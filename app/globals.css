@@ -1,26 +1,98 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #14161a;
-  --foreground: #e6e8eb;
-  --accent: #f59e0b;
-  --accent2: #ea580c;
-  --line: #2a2e36;
-  --muted: #9aa0a6;
+/*
+ * Roll20 Block Editor — 다크 톤 디자인 토큰.
+ * Notion 식 어두운 회색 (검정 아닌 #1a1c1f 부근).
+ * shadcn-ui 호환 변수명 사용.
+ */
+
+:root,
+.dark {
+  /* Surface */
+  --background: #16181d;
+  --foreground: #e9ecef;
+  --card: #1c1f25;
+  --card-foreground: #e9ecef;
+  --popover: #1c1f25;
+  --popover-foreground: #e9ecef;
+
+  /* Brand */
+  --primary: #f59e0b;
+  --primary-foreground: #1a1106;
+  --secondary: #2a2e36;
+  --secondary-foreground: #e9ecef;
+
+  /* States */
+  --muted: #232730;
+  --muted-foreground: #a8acb4;
+  --accent: #2a2e36;
+  --accent-foreground: #f5f6f8;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+
+  /* Borders / inputs */
+  --border: #2a2e36;
+  --input: #2a2e36;
+  --ring: #f59e0b;
+
+  /* Editor-specific */
+  --workspace-bg: #1a1c20;
+  --workspace-grid: #262931;
+  --toolbox-bg: #1c1f25;
+  --toolbox-border: #2a2e36;
+
+  /* Scratch hue accent ring (for category dots) */
+  --hue-logic: #4c97ff;
+  --hue-math: #7866ff;
+  --hue-text: #5cb1d6;
+  --hue-variables: #ff8c1a;
+  --hue-container: #ec4899;
+  --hue-input: #14b8a6;
+  --hue-display: #f59e0b;
+  --hue-dice: #ef4444;
+  --hue-expression: #84cc16;
+  --hue-sheetworker: #a855f7;
+  --hue-i18n: #06b6d4;
+  --hue-css: #f472b6;
+
+  --radius: 0.625rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --color-accent2: var(--accent2);
-  --color-line: var(--line);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Pretendard", sans-serif;
-  --font-mono: ui-monospace, Menlo, Consolas, monospace;
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-pretendard), var(--font-noto-sans-kr), var(--font-inter),
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Pretendard",
+    "Noto Sans KR", sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
 }
@@ -29,15 +101,83 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-feature-settings: "ss03", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+  border-color: var(--border);
+}
+
+/* ---------- Blockly overrides ---------- */
+
 .blocklyMainBackground {
-  fill: #1e1e1e !important;
+  fill: var(--workspace-bg) !important;
   stroke: none !important;
 }
 
 .blocklyToolboxDiv {
-  background: linear-gradient(180deg, #1c1f25, #14161a) !important;
-  border-right: 1px solid var(--line) !important;
+  background: var(--toolbox-bg) !important;
+  border-right: 1px solid var(--toolbox-border) !important;
   padding: 8px 0 !important;
+  color: var(--foreground) !important;
+}
+
+/* Category text contrast — 비전공자가 또렷이 읽도록 */
+.blocklyTreeRow {
+  padding: 6px 12px !important;
+  margin: 2px 6px !important;
+  border-radius: 6px !important;
+  transition: background 120ms ease !important;
+}
+
+.blocklyTreeRow:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.blocklyTreeSelected {
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+
+.blocklyTreeLabel {
+  color: var(--foreground) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.blocklyTreeSelected .blocklyTreeLabel {
+  color: var(--primary) !important;
+}
+
+.blocklyTreeIcon {
+  /* hue accent dot */
+  background-size: 10px 10px !important;
+}
+
+.blocklyFlyout {
+  background: var(--card) !important;
+}
+
+.blocklyFlyoutBackground {
+  fill: var(--card) !important;
+  fill-opacity: 0.98 !important;
+}
+
+.blocklyScrollbarHandle {
+  fill: #3a3f4a !important;
+}
+
+/* Trashcan, zoom — 살짝 톤다운 */
+.blocklyZoom > image,
+.blocklyZoom > svg {
+  opacity: 0.6 !important;
+  transition: opacity 120ms ease;
+}
+
+.blocklyZoom > image:hover,
+.blocklyZoom > svg:hover {
+  opacity: 1 !important;
 }

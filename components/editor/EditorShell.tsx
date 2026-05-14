@@ -1,36 +1,57 @@
 'use client';
 
+import { useState } from 'react';
+import { toast } from 'sonner';
 import EditorHeader from './EditorHeader';
 import BlockWorkspace from './BlockWorkspace';
+import RightPanel from './RightPanel';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 
 /**
- * Phase 1 의 최소 에디터 shell.
+ * 에디터 레이아웃 — 3-column.
  *
- * 추후 (Phase 2~3):
- * - WorkspaceTabs (HTML / CSS / i18n 3-탭) 추가
- * - RightPanel (Code / Preview 4-탭) 추가
- * - ToolboxPanel (커스텀 카테고리 toolbox) 추가
+ *   ┌────────────────── header (h-14) ───────────────────┐
+ *   │ [toolbox 240px] [workspace flex-1] [right 380px]   │
+ *   └────────────────────────────────────────────────────┘
  *
- * 지금은 빈 Blockly workspace 만 띄움 — Blockly inject 동작 확인용.
+ * 좌측 toolbox 는 Blockly 가 BlockWorkspace 내부에서 자체 렌더 (Blockly inject 사양).
+ * 우측 패널은 lg(≥1024px) 에서는 고정 컬럼, 그 아래에서는 Sheet drawer.
  */
 export default function EditorShell() {
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+
   return (
-    <div className="flex flex-col h-screen">
-      <EditorHeader />
+    <div className="flex h-screen flex-col">
+      <EditorHeader onOpenMobileSidebar={() => setMobileSheetOpen(true)} />
       <main className="flex flex-1 min-h-0">
-        <div className="flex-1 min-w-0">
-          <BlockWorkspace />
+        <div className="flex-1 min-w-0 bg-[var(--workspace-bg)]">
+          <BlockWorkspace
+            onRequestLoadExample={() =>
+              toast('D&D 5e 예시 — 곧 추가됩니다', { duration: 2200 })
+            }
+          />
         </div>
-        <aside className="w-[400px] border-l border-neutral-800 bg-neutral-900/50 flex flex-col">
-          <div className="px-4 py-3 border-b border-neutral-800 text-sm text-neutral-400">
-            우측 패널 (Phase 2 에서 코드/미리보기 추가)
-          </div>
-          <div className="flex-1 overflow-auto p-4 text-xs text-neutral-500 font-mono">
-            <p className="mb-2">Phase 1 — Blockly workspace bootstrap.</p>
-            <p className="mb-2">블록을 끌어보세요. (현재는 logic + math 표준 블록만 등록)</p>
-            <p>Phase 2 에서 156 Roll20 블록 마이그레이션.</p>
-          </div>
+        <aside className="hidden lg:flex w-[380px] shrink-0 border-l border-border bg-card flex-col">
+          <RightPanel />
         </aside>
+
+        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+          <SheetContent side="right" className="w-[90vw] max-w-md p-0 flex flex-col">
+            <SheetHeader className="border-b border-border px-4 py-3">
+              <SheetTitle>출력 패널</SheetTitle>
+              <SheetDescription>HTML · CSS · 번역 · 미리보기</SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 min-h-0">
+              <RightPanel />
+            </div>
+          </SheetContent>
+        </Sheet>
       </main>
     </div>
   );

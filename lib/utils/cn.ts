@@ -1,9 +1,9 @@
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
 /**
- * Tailwind class name merge helper.
- *
- * shadcn-ui 가 Phase 2 에 들어오면 clsx + tailwind-merge 로 교체.
- * Phase 1 에서는 단순 join 만.
+ * Tailwind class name merge helper (shadcn standard).
  */
-export function cn(...classes: Array<string | false | null | undefined>): string {
-  return classes.filter(Boolean).join(' ');
+export function cn(...inputs: ClassValue[]): string {
+  return twMerge(clsx(inputs));
 }
