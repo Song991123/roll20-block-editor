@@ -10,7 +10,7 @@ permissions:
   pages: write
   id-token: write
 
-# 동시에 1개만 deploy. 진행 중이면 새 push 가 대기.
+# ?�시??1개만 deploy. 진행 중이�???push 가 ?��?
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -23,9 +23,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 11
-
-      - uses: actions/setup-node@v4
+- uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
@@ -33,7 +31,7 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Build (static export → out/)
+      - name: Build (static export ??out/)
         run: pnpm build
         env:
           NODE_ENV: production
