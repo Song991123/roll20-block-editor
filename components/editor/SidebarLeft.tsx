@@ -1,0 +1,73 @@
+'use client';
+
+import { Box, ListTree } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useUiStore } from '@/lib/stores/uiStore';
+import { cn } from '@/lib/utils/cn';
+import BlocksLibrary from './BlocksLibrary';
+import WorkspaceTree from './WorkspaceTree';
+
+/**
+ * 좌측 사이드 — [블록] / [트리] 2 모드 segmented (D48).
+ *
+ * Anchor: docs/spec/08_wireframes.md W2-A/W2-B + 10_system_architecture §3.
+ */
+export default function SidebarLeft({ collapsed }: { collapsed: boolean }) {
+  const mode = useUiStore((s) => s.sidebarLeftMode);
+  const setMode = useUiStore((s) => s.setSidebarLeftMode);
+
+  if (collapsed) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-3">
+        <button
+          type="button"
+          aria-label="블록 라이브러리"
+          onClick={() => setMode('blocks')}
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--bg-hover)]',
+            mode === 'blocks' && 'bg-[var(--bg-active)] text-foreground',
+          )}
+        >
+          <Box className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="워크스페이스 트리"
+          onClick={() => setMode('tree')}
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--bg-hover)]',
+            mode === 'tree' && 'bg-[var(--bg-active)] text-foreground',
+          )}
+        >
+          <ListTree className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border px-3">
+        <ToggleGroup
+          type="single"
+          value={mode}
+          onValueChange={(v) => v && setMode(v as 'blocks' | 'tree')}
+          size="sm"
+          className="w-full"
+        >
+          <ToggleGroupItem value="blocks" aria-label="블록 라이브러리 (Cmd+1)" className="flex-1 gap-1.5">
+            <Box className="h-3.5 w-3.5" />
+            블록
+          </ToggleGroupItem>
+          <ToggleGroupItem value="tree" aria-label="워크스페이스 트리 (Cmd+2)" className="flex-1 gap-1.5">
+            <ListTree className="h-3.5 w-3.5" />
+            트리
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      <div className="flex-1 min-h-0">
+        {mode === 'blocks' ? <BlocksLibrary /> : <WorkspaceTree />}
+      </div>
+    </>
+  );
+}

@@ -17,12 +17,12 @@ const notoSansKR = Noto_Sans_KR({
 });
 
 export const metadata: Metadata = {
-  title: 'Roll20 Block Editor',
-  description: '비전공자를 위한 Roll20 캐릭터 시트 블록 코딩 에디터',
+  title: 'Roll20 시트 빌더',
+  description: '코드 없이 만드는 Roll20 캐릭터 시트 — 블록 코딩 + 한국어 친화',
 };
 
 export const viewport: Viewport = {
-  themeColor: '#16181d',
+  themeColor: '#0E1116',
   width: 'device-width',
   initialScale: 1,
 };
@@ -38,7 +38,7 @@ export default function RootLayout({
       className={`${inter.variable} ${notoSansKR.variable} dark h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="h-full">
         {children}
         <Toaster
           position="top-center"
@@ -47,9 +47,9 @@ export default function RootLayout({
           closeButton
           toastOptions={{
             style: {
-              background: 'var(--card)',
-              color: 'var(--foreground)',
-              border: '1px solid var(--border)',
+              background: 'var(--bg-elevated-2)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-default)',
             },
           }}
         />

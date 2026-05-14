@@ -1,31 +1,99 @@
-# Dependencies
-node_modules/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Build output
-.next/
-out/
+# === 영시영 (저작권 — 절대 push 안 함) ===
+**/1부 *.html
+**/1부 *.css
+**/1부 *.txt
+**/translate.txt
+sheet/example_004*
+sheet/example_001*
+sheet/example_002*
+sheet/example_003*
+sheet/_generated.html
+sheet/_test.html
+sheet/_USER_SHEET_CATALOG.md
 
-# Local cache
-.turbo/
-.eslintcache
+# 영시영 빌더 스크립트
+build_example_004*.py
+era_skills_data.py
+rolltemplates_data.py
+prefetch_imgur.py
 
-# Logs
-*.log
+# 영시영 ancestry / hardcoding 분석 문서
+docs/audit/
+docs/roll20-pattern-analysis/
+
+# vanilla monolith historical
+block-editor.html
+block-editor.html.bak.*
+viewer.html
+viewer-runtime.js
+viewer-api.js
+
+# === Next.js ===
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js build outputs
+/.next/
+/out/
+
+# production
+/build
+/dist
+
+# misc
+.DS_Store
+Thumbs.db
+desktop.ini
+*.pem
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+.pnpm-debug.log*
 
-# OS
-.DS_Store
-Thumbs.db
+# env files
+.env*
+!.env.example
 
-# Editor
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# Env
-.env*.local
+# Backups
+*.bak
+*.bak.*
+*.tmp
+*.orig
+*.backup-*
 
-# Temp
+# Claude
+.claude/
+
+# Mount fs 잔재 (Windows host 마운트가 unlink 거부)
 _tmp_*
+
+# === Whitelist ===
+!public/examples/example_005.xml
+!data/examples/example_005.xml
