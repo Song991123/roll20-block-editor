@@ -9,6 +9,7 @@
  */
 
 import { create } from 'zustand';
+import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 
 export type WorkspaceKey = 'html' | 'css' | 'i18n';
 
@@ -55,6 +56,12 @@ interface WorkspaceStore {
   setEmitCache: (out: Partial<EmitOutput>) => void;
   setEmitWarnings: (warnings: EmitWarning[]) => void;
   setSelectedBlockId: (id: string | null, origin: Exclude<SelectionOrigin, null>) => void;
+  /**
+   * 활성 워크스페이스 (또는 지정 워크스페이스) 에 새 블록 인스턴스 추가.
+   * Blockly adapter 가 실제 Block 객체 생성 → 워크스페이스 changeListener 가
+   * setXmlCache 자동 호출. 반환 = 새 블록 id.
+   */
+  appendBlockToActive: (blockType: string, target?: WorkspaceKey) => string | null;
 }
 
 const emptyMeta: WorkspaceMeta = {
@@ -114,6 +121,17 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
 
   setSelectedBlockId: (id, origin) =>
     set({ selectedBlockId: id, selectionOrigin: origin }),
+
+  appendBlockToActive: (blockType, target) => {
+    const state = useWorkspaceStore.getState();
+    const key = target ?? state.activeWorkspace;
+    const adapter = getBlocklyAdapter();
+    const id = adapter.appendBlockToWorkspace(key, blockType);
+    if (id) {
+      set({ selectedBlockId: id, selectionOrigin: 'tree' });
+    }
+    return id;
+  },
 }));
 
 /** Derived: emit error 가 1건이라도 있으면 다운로드 차단 (D18 ①). */

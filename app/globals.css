@@ -160,13 +160,44 @@ body {
   background: var(--border-strong);
 }
 
+/*
+ * Hidden Blockly host — D51.
+ * left:-9999px = visibility:hidden 보다 안전 (Blockly inject 시 layout 측정 필요).
+ * width/height = 1px → block render 가능, 사용자 안 보임.
+ */
 .blockly-model-host {
-  position: absolute;
-  width: 0;
-  height: 0;
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  visibility: hidden;
   pointer-events: none;
+  z-index: -1;
+}
+
+/* BlocksLibrary 의 mini preview workspace — 블록 SVG 만 보이게 minimum chrome. */
+.blocks-library-preview .blocklyMainBackground {
+  fill: transparent;
+  stroke: none;
+}
+.blocks-library-preview .blocklyScrollbarBackground,
+.blocks-library-preview .blocklyScrollbarHandle {
+  display: none;
+}
+
+/* spec 09 §8 — Blockly Zelos 텍스트 / 선택 토큰 override. */
+.blocklyText {
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', var(--font-noto-sans-kr), system-ui, sans-serif;
+  font-size: 13px;
+  fill: #ffffff;
+}
+.blocklyEditableText > .blocklyText {
+  fill: #ffffff;
+}
+.blocklySelected > .blocklyPath {
+  stroke: var(--primary);
+  stroke-width: 2;
 }
 
 :focus-visible {

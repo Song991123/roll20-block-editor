@@ -4,8 +4,8 @@
  * BlocklyModelHost — Blockly workspace 3개 (HTML/CSS/i18n) 의 hidden mount.
  *
  * Anchor: docs/spec/10_system_architecture.md §3.2 + §3.3.
- * 결정: D51 — `display:none` 대신 width/height 0 + visibility hidden + setVisible(false).
- *       (display:none 은 Blockly inject 시 0px viewport 로 inject 실패 — visibility 사용)
+ * 결정: D51 — `display:none` 대신 left:-9999px 트릭으로 viewport 밖에 배치.
+ *       setVisible(false) 는 newBlock + render 가 measurement 0 으로 실패 → 안 함.
  *
  * UI 가 직접 import 하지 않음 — BlocklyModelHost 와 lib/blockly/adapter.ts 만.
  * 모든 외부 호출 site = lib/blockly/adapter.ts 통해서.
@@ -48,8 +48,6 @@ export default function BlocklyModelHost() {
         scrollbars: false,
         sounds: false,
       });
-      // D51: 사용자 안 보임 + 렌더 비용 최소.
-      ws.setVisible(false);
       wsRef.current[key] = ws;
       adapter.registerWorkspace(key, ws);
 
@@ -88,7 +86,6 @@ export default function BlocklyModelHost() {
       aria-hidden="true"
       data-testid="blockly-model-host"
     >
-      {/* 각 워크스페이스의 mount point. 사용자 안 보임 (visibility hidden). */}
       <div id="bl-host-html" style={{ width: 480, height: 360 }} />
       <div id="bl-host-css" style={{ width: 480, height: 360 }} />
       <div id="bl-host-i18n" style={{ width: 480, height: 360 }} />

@@ -1,16 +1,26 @@
 'use client';
 
-import { useMemo, useSyncExternalStore } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { Search, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import * as Blockly from 'blockly';
+import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
+import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import {
   CATEGORIES,
   CATEGORY_ORDER,
   type BlockCategory,
-  type BlockShape,
+  type BlockDef,
 } from '@/lib/blocks/types';
 import {
   blocksByCategory,
@@ -21,9 +31,14 @@ import {
 import { cn } from '@/lib/utils/cn';
 
 /**
- * 좌측 [블록] 모드. Anchor: 08 W2-A + 02 §3.
+ * 좌측 [블록] 모드. Anchor: 08 W2-A + 02 §3 + D26 ②.
+ *
+ * Stage A-1.5:
+ *   - 각 BlockDef 를 Blockly 의 진짜 SVG 블록으로 렌더 (read-only mini workspace).
+ *   - 블록 클릭 / 드래그 → 활성 워크스페이스 (BlocklyModelHost 안) 에 추가.
+ *   - 추가 후 워크스페이스 changeListener → store xmlCache → 미리보기 갱신.
+ *
  * BlocklyModelHost 의 useEffect 가 registerAllBlocks → registry 가 본 컴포넌트에 통지.
- * Stage A-1: Expression 21 블록만 채움.
  */
 export default function BlocksLibrary() {
   const search = useUiStore((s) => s.blocksSearch);
@@ -70,9 +85,11 @@ export default function BlocksLibrary() {
               {searchResults.length === 0 ? (
                 <div className="px-2 py-3 text-xs text-muted-foreground">매칭되는 블록이 없어요.</div>
               ) : (
-                searchResults.map((b) => (
-                  <BlockTile key={b.type} type={b.type} label={b.label} category={b.category} shape={b.shape} />
-                ))
+                <div className="space-y-1">
+                  {searchResults.map((b) => (
+                    <BlockTile key={b.type} def={b} />
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -105,13 +122,11 @@ export default function BlocksLibrary() {
                     </button>
 
                     {isOpen && (
-                      <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-2">
+                      <div className="mt-1 space-y-1 pl-1">
                         {blocks.length === 0 ? (
                           <div className="py-1.5 pl-2 text-[10.5px] italic text-muted-foreground">카탈로그 작성 중…</div>
                         ) : (
-                          blocks.map((b) => (
-                            <BlockTile key={b.type} type={b.type} label={b.label} category={b.category} shape={b.shape} />
-                          ))
+                          blocks.map((b) => <BlockTile key={b.type} def={b} />)
                         )}
                       </div>
                     )}
@@ -136,55 +151,115 @@ export default function BlocksLibrary() {
   );
 }
 
-const HEX_CLIP = 'polygon(15% 0%, 85% 0%, 100% 50%, 85% 100%, 15% 100%, 0% 50%)';
+/**
+ * 단일 BlockDef 를 카드로 렌더 — 진짜 Blockly SVG 블록 미리보기 + 라벨 + 클릭/드래그.
+ *
+ * Blockly inject 로 read-only mini workspace 를 만들고, 그 안에 BlockDef.type 의
+ * 블록 인스턴스 1개를 배치 → SVG 그대로 사용자에게 보임. shape (둥근/육각/스택) 과
+ * 카테고리 hue 가 Blockly Zelos renderer 에 의해 자동 처리.
+ */
+function BlockTile({ def }: { def: BlockDef }) {
+  const meta = CATEGORIES[def.category];
+  const appendBlock = useWorkspaceStore((s) => s.appendBlockToActive);
+  const activeWs = useWorkspaceStore((s) => s.activeWorkspace);
+  const renderer = useSettingsStore((s) => s.blocklyRenderer);
 
-function ShapeIndicator({ shape, color }: { shape: BlockShape; color: string }) {
-  const isBool = shape === 'boolean';
-  const isRep = shape === 'reporter';
-  return (
-    <span
-      className="inline-block h-2.5 w-4 shrink-0 ring-1 ring-inset ring-black/15"
-      style={{
-        backgroundColor: color,
-        clipPath: isBool ? HEX_CLIP : undefined,
-        borderRadius: isBool ? undefined : isRep ? '9999px' : '3px',
-      }}
-      aria-hidden
-      data-shape={shape}
-    />
-  );
-}
+  const previewHostRef = useRef<HTMLDivElement | null>(null);
+  const blocklyWsRef = useRef<Blockly.WorkspaceSvg | null>(null);
+  const [previewHeight, setPreviewHeight] = useState<number>(36);
 
-function BlockTile({
-  type,
-  label,
-  category,
-  shape,
-}: {
-  type: string;
-  label: string;
-  category: BlockCategory;
-  shape: BlockShape;
-}) {
-  const meta = CATEGORIES[category];
+  // mini workspace + 단일 블록 inject.
+  useEffect(() => {
+    const host = previewHostRef.current;
+    if (!host) return;
+    if (blocklyWsRef.current) {
+      try { blocklyWsRef.current.dispose(); } catch { /* noop */ }
+      blocklyWsRef.current = null;
+    }
+    host.innerHTML = '';
+    try {
+      const ws = Blockly.inject(host, {
+        readOnly: true,
+        renderer,
+        toolbox: null as unknown as undefined,
+        trashcan: false,
+        scrollbars: false,
+        sounds: false,
+        move: { scrollbars: false, drag: false, wheel: false },
+        zoom: { controls: false, wheel: false, startScale: 0.8 },
+      }) as Blockly.WorkspaceSvg;
+      const block = ws.newBlock(def.type);
+      block.initSvg();
+      block.render();
+      block.moveBy(6, 4);
+      const heightWidth = block.getHeightWidth();
+      const h = Math.max(36, Math.ceil(heightWidth.height * 0.8) + 12);
+      setPreviewHeight(h);
+      blocklyWsRef.current = ws;
+    } catch (err) {
+      console.warn('[BlocksLibrary] mini preview inject failed', def.type, err);
+    }
+    return () => {
+      if (blocklyWsRef.current) {
+        try { blocklyWsRef.current.dispose(); } catch { /* noop */ }
+        blocklyWsRef.current = null;
+      }
+    };
+  }, [def.type, renderer]);
+
+  const handleAdd = useCallback(() => {
+    const id = appendBlock(def.type);
+    if (id) {
+      toast(`'${def.label}' 블록 추가됨 — ${activeWs.toUpperCase()} 워크스페이스`, { duration: 1600 });
+    } else {
+      toast.error('블록 추가 실패 (워크스페이스 미연결?)', { duration: 2200 });
+    }
+  }, [appendBlock, def.label, def.type, activeWs]);
+
   return (
-    <button
-      type="button"
+    <div
+      className={cn(
+        'group relative rounded-md border border-transparent bg-[var(--bg-elevated)]/40 px-1 py-0.5 transition-colors',
+        'hover:border-border hover:bg-[var(--bg-hover)]',
+      )}
       draggable
       onDragStart={(e) => {
-        e.dataTransfer.setData('application/x-r20-block-type', type);
+        e.dataTransfer.setData('application/x-r20-block-type', def.type);
         e.dataTransfer.effectAllowed = 'copy';
       }}
-      className={cn(
-        'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs text-foreground transition-colors',
-        'hover:bg-[var(--bg-hover)] active:bg-[var(--bg-active)]',
-        'cursor-grab focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-      )}
-      title={`${label} · ${shape}`}
+      title={def.tooltip}
     >
-      <ShapeIndicator shape={shape} color={meta.swatchVar} />
-      <span className="truncate">{label}</span>
-      <span className="ml-auto truncate text-[9.5px] font-mono text-muted-foreground/70">{type}</span>
-    </button>
+      <button
+        type="button"
+        onClick={handleAdd}
+        className="flex w-full items-stretch gap-2 rounded-sm text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-grab active:cursor-grabbing"
+        aria-label={`${def.label} 블록 추가`}
+      >
+        <div
+          ref={previewHostRef}
+          className="blocks-library-preview relative shrink-0 overflow-hidden rounded-sm"
+          style={{
+            width: 138,
+            height: previewHeight,
+            background: 'transparent',
+          }}
+          aria-hidden
+        />
+        <div className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
+          <span className="truncate text-xs text-foreground">{def.label}</span>
+          <span className="truncate font-mono text-[9.5px] text-muted-foreground/70">{def.type}</span>
+          <span className="mt-0.5 inline-flex items-center gap-1">
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: meta.swatchVar }}
+              aria-hidden
+            />
+            <span className="text-[9.5px] text-muted-foreground/70">
+              {def.shape === 'reporter' ? '값 (둥근)' : def.shape === 'boolean' ? '참/거짓 (육각)' : def.shape}
+            </span>
+          </span>
+        </div>
+      </button>
+    </div>
   );
 }

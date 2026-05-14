@@ -4,13 +4,16 @@
  * Anchor: docs/spec/10_system_architecture.md §3.3 + §3.2.
  *
  * 모든 외부 컴포넌트는 본 adapter 통해서만 Blockly 호출.
- * 직접 `import * as Blockly` 는 BlocklyModelHost 와 본 모듈에서만 허용.
+ * 직접 `import * as Blockly` 는 BlocklyModelHost / BlocksLibrary mini preview /
+ * 본 모듈에서만 허용.
  *
  * 미래에 Blockly 메이저 변경 시 (R-9) — 본 모듈만 수정하면 컴포넌트 전부 무영향.
  */
 
 import * as Blockly from 'blockly';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
+import { getBlockDef } from '@/lib/blocks/registry';
+import type { BlockCategory } from '@/lib/blocks/types';
 
 export interface BlockSnapshot {
   id: string;
@@ -22,31 +25,29 @@ export interface BlockSnapshot {
   /** 핵심 필드 미리보기 (예: text_input 의 name 필드 값). */
   preview: string;
   /** 카테고리 id — UI 색 띠 표시. */
-  category: string | null;
+  category: BlockCategory | null;
+}
+
+/** Inspector 폼이 사용. Blockly Block.inputList 를 평탄화한 field 정보. */
+export interface BlockFieldInfo {
+  name: string;
+  kind: 'text' | 'number' | 'dropdown' | 'checkbox' | 'unknown';
+  value: string;
+  options?: Array<{ value: string; label: string }>;
 }
 
 export interface BlocklyAdapter {
-  /** 3 워크스페이스의 Blockly 인스턴스 등록 (BlocklyModelHost 가 호출). */
   registerWorkspace(key: WorkspaceKey, ws: Blockly.WorkspaceSvg): void;
   unregisterWorkspace(key: WorkspaceKey): void;
-
   getWorkspace(key: WorkspaceKey): Blockly.WorkspaceSvg | null;
-
-  /** flat snapshot — 좌측 트리 가상 리스트용. */
   listAllBlocks(key: WorkspaceKey): BlockSnapshot[];
-
   getBlock(key: WorkspaceKey, id: string): BlockSnapshot | null;
-
-  /** Inspector 폼 onChange → 호출. */
+  getBlockFields(key: WorkspaceKey, blockId: string): BlockFieldInfo[];
+  /** 새 블록 인스턴스를 활성 워크스페이스 top-level 에 추가. 반환 = 새 block id (또는 null). */
+  appendBlockToWorkspace(key: WorkspaceKey, blockType: string): string | null;
   setFieldValue(key: WorkspaceKey, blockId: string, fieldName: string, value: string): void;
-
-  /** 워크스페이스 → XML 직렬화 (스토어 캐시 / 자동저장). */
   serializeXml(key: WorkspaceKey): string;
-
-  /** XML → 워크스페이스 하이드레이트. */
   hydrateFromXml(key: WorkspaceKey, xml: string): void;
-
-  /** workspace event listener 등록. unsubscribe 함수 반환. */
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
 
@@ -76,13 +77,14 @@ class DefaultAdapter implements BlocklyAdapter {
   }
 
   private walk(block: Blockly.Block, depth: number, out: BlockSnapshot[]): void {
+    const def = getBlockDef(block.type);
     out.push({
       id: block.id,
       type: block.type,
       depth,
-      label: block.type, // Stage A 의 BlockDef.label 로 후속 교체
+      label: def?.label ?? block.type,
       preview: this.previewFor(block),
-      category: null,
+      category: def?.category ?? null,
     });
     for (const child of block.getChildren(true)) {
       this.walk(child, depth + 1, out);
@@ -90,7 +92,6 @@ class DefaultAdapter implements BlocklyAdapter {
   }
 
   private previewFor(block: Blockly.Block): string {
-    // 첫 필드 값 1개만 표시 (UX 단순)
     const fields = block.inputList.flatMap((input) => input.fieldRow);
     for (const f of fields) {
       const v = f.getValue?.();
@@ -104,14 +105,67 @@ class DefaultAdapter implements BlocklyAdapter {
     if (!ws) return null;
     const b = ws.getBlockById(id);
     if (!b) return null;
+    const def = getBlockDef(b.type);
     return {
       id: b.id,
       type: b.type,
       depth: 0,
-      label: b.type,
+      label: def?.label ?? b.type,
       preview: this.previewFor(b),
-      category: null,
+      category: def?.category ?? null,
     };
+  }
+
+  getBlockFields(key: WorkspaceKey, blockId: string): BlockFieldInfo[] {
+    const ws = this.workspaces[key];
+    const b = ws?.getBlockById(blockId);
+    if (!b) return [];
+    const out: BlockFieldInfo[] = [];
+    for (const input of b.inputList) {
+      for (const f of input.fieldRow) {
+        const editable =
+          (f as { isCurrentlyEditable?: () => boolean }).isCurrentlyEditable?.() ?? false;
+        if (!editable) continue;
+        const name = (f as { name?: string }).name ?? '';
+        if (!name) continue;
+        const rawValue = f.getValue?.();
+        const value = rawValue == null ? '' : String(rawValue);
+        const fieldType = (f as { constructor: { name?: string } }).constructor?.name ?? '';
+        let kind: BlockFieldInfo['kind'] = 'unknown';
+        let options: BlockFieldInfo['options'] | undefined;
+        if (fieldType === 'FieldNumber') kind = 'number';
+        else if (fieldType === 'FieldTextInput') kind = 'text';
+        else if (fieldType === 'FieldCheckbox') kind = 'checkbox';
+        else if (fieldType === 'FieldDropdown') {
+          kind = 'dropdown';
+          const dd = f as unknown as {
+            getOptions?: (useCache?: boolean) => Array<[unknown, string]>;
+          };
+          const opts = dd.getOptions?.(false) ?? [];
+          options = opts.map(([labelRaw, val]) => ({
+            value: String(val),
+            label: typeof labelRaw === 'string' ? labelRaw : String(val),
+          }));
+        }
+        out.push({ name, kind, value, options });
+      }
+    }
+    return out;
+  }
+
+  appendBlockToWorkspace(key: WorkspaceKey, blockType: string): string | null {
+    const ws = this.workspaces[key];
+    if (!ws) return null;
+    try {
+      const block = ws.newBlock(blockType);
+      const offset = ws.getTopBlocks(false).length * 8;
+      block.moveBy(20 + offset, 20 + offset);
+      block.initSvg();
+      block.render();
+      return block.id;
+    } catch {
+      return null;
+    }
   }
 
   setFieldValue(key: WorkspaceKey, blockId: string, fieldName: string, value: string): void {

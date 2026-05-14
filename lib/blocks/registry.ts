@@ -68,4 +68,9 @@ export function getAllBlocks(): BlockDef[] {
   return ALL_BLOCKS;
 }
 
+/** type → BlockDef lookup (인스턴스 추가 / 인스펙터 메타 사용). */
+export function getBlockDef(type: string): BlockDef | null {
+  return ALL_BLOCKS.find((b) => b.type === type) ?? null;
+}
+
 export { CATEGORIES, CATEGORY_ORDER };
