@@ -113,7 +113,7 @@ export default function BlocksLibrary() {
                         <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                       )}
                       <span
-                        className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                        className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-inset ring-white/5"
                         style={{ backgroundColor: meta.swatchVar }}
                         aria-hidden
                       />
@@ -122,7 +122,10 @@ export default function BlocksLibrary() {
                     </button>
 
                     {isOpen && (
-                      <div className="mt-1 space-y-1 pl-1">
+                      <div
+                        className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
+                        style={{ borderColor: `color-mix(in srgb, ${meta.swatchVar} 60%, transparent)` }}
+                      >
                         {blocks.length === 0 ? (
                           <div className="py-1.5 pl-2 text-[10.5px] italic text-muted-foreground">카탈로그 작성 중…</div>
                         ) : (
