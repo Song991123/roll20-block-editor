@@ -121,7 +121,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --font-sans: 'Pretendard', 'Apple SD Gothic Neo', var(--font-noto-sans-kr), var(--font-inter),
+  --font-sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic',
     -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 }
@@ -189,7 +189,7 @@ body {
 
 /* spec 09 §8 — Blockly Zelos 텍스트 / 선택 토큰 override. */
 .blocklyText {
-  font-family: 'Pretendard', 'Apple SD Gothic Neo', var(--font-noto-sans-kr), system-ui, sans-serif;
+  font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   font-size: 13px;
   fill: #ffffff;
 }

@@ -1,20 +1,10 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Noto_Sans_KR } from 'next/font/google';
 import { Toaster } from 'sonner';
 import './globals.css';
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const notoSansKR = Noto_Sans_KR({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-noto-sans-kr',
-  display: 'swap',
-});
+// Pretendard variable font (OFL 1.1) — Korean + Latin coverage in one variable file.
+// Loaded via jsdelivr CDN's dynamic-subset CSS so only used glyphs are downloaded.
+// CSS variable --font-sans drives the family stack and includes a system-ui fallback.
 
 export const metadata: Metadata = {
   title: 'Roll20 시트 빌더',
@@ -33,11 +23,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="ko"
-      className={`${inter.variable} ${notoSansKR.variable} dark h-full antialiased`}
-      suppressHydrationWarning
-    >
+    <html lang="ko" className="dark h-full antialiased" suppressHydrationWarning>
+      <head>
+        <link
+          rel="preconnect"
+          href="https://cdn.jsdelivr.net"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
+        />
+      </head>
       <body className="h-full">
         {children}
         <Toaster
