@@ -8,23 +8,23 @@
 
 :root,
 .dark {
-  --bg-canvas:        #0E1116;
-  --bg-app:           #10141B;
-  --bg-elevated:      #161B22;
-  --bg-elevated-2:    #1B2129;
-  --bg-hover:         #1F242B;
-  --bg-active:        #252B33;
+  --bg-canvas:        #161616;
+  --bg-app:           #1A1A1A;
+  --bg-elevated:      #202020;
+  --bg-elevated-2:    #262626;
+  --bg-hover:         #2C2C2C;
+  --bg-active:        #333333;
   --bg-overlay:       rgba(0, 0, 0, 0.55);
 
-  --text-primary:     #E6EDF3;
-  --text-secondary:   #B1BAC4;
-  --text-muted:       #8B949E;
-  --text-disabled:    #5E6772;
-  --text-inverse:     #0E1116;
+  --text-primary:     #ECECEC;
+  --text-secondary:   #B5B5B5;
+  --text-muted:       #8E8E8E;
+  --text-disabled:    #5A5A5A;
+  --text-inverse:     #1A1A1A;
 
-  --border-default:   #2D343E;
-  --border-strong:    #3D4654;
-  --border-subtle:    #1E242C;
+  --border-default:   #303030;
+  --border-strong:    #404040;
+  --border-subtle:    #242424;
 
   --primary:          #2F81F7;
   --primary-hover:    #388BFD;
