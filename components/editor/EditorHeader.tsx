@@ -35,6 +35,7 @@ import {
   type ExampleDescriptor,
 } from '@/lib/examples';
 import { ImportDialog } from './ImportDialog';
+import { ExportDialog } from './ExportDialog';
 import { useState } from 'react';
 
 const APP_VERSION = 'v0.1.0';
@@ -62,6 +63,7 @@ export default function EditorHeader() {
   const toggleRight = useUiStore((s) => s.toggleSidebarRight);
   const dirty = useWorkspaceStore((s) => anyDirty(s.workspaces));
   const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const handleLoadExample = (descriptor: ExampleDescriptor) => async () => {
     try {
@@ -213,7 +215,7 @@ export default function EditorHeader() {
                 variant="default"
                 size="sm"
                 className="h-8 gap-1.5"
-                onClick={comingSoon('다운로드')}
+                onClick={() => setExportOpen(true)}
                 aria-label="시트 다운로드"
               >
                 <Download className="h-4 w-4" />
@@ -308,6 +310,7 @@ export default function EditorHeader() {
         </div>
       </header>
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
     </TooltipProvider>
   );
 }

