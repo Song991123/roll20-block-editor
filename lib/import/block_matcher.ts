@@ -312,7 +312,7 @@ function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   const a = node.attrs ?? {};
 
   // data-i18n="KEY" 가 있으면 i18n 우선.
-  if (a['data-i18n'] && (tag === 'span' || tag === 'div' || tag === 'label')) {
+  if (a['data-i18n'] && ['span','div','label','strong','b','em','small','p','td','th'].includes(tag)) {
     const text = firstTextContent(node);
     return {
       blockType: 'r20_i18n_text',
@@ -378,6 +378,13 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (!tag) return null;
   const a = node.attrs ?? {};
 
+  if (tag === 'script') {
+    return {
+      blockType: 'r20_raw_worker',
+      fields: { JS: allTextContent(node) },
+      children: {},
+    };
+  }
   if (/^h[1-6]$/.test(tag)) {
     return {
       blockType: 'r20_heading',
@@ -439,6 +446,18 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || '').replace(/sheet-disabled-text\s*/, '').trim(),
+      },
+      children: {},
+    };
+  }
+  // <b>, <strong>, <em>, <small>, <u> — text-only inline emphasis → static_text.
+  if (['b','strong','em','small','u','i'].includes(tag) && hasOnlyText(node) && !a['data-i18n']) {
+    // <i> 가 아이콘 마크업이 아닌 경우만 — 위 icon branch 가 sheet-icon-* 매칭 후 fall-through.
+    return {
+      blockType: 'r20_static_text',
+      fields: {
+        TEXT: firstTextContent(node),
+        CLASS: (stripSheetPrefix(a.class || '') + ' ' + tag).trim(),
       },
       children: {},
     };

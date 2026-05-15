@@ -215,7 +215,68 @@ function ruleToBlock(head: string, body: string, ctx: CssMatchContext): MatchedB
  */
 function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
   const trimmed = sel.trim();
-  // 단순 단일 토큰?
+  if (!trimmed) {
+    return { blockType: 'r20_literal_string', fields: { STR: '*' }, children: {} };
+  }
+
+  // Comma group at top level — A, B → r20_selector_comma.
+  const commaParts = splitTopLevel(trimmed, ',');
+  if (commaParts.length > 1) {
+    const right = buildSelectorBlock(commaParts.slice(1).join(',').trim(), ctx);
+    const left = buildSelectorBlock(commaParts[0].trim(), ctx);
+    return {
+      blockType: 'r20_selector_comma',
+      fields: {},
+      valueInputs: { A: left, B: right },
+      children: {},
+    };
+  }
+
+  // Combinator scan — child > / adjacent + / sibling ~ — top-level only.
+  const combo = findCombinator(trimmed);
+  if (combo) {
+    const a = buildSelectorBlock(combo.left, ctx);
+    const b = buildSelectorBlock(combo.right, ctx);
+    const type = combo.op === '>'
+      ? 'r20_selector_child'
+      : combo.op === '+'
+        ? 'r20_selector_sibling_adj'
+        : combo.op === '~'
+          ? 'r20_selector_sibling_gen'
+          : 'r20_selector_descendant';
+    return { blockType: type, fields: {}, valueInputs: { A: a, B: b }, children: {} };
+  }
+
+  // Pseudo-class (`.foo:hover`, `:checked`, `:nth-child(2)`).
+  const pseudoMatch = /^(.*?):([\w-]+)(?:\(([^)]*)\))?$/.exec(trimmed);
+  if (pseudoMatch && pseudoMatch[1] !== trimmed) {
+    const [, base, pseudo, arg] = pseudoMatch;
+    const ALLOWED = new Set(['hover', 'focus', 'checked', 'disabled', 'nth-child']);
+    if (ALLOWED.has(pseudo)) {
+      const baseBlock = base ? buildSelectorBlock(base, ctx) : {
+        blockType: 'r20_literal_string', fields: { STR: '' }, children: {},
+      };
+      return {
+        blockType: 'r20_selector_pseudo',
+        fields: { PSEUDO: pseudo, ARG: arg || '' },
+        valueInputs: { BASE: baseBlock },
+        children: {},
+      };
+    }
+  }
+
+  // Attribute selector `tag[attr=val]` or `[attr=val]`.
+  const attrMatch = /^([\w*-]*)\[([\w-]+)\s*([~|^$*]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\]]*))\]$/.exec(trimmed);
+  if (attrMatch) {
+    const [, , attr, op, v1, v2, v3] = attrMatch;
+    return {
+      blockType: 'r20_selector_attr',
+      fields: { ATTR: attr, OP: op, VALUE: v1 ?? v2 ?? v3 ?? '' },
+      children: {},
+    };
+  }
+
+  // Single class, id, or element.
   if (/^\.[\w-]+$/.test(trimmed)) {
     return {
       blockType: 'r20_selector_class',
@@ -231,22 +292,100 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
     };
   }
   if (/^(div|span|input|button)$/.test(trimmed)) {
-    return {
-      blockType: 'r20_selector_element',
-      fields: { TAG: trimmed },
-      children: {},
-    };
+    return { blockType: 'r20_selector_element', fields: { TAG: trimmed }, children: {} };
   }
-  // 그 외 — literal_string 으로 fallback (CSS workspace 안에서 raw selector).
+
+  // 그 외 — literal_string fallback (CSS workspace 안에서 raw selector).
   ctx.warnings.push({
-    code: 'css_selector_compound',
-    message: `복합 셀렉터 "${trimmed.slice(0, 40)}" 은 literal_string 으로 박음`,
+    code: 'css_selector_complex',
+    message: `매칭 못 한 셀렉터 "${trimmed.slice(0, 60)}" — literal_string 으로 박음`,
   });
   return {
     blockType: 'r20_literal_string',
     fields: { STR: trimmed },
     children: {},
   };
+}
+
+/** top-level (괄호/브래킷 보호) 단일 char 분리. */
+function splitTopLevel(s: string, sep: string): string[] {
+  const out: string[] = [];
+  let depthB = 0, depthP = 0, start = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '"' || c === "'") {
+      const q = c; i++;
+      while (i < s.length && s[i] !== q) { if (s[i] === '\\') i++; i++; }
+      continue;
+    }
+    if (c === '[') depthB++;
+    else if (c === ']') depthB--;
+    else if (c === '(') depthP++;
+    else if (c === ')') depthP--;
+    else if (c === sep && depthB === 0 && depthP === 0) {
+      out.push(s.slice(start, i)); start = i + 1;
+    }
+  }
+  out.push(s.slice(start));
+  return out;
+}
+
+/**
+ * 첫 top-level combinator (>, +, ~ or whitespace) 위치 검색.
+ * descendant (공백) 는 다른 모든 가능성을 다 시도한 다음 마지막.
+ */
+function findCombinator(sel: string): { op: string; left: string; right: string } | null {
+  let depthB = 0, depthP = 0;
+  // Look for `>`, `+`, `~` first.
+  for (let i = 0; i < sel.length; i++) {
+    const c = sel[i];
+    if (c === '"' || c === "'") {
+      const q = c; i++;
+      while (i < sel.length && sel[i] !== q) { if (sel[i] === '\\') i++; i++; }
+      continue;
+    }
+    if (c === '[') { depthB++; continue; }
+    if (c === ']') { depthB--; continue; }
+    if (c === '(') { depthP++; continue; }
+    if (c === ')') { depthP--; continue; }
+    if (depthB || depthP) continue;
+    if (c === '>' || c === '+' || c === '~') {
+      // 'a~b' 의 `~=` 는 attribute 안 (depthB), 여기 안 옴.
+      // Skip if it's part of a pseudo or other; ensure space around eligible
+      // We accept these only between identifiers (not at index 0).
+      if (i === 0) continue;
+      return {
+        op: c,
+        left: sel.slice(0, i).trim(),
+        right: sel.slice(i + 1).trim(),
+      };
+    }
+  }
+  // descendant (공백) — 가장 오른쪽 분리점.
+  depthB = 0; depthP = 0;
+  let lastSpace = -1;
+  for (let i = 0; i < sel.length; i++) {
+    const c = sel[i];
+    if (c === '"' || c === "'") {
+      const q = c; i++;
+      while (i < sel.length && sel[i] !== q) { if (sel[i] === '\\') i++; i++; }
+      continue;
+    }
+    if (c === '[') { depthB++; continue; }
+    if (c === ']') { depthB--; continue; }
+    if (c === '(') { depthP++; continue; }
+    if (c === ')') { depthP--; continue; }
+    if (depthB || depthP) continue;
+    if (c === ' ' || c === '\t' || c === '\n') {
+      lastSpace = i;
+    }
+  }
+  if (lastSpace > 0) {
+    const left = sel.slice(0, lastSpace).trim();
+    const right = sel.slice(lastSpace + 1).trim();
+    if (left && right) return { op: ' ', left, right };
+  }
+  return null;
 }
 
 function parseDecls(body: string): MatchedBlock[] {
