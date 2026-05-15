@@ -263,7 +263,7 @@ function BlockTile({ def }: { def: BlockDef }) {
   return (
     <div
       className={cn(
-        'group relative rounded-md border border-transparent bg-[var(--bg-elevated)]/40 px-1 py-0.5 transition-colors',
+        'group relative rounded-md border border-transparent bg-[var(--bg-elevated)]/40 px-1 py-0 transition-colors',
         'hover:border-border hover:bg-[var(--bg-hover)]',
       )}
       draggable
@@ -284,7 +284,7 @@ function BlockTile({ def }: { def: BlockDef }) {
           setTimeout(() => ghost.remove(), 0);
         } catch { /* setDragImage 미지원 환경 — fallback to default */ }
       }}
-      title={def.tooltip}
+      title={`${def.label}\n${def.tooltip}\n[${def.type}]`}
     >
       <button
         type="button"
@@ -302,19 +302,13 @@ function BlockTile({ def }: { def: BlockDef }) {
           }}
           aria-hidden
         />
-        <div className="flex min-w-0 flex-1 flex-col justify-center py-0.5">
-          <span className="truncate text-xs text-foreground">{def.label}</span>
-          <span className="truncate font-mono text-[9.5px] text-muted-foreground/70">{def.type}</span>
-          <span className="mt-0.5 inline-flex items-center gap-1">
-            <span
-              className="inline-block h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: meta.swatchVar }}
-              aria-hidden
-            />
-            <span className="text-[9.5px] text-muted-foreground/70">
-              {def.shape === 'reporter' ? '값 (둥근)' : def.shape === 'boolean' ? '참/거짓 (육각)' : def.shape}
-            </span>
-          </span>
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 py-0.5">
+          <span
+            className="inline-block h-2 w-2 shrink-0 rounded-full ring-1 ring-inset ring-white/10"
+            style={{ backgroundColor: meta.swatchVar }}
+            aria-hidden
+          />
+          <span className="truncate text-[12px] leading-tight text-foreground">{def.label}</span>
         </div>
       </button>
     </div>

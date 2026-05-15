@@ -90,7 +90,7 @@ export default function WidgetInspector() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="space-y-4 p-3" data-testid="widget-inspector">
+      <div className="space-y-3.5 p-3" data-testid="widget-inspector">
         <header className="flex items-center justify-between">
           <div>
             <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground">
@@ -106,7 +106,7 @@ export default function WidgetInspector() {
               removeWidget(target, widget.id);
               setSelectedWidgetId(null);
             }}
-            className="rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-[var(--bg-hover)]"
+            className="rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-500"
             data-testid="widget-inspector-delete"
             title="삭제 (Delete)"
           >
@@ -134,7 +134,7 @@ export default function WidgetInspector() {
             className={
               'w-full rounded border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none ' +
               (nameError
-                ? 'border-red-500 ring-2 ring-red-500/40 focus:ring-red-500'
+                ? 'border-red-500/70 ring-1 ring-red-500/50 focus:ring-red-500'
                 : 'border-border focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]')
             }
             data-testid="w-inspector-name"
@@ -144,7 +144,7 @@ export default function WidgetInspector() {
             autoComplete="off"
           />
           {nameError ? (
-            <p className="mt-1 text-[10.5px] text-red-500" data-testid="w-inspector-name-error">
+            <p className="mt-1 flex items-start gap-1 text-[10.5px] font-medium text-red-500" data-testid="w-inspector-name-error">
               {nameError}
             </p>
           ) : (
@@ -161,7 +161,7 @@ export default function WidgetInspector() {
             value={(widget.attrs.class as string | undefined) ?? ''}
             onChange={(e) => setAttr('class', e.target.value)}
             placeholder="예: stat-box highlighted"
-            className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]"
+            className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--color-primary,#2563eb)] focus:border-[var(--color-primary,#2563eb)]"
             data-testid="w-inspector-class"
             spellCheck={false}
             autoComplete="off"
@@ -178,7 +178,7 @@ export default function WidgetInspector() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="mb-1.5 text-[10.5px] uppercase tracking-wider text-muted-foreground">
+      <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </h3>
       {children}
@@ -202,8 +202,8 @@ function NumberField({
   testid?: string;
 }) {
   return (
-    <label className="flex items-center gap-1 text-xs">
-      <span className="w-8 text-muted-foreground">{label}</span>
+    <label className="flex items-center gap-1.5 text-xs">
+      <span className="w-10 shrink-0 text-[11px] font-medium text-muted-foreground">{label}</span>
       <input
         type="number"
         value={value}
@@ -211,7 +211,7 @@ function NumberField({
           const n = parseFloat(e.target.value);
           if (Number.isFinite(n)) onChange(n);
         }}
-        className="flex-1 rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)] tabular-nums"
+        className="flex-1 min-w-0 rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--color-primary,#2563eb)] focus:border-[var(--color-primary,#2563eb)] focus:border-[var(--color-primary,#2563eb)] tabular-nums"
         data-testid={testid}
       />
     </label>
@@ -234,7 +234,7 @@ function TypeSpecificFields({
           type="text"
           value={(attrs.value as string | undefined) ?? ''}
           onChange={(e) => setAttr('value', e.target.value)}
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]"
+          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--color-primary,#2563eb)] focus:border-[var(--color-primary,#2563eb)]"
           data-testid="w-inspector-value"
         />
       </Section>
@@ -249,7 +249,7 @@ function TypeSpecificFields({
             type="text"
             value={(attrs.label as string | undefined) ?? ''}
             onChange={(e) => setAttr('label', e.target.value)}
-            className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]"
+            className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--color-primary,#2563eb)] focus:border-[var(--color-primary,#2563eb)]"
             data-testid="w-inspector-label"
           />
         </Section>
@@ -277,7 +277,7 @@ function TypeSpecificFields({
           type="text"
           value={(attrs.text as string | undefined) ?? ''}
           onChange={(e) => setAttr('text', e.target.value)}
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]"
+          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--color-primary,#2563eb)] focus:border-[var(--color-primary,#2563eb)]"
           data-testid="w-inspector-text"
         />
       </Section>
@@ -292,7 +292,7 @@ function TypeSpecificFields({
           value={(attrs.src as string | undefined) ?? ''}
           onChange={(e) => setAttr('src', e.target.value)}
           placeholder="https://..."
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]"
+          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--color-primary,#2563eb)] focus:border-[var(--color-primary,#2563eb)]"
           data-testid="w-inspector-src"
           spellCheck={false}
         />
@@ -313,7 +313,7 @@ function TypeSpecificFields({
             )
           }
           rows={4}
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]"
+          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--color-primary,#2563eb)] focus:border-[var(--color-primary,#2563eb)]"
           data-testid="w-inspector-options"
         />
       </Section>
@@ -327,7 +327,7 @@ function TypeSpecificFields({
           type="text"
           value={(attrs.legend as string | undefined) ?? ''}
           onChange={(e) => setAttr('legend', e.target.value)}
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]"
+          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--color-primary,#2563eb)] focus:border-[var(--color-primary,#2563eb)]"
           data-testid="w-inspector-legend"
         />
       </Section>
