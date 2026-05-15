@@ -210,6 +210,53 @@ script[type='text/worker'] {
   border-radius: 3px;
 }
 
+/* ───────────────────────────────────────────────────────────────────
+ * colrow / row / col / fieldset / table / repeating / spacer defaults
+ * 목적: 시스템에 무관한 generic layout primitive 의 default 동작 보장.
+ * 추가 anchor: V2 검증 — ".sheet-colrow-N" 디폴트 grid 정의가 없어
+ * 다수 능력치 row 가 vertical stack 으로 깨지는 갭 보강.
+ * 시스템 specific 0. 모든 selector 는 Roll20/sheet 표준 class.
+ * ─────────────────────────────────────────────────────────────────── */
+
+/* colrow_n N-column grid */
+.sheet-colrow-2, .sheet-colrow-3, .sheet-colrow-4, .sheet-colrow-5, .sheet-colrow-6 {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.sheet-colrow-2 { grid-template-columns: repeat(2, 1fr); }
+.sheet-colrow-3 { grid-template-columns: repeat(3, 1fr); }
+.sheet-colrow-4 { grid-template-columns: repeat(4, 1fr); }
+.sheet-colrow-5 { grid-template-columns: repeat(5, 1fr); }
+.sheet-colrow-6 { grid-template-columns: repeat(6, 1fr); }
+
+/* row / col flex helpers */
+.sheet-row { display: flex; flex-direction: row; gap: 0.5rem; flex-wrap: wrap; }
+.sheet-col { display: flex; flex-direction: column; gap: 0.25rem; }
+
+/* fieldset basic — ".charsheet fieldset[class*=repeating_]" 보다 낮은 specificity */
+.sheet-fieldset, fieldset.sheet-fieldset {
+  padding: 0.5rem;
+  border: 1px solid var(--r20-border, #d0d7de);
+  border-radius: 0.25rem;
+}
+
+/* table basic — 기존 ".charsheet table" 룰과 함께 width/100% 보강 */
+.sheet-table, table { border-collapse: collapse; width: 100%; }
+.sheet-table th, .sheet-table td { padding: 0.25rem 0.5rem; text-align: left; }
+
+/* repeating section — generic class (Roll20 fieldset.repeating_* 와 별도) */
+.repeating_section {
+  border: 1px solid var(--r20-border, #d0d7de);
+  padding: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+/* spacers */
+.sheet-spacer-small { height: 0.25rem; }
+.sheet-spacer-medium { height: 0.5rem; }
+.sheet-spacer-large { height: 1rem; }
+
 :root {
   --r20-bg: #ffffff;
   --r20-fg: #1f2328;

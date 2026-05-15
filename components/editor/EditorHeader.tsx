@@ -109,7 +109,13 @@ export default function EditorHeader() {
         <div className="ml-2 flex items-center gap-0.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5"
+                aria-label="예시 시트 불러오기"
+              >
                 <Layers className="h-4 w-4" />
                 <span className="hidden sm:inline">예시</span>
               </Button>
@@ -150,6 +156,7 @@ export default function EditorHeader() {
                 size="sm"
                 className="h-8 gap-1.5"
                 onClick={comingSoon('새 시트')}
+                aria-label="새 시트 만들기"
               >
                 <FilePlus className="h-4 w-4" />
                 <span className="hidden sm:inline">새 시트</span>
@@ -166,6 +173,7 @@ export default function EditorHeader() {
                 size="sm"
                 className="h-8 gap-1.5"
                 onClick={comingSoon('파일 불러오기')}
+                aria-label="파일에서 불러오기"
               >
                 <FolderOpen className="h-4 w-4" />
                 <span className="hidden sm:inline">불러오기</span>
@@ -186,6 +194,7 @@ export default function EditorHeader() {
                 size="sm"
                 className="h-8 gap-1.5"
                 onClick={comingSoon('저장')}
+                aria-label="현재 시트 저장"
               >
                 <Save className="h-4 w-4" />
                 <span className="hidden sm:inline">저장</span>
@@ -202,6 +211,7 @@ export default function EditorHeader() {
                 size="sm"
                 className="h-8 gap-1.5"
                 onClick={comingSoon('다운로드')}
+                aria-label="시트 다운로드"
               >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">다운로드</span>
