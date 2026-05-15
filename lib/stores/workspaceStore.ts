@@ -13,6 +13,48 @@ import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 
 export type WorkspaceKey = 'html' | 'css' | 'i18n';
 
+/**
+ * Phase A — WYSIWYG 위젯 인스턴스 (spec 17 §10).
+ * type 은 widget registry 의 식별자.
+ * x/y/width/height 는 px, 좌상단 기준 absolute.
+ */
+export type WidgetType =
+  | 'text-input'
+  | 'number-input'
+  | 'textarea-input'
+  | 'checkbox-input'
+  | 'select-input'
+  | 'button'
+  | 'roll-button'
+  | 'heading'
+  | 'image'
+  | 'group-box'
+  | 'rolltemplate-field'
+  | 'rolltemplate-header';
+
+export type WidgetTarget = 'sheet' | 'rolltemplate';
+
+export interface WidgetInstance {
+  id: string;
+  type: WidgetType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  attrs: {
+    name?: string;
+    class?: string;
+    label?: string;
+    text?: string;
+    value?: string;
+    src?: string;
+    legend?: string;
+    formula?: string;
+    options?: string[];
+    [key: string]: unknown;
+  };
+}
+
 export interface WorkspaceMeta {
   xmlCache: string;
   dirty: boolean;
@@ -47,6 +89,10 @@ interface WorkspaceStore {
   selectedBlockId: string | null;
   selectionOrigin: SelectionOrigin;
 
+  // Phase A — WYSIWYG 위젯 인스턴스 (sheet / rolltemplate 별도).
+  sheetWidgets: WidgetInstance[];
+  rolltemplateWidgets: WidgetInstance[];
+
   // Actions
   setActiveWorkspace: (w: WorkspaceKey) => void;
   setXmlCache: (w: WorkspaceKey, xml: string, blockCount: number) => void;
@@ -68,6 +114,12 @@ interface WorkspaceStore {
    * setXmlCache 자동 호출. 반환 = 새 블록 id.
    */
   appendBlockToActive: (blockType: string, target?: WorkspaceKey) => string | null;
+
+  // Phase A — WYSIWYG 위젯 actions.
+  addWidget: (target: WidgetTarget, type: WidgetType, x: number, y: number) => string;
+  removeWidget: (target: WidgetTarget, id: string) => void;
+  updateWidget: (target: WidgetTarget, id: string, partial: Partial<WidgetInstance>) => void;
+  clearWidgets: (target: WidgetTarget) => void;
 }
 
 const emptyMeta: WorkspaceMeta = {
@@ -76,6 +128,51 @@ const emptyMeta: WorkspaceMeta = {
   blockCount: 0,
   lastSavedAt: null,
 };
+
+
+/** Phase A — 위젯 type → 기본 크기/attrs (spec 17 §5.2). */
+function defaultWidget(type: WidgetType): {
+  width: number;
+  height: number;
+  attrs: WidgetInstance['attrs'];
+} {
+  switch (type) {
+    case 'text-input':
+      return { width: 180, height: 32, attrs: { name: '', value: '' } };
+    case 'number-input':
+      return { width: 80, height: 32, attrs: { name: '', value: '0' } };
+    case 'textarea-input':
+      return { width: 280, height: 80, attrs: { name: '' } };
+    case 'checkbox-input':
+      return { width: 32, height: 32, attrs: { name: '' } };
+    case 'select-input':
+      return {
+        width: 160,
+        height: 32,
+        attrs: { name: '', options: ['옵션 1', '옵션 2', '옵션 3'] },
+      };
+    case 'button':
+      return { width: 100, height: 32, attrs: { label: '버튼' } };
+    case 'roll-button':
+      return {
+        width: 120,
+        height: 32,
+        attrs: { name: '', label: '굴림', formula: '1d20' },
+      };
+    case 'heading':
+      return { width: 200, height: 36, attrs: { text: '제목' } };
+    case 'image':
+      return { width: 120, height: 120, attrs: { src: '' } };
+    case 'group-box':
+      return { width: 300, height: 200, attrs: { legend: '' } };
+    case 'rolltemplate-field':
+      return { width: 120, height: 24, attrs: { name: '' } };
+    case 'rolltemplate-header':
+      return { width: 240, height: 32, attrs: { text: 'Roll Result' } };
+    default:
+      return { width: 100, height: 32, attrs: {} };
+  }
+}
 
 export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   workspaces: {
@@ -88,6 +185,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   emitWarnings: [],
   selectedBlockId: null,
   selectionOrigin: null,
+  sheetWidgets: [],
+  rolltemplateWidgets: [],
 
   setActiveWorkspace: (w) => set({ activeWorkspace: w }),
 
@@ -161,6 +260,50 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
       set({ selectedBlockId: id, selectionOrigin: 'tree' });
     }
     return id;
+  },
+
+  addWidget: (target, type, x, y) => {
+    const id = `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const defaults = defaultWidget(type);
+    const instance: WidgetInstance = {
+      id,
+      type,
+      x,
+      y,
+      width: defaults.width,
+      height: defaults.height,
+      attrs: { ...defaults.attrs },
+    };
+    set((s) => {
+      const key = target === 'sheet' ? 'sheetWidgets' : 'rolltemplateWidgets';
+      return { [key]: [...s[key], instance] } as Partial<WorkspaceStore>;
+    });
+    return id;
+  },
+
+  removeWidget: (target, id) => {
+    set((s) => {
+      const key = target === 'sheet' ? 'sheetWidgets' : 'rolltemplateWidgets';
+      return { [key]: s[key].filter((w) => w.id !== id) } as Partial<WorkspaceStore>;
+    });
+  },
+
+  updateWidget: (target, id, partial) => {
+    set((s) => {
+      const key = target === 'sheet' ? 'sheetWidgets' : 'rolltemplateWidgets';
+      return {
+        [key]: s[key].map((w) =>
+          w.id === id
+            ? { ...w, ...partial, attrs: { ...w.attrs, ...(partial.attrs ?? {}) } }
+            : w,
+        ),
+      } as Partial<WorkspaceStore>;
+    });
+  },
+
+  clearWidgets: (target) => {
+    const key = target === 'sheet' ? 'sheetWidgets' : 'rolltemplateWidgets';
+    set({ [key]: [] } as Partial<WorkspaceStore>);
   },
 }));
 

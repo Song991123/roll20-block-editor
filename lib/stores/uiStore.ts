@@ -15,7 +15,22 @@ export type CodeSubTab = 'html' | 'css' | 'i18n';
 export type WorkspaceKey = 'html' | 'css' | 'i18n';
 export type PreviewZoom = 'fit' | number;               // D52
 // D26 ②-재재 — 메인 영역 분할 뷰. 'split' default (양쪽 동시), 'assemble'/'preview' = 한쪽만 max.
-export type MainMode = 'split' | 'assemble' | 'preview';
+export type MainMode = 'split' | 'assemble' | 'preview' | 'edit';
+
+// Phase A — WYSIWYG 모드. 편집 모드일 때 시트 / 굴림틀 sub-tab.
+export type EditSubmode = 'sheet' | 'rolltemplate';
+
+// Phase A — 미리보기 9 레이어 (N2).
+export type PreviewLayer =
+  | 'all'
+  | 'structure'
+  | 'input'
+  | 'roll'
+  | 'text'
+  | 'image'
+  | 'table'
+  | 'repeating'
+  | 'custom';
 
 export interface MainSplit {
   /** 좌측 (워크스페이스) 비율 — 0~100 percent. */
@@ -56,6 +71,19 @@ export interface UiState {
 
   // 미리보기
   previewZoom: PreviewZoom;
+  // Phase A — 미리보기 레이어 (9 레이어).
+  previewLayer: PreviewLayer;
+
+  // Phase A — WYSIWYG 편집 모드 sub-tab.
+  editSubmode: EditSubmode;
+  // Phase A — 캔버스 폭 (시트 / 굴림틀 별도).
+  sheetCanvasWidth: number;       // default 850
+  rolltemplateCanvasWidth: number; // default 280
+  // Phase A — snap 8px on/off.
+  snapEnabled: boolean;
+  // Phase A — 선택된 위젯 (sheet 또는 rolltemplate).
+  selectedWidgetId: string | null;
+  hoveredWidgetId: string | null;
 
   // 효과음 (Web Audio 합성). lib/sfx/player.ts 의 playSfx() 가 읽음.
   // - sfxEnabled: 마스터 on/off (default true). statusbar 토글.
@@ -80,6 +108,14 @@ export interface UiState {
   setTreeNodeExpanded: (id: string, b: boolean) => void;
   setTreeSearch: (q: string) => void;
   setPreviewZoom: (z: PreviewZoom) => void;
+  setPreviewLayer: (l: PreviewLayer) => void;
+  setEditSubmode: (m: EditSubmode) => void;
+  setSheetCanvasWidth: (w: number) => void;
+  setRolltemplateCanvasWidth: (w: number) => void;
+  setSnapEnabled: (b: boolean) => void;
+  toggleSnapEnabled: () => void;
+  setSelectedWidgetId: (id: string | null) => void;
+  setHoveredWidgetId: (id: string | null) => void;
   setSfxEnabled: (b: boolean) => void;
   toggleSfxEnabled: () => void;
   setSfxVolume: (v: number) => void;
@@ -101,13 +137,22 @@ const DEFAULT_STATE = {
   treeExpanded: {} as Record<string, boolean>,
   treeSearch: '',
   previewZoom: 'fit' as PreviewZoom,
+  previewLayer: 'all' as PreviewLayer,
+  editSubmode: 'sheet' as EditSubmode,
+  sheetCanvasWidth: 850,
+  rolltemplateCanvasWidth: 280,
+  snapEnabled: true,
+  selectedWidgetId: null as string | null,
+  hoveredWidgetId: null as string | null,
   sfxEnabled: true,
   sfxVolume: 0.6,
 };
 
-// 분할 모드 cycle: split → assemble → preview → split.
+// 분할 모드 cycle: split → edit → assemble → preview → split.
+// (Phase A — 'edit' 추가)
 function nextMainMode(m: MainMode): MainMode {
-  if (m === 'split') return 'assemble';
+  if (m === 'split') return 'edit';
+  if (m === 'edit') return 'assemble';
   if (m === 'assemble') return 'preview';
   return 'split';
 }
@@ -159,6 +204,16 @@ export const useUiStore = create<UiState>()(
         set((s) => ({ treeExpanded: { ...s.treeExpanded, [id]: b } })),
       setTreeSearch: (q) => set({ treeSearch: q }),
       setPreviewZoom: (z) => set({ previewZoom: z }),
+      setPreviewLayer: (l) => set({ previewLayer: l }),
+      setEditSubmode: (m) => set({ editSubmode: m }),
+      setSheetCanvasWidth: (w) =>
+        set({ sheetCanvasWidth: Math.max(320, Math.min(2000, Math.round(w))) }),
+      setRolltemplateCanvasWidth: (w) =>
+        set({ rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))) }),
+      setSnapEnabled: (b) => set({ snapEnabled: b }),
+      toggleSnapEnabled: () => set((s) => ({ snapEnabled: !s.snapEnabled })),
+      setSelectedWidgetId: (id) => set({ selectedWidgetId: id }),
+      setHoveredWidgetId: (id) => set({ hoveredWidgetId: id }),
       setSfxEnabled: (b) => set({ sfxEnabled: b }),
       toggleSfxEnabled: () => set((s) => ({ sfxEnabled: !s.sfxEnabled })),
       setSfxVolume: (v) => set({ sfxVolume: Math.max(0, Math.min(1, v)) }),
@@ -179,7 +234,12 @@ export const useUiStore = create<UiState>()(
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<UiState>;
         const merged = { ...current, ...p } as UiState;
-        if (merged.mainMode !== 'split' && merged.mainMode !== 'assemble' && merged.mainMode !== 'preview') {
+        if (
+          merged.mainMode !== 'split' &&
+          merged.mainMode !== 'assemble' &&
+          merged.mainMode !== 'preview' &&
+          merged.mainMode !== 'edit'
+        ) {
           merged.mainMode = 'split';
         }
         if (!merged.mainSplit || typeof merged.mainSplit.left !== 'number') {
@@ -190,6 +250,11 @@ export const useUiStore = create<UiState>()(
       partialize: (s) => ({
         mainMode: s.mainMode,
         mainSplit: s.mainSplit,
+        editSubmode: s.editSubmode,
+        sheetCanvasWidth: s.sheetCanvasWidth,
+        rolltemplateCanvasWidth: s.rolltemplateCanvasWidth,
+        snapEnabled: s.snapEnabled,
+        previewLayer: s.previewLayer,
         sidebarLeftMode: s.sidebarLeftMode,
         sidebarLeftCollapsed: s.sidebarLeftCollapsed,
         sidebarRightTab: s.sidebarRightTab,

@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils/cn';
-import { useUiStore, type MainMode } from '@/lib/stores/uiStore';
+import { useUiStore, type MainMode, type EditSubmode } from '@/lib/stores/uiStore';
 import {
   Tooltip,
   TooltipContent,
@@ -12,12 +12,10 @@ import {
 /**
  * MainAreaToolbar — 메인 영역 상단 모드 토글.
  *
- * Anchor: D26 ②-재재 — 분할 뷰 default + 한쪽만 모드.
+ * Anchor: D26 ②-재재 (분할 default + 한쪽만) + spec 17 §4 (편집 모드 추가).
  *
- * 좌측: [⬌ 분할] / [🟦 조립만] / [📄 미리보기만]
- * 우측: 분할 모드일 때 현재 비율 표시 (resizer 드래그 피드백).
- *
- * 워크스페이스 탭 (HTML / CSS / i18n) 은 WorkspacePane 의 sub-toolbar 로 이동.
+ * 좌측 모드: [✏ 편집] / [⬌ 분할] / [🟦 조립] / [📄 미리보기]
+ * 우측: 편집 모드 시 sub-tab [시트] / [굴림틀]; 분할 모드 시 비율.
  */
 
 const MODES: Array<{
@@ -26,15 +24,23 @@ const MODES: Array<{
   symbol: string;
   tooltip: string;
 }> = [
+  { key: 'edit', label: '편집', symbol: '✏', tooltip: 'WYSIWYG 편집 (위젯 드래그-드롭)' },
   { key: 'split', label: '분할', symbol: '⬌', tooltip: '분할 보기 — 양쪽 동시' },
-  { key: 'assemble', label: '조립만', symbol: '🟦', tooltip: '워크스페이스만 (한쪽 max)' },
-  { key: 'preview', label: '미리보기만', symbol: '📄', tooltip: '미리보기만 (한쪽 max)' },
+  { key: 'assemble', label: '조립', symbol: '🟦', tooltip: '블록 워크스페이스만' },
+  { key: 'preview', label: '미리보기', symbol: '📄', tooltip: '미리보기만' },
+];
+
+const SUBMODES: Array<{ key: EditSubmode; label: string; tooltip: string }> = [
+  { key: 'sheet', label: '시트', tooltip: '캐릭터 시트 (850px)' },
+  { key: 'rolltemplate', label: '굴림틀', tooltip: '굴림 결과 틀 (280px)' },
 ];
 
 export default function MainAreaToolbar() {
   const mainMode = useUiStore((s) => s.mainMode);
   const setMainMode = useUiStore((s) => s.setMainMode);
   const mainSplit = useUiStore((s) => s.mainSplit);
+  const editSubmode = useUiStore((s) => s.editSubmode);
+  const setEditSubmode = useUiStore((s) => s.setEditSubmode);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -74,7 +80,41 @@ export default function MainAreaToolbar() {
           })}
         </div>
 
-        <div className="text-[10px] text-muted-foreground tabular-nums">
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground tabular-nums">
+          {mainMode === 'edit' && (
+            <div
+              role="tablist"
+              aria-label="편집 sub-tab"
+              className="inline-flex items-center gap-0.5 rounded-md bg-[var(--bg-elevated-2)] p-0.5"
+              data-testid="edit-submode-toolbar"
+            >
+              {SUBMODES.map((sub) => {
+                const isActive = editSubmode === sub.key;
+                return (
+                  <Tooltip key={sub.key}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => setEditSubmode(sub.key)}
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded px-2.5 py-1 transition-colors text-xs',
+                          isActive
+                            ? 'bg-[var(--bg-active)] text-foreground'
+                            : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+                        )}
+                        data-testid={`edit-submode-${sub.key}`}
+                      >
+                        {sub.label}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>{sub.tooltip}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          )}
           {mainMode === 'split' && (
             <span data-testid="split-ratio">
               {Math.round(mainSplit.left)}% / {Math.round(mainSplit.right)}%

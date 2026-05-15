@@ -7,6 +7,7 @@ import EditorHeader from './EditorHeader';
 import SidebarLeft from './SidebarLeft';
 import SidebarRight from './SidebarRight';
 import PreviewMain from './PreviewMain';
+import EditCanvas from './EditCanvas';
 import Statusbar from './Statusbar';
 import BlocklyModelHost from './BlocklyModelHost';
 import MainAreaToolbar from './MainAreaToolbar';
@@ -59,7 +60,8 @@ function Resizer({ onResize }: { onResize: (deltaX: number) => void }) {
 }
 
 function cycleMode(m: MainMode): MainMode {
-  if (m === 'split') return 'assemble';
+  if (m === 'split') return 'edit';
+  if (m === 'edit') return 'assemble';
   if (m === 'assemble') return 'preview';
   return 'split';
 }
@@ -113,8 +115,9 @@ export default function EditorShell() {
   const leftWidth = leftCollapsed ? 'var(--sidebar-left-collapsed)' : 'var(--sidebar-left-w)';
   const rightWidthPx = rightCollapsed ? '0px' : `${rightWidth}px`;
 
-  const workspaceVisible = mainMode !== 'preview';
-  const previewVisible = mainMode !== 'assemble';
+  // edit 모드 = workspace/preview 둘 다 hidden, EditCanvas 만 표시.
+  const workspaceVisible = mainMode !== 'preview' && mainMode !== 'edit';
+  const previewVisible = mainMode !== 'assemble' && mainMode !== 'edit';
 
   // onResize: store getState() 로 fresh 읽기 — deps 가 [setMainSplit] 만 → stable callback.
   // 이전: deps=[mainSplit.left] → mousemove 다발 발생 시 closure stale → 한 drag 가 ~20px 한계.
@@ -135,17 +138,25 @@ export default function EditorShell() {
     [setMainSplit],
   );
 
+  // edit 모드는 캔버스 자체가 full pane.
+  const editVisible = mainMode === 'edit';
   let workspaceStyle: CSSProperties = {};
   let previewStyle: CSSProperties = {};
+  let editStyle: CSSProperties = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
   if (mainMode === 'split') {
     workspaceStyle = { width: `${mainSplit.left}%`, flexShrink: 0 };
     previewStyle = { width: `${mainSplit.right}%`, flexShrink: 0 };
   } else if (mainMode === 'assemble') {
     workspaceStyle = { flex: '1 1 auto' };
     previewStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
-  } else {
+  } else if (mainMode === 'preview') {
     workspaceStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
     previewStyle = { flex: '1 1 auto' };
+  } else {
+    // mainMode === 'edit'
+    workspaceStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+    previewStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+    editStyle = { flex: '1 1 auto' };
   }
 
   return (
@@ -196,6 +207,15 @@ export default function EditorShell() {
               data-visible={previewVisible ? 'true' : 'false'}
             >
               {previewVisible && <PreviewMain />}
+            </div>
+
+            <div
+              className="relative flex flex-col min-h-0"
+              style={editStyle}
+              data-testid="edit-pane"
+              data-visible={editVisible ? 'true' : 'false'}
+            >
+              {editVisible && <EditCanvas />}
             </div>
           </div>
         </section>
