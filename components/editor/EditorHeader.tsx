@@ -34,6 +34,8 @@ import {
   loadExampleIntoWorkspaces,
   type ExampleDescriptor,
 } from '@/lib/examples';
+import { ImportDialog } from './ImportDialog';
+import { useState } from 'react';
 
 const APP_VERSION = 'v0.1.0';
 
@@ -59,6 +61,7 @@ export default function EditorHeader() {
   const toggleLeft = useUiStore((s) => s.toggleSidebarLeft);
   const toggleRight = useUiStore((s) => s.toggleSidebarRight);
   const dirty = useWorkspaceStore((s) => anyDirty(s.workspaces));
+  const [importOpen, setImportOpen] = useState(false);
 
   const handleLoadExample = (descriptor: ExampleDescriptor) => async () => {
     try {
@@ -172,7 +175,7 @@ export default function EditorHeader() {
                 variant="ghost"
                 size="sm"
                 className="h-8 gap-1.5"
-                onClick={comingSoon('파일 불러오기')}
+                onClick={() => setImportOpen(true)}
                 aria-label="파일에서 불러오기"
               >
                 <FolderOpen className="h-4 w-4" />
@@ -304,6 +307,7 @@ export default function EditorHeader() {
           </span>
         </div>
       </header>
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </TooltipProvider>
   );
 }
