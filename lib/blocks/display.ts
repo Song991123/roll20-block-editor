@@ -123,7 +123,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     type: 'r20_heading',
     shape: 'stack',
     category: DISPLAY,
-    label: '제목 (h1~h6)',
+    label: '제목',
     tooltip: '제목 — <h1>~<h6>. 레벨 + 텍스트 + class.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -131,7 +131,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField(new Blockly.FieldDropdown(HEADING_LEVELS), 'LEVEL')
         .appendField(new Blockly.FieldTextInput('Heading'), 'TEXT');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -154,12 +154,12 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     type: 'r20_hr',
     shape: 'stack',
     category: DISPLAY,
-    label: '가로선 hr',
+    label: '가로 구분선',
     tooltip: '구분선 — <hr>.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('가로선')
-        .appendField('class')
+        .appendField('가로 구분선')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -175,14 +175,14 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     type: 'r20_static_text',
     shape: 'stack',
     category: DISPLAY,
-    label: '정적 텍스트',
+    label: '고정 글자',
     tooltip: '고정 라벨 — <span>TEXT</span>.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('텍스트')
+        .appendField('고정 글자')
         .appendField(new Blockly.FieldTextInput('Label'), 'TEXT');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -204,13 +204,13 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('이미지')
-        .appendField('src')
+        .appendField('이미지 주소')
         .appendField(new Blockly.FieldTextInput(''), 'SRC');
       b.appendDummyInput()
-        .appendField('alt')
+        .appendField('대체 글자')
         .appendField(new Blockly.FieldTextInput(''), 'ALT');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
         .appendField('width')
@@ -245,7 +245,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField('아이콘')
         .appendField(new Blockly.FieldDropdown(ICON_NAMES), 'NAME');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -266,7 +266,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     type: 'r20_spacer',
     shape: 'stack',
     category: DISPLAY,
-    label: '여백 spacer',
+    label: '여백',
     tooltip: '수직 여백 — <div class="sheet-spacer sheet-spacer-SIZE">.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -288,14 +288,14 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     type: 'r20_disabled_text',
     shape: 'stack',
     category: DISPLAY,
-    label: '비활성 텍스트',
+    label: '흐린 안내 글자',
     tooltip: '비활성 표시 — <span aria-disabled="true">TEXT</span>.',
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('비활성 텍스트')
         .appendField(new Blockly.FieldTextInput('Disabled'), 'TEXT');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),

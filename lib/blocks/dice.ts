@@ -127,14 +127,14 @@ export const DICE_BLOCKS: BlockDef[] = [
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('굴림 버튼')
-        .appendField('name')
+        .appendField('이름')
         .appendField(new Blockly.FieldTextInput('attack'), 'NAME');
       b.appendDummyInput()
         .appendField('label')
         .appendField(new Blockly.FieldTextInput('Roll'), 'LABEL');
-      b.appendValueInput('EXPR').setCheck(null).appendField('value');
+      b.appendValueInput('EXPR').setCheck(null).appendField('값');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -158,18 +158,18 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_action_button',
     shape: 'stack',
     category: DICE,
-    label: '액션 버튼',
+    label: '동작 버튼',
     tooltip: '액션 버튼 — sheet worker 이벤트 (clicked:act_NAME) 트리거.',
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('액션 버튼')
-        .appendField('name')
+        .appendField('이름')
         .appendField(new Blockly.FieldTextInput('act'), 'NAME');
       b.appendDummyInput()
         .appendField('label')
         .appendField(new Blockly.FieldTextInput('Action'), 'LABEL');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -193,12 +193,12 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_chat_button',
     shape: 'stack',
     category: DICE,
-    label: '채팅 버튼',
+    label: '채팅 보내기 버튼',
     tooltip: '채팅 메시지 발송 버튼 — value="MESSAGE" 그대로 채팅 송신.',
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('채팅 버튼')
-        .appendField('name')
+        .appendField('이름')
         .appendField(new Blockly.FieldTextInput('say'), 'NAME');
       b.appendDummyInput()
         .appendField('label')
@@ -207,7 +207,7 @@ export const DICE_BLOCKS: BlockDef[] = [
         .appendField('message')
         .appendField(new Blockly.FieldTextInput('Hello'), 'MESSAGE');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -232,13 +232,13 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_rolltemplate_define',
     shape: 'c',
     category: DICE,
-    label: 'rolltemplate 정의',
+    label: '굴림 결과 틀 만들기',
     tooltip:
       '<rolltemplate class="sheet-rolltemplate-NAME"> wrapper — NAME 은 호출 시 &{template:NAME}.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('rolltemplate')
-        .appendField('name')
+        .appendField('굴림 결과 틀')
+        .appendField('이름')
         .appendField(new Blockly.FieldTextInput('default'), 'NAME');
       b.appendStatementInput('ROWS').setCheck(null);
       setStatementHooks(b);
@@ -263,12 +263,12 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_rolltemplate_row',
     shape: 'c',
     category: DICE,
-    label: 'rolltemplate 행',
+    label: '굴림 결과 틀: 한 줄',
     tooltip: 'rolltemplate 내부 행 — <div class="sheet-row">.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('row')
-        .appendField('class')
+        .appendField('줄')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('CHILDREN').setCheck(null);
       setStatementHooks(b);
@@ -289,11 +289,11 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_rolltemplate_cond_if',
     shape: 'c',
     category: DICE,
-    label: '조건 if (rolltemplate)',
+    label: '굴림 결과 틀: 만약 ... 이라면',
     tooltip: 'Mustache section — FIELD truthy 일 때만 표시 {{#FIELD}}…{{/FIELD}}.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('if')
+        .appendField('만약')
         .appendField('field')
         .appendField(new Blockly.FieldTextInput('hit'), 'FIELD');
       b.appendStatementInput('CHILDREN').setCheck(null);
@@ -315,11 +315,11 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_rolltemplate_cond_unless',
     shape: 'c',
     category: DICE,
-    label: '조건 unless (rolltemplate)',
+    label: '굴림 결과 틀: 만약 ... 아니라면',
     tooltip: 'Mustache inverted section — FIELD 가 falsy 일 때만 표시.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('unless')
+        .appendField('만약 아니라면')
         .appendField('field')
         .appendField(new Blockly.FieldTextInput('hit'), 'FIELD');
       b.appendStatementInput('CHILDREN').setCheck(null);
@@ -342,12 +342,12 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_rolltemplate_each',
     shape: 'c',
     category: DICE,
-    label: '반복 each (rolltemplate)',
+    label: '굴림 결과 틀: 각각 반복',
     tooltip:
       'Mustache iteration — FIELD 의 항목 수만큼 children 반복 {{#FIELD}}…{{/FIELD}}.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('each')
+        .appendField('각각')
         .appendField('field')
         .appendField(new Blockly.FieldTextInput('rolls'), 'FIELD');
       b.appendStatementInput('CHILDREN').setCheck(null);
@@ -370,7 +370,7 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_rolltemplate_field_ref',
     shape: 'reporter',
     category: DICE,
-    label: '필드 참조 {{NAME}}',
+    label: '굴림 결과 틀: 값 넣기',
     tooltip: 'rolltemplate 필드 참조 — invoke 측 key=value 의 value 출력.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -393,7 +393,7 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_rolltemplate_helper',
     shape: 'reporter',
     category: DICE,
-    label: 'rolltemplate 헬퍼',
+    label: '굴림 결과 틀: 도우미',
     tooltip: 'Roll20 rolltemplate 표준 헬퍼 — allprops / rollWasCrit / etc.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -418,7 +418,7 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_rolltemplate_computed',
     shape: 'reporter',
     category: DICE,
-    label: '계산 필드 computed',
+    label: '굴림 결과 틀: 자동 계산',
     tooltip: 'rolltemplate computed 필드 — {{computed::NAME}}.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -443,12 +443,12 @@ export const DICE_BLOCKS: BlockDef[] = [
     type: 'r20_template_invoke',
     shape: 'stack',
     category: DICE,
-    label: 'rolltemplate 호출',
+    label: '굴림 결과 틀 사용하기',
     tooltip: '채팅에 rolltemplate 호출 — &{template:NAME} {{key=value}} …',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('rolltemplate 호출')
-        .appendField('name')
+        .appendField('굴림 결과 틀 사용')
+        .appendField('이름')
         .appendField(new Blockly.FieldTextInput('default'), 'NAME');
       b.appendStatementInput('KEY_VALUE_PAIRS').setCheck(null);
       setStatementHooks(b);

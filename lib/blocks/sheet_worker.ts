@@ -151,10 +151,10 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_on_sheet_opened',
     shape: 'hat',
     category: SHEET_WORKER,
-    label: '시트 열림 시',
+    label: '시트가 열렸을 때',
     tooltip: 'on("sheet:opened", ...) — 시트 처음 열릴 때 한 번 실행.',
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('시트 열림 시');
+      b.appendDummyInput().appendField('시트가 열렸을 때');
       b.appendStatementInput('CHILDREN').setCheck(null);
       setHatHooks(b);
     }),
@@ -171,12 +171,12 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_on_attr_change',
     shape: 'hat',
     category: SHEET_WORKER,
-    label: '속성 변경 시',
+    label: '시트 값이 바뀌었을 때',
     tooltip: 'on("change:NAME", ...) — 속성값이 바뀔 때 실행.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('속성 변경 시')
-        .appendField('name')
+        .appendField('시트 값이 바뀌었을 때')
+        .appendField('이름')
         .appendField(new Blockly.FieldTextInput('hp'), 'NAME');
       b.appendStatementInput('CHILDREN').setCheck(null);
       setHatHooks(b);
@@ -194,7 +194,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_on_repeating_change',
     shape: 'hat',
     category: SHEET_WORKER,
-    label: '반복 섹션 속성 변경 시',
+    label: '반복 영역 값이 바뀌었을 때',
     tooltip: 'on("change:repeating_S:A", ...) — 반복 섹션의 항목 속성이 바뀔 때.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -221,11 +221,11 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_on_repeating_remove',
     shape: 'hat',
     category: SHEET_WORKER,
-    label: '반복 섹션 행 제거 시',
+    label: '반복 영역의 한 줄이 지워졌을 때',
     tooltip: 'on("remove:repeating_S", ...) — 반복 섹션의 행이 삭제될 때.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('반복 섹션 행 제거 시')
+        .appendField('반복 영역의 한 줄이 지워졌을 때')
         .appendField('section')
         .appendField(new Blockly.FieldTextInput('inventory'), 'SECTION');
       b.appendStatementInput('CHILDREN').setCheck(null);
@@ -245,12 +245,12 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_on_button_click',
     shape: 'hat',
     category: SHEET_WORKER,
-    label: '버튼 클릭 시',
+    label: '버튼을 눌렀을 때',
     tooltip: 'on("clicked:NAME", ...) — 액션 버튼 클릭 시.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('버튼 클릭 시')
-        .appendField('name')
+        .appendField('버튼을 눌렀을 때')
+        .appendField('이름')
         .appendField(new Blockly.FieldTextInput('act'), 'NAME');
       b.appendStatementInput('CHILDREN').setCheck(null);
       setHatHooks(b);
@@ -272,7 +272,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_if',
     shape: 'c',
     category: SHEET_WORKER,
-    label: '만약 (worker)',
+    label: '만약 ... 이라면',
     tooltip: 'if (CONDITION) { ... } — sheet worker JS 안의 조건 분기.',
     init: mkInit((b) => {
       b.appendValueInput('CONDITION').setCheck(T_BOOL).appendField('만약');
@@ -291,7 +291,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_for_count',
     shape: 'c',
     category: SHEET_WORKER,
-    label: '횟수 반복 (worker)',
+    label: '... 번 반복하기',
     tooltip: 'for (let i=0; i<COUNT; i++) { ... } — 횟수 반복 루프.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -315,11 +315,11 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_get_section_ids',
     shape: 'c',
     category: SHEET_WORKER,
-    label: '반복 섹션 ID 가져오기',
+    label: '반복 영역 줄 목록 가져오기',
     tooltip: 'getSectionIDs("repeating_S", (ids) => { const VAR = ids; ... })',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('반복 섹션 ID')
+        .appendField('반복 영역 줄 목록')
         .appendField('section')
         .appendField(new Blockly.FieldTextInput('inventory'), 'SECTION')
         .appendField('을')
@@ -343,7 +343,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_for_each_id',
     shape: 'c',
     category: SHEET_WORKER,
-    label: 'ID 각각에 대해',
+    label: '각 줄마다 반복하기',
     tooltip: 'IDS.forEach((VAR) => { ... }) — 반복 섹션 ID 배열 순회.',
     init: mkInit((b) => {
       b.appendValueInput('IDS').setCheck(null).appendField('ids');
@@ -368,7 +368,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_get_attrs',
     shape: 'c',
     category: SHEET_WORKER,
-    label: '속성 가져오기',
+    label: '시트 값들 가져오기',
     tooltip: 'getAttrs([...], (v) => { ... }) — 여러 속성 값을 콜백으로 읽음.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -395,7 +395,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_set_attrs',
     shape: 'stack',
     category: SHEET_WORKER,
-    label: '속성 1개 설정',
+    label: '시트 값 바꾸기',
     tooltip: 'setAttrs({ NAME: VALUE }) — 단일 속성 갱신.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -418,11 +418,11 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_set_attrs_pair',
     shape: 'stack',
     category: SHEET_WORKER,
-    label: '속성 여러 개 설정',
+    label: '시트 값 여러 개 바꾸기',
     tooltip: 'setAttrs({ k1: v1, k2: v2, k3: v3 }) — 최대 3개 동시 설정 (빈 키 생략).',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('속성 설정')
+        .appendField('시트 값 바꾸기')
         .appendField('key1')
         .appendField(new Blockly.FieldTextInput(''), 'KEY1');
       b.appendValueInput('VAL1').setCheck(null).appendField('val1');
@@ -455,11 +455,11 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_generate_row_id',
     shape: 'stack',
     category: SHEET_WORKER,
-    label: '새 행 ID 생성',
+    label: '새 줄 만들기 (ID)',
     tooltip: 'const VAR = generateRowID(); — 반복 섹션에 새 행 추가 시 사용.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('새 행 ID 를')
+        .appendField('새 줄 ID 를')
         .appendField(new Blockly.FieldTextInput('newId'), 'VAR')
         .appendField('로 생성');
       setStackHooks(b);
@@ -476,7 +476,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_remove_repeating_row',
     shape: 'stack',
     category: SHEET_WORKER,
-    label: '반복 섹션 행 삭제',
+    label: '반복 영역의 줄 지우기',
     tooltip: 'removeRepeatingRow("repeating_S_id") — 반복 섹션의 행 1개 제거.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -501,7 +501,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_var_set',
     shape: 'stack',
     category: SHEET_WORKER,
-    label: '변수 재대입',
+    label: '변수 값 바꾸기',
     tooltip: 'NAME = VALUE; — 이미 선언된 변수에 새 값.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -524,11 +524,11 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_var_let',
     shape: 'stack',
     category: SHEET_WORKER,
-    label: '변수 선언 (let)',
+    label: '변수 만들기',
     tooltip: 'let NAME = VALUE; — 새 지역 변수 선언.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('let')
+        .appendField('변수 만들기')
         .appendField(new Blockly.FieldTextInput('x'), 'VAR')
         .appendField('=');
       b.appendValueInput('VALUE').setCheck(null);
@@ -547,10 +547,10 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_console_log',
     shape: 'stack',
     category: SHEET_WORKER,
-    label: '콘솔 로그',
+    label: '콘솔에 출력하기',
     tooltip: 'console.log(VALUE); — 디버그 출력.',
     init: mkInit((b) => {
-      b.appendValueInput('VALUE').setCheck(null).appendField('콘솔 출력');
+      b.appendValueInput('VALUE').setCheck(null).appendField('콘솔에 출력');
       setStackHooks(b);
     }),
     generator: (block, ctx) => {
@@ -564,7 +564,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_return',
     shape: 'cap',
     category: SHEET_WORKER,
-    label: '반환',
+    label: '값 돌려주기',
     tooltip: 'return VALUE; — 핸들러 조기 종료.',
     init: mkInit((b) => {
       b.appendValueInput('VALUE').setCheck(null).appendField('반환');
@@ -586,7 +586,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_v_ref',
     shape: 'reporter',
     category: SHEET_WORKER,
-    label: '속성 값 v.NAME',
+    label: '시트 값',
     tooltip: 'v.NAME — getAttrs 콜백 안에서 받은 속성 값.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -606,7 +606,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_v_max_ref',
     shape: 'reporter',
     category: SHEET_WORKER,
-    label: '속성 최댓값 v.NAME_max',
+    label: '시트 값의 최댓값',
     tooltip: 'v.NAME_max — 속성의 최댓값 (auto-pair).',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -646,7 +646,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_arith',
     shape: 'reporter',
     category: SHEET_WORKER,
-    label: '사칙연산 (worker)',
+    label: '계산하기',
     tooltip: '(LHS OP RHS) — sheet worker JS 안의 산술 연산.',
     init: mkInit((b) => {
       b.appendValueInput('LHS').setCheck([T_NUM, T_STR]);
@@ -669,7 +669,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_cmp',
     shape: 'boolean',
     category: SHEET_WORKER,
-    label: '비교 (worker)',
+    label: '비교하기',
     tooltip: '(LHS OP RHS) — sheet worker JS 안의 비교 연산.',
     init: mkInit((b) => {
       b.appendValueInput('LHS').setCheck(null);
@@ -692,7 +692,7 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     type: 'r20_worker_logic',
     shape: 'boolean',
     category: SHEET_WORKER,
-    label: '논리 (worker)',
+    label: '그리고 / 또는',
     tooltip: '(LHS && RHS) 또는 (LHS || RHS) — sheet worker 의 논리 결합.',
     init: mkInit((b) => {
       b.appendValueInput('LHS').setCheck(T_BOOL);

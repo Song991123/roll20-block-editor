@@ -74,15 +74,15 @@ export const INPUT_BLOCKS: BlockDef[] = [
     type: 'r20_text_input',
     shape: 'stack',
     category: INPUT,
-    label: '텍스트 입력',
+    label: '글자 입력칸',
     tooltip: '한 줄 텍스트 입력 — <input type="text">.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('텍스트')
+        .appendField('글자')
         .appendField('속성')
         .appendField(new Blockly.FieldTextInput('name'), 'NAME');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
         .appendField('기본값')
@@ -103,7 +103,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
     type: 'r20_number_input',
     shape: 'stack',
     category: INPUT,
-    label: '숫자 입력',
+    label: '숫자 입력칸',
     tooltip: '숫자 입력 — <input type="number"> (min/max 옵션).',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -111,7 +111,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('속성')
         .appendField(new Blockly.FieldTextInput('name'), 'NAME');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
         .appendField('min')
@@ -142,7 +142,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
     type: 'r20_checkbox',
     shape: 'stack',
     category: INPUT,
-    label: '체크박스',
+    label: '체크 상자',
     tooltip: '체크박스 — <input type="checkbox">.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -150,7 +150,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('속성')
         .appendField(new Blockly.FieldTextInput('name'), 'NAME');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
         .appendField('기본 체크')
@@ -172,14 +172,14 @@ export const INPUT_BLOCKS: BlockDef[] = [
     type: 'r20_select',
     shape: 'c',
     category: INPUT,
-    label: '드롭다운 select',
+    label: '선택 메뉴',
     tooltip: '드롭다운 — <select>. 안에 옵션 블록을 쌓는다.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('select')
+        .appendField('선택 메뉴')
         .appendField('속성')
         .appendField(new Blockly.FieldTextInput('name'), 'NAME')
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('OPTIONS').setCheck('SelectOption').appendField('옵션:');
       setStatementHooks(b);
@@ -200,12 +200,12 @@ export const INPUT_BLOCKS: BlockDef[] = [
     type: 'r20_select_option',
     shape: 'stack',
     category: INPUT,
-    label: 'option 항목',
+    label: '선택 항목',
     tooltip: 'select 의 옵션 — <option value="VALUE">LABEL</option>.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('option')
-        .appendField('value')
+        .appendField('선택 항목')
+        .appendField('값')
         .appendField(new Blockly.FieldTextInput(''), 'VALUE')
         .appendField('라벨')
         .appendField(new Blockly.FieldTextInput('Option'), 'LABEL');
@@ -225,15 +225,15 @@ export const INPUT_BLOCKS: BlockDef[] = [
     type: 'r20_textarea',
     shape: 'stack',
     category: INPUT,
-    label: '여러 줄 textarea',
+    label: '여러 줄 입력칸',
     tooltip: '여러 줄 입력 — <textarea>.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('textarea')
+        .appendField('여러 줄 입력칸')
         .appendField('속성')
         .appendField(new Blockly.FieldTextInput('name'), 'NAME');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS')
         .appendField('rows')
         .appendField(new Blockly.FieldNumber(3, 1, 50, 1), 'ROWS');
@@ -265,13 +265,13 @@ export const INPUT_BLOCKS: BlockDef[] = [
     tooltip: '라디오 — <label><input type="radio">LABEL</label>.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('radio')
+        .appendField('라디오 버튼')
         .appendField('속성')
         .appendField(new Blockly.FieldTextInput('name'), 'NAME');
       b.appendDummyInput()
-        .appendField('value')
+        .appendField('값')
         .appendField(new Blockly.FieldTextInput(''), 'VALUE')
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
         .appendField('라벨')
@@ -296,11 +296,11 @@ export const INPUT_BLOCKS: BlockDef[] = [
     type: 'r20_hidden_input',
     shape: 'stack',
     category: INPUT,
-    label: '숨김 hidden',
+    label: '숨김 값',
     tooltip: '숨겨진 값 — <input type="hidden">. 계산용 attr 저장.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('hidden')
+        .appendField('숨김 값')
         .appendField('속성')
         .appendField(new Blockly.FieldTextInput('name'), 'NAME');
       b.appendDummyInput()
@@ -325,11 +325,11 @@ export const INPUT_BLOCKS: BlockDef[] = [
     tooltip: '파일 업로드 — <input type="file">.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('file')
+        .appendField('파일 선택')
         .appendField('속성')
         .appendField(new Blockly.FieldTextInput('name'), 'NAME');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
         .appendField('accept')

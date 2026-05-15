@@ -119,7 +119,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_literal_string',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '문자열',
+    label: '글자',
     tooltip: '문자열 리터럴.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -140,7 +140,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_attr_ref',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '@{속성}',
+    label: '시트 값 가져오기',
     tooltip: '캐릭터 속성 — @{이름}',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -161,7 +161,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_attr_ref_max',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '@{속성|max}',
+    label: '시트 값의 최댓값',
     tooltip: '속성의 최대값 — @{이름|max}',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -182,7 +182,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_attr_ref_qualified',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '@{대상|속성}',
+    label: '다른 시트의 값',
     tooltip: '선택/타겟 캐릭터의 속성 — @{selected|이름} 또는 @{target|이름}',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -206,7 +206,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_character_name',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '@{character_name}',
+    label: '캐릭터 이름',
     tooltip: '현재 캐릭터의 이름.',
     init: mkInit((b) => {
       b.appendDummyInput().appendField('@{character_name}');
@@ -220,7 +220,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_character_id',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '@{character_id}',
+    label: '캐릭터 ID',
     tooltip: '현재 캐릭터의 ID.',
     init: mkInit((b) => {
       b.appendDummyInput().appendField('@{character_id}');
@@ -234,7 +234,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_ability_ref',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '%{능력}',
+    label: '능력 매크로',
     tooltip: '능력 (ability) 호출 — %{대상|이름}',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -258,7 +258,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_inline_roll',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '[[ 인라인 굴림 ]]',
+    label: '즉시 굴림',
     tooltip: '인라인 굴림 — [[ 표현식 ]]. 채팅에서 결과 숫자 표시.',
     init: mkInit((b) => {
       b.appendDummyInput().appendField('[[');
@@ -278,7 +278,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_dice_expr',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '주사위 NdM',
+    label: '주사위 (예: 1d20)',
     tooltip: '주사위 표현식 — N개 M면체 (선택: 수정자).',
     init: mkInit((b) => {
       b.appendValueInput('COUNT').setCheck(T_NUM);
@@ -301,7 +301,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_dice_modifier',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '주사위 수정자',
+    label: '주사위 옵션',
     tooltip: '주사위 수정자 — kh3, kl1, r1, !6 등.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -322,7 +322,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_dice_label',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '굴림 라벨',
+    label: '굴림에 이름 붙이기',
     tooltip: '굴림 결과에 라벨 — 1d20[STR].',
     init: mkInit((b) => {
       b.appendValueInput('EXPR').setCheck(T_NUM_OR_STR);
@@ -346,7 +346,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_query_input',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '? 사용자 입력',
+    label: '사용자에게 물어보기',
     tooltip: '사용자 입력 — ?{프롬프트|기본값|옵션…}',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -386,7 +386,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_query_option',
     shape: 'stack',
     category: EXPRESSION,
-    label: '? 옵션 항목',
+    label: '사용자 선택지',
     tooltip: 'query 의 옵션 — "라벨,값" 으로 emit.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -410,7 +410,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_arith_op',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '계산식',
+    label: '계산하기 ( + − × ÷ )',
     tooltip: '산술 연산 — + − × ÷',
     init: mkInit((b) => {
       b.appendValueInput('LHS').setCheck(T_NUM);
@@ -434,7 +434,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_unary_fn',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '함수 (1항)',
+    label: '한 값 함수 (반올림 등)',
     tooltip: '단항 함수 — floor / ceil / round / abs.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -458,7 +458,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_binary_fn',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '함수 (2항)',
+    label: '두 값 함수 (최댓값 등)',
     tooltip: '이항 함수 — min / max.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -485,7 +485,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_cmp_op',
     shape: 'boolean',
     category: EXPRESSION,
-    label: '비교',
+    label: '비교하기 ( = < > )',
     tooltip: '비교 연산 — = ≠ < ≤ > ≥',
     init: mkInit((b) => {
       b.appendValueInput('LHS').setCheck(T_NUM_OR_STR);
@@ -508,7 +508,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_logic_op',
     shape: 'boolean',
     category: EXPRESSION,
-    label: '논리 결합',
+    label: '그리고 / 또는',
     tooltip: '논리 연산 — 그리고 / 또는.',
     init: mkInit((b) => {
       b.appendValueInput('LHS').setCheck(T_BOOL);
@@ -533,10 +533,10 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_logic_not',
     shape: 'boolean',
     category: EXPRESSION,
-    label: '부정',
+    label: '... 이 아니다',
     tooltip: '논리 부정 — NOT.',
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('NOT');
+      b.appendDummyInput().appendField('아니다');
       b.appendValueInput('ARG').setCheck(T_BOOL);
       b.setInputsInline(true);
       b.setOutput(true, T_BOOL);
@@ -552,7 +552,7 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     type: 'r20_paren',
     shape: 'reporter',
     category: EXPRESSION,
-    label: '( 괄호 )',
+    label: '( 묶기 )',
     tooltip: '괄호 — 우선순위 명시. 안의 타입 그대로 통과.',
     init: mkInit((b) => {
       b.appendDummyInput().appendField('(');

@@ -96,13 +96,13 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_div',
     shape: 'c',
     category: CONTAINER,
-    label: '박스 <div>',
+    label: '박스 (그룹)',
     tooltip: '일반 div 컨테이너. class 지정 가능.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
         top
-          .appendField('div')
-          .appendField('class')
+          .appendField('박스 (그룹)')
+          .appendField('클래스')
           .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
@@ -119,13 +119,13 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_span',
     shape: 'c',
     category: CONTAINER,
-    label: '인라인 <span>',
+    label: '글자 묶음',
     tooltip: '인라인 span 컨테이너. class 지정 가능.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
         top
-          .appendField('span')
-          .appendField('class')
+          .appendField('글자 묶음')
+          .appendField('클래스')
           .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
@@ -142,13 +142,13 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_fieldset',
     shape: 'c',
     category: CONTAINER,
-    label: '필드셋 <fieldset>',
+    label: '둘러싸인 그룹',
     tooltip: 'fieldset — 폼 그룹화.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
         top
-          .appendField('fieldset')
-          .appendField('class')
+          .appendField('둘러싸인 그룹')
+          .appendField('클래스')
           .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
@@ -165,11 +165,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_row',
     shape: 'c',
     category: CONTAINER,
-    label: '행 row',
+    label: '가로 줄',
     tooltip: '가로 행 — sheet-row.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('행 row');
+        top.appendField('가로 줄');
       }),
     ),
     generator: (block, ctx) => {
@@ -183,11 +183,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_col',
     shape: 'c',
     category: CONTAINER,
-    label: '열 col',
+    label: '세로 줄',
     tooltip: '세로 열 — sheet-col.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('열 col');
+        top.appendField('세로 줄');
       }),
     ),
     generator: (block, ctx) => {
@@ -201,12 +201,12 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_colrow_n',
     shape: 'c',
     category: CONTAINER,
-    label: 'N칸 행',
+    label: '여러 칸 가로 줄',
     tooltip: 'N개 컬럼으로 분할되는 행 — sheet-colrow sheet-colrow-N.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
         top
-          .appendField('N칸 행 N=')
+          .appendField('여러 칸 가로 줄 · 칸 수=')
           .appendField(new Blockly.FieldNumber(2, 1, 12, 1), 'N');
       }),
     ),
@@ -224,13 +224,13 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_table',
     shape: 'c',
     category: CONTAINER,
-    label: '표 <table>',
+    label: '표',
     tooltip: 'table — thead/tbody/tr/th/td 와 함께 사용.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
         top
-          .appendField('table')
-          .appendField('class')
+          .appendField('표')
+          .appendField('클래스')
           .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
@@ -247,11 +247,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_thead',
     shape: 'c',
     category: CONTAINER,
-    label: '<thead>',
+    label: '표 머리',
     tooltip: 'table 헤더 묶음.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('thead');
+        top.appendField('표 머리');
       }),
     ),
     generator: (block, ctx) => {
@@ -265,11 +265,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_tbody',
     shape: 'c',
     category: CONTAINER,
-    label: '<tbody>',
+    label: '표 몸통',
     tooltip: 'table 본문 묶음.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('tbody');
+        top.appendField('표 몸통');
       }),
     ),
     generator: (block, ctx) => {
@@ -283,11 +283,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_tr',
     shape: 'c',
     category: CONTAINER,
-    label: '<tr> 행',
+    label: '표의 한 줄',
     tooltip: 'table 행. 내부에 th/td.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('tr');
+        top.appendField('표의 한 줄');
       }),
     ),
     generator: (block, ctx) => {
@@ -301,11 +301,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_th',
     shape: 'c',
     category: CONTAINER,
-    label: '<th> 헤더',
+    label: '표의 머리 칸',
     tooltip: 'table 헤더 셀.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('th');
+        top.appendField('표의 머리 칸');
       }),
     ),
     generator: (block, ctx) => {
@@ -319,11 +319,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_td',
     shape: 'c',
     category: CONTAINER,
-    label: '<td> 칸',
+    label: '표의 칸',
     tooltip: 'table 데이터 셀.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('td');
+        top.appendField('표의 칸');
       }),
     ),
     generator: (block, ctx) => {
@@ -341,12 +341,12 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_repeating_section',
     shape: 'c',
     category: CONTAINER,
-    label: '반복 섹션',
+    label: '반복 영역',
     tooltip: 'Roll20 repeating section — 행 추가 / 삭제 가능한 섹션.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
         top
-          .appendField('반복 섹션 이름')
+          .appendField('반복 영역 이름')
           .appendField(new Blockly.FieldTextInput('items'), 'NAME');
       }),
     ),
@@ -365,11 +365,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_repeating_row',
     shape: 'c',
     category: CONTAINER,
-    label: '반복 행',
+    label: '반복 영역의 한 줄',
     tooltip: '반복 섹션 안의 한 행 — sheet-repeating-row.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('반복 행');
+        top.appendField('반복 영역의 한 줄');
       }),
     ),
     generator: (block, ctx) => {
@@ -385,11 +385,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_label',
     shape: 'stack',
     category: CONTAINER,
-    label: '<label> 텍스트',
+    label: '이름표',
     tooltip: '단순 텍스트 라벨 — <label>텍스트</label>.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('label')
+        .appendField('이름표')
         .appendField(new Blockly.FieldTextInput('이름'), 'TEXT');
       setStatementHooks(b);
     }),
@@ -408,12 +408,12 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_section_wrap',
     shape: 'c',
     category: CONTAINER,
-    label: '섹션 wrap',
+    label: '섹션 묶음',
     tooltip: '시트 섹션 wrapper — sheet-section sheet-section-NAME.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
         top
-          .appendField('섹션 이름')
+          .appendField('섹션 묶음 이름')
           .appendField(new Blockly.FieldTextInput('main'), 'NAME');
       }),
     ),
@@ -437,12 +437,12 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_toggle_wrap',
     shape: 'c',
     category: CONTAINER,
-    label: '토글 wrap',
+    label: '펼치기 / 접기 묶음',
     tooltip: '조건부 노출 그룹 — sheet-toggle sheet-toggle-NAME.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
         top
-          .appendField('토글 이름')
+          .appendField('펼치기/접기 묶음 이름')
           .appendField(new Blockly.FieldTextInput('panel'), 'NAME');
       }),
     ),
@@ -466,12 +466,12 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     type: 'r20_grid',
     shape: 'c',
     category: CONTAINER,
-    label: '그리드 grid',
+    label: '격자 배치',
     tooltip: 'CSS Grid 컨테이너 — COLS 컬럼.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
         top
-          .appendField('그리드 cols=')
+          .appendField('격자 배치 · 칸 수=')
           .appendField(new Blockly.FieldNumber(2, 1, 12, 1), 'COLS');
       }),
     ),

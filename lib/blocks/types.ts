@@ -83,7 +83,7 @@ export const CATEGORIES: Record<BlockCategory, CategoryMeta> = {
     defaultExpanded: true,
     advanced: false,
     order: 2,
-    description: '값을 받는 필드 — 텍스트 / 숫자 / 체크박스',
+    description: '값을 받는 칸 — 글자 / 숫자 / 체크 상자',
   },
   display: {
     id: 'display',
@@ -93,7 +93,7 @@ export const CATEGORIES: Record<BlockCategory, CategoryMeta> = {
     defaultExpanded: true,
     advanced: false,
     order: 3,
-    description: '라벨 / 이미지 / 헤더',
+    description: '제목 / 글자 / 이미지 / 아이콘',
   },
   dice: {
     id: 'dice',
@@ -103,7 +103,7 @@ export const CATEGORIES: Record<BlockCategory, CategoryMeta> = {
     defaultExpanded: true,
     advanced: false,
     order: 4,
-    description: '주사위 굴리기 + rolltemplate',
+    description: '주사위 굴리기 + 굴림 결과 틀',
   },
   i18n: {
     id: 'i18n',
@@ -113,11 +113,11 @@ export const CATEGORIES: Record<BlockCategory, CategoryMeta> = {
     defaultExpanded: true,
     advanced: false,
     order: 5,
-    description: '다국어 키 / placeholder / aria-label',
+    description: '다국어 — 메뉴 / 입력칸 안내문 / 접근성',
   },
   expression: {
     id: 'expression',
-    label: '표현식',
+    label: '값과 계산',
     hue: 200,
     swatchVar: 'var(--cat-expression)',
     defaultExpanded: false,
@@ -133,7 +133,7 @@ export const CATEGORIES: Record<BlockCategory, CategoryMeta> = {
     defaultExpanded: false,
     advanced: true,
     order: 7,
-    description: '자동 합계 / 이벤트 / sheet worker',
+    description: '자동 합계 / 이벤트 — 시트가 스스로 계산',
   },
   css: {
     id: 'css',
@@ -143,7 +143,7 @@ export const CATEGORIES: Record<BlockCategory, CategoryMeta> = {
     defaultExpanded: false,
     advanced: true,
     order: 8,
-    description: 'CSS 스타일 / 색 / 폰트',
+    description: '스타일 / 색 / 폰트',
   },
   advanced: {
     id: 'advanced',
@@ -153,17 +153,17 @@ export const CATEGORIES: Record<BlockCategory, CategoryMeta> = {
     defaultExpanded: false,
     advanced: true,
     order: 9,
-    description: 'raw markup / imgur (escape hatch)',
+    description: '직접 HTML / CSS / JS 작성 (탈출구)',
   },
   composite: {
     id: 'composite',
-    label: '합성',
+    label: '자주 쓰는 묶음',
     hue: 270,
     swatchVar: 'var(--cat-composite)',
     defaultExpanded: false,
     advanced: true,
     order: 10,
-    description: '자주 쓰는 primitive 묶음 — attr+helper / computed / dual-roll / radio-group',
+    description: '자주 쓰는 블록 묶음 — 입력칸+안내 / 자동 계산 / 굴림 버튼 묶음',
   },
 };
 

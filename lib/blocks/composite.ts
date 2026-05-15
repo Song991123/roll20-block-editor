@@ -78,16 +78,16 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
     type: 'r20_attr_with_txt_helper',
     shape: 'c',
     category: COMPOSITE,
-    label: '합성: 속성+텍스트 보조',
+    label: '묶음: 입력칸 + 안내 글자',
     tooltip:
       '히든 attr_NAME 저장값 + 옆에 보이는 텍스트 입력 짝(자주 쓰는 Roll20 입력 패턴).',
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('속성+보조 텍스트');
+      b.appendDummyInput().appendField('입력칸 + 안내 글자');
       b.appendDummyInput()
         .appendField('NAME')
         .appendField(new Blockly.FieldTextInput(''), 'NAME');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('CONTENT').setCheck(null);
       setStatementHooks(b);
@@ -137,11 +137,11 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
     type: 'r20_computed_attr',
     shape: 'c',
     category: COMPOSITE,
-    label: '합성: 자동 계산 속성',
+    label: '묶음: 자동 계산 칸',
     tooltip:
       '히든 attr + dep 변경 시 자동 setAttrs 하는 sheet worker 짝(반복되는 합계/모디 계산 패턴).',
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('자동 계산 속성');
+      b.appendDummyInput().appendField('자동 계산 칸');
       b.appendDummyInput()
         .appendField('NAME')
         .appendField(new Blockly.FieldTextInput(''), 'NAME');
@@ -225,11 +225,11 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
     type: 'r20_dual_roll_button',
     shape: 'stack',
     category: COMPOSITE,
-    label: '합성: 굴림 버튼 2개(한 줄)',
+    label: '묶음: 굴림 버튼 두 개 (한 줄)',
     tooltip:
       '한 row 안에 굴림 버튼 2개(예: 공격/피해 동시 노출).',
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('굴림 버튼 2개');
+      b.appendDummyInput().appendField('굴림 버튼 두 개');
       b.appendDummyInput()
         .appendField('1 label')
         .appendField(new Blockly.FieldTextInput(''), 'LABEL_A');
@@ -276,11 +276,11 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
     type: 'r20_radio_group',
     shape: 'c',
     category: COMPOSITE,
-    label: '합성: 라디오 그룹',
+    label: '묶음: 라디오 묶음',
     tooltip:
       '라디오 그룹(legend + 옵션 N개) — generic 한 라디오 선택지 묶음.',
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('라디오 그룹');
+      b.appendDummyInput().appendField('라디오 묶음');
       b.appendDummyInput()
         .appendField('NAME')
         .appendField(new Blockly.FieldTextInput(''), 'NAME');

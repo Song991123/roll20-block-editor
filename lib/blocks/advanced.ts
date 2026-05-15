@@ -59,10 +59,10 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     type: 'r20_raw_html',
     shape: 'stack',
     category: ADVANCED,
-    label: 'raw HTML',
+    label: '직접 HTML 작성 (고급)',
     tooltip: `HTML 워크스페이스에 입력 내용 그대로 출력. ${WARN_RAW}`,
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('raw HTML');
+      b.appendDummyInput().appendField('직접 HTML');
       b.appendDummyInput()
         .appendField('내용')
         .appendField(new Blockly.FieldTextInput(''), 'HTML');
@@ -89,10 +89,10 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     type: 'r20_raw_css',
     shape: 'stack',
     category: ADVANCED,
-    label: 'raw CSS',
+    label: '직접 CSS 작성 (고급)',
     tooltip: `CSS 워크스페이스에 입력 내용 그대로 출력. ${WARN_RAW}`,
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('raw CSS');
+      b.appendDummyInput().appendField('직접 CSS');
       b.appendDummyInput()
         .appendField('내용')
         .appendField(new Blockly.FieldTextInput(''), 'CSS');
@@ -119,10 +119,10 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     type: 'r20_raw_worker',
     shape: 'stack',
     category: ADVANCED,
-    label: 'raw 시트 자동화',
+    label: '직접 JS 작성 (고급)',
     tooltip: `sheet worker JS 그대로 출력. ${WARN_RAW}`,
     init: mkInit((b) => {
-      b.appendDummyInput().appendField('raw sheet worker');
+      b.appendDummyInput().appendField('직접 JS');
       b.appendDummyInput()
         .appendField('JS')
         .appendField(new Blockly.FieldTextInput(''), 'JS');
@@ -149,11 +149,11 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     type: 'r20_html_comment',
     shape: 'stack',
     category: ADVANCED,
-    label: 'HTML 주석',
+    label: '메모 (숨김)',
     tooltip: '<!-- TEXT --> — HTML 워크스페이스에 주석 박기.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('주석')
+        .appendField('메모')
         .appendField(new Blockly.FieldTextInput(''), 'TEXT');
       setStatementHooks(b);
     }),

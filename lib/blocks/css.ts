@@ -122,10 +122,10 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_css_rule',
     shape: 'c',
     category: CSS,
-    label: 'CSS 규칙',
+    label: '디자인 규칙',
     tooltip: '${selector} { ${decls} } — 셀렉터 + 선언 블록 묶음.',
     init: mkInit((b) => {
-      b.appendValueInput('SELECTOR').setCheck(T_STR).appendField('규칙');
+      b.appendValueInput('SELECTOR').setCheck(T_STR).appendField('디자인 규칙');
       b.appendStatementInput('DECLS').setCheck(null).appendField('선언');
       setStatementHooks(b);
     }),
@@ -141,7 +141,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_class',
     shape: 'reporter',
     category: CSS,
-    label: '.클래스 셀렉터',
+    label: '클래스 고르기 (.이름)',
     tooltip: '.NAME — autoPrefix (D4 ①) 가 `.sheet-` 자동 부착.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -161,7 +161,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_id',
     shape: 'reporter',
     category: CSS,
-    label: '#아이디 셀렉터',
+    label: 'ID 고르기 (#이름)',
     tooltip: '#NAME — 단일 id 매칭.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -181,11 +181,11 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_element',
     shape: 'reporter',
     category: CSS,
-    label: '요소 셀렉터',
+    label: '태그 고르기',
     tooltip: 'div / span / input / button.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('태그')
+        .appendField('태그 이름')
         .appendField(new Blockly.FieldDropdown(ELEMENT_TAGS), 'TAG');
       b.setOutput(true, T_STR);
     }),
@@ -201,7 +201,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_attr',
     shape: 'reporter',
     category: CSS,
-    label: '[속성] 셀렉터',
+    label: '속성으로 고르기',
     tooltip: '[ATTR OP "VALUE"] — 속성 매칭.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -227,7 +227,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_descendant',
     shape: 'reporter',
     category: CSS,
-    label: '자손 (공백)',
+    label: '안쪽 모든 자손',
     tooltip: 'A B — A 내부 자손 B.',
     init: mkInit((b) => {
       b.appendValueInput('A').setCheck(T_STR).appendField('A');
@@ -248,7 +248,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_child',
     shape: 'reporter',
     category: CSS,
-    label: '자식 >',
+    label: '바로 안쪽 자식',
     tooltip: 'A > B — 직계 자식.',
     init: mkInit((b) => {
       b.appendValueInput('A').setCheck(T_STR).appendField('A');
@@ -269,7 +269,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_sibling_adj',
     shape: 'reporter',
     category: CSS,
-    label: '인접 형제 +',
+    label: '바로 다음 형제',
     tooltip: 'A + B — 바로 다음 형제.',
     init: mkInit((b) => {
       b.appendValueInput('A').setCheck(T_STR).appendField('A');
@@ -290,7 +290,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_sibling_gen',
     shape: 'reporter',
     category: CSS,
-    label: '일반 형제 ~',
+    label: '뒤따르는 모든 형제',
     tooltip: 'A ~ B — 같은 부모의 뒤 형제.',
     init: mkInit((b) => {
       b.appendValueInput('A').setCheck(T_STR).appendField('A');
@@ -311,7 +311,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_pseudo',
     shape: 'reporter',
     category: CSS,
-    label: '의사 클래스 :',
+    label: '상태로 고르기 ( :hover 등 )',
     tooltip: 'BASE:PSEUDO(ARG) — hover/focus/checked/disabled/nth-child. ARG 비면 괄호 생략.',
     init: mkInit((b) => {
       b.appendValueInput('BASE').setCheck(T_STR).appendField('BASE');
@@ -343,7 +343,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_selector_comma',
     shape: 'reporter',
     category: CSS,
-    label: '여러 셀렉터 ,',
+    label: '여러 개 같이 고르기',
     tooltip: 'A, B — 두 셀렉터 묶음.',
     init: mkInit((b) => {
       b.appendValueInput('A').setCheck(T_STR).appendField('A');
@@ -364,7 +364,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_css_decl',
     shape: 'stack',
     category: CSS,
-    label: '선언',
+    label: '스타일 한 줄',
     tooltip: 'PROPERTY: VALUE; — 예: color: red;.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -388,7 +388,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_color_literal',
     shape: 'reporter',
     category: CSS,
-    label: '색 (HEX)',
+    label: '색',
     tooltip: '#RRGGBB HEX 텍스트 입력 — 잘못된 입력은 검정으로 fallback.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -410,7 +410,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_color_var',
     shape: 'reporter',
     category: CSS,
-    label: 'CSS 변수 참조',
+    label: '색 변수 가져오기',
     tooltip: 'var(--NAME) — CSS 커스텀 프로퍼티 참조.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -431,7 +431,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_css_var_def',
     shape: 'stack',
     category: CSS,
-    label: 'CSS 변수 정의',
+    label: '색 변수 만들기',
     tooltip: '--NAME: VALUE; — :root 규칙 안에 위치.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -456,7 +456,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_media_query',
     shape: 'c',
     category: CSS,
-    label: '@media',
+    label: '화면 크기 조건',
     tooltip: '@media (CONDITION) { ... } — 반응형 묶음.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -479,7 +479,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_keyframes',
     shape: 'c',
     category: CSS,
-    label: '@keyframes',
+    label: '움직임 정의',
     tooltip: '@keyframes NAME { ... } — 애니메이션 시퀀스 정의.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -502,11 +502,11 @@ export const CSS_BLOCKS: BlockDef[] = [
     type: 'r20_keyframe_stop',
     shape: 'stack',
     category: CSS,
-    label: '키프레임 정지점',
+    label: '움직임 단계',
     tooltip: 'from / to / 0% / 25% / 50% / 75% / 100% — 안에 선언 블록.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('정지점')
+        .appendField('단계')
         .appendField(new Blockly.FieldDropdown(KEYFRAME_STOPS), 'PERCENT');
       b.appendStatementInput('DECLS').setCheck(null);
       setStatementHooks(b);

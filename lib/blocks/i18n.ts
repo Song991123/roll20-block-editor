@@ -112,7 +112,7 @@ export const I18N_BLOCKS: BlockDef[] = [
     type: 'r20_i18n_text',
     shape: 'stack',
     category: I18N,
-    label: '번역 텍스트',
+    label: '번역 글자',
     tooltip: '<span data-i18n="KEY">DEFAULT</span> — class 옵션.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -122,7 +122,7 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본')
         .appendField(new Blockly.FieldTextInput('Default text'), 'DEFAULT');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -140,7 +140,7 @@ export const I18N_BLOCKS: BlockDef[] = [
     type: 'r20_i18n_ref',
     shape: 'reporter',
     category: I18N,
-    label: 'data-i18n 속성',
+    label: '번역 키 연결',
     tooltip: '`data-i18n="KEY"` 속성 조각. 다른 요소 속성으로 연결.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -161,7 +161,7 @@ export const I18N_BLOCKS: BlockDef[] = [
     type: 'r20_i18n_title',
     shape: 'stack',
     category: I18N,
-    label: '번역 title 툴팁',
+    label: '번역 (말풍선 도움말)',
     tooltip: '<span title="DEFAULT" data-i18n-title="KEY"> — 툴팁 번역.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -171,7 +171,7 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본 title')
         .appendField(new Blockly.FieldTextInput('Tooltip text'), 'DEFAULT');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -192,7 +192,7 @@ export const I18N_BLOCKS: BlockDef[] = [
     type: 'r20_i18n_placeholder',
     shape: 'stack',
     category: I18N,
-    label: '번역 placeholder',
+    label: '번역 (입력칸 안내문)',
     tooltip: '<input data-i18n-placeholder="KEY" placeholder="DEFAULT">.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -216,7 +216,7 @@ export const I18N_BLOCKS: BlockDef[] = [
     type: 'r20_i18n_aria_label',
     shape: 'stack',
     category: I18N,
-    label: '번역 aria-label',
+    label: '번역 (스크린리더 라벨)',
     tooltip: '<span data-i18n-aria-label="KEY" aria-label="DEFAULT"> — 접근성 라벨.',
     init: mkInit((b) => {
       b.appendDummyInput()
@@ -242,12 +242,12 @@ export const I18N_BLOCKS: BlockDef[] = [
     type: 'r20_i18n_var_pair',
     shape: 'reporter',
     category: I18N,
-    label: 'i18n 변수 페어',
+    label: '번역에 값 끼우기',
     tooltip:
       'i18n placeholder 변수 — `data-i18n-var-NAME="VALUE"`. ${NAME} 자리에 VALUE 가 들어감.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('변수')
+        .appendField('변수 이름')
         .appendField(new Blockly.FieldTextInput('name'), 'KEY')
         .appendField('=')
         .appendField(new Blockly.FieldTextInput(''), 'VAR_VALUE');
@@ -272,7 +272,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       'translation.json 에 들어가는 엔트리. emit 시 HTML 주석으로 표시 — 후처리 도구가 추출.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('언어')
+        .appendField('언어 코드')
         .appendField(new Blockly.FieldDropdown(LANG_CODES), 'LANG');
       b.appendDummyInput()
         .appendField('키')
@@ -297,7 +297,7 @@ export const I18N_BLOCKS: BlockDef[] = [
     type: 'r20_i18n_html',
     shape: 'stack',
     category: I18N,
-    label: '번역 HTML 허용',
+    label: '번역 (HTML 허용)',
     tooltip:
       '<span data-i18n-html="KEY">DEFAULT</span> — DEFAULT 가 HTML 로 해석됨 (escape 안 함).',
     init: mkInit((b) => {
@@ -323,7 +323,7 @@ export const I18N_BLOCKS: BlockDef[] = [
     type: 'r20_i18n_select_option',
     shape: 'stack',
     category: I18N,
-    label: '번역 옵션',
+    label: '번역 (선택 항목)',
     tooltip:
       '<option value="VALUE" data-i18n="KEY">DEFAULT</option> — <select> 안에 위치.',
     init: mkInit((b) => {
@@ -368,10 +368,10 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('타입')
         .appendField(new Blockly.FieldDropdown(BUTTON_TYPES), 'TYPE');
       b.appendDummyInput()
-        .appendField('name')
+        .appendField('이름')
         .appendField(new Blockly.FieldTextInput(''), 'NAME');
       b.appendDummyInput()
-        .appendField('class')
+        .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       setStatementHooks(b);
     }),
@@ -394,7 +394,7 @@ export const I18N_BLOCKS: BlockDef[] = [
     type: 'r20_i18n_legend',
     shape: 'stack',
     category: I18N,
-    label: '번역 legend',
+    label: '번역 (그룹 제목)',
     tooltip: '<legend data-i18n="KEY">DEFAULT</legend> — <fieldset> 제목.',
     init: mkInit((b) => {
       b.appendDummyInput()
