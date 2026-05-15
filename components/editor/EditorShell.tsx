@@ -10,6 +10,7 @@ import PreviewMain from './PreviewMain';
 import EditCanvas from './EditCanvas';
 import Statusbar from './Statusbar';
 import BlocklyModelHost from './BlocklyModelHost';
+import { useEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import MainAreaToolbar from './MainAreaToolbar';
 import WorkspaceSubToolbar from './WorkspaceSubToolbar';
 
@@ -67,6 +68,8 @@ function cycleMode(m: MainMode): MainMode {
 }
 
 export default function EditorShell() {
+  // emit pipeline — mainMode 무관, 항상 mount → import 후 Code 탭 즉시 반영.
+  useEmitPipeline();
   const mainMode = useUiStore((s) => s.mainMode);
   const setMainMode = useUiStore((s) => s.setMainMode);
   const mainSplit = useUiStore((s) => s.mainSplit);

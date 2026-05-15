@@ -13,9 +13,7 @@ import {
 } from '@/lib/dice/executor';
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
-import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import { getBlockDef } from '@/lib/blocks/registry';
-import { emitAll } from '@/lib/preview/emit';
 import { buildSheetDoc } from '@/lib/preview/buildDoc';
 import PreviewToolbar from './PreviewToolbar';
 import { playSfx } from '@/lib/sfx';
@@ -38,9 +36,11 @@ import PreviewEmptyState from './PreviewEmptyState';
  */
 export default function PreviewMain() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const htmlXml = useWorkspaceStore((s) => s.workspaces.html.xmlCache);
-  const cssXml = useWorkspaceStore((s) => s.workspaces.css.xmlCache);
-  const i18nXml = useWorkspaceStore((s) => s.workspaces.i18n.xmlCache);
+  // emit 결과는 useEmitPipeline (EditorShell 에서 항상 mount) 가 store 에 박는다.
+  // PreviewMain 은 본 결과를 읽어 buildSheetDoc → srcdoc 만 생성.
+  const emitHtml = useWorkspaceStore((s) => s.emitCache.html);
+  const emitCss = useWorkspaceStore((s) => s.emitCache.css);
+  const emitI18n = useWorkspaceStore((s) => s.emitCache.i18n);
   const htmlCount = useWorkspaceStore((s) => s.workspaces.html.blockCount);
   const cssCount = useWorkspaceStore((s) => s.workspaces.css.blockCount);
   const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
@@ -48,8 +48,6 @@ export default function PreviewMain() {
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   const appendBlock = useWorkspaceStore((s) => s.appendBlockToActive);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
-  const setEmitCache = useWorkspaceStore((s) => s.setEmitCache);
-  const setEmitWarnings = useWorkspaceStore((s) => s.setEmitWarnings);
   const darkMode = usePreviewStore((s) => s.darkMode);
   const sanitize = usePreviewStore((s) => s.sanitize);
   const sandbox = usePreviewStore((s) => s.iframeSandbox);
@@ -73,29 +71,19 @@ export default function PreviewMain() {
     buildSheetDoc({ html: '', css: '', sanitize, darkMode, previewLayer }),
   );
 
+  // emitCache 또는 미리보기 토글 (sanitize/darkMode/previewLayer) 변경 시 srcdoc 재생성.
+  // emit 자체는 useEmitPipeline 가 항상 돌리므로 본 컴포넌트는 doc 합성만.
   useEffect(() => {
-    const handle = window.setTimeout(() => {
-      const adapter = getBlocklyAdapter();
-      const result = emitAll({
-        html: adapter.getWorkspace('html'),
-        css: adapter.getWorkspace('css'),
-        i18n: adapter.getWorkspace('i18n'),
-      });
-      setEmitCache({ html: result.html, css: result.css, i18n: result.i18n });
-      setEmitWarnings(result.warnings);
-      const doc = buildSheetDoc({
-        html: result.html,
-        css: result.css,
-        i18n: result.i18n,
-        sanitize,
-        darkMode,
-        previewLayer,
-      });
-      setSrcdoc(doc);
-    }, 500);
-    return () => window.clearTimeout(handle);
-    // sanitize / darkMode 변경 시 즉시 재emit 도 동일 path.
-  }, [htmlXml, cssXml, i18nXml, sanitize, darkMode, previewLayer, setEmitCache, setEmitWarnings]);
+    const doc = buildSheetDoc({
+      html: emitHtml,
+      css: emitCss,
+      i18n: emitI18n,
+      sanitize,
+      darkMode,
+      previewLayer,
+    });
+    setSrcdoc(doc);
+  }, [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer]);
 
 
   // spec 17 §8 — 캔버스 widget 선택/hover → preview iframe 강조
