@@ -29,7 +29,8 @@ export type BlockCategory =
   | 'sheet_worker'
   | 'i18n'
   | 'css'
-  | 'advanced';
+  | 'advanced'
+  | 'composite';
 
 /** Typed slot kind — 잘못된 결합 차단 (§3.3). */
 export type BlockSlotKind =
@@ -152,7 +153,17 @@ export const CATEGORIES: Record<BlockCategory, CategoryMeta> = {
     defaultExpanded: false,
     advanced: true,
     order: 9,
-    description: 'raw markup / composite / imgur',
+    description: 'raw markup / imgur (escape hatch)',
+  },
+  composite: {
+    id: 'composite',
+    label: '합성',
+    hue: 270,
+    swatchVar: 'var(--cat-composite)',
+    defaultExpanded: false,
+    advanced: true,
+    order: 10,
+    description: '자주 쓰는 primitive 묶음 — attr+helper / computed / dual-roll / radio-group',
   },
 };
 
