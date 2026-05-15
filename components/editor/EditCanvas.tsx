@@ -6,6 +6,7 @@ import {
   useWorkspaceStore,
   type WidgetInstance,
   type WidgetTarget,
+  type WidgetType,
 } from '@/lib/stores/workspaceStore';
 import { WidgetRender } from '@/lib/widgets/previews';
 import { cn } from '@/lib/utils/cn';
@@ -42,6 +43,7 @@ export default function EditCanvas() {
 
   const sheetWidgets = useWorkspaceStore((s) => s.sheetWidgets);
   const rolltemplateWidgets = useWorkspaceStore((s) => s.rolltemplateWidgets);
+  const addWidget = useWorkspaceStore((s) => s.addWidget);
 
   const target: WidgetTarget = editSubmode === 'sheet' ? 'sheet' : 'rolltemplate';
   const widgets = target === 'sheet' ? sheetWidgets : rolltemplateWidgets;
@@ -72,6 +74,41 @@ export default function EditCanvas() {
     [setSelectedWidgetId],
   );
 
+  // Snap helper.
+  const snap = useCallback(
+    (v: number) => (snapEnabled ? Math.round(v / 8) * 8 : Math.round(v)),
+    [snapEnabled],
+  );
+
+  // Drop handler — WidgetGallery 의 카드 (또는 외부) dataTransfer 에 'application/x-widget-type'.
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      const type =
+        (e.dataTransfer.getData('application/x-widget-type') as string) ||
+        (e.dataTransfer.getData('text/plain') as string);
+      if (!type) return;
+      const node = surfaceRef.current;
+      if (!node) return;
+      const rect = node.getBoundingClientRect();
+      // zoom 보정: clientX/Y 는 viewport, surface 는 scale(zoom) 적용 — div 의 실 width = canvasWidth*zoom.
+      // 따라서 위젯 좌표 = (clientX - rect.left) / zoom.
+      const px = (e.clientX - rect.left) / zoom;
+      const py = (e.clientY - rect.top) / zoom;
+      const x = snap(Math.max(0, px));
+      const y = snap(Math.max(0, py));
+      const id = addWidget(target, type as WidgetType, x, y);
+      setSelectedWidgetId(id);
+    },
+    [addWidget, snap, target, zoom, setSelectedWidgetId],
+  );
+
   return (
     <div
       className="flex flex-1 min-h-0 flex-col bg-[var(--bg-canvas)]"
@@ -98,9 +135,12 @@ export default function EditCanvas() {
         >
           <div
             id="edit-canvas-surface"
+            ref={surfaceRef}
             data-testid="edit-canvas-surface"
             data-target={target}
             onMouseDown={onCanvasMouseDown}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
             style={{
               position: 'relative',
               width: canvasWidth,
