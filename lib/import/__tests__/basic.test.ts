@@ -132,6 +132,52 @@ function testInlineBreak(): void {
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for br');
 }
 
+function testCssFontFace(): void {
+  const css = `@font-face { font-family: 'MyFont'; src: url('http://x/y.woff2') format('woff2'); font-weight: 700; font-style: normal; }`;
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 1, '@font-face matched 1');
+  assert(r.stats.cssRawFallback === 0, 'no css raw fallback');
+  assert(r.css.includes('r20_css_font_face'), 'font_face block emitted');
+  assert(r.css.includes('>MyFont<'), 'FAMILY field carried');
+}
+
+function testCssSelectorComplexFallback(): void {
+  // 매우 복잡한 selector (parser 가 분해 못함) — r20_selector_complex 로 100% 보존.
+  const css = `body > .foo + .bar:not(:first-child) ~ [data-x="1"] { color: red; }`;
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 1, 'rule matched');
+  // r20_selector_complex 또는 정상 분해 둘 다 OK (분해돼도 selector_complex 가 잔여로 박힘 가능)
+  // 핵심: r20_literal_string 으로 박히지 않음 + warning 발생 1+
+  const literalCount = (r.css.match(/r20_literal_string/g) || []).length;
+  assert(literalCount === 0, 'no r20_literal_string fallback');
+}
+
+function testCssCompoundSelector(): void {
+  // tag.class compound — `input.sheet-hide`.
+  const css = `input.sheet-hide { display: none; }`;
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 1, 'rule matched');
+  assert(r.css.includes('r20_selector_compound'), 'compound block emitted');
+  assert(r.css.includes('r20_selector_element'), 'leading element preserved');
+}
+
+function testCssPseudoElementWebkit(): void {
+  const css = `input[type=number]::-webkit-outer-spin-button { display: none; }`;
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 1, 'rule matched');
+  assert(r.css.includes('r20_selector_pseudo_element'), 'pseudo-element block emitted');
+}
+
+function testCssExtendedElementTags(): void {
+  // Roll20 시트에서 자주 쓰는 bare-tag — textarea / table / caption 등.
+  const css = `textarea { background: #fff; } table { width: 100%; } caption { font-weight: bold; }`;
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 3, '3 rules matched');
+  // selector_element 가 textarea/table/caption 까지 핸들 — selector_complex fallback 0.
+  const complexMatches = (r.css.match(/r20_selector_complex/g) || []).length;
+  assert(complexMatches === 0, `no selector_complex fallback (got ${complexMatches})`);
+}
+
 const tests = [
   ['text input', testBasicTextInput],
   ['number input', testNumberInput],
@@ -148,6 +194,11 @@ const tests = [
   ['inline italic <i>', testInlineItalicI],
   ['table caption', testTableCaption],
   ['inline break <br>', testInlineBreak],
+  ['css @font-face', testCssFontFace],
+  ['css selector_complex fallback', testCssSelectorComplexFallback],
+  ['css compound selector', testCssCompoundSelector],
+  ['css pseudo-element ::-webkit-*', testCssPseudoElementWebkit],
+  ['css extended element tags', testCssExtendedElementTags],
 ] as const;
 
 let passed = 0;

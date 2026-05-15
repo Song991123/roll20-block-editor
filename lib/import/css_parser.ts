@@ -45,13 +45,21 @@ export function parseCss(css: string, ctx: CssMatchContext): MatchedBlock[] {
       out.push(block);
       ctx.matched++;
     } else if (r.kind === 'at') {
-      // 단순 처리 — raw_css fallback. 더 정확한 매칭은 후속 작업.
+      const headTrim = r.head.trim();
+      // @font-face — 전용 r20_css_font_face 블록으로 매칭.
+      if (/^@font-face\b/i.test(headTrim)) {
+        out.push(fontFaceToBlock(r.body));
+        ctx.matched++;
+        // ctx.matched 증가했으므로 ctx.total 의 1 도 그대로 carry — coverage 100% 기여.
+        continue;
+      }
+      // 그 외 at-rule — raw_css fallback.
       out.push(rawCssBlock(`${r.head}{${r.body}}`));
       ctx.rawFallback++;
       ctx.warnings.push({
         code: 'css_at_rule_raw',
-        message: `at-rule "${r.head.trim()}" 은 raw_css 로 박음`,
-        hint: r.head.trim().slice(0, 60),
+        message: `at-rule "${headTrim}" 은 raw_css 로 박음`,
+        hint: headTrim.slice(0, 60),
       });
     } else if (r.kind === 'decl_orphan') {
       // 잘림/비정상 — raw_css fallback.
@@ -208,18 +216,53 @@ function ruleToBlock(head: string, body: string, ctx: CssMatchContext): MatchedB
 }
 
 /**
- * Selector 파싱 — 첫 토큰만 reporter 로 분해 (compound selector 는 일단 raw).
+ * Selector 파싱 — top-down recursive 분해.
  *
- * 단순화: `.foo`, `#bar`, `div`, `[attr=val]` 의 단일 단순 토큰이면 매칭된 reporter.
- * 그 외 (descendant / child / compound) 는 `r20_literal_string` 으로 박는다.
+ * 우선순위:
+ *   1. comma (`A, B`) → r20_selector_comma
+ *   2. descendant / combinator (`A B`, `A > B`, `A + B`, `A ~ B`) → 해당 블록
+ *   3. pseudo-element (`base::after`, `::-webkit-*`) → r20_selector_pseudo_element
+ *   4. pseudo-class (`base:hover`, `:checked`) → r20_selector_pseudo
+ *   5. compound (`tag.class`, `tag#id`, `tag[attr=val]`, `.class[attr=val]`) → 첫 토큰 + tail compound
+ *   6. attribute (`[attr=val]`, `tag[attr=val]`) → r20_selector_attr
+ *   7. simple class `.foo` / id `#foo` / element `div` → 해당 reporter
+ *   8. 그 외 → r20_selector_complex (raw text 보존)
+ *
+ * 매칭 카운트: 모든 분기 reachable — `r20_literal_string` 사용 0 (selector_complex 가 대체).
  */
+const ELEMENT_TAGS_ALLOWED = new Set([
+  '*', 'div', 'span', 'input', 'button',
+  'textarea', 'select', 'option',
+  'table', 'tr', 'td', 'th', 'caption',
+  'p', 'hr', 'h1', 'h2', 'h3', 'h4',
+  'label', 'fieldset', 'a', 'img',
+]);
+
+const PSEUDO_CLASSES_ALLOWED = new Set([
+  'hover', 'focus', 'active', 'visited', 'link',
+  'checked', 'disabled', 'enabled', 'required', 'optional',
+  'first-child', 'last-child', 'only-child',
+  'first-of-type', 'last-of-type', 'only-of-type',
+  'nth-child', 'nth-of-type', 'nth-last-child', 'nth-last-of-type',
+  'not', 'is', 'where', 'has',
+  'empty', 'root', 'target',
+]);
+
+const PSEUDO_ELEMENTS_ALLOWED = new Set([
+  'before', 'after', 'placeholder',
+  'first-line', 'first-letter',
+  '-webkit-inner-spin-button',
+  '-webkit-outer-spin-button',
+  '-webkit-input-placeholder',
+]);
+
 function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
   const trimmed = sel.trim();
   if (!trimmed) {
-    return { blockType: 'r20_literal_string', fields: { STR: '*' }, children: {} };
+    return { blockType: 'r20_selector_complex', fields: { TEXT: '*' }, children: {} };
   }
 
-  // Comma group at top level — A, B → r20_selector_comma.
+  // 1. Comma group at top level — A, B → r20_selector_comma.
   const commaParts = splitTopLevel(trimmed, ',');
   if (commaParts.length > 1) {
     const right = buildSelectorBlock(commaParts.slice(1).join(',').trim(), ctx);
@@ -232,7 +275,7 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
     };
   }
 
-  // Combinator scan — child > / adjacent + / sibling ~ — top-level only.
+  // 2. Combinator scan — child > / adjacent + / sibling ~ / descendant.
   const combo = findCombinator(trimmed);
   if (combo) {
     const a = buildSelectorBlock(combo.left, ctx);
@@ -247,15 +290,46 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
     return { blockType: type, fields: {}, valueInputs: { A: a, B: b }, children: {} };
   }
 
-  // Pseudo-class (`.foo:hover`, `:checked`, `:nth-child(2)`).
-  const pseudoMatch = /^(.*?):([\w-]+)(?:\(([^)]*)\))?$/.exec(trimmed);
-  if (pseudoMatch && pseudoMatch[1] !== trimmed) {
-    const [, base, pseudo, arg] = pseudoMatch;
-    const ALLOWED = new Set(['hover', 'focus', 'checked', 'disabled', 'nth-child']);
-    if (ALLOWED.has(pseudo)) {
-      const baseBlock = base ? buildSelectorBlock(base, ctx) : {
-        blockType: 'r20_literal_string', fields: { STR: '' }, children: {},
+  // 3. Pseudo-element `::xxx` — split first (greedy `::` 우선).
+  const pseudoElIdx = findTopLevelDoubleColon(trimmed);
+  if (pseudoElIdx >= 0) {
+    const base = trimmed.slice(0, pseudoElIdx);
+    const pseudoRaw = trimmed.slice(pseudoElIdx + 2);
+    const pseudoMatch = /^([\w-]+)/.exec(pseudoRaw);
+    if (pseudoMatch && PSEUDO_ELEMENTS_ALLOWED.has(pseudoMatch[1])) {
+      const baseBlock = base
+        ? buildSelectorBlock(base, ctx)
+        : ({ blockType: 'r20_selector_complex', fields: { TEXT: '' }, children: {} } as MatchedBlock);
+      return {
+        blockType: 'r20_selector_pseudo_element',
+        fields: { PSEUDO: pseudoMatch[1] },
+        valueInputs: { BASE: baseBlock },
+        children: {},
       };
+    }
+  }
+
+  // 4. Pseudo-class `:hover` 등 (단 `:` 가 attribute selector 안이면 안 됨).
+  const pseudoClassMatch = findTopLevelPseudoClass(trimmed);
+  if (pseudoClassMatch) {
+    const { base, pseudo, arg } = pseudoClassMatch;
+    // legacy CSS2 single-colon `:before` / `:after` / `:first-line` / `:first-letter`
+    // → modern CSS3 ::pseudo-element 으로 normalize.
+    if (PSEUDO_ELEMENTS_ALLOWED.has(pseudo)) {
+      const baseBlock = base
+        ? buildSelectorBlock(base, ctx)
+        : ({ blockType: 'r20_selector_complex', fields: { TEXT: '' }, children: {} } as MatchedBlock);
+      return {
+        blockType: 'r20_selector_pseudo_element',
+        fields: { PSEUDO: pseudo },
+        valueInputs: { BASE: baseBlock },
+        children: {},
+      };
+    }
+    if (PSEUDO_CLASSES_ALLOWED.has(pseudo)) {
+      const baseBlock = base
+        ? buildSelectorBlock(base, ctx)
+        : ({ blockType: 'r20_selector_complex', fields: { TEXT: '' }, children: {} } as MatchedBlock);
       return {
         blockType: 'r20_selector_pseudo',
         fields: { PSEUDO: pseudo, ARG: arg || '' },
@@ -265,10 +339,62 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
     }
   }
 
-  // Attribute selector `tag[attr=val]` or `[attr=val]`.
-  const attrMatch = /^([\w*-]*)\[([\w-]+)\s*([~|^$*]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\]]*))\]$/.exec(trimmed);
+  // 5. Compound selector `tag.class`, `tag#id`, `.class[attr=val]`, `tag[attr=val]` etc.
+  // — Split simple atoms: leading element tag, then chain of `.class` / `#id` / `[attr=...]`.
+  const compoundTokens = tokenizeCompound(trimmed);
+  if (compoundTokens && compoundTokens.length > 1) {
+    // Reduce: combine via "concatenation" — Roll20 의 compound (no whitespace) selector.
+    // 가장 자연스러운 표현: 첫 token 만 분해 + 나머지는 또 buildSelectorBlock 으로.
+    // 단 부모-자식이 아니므로 descendant 가 아닌 compound 표현 — 여기서는
+    // 첫 token 만 매칭하고 나머지를 attr 또는 추가 class 로 chain. 단순 접근:
+    // 첫 token = base block, 나머지 join → r20_selector_complex (raw) 보존.
+    const head = compoundTokens[0];
+    const tail = compoundTokens.slice(1).join('');
+    const headBlock = buildSelectorBlock(head, ctx);
+    // tail 이 한 개의 단순 토큰이면 attr/class/id 분해
+    if (compoundTokens.length === 2) {
+      const second = compoundTokens[1];
+      // .class
+      if (/^\.[\w-]+$/.test(second)) {
+        return {
+          blockType: 'r20_selector_compound',
+          fields: { TAIL: second },
+          valueInputs: { BASE: headBlock },
+          children: {},
+        };
+      }
+      // #id
+      if (/^#[\w-]+$/.test(second)) {
+        return {
+          blockType: 'r20_selector_compound',
+          fields: { TAIL: second },
+          valueInputs: { BASE: headBlock },
+          children: {},
+        };
+      }
+      // [attr=val]
+      if (/^\[.*\]$/.test(second)) {
+        return {
+          blockType: 'r20_selector_compound',
+          fields: { TAIL: second },
+          valueInputs: { BASE: headBlock },
+          children: {},
+        };
+      }
+    }
+    // 3+ tokens — keep first as head, concat rest raw.
+    return {
+      blockType: 'r20_selector_compound',
+      fields: { TAIL: tail },
+      valueInputs: { BASE: headBlock },
+      children: {},
+    };
+  }
+
+  // 6. Attribute selector `[attr=val]` (no leading tag — already filtered by tokenize).
+  const attrMatch = /^\[([\w-]+)\s*([~|^$*]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\]]*))\]$/.exec(trimmed);
   if (attrMatch) {
-    const [, , attr, op, v1, v2, v3] = attrMatch;
+    const [, attr, op, v1, v2, v3] = attrMatch;
     return {
       blockType: 'r20_selector_attr',
       fields: { ATTR: attr, OP: op, VALUE: v1 ?? v2 ?? v3 ?? '' },
@@ -276,7 +402,7 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
     };
   }
 
-  // Single class, id, or element.
+  // 7. Simple class / id / element.
   if (/^\.[\w-]+$/.test(trimmed)) {
     return {
       blockType: 'r20_selector_class',
@@ -291,20 +417,110 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
       children: {},
     };
   }
-  if (/^(div|span|input|button)$/.test(trimmed)) {
+  if (ELEMENT_TAGS_ALLOWED.has(trimmed)) {
     return { blockType: 'r20_selector_element', fields: { TAG: trimmed }, children: {} };
   }
 
-  // 그 외 — literal_string fallback (CSS workspace 안에서 raw selector).
+  // 8. fallback — r20_selector_complex (raw selector 100% 보존).
   ctx.warnings.push({
     code: 'css_selector_complex',
-    message: `매칭 못 한 셀렉터 "${trimmed.slice(0, 60)}" — literal_string 으로 박음`,
+    message: `매칭 못 한 셀렉터 "${trimmed.slice(0, 60)}" — r20_selector_complex 로 박음`,
   });
   return {
-    blockType: 'r20_literal_string',
-    fields: { STR: trimmed },
+    blockType: 'r20_selector_complex',
+    fields: { TEXT: trimmed },
     children: {},
   };
+}
+
+/** Compound selector tokenize — `tag` + (`.class` | `#id` | `[attr=val]`)+ chain. */
+function tokenizeCompound(sel: string): string[] | null {
+  const tokens: string[] = [];
+  let i = 0;
+
+  // Leading element name (optional). `*` (universal) 도 허용.
+  if (sel[0] === '*') {
+    tokens.push('*');
+    i = 1;
+  } else if (/[a-zA-Z]/.test(sel[0])) {
+    let j = i;
+    while (j < sel.length && /[a-zA-Z0-9_-]/.test(sel[j])) j++;
+    if (j > i) {
+      tokens.push(sel.slice(i, j));
+      i = j;
+    }
+  }
+
+  while (i < sel.length) {
+    const c = sel[i];
+    if (c === '.' || c === '#') {
+      let j = i + 1;
+      while (j < sel.length && /[a-zA-Z0-9_-]/.test(sel[j])) j++;
+      if (j === i + 1) return null;
+      tokens.push(sel.slice(i, j));
+      i = j;
+    } else if (c === '[') {
+      const end = sel.indexOf(']', i);
+      if (end < 0) return null;
+      tokens.push(sel.slice(i, end + 1));
+      i = end + 1;
+    } else {
+      // 다른 char — compound 분해 실패.
+      return null;
+    }
+  }
+  return tokens.length > 0 ? tokens : null;
+}
+
+/** top-level `::` 위치 (괄호 / 따옴표 안은 무시). */
+function findTopLevelDoubleColon(sel: string): number {
+  let depthB = 0, depthP = 0;
+  for (let i = 0; i < sel.length - 1; i++) {
+    const c = sel[i];
+    if (c === '"' || c === "'") {
+      const q = c; i++;
+      while (i < sel.length && sel[i] !== q) { if (sel[i] === '\\') i++; i++; }
+      continue;
+    }
+    if (c === '[') { depthB++; continue; }
+    if (c === ']') { depthB--; continue; }
+    if (c === '(') { depthP++; continue; }
+    if (c === ')') { depthP--; continue; }
+    if (depthB || depthP) continue;
+    if (c === ':' && sel[i + 1] === ':') return i;
+  }
+  return -1;
+}
+
+/** top-level pseudo-class `:xxx(arg?)` 위치. base, pseudo name, arg 반환. */
+function findTopLevelPseudoClass(
+  sel: string,
+): { base: string; pseudo: string; arg: string } | null {
+  let depthB = 0, depthP = 0;
+  for (let i = 0; i < sel.length; i++) {
+    const c = sel[i];
+    if (c === '"' || c === "'") {
+      const q = c; i++;
+      while (i < sel.length && sel[i] !== q) { if (sel[i] === '\\') i++; i++; }
+      continue;
+    }
+    if (c === '[') { depthB++; continue; }
+    if (c === ']') { depthB--; continue; }
+    if (c === '(') { depthP++; continue; }
+    if (c === ')') { depthP--; continue; }
+    if (depthB || depthP) continue;
+    if (c === ':' && sel[i + 1] !== ':') {
+      // pseudo-class — parse `:name(args)?`
+      const m = /^:([\w-]+)(?:\(([^)]*)\))?/.exec(sel.slice(i));
+      if (!m) continue;
+      return {
+        base: sel.slice(0, i),
+        pseudo: m[1],
+        arg: m[2] || '',
+      };
+    }
+  }
+  return null;
 }
 
 /** top-level (괄호/브래킷 보호) 단일 char 분리. */
@@ -459,6 +675,42 @@ function rawCssBlock(text: string): MatchedBlock {
   return {
     blockType: 'r20_raw_css',
     fields: { CSS: text.trim() },
+    children: {},
+  };
+}
+
+/**
+ * @font-face body → r20_css_font_face block.
+ * font-family / src / font-weight / font-style 4 declaration 만 카탈로그 필드로 매핑.
+ * 기타 declaration 은 보존되지 않음 (parse 후 누락 가능 — 추후 추가 필드 확장 영역).
+ */
+function fontFaceToBlock(body: string): MatchedBlock {
+  const fields: Record<string, string> = {
+    FAMILY: '',
+    SRC: '',
+    WEIGHT: 'normal',
+    STYLE: 'normal',
+  };
+  const decls = splitDeclarations(body);
+  for (const d of decls) {
+    const idx = d.indexOf(':');
+    if (idx < 0) continue;
+    const prop = d.slice(0, idx).trim().toLowerCase();
+    const value = d.slice(idx + 1).trim();
+    if (prop === 'font-family') {
+      // strip surrounding quotes
+      fields.FAMILY = value.replace(/^['"]|['"]$/g, '');
+    } else if (prop === 'src') {
+      fields.SRC = value;
+    } else if (prop === 'font-weight') {
+      fields.WEIGHT = value;
+    } else if (prop === 'font-style') {
+      fields.STYLE = value;
+    }
+  }
+  return {
+    blockType: 'r20_css_font_face',
+    fields,
     children: {},
   };
 }

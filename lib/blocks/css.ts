@@ -26,10 +26,29 @@ const T_STR = 'String';
 
 /** 요소 셀렉터 — 시트에서 자주 쓰는 4 종. */
 const ELEMENT_TAGS: Array<[string, string]> = [
+  ['*', '*'],
   ['div', 'div'],
   ['span', 'span'],
   ['input', 'input'],
   ['button', 'button'],
+  ['textarea', 'textarea'],
+  ['select', 'select'],
+  ['option', 'option'],
+  ['table', 'table'],
+  ['tr', 'tr'],
+  ['td', 'td'],
+  ['th', 'th'],
+  ['caption', 'caption'],
+  ['p', 'p'],
+  ['hr', 'hr'],
+  ['h1', 'h1'],
+  ['h2', 'h2'],
+  ['h3', 'h3'],
+  ['h4', 'h4'],
+  ['label', 'label'],
+  ['fieldset', 'fieldset'],
+  ['a', 'a'],
+  ['img', 'img'],
 ];
 
 /** 속성 셀렉터 연산자 — =, ^=, $=, *=. */
@@ -47,6 +66,18 @@ const PSEUDOS: Array<[string, string]> = [
   ['checked', 'checked'],
   ['disabled', 'disabled'],
   ['nth-child', 'nth-child'],
+];
+
+/** 의사 요소 (::pseudo-element) — Roll20 시트에서 자주 쓰는 8 종. */
+const PSEUDO_ELEMENTS: Array<[string, string]> = [
+  ['before', 'before'],
+  ['after', 'after'],
+  ['placeholder', 'placeholder'],
+  ['first-line', 'first-line'],
+  ['first-letter', 'first-letter'],
+  ['-webkit-inner-spin-button', '-webkit-inner-spin-button'],
+  ['-webkit-outer-spin-button', '-webkit-outer-spin-button'],
+  ['-webkit-input-placeholder', '-webkit-input-placeholder'],
 ];
 
 /** 키프레임 정지점 — from/to + 5 단계 백분율. */
@@ -338,6 +369,79 @@ export const CSS_BLOCKS: BlockDef[] = [
     },
   },
 
+  // 10.5) pseudo element (::after, ::-webkit-*) ----------------------------
+  {
+    type: 'r20_selector_pseudo_element',
+    shape: 'reporter',
+    category: CSS,
+    label: '꾸미는 부분 ( ::after 등 )',
+    tooltip: 'BASE::PSEUDO — ::before/::after/::placeholder/::-webkit-* 등 의사 요소.',
+    init: mkInit((b) => {
+      b.appendValueInput('BASE').setCheck(T_STR).appendField('BASE');
+      b.appendDummyInput()
+        .appendField('::')
+        .appendField(new Blockly.FieldDropdown(PSEUDO_ELEMENTS), 'PSEUDO');
+      b.setInputsInline(true);
+      b.setOutput(true, T_STR);
+    }),
+    generator: (block, ctx) => {
+      const bb = block as Blockly.Block;
+      const base = (ctx.valueToCode(block, 'BASE', ORDER.NONE) || '').trim();
+      const pseudo = pickAllowed(
+        String(bb.getFieldValue('PSEUDO') ?? ''),
+        PSEUDO_ELEMENTS,
+        'after',
+      );
+      return [`${base}::${pseudo}`, ORDER.ATOMIC];
+    },
+  },
+
+  // 10.55) compound selector — tag + .class / #id / [attr] chain --------------
+  {
+    type: 'r20_selector_compound',
+    shape: 'reporter',
+    category: CSS,
+    label: '겹쳐서 고르기 (예: div.foo)',
+    tooltip: 'BASE + TAIL — 공백 없이 접합 (`div.foo`, `input.bar[value=on]` 등).',
+    init: mkInit((b) => {
+      b.appendValueInput('BASE').setCheck(T_STR).appendField('BASE');
+      b.appendDummyInput()
+        .appendField('+')
+        .appendField(new Blockly.FieldTextInput('.cls'), 'TAIL');
+      b.setInputsInline(true);
+      b.setOutput(true, T_STR);
+    }),
+    generator: (block, ctx) => {
+      const bb = block as Blockly.Block;
+      const base = (ctx.valueToCode(block, 'BASE', ORDER.NONE) || '').trim();
+      const tail = String(bb.getFieldValue('TAIL') ?? '').replace(/[{}\r\n\s]/g, '').trim();
+      if (!base) return [tail, ORDER.ATOMIC];
+      if (!tail) return [base, ORDER.ATOMIC];
+      return [`${base}${tail}`, ORDER.ATOMIC];
+    },
+  },
+
+  // 10.6) complex selector — raw 입력 (parser 가 분해 못한 selector 보존) -----
+  {
+    type: 'r20_selector_complex',
+    shape: 'reporter',
+    category: CSS,
+    label: '직접 셀렉터 입력',
+    tooltip: '복잡한 셀렉터를 직접 입력 — 분해 못 한 selector 의 100% 보존용.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('직접 셀렉터')
+        .appendField(new Blockly.FieldTextInput('div .foo'), 'TEXT');
+      b.setOutput(true, T_STR);
+    }),
+    generator: (block) => {
+      const bb = block as Blockly.Block;
+      // selector 안에서 `{`, `}` 만 차단 (rule 경계 안전), 나머지 그대로.
+      const raw = String(bb.getFieldValue('TEXT') ?? '').replace(/[{}\r\n]/g, ' ').trim();
+      return [raw, ORDER.ATOMIC];
+    },
+  },
+
   // 11) comma group --------------------------------------------------------
   {
     type: 'r20_selector_comma',
@@ -520,6 +624,44 @@ export const CSS_BLOCKS: BlockDef[] = [
       );
       const decls = ctx.statementToCode(block, 'DECLS');
       return wrapBraces(ctx, pct, decls);
+    },
+  },
+
+  // 18.5) css @font-face -------------------------------------------------
+  {
+    type: 'r20_css_font_face',
+    shape: 'stack',
+    category: CSS,
+    label: '글꼴 추가하기 (@font-face)',
+    tooltip: '@font-face { font-family: FAMILY; src: SRC; font-weight: WEIGHT; font-style: STYLE; } — 외부 글꼴 등록.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('@font-face')
+        .appendField('이름')
+        .appendField(new Blockly.FieldTextInput('MyFont'), 'FAMILY');
+      b.appendDummyInput()
+        .appendField('src')
+        .appendField(new Blockly.FieldTextInput("url('https://example.com/font.woff2') format('woff2')"), 'SRC');
+      b.appendDummyInput()
+        .appendField('굵기')
+        .appendField(new Blockly.FieldTextInput('normal'), 'WEIGHT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput('normal'), 'STYLE');
+      setStatementHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const bb = block as Blockly.Block;
+      const family = safeDeclValue(String(bb.getFieldValue('FAMILY') ?? '')).trim();
+      const src = safeDeclValue(String(bb.getFieldValue('SRC') ?? '')).trim();
+      const weight = safeDeclValue(String(bb.getFieldValue('WEIGHT') ?? '')).trim();
+      const style = safeDeclValue(String(bb.getFieldValue('STYLE') ?? '')).trim();
+      const decls: string[] = [];
+      if (family) decls.push(`font-family: '${family.replace(/'/g, '')}';`);
+      if (src) decls.push(`src: ${src};`);
+      if (weight) decls.push(`font-weight: ${weight};`);
+      if (style) decls.push(`font-style: ${style};`);
+      return wrapBraces(ctx, '@font-face', decls.join('\n'));
     },
   },
 
