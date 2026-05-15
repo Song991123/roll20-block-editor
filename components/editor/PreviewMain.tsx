@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { useChatStore } from '@/lib/stores/chatStore';
@@ -66,24 +66,23 @@ export default function PreviewMain() {
   const isEmpty = total === 0;
   const scale = zoom === 'fit' ? 1 : zoom;
 
-  // emit + buildDoc — 500ms 디바운스. xmlCache 가 store 에 박힐 때마다 재계산.
-  const [srcdoc, setSrcdoc] = useState<string>(() =>
-    buildSheetDoc({ html: '', css: '', sanitize, darkMode, previewLayer }),
+  // srcdoc — emitCache + 미리보기 토글 (sanitize/darkMode/previewLayer) 의 순수 derive.
+  // useState + useEffect 였을 때: 마운트 시 초기값 = 빈 placeholder → useEffect 가 다음
+  // tick 에 setSrcdoc → React 가 srcDoc prop 갱신, 하지만 iframe 이 reload 안 함 (Chrome
+  // 의 srcdoc 속성 변경 quirk). useMemo 로 바꿔 첫 렌더부터 올바른 값으로 렌더 →
+  // 모드 전환 후에도 즉시 컨텐츠 표시.
+  const srcdoc = useMemo(
+    () =>
+      buildSheetDoc({
+        html: emitHtml,
+        css: emitCss,
+        i18n: emitI18n,
+        sanitize,
+        darkMode,
+        previewLayer,
+      }),
+    [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer],
   );
-
-  // emitCache 또는 미리보기 토글 (sanitize/darkMode/previewLayer) 변경 시 srcdoc 재생성.
-  // emit 자체는 useEmitPipeline 가 항상 돌리므로 본 컴포넌트는 doc 합성만.
-  useEffect(() => {
-    const doc = buildSheetDoc({
-      html: emitHtml,
-      css: emitCss,
-      i18n: emitI18n,
-      sanitize,
-      darkMode,
-      previewLayer,
-    });
-    setSrcdoc(doc);
-  }, [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer]);
 
 
   // spec 17 §8 — 캔버스 widget 선택/hover → preview iframe 강조
