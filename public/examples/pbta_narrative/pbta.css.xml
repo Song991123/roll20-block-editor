@@ -1,0 +1,747 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="r20_css_rule" x="20" y="20">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">character-sheet</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">font-family</field>
+        <field name="VALUE">&#x27;Special Elite&#x27;, &#x27;Courier New&#x27;, monospace</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">background</field>
+            <field name="VALUE">#f6f1e3</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">color</field>
+                <field name="VALUE">#2c241c</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">padding</field>
+                    <field name="VALUE">20px</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">max-width</field>
+                        <field name="VALUE">880px</field>
+                        <next>
+                                                <block type="r20_css_decl">
+                            <field name="PROPERTY">margin</field>
+                            <field name="VALUE">0 auto</field>
+                            <next>
+                                                        <block type="r20_css_decl">
+                                <field name="PROPERTY">line-height</field>
+                                <field name="VALUE">1.45</field>
+                                <next>
+                                                                <block type="r20_css_decl">
+                                    <field name="PROPERTY">border</field>
+                                    <field name="VALUE">1px dashed #b8a07a</field>
+                                  </block>
+                                </next>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="240">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">page-title</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">font-size</field>
+        <field name="VALUE">28px</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">text-align</field>
+            <field name="VALUE">center</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">letter-spacing</field>
+                <field name="VALUE">0.04em</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">color</field>
+                    <field name="VALUE">#7a3b1b</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">border-bottom</field>
+                        <field name="VALUE">2px dashed #b8a07a</field>
+                        <next>
+                                                <block type="r20_css_decl">
+                            <field name="PROPERTY">padding-bottom</field>
+                            <field name="VALUE">6px</field>
+                            <next>
+                                                        <block type="r20_css_decl">
+                                <field name="PROPERTY">margin</field>
+                                <field name="VALUE">0 0 14px 0</field>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="460">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">sec-heading</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">font-size</field>
+        <field name="VALUE">16px</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">text-transform</field>
+            <field name="VALUE">uppercase</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">letter-spacing</field>
+                <field name="VALUE">0.08em</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">color</field>
+                    <field name="VALUE">#5a2a14</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">margin</field>
+                        <field name="VALUE">16px 0 6px 0</field>
+                        <next>
+                                                <block type="r20_css_decl">
+                            <field name="PROPERTY">border-bottom</field>
+                            <field name="VALUE">1px solid #c9b58c</field>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="680">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">section-help</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">font-size</field>
+        <field name="VALUE">11px</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">color</field>
+            <field name="VALUE">#6a5840</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">font-style</field>
+                <field name="VALUE">italic</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">display</field>
+                    <field name="VALUE">block</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">margin</field>
+                        <field name="VALUE">0 0 8px 0</field>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="900">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">stat</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">text-align</field>
+        <field name="VALUE">center</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">padding</field>
+            <field name="VALUE">8px 6px</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">border</field>
+                <field name="VALUE">1px solid #c9b58c</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">background</field>
+                    <field name="VALUE">#fffcf3</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">border-radius</field>
+                        <field name="VALUE">4px</field>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="1120">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">stat-score</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">width</field>
+        <field name="VALUE">100%</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">font-size</field>
+            <field name="VALUE">22px</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">text-align</field>
+                <field name="VALUE">center</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">border</field>
+                    <field name="VALUE">none</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">background</field>
+                        <field name="VALUE">transparent</field>
+                        <next>
+                                                <block type="r20_css_decl">
+                            <field name="PROPERTY">font-weight</field>
+                            <field name="VALUE">bold</field>
+                            <next>
+                                                        <block type="r20_css_decl">
+                                <field name="PROPERTY">color</field>
+                                <field name="VALUE">#1f1812</field>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="1340">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">harm-step</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">text-align</field>
+        <field name="VALUE">center</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">border</field>
+            <field name="VALUE">1px solid #b08a40</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">padding</field>
+                <field name="VALUE">6px 4px</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">background</field>
+                    <field name="VALUE">#fff8e6</field>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="1560">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">harm-box</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">transform</field>
+        <field name="VALUE">scale(1.4)</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">margin</field>
+            <field name="VALUE">6px 0</field>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="1780">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">move</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">border</field>
+        <field name="VALUE">1px solid #b08a40</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">border-radius</field>
+            <field name="VALUE">6px</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">padding</field>
+                <field name="VALUE">10px 12px</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">margin</field>
+                    <field name="VALUE">10px 0</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">background</field>
+                        <field name="VALUE">#fffaf0</field>
+                        <next>
+                                                <block type="r20_css_decl">
+                            <field name="PROPERTY">box-shadow</field>
+                            <field name="VALUE">0 1px 0 #d8c79c</field>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="2000">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">move-name</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">font-size</field>
+        <field name="VALUE">15px</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">color</field>
+            <field name="VALUE">#7a3b1b</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">margin</field>
+                <field name="VALUE">0 0 4px 0</field>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="2220">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">move-desc</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">font-size</field>
+        <field name="VALUE">12px</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">color</field>
+            <field name="VALUE">#3a2c1c</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">display</field>
+                <field name="VALUE">block</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">margin</field>
+                    <field name="VALUE">0 0 8px 0</field>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="2440">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">move-roll</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">background</field>
+        <field name="VALUE">#7a3b1b</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">color</field>
+            <field name="VALUE">#fdf6e3</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">border</field>
+                <field name="VALUE">none</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">padding</field>
+                    <field name="VALUE">4px 12px</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">border-radius</field>
+                        <field name="VALUE">3px</field>
+                        <next>
+                                                <block type="r20_css_decl">
+                            <field name="PROPERTY">cursor</field>
+                            <field name="VALUE">pointer</field>
+                            <next>
+                                                        <block type="r20_css_decl">
+                                <field name="PROPERTY">margin-left</field>
+                                <field name="VALUE">8px</field>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="2660">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">tier</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">font-size</field>
+        <field name="VALUE">11px</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">padding</field>
+            <field name="VALUE">3px 6px</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">border-radius</field>
+                <field name="VALUE">3px</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">display</field>
+                    <field name="VALUE">block</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">text-align</field>
+                        <field name="VALUE">center</field>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="2880">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">tier-strong</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">background</field>
+        <field name="VALUE">#d3e9c9</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">color</field>
+            <field name="VALUE">#1f4716</field>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="3100">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">tier-mixed</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">background</field>
+        <field name="VALUE">#f1e2b5</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">color</field>
+            <field name="VALUE">#5a3a05</field>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="3320">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">tier-miss</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">background</field>
+        <field name="VALUE">#e6c5c0</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">color</field>
+            <field name="VALUE">#5a1810</field>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="3540">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">item-name</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">flex</field>
+        <field name="VALUE">1</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">min-width</field>
+            <field name="VALUE">180px</field>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="3760">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">hx-notes</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">width</field>
+        <field name="VALUE">100%</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">font-style</field>
+            <field name="VALUE">italic</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">color</field>
+                <field name="VALUE">#3a2c1c</field>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="3980">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">history-area</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">width</field>
+        <field name="VALUE">100%</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">font-family</field>
+            <field name="VALUE">Georgia, serif</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">font-size</field>
+                <field name="VALUE">13px</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">background</field>
+                    <field name="VALUE">#fffcf3</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">border</field>
+                        <field name="VALUE">1px solid #c9b58c</field>
+                        <next>
+                                                <block type="r20_css_decl">
+                            <field name="PROPERTY">padding</field>
+                            <field name="VALUE">8px</field>
+                            <next>
+                                                        <block type="r20_css_decl">
+                                <field name="PROPERTY">min-height</field>
+                                <field name="VALUE">80px</field>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="4200">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">xp-score</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">width</field>
+        <field name="VALUE">100%</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">font-size</field>
+            <field name="VALUE">20px</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">text-align</field>
+                <field name="VALUE">center</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">font-weight</field>
+                    <field name="VALUE">bold</field>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="4420">
+    <value name="SELECTOR">
+        <block type="r20_selector_class">
+        <field name="NAME">adv-box</field>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">transform</field>
+        <field name="VALUE">scale(1.3)</field>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_css_rule" x="20" y="4640">
+    <value name="SELECTOR">
+        <block type="r20_selector_descendant">
+        <value name="A">
+                <block type="r20_selector_class">
+            <field name="NAME">character-sheet</field>
+          </block>
+        </value>
+        <value name="B">
+                <block type="r20_selector_class">
+            <field name="NAME">repeating_gear</field>
+          </block>
+        </value>
+      </block>
+    </value>
+    <statement name="DECLS">
+        <block type="r20_css_decl">
+        <field name="PROPERTY">display</field>
+        <field name="VALUE">block</field>
+        <next>
+                <block type="r20_css_decl">
+            <field name="PROPERTY">margin</field>
+            <field name="VALUE">8px 0</field>
+            <next>
+                        <block type="r20_css_decl">
+                <field name="PROPERTY">padding</field>
+                <field name="VALUE">8px</field>
+                <next>
+                                <block type="r20_css_decl">
+                    <field name="PROPERTY">border</field>
+                    <field name="VALUE">1px dashed #b8a07a</field>
+                    <next>
+                                        <block type="r20_css_decl">
+                        <field name="PROPERTY">background</field>
+                        <field name="VALUE">#fffcf3</field>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+</xml>

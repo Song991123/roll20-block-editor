@@ -1,0 +1,23 @@
+{
+  "id": "pbta_narrative",
+  "name": "PbtA Narrative 캐릭터 시트",
+  "shortName": "PbtA Narrative",
+  "description": "Powered by the Apocalypse 가상 sample — 5 stat (Cool/Hard/Hot/Sharp/Weird) + 5단 피해 시계 + 6 무브 (2d6+stat / 10+ / 7-9 / 6-) + 장비/Hx 반복 섹션 + history textarea + advancement. V3 catalog generality 검증 — 능력치 무거운 V2 (D&D 5e) 와 대비되는 narrative 시스템 cover 폭 검증.",
+  "system": "pbta_narrative",
+  "visibility": "public",
+  "language": "ko",
+  "author": "Roll20 Block Editor — V3 sample",
+  "license": "MIT",
+  "version": "1.0.0",
+  "blockCount": 407,
+  "preview": {
+    "width": 880,
+    "height": 1500
+  },
+  "systemTags": [
+    "pbta",
+    "narrative",
+    "indie",
+    "no-stat-system"
+  ]
+}

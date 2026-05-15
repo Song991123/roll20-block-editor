@@ -1,0 +1,1265 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="r20_div" x="20" y="20">
+    <field name="CLASS">character-sheet</field>
+    <statement name="CONTENT">
+        <block type="r20_section_wrap">
+        <field name="NAME">header</field>
+        <statement name="CONTENT">
+                <block type="r20_heading">
+            <field name="LEVEL">1</field>
+            <field name="TEXT">PbtA Character Sheet</field>
+            <field name="CLASS">page-title</field>
+            <next>
+                        <block type="r20_colrow_n">
+                <field name="N">4</field>
+                <statement name="CONTENT">
+                                <block type="r20_text_input">
+                    <field name="NAME">character_name</field>
+                    <field name="CLASS">char-name</field>
+                    <field name="DEFAULT">Driver</field>
+                    <next>
+                                        <block type="r20_text_input">
+                        <field name="NAME">playbook</field>
+                        <field name="CLASS">playbook-name</field>
+                        <field name="DEFAULT">The Driver</field>
+                        <next>
+                                                <block type="r20_text_input">
+                            <field name="NAME">look</field>
+                            <field name="CLASS">look</field>
+                            <field name="DEFAULT">battered leather, restless eyes</field>
+                            <next>
+                                                        <block type="r20_text_input">
+                                <field name="NAME">alignment</field>
+                                <field name="CLASS">alignment</field>
+                                <field name="DEFAULT">neutral</field>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </statement>
+              </block>
+            </next>
+          </block>
+        </statement>
+        <next>
+                <block type="r20_section_wrap">
+            <field name="NAME">stats</field>
+            <statement name="CONTENT">
+                        <block type="r20_heading">
+                <field name="LEVEL">2</field>
+                <field name="TEXT">Stats</field>
+                <field name="CLASS">sec-heading</field>
+                <next>
+                                <block type="r20_colrow_n">
+                    <field name="N">5</field>
+                    <statement name="CONTENT">
+                                        <block type="r20_fieldset">
+                        <field name="CLASS">stat</field>
+                        <statement name="CONTENT">
+                                                <block type="r20_label">
+                            <field name="TEXT">Cool</field>
+                            <next>
+                                                        <block type="r20_number_input">
+                                <field name="NAME">cool</field>
+                                <field name="CLASS">stat-score</field>
+                                <field name="MIN">-3</field>
+                                <field name="MAX">3</field>
+                                <field name="DEFAULT">+1</field>
+                              </block>
+                            </next>
+                          </block>
+                        </statement>
+                        <next>
+                                                <block type="r20_fieldset">
+                            <field name="CLASS">stat</field>
+                            <statement name="CONTENT">
+                                                        <block type="r20_label">
+                                <field name="TEXT">Hard</field>
+                                <next>
+                                                                <block type="r20_number_input">
+                                    <field name="NAME">hard</field>
+                                    <field name="CLASS">stat-score</field>
+                                    <field name="MIN">-3</field>
+                                    <field name="MAX">3</field>
+                                    <field name="DEFAULT">+0</field>
+                                  </block>
+                                </next>
+                              </block>
+                            </statement>
+                            <next>
+                                                        <block type="r20_fieldset">
+                                <field name="CLASS">stat</field>
+                                <statement name="CONTENT">
+                                                                <block type="r20_label">
+                                    <field name="TEXT">Hot</field>
+                                    <next>
+                                                                        <block type="r20_number_input">
+                                        <field name="NAME">hot</field>
+                                        <field name="CLASS">stat-score</field>
+                                        <field name="MIN">-3</field>
+                                        <field name="MAX">3</field>
+                                        <field name="DEFAULT">+1</field>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </statement>
+                                <next>
+                                                                <block type="r20_fieldset">
+                                    <field name="CLASS">stat</field>
+                                    <statement name="CONTENT">
+                                                                        <block type="r20_label">
+                                        <field name="TEXT">Sharp</field>
+                                        <next>
+                                                                                <block type="r20_number_input">
+                                            <field name="NAME">sharp</field>
+                                            <field name="CLASS">stat-score</field>
+                                            <field name="MIN">-3</field>
+                                            <field name="MAX">3</field>
+                                            <field name="DEFAULT">+0</field>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </statement>
+                                    <next>
+                                                                        <block type="r20_fieldset">
+                                        <field name="CLASS">stat</field>
+                                        <statement name="CONTENT">
+                                                                                <block type="r20_label">
+                                            <field name="TEXT">Weird</field>
+                                            <next>
+                                                                                        <block type="r20_number_input">
+                                                <field name="NAME">weird</field>
+                                                <field name="CLASS">stat-score</field>
+                                                <field name="MIN">-3</field>
+                                                <field name="MAX">3</field>
+                                                <field name="DEFAULT">-1</field>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </statement>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </next>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </statement>
+                  </block>
+                </next>
+              </block>
+            </statement>
+            <next>
+                        <block type="r20_section_wrap">
+                <field name="NAME">harm</field>
+                <statement name="CONTENT">
+                                <block type="r20_heading">
+                    <field name="LEVEL">2</field>
+                    <field name="TEXT">Harm Clock</field>
+                    <field name="CLASS">sec-heading</field>
+                    <next>
+                                        <block type="r20_static_text">
+                        <field name="TEXT">Damage accumulates as filled boxes — narrative state, not HP.</field>
+                        <field name="CLASS">section-help</field>
+                        <next>
+                                                <block type="r20_colrow_n">
+                            <field name="N">5</field>
+                            <statement name="CONTENT">
+                                                        <block type="r20_fieldset">
+                                <field name="CLASS">harm-step</field>
+                                <statement name="CONTENT">
+                                                                <block type="r20_label">
+                                    <field name="TEXT">Faint (-1 ongoing)</field>
+                                    <next>
+                                                                        <block type="r20_checkbox">
+                                        <field name="NAME">harm_faint</field>
+                                        <field name="CLASS">harm-box</field>
+                                        <field name="CHECKED">FALSE</field>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </statement>
+                                <next>
+                                                                <block type="r20_fieldset">
+                                    <field name="CLASS">harm-step</field>
+                                    <statement name="CONTENT">
+                                                                        <block type="r20_label">
+                                        <field name="TEXT">Injured</field>
+                                        <next>
+                                                                                <block type="r20_checkbox">
+                                            <field name="NAME">harm_injured</field>
+                                            <field name="CLASS">harm-box</field>
+                                            <field name="CHECKED">FALSE</field>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </statement>
+                                    <next>
+                                                                        <block type="r20_fieldset">
+                                        <field name="CLASS">harm-step</field>
+                                        <statement name="CONTENT">
+                                                                                <block type="r20_label">
+                                            <field name="TEXT">Maimed</field>
+                                            <next>
+                                                                                        <block type="r20_checkbox">
+                                                <field name="NAME">harm_maimed</field>
+                                                <field name="CLASS">harm-box</field>
+                                                <field name="CHECKED">FALSE</field>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </statement>
+                                        <next>
+                                                                                <block type="r20_fieldset">
+                                            <field name="CLASS">harm-step</field>
+                                            <statement name="CONTENT">
+                                                                                        <block type="r20_label">
+                                                <field name="TEXT">Crippled</field>
+                                                <next>
+                                                                                                <block type="r20_checkbox">
+                                                    <field name="NAME">harm_crippled</field>
+                                                    <field name="CLASS">harm-box</field>
+                                                    <field name="CHECKED">FALSE</field>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </statement>
+                                            <next>
+                                                                                        <block type="r20_fieldset">
+                                                <field name="CLASS">harm-step</field>
+                                                <statement name="CONTENT">
+                                                                                                <block type="r20_label">
+                                                    <field name="TEXT">Dying</field>
+                                                    <next>
+                                                                                                        <block type="r20_checkbox">
+                                                        <field name="NAME">harm_dying</field>
+                                                        <field name="CLASS">harm-box</field>
+                                                        <field name="CHECKED">FALSE</field>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </statement>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </next>
+                              </block>
+                            </statement>
+                            <next>
+                                                        <block type="r20_colrow_n">
+                                <field name="N">2</field>
+                                <statement name="CONTENT">
+                                                                <block type="r20_fieldset">
+                                    <field name="CLASS">stress-cell</field>
+                                    <statement name="CONTENT">
+                                                                        <block type="r20_label">
+                                        <field name="TEXT">Stress (debility tokens)</field>
+                                        <next>
+                                                                                <block type="r20_number_input">
+                                            <field name="NAME">stress</field>
+                                            <field name="CLASS">stress-score</field>
+                                            <field name="MIN">0</field>
+                                            <field name="MAX">20</field>
+                                            <field name="DEFAULT">0</field>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </statement>
+                                    <next>
+                                                                        <block type="r20_fieldset">
+                                        <field name="CLASS">stress-cell</field>
+                                        <statement name="CONTENT">
+                                                                                <block type="r20_label">
+                                            <field name="TEXT">Armor</field>
+                                            <next>
+                                                                                        <block type="r20_number_input">
+                                                <field name="NAME">armor</field>
+                                                <field name="CLASS">armor-score</field>
+                                                <field name="MIN">0</field>
+                                                <field name="MAX">4</field>
+                                                <field name="DEFAULT">1</field>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </statement>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </statement>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </statement>
+                <next>
+                                <block type="r20_section_wrap">
+                    <field name="NAME">moves</field>
+                    <statement name="CONTENT">
+                                        <block type="r20_heading">
+                        <field name="LEVEL">2</field>
+                        <field name="TEXT">Moves</field>
+                        <field name="CLASS">sec-heading</field>
+                        <next>
+                                                <block type="r20_fieldset">
+                            <field name="CLASS">move</field>
+                            <statement name="CONTENT">
+                                                        <block type="r20_heading">
+                                <field name="LEVEL">3</field>
+                                <field name="TEXT">Act Under Fire</field>
+                                <field name="CLASS">move-name</field>
+                                <next>
+                                                                <block type="r20_static_text">
+                                    <field name="TEXT">When you do something risky under pressure, roll +Cool.</field>
+                                    <field name="CLASS">move-desc</field>
+                                    <next>
+                                                                        <block type="r20_label">
+                                        <field name="TEXT">stat</field>
+                                        <next>
+                                                                                <block type="r20_select">
+                                            <field name="NAME">act_under_fire_stat</field>
+                                            <field name="CLASS">move-stat-picker</field>
+                                            <statement name="OPTIONS">
+                                                                                        <block type="r20_select_option">
+                                                <field name="VALUE">cool</field>
+                                                <field name="LABEL">Cool</field>
+                                                <next>
+                                                                                                <block type="r20_select_option">
+                                                    <field name="VALUE">hard</field>
+                                                    <field name="LABEL">Hard</field>
+                                                    <next>
+                                                                                                        <block type="r20_select_option">
+                                                        <field name="VALUE">hot</field>
+                                                        <field name="LABEL">Hot</field>
+                                                        <next>
+                                                                                                                <block type="r20_select_option">
+                                                            <field name="VALUE">sharp</field>
+                                                            <field name="LABEL">Sharp</field>
+                                                            <next>
+                                                                                                                        <block type="r20_select_option">
+                                                                <field name="VALUE">weird</field>
+                                                                <field name="LABEL">Weird</field>
+                                                                <next>
+                                                                                                                                <block type="r20_select_option">
+                                                                    <field name="VALUE">hx</field>
+                                                                    <field name="LABEL">Hx</field>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </statement>
+                                            <next>
+                                                                                        <block type="r20_roll_button">
+                                                <field name="NAME">act_under_fire</field>
+                                                <field name="LABEL">2d6 + stat</field>
+                                                <field name="CLASS">move-roll</field>
+                                                <value name="EXPR">
+                                                                                                <block type="r20_arith_op">
+                                                    <field name="OP">+</field>
+                                                    <value name="LHS">
+                                                                                                        <block type="r20_dice_expr">
+                                                        <value name="COUNT">
+                                                                                                                <block type="r20_literal_number">
+                                                            <field name="NUM">2</field>
+                                                          </block>
+                                                        </value>
+                                                        <value name="SIDES">
+                                                                                                                <block type="r20_literal_number">
+                                                            <field name="NUM">6</field>
+                                                          </block>
+                                                        </value>
+                                                      </block>
+                                                    </value>
+                                                    <value name="RHS">
+                                                                                                        <block type="r20_attr_ref">
+                                                        <field name="NAME">act_under_fire_stat</field>
+                                                      </block>
+                                                    </value>
+                                                  </block>
+                                                </value>
+                                                <next>
+                                                                                                <block type="r20_colrow_n">
+                                                    <field name="N">3</field>
+                                                    <statement name="CONTENT">
+                                                                                                        <block type="r20_static_text">
+                                                        <field name="TEXT">10+ : Clean Success</field>
+                                                        <field name="CLASS">tier tier-strong</field>
+                                                        <next>
+                                                                                                                <block type="r20_static_text">
+                                                            <field name="TEXT">7-9 : Partial / Cost</field>
+                                                            <field name="CLASS">tier tier-mixed</field>
+                                                            <next>
+                                                                                                                        <block type="r20_static_text">
+                                                                <field name="TEXT">6- : Miss / GM Move</field>
+                                                                <field name="CLASS">tier tier-miss</field>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </statement>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </next>
+                              </block>
+                            </statement>
+                            <next>
+                                                        <block type="r20_fieldset">
+                                <field name="CLASS">move</field>
+                                <statement name="CONTENT">
+                                                                <block type="r20_heading">
+                                    <field name="LEVEL">3</field>
+                                    <field name="TEXT">Go Aggro</field>
+                                    <field name="CLASS">move-name</field>
+                                    <next>
+                                                                        <block type="r20_static_text">
+                                        <field name="TEXT">When you threaten violence to make them do what you want, roll +Hard.</field>
+                                        <field name="CLASS">move-desc</field>
+                                        <next>
+                                                                                <block type="r20_label">
+                                            <field name="TEXT">stat</field>
+                                            <next>
+                                                                                        <block type="r20_select">
+                                                <field name="NAME">go_aggro_stat</field>
+                                                <field name="CLASS">move-stat-picker</field>
+                                                <statement name="OPTIONS">
+                                                                                                <block type="r20_select_option">
+                                                    <field name="VALUE">cool</field>
+                                                    <field name="LABEL">Cool</field>
+                                                    <next>
+                                                                                                        <block type="r20_select_option">
+                                                        <field name="VALUE">hard</field>
+                                                        <field name="LABEL">Hard</field>
+                                                        <next>
+                                                                                                                <block type="r20_select_option">
+                                                            <field name="VALUE">hot</field>
+                                                            <field name="LABEL">Hot</field>
+                                                            <next>
+                                                                                                                        <block type="r20_select_option">
+                                                                <field name="VALUE">sharp</field>
+                                                                <field name="LABEL">Sharp</field>
+                                                                <next>
+                                                                                                                                <block type="r20_select_option">
+                                                                    <field name="VALUE">weird</field>
+                                                                    <field name="LABEL">Weird</field>
+                                                                    <next>
+                                                                                                                                        <block type="r20_select_option">
+                                                                        <field name="VALUE">hx</field>
+                                                                        <field name="LABEL">Hx</field>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </statement>
+                                                <next>
+                                                                                                <block type="r20_roll_button">
+                                                    <field name="NAME">go_aggro</field>
+                                                    <field name="LABEL">2d6 + stat</field>
+                                                    <field name="CLASS">move-roll</field>
+                                                    <value name="EXPR">
+                                                                                                        <block type="r20_arith_op">
+                                                        <field name="OP">+</field>
+                                                        <value name="LHS">
+                                                                                                                <block type="r20_dice_expr">
+                                                            <value name="COUNT">
+                                                                                                                        <block type="r20_literal_number">
+                                                                <field name="NUM">2</field>
+                                                              </block>
+                                                            </value>
+                                                            <value name="SIDES">
+                                                                                                                        <block type="r20_literal_number">
+                                                                <field name="NUM">6</field>
+                                                              </block>
+                                                            </value>
+                                                          </block>
+                                                        </value>
+                                                        <value name="RHS">
+                                                                                                                <block type="r20_attr_ref">
+                                                            <field name="NAME">go_aggro_stat</field>
+                                                          </block>
+                                                        </value>
+                                                      </block>
+                                                    </value>
+                                                    <next>
+                                                                                                        <block type="r20_colrow_n">
+                                                        <field name="N">3</field>
+                                                        <statement name="CONTENT">
+                                                                                                                <block type="r20_static_text">
+                                                            <field name="TEXT">10+ : Clean Success</field>
+                                                            <field name="CLASS">tier tier-strong</field>
+                                                            <next>
+                                                                                                                        <block type="r20_static_text">
+                                                                <field name="TEXT">7-9 : Partial / Cost</field>
+                                                                <field name="CLASS">tier tier-mixed</field>
+                                                                <next>
+                                                                                                                                <block type="r20_static_text">
+                                                                    <field name="TEXT">6- : Miss / GM Move</field>
+                                                                    <field name="CLASS">tier tier-miss</field>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </statement>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </statement>
+                                <next>
+                                                                <block type="r20_fieldset">
+                                    <field name="CLASS">move</field>
+                                    <statement name="CONTENT">
+                                                                        <block type="r20_heading">
+                                        <field name="LEVEL">3</field>
+                                        <field name="TEXT">Seduce / Manipulate</field>
+                                        <field name="CLASS">move-name</field>
+                                        <next>
+                                                                                <block type="r20_static_text">
+                                            <field name="TEXT">When you use leverage on an NPC, roll +Hot.</field>
+                                            <field name="CLASS">move-desc</field>
+                                            <next>
+                                                                                        <block type="r20_label">
+                                                <field name="TEXT">stat</field>
+                                                <next>
+                                                                                                <block type="r20_select">
+                                                    <field name="NAME">seduce_manipulate_stat</field>
+                                                    <field name="CLASS">move-stat-picker</field>
+                                                    <statement name="OPTIONS">
+                                                                                                        <block type="r20_select_option">
+                                                        <field name="VALUE">cool</field>
+                                                        <field name="LABEL">Cool</field>
+                                                        <next>
+                                                                                                                <block type="r20_select_option">
+                                                            <field name="VALUE">hard</field>
+                                                            <field name="LABEL">Hard</field>
+                                                            <next>
+                                                                                                                        <block type="r20_select_option">
+                                                                <field name="VALUE">hot</field>
+                                                                <field name="LABEL">Hot</field>
+                                                                <next>
+                                                                                                                                <block type="r20_select_option">
+                                                                    <field name="VALUE">sharp</field>
+                                                                    <field name="LABEL">Sharp</field>
+                                                                    <next>
+                                                                                                                                        <block type="r20_select_option">
+                                                                        <field name="VALUE">weird</field>
+                                                                        <field name="LABEL">Weird</field>
+                                                                        <next>
+                                                                                                                                                <block type="r20_select_option">
+                                                                            <field name="VALUE">hx</field>
+                                                                            <field name="LABEL">Hx</field>
+                                                                          </block>
+                                                                        </next>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </statement>
+                                                    <next>
+                                                                                                        <block type="r20_roll_button">
+                                                        <field name="NAME">seduce_manipulate</field>
+                                                        <field name="LABEL">2d6 + stat</field>
+                                                        <field name="CLASS">move-roll</field>
+                                                        <value name="EXPR">
+                                                                                                                <block type="r20_arith_op">
+                                                            <field name="OP">+</field>
+                                                            <value name="LHS">
+                                                                                                                        <block type="r20_dice_expr">
+                                                                <value name="COUNT">
+                                                                                                                                <block type="r20_literal_number">
+                                                                    <field name="NUM">2</field>
+                                                                  </block>
+                                                                </value>
+                                                                <value name="SIDES">
+                                                                                                                                <block type="r20_literal_number">
+                                                                    <field name="NUM">6</field>
+                                                                  </block>
+                                                                </value>
+                                                              </block>
+                                                            </value>
+                                                            <value name="RHS">
+                                                                                                                        <block type="r20_attr_ref">
+                                                                <field name="NAME">seduce_manipulate_stat</field>
+                                                              </block>
+                                                            </value>
+                                                          </block>
+                                                        </value>
+                                                        <next>
+                                                                                                                <block type="r20_colrow_n">
+                                                            <field name="N">3</field>
+                                                            <statement name="CONTENT">
+                                                                                                                        <block type="r20_static_text">
+                                                                <field name="TEXT">10+ : Clean Success</field>
+                                                                <field name="CLASS">tier tier-strong</field>
+                                                                <next>
+                                                                                                                                <block type="r20_static_text">
+                                                                    <field name="TEXT">7-9 : Partial / Cost</field>
+                                                                    <field name="CLASS">tier tier-mixed</field>
+                                                                    <next>
+                                                                                                                                        <block type="r20_static_text">
+                                                                        <field name="TEXT">6- : Miss / GM Move</field>
+                                                                        <field name="CLASS">tier tier-miss</field>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </statement>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </statement>
+                                    <next>
+                                                                        <block type="r20_fieldset">
+                                        <field name="CLASS">move</field>
+                                        <statement name="CONTENT">
+                                                                                <block type="r20_heading">
+                                            <field name="LEVEL">3</field>
+                                            <field name="TEXT">Read a Situation</field>
+                                            <field name="CLASS">move-name</field>
+                                            <next>
+                                                                                        <block type="r20_static_text">
+                                                <field name="TEXT">When you size up a tense scene, roll +Sharp.</field>
+                                                <field name="CLASS">move-desc</field>
+                                                <next>
+                                                                                                <block type="r20_label">
+                                                    <field name="TEXT">stat</field>
+                                                    <next>
+                                                                                                        <block type="r20_select">
+                                                        <field name="NAME">read_situation_stat</field>
+                                                        <field name="CLASS">move-stat-picker</field>
+                                                        <statement name="OPTIONS">
+                                                                                                                <block type="r20_select_option">
+                                                            <field name="VALUE">cool</field>
+                                                            <field name="LABEL">Cool</field>
+                                                            <next>
+                                                                                                                        <block type="r20_select_option">
+                                                                <field name="VALUE">hard</field>
+                                                                <field name="LABEL">Hard</field>
+                                                                <next>
+                                                                                                                                <block type="r20_select_option">
+                                                                    <field name="VALUE">hot</field>
+                                                                    <field name="LABEL">Hot</field>
+                                                                    <next>
+                                                                                                                                        <block type="r20_select_option">
+                                                                        <field name="VALUE">sharp</field>
+                                                                        <field name="LABEL">Sharp</field>
+                                                                        <next>
+                                                                                                                                                <block type="r20_select_option">
+                                                                            <field name="VALUE">weird</field>
+                                                                            <field name="LABEL">Weird</field>
+                                                                            <next>
+                                                                                                                                                        <block type="r20_select_option">
+                                                                                <field name="VALUE">hx</field>
+                                                                                <field name="LABEL">Hx</field>
+                                                                              </block>
+                                                                            </next>
+                                                                          </block>
+                                                                        </next>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </statement>
+                                                        <next>
+                                                                                                                <block type="r20_roll_button">
+                                                            <field name="NAME">read_situation</field>
+                                                            <field name="LABEL">2d6 + stat</field>
+                                                            <field name="CLASS">move-roll</field>
+                                                            <value name="EXPR">
+                                                                                                                        <block type="r20_arith_op">
+                                                                <field name="OP">+</field>
+                                                                <value name="LHS">
+                                                                                                                                <block type="r20_dice_expr">
+                                                                    <value name="COUNT">
+                                                                                                                                        <block type="r20_literal_number">
+                                                                        <field name="NUM">2</field>
+                                                                      </block>
+                                                                    </value>
+                                                                    <value name="SIDES">
+                                                                                                                                        <block type="r20_literal_number">
+                                                                        <field name="NUM">6</field>
+                                                                      </block>
+                                                                    </value>
+                                                                  </block>
+                                                                </value>
+                                                                <value name="RHS">
+                                                                                                                                <block type="r20_attr_ref">
+                                                                    <field name="NAME">read_situation_stat</field>
+                                                                  </block>
+                                                                </value>
+                                                              </block>
+                                                            </value>
+                                                            <next>
+                                                                                                                        <block type="r20_colrow_n">
+                                                                <field name="N">3</field>
+                                                                <statement name="CONTENT">
+                                                                                                                                <block type="r20_static_text">
+                                                                    <field name="TEXT">10+ : Clean Success</field>
+                                                                    <field name="CLASS">tier tier-strong</field>
+                                                                    <next>
+                                                                                                                                        <block type="r20_static_text">
+                                                                        <field name="TEXT">7-9 : Partial / Cost</field>
+                                                                        <field name="CLASS">tier tier-mixed</field>
+                                                                        <next>
+                                                                                                                                                <block type="r20_static_text">
+                                                                            <field name="TEXT">6- : Miss / GM Move</field>
+                                                                            <field name="CLASS">tier tier-miss</field>
+                                                                          </block>
+                                                                        </next>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </statement>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </statement>
+                                        <next>
+                                                                                <block type="r20_fieldset">
+                                            <field name="CLASS">move</field>
+                                            <statement name="CONTENT">
+                                                                                        <block type="r20_heading">
+                                                <field name="LEVEL">3</field>
+                                                <field name="TEXT">Open Your Brain</field>
+                                                <field name="CLASS">move-name</field>
+                                                <next>
+                                                                                                <block type="r20_static_text">
+                                                    <field name="TEXT">When you open your mind to the strangeness, roll +Weird.</field>
+                                                    <field name="CLASS">move-desc</field>
+                                                    <next>
+                                                                                                        <block type="r20_label">
+                                                        <field name="TEXT">stat</field>
+                                                        <next>
+                                                                                                                <block type="r20_select">
+                                                            <field name="NAME">open_brain_stat</field>
+                                                            <field name="CLASS">move-stat-picker</field>
+                                                            <statement name="OPTIONS">
+                                                                                                                        <block type="r20_select_option">
+                                                                <field name="VALUE">cool</field>
+                                                                <field name="LABEL">Cool</field>
+                                                                <next>
+                                                                                                                                <block type="r20_select_option">
+                                                                    <field name="VALUE">hard</field>
+                                                                    <field name="LABEL">Hard</field>
+                                                                    <next>
+                                                                                                                                        <block type="r20_select_option">
+                                                                        <field name="VALUE">hot</field>
+                                                                        <field name="LABEL">Hot</field>
+                                                                        <next>
+                                                                                                                                                <block type="r20_select_option">
+                                                                            <field name="VALUE">sharp</field>
+                                                                            <field name="LABEL">Sharp</field>
+                                                                            <next>
+                                                                                                                                                        <block type="r20_select_option">
+                                                                                <field name="VALUE">weird</field>
+                                                                                <field name="LABEL">Weird</field>
+                                                                                <next>
+                                                                                                                                                                <block type="r20_select_option">
+                                                                                    <field name="VALUE">hx</field>
+                                                                                    <field name="LABEL">Hx</field>
+                                                                                  </block>
+                                                                                </next>
+                                                                              </block>
+                                                                            </next>
+                                                                          </block>
+                                                                        </next>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </statement>
+                                                            <next>
+                                                                                                                        <block type="r20_roll_button">
+                                                                <field name="NAME">open_brain</field>
+                                                                <field name="LABEL">2d6 + stat</field>
+                                                                <field name="CLASS">move-roll</field>
+                                                                <value name="EXPR">
+                                                                                                                                <block type="r20_arith_op">
+                                                                    <field name="OP">+</field>
+                                                                    <value name="LHS">
+                                                                                                                                        <block type="r20_dice_expr">
+                                                                        <value name="COUNT">
+                                                                                                                                                <block type="r20_literal_number">
+                                                                            <field name="NUM">2</field>
+                                                                          </block>
+                                                                        </value>
+                                                                        <value name="SIDES">
+                                                                                                                                                <block type="r20_literal_number">
+                                                                            <field name="NUM">6</field>
+                                                                          </block>
+                                                                        </value>
+                                                                      </block>
+                                                                    </value>
+                                                                    <value name="RHS">
+                                                                                                                                        <block type="r20_attr_ref">
+                                                                        <field name="NAME">open_brain_stat</field>
+                                                                      </block>
+                                                                    </value>
+                                                                  </block>
+                                                                </value>
+                                                                <next>
+                                                                                                                                <block type="r20_colrow_n">
+                                                                    <field name="N">3</field>
+                                                                    <statement name="CONTENT">
+                                                                                                                                        <block type="r20_static_text">
+                                                                        <field name="TEXT">10+ : Clean Success</field>
+                                                                        <field name="CLASS">tier tier-strong</field>
+                                                                        <next>
+                                                                                                                                                <block type="r20_static_text">
+                                                                            <field name="TEXT">7-9 : Partial / Cost</field>
+                                                                            <field name="CLASS">tier tier-mixed</field>
+                                                                            <next>
+                                                                                                                                                        <block type="r20_static_text">
+                                                                                <field name="TEXT">6- : Miss / GM Move</field>
+                                                                                <field name="CLASS">tier tier-miss</field>
+                                                                              </block>
+                                                                            </next>
+                                                                          </block>
+                                                                        </next>
+                                                                      </block>
+                                                                    </statement>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </statement>
+                                            <next>
+                                                                                        <block type="r20_fieldset">
+                                                <field name="CLASS">move</field>
+                                                <statement name="CONTENT">
+                                                                                                <block type="r20_heading">
+                                                    <field name="LEVEL">3</field>
+                                                    <field name="TEXT">Help or Interfere</field>
+                                                    <field name="CLASS">move-name</field>
+                                                    <next>
+                                                                                                        <block type="r20_static_text">
+                                                        <field name="TEXT">When you help or interfere with someone, roll +Hx.</field>
+                                                        <field name="CLASS">move-desc</field>
+                                                        <next>
+                                                                                                                <block type="r20_label">
+                                                            <field name="TEXT">stat</field>
+                                                            <next>
+                                                                                                                        <block type="r20_select">
+                                                                <field name="NAME">help_interfere_stat</field>
+                                                                <field name="CLASS">move-stat-picker</field>
+                                                                <statement name="OPTIONS">
+                                                                                                                                <block type="r20_select_option">
+                                                                    <field name="VALUE">cool</field>
+                                                                    <field name="LABEL">Cool</field>
+                                                                    <next>
+                                                                                                                                        <block type="r20_select_option">
+                                                                        <field name="VALUE">hard</field>
+                                                                        <field name="LABEL">Hard</field>
+                                                                        <next>
+                                                                                                                                                <block type="r20_select_option">
+                                                                            <field name="VALUE">hot</field>
+                                                                            <field name="LABEL">Hot</field>
+                                                                            <next>
+                                                                                                                                                        <block type="r20_select_option">
+                                                                                <field name="VALUE">sharp</field>
+                                                                                <field name="LABEL">Sharp</field>
+                                                                                <next>
+                                                                                                                                                                <block type="r20_select_option">
+                                                                                    <field name="VALUE">weird</field>
+                                                                                    <field name="LABEL">Weird</field>
+                                                                                    <next>
+                                                                                                                                                                        <block type="r20_select_option">
+                                                                                        <field name="VALUE">hx</field>
+                                                                                        <field name="LABEL">Hx</field>
+                                                                                      </block>
+                                                                                    </next>
+                                                                                  </block>
+                                                                                </next>
+                                                                              </block>
+                                                                            </next>
+                                                                          </block>
+                                                                        </next>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </statement>
+                                                                <next>
+                                                                                                                                <block type="r20_roll_button">
+                                                                    <field name="NAME">help_interfere</field>
+                                                                    <field name="LABEL">2d6 + stat</field>
+                                                                    <field name="CLASS">move-roll</field>
+                                                                    <value name="EXPR">
+                                                                                                                                        <block type="r20_arith_op">
+                                                                        <field name="OP">+</field>
+                                                                        <value name="LHS">
+                                                                                                                                                <block type="r20_dice_expr">
+                                                                            <value name="COUNT">
+                                                                                                                                                        <block type="r20_literal_number">
+                                                                                <field name="NUM">2</field>
+                                                                              </block>
+                                                                            </value>
+                                                                            <value name="SIDES">
+                                                                                                                                                        <block type="r20_literal_number">
+                                                                                <field name="NUM">6</field>
+                                                                              </block>
+                                                                            </value>
+                                                                          </block>
+                                                                        </value>
+                                                                        <value name="RHS">
+                                                                                                                                                <block type="r20_attr_ref">
+                                                                            <field name="NAME">help_interfere_stat</field>
+                                                                          </block>
+                                                                        </value>
+                                                                      </block>
+                                                                    </value>
+                                                                    <next>
+                                                                                                                                        <block type="r20_colrow_n">
+                                                                        <field name="N">3</field>
+                                                                        <statement name="CONTENT">
+                                                                                                                                                <block type="r20_static_text">
+                                                                            <field name="TEXT">10+ : Clean Success</field>
+                                                                            <field name="CLASS">tier tier-strong</field>
+                                                                            <next>
+                                                                                                                                                        <block type="r20_static_text">
+                                                                                <field name="TEXT">7-9 : Partial / Cost</field>
+                                                                                <field name="CLASS">tier tier-mixed</field>
+                                                                                <next>
+                                                                                                                                                                <block type="r20_static_text">
+                                                                                    <field name="TEXT">6- : Miss / GM Move</field>
+                                                                                    <field name="CLASS">tier tier-miss</field>
+                                                                                  </block>
+                                                                                </next>
+                                                                              </block>
+                                                                            </next>
+                                                                          </block>
+                                                                        </statement>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </statement>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </next>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </statement>
+                    <next>
+                                        <block type="r20_section_wrap">
+                        <field name="NAME">gear</field>
+                        <statement name="CONTENT">
+                                                <block type="r20_heading">
+                            <field name="LEVEL">2</field>
+                            <field name="TEXT">Gear</field>
+                            <field name="CLASS">sec-heading</field>
+                            <next>
+                                                        <block type="r20_static_text">
+                                <field name="TEXT">Gear is tracked by narrative tags — harm/handy/scary etc.</field>
+                                <field name="CLASS">section-help</field>
+                                <next>
+                                                                <block type="r20_repeating_section">
+                                    <field name="NAME">gear</field>
+                                    <statement name="CONTENT">
+                                                                        <block type="r20_repeating_row">
+                                        <statement name="CONTENT">
+                                                                                <block type="r20_text_input">
+                                            <field name="NAME">item_name</field>
+                                            <field name="CLASS">item-name</field>
+                                            <field name="DEFAULT"></field>
+                                            <next>
+                                                                                        <block type="r20_number_input">
+                                                <field name="NAME">item_qty</field>
+                                                <field name="CLASS">item-qty</field>
+                                                <field name="MIN">0</field>
+                                                <field name="MAX">99</field>
+                                                <field name="DEFAULT">1</field>
+                                                <next>
+                                                                                                <block type="r20_text_input">
+                                                    <field name="NAME">item_tags</field>
+                                                    <field name="CLASS">item-tags</field>
+                                                    <field name="DEFAULT"></field>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </statement>
+                                      </block>
+                                    </statement>
+                                  </block>
+                                </next>
+                              </block>
+                            </next>
+                          </block>
+                        </statement>
+                        <next>
+                                                <block type="r20_section_wrap">
+                            <field name="NAME">hx</field>
+                            <statement name="CONTENT">
+                                                        <block type="r20_heading">
+                                <field name="LEVEL">2</field>
+                                <field name="TEXT">Hx (Relationships)</field>
+                                <field name="CLASS">sec-heading</field>
+                                <next>
+                                                                <block type="r20_static_text">
+                                    <field name="TEXT">When Hx hits +4 reset to -1 and tick advancement.</field>
+                                    <field name="CLASS">section-help</field>
+                                    <next>
+                                                                        <block type="r20_repeating_section">
+                                        <field name="NAME">hx</field>
+                                        <statement name="CONTENT">
+                                                                                <block type="r20_repeating_row">
+                                            <statement name="CONTENT">
+                                                                                        <block type="r20_text_input">
+                                                <field name="NAME">hx_target</field>
+                                                <field name="CLASS">hx-target</field>
+                                                <field name="DEFAULT"></field>
+                                                <next>
+                                                                                                <block type="r20_number_input">
+                                                    <field name="NAME">hx_value</field>
+                                                    <field name="CLASS">hx-value</field>
+                                                    <field name="MIN">-3</field>
+                                                    <field name="MAX">4</field>
+                                                    <field name="DEFAULT">0</field>
+                                                    <next>
+                                                                                                        <block type="r20_textarea">
+                                                        <field name="NAME">hx_notes</field>
+                                                        <field name="CLASS">hx-notes</field>
+                                                        <field name="ROWS">2</field>
+                                                        <field name="DEFAULT"></field>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </statement>
+                                          </block>
+                                        </statement>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </next>
+                              </block>
+                            </statement>
+                            <next>
+                                                        <block type="r20_section_wrap">
+                                <field name="NAME">history</field>
+                                <statement name="CONTENT">
+                                                                <block type="r20_heading">
+                                    <field name="LEVEL">2</field>
+                                    <field name="TEXT">History / Backstory</field>
+                                    <field name="CLASS">sec-heading</field>
+                                    <next>
+                                                                        <block type="r20_textarea">
+                                        <field name="NAME">history_intro</field>
+                                        <field name="CLASS">history-area</field>
+                                        <field name="ROWS">4</field>
+                                        <field name="DEFAULT">Where did you come from, and why are you here? A short narrative paragraph.</field>
+                                        <next>
+                                                                                <block type="r20_textarea">
+                                            <field name="NAME">history_truth</field>
+                                            <field name="CLASS">history-area</field>
+                                            <field name="ROWS">3</field>
+                                            <field name="DEFAULT">One secret only one other character knows.</field>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </statement>
+                                <next>
+                                                                <block type="r20_section_wrap">
+                                    <field name="NAME">advancement</field>
+                                    <statement name="CONTENT">
+                                                                        <block type="r20_heading">
+                                        <field name="LEVEL">2</field>
+                                        <field name="TEXT">Advancement</field>
+                                        <field name="CLASS">sec-heading</field>
+                                        <next>
+                                                                                <block type="r20_colrow_n">
+                                            <field name="N">2</field>
+                                            <statement name="CONTENT">
+                                                                                        <block type="r20_fieldset">
+                                                <field name="CLASS">adv-cell</field>
+                                                <statement name="CONTENT">
+                                                                                                <block type="r20_label">
+                                                    <field name="TEXT">Experience</field>
+                                                    <next>
+                                                                                                        <block type="r20_number_input">
+                                                        <field name="NAME">xp</field>
+                                                        <field name="CLASS">xp-score</field>
+                                                        <field name="MIN">0</field>
+                                                        <field name="MAX">20</field>
+                                                        <field name="DEFAULT">0</field>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </statement>
+                                                <next>
+                                                                                                <block type="r20_fieldset">
+                                                    <field name="CLASS">adv-cell</field>
+                                                    <statement name="CONTENT">
+                                                                                                        <block type="r20_label">
+                                                        <field name="TEXT">Progress (5 fills = 1 advance)</field>
+                                                        <next>
+                                                                                                                <block type="r20_colrow_n">
+                                                            <field name="N">5</field>
+                                                            <statement name="CONTENT">
+                                                                                                                        <block type="r20_checkbox">
+                                                                <field name="NAME">adv_1</field>
+                                                                <field name="CLASS">adv-box</field>
+                                                                <field name="CHECKED">FALSE</field>
+                                                                <next>
+                                                                                                                                <block type="r20_checkbox">
+                                                                    <field name="NAME">adv_2</field>
+                                                                    <field name="CLASS">adv-box</field>
+                                                                    <field name="CHECKED">FALSE</field>
+                                                                    <next>
+                                                                                                                                        <block type="r20_checkbox">
+                                                                        <field name="NAME">adv_3</field>
+                                                                        <field name="CLASS">adv-box</field>
+                                                                        <field name="CHECKED">FALSE</field>
+                                                                        <next>
+                                                                                                                                                <block type="r20_checkbox">
+                                                                            <field name="NAME">adv_4</field>
+                                                                            <field name="CLASS">adv-box</field>
+                                                                            <field name="CHECKED">FALSE</field>
+                                                                            <next>
+                                                                                                                                                        <block type="r20_checkbox">
+                                                                                <field name="NAME">adv_5</field>
+                                                                                <field name="CLASS">adv-box</field>
+                                                                                <field name="CHECKED">FALSE</field>
+                                                                              </block>
+                                                                            </next>
+                                                                          </block>
+                                                                        </next>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </statement>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </statement>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </statement>
+                                            <next>
+                                                                                        <block type="r20_textarea">
+                                                <field name="NAME">advance_notes</field>
+                                                <field name="CLASS">adv-notes</field>
+                                                <field name="ROWS">3</field>
+                                                <field name="DEFAULT">Note which advance you took.</field>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </statement>
+                                  </block>
+                                </next>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="r20_attr_ref" x="20" y="620">
+    <field name="NAME">character_name</field>
+  </block>
+</xml>

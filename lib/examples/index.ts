@@ -35,7 +35,9 @@ export interface ExampleDescriptor {
 }
 
 /**
- * V2 검증 sample 1 종. 추후 새 sample 추가 시 본 배열에 entry 추가.
+ * V2 (D&D 5e) + V3 (PbtA narrative) 가상 sample 2 종.
+ * 둘 다 lib/blocks/ generator 변경 0건 — 같은 130-block 카탈로그가 능력치 무거운
+ * 시스템과 narrative 시스템 양쪽을 다 cover 한다는 generality 검증.
  */
 export const EXAMPLES: ExampleDescriptor[] = [
   {
@@ -50,6 +52,19 @@ export const EXAMPLES: ExampleDescriptor[] = [
     i18nXmlPath: 'examples/dnd5e/dnd5e.i18n.xml',
     metaPath: 'examples/dnd5e/dnd5e.meta.json',
     systemTags: ['d20', 'fantasy', 'tabletop', 'dnd'],
+  },
+  {
+    id: 'pbta_narrative',
+    name: 'PbtA Narrative 캐릭터 시트',
+    shortName: 'PbtA Narrative',
+    description:
+      'Cool/Hard/Hot/Sharp/Weird 5 stat + 5단 피해 시계 + 6 무브(2d6+stat) + 장비·Hx 반복 + 내력·성장 (V3 narrative 검증).',
+    icon: '🃏',
+    htmlXmlPath: 'examples/pbta_narrative/pbta.xml',
+    cssXmlPath: 'examples/pbta_narrative/pbta.css.xml',
+    i18nXmlPath: 'examples/pbta_narrative/pbta.i18n.xml',
+    metaPath: 'examples/pbta_narrative/pbta.meta.json',
+    systemTags: ['pbta', 'narrative', 'indie', 'no-stat-system'],
   },
 ];
 
