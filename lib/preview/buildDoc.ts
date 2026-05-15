@@ -30,6 +30,19 @@ export interface BuildDocOptions {
   sanitize?: boolean;
   /** 다크 모드 토큰 부착 — body[data-theme=dark]. */
   darkMode?: boolean;
+  /** spec 17 §9 — 9 레이어 필터. 'all' 이면 dim 없음. */
+  previewLayer?:
+    | 'all'
+    | 'structure'
+    | 'input'
+    | 'roll'
+    | 'text'
+    | 'image'
+    | 'table'
+    | 'repeating'
+    | 'custom';
+  /** spec 17 §8 — 캔버스에서 선택된 위젯 id 와 sync (강조 표시). */
+  selectedWidgetName?: string | null;
 }
 
 /** 미리보기 iframe 안에서 부모창에 클릭 이벤트 전달하는 ES2015 inline 스크립트. */
@@ -108,6 +121,36 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function cssEscape(s) {
     return String(s).replace(/[^\w-]/g, '\\$&');
   }
+  // spec 17 §8 / N3 — name 속성 있는 element hover / click 양방향 sync
+  function widgetNameOf(node) {
+    while (node && node !== document.body) {
+      var dwn = node.getAttribute && node.getAttribute('data-widget-name');
+      if (dwn) return dwn;
+      var nm = node.getAttribute && node.getAttribute('name');
+      if (nm && nm.indexOf('attr_') === 0) return nm.substring(5);
+      node = node.parentNode;
+    }
+    return null;
+  }
+  document.addEventListener('mouseover', function (e) {
+    var n = widgetNameOf(e.target);
+    if (!n) return;
+    try {
+      parent.postMessage({ type: 'r20:widget-hover', widgetName: n }, '*');
+    } catch (err) {}
+    // N3 tooltip — title 으로 보여주기 (이미 widget 의 title 에 attr_ 있을 수도).
+    var el = e.target;
+    if (el && el.setAttribute && !el.getAttribute('title')) {
+      el.setAttribute('title', 'attr_' + n);
+    }
+  }, false);
+  document.addEventListener('mouseout', function (e) {
+    var n = widgetNameOf(e.target);
+    if (!n) return;
+    try {
+      parent.postMessage({ type: 'r20:widget-hover', widgetName: null }, '*');
+    } catch (err) {}
+  }, false);
 })();
 `;
 
@@ -128,12 +171,81 @@ const EMPTY_PLACEHOLDER = `
 </style>
 `;
 
+
+/**
+ * spec 17 §9 — 9 레이어 CSS 필터.
+ * 활성 레이어 element 만 정상 / 나머지는 opacity 0.3 + pointer-events none.
+ *
+ * 모든 룰은 body[data-layer="<id>"] 안에서만 적용.
+ */
+function layerFilterCss(): string {
+  return `
+/* spec 17 §9 — 9 layer filter */
+body[data-layer="structure"] :not(fieldset):not(section):not(div):not(legend):not(.charsheet) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+body[data-layer="input"] *:not(input):not(select):not(textarea):not(label) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+body[data-layer="input"] input,
+body[data-layer="input"] select,
+body[data-layer="input"] textarea,
+body[data-layer="input"] label {
+  opacity: 1;
+  pointer-events: auto;
+}
+body[data-layer="roll"] *:not(button[type="roll"]):not(button.roll) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+body[data-layer="roll"] button[type="roll"],
+body[data-layer="roll"] button.roll {
+  opacity: 1;
+  pointer-events: auto;
+  outline: 2px solid #2563eb;
+}
+body[data-layer="text"] :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(p):not(span):not(label) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+body[data-layer="image"] :not(img) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+body[data-layer="image"] img {
+  outline: 2px solid #2563eb;
+}
+body[data-layer="table"] :not(table):not(thead):not(tbody):not(tr):not(td):not(th) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+body[data-layer="repeating"] :not([data-rfh]):not([data-rfh] *) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+body[data-layer="custom"] :not([class]) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* spec 17 §8 — 캔버스에서 선택된 위젯 강조 */
+body [data-widget-name="__SELECTED__"],
+body [name^="attr_"][data-r20-selected="1"] {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+}
+`;
+}
+
 /**
  * iframe srcdoc 합성. 결과는 그대로 `<iframe srcDoc>` 에 박는다.
  */
 export function buildSheetDoc(opts: BuildDocOptions): string {
   const sanitize = opts.sanitize !== false; // default ON
   const darkMode = opts.darkMode === true;
+  const layer = opts.previewLayer ?? 'all';
 
   const userHtml = (opts.html ?? '').trim();
   const userCss = (opts.css ?? '').trim();
@@ -150,9 +262,10 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>시트 미리보기</title>
 <style>${runtimeCss}</style>
+<style>${layerFilterCss()}</style>
 <style>${prefixedCss}</style>
 </head>
-<body${darkMode ? ' data-theme="dark"' : ''}>
+<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}">
 <div class="charsheet">
 ${bodyInner}
 </div>

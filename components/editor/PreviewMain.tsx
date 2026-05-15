@@ -54,6 +54,9 @@ export default function PreviewMain() {
   const sanitize = usePreviewStore((s) => s.sanitize);
   const sandbox = usePreviewStore((s) => s.iframeSandbox);
   const zoom = useUiStore((s) => s.previewZoom);
+  const previewLayer = useUiStore((s) => s.previewLayer);
+  const setHoveredWidgetId = useUiStore((s) => s.setHoveredWidgetId);
+  const setSelectedWidgetId = useUiStore((s) => s.setSelectedWidgetId);
   const [dragOver, setDragOver] = useState(false);
 
   const total = htmlCount + cssCount + i18nCount;
@@ -62,7 +65,7 @@ export default function PreviewMain() {
 
   // emit + buildDoc — 500ms 디바운스. xmlCache 가 store 에 박힐 때마다 재계산.
   const [srcdoc, setSrcdoc] = useState<string>(() =>
-    buildSheetDoc({ html: '', css: '', sanitize, darkMode }),
+    buildSheetDoc({ html: '', css: '', sanitize, darkMode, previewLayer }),
   );
 
   useEffect(() => {
@@ -81,12 +84,13 @@ export default function PreviewMain() {
         i18n: result.i18n,
         sanitize,
         darkMode,
+        previewLayer,
       });
       setSrcdoc(doc);
     }, 500);
     return () => window.clearTimeout(handle);
     // sanitize / darkMode 변경 시 즉시 재emit 도 동일 path.
-  }, [htmlXml, cssXml, i18nXml, sanitize, darkMode, setEmitCache, setEmitWarnings]);
+  }, [htmlXml, cssXml, i18nXml, sanitize, darkMode, previewLayer, setEmitCache, setEmitWarnings]);
 
   // 미리보기 → 우측 인스펙터 sync + 굴림 결과 채팅 박음 (postMessage).
   useEffect(() => {
@@ -95,6 +99,31 @@ export default function PreviewMain() {
       const data = e.data;
       if (data?.type === 'r20:select' && typeof data.blockId === 'string') {
         setSelected(data.blockId, 'preview');
+        return;
+      }
+      // spec 17 §8 + N3 — widget hover/click (양방향 sync 간단)
+      if (data?.type === 'r20:widget-hover') {
+        const widgetName: string | null = data.widgetName ?? null;
+        if (widgetName == null) {
+          setHoveredWidgetId(null);
+          return;
+        }
+        // 현 캔버스에서 같은 name 의 위젯 찾아 hover 표시
+        const ws = useWorkspaceStore.getState();
+        const tgt = useUiStore.getState().editSubmode === 'sheet' ? 'sheet' : 'rolltemplate';
+        const list = tgt === 'sheet' ? ws.sheetWidgets : ws.rolltemplateWidgets;
+        const w = list.find((x) => (x.attrs.name as string | undefined) === widgetName);
+        setHoveredWidgetId(w?.id ?? null);
+        return;
+      }
+      if (data?.type === 'r20:widget-click') {
+        const widgetName: string | undefined = data.widgetName;
+        if (!widgetName) return;
+        const ws = useWorkspaceStore.getState();
+        const tgt = useUiStore.getState().editSubmode === 'sheet' ? 'sheet' : 'rolltemplate';
+        const list = tgt === 'sheet' ? ws.sheetWidgets : ws.rolltemplateWidgets;
+        const w = list.find((x) => (x.attrs.name as string | undefined) === widgetName);
+        if (w) setSelectedWidgetId(w.id);
         return;
       }
       if (data?.type === 'r20:roll') {
