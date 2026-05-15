@@ -19,6 +19,7 @@ export const runtimeCss = String.raw`
 html, body {
   margin: 0;
   padding: 0;
+  min-height: 100vh;
   background: var(--r20-bg, #ffffff);
   color: var(--r20-fg, #1f2328);
   font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system,

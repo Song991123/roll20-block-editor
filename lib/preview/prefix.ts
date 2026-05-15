@@ -27,10 +27,10 @@ function isReservedClassToken(token: string): boolean {
 }
 
 /** `class="..."` / `class='...'` 매처. */
-const CLASS_ATTR_RE = /\bclass\s*=\s*(["'])((?:(?!\1).)*)\1/g;
+const CLASS_ATTR_RE = /(?<=\s)class\s*=\s*(["'])((?:(?!\1).)*)\1/g;
 
 /** `id="..."` / `id='...'`. */
-const ID_ATTR_RE = /\bid\s*=\s*(["'])((?:(?!\1).)*)\1/g;
+const ID_ATTR_RE = /(?<=\s)id\s*=\s*(["'])((?:(?!\1).)*)\1/g;
 
 /** `<style>...</style>` 매처 — multiline. */
 const STYLE_TAG_RE = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
