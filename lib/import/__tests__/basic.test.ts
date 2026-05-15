@@ -84,6 +84,54 @@ function testCoverageStat(): void {
   assert(r.stats.coverage > 90, `coverage should be >90, got ${r.stats.coverage}`);
 }
 
+
+function testInlineBoldB(): void {
+  const html = `<b>x</b>`;
+  const r = importSheet({ html });
+  assert(r.stats.htmlMatched >= 1, '<b> should match');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for <b>');
+  assert(r.html.includes('r20_inline_bold'), 'r20_inline_bold block emitted');
+  assert(r.html.includes('>x<'), 'TEXT carried');
+}
+
+function testInlineBoldStrong(): void {
+  const html = `<strong>x</strong>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_inline_bold'), '<strong> → r20_inline_bold');
+  assert(r.html.includes('>x<'), 'TEXT carried');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback');
+}
+
+function testInlineItalicEm(): void {
+  const html = `<em>x</em>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_inline_italic'), '<em> → r20_inline_italic');
+  assert(r.html.includes('>x<'), 'TEXT carried');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback');
+}
+
+function testInlineItalicI(): void {
+  const html = `<i>x</i>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_inline_italic'), '<i> (non-icon) → r20_inline_italic');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback');
+}
+
+function testTableCaption(): void {
+  const html = `<caption>Title</caption>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_table_caption'), '<caption> → r20_table_caption');
+  assert(r.html.includes('>Title<'), 'TEXT carried');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for caption');
+}
+
+function testInlineBreak(): void {
+  const html = `<br>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_inline_break'), '<br> → r20_inline_break');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for br');
+}
+
 const tests = [
   ['text input', testBasicTextInput],
   ['number input', testNumberInput],
@@ -94,6 +142,12 @@ const tests = [
   ['i18n flat', testI18nFlat],
   ['raw fallback', testRawFallback],
   ['coverage', testCoverageStat],
+  ['inline bold <b>', testInlineBoldB],
+  ['inline bold <strong>', testInlineBoldStrong],
+  ['inline italic <em>', testInlineItalicEm],
+  ['inline italic <i>', testInlineItalicI],
+  ['table caption', testTableCaption],
+  ['inline break <br>', testInlineBreak],
 ] as const;
 
 let passed = 0;

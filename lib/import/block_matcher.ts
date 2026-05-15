@@ -472,14 +472,55 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       children: {},
     };
   }
-  // <b>, <strong>, <em>, <small>, <u> — text-only inline emphasis → static_text.
-  if (['b','strong','em','small','u','i'].includes(tag) && hasOnlyText(node) && !a['data-i18n']) {
-    // <i> 가 아이콘 마크업이 아닌 경우만 — 위 icon branch 가 sheet-icon-* 매칭 후 fall-through.
+  // <b>, <strong> — bold emphasis → r20_inline_bold (시맨틱 보존).
+  if ((tag === 'b' || tag === 'strong') && hasOnlyText(node) && !a['data-i18n']) {
+    return {
+      blockType: 'r20_inline_bold',
+      fields: {
+        TEXT: firstTextContent(node),
+        CLASS: stripSheetPrefix(a.class || ''),
+      },
+      children: {},
+    };
+  }
+  // <em>, <i> — italic emphasis → r20_inline_italic.
+  // <i> 가 sheet-icon-* 마크업이면 위쪽 icon branch 가 먼저 잡고 여기 안 옴.
+  if ((tag === 'em' || tag === 'i') && hasOnlyText(node) && !a['data-i18n']) {
+    return {
+      blockType: 'r20_inline_italic',
+      fields: {
+        TEXT: firstTextContent(node),
+        CLASS: stripSheetPrefix(a.class || ''),
+      },
+      children: {},
+    };
+  }
+  // <small>, <u> — text-only inline emphasis (legacy) → static_text. (별도 블록 없음)
+  if (['small','u'].includes(tag) && hasOnlyText(node) && !a['data-i18n']) {
     return {
       blockType: 'r20_static_text',
       fields: {
         TEXT: firstTextContent(node),
         CLASS: (stripSheetPrefix(a.class || '') + ' ' + tag).trim(),
+      },
+      children: {},
+    };
+  }
+  // <br> — void linebreak → r20_inline_break.
+  if (tag === 'br') {
+    return {
+      blockType: 'r20_inline_break',
+      fields: {},
+      children: {},
+    };
+  }
+  // <caption> — table caption → r20_table_caption.
+  if (tag === 'caption') {
+    return {
+      blockType: 'r20_table_caption',
+      fields: {
+        TEXT: allTextContent(node),
+        CLASS: stripSheetPrefix(a.class || ''),
       },
       children: {},
     };

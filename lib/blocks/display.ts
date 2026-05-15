@@ -307,6 +307,94 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       return `<span${sheetClassAttrWithBase(base, cls)} aria-disabled="true">${escapeAttr(text)}</span>`;
     },
   },
+
+  // 8) inline bold ----------------------------------------------------------
+  {
+    type: 'r20_inline_bold',
+    shape: 'stack',
+    category: DISPLAY,
+    label: '굵은 글자',
+    tooltip: '굵은 글자 — <b>TEXT</b>. 굵게 강조.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('굵은 글자')
+        .appendField(new Blockly.FieldTextInput('Bold'), 'TEXT');
+      b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const text = String(b.getFieldValue('TEXT') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      return `<b${sheetClassAttr(cls)}>${escapeAttr(text)}</b>`;
+    },
+  },
+
+  // 9) inline italic --------------------------------------------------------
+  {
+    type: 'r20_inline_italic',
+    shape: 'stack',
+    category: DISPLAY,
+    label: '기울임 글자',
+    tooltip: '기울임 글자 — <em>TEXT</em>. 기울여 강조.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('기울임 글자')
+        .appendField(new Blockly.FieldTextInput('Italic'), 'TEXT');
+      b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const text = String(b.getFieldValue('TEXT') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      return `<em${sheetClassAttr(cls)}>${escapeAttr(text)}</em>`;
+    },
+  },
+
+  // 10) table caption -------------------------------------------------------
+  {
+    type: 'r20_table_caption',
+    shape: 'stack',
+    category: DISPLAY,
+    label: '표 제목',
+    tooltip: '표 제목 — <caption>TEXT</caption>. <table> 내부 첫 자식.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('표 제목')
+        .appendField(new Blockly.FieldTextInput('Caption'), 'TEXT');
+      b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const text = String(b.getFieldValue('TEXT') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      return `<caption${sheetClassAttr(cls)}>${escapeAttr(text)}</caption>`;
+    },
+  },
+
+  // 11) inline break --------------------------------------------------------
+  {
+    type: 'r20_inline_break',
+    shape: 'stack',
+    category: DISPLAY,
+    label: '줄바꿈',
+    tooltip: '줄바꿈 — <br>. void element.',
+    init: mkInit((b) => {
+      b.appendDummyInput().appendField('줄바꿈');
+      setStatementHooks(b);
+    }),
+    generator: () => {
+      return `<br>`;
+    },
+  },
 ];
 
 /**
