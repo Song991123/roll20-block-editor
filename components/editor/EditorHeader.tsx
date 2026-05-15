@@ -36,7 +36,7 @@ import {
 } from '@/lib/examples';
 import { ImportDialog } from './ImportDialog';
 import { ExportDialog } from './ExportDialog';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const APP_VERSION = 'v0.1.0';
 
@@ -62,8 +62,20 @@ export default function EditorHeader() {
   const toggleLeft = useUiStore((s) => s.toggleSidebarLeft);
   const toggleRight = useUiStore((s) => s.toggleSidebarRight);
   const dirty = useWorkspaceStore((s) => anyDirty(s.workspaces));
+  const clearAll = useWorkspaceStore((s) => s.clearAll);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+
+  // [새 시트] — confirm 후 3 워크스페이스 모두 비움. 빈 상태에서도 항상
+  // confirm (사용자 의도를 명시적으로 확인 — accidental click 방어).
+  const handleNewSheet = useCallback(() => {
+    if (typeof window !== 'undefined' &&
+        !window.confirm('현재 워크스페이스(HTML/CSS/번역) 를 모두 비웁니다 — 진행할까요?')) {
+      return;
+    }
+    clearAll();
+    toast.success('빈 시트 생성됨 — HTML/CSS/번역 워크스페이스 초기화', { duration: 2200 });
+  }, [clearAll]);
 
   const handleLoadExample = (descriptor: ExampleDescriptor) => async () => {
     try {
@@ -160,7 +172,7 @@ export default function EditorHeader() {
                 variant="ghost"
                 size="sm"
                 className="h-8 gap-1.5"
-                onClick={comingSoon('새 시트')}
+                onClick={handleNewSheet}
                 aria-label="새 시트 만들기"
               >
                 <FilePlus className="h-4 w-4" />

@@ -39,11 +39,16 @@ export interface MatchContext {
   matchedCount: number;
   /** 전체 element 수 (root 제외, raw 포함). */
   totalCount: number;
+  /**
+   * XSS 방지로 제거된 인라인 이벤트 핸들러 (onclick / onload / onerror 등) 카운트.
+   * 0 이 아니면 ImportDialog 에서 사용자에게 경고로 표시 — 더는 silent drop 아님.
+   */
+  sanitizeDropped: number;
   warnings: Array<{ code: string; message: string; hint?: string }>;
 }
 
 export function newMatchContext(): MatchContext {
-  return { rawFallbackCount: 0, matchedCount: 0, totalCount: 0, warnings: [] };
+  return { rawFallbackCount: 0, matchedCount: 0, totalCount: 0, sanitizeDropped: 0, warnings: [] };
 }
 
 // ---------------------------------------------------------------------------
@@ -74,6 +79,23 @@ export function matchTree(root: DomNode, ctx: MatchContext): MatchedBlock[] {
 export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (node.type !== 'element' || !node.tag) return null;
   ctx.totalCount++;
+
+  // XSS 방지 — 인라인 이벤트 핸들러 (onclick / onload / onerror / ...) 는
+  // 구조화 매칭에서 dropped, raw_html fallback 에서는 살아남을 수 있음. 양쪽
+  // 다 위험. 발견 시 카운트 + 경고 + node.attrs 에서도 제거 (raw 직렬화 안전).
+  if (node.attrs) {
+    for (const k of Object.keys(node.attrs)) {
+      if (/^on[a-z]+$/i.test(k)) {
+        ctx.sanitizeDropped += 1;
+        ctx.warnings.push({
+          code: 'sanitize_dropped',
+          message: `<${node.tag}> 의 인라인 이벤트 핸들러 '${k}' 가 제거되었습니다 (XSS 방지).`,
+          hint: k,
+        });
+        delete node.attrs[k];
+      }
+    }
+  }
 
   const result =
     matchInput(node, ctx) ??

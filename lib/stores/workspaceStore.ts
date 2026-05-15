@@ -53,6 +53,12 @@ interface WorkspaceStore {
   markDirty: (w: WorkspaceKey) => void;
   markSaved: (w: WorkspaceKey) => void;
   resetWorkspace: (w: WorkspaceKey) => void;
+  /**
+   * 3 워크스페이스 (HTML/CSS/i18n) + emit 캐시 + 선택 상태를 모두 비움.
+   * Blockly 워크스페이스 SVG 까지 비우려고 adapter.hydrateFromXml 에 빈 xml 전달.
+   * 헤더의 [새 시트] 버튼이 사용.
+   */
+  clearAll: () => void;
   setEmitCache: (out: Partial<EmitOutput>) => void;
   setEmitWarnings: (warnings: EmitWarning[]) => void;
   setSelectedBlockId: (id: string | null, origin: Exclude<SelectionOrigin, null>) => void;
@@ -113,6 +119,30 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
     set((s) => ({
       workspaces: { ...s.workspaces, [w]: { ...emptyMeta } },
     })),
+
+  clearAll: () => {
+    const adapter = getBlocklyAdapter();
+    const empty = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
+    // Blockly workspace SVG 안의 블록을 비움 (changeListener 가 store sync 도 시도).
+    for (const key of ['html', 'css', 'i18n'] as const) {
+      try {
+        adapter.hydrateFromXml(key, empty);
+      } catch {
+        /* adapter 미연결 / 미초기화 — 메타 reset 만으로도 UX 충분. */
+      }
+    }
+    set({
+      workspaces: {
+        html: { ...emptyMeta },
+        css: { ...emptyMeta },
+        i18n: { ...emptyMeta },
+      },
+      emitCache: { html: '', css: '', i18n: '' },
+      emitWarnings: [],
+      selectedBlockId: null,
+      selectionOrigin: null,
+    });
+  },
 
   setEmitCache: (out) =>
     set((s) => ({ emitCache: { ...s.emitCache, ...out } })),

@@ -52,6 +52,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     cssTotal: number;
     i18nKeys: number;
     warnings: number;
+    sanitizeDropped: number;
   }>(null);
 
   function handleFile(setter: (v: string) => void) {
@@ -99,7 +100,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         cssTotal: result.stats.cssTotal,
         i18nKeys: result.stats.i18nKeys,
         warnings: result.warnings.length,
+        sanitizeDropped: result.stats.sanitizeDropped,
       });
+      if (result.stats.sanitizeDropped > 0) {
+        toast.warning(
+          `보안상 인라인 이벤트 핸들러 ${result.stats.sanitizeDropped}개 제거됨 (onclick 등 XSS 위험 attr)`,
+          { duration: 4500 },
+        );
+      }
       toast.success(
         `불러오기 완료 — 매칭 ${result.stats.htmlMatched}/${result.stats.htmlTotal} (${result.stats.coverage}%) · raw fallback ${result.stats.htmlRawFallback}`,
         { duration: 3500 },
@@ -202,6 +210,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span>
               {' · '}번역 키 <span className="tabular-nums">{report.i18nKeys}</span>
             </div>
+            {report.sanitizeDropped > 0 && (
+              <div className="mt-1 text-amber-500" data-testid="import-sanitize-warning">
+                보안상 {report.sanitizeDropped}개의 인라인 이벤트 핸들러(onclick 등)가 제거되었습니다 — XSS 방지.
+              </div>
+            )}
             {report.warnings > 0 && (
               <div className="mt-1 text-amber-500">
                 경고 {report.warnings}건 — 일부 패턴은 raw 블록으로 박혔습니다.

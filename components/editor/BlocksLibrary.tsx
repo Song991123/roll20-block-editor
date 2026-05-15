@@ -58,6 +58,13 @@ export default function BlocksLibrary() {
     [showAdvanced],
   );
 
+  // 고급 카테고리 개수 — "고급 블록 더 보기 (N종)" 의 N. CATEGORIES advanced 플래그가
+  // 진실의 원천이므로 카테고리 추가/삭제 시 자동 반영. 시스템 specific 토큰 0.
+  const advancedCategoryCount = useMemo(
+    () => CATEGORY_ORDER.filter((id) => CATEGORIES[id].advanced).length,
+    [],
+  );
+
   const searchResults = useMemo(() => (search.trim() ? searchBlocks(search) : []), [search]);
 
   return (
@@ -105,6 +112,8 @@ export default function BlocksLibrary() {
                     <button
                       type="button"
                       onClick={() => toggleCat(catId)}
+                      aria-expanded={isOpen}
+                      aria-controls={`block-category-${catId}`}
                       className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-foreground transition-colors hover:bg-[var(--bg-hover)]"
                     >
                       {isOpen ? (
@@ -123,6 +132,7 @@ export default function BlocksLibrary() {
 
                     {isOpen && (
                       <div
+                        id={`block-category-${catId}`}
                         className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
                         style={{ borderColor: `color-mix(in srgb, ${meta.swatchVar} 60%, transparent)` }}
                       >
@@ -156,7 +166,7 @@ export default function BlocksLibrary() {
                     ) : (
                       <>
                         <ChevronRight className="h-3 w-3 shrink-0" />
-                        <span>고급 블록 더 보기 (4종)</span>
+                        <span>고급 블록 더 보기 ({advancedCategoryCount}종)</span>
                       </>
                     )}
                   </button>

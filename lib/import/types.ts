@@ -49,6 +49,11 @@ export interface ImportStats {
   i18nKeys: number;
   /** 종합 coverage % (HTML 기준). */
   coverage: number;
+  /**
+   * 보안상 제거된 인라인 이벤트 핸들러 (onclick / onload / ...) 의 총 개수.
+   * UI 가 0 보다 크면 사용자에게 명시적 경고를 표시 (silent drop 방지).
+   */
+  sanitizeDropped: number;
 }
 
 export interface ImportInput {

@@ -101,6 +101,7 @@ export function importSheet(
       cssRawFallback: cssCtx.rawFallback,
       i18nKeys: i18nCtx.keys,
       coverage,
+      sanitizeDropped: htmlCtx.sanitizeDropped,
     },
   };
 }
