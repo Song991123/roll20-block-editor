@@ -69,7 +69,7 @@ export default function BlocksLibrary() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="블록 검색…"
+            placeholder="블록 검색 — 예: 텍스트, 굴림, 자동합"
             className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
@@ -137,14 +137,30 @@ export default function BlocksLibrary() {
                 );
               })}
 
-              {!showAdvanced && (
-                <button
-                  type="button"
-                  onClick={() => setAdvShown(true)}
-                  className="mt-2 flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground"
-                >
-                  <Sparkles className="h-3 w-3" />▾ 고급 카테고리 (4) 펼치기
-                </button>
+              {/* 고급 카테고리 토글 — settings 로 강제 노출시엔 숨김. */}
+              {!showAdvSetting && (
+                <>
+                  <div className="my-2 h-px bg-[var(--border-subtle)]" aria-hidden />
+                  <button
+                    type="button"
+                    onClick={() => setAdvShown(!advShown)}
+                    className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground"
+                    aria-expanded={advShown}
+                  >
+                    <Sparkles className="h-3 w-3 shrink-0" />
+                    {advShown ? (
+                      <>
+                        <ChevronDown className="h-3 w-3 shrink-0" />
+                        <span>고급 블록 접기</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronRight className="h-3 w-3 shrink-0" />
+                        <span>고급 블록 더 보기 (4종)</span>
+                      </>
+                    )}
+                  </button>
+                </>
               )}
             </div>
           )}
