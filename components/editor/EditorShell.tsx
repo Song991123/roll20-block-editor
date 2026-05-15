@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef, type CSSProperties, type MouseEvent } from 'react';
 import { cn } from '@/lib/utils/cn';
-import { useUiStore } from '@/lib/stores/uiStore';
+import { useUiStore, type MainMode } from '@/lib/stores/uiStore';
 import EditorHeader from './EditorHeader';
 import SidebarLeft from './SidebarLeft';
 import SidebarRight from './SidebarRight';
@@ -10,32 +10,81 @@ import PreviewMain from './PreviewMain';
 import Statusbar from './Statusbar';
 import BlocklyModelHost from './BlocklyModelHost';
 import MainAreaToolbar from './MainAreaToolbar';
+import WorkspaceSubToolbar from './WorkspaceSubToolbar';
 
 /**
- * 새 UX 셸 — Preview-first 3-zone grid + 메인 영역 [조립]/[미리보기] 토글 (D26 ② 재).
+ * 새 UX 셸 — Preview-first 3-zone grid + 메인 영역 분할 뷰 (D26 ②-재재).
  *
  * Anchor: docs/spec/08_wireframes.md W2 + docs/spec/10_system_architecture.md §3.
  *
- *   ┌────────────────── EditorHeader (56px) ──────────────────┐
- *   │  로고  [예시][불러오기]      [저장][다운로드] ⚙ ?         │
- *   ├──────────┬───────────────────────────────┬──────────────┤
- *   │ Sidebar  │  MainAreaToolbar (h-10)       │  Sidebar     │
- *   │ Left     │  [조립][미리보기]  [HTML CSS i18n]│  Right       │
- *   │ 280px    │  ─────────────────────────────│  320px       │
- *   │          │  조립 = visible Blockly       │              │
- *   │          │  미리보기 = iframe srcdoc     │              │
- *   │          │                               │              │
- *   ├──────────┴───────────────────────────────┴──────────────┤
- *   │  Statusbar (32px) — 블록 수 · 저장 · v0.x · 워크스페이스  │
- *   └─────────────────────────────────────────────────────────┘
+ *   ┌────────────────── EditorHeader (56px) ──────────────────────────┐
+ *   │  로고  [예시][불러오기]      [저장][다운로드] ⚙ ?                 │
+ *   ├──────────┬────────────────────────────────────┬─────────────────┤
+ *   │ Sidebar  │  MainAreaToolbar  [⬌][🟦][📄]     │  Sidebar        │
+ *   │ Left     │  ────────────────────────────────  │  Right          │
+ *   │ 280px    │  [HTML CSS i18n][zoom][cleanUp]    │  320px          │
+ *   │          │  ┌─Workspace──┃─Preview───────┐   │                 │
+ *   │          │  │ Blockly    ┃  iframe       │   │                 │
+ *   │          │  │            ↑               │   │                 │
+ *   │          │  │     resizer (col-resize)   │   │                 │
+ *   │          │  └────────────┴───────────────┘   │                 │
+ *   │          │                  PreviewToolbar    │                 │
+ *   ├──────────┴────────────────────────────────────┴─────────────────┤
+ *   │  Statusbar (32px)                                                │
+ *   └──────────────────────────────────────────────────────────────────┘
  *
  * BlocklyModelHost — 항상 mount, visible prop 으로 메인 영역 fill or off-screen.
- *   - mainMode='assemble' = 메인 영역에 visible, 사용자 드래그/스냅/줌 가능.
- *   - mainMode='preview' = off-screen, 모델만 유지 (PreviewMain emit 그대로 사용).
+ *   - mainMode='split' / 'assemble' = workspace pane 안에 visible.
+ *   - mainMode='preview' = off-screen (모델만 유지, emit pipeline 정상).
  */
+
+const MIN_PANE_PX = 280;
+
+function Resizer({ onResize }: { onResize: (deltaX: number) => void }) {
+  const onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    let lastX = e.clientX;
+    const handleMove = (ev: globalThis.MouseEvent) => {
+      const dx = ev.clientX - lastX;
+      lastX = ev.clientX;
+      if (dx !== 0) onResize(dx);
+    };
+    const handleUp = () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="메인 영역 크기 조절"
+      tabIndex={0}
+      className="main-resizer"
+      onMouseDown={onMouseDown}
+      data-testid="main-resizer"
+    />
+  );
+}
+
+function cycleMode(m: MainMode): MainMode {
+  if (m === 'split') return 'assemble';
+  if (m === 'assemble') return 'preview';
+  return 'split';
+}
+
 export default function EditorShell() {
   const mainMode = useUiStore((s) => s.mainMode);
   const setMainMode = useUiStore((s) => s.setMainMode);
+  const mainSplit = useUiStore((s) => s.mainSplit);
+  const setMainSplit = useUiStore((s) => s.setMainSplit);
   const leftCollapsed = useUiStore((s) => s.sidebarLeftCollapsed);
   const rightCollapsed = useUiStore((s) => s.sidebarRightCollapsed);
   const rightWidth = useUiStore((s) => s.sidebarRightWidth);
@@ -44,8 +93,10 @@ export default function EditorShell() {
   const setLeftMode = useUiStore((s) => s.setSidebarLeftMode);
   const setRightTab = useUiStore((s) => s.setSidebarRightTab);
 
+  const splitContainerRef = useRef<HTMLDivElement>(null);
+
   // Stage S§11 — 글로벌 단축키.
-  // Cmd+B = 메인 모드 토글 (assemble ↔ preview)
+  // Cmd+B = 메인 모드 cycle (split → assemble → preview → split)
   // Cmd+[ Cmd+] = 사이드바 collapse
   // Cmd+1~4 = 좌측 mode / 우측 tab 전환
   useEffect(() => {
@@ -60,7 +111,7 @@ export default function EditorShell() {
         toggleRight();
       } else if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
-        setMainMode(mainMode === 'assemble' ? 'preview' : 'assemble');
+        setMainMode(cycleMode(mainMode));
       } else if (e.key === '1') {
         e.preventDefault();
         setLeftMode('blocks');
@@ -82,7 +133,40 @@ export default function EditorShell() {
   const leftWidth = leftCollapsed ? 'var(--sidebar-left-collapsed)' : 'var(--sidebar-left-w)';
   const rightWidthPx = rightCollapsed ? '0px' : `${rightWidth}px`;
 
-  const assembleVisible = mainMode === 'assemble';
+  const workspaceVisible = mainMode !== 'preview';
+  const previewVisible = mainMode !== 'assemble';
+
+  const onResize = useCallback(
+    (deltaX: number) => {
+      const node = splitContainerRef.current;
+      if (!node) return;
+      const totalW = node.getBoundingClientRect().width;
+      // 리사이저 두께 6px — 양쪽 최소 280 보장 못 하면 무시.
+      const minTotal = MIN_PANE_PX * 2 + 6;
+      if (totalW < minTotal) return;
+      const currentLeftPx = (mainSplit.left / 100) * totalW;
+      let nextLeftPx = currentLeftPx + deltaX;
+      nextLeftPx = Math.max(MIN_PANE_PX, Math.min(totalW - MIN_PANE_PX - 6, nextLeftPx));
+      const nextLeftPct = (nextLeftPx / totalW) * 100;
+      setMainSplit(nextLeftPct, 100 - nextLeftPct);
+    },
+    [mainSplit.left, setMainSplit],
+  );
+
+  // 각 pane 의 width style — mode 별 다름.
+  let workspaceStyle: CSSProperties = {};
+  let previewStyle: CSSProperties = {};
+  if (mainMode === 'split') {
+    workspaceStyle = { width: `${mainSplit.left}%`, flexShrink: 0 };
+    previewStyle = { width: `${mainSplit.right}%`, flexShrink: 0 };
+  } else if (mainMode === 'assemble') {
+    workspaceStyle = { flex: '1 1 auto' };
+    previewStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+  } else {
+    // preview
+    workspaceStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+    previewStyle = { flex: '1 1 auto' };
+  }
 
   return (
     <div className="flex h-screen flex-col bg-[var(--bg-app)] text-foreground">
@@ -105,16 +189,37 @@ export default function EditorShell() {
 
         <section className="relative flex flex-col min-w-0 min-h-0 bg-[var(--bg-canvas)]">
           <MainAreaToolbar />
-          {/* 메인 영역 contents — relative 컨테이너로 BlocklyModelHost / PreviewMain 둘 다 안에 mount.
-              BlocklyModelHost 는 항상 mount (워크스페이스 alive 유지). visible prop 으로 위치 토글. */}
-          <div className="relative flex-1 min-h-0">
-            <BlocklyModelHost visible={assembleVisible} />
-            {/* PreviewMain — mainMode='preview' 일 때만 렌더 (emit pipeline 까지 살아있음 — workspaceStore 변경 시 자동 재emit). */}
-            {!assembleVisible && (
-              <div className="absolute inset-0">
-                <PreviewMain />
+          <div
+            ref={splitContainerRef}
+            className="relative flex flex-1 min-h-0"
+            data-testid="main-split-container"
+            data-main-mode={mainMode}
+          >
+            {/* Workspace pane — 항상 DOM 에 있어야 Blockly state 유지. width 로만 토글. */}
+            <div
+              className="relative flex flex-col min-h-0"
+              style={workspaceStyle}
+              data-testid="workspace-pane"
+              data-visible={workspaceVisible ? 'true' : 'false'}
+            >
+              {workspaceVisible && <WorkspaceSubToolbar />}
+              <div className="relative flex-1 min-h-0">
+                <BlocklyModelHost visible={workspaceVisible} />
               </div>
-            )}
+            </div>
+
+            {/* Resizer — 분할 모드일 때만 */}
+            {mainMode === 'split' && <Resizer onResize={onResize} />}
+
+            {/* Preview pane — workspace 와 동일 구조. */}
+            <div
+              className="relative flex flex-col min-h-0"
+              style={previewStyle}
+              data-testid="preview-pane"
+              data-visible={previewVisible ? 'true' : 'false'}
+            >
+              {previewVisible && <PreviewMain />}
+            </div>
           </div>
         </section>
 

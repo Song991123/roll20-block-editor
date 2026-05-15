@@ -248,3 +248,35 @@ body {
   outline: none;
   box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--primary);
 }
+
+/* D26 ②-재재 — 메인 영역 분할 뷰 resizer.
+ * 워크스페이스 ↔ 미리보기 사이 6px 핸들, 드래그로 비율 조절.
+ */
+.main-resizer {
+  flex-shrink: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: var(--border-default);
+  position: relative;
+  z-index: 5;
+  transition: background-color 120ms ease;
+  user-select: none;
+}
+.main-resizer:hover,
+.main-resizer:active,
+.main-resizer:focus-visible {
+  background: var(--primary);
+}
+.main-resizer::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 28px;
+  background: var(--bg-elevated);
+  border-radius: 1px;
+  opacity: 0.6;
+  pointer-events: none;
+}

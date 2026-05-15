@@ -14,12 +14,21 @@ export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴
 export type CodeSubTab = 'html' | 'css' | 'i18n';
 export type WorkspaceKey = 'html' | 'css' | 'i18n';
 export type PreviewZoom = 'fit' | number;               // D52
-export type MainMode = 'assemble' | 'preview';          // D26 ② 재결정 — 메인 영역 토글
+// D26 ②-재재 — 메인 영역 분할 뷰. 'split' default (양쪽 동시), 'assemble'/'preview' = 한쪽만 max.
+export type MainMode = 'split' | 'assemble' | 'preview';
+
+export interface MainSplit {
+  /** 좌측 (워크스페이스) 비율 — 0~100 percent. */
+  left: number;
+  /** 우측 (미리보기) 비율 — 0~100 percent. */
+  right: number;
+}
 
 export interface UiState {
-  // 메인 영역 모드 — [조립] (visible Blockly) vs [미리보기] (iframe).
-  // 기존 BlocklyModelHost 가 hidden 박혀서 블록 조립 불가능했던 문제 해결.
+  // 메인 영역 모드 — 분할 (default) | 조립만 | 미리보기만.
   mainMode: MainMode;
+  // 분할 모드에서 좌/우 비율.
+  mainSplit: MainSplit;
 
   // 좌측 사이드
   sidebarLeftMode: SidebarLeftMode;
@@ -51,6 +60,7 @@ export interface UiState {
   // Actions
   setMainMode: (m: MainMode) => void;
   toggleMainMode: () => void;
+  setMainSplit: (left: number, right: number) => void;
   setSidebarLeftMode: (m: SidebarLeftMode) => void;
   setSidebarRightTab: (t: SidebarRightTab) => void;
   toggleSidebarLeft: () => void;
@@ -67,7 +77,8 @@ export interface UiState {
 }
 
 const DEFAULT_STATE = {
-  mainMode: 'assemble' as MainMode,
+  mainMode: 'split' as MainMode,
+  mainSplit: { left: 50, right: 50 } as MainSplit,
   sidebarLeftMode: 'blocks' as SidebarLeftMode,
   sidebarLeftCollapsed: false,
   sidebarRightTab: 'attrs' as SidebarRightTab,
@@ -83,14 +94,33 @@ const DEFAULT_STATE = {
   previewZoom: 'fit' as PreviewZoom,
 };
 
+// 분할 모드 cycle: split → assemble → preview → split.
+function nextMainMode(m: MainMode): MainMode {
+  if (m === 'split') return 'assemble';
+  if (m === 'assemble') return 'preview';
+  return 'split';
+}
+
+// 비율 합이 양수가 아니면 무시. 합 100 으로 normalize.
+function normalizeSplit(left: number, right: number): MainSplit {
+  const safeLeft = Number.isFinite(left) ? Math.max(0, left) : 50;
+  const safeRight = Number.isFinite(right) ? Math.max(0, right) : 50;
+  const total = safeLeft + safeRight;
+  if (total <= 0) return { left: 50, right: 50 };
+  return {
+    left: (safeLeft / total) * 100,
+    right: (safeRight / total) * 100,
+  };
+}
+
 export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
       ...DEFAULT_STATE,
 
       setMainMode: (m) => set({ mainMode: m }),
-      toggleMainMode: () =>
-        set((s) => ({ mainMode: s.mainMode === 'assemble' ? 'preview' : 'assemble' })),
+      toggleMainMode: () => set((s) => ({ mainMode: nextMainMode(s.mainMode) })),
+      setMainSplit: (left, right) => set({ mainSplit: normalizeSplit(left, right) }),
       setSidebarLeftMode: (m) => set({ sidebarLeftMode: m }),
       setSidebarRightTab: (t) => set({ sidebarRightTab: t }),
       toggleSidebarLeft: () =>
@@ -130,9 +160,22 @@ export const useUiStore = create<UiState>()(
             }
           : localStorage,
       ),
-      // tree 펼침 + 검색 같은 일회성 상태는 persist 안 함
+      // 이전 버전의 persisted mainMode ('assemble' | 'preview' 만 알던 시절) 와 호환.
+      // 알 수 없는 값이면 'split' 로 떨어뜨림. mainSplit 누락 시 default 채움.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<UiState>;
+        const merged = { ...current, ...p } as UiState;
+        if (merged.mainMode !== 'split' && merged.mainMode !== 'assemble' && merged.mainMode !== 'preview') {
+          merged.mainMode = 'split';
+        }
+        if (!merged.mainSplit || typeof merged.mainSplit.left !== 'number') {
+          merged.mainSplit = { left: 50, right: 50 };
+        }
+        return merged;
+      },
       partialize: (s) => ({
         mainMode: s.mainMode,
+        mainSplit: s.mainSplit,
         sidebarLeftMode: s.sidebarLeftMode,
         sidebarLeftCollapsed: s.sidebarLeftCollapsed,
         sidebarRightTab: s.sidebarRightTab,
