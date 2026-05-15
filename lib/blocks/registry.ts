@@ -1,8 +1,8 @@
 /**
  * 블록 등록 + 카탈로그 조회 진입점.
  * Anchor: docs/spec/02_functional_spec.md §3 + docs/spec/13_roadmap.md §3.
- * Stage A-4: Expression 21 + Container 18 + Input 9 + Display 7 = 55 블록 등록.
- * 5 카테고리 (Dice/SheetWorker/i18n/CSS/Advanced) 는 후속 세션.
+ * Stage A-5: Expression 21 + Container 18 + Input 9 + Display 7 + Dice 12 = 67 블록 등록.
+ * 4 카테고리 (SheetWorker/i18n/CSS/Advanced) 는 후속 세션.
  */
 
 import {
@@ -16,6 +16,7 @@ import { registerExpressionBlocks } from './expression';
 import { registerContainerBlocks } from './container';
 import { registerInputBlocks } from './input';
 import { registerDisplayBlocks } from './display';
+import { registerDiceBlocks } from './dice';
 
 const ALL_BLOCKS: BlockDef[] = [];
 let registered = false;
@@ -28,6 +29,7 @@ export function registerAllBlocks(): void {
   registerContainerBlocks(ALL_BLOCKS);
   registerInputBlocks(ALL_BLOCKS);
   registerDisplayBlocks(ALL_BLOCKS);
+  registerDiceBlocks(ALL_BLOCKS);
   registered = true;
   registeredVersion += 1;
   for (const cb of subs) cb();
