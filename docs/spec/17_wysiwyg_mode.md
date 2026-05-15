@@ -280,8 +280,7 @@ interface WorkspaceState {
 
 ## §11. 의존성
 
-- `@dnd-kit/core` — drag-drop primitives.
-- `@dnd-kit/sortable` — Phase B 정렬 (Phase A 는 안 씀).
+**Phase A 외부 의존성 0.** HTML5 native DnD (`draggable` + `ondragover` + `ondrop` + `dataTransfer`) 와 pointer events 만으로 충분. `@dnd-kit/core` 는 Phase B (a11y + sortable) 에서 추가.
 
 ---
 
