@@ -185,7 +185,7 @@ function BlockTile({ def }: { def: BlockDef }) {
 
   const previewHostRef = useRef<HTMLDivElement | null>(null);
   const blocklyWsRef = useRef<Blockly.WorkspaceSvg | null>(null);
-  const [previewHeight, setPreviewHeight] = useState<number>(36);
+  const [previewSize, setPreviewSize] = useState<{ w: number; h: number }>({ w: 144, h: 36 });
 
   // mini workspace + 단일 블록 inject.
   useEffect(() => {
@@ -211,9 +211,16 @@ function BlockTile({ def }: { def: BlockDef }) {
       block.initSvg();
       block.render();
       block.moveBy(6, 4);
-      const heightWidth = block.getHeightWidth();
-      const h = Math.max(36, Math.ceil(heightWidth.height * 0.8) + 12);
-      setPreviewHeight(h);
+      const hw = block.getHeightWidth();
+      // 블록 자연 폭 측정 후 144px 컨테이너에 맞도록 scale 재조정 (PADDING 14 = left 6 + right margin 8).
+      const TARGET_W = 144;
+      const TARGET_PAD = 14;
+      const usableW = TARGET_W - TARGET_PAD;
+      const fitScale = Math.min(0.85, usableW / Math.max(1, hw.width));
+      const safeScale = Math.max(0.35, fitScale);
+      ws.setScale(safeScale);
+      const h = Math.max(36, Math.ceil(hw.height * safeScale) + 12);
+      setPreviewSize({ w: TARGET_W, h });
       blocklyWsRef.current = ws;
     } catch (err) {
       console.warn('[BlocksLibrary] mini preview inject failed', def.type, err);
@@ -245,6 +252,19 @@ function BlockTile({ def }: { def: BlockDef }) {
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-block-type', def.type);
         e.dataTransfer.effectAllowed = 'copy';
+        // 네이티브 drag image 가 Blockly SVG 를 캡처하면 ghost trail (residual frame) 이 남음.
+        // → label 만 들어간 lightweight ghost 로 치환.
+        try {
+          const ghost = document.createElement('div');
+          ghost.textContent = def.label;
+          ghost.style.cssText =
+            'position:fixed;top:-9999px;left:-9999px;padding:4px 10px;border-radius:6px;' +
+            'background:#262626;color:#ECECEC;font:12px/1.2 Pretendard,system-ui,sans-serif;' +
+            'border:1px solid #404040;white-space:nowrap;pointer-events:none;';
+          document.body.appendChild(ghost);
+          e.dataTransfer.setDragImage(ghost, 8, 12);
+          setTimeout(() => ghost.remove(), 0);
+        } catch { /* setDragImage 미지원 환경 — fallback to default */ }
       }}
       title={def.tooltip}
     >
@@ -258,8 +278,8 @@ function BlockTile({ def }: { def: BlockDef }) {
           ref={previewHostRef}
           className="blocks-library-preview relative shrink-0 overflow-hidden rounded-sm"
           style={{
-            width: 138,
-            height: previewHeight,
+            width: previewSize.w,
+            height: previewSize.h,
             background: 'transparent',
           }}
           aria-hidden
