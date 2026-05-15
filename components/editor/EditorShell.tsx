@@ -17,22 +17,6 @@ import WorkspaceSubToolbar from './WorkspaceSubToolbar';
  *
  * Anchor: docs/spec/08_wireframes.md W2 + docs/spec/10_system_architecture.md §3.
  *
- *   ┌────────────────── EditorHeader (56px) ──────────────────────────┐
- *   │  로고  [예시][불러오기]      [저장][다운로드] ⚙ ?                 │
- *   ├──────────┬────────────────────────────────────┬─────────────────┤
- *   │ Sidebar  │  MainAreaToolbar  [⬌][🟦][📄]     │  Sidebar        │
- *   │ Left     │  ────────────────────────────────  │  Right          │
- *   │ 280px    │  [HTML CSS i18n][zoom][cleanUp]    │  320px          │
- *   │          │  ┌─Workspace──┃─Preview───────┐   │                 │
- *   │          │  │ Blockly    ┃  iframe       │   │                 │
- *   │          │  │            ↑               │   │                 │
- *   │          │  │     resizer (col-resize)   │   │                 │
- *   │          │  └────────────┴───────────────┘   │                 │
- *   │          │                  PreviewToolbar    │                 │
- *   ├──────────┴────────────────────────────────────┴─────────────────┤
- *   │  Statusbar (32px)                                                │
- *   └──────────────────────────────────────────────────────────────────┘
- *
  * BlocklyModelHost — 항상 mount, visible prop 으로 메인 영역 fill or off-screen.
  *   - mainMode='split' / 'assemble' = workspace pane 안에 visible.
  *   - mainMode='preview' = off-screen (모델만 유지, emit pipeline 정상).
@@ -95,10 +79,6 @@ export default function EditorShell() {
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
 
-  // Stage S§11 — 글로벌 단축키.
-  // Cmd+B = 메인 모드 cycle (split → assemble → preview → split)
-  // Cmd+[ Cmd+] = 사이드바 collapse
-  // Cmd+1~4 = 좌측 mode / 우측 tab 전환
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const cmd = e.metaKey || e.ctrlKey;
@@ -136,10 +116,8 @@ export default function EditorShell() {
   const workspaceVisible = mainMode !== 'preview';
   const previewVisible = mainMode !== 'assemble';
 
-  // onResize 는 dependency-free — store 의 최신 mainSplit 을 매 호출 시 getState 로 직접 읽음.
-  // 이전 버전은 `[mainSplit.left]` 를 deps 로 박았는데, mousemove 이벤트가
-  // 같은 tick 안에 연속 발생하면 closure 가 stale 상태를 잡고 있어서 결과적으로
-  // 한 번의 drag 가 ~20px 이상 이동을 못 했음. fresh getState 로 그 문제 해소.
+  // onResize: store getState() 로 fresh 읽기 — deps 가 [setMainSplit] 만 → stable callback.
+  // 이전: deps=[mainSplit.left] → mousemove 다발 발생 시 closure stale → 한 drag 가 ~20px 한계.
   const onResize = useCallback(
     (deltaX: number) => {
       const node = splitContainerRef.current;
@@ -157,7 +135,6 @@ export default function EditorShell() {
     [setMainSplit],
   );
 
-  // 각 pane 의 width style — mode 별 다름.
   let workspaceStyle: CSSProperties = {};
   let previewStyle: CSSProperties = {};
   if (mainMode === 'split') {
@@ -167,7 +144,6 @@ export default function EditorShell() {
     workspaceStyle = { flex: '1 1 auto' };
     previewStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
   } else {
-    // preview
     workspaceStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
     previewStyle = { flex: '1 1 auto' };
   }
@@ -199,7 +175,6 @@ export default function EditorShell() {
             data-testid="main-split-container"
             data-main-mode={mainMode}
           >
-            {/* Workspace pane — 항상 DOM 에 있어야 Blockly state 유지. width 로만 토글. */}
             <div
               className="relative flex flex-col min-h-0"
               style={workspaceStyle}
@@ -212,10 +187,8 @@ export default function EditorShell() {
               </div>
             </div>
 
-            {/* Resizer — 분할 모드일 때만 */}
             {mainMode === 'split' && <Resizer onResize={onResize} />}
 
-            {/* Preview pane — workspace 와 동일 구조. */}
             <div
               className="relative flex flex-col min-h-0"
               style={previewStyle}
@@ -223,4 +196,20 @@ export default function EditorShell() {
               data-visible={previewVisible ? 'true' : 'false'}
             >
               {previewVisible && <PreviewMain />}
-            </
+            </div>
+          </div>
+        </section>
+
+        <aside
+          className={cn(
+            'flex flex-col border-l border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
+            rightCollapsed && 'border-l-0',
+          )}
+        >
+          {!rightCollapsed && <SidebarRight />}
+        </aside>
+      </main>
+      <Statusbar />
+    </div>
+  );
+}
