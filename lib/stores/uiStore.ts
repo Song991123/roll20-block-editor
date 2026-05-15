@@ -14,8 +14,13 @@ export type SidebarRightTab = 'attrs' | 'code';         // D49
 export type CodeSubTab = 'html' | 'css' | 'i18n';
 export type WorkspaceKey = 'html' | 'css' | 'i18n';
 export type PreviewZoom = 'fit' | number;               // D52
+export type MainMode = 'assemble' | 'preview';          // D26 ② 재결정 — 메인 영역 토글
 
 export interface UiState {
+  // 메인 영역 모드 — [조립] (visible Blockly) vs [미리보기] (iframe).
+  // 기존 BlocklyModelHost 가 hidden 박혀서 블록 조립 불가능했던 문제 해결.
+  mainMode: MainMode;
+
   // 좌측 사이드
   sidebarLeftMode: SidebarLeftMode;
   sidebarLeftCollapsed: boolean;
@@ -44,6 +49,8 @@ export interface UiState {
   previewZoom: PreviewZoom;
 
   // Actions
+  setMainMode: (m: MainMode) => void;
+  toggleMainMode: () => void;
   setSidebarLeftMode: (m: SidebarLeftMode) => void;
   setSidebarRightTab: (t: SidebarRightTab) => void;
   toggleSidebarLeft: () => void;
@@ -60,6 +67,7 @@ export interface UiState {
 }
 
 const DEFAULT_STATE = {
+  mainMode: 'assemble' as MainMode,
   sidebarLeftMode: 'blocks' as SidebarLeftMode,
   sidebarLeftCollapsed: false,
   sidebarRightTab: 'attrs' as SidebarRightTab,
@@ -80,6 +88,9 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       ...DEFAULT_STATE,
 
+      setMainMode: (m) => set({ mainMode: m }),
+      toggleMainMode: () =>
+        set((s) => ({ mainMode: s.mainMode === 'assemble' ? 'preview' : 'assemble' })),
       setSidebarLeftMode: (m) => set({ sidebarLeftMode: m }),
       setSidebarRightTab: (t) => set({ sidebarRightTab: t }),
       toggleSidebarLeft: () =>
@@ -121,6 +132,7 @@ export const useUiStore = create<UiState>()(
       ),
       // tree 펼침 + 검색 같은 일회성 상태는 persist 안 함
       partialize: (s) => ({
+        mainMode: s.mainMode,
         sidebarLeftMode: s.sidebarLeftMode,
         sidebarLeftCollapsed: s.sidebarLeftCollapsed,
         sidebarRightTab: s.sidebarRightTab,

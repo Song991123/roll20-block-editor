@@ -162,9 +162,11 @@ body {
 }
 
 /*
- * Hidden Blockly host — D51.
- * left:-9999px = visibility:hidden 보다 안전 (Blockly inject 시 layout 측정 필요).
- * width/height = 1px → block render 가능, 사용자 안 보임.
+ * Blockly host — D26 ② 재결정.
+ * 기본 = off-screen (mainMode='preview' 일 때 model only, 사용자 안 보임).
+ * .is-visible (mainMode='assemble') = 메인 영역에 absolute fill, 블록 조립 가능.
+ * 워크스페이스 3개 (HTML/CSS/i18n) 가 같은 컨테이너에 absolute 로 겹쳐 mount —
+ * 활성 워크스페이스만 visible, 나머지는 visibility:hidden 으로 측정 유지 (D51 의 setVisible 회피 이유).
  */
 .blockly-model-host {
   position: fixed;
@@ -175,6 +177,47 @@ body {
   overflow: hidden;
   pointer-events: none;
   z-index: -1;
+}
+
+.blockly-model-host.is-visible {
+  position: absolute;
+  inset: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  overflow: hidden;
+  pointer-events: auto;
+  z-index: 0;
+  background: var(--bg-canvas);
+}
+
+.blockly-model-host.is-visible > .blockly-host-slot {
+  position: absolute;
+  inset: 0;
+  /* inline style="width:480px;height:360px" override — assemble 모드에서는 container fill. */
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.blockly-model-host.is-visible > .blockly-host-slot:not(.is-active) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.blockly-model-host.is-visible > .blockly-host-slot.is-active {
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+.blockly-model-host.is-visible.is-drag-over::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 2px solid var(--primary);
+  box-shadow: inset 0 0 0 1px rgba(47, 129, 247, 0.25);
+  z-index: 10;
 }
 
 /* BlocksLibrary 의 mini preview workspace — 블록 SVG 만 보이게 minimum chrome. */
