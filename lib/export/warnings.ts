@@ -145,9 +145,9 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       found.push({
-        severity: 'error',
+        severity: 'warning',
         code: CODE.TRANSLATION_PARSE,
-        message: `translation.json 이 유효한 JSON 이 아닙니다 (${detail}). 번역 워크스페이스의 블록 구성을 확인하세요.`,
+        message: `translation.json 이 유효한 JSON 이 아닙니다 (${detail}). 다운로드는 가능하지만 Roll20 에서 번역이 동작하지 않습니다. 번역 워크스페이스를 확인하세요.`,
         blockId: null,
       });
     }
