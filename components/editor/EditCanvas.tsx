@@ -44,6 +44,8 @@ export default function EditCanvas() {
   const sheetWidgets = useWorkspaceStore((s) => s.sheetWidgets);
   const rolltemplateWidgets = useWorkspaceStore((s) => s.rolltemplateWidgets);
   const addWidget = useWorkspaceStore((s) => s.addWidget);
+  const updateWidget = useWorkspaceStore((s) => s.updateWidget);
+  const removeWidget = useWorkspaceStore((s) => s.removeWidget);
 
   const target: WidgetTarget = editSubmode === 'sheet' ? 'sheet' : 'rolltemplate';
   const widgets = target === 'sheet' ? sheetWidgets : rolltemplateWidgets;
@@ -54,6 +56,43 @@ export default function EditCanvas() {
   const minHeight = target === 'sheet' ? 1100 : 400;
 
   const [zoom, setZoom] = useState<number>(1);
+
+  // 키보드 — 화살표 = 1px / Shift+화살표 = 10px / Delete/Backspace = 삭제.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const id = useUiStore.getState().selectedWidgetId;
+      if (!id) return;
+      const isInput =
+        (e.target instanceof HTMLInputElement) ||
+        (e.target instanceof HTMLTextAreaElement) ||
+        (e.target instanceof HTMLSelectElement);
+      if (isInput) return; // 캔버스 안 form 요소 입력 중에는 화살표 무시.
+      const submode = useUiStore.getState().editSubmode;
+      const tgt: WidgetTarget = submode === 'sheet' ? 'sheet' : 'rolltemplate';
+      const list = useWorkspaceStore.getState();
+      const widgets = tgt === 'sheet' ? list.sheetWidgets : list.rolltemplateWidgets;
+      const w = widgets.find((x) => x.id === id);
+      if (!w) return;
+      const step = e.shiftKey ? 10 : 1;
+      let dx = 0, dy = 0;
+      if (e.key === 'ArrowLeft') dx = -step;
+      else if (e.key === 'ArrowRight') dx = step;
+      else if (e.key === 'ArrowUp') dy = -step;
+      else if (e.key === 'ArrowDown') dy = step;
+      else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        removeWidget(tgt, id);
+        useUiStore.getState().setSelectedWidgetId(null);
+        return;
+      }
+      if (dx !== 0 || dy !== 0) {
+        e.preventDefault();
+        updateWidget(tgt, id, { x: Math.max(0, w.x + dx), y: Math.max(0, w.y + dy) });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [updateWidget, removeWidget]);
 
   const onZoomChange = useCallback((dir: 'in' | 'out' | 'reset') => {
     setZoom((z) => {
@@ -160,6 +199,9 @@ export default function EditCanvas() {
                 <CanvasWidget
                   key={w.id}
                   widget={w}
+                  target={target}
+                  zoom={zoom}
+                  snapEnabled={snapEnabled}
                   isSelected={selectedWidgetId === w.id}
                   isHovered={hoveredWidgetId === w.id}
                   onSelect={() => setSelectedWidgetId(w.id)}
@@ -298,16 +340,23 @@ function EmptyState({ target }: { target: WidgetTarget }) {
 
 function CanvasWidget({
   widget,
+  target,
+  zoom,
+  snapEnabled,
   isSelected,
   isHovered,
   onSelect,
 }: {
   widget: WidgetInstance;
+  target: WidgetTarget;
+  zoom: number;
+  snapEnabled: boolean;
   isSelected: boolean;
   isHovered: boolean;
   onSelect: () => void;
 }) {
   const setHoveredWidgetId = useUiStore((s) => s.setHoveredWidgetId);
+  const updateWidget = useWorkspaceStore((s) => s.updateWidget);
 
   const style: CSSProperties = {
     position: 'absolute',
@@ -326,13 +375,48 @@ function CanvasWidget({
     borderRadius: 4,
   };
 
+  // pointer drag — form 요소 위에서는 시작 안 함.
+  const onMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect();
+    const targetEl = e.target as HTMLElement;
+    if (
+      targetEl.tagName === 'INPUT' ||
+      targetEl.tagName === 'TEXTAREA' ||
+      targetEl.tagName === 'SELECT' ||
+      targetEl.tagName === 'BUTTON' ||
+      targetEl.closest('input, textarea, select, button')
+    ) {
+      return; // form 입력 우선 — 드래그 시작 안 함.
+    }
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origX = widget.x;
+    const origY = widget.y;
+    const snap = (v: number) =>
+      snapEnabled ? Math.round(v / 8) * 8 : Math.round(v);
+    const onMove = (ev: globalThis.MouseEvent) => {
+      const dx = (ev.clientX - startX) / zoom;
+      const dy = (ev.clientY - startY) / zoom;
+      updateWidget(target, widget.id, {
+        x: snap(Math.max(0, origX + dx)),
+        y: snap(Math.max(0, origY + dy)),
+      });
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.body.style.userSelect = 'none';
+  };
+
   return (
     <div
       style={style}
-      onMouseDown={(e) => {
-        e.stopPropagation();
-        onSelect();
-      }}
+      onMouseDown={onMouseDown}
       onMouseEnter={() => setHoveredWidgetId(widget.id)}
       onMouseLeave={() => setHoveredWidgetId(null)}
       data-testid={`canvas-widget-${widget.id}`}
