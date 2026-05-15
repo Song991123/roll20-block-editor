@@ -57,6 +57,11 @@ export default function PreviewMain() {
   const previewLayer = useUiStore((s) => s.previewLayer);
   const setHoveredWidgetId = useUiStore((s) => s.setHoveredWidgetId);
   const setSelectedWidgetId = useUiStore((s) => s.setSelectedWidgetId);
+  const selectedWidgetId = useUiStore((s) => s.selectedWidgetId);
+  const hoveredWidgetId = useUiStore((s) => s.hoveredWidgetId);
+  const editSubmode = useUiStore((s) => s.editSubmode);
+  const sheetWidgetsList = useWorkspaceStore((s) => s.sheetWidgets);
+  const rolltemplateWidgetsList = useWorkspaceStore((s) => s.rolltemplateWidgets);
   const [dragOver, setDragOver] = useState(false);
 
   const total = htmlCount + cssCount + i18nCount;
@@ -91,6 +96,24 @@ export default function PreviewMain() {
     return () => window.clearTimeout(handle);
     // sanitize / darkMode 변경 시 즉시 재emit 도 동일 path.
   }, [htmlXml, cssXml, i18nXml, sanitize, darkMode, previewLayer, setEmitCache, setEmitWarnings]);
+
+
+  // spec 17 §8 — 캔버스 widget 선택/hover → preview iframe 강조
+  useEffect(() => {
+    const list = editSubmode === 'sheet' ? sheetWidgetsList : rolltemplateWidgetsList;
+    const selected = list.find((w) => w.id === selectedWidgetId);
+    const hovered = list.find((w) => w.id === hoveredWidgetId);
+    const selectedName = (selected?.attrs.name as string | undefined) ?? null;
+    const hoveredName = (hovered?.attrs.name as string | undefined) ?? null;
+    const cw = iframeRef.current?.contentWindow;
+    if (!cw) return;
+    try {
+      cw.postMessage({ type: 'r20:widget-select', widgetName: selectedName }, '*');
+      cw.postMessage({ type: 'r20:widget-hover-in', widgetName: hoveredName }, '*');
+    } catch {
+      /* iframe not ready */
+    }
+  }, [selectedWidgetId, hoveredWidgetId, editSubmode, sheetWidgetsList, rolltemplateWidgetsList, srcdoc]);
 
   // 미리보기 → 우측 인스펙터 sync + 굴림 결과 채팅 박음 (postMessage).
   useEffect(() => {

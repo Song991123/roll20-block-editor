@@ -422,6 +422,12 @@ function CanvasWidget({
       data-testid={`canvas-widget-${widget.id}`}
       data-widget-id={widget.id}
       data-widget-type={widget.type}
+      data-widget-name={(widget.attrs.name as string | undefined) ?? undefined}
+      title={
+        widget.attrs.name
+          ? `attr_${String(widget.attrs.name)}`
+          : undefined
+      }
     >
       <WidgetRender type={widget.type} attrs={widget.attrs} />
     </div>

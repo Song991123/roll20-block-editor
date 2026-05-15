@@ -85,6 +85,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     return null;
   }
   document.addEventListener('click', function (e) {
+    // spec 17 §8 — name 있는 element 클릭 시 부모에 widget-click 전송 (위젯 강조용)
+    var widgetName = widgetNameOf(e.target);
+    if (widgetName) {
+      try {
+        parent.postMessage({ type: 'r20:widget-click', widgetName: widgetName }, '*');
+      } catch (err) {}
+    }
     var rollInfo = findRollButton(e.target);
     if (rollInfo) {
       try { e.preventDefault(); } catch (_) {}
@@ -110,13 +117,46 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
   }, false);
   window.addEventListener('message', function (e) {
-    if (!e.data || e.data.type !== 'r20:highlight') return;
-    var prev = document.querySelector('[data-r20-preview-selected="1"]');
-    if (prev) prev.removeAttribute('data-r20-preview-selected');
-    var id = e.data.blockId;
-    if (!id) return;
-    var sel = document.querySelector('[data-r20-block-id="' + cssEscape(id) + '"]');
-    if (sel) sel.setAttribute('data-r20-preview-selected', '1');
+    if (!e.data) return;
+    if (e.data.type === 'r20:highlight') {
+      var prev = document.querySelector('[data-r20-preview-selected="1"]');
+      if (prev) prev.removeAttribute('data-r20-preview-selected');
+      var id = e.data.blockId;
+      if (!id) return;
+      var sel = document.querySelector('[data-r20-block-id="' + cssEscape(id) + '"]');
+      if (sel) sel.setAttribute('data-r20-preview-selected', '1');
+      return;
+    }
+    // spec 17 §8 — 캔버스에서 위젯 선택 → 미리보기 강조
+    if (e.data.type === 'r20:widget-select') {
+      var prevW = document.querySelector('[data-r20-selected="1"]');
+      if (prevW) prevW.removeAttribute('data-r20-selected');
+      var name = e.data.widgetName;
+      if (!name) return;
+      var nodes = document.querySelectorAll(
+        '[data-widget-name="' + cssEscape(name) + '"],' +
+        '[name="attr_' + cssEscape(name) + '"]'
+      );
+      for (var i = 0; i < nodes.length; i++) {
+        nodes[i].setAttribute('data-r20-selected', '1');
+      }
+      return;
+    }
+    // spec 17 §8 — 캔버스에서 위젯 hover → 미리보기 dim outline
+    if (e.data.type === 'r20:widget-hover-in') {
+      var prevH = document.querySelector('[data-r20-hovered="1"]');
+      if (prevH) prevH.removeAttribute('data-r20-hovered');
+      var nameH = e.data.widgetName;
+      if (!nameH) return;
+      var nodesH = document.querySelectorAll(
+        '[data-widget-name="' + cssEscape(nameH) + '"],' +
+        '[name="attr_' + cssEscape(nameH) + '"]'
+      );
+      for (var j = 0; j < nodesH.length; j++) {
+        nodesH[j].setAttribute('data-r20-hovered', '1');
+      }
+      return;
+    }
   }, false);
   function cssEscape(s) {
     return String(s).replace(/[^\w-]/g, '\\$&');
@@ -231,9 +271,12 @@ body[data-layer="custom"] :not([class]) {
 }
 
 /* spec 17 §8 — 캔버스에서 선택된 위젯 강조 */
-body [data-widget-name="__SELECTED__"],
-body [name^="attr_"][data-r20-selected="1"] {
+body [data-r20-selected="1"] {
   outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+}
+body [data-r20-hovered="1"] {
+  outline: 2px dashed #93c5fd;
   outline-offset: 1px;
 }
 `;
