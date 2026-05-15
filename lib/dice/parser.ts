@@ -361,7 +361,7 @@ export function parseRoot(input: string): ParseRoot {
   if (!raw) return { kind: 'chat', text: '' };
 
   // rolltemplate?
-  const tplMatch = raw.match(/^&\{template:([A-Za-z0-9_-]+)\}\s*(.*)$/s);
+  const tplMatch = raw.match(/^&\{template:([A-Za-z0-9_-]+)\}\s*([\s\S]*)$/);
   if (tplMatch) {
     const name = tplMatch[1]!;
     const rest = tplMatch[2] ?? '';

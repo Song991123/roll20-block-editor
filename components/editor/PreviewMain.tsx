@@ -5,7 +5,12 @@ import { toast } from 'sonner';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { useChatStore } from '@/lib/stores/chatStore';
 import { parseRoot } from '@/lib/dice/parser';
-import { executeRoot, type AttrResolver, type QueryResolver } from '@/lib/dice/executor';
+import {
+  executeRoot,
+  type AttrResolver,
+  type QueryResolver,
+  type RollResult,
+} from '@/lib/dice/executor';
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
@@ -106,13 +111,13 @@ export default function PreviewMain() {
         const label = String(data.label ?? '').trim();
         const senderRaw = String(data.name ?? '').trim();
         const sender = label || (senderRaw ? senderRaw.replace(/^roll_/, '') : 'Sheet');
-        let result;
+        let result: RollResult;
         try {
           const root = parseRoot(expression);
           result = executeRoot(root, { attr: resolver, query });
         } catch (err) {
           result = {
-            kind: 'error' as const,
+            kind: 'error',
             message: err instanceof Error ? err.message : String(err),
             raw: expression,
           };
