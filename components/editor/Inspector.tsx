@@ -4,6 +4,8 @@ import { useCallback, useMemo } from 'react';
 import { MousePointerSquareDashed } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import { useUiStore } from '@/lib/stores/uiStore';
+import WidgetInspector from './WidgetInspector';
 import {
   getBlocklyAdapter,
   type BlockSnapshot,
@@ -22,6 +24,14 @@ import { CATEGORIES } from '@/lib/blocks/types';
  *     → 미리보기 srcdoc 재생성.
  */
 export default function Inspector() {
+  const mainMode = useUiStore((s) => s.mainMode);
+  if (mainMode === 'edit') {
+    return <WidgetInspector />;
+  }
+  return <BlockInspector />;
+}
+
+function BlockInspector() {
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   const htmlXml = useWorkspaceStore((s) => s.workspaces.html.xmlCache);
   const cssXml = useWorkspaceStore((s) => s.workspaces.css.xmlCache);
