@@ -1,0 +1,310 @@
+# 17. WYSIWYG 모드 (위치 기반 시트 편집 — Phase A MVP)
+
+**Anchor:** spec 02 §3 (130 블록 카탈로그), spec 08 W2 (메인 영역), spec 09 §1.1 (9 카테고리)
+**Driver feedback:** 사용자 (2026-05) — "블록은 자연어가 됐지만, 시트를 짜려면 결국 블록 카드 모양만 보고 머릿속으로 '이게 위치 어디 가나' 생각해야 함. 종이에 그리듯 끌어다 놓고 싶다."
+
+---
+
+## §1. 비전 (Vision)
+
+**비전공자가 실 위젯을 드래그-드롭 + 위치 조정으로 Roll20 시트 (캐릭터 시트 + 굴림 결과 틀) 를 만든다.**
+
+- 워크스페이스에 블록을 쌓는 게 *아니라*, 시트 캔버스에 위젯을 **놓는다.**
+- 위젯은 블록 (논리) 이 아니라 **실 모양 (input/select/button…)** 으로 표시 — 미리보기 ≒ 캔버스.
+- 위치 = `position: absolute; left/top/width/height` — 자유.
+- 이름 (`name`) = Roll20 의 `attr_xxx` 식별자 — **영어 + 숫자 + `_` 만**.
+
+블록 모드 (워크스페이스) 는 *제거되지 않음.* WYSIWYG 모드는 블록 모드 와 동급의 **편집 모드** 로 추가됨. 사용자가 [편집] / [조립] 토글로 전환.
+
+---
+
+## §2. 확정된 결정 (Phase A 사용자 ack 완료)
+
+| ID | 결정 | 메모 |
+|---|---|---|
+| W1 | 시트 폭 **850px** | Roll20 default 표준 |
+| W2 | snap **8px** + off 토글 | 인스펙터 픽셀 미세조정 가능 |
+| W3 | 스타일 = 클래스 + 별도 CSS (능력 제한 X) | 인스펙터 안 `class` 필드 + CSS workspace |
+| W4 | **6 카테고리** 위젯 갤러리 | 기본 / 입력 / 표시 / 굴림 / 컨테이너 / 굴림 결과 틀 |
+| W5 | 양방향 sync = Phase A 안 *간단* 포함 (hover/click) | full 양방향 = Phase B |
+| W6 | 인스펙터 안 **위치 섹션** (별도 탭 X) | 위치/크기/이름/클래스 한 패널 |
+| W7 | 모드 토글 = **메인 영역 상단** | [✏ 편집] / [🟦 조립] / [📄 미리보기] |
+| W8 | 위치 = **`position: absolute`** | 좌표 = x/y px |
+| W9 | 위젯 카드 = **실 위젯 모양** | input 위젯 = `<input>` 박스 그대로 |
+| W10 | 초기 위젯 **12개** | 10 sheet + 2 rolltemplate |
+| W11 | undo/redo **100 step** | Phase A 는 stub (Phase B 본 구현) |
+| W12 | DnD = **@dnd-kit/core + 자체 pointer** | drag = dnd-kit / move = pointer |
+
+---
+
+## §3. 추가 결정 (사용자 ack 후 변경)
+
+| ID | 결정 | 메모 |
+|---|---|---|
+| N1 | `name` 속성 (= Roll20 `attr_` 식별자) — **regex `/^[a-z][a-z0-9_]*$/i` 강제** | 한국어 / 공백 / 특수 차단. 인스펙터에서 invalid = 빨강 outline + 에러 메시지 |
+| N2 | 미리보기 **9 레이어** + **굴림 결과 틀 별도 sub-canvas** | 시트 + 굴림 결과 틀이 서로 다른 렌더 컨텍스트. 굴림 결과 틀 캔버스 폭 = **280px** (Roll20 채팅 default) |
+| N3 | `name` 속성 있는 모든 element 호버 시 **tooltip 표시** | `attr_strength` 형태로 식별자 노출. 캔버스 와 미리보기 양쪽 |
+| A 옵션 | [편집] 모드 안 **sub-tab [시트] / [굴림틀]** | tab X = 캔버스 width 자체가 다름 |
+
+---
+
+## §4. 모드 구조
+
+### §4.1 메인 영역 모드 (W7)
+
+```
+[✏ 편집]   [🟦 조립]   [📄 미리보기]
+   ▼          ▼            ▼
+┌──────┐  ┌──────┐    ┌──────┐
+│ 캔버스│  │블록스택│    │렌더링│
+│(시트)│  │       │    │       │
+│      │  │       │    │       │
+└──────┘  └──────┘    └──────┘
+```
+
+- **편집** — WYSIWYG 캔버스. 좌측 위젯 갤러리 + 캔버스 + 우측 인스펙터.
+- **조립** — 기존 Blockly 워크스페이스. 변경 없음.
+- **미리보기** — 기존 PreviewMain. 변경 없음 (+ 레이어 토글 추가).
+- **분할** — 옵션 (편집 + 미리보기 동시) — Phase A 는 [편집] 단독 우선.
+
+### §4.2 편집 모드 sub-tab (A 옵션)
+
+```
+편집 모드 캔버스 위 sub-toolbar:
+
+[시트 (850px)]  [굴림틀 (280px)]   |  폭▾ 줌+/− snap■
+   ↑ 선택됨            ↑ 클릭하면 캔버스 폭/저장공간 전환
+```
+
+- **시트** — `sheetWidgets[]` 렌더, 캔버스 폭 = 850px.
+- **굴림틀** — `rolltemplateWidgets[]` 렌더, 캔버스 폭 = 280px.
+
+저장 공간은 `workspaceStore` 안 2 배열 (시트 / 굴림틀).
+
+---
+
+## §5. 위젯 갤러리 (W4 + W9 + W10)
+
+### §5.1 카테고리 6개
+
+| ID | 한국어 라벨 | 포함 위젯 (Phase A) |
+|---|---|---|
+| `basic` | 기본 | 제목, 이미지 |
+| `input` | 입력 | 텍스트 입력칸, 숫자 입력칸, 여러 줄 입력칸, 체크박스, 선택 메뉴 |
+| `display` | 표시 | (Phase A 0, Phase B 확장) |
+| `dice` | 굴림 | 버튼, 굴림 버튼 |
+| `container` | 컨테이너 | 그룹 박스 |
+| `rolltemplate` | 굴림 결과 틀 | {{필드}}, 결과 헤더 |
+
+### §5.2 12개 초기 위젯
+
+**시트 모드 (10):**
+
+| # | 이름 | 카테고리 | 실 렌더 | 기본 attrs |
+|---|---|---|---|---|
+| 1 | 텍스트 입력칸 | input | `<input type="text">` | `{ name: '', value: '' }` |
+| 2 | 숫자 입력칸 | input | `<input type="number">` | `{ name: '', value: '0' }` |
+| 3 | 체크박스 | input | `<input type="checkbox">` | `{ name: '' }` |
+| 4 | 선택 메뉴 | input | `<select><option>…</option></select>` | `{ name: '', options: [] }` |
+| 5 | 여러 줄 입력칸 | input | `<textarea>` | `{ name: '' }` |
+| 6 | 버튼 | dice | `<button>` | `{ label: '버튼' }` |
+| 7 | 굴림 버튼 | dice | `<button class="roll">🎲</button>` | `{ name: '', label: '굴림', formula: '' }` |
+| 8 | 제목 | basic | `<h2>` | `{ text: '제목' }` |
+| 9 | 이미지 | basic | `<img>` placeholder | `{ src: '' }` |
+| 10 | 그룹 박스 | container | `<fieldset>` | `{ legend: '' }` |
+
+**굴림틀 모드 (2 — Phase B 에서 확장):**
+
+| # | 이름 | 카테고리 | 실 렌더 | 기본 attrs |
+|---|---|---|---|---|
+| 11 | {{필드}} | rolltemplate | `<span>{{name}}</span>` | `{ name: '' }` |
+| 12 | 결과 헤더 | rolltemplate | `<h3>` | `{ text: 'Roll Result' }` |
+
+### §5.3 위젯 카드 모양 (W9)
+
+- **실 위젯 모양 mini-render** — 카드 안에 실 input/button/etc 렌더 (disabled).
+- 라벨 = 한국어 자연어 (예: "텍스트 입력칸").
+- 클릭 또는 drag 가능. drag preview = 실 위젯 모양.
+
+---
+
+## §6. 캔버스 (W1 + W8)
+
+### §6.1 컨테이너
+
+- **시트** — `width: 850px; min-height: 1100px; position: relative;`
+- **굴림 결과 틀** — `width: 280px; min-height: 400px; position: relative;`
+
+배경 = 미리보기 시뮬레이션 — `autoPrefix` (D62) + runtime.css 적용.
+
+빈 상태 empty state: "위젯을 드래그해서 시작하세요" + 화살표 좌측 갤러리.
+
+### §6.2 좌표계
+
+- 좌상단 = (0, 0).
+- 모든 위젯 = `position: absolute; top: y; left: x; width: w; height: h;`.
+- snap 8px 가 on 이면 좌표 `Math.round(v / 8) * 8`.
+
+### §6.3 폭 dropdown
+
+| 모드 | 옵션 |
+|---|---|
+| 시트 | 640 / 740 / 850 (default) / 960 / 1000 / custom |
+| 굴림 결과 틀 | 260 / 280 (default) / 300 / 350 |
+
+---
+
+## §7. 인스펙터 (W6 + N1)
+
+편집 모드 + 위젯 선택 시 인스펙터 panel:
+
+```
+┌──────────────────────┐
+│ 위치 / 크기            │
+│   x     [    200] px │
+│   y     [    100] px │
+│   너비  [    150] px │
+│   높이  [     32] px │
+├──────────────────────┤
+│ 이름 (Roll20 attr)    │
+│   [strength________] │ ← regex /^[a-z][a-z0-9_]*$/i
+│   ⓘ 영어 + 숫자 + _ 만 │
+├──────────────────────┤
+│ 클래스                │
+│   [stat-box________] │
+├──────────────────────┤
+│ 기본값                │
+│   [____________]    │
+└──────────────────────┘
+```
+
+### §7.1 이름 검증 (N1)
+
+```ts
+const NAME_RE = /^[a-z][a-z0-9_]*$/i;
+function isValidAttrName(s: string): boolean {
+  return s === '' || NAME_RE.test(s);
+}
+```
+
+invalid 입력 시:
+- 입력 box 빨강 outline (`ring-2 ring-red-500`).
+- 아래 빨강 텍스트 "영어 + 숫자 + _ 만 가능 — 예: strength, hp_max".
+- store 에는 update 안 함 (사용자가 고치는 동안 stale 안 됨 — controlled draft).
+
+---
+
+## §8. 양방향 sync (W5 부분 + N3)
+
+### §8.1 Phase A 안 포함
+
+- 캔버스 → 인스펙터: 위젯 클릭 = 선택 / 인스펙터 갱신.
+- 인스펙터 → 캔버스: 값 변경 = 캔버스 즉시 reflect.
+- 미리보기 hover → 캔버스 outline (옅은).
+- 미리보기 click → 캔버스 outline (강조) + 인스펙터 갱신.
+- 캔버스 widget click → 미리보기 element 강조.
+- N3: `name` 속성 있는 모든 element 호버 시 tooltip = `attr_${name}`.
+
+### §8.2 Phase B+ (Phase A 아님)
+
+- preview ↔ blocks ↔ canvas 3 way.
+- conflict resolution / divergence indicator.
+- collaborative editing.
+
+---
+
+## §9. 미리보기 레이어 (N2)
+
+### §9.1 9 레이어 (toggle 메뉴)
+
+| ID | 라벨 | 활성 element |
+|---|---|---|
+| `all` | 전체 | 모든 element 정상 |
+| `structure` | 구조 | `<fieldset>`, `<div>`, `<section>` (컨테이너만) |
+| `input` | 입력 | `<input>`, `<select>`, `<textarea>` |
+| `roll` | 굴림 버튼 | `<button.roll>` 또는 `data-role="roll"` |
+| `text` | 텍스트 | `<h1-6>`, `<p>`, `<span>` 텍스트 |
+| `image` | 이미지 | `<img>` |
+| `table` | 표 | `<table>`, `<tr>`, `<td>` |
+| `repeating` | 반복 영역 | `[data-rfh]` repeating field section |
+| `custom` | 사용자정의 | `[class]` 가 user-defined class 인 것 |
+
+### §9.2 비활성 element 표시
+
+```css
+.layer-filter[data-active="input"] :not(input):not(select):not(textarea) {
+  opacity: 0.3;
+  pointer-events: none;
+}
+```
+
+iframe srcdoc 에 inject. uiStore 의 `previewLayer` 값에 따라 root 의 `data-active` 갱신.
+
+### §9.3 굴림 결과 틀 별도 sub-canvas
+
+굴림 결과 틀은 Roll20 채팅에 표시되므로 시트 캔버스와 별도. 폭 280px (Roll20 채팅 default).
+
+---
+
+## §10. workspaceStore 확장
+
+```ts
+interface WidgetInstance {
+  id: string;
+  type: WidgetType;       // 'text-input' | 'number-input' | ...
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  attrs: {
+    name?: string;
+    class?: string;
+    label?: string;
+    value?: string;
+    [key: string]: unknown;
+  };
+  style?: Partial<CSSStyleDeclaration>;
+}
+
+interface WorkspaceState {
+  // ... 기존 ...
+  sheetWidgets: WidgetInstance[];
+  rolltemplateWidgets: WidgetInstance[];
+  addWidget(target: 'sheet' | 'rolltemplate', type: WidgetType, x: number, y: number): string;
+  removeWidget(target: 'sheet' | 'rolltemplate', id: string): void;
+  updateWidget(target: 'sheet' | 'rolltemplate', id: string, partial: Partial<WidgetInstance>): void;
+}
+```
+
+---
+
+## §11. 의존성
+
+- `@dnd-kit/core` — drag-drop primitives.
+- `@dnd-kit/sortable` — Phase B 정렬 (Phase A 는 안 씀).
+
+---
+
+## §12. 마일스톤 (Phase A → Phase B)
+
+### Phase A MVP (이 spec)
+
+- A-0 spec doc.
+- A-1 edit mode state + shell.
+- A-2 EditCanvas 컨테이너 (850 / 280).
+- A-3 위젯 갤러리 (12 위젯 / 6 카테고리).
+- A-4 드래그-드롭 to 캔버스.
+- A-5 선택 + 이동 (pointer + 키보드).
+- A-6 인스펙터 위치/이름 (N1 강제).
+- A-7 9 레이어 토글 (미리보기).
+- A-8 양방향 sync (간단) + N3 hover.
+- A-9 라이브 검증.
+
+### Phase B (다음 세션)
+
+- 리사이즈 핸들 (8 방향).
+- 멀티 선택 + 정렬 (좌/우/중앙 등).
+- 컨테이너 위젯 안에 nested.
+- undo/redo 100 step 본 구현.
+- 양방향 sync full (blocks ↔ canvas).
+- Phase C 위젯 (반복 영역, 탭, 등).
