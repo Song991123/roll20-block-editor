@@ -1,48 +1,68 @@
 'use client';
 
-import { Box, ListTree } from 'lucide-react';
+import { Box, ListTree, LayoutPanelLeft } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { cn } from '@/lib/utils/cn';
 import BlocksLibrary from './BlocksLibrary';
 import WorkspaceTree from './WorkspaceTree';
+import WidgetGallery from './WidgetGallery';
 
 /**
- * 좌측 사이드 — [블록] / [트리] 2 모드 segmented (D48).
+ * 좌측 사이드 — [블록] / [트리] 2 모드 (D48). 편집 모드일 때는 [위젯] 갤러리.
  *
- * Anchor: docs/spec/08_wireframes.md W2-A/W2-B + 10_system_architecture §3.
+ * Anchor: docs/spec/08_wireframes.md W2-A/W2-B + 17_wysiwyg_mode.md §5.
  */
 export default function SidebarLeft({ collapsed }: { collapsed: boolean }) {
   const mode = useUiStore((s) => s.sidebarLeftMode);
   const setMode = useUiStore((s) => s.setSidebarLeftMode);
+  const mainMode = useUiStore((s) => s.mainMode);
+  const isEdit = mainMode === 'edit';
 
   if (collapsed) {
     return (
       <div className="flex flex-col items-center gap-2 py-3">
-        <button
-          type="button"
-          aria-label="블록 라이브러리"
-          onClick={() => setMode('blocks')}
-          className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--bg-hover)]',
-            mode === 'blocks' && 'bg-[var(--bg-active)] text-foreground',
-          )}
-        >
-          <Box className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          aria-label="워크스페이스 트리"
-          onClick={() => setMode('tree')}
-          className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--bg-hover)]',
-            mode === 'tree' && 'bg-[var(--bg-active)] text-foreground',
-          )}
-        >
-          <ListTree className="h-4 w-4" />
-        </button>
+        {isEdit ? (
+          <button
+            type="button"
+            aria-label="위젯 갤러리"
+            className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--bg-active)] text-foreground"
+          >
+            <LayoutPanelLeft className="h-4 w-4" />
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              aria-label="블록 라이브러리"
+              onClick={() => setMode('blocks')}
+              className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--bg-hover)]',
+                mode === 'blocks' && 'bg-[var(--bg-active)] text-foreground',
+              )}
+            >
+              <Box className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              aria-label="워크스페이스 트리"
+              onClick={() => setMode('tree')}
+              className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-[var(--bg-hover)]',
+                mode === 'tree' && 'bg-[var(--bg-active)] text-foreground',
+              )}
+            >
+              <ListTree className="h-4 w-4" />
+            </button>
+          </>
+        )}
       </div>
     );
+  }
+
+  // 편집 모드 — 위젯 갤러리 (BlocksLibrary 대신).
+  if (isEdit) {
+    return <WidgetGallery />;
   }
 
   return (
