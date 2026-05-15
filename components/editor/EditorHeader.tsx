@@ -29,6 +29,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, anyDirty } from '@/lib/stores/workspaceStore';
+import {
+  EXAMPLES,
+  loadExampleIntoWorkspaces,
+  type ExampleDescriptor,
+} from '@/lib/examples';
 
 const APP_VERSION = 'v0.1.0';
 
@@ -54,6 +59,20 @@ export default function EditorHeader() {
   const toggleLeft = useUiStore((s) => s.toggleSidebarLeft);
   const toggleRight = useUiStore((s) => s.toggleSidebarRight);
   const dirty = useWorkspaceStore((s) => anyDirty(s.workspaces));
+
+  const handleLoadExample = (descriptor: ExampleDescriptor) => async () => {
+    try {
+      const counts = await loadExampleIntoWorkspaces(descriptor);
+      const total = counts.html + counts.css + counts.i18n;
+      toast.success(
+        `${descriptor.shortName} 예시 로드 — 블록 ${total}개 (HTML ${counts.html} / CSS ${counts.css} / 번역 ${counts.i18n})`,
+        { duration: 2200 },
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`${descriptor.shortName} 로드 실패: ${msg}`, { duration: 3000 });
+    }
+  };
 
   const comingSoon = (label: string) => () =>
     toast(`${label} — 곧 추가됩니다`, { duration: 1800 });
@@ -104,18 +123,22 @@ export default function EditorHeader() {
                   <span className="text-[11px] text-muted-foreground">처음부터 만들기</span>
                 </span>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={comingSoon('판타지 모험가 1페이지')}>
-                <span className="flex flex-col">
-                  <span className="text-sm">⚔️ 판타지 모험가 (1페이지)</span>
-                  <span className="text-[11px] text-muted-foreground">곧 추가됩니다</span>
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={comingSoon('인디 narrative')}>
-                <span className="flex flex-col">
-                  <span className="text-sm">📜 인디 narrative (가상)</span>
-                  <span className="text-[11px] text-muted-foreground">곧 추가됩니다</span>
-                </span>
-              </DropdownMenuItem>
+              {EXAMPLES.map((ex) => (
+                <DropdownMenuItem
+                  key={ex.id}
+                  onSelect={handleLoadExample(ex)}
+                  data-testid={`example-${ex.id}`}
+                >
+                  <span className="flex flex-col">
+                    <span className="text-sm">
+                      {ex.icon} {ex.name}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {ex.description}
+                    </span>
+                  </span>
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
 

@@ -1,0 +1,168 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="r20_locale_value" x="20" y="20">
+    <field name="LANG">ko</field>
+    <field name="KEY">title.sheet</field>
+    <field name="VALUE">D&amp;D 5e 캐릭터 시트</field>
+    <next>
+      <block type="r20_locale_value">
+        <field name="LANG">en</field>
+        <field name="KEY">title.sheet</field>
+        <field name="VALUE">D&amp;D 5e Character Sheet</field>
+        <next>
+          <block type="r20_locale_value">
+            <field name="LANG">ko</field>
+            <field name="KEY">title.abilities</field>
+            <field name="VALUE">능력치</field>
+            <next>
+              <block type="r20_locale_value">
+                <field name="LANG">en</field>
+                <field name="KEY">title.abilities</field>
+                <field name="VALUE">Ability Scores</field>
+                <next>
+                  <block type="r20_locale_value">
+                    <field name="LANG">ko</field>
+                    <field name="KEY">title.saves</field>
+                    <field name="VALUE">내성</field>
+                    <next>
+                      <block type="r20_locale_value">
+                        <field name="LANG">en</field>
+                        <field name="KEY">title.saves</field>
+                        <field name="VALUE">Saving Throws</field>
+                        <next>
+                          <block type="r20_locale_value">
+                            <field name="LANG">ko</field>
+                            <field name="KEY">title.skills</field>
+                            <field name="VALUE">기능</field>
+                            <next>
+                              <block type="r20_locale_value">
+                                <field name="LANG">en</field>
+                                <field name="KEY">title.skills</field>
+                                <field name="VALUE">Skills</field>
+                                <next>
+                                  <block type="r20_locale_value">
+                                    <field name="LANG">ko</field>
+                                    <field name="KEY">title.combat</field>
+                                    <field name="VALUE">전투</field>
+                                    <next>
+                                      <block type="r20_locale_value">
+                                        <field name="LANG">en</field>
+                                        <field name="KEY">title.combat</field>
+                                        <field name="VALUE">Combat</field>
+                                        <next>
+                                          <block type="r20_locale_value">
+                                            <field name="LANG">ko</field>
+                                            <field name="KEY">title.equipment</field>
+                                            <field name="VALUE">장비</field>
+                                            <next>
+                                              <block type="r20_locale_value">
+                                                <field name="LANG">en</field>
+                                                <field name="KEY">title.equipment</field>
+                                                <field name="VALUE">Equipment</field>
+                                                <next>
+                                                  <block type="r20_locale_value">
+                                                    <field name="LANG">ko</field>
+                                                    <field name="KEY">title.spells</field>
+                                                    <field name="VALUE">마법</field>
+                                                    <next>
+                                                      <block type="r20_locale_value">
+                                                        <field name="LANG">en</field>
+                                                        <field name="KEY">title.spells</field>
+                                                        <field name="VALUE">Spells</field>
+                                                        <next>
+                                                          <block type="r20_locale_value">
+                                                            <field name="LANG">ko</field>
+                                                            <field name="KEY">title.notes</field>
+                                                            <field name="VALUE">비고</field>
+                                                            <next>
+                                                              <block type="r20_locale_value">
+                                                                <field name="LANG">en</field>
+                                                                <field name="KEY">title.notes</field>
+                                                                <field name="VALUE">Notes</field>
+                                                                <next>
+                                                                  <block type="r20_locale_value">
+                                                                    <field name="LANG">ko</field>
+                                                                    <field name="KEY">label.hp</field>
+                                                                    <field name="VALUE">체력</field>
+                                                                    <next>
+                                                                      <block type="r20_locale_value">
+                                                                        <field name="LANG">en</field>
+                                                                        <field name="KEY">label.hp</field>
+                                                                        <field name="VALUE">Hit Points</field>
+                                                                        <next>
+                                                                          <block type="r20_locale_value">
+                                                                            <field name="LANG">ko</field>
+                                                                            <field name="KEY">label.ac</field>
+                                                                            <field name="VALUE">방어도</field>
+                                                                            <next>
+                                                                              <block type="r20_locale_value">
+                                                                                <field name="LANG">en</field>
+                                                                                <field name="KEY">label.ac</field>
+                                                                                <field name="VALUE">Armor Class</field>
+                                                                                <next>
+                                                                                  <block type="r20_locale_value">
+                                                                                    <field name="LANG">ko</field>
+                                                                                    <field name="KEY">label.init</field>
+                                                                                    <field name="VALUE">이니셔티브</field>
+                                                                                    <next>
+                                                                                      <block type="r20_locale_value">
+                                                                                        <field name="LANG">en</field>
+                                                                                        <field name="KEY">label.init</field>
+                                                                                        <field name="VALUE">Initiative</field>
+                                                                                        <next>
+                                                                                          <block type="r20_locale_value">
+                                                                                            <field name="LANG">ko</field>
+                                                                                            <field name="KEY">label.speed</field>
+                                                                                            <field name="VALUE">이동속도</field>
+                                                                                            <next>
+                                                                                              <block type="r20_locale_value">
+                                                                                                <field name="LANG">en</field>
+                                                                                                <field name="KEY">label.speed</field>
+                                                                                                <field name="VALUE">Speed</field>
+                                                                                              </block>
+                                                                                            </next>
+                                                                                          </block>
+                                                                                        </next>
+                                                                                      </block>
+                                                                                    </next>
+                                                                                  </block>
+                                                                                </next>
+                                                                              </block>
+                                                                            </next>
+                                                                          </block>
+                                                                        </next>
+                                                                      </block>
+                                                                    </next>
+                                                                  </block>
+                                                                </next>
+                                                              </block>
+                                                            </next>
+                                                          </block>
+                                                        </next>
+                                                      </block>
+                                                    </next>
+                                                  </block>
+                                                </next>
+                                              </block>
+                                            </next>
+                                          </block>
+                                        </next>
+                                      </block>
+                                    </next>
+                                  </block>
+                                </next>
+                              </block>
+                            </next>
+                          </block>
+                        </next>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </next>
+  </block>
+</xml>

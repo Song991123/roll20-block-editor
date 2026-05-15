@@ -1,0 +1,18 @@
+{
+  "id": "dnd5e",
+  "name": "D&D 5e 캐릭터 시트",
+  "shortName": "D&D 5e",
+  "description": "Dungeons & Dragons 5판 가상 sample — 능력치 6 / 내성 6 / 기능 18 / HP·AC·이니셔티브·이동속도 + 장비·마법 반복 섹션 + rolltemplate. V2 catalog 의 generality 검증.",
+  "system": "dnd5e",
+  "visibility": "public",
+  "language": "ko",
+  "author": "Roll20 Block Editor — V2 sample",
+  "license": "MIT",
+  "version": "1.0.0",
+  "blockCount": 509,
+  "preview": {
+    "width": 920,
+    "height": 1400
+  },
+  "systemTags": ["d20", "fantasy", "tabletop", "dnd"]
+}
