@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import { useChatStore } from '@/lib/stores/chatStore';
+import { parseRoot } from '@/lib/dice/parser';
+import { executeRoot, type AttrResolver, type QueryResolver } from '@/lib/dice/executor';
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
@@ -79,13 +82,50 @@ export default function PreviewMain() {
     // sanitize / darkMode 변경 시 즉시 재emit 도 동일 path.
   }, [htmlXml, cssXml, i18nXml, sanitize, darkMode, setEmitCache, setEmitWarnings]);
 
-  // 미리보기 → 우측 인스펙터 sync (postMessage).
+  // 미리보기 → 우측 인스펙터 sync + 굴림 결과 채팅 박음 (postMessage).
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (e.source !== iframeRef.current?.contentWindow) return;
       const data = e.data;
       if (data?.type === 'r20:select' && typeof data.blockId === 'string') {
         setSelected(data.blockId, 'preview');
+        return;
+      }
+      if (data?.type === 'r20:roll') {
+        const attrsMap: Record<string, string> = (data.attrs ?? {}) as Record<string, string>;
+        const resolver: AttrResolver = (name) => {
+          if (Object.prototype.hasOwnProperty.call(attrsMap, name)) return attrsMap[name];
+          return undefined;
+        };
+        const query: QueryResolver = (prompt, fallback) => {
+          if (typeof window === 'undefined') return fallback;
+          const ans = window.prompt(prompt, fallback);
+          return ans === null ? fallback : ans;
+        };
+        const expression = String(data.value ?? '').trim();
+        const label = String(data.label ?? '').trim();
+        const senderRaw = String(data.name ?? '').trim();
+        const sender = label || (senderRaw ? senderRaw.replace(/^roll_/, '') : 'Sheet');
+        let result;
+        try {
+          const root = parseRoot(expression);
+          result = executeRoot(root, { attr: resolver, query });
+        } catch (err) {
+          result = {
+            kind: 'error' as const,
+            message: err instanceof Error ? err.message : String(err),
+            raw: expression,
+          };
+        }
+        useChatStore.getState().pushRoll({
+          sender,
+          expression,
+          result,
+        });
+        // 굴림 발생 시 [채팅] 탭으로 자동 전환 + 우측 사이드 펼침.
+        const ui = useUiStore.getState();
+        if (ui.sidebarRightCollapsed) ui.toggleSidebarRight();
+        if (ui.sidebarRightTab !== 'chat') ui.setSidebarRightTab('chat');
       }
     };
     window.addEventListener('message', onMessage);

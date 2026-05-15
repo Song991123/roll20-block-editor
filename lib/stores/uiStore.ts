@@ -10,7 +10,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type SidebarLeftMode = 'blocks' | 'tree';        // D48
-export type SidebarRightTab = 'attrs' | 'code';         // D49
+export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴림 결과)
 export type CodeSubTab = 'html' | 'css' | 'i18n';
 export type WorkspaceKey = 'html' | 'css' | 'i18n';
 export type PreviewZoom = 'fit' | number;               // D52

@@ -40,7 +40,53 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       parent.postMessage({ type: 'r20:select', blockId: id }, '*');
     } catch (e) {}
   }
+  function collectAttrs() {
+    var out = {};
+    var nodes = document.querySelectorAll('input[name^="attr_"], select[name^="attr_"], textarea[name^="attr_"]');
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      var nm = n.getAttribute('name') || '';
+      if (nm.indexOf('attr_') !== 0) continue;
+      var key = nm.substring(5);
+      var val;
+      if (n.tagName === 'INPUT' && (n.type === 'checkbox' || n.type === 'radio')) {
+        val = n.checked ? (n.value || '1') : '';
+      } else {
+        val = n.value || '';
+      }
+      if (val !== '' || out[key] === undefined) out[key] = val;
+    }
+    return out;
+  }
+  function findRollButton(node) {
+    while (node && node !== document.body) {
+      if (node.tagName === 'BUTTON' && node.getAttribute('type') === 'roll') {
+        return {
+          name: node.getAttribute('name') || '',
+          value: node.getAttribute('value') || '',
+          label: (node.textContent || '').trim()
+        };
+      }
+      node = node.parentNode;
+    }
+    return null;
+  }
   document.addEventListener('click', function (e) {
+    var rollInfo = findRollButton(e.target);
+    if (rollInfo) {
+      try { e.preventDefault(); } catch (_) {}
+      try { e.stopPropagation(); } catch (_) {}
+      try {
+        parent.postMessage({
+          type: 'r20:roll',
+          name: rollInfo.name,
+          value: rollInfo.value,
+          label: rollInfo.label,
+          attrs: collectAttrs()
+        }, '*');
+      } catch (err) {}
+      return false;
+    }
     var node = e.target;
     while (node && node !== document.body) {
       if (node.dataset && node.dataset.r20BlockId) {
