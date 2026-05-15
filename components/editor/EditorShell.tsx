@@ -136,21 +136,25 @@ export default function EditorShell() {
   const workspaceVisible = mainMode !== 'preview';
   const previewVisible = mainMode !== 'assemble';
 
+  // onResize 는 dependency-free — store 의 최신 mainSplit 을 매 호출 시 getState 로 직접 읽음.
+  // 이전 버전은 `[mainSplit.left]` 를 deps 로 박았는데, mousemove 이벤트가
+  // 같은 tick 안에 연속 발생하면 closure 가 stale 상태를 잡고 있어서 결과적으로
+  // 한 번의 drag 가 ~20px 이상 이동을 못 했음. fresh getState 로 그 문제 해소.
   const onResize = useCallback(
     (deltaX: number) => {
       const node = splitContainerRef.current;
       if (!node) return;
       const totalW = node.getBoundingClientRect().width;
-      // 리사이저 두께 6px — 양쪽 최소 280 보장 못 하면 무시.
       const minTotal = MIN_PANE_PX * 2 + 6;
       if (totalW < minTotal) return;
-      const currentLeftPx = (mainSplit.left / 100) * totalW;
+      const freshLeft = useUiStore.getState().mainSplit.left;
+      const currentLeftPx = (freshLeft / 100) * totalW;
       let nextLeftPx = currentLeftPx + deltaX;
       nextLeftPx = Math.max(MIN_PANE_PX, Math.min(totalW - MIN_PANE_PX - 6, nextLeftPx));
       const nextLeftPct = (nextLeftPx / totalW) * 100;
       setMainSplit(nextLeftPct, 100 - nextLeftPct);
     },
-    [mainSplit.left, setMainSplit],
+    [setMainSplit],
   );
 
   // 각 pane 의 width style — mode 별 다름.
@@ -219,20 +223,4 @@ export default function EditorShell() {
               data-visible={previewVisible ? 'true' : 'false'}
             >
               {previewVisible && <PreviewMain />}
-            </div>
-          </div>
-        </section>
-
-        <aside
-          className={cn(
-            'flex flex-col border-l border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
-            rightCollapsed && 'border-l-0',
-          )}
-        >
-          {!rightCollapsed && <SidebarRight />}
-        </aside>
-      </main>
-      <Statusbar />
-    </div>
-  );
-}
+            </
