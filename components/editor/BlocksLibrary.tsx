@@ -220,6 +220,11 @@ function BlockTile({ def }: { def: BlockDef }) {
       const safeScale = Math.max(0.35, fitScale);
       ws.setScale(safeScale);
       const h = Math.max(36, Math.ceil(hw.height * safeScale) + 12);
+      // 컨테이너 dim 을 DOM 에 즉시 반영 (React reconciliation 전).
+      // SVG width/height attr 는 Blockly.svgResize() 명시 호출돼야 갱신 — 안 하면 SVG 가 36px 에 고정돼 c-shape 블록이 세로 잘림.
+      host.style.width = `${TARGET_W}px`;
+      host.style.height = `${h}px`;
+      try { Blockly.svgResize(ws); } catch { /* noop */ }
       setPreviewSize({ w: TARGET_W, h });
       blocklyWsRef.current = ws;
     } catch (err) {
