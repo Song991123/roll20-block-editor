@@ -20,7 +20,7 @@ interface PreviewStore {
   darkMode: boolean;
   sanitize: boolean;        // D4 ① — default ON
   autoRegen: boolean;       // 큰 시트 OFF 권장
-  iframeSandbox: string;    // "allow-same-origin"
+  iframeSandbox: string;    // allow-scripts only — 사용자 시트 안 script 는 unique origin 안에서만 실행 (parent 접근 X). preview bridge script 동작 필요.
 
   dynamicToggles: DynamicToggle[];
 
@@ -35,7 +35,7 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   darkMode: true,
   sanitize: true,            // D4 ① default ON
   autoRegen: true,
-  iframeSandbox: 'allow-same-origin',
+  iframeSandbox: 'allow-scripts',
   dynamicToggles: [],
 
   setDarkMode: (v) => set({ darkMode: v }),
