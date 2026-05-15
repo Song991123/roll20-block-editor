@@ -1,0 +1,375 @@
+/**
+ * Input 카테고리 — 9 블록 (Stage A-3).
+ *
+ * Anchor:
+ *   - docs/spec/02_functional_spec.md §3.1 ID 2 (입력 / Input, hue 230).
+ *   - docs/spec/02_functional_spec.md §3.2 — stack + c (select 의 옵션 슬롯).
+ *   - docs/spec/04_block_taxonomy_v2.md (Input 카탈로그).
+ *   - docs/spec/12_roll20_output_spec.md §2 (HTML emit contract — name="attr_*").
+ *
+ * Roll20 시트의 폼 인풋 — 모두 `name="attr_${NAME}"` 규약으로 emit.
+ * 시스템 specific 토큰 0. 일반화된 입력 필드만.
+ */
+
+import * as Blockly from 'blockly';
+import { type BlockDef, type GeneratorContext } from './types';
+
+// ---------- 카테고리 / 상수 ----------
+
+const INPUT = 'input' as const;
+/** spec §3.1 — 입력 카테고리 hue. */
+const HUE = 230;
+
+// ---------- init helper ----------
+
+function mkInit(builder: (b: Blockly.Block) => void): (block: unknown) => void {
+  return function (this: Blockly.Block) {
+    this.setColour(HUE);
+    builder(this);
+  } as unknown as (block: unknown) => void;
+}
+
+/** stack prev/next (untyped — 모든 컨테이너에 들어감). */
+function setStatementHooks(b: Blockly.Block): void {
+  b.setPreviousStatement(true, null);
+  b.setNextStatement(true, null);
+}
+
+// ---------- HTML emit helper ----------
+
+function escapeAttr(value: string): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/** ` attr="value"` 또는 빈 문자열 — value 비면 attr 자체 생략. */
+function attr(name: string, value: string): string {
+  const v = String(value ?? '').trim();
+  if (!v) return '';
+  return ` ${name}="${escapeAttr(v)}"`;
+}
+
+/** ` class="sheet-${CLASS}"` — CLASS 비면 생략. */
+function sheetClassAttr(cls: string): string {
+  const v = String(cls ?? '').trim();
+  if (!v) return '';
+  return ` class="sheet-${escapeAttr(v)}"`;
+}
+
+/** Roll20 attribute name 규약 — ` name="attr_${NAME}"`. */
+function nameAttr(name: string): string {
+  const v = String(name ?? '').trim();
+  if (!v) return '';
+  return ` name="attr_${escapeAttr(v)}"`;
+}
+
+// ---------- 9 블록 정의 ----------
+
+export const INPUT_BLOCKS: BlockDef[] = [
+  // 1) text input -----------------------------------------------------------
+  {
+    type: 'r20_text_input',
+    shape: 'stack',
+    category: INPUT,
+    label: '텍스트 입력',
+    tooltip: '한 줄 텍스트 입력 — <input type="text">.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('텍스트')
+        .appendField('속성')
+        .appendField(new Blockly.FieldTextInput('name'), 'NAME');
+      b.appendDummyInput()
+        .appendField('class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('기본값')
+        .appendField(new Blockly.FieldTextInput(''), 'DEFAULT');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const def = String(b.getFieldValue('DEFAULT') ?? '');
+      return `<input type="text"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', def)}>`;
+    },
+  },
+
+  // 2) number input ---------------------------------------------------------
+  {
+    type: 'r20_number_input',
+    shape: 'stack',
+    category: INPUT,
+    label: '숫자 입력',
+    tooltip: '숫자 입력 — <input type="number"> (min/max 옵션).',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('숫자')
+        .appendField('속성')
+        .appendField(new Blockly.FieldTextInput('name'), 'NAME');
+      b.appendDummyInput()
+        .appendField('class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('min')
+        .appendField(new Blockly.FieldTextInput(''), 'MIN')
+        .appendField('max')
+        .appendField(new Blockly.FieldTextInput(''), 'MAX');
+      b.appendDummyInput()
+        .appendField('기본값')
+        .appendField(new Blockly.FieldTextInput('0'), 'DEFAULT');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const min = String(b.getFieldValue('MIN') ?? '');
+      const max = String(b.getFieldValue('MAX') ?? '');
+      const def = String(b.getFieldValue('DEFAULT') ?? '');
+      return (
+        `<input type="number"${sheetClassAttr(cls)}${nameAttr(name)}` +
+        `${attr('min', min)}${attr('max', max)}${attr('value', def)}>`
+      );
+    },
+  },
+
+  // 3) checkbox -------------------------------------------------------------
+  {
+    type: 'r20_checkbox',
+    shape: 'stack',
+    category: INPUT,
+    label: '체크박스',
+    tooltip: '체크박스 — <input type="checkbox">.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('체크박스')
+        .appendField('속성')
+        .appendField(new Blockly.FieldTextInput('name'), 'NAME');
+      b.appendDummyInput()
+        .appendField('class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('기본 체크')
+        .appendField(new Blockly.FieldCheckbox('FALSE'), 'CHECKED');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const checked = String(b.getFieldValue('CHECKED') ?? 'FALSE') === 'TRUE';
+      const checkedAttr = checked ? ' checked="checked"' : '';
+      return `<input type="checkbox"${sheetClassAttr(cls)}${nameAttr(name)}${checkedAttr}>`;
+    },
+  },
+
+  // 4) select (c-shape, options statement slot) -----------------------------
+  {
+    type: 'r20_select',
+    shape: 'c',
+    category: INPUT,
+    label: '드롭다운 select',
+    tooltip: '드롭다운 — <select>. 안에 옵션 블록을 쌓는다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('select')
+        .appendField('속성')
+        .appendField(new Blockly.FieldTextInput('name'), 'NAME')
+        .appendField('class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendStatementInput('OPTIONS').setCheck('SelectOption').appendField('옵션:');
+      setStatementHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const options = ctx.statementToCode(block, 'OPTIONS');
+      const head = `<select${sheetClassAttr(cls)}${nameAttr(name)}>`;
+      if (!options || !options.trim()) return `${head}</select>`;
+      return `${head}\n${ctx.indent(options)}\n</select>`;
+    },
+  },
+
+  // 5) select option (stack — fits SelectOption slot) -----------------------
+  {
+    type: 'r20_select_option',
+    shape: 'stack',
+    category: INPUT,
+    label: 'option 항목',
+    tooltip: 'select 의 옵션 — <option value="VALUE">LABEL</option>.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('option')
+        .appendField('value')
+        .appendField(new Blockly.FieldTextInput(''), 'VALUE')
+        .appendField('라벨')
+        .appendField(new Blockly.FieldTextInput('Option'), 'LABEL');
+      b.setPreviousStatement(true, 'SelectOption');
+      b.setNextStatement(true, 'SelectOption');
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const value = String(b.getFieldValue('VALUE') ?? '');
+      const label = String(b.getFieldValue('LABEL') ?? '');
+      return `<option${attr('value', value)}>${escapeAttr(label)}</option>`;
+    },
+  },
+
+  // 6) textarea -------------------------------------------------------------
+  {
+    type: 'r20_textarea',
+    shape: 'stack',
+    category: INPUT,
+    label: '여러 줄 textarea',
+    tooltip: '여러 줄 입력 — <textarea>.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('textarea')
+        .appendField('속성')
+        .appendField(new Blockly.FieldTextInput('name'), 'NAME');
+      b.appendDummyInput()
+        .appendField('class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS')
+        .appendField('rows')
+        .appendField(new Blockly.FieldNumber(3, 1, 50, 1), 'ROWS');
+      b.appendDummyInput()
+        .appendField('기본값')
+        .appendField(new Blockly.FieldTextInput(''), 'DEFAULT');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const rowsRaw = Number(b.getFieldValue('ROWS') ?? 3);
+      const rows = Number.isFinite(rowsRaw) && rowsRaw >= 1 ? Math.floor(rowsRaw) : 3;
+      const def = String(b.getFieldValue('DEFAULT') ?? '');
+      return (
+        `<textarea${sheetClassAttr(cls)}${nameAttr(name)}` +
+        ` rows="${rows}">${escapeAttr(def)}</textarea>`
+      );
+    },
+  },
+
+  // 7) radio ----------------------------------------------------------------
+  {
+    type: 'r20_radio',
+    shape: 'stack',
+    category: INPUT,
+    label: '라디오 버튼',
+    tooltip: '라디오 — <label><input type="radio">LABEL</label>.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('radio')
+        .appendField('속성')
+        .appendField(new Blockly.FieldTextInput('name'), 'NAME');
+      b.appendDummyInput()
+        .appendField('value')
+        .appendField(new Blockly.FieldTextInput(''), 'VALUE')
+        .appendField('class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('라벨')
+        .appendField(new Blockly.FieldTextInput('Option'), 'LABEL');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const value = String(b.getFieldValue('VALUE') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const label = String(b.getFieldValue('LABEL') ?? '');
+      return (
+        `<label><input type="radio"${sheetClassAttr(cls)}${nameAttr(name)}` +
+        `${attr('value', value)}>${escapeAttr(label)}</label>`
+      );
+    },
+  },
+
+  // 8) hidden input ---------------------------------------------------------
+  {
+    type: 'r20_hidden_input',
+    shape: 'stack',
+    category: INPUT,
+    label: '숨김 hidden',
+    tooltip: '숨겨진 값 — <input type="hidden">. 계산용 attr 저장.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('hidden')
+        .appendField('속성')
+        .appendField(new Blockly.FieldTextInput('name'), 'NAME');
+      b.appendDummyInput()
+        .appendField('기본값')
+        .appendField(new Blockly.FieldTextInput('0'), 'DEFAULT');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const def = String(b.getFieldValue('DEFAULT') ?? '');
+      return `<input type="hidden"${nameAttr(name)}${attr('value', def)}>`;
+    },
+  },
+
+  // 9) file input -----------------------------------------------------------
+  {
+    type: 'r20_file_input',
+    shape: 'stack',
+    category: INPUT,
+    label: '파일 선택',
+    tooltip: '파일 업로드 — <input type="file">.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('file')
+        .appendField('속성')
+        .appendField(new Blockly.FieldTextInput('name'), 'NAME');
+      b.appendDummyInput()
+        .appendField('class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('accept')
+        .appendField(new Blockly.FieldTextInput(''), 'ACCEPT');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const accept = String(b.getFieldValue('ACCEPT') ?? '');
+      return `<input type="file"${sheetClassAttr(cls)}${nameAttr(name)}${attr('accept', accept)}>`;
+    },
+  },
+];
+
+/**
+ * Stage A-3 — Input 9 블록 등록.
+ *
+ * 1) BlockDef 메타를 target 배열에 push (UI 카탈로그 표시용).
+ * 2) Blockly.Blocks[type] = { init } 등록 (워크스페이스 instantiate 가능).
+ *
+ * registry.ts `registerAllBlocks()` 안에서 호출. 멱등성은 호출자가 보장.
+ */
+export function registerInputBlocks(target: BlockDef[]): void {
+  type BlocklyBlockMap = Record<string, { init: () => void }>;
+  const blocksMap = Blockly.Blocks as unknown as BlocklyBlockMap;
+
+  for (const def of INPUT_BLOCKS) {
+    target.push(def);
+    if (def.init) {
+      blocksMap[def.type] = { init: def.init as unknown as () => void };
+    }
+  }
+}
+
+/** Stage A-3 의 generator 매핑 — emit-worker lookup. */
+export const INPUT_GENERATORS: Record<
+  string,
+  (block: unknown, ctx: GeneratorContext) => string | [string, number]
+> = Object.fromEntries(
+  INPUT_BLOCKS.filter((d) => d.generator).map((d) => [d.type, d.generator!]),
+);
