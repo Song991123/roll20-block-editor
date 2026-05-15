@@ -29,6 +29,7 @@ import {
   getRegistryVersion,
 } from '@/lib/blocks/registry';
 import { cn } from '@/lib/utils/cn';
+import { playSfx } from '@/lib/sfx';
 
 /**
  * 좌측 [블록] 모드. Anchor: 08 W2-A + 02 §3 + D26 ②.
@@ -251,8 +252,10 @@ function BlockTile({ def }: { def: BlockDef }) {
   const handleAdd = useCallback(() => {
     const id = appendBlock(def.type);
     if (id) {
+      playSfx('block.add');
       toast(`'${def.label}' 블록 추가됨 — ${activeWs.toUpperCase()} 워크스페이스`, { duration: 1600 });
     } else {
+      playSfx('toast.error');
       toast.error('블록 추가 실패 (워크스페이스 미연결?)', { duration: 2200 });
     }
   }, [appendBlock, def.label, def.type, activeWs]);

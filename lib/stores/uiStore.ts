@@ -1,5 +1,5 @@
 /**
- * UI store — 사이드 패널 / 미리보기 / 검색 등 transient UI 상태.
+ * UI store — 사이드 패널 / 미리보기 / 검색 / 효과음 등 transient UI 상태.
  *
  * Anchor: docs/spec/10_system_architecture.md §4.2.
  *
@@ -57,6 +57,12 @@ export interface UiState {
   // 미리보기
   previewZoom: PreviewZoom;
 
+  // 효과음 (Web Audio 합성). lib/sfx/player.ts 의 playSfx() 가 읽음.
+  // - sfxEnabled: 마스터 on/off (default true). statusbar 토글.
+  // - sfxVolume: 0..1 (default 0.6). 현재 UI 슬라이더 없음, 향후 설정 모달에서.
+  sfxEnabled: boolean;
+  sfxVolume: number;
+
   // Actions
   setMainMode: (m: MainMode) => void;
   toggleMainMode: () => void;
@@ -74,6 +80,9 @@ export interface UiState {
   setTreeNodeExpanded: (id: string, b: boolean) => void;
   setTreeSearch: (q: string) => void;
   setPreviewZoom: (z: PreviewZoom) => void;
+  setSfxEnabled: (b: boolean) => void;
+  toggleSfxEnabled: () => void;
+  setSfxVolume: (v: number) => void;
 }
 
 const DEFAULT_STATE = {
@@ -92,6 +101,8 @@ const DEFAULT_STATE = {
   treeExpanded: {} as Record<string, boolean>,
   treeSearch: '',
   previewZoom: 'fit' as PreviewZoom,
+  sfxEnabled: true,
+  sfxVolume: 0.6,
 };
 
 // 분할 모드 cycle: split → assemble → preview → split.
@@ -148,6 +159,9 @@ export const useUiStore = create<UiState>()(
         set((s) => ({ treeExpanded: { ...s.treeExpanded, [id]: b } })),
       setTreeSearch: (q) => set({ treeSearch: q }),
       setPreviewZoom: (z) => set({ previewZoom: z }),
+      setSfxEnabled: (b) => set({ sfxEnabled: b }),
+      toggleSfxEnabled: () => set((s) => ({ sfxEnabled: !s.sfxEnabled })),
+      setSfxVolume: (v) => set({ sfxVolume: Math.max(0, Math.min(1, v)) }),
     }),
     {
       name: 'r20-ui',
@@ -186,6 +200,8 @@ export const useUiStore = create<UiState>()(
         blocksExpandedCategories: s.blocksExpandedCategories,
         blocksAdvancedShown: s.blocksAdvancedShown,
         previewZoom: s.previewZoom,
+        sfxEnabled: s.sfxEnabled,
+        sfxVolume: s.sfxVolume,
       }),
     },
   ),

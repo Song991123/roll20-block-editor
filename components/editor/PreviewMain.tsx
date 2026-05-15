@@ -18,6 +18,7 @@ import { getBlockDef } from '@/lib/blocks/registry';
 import { emitAll } from '@/lib/preview/emit';
 import { buildSheetDoc } from '@/lib/preview/buildDoc';
 import PreviewToolbar from './PreviewToolbar';
+import { playSfx } from '@/lib/sfx';
 import PreviewEmptyState from './PreviewEmptyState';
 
 /**
@@ -127,6 +128,24 @@ export default function PreviewMain() {
           expression,
           result,
         });
+        // SFX — 결과별 분기.
+        //   error  → toast.error 사운드
+        //   crit   → 상승 fanfare
+        //   fumble → 하강 sad horn
+        //   else   → dice tumble + pop
+        if (result.kind === 'error') {
+          playSfx('toast.error');
+        } else if (result.kind === 'expr' && result.isCrit) {
+          playSfx('roll.crit');
+        } else if (result.kind === 'expr' && result.isFumble) {
+          playSfx('roll.fumble');
+        } else if (result.kind === 'rolltemplate' && result.anyCrit) {
+          playSfx('roll.crit');
+        } else if (result.kind === 'rolltemplate' && result.anyFumble) {
+          playSfx('roll.fumble');
+        } else {
+          playSfx('roll.click');
+        }
         // 굴림 발생 시 [채팅] 탭으로 자동 전환 + 우측 사이드 펼침.
         const ui = useUiStore.getState();
         if (ui.sidebarRightCollapsed) ui.toggleSidebarRight();
@@ -169,11 +188,13 @@ export default function PreviewMain() {
           const id = appendBlock(type);
           const def = getBlockDef(type);
           if (id) {
+            playSfx('block.add');
             toast(
               `'${def?.label ?? type}' 추가됨 — ${(activeWs as WorkspaceKey).toUpperCase()} 워크스페이스`,
               { duration: 1600 },
             );
           } else {
+            playSfx('toast.error');
             toast.error('블록 추가 실패', { duration: 2200 });
           }
         }}

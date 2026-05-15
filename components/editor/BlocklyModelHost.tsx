@@ -28,6 +28,7 @@ import {
 } from '@/lib/stores/workspaceStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { registerAllBlocks, getBlockDef } from '@/lib/blocks/registry';
+import { playSfx } from '@/lib/sfx';
 
 const WORKSPACE_KEYS: WorkspaceKey[] = ['html', 'css', 'i18n'];
 
@@ -78,8 +79,23 @@ export default function BlocklyModelHost({ visible }: Props) {
       adapter.registerWorkspace(key, ws);
 
       // 변경 시 직렬화 → store 캐시.
-      const listener = () => {
+      // 추가로: BLOCK_MOVE 이벤트에서 oldParentId/newParentId 가 달라지면
+      //   = connection snap (블록 결합) → 'block.snap' SFX.
+      //   isDragging 중이면 skip (drag 중간 spurious move 가 들어옴).
+      const listener = (ev?: Blockly.Events.Abstract) => {
         if (ws.isDragging()) return;
+        // Snap detection — drag end 의 BLOCK_MOVE 만 사운드.
+        if (ev && ev.type === Blockly.Events.BLOCK_MOVE && !ws.isDragging()) {
+          const mv = ev as Blockly.Events.BlockMove;
+          // 새 부모 또는 기존 부모가 있고, 둘이 다름 = snap.
+          if (
+            (mv.newParentId !== undefined || mv.oldParentId !== undefined) &&
+            mv.newParentId !== mv.oldParentId &&
+            mv.newParentId
+          ) {
+            playSfx('block.snap');
+          }
+        }
         try {
           const dom = Blockly.Xml.workspaceToDom(ws);
           const xml = Blockly.Xml.domToText(dom);
@@ -187,11 +203,13 @@ export default function BlocklyModelHost({ visible }: Props) {
               const id = appendBlock(type);
               const def = getBlockDef(type);
               if (id) {
+                playSfx('block.add');
                 toast(
                   `'${def?.label ?? type}' 추가됨 — ${activeWorkspace.toUpperCase()} 워크스페이스`,
                   { duration: 1600 },
                 );
               } else {
+                playSfx('toast.error');
                 toast.error('블록 추가 실패', { duration: 2200 });
               }
             }

@@ -3,6 +3,7 @@
 import { useWorkspaceStore, totalBlockCount, anyDirty } from '@/lib/stores/workspaceStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { useUiStore } from '@/lib/stores/uiStore';
+import SfxToggle from './SfxToggle';
 
 const APP_VERSION = 'v0.1.0';
 
@@ -40,6 +41,8 @@ export default function Statusbar() {
       <span className="text-border">·</span>
       <span>워크스페이스: {WORKSPACE_LABEL[treeTab]}</span>
       <span className="flex-1" />
+      <SfxToggle />
+      <span className="text-border">·</span>
       <span className="tabular-nums opacity-70">{APP_VERSION}</span>
     </footer>
   );
