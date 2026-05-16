@@ -184,22 +184,12 @@ class DefaultAdapter implements BlocklyAdapter {
   hydrateFromXml(key: WorkspaceKey, xml: string): void {
     const ws = this.workspaces[key];
     if (!ws || !xml) return;
-    // Perf optimization (Phase 3 — docs/perf/05_yshy_inject.md):
-    //   setResizesEnabled(false) wrap is the canonical Blockly 12 bulk-load
-    //   pattern (mirrored from appendDomToWorkspace internals). Skips the
-    //   O(N) resizeContents() recomputation on every block append → for 6K
-    //   blocks this avoids ~6K redundant workspace resize calls.
-    //   Events.disable + setResizesEnabled together cover the two biggest
-    //   per-block costs during XML hydrate. queueRender batching is already
-    //   built-in to Blockly 12 (render_management.ts).
     Blockly.Events.disable();
-    ws.setResizesEnabled(false);
     try {
       ws.clear();
       const dom = Blockly.utils.xml.textToDom(xml);
       Blockly.Xml.domToWorkspace(dom, ws);
     } finally {
-      ws.setResizesEnabled(true);
       Blockly.Events.enable();
     }
   }
