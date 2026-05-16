@@ -254,6 +254,11 @@ class DefaultAdapter implements BlocklyAdapter {
     // Re-implement: Blockly.Xml.domToWorkspace 는 root <xml> 의 자식만 처리하므로
     // 각 chunk 를 가짜 <xml> wrapper 에 묶어 호출.
     Blockly.Events.disable();
+    // 중요: 각 chunk 안에서 setResizesEnabled wrap 을 우리가 직접 관리.
+    // Blockly 의 `appendDomToWorkspace` 가 내부적으로 `ws.clear()` 를 호출하므로
+    //   chunk 단위로 호출하면 이전 chunk 내용이 매번 지워짐 → 사용 불가.
+    // → 직접 `Blockly.Xml.domToWorkspace` 호출 (append 만 하고 clear 안 함).
+    ws.setResizesEnabled(false);
     try {
       ws.clear();
       if (total === 0) {
@@ -278,11 +283,13 @@ class DefaultAdapter implements BlocklyAdapter {
           // children 은 다른 doc 에 속할 수 있으니 cloneNode — 원본 dom 손상 방지.
           chunkRoot.appendChild(allChildren[j].cloneNode(true));
         }
-        Blockly.Xml.appendDomToWorkspace(chunkRoot, ws);
+        // domToWorkspace 는 clear 안 함 (append-only). setResizesEnabled wrap 은 우리가 외부에서.
+        Blockly.Xml.domToWorkspace(chunkRoot, ws);
         done = end;
         onProgress?.(done, total);
       }
     } finally {
+      ws.setResizesEnabled(true);
       Blockly.Events.enable();
     }
   }
