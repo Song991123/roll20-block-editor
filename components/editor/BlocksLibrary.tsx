@@ -197,9 +197,38 @@ function BlockTile({ def }: { def: BlockDef }) {
   const previewHostRef = useRef<HTMLDivElement | null>(null);
   const blocklyWsRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const [previewSize, setPreviewSize] = useState<{ w: number; h: number }>({ w: 144, h: 36 });
+  // Hot path #2: IntersectionObserver lazy mount — viewport 밖 tile 은 inject 안 함.
+  // baseline 00 §1.4: 138 tile × ~120ms inject = ~16s worst-case main-thread block.
+  // 처음엔 visible=false → skeleton 만 render → IO 가 onScreen 알려주면 그때 mount.
+  const [isOnScreen, setIsOnScreen] = useState(false);
 
-  // mini workspace + 단일 블록 inject.
   useEffect(() => {
+    const host = previewHostRef.current;
+    if (!host) return;
+    // IO unsupported (Safari < 12.1, jsdom) → 즉시 mount (회귀 방지).
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsOnScreen(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setIsOnScreen(true);
+            observer.disconnect();
+            return;
+          }
+        }
+      },
+      { rootMargin: '120px' }, // 부드러운 스크롤을 위해 viewport 위/아래 120px 까지 미리 mount.
+    );
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, []);
+
+  // mini workspace + 단일 블록 inject — isOnScreen 일 때만.
+  useEffect(() => {
+    if (!isOnScreen) return;
     const host = previewHostRef.current;
     if (!host) return;
     if (blocklyWsRef.current) {
@@ -247,7 +276,7 @@ function BlockTile({ def }: { def: BlockDef }) {
         blocklyWsRef.current = null;
       }
     };
-  }, [def.type, renderer]);
+  }, [def.type, renderer, isOnScreen]);
 
   const handleAdd = useCallback(() => {
     const id = appendBlock(def.type);
