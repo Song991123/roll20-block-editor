@@ -95,19 +95,31 @@ function emitSingleBlock(b: MatchedBlock, topAttrs: string = ''): string {
  */
 function emitStatementChain(chain: MatchedBlock[]): string {
   if (!chain.length) return '';
-  const opens: string[] = [];
-  const closes: string[] = [];
+  // 구조 (chain 길이 N):
+  //   <block_1>body<next>
+  //     <block_2>body<next>
+  //       …
+  //         <block_N>body</block_N>
+  //       </next></block_{N-1}>
+  //     …
+  //   </next></block_1>
+  //
+  // 즉, opens = block_1 + `<next>` + block_2 + `<next>` + … + block_N (2N-1 토큰)
+  //     closes = `</block>` (가장 안쪽 N) + `</next></block>` × (N-1)  (총 2N-1 닫는 토큰).
+  // 재귀 없이 stack-safe.
+  //
+  // v1 (066be96) 버그: closes 배열을 append-then-reverse 했는데 매 iteration 에
+  //   `</next>`+`</block>` 둘 다 push → 짝이 잘못 묶임 → Blockly 가 malformed
+  //   XML 을 lenient parse 하면서 block.nextConnection 이 두 번 연결 시도
+  //   → "Next statement is already connected" throw.
+  const buf: string[] = [];
   for (let i = 0; i < chain.length; i += 1) {
-    opens.push(emitBlockOpenAndBody(chain[i]));
-    if (i + 1 < chain.length) {
-      opens.push(`<next>`);
-      closes.push(`</next>`);
-    }
-    closes.push(`</block>`);
+    buf.push(emitBlockOpenAndBody(chain[i]));
+    if (i + 1 < chain.length) buf.push(`<next>`);
   }
-  // closes 는 역순으로 닫음 (마지막 block 부터 닫고 그 위 next, 그 위 block...)
-  closes.reverse();
-  return opens.join('') + closes.join('');
+  buf.push(`</block>`);
+  for (let i = 0; i + 1 < chain.length; i += 1) buf.push(`</next></block>`);
+  return buf.join('');
 }
 
 /**
