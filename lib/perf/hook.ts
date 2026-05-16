@@ -257,28 +257,30 @@ function buildHook(): PerfHook {
     },
 
     genSyntheticXml: (n: number, prefix: string = 'syn'): string => {
-      // r20_text_input 은 stack 블록 — next-chain 가능.
+      // FLAT top-level 구조 — 각 블록이 독립 top-level (next-chain 없음).
+      // 이유: 직전 세션의 next-chain 구현은 N≥256 에서 V8 stack limit 으로
+      //   `Blockly.Xml.domToBlock` 재귀가 cap 됨 → 실측 무효 (docs/perf/05).
+      // 영시영 1부 실 import 도 top-level 다수 + 얕은 nesting 이므로 flat 구조가
+      //   더 충실한 시뮬레이션.
       // 시트 specific 0: NAME 필드 = `${prefix}${i}` (영시영 식별자 / 한글 0).
       if (n <= 0) return '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
       const parts: string[] = [];
       parts.push('<xml xmlns="https://developers.google.com/blockly/xml">');
-      // 1 개 top-level 블록 + (n-1) 개 next-chain.
-      let openTags = 0;
+      // 격자 배치 — workspace 좌표상 시각적으로 분산 (clone 시 동일 좌표 cap 회피).
+      const COLS = 50;
+      const DX = 220;
+      const DY = 36;
       for (let i = 0; i < n; i += 1) {
-        const isTop = i === 0;
-        const attr = isTop ? ' x="20" y="20"' : '';
-        parts.push(`<block type="r20_text_input"${attr}>`);
+        const col = i % COLS;
+        const row = Math.floor(i / COLS);
+        const x = 20 + col * DX;
+        const y = 20 + row * DY;
+        parts.push(`<block type="r20_text_input" x="${x}" y="${y}">`);
         parts.push(`<field name="NAME">${prefix}${i}</field>`);
         parts.push('<field name="CLASS"></field>');
         parts.push('<field name="DEFAULT"></field>');
-        if (i < n - 1) {
-          parts.push('<next>');
-          openTags += 1;
-        }
+        parts.push('</block>');
       }
-      // 닫기
-      for (let j = 0; j < n; j += 1) parts.push('</block>');
-      for (let j = 0; j < openTags; j += 1) parts.push('</next>');
       parts.push('</xml>');
       return parts.join('');
     },
