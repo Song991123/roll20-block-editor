@@ -71,6 +71,29 @@ export interface PerfHook {
   /** Long-task observer — start/stop 으로 임의 구간 main-thread block 측정. */
   startLongTaskObserver: () => void;
   stopLongTaskObserver: () => Array<{ startTime: number; duration: number; name: string }>;
+  /**
+   * 합성 (synthetic) Blockly XML 생성기 — 영시영 식별자 / 사용자 시트 토큰 0.
+   * 6K 블록 inject hot path 측정용. r20_text_input 블록의 next-chain.
+   * @param n  체인 길이 (블록 수)
+   * @param prefix  field NAME 접두사 (기본 'syn').
+   */
+  genSyntheticXml: (n: number, prefix?: string) => string;
+  /**
+   * 사전 빌드된 Blockly XML 을 워크스페이스에 직접 hydrate — parse/emit 비용 없이
+   * 순수 inject 시간만 측정. workspaceStore 도 emit 강제 갱신 X (측정 격리).
+   * `before` 옵션으로 setResizesEnabled 우회 시뮬레이션 (회귀 비교).
+   */
+  injectXml: (
+    input: { key?: WorkspaceKey; xml: string; before?: boolean },
+  ) => Promise<{
+    domParseMs: number;
+    domToWorkspaceMs: number;
+    totalMs: number;
+    blockCount: number;
+    longtasksMs: number;
+    heapBeforeMb: number | null;
+    heapAfterMb: number | null;
+  }>;
 }
 
 const HOOK_FLAG = '__perfOn';
@@ -228,6 +251,86 @@ function buildHook(): PerfHook {
         matchPct,
         blockCount,
         warnings: result.warnings.length,
+        heapBeforeMb,
+        heapAfterMb,
+      };
+    },
+
+    genSyntheticXml: (n: number, prefix: string = 'syn'): string => {
+      // r20_text_input 은 stack 블록 — next-chain 가능.
+      // 시트 specific 0: NAME 필드 = `${prefix}${i}` (영시영 식별자 / 한글 0).
+      if (n <= 0) return '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
+      const parts: string[] = [];
+      parts.push('<xml xmlns="https://developers.google.com/blockly/xml">');
+      // 1 개 top-level 블록 + (n-1) 개 next-chain.
+      let openTags = 0;
+      for (let i = 0; i < n; i += 1) {
+        const isTop = i === 0;
+        const attr = isTop ? ' x="20" y="20"' : '';
+        parts.push(`<block type="r20_text_input"${attr}>`);
+        parts.push(`<field name="NAME">${prefix}${i}</field>`);
+        parts.push('<field name="CLASS"></field>');
+        parts.push('<field name="DEFAULT"></field>');
+        if (i < n - 1) {
+          parts.push('<next>');
+          openTags += 1;
+        }
+      }
+      // 닫기
+      for (let j = 0; j < n; j += 1) parts.push('</block>');
+      for (let j = 0; j < openTags; j += 1) parts.push('</next>');
+      parts.push('</xml>');
+      return parts.join('');
+    },
+
+    injectXml: async ({ key = 'html', xml, before = false }) => {
+      const adapter = getBlocklyAdapter();
+      const ws = adapter.getWorkspace(key);
+      if (!ws) {
+        throw new Error(`[perf] workspace ${key} not registered`);
+      }
+      // ws 는 Blockly.WorkspaceSvg — adapter 의 hydrateFromXml 우회하지 않고
+      // measurement 격리 위해 직접 Blockly API 호출 (내부 구조 동일).
+      // before=true : 회귀 측정 — setResizesEnabled wrap 우회 (Phase 3 fix 이전 시뮬레이션).
+      // before=false: 현 adapter 의 hydrateFromXml 과 동일 코드경로.
+      // dynamic import 로 Blockly chunk 의 lazy 보장.
+      const Blockly = await import('blockly');
+      tracker.start();
+      const heapBeforeMb = getHeapMb();
+      const t0 = nowMs();
+      Blockly.Events.disable();
+      let domParseMs = 0;
+      let domToWorkspaceMs = 0;
+      try {
+        if (!before) ws.setResizesEnabled(false);
+        ws.clear();
+        const tParse0 = nowMs();
+        const dom = Blockly.utils.xml.textToDom(xml);
+        domParseMs = nowMs() - tParse0;
+        const tInj0 = nowMs();
+        Blockly.Xml.domToWorkspace(dom, ws);
+        domToWorkspaceMs = nowMs() - tInj0;
+      } finally {
+        if (!before) ws.setResizesEnabled(true);
+        Blockly.Events.enable();
+      }
+      const totalMs = nowMs() - t0;
+      const heapAfterMb = getHeapMb();
+      const longtasks = tracker.stop();
+      const longtasksMs = longtasks.reduce((s, e) => s + e.duration, 0);
+      const blockCount = adapter.listAllBlocks(key).length;
+      // eslint-disable-next-line no-console
+      console.log(
+        `[perf] injectXml(${key}, before=${before}): total=${totalMs.toFixed(1)}ms ` +
+          `(domParse=${domParseMs.toFixed(1)}, domToWorkspace=${domToWorkspaceMs.toFixed(1)}) ` +
+          `longtasks=${longtasksMs.toFixed(0)}ms blockCount=${blockCount}`,
+      );
+      return {
+        domParseMs,
+        domToWorkspaceMs,
+        totalMs,
+        blockCount,
+        longtasksMs,
         heapBeforeMb,
         heapAfterMb,
       };
