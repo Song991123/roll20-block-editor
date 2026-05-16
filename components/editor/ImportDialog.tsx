@@ -54,6 +54,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     warnings: number;
     sanitizeDropped: number;
   }>(null);
+  const [progress, setProgress] = useState<null | { done: number; total: number; pct: number }>(null);
 
   function handleFile(setter: (v: string) => void) {
     return (e: ChangeEvent<HTMLInputElement>) => {
@@ -65,8 +66,13 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     };
   }
 
-  function handleImport() {
+  async function handleImport() {
     setBusy(true);
+    setProgress(null);
+    // Plan A — chunked inject + progress UI.
+    // 큰 sheet (top-level 블록 N > 1000) 만 progress 표시 → 작은 sheet 는 기존 UX.
+    const PROGRESS_THRESHOLD = 1000;
+    const PROGRESS_TOAST_ID = 'import-progress';
     try {
       const result = importSheet({
         html: htmlText,
@@ -79,9 +85,30 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       ws.resetWorkspace('html');
       ws.resetWorkspace('css');
       ws.resetWorkspace('i18n');
-      adapter.hydrateFromXml('html', result.html);
+
+      // html 워크스페이스가 가장 큼 (6K 가능) → chunked. css/i18n 은 보통 작음.
+      // top-level 카운트는 chunked 가 자체 측정 → progress callback 으로 수신.
+      let htmlTotal = 0;
+      await adapter.hydrateFromXmlChunked('html', result.html, {
+        chunkSize: 500,
+        onProgress: (done, total) => {
+          htmlTotal = total;
+          if (total >= PROGRESS_THRESHOLD) {
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            setProgress({ done, total, pct });
+            toast.loading(`${done.toLocaleString()} / ${total.toLocaleString()} 블록 적용 중… ${pct}%`, {
+              id: PROGRESS_TOAST_ID,
+            });
+          }
+        },
+      });
       adapter.hydrateFromXml('css', result.css);
       adapter.hydrateFromXml('i18n', result.i18n);
+      // chunked 토스트 정리.
+      if (htmlTotal >= PROGRESS_THRESHOLD) {
+        toast.dismiss(PROGRESS_TOAST_ID);
+      }
+      setProgress(null);
       const htmlBlocks = adapter.getWorkspace('html')?.getAllBlocks(false).length ?? 0;
       const cssBlocks = adapter.getWorkspace('css')?.getAllBlocks(false).length ?? 0;
       const i18nBlocks = adapter.getWorkspace('i18n')?.getAllBlocks(false).length ?? 0;
@@ -114,8 +141,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      toast.dismiss('import-progress');
       toast.error(`불러오기 실패: ${msg}`, { duration: 4000 });
     } finally {
+      setProgress(null);
       setBusy(false);
     }
   }
@@ -198,6 +227,31 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           </TabsContent>
         </Tabs>
 
+        {progress && progress.total > 0 && (
+          <div
+            className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed"
+            role="status"
+            aria-live="polite"
+            data-testid="import-progress"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium">큰 시트 적용 중…</span>
+              <span className="tabular-nums text-muted-foreground">
+                {progress.done.toLocaleString()} / {progress.total.toLocaleString()} 블록 · {progress.pct}%
+              </span>
+            </div>
+            <div className="h-1.5 w-full rounded bg-[var(--bg-muted)] overflow-hidden">
+              <div
+                className="h-full bg-primary transition-[width] duration-150"
+                style={{ width: `${progress.pct}%` }}
+              />
+            </div>
+            <div className="mt-1 text-muted-foreground text-[11px]">
+              화면이 잠시 끊겨도 정상입니다 — 진행되는 동안 다른 영역은 응답합니다.
+            </div>
+          </div>
+        )}
+
         {report && (
           <div className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed">
             <div className="font-medium mb-1">매칭 결과</div>
@@ -228,7 +282,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             지우기
           </Button>
           <Button onClick={handleImport} disabled={busy || !anyInput}>
-            {busy ? '변환 중…' : '변환 시작'}
+            {busy ? (progress ? `${progress.pct}% 적용 중…` : '변환 중…') : '변환 시작'}
           </Button>
         </DialogFooter>
       </DialogContent>
