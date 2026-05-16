@@ -18,7 +18,7 @@
  * 시스템 specific 0 — 모든 변환 규칙은 Roll20 표준 + 블록 정의.
  */
 
-import * as Blockly from 'blockly';
+import type * as Blockly from 'blockly';
 import { getBlockDef } from '@/lib/blocks/registry';
 import type {
   BlockDef,

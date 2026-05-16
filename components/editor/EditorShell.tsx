@@ -9,7 +9,7 @@ import SidebarRight from './SidebarRight';
 import PreviewMain from './PreviewMain';
 import EditCanvas from './EditCanvas';
 import Statusbar from './Statusbar';
-import BlocklyModelHost from './BlocklyModelHost';
+import dynamic from 'next/dynamic';
 import { useEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { installPerfHook } from '@/lib/perf/hook';
 import MainAreaToolbar from './MainAreaToolbar';
@@ -67,6 +67,18 @@ function cycleMode(m: MainMode): MainMode {
   if (m === 'assemble') return 'preview';
   return 'split';
 }
+
+/**
+ * BlocklyModelHost dynamic import — Blockly 12 코어 (~500KB) 를 별도 chunk 로 split.
+ * cold-load critical path 단축 + 첫 assemble entry 까지 chunk 로딩이 idle 시간에 진행.
+ *
+ * ssr:false — Blockly 는 window/SVG 접근 → server-render 시 즉시 throw.
+ * loading: null — preview / edit 모드에서는 placeholder 도 보일 일 없음 (off-screen).
+ */
+const BlocklyModelHost = dynamic(() => import('./BlocklyModelHost'), {
+  ssr: false,
+  loading: () => null,
+});
 
 export default function EditorShell() {
   // emit pipeline — mainMode 무관, 항상 mount → import 후 Code 탭 즉시 반영.

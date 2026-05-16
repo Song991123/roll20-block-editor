@@ -4,7 +4,19 @@ import { Box, ListTree, LayoutPanelLeft } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { cn } from '@/lib/utils/cn';
-import BlocksLibrary from './BlocksLibrary';
+import dynamic from 'next/dynamic';
+
+/**
+ * BlocksLibrary dynamic — Blockly 미니프리뷰 inject 코드 + 130 블록 정의가 큰 chunk.
+ * SidebarLeft 의 [블록] 모드 진입 시점에만 로드.
+ *
+ * ssr:false — Blockly 사용 → server-render 시 throw.
+ * loading: null — 잠시 비어 보이는 게 chunk 크기 정직한 신호.
+ */
+const BlocksLibrary = dynamic(() => import('./BlocksLibrary'), {
+  ssr: false,
+  loading: () => null,
+});
 import WorkspaceTree from './WorkspaceTree';
 import WidgetGallery from './WidgetGallery';
 
