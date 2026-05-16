@@ -42,6 +42,11 @@ import {
 import { DEFAULT_METADATA } from '@/lib/export/manifest';
 import { analyzeEmit } from '@/lib/export/warnings';
 import { buildZip, triggerDownload } from '@/lib/export/zip_builder';
+// Stage 19 — 구버전 Roll20 sandbox 호환 모드 (anchor: docs/spec/19_sanitize_and_default_view.md).
+import {
+  sanitizeForRoll20Legacy,
+  type SanitizeWarning,
+} from '@/lib/emit/sanitize';
 
 export interface ExportDialogProps {
   open: boolean;
@@ -54,6 +59,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   const [meta, setMeta] = useState<SheetMetadata>(DEFAULT_METADATA);
   const [busy, setBusy] = useState(false);
+  // Stage 19 — 구버전 sandbox 호환 모드 (default off — 사용자 명시 opt-in).
+  const [legacyMode, setLegacyMode] = useState(false);
+  const [legacyWarnings, setLegacyWarnings] = useState<SanitizeWarning[]>([]);
 
   // 본 모달이 보이는 동안에만 합산 — emitCache 변동 시 자동 재계산.
   const combinedWarnings = useMemo<EmitWarning[]>(() => {
@@ -79,10 +87,19 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     if (blocked) return;
     setBusy(true);
     try {
+      // Stage 19 — 구버전 호환 모드 on 시 CSS sanitize.
+      let cssForZip = emitCache.css;
+      let collectedWarnings: SanitizeWarning[] = [];
+      if (legacyMode && emitCache.css) {
+        const r = sanitizeForRoll20Legacy(emitCache.css);
+        cssForZip = r.sanitized;
+        collectedWarnings = r.warnings;
+      }
+      setLegacyWarnings(collectedWarnings);
       const zip = await buildZip(
         {
           html: emitCache.html,
-          css: emitCache.css,
+          css: cssForZip,
           translation: emitCache.i18n,
           warnings: [],
         },
@@ -228,6 +245,36 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 data-testid="export-blocked-banner"
               >
                 <strong>다운로드가 차단되었습니다.</strong> 위의 오류 (ERROR) 항목을 모두 해결한 뒤 다시 시도하세요.
+              </div>
+            )}
+          </section>
+          {/* Stage 19 — 구버전 Roll20 sandbox 호환 모드 토글 (additive). */}
+          <section
+            className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+            data-testid="export-legacy-section"
+          >
+            <label className="flex items-start gap-2 text-[12px] cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={legacyMode}
+                onChange={(e) => setLegacyMode(e.target.checked)}
+                className="mt-[2px] h-4 w-4 accent-[var(--accent-primary)]"
+                data-testid="export-legacy-toggle"
+                aria-label="구버전 Roll20 sandbox 호환 모드"
+              />
+              <span className="flex-1">
+                <span className="font-medium">구버전 Roll20 sandbox 호환 모드 (CSS 자동 변환)</span>
+                <span className="ml-1 text-[11px] text-muted-foreground">
+                  transform → zoom · animation 제거 · var() inline · position:fixed → absolute
+                </span>
+              </span>
+            </label>
+            {legacyMode && legacyWarnings.length > 0 && (
+              <div
+                className="mt-2 text-[11px] text-muted-foreground"
+                data-testid="export-legacy-warnings"
+              >
+                지난 다운로드 무해화 결과: {legacyWarnings.length}건 — 자세한 내역은 .zip 내부 sanitize-warnings.json 참고 (별도 phase 에서 zip_builder 와 wire 예정).
               </div>
             )}
           </section>

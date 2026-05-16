@@ -24,6 +24,7 @@ import { registerI18nBlocks } from './i18n';
 import { registerCssBlocks } from './css';
 import { registerAdvancedBlocks } from './advanced';
 import { registerCompositeBlocks } from './composite';
+import { registerConditionalViewBlocks } from './conditional_view';
 
 const ALL_BLOCKS: BlockDef[] = [];
 let registered = false;
@@ -42,6 +43,7 @@ export function registerAllBlocks(): void {
   registerCssBlocks(ALL_BLOCKS);
   registerAdvancedBlocks(ALL_BLOCKS);
   registerCompositeBlocks(ALL_BLOCKS);
+  registerConditionalViewBlocks(ALL_BLOCKS);
   registered = true;
   registeredVersion += 1;
   for (const cb of subs) cb();
