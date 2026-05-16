@@ -367,10 +367,17 @@ function buildHook(): PerfHook {
       // adapter.hydrateFromXmlChunked 가 자체적으로 clear + Events.disable wrap.
       await adapter.hydrateFromXmlChunked(key, xml, { chunkSize });
       const totalMs = nowMs() - t0;
-      // longtask observer 가 flush 할 수 있게 한 tick 양보 + RAF.
+      // longtask observer 가 flush 할 수 있게 한 tick 양보. 숨겨진 탭에서 rAF 가
+      // 멈출 수 있으므로 setTimeout 으로 race — 50ms 안에는 반드시 진행.
       await new Promise<void>((r) => {
-        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => r());
-        else setTimeout(r, 16);
+        let done = false;
+        const fin = () => {
+          if (done) return;
+          done = true;
+          r();
+        };
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fin);
+        setTimeout(fin, 50);
       });
       const heapAfterMb = getHeapMb();
       const longtasks = tracker.stop();
