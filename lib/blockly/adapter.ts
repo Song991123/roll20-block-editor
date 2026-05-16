@@ -22,13 +22,38 @@ import type { BlockCategory } from '@/lib/blocks/types';
  * timeout=100ms 로 idle 가 안 오면 강제 fire — chunked inject 가 idle 부족으로
  * 무한 대기하지 않도록.
  */
+// MessageChannel + postMessage delivers a macrotask that — unlike `setTimeout(0)` —
+// is NOT throttled to 1Hz in hidden / backgrounded Chrome tabs. We allocate one
+// channel and reuse it across yields.
+let __yieldChannel: MessageChannel | null = null;
+let __yieldQueue: Array<() => void> = [];
+function ensureYieldChannel(): MessageChannel | null {
+  if (typeof window === 'undefined' || typeof MessageChannel === 'undefined') return null;
+  if (__yieldChannel) return __yieldChannel;
+  const ch = new MessageChannel();
+  ch.port1.onmessage = () => {
+    const cbs = __yieldQueue;
+    __yieldQueue = [];
+    for (const cb of cbs) {
+      try {
+        cb();
+      } catch {
+        // swallow — we're only yielding
+      }
+    }
+  };
+  __yieldChannel = ch;
+  return ch;
+}
+
 function yieldToMain(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
-  // Chrome throttles requestIdleCallback heavily in backgrounded / hidden tabs
-  // (callbacks can be coalesced for many seconds even with a `timeout` hint).
-  // setTimeout(0) is a macrotask that reliably allows one frame paint between
-  // chunks and is not throttled the same way → use it directly.
-  return new Promise<void>((resolve) => setTimeout(resolve, 0));
+  const ch = ensureYieldChannel();
+  if (!ch) return new Promise<void>((resolve) => setTimeout(resolve, 0));
+  return new Promise<void>((resolve) => {
+    __yieldQueue.push(resolve);
+    ch.port2.postMessage(null);
+  });
 }
 
 
