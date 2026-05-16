@@ -94,6 +94,27 @@ export interface PerfHook {
     heapBeforeMb: number | null;
     heapAfterMb: number | null;
   }>;
+  /**
+   * Chunked inject 측정 — adapter.hydrateFromXmlChunked 호출.
+   * longtask observer 도 활성 → 각 chunk 별 main-thread block 시간 누적 + max
+   * 추적 가능. progress callback 안 받음 (측정 hook 은 fire-and-forget).
+   */
+  injectXmlChunked: (
+    input: {
+      key?: WorkspaceKey;
+      xml: string;
+      chunkSize?: number;
+    },
+  ) => Promise<{
+    totalMs: number;
+    chunkSize: number;
+    chunkCount: number;
+    blockCount: number;
+    longtasksMs: number;
+    longestLongtaskMs: number;
+    heapBeforeMb: number | null;
+    heapAfterMb: number | null;
+  }>;
 }
 
 const HOOK_FLAG = '__perfOn';
@@ -333,6 +354,43 @@ function buildHook(): PerfHook {
         totalMs,
         blockCount,
         longtasksMs,
+        heapBeforeMb,
+        heapAfterMb,
+      };
+    },
+
+    injectXmlChunked: async ({ key = 'html', xml, chunkSize = 500 }) => {
+      const adapter = getBlocklyAdapter();
+      tracker.start();
+      const heapBeforeMb = getHeapMb();
+      const t0 = nowMs();
+      // adapter.hydrateFromXmlChunked 가 자체적으로 clear + Events.disable wrap.
+      await adapter.hydrateFromXmlChunked(key, xml, { chunkSize });
+      const totalMs = nowMs() - t0;
+      // longtask observer 가 flush 할 수 있게 한 tick 양보 + RAF.
+      await new Promise<void>((r) => {
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => r());
+        else setTimeout(r, 16);
+      });
+      const heapAfterMb = getHeapMb();
+      const longtasks = tracker.stop();
+      const longtasksMs = longtasks.reduce((s, e) => s + e.duration, 0);
+      const longestLongtaskMs = longtasks.reduce((m, e) => Math.max(m, e.duration), 0);
+      const blockCount = adapter.listAllBlocks(key).length;
+      const chunkCount = Math.ceil(blockCount / Math.max(1, chunkSize)) || 0;
+      // eslint-disable-next-line no-console
+      console.log(
+        `[perf] injectXmlChunked(${key}, chunk=${chunkSize}): total=${totalMs.toFixed(1)}ms ` +
+          `longtasks=${longtasksMs.toFixed(0)}ms (max=${longestLongtaskMs.toFixed(0)}ms) ` +
+          `blockCount=${blockCount} chunks=${chunkCount}`,
+      );
+      return {
+        totalMs,
+        chunkSize,
+        chunkCount,
+        blockCount,
+        longtasksMs,
+        longestLongtaskMs,
         heapBeforeMb,
         heapAfterMb,
       };

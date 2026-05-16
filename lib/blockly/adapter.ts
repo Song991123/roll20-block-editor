@@ -15,6 +15,27 @@ import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { getBlockDef } from '@/lib/blocks/registry';
 import type { BlockCategory } from '@/lib/blocks/types';
 
+/**
+ * Main-thread yield — 가능하면 `requestIdleCallback` (브라우저 idle 시간),
+ * 없으면 `setTimeout(0)`. SSR 에선 즉시 resolve.
+ *
+ * timeout=100ms 로 idle 가 안 오면 강제 fire — chunked inject 가 idle 부족으로
+ * 무한 대기하지 않도록.
+ */
+function yieldToMain(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  const w = window as unknown as {
+    requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
+  };
+  if (typeof w.requestIdleCallback === 'function') {
+    return new Promise<void>((resolve) => {
+      w.requestIdleCallback!(() => resolve(), { timeout: 100 });
+    });
+  }
+  return new Promise<void>((resolve) => setTimeout(resolve, 0));
+}
+
+
 export interface BlockSnapshot {
   id: string;
   type: string;
@@ -48,6 +69,24 @@ export interface BlocklyAdapter {
   setFieldValue(key: WorkspaceKey, blockId: string, fieldName: string, value: string): void;
   serializeXml(key: WorkspaceKey): string;
   hydrateFromXml(key: WorkspaceKey, xml: string): void;
+  /**
+   * Chunked hydrate — XML 의 top-level 자식을 chunkSize 단위로 잘라 inject.
+   * 각 chunk 사이에 `requestIdleCallback` (없으면 `setTimeout(0)`) 으로 main-thread
+   * yield → paint + UI 응답성 확보. wall time 은 비슷하나 longest longtask 가
+   * 1개의 거대 task 에서 chunk 크기 비례 작은 task 여러 개로 분산됨.
+   *
+   * 옵션:
+   *  - chunkSize  default 500 (perf sweep §4 결과)
+   *  - onProgress(done, total)  완료된 블록 수 / 전체 블록 수
+   */
+  hydrateFromXmlChunked(
+    key: WorkspaceKey,
+    xml: string,
+    opts?: {
+      chunkSize?: number;
+      onProgress?: (done: number, total: number) => void;
+    },
+  ): Promise<void>;
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
 
@@ -189,6 +228,60 @@ class DefaultAdapter implements BlocklyAdapter {
       ws.clear();
       const dom = Blockly.utils.xml.textToDom(xml);
       Blockly.Xml.domToWorkspace(dom, ws);
+    } finally {
+      Blockly.Events.enable();
+    }
+  }
+
+  async hydrateFromXmlChunked(
+    key: WorkspaceKey,
+    xml: string,
+    opts: {
+      chunkSize?: number;
+      onProgress?: (done: number, total: number) => void;
+    } = {},
+  ): Promise<void> {
+    const ws = this.workspaces[key];
+    if (!ws || !xml) return;
+    const chunkSize = Math.max(1, opts.chunkSize ?? 500);
+    const onProgress = opts.onProgress;
+
+    const dom = Blockly.utils.xml.textToDom(xml);
+    // children = top-level <block> / <shadow> / <variables> 등 모든 root children.
+    const allChildren: ChildNode[] = Array.from(dom.childNodes);
+    const total = allChildren.length;
+
+    // Re-implement: Blockly.Xml.domToWorkspace 는 root <xml> 의 자식만 처리하므로
+    // 각 chunk 를 가짜 <xml> wrapper 에 묶어 호출.
+    Blockly.Events.disable();
+    try {
+      ws.clear();
+      if (total === 0) {
+        onProgress?.(0, 0);
+        return;
+      }
+      // 진행률 시작 알림 (즉시 paint).
+      onProgress?.(0, total);
+
+      const doc = dom.ownerDocument ?? globalThis.document;
+      let done = 0;
+      for (let i = 0; i < total; i += chunkSize) {
+        // 각 chunk 사이에 paint 한 번 양보 — requestIdleCallback 선호, fallback setTimeout(0).
+        await yieldToMain();
+
+        const chunkRoot = doc.createElementNS(
+          'https://developers.google.com/blockly/xml',
+          'xml',
+        );
+        const end = Math.min(i + chunkSize, total);
+        for (let j = i; j < end; j += 1) {
+          // children 은 다른 doc 에 속할 수 있으니 cloneNode — 원본 dom 손상 방지.
+          chunkRoot.appendChild(allChildren[j].cloneNode(true));
+        }
+        Blockly.Xml.appendDomToWorkspace(chunkRoot, ws);
+        done = end;
+        onProgress?.(done, total);
+      }
     } finally {
       Blockly.Events.enable();
     }
