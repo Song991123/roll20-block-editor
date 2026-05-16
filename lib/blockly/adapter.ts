@@ -24,14 +24,10 @@ import type { BlockCategory } from '@/lib/blocks/types';
  */
 function yieldToMain(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve();
-  const w = window as unknown as {
-    requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
-  };
-  if (typeof w.requestIdleCallback === 'function') {
-    return new Promise<void>((resolve) => {
-      w.requestIdleCallback!(() => resolve(), { timeout: 100 });
-    });
-  }
+  // Chrome throttles requestIdleCallback heavily in backgrounded / hidden tabs
+  // (callbacks can be coalesced for many seconds even with a `timeout` hint).
+  // setTimeout(0) is a macrotask that reliably allows one frame paint between
+  // chunks and is not throttled the same way → use it directly.
   return new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
