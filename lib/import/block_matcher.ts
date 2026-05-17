@@ -141,12 +141,22 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     const cls = stripSheetPrefix(a.class || '');
 
     // i18n placeholder — data-i18n-placeholder 있으면 i18n 블록 우선.
+    // NAME / CLASS / TYPE 등 input attribute 보존 (Roll20 sheet attr 식별자
+    // attr_minionhp / sheet-attr_minionhp 등이 export 시 살아남아야 sandbox
+    // 업로드 후 sheet 동작 깨지지 않음). raw 그대로 박음 (prefix 안 깎음) —
+    // i18n_button 과 동일 컨벤션.
     if (a['data-i18n-placeholder']) {
       return {
         blockType: 'r20_i18n_placeholder',
         fields: {
           KEY: a['data-i18n-placeholder'],
-          DEFAULT: a.placeholder || '',
+          DEFAULT: a.value || a.placeholder || '',
+          NAME: a.name || '',
+          CLASS: a.class || '',
+          TYPE: (a.type || 'text').toLowerCase(),
+          ACCEPT: a.accept || '',
+          MIN: a.min || '',
+          MAX: a.max || '',
         },
         children: {},
       };
