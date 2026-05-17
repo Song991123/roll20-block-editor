@@ -33,6 +33,18 @@ const QUAL_OPS: Array<[string, string]> = [
   ['대상', 'target'],
 ];
 
+/**
+ * r20_attr_ref SCOPE dropdown — 시트 참조 범위.
+ * spec 22 §1.5 — `@{ATTR}` / `@{selected|ATTR}` / `@{target|ATTR}` /
+ * `@{character_id}` 4종 통합.
+ */
+const SCOPE_OPS: Array<[string, string]> = [
+  ['이 캐릭터', 'self'],
+  ['선택된 캐릭터', 'selected'],
+  ['지정된 대상', 'target'],
+  ['캐릭터 ID', 'character_id'],
+];
+
 const DICE_MOD_OPS: Array<[string, string]> = [
   ['kh (높은 N 유지)', 'kh'],
   ['kl (낮은 N 유지)', 'kl'],
@@ -135,24 +147,36 @@ export const EXPRESSION_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 3) 속성 참조  @{NAME} --------------------------------------------------
+  // 3) 속성 참조  @{NAME} — SCOPE 옵션 4종 (self/selected/target/character_id)
   {
     type: 'r20_attr_ref',
     shape: 'reporter',
     category: EXPRESSION,
     label: '시트 값 가져오기',
-    tooltip: '캐릭터 속성 — @{이름}',
+    tooltip:
+      '캐릭터 속성 — SCOPE 에 따라 @{이름} / @{selected|이름} / @{target|이름} / @{character_id} emit.',
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('@{')
+        .appendField(new Blockly.FieldDropdown(SCOPE_OPS), 'SCOPE')
+        .appendField('|')
         .appendField(new Blockly.FieldTextInput('attribute'), 'NAME')
         .appendField('}');
       b.setOutput(true, T_NUM_OR_STR);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const scopeRaw = String(b.getFieldValue('SCOPE') ?? 'self');
+      const allowed = new Set(SCOPE_OPS.map(([, v]) => v));
+      const scope = allowed.has(scopeRaw) ? scopeRaw : 'self';
       const name = String(b.getFieldValue('NAME') ?? '');
-      return [`@{${name}}`, ORDER.ATOMIC];
+      if (scope === 'character_id') {
+        return ['@{character_id}', ORDER.ATOMIC];
+      }
+      if (scope === 'self') {
+        return [`@{${name}}`, ORDER.ATOMIC];
+      }
+      return [`@{${scope}|${name}}`, ORDER.ATOMIC];
     },
   },
 
