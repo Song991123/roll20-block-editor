@@ -44,3 +44,9 @@
   background: rgba(22, 163, 74, 0.06);
   cursor: text !important;
 }
+
+/* Phase F (spec 17 §13) — tree → preview sync 시 element 가 viewport 밖이면
+ * shadowMount.ts 의 setSelected(id, { scrollIntoView: true }) 가
+ * element.scrollIntoView({behavior:'smooth', block:'center'}) 호출.
+ * outline 색은 동일 (#f60) — scroll 동작만 추가. inline 스타일 변경 없음.
+ */

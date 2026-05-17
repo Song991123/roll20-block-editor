@@ -49,6 +49,10 @@ export default function PreviewMain() {
   const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
   const activeWs = useWorkspaceStore((s) => s.activeWorkspace);
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
+  // Phase F (spec 17 §13) — origin === 'tree' 면 preview 안 element 가
+  // viewport 밖일 때 scrollIntoView. preview origin (이미 클릭한 element 가
+  // viewport 안) 이나 inspector / init 는 scroll 안 함 (UX: 갑작스러운 점프 방지).
+  const selectionOrigin = useWorkspaceStore((s) => s.selectionOrigin);
   const appendBlock = useWorkspaceStore((s) => s.appendBlockToActive);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
   const darkMode = usePreviewStore((s) => s.darkMode);
@@ -108,7 +112,7 @@ export default function PreviewMain() {
   // spec 17 §12 Phase B — Shadow mount 가 반환하는 setSelected 를 ref 로 잡아
   // selectedBlockId 변경 effect 에서 호출. mount 사이클 (parts 변경) 마다 새 ref
   // 발급 — cleanup 단계에서 null 로 비워 stale 호출 방지.
-  const shadowSetSelectedRef = useRef<((id: string | null) => void) | null>(null);
+  const shadowSetSelectedRef = useRef<((id: string | null, opts?: { scrollIntoView?: boolean }) => void) | null>(null);
   const parts = useMemo(
     () =>
       buildSheetParts({
@@ -289,8 +293,9 @@ export default function PreviewMain() {
     });
     shadowSetSelectedRef.current = setShadowSelected;
     // mount 직후 한번 — 현재 selectedBlockId 가 있으면 outline 복원.
+    // mount 시점엔 scroll 안 함 (init 직후 갑작스러운 점프 방지).
     const currentSelected = useWorkspaceStore.getState().selectedBlockId;
-    if (currentSelected) setShadowSelected(currentSelected);
+    if (currentSelected) setShadowSelected(currentSelected, { scrollIntoView: false });
     return () => {
       shadowSetSelectedRef.current = null;
       dragOrigin = null;
@@ -305,10 +310,15 @@ export default function PreviewMain() {
 
   // Phase B — selectedBlockId 변경 → Shadow 안 outline 동기화.
   // iframe 모드 or 미마운트 시 ref.current === null → noop.
+  // Phase F (spec 17 §13) — selectionOrigin === 'tree' 시 element 가 viewport
+  // 밖이면 부드럽게 가운데로 스크롤. tree row 클릭 후 preview 영역에서 시각적
+  // 페어링이 즉시 보이도록.
   useEffect(() => {
     if (renderMode !== 'shadow') return;
-    shadowSetSelectedRef.current?.(selectedId);
-  }, [selectedId, renderMode]);
+    shadowSetSelectedRef.current?.(selectedId, {
+      scrollIntoView: selectionOrigin === 'tree',
+    });
+  }, [selectedId, selectionOrigin, renderMode]);
 
 
   // spec 17 §8 — 캔버스 widget 선택/hover → preview iframe 강조

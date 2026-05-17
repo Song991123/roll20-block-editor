@@ -602,3 +602,100 @@ emit HTML 문자열에 `data-r20-block-id="<blockId>"` 가 추가되는 element 
 - nested element 가 둘 이상인 generator (예: `<label><input>...</label>`) — 첫 element (label) 에만 id 박힘. 내부 input 의 단독 select 는 label 의 click handler 가 처리. (각 input/label 을 별도 block 으로 분해하려면 import 그래프 변경 필요 — 별도 phase.)
 - `r20_select` 의 generator 가 emit 하는 `<select>...<option>...</option></select>` — `<select>` 에 select block id, `<option>` 에는 별도 `r20_select_option` block 의 id (statement chain 으로 들어옴) → 자연 분리.
 - `injectBlockIdAttr` 가 null 반환하는 케이스 (pure 텍스트, 주석만, void prefix) — 변동 없이 raw 통과 → 기존 fallback (`wrapTopLevel` 의 `<div>` 래퍼) 가 top-level 에만 보호망 역할.
+
+---
+
+### Phase F-shadow — 양방향 sync 강화 + partial re-render API (이 commit)
+
+**Anchor**: docs/spec/17_wysiwyg_mode.md §13. 이전 phases: §12 Phase A/B/C/D/E.
+
+#### 변경 요약 (한 줄)
+
+좌측 트리 → 미리보기 sync 완성 (tree row 클릭 → Shadow 안 element outline + viewport 밖이면 부드럽게 scroll-into-view), Inspector → 미리보기 즉시 갱신 belt+suspenders (Phase D fix 동일 패턴), 그리고 partial re-render `updateBlock(blockId, newOuterHtml)` API 만 노출 (wire 는 follow-up backlog).
+
+#### Step 1 — tree → preview sync
+
+지금까지: preview 안 element 클릭 → store 의 `selectedBlockId` 갱신 → 트리 row 가 자체 selected style 부착 (one-way: preview→tree).
+Phase F: 정반대 방향도 활성. `selectionOrigin` 이 `'tree'` 일 때만 scroll 발동.
+
+- `lib/preview/shadowMount.ts` `setSelected(blockId, opts?)` 시그니처 확장:
+  - `opts.scrollIntoView === true` 이면 element 의 `getBoundingClientRect` 로 viewport 안인지 검사 후 밖이면 `scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'})` 호출.
+  - JSDOM / 일부 환경에선 `scrollIntoView` 미지원 → `try/catch` 로 swallow.
+- `components/editor/PreviewMain.tsx`:
+  - `selectionOrigin` 을 store subscription 으로 추가.
+  - 기존 selectedId effect 가 `shadowSetSelectedRef.current?.(selectedId, { scrollIntoView: selectionOrigin === 'tree' })` 호출.
+  - mount 직후 초기 outline 복원 시엔 `scrollIntoView: false` (init 시점 갑작스러운 점프 방지).
+- `components/editor/WorkspaceTree.tsx`:
+  - 이미 row click → `setSelected(node.id, 'tree')` 호출 중 (변경 없음). origin propagation 만 위 단계에서 활성.
+
+#### Step 2 — Inspector → preview 즉시 갱신 (belt+suspenders)
+
+정상 경로: Inspector 필드 입력 → `adapter.setFieldValue` → Blockly `BLOCK_CHANGE` 이벤트 → `BlocklyModelHost` changeListener → `bumpStructure` → `useEmitPipeline` 디바운스 → emit → Shadow re-mount.
+
+Phase D fix 검증 세션 (`local_86b826b4`) 에서 동일 시나리오로 발견된 케이스: `hydrateFromXml` / perfHook `injectXml` 의 `Events.disable` 카운터가 미해소 상태로 남으면 `setFieldValue` 가 BLOCK_CHANGE 를 발화하지 않아 emit 갱신이 안 됨. PreviewMain `onEditText` 가 이미 동일 패턴으로 `adapter.setBlockField` (events-guard 포함) + 명시 `bumpStructure` 를 호출 중.
+
+Phase F: `Inspector.onFieldChange` 도 동일 패턴으로 통일.
+
+```ts
+const ok = adapter.setBlockField(key, selectedId, name, value);
+if (ok) {
+  const count = adapter.listAllBlocks(key).length;
+  useWorkspaceStore.getState().bumpStructure(key, count);
+}
+```
+
+- `setBlockField` 는 `Blockly.Events.isEnabled()` 가 false 면 1회 enable 후 setFieldValue → finally 원복 (이벤트 보장).
+- 명시 `bumpStructure` — 동일 frame 내 중복 bump 는 useEmitPipeline 의 디바운스가 1회만 실행하므로 무해.
+
+#### Step 3 — partial re-render API (현재는 spec only)
+
+현 mount 사이클: `parts` (`html` + `css` + `i18n` 합성본) 가 바뀌면 `useEffect` 의 cleanup → `shadow.innerHTML = ''` → 새 `mountSheetShadow` 호출 → 전체 DOM 재구성. 큰 sheet (수백~수천 element) 에서 비쌈, 그리고 선택 outline / contentEditable state / scroll position 이 매 재mount 마다 리셋.
+
+Phase F 가 노출하는 API:
+
+```ts
+export interface ShadowMountResult {
+  // ...
+  updateBlock: (blockId: string, newOuterHtml: string) => boolean;
+}
+```
+
+- element 찾기: `shadow.querySelector('[data-r20-block-id="<escaped>"]')`.
+- 없으면 false → 호출자가 full re-mount fallback.
+- `target.outerHTML = newOuterHtml` 로 swap. 다른 element 의 DOM 노드 / scroll / cE state 보존.
+- contentEditable 활성 중이면 swap 보류 (false 반환) — 사용자의 입력 잃지 않게.
+
+**현재 호출자 wire 안 됨 — follow-up backlog 항목.** 이유: emit pipeline 이 현재 sheet 전체 HTML 만 emit (블록 단위 diff 없음). diff 를 만들려면:
+
+1. `lib/preview/emit.ts` 가 blockId → outerHTML 매핑 추가 emit (예: `Map<blockId, html>`).
+2. PreviewMain 이 이전 emit 의 mapping 을 ref 로 보관, 새 emit 마다 diff 추출 (added / changed / removed blockId).
+3. changed 만 `updateBlock` 호출. added / removed 는 full re-mount (DOM tree 구조 변경 위험).
+
+본 phase 가 API 만 노출하고 wire 는 미루는 이유: emit 변경 + diff 인프라가 비용이 크고, 현재 sheet 크기 (수십~수백 element) 에선 full re-mount 가 체감 안 됨. 시트가 수천 element 로 자라면 본격 도입.
+
+#### 시각 / UX
+
+- tree→preview scroll: orange outline (`#f60`, Phase B 와 동일) + smooth scroll-into-view. 색은 동일하지만 `scroll` 동작이 추가됐을 뿐.
+- preview→tree: 기존 그대로 (orange row 강조, Phase B).
+- Inspector→preview: 사용자에 보이는 차이 0 (정상 경로에서 이미 동작), 단 hydrate 직후 첫 입력에서도 즉시 갱신이 보장됨 (Phase D fix 패턴 적용).
+
+#### Phase A~E 와의 격리
+
+- Phase B (select outline) — `setSelected` 의 추가 `opts` 인자는 optional → 기존 caller 영향 0.
+- Phase C (drag-to-move) — 변경 없음.
+- Phase D (inline text edit) — `updateBlock` 이 contentEditable 활성 element 를 swap 보류 → 입력 안전.
+- Phase E (context menu) — 변경 없음.
+
+#### 검증
+
+라이브 verify (3 시나리오):
+
+1. import sample sheet → preview 안 input 클릭 → 트리 해당 row orange 강조 ✓
+2. 트리 row 클릭 → preview 안 input 에 orange outline + viewport 밖이면 smooth scroll ✓
+3. Inspector 에서 input PLACEHOLDER 필드 수정 → preview input placeholder 즉시 갱신 ✓
+
+#### 알려진 caveat / follow-up
+
+- partial re-render wire 미완 — emit diff 인프라 추가 후 PreviewMain 에 통합 (별도 phase).
+- scroll-into-view 의 nearest scroll ancestor — 현재 PreviewMain 의 `overflow-auto` wrapper 가 ancestor. zoom != 'fit' 시 wrapper 폭이 sheet 폭과 다를 수 있어 scroll 이 미세하게 어긋날 가능성. 본 phase 는 'fit' 기준만 검증.
+- 트리 가상화 (react-window) 미도입 — 1000+ block 시 row click latency 증가 가능. spec 06 D53 항목 동일 backlog.

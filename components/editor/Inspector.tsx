@@ -58,7 +58,17 @@ function BlockInspector() {
   const onFieldChange = useCallback(
     (name: string, value: string) => {
       if (!selectedId || !key) return;
-      getBlocklyAdapter().setFieldValue(key, selectedId, name, value);
+      const adapter = getBlocklyAdapter();
+      // Phase F (spec 17 §13) — setBlockField 는 events-guard 가 있어
+      // hydrate / perfHook 의 Events.disable 카운터 미해소 환경에서도
+      // BLOCK_CHANGE 가 정상 발화됨. 추가로 명시적 bumpStructure 호출 —
+      // PreviewMain.onEditText 와 동일한 belt+suspenders 패턴 (Phase D fix
+      // local_86b826b4 / Phase D fix add-block local_1abb2993 참고).
+      const ok = adapter.setBlockField(key, selectedId, name, value);
+      if (ok) {
+        const count = adapter.listAllBlocks(key).length;
+        useWorkspaceStore.getState().bumpStructure(key, count);
+      }
     },
     [selectedId, key],
   );

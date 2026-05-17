@@ -114,8 +114,23 @@ export interface ShadowMountResult {
    * 외부 selection 변경 → Shadow 안 outline 동기화.
    * 모든 `.r20-selected` 제거 후 해당 blockId element 에 부착.
    * blockId === null → outline 모두 해제.
+   *
+   * Phase F (spec 17 §13) — `opts.scrollIntoView` 가 true 이면 element 가
+   * viewport 밖이면 `scrollIntoView({behavior:'smooth', block:'center'})`
+   * 호출. tree → preview sync 시 사용 (preview 안에서 클릭 origin 은 이미
+   * viewport 안이므로 호출자가 false 로 막음).
    */
-  setSelected: (blockId: string | null) => void;
+  setSelected: (blockId: string | null, opts?: { scrollIntoView?: boolean }) => void;
+  /**
+   * Phase F (spec 17 §13) — partial re-render 후보 API.
+   * 특정 blockId 의 element 만 `outerHTML` 로 교체. element 없으면 false 반환
+   * (호출자가 full re-mount fallback). 다른 element 의 DOM 노드 / selection /
+   * scroll position / contentEditable state 는 보존.
+   *
+   * **현재는 호출자 (PreviewMain) 에서 wire 안 됨** — emit 단위 diff 가 없어
+   * 어느 blockId 가 바뀌었는지 추적 필요. follow-up backlog.
+   */
+  updateBlock: (blockId: string, newOuterHtml: string) => boolean;
 }
 
 /**
@@ -451,25 +466,75 @@ ${opts.css}
   };
   shadow.addEventListener('contextmenu', onContextMenu);
 
-  const setSelected = (blockId: string | null) => {
+  const escapeAttr = (raw: string): string =>
+    (typeof CSS !== 'undefined' && CSS.escape)
+      ? CSS.escape(raw)
+      : raw.replace(/(["\\])/g, '\\$1');
+
+  // Phase F — element 가 viewport 밖이면 부드럽게 가운데로 스크롤.
+  // Shadow 안 element 의 scrollIntoView 는 nearest scroll ancestor (보통
+  // PreviewMain 의 overflow-auto wrapper) 를 따라 움직임. block:'center' 로
+  // 상하 가운데, inline:'nearest' 로 가로 스크롤 최소화.
+  const scrollIntoViewIfNeeded = (el: HTMLElement) => {
+    try {
+      const rect = el.getBoundingClientRect();
+      const inView =
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth);
+      if (!inView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      }
+    } catch {
+      /* JSDOM / 일부 환경 — scrollIntoView 미지원 */
+    }
+  };
+
+  const setSelected = (
+    blockId: string | null,
+    selOpts?: { scrollIntoView?: boolean },
+  ) => {
     if (!shadow) return;
     // clear all
     const prev = shadow.querySelectorAll<HTMLElement>('[data-r20-block-id].r20-selected');
     prev.forEach((el) => el.classList.remove('r20-selected'));
     if (blockId == null) return;
-    // CSS escape — blockId 는 Blockly id (영숫자 + 약간의 special) 인데 그래도
-    // attribute selector 에서 quoting + escape 안전하게.
-    const escaped = (typeof CSS !== 'undefined' && CSS.escape)
-      ? CSS.escape(blockId)
-      : blockId.replace(/(["\\])/g, '\\$1');
+    const escaped = escapeAttr(blockId);
     const target = shadow.querySelector<HTMLElement>(
       `[data-r20-block-id="${escaped}"]`,
     );
-    if (target) target.classList.add('r20-selected');
+    if (!target) return;
+    target.classList.add('r20-selected');
+    if (selOpts?.scrollIntoView) {
+      scrollIntoViewIfNeeded(target);
+    }
+  };
+
+  // Phase F — partial re-render API. 호출자 (PreviewMain) 에서 emit 단위 diff
+  // 가 없어 현재 wire 안 됨. follow-up backlog.
+  const updateBlock = (blockId: string, newOuterHtml: string): boolean => {
+    if (!shadow) return false;
+    const escaped = escapeAttr(blockId);
+    const target = shadow.querySelector<HTMLElement>(
+      `[data-r20-block-id="${escaped}"]`,
+    );
+    if (!target) return false;
+    // contentEditable 중이면 swap 보류 — 사용자의 입력 잃으면 안 됨.
+    if (target.isContentEditable || target.querySelector('[contenteditable=\"true\"]')) {
+      return false;
+    }
+    try {
+      target.outerHTML = newOuterHtml;
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   return {
     shadow,
+    updateBlock,
     cleanup: () => {
       // editing 중이라면 — blur listener 정리 + contentEditable off.
       if (editingState) {
