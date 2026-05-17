@@ -1,0 +1,439 @@
+/*
+ * Roll20 sheet sandbox baseline CSS — 미리보기에 박는 첫 번째 stylesheet.
+ *
+ * Anchor: docs/spec/25_roll20_baseline.md
+ *
+ * 출처 (D:\훙냥냥\마렌상\영시영 시트 고치기\roll20-base\):
+ *   - base.css (Bootstrap 3.x + normalize.css v3.0.3 — Roll20 가 번들)
+ *   - charactersheet.css (Roll20 의 `.ui-dialog .charsheet ...` 룰)
+ *
+ * 왜 이게 있어야 하나:
+ *   Roll20 sandbox 가 sheet sandbox iframe 안에 base.css + charactersheet.css
+ *   를 박은 후에 시트 CSS 가 위에 얹힘. 우리 미리보기는 이걸 안 박고 있어서
+ *   form element 의 default look 이 브라우저 native + 우리 앱 CSS 로 결정됐다.
+ *   그 결과 라이브 미리보기와 실제 Roll20 환경의 시각이 크게 달라져 사용자가
+ *   값 추적을 못 하는 상태.
+ *
+ * Ground truth 시각 — 사용자 share 영시영 실제 Roll20 렌더 (docs/spec/25 노트):
+ *   - 1부 red moon era / 2부 waterfall era (03:30) / 3부 broken glass era (7402)
+ *   - dark bg + form-control 정렬 (좁은 numeric + 좌측 label) + 능력치 stack 격자
+ *
+ * 본 파일은 `roll20-base` 의 base.css / charactersheet.css 의 sheet 영역에
+ * 영향을 주는 핵심 룰만 추출한 *근사*. 100% 정합은 아니며 sandbox 의 실제 CSS
+ * 를 그대로 박지는 않는다 (size, 의도 한 차이):
+ *   - 외곽 `.ui-dialog` 셀렉터 제거 → `.charsheet` 만 사용 (우리 wrapper 가
+ *     `.charsheet` 직접).
+ *   - dicefontd20 / pictos 같은 Roll20 전용 폰트 fallback — 이모지 아이콘.
+ *   - 9980 라인의 vtt UI 전용 룰 (jQuery dialog 등) 은 제외.
+ *
+ * 시스템 specific 0. 셀렉터 모두 Roll20 표준 element/class.
+ *
+ * 주입 순서 (shadowMount + buildSheetDoc):
+ *   1. roll20_baseline.css ← 본 파일 (Roll20 default look)
+ *   2. runtime.css         ← 우리 overlay (highlight, layer filter, dark mode)
+ *   3. user sheet CSS      ← 사용자 CSS (덮어쓰기 우선)
+ */
+
+/* ─── box-sizing reset (Bootstrap 3.x) ─────────────────────────── */
+.charsheet,
+.charsheet *,
+.charsheet *::before,
+.charsheet *::after {
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+/* ─── body-equivalent (charsheet wrapper 가 body 역할) ─────────── */
+/* base.css L1500: body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; */
+/*                       font-size: 14px; line-height: 1.42857143; color: #333; }     */
+.charsheet {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.42857143;
+  color: #333;
+  background-color: #fff;
+  /* charactersheet.css L263 `.ui-dialog .charsheet { padding: 10px; }` */
+  padding: 10px;
+}
+
+/* ─── normalize: form element 기본 (base.css L527~590) ──────────── */
+.charsheet button,
+.charsheet input,
+.charsheet optgroup,
+.charsheet select,
+.charsheet textarea {
+  margin: 0;
+  font: inherit;
+  color: inherit;
+}
+.charsheet input,
+.charsheet button,
+.charsheet select,
+.charsheet textarea {
+  background-color: #fff;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+.charsheet button {
+  overflow: visible;
+}
+.charsheet button,
+.charsheet select {
+  text-transform: none;
+}
+.charsheet button,
+.charsheet input[type="button"],
+.charsheet input[type="reset"],
+.charsheet input[type="submit"] {
+  -webkit-appearance: button;
+  cursor: pointer;
+}
+.charsheet button[disabled],
+.charsheet input[disabled] {
+  cursor: default;
+}
+.charsheet input {
+  line-height: normal;
+}
+.charsheet input[type="checkbox"],
+.charsheet input[type="radio"] {
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  padding: 0;
+  margin: 4px 0 0;
+  line-height: normal;
+}
+.charsheet input[type="number"]::-webkit-inner-spin-button,
+.charsheet input[type="number"]::-webkit-outer-spin-button {
+  height: auto;
+}
+.charsheet textarea {
+  overflow: auto;
+}
+
+/* ─── Bootstrap-3 form-control 미니멀 근사 ─────────────────────── */
+/* Roll20 의 시트는 보통 Bootstrap `.form-control` 클래스 없이 raw       */
+/* <input> 만 박는데, base.css 의 form-control 룰이 raw input 에도        */
+/* 일부 (font/line-height 등) 영향. native 브라우저 기본보다 통일감 ↑.    */
+.charsheet input[type="text"],
+.charsheet input[type="number"],
+.charsheet input[type="email"],
+.charsheet input[type="url"],
+.charsheet input[type="search"],
+.charsheet input[type="password"],
+.charsheet input:not([type]),
+.charsheet select,
+.charsheet textarea {
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.42857143;
+  color: #555;
+  background-color: #fff;
+  background-image: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+  -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;
+       -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+          transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+}
+.charsheet textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+.charsheet input[type="text"]:focus,
+.charsheet input[type="number"]:focus,
+.charsheet input:not([type]):focus,
+.charsheet select:focus,
+.charsheet textarea:focus {
+  border-color: #66afe9;
+  outline: 0;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+}
+
+/* charactersheet.css L267 `.ui-dialog .charsheet input` */
+.charsheet input {
+  height: auto;
+  vertical-align: middle;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+/* charactersheet.css L279 `.ui-dialog .charsheet input[type=number] { width: 3.5em; }`
+   ▶ 이게 핵심. 일반 number input 은 3.5em 좁은 박스. 사용자 CSS 가 의도적으로
+     width 늘리지 않으면 좁음. 우리 미리보기는 여태 이걸 안 박아서 실제 영시영
+     의 능력치 numeric input 폭 (좁은 칸 + 좌측 label) 과 큰 차이가 있었음. */
+.charsheet input[type="number"] {
+  width: 3.5em;
+}
+
+.charsheet input[type="checkbox"],
+.charsheet input[type="radio"] {
+  width: auto;
+  height: auto;
+  margin: 4px 0 0;
+}
+
+.charsheet input[type="hidden"] {
+  display: none;
+}
+
+/* ─── 버튼 (Bootstrap .btn + Roll20 roll/compendium override) ────── */
+/* base.css L3427 `.btn` 의 일반 button 근사. raw <button> 도 동일 룩. */
+.charsheet button {
+  display: inline-block;
+  padding: 6px 12px;
+  margin-bottom: 0;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 1.42857143;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  background-color: #fff;
+  background-image: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  color: #333;
+}
+.charsheet button:hover,
+.charsheet button:focus {
+  background-color: #e6e6e6;
+  border-color: #adadad;
+  color: #333;
+  text-decoration: none;
+}
+.charsheet button:active {
+  background-image: none;
+  outline: 0;
+  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);
+          box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);
+}
+.charsheet button:disabled,
+.charsheet button[disabled] {
+  cursor: not-allowed;
+  opacity: .65;
+  -webkit-box-shadow: none;
+          box-shadow: none;
+}
+
+/* charactersheet.css L313 — roll / compendium 버튼은 padding 줄이고 폰트 키움.
+   dicefontd20 / pictos 폰트는 Roll20 전용 → 우리 환경엔 없음 → 이모지 fallback. */
+.charsheet button[type="roll"],
+.charsheet button[type="compendium"] {
+  padding: 2px 3px;
+  font-size: 1.3em;
+  margin: 0px 3px 0px 3px;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  color: #333;
+}
+.charsheet button[type="roll"]::before {
+  /* Roll20: `font-family: "dicefontd20"; content: "t";` (d20 글리프)
+     우리: dicefontd20 폰트 없음 → 주사위 이모지 fallback. */
+  content: "🎲 ";
+  font-family: inherit;
+}
+.charsheet button[type="compendium"]::before {
+  /* Roll20: `font-family: "pictos"; content: "i";` */
+  content: "ⓘ ";
+  font-family: inherit;
+}
+
+/* ─── label (base.css L2932) ─────────────────────────────────────── */
+.charsheet label {
+  display: inline-block;
+  max-width: 100%;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+/* label 안의 input 은 base.css 가 inline-block 으로 — 줄을 깨지 마라 */
+.charsheet label input {
+  display: inline-block;
+}
+.charsheet label input[type="checkbox"] {
+  display: inline-block;
+}
+
+/* ─── fieldset / legend (base.css L583, L2917) ───────────────────── */
+.charsheet fieldset {
+  padding: .35em .625em .75em;
+  margin: 0 2px;
+  border: 1px solid #c0c0c0;
+  min-width: 0;
+}
+.charsheet legend {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 20px;
+  font-size: 21px;
+  line-height: inherit;
+  color: #333;
+  border: 0;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+/* ─── heading (Bootstrap typography) ─────────────────────────────── */
+.charsheet h1,
+.charsheet h2,
+.charsheet h3,
+.charsheet h4,
+.charsheet h5,
+.charsheet h6 {
+  font-family: inherit;
+  font-weight: 500;
+  line-height: 1.1;
+  color: inherit;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+.charsheet h1 { font-size: 36px; }
+.charsheet h2 { font-size: 30px; }
+.charsheet h3 { font-size: 24px; }
+.charsheet h4 { font-size: 18px; }
+.charsheet h5 { font-size: 14px; }
+.charsheet h6 { font-size: 12px; }
+.charsheet p { margin: 0 0 10px; }
+
+/* ─── link (base.css L1517) ──────────────────────────────────────── */
+.charsheet a {
+  color: #337ab7;
+  text-decoration: none;
+  background-color: transparent;
+}
+.charsheet a:hover,
+.charsheet a:focus {
+  color: #23527c;
+  text-decoration: underline;
+}
+
+/* ─── img (base.css L502) ─────────────────────────────────────────── */
+.charsheet img {
+  border: 0;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+/* ─── table (base.css L598 + Bootstrap .table) ──────────────────── */
+.charsheet table {
+  background-color: transparent;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+.charsheet th,
+.charsheet td {
+  padding: 8px;
+  line-height: 1.42857143;
+  vertical-align: top;
+  border-top: 1px solid #ddd;
+  text-align: left;
+}
+.charsheet thead > tr > th {
+  vertical-align: bottom;
+  border-bottom: 2px solid #ddd;
+}
+
+/* ─── hr (charactersheet.css L275 + base.css) ────────────────────── */
+.charsheet hr {
+  clear: both;
+  height: 0;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border: 0;
+  border-top: 1px solid #eee;
+  -webkit-box-sizing: content-box;
+     -moz-box-sizing: content-box;
+          box-sizing: content-box;
+}
+
+/* ─── Roll20 sheet-row / sheet-col 그리드 (charactersheet.css L283~309) ── */
+.charsheet .sheet-row,
+.charsheet .sheet-2colrow,
+.charsheet .sheet-3colrow {
+  display: block;
+  clear: both;
+}
+.charsheet .sheet-col {
+  display: inline-block;
+  vertical-align: top;
+}
+.charsheet .sheet-col img {
+  max-width: 100%;
+}
+.charsheet .sheet-2colrow .sheet-col {
+  width: calc(50% - 20px);
+  margin-right: 30px;
+}
+.charsheet .sheet-3colrow .sheet-col {
+  width: calc(33% - 21px);
+  margin-right: 30px;
+}
+.charsheet .sheet-col:last-child {
+  margin-right: 0 !important;
+}
+
+/* ─── Roll20 repcontainer / repitem (charactersheet.css L348~) ──── */
+.charsheet .repcontainer .repitem {
+  position: relative;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+}
+.charsheet .repcontainer.editmode .repitem .itemcontrol {
+  display: block;
+}
+.charsheet .repitem.repitembroken {
+  border: 1px solid red !important;
+}
+
+/* ─── rolltemplate — 미리보기에선 안 보임 (실제 굴림 시만 렌더) ───── */
+.charsheet rolltemplate,
+.charsheet [class*="sheet-rolltemplate-"] {
+  display: none;
+}
+
+/* ─── sheet worker script tag — 안 보임 ──────────────────────────── */
+.charsheet script,
+.charsheet script[type="text/worker"] {
+  display: none;
+}
+
+/* ─── strong / em / code ────────────────────────────────────────── */
+.charsheet b,
+.charsheet strong { font-weight: bold; }
+.charsheet i,
+.charsheet em { font-style: italic; }
+.charsheet code,
+.charsheet kbd,
+.charsheet pre,
+.charsheet samp {
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 90%;
+}
+.charsheet pre {
+  display: block;
+  padding: 9.5px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.42857143;
+  color: #333;
+  word-break: break-all;
+  word-wrap: break-word;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}

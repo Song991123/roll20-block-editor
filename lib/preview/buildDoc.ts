@@ -19,6 +19,7 @@
  */
 
 import { autoPrefixHtmlClasses, autoPrefixCssClasses } from './prefix';
+import { roll20BaselineCss } from './roll20_baseline';
 import { runtimeCss } from './runtime';
 
 export interface BuildDocOptions {
@@ -305,6 +306,8 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>시트 미리보기</title>
+<!-- spec 25: Roll20 sandbox baseline (먼저) → runtime overlay → user CSS -->
+<style>${roll20BaselineCss}</style>
 <style>${runtimeCss}</style>
 <style>${layerFilterCss()}</style>
 <style>${prefixedCss}</style>
@@ -338,7 +341,10 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
   // layerFilterCss scope = '.charsheet' 로 selector 일관성 유지.
+  // spec 25 — Roll20 sandbox baseline 먼저 → runtime overlay → user CSS.
+  // user CSS 가 마지막 source order 라 동일 specificity 셀렉터에선 사용자 우선.
   const css = [
+    roll20BaselineCss,
     runtimeCss,
     layerFilterCss('.charsheet'),
     prefixedCss,

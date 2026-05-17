@@ -1,169 +1,29 @@
 /*
- * Roll20 base runtime CSS — 미리보기 iframe 안에 inline.
+ * Roll20 preview runtime CSS — overlay-only.
  *
- * Anchor: docs/spec/12_roll20_output_spec.md §6.1 (Custom Sheet Sandbox CSS 제약)
- *       + §6.2 (HTML 제약) — Roll20 가 적용하는 default look 의 근사.
+ * Anchor: docs/spec/12_roll20_output_spec.md §6.1 / §6.2
+ *       + docs/spec/25_roll20_baseline.md
  *
- * 목적: 사용자가 빈 워크스페이스이거나 CSS 워크스페이스에 아무것도 안 넣어도
- * 미리보기에서 시트가 "벌거벗은 HTML" 으로 보이지 않게 base default 제공.
+ * Reference copy of runtime.ts's runtimeCss string. Edit both in sync.
+ * Form / typography / table baseline lives in roll20_baseline.{ts,css}.
  *
- * 시스템 specific 0. 모든 selector 는 Roll20 표준 class (`.charsheet`,
- * `.sheet-fieldset`, `.repeating_*`, input/button 일반 element).
+ * 시스템 specific 0.
  */
 
+/* iframe body — Shadow DOM 에선 body 가 없으므로 noop */
 html, body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   background: var(--r20-bg, #ffffff);
-  color: var(--r20-fg, #1f2328);
-  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system,
-    BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 13px;
-  line-height: 1.5;
 }
 
-/* charsheet root — Roll20 의 시트 컨테이너 */
-.charsheet {
-  display: block;
-  box-sizing: border-box;
-  padding: 16px 20px;
-  background: var(--r20-bg, #ffffff);
-  color: var(--r20-fg, #1f2328);
-  min-height: 100%;
-}
-
-.charsheet *,
-.charsheet *::before,
-.charsheet *::after {
-  box-sizing: border-box;
-}
-
-/* 기본 input/select/textarea */
-.charsheet input[type='text'],
-.charsheet input[type='number'],
-.charsheet input:not([type]),
-.charsheet select,
-.charsheet textarea {
-  display: inline-block;
-  padding: 4px 8px;
-  margin: 0;
-  border: 1px solid var(--r20-border, #d0d7de);
-  border-radius: 3px;
-  background: var(--r20-input-bg, #ffffff);
-  color: inherit;
-  font: inherit;
-  line-height: 1.4;
-  min-width: 60px;
-}
-
-.charsheet input[type='number'] {
-  width: 64px;
-  text-align: right;
-}
-
-.charsheet textarea {
-  width: 100%;
-  min-height: 60px;
-  resize: vertical;
-}
-
-.charsheet input:focus,
-.charsheet select:focus,
-.charsheet textarea:focus {
-  outline: 2px solid var(--r20-focus, #2f81f7);
-  outline-offset: 1px;
-  border-color: var(--r20-focus, #2f81f7);
-}
-
-/* 체크박스 / 라디오 */
-.charsheet input[type='checkbox'],
-.charsheet input[type='radio'] {
-  width: 14px;
-  height: 14px;
-  margin: 0 4px 0 0;
-  vertical-align: middle;
-  accent-color: var(--r20-focus, #2f81f7);
-}
-
-/* hidden input — 시각화 안 함 */
-.charsheet input[type='hidden'] {
-  display: none;
-}
-
-/* 버튼 — type=roll / type=action / 일반 button */
-.charsheet button,
-.charsheet button[type='roll'],
-.charsheet button[type='action'] {
-  display: inline-block;
-  padding: 4px 10px;
-  margin: 2px;
-  border: 1px solid var(--r20-border, #d0d7de);
-  border-radius: 3px;
-  background: var(--r20-button-bg, #f6f8fa);
-  color: inherit;
-  font: inherit;
-  font-weight: 500;
-  cursor: pointer;
-  line-height: 1.4;
-}
-
-.charsheet button[type='roll'] {
-  background: var(--r20-roll-bg, #ddf4ff);
-  border-color: var(--r20-roll-border, #54aeff);
-  color: var(--r20-roll-fg, #0969da);
-}
-
-.charsheet button[type='action'] {
-  background: var(--r20-action-bg, #fff8c5);
-  border-color: var(--r20-action-border, #d4a72c);
-  color: var(--r20-action-fg, #7d4e00);
-}
-
-.charsheet button:hover {
-  filter: brightness(0.96);
-}
-
-.charsheet button:active {
-  filter: brightness(0.9);
-}
-
-/* label */
-.charsheet label {
-  display: inline-block;
-  margin: 2px 6px 2px 0;
-  vertical-align: middle;
-  color: inherit;
-  font-weight: 500;
-}
-
-/* heading */
-.charsheet h1, .charsheet h2, .charsheet h3,
-.charsheet h4, .charsheet h5, .charsheet h6 {
-  margin: 12px 0 6px;
-  font-weight: 600;
-  line-height: 1.3;
-  color: inherit;
-}
-
-.charsheet h1 { font-size: 1.5em; }
-.charsheet h2 { font-size: 1.3em; }
-.charsheet h3 { font-size: 1.15em; }
-.charsheet h4 { font-size: 1em; }
-.charsheet h5 { font-size: 0.9em; }
-.charsheet h6 { font-size: 0.85em; color: var(--r20-fg-muted, #57606a); }
-
-/* 반복 섹션 (Roll20 의 fieldset.repeating_*) */
+/* preview-only — fieldset[class*=repeating_] 시각 hint */
 .charsheet fieldset[class^='repeating_'],
 .charsheet fieldset[class*=' repeating_'] {
-  display: block;
-  margin: 8px 0;
-  padding: 8px 10px;
   border: 1px dashed var(--r20-border, #d0d7de);
-  border-radius: 4px;
   background: var(--r20-repeat-bg, rgba(208, 215, 222, 0.08));
 }
-
 .charsheet fieldset[class^='repeating_']::before,
 .charsheet fieldset[class*=' repeating_']::before {
   content: '↻ 반복 섹션';
@@ -175,57 +35,14 @@ html, body {
   text-transform: uppercase;
 }
 
-/* sheet-rolltemplate-* — 미리보기에선 숨김 (실제 굴림 시만 노출) */
-.charsheet rolltemplate,
-.charsheet [class*='sheet-rolltemplate-'] {
-  display: none;
-}
-
-/* sheet worker script — 미리보기에서 숨김 */
-.charsheet script,
-script[type='text/worker'] {
-  display: none;
-}
-
-/* 일반 div / section / table */
-.charsheet table {
-  border-collapse: collapse;
-  margin: 6px 0;
-}
-
-.charsheet th, .charsheet td {
-  padding: 4px 8px;
-  border: 1px solid var(--r20-border, #d0d7de);
-  text-align: left;
-}
-
-.charsheet th {
-  background: var(--r20-thead-bg, #f6f8fa);
-  font-weight: 600;
-}
-
-.charsheet img {
-  max-width: 100%;
-  height: auto;
-  vertical-align: middle;
-}
-
-/* preview-only 선택 강조 (PreviewMain 이 postMessage 로 highlight) */
+/* preview-only 선택 강조 */
 .charsheet [data-r20-preview-selected='1'] {
   outline: 2px solid var(--r20-focus, #2f81f7);
   outline-offset: 1px;
   border-radius: 3px;
 }
 
-/* ───────────────────────────────────────────────────────────────────
- * colrow / row / col / fieldset / table / repeating / spacer defaults
- * 목적: 시스템에 무관한 generic layout primitive 의 default 동작 보장.
- * 추가 anchor: V2 검증 — `.sheet-colrow-N` 디폴트 grid 정의가 없어
- * 다수 능력치 row 가 vertical stack 으로 깨지는 갭 보강.
- * 시스템 specific 0. 모든 selector 는 Roll20/sheet 표준 class.
- * ─────────────────────────────────────────────────────────────────── */
-
-/* colrow_n N-column grid */
+/* generic layout helpers (Roll20 표준 X — 우리 helper) */
 .sheet-colrow-2, .sheet-colrow-3, .sheet-colrow-4, .sheet-colrow-5, .sheet-colrow-6 {
   display: grid;
   gap: 0.5rem;
@@ -237,34 +54,26 @@ script[type='text/worker'] {
 .sheet-colrow-5 { grid-template-columns: repeat(5, 1fr); }
 .sheet-colrow-6 { grid-template-columns: repeat(6, 1fr); }
 
-/* row / col flex helpers */
-.sheet-row { display: flex; flex-direction: row; gap: 0.5rem; flex-wrap: wrap; }
-.sheet-col { display: flex; flex-direction: column; gap: 0.25rem; }
-
-/* fieldset basic — `.charsheet fieldset[class*=repeating_]` 보다 낮은 specificity */
 .sheet-fieldset, fieldset.sheet-fieldset {
   padding: 0.5rem;
   border: 1px solid var(--r20-border, #d0d7de);
   border-radius: 0.25rem;
 }
 
-/* table basic — 기존 `.charsheet table` 룰과 함께 width/100% 보강 */
-.sheet-table, table { border-collapse: collapse; width: 100%; }
+.sheet-table { border-collapse: collapse; width: 100%; }
 .sheet-table th, .sheet-table td { padding: 0.25rem 0.5rem; text-align: left; }
 
-/* repeating section — generic class (Roll20 fieldset.repeating_* 와 별도) */
 .repeating_section {
   border: 1px solid var(--r20-border, #d0d7de);
   padding: 0.5rem;
   margin: 0.5rem 0;
 }
 
-/* spacers */
 .sheet-spacer-small { height: 0.25rem; }
 .sheet-spacer-medium { height: 0.5rem; }
 .sheet-spacer-large { height: 1rem; }
 
-/* 다크 모드 토큰 — usePreviewStore.darkMode 가 body[data-theme=dark] 부착 */
+/* 다크 모드 토큰 */
 :root {
   --r20-bg: #ffffff;
   --r20-fg: #1f2328;
@@ -284,6 +93,24 @@ script[type='text/worker'] {
 }
 
 body[data-theme='dark'] {
+  --r20-bg: #0d1117;
+  --r20-fg: #e6edf3;
+  --r20-fg-muted: #8b949e;
+  --r20-border: #30363d;
+  --r20-input-bg: #161b22;
+  --r20-button-bg: #21262d;
+  --r20-roll-bg: #1b3148;
+  --r20-roll-border: #316dca;
+  --r20-roll-fg: #58a6ff;
+  --r20-action-bg: #3a2e0c;
+  --r20-action-border: #7d6219;
+  --r20-action-fg: #f3d175;
+  --r20-repeat-bg: rgba(110, 118, 129, 0.1);
+  --r20-thead-bg: #161b22;
+  --r20-focus: #58a6ff;
+}
+
+:host([data-theme='dark']) {
   --r20-bg: #0d1117;
   --r20-fg: #e6edf3;
   --r20-fg-muted: #8b949e;
