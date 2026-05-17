@@ -150,8 +150,17 @@ class EmitEngine implements GeneratorContext {
         const safe = escapeAttr(code);
         return `<input class="${shape === 'boolean' ? 'expr-bool' : 'expr-value'}" data-r20-block-id="${block.id}" type="text" readonly value="${safe}" />`;
       }
-      // stack / cap / hat / c / e — Phase 3+ 의 container 블록이 본 분기.
-      return `<div data-r20-block-id="${block.id}">${code}</div>`;
+      // stack / cap / hat / c / e —
+      //   원래: `<div data-r20-block-id=...>${code}</div>` 로 감쌌으나, 영시영 1부
+      //   처럼 import 한 시트 (flat top-level 6K+) 에선 CSS sibling trick 룰
+      //   (`.sheet-toggle[value="1"]:checked ~ div.sheet-X`) 이 wrapper 한
+      //   레벨 깊어 매치 X → era 토글 영역 전체 hidden, 미리보기는 body
+      //   배경 이미지만 보임. fix: wrapper 없이 첫 element 의 opening tag 에만
+      //   `data-r20-block-id` 주입 → 형제 관계 보존, click→select 도 그대로
+      //   (preview bridge 가 부모 walk 으로 id 탐색).
+      //   pure text emit 또는 opening tag 검출 실패 시 안전망으로 div 래핑 유지.
+      const injected = injectBlockIdAttr(code, block.id);
+      return injected ?? `<div data-r20-block-id="${block.id}">${code}</div>`;
     }
 
     // CSS / i18n — top-level expression 은 아직 의미 X. raw dump (debugging).
@@ -208,4 +217,68 @@ function escapeAttr(s: string): string {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+/**
+ * 첫 opening element tag 에 `data-r20-block-id` 속성을 주입.
+ *
+ * 동기:
+ *   - top-level 블록을 `<div data-r20-block-id>...</div>` 로 감싸면 CSS
+ *     sibling 셀렉터 (`A:checked ~ B`) 가 wrapper 안 element 끼리만 동작 →
+ *     서로 다른 top-level 블록이 형제일 때 매치 X → 영시영 1부 같은 era
+ *     toggle 시트가 통째로 hidden.
+ *   - wrapper 제거 + 첫 element tag 에 속성만 주입 → 형제 관계 그대로,
+ *     preview bridge 의 click→select 도 부모 walk 으로 동일 동작.
+ *
+ * 입력 가정 0: emit 결과 string 의 선두에 (whitespace + HTML 주석 후) 일반
+ *   element opening tag 가 있으면 거기에 주입, 아니면 null 반환 (fallback).
+ *
+ * 시스템 specific 0 — 모든 HTML 토큰은 사용자 입력 기반.
+ */
+function injectBlockIdAttr(html: string, id: string): string | null {
+  // 선두 whitespace / HTML 주석 스킵.
+  let i = 0;
+  while (i < html.length) {
+    const c = html[i];
+    if (c === ' ' || c === '\t' || c === '\n' || c === '\r') {
+      i++;
+      continue;
+    }
+    if (html.startsWith('<!--', i)) {
+      const end = html.indexOf('-->', i + 4);
+      if (end < 0) return null;
+      i = end + 3;
+      continue;
+    }
+    break;
+  }
+  if (i >= html.length || html[i] !== '<') return null;
+  // <tagname  — 일반 element 만. <!DOCTYPE / <?xml 등은 제외.
+  const m = /^<([a-zA-Z][a-zA-Z0-9-]*)/.exec(html.slice(i));
+  if (!m) return null;
+  const tagNameEnd = i + m[0].length;
+  // opening tag 의 `>` 위치 — 따옴표 안 `>` 는 무시.
+  let end = tagNameEnd;
+  let quote: string | null = null;
+  while (end < html.length) {
+    const c = html[end];
+    if (quote) {
+      if (c === quote) quote = null;
+      end++;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      quote = c;
+      end++;
+      continue;
+    }
+    if (c === '>') break;
+    end++;
+  }
+  if (end >= html.length) return null;
+  const attrsRegion = html.slice(tagNameEnd, end);
+  if (/\sdata-r20-block-id\s*=/.test(attrsRegion) || /^data-r20-block-id\s*=/.test(attrsRegion.trimStart())) {
+    return html;
+  }
+  return html.slice(0, tagNameEnd) + ` data-r20-block-id="${id}"` + html.slice(tagNameEnd);
 }
