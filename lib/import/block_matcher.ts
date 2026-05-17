@@ -16,6 +16,7 @@
 
 import type { DomNode } from './dom_walker';
 import { firstTextContent, allTextContent } from './dom_walker';
+import { parseAttrRefToken } from './expression_parser';
 
 export interface MatchedBlock {
   /** 130 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
@@ -412,9 +413,18 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   const a = node.attrs ?? {};
 
   if (tag === 'script') {
+    // Stage 22 §1/§2 — script body 가 단일 reporter call (compendium /
+    // translation) 이면 카탈로그 reporter 로 매칭. 아니면 raw_worker 유지.
+    //
+    // 영시영 1부 회귀: `<script type="text/worker">` 같은 큰 worker 본문은
+    // 단일 reporter 패턴에 매칭 안 됨 → 기존 raw_worker fallback 그대로 →
+    // matchedCount 회귀 0.
+    const body = allTextContent(node);
+    const reporter = matchSheetWorkerReporter(body);
+    if (reporter) return reporter;
     return {
       blockType: 'r20_raw_worker',
-      fields: { JS: allTextContent(node) },
+      fields: { JS: body },
       children: {},
     };
   }
@@ -584,6 +594,13 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
 
   if (tag === 'div') {
     const cls = a.class || '';
+    // value switch panel 매칭 (Stage 22 §4) — `sheet-X-switch` wrapper.
+    // 내부에 inline `<style>` + radio + panel div 들이 묶여 있을 때 묶음 분해.
+    const switchMatch = matchValueSwitchPanel(node, cls, ctx);
+    if (switchMatch) {
+      // matcher 가 totalCount 카운트는 직접 안 함 — 매칭 자체로 1 으로 침.
+      return switchMatch;
+    }
     // row / col / colrow / section / toggle / grid 매칭
     if (/\bsheet-row\b/.test(cls)) {
       return {
@@ -678,6 +695,102 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
 // Helpers.
 // ---------------------------------------------------------------------------
 
+/**
+ * `sheet-X-switch` wrapper div → r20_value_switch_panel 복합 블록 분해.
+ *
+ * 인식 패턴 (lib/blocks/composite.ts emit 결과 역방향):
+ *   <div class="sheet-X-switch">
+ *     <style> ...sibling rule... </style>
+ *     <input type="radio" class="sheet-X-input" name="attr_X" value="V1">
+ *     <input ... value="V2">
+ *     <div class="sheet-X-panel sheet-X-panel-V1">PANEL1</div>
+ *     <div class="sheet-X-panel sheet-X-panel-V2">PANEL2</div>
+ *   </div>
+ *
+ * ATTR_NAME 추출: class `sheet-X-switch` 의 X.
+ * VALUE 별 PANEL: `sheet-X-panel-V` 의 V → 매칭. panel 내용은 div 의 자식들
+ * matchTree 재귀.
+ *
+ * 매칭 실패 (input/panel 0 개 or X 불일치) 시 null → 호출 측이 일반 div 처리.
+ */
+function matchValueSwitchPanel(
+  node: DomNode,
+  cls: string,
+  ctx: MatchContext,
+): MatchedBlock | null {
+  const m = /(?:^|\s)sheet-([\w-]+?)-switch(?:\s|$)/.exec(cls);
+  if (!m) return null;
+  const attr = m[1];
+  if (!attr) return null;
+  // Note: template literal 안의 `\s` 는 escape 안 됨 → `\\s` 로 해야 RegExp 안에 `\s` 도달.
+  const inputClsRe = new RegExp('(?:^|\\s)sheet-' + escapeRegExp(attr) + '-input(?:\\s|$)');
+  const panelClsRe = new RegExp('(?:^|\\s)sheet-' + escapeRegExp(attr) + '-panel-([\\w-]+)(?:\\s|$)');
+  // 자식 element 들 중 input (radio) + panel div 추출.
+  const radioValues: string[] = [];
+  const panelByValue = new Map<string, DomNode>();
+  for (const c of node.children) {
+    if (c.type !== 'element') continue;
+    const ca = c.attrs ?? {};
+    const childCls = ca.class || '';
+    if (c.tag === 'input' && inputClsRe.test(childCls)) {
+      const v = ca.value || '';
+      if (v) radioValues.push(v);
+      continue;
+    }
+    if (c.tag === 'div') {
+      const mm = panelClsRe.exec(childCls);
+      if (mm) {
+        const v = mm[1];
+        if (!panelByValue.has(v)) panelByValue.set(v, c);
+      }
+    }
+    // <style> 자식은 skip — emit 가 다시 채우므로 round-trip 시 동일.
+  }
+  // 매칭 조건: panel 1 개 이상.
+  if (panelByValue.size === 0) return null;
+  // 순서 — radio 등장 순서 우선, panel-only value 는 뒤에 추가.
+  const seen = new Set<string>();
+  const orderedValues: string[] = [];
+  for (const v of radioValues) {
+    if (panelByValue.has(v) && !seen.has(v)) {
+      seen.add(v);
+      orderedValues.push(v);
+    }
+  }
+  for (const v of panelByValue.keys()) {
+    if (!seen.has(v)) {
+      seen.add(v);
+      orderedValues.push(v);
+    }
+  }
+  const cases: MatchedBlock[] = [];
+  for (const v of orderedValues) {
+    const panelDiv = panelByValue.get(v);
+    if (!panelDiv) continue;
+    // PANEL 슬롯 = panel div 의 자식 element 들을 matchTree 처리.
+    const panelChildren: MatchedBlock[] = [];
+    for (const c of panelDiv.children) {
+      if (c.type !== 'element') continue;
+      const matched = matchElement(c, ctx);
+      if (matched) panelChildren.push(matched);
+    }
+    cases.push({
+      blockType: 'r20_value_case',
+      fields: { VALUE: v },
+      children: panelChildren.length ? { PANEL: panelChildren } : {},
+    });
+  }
+  return {
+    blockType: 'r20_value_switch_panel',
+    fields: { ATTR_NAME: attr },
+    children: { CASES: cases },
+  };
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
   for (const c of node.children) {
@@ -738,8 +851,79 @@ function extractGridCols(style: string): string {
   return m ? m[1] : '';
 }
 
+/**
+ * Sheet worker `<script>` body 가 단일 reporter call (compendium /
+ * translation) 이면 카탈로그 reporter 블록으로 분해.
+ *
+ * 매칭 패턴 (앞뒤 whitespace + 후행 `;` 허용, 따옴표는 ' 또는 " 둘 다):
+ *   - `getCompendiumPage('PATH')` → r20_get_compendium PATH
+ *   - `getCompendiumEntries('PATH', 'SUB')` → r20_get_compendium PATH+SUBPATH
+ *   - `getTranslationByKey('KEY')` → r20_get_translation KEY
+ *   - `getTranslationByLang('LANG', 'KEY')` → r20_get_translation KEY+LANG
+ *
+ * 외부 컨텍스트가 있는 (`if`, `=`, `;` 가 본문에 추가로 있는) 복합 worker 는
+ * 매칭 안 함 → raw_worker fallback.
+ */
+function matchSheetWorkerReporter(body: string): MatchedBlock | null {
+  if (!body) return null;
+  // 단순 reporter — 전체 본문이 한 expression call.
+  const trimmed = body.trim().replace(/;\s*$/, '');
+  if (!trimmed) return null;
+  // PATH/SUBPATH/KEY/LANG 의 따옴표 안은 자유 텍스트 — escape 안전한 매처.
+  const RE_COMPENDIUM_PAGE =
+    /^getCompendiumPage\(\s*(?:'([^']*)'|"([^"]*)")\s*\)$/;
+  const m1 = RE_COMPENDIUM_PAGE.exec(trimmed);
+  if (m1) {
+    const path = m1[1] ?? m1[2] ?? '';
+    return {
+      blockType: 'r20_get_compendium',
+      fields: { PATH: path, SUBPATH: '' },
+      children: {},
+    };
+  }
+  const RE_COMPENDIUM_ENTRIES =
+    /^getCompendiumEntries\(\s*(?:'([^']*)'|"([^"]*)")\s*,\s*(?:'([^']*)'|"([^"]*)")\s*\)$/;
+  const m2 = RE_COMPENDIUM_ENTRIES.exec(trimmed);
+  if (m2) {
+    const path = m2[1] ?? m2[2] ?? '';
+    const sub = m2[3] ?? m2[4] ?? '';
+    return {
+      blockType: 'r20_get_compendium',
+      fields: { PATH: path, SUBPATH: sub },
+      children: {},
+    };
+  }
+  const RE_TRANSLATION_KEY =
+    /^getTranslationByKey\(\s*(?:'([^']*)'|"([^"]*)")\s*\)$/;
+  const m3 = RE_TRANSLATION_KEY.exec(trimmed);
+  if (m3) {
+    const key = m3[1] ?? m3[2] ?? '';
+    return {
+      blockType: 'r20_get_translation',
+      fields: { KEY: key, LANG: '' },
+      children: {},
+    };
+  }
+  const RE_TRANSLATION_LANG =
+    /^getTranslationByLang\(\s*(?:'([^']*)'|"([^"]*)")\s*,\s*(?:'([^']*)'|"([^"]*)")\s*\)$/;
+  const m4 = RE_TRANSLATION_LANG.exec(trimmed);
+  if (m4) {
+    const lang = m4[1] ?? m4[2] ?? '';
+    const key = m4[3] ?? m4[4] ?? '';
+    return {
+      blockType: 'r20_get_translation',
+      fields: { KEY: key, LANG: lang },
+      children: {},
+    };
+  }
+  return null;
+}
+
 function rawExpression(expr: string): MatchedBlock {
-  // expression 카테고리 raw block — 단순 텍스트.
+  // expression 카테고리 — 단일 `@{...}` 토큰이면 r20_attr_ref(_max) 로 분해
+  // (Stage 22 §5 round-trip). 패턴 외엔 raw literal_string 유지.
+  const attrRef = parseAttrRefToken(expr);
+  if (attrRef) return attrRef;
   return {
     blockType: 'r20_literal_string',
     fields: { STR: expr },

@@ -614,6 +614,19 @@ function parseDecls(body: string): MatchedBlock[] {
     const prop = d.slice(0, idx).trim();
     const value = d.slice(idx + 1).trim();
     if (!prop) continue;
+    // Stage 22 §3 — `--name: value;` 변수 선언은 r20_css_var_decl 로.
+    // VAR_NAME 슬롯 + VALUE_TEXT fallback. (slot 형태로 잘려 들어온 값은 raw 보존.)
+    if (prop.startsWith('--')) {
+      const name = prop.slice(2);
+      if (/^[\w-]+$/.test(name)) {
+        out.push({
+          blockType: 'r20_css_var_decl',
+          fields: { VAR_NAME: name, VALUE_TEXT: value },
+          children: {},
+        });
+        continue;
+      }
+    }
     out.push({
       blockType: 'r20_css_decl',
       fields: { PROPERTY: prop, VALUE: value },

@@ -146,10 +146,25 @@ SCOPE 필드 누락 시 dropdown 의 첫 번째 값(`self`) 자동 적용 → em
 
 ## 6. Import matcher 영향
 
-본 패치는 emit 단(generator) 만 확장한다. Import matcher (`lib/import/block_matcher.ts`)
-는 본 블록들을 자동 인식하지 않는다 — 후속 작업 항목.
+**Phase 2 (round-trip) — 본 후속 패치에서 통합 완료.**
 
-영시영 1부 6134 매칭 회귀 확인됨 (Step 7, `htmlMatched=6134, htmlRawFallback=0`).
+`lib/import/` 에 다음 매처가 추가됨:
+
+| 신규 매처 | 위치 | 인식 패턴 |
+|---|---|---|
+| sheet worker reporter | `block_matcher.ts` (`matchSheetWorkerReporter`) | `<script>` 본문이 단일 `getCompendiumPage('PATH')` / `getCompendiumEntries('PATH','SUB')` / `getTranslationByKey('KEY')` / `getTranslationByLang('LANG','KEY')` 호출 |
+| value switch panel | `block_matcher.ts` (`matchValueSwitchPanel`) | `<div class="sheet-X-switch">` wrapper + inline `<style>` + `<input class="sheet-X-input">` + `<div class="sheet-X-panel sheet-X-panel-V">` 자식들 |
+| css var decl | `css_parser.ts` (`parseDecls` 분기) | CSS rule 안 `--name: value;` 선언 (VAR_NAME 식별자 + VALUE_TEXT fallback 만 사용 — slot 빈 채로) |
+| attr_ref token | `expression_parser.ts` (`parseAttrRefToken`) | 단일 텍스트 토큰 `@{NAME}` / `@{selected\|NAME}` / `@{target\|NAME}` / `@{character_id}` / `@{NAME\|max}`. `rawExpression()` 안에서 roll button EXPR 등의 단일 토큰을 우선 분해. 복합 표현식 (`@{x}+@{y}`) 은 매칭 안 함 → `r20_literal_string` raw 유지 |
+
+**Round-trip 보장**:
+- 신규 5 매처의 단위 테스트 `lib/import/__tests__/high_priority_import.test.ts` 20 케이스 모두 통과.
+- 영시영 1부 회귀: `htmlMatched=6134/6134, cssMatched=202/202, htmlRawFallback=0` — 매칭 회귀 0. (영시영 1부 자체는 emit 형식의 `sheet-X-switch` / `getCompendium*` / CSS `--var` / 단일 `@{...}` token EXPR 패턴이 거의 없으므로 신규 매처 trigger 0 — 정상.)
+- 합성 round-trip (emit → import → emit) 일관성: spec 의 emit 형식과 매처가 1:1 대응되어 동일 입력 → 동일 블록 트리 복원.
+
+**제약**:
+- `<script>` 본문이 단순 reporter call 한 줄이 아니면 (`if`, `=`, 다중 statement) `r20_raw_worker` fallback. Roll20 의 일반적 sheet worker (`on(...)`, attr assignment) 은 그대로 raw 유지 → 회귀 0.
+- `r20_value_switch_panel` 매처는 `panel-V` 의 V 값 추출만 함 — 임시로 `<style>` 자식의 sibling rule 들과 cross-check 안 함. emit 가 항상 둘 다 채우므로 round-trip 안전. 손으로 작성된 부분 markup 은 매칭 안 될 수 있음 (panel 0 이면 일반 `r20_div` fallback).
 
 ## 7. 측정 못 한 항목
 
