@@ -206,9 +206,21 @@ export function emitWorkspace(
   const engine = new EmitEngine(kind);
   const pieces: string[] = [];
   for (const block of ws.getTopBlocks(true)) {
-    const out = engine.runGenerator(block);
-    const wrapped = engine.wrapTopLevel(block, out.code);
-    if (wrapped) pieces.push(wrapped);
+    // Stage 2 fix — top-level stack chains: getTopBlocks 는 chain head 만
+    //   반환. 이전 emit 은 head 의 code 만 emit, getNextBlock() 으로 이어진
+    //   sibling block 들이 silently dropped 됐다. 영향 큰 케이스:
+    //     i18n 워크스페이스 — r20_locale_value 만 24개 chain 했는데 head 1
+    //     개만 emit 되어 23개 누락 (D&D 5e i18n 측정에서 lines 1, len 48
+    //     byte 로 확인). 해결: 각 top block 의 next-chain 까지 순회.
+    //   reporter/boolean 은 next 연결이 없으므로 getNextBlock() 자체가 null
+    //   → 자연 no-op. statementToCode 와 동일한 패턴.
+    let cur: Blockly.Block | null = block;
+    while (cur) {
+      const out = engine.runGenerator(cur);
+      const wrapped = engine.wrapTopLevel(cur, out.code);
+      if (wrapped) pieces.push(wrapped);
+      cur = cur.getNextBlock();
+    }
   }
   return { code: pieces.join('\n'), warnings: engine.warnings };
 }

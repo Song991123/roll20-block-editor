@@ -38,7 +38,28 @@ export function parseI18n(
   ctx: I18nCtx,
   opts: I18nOptions = {},
 ): MatchedBlock[] {
-  const lang = (opts.lang && LANG_CODES.has(opts.lang)) ? opts.lang : detectLang(text) || 'ko';
+  const fallbackLang = (opts.lang && LANG_CODES.has(opts.lang)) ? opts.lang : detectLang(text) || 'ko';
+  // Stage 2 fix — i18n format round-trip parity. Emit pipeline 의
+  //   r20_locale_value generator 는 `<!-- i18n[lang] "key": "value" -->`
+  //   주석 라인을 출력한다 (lib/blocks/i18n.ts §7). 이전 importer 는 이
+  //   포맷을 인식 못 해 parseFlat 로 fall through → 키 = `<!-- i18n[ko] "k"`,
+  //   값 = `\"v\" -->` 같은 garbage 가 박혔고 round-trip 시 escape 가
+  //   한 단계씩 누적됐다 (D&D 5e 측정에서 second emit 의 key 가 `--i18nkotitle.sheet`
+  //   로 변형된 원인). 해결: comment 포맷을 우선 시도, 각 항목 자체의 lang
+  //   정보 보존.
+  const parsedComments = parseComments(text);
+  if (parsedComments) {
+    const out: MatchedBlock[] = [];
+    for (const [lang, key, value] of parsedComments) {
+      out.push({
+        blockType: 'r20_locale_value',
+        fields: { LANG: lang, KEY: key, VALUE: value },
+        children: {},
+      });
+      ctx.keys++;
+    }
+    return out;
+  }
   const parsed = tryJson(text) ?? parseFlat(text);
   if (!parsed) {
     if (text.trim()) {
@@ -53,12 +74,59 @@ export function parseI18n(
   for (const [key, value] of parsed) {
     out.push({
       blockType: 'r20_locale_value',
-      fields: { LANG: lang, KEY: key, VALUE: value },
+      fields: { LANG: fallbackLang, KEY: key, VALUE: value },
       children: {},
     });
     ctx.keys++;
   }
   return out;
+}
+
+/**
+ * `<!-- i18n[lang] "key": "value" -->` 주석 라인 시퀀스 파서 —
+ * lib/blocks/i18n.ts 의 r20_locale_value generator 가 출력하는 emit 포맷.
+ *
+ * 각 항목은 자체 lang 코드 보존. 매칭 실패 시 null (다른 파서 fallback).
+ *
+ * 형식 규약:
+ *   - 시작/끝 토큰은 `<!--` / `-->`
+ *   - lang 코드는 ASCII 2글자 (LANG_CODES set 강제), 미허용 시 항목 skip
+ *   - key / value 는 JSON 문자열 리터럴 (jsonEscape 의 역연산 — `\"`, `\\`,
+ *     `\n`, `\r`, `\t`, `\uXXXX` 지원).
+ *
+ * 다른 형식 (JSON / flat) 라인이 섞여 있어도 본 함수가 매칭하는 라인이 1개
+ * 이상이면 OK — 나머지는 무시 (사용자에게 명시적 경고 X, comments-mode 로
+ * 단언했으므로). 0 매칭이면 null 반환 → 호출 측이 다른 파서 시도.
+ */
+function parseComments(text: string): Array<[string, string, string]> | null {
+  const out: Array<[string, string, string]> = [];
+  // /g 플래그로 멀티라인 / multi-entry 한 줄 모두 처리.
+  const re = /<!--\s*i18n\[([a-z]{2})\]\s*"((?:\\.|[^"\\])*)"\s*:\s*"((?:\\.|[^"\\])*)"\s*-->/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const lang = m[1];
+    if (!LANG_CODES.has(lang)) continue;
+    out.push([lang, jsonUnescape(m[2]), jsonUnescape(m[3])]);
+  }
+  return out.length > 0 ? out : null;
+}
+
+/** JSON 문자열 리터럴 escape 의 역연산 — `\"` / `\\` / `\n` / `\uXXXX` 디코드. */
+function jsonUnescape(s: string): string {
+  return s.replace(/\\(u[0-9a-fA-F]{4}|.)/g, (_m, esc) => {
+    if (esc[0] === 'u') return String.fromCharCode(parseInt(esc.slice(1), 16));
+    switch (esc) {
+      case 'n': return '\n';
+      case 'r': return '\r';
+      case 't': return '\t';
+      case 'b': return '\b';
+      case 'f': return '\f';
+      case '"': return '"';
+      case "\\": return '\\';
+      case '/': return '/';
+      default: return esc;
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------
