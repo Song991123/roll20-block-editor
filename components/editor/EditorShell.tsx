@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, type CSSProperties, type MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { useUiStore, type MainMode } from '@/lib/stores/uiStore';
 import EditorHeader from './EditorHeader';
@@ -9,11 +9,15 @@ import SidebarRight from './SidebarRight';
 import PreviewMain from './PreviewMain';
 import EditCanvas from './EditCanvas';
 import Statusbar from './Statusbar';
+import AutosaveBanner from './AutosaveBanner';
 import dynamic from 'next/dynamic';
 import { useEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { installPerfHook } from '@/lib/perf/hook';
 import MainAreaToolbar from './MainAreaToolbar';
 import WorkspaceSubToolbar from './WorkspaceSubToolbar';
+import { installAutosave } from '@/lib/persist/autosave';
+import { loadWorkspace, AUTOSAVE_KEY, type SavedRecord } from '@/lib/persist/indexeddb';
+import { useSettingsStore } from '@/lib/stores/settingsStore';
 
 /**
  * 새 UX 셸 — Preview-first 3-zone grid + 메인 영역 분할 뷰 (D26 ②-재재).
@@ -86,6 +90,35 @@ export default function EditorShell() {
 
   // window.__perfHook — localStorage.__perfOn=1 시만 활성.
   useEffect(() => { installPerfHook(); }, []);
+
+  // Autosave (spec 22) — settings.autosave 가 ON 일 때만 install.
+  // install 은 idempotent (두 번째 호출 no-op) — autosave 토글이 ON 으로 바뀔
+  // 때 다시 호출해서 안전. 토글 OFF 시 cleanup 반환된 unsub 호출 → timer + sub 해제.
+  const autosaveEnabled = useSettingsStore((s) => s.autosave);
+  useEffect(() => {
+    if (!autosaveEnabled) return;
+    const cleanup = installAutosave();
+    return cleanup;
+  }, [autosaveEnabled]);
+
+  // Mount 시 직전 자동저장 발견하면 배너로 묻는다.
+  // BlocklyModelHost 가 mount 되어 adapter.registerWorkspace 가 끝난 후에야
+  // hydrate 가능 → setTimeout 으로 next-tick 에 호출 (mount 보장 X 이지만,
+  // 사용자가 [복구] 누르는 데 충분한 delay 가 있음).
+  const [recovered, setRecovered] = useState<SavedRecord | null>(null);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const rec = await loadWorkspace(AUTOSAVE_KEY);
+        if (!alive || !rec || !rec.xml) return;
+        setRecovered(rec);
+      } catch {
+        // graceful — IDB 미지원 / 권한 등 → 그냥 배너 안 띄움.
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
   const mainMode = useUiStore((s) => s.mainMode);
   const setMainMode = useUiStore((s) => s.setMainMode);
   const mainSplit = useUiStore((s) => s.mainSplit);
@@ -181,6 +214,13 @@ export default function EditorShell() {
   return (
     <div className="flex h-screen flex-col bg-[var(--bg-app)] text-foreground">
       <EditorHeader />
+      {recovered && (
+        <AutosaveBanner
+          xml={recovered.xml}
+          meta={recovered.meta}
+          onDismiss={() => setRecovered(null)}
+        />
+      )}
       <main
         className="grid flex-1 min-h-0"
         style={{
