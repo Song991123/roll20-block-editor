@@ -223,6 +223,37 @@ export default function PreviewMain() {
         }
         dragOrigin = null;
       },
+      // Phase D — inline text 편집 commit.
+      // dblclick → contentEditable → blur 시 호출.
+      // 블록 종류별 텍스트 필드 이름이 달라 (TEXT / LABEL / VALUE) — 우선순위 순으로
+      // 첫 매치되는 필드에 setBlockField. 셋 다 없으면 noop + 디버그 로그.
+      // 워크스페이스도 active 기준 + html/css/i18n 순회로 탐색 (drag 와 동일 전략).
+      onEditText: (blockId, newText) => {
+        const adapter = getBlocklyAdapter();
+        const cand: WorkspaceKey[] = [
+          useWorkspaceStore.getState().activeWorkspace as WorkspaceKey,
+          'html', 'css', 'i18n',
+        ];
+        // 중복 제거.
+        const order: WorkspaceKey[] = [];
+        for (const k of cand) if (!order.includes(k)) order.push(k);
+        const FIELD_PREFS = ['TEXT', 'LABEL', 'VALUE', 'CONTENT'] as const;
+        for (const ws of order) {
+          if (!adapter.getBlock(ws, blockId)) continue;
+          for (const fname of FIELD_PREFS) {
+            if (adapter.hasBlockField(ws, blockId, fname)) {
+              adapter.setBlockField(ws, blockId, fname, newText);
+              return;
+            }
+          }
+          // 블록 존재 but 텍스트 필드 없음 — 더 찾지 말고 종료.
+          // eslint-disable-next-line no-console
+          console.debug('[wysiwyg] block has no TEXT/LABEL/VALUE/CONTENT field — edit ignored:', blockId);
+          return;
+        }
+        // eslint-disable-next-line no-console
+        console.debug('[wysiwyg] block not found in any workspace — edit ignored:', blockId);
+      },
     });
     shadowSetSelectedRef.current = setShadowSelected;
     // mount 직후 한번 — 현재 selectedBlockId 가 있으면 outline 복원.

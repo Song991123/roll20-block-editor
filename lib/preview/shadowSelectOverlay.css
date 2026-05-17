@@ -32,3 +32,15 @@
 [data-r20-dragging] * {
   user-select: none !important;
 }
+
+/* Phase D — inline text 편집 중 element.
+ * dblclick → contentEditable swap 시 .r20-editing 부여. blur 시 제거.
+ * 색 = green (#16a34a, tailwind green-600) — drag/select 의 orange 와 구분.
+ */
+[data-r20-block-id] .r20-editing,
+[data-r20-block-id].r20-editing {
+  outline: 2px dashed #16a34a;
+  outline-offset: 2px;
+  background: rgba(22, 163, 74, 0.06);
+  cursor: text !important;
+}

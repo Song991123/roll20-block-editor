@@ -18,7 +18,20 @@
  *   - native form 요소 (input/textarea/select/button) 위에서는 drag 시작 안 함
  *     — focus / typing 보존, onSelect 만 호출.
  *
- * Anchor: docs/spec/17_wysiwyg_mode.md §12 (Phase B / Phase C).
+ * Phase D (이 commit) — inline text 편집:
+ *   - dblclick → 가장 가까운 `[data-r20-block-id]` ancestor 찾고, target 이 텍스트
+ *     노드를 가진 element 면 그 element 자체, 아니면 blockEl 을 contentEditable 로
+ *     swap. 전체 선택 후 focus.
+ *   - blur 시 contentEditable=false 로 되돌리고, 변경된 텍스트면 onEditText(id, val)
+ *     호출 → 호출자가 setBlockField 로 commit.
+ *   - editing 중인 element 는 `.r20-editing` 클래스 부여 — green dashed outline 시각
+ *     피드백. blur 시 제거.
+ *   - input/textarea/select 같은 native form 위에선 dblclick 무시 — native 동작
+ *     (단어 선택 등) 보존. drag 시작도 마찬가지로 차단됨 (Phase C 룰).
+ *   - editing 중에는 pointerdown drag 시작 안 함 (editingState 검사) — 텍스트 박스
+ *     안에서 마우스 selection 이 자연스럽게.
+ *
+ * Anchor: docs/spec/17_wysiwyg_mode.md §12 (Phase B / Phase C / Phase D).
  *
  * 설계 메모:
  *   - shadow root 는 host 당 한번만 attach 가능 → 동일 host 재mount 시 innerHTML
@@ -75,6 +88,13 @@ export interface ShadowMountOptions {
    * 를 누적해서 사용. drag 시작 안 됐으면 (threshold 미만) 호출 안 됨.
    */
   onDragEnd?: (blockId: string) => void;
+  /**
+   * Phase D — inline text 편집 완료. dblclick → contentEditable → blur 시 호출.
+   * newText 는 element.innerText.trim() — 호출자가 trim 한번 더 해도 무해.
+   * 호출자는 보통 adapter.setBlockField(blockId, 'TEXT' | 'LABEL' | ..., newText).
+   * 텍스트 변경이 없으면 호출 안 됨 (orig === newText).
+   */
+  onEditText?: (blockId: string, newText: string) => void;
 }
 
 export interface ShadowMountResult {
@@ -145,6 +165,13 @@ export function mountSheetShadow(
   outline: 2px dashed #f60;
   outline-offset: 2px;
 }
+[data-r20-block-id] .r20-editing,
+[data-r20-block-id].r20-editing {
+  outline: 2px dashed #16a34a;
+  outline-offset: 2px;
+  background: rgba(22, 163, 74, 0.06);
+  cursor: text !important;
+}
 ${opts.css}
 `;
   shadow.appendChild(styleEl);
@@ -200,6 +227,19 @@ ${opts.css}
   };
   let dragState: DragState | null = null;
 
+  // Phase D — inline text editing state. dblclick 으로 contentEditable 활성 시
+  // editingState 채워짐. blur 또는 cleanup 시 비워짐.
+  // editingState != null 동안에는 pointerdown drag 시작을 차단해 마우스 selection
+  // 이 텍스트 박스 안에서 정상 동작.
+  type EditingState = {
+    blockId: string;
+    el: HTMLElement;
+    orig: string;
+    onBlur: (ev: Event) => void;
+    onKey: (ev: KeyboardEvent) => void;
+  };
+  let editingState: EditingState | null = null;
+
   const isFormElement = (el: Element | null): boolean => {
     if (!el) return false;
     const tag = el.tagName;
@@ -222,6 +262,10 @@ ${opts.css}
     if (e.button !== 0) return;
     const target = e.target as HTMLElement | null;
     if (!target) return;
+    // Phase D — inline 편집 중이면 drag/select 무시 — 마우스 selection 우선.
+    if (editingState) return;
+    // contentEditable element 위에서도 drag 시작 안 함.
+    if (target.isContentEditable) return;
     // form 위에선 drag 시작 안 함 — native focus / typing 보존.
     // onSelect 는 click handler 가 알아서 호출함 (drag 시작 안 했으니 suppressClick=false).
     if (isFormElement(target)) return;
@@ -294,6 +338,87 @@ ${opts.css}
   host.addEventListener('pointerup', finishDrag);
   host.addEventListener('pointercancel', finishDrag);
 
+  // Phase D — dblclick → inline text 편집.
+  // 1) target 이 form element 면 무시 (native dblclick = word select).
+  // 2) [data-r20-block-id] ancestor 없으면 무시.
+  // 3) target 이 직속 텍스트 자식을 가진 element 면 target 자체, 없으면 blockEl
+  //    을 textEl 로 선택. 후자는 wrapper 가 text 만 직접 보유한 단순 케이스
+  //    (예: <label data-r20-block-id>이름</label>) 를 노린 휴리스틱.
+  // 4) contentEditable='true' + 전체 선택 + focus. blur 시 false 로 되돌리고
+  //    orig 와 비교해 변경 시 onEditText 호출.
+  // 5) Escape — 원본으로 되돌리고 blur. Enter — blur (개행 막음).
+  const onDblClick = (ev: Event) => {
+    const e = ev as MouseEvent;
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    if (isFormElement(target)) return;
+    const blockEl = target.closest('[data-r20-block-id]') as HTMLElement | null;
+    if (!blockEl) return;
+    const blockId = blockEl.dataset.r20BlockId;
+    if (!blockId) return;
+    // 이미 편집 중이면 무시 (blur 가 먼저 처리).
+    if (editingState) return;
+    // 텍스트 자식 노드 (nodeType=3) 가 있는 element 우선, 없으면 blockEl.
+    const hasTextChild = Array.from(target.childNodes).some(
+      (n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim().length > 0,
+    );
+    const textEl: HTMLElement = hasTextChild ? target : blockEl;
+    // textEl 이 input/textarea 면 (블록 자체가 form element) 무시.
+    if (isFormElement(textEl)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    const orig = (textEl.innerText ?? textEl.textContent ?? '').trim();
+    textEl.setAttribute('contenteditable', 'true');
+    textEl.classList.add('r20-editing');
+    textEl.focus();
+    // 전체 선택 — Shadow Root selection API 우선.
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(textEl);
+      const root = textEl.getRootNode() as ShadowRoot & {
+        getSelection?: () => Selection | null;
+      };
+      const sel = root.getSelection?.() ?? window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    } catch {
+      /* selection 미지원 환경 — 그래도 contentEditable 자체는 동작 */
+    }
+
+    const onBlur = () => {
+      if (!editingState || editingState.el !== textEl) return;
+      const state = editingState;
+      editingState = null;
+      textEl.removeAttribute('contenteditable');
+      textEl.classList.remove('r20-editing');
+      textEl.removeEventListener('blur', state.onBlur);
+      textEl.removeEventListener('keydown', state.onKey);
+      const newText = (textEl.innerText ?? textEl.textContent ?? '').trim();
+      // 변경 없으면 commit 안 함.
+      if (newText !== state.orig) {
+        opts.onEditText?.(state.blockId, newText);
+      }
+    };
+    const onKey = (kev: KeyboardEvent) => {
+      if (kev.key === 'Escape') {
+        kev.preventDefault();
+        // 원본 복구 후 blur.
+        if (editingState) {
+          textEl.innerText = editingState.orig;
+        }
+        textEl.blur();
+      } else if (kev.key === 'Enter' && !kev.shiftKey) {
+        kev.preventDefault();
+        textEl.blur();
+      }
+    };
+    textEl.addEventListener('blur', onBlur);
+    textEl.addEventListener('keydown', onKey);
+    editingState = { blockId, el: textEl, orig, onBlur, onKey };
+  };
+  shadow.addEventListener('dblclick', onDblClick);
+
   const setSelected = (blockId: string | null) => {
     if (!shadow) return;
     // clear all
@@ -314,9 +439,23 @@ ${opts.css}
   return {
     shadow,
     cleanup: () => {
+      // editing 중이라면 — blur listener 정리 + contentEditable off.
+      if (editingState) {
+        const s = editingState;
+        editingState = null;
+        try {
+          s.el.removeAttribute('contenteditable');
+          s.el.classList.remove('r20-editing');
+          s.el.removeEventListener('blur', s.onBlur);
+          s.el.removeEventListener('keydown', s.onKey);
+        } catch {
+          /* element already removed by innerHTML reset */
+        }
+      }
       if (shadow) {
         shadow.removeEventListener('click', onClick);
         shadow.removeEventListener('pointerdown', onPointerDown);
+        shadow.removeEventListener('dblclick', onDblClick);
         shadow.innerHTML = '';
       }
       host.removeEventListener('pointermove', onPointerMove);

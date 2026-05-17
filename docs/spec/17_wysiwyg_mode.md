@@ -373,3 +373,47 @@ Shadow DOM 안 element 를 pointer drag → `LEFT_PX/TOP_PX` field 가 있는 �
 - 미세 정밀 모드 (Shift+drag = 1px snap, 기본 = 8px snap) 미구현 — Phase D 후보.
 - container resize 핸들 미구현 (8 방향) — Phase B 본 spec 의 별도 항목.
 - 모바일 (터치) — pointer events 가 통합 처리하지만 라이브 측정 미진행.
+
+### Phase D-shadow — Shadow DOM inline text edit (이 commit)
+
+> Phase B / C 연장선 — dblclick → contentEditable swap.
+
+#### 변경 요약 (한 줄)
+
+미리보기 안 텍스트 element 더블클릭 → contentEditable 활성 → blur 시 `setBlockField` 로 round-trip. 우선 'TEXT', 'LABEL', 'VALUE', 'CONTENT' 필드 순으로 매치.
+
+#### 흐름
+
+1. `mountSheetShadow` 가 새 콜백 `onEditText(blockId, newText)` 노출.
+2. ShadowRoot 의 `dblclick` → 가장 가까운 `[data-r20-block-id]` ancestor → 직속 TEXT_NODE 가진 element 이면 그 element, 아니면 blockEl 자체를 textEl 로 선택.
+3. textEl 이 input/textarea/select/button/label 등 form element 이면 무시 — native 단어 선택/포커스 보존.
+4. `contenteditable="true"` + `.r20-editing` 클래스 + focus + 전체 선택 (Shadow Root `getSelection()` 우선, fallback `window.getSelection()`).
+5. blur 시 `contenteditable` 제거 + `.r20-editing` 제거. orig 와 비교해 변경 있을 때만 `onEditText` 호출.
+6. Enter (shift 없이) → blur. Escape → 원본 복구 후 blur.
+7. PreviewMain `onEditText` → 활성 + html/css/i18n 워크스페이스 순회로 블록 찾고, `hasBlockField` 로 'TEXT' → 'LABEL' → 'VALUE' → 'CONTENT' 첫 매치 필드에 `setBlockField`. 셋 다 없으면 console.debug 후 noop.
+8. `setBlockField` → `BLOCK_CHANGE` 이벤트 → bumpStructure → 500ms 디바운스 후 emit → preview 재mount → 새 텍스트 박힘.
+
+#### Phase C 와의 격리
+
+- pointerdown 핸들러가 `editingState != null` 또는 `target.isContentEditable` 일 때 즉시 return → drag/select 발화 안 됨. 마우스 selection 은 native.
+- form element / contentEditable 위에서는 dblclick 도 native word-select 우선 — `isFormElement` 첫 체크.
+
+#### 시각 피드백
+
+- 편집 중 element: `outline: 2px dashed #16a34a` (green), `background: rgba(22,163,74,0.06)`, `cursor: text`.
+- drag (orange dashed #f60) / select (orange solid #f60) 와 색으로 구분.
+- CSS 는 `shadowMount.ts` inline 과 `lib/preview/shadowSelectOverlay.css` 양쪽 동기화 (overlay 파일은 import 안 됨, 동일 내용 유지 책임).
+
+#### 검증
+
+- typecheck/lint: pending (다음 step).
+- live e2e: pending — 본 sandbox disk/네트워크 제한으로 다음 환경에서 측정.
+- 라이브 측정 안 한 항목: 영시영 1부 헤더 라벨 더블클릭 → 입력 → blur → 코드 패널 emit 새 값 verify. screenshot 미수집.
+
+#### 알려진 caveat / 후속
+
+- 멀티라인 (textarea 같은) 텍스트 편집 — 현재는 `Enter` 가 blur 트리거하므로 단일 줄만. 추후 Shift+Enter 가 줄바꿈 + Enter 가 commit 으로 분기 검토.
+- 빈 문자열 commit — 현재는 `'' !== orig` 면 그대로 commit. setBlockField 도 빈 값 허용 → 블록은 빈 텍스트 보존. UX 이의 시 후속.
+- 부분 selection 후 dblclick → 첫 dblclick 만 잡힘 (editingState 검사). 두 번째 dblclick 으로 다른 element 편집 → blur 가 먼저 발화하므로 자연스럽게 swap.
+- emit 디바운스 500ms — blur → 새 텍스트 박힘까지 사용자 체감 0.5초. drag 와 동일 정책.
+- Phase E (context menu — 우클릭 메뉴) 진행 가능 (본 Phase D 가 차단 없음).
