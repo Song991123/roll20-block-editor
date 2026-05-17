@@ -66,6 +66,27 @@ function classAttr(value: string): string {
   return ` class="${escapeAttr(v)}"`;
 }
 
+/**
+ * 사용자 입력 class 토큰에 sheet- prefix 재부착 → emit.
+ * 매처가 import 시 sheet- 접두를 떼서 CLASS 필드를 정규화한다 (input.ts 의
+ * sheetClassAttr 와 동일 규약). 컨테이너 generator 도 이 규약을 따른다 — 안 그러면
+ * `.sheet-foo[value="1"]:checked ~ .sheet-bar` 같은 CSS sibling-trick 셀렉터가
+ * 라운드트립 후 매칭 실패 (era / pulp 영역 hidden).
+ *
+ * 빈 토큰은 결과에서 제거. 이미 sheet- 로 시작하는 토큰은 중복 방지로 그대로 둠
+ * (특수 케이스: 일부 r20_row / r20_col 등이 리터럴로 'sheet-row' 를 넘긴다).
+ */
+function sheetUserClassAttr(value: string): string {
+  const v = String(value ?? '').trim();
+  if (!v) return '';
+  const out = v
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
+    .join(' ');
+  return ` class="${escapeAttr(out)}"`;
+}
+
 /** ` name="..."` (Roll20 attribute name 등). */
 function nameAttr(attrName: string, value: string): string {
   const v = value.trim();
@@ -110,7 +131,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const b = block as Blockly.Block;
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', classAttr(cls), content);
+      return wrapTag(ctx, 'div', sheetUserClassAttr(cls), content);
     },
   },
 
@@ -133,7 +154,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const b = block as Blockly.Block;
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'span', classAttr(cls), content);
+      return wrapTag(ctx, 'span', sheetUserClassAttr(cls), content);
     },
   },
 
@@ -156,7 +177,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const b = block as Blockly.Block;
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'fieldset', classAttr(cls), content);
+      return wrapTag(ctx, 'fieldset', sheetUserClassAttr(cls), content);
     },
   },
 
@@ -238,7 +259,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const b = block as Blockly.Block;
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'table', classAttr(cls), content);
+      return wrapTag(ctx, 'table', sheetUserClassAttr(cls), content);
     },
   },
 
