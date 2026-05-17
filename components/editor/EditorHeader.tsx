@@ -34,9 +34,17 @@ import {
   loadExampleIntoWorkspaces,
   type ExampleDescriptor,
 } from '@/lib/examples';
-import { ImportDialog } from './ImportDialog';
-import { ExportDialog } from './ExportDialog';
+import dynamic from 'next/dynamic';
 import { useCallback, useState } from 'react';
+
+const ImportDialog = dynamic(
+  () => import('./ImportDialog').then((m) => ({ default: m.ImportDialog })),
+  { ssr: false, loading: () => null },
+);
+const ExportDialog = dynamic(
+  () => import('./ExportDialog').then((m) => ({ default: m.ExportDialog })),
+  { ssr: false, loading: () => null },
+);
 
 const APP_VERSION = 'v0.1.0';
 
