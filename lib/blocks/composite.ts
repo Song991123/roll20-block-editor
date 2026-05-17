@@ -345,6 +345,176 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       },
     ],
   },
+
+  // 5) value switch panel ----------------------------------------------------
+  //
+  // Stage 22 §4 — `r20_value_switch_panel` (영시영 era 토글 같은 일반화 패턴).
+  //   - ATTR_NAME 필드 + statement input `CASES` (자식 = r20_value_case).
+  //   - 자식 r20_value_case 의 VALUE 별로 panel `<div>` emit.
+  //   - 같은 wrapper 안에 inline `<style>` 로 sibling trick CSS 묶음.
+  //
+  // HTML 구조:
+  //   <div class="sheet-ATTR-switch">
+  //     <style> ... value=V1,V2 별 sibling rule ... </style>
+  //     <input type="radio" class="sheet-ATTR-input" name="attr_ATTR" value="V1">
+  //     <input type="radio" class="sheet-ATTR-input" name="attr_ATTR" value="V2">
+  //     <div class="sheet-ATTR-panel sheet-ATTR-panel-V1">PANEL1</div>
+  //     <div class="sheet-ATTR-panel sheet-ATTR-panel-V2">PANEL2</div>
+  //   </div>
+  //
+  // CSS:
+  //   .sheet-ATTR-panel { display: none; }
+  //   .sheet-ATTR-input[value="V1"]:checked ~ .sheet-ATTR-panel-V1 { display: block; }
+  //   ...
+  //
+  // CASES 비면 wrapper 만 emit (warning).
+  {
+    type: 'r20_value_switch_panel',
+    shape: 'c',
+    category: COMPOSITE,
+    label: '묶음: 값별 영역 전환',
+    tooltip:
+      '값에 따라 영역 toggle — name="attr_NAME" 라디오 + sibling CSS 자동 emit (영시영 era 패턴 일반화).',
+    init: mkInit((b) => {
+      b.appendDummyInput().appendField('값별 영역 전환');
+      b.appendDummyInput()
+        .appendField('NAME')
+        .appendField(new Blockly.FieldTextInput('era'), 'ATTR_NAME');
+      b.appendStatementInput('CASES').setCheck(null);
+      setStatementHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const rawAttr = String(b.getFieldValue('ATTR_NAME') ?? '').trim();
+      const attr = rawAttr.replace(/[^A-Za-z0-9_-]/g, '');
+      if (!attr) {
+        ctx.warn(
+          b.id,
+          'COMPOSITE_VALUE_SWITCH_ATTR_MISSING',
+          'r20_value_switch_panel: ATTR_NAME 비어 있음 — emit 생략.',
+          'warning',
+        );
+        return '';
+      }
+      // 자식 r20_value_case 순회 — statement 시퀀스 chain.
+      type Case = { value: string; panel: string };
+      const cases: Case[] = [];
+      let cur = b.getInputTargetBlock('CASES');
+      while (cur) {
+        if (cur.type === 'r20_value_case') {
+          const rawV = String(cur.getFieldValue('VALUE') ?? '').trim();
+          const v = rawV.replace(/[^A-Za-z0-9_-]/g, '');
+          if (v) {
+            const panel = ctx.statementToCode(cur, 'PANEL');
+            cases.push({ value: v, panel });
+          } else {
+            ctx.warn(
+              cur.id,
+              'COMPOSITE_VALUE_CASE_VALUE_MISSING',
+              'r20_value_case: VALUE 비어 있음 — 해당 케이스 skip.',
+              'warning',
+            );
+          }
+        }
+        cur = cur.getNextBlock();
+      }
+      if (cases.length === 0) {
+        ctx.warn(
+          b.id,
+          'COMPOSITE_VALUE_SWITCH_NO_CASES',
+          'r20_value_switch_panel: 케이스 0개 — wrapper 만 emit.',
+          'warning',
+        );
+      }
+      // 중복 value 제거 (먼저 등장한 것 우선).
+      const seen = new Set<string>();
+      const uniq = cases.filter((c) => {
+        if (seen.has(c.value)) return false;
+        seen.add(c.value);
+        return true;
+      });
+      const cls = (suffix: string): string => `sheet-${attr}-${suffix}`;
+      const nameAttr = escapeAttr(`attr_${attr}`);
+      const cssLines: string[] = [];
+      cssLines.push(`  .${cls('panel')} { display: none; }`);
+      for (const c of uniq) {
+        cssLines.push(
+          `  .${cls('input')}[value="${escapeAttr(c.value)}"]:checked ~ .${cls('panel-' + c.value)} { display: block; }`,
+        );
+      }
+      const radioLines = uniq
+        .map(
+          (c) =>
+            `<input type="radio" class="${escapeAttr(cls('input'))}" name="${nameAttr}" value="${escapeAttr(c.value)}">`,
+        )
+        .join('\n');
+      const panelLines = uniq
+        .map((c) => {
+          const inner = c.panel && c.panel.trim() ? `\n${ctx.indent(c.panel)}\n` : '';
+          return `<div class="${escapeAttr(cls('panel'))} ${escapeAttr(cls('panel-' + c.value))}">${inner}</div>`;
+        })
+        .join('\n');
+      const styleBlock = `<style>\n${cssLines.join('\n')}\n</style>`;
+      const inner = [styleBlock, radioLines, panelLines]
+        .filter((s) => s && s.trim().length > 0)
+        .join('\n');
+      return `<div class="${escapeAttr(cls('switch'))}">\n${ctx.indent(inner)}\n</div>`;
+    },
+    inspectorSchema: [
+      {
+        name: 'ATTR_NAME',
+        label: '속성 이름',
+        kind: 'text',
+        placeholder: 'era',
+        description: 'attr_NAME 라디오 그룹의 base 이름. CSS class 도 `sheet-NAME-*` 로 emit.',
+      },
+    ],
+  },
+
+  // 6) value case (child of r20_value_switch_panel) ---------------------------
+  //
+  // Stage 22 §4 — `r20_value_case`. 단독 사용 시 panel 만 emit (CSS 없음).
+  // r20_value_switch_panel 자식으로 위치 시 부모 generator 가 직접 수집 (본
+  // 블록의 standalone generator 출력은 무시됨).
+  {
+    type: 'r20_value_case',
+    shape: 'stack',
+    category: COMPOSITE,
+    label: '케이스: 값',
+    tooltip:
+      'r20_value_switch_panel 자식 — VALUE 대응 panel. 단독 사용 시 panel HTML 만 emit (CSS 없음).',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('값')
+        .appendField(new Blockly.FieldTextInput('1'), 'VALUE');
+      b.appendStatementInput('PANEL').setCheck(null);
+      setStatementHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const rawV = String(b.getFieldValue('VALUE') ?? '').trim();
+      const v = rawV.replace(/[^A-Za-z0-9_-]/g, '');
+      const panel = ctx.statementToCode(block, 'PANEL');
+      // 부모가 r20_value_switch_panel 이면 부모가 본 자식을 수집 → 중복 방지
+      // 위해 빈 문자열 반환. 단독일 때만 panel 만 emit.
+      const parent = b.getParent();
+      if (parent && parent.type === 'r20_value_switch_panel') {
+        return '';
+      }
+      if (!v) return '';
+      const inner = panel && panel.trim() ? `\n${ctx.indent(panel)}\n` : '';
+      return `<div class="sheet-value-case sheet-value-case-${escapeAttr(v)}">${inner}</div>`;
+    },
+    inspectorSchema: [
+      {
+        name: 'VALUE',
+        label: '값',
+        kind: 'text',
+        placeholder: '1',
+        description: '대응 값 — `[value="VALUE"]:checked` sibling 매칭에 사용.',
+      },
+    ],
+  },
 ];
 
 /**
