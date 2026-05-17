@@ -317,3 +317,59 @@ interface WorkspaceState {
 - **store → 좌측 트리**: `WorkspaceTree` 의 row 가 `selectedBlockId` 비교 → `bg-orange-500/20 + ring-orange-500/60` 으로 시각 페어링 (Shadow outline 색과 동일 톤).
 - 무한 루프 방지: origin 라벨 (`'preview' | 'tree'`) 로 sync src 구분.
 - 검증: live e2e 는 sandbox env 에서 npm install/dev 실행 가능 여부에 의존 — 코드 path inspection 으로 emit (`data-r20-block-id` 자동 박힘) ↔ shadowMount click delegation ↔ store ↔ effect re-emit 의 4 cycle 모두 연결됨.
+
+### Phase C-shadow — Shadow DOM drag-to-move (이 commit)
+
+> 별도 spec `21_wysiwyg_unified.md` 미존재 — Phase B-shadow 와 함께 본 §12 에 통합.
+
+#### 변경 요약 (한 줄)
+
+Shadow DOM 안 element 를 pointer drag → `LEFT_PX/TOP_PX` field 가 있는 블록만 위치 round-trip. 다른 블록은 안전 무시. 입력 요소 위에선 drag 발화 X (native focus 보존).
+
+#### 흐름
+
+1. `mountSheetShadow` 가 새 콜백 `onDragStart / onDragMove / onDragEnd` 노출.
+2. ShadowRoot 의 `pointerdown` → 가장 가까운 `[data-r20-block-id]` ancestor → state 기록 + `host.setPointerCapture`.
+3. `pointermove` 가 `DRAG_THRESHOLD_PX (3px)` 초과 시점에 `onDragStart` 호출 + 호스트에 `data-r20-dragging` 속성 + element 에 `.r20-dragging` 클래스 (cursor: grabbing, 점선 outline).
+4. PreviewMain 의 `onDragMove(blockId, dx, dy)` → adapter 에서 `hasBlockField('LEFT_PX')` & `hasBlockField('TOP_PX')` 검사 → rAF 1프레임 합쳐서 `setBlockField` 두 번. zoom 보정 = `host.getBoundingClientRect().width / host.offsetWidth`.
+5. `Blockly.setFieldValue` → `BLOCK_CHANGE` 이벤트 → BlocklyModelHost listener → `bumpStructure` → 500ms 디바운스 후 emit → preview 재mount → 새 LEFT/TOP 으로 그려짐.
+6. `pointerup` → pending rAF flush → `onDragEnd` → 다음 click 한 번 suppress (browser 의 drag→click 자연 발화 방어).
+
+#### API 변경
+
+`lib/blockly/adapter.ts` — 3개 메서드 추가:
+
+- `hasBlockField(key, blockId, fieldName): boolean`
+- `getBlockField(key, blockId, fieldName): string | null`
+- `setBlockField(key, blockId, fieldName, value): boolean` — 값 변경 시 true.
+
+기존 `setFieldValue` (반환 void) 와 별도 — 호출자 호환성 유지.
+
+#### 신규 블록
+
+`r20_pos_div` — Container 카테고리, c-shape. 필드 = LEFT_PX, TOP_PX, WIDTH_PX, HEIGHT_PX, CLASS. emit = `<div class="sheet-..." style="position:absolute;left:Xpx;top:Ypx;width:Wpx;height:Hpx;">...</div>`. WYSIWYG drag 의 round-trip 시연 + 자유 배치 박스 사용자 시나리오.
+
+기존 블록 (r20_div / r20_input 등) 은 LEFT_PX/TOP_PX 없음 → drag 시도해도 console.debug 로 무시 + dragOrigin.hasPos=false → setBlockField 미호출. UX 비손상.
+
+#### 입력 요소 보존
+
+`pointerdown` 핸들러가 `closest('input, textarea, select, button, option')` 체크 → 매치 시 drag state 미설정 + 즉시 return. native focus / typing / submit 동작 그대로. 단, click delegation 은 그대로 작동 — `onSelect` 가 click 시점에 호출됨.
+
+#### 성능 메모
+
+- pointermove 60-120Hz → rAF 안에서 한 번만 setBlockField. 결과적으로 ≤60 setFieldValue 호출/초.
+- 각 setFieldValue 는 BLOCK_CHANGE 이벤트 → bumpStructure (queueMicrotask coalesce → 1회/microtask).
+- emit 디바운스 500ms → 드래그 중 preview 재렌더 X, 드롭 후 한 번만.
+- 단점: undo history 가 매 frame 항목 누적 (Blockly Events.setGroup 미사용). 후속 commit 에서 `Blockly.Events.setGroup(true)` wrap 으로 단일 undo 단위로 묶을 예정.
+
+#### 검증
+
+- typecheck: 변경 4파일 (shadowMount.ts / adapter.ts / container.ts / PreviewMain.tsx) 모두 TS 에러 0. pre-existing 'sonner' 모듈 누락 에러는 본 sandbox 환경 한계 (node_modules 부분 복사) — 본 commit 과 무관.
+- live e2e: 본 sandbox 에선 next dev 실행 가능 disk 공간 부족 → 코드 path inspection 으로만 검증. UI 라이브 측정은 host 환경 / 다음 commit 에서.
+
+#### 알려진 caveat / 후속
+
+- undo 단위 미정 (위 성능 메모 참조).
+- 미세 정밀 모드 (Shift+drag = 1px snap, 기본 = 8px snap) 미구현 — Phase D 후보.
+- container resize 핸들 미구현 (8 방향) — Phase B 본 spec 의 별도 항목.
+- 모바일 (터치) — pointer events 가 통합 처리하지만 라이브 측정 미진행.

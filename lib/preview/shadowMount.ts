@@ -2,13 +2,23 @@
  * shadowMount — emit 결과 (html, css) 를 host element 의 Shadow DOM 으로
  * 박는 헬퍼. Phase A — iframe 동일성 보장 (시각 only).
  *
- * Phase B (이 commit):
+ * Phase B:
  *   - Shadow 안 click delegation → `data-r20-block-id` 가진 가장 가까운 ancestor
  *     찾아서 `onSelect(blockId)` 호출.
  *   - 반환 객체에 `setSelected(blockId | null)` 추가 — 외부 selectedBlockId 변경
  *     시 동기적으로 outline 토글 (모든 `.r20-selected` 제거 → 새 element 부착).
  *
- * Anchor: docs/spec/17_wysiwyg_mode.md §12 (Phase B / 양방향 sync full).
+ * Phase C (이 commit) — drag-to-move:
+ *   - pointerdown 으로 가장 가까운 `[data-r20-block-id]` ancestor 식별 → drag state
+ *     기록 + setPointerCapture → cursor: grabbing.
+ *   - pointermove → 매 frame onDragMove(dx, dy) (viewport px). zoom scale 변환은
+ *     호출자 (PreviewMain) 에서 host getBoundingClientRect 로 계산.
+ *   - pointerup / pointercancel → onDragEnd. drag threshold (3px) 미만 시 click
+ *     으로 간주, onSelect 호출만 + onDragEnd 호출 안 함.
+ *   - native form 요소 (input/textarea/select/button) 위에서는 drag 시작 안 함
+ *     — focus / typing 보존, onSelect 만 호출.
+ *
+ * Anchor: docs/spec/17_wysiwyg_mode.md §12 (Phase B / Phase C).
  *
  * 설계 메모:
  *   - shadow root 는 host 당 한번만 attach 가능 → 동일 host 재mount 시 innerHTML
@@ -20,9 +30,14 @@
  *   - click handler 는 capture phase 가 아닌 bubble phase — input/button 의 native
  *     change 가 발생한 후 select 처리되어 자연스러움. preventDefault 는 form submit
  *     같은 navigation 방지용 (좁게).
+ *   - drag 시작 후엔 click 이벤트가 자연 발화 — drag 동안 click 무시 (suppressClick
+ *     플래그) 해서 onSelect 가 중복 호출되지 않게.
  *
  * 시스템 specific 0.
  */
+
+/** Drag threshold — pointerdown 이후 이만큼 움직여야 drag 으로 간주 (px). */
+const DRAG_THRESHOLD_PX = 3;
 
 export interface ShadowMountOptions {
   /** 박을 user HTML — 이미 autoPrefix 처리된 상태 가정. */
@@ -39,6 +54,27 @@ export interface ShadowMountOptions {
    * Phase B — workspaceStore.setSelectedBlockId 와 연결.
    */
   onSelect?: (blockId: string) => void;
+  /**
+   * Phase C — drag 시작 (threshold 초과 직후). dragStart 후엔 onSelect 가
+   * 호출되지 않음 — drag 중 click 이벤트는 suppress.
+   */
+  onDragStart?: (blockId: string, clientX: number, clientY: number) => void;
+  /**
+   * Phase C — drag 이동. dx/dy 는 dragStart 시점부터의 viewport px delta.
+   * zoom scale 변환은 호출자에서 host.getBoundingClientRect() 비례로 처리.
+   */
+  onDragMove?: (
+    blockId: string,
+    dx: number,
+    dy: number,
+    clientX: number,
+    clientY: number,
+  ) => void;
+  /**
+   * Phase C — drag 종료. drop 위치는 호출자가 onDragMove 의 마지막 dx/dy
+   * 를 누적해서 사용. drag 시작 안 됐으면 (threshold 미만) 호출 안 됨.
+   */
+  onDragEnd?: (blockId: string) => void;
 }
 
 export interface ShadowMountResult {
@@ -76,6 +112,7 @@ export function mountSheetShadow(
   // :host reset — outer page CSS 가 새지 않게.
   // contain: layout style — Shadow 안 reflow 가 outer 에 안 새도록.
   // .r20-selected — Phase B 선택 outline (orange #f60 + 2px offset).
+  // .r20-dragging — Phase C drag 중 cursor: grabbing + 약한 opacity 로 시각 피드백.
   styleEl.textContent = `
 :host {
   all: initial;
@@ -91,9 +128,21 @@ export function mountSheetShadow(
   color: #e6edf3;
   background: #0d1117;
 }
+:host([data-r20-dragging]) {
+  cursor: grabbing !important;
+}
+:host([data-r20-dragging]) * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
 :host *, :host *::before, :host *::after { box-sizing: border-box; }
 [data-r20-block-id].r20-selected {
   outline: 2px solid #f60;
+  outline-offset: 2px;
+}
+[data-r20-block-id].r20-dragging {
+  opacity: 0.7;
+  outline: 2px dashed #f60;
   outline-offset: 2px;
 }
 ${opts.css}
@@ -118,7 +167,15 @@ ${opts.css}
   // preventDefault — form submit / a navigation 차단 (편집 모드의 의도).
   // stopPropagation 은 일부러 안 함 (Shadow 밖으로 click 새는 일이 없음, 그리고
   // 다른 외부 listener 가 필요할 수도).
+  //
+  // Phase C — drag 중에는 click suppress (suppressClickRef.value === true).
+  // pointerup 직후 click 이 자연 발화하므로, 다음 task 까지 무시.
+  let suppressClick = false;
   const onClick = (e: Event) => {
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
     const target = e.target as HTMLElement | null;
     if (!target) return;
     const el = target.closest('[data-r20-block-id]') as HTMLElement | null;
@@ -129,6 +186,113 @@ ${opts.css}
     opts.onSelect?.(blockId);
   };
   shadow.addEventListener('click', onClick);
+
+  // Phase C — pointer drag state.
+  // dragState 는 pointerdown 시 채워지고 pointermove 임계점 초과 시 active = true.
+  // pointerup 에서 cleanup.
+  type DragState = {
+    pointerId: number;
+    blockId: string;
+    blockEl: HTMLElement;
+    startX: number;
+    startY: number;
+    active: boolean;
+  };
+  let dragState: DragState | null = null;
+
+  const isFormElement = (el: Element | null): boolean => {
+    if (!el) return false;
+    const tag = el.tagName;
+    if (
+      tag === 'INPUT' ||
+      tag === 'TEXTAREA' ||
+      tag === 'SELECT' ||
+      tag === 'BUTTON' ||
+      tag === 'OPTION' ||
+      tag === 'LABEL'
+    ) {
+      return true;
+    }
+    return !!el.closest?.('input, textarea, select, button, option');
+  };
+
+  const onPointerDown = (ev: Event) => {
+    const e = ev as PointerEvent;
+    // 좌클릭 only — wheel/right 무시.
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    // form 위에선 drag 시작 안 함 — native focus / typing 보존.
+    // onSelect 는 click handler 가 알아서 호출함 (drag 시작 안 했으니 suppressClick=false).
+    if (isFormElement(target)) return;
+    const el = target.closest('[data-r20-block-id]') as HTMLElement | null;
+    if (!el) return;
+    const blockId = el.dataset.r20BlockId;
+    if (!blockId) return;
+    dragState = {
+      pointerId: e.pointerId,
+      blockId,
+      blockEl: el,
+      startX: e.clientX,
+      startY: e.clientY,
+      active: false,
+    };
+    // Pointer capture — drag 중 host 밖으로 나가도 pointermove 계속 받음.
+    // ShadowRoot 은 setPointerCapture 가 없으므로 host 에 캡처.
+    try {
+      host.setPointerCapture(e.pointerId);
+    } catch {
+      /* 일부 환경에선 unsupported — 그래도 document-level move 로 대체 */
+    }
+  };
+
+  const onPointerMove = (ev: Event) => {
+    const e = ev as PointerEvent;
+    if (!dragState) return;
+    if (e.pointerId !== dragState.pointerId) return;
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    if (!dragState.active) {
+      if (Math.abs(dx) < DRAG_THRESHOLD_PX && Math.abs(dy) < DRAG_THRESHOLD_PX) {
+        return;
+      }
+      dragState.active = true;
+      dragState.blockEl.classList.add('r20-dragging');
+      host.setAttribute('data-r20-dragging', '');
+      opts.onDragStart?.(dragState.blockId, e.clientX, e.clientY);
+    }
+    opts.onDragMove?.(dragState.blockId, dx, dy, e.clientX, e.clientY);
+  };
+
+  const finishDrag = (ev: Event) => {
+    const e = ev as PointerEvent;
+    if (!dragState) return;
+    if (e.pointerId !== dragState.pointerId) return;
+    const wasActive = dragState.active;
+    const blockEl = dragState.blockEl;
+    const blockId = dragState.blockId;
+    const pointerId = dragState.pointerId;
+    dragState = null;
+    blockEl.classList.remove('r20-dragging');
+    host.removeAttribute('data-r20-dragging');
+    try {
+      host.releasePointerCapture(pointerId);
+    } catch {
+      /* ignore */
+    }
+    if (wasActive) {
+      // drag 후엔 자동으로 click 이 발화됨 (browser quirk) — suppress 한 번.
+      suppressClick = true;
+      opts.onDragEnd?.(blockId);
+    }
+  };
+
+  // ShadowRoot 에 직접 pointerdown — bubble phase 로 받음.
+  // pointermove / pointerup 은 host (capture target) 에서 받아야 안정적.
+  shadow.addEventListener('pointerdown', onPointerDown);
+  host.addEventListener('pointermove', onPointerMove);
+  host.addEventListener('pointerup', finishDrag);
+  host.addEventListener('pointercancel', finishDrag);
 
   const setSelected = (blockId: string | null) => {
     if (!shadow) return;
@@ -152,8 +316,13 @@ ${opts.css}
     cleanup: () => {
       if (shadow) {
         shadow.removeEventListener('click', onClick);
+        shadow.removeEventListener('pointerdown', onPointerDown);
         shadow.innerHTML = '';
       }
+      host.removeEventListener('pointermove', onPointerMove);
+      host.removeEventListener('pointerup', finishDrag);
+      host.removeEventListener('pointercancel', finishDrag);
+      host.removeAttribute('data-r20-dragging');
     },
     setSelected,
   };

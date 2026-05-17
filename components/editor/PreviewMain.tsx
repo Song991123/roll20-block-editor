@@ -16,6 +16,7 @@ import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlockDef } from '@/lib/blocks/registry';
 import { buildSheetDoc, buildSheetParts } from '@/lib/preview/buildDoc';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
+import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import PreviewToolbar from './PreviewToolbar';
 import { playSfx } from '@/lib/sfx';
 import PreviewEmptyState from './PreviewEmptyState';
@@ -111,6 +112,23 @@ export default function PreviewMain() {
     if (renderMode !== 'shadow') return;
     const host = hostRef.current;
     if (!host) return;
+    // Phase C drag — 시작 시점의 LEFT_PX/TOP_PX 를 origin 으로 저장.
+    // pointermove 마다 (origLeft+dx/scale, origTop+dy/scale) 로 갱신.
+    // scale = host.getBoundingClientRect().width / host.offsetWidth — zoom 보정.
+    // 호스트가 zoom 적용 안 됐으면 1.
+    let dragOrigin: {
+      blockId: string;
+      origLeft: number;
+      origTop: number;
+      ws: WorkspaceKey;
+      scale: number;
+      hasPos: boolean;
+    } | null = null;
+    // Phase C — pending setFieldValue (rAF 합치기). pointermove 가 frame 보다
+    // 빠를 때 (touch 일부 환경) 마지막 값만 commit.
+    let dragOriginPending: { ws: WorkspaceKey; blockId: string; left: number; top: number } | null = null;
+    let dragOriginRaf: number | null = null;
+
     const { cleanup, setSelected: setShadowSelected } = mountSheetShadow(host, {
       html: parts.html,
       css: parts.css,
@@ -119,6 +137,92 @@ export default function PreviewMain() {
       // Phase B — Shadow 안 element 클릭 → workspaceStore.selectedBlockId 갱신.
       // origin 'preview' — 양방향 sync 시 src 구분.
       onSelect: (blockId) => setSelected(blockId, 'preview'),
+      // Phase C — drag 시작. 모든 워크스페이스 (html / css / i18n) 에서 LEFT_PX/TOP_PX
+      // 가진 block 검색. 없으면 hasPos=false → 이후 move 호출은 noop (안전 무시).
+      onDragStart: (blockId, _cx, _cy) => {
+        const adapter = getBlocklyAdapter();
+        // active 우선, 없으면 html 워크스페이스에서 찾기.
+        const cand: WorkspaceKey[] = [
+          useWorkspaceStore.getState().activeWorkspace as WorkspaceKey,
+          'html', 'css', 'i18n',
+        ];
+        let foundWs: WorkspaceKey | null = null;
+        for (const k of cand) {
+          if (adapter.hasBlockField(k, blockId, 'LEFT_PX') ||
+              adapter.hasBlockField(k, blockId, 'TOP_PX')) {
+            foundWs = k;
+            break;
+          }
+          // block 이 해당 ws 에 있지만 pos field 없으면 — 다음 ws 도 검색 안 됨.
+          if (adapter.getBlock(k, blockId)) {
+            foundWs = k;
+            break;
+          }
+        }
+        const ws = foundWs ?? 'html';
+        const hasL = adapter.hasBlockField(ws, blockId, 'LEFT_PX');
+        const hasT = adapter.hasBlockField(ws, blockId, 'TOP_PX');
+        const hasPos = hasL && hasT;
+        const origLeft = hasL
+          ? Number(adapter.getBlockField(ws, blockId, 'LEFT_PX') ?? '0')
+          : 0;
+        const origTop = hasT
+          ? Number(adapter.getBlockField(ws, blockId, 'TOP_PX') ?? '0')
+          : 0;
+        // zoom 보정 — host CSS scale 이 있으면 (transform: scale()) viewport px
+        // → sheet px 변환 필요. 현재 시트 wrapper 는 width 조정으로 zoom 처리하므로
+        // scale 은 (rendered width / intrinsic width).
+        const rect = host.getBoundingClientRect();
+        const scale = host.offsetWidth > 0 ? rect.width / host.offsetWidth : 1;
+        dragOrigin = { blockId, origLeft, origTop, ws, scale, hasPos };
+        if (!hasPos) {
+          // 위치 필드 없는 블록 — drag 무시 + 사용자에 한 번 통보 (toast).
+          // sonner toast 는 정의되어 있으나 너무 시끄러울 수 있어 console.debug 로 대체.
+          // 추후 W3 UX 가 결정.
+          // eslint-disable-next-line no-console
+          console.debug('[wysiwyg] block has no LEFT_PX/TOP_PX — drag ignored:', blockId);
+        }
+      },
+      onDragMove: (blockId, dx, dy) => {
+        if (!dragOrigin || dragOrigin.blockId !== blockId) return;
+        if (!dragOrigin.hasPos) return;
+        // rAF coalesce — pointermove 는 60-120Hz, setFieldValue 는 BLOCK_CHANGE
+        // event + bumpStructure 트리거. 60Hz 면 충분, 더 빠르면 emit 디바운스가
+        // 흡수 못 함. rAF 안에서만 호출.
+        const s = dragOrigin.scale || 1;
+        dragOriginPending = {
+          ws: dragOrigin.ws,
+          blockId,
+          left: Math.max(0, Math.round(dragOrigin.origLeft + dx / s)),
+          top: Math.max(0, Math.round(dragOrigin.origTop + dy / s)),
+        };
+        if (dragOriginRaf == null) {
+          dragOriginRaf = window.requestAnimationFrame(() => {
+            dragOriginRaf = null;
+            const pend = dragOriginPending;
+            dragOriginPending = null;
+            if (!pend) return;
+            const adapter = getBlocklyAdapter();
+            adapter.setBlockField(pend.ws, pend.blockId, 'LEFT_PX', String(pend.left));
+            adapter.setBlockField(pend.ws, pend.blockId, 'TOP_PX', String(pend.top));
+          });
+        }
+      },
+      onDragEnd: () => {
+        // pending flush — rAF 한 프레임 남은 갱신 commit.
+        if (dragOriginRaf != null) {
+          window.cancelAnimationFrame(dragOriginRaf);
+          dragOriginRaf = null;
+        }
+        const pend = dragOriginPending;
+        dragOriginPending = null;
+        if (pend) {
+          const adapter = getBlocklyAdapter();
+          adapter.setBlockField(pend.ws, pend.blockId, 'LEFT_PX', String(pend.left));
+          adapter.setBlockField(pend.ws, pend.blockId, 'TOP_PX', String(pend.top));
+        }
+        dragOrigin = null;
+      },
     });
     shadowSetSelectedRef.current = setShadowSelected;
     // mount 직후 한번 — 현재 selectedBlockId 가 있으면 outline 복원.
@@ -126,6 +230,12 @@ export default function PreviewMain() {
     if (currentSelected) setShadowSelected(currentSelected);
     return () => {
       shadowSetSelectedRef.current = null;
+      dragOrigin = null;
+      dragOriginPending = null;
+      if (dragOriginRaf != null) {
+        window.cancelAnimationFrame(dragOriginRaf);
+        dragOriginRaf = null;
+      }
       cleanup();
     };
   }, [renderMode, parts, previewLayer, darkMode, setSelected]);

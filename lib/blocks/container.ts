@@ -505,6 +505,48 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       return wrapTag(ctx, 'div', ` class="sheet-grid"${style}`, content);
     },
   },
+
+  // ──────────────────────────────────────────────────────────────────
+  // Phase C WYSIWYG — 절대 위치 박스. LEFT_PX / TOP_PX 필드를 가져
+  // shadow DOM drag-to-move 의 round-trip 시연용 + 시트 위에 자유 배치
+  // 박스를 만들고 싶은 사용자 시나리오. position:absolute + left/top inline
+  // style 로 emit (시스템 specific 0 — 일반 CSS).
+  // Anchor: docs/spec/17_wysiwyg_mode.md §12 Phase C.
+  // ──────────────────────────────────────────────────────────────────
+  {
+    type: 'r20_pos_div',
+    shape: 'c',
+    category: CONTAINER,
+    label: '절대 위치 박스',
+    tooltip: 'position:absolute 박스 — left/top px 지정. 미리보기에서 드래그로 이동 가능.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('절대 위치 박스')
+          .appendField('왼쪽=')
+          .appendField(new Blockly.FieldNumber(0, 0, 99999, 1), 'LEFT_PX')
+          .appendField('위=')
+          .appendField(new Blockly.FieldNumber(0, 0, 99999, 1), 'TOP_PX')
+          .appendField('너비=')
+          .appendField(new Blockly.FieldNumber(120, 1, 99999, 1), 'WIDTH_PX')
+          .appendField('높이=')
+          .appendField(new Blockly.FieldNumber(60, 1, 99999, 1), 'HEIGHT_PX')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const left = Number(b.getFieldValue('LEFT_PX') ?? 0);
+      const top = Number(b.getFieldValue('TOP_PX') ?? 0);
+      const w = Number(b.getFieldValue('WIDTH_PX') ?? 120);
+      const h = Number(b.getFieldValue('HEIGHT_PX') ?? 60);
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      const style = ` style="position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${h}px;"`;
+      return wrapTag(ctx, 'div', `${sheetUserClassAttr(cls)}${style}`, content);
+    },
+  },
 ];
 
 /**

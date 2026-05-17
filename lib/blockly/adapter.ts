@@ -88,6 +88,23 @@ export interface BlocklyAdapter {
   /** 새 블록 인스턴스를 활성 워크스페이스 top-level 에 추가. 반환 = 새 block id (또는 null). */
   appendBlockToWorkspace(key: WorkspaceKey, blockType: string): string | null;
   setFieldValue(key: WorkspaceKey, blockId: string, fieldName: string, value: string): void;
+  /**
+   * Phase C WYSIWYG drag — 특정 block 의 field 가 존재하는지 검사.
+   * 위치 필드 (LEFT_PX/TOP_PX) 같이 일부 블록에만 있는 field 의 안전한 처리에 사용.
+   * 블록 자체가 없으면 false.
+   */
+  hasBlockField(key: WorkspaceKey, blockId: string, fieldName: string): boolean;
+  /**
+   * Phase C WYSIWYG drag — 특정 block 의 field 값을 읽음. 없으면 null.
+   * number-like field 의 string 그대로 반환 (호출측에서 parseInt/Float).
+   */
+  getBlockField(key: WorkspaceKey, blockId: string, fieldName: string): string | null;
+  /**
+   * Phase C WYSIWYG drag — 특정 block 의 field 를 갱신 (setFieldValue 와 동일
+   * 시그니처이나 reverse-arg 으로 호환성 더 직관적). 존재하지 않는 field 는 no-op.
+   * 반환 = 갱신 성공 여부 (block + field 모두 존재 + 값 변경 시 true).
+   */
+  setBlockField(key: WorkspaceKey, blockId: string, fieldName: string, value: string): boolean;
   serializeXml(key: WorkspaceKey): string;
   hydrateFromXml(key: WorkspaceKey, xml: string): void;
   /**
@@ -232,6 +249,39 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     const b = ws?.getBlockById(blockId);
     b?.setFieldValue(value, fieldName);
+  }
+
+  /** Phase C — block + field 존재 여부 검사. */
+  hasBlockField(key: WorkspaceKey, blockId: string, fieldName: string): boolean {
+    const ws = this.workspaces[key];
+    const b = ws?.getBlockById(blockId);
+    if (!b) return false;
+    // getField 는 Blockly Block API — 존재 안 하면 null 반환.
+    return !!(b as { getField?: (n: string) => unknown }).getField?.(fieldName);
+  }
+
+  /** Phase C — field 값 read. */
+  getBlockField(key: WorkspaceKey, blockId: string, fieldName: string): string | null {
+    const ws = this.workspaces[key];
+    const b = ws?.getBlockById(blockId);
+    if (!b) return null;
+    const f = (b as { getField?: (n: string) => unknown }).getField?.(fieldName);
+    if (!f) return null;
+    const v = (f as { getValue?: () => unknown }).getValue?.();
+    return v == null ? null : String(v);
+  }
+
+  /** Phase C — field 값 write. 존재하지 않으면 no-op + false. */
+  setBlockField(key: WorkspaceKey, blockId: string, fieldName: string, value: string): boolean {
+    const ws = this.workspaces[key];
+    const b = ws?.getBlockById(blockId);
+    if (!b) return false;
+    const f = (b as { getField?: (n: string) => unknown }).getField?.(fieldName);
+    if (!f) return false;
+    const cur = (f as { getValue?: () => unknown }).getValue?.();
+    if (cur != null && String(cur) === value) return false;
+    b.setFieldValue(value, fieldName);
+    return true;
   }
 
   serializeXml(key: WorkspaceKey): string {
