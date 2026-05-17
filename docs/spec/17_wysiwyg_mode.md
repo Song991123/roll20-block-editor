@@ -418,6 +418,30 @@ Shadow DOM 안 element 를 pointer drag → `LEFT_PX/TOP_PX` field 가 있는 �
 - emit 디바운스 500ms — blur → 새 텍스트 박힘까지 사용자 체감 0.5초. drag 와 동일 정책.
 - Phase E (context menu — 우클릭 메뉴) 진행 가능 (본 Phase D 가 차단 없음).
 
+#### Phase D fix — emit commit 누락 (이 commit, local_86b826b4 검증 반영)
+
+라이브 verify 세션 `local_86b826b4` 에서 발견된 결함: dblclick → contentEditable → 시각 텍스트 변경 OK 인데 blur 후 코드 패널의 raw HTML 에 새 값이 박히지 않음.
+
+원인:
+
+- `adapter.setBlockField` 가 `block.setFieldValue` 를 호출하면 정상 경로에선 `BLOCK_CHANGE` 이벤트 → `BlocklyModelHost` changeListener → `bumpStructure` → `useEmitPipeline` 디바운스 (500ms) → emit cache 갱신이 발화한다.
+- 그러나 `perfHook.injectXml` / `adapter.hydrateFromXml*` 의 `Blockly.Events.disable()` 카운터가 (예외 경로 또는 nested 호출에서) 미해소된 채 남아 있으면 후속 `setFieldValue` 가 BLOCK_CHANGE 를 발화하지 못한다. 그 결과 structureVersion 이 안 올라가 emit 도 안 돈다.
+- 또한 Blockly v12 의 외부 (UI 아닌) `setFieldValue` 호출이 일부 경로에서 이벤트 전파를 빼먹는 케이스가 동일 증상을 만든다.
+
+수정 (belt + suspenders):
+
+1. `lib/blockly/adapter.ts` — `setBlockField` 호출 직전 `Blockly.Events.isEnabled()` 가 false 면 1회 `enable()` 로 끌어올린 뒤 `setFieldValue` 호출, finally 에서 `disable()` 로 원상복구. caller 의 `Events.disable` 카운터에 영향 없음 (-1 까지 떨어트려도 `isEnabled()` ≤0 → false 동작 그대로).
+2. `components/editor/PreviewMain.tsx` — `onEditText` 핸들러가 `setBlockField` 성공 시 (`ok === true`) `useWorkspaceStore.getState().bumpStructure(ws, count)` 를 명시적으로 호출. 정상 경로의 이벤트 발화가 살아있을 땐 동일 frame 내 중복 bump (`counter+2`) 가 되지만 `useEmitPipeline` 은 한 frame 내 다회 호출에도 500ms 디바운스로 1회만 emit 실행 → 무해.
+
+검증 (라이브):
+
+- 합성 sample `<h1>Heading</h1><label>NameLabel</label>` import → h1 더블클릭 → "Edited" 입력 → Enter → 500ms 후 코드 패널 raw HTML 에 `<h1>Edited</h1>` 박힘 확인 (스크린샷 저장).
+- 회귀: 정상 경로 (이벤트 발화 살아있는 일반 add-block) 에서도 동일 emit 1회만 실행 — devtools Performance 에서 confirm.
+
+후속:
+
+- 본 fix 는 증상에 대한 robust 처리. 근본적으로 Blockly v12 의 외부 setFieldValue 이벤트 전파 신뢰성을 별도 spike 로 측정해 (시트 단위 100회 호출 → 100회 BLOCK_CHANGE) 라이브러리 측 fix 요청 여부 결정.
+
 ### Phase E-shadow — Shadow DOM 우클릭 컨텍스트 메뉴 (이 commit)
 
 > Phase B / C / D 연장선 — contextmenu 이벤트 → ShadowContextMenu 컴포넌트 → adapter 액션.

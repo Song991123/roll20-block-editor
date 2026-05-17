@@ -293,7 +293,15 @@ class DefaultAdapter implements BlocklyAdapter {
     return v == null ? null : String(v);
   }
 
-  /** Phase C — field 값 write. 존재하지 않으면 no-op + false. */
+  /** Phase C — field 값 write. 존재하지 않으면 no-op + false.
+   *
+   * Phase D fix (local_86b826b4 검증): hydrateFromXml* / perfHook injectXml 의
+   * Events.disable 가 (예외 경로에서) 카운터가 미해소된 채 남아있는 경우
+   * setFieldValue 호출이 BLOCK_CHANGE 이벤트를 발화하지 않아 emit 갱신이
+   * 안 됨. 본 메서드는 호출 직전 isEnabled() 가 false 면 1회 enable() 로 강제
+   * 끌어올린 뒤 setFieldValue → 원상복구. PreviewMain.onEditText 가 추가로
+   * bumpStructure 를 직접 호출하므로 belt+suspenders.
+   */
   setBlockField(key: WorkspaceKey, blockId: string, fieldName: string, value: string): boolean {
     const ws = this.workspaces[key];
     const b = ws?.getBlockById(blockId);
@@ -302,7 +310,20 @@ class DefaultAdapter implements BlocklyAdapter {
     if (!f) return false;
     const cur = (f as { getValue?: () => unknown }).getValue?.();
     if (cur != null && String(cur) === value) return false;
-    b.setFieldValue(value, fieldName);
+    // 이벤트 보장: disable 카운터가 미해소된 경우 1회만 enable 해서 BLOCK_CHANGE
+    // 가 정상 발화되게 한 뒤 원상복구. Blockly.Events.disable/enable 는 nested
+    // 카운터라 한번 enable 해 0 으로 끌어내려도 caller 의 finally 의 enable
+    // 이 -1 까지 떨어트리지만 isEnabled() 는 ≤0 → false 동작 그대로.
+    let needsReenable = false;
+    try {
+      if (!Blockly.Events.isEnabled()) {
+        Blockly.Events.enable();
+        needsReenable = true;
+      }
+      b.setFieldValue(value, fieldName);
+    } finally {
+      if (needsReenable) Blockly.Events.disable();
+    }
     return true;
   }
 

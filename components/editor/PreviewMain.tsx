@@ -255,7 +255,20 @@ export default function PreviewMain() {
           if (!adapter.getBlock(ws, blockId)) continue;
           for (const fname of FIELD_PREFS) {
             if (adapter.hasBlockField(ws, blockId, fname)) {
-              adapter.setBlockField(ws, blockId, fname, newText);
+              const ok = adapter.setBlockField(ws, blockId, fname, newText);
+              // Phase D fix (local_86b826b4 검증) — emit pipeline 강제 트리거.
+              // 정상 경로에선 setFieldValue → BLOCK_CHANGE → BlocklyModelHost
+              // changeListener → bumpStructure 가 자동으로 돌지만, 라이브 verify
+              // 에서 시각 편집은 OK 인데 emit raw HTML 에 변화가 안 박히는 케이스가
+              // 발견됨 (Blockly v12 의 외부 setFieldValue 이벤트 전파 누락 또는
+              // perfHook hydrate 의 Events.disable 카운터 미해소). bumpStructure
+              // 를 명시적으로 호출해 useEmitPipeline 의 500ms 디바운스가 확실히
+              // 트리거되도록. 정상 경로에선 동일 frame 내 중복 bump (counter+2)
+              // 이지만 emit 은 1회만 실행되어 무해.
+              if (ok) {
+                const count = adapter.listAllBlocks(ws).length;
+                useWorkspaceStore.getState().bumpStructure(ws, count);
+              }
               return;
             }
           }
