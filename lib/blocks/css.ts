@@ -555,6 +555,61 @@ export const CSS_BLOCKS: BlockDef[] = [
     },
   },
 
+  // 15.5) css var decl (value input) --------------------------------------
+  //
+  // r20_css_var_decl — VAR_NAME 텍스트 + VALUE value input (reporter 슬롯).
+  // VALUE 슬롯 비면 텍스트 fallback 사용.
+  // 입력 prefix `--` 는 자동 제거 (사용자가 `--accent` 또는 `accent` 둘 다
+  // 입력 가능). Stage 22 §3 — HIGH 우선 신규 블록 (CSS 변수 빌더 7/40 시스템 사용).
+  {
+    type: 'r20_css_var_decl',
+    shape: 'stack',
+    category: CSS,
+    label: '변수 선언 (값 슬롯)',
+    tooltip:
+      '--NAME: VALUE; — VALUE 슬롯에 색/숫자/다른 var 블록 연결 가능. 슬롯 비면 텍스트 fallback.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('--')
+        .appendField(new Blockly.FieldTextInput('accent'), 'VAR_NAME')
+        .appendField(':');
+      b.appendValueInput('VALUE').setCheck(null);
+      b.appendDummyInput()
+        .appendField('또는')
+        .appendField(new Blockly.FieldTextInput(''), 'VALUE_TEXT')
+        .appendField(';');
+      setStatementHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const rawName = String(b.getFieldValue('VAR_NAME') ?? '').trim();
+      // `--` prefix 자동 제거 (한 번/두 번 모두).
+      const stripped = rawName.replace(/^-+/, '');
+      const name = sanitizeIdent(stripped);
+      if (!name) return '';
+      const slot = (ctx.valueToCode(block, 'VALUE', 0) ?? '').trim();
+      const txt = safeDeclValue(String(b.getFieldValue('VALUE_TEXT') ?? ''));
+      const value = slot || txt;
+      return `--${name}: ${value};`;
+    },
+    inspectorSchema: [
+      {
+        name: 'VAR_NAME',
+        label: '변수 이름',
+        kind: 'text',
+        placeholder: 'accent',
+        description: '`--` 접두사 자동 처리.',
+      },
+      {
+        name: 'VALUE_TEXT',
+        label: '값(텍스트 fallback)',
+        kind: 'text',
+        placeholder: '#3366ff',
+        description: 'VALUE 슬롯에 블록이 안 꽂혀 있을 때 사용.',
+      },
+    ],
+  },
+
   // 16) media query --------------------------------------------------------
   {
     type: 'r20_media_query',
