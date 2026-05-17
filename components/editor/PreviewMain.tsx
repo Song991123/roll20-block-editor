@@ -91,6 +91,10 @@ export default function PreviewMain() {
   // 시각 동일성 보장 — buildSheetParts 는 buildSheetDoc 과 같은 runtime/layer/prefix CSS 사용.
   // Phase A 범위 = 시각만 동일. Phase B+ 의 인터랙션 (select / drag / inline edit) 은 미구현.
   const hostRef = useRef<HTMLDivElement>(null);
+  // spec 17 §12 Phase B — Shadow mount 가 반환하는 setSelected 를 ref 로 잡아
+  // selectedBlockId 변경 effect 에서 호출. mount 사이클 (parts 변경) 마다 새 ref
+  // 발급 — cleanup 단계에서 null 로 비워 stale 호출 방지.
+  const shadowSetSelectedRef = useRef<((id: string | null) => void) | null>(null);
   const parts = useMemo(
     () =>
       buildSheetParts({
@@ -107,14 +111,31 @@ export default function PreviewMain() {
     if (renderMode !== 'shadow') return;
     const host = hostRef.current;
     if (!host) return;
-    const { cleanup } = mountSheetShadow(host, {
+    const { cleanup, setSelected: setShadowSelected } = mountSheetShadow(host, {
       html: parts.html,
       css: parts.css,
       layer: previewLayer,
       darkMode,
+      // Phase B — Shadow 안 element 클릭 → workspaceStore.selectedBlockId 갱신.
+      // origin 'preview' — 양방향 sync 시 src 구분.
+      onSelect: (blockId) => setSelected(blockId, 'preview'),
     });
-    return cleanup;
-  }, [renderMode, parts, previewLayer, darkMode]);
+    shadowSetSelectedRef.current = setShadowSelected;
+    // mount 직후 한번 — 현재 selectedBlockId 가 있으면 outline 복원.
+    const currentSelected = useWorkspaceStore.getState().selectedBlockId;
+    if (currentSelected) setShadowSelected(currentSelected);
+    return () => {
+      shadowSetSelectedRef.current = null;
+      cleanup();
+    };
+  }, [renderMode, parts, previewLayer, darkMode, setSelected]);
+
+  // Phase B — selectedBlockId 변경 → Shadow 안 outline 동기화.
+  // iframe 모드 or 미마운트 시 ref.current === null → noop.
+  useEffect(() => {
+    if (renderMode !== 'shadow') return;
+    shadowSetSelectedRef.current?.(selectedId);
+  }, [selectedId, renderMode]);
 
 
   // spec 17 §8 — 캔버스 widget 선택/hover → preview iframe 강조
