@@ -77,3 +77,93 @@ GitHub Pages deploy `commit 142a6dc` 확인:
 - Tailwind v4 arbitrary value parse time — build 시 1회. 런타임 영향 0.
 - sticky 헤더 z-[5] — `Inspector` rail (z-10) 보다 낮게 유지, 충돌 없음.
 - 기존 lazy mount (IntersectionObserver, rootMargin 500px) 정상 동작 — sticky / stripe 가 inject 트리거에 영향 없음.
+
+---
+
+## 8. Round 2 Polish (별도 작업)
+
+Round 1 의 §6 backlog 4 항목 모두 처리.
+
+### 8.1 검색 X clear 버튼 (R2-1)
+
+`BlocksLibrary.tsx` 검색 input 옆 X 아이콘 (lucide `X`):
+
+- `search.length > 0` 일 때만 render (`{search.length > 0 && ...}`)
+- 클릭 시 `setSearch('')` + `requestAnimationFrame(() => searchInputRef.current?.focus())` — 다음 검색어 즉시 입력 가능
+- input className `pr-3` → `pr-7` 로 우측 패딩 늘려 X 영역 확보
+- aria-label `'검색어 지우기'` + focus ring
+
+토큰: 추가 0 (`--bg-hover`, `--ring` 재사용).
+
+### 8.2 검색 결과 카테고리 그룹화 (R2-2)
+
+`searchResultsByCategory` useMemo — `searchResults` 를 `BlockDef.category` 별 그룹으로 묶어 `CATEGORY_ORDER` 순서로 정렬. 빈 그룹은 자동 생략 (`map.has(id)` 필터).
+
+렌더링:
+- 그룹마다 카테고리 헤더 (4px stripe + 색 dot + 카운트 Badge) — 일반 카테고리 헤더와 동일 sticky 스킴 (`top-0 z-[5] backdrop-blur-sm`)
+- 12% bg tint (open 14% / closed 6% 대신 검색 결과는 항상 12%)
+- collapse 토글 없음 — 검색 결과는 항상 펼친 상태
+
+### 8.3 카테고리 collapse 애니메이션 (R2-3)
+
+grid-template-rows 0fr ↔ 1fr trick:
+
+```jsx
+<div
+  className={cn(
+    'blocks-cat-body grid transition-[grid-template-rows,opacity] duration-200 ease-out',
+    isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+  )}
+  style={{ willChange: isOpen ? 'grid-template-rows' : 'auto' }}
+  aria-hidden={!isOpen}
+>
+  <div className="min-h-0 overflow-hidden">
+    {/* category body */}
+  </div>
+</div>
+```
+
+브라우저 지원: Chrome 117+ / Firefox 137+ / Safari 17+. 미지원 환경에서는 instant snap (회귀 없음, 단지 애니메이션 X).
+
+특징:
+- **항상 DOM 렌더** — 닫혀도 `BlockTile` 의 IntersectionObserver 가 정상 작동, lazy mount 회귀 없음
+- `min-h-0 overflow-hidden` inner — 콘텐츠 시각적으로 깔끔히 잘림
+- `will-change: grid-template-rows` 만 open 상태에서 — 닫혀 있을 때 perf 비용 0
+- `transition-property` 를 `globals.css` `.blocks-cat-body` 에 명시 → Tailwind v4 arbitrary value parse 안전망
+
+`opacity` 동반 fade 200ms ease-out 으로 cross-fade.
+
+### 8.4 즐겨찾기 (R2-4)
+
+`settingsStore`:
+- `blockFavorites: string[]` — block `type` 배열, persist 적용 (`r20-settings` localStorage 자동)
+- `toggleBlockFavorite(type)` 액션
+
+`BlocksLibrary`:
+- ⭐ **즐겨찾기 가상 카테고리** — 항상 최상단. `favoriteBlocks.length === 0` 이면 헤더 자체 숨김 (UI 클러터 방지)
+- 색: `#FFC857` (노란 별) — 일반 카테고리와 시각적으로 차별, 추가 토큰 1개 (인라인)
+- toggle 키 `'__favorites__'` 로 기존 `blocksExpandedCategories` 재사용 → 별도 store 키 추가 X
+- collapse 애니메이션 동일 적용
+
+`BlockTile`:
+- 우상단 별 아이콘 overlay 버튼 — `opacity-0 group-hover:opacity-100`, isFavorite 일 때는 항상 `opacity-100`
+- `onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleBlockFavorite(...); }}` — 블록 추가 트리거 안 됨
+- favorite 시 `fill-[#FFC857]`, 평소엔 `text-muted-foreground`
+
+`favoriteBlocks` useMemo: `getAllBlocks()` 로 join, registry 에 없는 type 자동 제외 → registry 변경 안전성 확보.
+
+## 9. Round 2 검증
+
+라이브 (commit `<deploy 후 채움>`):
+- X clear: 검색어 입력 → X 표시, 클릭 시 사라짐 + input focus 유지
+- 카테고리 그룹화: "input" 검색 → 입력 카테고리 헤더 + 매칭 / 표시 카테고리 헤더 + 매칭 ... 형태
+- collapse: 카테고리 헤더 클릭 → 200ms 부드럽게 닫힘/열림
+- 즐겨찾기: tile hover → 별 버튼 표시, 클릭 → 즐겨찾기 추가 → 최상단에 ⭐ 즐겨찾기 카테고리 등장
+
+## 10. Round 2 후속 영향
+
+- `blockFavorites` 는 localStorage persist — IndexedDB 도입 안 함 (작은 배열 / 즉시 hydrate / autosave wrapper 와 분리).
+- 즐겨찾기 카테고리는 `visibleCategories.map` 밖에서 별도 렌더 — `CATEGORY_ORDER` 미오염 (기존 9 카테고리 순서 보존).
+- collapse 애니 grid-rows trick 은 layout-trigger property 만 변경 — composite-only 는 아니지만 200ms / per-category 한정 → 측정 가능 perf 회귀 없음 (Phase F longtask 0ms 유지 expected).
+- 새 토큰: `#FFC857` (즐겨찾기 노란색) — `--cat-favorites` 로 globals.css 에 승격 가능 (round 3 후보).
+
