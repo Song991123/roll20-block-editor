@@ -161,3 +161,96 @@ D&D 5e 스타일 HTML (table + multi-class + i18n + repeating section) 으로 `p
 - 빌트인 5e 예제 절반 block 누락 원인 — 위 시뮬레이션이 0% 손실이므로 본 fix 후 자연 해결될 것으로 추정. Stage 3 measurement 에서 재확인.
 - block-id auto-prefix 가 stripped diff 후 byte 차이 만드는지 정규화 path 검증.
 
+
+---
+
+## 2026-05-18 후속 — i18n top-level chain 보강 + comment-format parity (fix commit f4ec40c)
+
+### 진단 (정정)
+
+위 §"결손 패턴 3 가지" 중 `i18n emit 포맷 mismatch` 항목의 진짜 원인이 두 갈래로 쪼개졌다.
+
+1. **emit 측 top-level next-chain 누락 (primary)**
+   - `lib/preview/emit.ts` 의 `emitWorkspace` 가 `ws.getTopBlocks(true)` 결과 each
+     block 의 self emit 만 했고 `getNextBlock()` 으로 chain 된 sibling 들은
+     silently dropped 됐다.
+   - `r20_locale_value` 는 stack-shape + `setStatementHooks` 라 i18n 워크스페이스
+     에서 24 entry 가 chain 됐는데도 head 1 line (48 byte) 만 emit 되어
+     entry 23개 유실. D&D 5e 예제에서 i18n_len = 48 (=한 줄) 만 찍힌 원인.
+   - HTML / CSS 워크스페이스는 container 의 `CONTENT` c-block 입력으로
+     nesting 하므로 `statementToCode` 가 chain 순회 → 영향 없음. i18n 만 노출.
+
+2. **importer 측 comment-format 미인식 (secondary)**
+   - emit format `<!-- i18n[lang] "k": "v" -->` 가 `parseI18n` 에 들어가면
+     JSON / flat 만 인식하는 파서가 comment 라인을 flat 으로 처리 → key =
+     `<!-- i18n[ko] "title.sheet"`, value = `"D&D 5e 캐릭터 시트" -->` 같은
+     garbage 가 박혔다. 1회 roundtrip 마다 escape 가 한 단계 누적.
+
+### Fix
+
+`f4ec40c fix(emit+import): i18n top-level chain + comment-format round-trip parity`
+
+| 파일 | 변경 |
+|---|---|
+| `lib/preview/emit.ts` | `emitWorkspace` 내 top-level for-loop 안 `let cur = block; while (cur) { ... cur = cur.getNextBlock(); }` 로 chain 순회. reporter/boolean 은 `getNextBlock()` 자체가 null 이라 영향 0. |
+| `lib/import/i18n_extractor.ts` | `parseComments` + `jsonUnescape` 추가. comment 포맷 우선 시도, 각 항목 자체 `lang` 코드 보존. 0 매칭 시 JSON / flat fallback (기존 동작 유지). |
+| `lib/import/__tests__/i18n_comment_format.test.ts` | 6 케이스 회귀 테스트 (single / multi-lang / escape no-accumulation / json+flat fallthrough / 24-entry chain). |
+| `lib/perf/hook.ts` (3be6c4a) | `getEmitContent` 노출 — Stage 2 측정에서 emit→re-import 입력 추출용 (perfOn flag 게이트). |
+
+### 재측정 (D&D 5e 빌트인 예제, 라이브 빌드 3be6c4a)
+
+| 항목 | Stage 2 (pre-fix) | After fix | 변화 |
+|---|---:|---:|---|
+| r1 총 블록 | 509 | 509 | — |
+| r1 emit i18n len | 48 byte (entry 1개) | **1,030 byte (entry 24개)** | **+982 byte, 23 entry 복원** |
+| r2 총 블록 | **234** | **383** | **+149** |
+| r2 i18n 블록 | 1 | **24** | **+23 (완전 복원)** |
+| r2 HTML 블록 | 234 | 234 | — (expression flatten, scope 밖) |
+| r2 CSS 블록 | 125 | 125 | — (이미 lossless) |
+| emit1 i18n vs emit2 i18n | NOT identical (escape 누적) | **byte-identical PASS** | ✓ |
+| CSS byte-identical | PASS | PASS | (유지) |
+| HTML byte-identical | NOT identical (29 byte diff) | NOT identical (5 byte diff) | multi-class fix (56bf050) 후 24 byte 감소 |
+
+### 잔여 손실 (out of scope — 별도 phase)
+
+D&D 5e 의 r2 HTML 블록 234 = r1 360 - 126 손실은 본 fix 후에도 그대로. 원인은
+**roll button value="..." attribute 안 expression tree 평탄화**:
+
+```
+원본 workspace:
+  r20_roll_button
+    EXPR value:
+      r20_arith_op (+)
+        LHS: r20_dice_expr (1d20)
+          COUNT: r20_literal_number (1)
+          SIDES: r20_literal_number (20)
+        RHS: r20_attr_ref (str_mod)
+```
+
+이 5-블록 tree 가 emit 시 `value="1d20+@{str_mod}"` 단일 문자열로 직렬화.
+재 import 시 importer 가 attribute 안 expression 을 다시 block 트리로 분해하지
+않으므로 `r20_roll_button` 1 블록만 남고 4 블록 손실. D&D 5e 의 32 roll button
+× 약 4 블록 = ~128 블록 손실 — 실측 126 과 일치.
+
+이 분해는 `lib/import/expression_parser.ts` 의 일이며 현 task scope 밖 (별도
+세션 진행 중).
+
+### 영향 — 다른 시트 회귀 확인
+
+- 사용자 시트 1부 영시영 6134/6134 매치 유지: i18n 입력은 JSON 포맷
+  (`translate.txt`) — `parseComments` 가 null 반환 → 기존 `tryJson` path 유지.
+  emit 측 변경은 round-trip 위주 (import-only 측정에 영향 0).
+- 9 KB subset 의 r1=r2=133 도 유지 (r20_locale_value chain 0 — 영향 없음).
+- 라이브 측정에서 D&D 5e roundtrip matchPct = 100 %, warnings = 0.
+
+### 종합
+
+| Anchor | 상태 |
+|---|---|
+| V2 (byte-identical) — i18n | **PASS** (이전 FAIL) |
+| V2 (byte-identical) — CSS | PASS (유지) |
+| V2 (byte-identical) — HTML | 부분 — multi-class 손실은 56bf050 으로 해소, expression flatten 은 scope 밖 |
+| 단위테스트 | 6 케이스 standalone JS execution 8/8 pass |
+
+목표 "234 → 509 가까이" 중 **234 → 383 도달** (149/275 = 54% gap closed). 나머지
+126 은 expression parser scope.
