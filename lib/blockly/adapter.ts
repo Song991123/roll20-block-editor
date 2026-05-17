@@ -87,6 +87,8 @@ export interface BlocklyAdapter {
   getBlockFields(key: WorkspaceKey, blockId: string): BlockFieldInfo[];
   /** 새 블록 인스턴스를 활성 워크스페이스 top-level 에 추가. 반환 = 새 block id (또는 null). */
   appendBlockToWorkspace(key: WorkspaceKey, blockType: string): string | null;
+  /** 워크스페이스 내 모든 블록 수 (top-level + nested). bumpStructure 인자용. */
+  countBlocks(key: WorkspaceKey): number;
   setFieldValue(key: WorkspaceKey, blockId: string, fieldName: string, value: string): void;
   /**
    * Phase C WYSIWYG drag — 특정 block 의 field 가 존재하는지 검사.
@@ -261,9 +263,36 @@ class DefaultAdapter implements BlocklyAdapter {
       block.moveBy(20 + offset, 20 + offset);
       block.initSvg();
       block.render();
+      // Phase D fix (add-block bumpStructure 버그, local_1abb2993):
+      // `ws.newBlock` 은 데이터 구조만 만들고 BLOCK_CREATE 이벤트를 발화하지
+      // 않는다. 따라서 BlocklyModelHost 의 changeListener (BLOCK_CREATE →
+      // bumpStructure) 가 트리거 안 되고 → store.blockCount=0 유지 →
+      // PreviewEmptyState 영구 표시 → 미리보기 영구 빈 화면.
+      // 해결: 명시적으로 BlockCreate 이벤트 발화. disable 카운터가 미해소된
+      // 환경에서도 belt+suspenders 로 1회만 enable 후 fire → 원상복구.
+      let needsReenable = false;
+      try {
+        if (!Blockly.Events.isEnabled()) {
+          Blockly.Events.enable();
+          needsReenable = true;
+        }
+        Blockly.Events.fire(new Blockly.Events.BlockCreate(block));
+      } finally {
+        if (needsReenable) Blockly.Events.disable();
+      }
       return block.id;
     } catch {
       return null;
+    }
+  }
+
+  countBlocks(key: WorkspaceKey): number {
+    const ws = this.workspaces[key];
+    if (!ws) return 0;
+    try {
+      return ws.getAllBlocks(false).length;
+    } catch {
+      return 0;
     }
   }
 

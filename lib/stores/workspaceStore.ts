@@ -278,6 +278,18 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
     const id = adapter.appendBlockToWorkspace(key, blockType);
     if (id) {
       set({ selectedBlockId: id, selectionOrigin: 'tree' });
+      // Phase D fix (add-block bumpStructure 버그, local_1abb2993):
+      // adapter 내부에서 BLOCK_CREATE 이벤트를 fire 하므로 changeListener 가
+      // bumpStructure 를 자동 호출하지만, Events.disable 카운터가 미해소된
+      // 환경 또는 listener 미등록 (테스트 등) 환경에서도 store 가 일관되게
+      // 갱신되도록 belt+suspenders 로 명시 호출. serializeXml 비용 없이
+      // O(N) tree walk + counter++ 만 수행 (BlocklyModelHost 와 동일 비용).
+      try {
+        const count = adapter.countBlocks(key);
+        if (count > 0) state.bumpStructure(key, count);
+      } catch {
+        /* adapter teardown mid-call */
+      }
     }
     return id;
   },

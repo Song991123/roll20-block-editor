@@ -442,6 +442,30 @@ Shadow DOM 안 element 를 pointer drag → `LEFT_PX/TOP_PX` field 가 있는 �
 
 - 본 fix 는 증상에 대한 robust 처리. 근본적으로 Blockly v12 의 외부 setFieldValue 이벤트 전파 신뢰성을 별도 spike 로 측정해 (시트 단위 100회 호출 → 100회 BLOCK_CHANGE) 라이브러리 측 fix 요청 여부 결정.
 
+#### Phase D fix — add-block bumpStructure 누락 (local_1abb2993)
+
+Phase D 의 emit-commit fix 검증 세션이 부수 발견: 블록 라이브러리에서 BlockTile 클릭 (또는 캔버스에 drag-drop) → 블록은 워크스페이스에 정상 시각 추가되지만 `useWorkspaceStore.blockCount` 가 0 으로 유지 → `PreviewEmptyState` 영구 표시 → 미리보기 영구 빈 화면.
+
+원인:
+
+- `adapter.appendBlockToWorkspace` 가 `ws.newBlock(blockType) + initSvg + render` 만 호출하고 `BLOCK_CREATE` 이벤트를 명시 발화하지 않음. Blockly v12 의 `WorkspaceSvg.newBlock` 은 데이터 구조만 만들 뿐 이벤트 발화 책임은 호출자 몫.
+- 결과로 `BlocklyModelHost` 의 changeListener (BLOCK_CREATE → `getAllBlocks().length` → `bumpStructure`) 가 트리거되지 않아 store 의 `blockCount === 0` 유지. `useEmitPipeline` 은 `structureVersion` 의존이라 emit 디바운스도 발동 안 함.
+- BlocksLibrary BlockTile click / BlocklyModelHost onDrop / PreviewMain onDrop — 세 입력 경로 모두 `useWorkspaceStore.appendBlockToActive → adapter.appendBlockToWorkspace` 단일 진입점 통과 → 한 곳 fix 로 전부 회복.
+
+수정 (belt + suspenders):
+
+1. `lib/blockly/adapter.ts` — `appendBlockToWorkspace` 마지막에 `Blockly.Events.fire(new Blockly.Events.BlockCreate(block))` 명시 호출. `Events.isEnabled()` 가 false 면 1회 `enable()` 로 끌어올린 뒤 fire, finally 에서 원상복구 — `hydrateFromXml*` 의 disable 카운터 미해소 상태에서도 안전. 추가로 `countBlocks(key)` 메서드 노출 (캐퍼링용).
+2. `lib/stores/workspaceStore.ts` — `appendBlockToActive` 가 새 id 획득 직후 `adapter.countBlocks(key)` → `bumpStructure(key, count)` 명시 호출. 정상 경로의 이벤트 발화가 살아있을 땐 동일 frame 내 중복 bump (counter+2) 가 되지만 emit 디바운스로 1회만 emit 실행 — 무해.
+
+검증 (라이브):
+
+- 빈 워크스페이스 → BlockTile (`r20_text_input`) 클릭 → `useWorkspaceStore.getState().blockCount > 0` 확인 → `PreviewEmptyState` 사라지고 미리보기 iframe 안 렌더 시작 → 코드 패널 raw HTML 에 emit 결과 박힘.
+- 회귀: drag-from-library → workspace drop, drag-from-library → preview-overlay drop 도 동일 fix 로 회복 (세 경로 단일 진입점).
+
+후속:
+
+- Blockly v12 가 `WorkspaceSvg.appendBlock` 류 고수준 API 를 도입하면 본 belt+suspenders 제거 가능. `lib/examples/index.ts` 의 `bumpStructure` 명시 호출 패턴과 동일한 안전망.
+
 ### Phase E-shadow — Shadow DOM 우클릭 컨텍스트 메뉴 (이 commit)
 
 > Phase B / C / D 연장선 — contextmenu 이벤트 → ShadowContextMenu 컴포넌트 → adapter 액션.
