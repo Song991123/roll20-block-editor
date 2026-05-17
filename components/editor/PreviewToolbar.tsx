@@ -1,6 +1,6 @@
 'use client';
 
-import { Maximize2, Minus, Plus, RefreshCw, Moon, Sun, Layers, Check } from 'lucide-react';
+import { Maximize2, Minus, Plus, RefreshCw, Moon, Sun, Layers, Check, Frame } from 'lucide-react';
 import type { PreviewLayer } from '@/lib/stores/uiStore';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +49,8 @@ export default function PreviewToolbar() {
   const setZoom = useUiStore((s) => s.setPreviewZoom);
   const darkMode = usePreviewStore((s) => s.darkMode);
   const setDarkMode = usePreviewStore((s) => s.setDarkMode);
+  const renderMode = usePreviewStore((s) => s.renderMode);
+  const setRenderMode = usePreviewStore((s) => s.setRenderMode);
 
   const numericZoom = typeof zoom === 'number' ? zoom : 1;
 
@@ -143,6 +145,32 @@ export default function PreviewToolbar() {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top">{darkMode ? '라이트' : '다크'} 미리보기</TooltipContent>
+        </Tooltip>
+
+        <span className="mx-1.5 h-5 w-px bg-border" />
+
+        {/* spec 21 Phase A — Roll20 환경 시뮬 토글 (ON = iframe sandbox, OFF = Shadow DOM) */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant={renderMode === 'iframe' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 gap-1.5 px-2.5 text-[11px]"
+              onClick={() => setRenderMode(renderMode === 'iframe' ? 'shadow' : 'iframe')}
+              aria-label="Roll20 환경 시뮬"
+              aria-pressed={renderMode === 'iframe'}
+              data-testid="preview-rendermode-toggle"
+            >
+              <Frame className="h-3.5 w-3.5" />
+              <span>{renderMode === 'iframe' ? 'Roll20 시뮬' : '편집 모드'}</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            {renderMode === 'iframe'
+              ? 'iframe sandbox — Roll20 환경 시뮬레이션 (현재)'
+              : 'Shadow DOM — 편집 가능 컨테이너 (현재)'}
+          </TooltipContent>
         </Tooltip>
 
         <span className="mx-1.5 h-5 w-px bg-border" />

@@ -216,66 +216,67 @@ const EMPTY_PLACEHOLDER = `
  * spec 17 §9 — 9 레이어 CSS 필터.
  * 활성 레이어 element 만 정상 / 나머지는 opacity 0.3 + pointer-events none.
  *
- * 모든 룰은 body[data-layer="<id>"] 안에서만 적용.
+ * `scope` — selector prefix. iframe 모드 = 'body'. Shadow DOM 모드에서는 layer 가
+ * charsheet wrapper div 에 박혀 있어 '.charsheet' 사용. 호출자가 지정.
  */
-function layerFilterCss(): string {
+export function layerFilterCss(scope: string = 'body'): string {
   return `
 /* spec 17 §9 — 9 layer filter */
-body[data-layer="structure"] :not(fieldset):not(section):not(div):not(legend):not(.charsheet) {
+${scope}[data-layer="structure"] :not(fieldset):not(section):not(div):not(legend):not(.charsheet) {
   opacity: 0.3;
   pointer-events: none;
 }
-body[data-layer="input"] *:not(input):not(select):not(textarea):not(label) {
+${scope}[data-layer="input"] *:not(input):not(select):not(textarea):not(label) {
   opacity: 0.3;
   pointer-events: none;
 }
-body[data-layer="input"] input,
-body[data-layer="input"] select,
-body[data-layer="input"] textarea,
-body[data-layer="input"] label {
+${scope}[data-layer="input"] input,
+${scope}[data-layer="input"] select,
+${scope}[data-layer="input"] textarea,
+${scope}[data-layer="input"] label {
   opacity: 1;
   pointer-events: auto;
 }
-body[data-layer="roll"] *:not(button[type="roll"]):not(button.roll) {
+${scope}[data-layer="roll"] *:not(button[type="roll"]):not(button.roll) {
   opacity: 0.3;
   pointer-events: none;
 }
-body[data-layer="roll"] button[type="roll"],
-body[data-layer="roll"] button.roll {
+${scope}[data-layer="roll"] button[type="roll"],
+${scope}[data-layer="roll"] button.roll {
   opacity: 1;
   pointer-events: auto;
   outline: 2px solid #2563eb;
 }
-body[data-layer="text"] :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(p):not(span):not(label) {
+${scope}[data-layer="text"] :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(p):not(span):not(label) {
   opacity: 0.3;
   pointer-events: none;
 }
-body[data-layer="image"] :not(img) {
+${scope}[data-layer="image"] :not(img) {
   opacity: 0.3;
   pointer-events: none;
 }
-body[data-layer="image"] img {
+${scope}[data-layer="image"] img {
   outline: 2px solid #2563eb;
 }
-body[data-layer="table"] :not(table):not(thead):not(tbody):not(tr):not(td):not(th) {
+${scope}[data-layer="table"] :not(table):not(thead):not(tbody):not(tr):not(td):not(th) {
   opacity: 0.3;
   pointer-events: none;
 }
-body[data-layer="repeating"] :not([data-rfh]):not([data-rfh] *) {
+${scope}[data-layer="repeating"] :not([data-rfh]):not([data-rfh] *) {
   opacity: 0.3;
   pointer-events: none;
 }
-body[data-layer="custom"] :not([class]) {
+${scope}[data-layer="custom"] :not([class]) {
   opacity: 0.3;
   pointer-events: none;
 }
 
 /* spec 17 §8 — 캔버스에서 선택된 위젯 강조 */
-body [data-r20-selected="1"] {
+${scope} [data-r20-selected="1"] {
   outline: 2px solid #f59e0b;
   outline-offset: 1px;
 }
-body [data-r20-hovered="1"] {
+${scope} [data-r20-hovered="1"] {
   outline: 2px dashed #93c5fd;
   outline-offset: 1px;
 }
@@ -315,4 +316,33 @@ ${bodyInner}
 <script>${PREVIEW_BRIDGE_SCRIPT}</script>
 </body>
 </html>`;
+}
+
+/**
+ * Shadow DOM 모드용 — emit 결과를 (html, css) 두 파츠로 반환.
+ * 동일한 sanitize / autoPrefix / runtimeCss / layerFilterCss 합성을 거치되,
+ * doctype / body wrapper / postMessage bridge script 는 빼고 순수 인젝션 가능
+ * 형태로 만든다. shadowMount 가 :host reset + container 박아주는 것을 가정.
+ *
+ * iframe 모드의 buildSheetDoc 과 시각 동일성 보장 — 같은 CSS 토큰 사용.
+ */
+export function buildSheetParts(opts: BuildDocOptions): { html: string; css: string } {
+  const sanitize = opts.sanitize !== false;
+  const userHtml = (opts.html ?? '').trim();
+  const userCss = (opts.css ?? '').trim();
+
+  const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
+  const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
+
+  const bodyInner = prefixedHtml ? prefixedHtml : EMPTY_PLACEHOLDER;
+
+  // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
+  // layerFilterCss scope = '.charsheet' 로 selector 일관성 유지.
+  const css = [
+    runtimeCss,
+    layerFilterCss('.charsheet'),
+    prefixedCss,
+  ].join('\n');
+
+  return { html: bodyInner, css };
 }

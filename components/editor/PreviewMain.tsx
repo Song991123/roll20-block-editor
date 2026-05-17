@@ -14,7 +14,8 @@ import {
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlockDef } from '@/lib/blocks/registry';
-import { buildSheetDoc } from '@/lib/preview/buildDoc';
+import { buildSheetDoc, buildSheetParts } from '@/lib/preview/buildDoc';
+import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import PreviewToolbar from './PreviewToolbar';
 import { playSfx } from '@/lib/sfx';
 import PreviewEmptyState from './PreviewEmptyState';
@@ -51,6 +52,7 @@ export default function PreviewMain() {
   const darkMode = usePreviewStore((s) => s.darkMode);
   const sanitize = usePreviewStore((s) => s.sanitize);
   const sandbox = usePreviewStore((s) => s.iframeSandbox);
+  const renderMode = usePreviewStore((s) => s.renderMode);
   const zoom = useUiStore((s) => s.previewZoom);
   const previewLayer = useUiStore((s) => s.previewLayer);
   const setHoveredWidgetId = useUiStore((s) => s.setHoveredWidgetId);
@@ -83,6 +85,36 @@ export default function PreviewMain() {
       }),
     [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer],
   );
+
+  // spec 21 Phase A — Shadow DOM 모드 mount.
+  // host element 에 Shadow Root attach → buildSheetParts(html, css) 인젝션.
+  // 시각 동일성 보장 — buildSheetParts 는 buildSheetDoc 과 같은 runtime/layer/prefix CSS 사용.
+  // Phase A 범위 = 시각만 동일. Phase B+ 의 인터랙션 (select / drag / inline edit) 은 미구현.
+  const hostRef = useRef<HTMLDivElement>(null);
+  const parts = useMemo(
+    () =>
+      buildSheetParts({
+        html: emitHtml,
+        css: emitCss,
+        i18n: emitI18n,
+        sanitize,
+        darkMode,
+        previewLayer,
+      }),
+    [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer],
+  );
+  useEffect(() => {
+    if (renderMode !== 'shadow') return;
+    const host = hostRef.current;
+    if (!host) return;
+    const { cleanup } = mountSheetShadow(host, {
+      html: parts.html,
+      css: parts.css,
+      layer: previewLayer,
+      darkMode,
+    });
+    return cleanup;
+  }, [renderMode, parts, previewLayer, darkMode]);
 
 
   // spec 17 §8 — 캔버스 widget 선택/hover → preview iframe 강조
@@ -249,13 +281,21 @@ export default function PreviewMain() {
               transition: 'width 120ms ease',
             }}
           >
-            <iframe
-              ref={iframeRef}
-              title="시트 미리보기"
-              sandbox={sandbox}
-              srcDoc={srcdoc}
-              className="block h-[calc(100vh-220px)] w-full border-0"
-            />
+            {renderMode === 'iframe' ? (
+              <iframe
+                ref={iframeRef}
+                title="시트 미리보기"
+                sandbox={sandbox}
+                srcDoc={srcdoc}
+                className="block h-[calc(100vh-220px)] w-full border-0"
+              />
+            ) : (
+              <div
+                ref={hostRef}
+                data-testid="preview-shadow-host"
+                className="block h-[calc(100vh-220px)] w-full overflow-auto"
+              />
+            )}
           </div>
         )}
       </div>

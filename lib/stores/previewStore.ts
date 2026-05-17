@@ -16,17 +16,26 @@ export interface DynamicToggle {
   label: string;         // 사용자가 박은 한국어 라벨
 }
 
+/**
+ * spec 21 — WYSIWYG Phase A. 미리보기 렌더 모드.
+ *   - 'shadow' : Shadow DOM 컨테이너 (기본). DOM 직접 인스펙터/편집 가능, Phase B+ 의 select/drag/inline edit 기반.
+ *   - 'iframe' : 레거시 iframe srcdoc — Roll20 환경 시뮬 (sandbox / postMessage bridge).
+ */
+export type PreviewRenderMode = 'shadow' | 'iframe';
+
 interface PreviewStore {
   darkMode: boolean;
   sanitize: boolean;        // D4 ① — default ON
   autoRegen: boolean;       // 큰 시트 OFF 권장
   iframeSandbox: string;    // allow-scripts only — 사용자 시트 안 script 는 unique origin 안에서만 실행 (parent 접근 X). preview bridge script 동작 필요.
+  renderMode: PreviewRenderMode;   // spec 21 Phase A — default 'shadow'
 
   dynamicToggles: DynamicToggle[];
 
   setDarkMode: (v: boolean) => void;
   setSanitize: (v: boolean) => void;
   setAutoRegen: (v: boolean) => void;
+  setRenderMode: (mode: PreviewRenderMode) => void;
   setDynamicToggle: (attr: string, on: boolean) => void;
   setDynamicToggles: (toggles: DynamicToggle[]) => void;
 }
@@ -36,11 +45,13 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   sanitize: true,            // D4 ① default ON
   autoRegen: true,
   iframeSandbox: 'allow-scripts',
+  renderMode: 'shadow',      // spec 21 Phase A — Shadow DOM default
   dynamicToggles: [],
 
   setDarkMode: (v) => set({ darkMode: v }),
   setSanitize: (v) => set({ sanitize: v }),
   setAutoRegen: (v) => set({ autoRegen: v }),
+  setRenderMode: (mode) => set({ renderMode: mode }),
   setDynamicToggle: (attr, on) =>
     set((s) => ({
       dynamicToggles: s.dynamicToggles.map((t) =>
