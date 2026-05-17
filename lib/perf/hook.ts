@@ -60,6 +60,13 @@ export interface PerfHook {
   getWorkspace: () => PerfWorkspaceSnap;
   /** emit 결과 (lazy emit). 길이만 — 본문 dump X (사용자 시트 식별자 leak 방지). */
   getEmitCache: () => PerfEmitSnap;
+  /**
+   * emit 결과 본문 — 측정 round-trip 시 emit→re-import 입력으로 사용.
+   * `__perfOn` flag 활성 + same-origin 일 때만 노출 (사용자 시트 식별자 leak
+   * 우려 있으나 perf 측정 사용자는 같은 사용자라 OK). Stage 2 round-trip
+   * 측정 phase 에서만 활성.
+   */
+  getEmitContent: () => { html: string; css: string; i18n: string };
   /** sync / async 작업 timing + heap delta. */
   measure: <T>(label: string, fn: () => T | Promise<T>) => Promise<PerfMeasure & { value: T }>;
   /** 영시영 / 다른 시트 raw HTML/CSS/i18n 을 generic pipeline 으로 import 후 hydrate. */
@@ -208,6 +215,15 @@ function buildHook(): PerfHook {
         htmlLen: cache.html.length,
         cssLen: cache.css.length,
         i18nLen: cache.i18n.length,
+      };
+    },
+
+    getEmitContent: () => {
+      const cache = useWorkspaceStore.getState().emitCache;
+      return {
+        html: cache.html,
+        css: cache.css,
+        i18n: cache.i18n,
       };
     },
 
