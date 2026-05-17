@@ -175,6 +175,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         blockType: 'r20_checkbox',
         fields: {
           NAME: name, CLASS: cls,
+          VALUE: a.value || '',
           CHECKED: 'checked' in a || a.checked != null ? 'TRUE' : 'FALSE',
         },
         children: {},
