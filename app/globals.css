@@ -220,6 +220,13 @@ body {
   z-index: 10;
 }
 
+/* BlocksLibrary 카테고리 collapse — grid-template-rows 0fr↔1fr 외에 opacity 도 함께 트랜지션 (200ms). */
+.blocks-cat-body {
+  transition-property: grid-template-rows, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease-out;
+}
+
 /* BlocksLibrary 의 mini preview workspace — 블록 SVG 만 보이게 minimum chrome. */
 .blocks-library-preview .blocklyMainBackground {
   fill: transparent;

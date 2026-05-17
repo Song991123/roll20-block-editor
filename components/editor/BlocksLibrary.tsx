@@ -196,19 +196,34 @@ export default function BlocksLibrary() {
                       <Badge variant="secondary" className="font-mono">{blocks.length}</Badge>
                     </button>
 
-                    {isOpen && (
-                      <div
-                        id={`block-category-${catId}`}
-                        className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
-                        style={{ borderColor: `color-mix(in srgb, ${meta.swatchVar} 60%, transparent)` }}
-                      >
-                        {blocks.length === 0 ? (
-                          <div className="py-1.5 pl-2 text-[10.5px] italic text-muted-foreground">카탈로그 작성 중…</div>
-                        ) : (
-                          blocks.map((b) => <BlockTile key={b.type} def={b} />)
-                        )}
+                    {/*
+                      collapse 애니메이션: grid-template-rows 0fr ↔ 1fr trick.
+                      - 항상 DOM 렌더 → 닫혀도 IntersectionObserver 가 BlockTile inject 못 막음 (lazy 유지).
+                      - 닫힌 상태에서는 inner overflow hidden + max-height 0 → 시각적으로 깔끔히 접힘.
+                      - 200ms ease-out + will-change 는 열림 transition 동안만 (perf 영향 최소).
+                    */}
+                    <div
+                      id={`block-category-${catId}`}
+                      className={cn(
+                        'blocks-cat-body grid transition-[grid-template-rows,opacity] duration-200 ease-out',
+                        isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+                      )}
+                      style={{ willChange: isOpen ? 'grid-template-rows' : 'auto' }}
+                      aria-hidden={!isOpen}
+                    >
+                      <div className="min-h-0 overflow-hidden">
+                        <div
+                          className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
+                          style={{ borderColor: `color-mix(in srgb, ${meta.swatchVar} 60%, transparent)` }}
+                        >
+                          {blocks.length === 0 ? (
+                            <div className="py-1.5 pl-2 text-[10.5px] italic text-muted-foreground">카탈로그 작성 중…</div>
+                          ) : (
+                            blocks.map((b) => <BlockTile key={b.type} def={b} />)
+                          )}
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })}
