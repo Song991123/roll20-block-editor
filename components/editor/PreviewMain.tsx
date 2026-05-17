@@ -18,6 +18,7 @@ import { buildSheetDoc, buildSheetParts } from '@/lib/preview/buildDoc';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import PreviewToolbar from './PreviewToolbar';
+import ShadowContextMenu, { type ShadowContextMenuAction } from './ShadowContextMenu';
 import { playSfx } from '@/lib/sfx';
 import PreviewEmptyState from './PreviewEmptyState';
 
@@ -64,6 +65,18 @@ export default function PreviewMain() {
   const sheetWidgetsList = useWorkspaceStore((s) => s.sheetWidgets);
   const rolltemplateWidgetsList = useWorkspaceStore((s) => s.rolltemplateWidgets);
   const [dragOver, setDragOver] = useState(false);
+  // Phase E — 우클릭 컨텍스트 메뉴 state. Shadow onContextMenu 가 (blockId, x, y) 채움.
+  // null 이면 안 그림. 액션 dispatch / 외부 클릭 / Escape 시 null 로 리셋.
+  const [contextMenuState, setContextMenuState] = useState<{
+    blockId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  // Phase E — Inspector 활성화에 쓰일 sidebarRightTab/collapse setter.
+  // 'attrs' 가 Inspector 패널 (D49).
+  const setSidebarRightTab = useUiStore((s) => s.setSidebarRightTab);
+  const sidebarRightCollapsed = useUiStore((s) => s.sidebarRightCollapsed);
+  const toggleSidebarRight = useUiStore((s) => s.toggleSidebarRight);
 
   const total = htmlCount + cssCount + i18nCount;
   const isEmpty = total === 0;
@@ -254,6 +267,12 @@ export default function PreviewMain() {
         // eslint-disable-next-line no-console
         console.debug('[wysiwyg] block not found in any workspace — edit ignored:', blockId);
       },
+      // Phase E — 우클릭 → state 갱신 → ShadowContextMenu 렌더.
+      // (x, y) 는 viewport 좌표. ShadowContextMenu 가 position:fixed 으로 사용.
+      // 같은 element 연속 우클릭은 기존 메뉴 close 후 새 위치로 재오픈.
+      onContextMenu: (blockId, x, y) => {
+        setContextMenuState({ blockId, x, y });
+      },
     });
     shadowSetSelectedRef.current = setShadowSelected;
     // mount 직후 한번 — 현재 selectedBlockId 가 있으면 outline 복원.
@@ -397,6 +416,63 @@ export default function PreviewMain() {
     w.postMessage({ type: 'r20:highlight', blockId: selectedId }, '*');
   }, [selectedId, srcdoc]);
 
+  // Phase E — 컨텍스트 메뉴 액션 디스패치.
+  // - inspect: selectedBlockId 갱신 + sidebar right 펼침 + 'attrs' (Inspector) 탭 활성.
+  // - delete: adapter.deleteBlock → BLOCK_DELETE event → bumpStructure → emit → preview 재mount.
+  // - duplicate: adapter.duplicateBlock → 실패 (null) 시 toast.
+  // - moveUp/moveDown: adapter.moveBlockUp/Down → false (statement chain 등) 시 toast '지원 예정'.
+  // 워크스페이스 키는 active 우선, 없으면 html/css/i18n 순회 — drag/edit 와 동일 전략.
+  const dispatchContextAction = (
+    action: ShadowContextMenuAction,
+    blockId: string,
+  ) => {
+    const adapter = getBlocklyAdapter();
+    const cand: WorkspaceKey[] = [
+      useWorkspaceStore.getState().activeWorkspace as WorkspaceKey,
+      'html', 'css', 'i18n',
+    ];
+    const order: WorkspaceKey[] = [];
+    for (const k of cand) if (!order.includes(k)) order.push(k);
+    let ws: WorkspaceKey | null = null;
+    for (const k of order) {
+      if (adapter.getBlock(k, blockId)) { ws = k; break; }
+    }
+    if (!ws) {
+      toast.error('블록을 찾을 수 없습니다', { duration: 1800 });
+      return;
+    }
+    switch (action) {
+      case 'inspect': {
+        setSelected(blockId, 'inspector');
+        if (sidebarRightCollapsed) toggleSidebarRight();
+        setSidebarRightTab('attrs');
+        return;
+      }
+      case 'delete': {
+        const ok = adapter.deleteBlock(ws, blockId);
+        if (!ok) toast.error('삭제 실패', { duration: 1800 });
+        return;
+      }
+      case 'duplicate': {
+        const newId = adapter.duplicateBlock(ws, blockId);
+        if (!newId) toast('복사 지원 예정 (이 블록은 복제 불가)', { duration: 2000 });
+        else toast('블록 복사됨', { duration: 1200 });
+        return;
+      }
+      case 'moveUp': {
+        const ok = adapter.moveBlockUp(ws, blockId);
+        if (!ok) toast('위로 이동 지원 예정 (현재 최상단 또는 statement chain)', { duration: 2000 });
+        return;
+      }
+      case 'moveDown': {
+        const ok = adapter.moveBlockDown(ws, blockId);
+        if (!ok) toast('아래로 이동 지원 예정 (현재 최하단 또는 statement chain)', { duration: 2000 });
+        return;
+      }
+      default: return;
+    }
+  };
+
   return (
     <div className="relative flex h-full min-h-0 flex-col">
       <div
@@ -462,6 +538,17 @@ export default function PreviewMain() {
         )}
       </div>
       <PreviewToolbar />
+      {contextMenuState && renderMode === 'shadow' && (
+        <ShadowContextMenu
+          blockId={contextMenuState.blockId}
+          x={contextMenuState.x}
+          y={contextMenuState.y}
+          onAction={(action) =>
+            dispatchContextAction(action, contextMenuState.blockId)
+          }
+          onClose={() => setContextMenuState(null)}
+        />
+      )}
     </div>
   );
 }

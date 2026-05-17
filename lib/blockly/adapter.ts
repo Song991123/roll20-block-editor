@@ -125,6 +125,28 @@ export interface BlocklyAdapter {
       onProgress?: (done: number, total: number) => void;
     },
   ): Promise<void>;
+  /**
+   * Phase E WYSIWYG context menu — 블록 삭제. dispose(healStack=true).
+   * 블록이 없으면 false.
+   */
+  deleteBlock(key: WorkspaceKey, blockId: string): boolean;
+  /**
+   * Phase E WYSIWYG context menu — 블록 복제. Blockly.Xml.blockToDom →
+   * domToBlock 으로 같은 워크스페이스에 같은 type/field 의 블록 생성.
+   * 위치는 원본 + (20, 20) px 오프셋. 반환 = 새 block id 또는 null.
+   */
+  duplicateBlock(key: WorkspaceKey, blockId: string): string | null;
+  /**
+   * Phase E WYSIWYG context menu — top-level 블록을 한 칸 위로 (Y 좌표 swap).
+   * statement chain (next/prev connection) 안 블록은 미지원 — false 반환.
+   * 호출자는 false 시 토스트로 "지원 예정" 안내.
+   */
+  moveBlockUp(key: WorkspaceKey, blockId: string): boolean;
+  /**
+   * Phase E WYSIWYG context menu — top-level 블록을 한 칸 아래로 (Y swap).
+   * moveBlockUp 의 대칭. statement chain 안 미지원.
+   */
+  moveBlockDown(key: WorkspaceKey, blockId: string): boolean;
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
 
@@ -363,6 +385,73 @@ class DefaultAdapter implements BlocklyAdapter {
       ws.setResizesEnabled(true);
       Blockly.Events.enable();
     }
+  }
+
+  /** Phase E — block dispose(true). */
+  deleteBlock(key: WorkspaceKey, blockId: string): boolean {
+    const ws = this.workspaces[key];
+    const b = ws?.getBlockById(blockId);
+    if (!b) return false;
+    try {
+      b.dispose(true);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Phase E — block 복제. blockToDom → domToBlock, +20px 오프셋. */
+  duplicateBlock(key: WorkspaceKey, blockId: string): string | null {
+    const ws = this.workspaces[key];
+    const b = ws?.getBlockById(blockId);
+    if (!ws || !b) return null;
+    try {
+      const dom = Blockly.Xml.blockToDom(b, true) as Element;
+      // domToBlock 은 Blockly 12 의 단일 블록 hydrate API.
+      const newBlock = Blockly.Xml.domToBlock(dom, ws);
+      const xy = b.getRelativeToSurfaceXY();
+      // 새 블록은 (0,0) 에 박힘 → 원본 + 오프셋 위치로 이동.
+      const cur = newBlock.getRelativeToSurfaceXY();
+      newBlock.moveBy((xy.x - cur.x) + 20, (xy.y - cur.y) + 20);
+      return newBlock.id;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Phase E — top-level 블록 순서 위로 (Y 좌표 swap). */
+  moveBlockUp(key: WorkspaceKey, blockId: string): boolean {
+    const ws = this.workspaces[key];
+    const b = ws?.getBlockById(blockId);
+    if (!ws || !b) return false;
+    // statement chain 안 블록은 미지원.
+    if ((b as { getParent?: () => unknown }).getParent?.()) return false;
+    const tops = ws.getTopBlocks(true); // sorted by Y
+    const idx = tops.indexOf(b);
+    if (idx <= 0) return false;
+    const prev = tops[idx - 1];
+    const xyB = b.getRelativeToSurfaceXY();
+    const xyP = prev.getRelativeToSurfaceXY();
+    b.moveBy(xyP.x - xyB.x, xyP.y - xyB.y);
+    prev.moveBy(xyB.x - xyP.x, xyB.y - xyP.y);
+    return true;
+  }
+
+  /** Phase E — top-level 블록 순서 아래로. */
+  moveBlockDown(key: WorkspaceKey, blockId: string): boolean {
+    const ws = this.workspaces[key];
+    const b = ws?.getBlockById(blockId);
+    if (!ws || !b) return false;
+    if ((b as { getParent?: () => unknown }).getParent?.()) return false;
+    const tops = ws.getTopBlocks(true);
+    const idx = tops.indexOf(b);
+    if (idx < 0 || idx >= tops.length - 1) return false;
+    const next = tops[idx + 1];
+    const xyB = b.getRelativeToSurfaceXY();
+    const xyN = next.getRelativeToSurfaceXY();
+    b.moveBy(xyN.x - xyB.x, xyN.y - xyB.y);
+    next.moveBy(xyB.x - xyN.x, xyB.y - xyN.y);
+    return true;
   }
 
   onChange(key: WorkspaceKey, listener: () => void): () => void {

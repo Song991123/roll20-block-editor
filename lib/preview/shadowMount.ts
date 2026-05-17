@@ -95,6 +95,15 @@ export interface ShadowMountOptions {
    * 텍스트 변경이 없으면 호출 안 됨 (orig === newText).
    */
   onEditText?: (blockId: string, newText: string) => void;
+  /**
+   * Phase E — Shadow 안 element 우클릭 (contextmenu).
+   * 가장 가까운 `[data-r20-block-id]` ancestor 찾고 그 id 와 (clientX, clientY)
+   * 를 호출자에 전달. preventDefault() 가 호출되어 native 메뉴는 안 뜸.
+   * form element (input/textarea/select/button/option/label) 위 우클릭도
+   * 동일하게 Shadow 메뉴를 띄움 — 사용자 멘탈 모델 (블록 단위 조작) 유지.
+   * 호출자는 ShadowContextMenu 컴포넌트를 (x, y) 에 띄우는 책임.
+   */
+  onContextMenu?: (blockId: string, x: number, y: number) => void;
 }
 
 export interface ShadowMountResult {
@@ -419,6 +428,29 @@ ${opts.css}
   };
   shadow.addEventListener('dblclick', onDblClick);
 
+  // Phase E — contextmenu (우클릭) 위임.
+  // 1) target 의 가장 가까운 [data-r20-block-id] ancestor 찾기. 없으면 native 메뉴.
+  // 2) 있으면 preventDefault → native 메뉴 차단 → 호출자에 (blockId, x, y) 전달.
+  //    호출자가 ShadowContextMenu 컴포넌트를 (x, y) 에 띄움.
+  // 3) form element 위에서도 동일 — input 위 우클릭이 native [잘라내기 / 복사 / 붙여넣기]
+  //    가 아니라 [속성/삭제/...] 메뉴로 통일 (사용자 멘탈 모델 = 블록).
+  // 4) editingState 활성 (contentEditable) 중이면 그대로 통과 — native 메뉴 우선
+  //    (텍스트 편집 중엔 잘라내기/복사가 필요).
+  const onContextMenu = (ev: Event) => {
+    const e = ev as MouseEvent;
+    if (editingState) return; // contentEditable 중엔 native 메뉴 보존.
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    const el = target.closest('[data-r20-block-id]') as HTMLElement | null;
+    if (!el) return;
+    const blockId = el.dataset.r20BlockId;
+    if (!blockId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    opts.onContextMenu?.(blockId, e.clientX, e.clientY);
+  };
+  shadow.addEventListener('contextmenu', onContextMenu);
+
   const setSelected = (blockId: string | null) => {
     if (!shadow) return;
     // clear all
@@ -456,6 +488,7 @@ ${opts.css}
         shadow.removeEventListener('click', onClick);
         shadow.removeEventListener('pointerdown', onPointerDown);
         shadow.removeEventListener('dblclick', onDblClick);
+        shadow.removeEventListener('contextmenu', onContextMenu);
         shadow.innerHTML = '';
       }
       host.removeEventListener('pointermove', onPointerMove);

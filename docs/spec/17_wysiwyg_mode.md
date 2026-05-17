@@ -417,3 +417,70 @@ Shadow DOM 안 element 를 pointer drag → `LEFT_PX/TOP_PX` field 가 있는 �
 - 부분 selection 후 dblclick → 첫 dblclick 만 잡힘 (editingState 검사). 두 번째 dblclick 으로 다른 element 편집 → blur 가 먼저 발화하므로 자연스럽게 swap.
 - emit 디바운스 500ms — blur → 새 텍스트 박힘까지 사용자 체감 0.5초. drag 와 동일 정책.
 - Phase E (context menu — 우클릭 메뉴) 진행 가능 (본 Phase D 가 차단 없음).
+
+### Phase E-shadow — Shadow DOM 우클릭 컨텍스트 메뉴 (이 commit)
+
+> Phase B / C / D 연장선 — contextmenu 이벤트 → ShadowContextMenu 컴포넌트 → adapter 액션.
+
+#### 변경 요약 (한 줄)
+
+미리보기 안 element 우클릭 → 5개 항목 메뉴 (속성/복사/위로 이동/아래로 이동/삭제) → adapter API 디스패치 → 워크스페이스 변경 → emit → preview 재mount.
+
+#### 흐름
+
+1. `mountSheetShadow` 가 새 콜백 `onContextMenu(blockId, x, y)` 노출. ShadowRoot 의 `contextmenu` 이벤트 listener 가 가장 가까운 `[data-r20-block-id]` ancestor 찾고, 매치 시 `preventDefault()` + `stopPropagation()` + `opts.onContextMenu?.(blockId, e.clientX, e.clientY)`.
+2. `editingState != null` (Phase D contentEditable 활성) 면 listener 가 즉시 return — native 메뉴 보존 (텍스트 편집 중 잘라내기/복사 필요).
+3. form element (input/textarea/select/button/option/label) 위 우클릭도 Shadow 메뉴를 띄움 — 사용자 멘탈 모델 (블록 단위 조작) 통일.
+4. PreviewMain 에 `contextMenuState: { blockId, x, y } | null` state. 콜백이 setter 호출 → React 가 `ShadowContextMenu` 를 (x, y) 의 `position: fixed` 으로 렌더.
+5. ShadowContextMenu 는 외부 mousedown (capture phase) 또는 Escape 키 → `onClose` → state null.
+6. 항목 클릭 → `onAction(action)` → PreviewMain `dispatchContextAction(action, blockId)` → adapter API.
+
+#### 5개 항목
+
+| 항목 | 키 | adapter API | 동작 / 실패 |
+|---|---|---|---|
+| 속성 | `inspect` | `setSelectedBlockId(id, 'inspector')` + sidebar right 펼침 + `setSidebarRightTab('attrs')` | 항상 OK |
+| 복사 | `duplicate` | `adapter.duplicateBlock(ws, id)` — `Blockly.Xml.blockToDom` → `domToBlock`, +20px 오프셋 | 실패 시 toast `복사 지원 예정 (이 블록은 복제 불가)` |
+| 위로 이동 | `moveUp` | `adapter.moveBlockUp(ws, id)` — top-level Y 좌표 swap | statement chain / 이미 최상단 → false → toast `위로 이동 지원 예정` |
+| 아래로 이동 | `moveDown` | `adapter.moveBlockDown(ws, id)` — 대칭 | 동일 |
+| 삭제 | `delete` | `adapter.deleteBlock(ws, id)` — `block.dispose(true)` (healStack) | 실패 시 toast `삭제 실패` |
+
+#### adapter 추가 API (4개)
+
+`lib/blockly/adapter.ts`:
+
+- `deleteBlock(key, blockId): boolean` — `getBlockById` → `dispose(true)`. block 없으면 false. healStack=true 로 prev/next 연결 보존.
+- `duplicateBlock(key, blockId): string | null` — `Blockly.Xml.blockToDom(b, true)` → `Blockly.Xml.domToBlock(dom, ws)`. 새 블록을 원본 +20px 위치로 이동. 반환 = 새 block id 또는 null.
+- `moveBlockUp(key, blockId): boolean` — top-level only. `getParent()` 있으면 false (statement chain 미지원). `getTopBlocks(true)` 의 idx 가 0 이면 false. 그 외엔 prev 와 Y 좌표 swap (X 도 함께 swap).
+- `moveBlockDown(key, blockId): boolean` — 대칭. idx 가 마지막이면 false.
+
+#### 워크스페이스 키 탐색
+
+PreviewMain `dispatchContextAction` 은 active 워크스페이스 우선, 없으면 html → css → i18n 순으로 `adapter.getBlock(ws, blockId)` 가 매치되는 첫 워크스페이스 선택. drag/edit Phase 와 동일 전략 — block 의 워크스페이스 추적 metadata 없이도 안전.
+
+#### Phase B/C/D 와의 격리
+
+- click delegation (Phase B) — `contextmenu` 는 `click` 와 분리된 이벤트 → 우클릭이 selection 을 갱신하지 않음 (사용자가 우클릭으로 다른 블록의 메뉴를 띄워도 selection 은 유지).
+- pointer drag (Phase C) — `button !== 0` 으로 우클릭은 drag 시작 안 함. 기존 가드와 자연스럽게 분리.
+- inline edit (Phase D) — editingState 활성 중엔 contextmenu listener 즉시 return → native 메뉴 보존.
+
+#### 시각
+
+- 메뉴 width 160px, 항목 padding 6px/12px, hover bg-accent.
+- '삭제' 항목 = `text-destructive` (빨강) — destructive action 시각 표시.
+- viewport 경계 보정 — clamp 로 화면 밖 안 나가게 (`window.innerWidth - W - 4` / `window.innerHeight - H - 4`).
+- 메뉴 자체 우클릭은 `e.preventDefault()` 로 native 메뉴 중첩 방지.
+
+#### 검증
+
+- typecheck/lint: pending (다음 step).
+- live e2e: 작은 sample import → 미리보기 안 element 우클릭 → 메뉴 표시 → "삭제" 클릭 → 워크스페이스 + 미리보기에서 사라짐 확인 (screenshot 첨부).
+
+#### 알려진 caveat / 후속
+
+- statement chain (next/prev connection) 안 블록의 위/아래 이동 미구현 — Blockly connection 재배치 비용 + edge case 가 많아 별도 Phase 후보.
+- 메뉴 안 키보드 navigation (Tab/Arrow) 미지원 — Radix DropdownMenu 로 마이그레이션 시 자동 획득.
+- 우클릭 → 메뉴 → "속성" 클릭 시 selection origin = 'inspector' — 'preview' 가 아닌 'inspector' 로 둠 (사용자 의도가 Inspector 열기). 양방향 sync 트리거 차이 없음.
+- emit 디바운스 500ms — 삭제/복사 → 새 미리보기까지 0.5초 체감. Phase B/C/D 와 동일 정책.
+- Phase F (양방향 sync 강화) 진행 가능 (본 Phase E 가 차단 없음).
+
