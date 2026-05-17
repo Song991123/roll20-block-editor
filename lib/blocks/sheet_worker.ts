@@ -711,23 +711,90 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
   },
 
   // 25) getTranslationByKey -------------------------------------------------
+  //
+  // Stage 22 §2 — LANG 필드 추가 (optional).
+  //   - LANG 비면 (`''`) `getTranslationByKey('KEY')` emit (현재 언어).
+  //   - LANG 채우면 `getTranslationByLang('LANG', 'KEY')` emit.
+  // 영시영 1부 등 LANG 비어 있는 케이스는 기존 출력 유지.
   {
     type: 'r20_get_translation',
     shape: 'reporter',
     category: SHEET_WORKER,
     label: '번역 가져오기',
-    tooltip: "getTranslationByKey('KEY') — 다국어 키의 현재 언어 텍스트.",
+    tooltip:
+      "getTranslationByKey('KEY') — 다국어 키의 현재 언어 텍스트. LANG 채우면 getTranslationByLang(LANG, KEY).",
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('번역')
-        .appendField(new Blockly.FieldTextInput('key'), 'KEY');
+        .appendField(new Blockly.FieldTextInput('key'), 'KEY')
+        .appendField('언어')
+        .appendField(new Blockly.FieldTextInput(''), 'LANG');
       b.setOutput(true, T_STR);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
       const key = String(b.getFieldValue('KEY') ?? '').trim() || 'key';
+      const lang = String(b.getFieldValue('LANG') ?? '').trim();
+      if (lang) {
+        return [
+          `getTranslationByLang('${escapeJSString(lang)}', '${escapeJSString(key)}')`,
+          ORDER.ATOMIC,
+        ];
+      }
       return [`getTranslationByKey('${escapeJSString(key)}')`, ORDER.ATOMIC];
     },
+  },
+
+  // 26) getCompendiumPage / getCompendiumEntries ----------------------------
+  //
+  // Stage 22 §1 — Roll20 compendium 조회 (PF2/DW/Mothership/SW 등 시스템).
+  //   - SUBPATH 비면 `getCompendiumPage('PATH')` (page 전체 객체).
+  //   - SUBPATH 채우면 `getCompendiumEntries('PATH', 'SUBPATH')` (특정 필드).
+  // PATH / SUBPATH 모두 사용자 입력 (시스템 specific 토큰 0 — generic emit).
+  {
+    type: 'r20_get_compendium',
+    shape: 'reporter',
+    category: SHEET_WORKER,
+    label: '컴펜디움 가져오기',
+    tooltip:
+      "getCompendiumPage('PATH') — compendium 페이지 객체. SUBPATH 채우면 getCompendiumEntries('PATH','SUBPATH').",
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('컴펜디움')
+        .appendField(new Blockly.FieldTextInput('Spells/Fireball'), 'PATH')
+        .appendField('하위')
+        .appendField(new Blockly.FieldTextInput(''), 'SUBPATH');
+      b.setOutput(true, null);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const path = String(b.getFieldValue('PATH') ?? '').trim();
+      const subpath = String(b.getFieldValue('SUBPATH') ?? '').trim();
+      if (!path) return [`getCompendiumPage('')`, ORDER.ATOMIC];
+      if (subpath) {
+        return [
+          `getCompendiumEntries('${escapeJSString(path)}', '${escapeJSString(subpath)}')`,
+          ORDER.ATOMIC,
+        ];
+      }
+      return [`getCompendiumPage('${escapeJSString(path)}')`, ORDER.ATOMIC];
+    },
+    inspectorSchema: [
+      {
+        name: 'PATH',
+        label: '컴펜디움 경로',
+        kind: 'text',
+        placeholder: 'Spells/Fireball',
+        description: 'compendium 페이지 경로 (시스템 별 — PF2/DW/Mothership/SW 등).',
+      },
+      {
+        name: 'SUBPATH',
+        label: '하위 필드 (옵션)',
+        kind: 'text',
+        placeholder: 'description',
+        description: '비면 page 객체 반환. 채우면 해당 필드만 entries 반환.',
+      },
+    ],
   },
 ];
 
