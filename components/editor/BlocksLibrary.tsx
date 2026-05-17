@@ -220,7 +220,7 @@ function BlockTile({ def }: { def: BlockDef }) {
           }
         }
       },
-      { rootMargin: '120px' }, // 부드러운 스크롤을 위해 viewport 위/아래 120px 까지 미리 mount.
+      { rootMargin: '500px' }, // Phase 5: hidden-tab 환경 + 빠른 스크롤 시 BlockTile 시각 깨짐 줄이려 120→500 (5x). pre-mount cost 는 isOnScreen gate + Blockly inject 자체의 lazy 로 흡수.
     );
     observer.observe(host);
     return () => observer.disconnect();
