@@ -15,9 +15,16 @@ export type FontFamily = 'pretendard' | 'apple_sd' | 'noto';
 export type BlocklyRenderer = 'zelos' | 'geras' | 'thrasos';
 
 interface SettingsStore {
-  // 저장
+  // 저장 (autosave) — spec 22 §3.
+  /**
+   * Autosave master switch. default ON (spec 22 §2 — 페르소나 #1 우려 와
+   * "복구 시점에 묻는다" 정책으로 해소: 저장은 백그라운드, 복구는 사용자 동의).
+   */
   autosave: boolean;
+  /** Autosave debounce 간격 (초). UI 표시용. ms 단위는 `autosaveDebounceMs`. */
   autosaveInterval: number;
+  /** Autosave debounce 간격 (ms) — workspaceStore subscribe 가 사용. */
+  autosaveDebounceMs: number;
   backupSlots: number;
 
   // 외관
@@ -47,8 +54,10 @@ interface SettingsStore {
 }
 
 const DEFAULTS: Omit<SettingsStore, 'set' | 'reset'> = {
-  autosave: false,           // 페르소나 #1 우려 — default OFF
+  // spec 22 §2 — 저장은 ON, 복구는 묻는다. 페르소나 #1 우려 해소.
+  autosave: true,
   autosaveInterval: 5,
+  autosaveDebounceMs: 5000,
   backupSlots: 5,
   theme: 'dark',
   language: 'ko',
