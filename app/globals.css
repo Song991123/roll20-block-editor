@@ -220,6 +220,14 @@ body {
   z-index: 10;
 }
 
+/* type='search' 의 native cancel 버튼 숨김 — 우리 커스텀 X 와 중복 회피. */
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 /* BlocksLibrary 카테고리 collapse — grid-template-rows 0fr↔1fr 외에 opacity 도 함께 트랜지션 (200ms). */
 .blocks-cat-body {
   transition-property: grid-template-rows, opacity;
