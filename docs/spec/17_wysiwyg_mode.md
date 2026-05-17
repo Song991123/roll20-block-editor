@@ -484,3 +484,73 @@ PreviewMain `dispatchContextAction` 은 active 워크스페이스 우선, 없으
 - emit 디바운스 500ms — 삭제/복사 → 새 미리보기까지 0.5초 체감. Phase B/C/D 와 동일 정책.
 - Phase F (양방향 sync 강화) 진행 가능 (본 Phase E 가 차단 없음).
 
+
+### Phase B coverage 확대 — 모든 emit element 에 data-r20-block-id (이 commit)
+
+> Phase B (click delegation) / C (drag) / D (inline edit) / E (context menu) 의 모든 미리보기 인터랙션이 의존하는 `[data-r20-block-id]` 탐색 — top-level 만이 아니라 emit 그래프의 모든 element 에 박혀야 의미 있게 동작. 이 commit 이 그 coverage 를 채운다.
+
+#### 변경 요약 (한 줄)
+
+`EmitEngine.runGenerator` 가 element-emit shape (stack/c/cap/hat/e) 인 모든 block 의 첫 opening tag 에 `data-r20-block-id` 를 주입 — top-level / nested / statement chain 안 / value slot 깊이 무관.
+
+#### 배경 (라이브 verify 발견)
+
+Phase C+D 라이브 verify 세션 (`local_86b826b4`) — D&D 5e 시트 import (509 top-level 블록) 후 미리보기 안 `[data-r20-block-id]` element 가 **단 2개** 로 측정됨. 즉 h1 / label / 대부분 input / 컨테이너 안 자식 element 가 모두 미박힘 → 클릭해도 가장 가까운 ancestor 가 외곽 root 1개로 walk → 모든 클릭이 같은 (또는 없는) block 으로 매칭. WYSIWYG 의 select / drag / dblclick / contextmenu 가 사실상 작동 X.
+
+#### 원인
+
+이전 정책 (`emit.ts`):
+
+- `runGenerator` 는 generator 의 결과 (raw HTML 문자열) 를 그대로 반환.
+- `wrapTopLevel` 만 `injectBlockIdAttr` 호출 → **top-level 블록의 outer element 한 개** 에만 id 주입.
+- `statementToCode` / `valueToCode` 가 재귀 호출하는 child 의 emit 은 raw 그대로 join → child element 에는 id 없음.
+
+플랫 시트 (가로 줄 + 박스 안에 h1, label, input 다수 — 6K+ top-level) 의 경우 element 의 대다수가 자식 → id coverage 가 한 자릿수 ‰ 수준.
+
+#### 수정
+
+`runGenerator` 에 id 주입 단계 추가:
+
+```ts
+const raw = def.generator(block, this);
+const normalized = normalizeGen(raw);
+const shape: BlockShape = def.shape ?? 'stack';
+if (
+  normalized.code &&
+  shape !== 'reporter' &&
+  shape !== 'boolean'
+) {
+  const injected = injectBlockIdAttr(normalized.code, block.id);
+  if (injected !== null) {
+    return { code: injected, order: normalized.order, def };
+  }
+}
+return { ...normalized, def };
+```
+
+- 모든 element-shape (stack / c / cap / hat / e) 의 emit 결과의 첫 opening tag 에 자기 block id 박힘.
+- reporter / boolean 은 값 식 (`@{strength}` 등) — element 아님, attribute 안에 들어가면 깨지므로 **건드리지 않음**. (top-level 일 때는 `wrapTopLevel` 가 별도로 `<input>` wrapper 만들어 id 박음 — 기존 정책 유지.)
+- `wrapTopLevel` 의 `injectBlockIdAttr` 호출은 이제 idempotent no-op (이미 박힌 id 위에 다시 작업 시 unchanged 반환).
+- CSS / i18n 워크스페이스 → generator 가 element 가 아닌 텍스트/JSON 식 emit → `injectBlockIdAttr` 가 null 반환 → 통과 (영향 없음).
+
+#### 출력 contract 영향
+
+emit HTML 문자열에 `data-r20-block-id="<blockId>"` 가 추가되는 element 수가 늘어남. Roll20 가 이 attribute 를 무시하므로 시트 호환성 영향 0 (이미 wrapper 한 개에 박혔던 정책의 자연 확장).
+
+#### 회귀 영향
+
+- 영시영 1부 매칭: emit 변경은 import (matchHtml / matchCss / i18n) 와 격리. 매칭 6134/6134 유지.
+- 기존 import 라운드트립 테스트 (basic / i18n_text / i18n_placeholder / inline_bold / conditional_view) — emit 의존 X (import 측 helper 단위 테스트).
+- export 묶음 / sanitize 단위 — sanitize 가 `data-r20-block-id` 를 strip 하므로 export ZIP 안 sheet.html 은 변동 X.
+
+#### Phase D 잔재 충돌 회피
+
+- Phase D 의 `shadowMount.ts` 의 `closest('[data-r20-block-id]')` 탐색이 그대로 동작 — element 자체에 attribute 있으니 walk 즉시 매치.
+- Phase D 의 dblclick → contentEditable 텍스트 노드 매핑 — 텍스트 노드 부모가 attribute 가진 block element 와 일치 → 더 안전.
+- Phase E 의 contextmenu listener — 동일하게 closest 탐색, coverage 늘어남.
+
+#### 알려진 caveat / 후속
+
+- nested element 가 둘 이상인 generator (예: `<label><input>...</label>`) — 첫 element (label) 에만 id 박힘. 내부 input 의 단독 select 는 label 의 click handler 가 처리. (각 input/label 을 별도 block 으로 분해하려면 import 그래프 변경 필요 — 별도 phase.)
+- `r20_select` 의 generator 가 emit 하는 `<select>...<option>...</option></select>` — `<select>` 에 select block id, `<option>` 에는 별도 `r20_select_option` block 의 id (statement chain 으로 들어옴) → 자연 분리.
+- `injectBlockIdAttr` 가 null 반환하는 케이스 (pure 텍스트, 주석만, void prefix) — 변동 없이 raw 통과 → 기존 fallback (`wrapTopLevel` 의 `<div>` 래퍼) 가 top-level 에만 보호망 역할.

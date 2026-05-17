@@ -115,6 +115,29 @@ class EmitEngine implements GeneratorContext {
     try {
       const raw = def.generator(block, this);
       const normalized = normalizeGen(raw);
+      // Phase B coverage 확대 — element 를 emit 하는 모든 block (stack / c /
+      //   cap / hat / e) 의 첫 opening tag 에 `data-r20-block-id` 주입.
+      //   top-level 만이 아니라 statementToCode / valueToCode 경유 nested
+      //   block 도 동일하게 박혀야 미리보기 안 모든 h1 / label / input /
+      //   button 등이 click→select / hover / contextmenu 의 target 으로
+      //   잡힌다. 이전 정책 (wrapTopLevel 에서만 주입) 은 D&D 5e 같은 flat
+      //   top-level 시트에서 element 의 0.3% 만 id 부여 → Phase B WYSIWYG
+      //   사실상 작동 X.
+      //
+      //   reporter / boolean 은 값 식 (`@{strength}` 등) — element 아님 →
+      //   주입하면 attribute 안 깨짐. 건드리지 않는다 (top-level wrapper
+      //   `<input>` 은 wrapTopLevel 이 별도 처리).
+      const shape: BlockShape = def.shape ?? 'stack';
+      if (
+        normalized.code &&
+        shape !== 'reporter' &&
+        shape !== 'boolean'
+      ) {
+        const injected = injectBlockIdAttr(normalized.code, block.id);
+        if (injected !== null) {
+          return { code: injected, order: normalized.order, def };
+        }
+      }
       return { ...normalized, def };
     } catch (err) {
       this.warn(
