@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import {
   useCallback,
   useEffect,
@@ -109,13 +110,19 @@ export default function BlocksLibrary() {
                 const isOpen = expanded.includes(catId);
                 const blocks = blocksByCategory(catId);
                 return (
-                  <div key={catId}>
+                  <div key={catId} className="relative">
                     <button
                       type="button"
                       onClick={() => toggleCat(catId)}
                       aria-expanded={isOpen}
                       aria-controls={`block-category-${catId}`}
-                      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-foreground transition-colors hover:bg-[var(--bg-hover)]"
+                      className="blocks-cat-header sticky top-0 z-[5] flex w-full items-center gap-2 rounded-md px-2 py-1.5 pl-3 text-left text-xs font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-[color-mix(in_srgb,var(--bg-hover)_70%,transparent)]"
+                      style={{
+                        borderLeft: `4px solid ${meta.swatchVar}`,
+                        background: isOpen
+                          ? `color-mix(in srgb, ${meta.swatchVar} 14%, var(--bg-elevated))`
+                          : `color-mix(in srgb, ${meta.swatchVar} 6%, var(--bg-elevated))`,
+                      }}
                     >
                       {isOpen ? (
                         <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -123,7 +130,7 @@ export default function BlocksLibrary() {
                         <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                       )}
                       <span
-                        className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-inset ring-white/5"
+                        className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-inset ring-white/10 shadow-[0_0_0_2px_rgba(0,0,0,0.15)]"
                         style={{ backgroundColor: meta.swatchVar }}
                         aria-hidden
                       />
@@ -292,9 +299,17 @@ function BlockTile({ def }: { def: BlockDef }) {
   return (
     <div
       className={cn(
-        'group relative rounded-md border border-transparent bg-[var(--bg-elevated)]/40 px-1 py-0 transition-colors',
-        'hover:border-border hover:bg-[var(--bg-hover)]',
+        'group relative rounded-md border border-transparent bg-[var(--bg-elevated)]/40 pl-2 pr-1 py-0',
+        'transition-all duration-150 ease-out',
+        'hover:bg-[color-mix(in_srgb,var(--swatch)_10%,var(--bg-hover))]',
+        'hover:ring-1 hover:ring-inset hover:ring-[color-mix(in_srgb,var(--swatch)_35%,transparent)]',
+        'active:translate-y-px active:bg-[color-mix(in_srgb,var(--swatch)_18%,var(--bg-hover))]',
+        'focus-within:ring-2 focus-within:ring-inset focus-within:ring-[var(--swatch)]/60',
       )}
+      style={{
+        boxShadow: `inset 3px 0 0 ${meta.swatchVar}`,
+        ['--swatch' as string]: meta.swatchVar,
+      } as React.CSSProperties}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-block-type', def.type);
