@@ -1,7 +1,7 @@
 /**
  * HIGH 우선순위 신규 블록 5종 단위 테스트 (Stage 22).
  *
- * Anchor: docs/spec/22_high_priority_blocks.md.
+ * Anchor: docs/spec/23_high_priority_blocks.md.
  *
  * 본 테스트는 Blockly 의 일부 API (FieldDropdown / FieldTextInput / FieldNumber
  * / Block) 만 mock 해서 block 정의 + generator 동작을 검증한다.
