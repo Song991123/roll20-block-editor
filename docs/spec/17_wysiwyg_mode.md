@@ -307,3 +307,13 @@ interface WorkspaceState {
 - undo/redo 100 step 본 구현.
 - 양방향 sync full (blocks ↔ canvas).
 - Phase C 위젯 (반복 영역, 탭, 등).
+
+### Phase B-shadow — Shadow DOM 양방향 sync (이 commit)
+
+> 별도 spec `21_wysiwyg_unified.md` 가 task 에 언급됐으나 repo 에 미존재 — 본 §12 에 통합.
+
+- **shadow click → store**: `mountSheetShadow({ onSelect })` → ShadowRoot click delegation 이 `closest('[data-r20-block-id]')` 로 ancestor 식별 → `workspaceStore.setSelectedBlockId(id, 'preview')`.
+- **store → shadow outline**: mount 결과의 `setSelected(blockId | null)` API. 외부에서 selectedBlockId 변경 시 PreviewMain effect 가 호출 → 모든 `.r20-selected` 제거 후 새 element 부착. CSS = `outline: 2px solid #f60; outline-offset: 2px` (Shadow inline `<style>`).
+- **store → 좌측 트리**: `WorkspaceTree` 의 row 가 `selectedBlockId` 비교 → `bg-orange-500/20 + ring-orange-500/60` 으로 시각 페어링 (Shadow outline 색과 동일 톤).
+- 무한 루프 방지: origin 라벨 (`'preview' | 'tree'`) 로 sync src 구분.
+- 검증: live e2e 는 sandbox env 에서 npm install/dev 실행 가능 여부에 의존 — 코드 path inspection 으로 emit (`data-r20-block-id` 자동 박힘) ↔ shadowMount click delegation ↔ store ↔ effect re-emit 의 4 cycle 모두 연결됨.

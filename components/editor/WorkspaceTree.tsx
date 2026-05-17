@@ -128,10 +128,14 @@ function TreeRow({
     <button
       type="button"
       onClick={onSelect}
+      data-selected={selected || undefined}
+      data-block-id={node.id}
       className={cn(
         'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs transition-colors',
+        // spec 17 §12 Phase B — Shadow 안 outline 색 (#f60) 과 시각적 페어링.
+        // ring 으로 Shadow outline 과 같은 톤 박음 → 좌측 트리만 봐도 동일 행 식별.
         selected
-          ? 'bg-[var(--bg-active)] text-foreground'
+          ? 'bg-orange-500/20 text-foreground ring-1 ring-orange-500/60'
           : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
       )}
       style={{ paddingLeft: `${8 + node.depth * 12}px` }}
