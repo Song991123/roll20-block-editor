@@ -9,7 +9,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Search, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, Sparkles, X } from 'lucide-react';
 import * as Blockly from 'blockly';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -51,6 +51,8 @@ export default function BlocksLibrary() {
   const setAdvShown = useUiStore((s) => s.setBlocksAdvancedShown);
   const showAdvSetting = useSettingsStore((s) => s.showAdvancedCategories);
 
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
   useSyncExternalStore(subscribeBlocksRegistry, getRegistryVersion, () => 0);
 
   const showAdvanced = advShown || showAdvSetting;
@@ -75,12 +77,27 @@ export default function BlocksLibrary() {
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
           <input
+            ref={searchInputRef}
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="블록 검색 — 예: 텍스트, 굴림, 자동합"
-            className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] pl-8 pr-7 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
+          {search.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch('');
+                // focus input 후 → 다음 검색어 즉시 입력 가능
+                requestAnimationFrame(() => searchInputRef.current?.focus());
+              }}
+              aria-label="검색어 지우기"
+              className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
