@@ -44,8 +44,14 @@ export function emitWorkspaceXml(top: MatchedBlock[]): string {
   const buf: string[] = [];
   buf.push(`<xml xmlns="${XML_NS}">`);
   // 각 top-level block 을 별개 `<block>` 으로 — chain 안 함. (loop 으로 평탄.)
+  //
+  // y 좌표는 index × Y_STEP 으로 명시적으로 부여 — 그래야 emit 단계의
+  // ws.getTopBlocks(true) (Y 정렬) 가 import 순서를 그대로 보존.
+  // 미부여 시 Blockly auto-bump 가 순서를 재배치 → 형제 의존 CSS
+  // (`.toggle:checked ~ div.target`) 가 깨짐. 영시영 1부 era toggle 등.
+  const Y_STEP = 40;
   for (let i = 0; i < top.length; i += 1) {
-    const xy = i === 0 ? ` x="20" y="20"` : ''; // 첫 블록만 좌표 — 나머지는 Blockly 자동 배치.
+    const xy = ` x="20" y="${20 + i * Y_STEP}"`;
     buf.push(emitSingleBlock(top[i], xy));
   }
   buf.push('</xml>');
