@@ -188,6 +188,9 @@ export const I18N_BLOCKS: BlockDef[] = [
   },
 
   // 4) i18n placeholder (self-closing input) -------------------------------
+  // NAME / CLASS / TYPE / ACCEPT / MIN / MAX 보존 — Roll20 sheet attr 식별자
+  // (attr_minionhp, sheet-attr_minionhp 등) 가 export 후에도 살아남아야 sandbox
+  // 업로드 시 sheet 동작 안 깨짐. raw 그대로 — prefix 안 깎음 (i18n_button 컨벤션).
   {
     type: 'r20_i18n_placeholder',
     shape: 'stack',
@@ -199,15 +202,44 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('번역 키')
         .appendField(new Blockly.FieldTextInput('key.placeholder'), 'KEY');
       b.appendDummyInput()
-        .appendField('기본 placeholder')
-        .appendField(new Blockly.FieldTextInput('Placeholder'), 'DEFAULT');
+        .appendField('기본 값')
+        .appendField(new Blockly.FieldTextInput(''), 'DEFAULT');
+      b.appendDummyInput()
+        .appendField('이름')
+        .appendField(new Blockly.FieldTextInput(''), 'NAME');
+      b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('타입')
+        .appendField(new Blockly.FieldTextInput('text'), 'TYPE');
+      b.appendDummyInput()
+        .appendField('accept')
+        .appendField(new Blockly.FieldTextInput(''), 'ACCEPT');
+      b.appendDummyInput()
+        .appendField('min')
+        .appendField(new Blockly.FieldTextInput(''), 'MIN');
+      b.appendDummyInput()
+        .appendField('max')
+        .appendField(new Blockly.FieldTextInput(''), 'MAX');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
-      return `<input${attr('data-i18n-placeholder', key)}${attr('placeholder', def)}>`;
+      const name = String(b.getFieldValue('NAME') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const type = String(b.getFieldValue('TYPE') ?? '').trim() || 'text';
+      const accept = String(b.getFieldValue('ACCEPT') ?? '');
+      const min = String(b.getFieldValue('MIN') ?? '');
+      const max = String(b.getFieldValue('MAX') ?? '');
+      // raw class/name — sheet- / attr_ prefix 보존. (i18n_button 컨벤션과 동일.)
+      return (
+        `<input${attr('type', type)}${attr('class', cls)}${attr('name', name)}` +
+        `${attr('data-i18n-placeholder', key)}${attr('value', def)}` +
+        `${attr('accept', accept)}${attr('min', min)}${attr('max', max)}>`
+      );
     },
   },
 
