@@ -71,6 +71,21 @@ export default function BlocksLibrary() {
 
   const searchResults = useMemo(() => (search.trim() ? searchBlocks(search) : []), [search]);
 
+  // 검색 결과를 카테고리별로 그룹화 — CATEGORY_ORDER 순서 유지, 빈 그룹은 생략.
+  // useMemo deps 가 searchResults 면 flat array 새로 만들 때마다 재계산 — 의도된 동작.
+  const searchResultsByCategory = useMemo(() => {
+    if (searchResults.length === 0) return [] as { catId: BlockCategory; blocks: BlockDef[] }[];
+    const map = new Map<BlockCategory, BlockDef[]>();
+    for (const b of searchResults) {
+      const arr = map.get(b.category);
+      if (arr) arr.push(b);
+      else map.set(b.category, [b]);
+    }
+    return CATEGORY_ORDER
+      .filter((id) => map.has(id))
+      .map((id) => ({ catId: id, blocks: map.get(id)! }));
+  }, [searchResults]);
+
   return (
     <div className="flex h-full flex-col">
       <div className="shrink-0 border-b border-border p-3">
@@ -111,10 +126,36 @@ export default function BlocksLibrary() {
               {searchResults.length === 0 ? (
                 <div className="px-2 py-3 text-xs text-muted-foreground">매칭되는 블록이 없어요.</div>
               ) : (
-                <div className="space-y-1">
-                  {searchResults.map((b) => (
-                    <BlockTile key={b.type} def={b} />
-                  ))}
+                <div className="space-y-2">
+                  {searchResultsByCategory.map(({ catId, blocks }) => {
+                    const meta = CATEGORIES[catId];
+                    return (
+                      <div key={catId} className="relative">
+                        {/* 검색 결과 안 카테고리 헤더 — 본 카테고리 헤더와 동일 sticky/색 스킴 + 펼침 토글 없음 (항상 열림). */}
+                        <div
+                          className="blocks-cat-header sticky top-0 z-[5] flex w-full items-center gap-2 rounded-md px-2 py-1.5 pl-3 text-left text-xs font-medium text-foreground backdrop-blur-sm"
+                          style={{
+                            borderLeft: `4px solid ${meta.swatchVar}`,
+                            background: `color-mix(in srgb, ${meta.swatchVar} 12%, var(--bg-elevated))`,
+                          }}
+                        >
+                          <span
+                            className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-inset ring-white/10 shadow-[0_0_0_2px_rgba(0,0,0,0.15)]"
+                            style={{ backgroundColor: meta.swatchVar }}
+                            aria-hidden
+                          />
+                          <span className="flex-1 truncate">{meta.label}</span>
+                          <Badge variant="secondary" className="font-mono">{blocks.length}</Badge>
+                        </div>
+                        <div
+                          className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
+                          style={{ borderColor: `color-mix(in srgb, ${meta.swatchVar} 60%, transparent)` }}
+                        >
+                          {blocks.map((b) => <BlockTile key={b.type} def={b} />)}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
