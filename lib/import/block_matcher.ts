@@ -484,11 +484,13 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     };
   }
   // <b>, <strong> — bold emphasis → r20_inline_bold (시맨틱 보존).
-  if ((tag === 'b' || tag === 'strong') && hasOnlyText(node) && !a['data-i18n']) {
+  // hasOnlyTextOrInline 로 <b><i>x</i></b> / <b>mix <i>i</i></b> 같은 nested inline 도 매칭.
+  // (1부 RAW 419 <b> 중 109 만 매칭하던 버그 fix — nested 시 텍스트만 보존, 의미 손실 명시.)
+  if ((tag === 'b' || tag === 'strong') && hasOnlyTextOrInline(node) && !a['data-i18n']) {
     return {
       blockType: 'r20_inline_bold',
       fields: {
-        TEXT: firstTextContent(node),
+        TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || ''),
       },
       children: {},
@@ -496,22 +498,23 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   }
   // <em>, <i> — italic emphasis → r20_inline_italic.
   // <i> 가 sheet-icon-* 마크업이면 위쪽 icon branch 가 먼저 잡고 여기 안 옴.
-  if ((tag === 'em' || tag === 'i') && hasOnlyText(node) && !a['data-i18n']) {
+  // hasOnlyTextOrInline 로 <em><b>x</b></em> 같은 nested inline 도 매칭.
+  if ((tag === 'em' || tag === 'i') && hasOnlyTextOrInline(node) && !a['data-i18n']) {
     return {
       blockType: 'r20_inline_italic',
       fields: {
-        TEXT: firstTextContent(node),
+        TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || ''),
       },
       children: {},
     };
   }
-  // <small>, <u> — text-only inline emphasis (legacy) → static_text. (별도 블록 없음)
-  if (['small','u'].includes(tag) && hasOnlyText(node) && !a['data-i18n']) {
+  // <small>, <u> — text-only (또는 nested-inline-only) inline emphasis (legacy) → static_text.
+  if (['small','u'].includes(tag) && hasOnlyTextOrInline(node) && !a['data-i18n']) {
     return {
       blockType: 'r20_static_text',
       fields: {
-        TEXT: firstTextContent(node),
+        TEXT: allTextContent(node),
         CLASS: (stripSheetPrefix(a.class || '') + ' ' + tag).trim(),
       },
       children: {},
@@ -536,21 +539,21 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       children: {},
     };
   }
-  // 단순 텍스트 <span>
-  if (tag === 'span' && hasOnlyText(node)) {
+  // 단순 텍스트 <span> — nested inline 허용 (동일 fix).
+  if (tag === 'span' && hasOnlyTextOrInline(node)) {
     return {
       blockType: 'r20_static_text',
       fields: {
-        TEXT: firstTextContent(node),
+        TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || ''),
       },
       children: {},
     };
   }
-  if (tag === 'label' && hasOnlyText(node)) {
+  if (tag === 'label' && hasOnlyTextOrInline(node)) {
     return {
       blockType: 'r20_label',
-      fields: { TEXT: firstTextContent(node) },
+      fields: { TEXT: allTextContent(node) },
       children: {},
     };
   }
@@ -687,6 +690,33 @@ function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
 
 function hasOnlyText(node: DomNode): boolean {
   return node.children.every((c) => c.type === 'text' || c.type === 'comment');
+}
+
+/**
+ * text/comment 또는 inline emphasis element (재귀) 만 자식으로 가지는지.
+ *
+ * <b><i>x</i></b> / <b>mix <i>i</i> text</b> 같은 중첩 inline 케이스를
+ * r20_inline_bold / r20_inline_italic / r20_static_text / r20_label 로 매칭하기
+ * 위함. 의미적으로 nested element 구조는 잃지만 (TEXT 한 줄로 합쳐짐) 텍스트는
+ * 보존. <a> 같은 non-emphasis inline 은 제외 (의미 손실 큼 → raw_html 로 fallback).
+ *
+ * 1부 검증: RAW 419 <b> 중 109 만 매칭하던 hasOnlyText 의 buggy 제약 fix.
+ */
+const INLINE_TEXT_TAGS = new Set([
+  'b', 'strong', 'em', 'small', 'u', 'i', 'br', 'span', 'sub', 'sup',
+]);
+
+function hasOnlyTextOrInline(node: DomNode): boolean {
+  return node.children.every((c) => {
+    if (c.type === 'text' || c.type === 'comment') return true;
+    if (c.type !== 'element' || !c.tag) return false;
+    if (!INLINE_TEXT_TAGS.has(c.tag)) return false;
+    // <i class="sheet-icon-*"> 같은 아이콘은 흡수 X (의미 손실 큼).
+    if (c.tag === 'i' && /(?:^|\s)sheet-icon-/.test((c.attrs?.class) || '')) return false;
+    // data-i18n 가진 자식은 별도 i18n 블록이어야 — 흡수 X.
+    if (c.attrs && (c.attrs['data-i18n'] || c.attrs['data-i18n-html'])) return false;
+    return hasOnlyTextOrInline(c);
+  });
 }
 
 /** `attr_foo` → `foo`. 영시영 / Roll20 표준 prefix. */
