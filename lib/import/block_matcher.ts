@@ -346,7 +346,7 @@ function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
 
   // data-i18n="KEY" 가 있으면 i18n 우선.
   if (a['data-i18n'] && ['span','div','label','strong','b','em','small','p','td','th'].includes(tag)) {
-    const text = firstTextContent(node);
+    const text = allTextContent(node).trim();
     return {
       blockType: 'r20_i18n_text',
       fields: { KEY: a['data-i18n'], DEFAULT: text, CLASS: stripSheetPrefix(a.class || '') },
