@@ -346,11 +346,23 @@ function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   const a = node.attrs ?? {};
 
   // data-i18n="KEY" 가 있으면 i18n 우선.
+  //
+  // TAG 보존 (table 평탄화 fix): r20_i18n_text 가 항상 <span> 으로 emit 되면
+  // <td data-i18n="k">label</td> 가 emit 시 <span data-i18n="k">label</span> 로
+  // 바뀌어 <tr><span>...</span><td>...</td></tr> 가 invalid HTML 이 되고, 재
+  // import 시 브라우저 파서가 span 을 hoist 해 table 구조가 평탄화된다.
+  // 해결: 매처가 TAG 필드에 원본 태그를 박고 emit 가 그 태그로 출력. div/label/
+  // strong/b/em/small/p 도 동일하게 보존되어 round-trip byte-identical 에 기여.
   if (a['data-i18n'] && ['span','div','label','strong','b','em','small','p','td','th'].includes(tag)) {
     const text = allTextContent(node).trim();
     return {
       blockType: 'r20_i18n_text',
-      fields: { KEY: a['data-i18n'], DEFAULT: text, CLASS: stripSheetPrefix(a.class || '') },
+      fields: {
+        KEY: a['data-i18n'],
+        DEFAULT: text,
+        CLASS: stripSheetPrefix(a.class || ''),
+        TAG: tag,
+      },
       children: {},
     };
   }
@@ -601,15 +613,21 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       // matcher 가 totalCount 카운트는 직접 안 함 — 매칭 자체로 1 으로 침.
       return switchMatch;
     }
-    // row / col / colrow / section / toggle / grid 매칭
-    if (/\bsheet-row\b/.test(cls)) {
+    // row / col / colrow / section / toggle / grid 매칭.
+    //
+    // multi-class fix: <div class="sheet-row sheet-header"> 같이 인식 class 외
+    // 추가 토큰이 있으면 r20_row 로 단축하지 않고 r20_div 로 떨어뜨림.
+    // r20_row 의 generator 는 `class="sheet-row"` 만 emit → 추가 class 손실.
+    // r20_div 의 generator (sheetUserClassAttr) 는 모든 토큰을 보존.
+    const tokens = cls.split(/\s+/).filter(Boolean);
+    if (/\bsheet-row\b/.test(cls) && tokens.length === 1 && tokens[0] === 'sheet-row') {
       return {
         blockType: 'r20_row',
         fields: {},
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
-    if (/\bsheet-col\b/.test(cls)) {
+    if (/\bsheet-col\b/.test(cls) && tokens.length === 1 && tokens[0] === 'sheet-col') {
       return {
         blockType: 'r20_col',
         fields: {},
@@ -617,7 +635,12 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       };
     }
     const colrowN = /\bsheet-colrow-(\d+)\b/.exec(cls);
-    if (colrowN) {
+    if (
+      colrowN &&
+      tokens.length === 2 &&
+      tokens.includes('sheet-colrow') &&
+      tokens.includes(`sheet-colrow-${colrowN[1]}`)
+    ) {
       return {
         blockType: 'r20_colrow_n',
         fields: { N: colrowN[1] },
@@ -640,14 +663,22 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
-    if (/\bsheet-repeating-row\b/.test(cls)) {
+    if (
+      /\bsheet-repeating-row\b/.test(cls) &&
+      tokens.length === 1 &&
+      tokens[0] === 'sheet-repeating-row'
+    ) {
       return {
         blockType: 'r20_repeating_row',
         fields: {},
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
-    if (/\bsheet-grid\b/.test(cls)) {
+    if (
+      /\bsheet-grid\b/.test(cls) &&
+      tokens.length === 1 &&
+      tokens[0] === 'sheet-grid'
+    ) {
       const cols = extractGridCols(a.style || '') || '2';
       return {
         blockType: 'r20_grid',

@@ -52,11 +52,21 @@ function attr(name: string, value: string): string {
   return ` ${name}="${escapeAttr(v)}"`;
 }
 
-/** ` class="sheet-${CLASS}"` — CLASS 비면 생략. */
+/** ` class="sheet-foo sheet-bar"` — CLASS 비면 생략. 토큰별로 sheet- prefix 부착.
+ *
+ * multi-class fix: 이전엔 전체 문자열에 한 번만 sheet- 부착 → `class="sheet-row header"`
+ * 같은 잘못된 출력. 매처가 import 시 토큰별로 sheet- 를 떼므로 emit 도 토큰별로
+ * 다시 부착해야 round-trip byte-identical 성립.
+ */
 function sheetClassAttr(cls: string): string {
   const v = String(cls ?? '').trim();
   if (!v) return '';
-  return ` class="sheet-${escapeAttr(v)}"`;
+  const out = v
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
+    .join(' ');
+  return ` class="${escapeAttr(out)}"`;
 }
 
 /** Roll20 attribute name 규약 — ` name="attr_${NAME}"`. */

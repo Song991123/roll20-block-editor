@@ -70,11 +70,21 @@ function attr(name: string, value: string): string {
   return ` ${name}="${escapeAttr(v)}"`;
 }
 
-/** ` class="sheet-${CLASS}"` — CLASS 비면 생략. */
+/** ` class="sheet-foo sheet-bar"` — CLASS 비면 생략. 토큰별로 sheet- prefix 부착.
+ *
+ * multi-class fix: 이전엔 전체 문자열에 한 번만 sheet- 부착 → `class="sheet-row header"`
+ * 같은 잘못된 출력. 매처가 import 시 토큰별로 sheet- 를 떼므로 emit 도 토큰별로
+ * 다시 부착해야 round-trip byte-identical 성립.
+ */
 function sheetClassAttr(cls: string): string {
   const v = String(cls ?? '').trim();
   if (!v) return '';
-  return ` class="sheet-${escapeAttr(v)}"`;
+  const out = v
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
+    .join(' ');
+  return ` class="${escapeAttr(out)}"`;
 }
 
 /** dropdown 값 화이트리스트 검증 — 미허용 시 fallback. */
@@ -82,6 +92,16 @@ function pickAllowed(raw: string, opts: Array<[string, string]>, fallback: strin
   const allowed = new Set(opts.map(([, v]) => v));
   const s = String(raw ?? '').trim();
   return allowed.has(s) ? s : fallback;
+}
+
+/** r20_i18n_text 의 TAG 필드 화이트리스트 — 매처 set 과 동기화.
+ * 미허용 시 'span' fallback (backwards-compat). */
+const I18N_TEXT_ALLOWED_TAGS = new Set([
+  'span', 'div', 'label', 'strong', 'b', 'em', 'small', 'p', 'td', 'th',
+]);
+function pickI18nTextTag(raw: string): string {
+  const s = String(raw ?? '').trim().toLowerCase();
+  return I18N_TEXT_ALLOWED_TAGS.has(s) ? s : 'span';
 }
 
 /**
@@ -108,12 +128,18 @@ function jsonEscape(value: string): string {
 
 export const I18N_BLOCKS: BlockDef[] = [
   // 1) i18n text -----------------------------------------------------------
+  //
+  // TAG 필드 (table 평탄화 fix): 매처가 <td data-i18n="k">label</td> 같은
+  // 케이스에서 TAG='td' 를 박으면 emit 가 <td data-i18n="k">label</td> 그대로
+  // 토함. 기본값 'span' 으로 backwards-compatible — 기존 워크스페이스에 TAG
+  // 필드 없는 r20_i18n_text 도 정상 emit (span fallback).
+  // 허용 태그 = 매처에서 매칭하는 set (span/div/label/strong/b/em/small/p/td/th).
   {
     type: 'r20_i18n_text',
     shape: 'stack',
     category: I18N,
     label: '번역 글자',
-    tooltip: '<span data-i18n="KEY">DEFAULT</span> — class 옵션.',
+    tooltip: '<TAG data-i18n="KEY">DEFAULT</TAG> — class / 태그 옵션 (기본 span).',
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('번역 키')
@@ -124,6 +150,9 @@ export const I18N_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('태그')
+        .appendField(new Blockly.FieldTextInput('span'), 'TAG');
       setStatementHooks(b);
     }),
     generator: (block) => {
@@ -131,7 +160,8 @@ export const I18N_BLOCKS: BlockDef[] = [
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<span${sheetClassAttr(cls)}${attr('data-i18n', key)}>${escapeAttr(def)}</span>`;
+      const tag = pickI18nTextTag(String(b.getFieldValue('TAG') ?? 'span'));
+      return `<${tag}${sheetClassAttr(cls)}${attr('data-i18n', key)}>${escapeAttr(def)}</${tag}>`;
     },
   },
 

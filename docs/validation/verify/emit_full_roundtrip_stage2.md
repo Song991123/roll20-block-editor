@@ -105,3 +105,59 @@ Procedure:
 
 - 사용자 시트 full sample (수백 KB) 은 javascript_tool chunked 전송 부담 (~100 calls) 으로 9 KB subset 만 측정. Script `emit_roundtrip_playwright.mjs` 는 full sample 도 처리 가능 (Playwright `page.evaluate` 는 함수 인자로 큰 string 한번에 전달).
 - Chrome MCP 우회는 reproducible.
+
+---
+
+## 2026-05-18 Update — multi-class + table-tag fix 적용
+
+### 변경 파일
+
+- `lib/import/block_matcher.ts`
+  - `matchI18n`: `r20_i18n_text` 매칭 시 원본 태그를 `TAG` 필드에 박음 (span/div/label/strong/b/em/small/p/td/th 보존).
+  - `matchContainer` (div branch): r20_row / r20_col / r20_colrow_n / r20_repeating_row / r20_grid 단축은 토큰이 정확히 그 class **하나일 때만**. 추가 class 있으면 r20_div 로 떨어뜨려 `sheetUserClassAttr` 가 모든 토큰 보존.
+- `lib/blocks/i18n.ts`
+  - `r20_i18n_text` 에 `TAG` 필드 추가 (기본 'span'). generator 가 TAG 화이트리스트 검증 후 그 태그로 emit.
+  - `sheetClassAttr` 를 토큰별 sheet- prefix 부착으로 수정 (multi-class fix).
+- `lib/blocks/input.ts`, `lib/blocks/dice.ts`, `lib/blocks/display.ts`
+  - 동일한 `sheetClassAttr` multi-class fix.
+- `lib/blocks/__tests__/table_multiclass.test.ts`
+  - 신규 unit test 8 케이스 (multi-class + table TAG 보존).
+
+### 검증
+
+| 측정 | 결과 |
+|---|---|
+| 신규 `table_multiclass.test.ts` | **8/8 PASS** |
+| 기존 `basic.test.ts` | **20/20 PASS** (회귀 0) |
+| 기존 `i18n_text.test.ts` | **7/7 PASS** (회귀 0) |
+| 기존 `i18n_placeholder.test.ts` | **5/5 PASS** (회귀 0) |
+| 기존 `inline_bold.test.ts` | **13/13 PASS** (회귀 0) |
+
+### Round-trip 시뮬레이션 (Node, Blockly-free)
+
+D&D 5e 스타일 HTML (table + multi-class + i18n + repeating section) 으로 `parseHtml` → `matchTree` → (simulated emit) → `parseHtml` → `matchTree` 재측정:
+
+| 시도 | r1 (1차 매칭) | r2 (2차 재매칭) | loss |
+|---|---:|---:|---:|
+| **fix 적용 후** | **37** | **37** | **0 (0.0%)** |
+
+`<td data-i18n>` 가 `<td>` 그대로 round-trip, `class="sheet-row sheet-header"` 가 r20_div 로 보존 → 양쪽 토큰 모두 emit 에 살아남음.
+
+### D&D 5e 빌트인 예제 재측정 (509 → ?)
+
+직전 결과: r1=509 → r2=234 (54% 손실).
+
+본 fix 의 직접 측정은 **Playwright + 라이브 빌드 (또는 로컬 dev server)** 필요. 본 sandbox 환경은 disk 134 MB 만 → Playwright (~300 MB) install 불가. 또한 라이브 빌드 (GitHub Pages) 는 본 fix 가 deploy 되어야 검증 가능.
+
+추정: 위 시뮬레이션이 0% 손실을 보이므로 fix 가 본 fault 의 직접 원인 (multi-class drop + table 평탄화) 두 가지를 fix 함. 5e 의 234 → 509 회복은 deploy 후 Playwright 또는 Chrome MCP 로 측정 필요. 검증 항목:
+
+- `<table>` family 가 invalid HTML 으로 평탄화되지 않음.
+- `class="sheet-A sheet-B"` round-trip 양 토큰 보존.
+- i18n 출력 포맷 mismatch (별도 backlog) 은 본 fix 의 범위 외.
+
+### 남은 backlog (본 fix 의 범위 외)
+
+- `<!-- i18n[ko] "k": "v" -->` HTML comment 포맷 mismatch (재 import 시 escape 누적).
+- 빌트인 5e 예제 절반 block 누락 원인 — 위 시뮬레이션이 0% 손실이므로 본 fix 후 자연 해결될 것으로 추정. Stage 3 measurement 에서 재확인.
+- block-id auto-prefix 가 stripped diff 후 byte 차이 만드는지 정규화 path 검증.
+

@@ -81,11 +81,18 @@ function attr(name: string, value: string): string {
   return ` ${name}="${escapeAttr(v)}"`;
 }
 
-/** ` class="sheet-${CLASS}"` — CLASS 비면 생략. */
+/** ` class="sheet-foo sheet-bar"` — 토큰별 sheet- prefix. CLASS 비면 생략.
+ * multi-class fix: 매처는 토큰별 prefix 를 떼므로 emit 도 토큰별로 부착해야
+ * round-trip byte-identical 성립. */
 function sheetClassAttr(cls: string): string {
   const v = String(cls ?? '').trim();
   if (!v) return '';
-  return ` class="sheet-${escapeAttr(v)}"`;
+  const out = v
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((t) => (t.startsWith('sheet-') ? t : `sheet-${t}`))
+    .join(' ');
+  return ` class="${escapeAttr(out)}"`;
 }
 
 /** `<tag attrs>\n  content\n</tag>` 형태 wrap. content 비면 self-collapse. */
