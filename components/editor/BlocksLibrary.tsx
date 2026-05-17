@@ -9,7 +9,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Search, ChevronDown, ChevronRight, Sparkles, X } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, Sparkles, X, Star } from 'lucide-react';
 import * as Blockly from 'blockly';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,6 +28,7 @@ import {
   searchBlocks,
   subscribeBlocksRegistry,
   getRegistryVersion,
+  getAllBlocks,
 } from '@/lib/blocks/registry';
 import { cn } from '@/lib/utils/cn';
 import { playSfx } from '@/lib/sfx';
@@ -50,6 +51,16 @@ export default function BlocksLibrary() {
   const advShown = useUiStore((s) => s.blocksAdvancedShown);
   const setAdvShown = useUiStore((s) => s.setBlocksAdvancedShown);
   const showAdvSetting = useSettingsStore((s) => s.showAdvancedCategories);
+  const blockFavorites = useSettingsStore((s) => s.blockFavorites);
+  const isFavoritesOpen = useUiStore((s) => s.blocksExpandedCategories.includes('__favorites__'));
+  // 즐겨찾기 BlockDef 배열 — 등록 안 된 type 은 자동 제외 (registry 변경 안전).
+  const favoriteBlocks = useMemo(() => {
+    if (blockFavorites.length === 0) return [] as BlockDef[];
+    const all = getAllBlocks();
+    const byType = new Map(all.map((b) => [b.type, b]));
+    return blockFavorites.map((t) => byType.get(t)).filter((b): b is BlockDef => Boolean(b));
+  }, [blockFavorites]);
+
 
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -163,6 +174,51 @@ export default function BlocksLibrary() {
 
           {!search.trim() && (
             <div className="space-y-1">
+              {/* ⭐ 즐겨찾기 가상 카테고리 — favoriteBlocks 0 일 때 헤더 자체 숨김. */}
+              {favoriteBlocks.length > 0 && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => toggleCat('__favorites__')}
+                    aria-expanded={isFavoritesOpen}
+                    aria-controls="block-category-__favorites__"
+                    className="blocks-cat-header sticky top-0 z-[5] flex w-full items-center gap-2 rounded-md px-2 py-1.5 pl-3 text-left text-xs font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-[color-mix(in_srgb,var(--bg-hover)_70%,transparent)]"
+                    style={{
+                      borderLeft: `4px solid #FFC857`,
+                      background: isFavoritesOpen
+                        ? `color-mix(in srgb, #FFC857 14%, var(--bg-elevated))`
+                        : `color-mix(in srgb, #FFC857 6%, var(--bg-elevated))`,
+                    }}
+                  >
+                    {isFavoritesOpen ? (
+                      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    )}
+                    <Star className="h-3 w-3 shrink-0 fill-[#FFC857] text-[#FFC857]" />
+                    <span className="flex-1 truncate">즐겨찾기</span>
+                    <Badge variant="secondary" className="font-mono">{favoriteBlocks.length}</Badge>
+                  </button>
+                  <div
+                    id="block-category-__favorites__"
+                    className={cn(
+                      'blocks-cat-body grid transition-[grid-template-rows,opacity] duration-200 ease-out',
+                      isFavoritesOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+                    )}
+                    style={{ willChange: isFavoritesOpen ? 'grid-template-rows' : 'auto' }}
+                    aria-hidden={!isFavoritesOpen}
+                  >
+                    <div className="min-h-0 overflow-hidden">
+                      <div
+                        className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
+                        style={{ borderColor: 'color-mix(in srgb, #FFC857 60%, transparent)' }}
+                      >
+                        {favoriteBlocks.map((b) => <BlockTile key={b.type} def={b} />)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {visibleCategories.map((catId) => {
                 const meta = CATEGORIES[catId];
                 const isOpen = expanded.includes(catId);
@@ -271,6 +327,9 @@ export default function BlocksLibrary() {
 function BlockTile({ def }: { def: BlockDef }) {
   const meta = CATEGORIES[def.category];
   const appendBlock = useWorkspaceStore((s) => s.appendBlockToActive);
+  const blockFavorites = useSettingsStore((s) => s.blockFavorites);
+  const toggleBlockFavorite = useSettingsStore((s) => s.toggleBlockFavorite);
+  const isFavorite = blockFavorites.includes(def.type);
   const activeWs = useWorkspaceStore((s) => s.activeWorkspace);
   const renderer = useSettingsStore((s) => s.blocklyRenderer);
 
@@ -427,6 +486,31 @@ function BlockTile({ def }: { def: BlockDef }) {
           />
           <span className="truncate text-[12px] leading-tight text-foreground">{def.label}</span>
         </div>
+      </button>
+      {/* 별 아이콘 — 우상단 overlay. 클릭 시 즐겨찾기 토글. 외부 <button> 안에 nested 하지 않으려 sibling 으로. */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleBlockFavorite(def.type);
+        }}
+        aria-pressed={isFavorite}
+        aria-label={isFavorite ? `${def.label} 즐겨찾기 해제` : `${def.label} 즐겨찾기 추가`}
+        title={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+        className={cn(
+          'absolute right-1 top-1 z-[1] flex h-5 w-5 items-center justify-center rounded-sm',
+          'opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100',
+          'hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+          isFavorite && 'opacity-100',
+        )}
+      >
+        <Star
+          className={cn(
+            'h-3 w-3',
+            isFavorite ? 'fill-[#FFC857] text-[#FFC857]' : 'text-muted-foreground',
+          )}
+        />
       </button>
     </div>
   );

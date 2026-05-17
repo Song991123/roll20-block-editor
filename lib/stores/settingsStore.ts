@@ -45,6 +45,10 @@ interface SettingsStore {
   // 데이터
   indexedDbUsageBytes: number;
 
+  // 즐겨찾기 — BlockTile 의 별 아이콘으로 추가/제거.
+  blockFavorites: string[];
+  toggleBlockFavorite: (type: string) => void;
+
   // Actions
   set: <K extends keyof Omit<SettingsStore, 'set' | 'reset'>>(
     key: K,
@@ -69,6 +73,8 @@ const DEFAULTS: Omit<SettingsStore, 'set' | 'reset'> = {
   cssAutoPrefix: true,       // D4 ①
   reducedMotion: false,
   indexedDbUsageBytes: 0,
+  blockFavorites: [],
+  toggleBlockFavorite: () => {},
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -76,6 +82,12 @@ export const useSettingsStore = create<SettingsStore>()(
     (set) => ({
       ...DEFAULTS,
       set: (key, value) => set({ [key]: value } as Partial<SettingsStore>),
+      toggleBlockFavorite: (type) =>
+        set((s) => ({
+          blockFavorites: s.blockFavorites.includes(type)
+            ? s.blockFavorites.filter((t) => t !== type)
+            : [...s.blockFavorites, type],
+        })),
       reset: () => set({ ...DEFAULTS }),
     }),
     {
