@@ -112,9 +112,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       const htmlBlocks = adapter.getWorkspace('html')?.getAllBlocks(false).length ?? 0;
       const cssBlocks = adapter.getWorkspace('css')?.getAllBlocks(false).length ?? 0;
       const i18nBlocks = adapter.getWorkspace('i18n')?.getAllBlocks(false).length ?? 0;
-      ws.setXmlCache('html', result.html, htmlBlocks);
-      ws.setXmlCache('css', result.css, cssBlocks);
-      ws.setXmlCache('i18n', result.i18n, i18nBlocks);
+      ws.bumpStructure('html', htmlBlocks);
+      ws.bumpStructure('css', cssBlocks);
+      ws.bumpStructure('i18n', i18nBlocks);
       ws.markSaved('html');
       ws.markSaved('css');
       ws.markSaved('i18n');

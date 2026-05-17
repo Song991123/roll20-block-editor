@@ -88,7 +88,7 @@ export function getExampleAssetUrl(relPath: string): string {
  * Example 단일 항목 로드 — html/css/i18n 3 워크스페이스를 동시에 채움.
  *
  * 모든 fetch 가 끝난 뒤 adapter.hydrateFromXml 을 동기 호출 → workspace
- * changeListener 가 자동으로 setXmlCache 호출.
+ * changeListener 가 자동으로 bumpStructure 호출 (FINISHED_LOADING 이벤트).
  *
  * 실패 시 throw — 호출자가 toast 등으로 처리.
  */
@@ -124,7 +124,7 @@ export async function loadExampleIntoWorkspaces(
     const ws = adapter.getWorkspace(key);
     const count = ws?.getAllBlocks(false).length ?? 0;
     counts[key] = count;
-    useWorkspaceStore.getState().setXmlCache(key, xml, count);
+    useWorkspaceStore.getState().bumpStructure(key, count);
     useWorkspaceStore.getState().markSaved(key);
   }
 

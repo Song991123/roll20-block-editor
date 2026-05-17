@@ -26,9 +26,10 @@ import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import { emitAll } from './emit';
 
 export function useEmitPipeline(): void {
-  const htmlXml = useWorkspaceStore((s) => s.workspaces.html.xmlCache);
-  const cssXml = useWorkspaceStore((s) => s.workspaces.css.xmlCache);
-  const i18nXml = useWorkspaceStore((s) => s.workspaces.i18n.xmlCache);
+  // Perf hot path #3: structureVersion replaces xmlCache string.
+  const htmlV = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
+  const cssV = useWorkspaceStore((s) => s.workspaces.css.structureVersion);
+  const i18nV = useWorkspaceStore((s) => s.workspaces.i18n.structureVersion);
   const setEmitCache = useWorkspaceStore((s) => s.setEmitCache);
   const setEmitWarnings = useWorkspaceStore((s) => s.setEmitWarnings);
 
@@ -44,5 +45,5 @@ export function useEmitPipeline(): void {
       setEmitWarnings(result.warnings);
     }, 500);
     return () => window.clearTimeout(handle);
-  }, [htmlXml, cssXml, i18nXml, setEmitCache, setEmitWarnings]);
+  }, [htmlV, cssV, i18nV, setEmitCache, setEmitWarnings]);
 }

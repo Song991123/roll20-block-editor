@@ -30,14 +30,16 @@ export default function WorkspaceTree() {
   const setTreeSearch = useUiStore((s) => s.setTreeSearch);
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
-  // workspaces 의 xmlCache 변경을 의존성으로.
-  const xmlCache = useWorkspaceStore((s) => s.workspaces[tab].xmlCache);
+  // Perf hot path #3: structureVersion (cheap counter bump) replaces xmlCache
+  // string. Same re-render frequency — but the upstream BlocklyModelHost no
+  // longer pays 50-200ms/event to produce the unused XML text.
+  const structureVersion = useWorkspaceStore((s) => s.workspaces[tab].structureVersion);
 
   const snapshot: BlockSnapshot[] = useMemo(() => {
     const adapter = getBlocklyAdapter();
     return adapter.listAllBlocks(tab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, xmlCache]);
+  }, [tab, structureVersion]);
 
   const filtered = useMemo(() => {
     if (!treeSearch.trim()) return snapshot;

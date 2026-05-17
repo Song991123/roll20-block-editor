@@ -20,7 +20,7 @@ import { CATEGORIES } from '@/lib/blocks/types';
  *
  * Stage A-1.5:
  *   - Blockly Block.inputList → editable fields 평탄화 (number / text / dropdown / checkbox).
- *   - 폼 onChange → adapter.setFieldValue → Blockly fireChangeListener → xmlCache 갱신
+ *   - 폼 onChange → adapter.setFieldValue → Blockly fireChangeListener → structureVersion 갱신
  *     → 미리보기 srcdoc 재생성.
  */
 export default function Inspector() {
@@ -33,9 +33,10 @@ export default function Inspector() {
 
 function BlockInspector() {
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
-  const htmlXml = useWorkspaceStore((s) => s.workspaces.html.xmlCache);
-  const cssXml = useWorkspaceStore((s) => s.workspaces.css.xmlCache);
-  const i18nXml = useWorkspaceStore((s) => s.workspaces.i18n.xmlCache);
+  // Perf hot path #3: see workspaceStore.WorkspaceMeta — counter, not string.
+  const htmlV = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
+  const cssV = useWorkspaceStore((s) => s.workspaces.css.structureVersion);
+  const i18nV = useWorkspaceStore((s) => s.workspaces.i18n.structureVersion);
 
   const { snap, key }: { snap: BlockSnapshot | null; key: WorkspaceKey | null } = useMemo(() => {
     if (!selectedId) return { snap: null, key: null };
@@ -46,13 +47,13 @@ function BlockInspector() {
     }
     return { snap: null, key: null };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, htmlXml, cssXml, i18nXml]);
+  }, [selectedId, htmlV, cssV, i18nV]);
 
   const fields: BlockFieldInfo[] = useMemo(() => {
     if (!selectedId || !key) return [];
     return getBlocklyAdapter().getBlockFields(key, selectedId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, key, htmlXml, cssXml, i18nXml]);
+  }, [selectedId, key, htmlV, cssV, i18nV]);
 
   const onFieldChange = useCallback(
     (name: string, value: string) => {

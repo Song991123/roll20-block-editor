@@ -27,7 +27,7 @@ import PreviewEmptyState from './PreviewEmptyState';
  * Phase 2:
  *   - workspace 의 모든 블록을 emit (lib/preview/emit) → autoPrefix → runtimeCss 합성
  *     (lib/preview/buildDoc) → iframe srcdoc 으로 박음.
- *   - xmlCache / sanitize / darkMode 변경 → 500ms 디바운스 후 재emit.
+ *   - structureVersion / sanitize / darkMode 변경 → 500ms 디바운스 후 재emit.
  *   - 미리보기 → 우측 인스펙터 sync 는 postMessage(r20:select) 유지.
  *   - 선택된 블록 → iframe 안 highlight 는 postMessage(r20:highlight) 송신.
  *   - 좌측 사이드 카드 drag → 본 영역 drop → appendBlockToActive.

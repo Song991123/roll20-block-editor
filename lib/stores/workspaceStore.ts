@@ -56,7 +56,16 @@ export interface WidgetInstance {
 }
 
 export interface WorkspaceMeta {
-  xmlCache: string;
+  /**
+   * Sub-microsecond change signal — bumped on every Blockly mutation event.
+   * Replaces the prior `xmlCache: string` field (which cost 50-200ms at 4500
+   * blocks per event for `workspaceToDom + domToText`). No subscriber ever
+   * read the string content; they all used it purely as a re-render trigger
+   * (WorkspaceTree, Inspector, useEmitPipeline). Now they subscribe to
+   * `structureVersion` instead and call `adapter.serializeXml()` on-demand
+   * (ExportDialog / Save) — keeping the hot path off the main thread.
+   */
+  structureVersion: number;
   dirty: boolean;
   blockCount: number;
   lastSavedAt: number | null;
@@ -95,7 +104,13 @@ interface WorkspaceStore {
 
   // Actions
   setActiveWorkspace: (w: WorkspaceKey) => void;
-  setXmlCache: (w: WorkspaceKey, xml: string, blockCount: number) => void;
+  /**
+   * Notify subscribers that workspace `w` mutated. Cheap — increments a counter
+   * + updates blockCount + marks dirty. The previously-passed `xml` string is no
+   * longer captured into the store (no subscriber needed it); call
+   * `getBlocklyAdapter().serializeXml(w)` on-demand if you need the text.
+   */
+  bumpStructure: (w: WorkspaceKey, blockCount: number) => void;
   markDirty: (w: WorkspaceKey) => void;
   markSaved: (w: WorkspaceKey) => void;
   resetWorkspace: (w: WorkspaceKey) => void;
@@ -111,7 +126,7 @@ interface WorkspaceStore {
   /**
    * 활성 워크스페이스 (또는 지정 워크스페이스) 에 새 블록 인스턴스 추가.
    * Blockly adapter 가 실제 Block 객체 생성 → 워크스페이스 changeListener 가
-   * setXmlCache 자동 호출. 반환 = 새 블록 id.
+   * bumpStructure 자동 호출. 반환 = 새 블록 id.
    */
   appendBlockToActive: (blockType: string, target?: WorkspaceKey) => string | null;
 
@@ -123,7 +138,7 @@ interface WorkspaceStore {
 }
 
 const emptyMeta: WorkspaceMeta = {
-  xmlCache: '',
+  structureVersion: 0,
   dirty: false,
   blockCount: 0,
   lastSavedAt: null,
@@ -190,11 +205,16 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
 
   setActiveWorkspace: (w) => set({ activeWorkspace: w }),
 
-  setXmlCache: (w, xml, blockCount) =>
+  bumpStructure: (w, blockCount) =>
     set((s) => ({
       workspaces: {
         ...s.workspaces,
-        [w]: { ...s.workspaces[w], xmlCache: xml, blockCount, dirty: true },
+        [w]: {
+          ...s.workspaces[w],
+          structureVersion: s.workspaces[w].structureVersion + 1,
+          blockCount,
+          dirty: true,
+        },
       },
     })),
 

@@ -37,7 +37,7 @@ import { playSfx } from '@/lib/sfx';
  * Stage A-1.5:
  *   - 각 BlockDef 를 Blockly 의 진짜 SVG 블록으로 렌더 (read-only mini workspace).
  *   - 블록 클릭 / 드래그 → 활성 워크스페이스 (BlocklyModelHost 안) 에 추가.
- *   - 추가 후 워크스페이스 changeListener → store xmlCache → 미리보기 갱신.
+ *   - 추가 후 워크스페이스 changeListener → store structureVersion bump → 미리보기 갱신.
  *
  * BlocklyModelHost 의 useEffect 가 registerAllBlocks → registry 가 본 컴포넌트에 통지.
  */
