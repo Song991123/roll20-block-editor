@@ -153,6 +153,9 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
+        .appendField('값')
+        .appendField(new Blockly.FieldTextInput(''), 'VALUE');
+      b.appendDummyInput()
         .appendField('기본 체크')
         .appendField(new Blockly.FieldCheckbox('FALSE'), 'CHECKED');
       setStatementHooks(b);
@@ -161,9 +164,10 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const b = block as Blockly.Block;
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
+      const val = String(b.getFieldValue('VALUE') ?? '');
       const checked = String(b.getFieldValue('CHECKED') ?? 'FALSE') === 'TRUE';
       const checkedAttr = checked ? ' checked="checked"' : '';
-      return `<input type="checkbox"${sheetClassAttr(cls)}${nameAttr(name)}${checkedAttr}>`;
+      return `<input type="checkbox"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', val)}${checkedAttr}>`;
     },
   },
 
