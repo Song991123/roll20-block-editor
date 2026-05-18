@@ -113,21 +113,27 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var body = document.body;
     var doc = document.documentElement;
     var sheet = document.getElementById('dialog-window') || document.getElementById('charsheet-root');
-    var values = [
+    var viewport = Math.max(
+      window.innerWidth || 0,
+      doc ? doc.clientWidth : 0,
+      body ? body.clientWidth : 0
+    );
+    var scrollWidth = Math.max(
       body ? body.scrollWidth : 0,
-      body ? body.offsetWidth : 0,
       doc ? doc.scrollWidth : 0,
-      doc ? doc.offsetWidth : 0,
-      sheet ? sheet.scrollWidth : 0,
-      sheet ? sheet.offsetWidth : 0
-    ];
-    var w = 0;
-    for (var i = 0; i < values.length; i++) w = Math.max(w, values[i] || 0);
-    return Math.max(320, Math.ceil(w + 32));
+      sheet ? sheet.scrollWidth : 0
+    );
+    // Do not report width when content merely fills the current iframe.
+    // Otherwise parent grows iframe -> scrollWidth grows -> infinite feedback.
+    if (scrollWidth <= viewport + 8) return null;
+    return Math.max(320, Math.min(2400, Math.ceil(scrollWidth)));
   }
   function postResize() {
     try {
-      parent.postMessage({ type: 'r20:resize', height: measureHeight(), width: measureWidth() }, '*');
+      var width = measureWidth();
+      var msg = { type: 'r20:resize', height: measureHeight() };
+      if (width != null) msg.width = width;
+      parent.postMessage(msg, '*');
     } catch (e) {}
   }
   function scheduleResize() {

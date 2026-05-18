@@ -360,7 +360,7 @@ export default function PreviewMain() {
         const nextHeight = Math.max(480, Math.min(60000, Math.ceil(data.height)));
         setIframeHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
         if (typeof data.width === 'number') {
-          const nextWidth = Math.max(320, Math.min(5000, Math.ceil(data.width)));
+          const nextWidth = Math.max(320, Math.min(2400, Math.ceil(data.width)));
           setIframeWidth((prev) => (Math.abs(prev - nextWidth) > 8 ? nextWidth : prev));
         }
         return;
