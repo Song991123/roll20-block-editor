@@ -60,13 +60,14 @@ function rewriteForShadow(css: string): string {
 }
 
 /**
- * iframe srcdoc 모드 — `.ui-dialog ` prefix 제거만 적용.
- * iframe wrapper 도 `.ui-dialog` 없이 `<div class="charsheet">` 만 박으므로 동일.
+ * iframe srcdoc 모드 — Roll20 dialog wrapper 를 함께 렌더하므로 raw selector 보존.
+ * `.ui-dialog .charsheet`, `.sheetform`, `.charactersheet`, `.largedialog`
+ * selectors must match the same wrapper structure Roll20 uses.
  */
 export const roll20BaseIframeCss = [
-  stripUiDialogPrefix(roll20BaseCss),
-  stripUiDialogPrefix(roll20CharsheetCss),
-  stripUiDialogPrefix(roll20JqueryCss),
+  roll20BaseCss,
+  roll20CharsheetCss,
+  roll20JqueryCss,
 ].join('\n');
 
 /** Shadow DOM 모드 합성본. */
@@ -77,5 +78,5 @@ export const roll20BaseShadowCss = [
 ].join('\n');
 
 /** Dark mode — iframe / shadow 공용. */
-export const roll20DarkmodeIframeCss = stripUiDialogPrefix(roll20DarkmodeCss);
+export const roll20DarkmodeIframeCss = roll20DarkmodeCss;
 export const roll20DarkmodeShadowCss = rewriteForShadow(roll20DarkmodeCss);

@@ -323,8 +323,16 @@ ${includeEditorOverlays ? `<style id="r20-baseline-fallback">${roll20BaselineCss
 <style id="r20-user">${prefixedCss}</style>
 </head>
 <body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}">
-<div class="charsheet">
+<div class="ui-dialog ui-widget ui-widget-content ui-corner-all" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
+<div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
+<div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
+<form class="sheetform">
+<div class="charactersheet tab-pane charsheet lang-undefined${darkMode ? ' sheet-darkmode' : ''}" id="charsheet-root">
 ${bodyInner}
+</div>
+</form>
+</div>
+</div>
 </div>
 <script>${PREVIEW_BRIDGE_SCRIPT}</script>
 </body>
