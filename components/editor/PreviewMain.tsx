@@ -77,6 +77,7 @@ export default function PreviewMain() {
     y: number;
   } | null>(null);
   const [iframeHeight, setIframeHeight] = useState(900);
+  const [iframeWidth, setIframeWidth] = useState(850);
   // Phase E — Inspector 활성화에 쓰일 sidebarRightTab/collapse setter.
   // 'attrs' 가 Inspector 패널 (D49).
   const setSidebarRightTab = useUiStore((s) => s.setSidebarRightTab);
@@ -112,6 +113,7 @@ export default function PreviewMain() {
   // Phase A 범위 = 시각만 동일. Phase B+ 의 인터랙션 (select / drag / inline edit) 은 미구현.
   useEffect(() => {
     setIframeHeight(900);
+    setIframeWidth(850);
   }, [srcdoc]);
 
   const hostRef = useRef<HTMLDivElement>(null);
@@ -355,8 +357,12 @@ export default function PreviewMain() {
         return;
       }
       if (data?.type === 'r20:resize' && typeof data.height === 'number') {
-        const next = Math.max(480, Math.min(60000, Math.ceil(data.height)));
-        setIframeHeight((prev) => (Math.abs(prev - next) > 8 ? next : prev));
+        const nextHeight = Math.max(480, Math.min(60000, Math.ceil(data.height)));
+        setIframeHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
+        if (typeof data.width === 'number') {
+          const nextWidth = Math.max(320, Math.min(5000, Math.ceil(data.width)));
+          setIframeWidth((prev) => (Math.abs(prev - nextWidth) > 8 ? nextWidth : prev));
+        }
         return;
       }
       // spec 17 §8 + N3 — widget hover/click (양방향 sync 간단)
@@ -551,8 +557,8 @@ export default function PreviewMain() {
               renderMode === 'iframe' ? 'bg-transparent' : 'bg-white shadow-lg ring-1 ring-border'
             }`}
             style={{
-              width: zoom === 'fit' ? '100%' : `${850 * (typeof scale === 'number' ? scale : 1)}px`,
-              maxWidth: '960px',
+              width: zoom === 'fit' ? '100%' : `${iframeWidth * (typeof scale === 'number' ? scale : 1)}px`,
+              maxWidth: zoom === 'fit' ? '100%' : 'none',
               transition: 'width 120ms ease',
             }}
           >

@@ -109,9 +109,25 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     for (var i = 0; i < values.length; i++) h = Math.max(h, values[i] || 0);
     return Math.max(480, Math.ceil(h + 32));
   }
+  function measureWidth() {
+    var body = document.body;
+    var doc = document.documentElement;
+    var sheet = document.getElementById('dialog-window') || document.getElementById('charsheet-root');
+    var values = [
+      body ? body.scrollWidth : 0,
+      body ? body.offsetWidth : 0,
+      doc ? doc.scrollWidth : 0,
+      doc ? doc.offsetWidth : 0,
+      sheet ? sheet.scrollWidth : 0,
+      sheet ? sheet.offsetWidth : 0
+    ];
+    var w = 0;
+    for (var i = 0; i < values.length; i++) w = Math.max(w, values[i] || 0);
+    return Math.max(320, Math.ceil(w + 32));
+  }
   function postResize() {
     try {
-      parent.postMessage({ type: 'r20:resize', height: measureHeight() }, '*');
+      parent.postMessage({ type: 'r20:resize', height: measureHeight(), width: measureWidth() }, '*');
     } catch (e) {}
   }
   function scheduleResize() {
@@ -120,6 +136,79 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       resizeTimer = 0;
       postResize();
     });
+  }
+  var sheetWorkerHandlers = {};
+  var settingAttrs = false;
+  function sheetWorkerOn(events, fn) {
+    if (typeof fn !== 'function') return;
+    String(events || '').split(/\s+/).filter(Boolean).forEach(function (evt) {
+      (sheetWorkerHandlers[evt] = sheetWorkerHandlers[evt] || []).push(fn);
+    });
+  }
+  function readSheetAttr(name) {
+    var el = document.querySelector('[name="attr_' + cssEscape(name) + '"]');
+    if (!el) return '';
+    if (el.type === 'checkbox') return el.checked ? (el.value || '1') : '0';
+    if (el.type === 'radio') return el.checked ? (el.value || '') : '';
+    return el.value == null ? '' : String(el.value);
+  }
+  function writeSheetAttr(name, value) {
+    var nodes = document.querySelectorAll('[name="attr_' + cssEscape(name) + '"]');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (el.type === 'checkbox') {
+        el.checked = String(value) === String(el.value || '1') || value === true || value === 1 || value === '1';
+      } else if (el.type === 'radio') {
+        el.checked = String(el.value) === String(value);
+      } else {
+        el.value = value == null ? '' : String(value);
+      }
+    }
+  }
+  function sheetWorkerGetAttrs(names, cb) {
+    var out = {};
+    (names || []).forEach(function (n) { out[n] = readSheetAttr(n); });
+    if (typeof cb === 'function') cb(out);
+  }
+  function sheetWorkerSetAttrs(values, opts, cb) {
+    if (typeof opts === 'function') { cb = opts; opts = undefined; }
+    settingAttrs = true;
+    Object.keys(values || {}).forEach(function (k) { writeSheetAttr(k, values[k]); });
+    settingAttrs = false;
+    Object.keys(values || {}).forEach(function (k) { triggerSheetWorker('change:' + k, { sourceAttribute: k }); });
+    if (typeof cb === 'function') cb();
+    scheduleResize();
+  }
+  function triggerSheetWorker(evt, payload) {
+    var list = sheetWorkerHandlers[evt] || [];
+    for (var i = 0; i < list.length; i++) {
+      try { list[i](payload || { sourceAttribute: evt.replace(/^change:/, '') }); } catch (e) { console.error('[sheet worker]', evt, e); }
+    }
+  }
+  function installSheetWorkers() {
+    var scripts = document.querySelectorAll('script[type="text/worker"]');
+    scripts.forEach(function (script) {
+      var code = script.textContent || '';
+      if (!code.trim()) return;
+      try {
+        var fn = new Function(
+          'on', 'getAttrs', 'setAttrs', 'getSectionIDs', 'generateRowID', 'removeRepeatingRow', 'setDefaultToken',
+          code
+        );
+        fn(
+          sheetWorkerOn,
+          sheetWorkerGetAttrs,
+          sheetWorkerSetAttrs,
+          function (_section, cb) { if (typeof cb === 'function') cb([]); },
+          function () { return 'row_' + Math.random().toString(36).slice(2, 18); },
+          function () {},
+          function () {}
+        );
+      } catch (e) {
+        console.error('[sheet worker install]', e);
+      }
+    });
+    triggerSheetWorker('sheet:opened', {});
   }
   document.addEventListener('click', function (e) {
     // spec 17 §8 — name 있는 element 클릭 시 부모에 widget-click 전송 (위젯 강조용)
@@ -142,6 +231,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
           attrs: collectAttrs()
         }, '*');
       } catch (err) {}
+      return false;
+    }
+    var action = e.target && e.target.closest && e.target.closest('button[type="action"]');
+    if (action) {
+      var actionName = action.getAttribute('name') || '';
+      actionName = actionName.replace(/^act_/, '');
+      triggerSheetWorker('clicked:' + actionName, { triggerName: actionName });
+      try { e.preventDefault(); } catch (_) {}
       return false;
     }
     var node = e.target;
@@ -228,6 +325,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       parent.postMessage({ type: 'r20:widget-hover', widgetName: null }, '*');
     } catch (err) {}
   }, false);
+  document.addEventListener('change', function (e) {
+    if (settingAttrs) return;
+    var name = e.target && e.target.getAttribute && e.target.getAttribute('name');
+    if (!name || name.indexOf('attr_') !== 0) return;
+    var attr = name.substring(5);
+    triggerSheetWorker('change:' + attr, { sourceAttribute: attr });
+    scheduleResize();
+  }, true);
   window.addEventListener('load', scheduleResize);
   window.addEventListener('resize', scheduleResize);
   document.addEventListener('DOMContentLoaded', scheduleResize);
@@ -241,6 +346,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       img.addEventListener('error', scheduleResize);
     });
   } catch (e) {}
+  installSheetWorkers();
   scheduleResize();
 })();
 `;
@@ -282,6 +388,20 @@ const ROLL20_DIALOG_OPEN_CSS = `
 .charsheet {
   background-repeat: no-repeat !important;
   background-position: top center !important;
+}
+
+rolltemplate,
+script[type="text/worker"],
+script:not([src]):not([type^="text/javascript"]) {
+  display: none !important;
+}
+`;
+
+const ROLL20_PREVIEW_HIDDEN_CSS = `
+rolltemplate,
+script[type="text/worker"],
+script:not([src]):not([type^="text/javascript"]) {
+  display: none !important;
 }
 `;
 
@@ -388,6 +508,7 @@ ${includeEditorOverlays ? `<style id="r20-baseline-fallback">${roll20BaselineCss
 <style id="r20-runtime">${runtimeCss}</style>
 <style id="r20-layer-filter">${layerFilterCss()}</style>` : ''}
 <style id="r20-user">${prefixedCss}</style>
+<style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
 <body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}">
 <div class="ui-dialog ui-widget ui-widget-content ui-corner-all" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
