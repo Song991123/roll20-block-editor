@@ -13,6 +13,7 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
+import { styleAttr } from './style_field';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -146,10 +147,14 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const levelRaw = String(b.getFieldValue('LEVEL') ?? '1');
       const levelNum = Number(levelRaw);
       const level =
@@ -158,7 +163,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
           : '1';
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<h${level}${sheetClassAttr(cls)}>${escapeAttr(text)}</h${level}>`;
+      return `<h${level}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</h${level}>`;
     },
   },
 
@@ -174,12 +179,16 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField('가로 구분선')
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<hr${sheetClassAttr(cls)}>`;
+      return `<hr${sheetClassAttr(cls)}${styleAttr(style)}>`;
     },
   },
 
@@ -197,13 +206,17 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<span${sheetClassAttr(cls)}>${escapeAttr(text)}</span>`;
+      return `<span${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</span>`;
     },
   },
 
@@ -230,10 +243,14 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField(new Blockly.FieldTextInput(''), 'WIDTH')
         .appendField('height')
         .appendField(new Blockly.FieldTextInput(''), 'HEIGHT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const src = String(b.getFieldValue('SRC') ?? '');
       const alt = String(b.getFieldValue('ALT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
@@ -241,7 +258,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const height = sanitizeSize(String(b.getFieldValue('HEIGHT') ?? ''));
       return (
         `<img${attr('src', src)}${attr('alt', alt)}${sheetClassAttr(cls)}` +
-        `${attr('width', width)}${attr('height', height)}>`
+        `${attr('width', width)}${attr('height', height)}${styleAttr(style)}>`
       );
     },
   },
@@ -260,17 +277,21 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const nameRaw = String(b.getFieldValue('NAME') ?? '');
       // 허용된 값만 통과 (dropdown 값). 비면 fallback 'star'.
       const allowed = new Set(ICON_NAMES.map(([, v]) => v));
       const name = allowed.has(nameRaw) ? nameRaw : 'star';
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const base = `sheet-icon sheet-icon-${name}`;
-      return `<i${sheetClassAttrWithBase(base, cls)}></i>`;
+      return `<i${sheetClassAttrWithBase(base, cls)}${styleAttr(style)}></i>`;
     },
   },
 
@@ -285,14 +306,18 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('여백')
         .appendField(new Blockly.FieldDropdown(SPACER_SIZES), 'SIZE');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const sizeRaw = String(b.getFieldValue('SIZE') ?? 'medium');
       const allowed = new Set(SPACER_SIZES.map(([, v]) => v));
       const size = allowed.has(sizeRaw) ? sizeRaw : 'medium';
-      return `<div class="sheet-spacer sheet-spacer-${size}"></div>`;
+      return `<div class="sheet-spacer sheet-spacer-${size}"${styleAttr(style)}></div>`;
     },
   },
 
@@ -310,14 +335,18 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const base = 'sheet-disabled-text';
-      return `<span${sheetClassAttrWithBase(base, cls)} aria-disabled="true">${escapeAttr(text)}</span>`;
+      return `<span${sheetClassAttrWithBase(base, cls)} aria-disabled="true"${styleAttr(style)}>${escapeAttr(text)}</span>`;
     },
   },
 
@@ -335,13 +364,17 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<b${sheetClassAttr(cls)}>${escapeAttr(text)}</b>`;
+      return `<b${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</b>`;
     },
   },
 
@@ -359,13 +392,17 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<em${sheetClassAttr(cls)}>${escapeAttr(text)}</em>`;
+      return `<em${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</em>`;
     },
   },
 
@@ -383,13 +420,17 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<caption${sheetClassAttr(cls)}>${escapeAttr(text)}</caption>`;
+      return `<caption${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</caption>`;
     },
   },
 
@@ -402,10 +443,15 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     tooltip: '줄바꿈 — <br>. void element.',
     init: mkInit((b) => {
       b.appendDummyInput().appendField('줄바꿈');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: () => {
-      return `<br>`;
+      const _b = block as Blockly.Block;
+      const style = String(_b.getFieldValue('STYLE') ?? '');
+      return `<br${styleAttr(style)}>`;
     },
   },
 ];

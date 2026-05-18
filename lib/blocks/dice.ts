@@ -19,6 +19,7 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext, ORDER } from './types';
+import { styleAttr } from './style_field';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -143,17 +144,21 @@ export const DICE_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim();
       const label = String(b.getFieldValue('LABEL') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const expr = ctx.valueToCode(block, 'EXPR', ORDER.NONE) || '';
       return (
         `<button type="roll"${attr('name', name ? `roll_${name}` : '')}` +
-        `${attr('value', expr)}${sheetClassAttr(cls)}>${escapeText(label)}</button>`
+        `${attr('value', expr)}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
   },
@@ -178,16 +183,20 @@ export const DICE_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim();
       const label = String(b.getFieldValue('LABEL') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<button type="action"${attr('name', name ? `act_${name}` : '')}` +
-        `${sheetClassAttr(cls)}>${escapeText(label)}</button>`
+        `${sheetClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
   },
@@ -216,17 +225,21 @@ export const DICE_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim();
       const label = String(b.getFieldValue('LABEL') ?? '');
       const message = String(b.getFieldValue('MESSAGE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<button type="roll"${attr('name', name ? `roll_${name}` : '')}` +
-        `${attr('value', message)}${sheetClassAttr(cls)}>${escapeText(label)}</button>`
+        `${attr('value', message)}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeText(label)}</button>`
       );
     },
   },
@@ -248,16 +261,20 @@ export const DICE_BLOCKS: BlockDef[] = [
         .appendField('이름')
         .appendField(new Blockly.FieldTextInput('default'), 'NAME');
       b.appendStatementInput('ROWS').setCheck(null);
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'default';
       const rows = ctx.statementToCode(block, 'ROWS');
       return wrapTag(
         ctx,
         'rolltemplate',
-        ` class="sheet-rolltemplate-${escapeAttr(name)}"`,
+        ` class="sheet-rolltemplate-${escapeAttr(name)}"${styleAttr(style)}`,
         rows,
       );
     },
@@ -278,14 +295,18 @@ export const DICE_BLOCKS: BlockDef[] = [
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('CHILDREN').setCheck(null);
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '').trim();
       const children = ctx.statementToCode(block, 'CHILDREN');
       const classValue = cls ? `sheet-row sheet-${cls}` : 'sheet-row';
-      return wrapTag(ctx, 'div', ` class="${escapeAttr(classValue)}"`, children);
+      return wrapTag(ctx, 'div', ` class="${escapeAttr(classValue)}"${styleAttr(style)}`, children);
     },
   },
 

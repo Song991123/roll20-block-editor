@@ -12,6 +12,7 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext, ORDER } from './types';
+import { styleAttr } from './style_field';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -153,15 +154,19 @@ export const I18N_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('태그')
         .appendField(new Blockly.FieldTextInput('span'), 'TAG');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const tag = pickI18nTextTag(String(b.getFieldValue('TAG') ?? 'span'));
-      return `<${tag}${sheetClassAttr(cls)}${attr('data-i18n', key)}>${escapeAttr(def)}</${tag}>`;
+      return `<${tag}${sheetClassAttr(cls)}${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</${tag}>`;
     },
   },
 
@@ -203,16 +208,20 @@ export const I18N_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<span${attr('title', def)}${attr('data-i18n-title', key)}` +
-        `${sheetClassAttr(cls)}></span>`
+        `${sheetClassAttr(cls)}${styleAttr(style)}></span>`
       );
     },
   },
@@ -252,10 +261,14 @@ export const I18N_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('max')
         .appendField(new Blockly.FieldTextInput(''), 'MAX');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
@@ -268,7 +281,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       return (
         `<input${attr('type', type)}${attr('class', cls)}${attr('name', name)}` +
         `${attr('data-i18n-placeholder', key)}${attr('value', def)}` +
-        `${attr('accept', accept)}${attr('min', min)}${attr('max', max)}>`
+        `${attr('accept', accept)}${attr('min', min)}${attr('max', max)}${styleAttr(style)}>`
       );
     },
   },
@@ -287,14 +300,18 @@ export const I18N_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('기본 aria-label')
         .appendField(new Blockly.FieldTextInput('Accessible label'), 'DEFAULT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       return (
-        `<span${attr('data-i18n-aria-label', key)}${attr('aria-label', def)}></span>`
+        `<span${attr('data-i18n-aria-label', key)}${attr('aria-label', def)}${styleAttr(style)}></span>`
       );
     },
   },
@@ -369,14 +386,18 @@ export const I18N_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('기본 HTML')
         .appendField(new Blockly.FieldTextInput('<b>Default</b>'), 'DEFAULT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       // DEFAULT 는 HTML 그대로 — escape 하지 않음 (data-i18n-html 의 의도).
-      return `<span${attr('data-i18n-html', key)}>${def}</span>`;
+      return `<span${attr('data-i18n-html', key)}${styleAttr(style)}>${def}</span>`;
     },
   },
 
@@ -398,15 +419,19 @@ export const I18N_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('값')
         .appendField(new Blockly.FieldTextInput('value'), 'VALUE');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const value = String(b.getFieldValue('VALUE') ?? '');
       return (
-        `<option${attr('value', value)}${attr('data-i18n', key)}>` +
+        `<option${attr('value', value)}${attr('data-i18n', key)}${styleAttr(style)}>` +
         `${escapeAttr(def)}</option>`
       );
     },
@@ -435,10 +460,14 @@ export const I18N_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const type = pickAllowed(String(b.getFieldValue('TYPE') ?? ''), BUTTON_TYPES, 'button');
@@ -446,7 +475,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
         `<button${attr('type', type)}${attr('name', name)}` +
-        `${sheetClassAttr(cls)}${attr('data-i18n', key)}>${escapeAttr(def)}</button>`
+        `${sheetClassAttr(cls)}${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</button>`
       );
     },
   },
@@ -465,13 +494,17 @@ export const I18N_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('기본 텍스트')
         .appendField(new Blockly.FieldTextInput('Section'), 'DEFAULT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
-      return `<legend${attr('data-i18n', key)}>${escapeAttr(def)}</legend>`;
+      return `<legend${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</legend>`;
     },
   },
 ];

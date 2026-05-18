@@ -176,6 +176,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
           ACCEPT: a.accept || '',
           MIN: a.min || '',
           MAX: a.max || '',
+          STYLE: a.style || '',
         },
         children: {},
       };
@@ -184,7 +185,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (inputType === 'text') {
       return {
         blockType: 'r20_text_input',
-        fields: { NAME: name, CLASS: cls, DEFAULT: a.value || '' },
+        fields: { NAME: name, CLASS: cls, DEFAULT: a.value || '', STYLE: a.style || '' },
         children: {},
       };
     }
@@ -195,6 +196,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
           NAME: name, CLASS: cls,
           MIN: a.min || '', MAX: a.max || '',
           DEFAULT: a.value || '0',
+          STYLE: a.style || '',
         },
         children: {},
       };
@@ -206,6 +208,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
           NAME: name, CLASS: cls,
           VALUE: a.value || '',
           CHECKED: 'checked' in a || a.checked != null ? 'TRUE' : 'FALSE',
+          STYLE: a.style || '',
         },
         children: {},
       };
@@ -216,6 +219,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         fields: {
           NAME: name, VALUE: a.value || '', CLASS: cls,
           LABEL: '',
+          STYLE: a.style || '',
         },
         children: {},
       };
@@ -223,14 +227,14 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (inputType === 'hidden') {
       return {
         blockType: 'r20_hidden_input',
-        fields: { NAME: name, DEFAULT: a.value || '0' },
+        fields: { NAME: name, DEFAULT: a.value || '0', STYLE: a.style || '' },
         children: {},
       };
     }
     if (inputType === 'file') {
       return {
         blockType: 'r20_file_input',
-        fields: { NAME: name, CLASS: cls, ACCEPT: a.accept || '' },
+        fields: { NAME: name, CLASS: cls, ACCEPT: a.accept || '', STYLE: a.style || '' },
         children: {},
       };
     }
@@ -249,7 +253,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     }
     return {
       blockType: 'r20_select',
-      fields: { NAME: name, CLASS: cls },
+      fields: { NAME: name, CLASS: cls, STYLE: a.style || '' },
       children: { OPTIONS: options },
     };
   }
@@ -265,7 +269,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     const text = firstTextContent(node);
     return {
       blockType: 'r20_textarea',
-      fields: { NAME: name, CLASS: cls, ROWS: rows, DEFAULT: text },
+      fields: { NAME: name, CLASS: cls, ROWS: rows, DEFAULT: text, STYLE: a.style || '' },
       children: {},
     };
   }
@@ -283,13 +287,14 @@ function matchOption(node: DomNode, _ctx: MatchContext): MatchedBlock {
         KEY: a['data-i18n'],
         DEFAULT: label,
         VALUE: a.value || '',
+        STYLE: a.style || '',
       },
       children: {},
     };
   }
   return {
     blockType: 'r20_select_option',
-    fields: { VALUE: a.value || '', LABEL: label },
+    fields: { VALUE: a.value || '', LABEL: label, STYLE: a.style || '' },
     children: {},
   };
 }
@@ -314,13 +319,13 @@ function matchDice(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
       if (!looksLikeRoll && expr) {
         return {
           blockType: 'r20_chat_button',
-          fields: { NAME: name, LABEL: label, MESSAGE: expr, CLASS: cls },
+          fields: { NAME: name, LABEL: label, MESSAGE: expr, CLASS: cls, STYLE: a.style || '' },
           children: {},
         };
       }
       return {
         blockType: 'r20_roll_button',
-        fields: { NAME: name, LABEL: label, CLASS: cls },
+        fields: { NAME: name, LABEL: label, CLASS: cls, STYLE: a.style || '' },
         children: {},
         // EXPR 은 raw 표현식 — value-input 슬롯에 raw_expression 으로 박음.
         valueInputs: expr ? { EXPR: rawExpression(expr) } : undefined,
@@ -330,7 +335,7 @@ function matchDice(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
       const name = rawName.startsWith('act_') ? rawName.slice(4) : rawName;
       return {
         blockType: 'r20_action_button',
-        fields: { NAME: name, LABEL: label, CLASS: cls },
+        fields: { NAME: name, LABEL: label, CLASS: cls, STYLE: a.style || '' },
         children: {},
       };
     }
@@ -350,7 +355,7 @@ function matchDice(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
     }
     return {
       blockType: 'r20_rolltemplate_define',
-      fields: { NAME: name },
+      fields: { NAME: name, STYLE: a.style || '' },
       children: { ROWS: rows },
     };
   }
@@ -380,6 +385,7 @@ function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         DEFAULT: text,
         CLASS: stripSheetPrefix(a.class || ''),
         TAG: tag,
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -388,7 +394,7 @@ function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     const inner = innerHtmlSerialize(node);
     return {
       blockType: 'r20_i18n_html',
-      fields: { KEY: a['data-i18n-html'], DEFAULT: inner },
+      fields: { KEY: a['data-i18n-html'], DEFAULT: inner, STYLE: a.style || '' },
       children: {},
     };
   }
@@ -399,6 +405,7 @@ function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         KEY: a['data-i18n-title'],
         DEFAULT: a.title || '',
         CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -409,6 +416,7 @@ function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         KEY: a['data-i18n-aria-label'],
         DEFAULT: a['aria-label'] || '',
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -416,7 +424,7 @@ function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'legend' && a['data-i18n']) {
     return {
       blockType: 'r20_i18n_legend',
-      fields: { KEY: a['data-i18n'], DEFAULT: firstTextContent(node) },
+      fields: { KEY: a['data-i18n'], DEFAULT: firstTextContent(node), STYLE: a.style || '' },
       children: {},
     };
   }
@@ -430,6 +438,7 @@ function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         TYPE: (a.type || 'button').toLowerCase(),
         NAME: a.name || '',
         CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -498,6 +507,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         LEVEL: tag.slice(1),
         TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -505,7 +515,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'hr') {
     return {
       blockType: 'r20_hr',
-      fields: { CLASS: stripSheetPrefix(a.class || '') },
+      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
       children: {},
     };
   }
@@ -518,6 +528,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         CLASS: stripSheetPrefix(a.class || ''),
         WIDTH: a.width || '',
         HEIGHT: a.height || '',
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -528,7 +539,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (m) {
       return {
         blockType: 'r20_icon',
-        fields: { NAME: m[1], CLASS: '' },
+        fields: { NAME: m[1], CLASS: '', STYLE: a.style || '' },
         children: {},
       };
     }
@@ -540,7 +551,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (m && /sheet-spacer/.test(cls)) {
       return {
         blockType: 'r20_spacer',
-        fields: { SIZE: m[1] },
+        fields: { SIZE: m[1], STYLE: a.style || '' },
         children: {},
       };
     }
@@ -552,6 +563,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || '').replace(/sheet-disabled-text\s*/, '').trim(),
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -565,6 +577,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -578,6 +591,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -589,6 +603,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         TEXT: allTextContent(node),
         CLASS: (stripSheetPrefix(a.class || '') + ' ' + tag).trim(),
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -597,7 +612,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'br') {
     return {
       blockType: 'r20_inline_break',
-      fields: {},
+      fields: { STYLE: a.style || '' },
       children: {},
     };
   }
@@ -608,6 +623,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -619,6 +635,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         TEXT: allTextContent(node),
         CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
       },
       children: {},
     };
@@ -626,7 +643,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'label' && hasOnlyTextOrInline(node)) {
     return {
       blockType: 'r20_label',
-      fields: { TEXT: allTextContent(node) },
+      fields: { TEXT: allTextContent(node), STYLE: a.style || '' },
       children: {},
     };
   }
@@ -644,13 +661,13 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (repeating) {
       return {
         blockType: 'r20_repeating_section',
-        fields: { NAME: repeating[1] },
+        fields: { NAME: repeating[1], STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
     return {
       blockType: 'r20_fieldset',
-      fields: { CLASS: stripSheetPrefix(cls) },
+      fields: { CLASS: stripSheetPrefix(cls), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
@@ -674,14 +691,14 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (/\bsheet-row\b/.test(cls) && tokens.length === 1 && tokens[0] === 'sheet-row') {
       return {
         blockType: 'r20_row',
-        fields: {},
+        fields: { STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
     if (/\bsheet-col\b/.test(cls) && tokens.length === 1 && tokens[0] === 'sheet-col') {
       return {
         blockType: 'r20_col',
-        fields: {},
+        fields: { STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
@@ -694,7 +711,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     ) {
       return {
         blockType: 'r20_colrow_n',
-        fields: { N: colrowN[1] },
+        fields: { N: colrowN[1], STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
@@ -702,7 +719,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (sectionN) {
       return {
         blockType: 'r20_section_wrap',
-        fields: { NAME: sectionN[1] },
+        fields: { NAME: sectionN[1], STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
@@ -710,7 +727,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (toggleN) {
       return {
         blockType: 'r20_toggle_wrap',
-        fields: { NAME: toggleN[1] },
+        fields: { NAME: toggleN[1], STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
@@ -721,7 +738,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     ) {
       return {
         blockType: 'r20_repeating_row',
-        fields: {},
+        fields: { STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
@@ -733,13 +750,13 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       const cols = extractGridCols(a.style || '') || '2';
       return {
         blockType: 'r20_grid',
-        fields: { COLS: cols },
+        fields: { COLS: cols, STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
     return {
       blockType: 'r20_div',
-      fields: { CLASS: stripSheetPrefix(cls) },
+      fields: { CLASS: stripSheetPrefix(cls), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
@@ -747,7 +764,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'span') {
     return {
       blockType: 'r20_span',
-      fields: { CLASS: stripSheetPrefix(a.class || '') },
+      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
@@ -755,14 +772,14 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'table') {
     return {
       blockType: 'r20_table',
-      fields: { CLASS: stripSheetPrefix(a.class || '') },
+      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
   if (tag === 'thead' || tag === 'tbody' || tag === 'tr' || tag === 'th' || tag === 'td') {
     return {
       blockType: `r20_${tag}`,
-      fields: { CLASS: stripSheetPrefix(a.class || '') },
+      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }

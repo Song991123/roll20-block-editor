@@ -13,6 +13,7 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
+import { styleAttr } from './style_field';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -97,14 +98,18 @@ export const INPUT_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('기본값')
         .appendField(new Blockly.FieldTextInput(''), 'DEFAULT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const def = String(b.getFieldValue('DEFAULT') ?? '');
-      return `<input type="text"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', def)}>`;
+      return `<input type="text"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', def)}${styleAttr(style)}>`;
     },
   },
 
@@ -131,10 +136,14 @@ export const INPUT_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('기본값')
         .appendField(new Blockly.FieldTextInput('0'), 'DEFAULT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const min = String(b.getFieldValue('MIN') ?? '');
@@ -142,7 +151,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       return (
         `<input type="number"${sheetClassAttr(cls)}${nameAttr(name)}` +
-        `${attr('min', min)}${attr('max', max)}${attr('value', def)}>`
+        `${attr('min', min)}${attr('max', max)}${attr('value', def)}${styleAttr(style)}>`
       );
     },
   },
@@ -168,16 +177,20 @@ export const INPUT_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('기본 체크')
         .appendField(new Blockly.FieldCheckbox('FALSE'), 'CHECKED');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const val = String(b.getFieldValue('VALUE') ?? '');
       const checked = String(b.getFieldValue('CHECKED') ?? 'FALSE') === 'TRUE';
       const checkedAttr = checked ? ' checked="checked"' : '';
-      return `<input type="checkbox"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', val)}${checkedAttr}>`;
+      return `<input type="checkbox"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', val)}${checkedAttr}${styleAttr(style)}>`;
     },
   },
 
@@ -196,14 +209,18 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('OPTIONS').setCheck('SelectOption').appendField('옵션:');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const options = ctx.statementToCode(block, 'OPTIONS');
-      const head = `<select${sheetClassAttr(cls)}${nameAttr(name)}>`;
+      const head = `<select${sheetClassAttr(cls)}${nameAttr(name)}${styleAttr(style)}>`;
       if (!options || !options.trim()) return `${head}</select>`;
       return `${head}\n${ctx.indent(options)}\n</select>`;
     },
@@ -223,14 +240,18 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField(new Blockly.FieldTextInput(''), 'VALUE')
         .appendField('라벨')
         .appendField(new Blockly.FieldTextInput('Option'), 'LABEL');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       b.setPreviousStatement(true, 'SelectOption');
       b.setNextStatement(true, 'SelectOption');
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const value = String(b.getFieldValue('VALUE') ?? '');
       const label = String(b.getFieldValue('LABEL') ?? '');
-      return `<option${attr('value', value)}>${escapeAttr(label)}</option>`;
+      return `<option${attr('value', value)}${styleAttr(style)}>${escapeAttr(label)}</option>`;
     },
   },
 
@@ -254,10 +275,14 @@ export const INPUT_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('기본값')
         .appendField(new Blockly.FieldTextInput(''), 'DEFAULT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const rowsRaw = Number(b.getFieldValue('ROWS') ?? 3);
@@ -265,7 +290,7 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       return (
         `<textarea${sheetClassAttr(cls)}${nameAttr(name)}` +
-        ` rows="${rows}">${escapeAttr(def)}</textarea>`
+        ` rows="${rows}"${styleAttr(style)}>${escapeAttr(def)}</textarea>`
       );
     },
   },
@@ -290,17 +315,21 @@ export const INPUT_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('라벨')
         .appendField(new Blockly.FieldTextInput('Option'), 'LABEL');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
       const value = String(b.getFieldValue('VALUE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const label = String(b.getFieldValue('LABEL') ?? '');
       return (
         `<label><input type="radio"${sheetClassAttr(cls)}${nameAttr(name)}` +
-        `${attr('value', value)}>${escapeAttr(label)}</label>`
+        `${attr('value', value)}${styleAttr(style)}>${escapeAttr(label)}</label>`
       );
     },
   },
@@ -320,13 +349,17 @@ export const INPUT_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('기본값')
         .appendField(new Blockly.FieldTextInput('0'), 'DEFAULT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
       const def = String(b.getFieldValue('DEFAULT') ?? '');
-      return `<input type="hidden"${nameAttr(name)}${attr('value', def)}>`;
+      return `<input type="hidden"${nameAttr(name)}${attr('value', def)}${styleAttr(style)}>`;
     },
   },
 
@@ -348,14 +381,18 @@ export const INPUT_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('accept')
         .appendField(new Blockly.FieldTextInput(''), 'ACCEPT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const accept = String(b.getFieldValue('ACCEPT') ?? '');
-      return `<input type="file"${sheetClassAttr(cls)}${nameAttr(name)}${attr('accept', accept)}>`;
+      return `<input type="file"${sheetClassAttr(cls)}${nameAttr(name)}${attr('accept', accept)}${styleAttr(style)}>`;
     },
   },
 ];

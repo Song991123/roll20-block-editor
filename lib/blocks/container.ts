@@ -16,6 +16,7 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
+import { styleAttr, mergeStyle } from './style_field';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -105,6 +106,12 @@ function buildCBlock(
   topFields: (input: Blockly.Input) => void,
 ): void {
   topFields(b.appendDummyInput());
+  // STYLE 필드 — inline `style="..."` 보존 (모든 c-shape 컨테이너 공통).
+  // 영시영 1부 측정 결과 style 607 건 100% 손실 — 모든 시트 generic fix.
+  // Anchor: docs/validation/verify/yshy_1bu_structural.md §4.3.
+  b.appendDummyInput()
+    .appendField('스타일')
+    .appendField(new Blockly.FieldTextInput(''), 'STYLE');
   b.appendStatementInput('CONTENT').setCheck(null);
   setStatementHooks(b);
 }
@@ -129,9 +136,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', sheetUserClassAttr(cls), content);
+      return wrapTag(ctx, 'div', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -152,9 +160,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'span', sheetUserClassAttr(cls), content);
+      return wrapTag(ctx, 'span', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -175,9 +184,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'fieldset', sheetUserClassAttr(cls), content);
+      return wrapTag(ctx, 'fieldset', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -194,8 +204,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       }),
     ),
     generator: (block, ctx) => {
+      const _b = block as Blockly.Block;
+      const style = String(_b.getFieldValue('STYLE') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', classAttr('sheet-row'), content);
+      return wrapTag(ctx, 'div', `${classAttr('sheet-row')}${styleAttr(style)}`, content);
     },
   },
 
@@ -212,8 +224,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       }),
     ),
     generator: (block, ctx) => {
+      const _b = block as Blockly.Block;
+      const style = String(_b.getFieldValue('STYLE') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', classAttr('sheet-col'), content);
+      return wrapTag(ctx, 'div', `${classAttr('sheet-col')}${styleAttr(style)}`, content);
     },
   },
 
@@ -233,10 +247,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const n = Number(b.getFieldValue('N') ?? 2);
       const safe = Number.isFinite(n) && n >= 1 ? Math.floor(n) : 2;
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', classAttr(`sheet-colrow sheet-colrow-${safe}`), content);
+      return wrapTag(ctx, 'div', `${classAttr(`sheet-colrow sheet-colrow-${safe}`)}${styleAttr(style)}`, content);
     },
   },
 
@@ -257,9 +272,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'table', sheetUserClassAttr(cls), content);
+      return wrapTag(ctx, 'table', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -280,9 +296,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'thead', sheetUserClassAttr(cls), content);
+      return wrapTag(ctx, 'thead', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -303,9 +320,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'tbody', sheetUserClassAttr(cls), content);
+      return wrapTag(ctx, 'tbody', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -326,9 +344,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'tr', sheetUserClassAttr(cls), content);
+      return wrapTag(ctx, 'tr', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -349,9 +368,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'th', sheetUserClassAttr(cls), content);
+      return wrapTag(ctx, 'th', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -372,9 +392,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'td', sheetUserClassAttr(cls), content);
+      return wrapTag(ctx, 'td', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -398,9 +419,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'items';
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'fieldset', classAttr(`repeating_${name}`), content);
+      return wrapTag(ctx, 'fieldset', `${classAttr(`repeating_${name}`)}${styleAttr(style)}`, content);
     },
   },
 
@@ -419,8 +441,10 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       }),
     ),
     generator: (block, ctx) => {
+      const _b = block as Blockly.Block;
+      const style = String(_b.getFieldValue('STYLE') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', classAttr('sheet-repeating-row'), content);
+      return wrapTag(ctx, 'div', `${classAttr('sheet-repeating-row')}${styleAttr(style)}`, content);
     },
   },
 
@@ -437,13 +461,17 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('이름표')
         .appendField(new Blockly.FieldTextInput('이름'), 'TEXT');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const safe = escapeAttr(text);
-      return `<label>${safe}</label>`;
+      return `<label${styleAttr(style)}>${safe}</label>`;
     },
   },
 
@@ -465,12 +493,13 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'main';
       const content = ctx.statementToCode(block, 'CONTENT');
       return wrapTag(
         ctx,
         'div',
-        classAttr(`sheet-section sheet-section-${name}`),
+        `${classAttr(`sheet-section sheet-section-${name}`)}${styleAttr(style)}`,
         content,
       );
     },
@@ -494,12 +523,13 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'panel';
       const content = ctx.statementToCode(block, 'CONTENT');
       return wrapTag(
         ctx,
         'div',
-        ` class="sheet-toggle sheet-toggle-${escapeAttr(name)}"${nameAttr('data-toggle', name)}`,
+        ` class="sheet-toggle sheet-toggle-${escapeAttr(name)}"${nameAttr('data-toggle', name)}${styleAttr(style)}`,
         content,
       );
     },
@@ -523,11 +553,13 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const userStyle = String(b.getFieldValue('STYLE') ?? '');
       const cols = Number(b.getFieldValue('COLS') ?? 2);
       const safe = Number.isFinite(cols) && cols >= 1 ? Math.floor(cols) : 2;
       const content = ctx.statementToCode(block, 'CONTENT');
-      const style = ` style="grid-template-columns: repeat(${safe}, 1fr)"`;
-      return wrapTag(ctx, 'div', ` class="sheet-grid"${style}`, content);
+      const builtinStyle = `grid-template-columns: repeat(${safe}, 1fr)`;
+      const mergedStyle = mergeStyle(userStyle, builtinStyle);
+      return wrapTag(ctx, 'div', ` class="sheet-grid"${mergedStyle}`, content);
     },
   },
 
@@ -562,14 +594,16 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const userStyle = String(b.getFieldValue('STYLE') ?? '');
       const left = Number(b.getFieldValue('LEFT_PX') ?? 0);
       const top = Number(b.getFieldValue('TOP_PX') ?? 0);
       const w = Number(b.getFieldValue('WIDTH_PX') ?? 120);
       const h = Number(b.getFieldValue('HEIGHT_PX') ?? 60);
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      const style = ` style="position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${h}px;"`;
-      return wrapTag(ctx, 'div', `${sheetUserClassAttr(cls)}${style}`, content);
+      const builtinStyle = `position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${h}px;`;
+      const mergedStyle = mergeStyle(userStyle, builtinStyle);
+      return wrapTag(ctx, 'div', `${sheetUserClassAttr(cls)}${mergedStyle}`, content);
     },
   },
 ];
