@@ -25,8 +25,7 @@ import {
   roll20DarkmodeIframeCss,
   roll20DarkmodeShadowCss,
 } from './roll20_base';
-// roll20_baseline (우리 보조 overlay) 는 R20 sandbox 본 CSS 와 중복/충돌해서 제외 (4번째 catch fix).
-// import { roll20BaselineCss } from './roll20_baseline';
+import { roll20BaselineCss } from './roll20_baseline';
 import { runtimeCss } from './runtime';
 
 export interface BuildDocOptions {
@@ -316,6 +315,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <!-- spec 25 + isolation fix: 실 Roll20 sandbox CSS (ground truth) → 우리 보조 baseline → runtime overlay → user CSS -->
 <style id="roll20-base">${roll20BaseIframeCss}</style>${darkMode ? `
 <style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>` : ''}
+<style id="r20-baseline-fallback">${roll20BaselineCss}</style>
 <style id="r20-runtime">${runtimeCss}</style>
 <style id="r20-layer-filter">${layerFilterCss()}</style>
 <style id="r20-user">${prefixedCss}</style>
@@ -356,6 +356,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   const css = [
     roll20BaseShadowCss,
     darkMode ? roll20DarkmodeShadowCss : '',
+    roll20BaselineCss,
     runtimeCss,
     layerFilterCss('.charsheet'),
     prefixedCss,
