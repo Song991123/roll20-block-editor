@@ -35,7 +35,7 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
         />
       </head>
-      <body className="h-full">
+      <body className="h-full app-shell">
         {children}
         <Toaster
           position="top-center"
