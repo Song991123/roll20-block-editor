@@ -698,15 +698,24 @@ function compare(rootHtml, rootBlocks) {
       }
 
       // wrapper element semantic loss — <td/th data-i18n=X>이름</td> 가 r20_i18n_text 가 됨
-      // (table cell wrapper 자체가 사라짐 — emit 시 <span data-i18n> 으로 나옴, <td> 손실)
+      // (table cell wrapper 자체가 사라짐 — emit 시 <span data-i18n> 으로 나옴, <td> 손실).
+      //
+      // P0 #1 fix (56bf050 / a6bef8b): r20_i18n_text 에 TAG 필드 추가.
+      // matcher 가 원본 태그를 TAG 에 박고 emit 가 그 태그로 출력 → <td data-i18n>
+      // wrapper 가 emit HTML 에 다시 등장. fields.TAG 가 element tag 와 일치하면
+      // wrapper 보존된 것으로 카운트. 불일치 / 미설정 시에만 loss.
       if ((el.tag === 'td' || el.tag === 'th' || el.tag === 'p') &&
           matchedBlock.blockType === 'r20_i18n_text') {
-        loss.wrapper_element_lost = (loss.wrapper_element_lost || 0) + 1;
-        pushSample(loss.samples.wrapper_lost = loss.samples.wrapper_lost || [], {
-          html: shortHtml(el),
-          lostWrapper: el.tag,
-          block: matchedBlock.blockType,
-        });
+        const tagField = (matchedBlock.fields && matchedBlock.fields.TAG) || '';
+        if (tagField.toLowerCase() !== el.tag) {
+          loss.wrapper_element_lost = (loss.wrapper_element_lost || 0) + 1;
+          pushSample(loss.samples.wrapper_lost = loss.samples.wrapper_lost || [], {
+            html: shortHtml(el),
+            lostWrapper: el.tag,
+            block: matchedBlock.blockType,
+            tagField,
+          });
+        }
       }
 
       // attribute 보존 측정
