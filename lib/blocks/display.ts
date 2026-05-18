@@ -448,9 +448,9 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
-    generator: () => {
-      const _b = block as Blockly.Block;
-      const style = String(_b.getFieldValue('STYLE') ?? '');
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const style = String(b.getFieldValue('STYLE') ?? '');
       return `<br${styleAttr(style)}>`;
     },
   },
