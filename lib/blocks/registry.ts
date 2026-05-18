@@ -24,6 +24,9 @@ import { registerI18nBlocks } from './i18n';
 import { registerCssBlocks } from './css';
 import { registerAdvancedBlocks } from './advanced';
 import { registerCompositeBlocks } from './composite';
+import { registerCompositeAttributeCardBlocks } from './composite_attribute_card';
+import { registerCompositeSkillRowBlocks } from './composite_skill_row';
+import { registerCompositeRepeatingSectionWrapperBlocks } from './composite_repeating_section_wrapper';
 import { registerConditionalViewBlocks } from './conditional_view';
 
 const ALL_BLOCKS: BlockDef[] = [];
@@ -43,6 +46,10 @@ export function registerAllBlocks(): void {
   registerCssBlocks(ALL_BLOCKS);
   registerAdvancedBlocks(ALL_BLOCKS);
   registerCompositeBlocks(ALL_BLOCKS);
+  // Phase 1 + 2 composite — atomic chain inflation 완화 (spec 26).
+  registerCompositeAttributeCardBlocks(ALL_BLOCKS);
+  registerCompositeSkillRowBlocks(ALL_BLOCKS);
+  registerCompositeRepeatingSectionWrapperBlocks(ALL_BLOCKS);
   registerConditionalViewBlocks(ALL_BLOCKS);
   registered = true;
   registeredVersion += 1;

@@ -14,6 +14,7 @@
 
 import { parseHtml } from './dom_walker';
 import { matchTree, newMatchContext } from './block_matcher';
+import { packComposites } from './composite_matcher';
 import { parseCss, newCssCtx } from './css_parser';
 import { parseI18n, newI18nCtx, type I18nOptions } from './i18n_extractor';
 import { emitWorkspaceXml } from './xml_emitter';
@@ -37,7 +38,11 @@ export function importSheet(
   if (input.html && input.html.trim()) {
     const root = parseHtml(input.html);
     const tree = matchTree(root, htmlCtx);
-    htmlXml = emitWorkspaceXml(tree);
+    // Phase 2 — composite packing layer. atomic chain 의 자주-반복 패턴을
+    // composite block 1 개로 묶어 카탈로그 inflation 감소. 인식 실패 시
+    // atomic 그대로 유지 (fail-safe).
+    const composed = packComposites(tree);
+    htmlXml = emitWorkspaceXml(composed);
     for (const w of htmlCtx.warnings) {
       warnings.push({
         severity: 'warning',
