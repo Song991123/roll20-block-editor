@@ -219,6 +219,29 @@ const EMPTY_PLACEHOLDER = `
 </style>
 `;
 
+const ROLL20_DIALOG_OPEN_CSS = `
+.ui-dialog#dialog-window,
+.dialog.largedialog,
+.characterviewer,
+.tab-content,
+.charactersheet.tab-pane.charsheet {
+  display: block !important;
+  visibility: visible !important;
+}
+
+.charsheet input[disabled],
+.charsheet input[readonly],
+.charsheet select[disabled] {
+  background-color: rgba(255, 255, 255, 0) !important;
+  color: inherit !important;
+}
+
+.charsheet {
+  background-repeat: no-repeat !important;
+  background-position: top center !important;
+}
+`;
+
 
 /**
  * spec 17 §9 — 9 레이어 CSS 필터.
@@ -317,6 +340,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <!-- spec 25 + isolation fix: 실 Roll20 sandbox CSS (ground truth) → 우리 보조 baseline → runtime overlay → user CSS -->
 <style id="roll20-base">${roll20BaseIframeCss}</style>${darkMode ? `
 <style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>` : ''}
+<style id="roll20-dialog-open">${ROLL20_DIALOG_OPEN_CSS}</style>
 ${includeEditorOverlays ? `<style id="r20-baseline-fallback">${roll20BaselineCss}</style>
 <style id="r20-runtime">${runtimeCss}</style>
 <style id="r20-layer-filter">${layerFilterCss()}</style>` : ''}
@@ -327,7 +351,7 @@ ${includeEditorOverlays ? `<style id="r20-baseline-fallback">${roll20BaselineCss
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
 <form class="sheetform">
-<div class="charactersheet tab-pane charsheet lang-undefined${darkMode ? ' sheet-darkmode' : ''}" id="charsheet-root">
+<div class="charactersheet tab-pane active charsheet lang-undefined${darkMode ? ' sheet-darkmode' : ''}" id="charsheet-root">
 ${bodyInner}
 </div>
 </form>
