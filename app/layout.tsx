@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full" suppressHydrationWarning>
+    <html lang="ko" className="dark h-full" suppressHydrationWarning>
       <head>
         <link
           rel="preconnect"

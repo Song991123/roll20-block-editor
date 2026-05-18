@@ -1,32 +1,45 @@
 /*
- * Roll20 Block Editor — globals (architectural refactor: 6번째 catch).
+ * Roll20 Block Editor — globals (7번째 catch: preflight 부활 + Shadow DOM 격리 재정리).
  *
- * User directive: 우리 앱 CSS 를 SOURCE 부터 시트 영역과 분리.
- *   - Tailwind preflight (글로벌 `html/body/*` reset) 은 `.app-shell` 안으로
- *     스코핑 (`@reference` 로 utility 만 들여오고 base preflight 는 우리가
- *     필요한 만큼만 직접 작성).
- *   - 디자인 토큰 (`--bg-app`, `--primary`, ...) 은 `:root` / `.dark` 가 아니라
- *     `.app-shell` / `.app-shell.dark` 에 정의. html / body 는 우리 변수 없음.
- *   - `<body>` 는 plain. `.app-shell` 은 EditorShell 의 root 컨테이너에 박힘.
- *   - Shadow DOM 호스트는 EditorShell 안 트리에 있으나 inherited 속성 (font-
- *     family/color) 이 body 부터 시작해서 .app-shell 까지만 도달 — Roll20
- *     baseline 의 `body { font-family: 'Helvetica Neue' }` 가 shadow 안
- *     wrapper element 에 explicit 매칭되어 우리 톤 덮어씀.
+ * 회귀 사유 (6번째 catch / 592f35e 직후):
+ *   - Tailwind v4 의 preflight 를 source-level 제거 → shadcn 컴포넌트
+ *     (Button / Dialog / Input 등) 의 reset 사라짐 → 앱 UI 완전 깨짐
+ *     (button = browser default 회색 + Arial, h1/h2 = native margin, input
+ *     = native border + native font).
+ *   - 시트 영역도 그대로 안 보임 — 별개 원인. Shadow DOM `:host { all: initial }`
+ *     이 이미 격리 책임을 진다. preflight 가 light DOM 에 있어도 shadow 안엔
+ *     안 도달 (selectors 가 shadow boundary 통과 X). 따라서 preflight 제거는
+ *     앱만 깨고 시트는 안 고침.
+ *
+ * 7번째 catch — restore + isolation 재정리:
+ *   1. `@import "tailwindcss/preflight.css" layer(base)` 부활 → shadcn 톤 복구.
+ *   2. shadow 격리는 shadowMount.ts 의 `:host { all: initial }` + 명시
+ *      `font-family: "Helvetica Neue"` 가 책임. light DOM CSS (preflight 포함)
+ *      는 shadow 안에 안 새므로 preflight 부활은 시트 영역에 영향 없음.
+ *   3. `.charsheet, .charsheet *` 의 `all: revert` 룰은 light DOM 에 `.charsheet`
+ *      가 없어 dead — 단, 미래에 iframe srcdoc 외에 light DOM 에 .charsheet
+ *      를 박는 경로가 생기면 그 때 발화하도록 symbolic 으로 남겨둠.
  *
  * Anchor: docs/spec/09_design_system.md §1 + docs/spec/25_roll20_baseline.md §9.
  */
 
-/*
- * Tailwind v4 layering — preflight 제외.
- *   `@import "tailwindcss"` 전체 번들은 `@layer base` 안에 preflight (html/body
- *   /universal selector reset) 를 박는다. 그 reset 이 light DOM html element
- *   에 `font-family` 박으면 shadow 호스트로 inherit 됨. 그래서 theme + utilities
- *   만 들이고, 우리 앱 영역의 base reset 은 `.app-shell` scope 안에 명시.
- */
-@layer theme, app-base, components, utilities;
+/* Tailwind v4 layer 선언 — base (preflight) 부활. */
+@layer theme, base, app-base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
 @import "tailwindcss/utilities.css" layer(utilities);
 @import "tw-animate-css";
+
+/*
+ * Symbolic guard — `.charsheet` 영역에서 우리 앱 reset 의 영향이 발생할 경우
+ * UA default 로 되돌림 (이후 Roll20 baseline CSS 가 cascade 시작). 현재 light
+ * DOM 에 `.charsheet` 가 없어 no-op 이지만, 회귀 방지 차원에서 명시.
+ */
+.charsheet,
+.charsheet * {
+  all: revert;
+}
+
 
 /*
  * .app-shell — 우리 앱 UI (Header / Sidebar / Workspace 등) 가 박히는 컨테이너.
@@ -154,17 +167,6 @@
   --font-sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic',
     -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-}
-
-/*
- * Global universal reset — box-sizing 만. shadow DOM 내부엔 어차피 매칭 안 됨
- * (shadow boundary 가 selector 차단). 색/폰트/border 0 — inherited 속성 박지
- * 않으므로 shadow 호스트로 새는 일 없음.
- */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
 }
 
 /*
