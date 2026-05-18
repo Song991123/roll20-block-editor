@@ -41,7 +41,7 @@ interface PreviewStore {
 }
 
 export const usePreviewStore = create<PreviewStore>((set) => ({
-  darkMode: true,
+  darkMode: false,
   sanitize: true,            // D4 ① default ON
   autoRegen: true,
   iframeSandbox: 'allow-scripts',

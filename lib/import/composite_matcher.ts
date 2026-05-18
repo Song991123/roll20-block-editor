@@ -477,9 +477,8 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
     fields,
     children: {},
     hint: 'composite:skill_row',
-    // @ts-expect-error — internal stat hint, not part of MatchedBlock public API.
     _collapsedTds: tds.length,
-  } as MatchedBlock;
+  } as MatchedBlock & { _collapsedTds: number };
 }
 
 function emptySkillRowFields(): Record<string, string> {
@@ -639,9 +638,8 @@ function tryMatchRepeatingSectionWrapper(
     },
     children: { CONTENT: remaining },
     hint: 'composite:repeating_section_wrapper',
-    // @ts-expect-error — internal stat hint, not part of MatchedBlock public API.
     _absorbed: absorbed,
-  } as MatchedBlock;
+  } as MatchedBlock & { _absorbed: number };
   return { pack, absorbed };
 }
 
