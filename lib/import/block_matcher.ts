@@ -17,6 +17,7 @@
 import type { DomNode } from './dom_walker';
 import { firstTextContent, allTextContent } from './dom_walker';
 import { parseAttrRefToken } from './expression_parser';
+import { parseSheetWorkerScript, type ParsedBlock } from './script_parser';
 
 export interface MatchedBlock {
   /** 130 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
@@ -45,11 +46,28 @@ export interface MatchContext {
    * 0 이 아니면 ImportDialog 에서 사용자에게 경고로 표시 — 더는 silent drop 아님.
    */
   sanitizeDropped: number;
+  /**
+   * Sheet worker `<script type="text/worker">` body 의 inner statement
+   * matching 통계 (Stage worker-1 — script_parser.ts).
+   *   - scriptBlocksMatched: sheet_worker 25 카탈로그로 인식된 inner block 수.
+   *   - scriptStatementsRaw: 패턴 매칭 실패해서 raw_worker statement fallback 으로 박은 inner statement 수.
+   * htmlMatched / htmlTotal 은 element-level 그대로 유지 — 본 카운터는 별도 보고.
+   */
+  scriptBlocksMatched: number;
+  scriptStatementsRaw: number;
   warnings: Array<{ code: string; message: string; hint?: string }>;
 }
 
 export function newMatchContext(): MatchContext {
-  return { rawFallbackCount: 0, matchedCount: 0, totalCount: 0, sanitizeDropped: 0, warnings: [] };
+  return {
+    rawFallbackCount: 0,
+    matchedCount: 0,
+    totalCount: 0,
+    sanitizeDropped: 0,
+    scriptBlocksMatched: 0,
+    scriptStatementsRaw: 0,
+    warnings: [],
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -426,14 +444,47 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
 
   if (tag === 'script') {
     // Stage 22 §1/§2 — script body 가 단일 reporter call (compendium /
-    // translation) 이면 카탈로그 reporter 로 매칭. 아니면 raw_worker 유지.
+    // translation) 이면 카탈로그 reporter 로 매칭.
     //
-    // 영시영 1부 회귀: `<script type="text/worker">` 같은 큰 worker 본문은
-    // 단일 reporter 패턴에 매칭 안 됨 → 기존 raw_worker fallback 그대로 →
-    // matchedCount 회귀 0.
-    const body = allTextContent(node);
+    // Stage worker-1 (현재): `<script type="text/worker">` body 가 sheet
+    // worker 25 패턴 (on/getAttrs/setAttrs/...) 으로 분해되면 r20_raw_worker
+    // 안에 분해된 sub-block 들을 CHILDREN 으로 박음. element-level 매칭은
+    // 그대로 1 (raw_worker) — htmlMatched / htmlTotal 비율 회귀 0.
+    // scriptBlocksMatched / scriptStatementsRaw 가 분해 통계.
+    //
+    // body 가 단일 reporter 인 경우는 기존 분기 (Stage 22) 가 우선.
+    // 주의: allTextContent 는 whitespace 를 collapse 함 (' ' 1 개로 합침).
+    // 그러면 `//` line comment 가 의도치 않게 다음 statement 까지 삼킴 →
+    // 파서가 인식 못 함. script body 는 raw text 그대로 보존.
+    const rawBody = node.children
+      .filter((c) => c.type === 'text' && c.text)
+      .map((c) => c.text as string)
+      .join('');
+    const body = rawBody;
     const reporter = matchSheetWorkerReporter(body);
     if (reporter) return reporter;
+
+    const scriptType = (a.type || '').toLowerCase();
+    if (scriptType === 'text/worker' || scriptType === '') {
+      const parsed = parseSheetWorkerScript(body);
+      if (parsed.blocks.length > 0 && parsed.stats.matched > 0) {
+        ctx.scriptBlocksMatched += parsed.stats.matched;
+        ctx.scriptStatementsRaw += parsed.stats.unparsed;
+        if (parsed.stats.unparsed > 0) {
+          ctx.warnings.push({
+            code: 'sheet_worker_partial',
+            message: `<script> 본문의 ${parsed.stats.unparsed} 개 statement 가 sheet_worker 카탈로그에 매칭되지 않음 — raw_worker 단편으로 fallback`,
+            hint: `matched=${parsed.stats.matched} raw=${parsed.stats.unparsed}`,
+          });
+        }
+        return {
+          blockType: 'r20_raw_worker',
+          fields: { JS: body },
+          children: { CHILDREN: parsed.blocks.map(parsedToMatched) },
+        };
+      }
+    }
+
     return {
       blockType: 'r20_raw_worker',
       fields: { JS: body },
@@ -948,6 +999,28 @@ function matchSheetWorkerReporter(body: string): MatchedBlock | null {
     };
   }
   return null;
+}
+
+// Stage worker-1: ParsedBlock (script_parser.ts) → MatchedBlock (import).
+// ParsedBlock 의 인터페이스가 MatchedBlock 과 동일한 shape — 재귀 변환만 수행.
+function parsedToMatched(p: ParsedBlock): MatchedBlock {
+  const children: Record<string, MatchedBlock[]> = {};
+  for (const [name, arr] of Object.entries(p.children ?? {})) {
+    children[name] = arr.map(parsedToMatched);
+  }
+  const out: MatchedBlock = {
+    blockType: p.blockType,
+    fields: p.fields,
+    children,
+  };
+  if (p.valueInputs) {
+    const vi: Record<string, MatchedBlock> = {};
+    for (const [name, inner] of Object.entries(p.valueInputs)) {
+      vi[name] = parsedToMatched(inner);
+    }
+    out.valueInputs = vi;
+  }
+  return out;
 }
 
 function rawExpression(expr: string): MatchedBlock {

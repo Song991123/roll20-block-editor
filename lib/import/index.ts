@@ -102,6 +102,8 @@ export function importSheet(
       i18nKeys: i18nCtx.keys,
       coverage,
       sanitizeDropped: htmlCtx.sanitizeDropped,
+      scriptBlocksMatched: htmlCtx.scriptBlocksMatched,
+      scriptStatementsRaw: htmlCtx.scriptStatementsRaw,
     },
   };
 }

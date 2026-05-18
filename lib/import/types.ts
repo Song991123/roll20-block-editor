@@ -54,6 +54,12 @@ export interface ImportStats {
    * UI 가 0 보다 크면 사용자에게 명시적 경고를 표시 (silent drop 방지).
    */
   sanitizeDropped: number;
+  /**
+   * Sheet worker `<script type="text/worker">` body 의 inner-block 분해 통계
+   * (Stage worker-1). htmlMatched / htmlTotal 은 element-level 그대로.
+   */
+  scriptBlocksMatched: number;
+  scriptStatementsRaw: number;
 }
 
 export interface ImportInput {
