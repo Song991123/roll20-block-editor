@@ -104,6 +104,12 @@ export interface ShadowMountOptions {
    * 호출자는 ShadowContextMenu 컴포넌트를 (x, y) 에 띄우는 책임.
    */
   onContextMenu?: (blockId: string, x: number, y: number) => void;
+  /** Edit-canvas mode: block native controls and use the sheet only as a move surface. */
+  disableNativeControls?: boolean;
+  /** Edit-canvas mode: do not turn text nodes into contentEditable fields. */
+  disableInlineTextEdit?: boolean;
+  /** Edit-canvas mode: keep right-click free of the preview attribute/context menu. */
+  disableContextMenu?: boolean;
 }
 
 export interface ShadowMountResult {
@@ -242,6 +248,9 @@ ${opts.css}
     }
     const target = e.target as HTMLElement | null;
     if (!target) return;
+    if (opts.disableNativeControls && isFormElement(target)) {
+      e.preventDefault();
+    }
     const el = target.closest('[data-r20-block-id]') as HTMLElement | null;
     if (!el) return;
     const blockId = el.dataset.r20BlockId;
@@ -305,7 +314,8 @@ ${opts.css}
     if (target.isContentEditable) return;
     // form 위에선 drag 시작 안 함 — native focus / typing 보존.
     // onSelect 는 click handler 가 알아서 호출함 (drag 시작 안 했으니 suppressClick=false).
-    if (isFormElement(target)) return;
+    if (isFormElement(target) && !opts.disableNativeControls) return;
+    if (opts.disableNativeControls) e.preventDefault();
     const el = target.closest('[data-r20-block-id]') as HTMLElement | null;
     if (!el) return;
     const blockId = el.dataset.r20BlockId;
@@ -385,6 +395,7 @@ ${opts.css}
   //    orig 와 비교해 변경 시 onEditText 호출.
   // 5) Escape — 원본으로 되돌리고 blur. Enter — blur (개행 막음).
   const onDblClick = (ev: Event) => {
+    if (opts.disableInlineTextEdit) return;
     const e = ev as MouseEvent;
     const target = e.target as HTMLElement | null;
     if (!target) return;
@@ -465,6 +476,7 @@ ${opts.css}
   // 4) editingState 활성 (contentEditable) 중이면 그대로 통과 — native 메뉴 우선
   //    (텍스트 편집 중엔 잘라내기/복사가 필요).
   const onContextMenu = (ev: Event) => {
+    if (opts.disableContextMenu) return;
     const e = ev as MouseEvent;
     if (editingState) return; // contentEditable 중엔 native 메뉴 보존.
     const target = e.target as HTMLElement | null;
