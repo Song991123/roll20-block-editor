@@ -76,6 +76,7 @@ export default function PreviewMain() {
     x: number;
     y: number;
   } | null>(null);
+  const [iframeHeight, setIframeHeight] = useState(900);
   // Phase E — Inspector 활성화에 쓰일 sidebarRightTab/collapse setter.
   // 'attrs' 가 Inspector 패널 (D49).
   const setSidebarRightTab = useUiStore((s) => s.setSidebarRightTab);
@@ -109,6 +110,10 @@ export default function PreviewMain() {
   // host element 에 Shadow Root attach → buildSheetParts(html, css) 인젝션.
   // 시각 동일성 보장 — buildSheetParts 는 buildSheetDoc 과 같은 runtime/layer/prefix CSS 사용.
   // Phase A 범위 = 시각만 동일. Phase B+ 의 인터랙션 (select / drag / inline edit) 은 미구현.
+  useEffect(() => {
+    setIframeHeight(900);
+  }, [srcdoc]);
+
   const hostRef = useRef<HTMLDivElement>(null);
   // spec 17 §12 Phase B — Shadow mount 가 반환하는 setSelected 를 ref 로 잡아
   // selectedBlockId 변경 effect 에서 호출. mount 사이클 (parts 변경) 마다 새 ref
@@ -349,6 +354,11 @@ export default function PreviewMain() {
         setSelected(data.blockId, 'preview');
         return;
       }
+      if (data?.type === 'r20:resize' && typeof data.height === 'number') {
+        const next = Math.max(480, Math.min(60000, Math.ceil(data.height)));
+        setIframeHeight((prev) => (Math.abs(prev - next) > 8 ? next : prev));
+        return;
+      }
       // spec 17 §8 + N3 — widget hover/click (양방향 sync 간단)
       if (data?.type === 'r20:widget-hover') {
         const widgetName: string | null = data.widgetName ?? null;
@@ -552,7 +562,8 @@ export default function PreviewMain() {
                 title="시트 미리보기"
                 sandbox={sandbox}
                 srcDoc={srcdoc}
-                className="block h-[calc(100vh-220px)] w-full border-0"
+                className="block w-full border-0"
+                style={{ height: `${iframeHeight}px` }}
               />
             ) : (
               <div

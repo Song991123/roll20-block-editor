@@ -92,6 +92,35 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return null;
   }
+  var resizeTimer = 0;
+  function measureHeight() {
+    var body = document.body;
+    var doc = document.documentElement;
+    var sheet = document.getElementById('dialog-window') || document.getElementById('charsheet-root');
+    var values = [
+      body ? body.scrollHeight : 0,
+      body ? body.offsetHeight : 0,
+      doc ? doc.scrollHeight : 0,
+      doc ? doc.offsetHeight : 0,
+      sheet ? sheet.scrollHeight : 0,
+      sheet ? sheet.offsetHeight : 0
+    ];
+    var h = 0;
+    for (var i = 0; i < values.length; i++) h = Math.max(h, values[i] || 0);
+    return Math.max(480, Math.ceil(h + 32));
+  }
+  function postResize() {
+    try {
+      parent.postMessage({ type: 'r20:resize', height: measureHeight() }, '*');
+    } catch (e) {}
+  }
+  function scheduleResize() {
+    if (resizeTimer) return;
+    resizeTimer = window.requestAnimationFrame(function () {
+      resizeTimer = 0;
+      postResize();
+    });
+  }
   document.addEventListener('click', function (e) {
     // spec 17 §8 — name 있는 element 클릭 시 부모에 widget-click 전송 (위젯 강조용)
     var widgetName = widgetNameOf(e.target);
@@ -199,6 +228,20 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       parent.postMessage({ type: 'r20:widget-hover', widgetName: null }, '*');
     } catch (err) {}
   }, false);
+  window.addEventListener('load', scheduleResize);
+  window.addEventListener('resize', scheduleResize);
+  document.addEventListener('DOMContentLoaded', scheduleResize);
+  try {
+    var mo = new MutationObserver(scheduleResize);
+    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
+  } catch (e) {}
+  try {
+    document.querySelectorAll('img').forEach(function (img) {
+      img.addEventListener('load', scheduleResize);
+      img.addEventListener('error', scheduleResize);
+    });
+  } catch (e) {}
+  scheduleResize();
 })();
 `;
 
