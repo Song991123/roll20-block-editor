@@ -224,7 +224,11 @@ function testMultipleSiblingCards(): void {
 }
 
 function testNestedChainPackingViaTr(): void {
-  // tr 안 td chain 도 재귀 packing
+  // Phase 2: 단일 r20_tr 의 자식이 (label + input + roll) skill_row 패턴이면
+  // 외부 layer 에서 r20_skill_row 로 packing (top-down). 그래서 본 tr 은
+  // attribute_card 대신 skill_row 로 변환된다. attribute_card 가 nested
+  // 으로 만들어지는 케이스는 div / 더 복잡한 wrapper / 한 row 안 다중 card
+  // 같은 시나리오 (다른 테스트가 커버).
   const trBlock: MatchedBlock = {
     blockType: 'r20_tr',
     fields: { CLASS: '' },
@@ -238,13 +242,13 @@ function testNestedChainPackingViaTr(): void {
   };
   const packed = packComposites([trBlock]);
   assert(packed.length === 1, `outer chain unchanged`);
-  assert(packed[0].blockType === 'r20_tr');
-  const innerContent = packed[0].children?.CONTENT ?? [];
   assert(
-    innerContent.length === 1,
-    `tr inner chain should pack to 1 composite, got ${innerContent.length} types=${innerContent.map((b) => b.blockType).join(',')}`,
+    packed[0].blockType === 'r20_skill_row',
+    `expected skill_row absorption (Phase 2), got ${packed[0].blockType}`,
   );
-  assert(innerContent[0].blockType === 'r20_attribute_card');
+  assert(packed[0].fields?.INPUT_NAME === 'str');
+  assert(packed[0].fields?.I18N_KEY === 'STR-u');
+  assert(packed[0].fields?.ROLL_NAME === 'str_check');
 }
 
 function testMixedChainPartialPack(): void {
