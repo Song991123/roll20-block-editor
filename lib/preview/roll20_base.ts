@@ -19,6 +19,7 @@
 
 import {
   roll20BaseCss,
+  roll20VttCss,
   roll20CharsheetCss,
   roll20JqueryCss,
   roll20DarkmodeCss,
@@ -66,6 +67,7 @@ function rewriteForShadow(css: string): string {
  */
 export const roll20BaseIframeCss = [
   roll20BaseCss,
+  roll20VttCss,
   roll20CharsheetCss,
   roll20JqueryCss,
 ].join('\n');
@@ -73,6 +75,7 @@ export const roll20BaseIframeCss = [
 /** Shadow DOM 모드 합성본. */
 export const roll20BaseShadowCss = [
   rewriteForShadow(roll20BaseCss),
+  rewriteForShadow(roll20VttCss),
   rewriteForShadow(roll20CharsheetCss),
   rewriteForShadow(roll20JqueryCss),
 ].join('\n');

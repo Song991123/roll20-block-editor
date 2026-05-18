@@ -23,10 +23,12 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEB_ROOT = os.path.dirname(HERE)
 LOCAL_DIR = os.path.join(WEB_ROOT, "lib", "preview", "roll20_base")
+WORKSPACE_ROLL20_BASE = os.path.abspath(os.path.join(WEB_ROOT, "..", "roll20-base"))
 TS_OUT = os.path.join(WEB_ROOT, "lib", "preview", "roll20_base_inline.ts")
 
 FILES = [
     ("roll20BaseCss",       "base.css"),
+    ("roll20VttCss",        "vtt.css"),
     ("roll20CharsheetCss",  "charactersheet.css"),
     ("roll20JqueryCss",     "jquery.css"),
     ("roll20DarkmodeCss",   "editor-darkmode.css"),
@@ -57,6 +59,8 @@ def main():
     parts = [header]
     for varname, fname in FILES:
         path = os.path.join(LOCAL_DIR, fname)
+        if not os.path.exists(path):
+            path = os.path.join(WORKSPACE_ROLL20_BASE, fname)
         if not os.path.exists(path):
             print(f"WARN: {path} not found — skipping", file=sys.stderr)
             parts.append(f"export const {varname} = '';\n\n")
