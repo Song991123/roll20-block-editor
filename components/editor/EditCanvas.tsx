@@ -37,6 +37,7 @@ type PendingMove = {
 
 export default function EditCanvas() {
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const setShadowSelectedRef = useRef<((id: string | null) => void) | null>(null);
   const dragOriginRef = useRef<DragOrigin | null>(null);
   const pendingMoveRef = useRef<PendingMove | null>(null);
@@ -121,9 +122,13 @@ export default function EditCanvas() {
     if (!preset) return;
     e.preventDefault();
 
-    const pos = measureDropPosition(hostRef.current, e.clientX, e.clientY);
-    appendFriendlyWidgetPreset(preset, pos);
-    setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
+    e.stopPropagation();
+
+    const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
+    const id = appendFriendlyWidgetPreset(preset, pos);
+    if (id) {
+      setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
+    }
   }, []);
 
   const handleNativeDragOver = useCallback((event: Event) => {
@@ -142,7 +147,7 @@ export default function EditCanvas() {
     e.preventDefault();
     e.stopPropagation();
 
-    const pos = measureDropPosition(hostRef.current, e.clientX, e.clientY);
+    const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     const id = appendFriendlyWidgetPreset(preset, pos);
     if (id) {
       setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
@@ -263,7 +268,13 @@ export default function EditCanvas() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-5" data-testid="edit-canvas-scroll">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-auto p-5"
+        data-testid="edit-canvas-scroll"
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+      >
         {isEmpty ? (
           <div
             className="flex min-h-[420px] items-center justify-center rounded border border-dashed border-border bg-[var(--bg-elevated)] text-sm text-muted-foreground"
@@ -289,18 +300,20 @@ export default function EditCanvas() {
 
 function measureDropPosition(
   host: HTMLElement | null,
+  fallback: HTMLElement | null,
   clientX: number,
   clientY: number,
 ): { left: number; top: number } {
-  if (!host) return { left: 24, top: 24 };
-  const shadow = host.shadowRoot;
+  const shadow = host?.shadowRoot;
   const root =
     shadow?.querySelector<HTMLElement>('body.charsheet') ??
     shadow?.querySelector<HTMLElement>('.charsheet');
-  const rect = (root ?? host).getBoundingClientRect();
+  const target = root ?? host ?? fallback;
+  if (!target) return { left: 24, top: 24 };
+  const rect = target.getBoundingClientRect();
   return {
-    left: Math.max(0, Math.round(clientX - rect.left + (root?.scrollLeft ?? host.scrollLeft))),
-    top: Math.max(0, Math.round(clientY - rect.top + (root?.scrollTop ?? host.scrollTop))),
+    left: Math.max(0, Math.round(clientX - rect.left + target.scrollLeft)),
+    top: Math.max(0, Math.round(clientY - rect.top + target.scrollTop)),
   };
 }
 
