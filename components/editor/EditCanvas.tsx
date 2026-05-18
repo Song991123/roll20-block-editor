@@ -8,6 +8,11 @@ import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { cn } from '@/lib/utils/cn';
+import {
+  FRIENDLY_WIDGET_MIME,
+  appendFriendlyWidgetPreset,
+  decodeFriendlyWidgetDrag,
+} from '@/lib/widgets/presets';
 
 const WORKSPACE_ORDER: WorkspaceKey[] = ['html', 'css', 'i18n'];
 
@@ -100,6 +105,25 @@ export default function EditCanvas() {
         top: `${pending.top}px`,
       }),
     );
+  }, []);
+
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes(FRIENDLY_WIDGET_MIME)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  }, []);
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    const payload = e.dataTransfer.getData(FRIENDLY_WIDGET_MIME);
+    if (!payload) return;
+    const preset = decodeFriendlyWidgetDrag(payload);
+    if (!preset) return;
+    e.preventDefault();
+
+    const pos = measureDropPosition(hostRef.current, e.clientX, e.clientY);
+    appendFriendlyWidgetPreset(preset, pos);
+    setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
   }, []);
 
   useEffect(() => {
@@ -209,12 +233,31 @@ export default function EditCanvas() {
               ref={hostRef}
               data-testid="edit-canvas-shadow-host"
               className="block min-h-[calc(100vh-190px)] w-full overflow-visible bg-white"
+              onDragOver={onDragOver}
+              onDrop={onDrop}
             />
           </div>
         )}
       </div>
     </div>
   );
+}
+
+function measureDropPosition(
+  host: HTMLElement | null,
+  clientX: number,
+  clientY: number,
+): { left: number; top: number } {
+  if (!host) return { left: 24, top: 24 };
+  const shadow = host.shadowRoot;
+  const root =
+    shadow?.querySelector<HTMLElement>('body.charsheet') ??
+    shadow?.querySelector<HTMLElement>('.charsheet');
+  const rect = (root ?? host).getBoundingClientRect();
+  return {
+    left: Math.max(0, Math.round(clientX - rect.left + (root?.scrollLeft ?? host.scrollLeft))),
+    top: Math.max(0, Math.round(clientY - rect.top + (root?.scrollTop ?? host.scrollTop))),
+  };
 }
 
 function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | null {
