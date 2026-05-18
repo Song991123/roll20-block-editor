@@ -19,6 +19,12 @@
  */
 
 import { autoPrefixHtmlClasses, autoPrefixCssClasses } from './prefix';
+import {
+  roll20BaseIframeCss,
+  roll20BaseShadowCss,
+  roll20DarkmodeIframeCss,
+  roll20DarkmodeShadowCss,
+} from './roll20_base';
 import { roll20BaselineCss } from './roll20_baseline';
 import { runtimeCss } from './runtime';
 
@@ -306,11 +312,13 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>시트 미리보기</title>
-<!-- spec 25: Roll20 sandbox baseline (먼저) → runtime overlay → user CSS -->
-<style>${roll20BaselineCss}</style>
-<style>${runtimeCss}</style>
-<style>${layerFilterCss()}</style>
-<style>${prefixedCss}</style>
+<!-- spec 25 + isolation fix: 실 Roll20 sandbox CSS (ground truth) → 우리 보조 baseline → runtime overlay → user CSS -->
+<style id="roll20-base">${roll20BaseIframeCss}</style>${darkMode ? `
+<style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>` : ''}
+<style id="r20-baseline-fallback">${roll20BaselineCss}</style>
+<style id="r20-runtime">${runtimeCss}</style>
+<style id="r20-layer-filter">${layerFilterCss()}</style>
+<style id="r20-user">${prefixedCss}</style>
 </head>
 <body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}">
 <div class="charsheet">
@@ -341,9 +349,13 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
   // layerFilterCss scope = '.charsheet' 로 selector 일관성 유지.
-  // spec 25 — Roll20 sandbox baseline 먼저 → runtime overlay → user CSS.
+  // spec 25 + isolation fix — 실 Roll20 sandbox CSS (ground truth, :root→:host
+  // rewrite) 먼저 → 우리 보조 baseline → runtime overlay → user CSS.
   // user CSS 가 마지막 source order 라 동일 specificity 셀렉터에선 사용자 우선.
+  const darkMode = opts.darkMode === true;
   const css = [
+    roll20BaseShadowCss,
+    darkMode ? roll20DarkmodeShadowCss : '',
     roll20BaselineCss,
     runtimeCss,
     layerFilterCss('.charsheet'),

@@ -159,18 +159,28 @@ export function mountSheetShadow(
   // .r20-dragging — Phase C drag 중 cursor: grabbing + 약한 opacity 로 시각 피드백.
   styleEl.textContent = `
 :host {
+  /* all: initial — outer page 의 Tailwind / shadcn / global utility 룰이
+     host 자체에 박는 색/폰트/박스 모델 등 모든 상속 가능 속성을 reset.
+     이 reset 후엔 아래 explicit 한 fallback 만 남는다.
+     shadow 안 element 는 host 의 inheritable 속성 (font-family, color, ...)
+     을 상속하지만, body.charsheet 가 곧 자체 font/color 를 baseline 으로부터
+     얻으므로 host 의 fallback 은 body{} 룰이 안 매칭됐을 때만 보임. */
   all: initial;
   display: block;
   width: 100%;
   height: 100%;
   contain: layout style;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #1f2328;
+  /* Roll20 baseline 과 동일 폰트/색조 — body{} 룰이 안 박힌 경우의 fallback. */
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.42857143;
+  color: #333;
   background: #fff;
 }
 :host([data-theme="dark"]) {
-  color: #e6edf3;
-  background: #0d1117;
+  /* Roll20 dark mode 의 대표 색조 — editor-darkmode.css 가 매칭 안 된 경우의 fallback. */
+  color: #e6e6e6;
+  background: #1f1f1f;
 }
 :host([data-r20-dragging]) {
   cursor: grabbing !important;
@@ -200,7 +210,10 @@ ${opts.css}
 `;
   shadow.appendChild(styleEl);
 
-  const container = document.createElement('div');
+  // spec 25 + isolation fix — wrapper 를 <body class="charsheet"> 로 만들어
+  // Roll20 base.css 의 body{} 룰이 정상 매칭되도록. createElement('body') 는
+  // HTMLBodyElement 를 반환하지만 shadow 안에서는 일반 flow content 로 동작.
+  const container = document.createElement('body');
   container.className = 'charsheet';
   container.setAttribute('data-layer', opts.layer ?? 'all');
   if (opts.darkMode) {

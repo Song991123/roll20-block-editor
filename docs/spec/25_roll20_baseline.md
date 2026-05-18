@@ -227,3 +227,145 @@ phase). baseline 은 폰트/폼/그리드 default 만 담당.
 - `components/editor/*` — touch X.
 - `lib/blockly/*` — touch X.
 
+
+---
+
+## §8. 사용자 큐레이션 Ground Truth — 2026-05-18 라운드 2 (commit 본 commit)
+
+### §8.1 배경
+
+§1~§7 의 baseline (340 rule, 12KB 추출본) 만으로는 사용자가 보던 Roll20 의 실
+시트 디자인과 시각 차이가 여전히 존재했다 (사용자 보고 2026-05-18:
+"롤20 기본적인 디자인이 적용되어야하는데 지금 아직도 다른 디자인이 같이 적용
+되는것같다"). 사용자가 직접 큐레이션한 ground truth 폴더는:
+
+```
+D:\훙냥냥\마렌상\영시영 시트 고치기\roll20-base\
+├── base.css            (449KB,  10272 line) — Bootstrap 3.x + normalize.css v3.0.3 + Grimoire color tokens
+├── charactersheet.css  (14KB,   728  line)  — .ui-dialog .charsheet / .characterdialog 룰
+├── jquery.css          (43KB,   890  line)  — jQuery UI Bootstrap (dialog chrome)
+├── editor-darkmode.css (36KB,   1471 line)  — Roll20 dark mode (sheet-darkmode scope)
+├── vtt.css             (2.96MB, 41146 line) — VTT 전체 (skipped — sheet 영역 X)
+├── app.css             (124KB, minified)    — Element Plus / Vue admin UI (skipped — sheet 영역 X)
+├── index.scss / var.scss                    — SCSS 소스 (skipped — 컴파일 안 됨)
+```
+
+본 라운드는 base/charactersheet/jquery/darkmode 4 파일 (~540KB) 을 **변환 없이
+그대로 inject** — §1~§7 의 추출본은 보조 (override candidate) 로 유지.
+
+### §8.2 파일
+
+| 파일 | 라인 / 크기 | 역할 |
+|---|---:|---|
+| `lib/preview/roll20_base/base.css`            | 10272 / 449KB | reference copy (실 파일) |
+| `lib/preview/roll20_base/charactersheet.css`  | 728   / 14KB  | reference copy |
+| `lib/preview/roll20_base/jquery.css`          | 890   / 43KB  | reference copy |
+| `lib/preview/roll20_base/editor-darkmode.css` | 1471  / 36KB  | reference copy |
+| `lib/preview/roll20_base_inline.ts`           | 542KB | AUTO-GENERATED — 위 4 파일을 TS template literal 로 인라인 (Web Worker import 가능) |
+| `lib/preview/roll20_base.ts`                  | 76 line | iframe 용 (변환 없음) + Shadow DOM 용 (`:root`→`:host` 리라이트) 합성 |
+| `scripts/gen_roll20_base_inline.py`           | 65 line | inline 재생성 스크립트 |
+
+### §8.3 주입 순서 (revised)
+
+**iframe srcdoc (`buildSheetDoc`)**:
+
+```html
+<head>
+  <style id="roll20-base">${roll20BaseIframeCss}</style>              <!-- 1. base + charsheet + jquery (실 파일) -->
+  <style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>     <!-- 2. dark mode (옵션) -->
+  <style id="r20-baseline-fallback">${roll20BaselineCss}</style>      <!-- 3. 보조 baseline (override candidate) -->
+  <style id="r20-runtime">${runtimeCss}</style>                       <!-- 4. 우리 overlay -->
+  <style id="r20-layer-filter">${layerFilterCss()}</style>            <!-- 5. layer 필터 -->
+  <style id="r20-user">${prefixedCss}</style>                         <!-- 6. 사용자 CSS (마지막) -->
+</head>
+```
+
+**Shadow DOM (`buildSheetParts`)**:
+
+```ts
+const css = [
+  roll20BaseShadowCss,             // :root → :host, html[data-theme] → :host([data-theme])
+  darkMode ? roll20DarkmodeShadowCss : '',
+  roll20BaselineCss,               // 우리 보조 (이미 .charsheet 스코프)
+  runtimeCss,
+  layerFilterCss('.charsheet'),
+  prefixedCss,
+].join('\n');
+```
+
+### §8.4 Shadow DOM isolation 보강
+
+`lib/preview/shadowMount.ts` 의 변경:
+
+1. **wrapper element 가 `<div class="charsheet">` → `<body class="charsheet">`**.
+   `document.createElement('body')` 의 결과는 HTMLBodyElement 지만 shadow tree
+   안에서는 일반 flow content 로 동작하며, CSS 셀렉터 `body { ... }` 가 정상
+   매칭. Roll20 base.css 의 body 룰 (`margin: 0`, line-height, background 등)
+   이 우리 미리보기에도 적용됨.
+
+2. **`:host { all: initial; ... }` 의 explicit fallback 색/폰트 — Roll20 기본값
+   으로 변경**. 이전: `-apple-system, ..., color: #1f2328, background: #fff`
+   (= 우리 앱의 호스트 페이지 기본). 이후: `"Helvetica Neue", Helvetica, Arial,
+   ..., color: #333, background: #fff`. body{} 룰이 미스매치한 edge case 에서도
+   Roll20 톤 유지.
+
+3. **`:host([data-theme="dark"])` fallback dark — Roll20 의 `#e6e6e6 / #1f1f1f`**
+   로 변경. 이전 우리는 GitHub-dark (`#e6edf3 / #0d1117`).
+
+4. **CSS `:root` / `html[data-theme]` 리라이트** (`roll20_base.ts:rewriteForShadow`):
+   - `:root\b` → `:host` — CSS variable 정의가 shadow tree 의 후손에게 cascade.
+   - `html[data-theme="X"]` → `:host([data-theme="X"]), [data-theme="X"]` —
+     host 자체에 박혀도 wrapper 에 박혀도 둘 다 매칭.
+   - `html\s*{` → `:host {` — normalize 의 html 룰 (font-family: sans-serif 등)
+     이 host 에 적용 → shadow tree 의 fallback 폰트.
+   - `html input[disabled]` 같은 descendant 결합 셀렉터는 리라이트 안 함
+     (`:host descendent` 는 invalid). 매칭 실패 허용 — base.css 안 그 단일
+     룰의 영향은 미미.
+
+### §8.5 의도된 제한 (skipped 항목)
+
+| 항목 | 이유 |
+|---|---|
+| `vtt.css` (2.96MB) | VTT 전체 (token/canvas/chat). 시트 영역 X. 번들 크기 폭증 우려. 채팅 영역 디자인 따로 필요하면 phase 3 검토. |
+| `app.css` (124KB) | Element Plus / Vue admin UI (Refiner 폼 등). Roll20 의 sandbox 시트 영역 외. |
+| `index.scss / var.scss` | SCSS 소스 — `@use 'element-plus/...'` 의존성 컴파일 불가. base.css 가 이미 컴파일 결과 포함. |
+| `html input[disabled]` 등 `html DESC` selector (Shadow) | `:host DESC` 가 CSS spec 상 invalid. 단일 룰 손실 허용. |
+| `:root` 외부에서 cascade 의존하는 element-plus 변수 (e.g. `--el-*`) | element-plus 의 Vue runtime 이 박는 변수 — 우리 미리보기에 없음. fallback 값 (`var(--el-*, default)`) 에 의존하는 룰만 영향, 영시영 시트 자체엔 무관. |
+
+### §8.6 verify 가이드
+
+라이브 deploy 후:
+
+```js
+// Shadow DOM 모드에서:
+const host = document.querySelector('[data-testid="preview-shadow-host"]');
+const shadow = host.shadowRoot;
+const body = shadow.querySelector('body.charsheet');
+const cs = getComputedStyle(body);
+console.log({
+  font: cs.fontFamily,     // "Helvetica Neue", Helvetica, Arial, sans-serif
+  size: cs.fontSize,       // 14px
+  lh:   cs.lineHeight,     // 1.42857143 * 14 = ~20px
+  color: cs.color,         // rgb(51, 51, 51)
+  bg:   cs.backgroundColor,// rgb(255, 255, 255)
+});
+
+// roll button 의 spec — Bootstrap btn + Roll20 charsheet roll button.
+const btn = shadow.querySelector('button[type="roll"]');
+if (btn) {
+  const bcs = getComputedStyle(btn);
+  console.log({ bg: bcs.backgroundColor, border: bcs.border, color: bcs.color });
+}
+```
+
+### §8.7 다음 phase
+
+1. **CSS bundle 분리 (lazy load)** — 540KB inline 은 PreviewMain 진입 시 즉시
+   파싱. 미리보기 미사용 사용자에게 불필요. Dynamic import 검토.
+2. **`html DESC` 셀렉터 자동 수동 매핑** — 정규식 한계. PostCSS plugin 으로
+   `html input` → `:host input, body input` 분기 가능.
+3. **vtt.css 의 채팅 영역만 추출** — `#chat-content`, `.message` 등 sheet 영역
+   외의 채팅 패널 디자인. `ChatPane` 컴포넌트 default 룩에 사용 검토.
+4. **app.css 의 dialog chrome 추출** — Roll20 의 character dialog 외곽 디자인.
+   `PreviewMain` wrapper 에 적용 검토.
+
