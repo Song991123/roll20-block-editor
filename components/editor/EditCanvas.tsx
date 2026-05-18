@@ -126,6 +126,29 @@ export default function EditCanvas() {
     setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
   }, []);
 
+  const handleNativeDragOver = useCallback((event: Event) => {
+    const e = event as DragEvent;
+    if (!hasFriendlyWidgetPayload(e.dataTransfer)) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  const handleNativeDrop = useCallback((event: Event) => {
+    const e = event as DragEvent;
+    const payload = e.dataTransfer?.getData(FRIENDLY_WIDGET_MIME) ?? '';
+    if (!payload) return;
+    const preset = decodeFriendlyWidgetDrag(payload);
+    if (!preset) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const pos = measureDropPosition(hostRef.current, e.clientX, e.clientY);
+    const id = appendFriendlyWidgetPreset(preset, pos);
+    if (id) {
+      setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
+    }
+  }, []);
+
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
@@ -178,6 +201,13 @@ export default function EditCanvas() {
     });
 
     setShadowSelectedRef.current = mounted.setSelected;
+    const shadowBody = mounted.shadow.querySelector<HTMLElement>('body.charsheet');
+    host.addEventListener('dragover', handleNativeDragOver);
+    host.addEventListener('drop', handleNativeDrop);
+    mounted.shadow.addEventListener('dragover', handleNativeDragOver);
+    mounted.shadow.addEventListener('drop', handleNativeDrop);
+    shadowBody?.addEventListener('dragover', handleNativeDragOver);
+    shadowBody?.addEventListener('drop', handleNativeDrop);
     return () => {
       if (rafRef.current != null) {
         window.cancelAnimationFrame(rafRef.current);
@@ -186,9 +216,23 @@ export default function EditCanvas() {
       pendingMoveRef.current = null;
       dragOriginRef.current = null;
       setShadowSelectedRef.current = null;
+      host.removeEventListener('dragover', handleNativeDragOver);
+      host.removeEventListener('drop', handleNativeDrop);
+      mounted.shadow.removeEventListener('dragover', handleNativeDragOver);
+      mounted.shadow.removeEventListener('drop', handleNativeDrop);
+      shadowBody?.removeEventListener('dragover', handleNativeDragOver);
+      shadowBody?.removeEventListener('drop', handleNativeDrop);
       mounted.cleanup();
     };
-  }, [parts, effectiveLayer, darkMode, flushPendingMove, snap]);
+  }, [
+    parts,
+    effectiveLayer,
+    darkMode,
+    flushPendingMove,
+    snap,
+    handleNativeDragOver,
+    handleNativeDrop,
+  ]);
 
   return (
     <div
@@ -258,6 +302,14 @@ function measureDropPosition(
     left: Math.max(0, Math.round(clientX - rect.left + (root?.scrollLeft ?? host.scrollLeft))),
     top: Math.max(0, Math.round(clientY - rect.top + (root?.scrollTop ?? host.scrollTop))),
   };
+}
+
+function hasFriendlyWidgetPayload(dataTransfer: DataTransfer | null): boolean {
+  if (!dataTransfer) return false;
+  for (let i = 0; i < dataTransfer.types.length; i += 1) {
+    if (dataTransfer.types[i] === FRIENDLY_WIDGET_MIME) return true;
+  }
+  return false;
 }
 
 function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | null {
