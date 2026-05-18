@@ -28,7 +28,7 @@ interface PreviewStore {
   sanitize: boolean;        // D4 ① — default ON
   autoRegen: boolean;       // 큰 시트 OFF 권장
   iframeSandbox: string;    // allow-scripts only — 사용자 시트 안 script 는 unique origin 안에서만 실행 (parent 접근 X). preview bridge script 동작 필요.
-  renderMode: PreviewRenderMode;   // spec 21 Phase A — default 'shadow'
+  renderMode: PreviewRenderMode;   // Roll20 sandbox parity default; Shadow DOM is edit mode.
 
   dynamicToggles: DynamicToggle[];
 
@@ -45,7 +45,7 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   sanitize: true,            // D4 ① default ON
   autoRegen: true,
   iframeSandbox: 'allow-scripts',
-  renderMode: 'shadow',      // spec 21 Phase A — Shadow DOM default
+  renderMode: 'iframe',
   dynamicToggles: [],
 
   setDarkMode: (v) => set({ darkMode: v }),

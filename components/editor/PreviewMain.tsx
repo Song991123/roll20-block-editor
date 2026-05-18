@@ -100,6 +100,7 @@ export default function PreviewMain() {
         sanitize,
         darkMode,
         previewLayer,
+        includeEditorOverlays: false,
       }),
     [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer],
   );
@@ -122,6 +123,7 @@ export default function PreviewMain() {
         sanitize,
         darkMode,
         previewLayer,
+        includeEditorOverlays: true,
       }),
     [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer],
   );
@@ -535,7 +537,9 @@ export default function PreviewMain() {
           <PreviewEmptyState />
         ) : (
           <div
-            className="mx-auto bg-white shadow-lg ring-1 ring-border"
+            className={`mx-auto ${
+              renderMode === 'iframe' ? 'bg-transparent' : 'bg-white shadow-lg ring-1 ring-border'
+            }`}
             style={{
               width: zoom === 'fit' ? '100%' : `${850 * (typeof scale === 'number' ? scale : 1)}px`,
               maxWidth: '960px',
