@@ -212,7 +212,7 @@ export default function EditorShell() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[var(--bg-app)] text-foreground">
+    <div className="app-shell dark flex h-screen flex-col bg-[var(--bg-app)] text-foreground">
       <EditorHeader />
       {recovered && (
         <AutosaveBanner

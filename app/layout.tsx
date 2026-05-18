@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="dark h-full antialiased" suppressHydrationWarning>
+    <html lang="ko" className="h-full" suppressHydrationWarning>
       <head>
         <link
           rel="preconnect"
@@ -35,7 +35,7 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"
         />
       </head>
-      <body className="h-full app-shell">
+      <body className="h-full">
         {children}
         <Toaster
           position="top-center"
@@ -44,9 +44,9 @@ export default function RootLayout({
           closeButton
           toastOptions={{
             style: {
-              background: 'var(--bg-elevated-2)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-default)',
+              background: '#262626',
+              color: '#ECECEC',
+              border: '1px solid #303030',
             },
           }}
         />

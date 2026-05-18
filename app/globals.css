@@ -1,21 +1,42 @@
-@import "tailwindcss";
+/*
+ * Roll20 Block Editor — globals (architectural refactor: 6번째 catch).
+ *
+ * User directive: 우리 앱 CSS 를 SOURCE 부터 시트 영역과 분리.
+ *   - Tailwind preflight (글로벌 `html/body/*` reset) 은 `.app-shell` 안으로
+ *     스코핑 (`@reference` 로 utility 만 들여오고 base preflight 는 우리가
+ *     필요한 만큼만 직접 작성).
+ *   - 디자인 토큰 (`--bg-app`, `--primary`, ...) 은 `:root` / `.dark` 가 아니라
+ *     `.app-shell` / `.app-shell.dark` 에 정의. html / body 는 우리 변수 없음.
+ *   - `<body>` 는 plain. `.app-shell` 은 EditorShell 의 root 컨테이너에 박힘.
+ *   - Shadow DOM 호스트는 EditorShell 안 트리에 있으나 inherited 속성 (font-
+ *     family/color) 이 body 부터 시작해서 .app-shell 까지만 도달 — Roll20
+ *     baseline 의 `body { font-family: 'Helvetica Neue' }` 가 shadow 안
+ *     wrapper element 에 explicit 매칭되어 우리 톤 덮어씀.
+ *
+ * Anchor: docs/spec/09_design_system.md §1 + docs/spec/25_roll20_baseline.md §9.
+ */
+
+/*
+ * Tailwind v4 layering — preflight 제외.
+ *   `@import "tailwindcss"` 전체 번들은 `@layer base` 안에 preflight (html/body
+ *   /universal selector reset) 를 박는다. 그 reset 이 light DOM html element
+ *   에 `font-family` 박으면 shadow 호스트로 inherit 됨. 그래서 theme + utilities
+ *   만 들이고, 우리 앱 영역의 base reset 은 `.app-shell` scope 안에 명시.
+ */
+@layer theme, app-base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 @import "tw-animate-css";
 
 /*
- * Roll20 Block Editor — Design tokens (Preview-first 재설계).
- * Anchor: docs/spec/09_design_system.md §1 (다크모드 default + 라이트 매핑).
- *
- * 5번째 catch — universal selector (`body`, `*`, `:focus-visible`) 가 시트
- * 영역 (.charsheet, shadow 호스트) 로 새지 않게 `.app-shell` wrapper scope 로
- * 한정. layout.tsx 의 <body> 에 `app-shell` class 박는다.
- * CSS variable 정의 (--bg-app, --primary, ...) 는 :root 유지 — shadcn-ui
- * primitives 가 root 에서 읽으므로. Variable inheritance 가 shadow 안으로
- * 새는 건 Roll20 sandbox CSS (.ui-dialog stripped 후 매칭) 가 charsheet body
- * 에 explicit 한 색/폰트를 박아 덮어쓰므로 실질 leak 영향 X.
+ * .app-shell — 우리 앱 UI (Header / Sidebar / Workspace 등) 가 박히는 컨테이너.
+ * Shadow DOM 의 시트 영역은 EditorShell 트리 안에 있긴 하나 inherited 속성은
+ * 여기까지만. 시각적으로 보이는 모든 우리 앱 element 는 이 scope 안.
  */
-
 :root,
-.dark {
+.dark,
+.app-shell,
+.app-shell.dark {
   --bg-canvas:        #161616;
   --bg-app:           #1A1A1A;
   --bg-elevated:      #202020;
@@ -87,7 +108,8 @@
   --statusbar-h:            32px;
 }
 
-.light {
+.light,
+.app-shell.light {
   --bg-canvas:     #F7F8FA;
   --bg-app:        #FFFFFF;
   --bg-elevated:   #F7F8FA;
@@ -134,46 +156,55 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
 }
 
+/*
+ * Global universal reset — box-sizing 만. shadow DOM 내부엔 어차피 매칭 안 됨
+ * (shadow boundary 가 selector 차단). 색/폰트/border 0 — inherited 속성 박지
+ * 않으므로 shadow 호스트로 새는 일 없음.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/*
+ * Minimal base layout — html / body 는 viewport 채움만. 색/폰트 0.
+ *   - shadow 호스트가 body 아래에 있어도 body 가 explicit 한 inherited 속성
+ *     박지 않으므로 shadow 안에 안 새어 들어옴.
+ *   - Roll20 sandbox CSS 의 body 룰은 shadow 내부 wrapper 에 매칭되어 시트
+ *     영역에 정상 Roll20 톤 박힘.
+ */
 html,
 body {
   height: 100%;
   margin: 0;
 }
 
-/* 5번째 catch — body 의 background/color/font-family 가 직접적으로 박히면
-   shadow 호스트가 inherit 받고 → shadow 안 body.charsheet 의 Roll20 body 룰이
-   매칭 안 된 element 들이 우리 다크 톤 / Pretendard 를 인헤리트. 따라서 본 룰
-   은 `.app-shell` (layout.tsx body 에 박힘) 로 한정. 사이드 효과:
-     - 시트 영역 (PreviewMain shadow 호스트의 자식) 의 inherited base 가 우리
-       Pretendard 가 아닌 system default 가 됨.
-     - shadow 안 Roll20 sandbox CSS 의 `body { font-family: ... }` 룰이 shadow
-       wrapper element (body.charsheet) 에 explicit 박혀 우리 톤 덮어씀.
-   `:root` 의 --* variable 정의는 그대로 둠 (shadcn-ui 가 root 에서 read). */
+/*
+ * .app-shell base — 우리 앱 UI 의 baseline. Tailwind preflight 제외 부분 중
+ * 우리한테 필수인 reset 만 직접 명시.
+ *   - box-sizing: border-box — 디자인 토큰 기반 spacing 가정.
+ *   - border: 0 solid — Tailwind utility 의 `border` modifier 만 박을 때 1px.
+ *   - font-family / color / background — 우리 앱 baseline.
+ */
 .app-shell {
-  background: var(--bg-app);
-  color: var(--text-primary);
+  box-sizing: border-box;
   font-family: var(--font-sans);
   font-feature-settings: 'ss03', 'cv11';
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-app);
+  color: var(--text-primary);
 }
 
-/* 5번째 catch — `* { border-color }` 가 모든 element 매칭 → shadow 호스트
-   까지. `.app-shell *` 로 한정해 시트 영역엔 안 박힘. */
-.app-shell * {
+.app-shell *,
+.app-shell *::before,
+.app-shell *::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
   border-color: var(--border-default);
-}
-
-/* 5번째 catch — Shadow 호스트 자체가 우리 앱 inherited 속성을 막는 island.
-   `.app-shell` 의 font-family/color/background 가 호스트로 inherit 되고 →
-   shadow 안 body.charsheet 가 Roll20 body 룰 미매칭 시 우리 톤이 그대로 새어
-   들어옴. 호스트에서 명시적 initial 박아 그 흐름을 차단. shadow 안 body 가
-   Roll20 룰을 정상 매칭하면 어차피 더 specific 한 rule 이 이김. */
-[data-testid="preview-shadow-host"] {
-  font-family: initial;
-  color: initial;
-  background: initial;
 }
 
 .app-shell *::-webkit-scrollbar {
@@ -191,12 +222,15 @@ body {
   background: var(--border-strong);
 }
 
+.app-shell :focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--primary);
+}
+
 /*
  * Blockly host — D26 ② 재결정.
  * 기본 = off-screen (mainMode='preview' 일 때 model only, 사용자 안 보임).
  * .is-visible (mainMode='assemble') = 메인 영역에 absolute fill, 블록 조립 가능.
- * 워크스페이스 3개 (HTML/CSS/i18n) 가 같은 컨테이너에 absolute 로 겹쳐 mount —
- * 활성 워크스페이스만 visible, 나머지는 visibility:hidden 으로 측정 유지 (D51 의 setVisible 회피 이유).
  */
 .blockly-model-host {
   position: fixed;
@@ -224,7 +258,6 @@ body {
 .blockly-model-host.is-visible > .blockly-host-slot {
   position: absolute;
   inset: 0;
-  /* inline style="width:480px;height:360px" override — assemble 모드에서는 container fill. */
   width: 100% !important;
   height: 100% !important;
 }
@@ -250,22 +283,23 @@ body {
   z-index: 10;
 }
 
-/* type='search' 의 native cancel 버튼 숨김 — 우리 커스텀 X 와 중복 회피. */
-input[type='search']::-webkit-search-cancel-button,
-input[type='search']::-webkit-search-decoration {
+/* type='search' 의 native cancel 버튼 숨김 — 우리 커스텀 X 와 중복 회피.
+   .app-shell 안에서만 매칭. */
+.app-shell input[type='search']::-webkit-search-cancel-button,
+.app-shell input[type='search']::-webkit-search-decoration {
   -webkit-appearance: none;
   appearance: none;
   display: none;
 }
 
-/* BlocksLibrary 카테고리 collapse — grid-template-rows 0fr↔1fr 외에 opacity 도 함께 트랜지션 (200ms). */
+/* BlocksLibrary 카테고리 collapse */
 .blocks-cat-body {
   transition-property: grid-template-rows, opacity;
   transition-duration: 200ms;
   transition-timing-function: ease-out;
 }
 
-/* BlocksLibrary 의 mini preview workspace — 블록 SVG 만 보이게 minimum chrome. */
+/* BlocksLibrary 의 mini preview workspace */
 .blocks-library-preview .blocklyMainBackground {
   fill: transparent;
   stroke: none;
@@ -275,7 +309,7 @@ input[type='search']::-webkit-search-decoration {
   display: none;
 }
 
-/* spec 09 §8 — Blockly Zelos 텍스트 / 선택 토큰 override. */
+/* spec 09 §8 — Blockly Zelos */
 .blocklyText {
   font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
   font-size: 13px;
@@ -289,16 +323,7 @@ input[type='search']::-webkit-search-decoration {
   stroke-width: 2;
 }
 
-/* 5번째 catch — `:focus-visible` 가 universal selector 라 shadow 호스트의
-   포커스 가능한 자손에도 매칭됨. `.app-shell` 안으로 한정해 시트 영역엔 안 박힘. */
-.app-shell :focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--primary);
-}
-
-/* D26 ②-재재 — 메인 영역 분할 뷰 resizer.
- * 워크스페이스 ↔ 미리보기 사이 6px 핸들, 드래그로 비율 조절.
- */
+/* D26 ②-재재 — 메인 영역 분할 뷰 resizer. */
 .main-resizer {
   flex-shrink: 0;
   width: 6px;
