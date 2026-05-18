@@ -369,3 +369,84 @@ if (btn) {
 4. **app.css 의 dialog chrome 추출** — Roll20 의 character dialog 외곽 디자인.
    `PreviewMain` wrapper 에 적용 검토.
 
+
+---
+
+## §9 — 4번째 catch: cascade 역전 + .ui-dialog 미매칭 + CSS variable leak
+
+### §9.1 증상
+
+3번째 catch (`90f9c8c`) 후 측정값은 `#f5f5f5 / #ccc / 2px 3px` 으로 일치 보고
+박았지만, 사용자 화면에는 여전히 우리 디자인 보임. roll button 의 d20 icon 이
+🎲 emoji 로 떴고, 컬러도 우리 dark theme 영향 받음.
+
+### §9.2 root cause — 3개 leak 동시 발생
+
+1. **cascade 역전.** `buildDoc.buildSheetParts` 의 CSS 합성 순서는
+   `roll20BaseShadowCss` → `roll20BaselineCss` → `runtimeCss` → user CSS 였음.
+   `roll20BaselineCss` (우리 보조 overlay) 가 `roll20BaseShadowCss` (실 Roll20
+   sandbox) 위에 박혀, `.charsheet button[type="roll"]::before { content:"\1F3B2"
+   /* 🎲 */; font-family: inherit }` 로 sandbox 의
+   `.ui-dialog .charsheet button[type=roll]:before { font-family: "dicefontd20";
+   content: "t" }` 를 덮어씀. 사용자가 "Roll20 베이스 위에 우리 좃대로 박지
+   말라" 고 명시.
+
+2. **`.ui-dialog` ancestor 미매칭.** `charactersheet.css` 의 모든 시트 룰
+   (`.ui-dialog .charsheet …`) 은 `.ui-dialog` 조상을 요구. Shadow / iframe
+   wrapper 는 `<body class="charsheet">` 만 박아 매칭 X — Roll20 baseline 의
+   roll button / form layout / repeating section frame 등 핵심 룰 다수가 cascade
+   에서 빠짐. `jquery.css L608` 의 `.ui-dialog { position:absolute; width:300px }`
+   때문에 `.ui-dialog` 를 wrapper 로 박는 것도 안 됨 — selector rewrite 가 정답.
+
+3. **CSS custom property leak.** `:host { all: initial }` 은 standard property
+   만 reset. CSS custom property (`--bg-app`, `--color-fg-default`, ...) 는
+   Shadow DOM 의 light-DOM 부모로부터 그대로 inherit. 우리 앱 `globals.css` 의
+   83개 `--*` 변수가 Shadow 안 element 에 cascade 됨 — `var(--bg-app, #fff)`
+   같은 fallback 안 잡히고 우리 다크 색조가 시트에 새어 들어옴.
+
+### §9.3 fix (이 commit)
+
+```
+lib/preview/roll20_base.ts
+  + stripUiDialogPrefix(css) — descendant selector list 의 `.ui-dialog ` prefix
+    제거. `(^|,)\s*\.ui-dialog\s+` → `(^|,)\s*`. iframe / shadow 양 모드에 적용.
+  · rewriteForShadow 에 stripUiDialogPrefix 합류.
+
+lib/preview/buildDoc.ts
+  - roll20BaselineCss 의 import / iframe `<style id="r20-baseline-fallback">`
+    inject / Shadow css array 항목 제거. 우리 overlay 가 R20 sandbox 위에 안
+    얹힌다.
+
+lib/preview/shadowMount.ts
+  + :host { … } 안에 우리 앱 83개 `--*` variable 의 `initial` reset 명시.
+    custom property 도 standard property 처럼 cascade 끊긴다.
+```
+
+### §9.4 cascade 최종 순서 (Shadow / iframe 공통)
+
+```
+1. roll20BaseShadowCss / roll20BaseIframeCss  ← Roll20 sandbox 본 CSS (foundation)
+   ├── base.css (normalize + Bootstrap-3)
+   ├── charactersheet.css (스트립된 .ui-dialog → 매칭됨)
+   └── jquery.css
+2. (옵션) roll20DarkmodeShadowCss / Iframe   ← Roll20 dark mode toggle
+3. runtimeCss                                 ← 우리 overlay (preview-only:
+                                                 선택 outline, fieldset hint,
+                                                 layout helper, --r20-* tokens)
+4. layerFilterCss('.charsheet')               ← 레이어 토글
+5. user CSS                                   ← 사용자가 import 한 시트 CSS
+```
+
+`roll20BaselineCss` (이전 §3 에 있던 우리 보조 baseline) 는 cascade 에서 완전히
+제거됨. emit/import 의 다른 경로에서도 참조 X (grep 으로 확인).
+
+### §9.5 측정 vs 시각 — R7 강조
+
+- 측정값 (computed style hex / px / em) 일치 ≠ 시각 일치. cascade 안 어떤
+  rule 이 매칭됐는지가 진짜 source of truth.
+- PASS 조건: (a) `getComputedStyle(button[type=roll])` 의 hex 값 일치, (b)
+  `::before` content / font-family 가 `"t"` / `"dicefontd20"`, (c) 우리 앱
+  `--*` variable 0개 inherit.
+- 위 (c) 가 빠지면 "측정상 일치" 라도 cascade 에 우리 앱 CSS 가 살아있는 상태 =
+  FAIL.
+
