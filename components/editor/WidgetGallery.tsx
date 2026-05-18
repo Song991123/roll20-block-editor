@@ -132,6 +132,23 @@ function WidgetPresetCard({
         e.dataTransfer.setData(FRIENDLY_WIDGET_MIME, encodeFriendlyWidgetDrag(preset.id));
         e.dataTransfer.setData('application/x-r20-block-type', preset.blockType);
         e.dataTransfer.setData('text/plain', preset.blockType);
+        try {
+          const ghost = e.currentTarget.cloneNode(true) as HTMLElement;
+          ghost.style.position = 'fixed';
+          ghost.style.left = '-1000px';
+          ghost.style.top = '-1000px';
+          ghost.style.width = `${e.currentTarget.getBoundingClientRect().width}px`;
+          ghost.style.pointerEvents = 'none';
+          ghost.style.opacity = '0.92';
+          ghost.style.transform = 'scale(0.98)';
+          ghost.style.boxShadow = '0 14px 32px rgba(0,0,0,0.28)';
+          ghost.style.background = '#ffffff';
+          document.body.appendChild(ghost);
+          e.dataTransfer.setDragImage(ghost, 34, 24);
+          window.setTimeout(() => ghost.remove(), 0);
+        } catch {
+          /* default drag image is fine if the browser blocks custom images. */
+        }
       }}
       title={`${preset.label}\n${preset.description}`}
     >

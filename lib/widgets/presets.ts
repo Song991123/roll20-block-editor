@@ -186,6 +186,7 @@ export function appendFriendlyWidgetPreset(
   preset: FriendlyWidgetPreset,
   position?: { left: number; top: number },
 ): string | null {
+  const targetPosition = findOpenWidgetPosition(position);
   const id = useWorkspaceStore.getState().appendBlockToActive(preset.blockType, 'html');
   if (!id) return null;
 
@@ -196,7 +197,7 @@ export function appendFriendlyWidgetPreset(
   }
 
   const baseStyle = preset.fields.STYLE ?? '';
-  const style = position ? withAbsolutePosition(baseStyle, position.left, position.top) : baseStyle;
+  const style = withAbsolutePosition(baseStyle, targetPosition.left, targetPosition.top);
   if (style || adapter.hasBlockField('html', id, 'STYLE')) {
     adapter.setBlockField('html', id, 'STYLE', style);
   }
@@ -214,6 +215,49 @@ export function decodeFriendlyWidgetDrag(value: string): FriendlyWidgetPreset | 
   } catch {
     return null;
   }
+}
+
+function findOpenWidgetPosition(position?: { left: number; top: number }): { left: number; top: number } {
+  const adapter = getBlocklyAdapter();
+  const base = position ?? defaultWidgetPosition(adapter.countBlocks('html'));
+  const existing = adapter
+    .listAllBlocks('html')
+    .map((block) => adapter.getBlockField('html', block.id, 'STYLE') ?? '')
+    .map(parseStylePosition)
+    .filter((pos): pos is { left: number; top: number } => Boolean(pos));
+
+  let left = Math.max(0, Math.round(base.left));
+  let top = Math.max(0, Math.round(base.top));
+  for (let i = 0; i < 40; i += 1) {
+    const occupied = existing.some((pos) => Math.abs(pos.left - left) < 28 && Math.abs(pos.top - top) < 28);
+    if (!occupied) return { left, top };
+    left += 28;
+    top += 28;
+  }
+  return { left, top };
+}
+
+function defaultWidgetPosition(count: number): { left: number; top: number } {
+  const index = Math.max(0, count);
+  return {
+    left: 24 + (index % 8) * 28,
+    top: 24 + Math.floor(index / 8) * 28,
+  };
+}
+
+function parseStylePosition(style: string): { left: number; top: number } | null {
+  const left = parseCssPx(style, 'left');
+  const top = parseCssPx(style, 'top');
+  if (left == null || top == null) return null;
+  return { left, top };
+}
+
+function parseCssPx(style: string, prop: 'left' | 'top'): number | null {
+  const re = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px\\s*(?:;|$)`, 'i');
+  const match = style.match(re);
+  if (!match) return null;
+  const n = Number.parseFloat(match[1]);
+  return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
 }
 
 function withAbsolutePosition(style: string, left: number, top: number): string {

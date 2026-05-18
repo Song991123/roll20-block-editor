@@ -24,6 +24,10 @@ type DragOrigin = {
   origTop: number;
   origStyle: string;
   scale: number;
+  el: HTMLElement;
+  origTransform: string;
+  origTransition: string;
+  origWillChange: string;
 };
 
 type PendingMove = {
@@ -42,6 +46,7 @@ export default function EditCanvas() {
   const dragOriginRef = useRef<DragOrigin | null>(null);
   const pendingMoveRef = useRef<PendingMove | null>(null);
   const rafRef = useRef<number | null>(null);
+  const visualRafRef = useRef<number | null>(null);
 
   const emitHtml = useWorkspaceStore((s) => s.emitCache.html);
   const emitCss = useWorkspaceStore((s) => s.emitCache.css);
@@ -108,6 +113,14 @@ export default function EditCanvas() {
     );
   }, []);
 
+  const cleanupDragVisual = useCallback(() => {
+    const origin = dragOriginRef.current;
+    if (!origin) return;
+    origin.el.style.transform = origin.origTransform;
+    origin.el.style.transition = origin.origTransition;
+    origin.el.style.willChange = origin.origWillChange;
+  }, []);
+
   const onDragOver = useCallback((e: React.DragEvent) => {
     if (e.dataTransfer.types.includes(FRIENDLY_WIDGET_MIME)) {
       e.preventDefault();
@@ -172,9 +185,13 @@ export default function EditCanvas() {
       onDragStart: (blockId) => {
         const origin = resolveDragOrigin(host, blockId);
         dragOriginRef.current = origin;
+        pendingMoveRef.current = null;
         if (!origin) {
           setLastMove('이 블록은 위치를 저장할 STYLE/LEFT/TOP 필드가 없어 이동을 건너뜀');
+          return;
         }
+        origin.el.style.transition = 'none';
+        origin.el.style.willChange = 'transform';
       },
       onDragMove: (blockId, dx, dy) => {
         const origin = dragOriginRef.current;
@@ -190,17 +207,31 @@ export default function EditCanvas() {
           top,
           origStyle: origin.origStyle,
         };
-        setLastMove(`${left}px, ${top}px`);
-        if (rafRef.current == null) {
-          rafRef.current = window.requestAnimationFrame(flushPendingMove);
+        if (visualRafRef.current == null) {
+          visualRafRef.current = window.requestAnimationFrame(() => {
+            visualRafRef.current = null;
+            const current = dragOriginRef.current;
+            const pending = pendingMoveRef.current;
+            if (!current || !pending || current.blockId !== pending.blockId) return;
+            const tx = pending.left - current.origLeft;
+            const ty = pending.top - current.origTop;
+            current.el.style.transform = `${current.origTransform ? `${current.origTransform} ` : ''}translate3d(${tx}px, ${ty}px, 0)`;
+          });
         }
       },
       onDragEnd: () => {
+        if (visualRafRef.current != null) {
+          window.cancelAnimationFrame(visualRafRef.current);
+          visualRafRef.current = null;
+        }
         if (rafRef.current != null) {
           window.cancelAnimationFrame(rafRef.current);
           rafRef.current = null;
         }
+        const pending = pendingMoveRef.current;
+        cleanupDragVisual();
         flushPendingMove();
+        if (pending) setLastMove(`${pending.left}px, ${pending.top}px`);
         dragOriginRef.current = null;
       },
     });
@@ -218,6 +249,11 @@ export default function EditCanvas() {
         window.cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
+      if (visualRafRef.current != null) {
+        window.cancelAnimationFrame(visualRafRef.current);
+        visualRafRef.current = null;
+      }
+      cleanupDragVisual();
       pendingMoveRef.current = null;
       dragOriginRef.current = null;
       setShadowSelectedRef.current = null;
@@ -237,6 +273,7 @@ export default function EditCanvas() {
     snap,
     handleNativeDragOver,
     handleNativeDrop,
+    cleanupDragVisual,
   ]);
 
   return (
@@ -327,6 +364,8 @@ function hasFriendlyWidgetPayload(dataTransfer: DataTransfer | null): boolean {
 
 function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | null {
   const adapter = getBlocklyAdapter();
+  const el = getShadowBlockElement(host, blockId);
+  if (!el) return null;
   const active = useWorkspaceStore.getState().activeWorkspace;
   const order = [active, ...WORKSPACE_ORDER].filter(
     (ws, idx, arr): ws is WorkspaceKey => !!ws && arr.indexOf(ws) === idx,
@@ -348,6 +387,10 @@ function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | nul
         origTop: parsePx(adapter.getBlockField(ws, blockId, 'TOP_PX')),
         origStyle: style,
         scale,
+        el,
+        origTransform: el.style.transform,
+        origTransition: el.style.transition,
+        origWillChange: el.style.willChange,
       };
     }
 
@@ -361,11 +404,22 @@ function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | nul
         origTop: parseCssPx(style, 'top') ?? measured.top,
         origStyle: style,
         scale,
+        el,
+        origTransform: el.style.transform,
+        origTransition: el.style.transition,
+        origWillChange: el.style.willChange,
       };
     }
   }
 
   return null;
+}
+
+function getShadowBlockElement(host: HTMLElement, blockId: string): HTMLElement | null {
+  const shadow = host.shadowRoot;
+  if (!shadow) return null;
+  const escaped = escapeAttr(blockId);
+  return shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`);
 }
 
 function getHostScale(host: HTMLElement): number {
