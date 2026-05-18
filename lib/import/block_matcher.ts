@@ -762,7 +762,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'thead' || tag === 'tbody' || tag === 'tr' || tag === 'th' || tag === 'td') {
     return {
       blockType: `r20_${tag}`,
-      fields: {},
+      fields: { CLASS: stripSheetPrefix(a.class || '') },
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }

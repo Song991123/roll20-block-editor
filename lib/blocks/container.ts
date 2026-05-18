@@ -272,12 +272,17 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     tooltip: 'table 헤더 묶음.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('표 머리');
+        top
+          .appendField('표 머리')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'thead', '', content);
+      return wrapTag(ctx, 'thead', sheetUserClassAttr(cls), content);
     },
   },
 
@@ -290,12 +295,17 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     tooltip: 'table 본문 묶음.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('표 몸통');
+        top
+          .appendField('표 몸통')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'tbody', '', content);
+      return wrapTag(ctx, 'tbody', sheetUserClassAttr(cls), content);
     },
   },
 
@@ -308,12 +318,17 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     tooltip: 'table 행. 내부에 th/td.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('표의 한 줄');
+        top
+          .appendField('표의 한 줄')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'tr', '', content);
+      return wrapTag(ctx, 'tr', sheetUserClassAttr(cls), content);
     },
   },
 
@@ -326,12 +341,17 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     tooltip: 'table 헤더 셀.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('표의 머리 칸');
+        top
+          .appendField('표의 머리 칸')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'th', '', content);
+      return wrapTag(ctx, 'th', sheetUserClassAttr(cls), content);
     },
   },
 
@@ -344,12 +364,17 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     tooltip: 'table 데이터 셀.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('표의 칸');
+        top
+          .appendField('표의 칸')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'td', '', content);
+      return wrapTag(ctx, 'td', sheetUserClassAttr(cls), content);
     },
   },
 
