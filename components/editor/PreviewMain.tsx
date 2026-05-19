@@ -392,8 +392,9 @@ export default function PreviewMain() {
         setIframeHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
         if (!autoWidthSizedRef.current && typeof data.width === 'number') {
           autoWidthSizedRef.current = true;
-          const nextWidth = Math.max(320, Math.min(2400, Math.ceil(data.width)));
-          if (Math.abs(nextWidth - useUiStore.getState().sheetCanvasWidth) > 8) {
+          const nextWidth = Math.max(850, Math.min(2400, Math.ceil(data.width)));
+          const currentWidth = useUiStore.getState().sheetCanvasWidth;
+          if (nextWidth > currentWidth + 8) {
             setSheetCanvasWidth(nextWidth);
           }
         }

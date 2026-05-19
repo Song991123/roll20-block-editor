@@ -104,7 +104,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!sheet) return null;
     var box = measureContentBox(sheet);
     if (!box.width || box.width < 120) return null;
-    return Math.max(320, Math.min(2400, Math.ceil(box.width)));
+    return Math.max(850, Math.min(2400, Math.ceil(box.width)));
   }
   function measureContentBox(root) {
     var rootRect = root.getBoundingClientRect();
@@ -433,7 +433,7 @@ const EMPTY_PLACEHOLDER = `
 `;
 
 const ROLL20_DIALOG_OPEN_CSS = `
-.ui-dialog#dialog-window,
+#dialog-window,
 .dialog.largedialog,
 .characterviewer,
 .tab-content,
@@ -442,12 +442,11 @@ const ROLL20_DIALOG_OPEN_CSS = `
   visibility: visible !important;
 }
 
-.ui-dialog#dialog-window,
-.ui-dialog#dialog-window.ui-widget-content,
-.ui-dialog#dialog-window .dialog.largedialog,
-.ui-dialog#dialog-window .characterviewer,
-.ui-dialog#dialog-window .tab-content,
-.ui-dialog#dialog-window .sheetform {
+#dialog-window,
+#dialog-window .dialog.largedialog,
+#dialog-window .characterviewer,
+#dialog-window .tab-content,
+#dialog-window .sheetform {
   background: transparent !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -457,17 +456,17 @@ const ROLL20_DIALOG_OPEN_CSS = `
   padding: 0 !important;
 }
 
-.ui-dialog#dialog-window::before,
-.ui-dialog#dialog-window::after,
-.ui-dialog#dialog-window .dialog.largedialog::before,
-.ui-dialog#dialog-window .dialog.largedialog::after,
-.ui-dialog#dialog-window .tab-content::before,
-.ui-dialog#dialog-window .tab-content::after,
-.ui-dialog#dialog-window .sheetform::before,
-.ui-dialog#dialog-window .sheetform::after,
-.ui-dialog#dialog-window > .ui-dialog-titlebar,
-.ui-dialog#dialog-window .ui-dialog-titlebar,
-.ui-dialog#dialog-window .ui-dialog-buttonpane {
+#dialog-window::before,
+#dialog-window::after,
+#dialog-window .dialog.largedialog::before,
+#dialog-window .dialog.largedialog::after,
+#dialog-window .tab-content::before,
+#dialog-window .tab-content::after,
+#dialog-window .sheetform::before,
+#dialog-window .sheetform::after,
+#dialog-window > .ui-dialog-titlebar,
+#dialog-window .ui-dialog-titlebar,
+#dialog-window .ui-dialog-buttonpane {
   content: none !important;
   display: none !important;
 }
@@ -658,7 +657,7 @@ ${includeEditorOverlays ? `<style id="r20-baseline-fallback">${roll20BaselineCss
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
 <body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}">
-<div class="ui-dialog r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
+<div class="r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
 <form class="sheetform">
@@ -712,7 +711,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   ].join('\n');
 
   const html = `
-<div class="ui-dialog r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
+<div class="r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
 <form class="sheetform">
