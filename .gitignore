@@ -104,6 +104,7 @@ docs/qa/yshy_*.md
 docs/qa/yshy_*.html
 docs/qa/yshy_*.json
 docs/qa/yshy_*.xml
+reports/corpus-static-audit/*.json
 
 # === Validation phase (LOCAL ONLY — 사용자 시트 식별자 / 영시영 specific md) ===
 docs/validation/working/
