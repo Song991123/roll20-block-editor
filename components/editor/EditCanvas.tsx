@@ -28,6 +28,9 @@ type DragOrigin = {
   origTransform: string;
   origTransition: string;
   origWillChange: string;
+  origPosition: string;
+  origStyleLeft: string;
+  origStyleTop: string;
 };
 
 type PendingMove = {
@@ -45,8 +48,8 @@ export default function EditCanvas() {
   const setShadowSelectedRef = useRef<((id: string | null) => void) | null>(null);
   const dragOriginRef = useRef<DragOrigin | null>(null);
   const pendingMoveRef = useRef<PendingMove | null>(null);
-  const rafRef = useRef<number | null>(null);
   const visualRafRef = useRef<number | null>(null);
+  const commitTimerRef = useRef<number | null>(null);
 
   const emitHtml = useWorkspaceStore((s) => s.emitCache.html);
   const emitCss = useWorkspaceStore((s) => s.emitCache.css);
@@ -63,8 +66,7 @@ export default function EditCanvas() {
   const [lastMove, setLastMove] = useState<string | null>(null);
 
   const effectiveLayer = editSubmode === 'rolltemplate' ? 'roll' : previewLayer;
-  const total = htmlCount + cssCount + i18nCount;
-  const isEmpty = total === 0;
+  const isEmpty = htmlCount + cssCount + i18nCount === 0;
 
   const parts = useMemo(
     () =>
@@ -88,37 +90,33 @@ export default function EditCanvas() {
     [snapEnabled],
   );
 
-  const flushPendingMove = useCallback(() => {
-    const pending = pendingMoveRef.current;
-    pendingMoveRef.current = null;
-    rafRef.current = null;
-    if (!pending) return;
-
-    const adapter = getBlocklyAdapter();
-    if (pending.kind === 'position-fields') {
-      adapter.setBlockField(pending.ws, pending.blockId, 'LEFT_PX', String(pending.left));
-      adapter.setBlockField(pending.ws, pending.blockId, 'TOP_PX', String(pending.top));
-      return;
-    }
-
-    adapter.setBlockField(
-      pending.ws,
-      pending.blockId,
-      'STYLE',
-      upsertCssDeclarations(pending.origStyle, {
-        position: 'absolute',
-        left: `${pending.left}px`,
-        top: `${pending.top}px`,
-      }),
-    );
-  }, []);
-
   const cleanupDragVisual = useCallback(() => {
     const origin = dragOriginRef.current;
     if (!origin) return;
     origin.el.style.transform = origin.origTransform;
     origin.el.style.transition = origin.origTransition;
     origin.el.style.willChange = origin.origWillChange;
+    origin.el.style.position = origin.origPosition;
+    origin.el.style.left = origin.origStyleLeft;
+    origin.el.style.top = origin.origStyleTop;
+  }, []);
+
+  const lockVisualAtDrop = useCallback((origin: DragOrigin, pending: PendingMove) => {
+    origin.el.style.transition = origin.origTransition;
+    origin.el.style.willChange = origin.origWillChange;
+    origin.el.style.transform = origin.origTransform;
+    origin.el.style.position = 'absolute';
+    origin.el.style.left = `${pending.left}px`;
+    origin.el.style.top = `${pending.top}px`;
+  }, []);
+
+  const commitMoveLater = useCallback((pending: PendingMove) => {
+    pendingMoveRef.current = null;
+    if (commitTimerRef.current != null) window.clearTimeout(commitTimerRef.current);
+    commitTimerRef.current = window.setTimeout(() => {
+      commitTimerRef.current = null;
+      commitMove(pending);
+    }, 80);
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -134,14 +132,11 @@ export default function EditCanvas() {
     const preset = decodeFriendlyWidgetDrag(payload);
     if (!preset) return;
     e.preventDefault();
-
     e.stopPropagation();
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     const id = appendFriendlyWidgetPreset(preset, pos);
-    if (id) {
-      setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
-    }
+    if (id) setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
   }, []);
 
   const handleNativeDragOver = useCallback((event: Event) => {
@@ -162,9 +157,7 @@ export default function EditCanvas() {
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     const id = appendFriendlyWidgetPreset(preset, pos);
-    if (id) {
-      setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
-    }
+    if (id) setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
   }, []);
 
   useEffect(() => {
@@ -179,9 +172,7 @@ export default function EditCanvas() {
       disableNativeControls: true,
       disableInlineTextEdit: true,
       disableContextMenu: true,
-      onSelect: (blockId) => {
-        setShadowSelectedRef.current?.(blockId);
-      },
+      onSelect: (blockId) => setShadowSelectedRef.current?.(blockId),
       onDragStart: (blockId) => {
         const origin = resolveDragOrigin(host, blockId);
         dragOriginRef.current = origin;
@@ -197,14 +188,12 @@ export default function EditCanvas() {
         const origin = dragOriginRef.current;
         if (!origin || origin.blockId !== blockId) return;
         const scale = origin.scale || 1;
-        const left = snap(origin.origLeft + dx / scale);
-        const top = snap(origin.origTop + dy / scale);
         pendingMoveRef.current = {
           ws: origin.ws,
           blockId,
           kind: origin.kind,
-          left,
-          top,
+          left: snap(origin.origLeft + dx / scale),
+          top: snap(origin.origTop + dy / scale),
           origStyle: origin.origStyle,
         };
         if (visualRafRef.current == null) {
@@ -224,14 +213,16 @@ export default function EditCanvas() {
           window.cancelAnimationFrame(visualRafRef.current);
           visualRafRef.current = null;
         }
-        if (rafRef.current != null) {
-          window.cancelAnimationFrame(rafRef.current);
-          rafRef.current = null;
-        }
+        const origin = dragOriginRef.current;
         const pending = pendingMoveRef.current;
-        cleanupDragVisual();
-        flushPendingMove();
-        if (pending) setLastMove(`${pending.left}px, ${pending.top}px`);
+        if (origin && pending) {
+          lockVisualAtDrop(origin, pending);
+          setLastMove(`${pending.left}px, ${pending.top}px`);
+          commitMoveLater(pending);
+        } else {
+          cleanupDragVisual();
+          pendingMoveRef.current = null;
+        }
         dragOriginRef.current = null;
       },
     });
@@ -245,14 +236,8 @@ export default function EditCanvas() {
     shadowBody?.addEventListener('dragover', handleNativeDragOver);
     shadowBody?.addEventListener('drop', handleNativeDrop);
     return () => {
-      if (rafRef.current != null) {
-        window.cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      if (visualRafRef.current != null) {
-        window.cancelAnimationFrame(visualRafRef.current);
-        visualRafRef.current = null;
-      }
+      if (visualRafRef.current != null) window.cancelAnimationFrame(visualRafRef.current);
+      if (commitTimerRef.current != null) window.clearTimeout(commitTimerRef.current);
       cleanupDragVisual();
       pendingMoveRef.current = null;
       dragOriginRef.current = null;
@@ -269,11 +254,12 @@ export default function EditCanvas() {
     parts,
     effectiveLayer,
     darkMode,
-    flushPendingMove,
     snap,
     handleNativeDragOver,
     handleNativeDrop,
     cleanupDragVisual,
+    lockVisualAtDrop,
+    commitMoveLater,
   ]);
 
   return (
@@ -317,7 +303,7 @@ export default function EditCanvas() {
             className="flex min-h-[420px] items-center justify-center rounded border border-dashed border-border bg-[var(--bg-elevated)] text-sm text-muted-foreground"
             data-testid="edit-canvas-empty"
           >
-            HTML/CSS를 불러오면 미리보기와 같은 편집 화면이 여기에 표시됩니다.
+            HTML/CSS를 불러오거나 부품을 드롭하면 편집 화면이 여기에 표시됩니다.
           </div>
         ) : (
           <div className="mx-auto min-w-0 max-w-full">
@@ -332,6 +318,25 @@ export default function EditCanvas() {
         )}
       </div>
     </div>
+  );
+}
+
+function commitMove(pending: PendingMove): void {
+  const adapter = getBlocklyAdapter();
+  if (pending.kind === 'position-fields') {
+    adapter.setBlockField(pending.ws, pending.blockId, 'LEFT_PX', String(pending.left));
+    adapter.setBlockField(pending.ws, pending.blockId, 'TOP_PX', String(pending.top));
+    return;
+  }
+  adapter.setBlockField(
+    pending.ws,
+    pending.blockId,
+    'STYLE',
+    upsertCssDeclarations(pending.origStyle, {
+      position: 'absolute',
+      left: `${pending.left}px`,
+      top: `${pending.top}px`,
+    }),
   );
 }
 
@@ -377,6 +382,15 @@ function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | nul
     const hasTop = adapter.hasBlockField(ws, blockId, 'TOP_PX');
     const style = adapter.getBlockField(ws, blockId, 'STYLE') ?? '';
     const scale = getHostScale(host);
+    const common = {
+      el,
+      origTransform: el.style.transform,
+      origTransition: el.style.transition,
+      origWillChange: el.style.willChange,
+      origPosition: el.style.position,
+      origStyleLeft: el.style.left,
+      origStyleTop: el.style.top,
+    };
 
     if (hasLeft && hasTop) {
       return {
@@ -387,10 +401,7 @@ function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | nul
         origTop: parsePx(adapter.getBlockField(ws, blockId, 'TOP_PX')),
         origStyle: style,
         scale,
-        el,
-        origTransform: el.style.transform,
-        origTransition: el.style.transition,
-        origWillChange: el.style.willChange,
+        ...common,
       };
     }
 
@@ -404,10 +415,7 @@ function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | nul
         origTop: parseCssPx(style, 'top') ?? measured.top,
         origStyle: style,
         scale,
-        el,
-        origTransform: el.style.transform,
-        origTransition: el.style.transition,
-        origWillChange: el.style.willChange,
+        ...common,
       };
     }
   }
@@ -428,13 +436,10 @@ function getHostScale(host: HTMLElement): number {
 }
 
 function measureBlockPosition(host: HTMLElement, blockId: string): { left: number; top: number } {
-  const shadow = host.shadowRoot;
-  if (!shadow) return { left: 0, top: 0 };
-  const escaped = escapeAttr(blockId);
-  const el = shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`);
+  const el = getShadowBlockElement(host, blockId);
   const root =
-    shadow.querySelector<HTMLElement>('body.charsheet') ??
-    shadow.querySelector<HTMLElement>('.charsheet');
+    host.shadowRoot?.querySelector<HTMLElement>('body.charsheet') ??
+    host.shadowRoot?.querySelector<HTMLElement>('.charsheet');
   if (!el || !root) return { left: 0, top: 0 };
   const elRect = el.getBoundingClientRect();
   const rootRect = root.getBoundingClientRect();
