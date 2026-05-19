@@ -36,6 +36,7 @@ import {
 } from '@/lib/examples';
 import dynamic from 'next/dynamic';
 import { useCallback, useState } from 'react';
+import { deleteWorkspace, AUTOSAVE_KEY } from '@/lib/persist/indexeddb';
 
 const ImportDialog = dynamic(
   () => import('./ImportDialog').then((m) => ({ default: m.ImportDialog })),
@@ -82,6 +83,7 @@ export default function EditorHeader() {
       return;
     }
     clearAll();
+    void deleteWorkspace(AUTOSAVE_KEY);
     toast.success('빈 시트 생성됨 — HTML/CSS/번역 워크스페이스 초기화', { duration: 2200 });
   }, [clearAll]);
 

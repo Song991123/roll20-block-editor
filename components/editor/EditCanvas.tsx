@@ -13,6 +13,7 @@ import {
   appendFriendlyWidgetPreset,
   decodeFriendlyWidgetDrag,
 } from '@/lib/widgets/presets';
+import PreviewToolbar from './PreviewToolbar';
 
 const WORKSPACE_ORDER: WorkspaceKey[] = ['html', 'css', 'i18n'];
 
@@ -59,14 +60,22 @@ export default function EditCanvas() {
   const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
   const editSubmode = useUiStore((s) => s.editSubmode);
   const previewLayer = useUiStore((s) => s.previewLayer);
+  const zoom = useUiStore((s) => s.previewZoom);
+  const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
   const snapEnabled = useUiStore((s) => s.snapEnabled);
   const toggleSnap = useUiStore((s) => s.toggleSnapEnabled);
   const sanitize = usePreviewStore((s) => s.sanitize);
   const darkMode = usePreviewStore((s) => s.darkMode);
   const [lastMove, setLastMove] = useState<string | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
 
   const effectiveLayer = editSubmode === 'rolltemplate' ? 'roll' : previewLayer;
   const isEmpty = htmlCount + cssCount + i18nCount === 0;
+  const fitScale =
+    zoom === 'fit' && viewportWidth > 0
+      ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / sheetCanvasWidth))
+      : 1;
+  const scale = zoom === 'fit' ? fitScale : zoom;
 
   const parts = useMemo(
     () =>
@@ -89,6 +98,16 @@ export default function EditCanvas() {
     },
     [snapEnabled],
   );
+
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    const update = () => setViewportWidth(node.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
 
   const cleanupDragVisual = useCallback(() => {
     const origin = dragOriginRef.current;
@@ -306,17 +325,35 @@ export default function EditCanvas() {
             HTML/CSS를 불러오거나 부품을 드롭하면 편집 화면이 여기에 표시됩니다.
           </div>
         ) : (
-          <div className="mx-auto min-w-0 max-w-full">
+          <div
+            className="mx-auto"
+            style={{
+              width: `${sheetCanvasWidth * scale}px`,
+              minHeight: `${Math.max(600, 900 * scale)}px`,
+              maxWidth: 'none',
+            }}
+          >
             <div
-              ref={hostRef}
-              data-testid="edit-canvas-shadow-host"
-              className="block min-h-[calc(100vh-190px)] w-full overflow-visible bg-white"
-              onDragOver={onDragOver}
-              onDrop={onDrop}
-            />
+              style={{
+                width: `${sheetCanvasWidth}px`,
+                minHeight: '900px',
+                transform: `scale(${scale})`,
+                transformOrigin: 'top center',
+              }}
+            >
+              <div
+                ref={hostRef}
+                data-testid="edit-canvas-shadow-host"
+                className="block min-h-[900px] overflow-visible bg-white"
+                style={{ width: `${sheetCanvasWidth}px` }}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
+              />
+            </div>
           </div>
         )}
       </div>
+      <PreviewToolbar />
     </div>
   );
 }

@@ -60,6 +60,7 @@ export default function PreviewMain() {
   const sandbox = usePreviewStore((s) => s.iframeSandbox);
   const renderMode = usePreviewStore((s) => s.renderMode);
   const zoom = useUiStore((s) => s.previewZoom);
+  const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
   const previewLayer = useUiStore((s) => s.previewLayer);
   const setHoveredWidgetId = useUiStore((s) => s.setHoveredWidgetId);
   const setSelectedWidgetId = useUiStore((s) => s.setSelectedWidgetId);
@@ -77,7 +78,7 @@ export default function PreviewMain() {
     y: number;
   } | null>(null);
   const [iframeHeight, setIframeHeight] = useState(900);
-  const [iframeWidth, setIframeWidth] = useState(850);
+  const [viewportWidth, setViewportWidth] = useState(0);
   // Phase E — Inspector 활성화에 쓰일 sidebarRightTab/collapse setter.
   // 'attrs' 가 Inspector 패널 (D49).
   const setSidebarRightTab = useUiStore((s) => s.setSidebarRightTab);
@@ -86,7 +87,11 @@ export default function PreviewMain() {
 
   const total = htmlCount + cssCount + i18nCount;
   const isEmpty = total === 0;
-  const scale = zoom === 'fit' ? 1 : zoom;
+  const fitScale =
+    zoom === 'fit' && viewportWidth > 0
+      ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / sheetCanvasWidth))
+      : 1;
+  const scale = zoom === 'fit' ? fitScale : zoom;
 
   // srcdoc — emitCache + 미리보기 토글 (sanitize/darkMode/previewLayer) 의 순수 derive.
   // useState + useEffect 였을 때: 마운트 시 초기값 = 빈 placeholder → useEffect 가 다음
@@ -113,8 +118,18 @@ export default function PreviewMain() {
   // Phase A 범위 = 시각만 동일. Phase B+ 의 인터랙션 (select / drag / inline edit) 은 미구현.
   useEffect(() => {
     setIframeHeight(900);
-    setIframeWidth(850);
-  }, [srcdoc]);
+  }, [srcdoc, sheetCanvasWidth]);
+
+  const previewAreaRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const node = previewAreaRef.current;
+    if (!node) return;
+    const update = () => setViewportWidth(node.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
 
   const hostRef = useRef<HTMLDivElement>(null);
   // spec 17 §12 Phase B — Shadow mount 가 반환하는 setSelected 를 ref 로 잡아
@@ -359,10 +374,6 @@ export default function PreviewMain() {
       if (data?.type === 'r20:resize' && typeof data.height === 'number') {
         const nextHeight = Math.max(480, Math.min(60000, Math.ceil(data.height)));
         setIframeHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
-        if (typeof data.width === 'number') {
-          const nextWidth = Math.max(320, Math.min(2400, Math.ceil(data.width)));
-          setIframeWidth((prev) => (Math.abs(prev - nextWidth) > 8 ? nextWidth : prev));
-        }
         return;
       }
       // spec 17 §8 + N3 — widget hover/click (양방향 sync 간단)
@@ -517,6 +528,7 @@ export default function PreviewMain() {
   return (
     <div className="relative flex h-full min-h-0 flex-col">
       <div
+        ref={previewAreaRef}
         className={`relative flex-1 min-h-0 overflow-auto p-6 ${
           dragOver ? 'ring-2 ring-primary ring-inset' : ''
         }`}
@@ -553,13 +565,22 @@ export default function PreviewMain() {
           <PreviewEmptyState />
         ) : (
           <div
-            className={`mx-auto ${
+            className="mx-auto"
+            style={{
+              width: `${sheetCanvasWidth * scale}px`,
+              height: `${iframeHeight * scale}px`,
+              maxWidth: 'none',
+            }}
+          >
+            <div
+              className={`origin-top ${
               renderMode === 'iframe' ? 'bg-transparent' : 'bg-white shadow-lg ring-1 ring-border'
             }`}
             style={{
-              width: zoom === 'fit' ? '100%' : `${iframeWidth * (typeof scale === 'number' ? scale : 1)}px`,
-              maxWidth: zoom === 'fit' ? '100%' : 'none',
-              transition: 'width 120ms ease',
+              width: `${sheetCanvasWidth}px`,
+              height: `${iframeHeight}px`,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top center',
             }}
           >
             {renderMode === 'iframe' ? (
@@ -569,7 +590,7 @@ export default function PreviewMain() {
                 sandbox={sandbox}
                 srcDoc={srcdoc}
                 className="block w-full border-0"
-                style={{ height: `${iframeHeight}px` }}
+                style={{ width: `${sheetCanvasWidth}px`, height: `${iframeHeight}px` }}
               />
             ) : (
               <div
@@ -578,6 +599,7 @@ export default function PreviewMain() {
                 className="block h-[calc(100vh-220px)] w-full overflow-auto"
               />
             )}
+            </div>
           </div>
         )}
       </div>

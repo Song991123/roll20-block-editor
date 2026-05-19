@@ -56,6 +56,8 @@ export default function PreviewToolbar() {
 
   const previewLayer = useUiStore((s) => s.previewLayer);
   const setPreviewLayer = useUiStore((s) => s.setPreviewLayer);
+  const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
+  const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
 
   const stepZoom = (dir: 1 | -1) => {
     const idx = ZOOM_STEPS.indexOf(numericZoom);
@@ -73,6 +75,23 @@ export default function PreviewToolbar() {
     <TooltipProvider delayDuration={300}>
       <div className="flex h-11 shrink-0 items-center justify-center gap-1 border-t border-border bg-[var(--bg-elevated)] px-3 text-xs">
         {/* 줌 컨트롤 그룹 */}
+        <label className="inline-flex h-8 items-center gap-1.5 rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-[11px] text-muted-foreground">
+          <span>W</span>
+          <input
+            type="number"
+            min={320}
+            max={2000}
+            step={10}
+            value={sheetCanvasWidth}
+            onChange={(e) => setSheetCanvasWidth(Number(e.target.value))}
+            className="h-6 w-16 bg-transparent text-right font-mono text-foreground outline-none"
+            aria-label="시트 가로 크기"
+          />
+          <span>px</span>
+        </label>
+
+        <span className="mx-1.5 h-5 w-px bg-border" />
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

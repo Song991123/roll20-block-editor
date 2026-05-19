@@ -51,6 +51,10 @@ function safeHtmlComment(value: string): string {
   return s;
 }
 
+function safeScriptText(value: string): string {
+  return String(value ?? '').replace(/<\/script/gi, '<\\/script');
+}
+
 // ---------- 4 블록 정의 ----------
 
 export const ADVANCED_BLOCKS: BlockDef[] = [
@@ -131,7 +135,7 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     generator: (block) => {
       const b = block as Blockly.Block;
       const js = String(b.getFieldValue('JS') ?? '');
-      return js;
+      return `<script type="text/worker">\n${safeScriptText(js)}\n</script>`;
     },
     inspectorSchema: [
       {

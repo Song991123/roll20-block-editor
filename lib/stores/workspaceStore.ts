@@ -260,6 +260,8 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
       emitWarnings: [],
       selectedBlockId: null,
       selectionOrigin: null,
+      sheetWidgets: [],
+      rolltemplateWidgets: [],
     });
   },
 

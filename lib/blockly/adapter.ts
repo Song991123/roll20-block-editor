@@ -149,6 +149,8 @@ export interface BlocklyAdapter {
    * moveBlockUp 의 대칭. statement chain 안 미지원.
    */
   moveBlockDown(key: WorkspaceKey, blockId: string): boolean;
+  moveBlockBefore(key: WorkspaceKey, blockId: string, targetId: string): boolean;
+  nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
 
@@ -502,6 +504,62 @@ class DefaultAdapter implements BlocklyAdapter {
     b.moveBy(xyN.x - xyB.x, xyN.y - xyB.y);
     next.moveBy(xyB.x - xyN.x, xyB.y - xyN.y);
     return true;
+  }
+
+  moveBlockBefore(key: WorkspaceKey, blockId: string, targetId: string): boolean {
+    const ws = this.workspaces[key];
+    const moving = ws?.getBlockById(blockId);
+    const target = ws?.getBlockById(targetId);
+    if (!ws || !moving || !target || moving === target) return false;
+    if ((moving as { getParent?: () => unknown }).getParent?.()) return false;
+    if ((target as { getParent?: () => unknown }).getParent?.()) return false;
+    const targetXY = target.getRelativeToSurfaceXY();
+    const movingXY = moving.getRelativeToSurfaceXY();
+    moving.moveBy(targetXY.x - movingXY.x, targetXY.y - movingXY.y - 24);
+    return true;
+  }
+
+  nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {
+    const ws = this.workspaces[key];
+    const moving = ws?.getBlockById(blockId) as
+      | (Blockly.Block & {
+          previousConnection?: Blockly.Connection | null;
+          nextConnection?: Blockly.Connection | null;
+          unplug?: (healStack?: boolean) => void;
+          initSvg?: () => void;
+          render?: () => void;
+        })
+      | null;
+    const target = ws?.getBlockById(targetId) as
+      | (Blockly.Block & { inputList?: Array<{ connection?: Blockly.Connection | null }> })
+      | null;
+    if (!ws || !moving || !target || moving === target) return false;
+    if (!moving.previousConnection) return false;
+
+    const statementConnection = (target.inputList ?? [])
+      .map((input) => input.connection)
+      .find((connection): connection is Blockly.Connection => {
+        if (!connection) return false;
+        return connection.type === Blockly.ConnectionType.NEXT_STATEMENT;
+      });
+    if (!statementConnection) return false;
+
+    try {
+      moving.unplug?.(true);
+      let connection = statementConnection;
+      let child = connection.targetBlock();
+      while (child?.nextConnection?.targetBlock()) {
+        child = child.nextConnection.targetBlock();
+      }
+      if (child?.nextConnection) connection = child.nextConnection;
+      if (connection.isConnected()) return false;
+      connection.connect(moving.previousConnection);
+      moving.initSvg?.();
+      moving.render?.();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   onChange(key: WorkspaceKey, listener: () => void): () => void {

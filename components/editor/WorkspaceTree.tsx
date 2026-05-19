@@ -30,6 +30,7 @@ export default function WorkspaceTree() {
   const setTreeSearch = useUiStore((s) => s.setTreeSearch);
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
+  const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
   // Perf hot path #3: structureVersion (cheap counter bump) replaces xmlCache
   // string. Same re-render frequency — but the upstream BlocklyModelHost no
   // longer pays 50-200ms/event to produce the unused XML text.
@@ -99,6 +100,15 @@ export default function WorkspaceTree() {
                 node={node}
                 selected={node.id === selectedId}
                 onSelect={() => setSelected(node.id, 'tree')}
+                onMove={(draggedId, targetId) => {
+                  if (draggedId === targetId) return;
+                  const adapter = getBlocklyAdapter();
+                  const nested = adapter.nestBlockInContainer(tab, draggedId, targetId);
+                  const moved = nested || adapter.moveBlockBefore(tab, draggedId, targetId);
+                  if (!moved) return;
+                  bumpStructure(tab, adapter.countBlocks(tab));
+                  setSelected(draggedId, 'tree');
+                }}
               />
             ))}
           </div>
@@ -119,15 +129,34 @@ function TreeRow({
   node,
   selected,
   onSelect,
+  onMove,
 }: {
   node: BlockSnapshot;
   selected: boolean;
   onSelect: () => void;
+  onMove: (draggedId: string, targetId: string) => void;
 }) {
   return (
     <button
       type="button"
+      draggable
       onClick={onSelect}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('application/x-r20-tree-block', node.id);
+        e.dataTransfer.effectAllowed = 'move';
+      }}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes('application/x-r20-tree-block')) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }}
+      onDrop={(e) => {
+        const draggedId = e.dataTransfer.getData('application/x-r20-tree-block');
+        if (!draggedId) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onMove(draggedId, node.id);
+      }}
       data-selected={selected || undefined}
       data-block-id={node.id}
       className={cn(
