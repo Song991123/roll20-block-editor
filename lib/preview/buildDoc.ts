@@ -676,7 +676,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
 <body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}">
-<div class="r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
+<div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
 <form class="sheetform">
@@ -729,7 +729,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   ].join('\n');
 
   const html = `
-<div class="r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
+<div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
 <form class="sheetform">
