@@ -145,6 +145,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   var sheetWorkerHandlers = {};
   var settingAttrs = false;
+  var translations = loadTranslations();
   function sheetWorkerOn(events, fn) {
     if (typeof fn !== 'function') return;
     String(events || '').split(/\s+/).filter(Boolean).forEach(function (evt) {
@@ -191,6 +192,61 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       try { list[i](payload || { sourceAttribute: evt.replace(/^change:/, '') }); } catch (e) { console.error('[sheet worker]', evt, e); }
     }
   }
+  function loadTranslations() {
+    var el = document.getElementById('__r20-i18n');
+    if (!el) return {};
+    try {
+      var raw = JSON.parse(el.textContent || '""');
+      if (typeof raw === 'string') return raw.trim() ? JSON.parse(raw) : {};
+      return raw && typeof raw === 'object' ? raw : {};
+    } catch (e) {
+      return {};
+    }
+  }
+  function getTranslationByKey(key) {
+    var value = translations && translations[key];
+    return value == null ? String(key || '') : String(value);
+  }
+  function getTranslationByLang(_lang, key) {
+    return getTranslationByKey(key);
+  }
+  function getTranslationLanguage() {
+    return (document.documentElement.getAttribute('lang') || 'ko').toLowerCase();
+  }
+  function applyTranslations() {
+    if (!translations || typeof translations !== 'object') return;
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n');
+      if (!key || translations[key] == null) return;
+      el.textContent = String(translations[key]);
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(function (el) {
+      var key = el.getAttribute('data-i18n-html');
+      if (!key || translations[key] == null) return;
+      el.innerHTML = String(translations[key]);
+    });
+    [
+      ['data-i18n-title', 'title'],
+      ['data-i18n-placeholder', 'placeholder'],
+      ['data-i18n-aria-label', 'aria-label']
+    ].forEach(function (pair) {
+      document.querySelectorAll('[' + pair[0] + ']').forEach(function (el) {
+        var key = el.getAttribute(pair[0]);
+        if (!key || translations[key] == null) return;
+        el.setAttribute(pair[1], String(translations[key]));
+      });
+    });
+  }
+  function sheetWorkerGetSectionIDs(section, cb) {
+    var safe = String(section || '').replace(/^repeating_/, '');
+    var ids = {};
+    var re = new RegExp('^repeating_' + regexEscape(safe) + '_([^_]+)_');
+    document.querySelectorAll('[name^="repeating_' + cssEscape(safe) + '_"]').forEach(function (el) {
+      var m = re.exec(el.getAttribute('name') || '');
+      if (m && m[1]) ids[m[1]] = true;
+    });
+    if (typeof cb === 'function') cb(Object.keys(ids));
+  }
   function installSheetWorkers() {
     var scripts = document.querySelectorAll('script[type="text/worker"]');
     scripts.forEach(function (script) {
@@ -199,16 +255,20 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       try {
         var fn = new Function(
           'on', 'getAttrs', 'setAttrs', 'getSectionIDs', 'generateRowID', 'removeRepeatingRow', 'setDefaultToken',
+          'getTranslationByKey', 'getTranslationByLang', 'getTranslationLanguage',
           code
         );
         fn(
           sheetWorkerOn,
           sheetWorkerGetAttrs,
           sheetWorkerSetAttrs,
-          function (_section, cb) { if (typeof cb === 'function') cb([]); },
+          sheetWorkerGetSectionIDs,
           function () { return 'row_' + Math.random().toString(36).slice(2, 18); },
           function () {},
-          function () {}
+          function () {},
+          getTranslationByKey,
+          getTranslationByLang,
+          getTranslationLanguage
         );
       } catch (e) {
         console.error('[sheet worker install]', e);
@@ -301,6 +361,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function cssEscape(s) {
     return String(s).replace(/[^\w-]/g, '\\$&');
   }
+  function regexEscape(s) {
+    return String(s).replace(/[.*+?^\x24{}()|[\]\\]/g, '\\$&');
+  }
   // spec 17 §8 / N3 — name 속성 있는 element hover / click 양방향 sync
   function widgetNameOf(node) {
     while (node && node !== document.body) {
@@ -352,6 +415,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       img.addEventListener('error', scheduleResize);
     });
   } catch (e) {}
+  applyTranslations();
   installSheetWorkers();
   scheduleResize();
 })();
@@ -397,19 +461,72 @@ const ROLL20_DIALOG_OPEN_CSS = `
 }
 
 rolltemplate,
-script[type="text/worker"],
-script:not([src]):not([type^="text/javascript"]) {
+script {
   display: none !important;
 }
 `;
 
 const ROLL20_PREVIEW_HIDDEN_CSS = `
 rolltemplate,
-script[type="text/worker"],
-script:not([src]):not([type^="text/javascript"]) {
+script {
   display: none !important;
 }
 `;
+
+function jsonScriptText(value: string | undefined): string {
+  return JSON.stringify(value ?? '')
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+}
+
+function parseTranslationMap(i18n: string | undefined): Record<string, string> {
+  if (!i18n?.trim()) return {};
+  try {
+    const parsed = JSON.parse(i18n);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (value == null) continue;
+      out[key] = String(value);
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function applyTranslationsToHtml(html: string, i18n: string | undefined): string {
+  const translations = parseTranslationMap(i18n);
+  if (Object.keys(translations).length === 0) return html;
+  if (typeof DOMParser === 'undefined') return html;
+
+  const doc = new DOMParser().parseFromString(`<template>${html}</template>`, 'text/html');
+  const template = doc.querySelector('template');
+  if (!template) return html;
+
+  template.content.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n');
+    if (key && translations[key] != null) el.textContent = translations[key];
+  });
+  template.content.querySelectorAll<HTMLElement>('[data-i18n-html]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-html');
+    if (key && translations[key] != null) el.innerHTML = translations[key];
+  });
+  const attrPairs = [
+    ['data-i18n-title', 'title'],
+    ['data-i18n-placeholder', 'placeholder'],
+    ['data-i18n-aria-label', 'aria-label'],
+  ] as const;
+  for (const [source, target] of attrPairs) {
+    template.content.querySelectorAll<HTMLElement>(`[${source}]`).forEach((el) => {
+      const key = el.getAttribute(source);
+      if (key && translations[key] != null) el.setAttribute(target, translations[key]);
+    });
+  }
+
+  return template.innerHTML;
+}
 
 
 /**
@@ -498,7 +615,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
 
-  const bodyInner = prefixedHtml ? prefixedHtml : EMPTY_PLACEHOLDER;
+  const bodyInner = prefixedHtml ? applyTranslationsToHtml(prefixedHtml, opts.i18n) : EMPTY_PLACEHOLDER;
 
   return `<!doctype html>
 <html lang="ko"${darkMode ? ' data-theme="dark"' : ''}>
@@ -528,6 +645,7 @@ ${bodyInner}
 </div>
 </div>
 </div>
+<script type="application/json" id="__r20-i18n">${jsonScriptText(opts.i18n)}</script>
 <script>${PREVIEW_BRIDGE_SCRIPT}</script>
 </body>
 </html>`;
@@ -549,7 +667,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
 
-  const bodyInner = prefixedHtml ? prefixedHtml : EMPTY_PLACEHOLDER;
+  const bodyInner = prefixedHtml ? applyTranslationsToHtml(prefixedHtml, opts.i18n) : EMPTY_PLACEHOLDER;
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
   // layerFilterCss scope = '.charsheet' 로 selector 일관성 유지.
@@ -561,11 +679,26 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   const css = [
     roll20BaseShadowCss,
     darkMode ? roll20DarkmodeShadowCss : '',
+    ROLL20_DIALOG_OPEN_CSS,
     includeEditorOverlays ? roll20BaselineCss : '',
     includeEditorOverlays ? runtimeCss : '',
     includeEditorOverlays ? layerFilterCss('.charsheet') : '',
     prefixedCss,
+    ROLL20_PREVIEW_HIDDEN_CSS,
   ].join('\n');
 
-  return { html: bodyInner, css };
+  const html = `
+<div class="ui-dialog ui-widget ui-widget-content ui-corner-all" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
+<div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
+<div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
+<form class="sheetform">
+<div class="charactersheet tab-pane active charsheet lang-undefined${darkMode ? ' sheet-darkmode' : ''}" id="charsheet-root">
+${bodyInner}
+</div>
+</form>
+</div>
+</div>
+</div>`;
+
+  return { html, css };
 }

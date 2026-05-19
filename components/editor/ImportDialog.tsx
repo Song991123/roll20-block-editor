@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { importSheet } from '@/lib/import';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 
 export interface ImportDialogProps {
   open: boolean;
@@ -36,6 +36,49 @@ export interface ImportDialogProps {
 }
 
 type Tab = 'html' | 'css' | 'i18n';
+
+const inputClassName = 'text-xs text-foreground file:text-foreground';
+const textareaClassName =
+  'h-56 w-full resize-y rounded border border-border bg-[var(--bg-elevated)] p-2 font-mono text-[12px] text-foreground caret-foreground placeholder:text-muted-foreground';
+
+function arrangeImportedWorkspace(key: WorkspaceKey) {
+  const workspace = getBlocklyAdapter().getWorkspace(key);
+  if (!workspace) return;
+
+  const blocks = workspace.getTopBlocks(false);
+  if (blocks.length <= 1) {
+    workspace.resizeContents?.();
+    return;
+  }
+
+  const columnCount = key === 'html' ? 4 : 2;
+  const minColumnWidth = key === 'html' ? 360 : 320;
+  const gap = 32;
+  let x = 24;
+  let y = 24;
+  let column = 0;
+  let rowHeight = 0;
+
+  for (const block of blocks) {
+    const pos = block.getRelativeToSurfaceXY();
+    const size = block.getHeightWidth();
+    block.moveBy(x - pos.x, y - pos.y);
+
+    rowHeight = Math.max(rowHeight, Math.ceil(size.height || 80));
+    column += 1;
+
+    if (column >= columnCount) {
+      column = 0;
+      x = 24;
+      y += rowHeight + gap;
+      rowHeight = 0;
+    } else {
+      x += Math.max(minColumnWidth, Math.ceil(size.width || minColumnWidth) + gap);
+    }
+  }
+
+  workspace.resizeContents?.();
+}
 
 export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const [tab, setTab] = useState<Tab>('html');
@@ -104,6 +147,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       });
       adapter.hydrateFromXml('css', result.css);
       adapter.hydrateFromXml('i18n', result.i18n);
+      arrangeImportedWorkspace('html');
+      arrangeImportedWorkspace('css');
+      arrangeImportedWorkspace('i18n');
       // chunked 토스트 정리.
       if (htmlTotal >= PROGRESS_THRESHOLD) {
         toast.dismiss(PROGRESS_TOAST_ID);
@@ -160,7 +206,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl text-foreground">
         <DialogHeader>
           <DialogTitle>외부 시트 불러오기</DialogTitle>
           <DialogDescription>
@@ -180,14 +226,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               type="file"
               accept=".html,.htm,text/html"
               onChange={handleFile(setHtmlText)}
-              className="text-xs"
+              className={inputClassName}
               aria-label="HTML 파일 업로드"
             />
             <textarea
               value={htmlText}
               onChange={(e) => setHtmlText(e.target.value)}
               placeholder="<input type='text' name='attr_character_name'> ... 같은 HTML 붙여넣기."
-              className="h-56 w-full resize-y rounded border border-border bg-[var(--bg-elevated)] p-2 font-mono text-[12px]"
+              className={textareaClassName}
               spellCheck={false}
             />
           </TabsContent>
@@ -197,14 +243,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               type="file"
               accept=".css,text/css"
               onChange={handleFile(setCssText)}
-              className="text-xs"
+              className={inputClassName}
               aria-label="CSS 파일 업로드"
             />
             <textarea
               value={cssText}
               onChange={(e) => setCssText(e.target.value)}
               placeholder=".sheet-header { color: red; } ... CSS 붙여넣기."
-              className="h-56 w-full resize-y rounded border border-border bg-[var(--bg-elevated)] p-2 font-mono text-[12px]"
+              className={textareaClassName}
               spellCheck={false}
             />
           </TabsContent>
@@ -214,14 +260,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               type="file"
               accept=".json,.txt,application/json,text/plain"
               onChange={handleFile(setI18nText)}
-              className="text-xs"
+              className={inputClassName}
               aria-label="번역 파일 업로드"
             />
             <textarea
               value={i18nText}
               onChange={(e) => setI18nText(e.target.value)}
               placeholder='{"hello":"안녕"} 또는 key=value 줄 형식.'
-              className="h-56 w-full resize-y rounded border border-border bg-[var(--bg-elevated)] p-2 font-mono text-[12px]"
+              className={textareaClassName}
               spellCheck={false}
             />
           </TabsContent>

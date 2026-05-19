@@ -44,6 +44,16 @@ function formatTime(ts: number): string {
   return `${hh}:${mm}:${ss}`;
 }
 
+function safeRolltemplateClass(name: string): string {
+  const safe = name.replace(/[^A-Za-z0-9_-]/g, '');
+  return `sheet-rolltemplate-${safe || 'default'}`;
+}
+
+function extractRolltemplateCss(css: string): string {
+  const matches = css.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
+  return matches ? matches.join('\n') : '';
+}
+
 function DiceBreakdown({ detail }: { detail: RollDetail }) {
   if (!detail.dice.length) {
     return (
@@ -143,7 +153,11 @@ function CardRolltemplate({
         🎲 rolltemplate:{result.templateName}
       </div>
       <div
-        className="rt-card rounded border border-border bg-[var(--bg-elevated-2)] p-2 text-xs"
+        className={[
+          'rt-card text-xs',
+          safeRolltemplateClass(result.templateName),
+          customBody ? '' : 'rounded border border-border bg-[var(--bg-elevated-2)] p-2',
+        ].join(' ')}
         dangerouslySetInnerHTML={{ __html: innerHtml }}
       />
       {result.anyCrit && (
@@ -215,9 +229,17 @@ export default function ChatPane() {
   const rolls = useChatStore((s) => s.rolls);
   const clear = useChatStore((s) => s.clear);
   const emittedHtml = useWorkspaceStore((s) => s.emitCache.html);
+  const emittedCss = useWorkspaceStore((s) => s.emitCache.css);
+  const rolltemplateCss = useMemo(() => extractRolltemplateCss(emittedCss), [emittedCss]);
 
   return (
     <div className="flex h-full flex-col min-h-0">
+      {rolltemplateCss.trim() && (
+        <style
+          data-r20-chat-user-css
+          dangerouslySetInnerHTML={{ __html: rolltemplateCss }}
+        />
+      )}
       <div className="h-9 shrink-0 border-b border-border px-3 flex items-center justify-between">
         <div className="text-[11px] font-medium text-[var(--fg-muted)]">
           채팅 ({rolls.length})

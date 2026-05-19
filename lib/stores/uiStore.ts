@@ -128,7 +128,7 @@ const DEFAULT_STATE = {
   sidebarLeftCollapsed: false,
   sidebarRightTab: 'attrs' as SidebarRightTab,
   sidebarRightCollapsed: false,
-  sidebarRightWidth: 320,
+  sidebarRightWidth: 300,
   codeSubTab: 'html' as CodeSubTab,
   treeWorkspaceTab: 'html' as WorkspaceKey,
   blocksSearch: '',
@@ -185,7 +185,7 @@ export const useUiStore = create<UiState>()(
         set((s) => ({ sidebarRightCollapsed: !s.sidebarRightCollapsed })),
       setSidebarRightWidth: (px) =>
         set({
-          sidebarRightWidth: Math.min(480, Math.max(280, px)),
+          sidebarRightWidth: Math.min(520, Math.max(260, px)),
         }),
       setCodeSubTab: (t) => set({ codeSubTab: t }),
       setTreeWorkspaceTab: (t) => set({ treeWorkspaceTab: t }),
