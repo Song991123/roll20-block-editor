@@ -630,7 +630,6 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
   const sanitize = opts.sanitize !== false; // default ON
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
-  const includeEditorOverlays = opts.includeEditorOverlays === true;
 
   const userHtml = (opts.html ?? '').trim();
   const userCss = (opts.css ?? '').trim();
@@ -650,9 +649,9 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <style id="roll20-base">${roll20BaseIframeCss}</style>${darkMode ? `
 <style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>` : ''}
 <style id="roll20-dialog-open">${ROLL20_DIALOG_OPEN_CSS}</style>
-${includeEditorOverlays ? `<style id="r20-baseline-fallback">${roll20BaselineCss}</style>
+<style id="r20-baseline-fallback">${roll20BaselineCss}</style>
 <style id="r20-runtime">${runtimeCss}</style>
-<style id="r20-layer-filter">${layerFilterCss()}</style>` : ''}
+<style id="r20-layer-filter">${layerFilterCss()}</style>
 <style id="r20-user">${prefixedCss}</style>
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
@@ -698,14 +697,13 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   // rewrite) 먼저 → 우리 보조 baseline → runtime overlay → user CSS.
   // user CSS 가 마지막 source order 라 동일 specificity 셀렉터에선 사용자 우선.
   const darkMode = opts.darkMode === true;
-  const includeEditorOverlays = opts.includeEditorOverlays !== false;
   const css = [
     roll20BaseShadowCss,
     darkMode ? roll20DarkmodeShadowCss : '',
     ROLL20_DIALOG_OPEN_CSS,
-    includeEditorOverlays ? roll20BaselineCss : '',
-    includeEditorOverlays ? runtimeCss : '',
-    includeEditorOverlays ? layerFilterCss('.charsheet') : '',
+    roll20BaselineCss,
+    runtimeCss,
+    layerFilterCss('.charsheet'),
     prefixedCss,
     ROLL20_PREVIEW_HIDDEN_CSS,
   ].join('\n');
