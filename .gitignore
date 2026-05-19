@@ -110,6 +110,7 @@ reports/roundtrip-node/**/raw/
 reports/visual-reference-inventory/*.json
 reports/visual-fixture-render/*.json
 reports/visual-fixture-render/html/
+reports/visual-fixture-render/screenshots/
 test-fixtures/corpus-working/
 test-fixtures/visual/
 .tmp/

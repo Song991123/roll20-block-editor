@@ -12,3 +12,9 @@ Fixture count: 2
 | `official-roll20-Les-Oublies` | official-roll20 | on | 62693 | 16080 | 3580183 | LesOubliesPreview.png | hidden css present; source script 4, rolltemplate 3 |
 
 Next check: open each generated HTML in a browser viewport, capture PNG, then compare against the reference image with a thresholded pixel-diff report.
+
+## Browser Capture Smoke
+
+2026-05-19: Opened the 2 generated HTML files through Browser Use and captured local-only PNGs under `reports/visual-fixture-render/screenshots/`. Browser console errors/warnings: 0 for both fixtures.
+
+Observation: full-page captures are not yet equivalent to reference-image comparison. Some fixtures render repeated/default sheet states in full-page mode, so the next implementation must normalize viewport, initial tab/state, crop region, and diff threshold before claiming visual parity.
