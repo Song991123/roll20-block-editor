@@ -94,39 +94,33 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   var resizeTimer = 0;
   function measureHeight() {
-    var body = document.body;
-    var doc = document.documentElement;
-    var sheet = document.getElementById('dialog-window') || document.getElementById('charsheet-root');
-    var values = [
-      body ? body.scrollHeight : 0,
-      body ? body.offsetHeight : 0,
-      doc ? doc.scrollHeight : 0,
-      doc ? doc.offsetHeight : 0,
-      sheet ? sheet.scrollHeight : 0,
-      sheet ? sheet.offsetHeight : 0
-    ];
-    var h = 0;
-    for (var i = 0; i < values.length; i++) h = Math.max(h, values[i] || 0);
-    return Math.max(480, Math.ceil(h + 32));
+    var sheet = document.getElementById('charsheet-root') || document.getElementById('dialog-window');
+    if (!sheet) return 480;
+    var box = measureContentBox(sheet);
+    return Math.max(120, Math.ceil(box.height + 24));
   }
   function measureWidth() {
-    var body = document.body;
-    var doc = document.documentElement;
-    var sheet = document.getElementById('dialog-window') || document.getElementById('charsheet-root');
-    var viewport = Math.max(
-      window.innerWidth || 0,
-      doc ? doc.clientWidth : 0,
-      body ? body.clientWidth : 0
-    );
-    var scrollWidth = Math.max(
-      body ? body.scrollWidth : 0,
-      doc ? doc.scrollWidth : 0,
-      sheet ? sheet.scrollWidth : 0
-    );
-    // Do not report width when content merely fills the current iframe.
-    // Otherwise parent grows iframe -> scrollWidth grows -> infinite feedback.
-    if (scrollWidth <= viewport + 8) return null;
-    return Math.max(320, Math.min(2400, Math.ceil(scrollWidth)));
+    var sheet = document.getElementById('charsheet-root') || document.getElementById('dialog-window');
+    if (!sheet) return null;
+    var box = measureContentBox(sheet);
+    if (!box.width || box.width < 120) return null;
+    return Math.max(320, Math.min(2400, Math.ceil(box.width)));
+  }
+  function measureContentBox(root) {
+    var rootRect = root.getBoundingClientRect();
+    var maxRight = Math.max(root.scrollWidth || 0, root.offsetWidth || 0);
+    var maxBottom = Math.max(root.scrollHeight || 0, root.offsetHeight || 0);
+    var nodes = root.querySelectorAll('*:not(script):not(rolltemplate)');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') continue;
+      var rect = el.getBoundingClientRect();
+      if (rect.width <= 0 && rect.height <= 0) continue;
+      maxRight = Math.max(maxRight, rect.right - rootRect.left + root.scrollLeft);
+      maxBottom = Math.max(maxBottom, rect.bottom - rootRect.top + root.scrollTop);
+    }
+    return { width: maxRight, height: maxBottom };
   }
   function postResize() {
     try {

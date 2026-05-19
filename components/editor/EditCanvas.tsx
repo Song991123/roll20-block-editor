@@ -338,7 +338,7 @@ export default function EditCanvas() {
                 width: `${sheetCanvasWidth}px`,
                 minHeight: '900px',
                 transform: `scale(${scale})`,
-                transformOrigin: 'top center',
+                transformOrigin: 'top left',
               }}
             >
               <div

@@ -17,7 +17,6 @@ import { getBlockDef } from '@/lib/blocks/registry';
 import { buildSheetDoc, buildSheetParts } from '@/lib/preview/buildDoc';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import PreviewToolbar from './PreviewToolbar';
 import ShadowContextMenu, { type ShadowContextMenuAction } from './ShadowContextMenu';
 import { playSfx } from '@/lib/sfx';
 import PreviewEmptyState from './PreviewEmptyState';
@@ -59,8 +58,10 @@ export default function PreviewMain() {
   const sanitize = usePreviewStore((s) => s.sanitize);
   const sandbox = usePreviewStore((s) => s.iframeSandbox);
   const renderMode = usePreviewStore((s) => s.renderMode);
+  const setRenderMode = usePreviewStore((s) => s.setRenderMode);
   const zoom = useUiStore((s) => s.previewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
+  const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
   const previewLayer = useUiStore((s) => s.previewLayer);
   const setHoveredWidgetId = useUiStore((s) => s.setHoveredWidgetId);
   const setSelectedWidgetId = useUiStore((s) => s.setSelectedWidgetId);
@@ -79,6 +80,7 @@ export default function PreviewMain() {
   } | null>(null);
   const [iframeHeight, setIframeHeight] = useState(900);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const autoWidthSizedRef = useRef(false);
   // Phase E — Inspector 활성화에 쓰일 sidebarRightTab/collapse setter.
   // 'attrs' 가 Inspector 패널 (D49).
   const setSidebarRightTab = useUiStore((s) => s.setSidebarRightTab);
@@ -92,6 +94,10 @@ export default function PreviewMain() {
       ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / sheetCanvasWidth))
       : 1;
   const scale = zoom === 'fit' ? fitScale : zoom;
+
+  useEffect(() => {
+    setRenderMode('iframe');
+  }, [setRenderMode]);
 
   // srcdoc — emitCache + 미리보기 토글 (sanitize/darkMode/previewLayer) 의 순수 derive.
   // useState + useEffect 였을 때: 마운트 시 초기값 = 빈 placeholder → useEffect 가 다음
@@ -117,8 +123,9 @@ export default function PreviewMain() {
   // 시각 동일성 보장 — buildSheetParts 는 buildSheetDoc 과 같은 runtime/layer/prefix CSS 사용.
   // Phase A 범위 = 시각만 동일. Phase B+ 의 인터랙션 (select / drag / inline edit) 은 미구현.
   useEffect(() => {
-    queueMicrotask(() => setIframeHeight(900));
-  }, [srcdoc, sheetCanvasWidth]);
+    autoWidthSizedRef.current = false;
+    queueMicrotask(() => setIframeHeight(120));
+  }, [srcdoc]);
 
   const previewAreaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -381,8 +388,15 @@ export default function PreviewMain() {
         return;
       }
       if (data?.type === 'r20:resize' && typeof data.height === 'number') {
-        const nextHeight = Math.max(480, Math.min(60000, Math.ceil(data.height)));
+        const nextHeight = Math.max(120, Math.min(60000, Math.ceil(data.height)));
         setIframeHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
+        if (!autoWidthSizedRef.current && typeof data.width === 'number') {
+          autoWidthSizedRef.current = true;
+          const nextWidth = Math.max(320, Math.min(2400, Math.ceil(data.width)));
+          if (Math.abs(nextWidth - useUiStore.getState().sheetCanvasWidth) > 8) {
+            setSheetCanvasWidth(nextWidth);
+          }
+        }
         return;
       }
       // spec 17 §8 + N3 — widget hover/click (양방향 sync 간단)
@@ -467,7 +481,7 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [setHoveredWidgetId, setSelected, setSelectedWidgetId]);
+  }, [setHoveredWidgetId, setSelected, setSelectedWidgetId, setSheetCanvasWidth]);
 
   // 선택된 블록 → iframe 안 highlight.
   useEffect(() => {
@@ -589,7 +603,7 @@ export default function PreviewMain() {
               width: `${sheetCanvasWidth}px`,
               height: `${iframeHeight}px`,
               transform: `scale(${scale})`,
-              transformOrigin: 'top center',
+              transformOrigin: 'top left',
             }}
           >
             {renderMode === 'iframe' ? (
@@ -612,7 +626,6 @@ export default function PreviewMain() {
           </div>
         )}
       </div>
-      <PreviewToolbar />
       {contextMenuState && renderMode === 'shadow' && (
         <ShadowContextMenu
           blockId={contextMenuState.blockId}
