@@ -50,6 +50,8 @@ export interface EmitOutput {
   translation: string;
   /** emit 자체 warning + export 단에서 검출되는 추가 warning. */
   warnings: EmitWarning[];
+  /** Optional additional files to include in the export zip. */
+  extraFiles?: Record<string, string>;
 }
 
 /** Severity 재export — UI import 단순화. */

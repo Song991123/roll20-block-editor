@@ -90,10 +90,21 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       // Stage 19 — 구버전 호환 모드 on 시 CSS sanitize.
       let cssForZip = emitCache.css;
       let collectedWarnings: SanitizeWarning[] = [];
+      const extraFiles: Record<string, string> = {};
       if (legacyMode && emitCache.css) {
         const r = sanitizeForRoll20Legacy(emitCache.css);
         cssForZip = r.sanitized;
         collectedWarnings = r.warnings;
+        extraFiles['sanitize-warnings.json'] = JSON.stringify(
+          {
+            mode: 'legacy-roll20-css-sanitize',
+            generatedAt: new Date().toISOString(),
+            warningCount: collectedWarnings.length,
+            warnings: collectedWarnings,
+          },
+          null,
+          2,
+        );
       }
       setLegacyWarnings(collectedWarnings);
       const zip = await buildZip(
@@ -102,6 +113,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           css: cssForZip,
           translation: emitCache.i18n,
           warnings: [],
+          extraFiles,
         },
         meta,
       );
@@ -260,12 +272,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 onChange={(e) => setLegacyMode(e.target.checked)}
                 className="mt-[2px] h-4 w-4 accent-[var(--accent-primary)]"
                 data-testid="export-legacy-toggle"
-                aria-label="구버전 Roll20 sandbox 호환 모드"
+                aria-label="구버전 Roll20 무해화"
               />
               <span className="flex-1">
-                <span className="font-medium">구버전 Roll20 무해화 모드</span>
+                <span className="font-medium">구버전 Roll20 무해화</span>
                 <span className="ml-1 text-[11px] text-muted-foreground">
-                  transform은 zoom으로 바꾸고, animation/var()/fixed 같은 위험 요소를 정리합니다.
+                  끄면 원본 CSS 그대로, 켜면 구버전에서 막힐 수 있는 CSS를 변환/제거하고 보고서를 zip에 넣습니다.
                 </span>
               </span>
             </label>
@@ -274,7 +286,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 className="mt-2 text-[11px] text-muted-foreground"
                 data-testid="export-legacy-warnings"
               >
-                지난 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 sanitize-warnings.json에 담길 예정입니다.
+                최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 sanitize-warnings.json에 포함됩니다.
+              </div>
+            )}
+            {legacyMode && legacyWarnings.length === 0 && (
+              <div className="mt-2 text-[11px] text-muted-foreground">
+                내보내기 시 CSS를 검사하고 sanitize-warnings.json을 함께 생성합니다.
               </div>
             )}
           </section>

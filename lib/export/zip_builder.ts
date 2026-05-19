@@ -44,6 +44,9 @@ export async function buildZip(
   zip.file(ZIP_FILES.TRANSLATION, translation);
   zip.file(ZIP_FILES.MANIFEST, buildManifest(meta));
   zip.file(ZIP_FILES.README, buildReadme(meta));
+  for (const [name, content] of Object.entries(emit.extraFiles ?? {})) {
+    zip.file(name, content);
+  }
 
   const blob = await zip.generateAsync({
     type: 'blob',
