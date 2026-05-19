@@ -30,12 +30,31 @@ export function useEmitPipeline(): void {
   const htmlV = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const cssV = useWorkspaceStore((s) => s.workspaces.css.structureVersion);
   const i18nV = useWorkspaceStore((s) => s.workspaces.i18n.structureVersion);
+  const htmlCount = useWorkspaceStore((s) => s.workspaces.html.blockCount);
+  const cssCount = useWorkspaceStore((s) => s.workspaces.css.blockCount);
+  const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
   const setEmitCache = useWorkspaceStore((s) => s.setEmitCache);
   const setEmitWarnings = useWorkspaceStore((s) => s.setEmitWarnings);
 
   useEffect(() => {
+    if (htmlCount + cssCount + i18nCount === 0) {
+      setEmitCache({ html: '', css: '', i18n: '' });
+      setEmitWarnings([]);
+      return;
+    }
+
     const handle = window.setTimeout(() => {
       const adapter = getBlocklyAdapter();
+      const liveTotal =
+        adapter.countBlocks('html') +
+        adapter.countBlocks('css') +
+        adapter.countBlocks('i18n');
+      if (liveTotal === 0) {
+        setEmitCache({ html: '', css: '', i18n: '' });
+        setEmitWarnings([]);
+        return;
+      }
+
       const result = emitAll({
         html: adapter.getWorkspace('html'),
         css: adapter.getWorkspace('css'),
@@ -45,5 +64,5 @@ export function useEmitPipeline(): void {
       setEmitWarnings(result.warnings);
     }, 500);
     return () => window.clearTimeout(handle);
-  }, [htmlV, cssV, i18nV, setEmitCache, setEmitWarnings]);
+  }, [htmlV, cssV, i18nV, htmlCount, cssCount, i18nCount, setEmitCache, setEmitWarnings]);
 }

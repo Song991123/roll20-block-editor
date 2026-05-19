@@ -213,7 +213,7 @@ export default function EditorShell() {
 
   return (
     <div className="app-shell dark flex h-screen flex-col bg-[var(--bg-app)] text-foreground">
-      <EditorHeader />
+      <EditorHeader onNewSheet={() => setRecovered(null)} />
       {recovered && (
         <AutosaveBanner
           xml={recovered.xml}

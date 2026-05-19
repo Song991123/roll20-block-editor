@@ -67,7 +67,11 @@ function LogoMark({ className }: { className?: string }) {
   );
 }
 
-export default function EditorHeader() {
+interface EditorHeaderProps {
+  onNewSheet?: () => void;
+}
+
+export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
   const toggleLeft = useUiStore((s) => s.toggleSidebarLeft);
   const toggleRight = useUiStore((s) => s.toggleSidebarRight);
   const dirty = useWorkspaceStore((s) => anyDirty(s.workspaces));
@@ -83,9 +87,14 @@ export default function EditorHeader() {
       return;
     }
     clearAll();
-    void deleteWorkspace(AUTOSAVE_KEY);
+    onNewSheet?.();
+    void deleteWorkspace(AUTOSAVE_KEY).catch(() => {
+      toast.warning('자동저장 기록 삭제에 실패했어요. 새로고침 후에도 복구 배너가 보이면 무시해 주세요.', {
+        duration: 2600,
+      });
+    });
     toast.success('빈 시트 생성됨 — HTML/CSS/번역 워크스페이스 초기화', { duration: 2200 });
-  }, [clearAll]);
+  }, [clearAll, onNewSheet]);
 
   const handleLoadExample = (descriptor: ExampleDescriptor) => async () => {
     try {
