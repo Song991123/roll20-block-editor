@@ -87,6 +87,10 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
       return;
     }
     clearAll();
+    if (typeof window !== 'undefined') {
+      window.setTimeout(() => clearAll(), 0);
+      window.setTimeout(() => clearAll(), 500);
+    }
     onNewSheet?.();
     void deleteWorkspace(AUTOSAVE_KEY).catch(() => {
       toast.warning('자동저장 기록 삭제에 실패했어요. 새로고침 후에도 복구 배너가 보이면 무시해 주세요.', {

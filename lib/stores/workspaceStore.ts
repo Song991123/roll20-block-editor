@@ -94,6 +94,7 @@ interface WorkspaceStore {
 
   emitCache: EmitOutput;
   emitWarnings: EmitWarning[];
+  lastClearedAt: number;
 
   selectedBlockId: string | null;
   selectionOrigin: SelectionOrigin;
@@ -198,6 +199,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
   activeWorkspace: 'html',
   emitCache: { html: '', css: '', i18n: '' },
   emitWarnings: [],
+  lastClearedAt: 0,
   selectedBlockId: null,
   selectionOrigin: null,
   sheetWidgets: [],
@@ -258,6 +260,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
       },
       emitCache: { html: '', css: '', i18n: '' },
       emitWarnings: [],
+      lastClearedAt: Date.now(),
       selectedBlockId: null,
       selectionOrigin: null,
       sheetWidgets: [],

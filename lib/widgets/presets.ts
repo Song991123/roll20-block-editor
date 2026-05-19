@@ -186,8 +186,11 @@ export function appendFriendlyWidgetPreset(
   preset: FriendlyWidgetPreset,
   position?: { left: number; top: number },
 ): string | null {
+  const state = useWorkspaceStore.getState();
+  if (Date.now() - state.lastClearedAt < 1200) return null;
+
   const targetPosition = findOpenWidgetPosition(position);
-  const id = useWorkspaceStore.getState().appendBlockToActive(preset.blockType, 'html');
+  const id = state.appendBlockToActive(preset.blockType, 'html');
   if (!id) return null;
 
   const adapter = getBlocklyAdapter();
