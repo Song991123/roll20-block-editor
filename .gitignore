@@ -107,7 +107,9 @@ docs/qa/yshy_*.xml
 reports/corpus-static-audit/*.json
 reports/roundtrip-node/**/roundtrip_report.json
 reports/roundtrip-node/**/raw/
+reports/visual-reference-inventory/*.json
 test-fixtures/corpus-working/
+test-fixtures/visual/
 .tmp/
 
 # === Validation phase (LOCAL ONLY — 사용자 시트 식별자 / 영시영 specific md) ===

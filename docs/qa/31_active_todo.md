@@ -31,6 +31,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | TODO | P0 | Preserve worker JS as a separate future block-coding workspace. | Current reports include worker matched/raw counts. |
 | TODO | P0 | Implement real browser L2 roundtrip: import -> emit -> import -> compare. | Current `reports/roundtrip-node/summary.md` is Node import determinism only. |
 | TODO | P0 | Add visual/cascade leak verification for Roll20 preview. | Need computed CSS origin and screenshot diff. |
+| DOING | P0 | Build screenshot-based sheet visual verification from existing preview images. | Inventory/report and fixture-prep scripts added. Next: render copied fixtures through the app/preview harness and capture screenshots for pixel diff. |
 | TODO | P1 | Improve raw fallback coverage for sheets such as custom Magica. | Current custom-magica coverage is 95.7%, rawFallback 76. |
 | TODO | P1 | Make layer panel useful as a Figma-like hierarchy/reparenting surface. | Tree must allow grouping/reparenting, not just viewing. |
 | TODO | P1 | Define absolute positioning inside frames/groups. | Coordinates should be relative to containing block; frame must become `position: relative` when needed. |
@@ -47,6 +48,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | DONE | CI/CD deploy for latest commit | GitHub Actions run for `1620b61` completed successfully and GitHub Pages returned 200. |
 | DONE | Claude CLI setup | Installed `@anthropic-ai/claude-code`; executable path `C:\Users\acorn\AppData\Roaming\npm\claude.cmd`; verified version `2.1.144`. |
 | DONE | Local smoke after render CSS patch | `corepack pnpm run lint`, `corepack pnpm run build`, and `http://127.0.0.1:3000/` browser load with no console errors. |
+| DONE | Visual reference inventory | `reports/visual-reference-inventory/visual-reference-inventory.md`; found 1497 source sheet folders, 9114 images, 491 visual candidates. |
+| DONE | Visual fixture preparation smoke | `scripts/prepare_visual_fixture.mjs` copied `official-roll20:Les-Oublies` and `official-roll20:AW2E` into ignored `test-fixtures/visual/` with manifests. |
 
 ## Forbidden Claims
 
