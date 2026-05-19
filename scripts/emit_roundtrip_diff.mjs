@@ -42,6 +42,7 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync, statSy
 import { resolve, join, basename, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
 const SHEET_DIR = process.argv[2];
 const OUT_DIR = process.argv[3] ?? resolve(process.cwd(), 'out');
@@ -74,10 +75,50 @@ function findFirst(dir, candidates) {
 
 function discoverInputs(dir) {
   return {
-    htmlPath: findFirst(dir, ['original.html', /\.html?$/i]),
-    cssPath:  findFirst(dir, ['original.css', /\.css$/i]),
-    i18nPath: findFirst(dir, ['translate.txt', 'i18n.txt', /^translat[a-z]*\.(txt|json)$/i, /^i18n.*\.(txt|json)$/i]),
+    htmlPath: findFirst(dir, ['original.html', 'html.html', 'HTML.html', 'html.txt', 'HTML.txt', /\.html?$/i, /^html\.(txt|html?)$/i]),
+    cssPath:  findFirst(dir, ['original.css', 'css.css', 'CSS.css', 'css.txt', 'CSS.txt', /\.css$/i, /^css\.(txt|css)$/i]),
+    i18nPath: findFirst(dir, ['translate.txt', 'i18n.txt', '번역.txt', /^translat[a-z]*\.(txt|json)$/i, /^i18n.*\.(txt|json)$/i, /번역\.(txt|json)$/i]),
   };
+}
+
+function resolveImporterModule() {
+  const jsPath = join(REPO_WEB, 'lib/import/index.js');
+  if (existsSync(jsPath)) return jsPath;
+
+  const tsPath = join(REPO_WEB, 'lib/import/index.ts');
+  if (!existsSync(tsPath)) {
+    throw new Error(`Import API not found: ${jsPath} or ${tsPath}`);
+  }
+
+  const outDir = join(REPO_WEB, '.tmp/roundtrip-build');
+  const compiled = join(outDir, 'lib/import/index.js');
+  if (existsSync(compiled) && statSync(compiled).mtimeMs >= statSync(tsPath).mtimeMs) {
+    return compiled;
+  }
+
+  const tscJs = join(REPO_WEB, 'node_modules/typescript/lib/tsc.js');
+  if (!existsSync(tscJs)) {
+    throw new Error(`Cannot compile TS importer because TypeScript was not found at ${tscJs}`);
+  }
+
+  execFileSync(process.execPath, [
+    tscJs,
+    '--module', 'commonjs',
+    '--moduleResolution', 'node',
+    '--target', 'ES2020',
+    '--outDir', outDir,
+    '--rootDir', REPO_WEB,
+    'lib/import/index.ts',
+    '--esModuleInterop',
+    '--skipLibCheck',
+    '--noEmit', 'false',
+    '--declaration', 'false',
+  ], { cwd: REPO_WEB, stdio: 'pipe' });
+
+  if (!existsSync(compiled)) {
+    throw new Error(`TS importer compile completed but ${compiled} was not created`);
+  }
+  return compiled;
 }
 
 function sha256(s) { return createHash('sha256').update(s).digest('hex'); }
@@ -294,8 +335,12 @@ async function main() {
   const css = cssPath ? readMaybe(cssPath) : '';
   const i18n = i18nPath ? readMaybe(i18nPath) : '';
 
-  const importerUrl = pathToFileURL(join(REPO_WEB, 'lib/import/index.js')).href;
-  const { importSheet } = await import(importerUrl);
+  const importerUrl = pathToFileURL(resolveImporterModule()).href;
+  const importerModule = await import(importerUrl);
+  const importSheet = importerModule.importSheet ?? importerModule.default?.importSheet;
+  if (typeof importSheet !== 'function') {
+    throw new Error('Compiled import module does not expose importSheet()');
+  }
 
   const t1 = Date.now();
   const resultA = importSheet({ html, css, i18n });

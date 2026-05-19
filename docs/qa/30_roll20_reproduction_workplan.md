@@ -71,11 +71,13 @@ Tasks:
 - Verify i18n coverage: JSON, flat text, Roll20 comment formats.
 - Verify worker coverage: `on`, `getAttrs`, `setAttrs`, repeating section helpers, raw JS fallback.
 - Verify rolltemplate coverage: hidden in sheet canvas but available to chat rendering.
+- Keep worker JS as its own editable block workspace. Do not flatten it into HTML text, because later JS block coding must edit it independently.
 
 Exit criteria:
 
 - L1 structural reports show no unexplained drops.
 - Raw fallback count is reported per file and per feature.
+- Worker reports include matched worker statements and raw worker statement counts.
 
 ### T3. True Roundtrip
 
@@ -276,4 +278,3 @@ Use this order to avoid session overload:
 6. Then expand to the full corpus.
 
 This order covers translation-heavy custom sheets, CoC default-era behavior, roll expression-heavy official sheets, and smaller fast smoke tests.
-

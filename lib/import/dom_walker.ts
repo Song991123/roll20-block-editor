@@ -190,6 +190,15 @@ function parseWithFallback(html: string): DomNode {
       continue;
     }
 
+    // Malformed Roll20 roll templates often contain raw "<" text fragments
+    // that are not real tags. Treat that single character as text so the
+    // fallback parser keeps moving instead of looping on the same index.
+    if (c === '<') {
+      appendText(stack, '<');
+      i++;
+      continue;
+    }
+
     // text
     const nextLt = html.indexOf('<', i);
     const stop = nextLt < 0 ? len : nextLt;

@@ -76,9 +76,9 @@ function findFirst(dir, candidates) {
 
 function readMaybe(p) { try { return readFileSync(p, 'utf8'); } catch { return ''; } }
 
-const htmlPath = findFirst(SHEET_DIR, ['original.html', /\.html?$/i]);
-const cssPath  = findFirst(SHEET_DIR, ['original.css', /\.css$/i]);
-const i18nPath = findFirst(SHEET_DIR, ['translate.txt', 'i18n.txt', /^translat[a-z]*\.(txt|json)$/i, /^i18n.*\.(txt|json)$/i]);
+const htmlPath = findFirst(SHEET_DIR, ['original.html', 'html.html', 'HTML.html', 'html.txt', 'HTML.txt', /\.html?$/i, /^html\.(txt|html?)$/i]);
+const cssPath  = findFirst(SHEET_DIR, ['original.css', 'css.css', 'CSS.css', 'css.txt', 'CSS.txt', /\.css$/i, /^css\.(txt|css)$/i]);
+const i18nPath = findFirst(SHEET_DIR, ['translate.txt', 'i18n.txt', '번역.txt', /^translat[a-z]*\.(txt|json)$/i, /^i18n.*\.(txt|json)$/i, /번역\.(txt|json)$/i]);
 
 if (!htmlPath) { console.error('No html file in', SHEET_DIR); process.exit(2); }
 

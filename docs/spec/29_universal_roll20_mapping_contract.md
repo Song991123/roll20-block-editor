@@ -46,6 +46,19 @@ Every source artifact must become blocks, not opaque app-only state.
 | Translation file | i18n key/value blocks or translation table. The preview must apply translations before visual comparison. |
 | Roll button value | Expression tree when parseable. Raw expression fallback only with explicit diagnostics. |
 
+## Worker JS Editing Contract
+
+Sheet worker JavaScript is a first-class source artifact, not text that should appear in the sheet canvas. The current importer may preserve unsupported JS as `r20_raw_worker`, but the product direction is a separate worker workspace that can gradually become block-editable.
+
+Required behavior:
+
+- `<script type="text/worker">` is imported into the worker layer and hidden from visual sheet preview.
+- Recognized Roll20 APIs such as `on(...)`, `getAttrs(...)`, `setAttrs(...)`, `getSectionIDs(...)`, `getTranslationByKey(...)`, and repeating-section helpers should become worker blocks when parseable.
+- Unsupported statements remain as raw worker blocks with exact source text and diagnostics.
+- Raw worker blocks must roundtrip without being lost. They are allowed while coverage grows.
+- Preview execution and chat rendering must consume the worker layer, not visible HTML text.
+- Future user-facing JS block coding should operate on this worker workspace without changing the HTML/CSS block model.
+
 ## Design Editor vs Source Fidelity
 
 Do not mix these two concerns:
@@ -152,4 +165,3 @@ Therefore every technical block should have:
 - Hiding raw unsupported content without representing it as a block.
 - Treating visual preview as verified without Roll20 sandbox or screenshot evidence.
 - Writing into source corpus folders.
-
