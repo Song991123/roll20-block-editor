@@ -1,7 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Layers, Search } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import type { BlockSnapshot } from '@/lib/blockly/adapter';
 import { buildSheetParts } from '@/lib/preview/buildDoc';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { usePreviewStore } from '@/lib/stores/previewStore';
@@ -85,6 +88,7 @@ export default function EditCanvas() {
   const [lastMove, setLastMove] = useState<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [optimisticMoves, setOptimisticMoves] = useState<Record<string, OptimisticMove>>({});
+  const [layerSearch, setLayerSearch] = useState('');
 
   const effectiveLayer = editSubmode === 'rolltemplate' ? 'roll' : previewLayer;
   const isEmpty = htmlCount + cssCount + i18nCount === 0;
@@ -368,52 +372,223 @@ export default function EditCanvas() {
       </div>
 
       <div
-        ref={scrollRef}
-        className="flex-1 overflow-auto p-5"
-        data-testid="edit-canvas-scroll"
-        onDragOver={onDragOver}
-        onDrop={onDrop}
+        className="grid flex-1 min-h-0"
+        style={{ gridTemplateColumns: '248px minmax(0, 1fr)' }}
       >
-        {isEmpty ? (
-          <div
-            className="flex min-h-[420px] items-center justify-center rounded border border-dashed border-border bg-[var(--bg-elevated)] text-sm text-muted-foreground"
-            data-testid="edit-canvas-empty"
-          >
-            HTML/CSS를 불러오거나 요소를 놓으면 여기에서 바로 편집할 수 있어요.
-          </div>
-        ) : (
-          <div
-            className="mx-auto"
-            style={{
-              width: `${sheetCanvasWidth * scale}px`,
-              minHeight: `${Math.max(600, 900 * scale)}px`,
-              maxWidth: 'none',
-            }}
-          >
+        <EditLayerPanel search={layerSearch} onSearchChange={setLayerSearch} />
+        <div
+          ref={scrollRef}
+          className="min-h-0 overflow-auto p-5"
+          data-testid="edit-canvas-scroll"
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+        >
+          {isEmpty ? (
             <div
+              className="flex min-h-[420px] items-center justify-center rounded border border-dashed border-border bg-[var(--bg-elevated)] text-sm text-muted-foreground"
+              data-testid="edit-canvas-empty"
+            >
+              HTML/CSS를 불러오거나 요소를 놓으면 여기에서 바로 편집할 수 있어요.
+            </div>
+          ) : (
+            <div
+              className="mx-auto"
               style={{
-                width: `${sheetCanvasWidth}px`,
-                minHeight: '900px',
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
+                width: `${sheetCanvasWidth * scale}px`,
+                minHeight: `${Math.max(600, 900 * scale)}px`,
+                maxWidth: 'none',
               }}
             >
               <div
-                ref={hostRef}
-                data-testid="edit-canvas-shadow-host"
-                className="block min-h-[900px] overflow-visible bg-white"
-                style={{ width: `${sheetCanvasWidth}px` }}
-                onDragOver={onDragOver}
-                onDrop={onDrop}
-              />
+                style={{
+                  width: `${sheetCanvasWidth}px`,
+                  minHeight: '900px',
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <div
+                  ref={hostRef}
+                  data-testid="edit-canvas-shadow-host"
+                  className="block min-h-[900px] overflow-visible bg-white"
+                  style={{ width: `${sheetCanvasWidth}px` }}
+                  onDragOver={onDragOver}
+                  onDrop={onDrop}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       <PreviewToolbar />
     </div>
   );
 }
+
+function EditLayerPanel({
+  search,
+  onSearchChange,
+}: {
+  search: string;
+  onSearchChange: (value: string) => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const tab = useUiStore((s) => s.treeWorkspaceTab);
+  const setTab = useUiStore((s) => s.setTreeWorkspaceTab);
+  const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
+  const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
+  const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
+  const structureVersion = useWorkspaceStore((s) => s.workspaces[tab].structureVersion);
+
+  const nodes = useMemo(() => {
+    void structureVersion;
+    return getBlocklyAdapter().listAllBlocks(tab);
+  }, [tab, structureVersion]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return nodes;
+    return nodes.filter(
+      (node) =>
+        node.type.toLowerCase().includes(q) ||
+        node.label.toLowerCase().includes(q) ||
+        node.preview.toLowerCase().includes(q),
+    );
+  }, [nodes, search]);
+
+  const virtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 30,
+    overscan: 10,
+  });
+
+  const moveLayer = useCallback(
+    (draggedId: string, targetId: string) => {
+      if (draggedId === targetId) return;
+      const adapter = getBlocklyAdapter();
+      const nested = adapter.nestBlockInContainer(tab, draggedId, targetId);
+      const moved = nested || adapter.moveBlockBefore(tab, draggedId, targetId);
+      if (!moved) return;
+      bumpStructure(tab, adapter.countBlocks(tab));
+      setSelected(draggedId, 'tree');
+    },
+    [bumpStructure, setSelected, tab],
+  );
+
+  return (
+    <aside className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]">
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3 text-xs font-medium text-foreground">
+        <Layers className="h-3.5 w-3.5" />
+        레이어
+      </div>
+      <div className="grid grid-cols-3 gap-1 border-b border-border p-2">
+        {(['html', 'css', 'i18n'] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={`rounded px-2 py-1 text-[11px] ${
+              tab === key
+                ? 'bg-[var(--bg-active)] text-foreground'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
+            }`}
+          >
+            {key === 'i18n' ? '번역' : key.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      <div className="border-b border-border p-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="레이어 검색"
+            className="h-7 w-full rounded border border-border bg-[var(--bg-elevated-2)] pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
+      </div>
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
+        {filtered.length === 0 ? (
+          <div className="px-3 py-8 text-center text-[11px] leading-relaxed text-muted-foreground">
+            표시할 레이어가 없습니다.
+          </div>
+        ) : (
+          <div
+            className="relative p-1"
+            style={{ height: `${virtualizer.getTotalSize() + 8}px` }}
+          >
+            {virtualizer.getVirtualItems().map((row) => {
+              const node = filtered[row.index];
+              if (!node) return null;
+              return (
+                <div
+                  key={node.id}
+                  className="absolute left-1 right-1 top-0"
+                  style={{ transform: `translateY(${row.start}px)` }}
+                >
+                  <EditLayerRow
+                    node={node}
+                    selected={node.id === selectedId}
+                    onSelect={() => setSelected(node.id, 'tree')}
+                    onMove={moveLayer}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+const EditLayerRow = memo(function EditLayerRow({
+  node,
+  selected,
+  onSelect,
+  onMove,
+}: {
+  node: BlockSnapshot;
+  selected: boolean;
+  onSelect: () => void;
+  onMove: (draggedId: string, targetId: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      draggable
+      onClick={onSelect}
+      onDragStart={(e) => {
+        e.dataTransfer.setData('application/x-r20-layer-block', node.id);
+        e.dataTransfer.effectAllowed = 'move';
+      }}
+      onDragOver={(e) => {
+        if (!e.dataTransfer.types.includes('application/x-r20-layer-block')) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }}
+      onDrop={(e) => {
+        const draggedId = e.dataTransfer.getData('application/x-r20-layer-block');
+        if (!draggedId) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onMove(draggedId, node.id);
+      }}
+      className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs ${
+        selected
+          ? 'bg-orange-500/20 text-foreground ring-1 ring-orange-500/60'
+          : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
+      }`}
+      style={{ paddingLeft: `${8 + node.depth * 12}px` }}
+    >
+      <span className="truncate font-mono text-[10.5px]">{node.type}</span>
+      {node.preview && <span className="truncate text-[10px] opacity-70">· {node.preview}</span>}
+    </button>
+  );
+});
 
 function commitMove(pending: PendingMove): void {
   const adapter = getBlocklyAdapter();
@@ -598,8 +773,8 @@ function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | nul
         blockId,
         ws,
         kind: 'style-field',
-        origLeft: parseCssPx(style, 'left') ?? measured.left,
-        origTop: parseCssPx(style, 'top') ?? measured.top,
+        origLeft: measured.containingBlockId ? measured.left : parseCssPx(style, 'left') ?? measured.left,
+        origTop: measured.containingBlockId ? measured.top : parseCssPx(style, 'top') ?? measured.top,
         origStyle: style,
         containingBlockEl: measured.containingBlockEl,
         containingBlockId: measured.containingBlockId,

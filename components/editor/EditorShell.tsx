@@ -149,9 +149,6 @@ export default function EditorShell() {
       } else if (e.key === '1') {
         e.preventDefault();
         setLeftMode('blocks');
-      } else if (e.key === '2') {
-        e.preventDefault();
-        setLeftMode('tree');
       } else if (e.key === '3') {
         e.preventDefault();
         setRightTab('attrs');
