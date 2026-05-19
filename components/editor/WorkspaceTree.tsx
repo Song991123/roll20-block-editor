@@ -1,9 +1,8 @@
 'use client';
 
 import { memo, useCallback, useMemo, useRef } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
@@ -16,13 +15,6 @@ const SUB_TABS = [
   { id: 'i18n', label: '번역' },
 ] as const;
 
-/**
- * 좌측 [트리] 모드 — 현재 워크스페이스의 블록 계층.
- *
- * Anchor: docs/spec/08_wireframes.md W2-B + 10_system_architecture §3.
- * D53 — 25K 노드 60fps 가상 리스트 (react-window). Stage S = 단순 리스트.
- * Stage A 이후 노드가 채워지면 react-window 도입.
- */
 export default function WorkspaceTree() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const tab = useUiStore((s) => s.treeWorkspaceTab);
@@ -32,25 +24,22 @@ export default function WorkspaceTree() {
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
-  // Perf hot path #3: structureVersion (cheap counter bump) replaces xmlCache
-  // string. Same re-render frequency — but the upstream BlocklyModelHost no
-  // longer pays 50-200ms/event to produce the unused XML text.
   const structureVersion = useWorkspaceStore((s) => s.workspaces[tab].structureVersion);
 
   const snapshot: BlockSnapshot[] = useMemo(() => {
+    void structureVersion;
     const adapter = getBlocklyAdapter();
     return adapter.listAllBlocks(tab);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, structureVersion]);
 
   const filtered = useMemo(() => {
-    if (!treeSearch.trim()) return snapshot;
-    const q = treeSearch.toLowerCase();
+    const q = treeSearch.trim().toLowerCase();
+    if (!q) return snapshot;
     return snapshot.filter(
-      (n) =>
-        n.label.toLowerCase().includes(q) ||
-        n.type.toLowerCase().includes(q) ||
-        n.preview.toLowerCase().includes(q),
+      (node) =>
+        node.label.toLowerCase().includes(q) ||
+        node.type.toLowerCase().includes(q) ||
+        node.preview.toLowerCase().includes(q),
     );
   }, [snapshot, treeSearch]);
 
@@ -84,14 +73,14 @@ export default function WorkspaceTree() {
           size="sm"
           className="w-full"
         >
-          {SUB_TABS.map((t) => (
+          {SUB_TABS.map((item) => (
             <ToggleGroupItem
-              key={t.id}
-              value={t.id}
-              aria-label={`${t.label} 워크스페이스`}
+              key={item.id}
+              value={item.id}
+              aria-label={`${item.label} 작업공간`}
               className="flex-1 text-[11px]"
             >
-              {t.label}
+              {item.label}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -104,7 +93,7 @@ export default function WorkspaceTree() {
             type="search"
             value={treeSearch}
             onChange={(e) => setTreeSearch(e.target.value)}
-            placeholder="트리 검색…"
+            placeholder="레이어 검색"
             className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] pl-8 pr-3 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
@@ -138,13 +127,6 @@ export default function WorkspaceTree() {
             })}
           </div>
         )}
-      </div>
-
-      <div className="shrink-0 border-t border-border p-2">
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs" disabled>
-          <Plus className="h-3.5 w-3.5" />
-          블록 추가 (Cmd+/)
-        </Button>
       </div>
     </div>
   );
@@ -186,8 +168,6 @@ const TreeRow = memo(function TreeRow({
       data-block-id={node.id}
       className={cn(
         'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-xs transition-colors',
-        // spec 17 §12 Phase B — Shadow 안 outline 색 (#f60) 과 시각적 페어링.
-        // ring 으로 Shadow outline 과 같은 톤 박음 → 좌측 트리만 봐도 동일 행 식별.
         selected
           ? 'bg-orange-500/20 text-foreground ring-1 ring-orange-500/60'
           : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
@@ -196,7 +176,7 @@ const TreeRow = memo(function TreeRow({
     >
       <span className="font-mono text-[10.5px] opacity-70 truncate">{node.type}</span>
       {node.preview && (
-        <span className="truncate text-[10.5px] text-muted-foreground">— {node.preview}</span>
+        <span className="truncate text-[10.5px] text-muted-foreground">· {node.preview}</span>
       )}
     </button>
   );
@@ -207,11 +187,11 @@ function EmptyTreeHint({ workspace }: { workspace: string }) {
   return (
     <div className="flex h-full min-h-[200px] flex-col items-center justify-center px-4 py-8 text-center">
       <div className="text-[11px] text-muted-foreground">
-        <p className="mb-2 font-medium text-foreground">아직 비어있어요</p>
+        <p className="mb-2 font-medium text-foreground">아직 비어 있어요</p>
         <p className="leading-relaxed">
-          {labels[workspace as keyof typeof labels]} 워크스페이스에 블록이 없어요.
+          {labels[workspace as keyof typeof labels]} 작업공간에 블록이 없습니다.
           <br />
-          왼쪽 [블록] 모드에서 블록을 끌어다 놓아보세요.
+          블록이나 위젯을 추가하면 여기에서 레이어처럼 볼 수 있어요.
         </p>
       </div>
     </div>

@@ -24,6 +24,10 @@ type DragOrigin = {
   origLeft: number;
   origTop: number;
   origStyle: string;
+  containingBlockEl: HTMLElement | null;
+  containingBlockId: string | null;
+  containingBlockStyle: string;
+  containingBlockNeedsRelative: boolean;
   scale: number;
   el: HTMLElement;
   origTransform: string;
@@ -32,6 +36,7 @@ type DragOrigin = {
   origPosition: string;
   origStyleLeft: string;
   origStyleTop: string;
+  origContainingBlockPosition: string;
 };
 
 type PendingMove = {
@@ -41,11 +46,17 @@ type PendingMove = {
   left: number;
   top: number;
   origStyle: string;
+  containingBlockId: string | null;
+  containingBlockStyle: string;
+  containingBlockNeedsRelative: boolean;
 };
 
 type OptimisticMove = {
   left: number;
   top: number;
+  containingBlockId: string | null;
+  containingBlockStyle: string;
+  containingBlockNeedsRelative: boolean;
 };
 
 export default function EditCanvas() {
@@ -128,9 +139,15 @@ export default function EditCanvas() {
     origin.el.style.position = origin.origPosition;
     origin.el.style.left = origin.origStyleLeft;
     origin.el.style.top = origin.origStyleTop;
+    if (origin.containingBlockEl) {
+      origin.containingBlockEl.style.position = origin.origContainingBlockPosition;
+    }
   }, []);
 
   const lockVisualAtDrop = useCallback((origin: DragOrigin, pending: PendingMove) => {
+    if (origin.containingBlockEl && origin.containingBlockNeedsRelative) {
+      origin.containingBlockEl.style.position = 'relative';
+    }
     origin.el.style.transition = origin.origTransition;
     origin.el.style.willChange = origin.origWillChange;
     origin.el.style.transform = origin.origTransform;
@@ -224,6 +241,9 @@ export default function EditCanvas() {
           left: snap(origin.origLeft + dx / scale),
           top: snap(origin.origTop + dy / scale),
           origStyle: origin.origStyle,
+          containingBlockId: origin.containingBlockId,
+          containingBlockStyle: origin.containingBlockStyle,
+          containingBlockNeedsRelative: origin.containingBlockNeedsRelative,
         };
         if (visualRafRef.current == null) {
           visualRafRef.current = window.requestAnimationFrame(() => {
@@ -248,7 +268,13 @@ export default function EditCanvas() {
           lockVisualAtDrop(origin, pending);
           setOptimisticMoves((moves) => ({
             ...moves,
-            [pending.blockId]: { left: pending.left, top: pending.top },
+            [pending.blockId]: {
+              left: pending.left,
+              top: pending.top,
+              containingBlockId: pending.containingBlockId,
+              containingBlockStyle: pending.containingBlockStyle,
+              containingBlockNeedsRelative: pending.containingBlockNeedsRelative,
+            },
           }));
           setLastMove(`${pending.left}px, ${pending.top}px`);
           commitMoveLater(pending);
@@ -391,6 +417,18 @@ export default function EditCanvas() {
 
 function commitMove(pending: PendingMove): void {
   const adapter = getBlocklyAdapter();
+  if (
+    pending.containingBlockId &&
+    pending.containingBlockNeedsRelative &&
+    adapter.hasBlockField(pending.ws, pending.containingBlockId, 'STYLE')
+  ) {
+    adapter.setBlockField(
+      pending.ws,
+      pending.containingBlockId,
+      'STYLE',
+      upsertCssDeclarations(pending.containingBlockStyle, { position: 'relative' }),
+    );
+  }
   if (pending.kind === 'position-fields') {
     adapter.setBlockField(pending.ws, pending.blockId, 'LEFT_PX', String(pending.left));
     adapter.setBlockField(pending.ws, pending.blockId, 'TOP_PX', String(pending.top));
@@ -415,9 +453,33 @@ function applyOptimisticPositions(
   if (!html || Object.keys(moves).length === 0) return html;
   let out = html;
   for (const [blockId, move] of Object.entries(moves)) {
+    if (move.containingBlockId && move.containingBlockNeedsRelative) {
+      out = applyOptimisticPositionDeclaration(
+        out,
+        move.containingBlockId,
+        move.containingBlockStyle,
+      );
+    }
     out = applyOptimisticPosition(out, blockId, move.left, move.top);
   }
   return out;
+}
+
+function applyOptimisticPositionDeclaration(
+  html: string,
+  blockId: string,
+  fallbackStyle: string,
+): string {
+  const tag = findBlockOpeningTag(html, blockId);
+  if (!tag) return html;
+  const styleMatch = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i);
+  const nextStyle = upsertCssDeclarations(styleMatch?.[2] ?? fallbackStyle, {
+    position: 'relative',
+  });
+  const nextTag = styleMatch
+    ? tag.text.replace(styleMatch[0], ` style=${styleMatch[1]}${escapeHtmlAttr(nextStyle)}${styleMatch[1]}`)
+    : tag.text.replace(/>$/, ` style="${escapeHtmlAttr(nextStyle)}">`);
+  return html.slice(0, tag.start) + nextTag + html.slice(tag.end);
 }
 
 function applyOptimisticPosition(
@@ -510,6 +572,7 @@ function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | nul
       origPosition: el.style.position,
       origStyleLeft: el.style.left,
       origStyleTop: el.style.top,
+      origContainingBlockPosition: '',
     };
 
     if (hasLeft && hasTop) {
@@ -520,13 +583,17 @@ function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | nul
         origLeft: parsePx(adapter.getBlockField(ws, blockId, 'LEFT_PX')),
         origTop: parsePx(adapter.getBlockField(ws, blockId, 'TOP_PX')),
         origStyle: style,
+        containingBlockEl: null,
+        containingBlockId: null,
+        containingBlockStyle: '',
+        containingBlockNeedsRelative: false,
         scale,
         ...common,
       };
     }
 
     if (adapter.hasBlockField(ws, blockId, 'STYLE')) {
-      const measured = measureBlockPosition(host, blockId);
+      const measured = measureBlockPosition(host, blockId, ws);
       return {
         blockId,
         ws,
@@ -534,8 +601,13 @@ function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | nul
         origLeft: parseCssPx(style, 'left') ?? measured.left,
         origTop: parseCssPx(style, 'top') ?? measured.top,
         origStyle: style,
+        containingBlockEl: measured.containingBlockEl,
+        containingBlockId: measured.containingBlockId,
+        containingBlockStyle: measured.containingBlockStyle,
+        containingBlockNeedsRelative: measured.containingBlockNeedsRelative,
         scale,
         ...common,
+        origContainingBlockPosition: measured.containingBlockEl?.style.position ?? '',
       };
     }
   }
@@ -555,18 +627,74 @@ function getHostScale(host: HTMLElement): number {
   return host.offsetWidth > 0 ? rect.width / host.offsetWidth : 1;
 }
 
-function measureBlockPosition(host: HTMLElement, blockId: string): { left: number; top: number } {
+function measureBlockPosition(
+  host: HTMLElement,
+  blockId: string,
+  ws: WorkspaceKey,
+): {
+  left: number;
+  top: number;
+  containingBlockEl: HTMLElement | null;
+  containingBlockId: string | null;
+  containingBlockStyle: string;
+  containingBlockNeedsRelative: boolean;
+} {
   const el = getShadowBlockElement(host, blockId);
   const root =
     host.shadowRoot?.querySelector<HTMLElement>('body.charsheet') ??
     host.shadowRoot?.querySelector<HTMLElement>('.charsheet');
-  if (!el || !root) return { left: 0, top: 0 };
+  if (!el || !root) {
+    return {
+      left: 0,
+      top: 0,
+      containingBlockEl: null,
+      containingBlockId: null,
+      containingBlockStyle: '',
+      containingBlockNeedsRelative: false,
+    };
+  }
+  const adapter = getBlocklyAdapter();
+  const container = findEditableContainingBlock(el, blockId, ws);
+  const frame = container?.el ?? root;
   const elRect = el.getBoundingClientRect();
-  const rootRect = root.getBoundingClientRect();
+  const frameRect = frame.getBoundingClientRect();
   return {
-    left: Math.max(0, Math.round(elRect.left - rootRect.left + root.scrollLeft)),
-    top: Math.max(0, Math.round(elRect.top - rootRect.top + root.scrollTop)),
+    left: Math.max(0, Math.round(elRect.left - frameRect.left + frame.scrollLeft)),
+    top: Math.max(0, Math.round(elRect.top - frameRect.top + frame.scrollTop)),
+    containingBlockEl: container?.el ?? null,
+    containingBlockId: container?.blockId ?? null,
+    containingBlockStyle: container?.style ?? '',
+    containingBlockNeedsRelative: container
+      ? !hasPositionDeclaration(container.style) &&
+        getComputedStyle(container.el).position === 'static' &&
+        adapter.hasBlockField(ws, container.blockId, 'STYLE')
+      : false,
   };
+}
+
+function findEditableContainingBlock(
+  el: HTMLElement,
+  blockId: string,
+  ws: WorkspaceKey,
+): { el: HTMLElement; blockId: string; style: string } | null {
+  const adapter = getBlocklyAdapter();
+  let cur = el.parentElement;
+  while (cur) {
+    const id = cur.dataset.r20BlockId;
+    if (id && id !== blockId && adapter.getBlock(ws, id) && adapter.hasBlockField(ws, id, 'STYLE')) {
+      return {
+        el: cur,
+        blockId: id,
+        style: adapter.getBlockField(ws, id, 'STYLE') ?? '',
+      };
+    }
+    cur = cur.parentElement;
+  }
+  return null;
+}
+
+function hasPositionDeclaration(style: string): boolean {
+  return /(?:^|;)\s*position\s*:/i.test(style);
 }
 
 function parsePx(value: string | null): number {
