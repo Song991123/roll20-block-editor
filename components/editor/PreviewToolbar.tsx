@@ -25,15 +25,15 @@ const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 // spec 17 §9.1 — 9 레이어. 라벨은 자연어, desc 는 보조 설명.
 const LAYERS: Array<{ id: PreviewLayer; label: string; desc: string }> = [
-  { id: 'all', label: '전체', desc: '모든 element 정상' },
+  { id: 'all', label: '전체', desc: '모든 요소 표시' },
   { id: 'structure', label: '구조', desc: 'fieldset / section 윤곽선' },
-  { id: 'input', label: '입력', desc: 'input / select / textarea / 체크박스 / 라디오' },
+  { id: 'input', label: '입력', desc: '입력칸 / 선택 메뉴 / 체크박스 / 라디오' },
   { id: 'roll', label: '굴림 버튼', desc: 'button[type=roll]' },
-  { id: 'text', label: '텍스트', desc: 'label / heading / 정적 텍스트' },
-  { id: 'image', label: '이미지', desc: 'img / icon / 배경 이미지' },
+  { id: 'text', label: '텍스트', desc: '라벨 / 제목 / 고정 텍스트' },
+  { id: 'image', label: '이미지', desc: '이미지 / 아이콘 / 배경 이미지' },
   { id: 'table', label: '표', desc: 'table / thead / tbody / tr / td' },
   { id: 'repeating', label: '반복 영역', desc: 'fieldset.repeating_*' },
-  { id: 'custom', label: '사용자정의', desc: '사용자 클래스' },
+  { id: 'custom', label: '사용자 정의', desc: '직접 만든 클래스' },
 ];
 
 /**
@@ -177,18 +177,18 @@ export default function PreviewToolbar() {
               size="sm"
               className="h-8 gap-1.5 px-2.5 text-[11px]"
               onClick={() => setRenderMode(renderMode === 'iframe' ? 'shadow' : 'iframe')}
-              aria-label="Roll20 환경 시뮬"
+              aria-label="Roll20 보기 방식"
               aria-pressed={renderMode === 'iframe'}
               data-testid="preview-rendermode-toggle"
             >
               <Frame className="h-3.5 w-3.5" />
-              <span>{renderMode === 'iframe' ? 'Roll20 시뮬' : '편집 모드'}</span>
+              <span>{renderMode === 'iframe' ? 'Roll20 보기' : '편집 보기'}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top">
             {renderMode === 'iframe'
-              ? 'iframe sandbox — Roll20 환경 시뮬레이션 (현재)'
-              : 'Shadow DOM — 편집 가능 컨테이너 (현재)'}
+              ? 'Roll20에 가까운 iframe 미리보기'
+              : '클릭과 드래그가 가능한 편집용 보기'}
           </TooltipContent>
         </Tooltip>
 
@@ -214,7 +214,7 @@ export default function PreviewToolbar() {
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
-            <TooltipContent side="top">레이어 (9개)</TooltipContent>
+            <TooltipContent side="top">표시할 요소 고르기</TooltipContent>
           </Tooltip>
           <DropdownMenuContent
             side="top"

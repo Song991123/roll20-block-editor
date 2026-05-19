@@ -37,9 +37,9 @@ export default function Statusbar() {
         )}
       </span>
       <span className="text-border">·</span>
-      <span>자동저장 {autosave ? 'ON' : 'OFF'}</span>
+      <span>자동저장 {autosave ? '켜짐' : '꺼짐'}</span>
       <span className="text-border">·</span>
-      <span>워크스페이스: {WORKSPACE_LABEL[treeTab]}</span>
+      <span>작업공간: {WORKSPACE_LABEL[treeTab]}</span>
       <span className="flex-1" />
       <SfxToggle />
       <span className="text-border">·</span>

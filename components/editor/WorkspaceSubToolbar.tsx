@@ -51,7 +51,7 @@ export default function WorkspaceSubToolbar() {
       <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border bg-[var(--bg-elevated)] px-2 text-xs">
         <div
           role="tablist"
-          aria-label="워크스페이스"
+          aria-label="작업공간"
           className="inline-flex items-center gap-0.5 rounded-md bg-[var(--bg-elevated-2)] p-0.5"
         >
           {TABS.map((tab) => {
@@ -80,7 +80,7 @@ export default function WorkspaceSubToolbar() {
                     {tab.label}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>{tab.label} 워크스페이스</TooltipContent>
+                <TooltipContent>{tab.label} 작업공간</TooltipContent>
               </Tooltip>
             );
           })}
@@ -95,13 +95,13 @@ export default function WorkspaceSubToolbar() {
                 size="icon"
                 className="h-7 w-7"
                 onClick={() => zoom(-1)}
-                aria-label="워크스페이스 축소"
+                aria-label="작업공간 축소"
                 data-testid="ws-zoom-out"
               >
                 <Minus className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>워크스페이스 축소</TooltipContent>
+            <TooltipContent>작업공간 축소</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -111,13 +111,13 @@ export default function WorkspaceSubToolbar() {
                 size="icon"
                 className="h-7 w-7"
                 onClick={() => zoom(1)}
-                aria-label="워크스페이스 확대"
+                aria-label="작업공간 확대"
                 data-testid="ws-zoom-in"
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>워크스페이스 확대</TooltipContent>
+            <TooltipContent>작업공간 확대</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -133,7 +133,7 @@ export default function WorkspaceSubToolbar() {
                 <Sparkles className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>블록 정리 (cleanUp)</TooltipContent>
+            <TooltipContent>블록 정리</TooltipContent>
           </Tooltip>
         </div>
       </div>

@@ -79,9 +79,9 @@ function BlockInspector() {
         <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-elevated-2)] text-muted-foreground">
           <MousePointerSquareDashed className="h-5 w-5" />
         </div>
-        <p className="text-sm font-medium text-foreground">선택된 블록 없음</p>
+        <p className="text-sm font-medium text-foreground">선택한 블록이 없어요</p>
         <p className="mt-1 max-w-[240px] text-[11px] leading-relaxed text-muted-foreground">
-          왼쪽 트리에서 블록을 선택하거나 미리보기에서 클릭해 보세요.
+          왼쪽 트리에서 블록을 고르거나 시트 화면에서 원하는 요소를 클릭해 보세요.
         </p>
       </div>
     );
@@ -110,7 +110,7 @@ function BlockInspector() {
 
         {fields.length === 0 ? (
           <div className="rounded-md border border-dashed border-border bg-[var(--bg-elevated-2)] p-3 text-[11px] text-muted-foreground">
-            편집 가능한 필드가 없는 블록이에요.
+            이 블록에는 여기서 바꿀 수 있는 값이 없어요.
           </div>
         ) : (
           <div className="space-y-3">

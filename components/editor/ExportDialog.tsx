@@ -108,7 +108,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       triggerDownload(zip);
       const kb = (zip.size / 1024).toFixed(1);
       toast.success(
-        `${zip.fileName} 다운로드 완료 (${kb} KB) — README.txt 의 Roll20 등록 가이드 확인하세요`,
+        `${zip.fileName} 내보내기 완료 (${kb} KB). README.txt에 Roll20 등록 순서를 적어뒀어요.`,
         { duration: 4500 },
       );
       onOpenChange(false);
@@ -126,10 +126,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileArchive className="h-5 w-5" />
-            Roll20 시트 .zip 다운로드
+            Roll20용 .zip 내보내기
           </DialogTitle>
           <DialogDescription>
-            Custom Sheet Sandbox 에 무수정 업로드 가능한 4 개 파일 (sheet.html / sheet.css / translation.json / sheet.json) + README.txt 를 .zip 으로 묶어 내보냅니다.
+            Roll20 Custom Sheet Sandbox에 올릴 파일을 .zip으로 묶습니다. sheet.html, sheet.css, translation.json, sheet.json, README.txt가 포함돼요.
           </DialogDescription>
         </DialogHeader>
 
@@ -203,7 +203,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             data-testid="export-warnings"
           >
             <div className="mb-2 flex items-center justify-between">
-              <div className="text-sm font-medium">검사 결과</div>
+              <div className="text-sm font-medium">내보내기 전 확인</div>
               <div className="flex items-center gap-3 text-[11px] tabular-nums">
                 <span className="text-red-500">오류 {counts.error}</span>
                 <span className="text-amber-500">경고 {counts.warning}</span>
@@ -213,7 +213,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
             {combinedWarnings.length === 0 ? (
               <div className="text-[12px] text-muted-foreground">
-                감지된 문제가 없습니다. 다운로드 가능합니다.
+                감지된 문제가 없어요. 바로 내보낼 수 있습니다.
               </div>
             ) : (
               <ul className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
@@ -244,7 +244,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 role="alert"
                 data-testid="export-blocked-banner"
               >
-                <strong>다운로드가 차단되었습니다.</strong> 위의 오류 (ERROR) 항목을 모두 해결한 뒤 다시 시도하세요.
+                <strong>내보내기를 막았어요.</strong> 위의 오류 항목을 먼저 해결해 주세요.
               </div>
             )}
           </section>
@@ -263,9 +263,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 aria-label="구버전 Roll20 sandbox 호환 모드"
               />
               <span className="flex-1">
-                <span className="font-medium">구버전 Roll20 sandbox 호환 모드 (CSS 자동 변환)</span>
+                <span className="font-medium">구버전 Roll20 무해화 모드</span>
                 <span className="ml-1 text-[11px] text-muted-foreground">
-                  transform → zoom · animation 제거 · var() inline · position:fixed → absolute
+                  transform은 zoom으로 바꾸고, animation/var()/fixed 같은 위험 요소를 정리합니다.
                 </span>
               </span>
             </label>
@@ -274,7 +274,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 className="mt-2 text-[11px] text-muted-foreground"
                 data-testid="export-legacy-warnings"
               >
-                지난 다운로드 무해화 결과: {legacyWarnings.length}건 — 자세한 내역은 .zip 내부 sanitize-warnings.json 참고 (별도 phase 에서 zip_builder 와 wire 예정).
+                지난 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 sanitize-warnings.json에 담길 예정입니다.
               </div>
             )}
           </section>
@@ -297,7 +297,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             data-testid="export-download-button"
           >
             <FileArchive className="mr-1.5 h-4 w-4" />
-            {busy ? '압축 중…' : '다운로드 (.zip)'}
+            {busy ? '압축 중…' : '내보내기 (.zip)'}
           </Button>
         </DialogFooter>
       </DialogContent>

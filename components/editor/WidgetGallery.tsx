@@ -48,18 +48,18 @@ export default function WidgetGallery() {
   const addPreset = (preset: FriendlyWidgetPreset) => {
     const id = appendFriendlyWidgetPreset(preset, { left: 24, top: 24 });
     if (id) {
-      toast(`${preset.label} 추가됨`, { duration: 1400 });
+      toast(`${preset.label}을 추가했어요.`, { duration: 1400 });
     } else {
-      toast.error('블록 워크스페이스가 아직 준비되지 않았어요.');
+      toast.error('시트 작업공간이 아직 준비되지 않았어요.');
     }
   };
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border px-3 text-xs">
-        <span className="font-semibold">부품 갤러리</span>
+        <span className="font-semibold">요소 갤러리</span>
         <span className="ml-auto rounded bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          HTML에 추가
+          시트에 추가
         </span>
       </div>
 
@@ -70,7 +70,7 @@ export default function WidgetGallery() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="부품 검색"
+            placeholder="요소 검색"
             className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] py-1.5 pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]"
             data-testid="widget-gallery-search"
           />
@@ -80,7 +80,7 @@ export default function WidgetGallery() {
       <div className="flex-1 overflow-auto px-2 py-2" data-testid="widget-gallery-scroll">
         {grouped.length === 0 ? (
           <div className="px-2 py-6 text-center text-xs text-muted-foreground">
-            맞는 부품이 없습니다.
+            맞는 요소가 없어요.
           </div>
         ) : (
           grouped.map(({ group, items }) => (

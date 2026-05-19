@@ -24,15 +24,15 @@ const MODES: Array<{
   symbol: string;
   tooltip: string;
 }> = [
-  { key: 'edit', label: '편집', symbol: '✏', tooltip: 'WYSIWYG 편집 (위젯 드래그-드롭)' },
-  { key: 'split', label: '분할', symbol: '⬌', tooltip: '분할 보기 — 양쪽 동시' },
-  { key: 'assemble', label: '조립', symbol: '🟦', tooltip: '블록 워크스페이스만' },
-  { key: 'preview', label: '미리보기', symbol: '📄', tooltip: '미리보기만' },
+  { key: 'edit', label: '편집', symbol: '✏', tooltip: '시트를 직접 보고 움직이며 편집' },
+  { key: 'split', label: '나란히', symbol: '⬌', tooltip: '블록과 미리보기를 함께 보기' },
+  { key: 'assemble', label: '블록', symbol: '🟦', tooltip: '블록 작업공간만 보기' },
+  { key: 'preview', label: '미리보기', symbol: '📄', tooltip: 'Roll20 화면만 보기' },
 ];
 
 const SUBMODES: Array<{ key: EditSubmode; label: string; tooltip: string }> = [
-  { key: 'sheet', label: '시트', tooltip: '캐릭터 시트 (850px)' },
-  { key: 'rolltemplate', label: '굴림틀', tooltip: '굴림 결과 틀 (280px)' },
+  { key: 'sheet', label: '시트', tooltip: '캐릭터 시트 편집' },
+  { key: 'rolltemplate', label: '굴림 결과', tooltip: '채팅에 표시되는 굴림 결과 편집' },
 ];
 
 export default function MainAreaToolbar() {
@@ -47,7 +47,7 @@ export default function MainAreaToolbar() {
       <div className="flex h-10 shrink-0 items-center justify-between gap-3 border-b border-border bg-[var(--bg-elevated)] px-3 text-xs">
         <div
           role="tablist"
-          aria-label="메인 영역 모드"
+          aria-label="화면 모드"
           className="inline-flex items-center gap-0.5 rounded-md bg-[var(--bg-elevated-2)] p-0.5"
         >
           {MODES.map((mode) => {
@@ -84,7 +84,7 @@ export default function MainAreaToolbar() {
           {mainMode === 'edit' && (
             <div
               role="tablist"
-              aria-label="편집 sub-tab"
+              aria-label="편집 대상"
               className="inline-flex items-center gap-0.5 rounded-md bg-[var(--bg-elevated-2)] p-0.5"
               data-testid="edit-submode-toolbar"
             >

@@ -83,7 +83,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
   // confirm (사용자 의도를 명시적으로 확인 — accidental click 방어).
   const handleNewSheet = useCallback(() => {
     if (typeof window !== 'undefined' &&
-        !window.confirm('현재 워크스페이스(HTML/CSS/번역) 를 모두 비웁니다 — 진행할까요?')) {
+        !window.confirm('현재 시트의 HTML, CSS, 번역 작업을 모두 비울까요?')) {
       return;
     }
     clearAll();
@@ -93,11 +93,11 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
     }
     onNewSheet?.();
     void deleteWorkspace(AUTOSAVE_KEY).catch(() => {
-      toast.warning('자동저장 기록 삭제에 실패했어요. 새로고침 후에도 복구 배너가 보이면 무시해 주세요.', {
+      toast.warning('자동저장 기록을 지우지 못했어요. 새로고침 후 복구 안내가 보이면 무시해 주세요.', {
         duration: 2600,
       });
     });
-    toast.success('빈 시트 생성됨 — HTML/CSS/번역 워크스페이스 초기화', { duration: 2200 });
+    toast.success('새 빈 시트를 만들었어요.', { duration: 2200 });
   }, [clearAll, onNewSheet]);
 
   const handleLoadExample = (descriptor: ExampleDescriptor) => async () => {
@@ -105,17 +105,17 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
       const counts = await loadExampleIntoWorkspaces(descriptor);
       const total = counts.html + counts.css + counts.i18n;
       toast.success(
-        `${descriptor.shortName} 예시 로드 — 블록 ${total}개 (HTML ${counts.html} / CSS ${counts.css} / 번역 ${counts.i18n})`,
+        `${descriptor.shortName} 샘플을 불러왔어요. 블록 ${total}개 (HTML ${counts.html} / CSS ${counts.css} / 번역 ${counts.i18n})`,
         { duration: 2200 },
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`${descriptor.shortName} 로드 실패: ${msg}`, { duration: 3000 });
+      toast.error(`${descriptor.shortName} 샘플을 불러오지 못했어요: ${msg}`, { duration: 3000 });
     }
   };
 
   const comingSoon = (label: string) => () =>
-    toast(`${label} — 곧 추가됩니다`, { duration: 1800 });
+    toast(`${label}은 아직 준비 중이에요.`, { duration: 1800 });
 
   return (
     <TooltipProvider delayDuration={250}>
@@ -128,20 +128,20 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
               size="icon"
               className="h-8 w-8"
               onClick={toggleLeft}
-              aria-label="좌측 사이드 토글 (Cmd+[)"
+              aria-label="왼쪽 패널 열기/닫기 (Cmd+[)"
             >
               <PanelLeft className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom">좌측 토글 (Cmd+[)</TooltipContent>
+          <TooltipContent side="bottom">왼쪽 패널 (Cmd+[)</TooltipContent>
         </Tooltip>
 
         <div className="flex items-center gap-2 pl-1">
           <LogoMark className="h-7 w-7" />
           <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-tight">Roll20 시트 빌더</div>
+            <div className="text-sm font-semibold tracking-tight">Roll20 시트 편집기</div>
             <div className="text-[10.5px] text-muted-foreground hidden md:block">
-              블록 코딩으로 만드는 캐릭터 시트
+              블록과 캔버스로 만드는 캐릭터 시트
             </div>
           </div>
         </div>
@@ -154,19 +154,19 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 variant="ghost"
                 size="sm"
                 className="h-8 gap-1.5"
-                aria-label="예시 시트 불러오기"
+                aria-label="샘플 시트 불러오기"
               >
                 <Layers className="h-4 w-4" />
-                <span className="hidden sm:inline">예시</span>
+                <span className="hidden sm:inline">샘플</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-60">
-              <DropdownMenuLabel>예시 시트</DropdownMenuLabel>
+              <DropdownMenuLabel>샘플 시트</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={comingSoon('빈 템플릿')}>
                 <span className="flex flex-col">
                   <span className="text-sm">🎲 빈 시트</span>
-                  <span className="text-[11px] text-muted-foreground">처음부터 만들기</span>
+                  <span className="text-[11px] text-muted-foreground">아무것도 없는 시트로 시작</span>
                 </span>
               </DropdownMenuItem>
               {EXAMPLES.map((ex) => (
@@ -202,7 +202,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 <span className="hidden sm:inline">새 시트</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>새 빈 워크스페이스</TooltipContent>
+            <TooltipContent>새 빈 시트</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -219,7 +219,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 <span className="hidden sm:inline">불러오기</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>.xml / .zip 가져오기</TooltipContent>
+            <TooltipContent>HTML/CSS 또는 저장 파일 가져오기</TooltipContent>
           </Tooltip>
         </div>
 
@@ -251,13 +251,13 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 size="sm"
                 className="h-8 gap-1.5"
                 onClick={() => setExportOpen(true)}
-                aria-label="시트 다운로드"
+                aria-label="Roll20용 파일 내보내기"
               >
                 <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">다운로드</span>
+                <span className="hidden sm:inline">내보내기</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Roll20 등록용 .zip (Ctrl+E)</TooltipContent>
+            <TooltipContent>Roll20 등록용 .zip 내보내기 (Ctrl+E)</TooltipContent>
           </Tooltip>
 
           <div className="mx-1 h-5 w-px bg-border" />
@@ -302,12 +302,12 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 size="icon"
                 className="h-8 w-8"
                 onClick={toggleRight}
-                aria-label="우측 사이드 토글 (Cmd+])"
+                aria-label="오른쪽 패널 열기/닫기 (Cmd+])"
               >
                 <PanelRight className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">우측 토글 (Cmd+])</TooltipContent>
+            <TooltipContent side="bottom">오른쪽 패널 (Cmd+])</TooltipContent>
           </Tooltip>
 
           <Tooltip>

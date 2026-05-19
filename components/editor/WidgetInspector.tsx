@@ -62,9 +62,9 @@ export default function WidgetInspector() {
         <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-elevated-2)] text-muted-foreground">
           <MousePointerSquareDashed className="h-5 w-5" />
         </div>
-        <p className="text-sm font-medium text-foreground">선택된 위젯 없음</p>
+        <p className="text-sm font-medium text-foreground">선택한 요소가 없어요</p>
         <p className="mt-1 max-w-[240px] text-[11px] leading-relaxed text-muted-foreground">
-          캔버스에서 위젯을 클릭하거나 갤러리에서 위젯을 끌어다 놓으세요.
+          시트에서 요소를 클릭하거나 왼쪽 갤러리에서 새 요소를 끌어오세요.
         </p>
       </div>
     );
@@ -84,7 +84,7 @@ export default function WidgetInspector() {
     const v = e.target.value;
     setNameDraft(v);
     if (!isValidAttrName(v)) {
-      setNameError('영어 + 숫자 + _ 만 가능 — 예: strength, hp_max');
+      setNameError('영문, 숫자, _만 사용할 수 있어요. 예: strength, hp_max');
       return; // store 갱신 안 함 (invalid)
     }
     setNameError('');
@@ -97,7 +97,7 @@ export default function WidgetInspector() {
         <header className="flex items-center justify-between">
           <div>
             <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground">
-              위젯
+              요소
             </div>
             <div className="mt-0.5 text-sm font-medium text-foreground">
               {def?.label ?? widget.type}
@@ -128,7 +128,7 @@ export default function WidgetInspector() {
         </Section>
 
         {/* 이름 (Roll20 attr) */}
-        <Section title="이름 (Roll20 attr)">
+        <Section title="속성 이름 (Roll20 attr)">
           <input
             type="text"
             value={nameDraft}
@@ -152,13 +152,13 @@ export default function WidgetInspector() {
             </p>
           ) : (
             <p className="mt-1 text-[10.5px] text-muted-foreground">
-              영어 + 숫자 + _ 만 가능. Roll20 에서 <code className="font-mono">attr_{nameDraft || 'name'}</code> 으로 노출.
+              Roll20에서는 <code className="font-mono">attr_{nameDraft || 'name'}</code> 이름으로 저장됩니다.
             </p>
           )}
         </Section>
 
         {/* 클래스 */}
-        <Section title="클래스 (CSS class)">
+        <Section title="CSS 클래스">
           <input
             type="text"
             value={(widget.attrs.class as string | undefined) ?? ''}
@@ -232,7 +232,7 @@ function TypeSpecificFields({
 
   if (type === 'text-input' || type === 'number-input' || type === 'textarea-input') {
     return (
-      <Section title="기본값">
+      <Section title="처음 값">
         <input
           type="text"
           value={(attrs.value as string | undefined) ?? ''}
@@ -257,7 +257,7 @@ function TypeSpecificFields({
           />
         </Section>
         {type === 'roll-button' && (
-          <Section title="굴림 수식">
+          <Section title="굴림식">
             <input
               type="text"
               value={(attrs.formula as string | undefined) ?? ''}
@@ -289,7 +289,7 @@ function TypeSpecificFields({
 
   if (type === 'image') {
     return (
-      <Section title="이미지 URL">
+      <Section title="이미지 주소">
         <input
           type="text"
           value={(attrs.src as string | undefined) ?? ''}
@@ -306,7 +306,7 @@ function TypeSpecificFields({
   if (type === 'select-input') {
     const options = ((attrs.options as string[] | undefined) ?? []).join('\n');
     return (
-      <Section title="선택 옵션 (줄당 1개)">
+      <Section title="선택지 (한 줄에 하나)">
         <textarea
           value={options}
           onChange={(e) =>

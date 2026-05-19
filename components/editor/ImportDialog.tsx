@@ -139,7 +139,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           if (total >= PROGRESS_THRESHOLD) {
             const pct = total > 0 ? Math.round((done / total) * 100) : 0;
             setProgress({ done, total, pct });
-            toast.loading(`${done.toLocaleString()} / ${total.toLocaleString()} 블록 적용 중… ${pct}%`, {
+            toast.loading(`${done.toLocaleString()} / ${total.toLocaleString()}개 블록 불러오는 중… ${pct}%`, {
               id: PROGRESS_TOAST_ID,
             });
           }
@@ -177,12 +177,12 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       });
       if (result.stats.sanitizeDropped > 0) {
         toast.warning(
-          `보안상 인라인 이벤트 핸들러 ${result.stats.sanitizeDropped}개 제거됨 (onclick 등 XSS 위험 attr)`,
+          `보안을 위해 인라인 이벤트 핸들러 ${result.stats.sanitizeDropped}개를 제거했어요. (onclick 등)`,
           { duration: 4500 },
         );
       }
       toast.success(
-        `불러오기 완료 — 매칭 ${result.stats.htmlMatched}/${result.stats.htmlTotal} (${result.stats.coverage}%) · raw fallback ${result.stats.htmlRawFallback}`,
+        `불러오기 완료: HTML 매칭 ${result.stats.htmlMatched}/${result.stats.htmlTotal} (${result.stats.coverage}%) · 원본 보존 ${result.stats.htmlRawFallback}개`,
         { duration: 3500 },
       );
     } catch (err) {
@@ -210,7 +210,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         <DialogHeader>
           <DialogTitle>외부 시트 불러오기</DialogTitle>
           <DialogDescription>
-            HTML / CSS / translation 텍스트를 입력하면 130 블록 카탈로그로 자동 매칭해 워크스페이스에 박아 줍니다. 매칭 안 되는 패턴은 raw 블록으로 fallback.
+            HTML, CSS, translation 파일을 넣으면 블록으로 자동 변환합니다. 아직 지원하지 않는 구조는 원본 블록으로 보존해요.
           </DialogDescription>
         </DialogHeader>
 
@@ -281,7 +281,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             data-testid="import-progress"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">큰 시트 적용 중…</span>
+              <span className="font-medium">큰 시트를 불러오는 중…</span>
               <span className="tabular-nums text-muted-foreground">
                 {progress.done.toLocaleString()} / {progress.total.toLocaleString()} 블록 · {progress.pct}%
               </span>
@@ -293,7 +293,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               />
             </div>
             <div className="mt-1 text-muted-foreground text-[11px]">
-              화면이 잠시 끊겨도 정상입니다 — 진행되는 동안 다른 영역은 응답합니다.
+              큰 시트는 잠깐 느려질 수 있어요. 변환은 계속 진행됩니다.
             </div>
           </div>
         )}
@@ -304,7 +304,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             <div>
               HTML 매칭: <span className="tabular-nums">{report.matched}/{report.total}</span>
               {' '}({report.coverage}%)
-              {' · '}raw fallback <span className="tabular-nums">{report.rawHtml}</span>
+              {' · '}원본 보존 <span className="tabular-nums">{report.rawHtml}</span>
             </div>
             <div>
               CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span>
@@ -312,12 +312,12 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             </div>
             {report.sanitizeDropped > 0 && (
               <div className="mt-1 text-amber-500" data-testid="import-sanitize-warning">
-                보안상 {report.sanitizeDropped}개의 인라인 이벤트 핸들러(onclick 등)가 제거되었습니다 — XSS 방지.
+                보안을 위해 인라인 이벤트 핸들러(onclick 등) {report.sanitizeDropped}개를 제거했습니다.
               </div>
             )}
             {report.warnings > 0 && (
               <div className="mt-1 text-amber-500">
-                경고 {report.warnings}건 — 일부 패턴은 raw 블록으로 박혔습니다.
+                경고 {report.warnings}건 — 일부 패턴은 원본 블록으로 보존했습니다.
               </div>
             )}
           </div>
@@ -328,7 +328,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             지우기
           </Button>
           <Button onClick={handleImport} disabled={busy || !anyInput}>
-            {busy ? (progress ? `${progress.pct}% 적용 중…` : '변환 중…') : '변환 시작'}
+            {busy ? (progress ? `${progress.pct}% 불러오는 중…` : '변환 중…') : '불러오기'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -155,7 +155,7 @@ export default function EditCanvas() {
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     const id = appendFriendlyWidgetPreset(preset, pos);
-    if (id) setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
+    if (id) setLastMove(`${preset.label} 추가됨: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
   }, []);
 
   const handleNativeDragOver = useCallback((event: Event) => {
@@ -176,7 +176,7 @@ export default function EditCanvas() {
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     const id = appendFriendlyWidgetPreset(preset, pos);
-    if (id) setLastMove(`${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
+    if (id) setLastMove(`${preset.label} 추가됨: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
   }, []);
 
   useEffect(() => {
@@ -197,7 +197,7 @@ export default function EditCanvas() {
         dragOriginRef.current = origin;
         pendingMoveRef.current = null;
         if (!origin) {
-          setLastMove('이 블록은 위치를 저장할 STYLE/LEFT/TOP 필드가 없어 이동을 건너뜀');
+          setLastMove('이 블록은 위치 값을 저장할 필드가 없어 움직일 수 없어요.');
           return;
         }
         origin.el.style.transition = 'none';
@@ -289,7 +289,7 @@ export default function EditCanvas() {
     >
       <div className="flex h-9 shrink-0 items-center gap-3 border-b border-border bg-[var(--bg-elevated)] px-3 text-xs">
         <span className="font-medium text-foreground">
-          {editSubmode === 'rolltemplate' ? '굴림틀 배치' : '시트 배치'}
+          {editSubmode === 'rolltemplate' ? '굴림 결과 편집' : '시트 편집'}
         </span>
         <button
           type="button"
@@ -300,13 +300,13 @@ export default function EditCanvas() {
               ? 'border-[var(--color-primary,#2563eb)] bg-[var(--color-primary,#2563eb)] text-white'
               : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
           )}
-          title="8px 단위로 이동"
+          title="8px 단위로 맞추기"
           data-testid="edit-canvas-snap-toggle"
         >
           snap {snapEnabled ? '8px' : 'off'}
         </button>
         <div className="ml-auto text-[10px] text-muted-foreground tabular-nums">
-          {lastMove ?? '드래그하면 HTML style/위치 필드에 반영'}
+          {lastMove ?? '요소를 끌어 옮기면 HTML/CSS 위치 값에 반영돼요.'}
         </div>
       </div>
 
@@ -322,7 +322,7 @@ export default function EditCanvas() {
             className="flex min-h-[420px] items-center justify-center rounded border border-dashed border-border bg-[var(--bg-elevated)] text-sm text-muted-foreground"
             data-testid="edit-canvas-empty"
           >
-            HTML/CSS를 불러오거나 부품을 드롭하면 편집 화면이 여기에 표시됩니다.
+            HTML/CSS를 불러오거나 요소를 놓으면 여기에서 바로 편집할 수 있어요.
           </div>
         ) : (
           <div
