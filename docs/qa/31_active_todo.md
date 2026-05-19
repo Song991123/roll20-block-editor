@@ -27,7 +27,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | Status | Priority | Task | Notes |
 | --- | ---: | --- | --- |
 | VERIFY | P0 | Make edit canvas and preview render from the same emitted HTML/CSS path, with edit overlays only. | First patch: `buildSheetDoc`/`buildSheetParts` now always include Roll20 baseline/runtime/layer CSS so iframe/shadow/edit use the same sheet render CSS stack. `lint`, `build`, and localhost load passed; still needs imported-sheet visual parity check. |
-| TODO | P0 | Hide `script`, `script[type="text/worker"]`, and `rolltemplate` from sheet canvas in every render mode. | They belong to worker/chat layers, not visible sheet HTML. |
+| DONE | P0 | Hide `script`, `script[type="text/worker"]`, and `rolltemplate` from sheet canvas in every render mode. | `lib/preview/buildDoc.ts` now hard-hides them after user CSS in iframe and shadow/edit render paths; fixture render report confirms source script/rolltemplate nodes remain for runtime/chat extraction. |
 | TODO | P0 | Preserve worker JS as a separate future block-coding workspace. | Current reports include worker matched/raw counts. |
 | TODO | P0 | Implement real browser L2 roundtrip: import -> emit -> import -> compare. | Current `reports/roundtrip-node/summary.md` is Node import determinism only. |
 | TODO | P0 | Add visual/cascade leak verification for Roll20 preview. | Need computed CSS origin and screenshot diff. |
@@ -54,6 +54,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | DONE | Visual reference inventory | `reports/visual-reference-inventory/visual-reference-inventory.md`; found 1497 source sheet folders, 9114 images, 491 visual candidates. |
 | DONE | Visual fixture preparation smoke | `scripts/prepare_visual_fixture.mjs` copied `official-roll20:Les-Oublies` and `official-roll20:AW2E` into ignored `test-fixtures/visual/` with manifests. |
 | DONE | Visual fixture render smoke | `scripts/render_visual_fixture_doc.mjs` wrote standalone preview HTML for 2 copied fixtures and `reports/visual-fixture-render/visual-fixture-render.md`. |
+| DONE | Preview non-canvas node hiding | `script`, `script[type="text/worker"]`, and `rolltemplate` get final-source-order hidden CSS with zero layout/hit-test footprint in both build paths. |
 | DONE | Browser capture smoke for visual fixtures | Opened both generated fixture HTML files through Browser Use; captured local PNGs with 0 console errors. Full-page captures show fixture-state/viewport normalization is still needed before pixel diff. |
 | DONE | Browser-canvas diagnostic pixel diff | `reports/visual-fixture-diff/visual-fixture-diff-results.md`; 2 fixtures diffed with 0 browser console errors. Multi-mode diff added after first pass. |
 

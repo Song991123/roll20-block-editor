@@ -486,6 +486,16 @@ const ROLL20_DIALOG_OPEN_CSS = `
 rolltemplate,
 script {
   display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
 }
 `;
 
@@ -493,6 +503,16 @@ const ROLL20_PREVIEW_HIDDEN_CSS = `
 rolltemplate,
 script {
   display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
 }
 `;
 
