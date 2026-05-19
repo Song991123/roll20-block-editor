@@ -346,7 +346,7 @@ function BlockTile({ def }: { def: BlockDef }) {
     if (!host) return;
     // IO unsupported (Safari < 12.1, jsdom) → 즉시 mount (회귀 방지).
     if (typeof IntersectionObserver === 'undefined') {
-      setIsOnScreen(true);
+      queueMicrotask(() => setIsOnScreen(true));
       return;
     }
     const observer = new IntersectionObserver(

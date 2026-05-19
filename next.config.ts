@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import bundleAnalyzer from '@next/bundle-analyzer';
 
 // GitHub Pages 정적 export 설정.
 // production 빌드 (CI) 에서만 basePath / assetPrefix 켜고, 로컬 dev 에서는 끔.
@@ -14,4 +15,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 };
 
-export default nextConfig;
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+export default withBundleAnalyzer(nextConfig);

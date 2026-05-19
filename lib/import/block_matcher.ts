@@ -363,7 +363,7 @@ function matchDice(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
   return null;
 }
 
-function matchI18n(node: DomNode, ctx: MatchContext): MatchedBlock | null {
+function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
   const tag = node.tag;
   if (!tag) return null;
   const a = node.attrs ?? {};
@@ -898,10 +898,6 @@ function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
     if (m) out.push(m);
   }
   return out;
-}
-
-function hasOnlyText(node: DomNode): boolean {
-  return node.children.every((c) => c.type === 'text' || c.type === 'comment');
 }
 
 /**

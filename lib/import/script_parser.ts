@@ -946,7 +946,7 @@ function tryParseRemoveRepeatingRow(args: string): ParsedBlock | null {
   let idExpr: string | null = null;
 
   // 1) 'repeating_<S>_' + id-expr
-  let m = /^(['"])repeating_([\w-]+)_\1\s*\+\s*(.+)$/.exec(t);
+  const m = /^(['"])repeating_([\w-]+)_\1\s*\+\s*(.+)$/.exec(t);
   if (m) {
     section = m[2];
     idExpr = m[3].trim();

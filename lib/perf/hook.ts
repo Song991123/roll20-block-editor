@@ -237,7 +237,7 @@ function buildHook(): PerfHook {
         heapBeforeMb !== null && heapAfterMb !== null
           ? Math.round((heapAfterMb - heapBeforeMb) * 100) / 100
           : null;
-      // eslint-disable-next-line no-console
+       
       console.log(`[perf] ${label}: ${ms.toFixed(1)}ms (heap ${heapBeforeMb}→${heapAfterMb}MB)`);
       return { label, ms, heapBeforeMb, heapAfterMb, heapDeltaMb, value };
     },
@@ -358,7 +358,7 @@ function buildHook(): PerfHook {
       const longtasks = tracker.stop();
       const longtasksMs = longtasks.reduce((s, e) => s + e.duration, 0);
       const blockCount = adapter.listAllBlocks(key).length;
-      // eslint-disable-next-line no-console
+       
       console.log(
         `[perf] injectXml(${key}, before=${before}): total=${totalMs.toFixed(1)}ms ` +
           `(domParse=${domParseMs.toFixed(1)}, domToWorkspace=${domToWorkspaceMs.toFixed(1)}) ` +
@@ -401,7 +401,7 @@ function buildHook(): PerfHook {
       const longestLongtaskMs = longtasks.reduce((m, e) => Math.max(m, e.duration), 0);
       const blockCount = adapter.listAllBlocks(key).length;
       const chunkCount = Math.ceil(blockCount / Math.max(1, chunkSize)) || 0;
-      // eslint-disable-next-line no-console
+       
       console.log(
         `[perf] injectXmlChunked(${key}, chunk=${chunkSize}): total=${totalMs.toFixed(1)}ms ` +
           `longtasks=${longtasksMs.toFixed(0)}ms (max=${longestLongtaskMs.toFixed(0)}ms) ` +
@@ -439,7 +439,7 @@ export function installPerfHook(): void {
   const w = window as unknown as { [HOOK_KEY]?: PerfHook };
   if (w[HOOK_KEY]) return;
   w[HOOK_KEY] = buildHook();
-  // eslint-disable-next-line no-console
+   
   console.log(
     '[perf] window.__perfHook installed. localStorage.removeItem("__perfOn") + reload 로 비활성.',
   );

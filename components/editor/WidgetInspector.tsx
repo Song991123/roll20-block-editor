@@ -49,8 +49,11 @@ export default function WidgetInspector() {
   const [nameError, setNameError] = useState<string>('');
 
   useEffect(() => {
-    setNameDraft((widget?.attrs.name as string | undefined) ?? '');
-    setNameError('');
+    const handle = window.setTimeout(() => {
+      setNameDraft((widget?.attrs.name as string | undefined) ?? '');
+      setNameError('');
+    }, 0);
+    return () => window.clearTimeout(handle);
   }, [selectedId, widget?.attrs.name]);
 
   if (!widget) {

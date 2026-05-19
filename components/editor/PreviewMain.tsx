@@ -117,7 +117,7 @@ export default function PreviewMain() {
   // 시각 동일성 보장 — buildSheetParts 는 buildSheetDoc 과 같은 runtime/layer/prefix CSS 사용.
   // Phase A 범위 = 시각만 동일. Phase B+ 의 인터랙션 (select / drag / inline edit) 은 미구현.
   useEffect(() => {
-    setIframeHeight(900);
+    queueMicrotask(() => setIframeHeight(900));
   }, [srcdoc, sheetCanvasWidth]);
 
   const previewAreaRef = useRef<HTMLDivElement>(null);
@@ -180,7 +180,7 @@ export default function PreviewMain() {
       onSelect: (blockId) => setSelected(blockId, 'preview'),
       // Phase C — drag 시작. 모든 워크스페이스 (html / css / i18n) 에서 LEFT_PX/TOP_PX
       // 가진 block 검색. 없으면 hasPos=false → 이후 move 호출은 noop (안전 무시).
-      onDragStart: (blockId, _cx, _cy) => {
+      onDragStart: (blockId) => {
         const adapter = getBlocklyAdapter();
         // active 우선, 없으면 html 워크스페이스에서 찾기.
         const cand: WorkspaceKey[] = [
@@ -220,7 +220,7 @@ export default function PreviewMain() {
           // 위치 필드 없는 블록 — drag 무시 + 사용자에 한 번 통보 (toast).
           // sonner toast 는 정의되어 있으나 너무 시끄러울 수 있어 console.debug 로 대체.
           // 추후 W3 UX 가 결정.
-          // eslint-disable-next-line no-console
+           
           console.debug('[wysiwyg] block has no LEFT_PX/TOP_PX — drag ignored:', blockId);
         }
       },
@@ -301,11 +301,11 @@ export default function PreviewMain() {
             }
           }
           // 블록 존재 but 텍스트 필드 없음 — 더 찾지 말고 종료.
-          // eslint-disable-next-line no-console
+           
           console.debug('[wysiwyg] block has no TEXT/LABEL/VALUE/CONTENT field — edit ignored:', blockId);
           return;
         }
-        // eslint-disable-next-line no-console
+         
         console.debug('[wysiwyg] block not found in any workspace — edit ignored:', blockId);
       },
       // Phase E — 우클릭 → state 갱신 → ShadowContextMenu 렌더.
@@ -360,7 +360,16 @@ export default function PreviewMain() {
     } catch {
       /* iframe not ready */
     }
-  }, [selectedWidgetId, hoveredWidgetId, editSubmode, sheetWidgetsList, rolltemplateWidgetsList, srcdoc]);
+  }, [
+    selectedWidgetId,
+    hoveredWidgetId,
+    editSubmode,
+    sheetWidgetsList,
+    rolltemplateWidgetsList,
+    srcdoc,
+    setHoveredWidgetId,
+    setSelectedWidgetId,
+  ]);
 
   // 미리보기 → 우측 인스펙터 sync + 굴림 결과 채팅 박음 (postMessage).
   useEffect(() => {
@@ -458,7 +467,7 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [setSelected]);
+  }, [setHoveredWidgetId, setSelected, setSelectedWidgetId]);
 
   // 선택된 블록 → iframe 안 highlight.
   useEffect(() => {

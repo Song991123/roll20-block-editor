@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import { Search, Plus } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useUiStore } from '@/lib/stores/uiStore';
@@ -24,6 +24,7 @@ const SUB_TABS = [
  * Stage A 이후 노드가 채워지면 react-window 도입.
  */
 export default function WorkspaceTree() {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const tab = useUiStore((s) => s.treeWorkspaceTab);
   const setTab = useUiStore((s) => s.setTreeWorkspaceTab);
   const treeSearch = useUiStore((s) => s.treeSearch);
@@ -52,6 +53,26 @@ export default function WorkspaceTree() {
         n.preview.toLowerCase().includes(q),
     );
   }, [snapshot, treeSearch]);
+
+  const rowVirtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 30,
+    overscan: 12,
+  });
+
+  const handleMove = useCallback(
+    (draggedId: string, targetId: string) => {
+      if (draggedId === targetId) return;
+      const adapter = getBlocklyAdapter();
+      const nested = adapter.nestBlockInContainer(tab, draggedId, targetId);
+      const moved = nested || adapter.moveBlockBefore(tab, draggedId, targetId);
+      if (!moved) return;
+      bumpStructure(tab, adapter.countBlocks(tab));
+      setSelected(draggedId, 'tree');
+    },
+    [bumpStructure, setSelected, tab],
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -89,31 +110,35 @@ export default function WorkspaceTree() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-auto">
         {filtered.length === 0 ? (
           <EmptyTreeHint workspace={tab} />
         ) : (
-          <div className="p-1">
-            {filtered.map((node) => (
-              <TreeRow
-                key={node.id}
-                node={node}
-                selected={node.id === selectedId}
-                onSelect={() => setSelected(node.id, 'tree')}
-                onMove={(draggedId, targetId) => {
-                  if (draggedId === targetId) return;
-                  const adapter = getBlocklyAdapter();
-                  const nested = adapter.nestBlockInContainer(tab, draggedId, targetId);
-                  const moved = nested || adapter.moveBlockBefore(tab, draggedId, targetId);
-                  if (!moved) return;
-                  bumpStructure(tab, adapter.countBlocks(tab));
-                  setSelected(draggedId, 'tree');
-                }}
-              />
-            ))}
+          <div
+            className="relative p-1"
+            style={{ height: `${rowVirtualizer.getTotalSize() + 8}px` }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const node = filtered[virtualRow.index];
+              if (!node) return null;
+              return (
+                <div
+                  key={node.id}
+                  className="absolute left-1 right-1 top-0"
+                  style={{ transform: `translateY(${virtualRow.start}px)` }}
+                >
+                  <TreeRow
+                    node={node}
+                    selected={node.id === selectedId}
+                    onSelect={() => setSelected(node.id, 'tree')}
+                    onMove={handleMove}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       <div className="shrink-0 border-t border-border p-2">
         <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs" disabled>
@@ -125,7 +150,7 @@ export default function WorkspaceTree() {
   );
 }
 
-function TreeRow({
+const TreeRow = memo(function TreeRow({
   node,
   selected,
   onSelect,
@@ -175,7 +200,7 @@ function TreeRow({
       )}
     </button>
   );
-}
+});
 
 function EmptyTreeHint({ workspace }: { workspace: string }) {
   const labels = { html: 'HTML', css: 'CSS', i18n: '번역' } as const;

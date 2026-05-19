@@ -7,7 +7,7 @@ import {
   CheckSquare,
   Hash,
   Heading1,
-  Image,
+  Image as ImageIcon,
   MessageSquare,
   MousePointerClick,
   Search,
@@ -113,7 +113,6 @@ function WidgetPresetCard({
   preset: FriendlyWidgetPreset;
   onClick: () => void;
 }) {
-  const Icon = iconForPreset(preset);
   return (
     <button
       type="button"
@@ -157,7 +156,7 @@ function WidgetPresetCard({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          {renderPresetIcon(preset)}
           <span className="truncate text-xs font-medium text-foreground">{preset.label}</span>
         </div>
         <div className="mt-0.5 line-clamp-2 text-[10.5px] leading-snug text-muted-foreground">
@@ -185,7 +184,7 @@ function PreviewShape({ preset }: { preset: FriendlyWidgetPreset }) {
     case 'checkbox':
       return <div className="h-4 w-4 rounded border border-[#6b7280] bg-white" />;
     case 'image':
-      return <Image className="h-7 w-7 text-[#6b7280]" />;
+      return <ImageIcon className="h-7 w-7 text-[#6b7280]" />;
     case 'button':
       return <div className="h-6 w-12 rounded bg-[#2563eb]" />;
     default:
@@ -193,26 +192,29 @@ function PreviewShape({ preset }: { preset: FriendlyWidgetPreset }) {
   }
 }
 
-function iconForPreset(preset: FriendlyWidgetPreset) {
+function renderPresetIcon(preset: FriendlyWidgetPreset) {
+  const className = 'h-3.5 w-3.5 shrink-0 text-muted-foreground';
   switch (preset.preview) {
     case 'heading':
-      return Heading1;
+      return <Heading1 className={className} />;
     case 'label':
-      return Type;
+      return <Type className={className} />;
     case 'text':
-      return Type;
+      return <Type className={className} />;
     case 'number':
-      return Hash;
+      return <Hash className={className} />;
     case 'textarea':
-      return AlignLeft;
+      return <AlignLeft className={className} />;
     case 'checkbox':
-      return CheckSquare;
+      return <CheckSquare className={className} />;
     case 'image':
-      return Image;
+      return <ImageIcon className={className} />;
     case 'button':
-      return preset.blockType === 'r20_chat_button' ? MessageSquare : MousePointerClick;
+      return preset.blockType === 'r20_chat_button'
+        ? <MessageSquare className={className} />
+        : <MousePointerClick className={className} />;
     case 'box':
     default:
-      return Box;
+      return <Box className={className} />;
   }
 }

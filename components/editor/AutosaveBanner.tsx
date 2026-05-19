@@ -73,7 +73,7 @@ export default function AutosaveBanner({ xml, meta, onDismiss }: Props) {
             adapter.hydrateFromXml(key, wsXml);
           } catch (e) {
             // 한 워크스페이스 실패해도 나머지는 계속.
-            // eslint-disable-next-line no-console
+             
             console.error(`[autosave] hydrate ${key} failed:`, e);
           }
         }
@@ -92,7 +92,7 @@ export default function AutosaveBanner({ xml, meta, onDismiss }: Props) {
       // 복구 후 autosave entry 는 그대로 둔다 — 다음 변경 시 새로 덮어쓰면 됨.
       onDismiss();
     } catch (e) {
-      // eslint-disable-next-line no-console
+       
       console.error('[autosave] restore failed', e);
       toast.error('복구 중 오류가 발생했습니다.');
       onDismiss();

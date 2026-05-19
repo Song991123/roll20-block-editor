@@ -165,11 +165,6 @@ function recursePack(b: MatchedBlock, stats?: CompositePackStats): MatchedBlock 
   };
 }
 
-function countTrChildren(b: MatchedBlock): number {
-  if (b.blockType !== 'r20_tr') return 0;
-  return (b.children?.CONTENT ?? []).length;
-}
-
 // ---------------------------------------------------------------------------
 // Attribute card pattern (Phase 1) — 변경 없음.
 // ---------------------------------------------------------------------------
@@ -320,8 +315,8 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
   //
   // 그 외 자식 type 이 섞이면 atomic 유지 (사용자 변형 - 안전).
   let checkboxIdx = -1;
-  let inputIdxs: number[] = [];
-  let rollIdxs: number[] = [];
+  const inputIdxs: number[] = [];
+  const rollIdxs: number[] = [];
 
   for (let i = 0; i < cells.length; i++) {
     const cell = cells[i];

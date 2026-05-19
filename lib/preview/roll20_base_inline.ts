@@ -11,7 +11,7 @@
  *
  * **AUTO-GENERATED — 직접 편집 X. scripts/gen_roll20_base_inline.py 로 재생성.**
  */
-/* eslint-disable */
+ 
 export const roll20BaseCss = `/*
 *
 *         DEFINE ROLL20 GRIMOIRE COLORS     
