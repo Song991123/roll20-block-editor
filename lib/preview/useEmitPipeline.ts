@@ -62,7 +62,7 @@ export function useEmitPipeline(): void {
       });
       setEmitCache({ html: result.html, css: result.css, i18n: result.i18n });
       setEmitWarnings(result.warnings);
-    }, 500);
+    }, 120);
     return () => window.clearTimeout(handle);
   }, [htmlV, cssV, i18nV, htmlCount, cssCount, i18nCount, setEmitCache, setEmitWarnings]);
 }

@@ -43,6 +43,11 @@ type PendingMove = {
   origStyle: string;
 };
 
+type OptimisticMove = {
+  left: number;
+  top: number;
+};
+
 export default function EditCanvas() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -68,6 +73,7 @@ export default function EditCanvas() {
   const darkMode = usePreviewStore((s) => s.darkMode);
   const [lastMove, setLastMove] = useState<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [optimisticMoves, setOptimisticMoves] = useState<Record<string, OptimisticMove>>({});
 
   const effectiveLayer = editSubmode === 'rolltemplate' ? 'roll' : previewLayer;
   const isEmpty = htmlCount + cssCount + i18nCount === 0;
@@ -76,11 +82,15 @@ export default function EditCanvas() {
       ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / sheetCanvasWidth))
       : 1;
   const scale = zoom === 'fit' ? fitScale : zoom;
+  const optimisticHtml = useMemo(
+    () => applyOptimisticPositions(emitHtml, optimisticMoves),
+    [emitHtml, optimisticMoves],
+  );
 
   const parts = useMemo(
     () =>
       buildSheetParts({
-        html: emitHtml,
+        html: optimisticHtml,
         css: emitCss,
         i18n: emitI18n,
         sanitize,
@@ -88,7 +98,7 @@ export default function EditCanvas() {
         previewLayer: effectiveLayer,
         includeEditorOverlays: true,
       }),
-    [emitHtml, emitCss, emitI18n, sanitize, darkMode, effectiveLayer],
+    [optimisticHtml, emitCss, emitI18n, sanitize, darkMode, effectiveLayer],
   );
 
   const snap = useCallback(
@@ -135,7 +145,7 @@ export default function EditCanvas() {
     commitTimerRef.current = window.setTimeout(() => {
       commitTimerRef.current = null;
       commitMove(pending);
-    }, 80);
+    }, 0);
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -236,6 +246,10 @@ export default function EditCanvas() {
         const pending = pendingMoveRef.current;
         if (origin && pending) {
           lockVisualAtDrop(origin, pending);
+          setOptimisticMoves((moves) => ({
+            ...moves,
+            [pending.blockId]: { left: pending.left, top: pending.top },
+          }));
           setLastMove(`${pending.left}px, ${pending.top}px`);
           commitMoveLater(pending);
         } else {
@@ -280,6 +294,23 @@ export default function EditCanvas() {
     lockVisualAtDrop,
     commitMoveLater,
   ]);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setOptimisticMoves((moves) => {
+        let changed = false;
+        const next = { ...moves };
+        for (const [blockId, move] of Object.entries(moves)) {
+          if (htmlHasPosition(emitHtml, blockId, move.left, move.top)) {
+            delete next[blockId];
+            changed = true;
+          }
+        }
+        return changed ? next : moves;
+      });
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, [emitHtml]);
 
   return (
     <div
@@ -375,6 +406,58 @@ function commitMove(pending: PendingMove): void {
       top: `${pending.top}px`,
     }),
   );
+}
+
+function applyOptimisticPositions(
+  html: string,
+  moves: Record<string, OptimisticMove>,
+): string {
+  if (!html || Object.keys(moves).length === 0) return html;
+  let out = html;
+  for (const [blockId, move] of Object.entries(moves)) {
+    out = applyOptimisticPosition(out, blockId, move.left, move.top);
+  }
+  return out;
+}
+
+function applyOptimisticPosition(
+  html: string,
+  blockId: string,
+  left: number,
+  top: number,
+): string {
+  const tag = findBlockOpeningTag(html, blockId);
+  if (!tag) return html;
+  const styleMatch = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i);
+  const nextStyle = upsertCssDeclarations(styleMatch?.[2] ?? '', {
+    position: 'absolute',
+    left: `${left}px`,
+    top: `${top}px`,
+  });
+  const nextTag = styleMatch
+    ? tag.text.replace(styleMatch[0], ` style=${styleMatch[1]}${escapeHtmlAttr(nextStyle)}${styleMatch[1]}`)
+    : tag.text.replace(/>$/, ` style="${escapeHtmlAttr(nextStyle)}">`);
+  return html.slice(0, tag.start) + nextTag + html.slice(tag.end);
+}
+
+function htmlHasPosition(html: string, blockId: string, left: number, top: number): boolean {
+  const tag = findBlockOpeningTag(html, blockId);
+  if (!tag) return false;
+  const style = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+  return parseCssPx(style, 'left') === left && parseCssPx(style, 'top') === top;
+}
+
+function findBlockOpeningTag(html: string, blockId: string): { start: number; end: number; text: string } | null {
+  const marker = `data-r20-block-id="${blockId}"`;
+  let markerIndex = html.indexOf(marker);
+  if (markerIndex < 0) {
+    markerIndex = html.indexOf(`data-r20-block-id='${blockId}'`);
+  }
+  if (markerIndex < 0) return null;
+  const start = html.lastIndexOf('<', markerIndex);
+  const end = html.indexOf('>', markerIndex);
+  if (start < 0 || end < 0 || start > markerIndex) return null;
+  return { start, end: end + 1, text: html.slice(start, end + 1) };
 }
 
 function measureDropPosition(
@@ -520,4 +603,8 @@ function escapeAttr(raw: string): string {
   return typeof CSS !== 'undefined' && CSS.escape
     ? CSS.escape(raw)
     : raw.replace(/(["\\])/g, '\\$1');
+}
+
+function escapeHtmlAttr(raw: string): string {
+  return raw.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
