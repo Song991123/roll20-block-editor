@@ -62,6 +62,8 @@ type OptimisticMove = {
   containingBlockNeedsRelative: boolean;
 };
 
+const DESIGN_CSS_MARKER = 'r20-design-css:managed';
+
 export default function EditCanvas() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -111,7 +113,7 @@ export default function EditCanvas() {
         sanitize,
         darkMode,
         previewLayer: effectiveLayer,
-        includeEditorOverlays: true,
+        includeEditorOverlays: false,
       }),
     [optimisticHtml, emitCss, emitI18n, sanitize, darkMode, effectiveLayer],
   );
@@ -331,7 +333,7 @@ export default function EditCanvas() {
         let changed = false;
         const next = { ...moves };
         for (const [blockId, move] of Object.entries(moves)) {
-          if (htmlHasPosition(emitHtml, blockId, move.left, move.top)) {
+          if (htmlOrCssHasPosition(emitHtml, emitCss, blockId, move.left, move.top)) {
             delete next[blockId];
             changed = true;
           }
@@ -340,7 +342,7 @@ export default function EditCanvas() {
       });
     }, 0);
     return () => window.clearTimeout(handle);
-  }, [emitHtml]);
+  }, [emitHtml, emitCss]);
 
   return (
     <div
@@ -584,29 +586,98 @@ const EditLayerRow = memo(function EditLayerRow({
       }`}
       style={{ paddingLeft: `${8 + node.depth * 12}px` }}
     >
+      <span
+        aria-hidden
+        className={`grid h-4 w-4 shrink-0 place-items-center rounded border ${layerIconClass(node.type)}`}
+      >
+        {layerIconText(node.type)}
+      </span>
       <span className="truncate font-mono text-[10.5px]">{node.type}</span>
       {node.preview && <span className="truncate text-[10px] opacity-70">· {node.preview}</span>}
     </button>
   );
 });
 
+function layerIconClass(type: string): string {
+  if (isFrameLikeBlock(type)) return 'border-sky-500/60 bg-sky-500/15 text-sky-200';
+  if (type.includes('input') || type.includes('select') || type.includes('checkbox')) {
+    return 'border-emerald-500/60 bg-emerald-500/15 text-emerald-200';
+  }
+  if (type.includes('button') || type.includes('roll')) {
+    return 'border-amber-500/60 bg-amber-500/15 text-amber-200';
+  }
+  if (type.includes('text') || type.includes('label') || type.includes('heading')) {
+    return 'border-violet-500/60 bg-violet-500/15 text-violet-200';
+  }
+  return 'border-zinc-500/60 bg-zinc-500/15 text-zinc-200';
+}
+
+function layerIconText(type: string): string {
+  if (isFrameLikeBlock(type)) return '□';
+  if (type.includes('input') || type.includes('select') || type.includes('checkbox')) return 'I';
+  if (type.includes('button') || type.includes('roll')) return 'B';
+  if (type.includes('text') || type.includes('label') || type.includes('heading')) return 'T';
+  return '·';
+}
+
+function isFrameLikeBlock(type: string): boolean {
+  return (
+    type.includes('div') ||
+    type.includes('row') ||
+    type.includes('col') ||
+    type.includes('section') ||
+    type.includes('fieldset') ||
+    type.includes('table') ||
+    type.includes('grid')
+  );
+}
+
 function commitMove(pending: PendingMove): void {
   const adapter = getBlocklyAdapter();
+  let parentClass: string | null = null;
   if (
     pending.containingBlockId &&
     pending.containingBlockNeedsRelative &&
     adapter.hasBlockField(pending.ws, pending.containingBlockId, 'STYLE')
   ) {
-    adapter.setBlockField(
-      pending.ws,
-      pending.containingBlockId,
-      'STYLE',
-      upsertCssDeclarations(pending.containingBlockStyle, { position: 'relative' }),
-    );
+    parentClass = ensureDesignClass(adapter, pending.ws, pending.containingBlockId);
+    if (parentClass) {
+      adapter.setBlockField(
+        pending.ws,
+        pending.containingBlockId,
+        'STYLE',
+        removeCssDeclarations(pending.containingBlockStyle, ['position']),
+      );
+      upsertDesignCssRule(parentClass, { position: 'relative' });
+    } else {
+      adapter.setBlockField(
+        pending.ws,
+        pending.containingBlockId,
+        'STYLE',
+        upsertCssDeclarations(pending.containingBlockStyle, { position: 'relative' }),
+      );
+    }
   }
   if (pending.kind === 'position-fields') {
     adapter.setBlockField(pending.ws, pending.blockId, 'LEFT_PX', String(pending.left));
     adapter.setBlockField(pending.ws, pending.blockId, 'TOP_PX', String(pending.top));
+    patchEmitCacheAfterMove(pending);
+    return;
+  }
+  const designClass = ensureDesignClass(adapter, pending.ws, pending.blockId);
+  if (designClass) {
+    adapter.setBlockField(
+      pending.ws,
+      pending.blockId,
+      'STYLE',
+      removeCssDeclarations(pending.origStyle, ['position', 'left', 'top']),
+    );
+    upsertDesignCssRule(designClass, {
+      position: 'absolute',
+      left: `${pending.left}px`,
+      top: `${pending.top}px`,
+    });
+    patchEmitCacheAfterCssMove(pending, designClass, parentClass);
     return;
   }
   adapter.setBlockField(
@@ -619,6 +690,102 @@ function commitMove(pending: PendingMove): void {
       top: `${pending.top}px`,
     }),
   );
+  patchEmitCacheAfterMove(pending);
+}
+
+function ensureDesignClass(
+  adapter: ReturnType<typeof getBlocklyAdapter>,
+  ws: WorkspaceKey,
+  blockId: string,
+): string | null {
+  if (!adapter.hasBlockField(ws, blockId, 'CLASS')) return null;
+  const token = designClassForBlock(blockId);
+  const current = adapter.getBlockField(ws, blockId, 'CLASS') ?? '';
+  const parts = current.split(/\s+/).filter(Boolean);
+  if (!parts.includes(token)) {
+    adapter.setBlockField(ws, blockId, 'CLASS', [...parts, token].join(' '));
+  }
+  return token;
+}
+
+function upsertDesignCssRule(className: string, declarations: Record<string, string>): void {
+  const adapter = getBlocklyAdapter();
+  const rawBlockId = findOrCreateDesignCssBlock(adapter);
+  if (!rawBlockId) return;
+  const current = adapter.getBlockField('css', rawBlockId, 'CSS') ?? '';
+  adapter.setBlockField('css', rawBlockId, 'CSS', upsertCssRule(current, className, declarations));
+}
+
+function findOrCreateDesignCssBlock(adapter: ReturnType<typeof getBlocklyAdapter>): string | null {
+  const existing = adapter
+    .listAllBlocks('css')
+    .find((block) => block.type === 'r20_raw_css' && (adapter.getBlockField('css', block.id, 'CSS') ?? '').includes(DESIGN_CSS_MARKER));
+  if (existing) return existing.id;
+  const id = adapter.appendBlockToWorkspace('css', 'r20_raw_css');
+  if (!id) return null;
+  adapter.setBlockField('css', id, 'CSS', `/* ${DESIGN_CSS_MARKER} */`);
+  return id;
+}
+
+function upsertCssRule(
+  css: string,
+  className: string,
+  declarations: Record<string, string>,
+): string {
+  const selector = `.${className}`;
+  const rule = `${selector} { ${formatCssDeclarations(declarations)} }`;
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`${escaped}\\s*\\{[^}]*\\}`, 'm');
+  const base = css.trim() || `/* ${DESIGN_CSS_MARKER} */`;
+  if (re.test(base)) return base.replace(re, rule);
+  return `${base}\n${rule}`;
+}
+
+function formatCssDeclarations(declarations: Record<string, string>): string {
+  return Object.entries(declarations)
+    .map(([key, value]) => `${key}: ${value};`)
+    .join(' ');
+}
+
+function patchEmitCacheAfterCssMove(
+  pending: PendingMove,
+  designClass: string,
+  parentClass: string | null,
+): void {
+  if (pending.ws !== 'html') return;
+  const store = useWorkspaceStore.getState();
+  let html = store.emitCache.html;
+  let css = store.emitCache.css;
+  if (!html) return;
+  if (pending.containingBlockId && pending.containingBlockNeedsRelative && parentClass) {
+    html = addClassToBlockTag(html, pending.containingBlockId, parentClass);
+    html = removeStyleDeclarationsFromBlockTag(html, pending.containingBlockId, ['position']);
+    css = upsertCssRule(css, parentClass, { position: 'relative' });
+  }
+  html = addClassToBlockTag(html, pending.blockId, designClass);
+  html = removeStyleDeclarationsFromBlockTag(html, pending.blockId, ['position', 'left', 'top']);
+  css = upsertCssRule(css, designClass, {
+    position: 'absolute',
+    left: `${pending.left}px`,
+    top: `${pending.top}px`,
+  });
+  store.setEmitCache({ html, css });
+}
+
+function patchEmitCacheAfterMove(pending: PendingMove): void {
+  if (pending.ws !== 'html') return;
+  const store = useWorkspaceStore.getState();
+  let html = store.emitCache.html;
+  if (!html) return;
+  if (pending.containingBlockId && pending.containingBlockNeedsRelative) {
+    html = applyOptimisticPositionDeclaration(
+      html,
+      pending.containingBlockId,
+      pending.containingBlockStyle,
+    );
+  }
+  html = applyOptimisticPosition(html, pending.blockId, pending.left, pending.top);
+  store.setEmitCache({ html });
 }
 
 function applyOptimisticPositions(
@@ -677,11 +844,21 @@ function applyOptimisticPosition(
   return html.slice(0, tag.start) + nextTag + html.slice(tag.end);
 }
 
-function htmlHasPosition(html: string, blockId: string, left: number, top: number): boolean {
+function htmlOrCssHasPosition(
+  html: string,
+  css: string,
+  blockId: string,
+  left: number,
+  top: number,
+): boolean {
   const tag = findBlockOpeningTag(html, blockId);
   if (!tag) return false;
   const style = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
-  return parseCssPx(style, 'left') === left && parseCssPx(style, 'top') === top;
+  if (parseCssPx(style, 'left') === left && parseCssPx(style, 'top') === top) return true;
+  const className = designClassForBlock(blockId);
+  if (!tagHasClass(tag.text, className)) return false;
+  const declarations = readCssRuleDeclarations(css, className);
+  return parseCssPx(declarations, 'left') === left && parseCssPx(declarations, 'top') === top;
 }
 
 function findBlockOpeningTag(html: string, blockId: string): { start: number; end: number; text: string } | null {
@@ -695,6 +872,48 @@ function findBlockOpeningTag(html: string, blockId: string): { start: number; en
   const end = html.indexOf('>', markerIndex);
   if (start < 0 || end < 0 || start > markerIndex) return null;
   return { start, end: end + 1, text: html.slice(start, end + 1) };
+}
+
+function addClassToBlockTag(html: string, blockId: string, className: string): string {
+  const tag = findBlockOpeningTag(html, blockId);
+  if (!tag || tagHasClass(tag.text, className)) return html;
+  const classMatch = tag.text.match(/\sclass=(["'])([\s\S]*?)\1/i);
+  const nextTag = classMatch
+    ? tag.text.replace(
+        classMatch[0],
+        ` class=${classMatch[1]}${escapeHtmlAttr(`${classMatch[2]} ${className}`.trim())}${classMatch[1]}`,
+      )
+    : tag.text.replace(/>$/, ` class="${escapeHtmlAttr(className)}">`);
+  return html.slice(0, tag.start) + nextTag + html.slice(tag.end);
+}
+
+function removeStyleDeclarationsFromBlockTag(html: string, blockId: string, props: string[]): string {
+  const tag = findBlockOpeningTag(html, blockId);
+  if (!tag) return html;
+  const styleMatch = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i);
+  if (!styleMatch) return html;
+  const nextStyle = removeCssDeclarations(styleMatch[2], props);
+  const nextTag = nextStyle
+    ? tag.text.replace(styleMatch[0], ` style=${styleMatch[1]}${escapeHtmlAttr(nextStyle)}${styleMatch[1]}`)
+    : tag.text.replace(styleMatch[0], '');
+  return html.slice(0, tag.start) + nextTag + html.slice(tag.end);
+}
+
+function tagHasClass(tag: string, className: string): boolean {
+  const cls = tag.match(/\sclass=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+  return cls.split(/\s+/).includes(className);
+}
+
+function designClassForBlock(blockId: string): string {
+  const safe = blockId.replace(/[^a-zA-Z0-9_-]/g, (ch) => ch.charCodeAt(0).toString(36));
+  return `r20-node-${safe.slice(0, 32)}`;
+}
+
+function readCssRuleDeclarations(css: string, className: string): string {
+  const selector = `.${className}`;
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'm'));
+  return match?.[1] ?? '';
 }
 
 function measureDropPosition(
@@ -896,6 +1115,21 @@ function upsertCssDeclarations(style: string, declarations: Record<string, strin
   }
   for (const [key, value] of Object.entries(declarations)) {
     map.set(key.toLowerCase(), value);
+  }
+  return Array.from(map.entries())
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('; ');
+}
+
+function removeCssDeclarations(style: string, props: string[]): string {
+  const remove = new Set(props.map((prop) => prop.toLowerCase()));
+  const map = new Map<string, string>();
+  for (const chunk of style.split(';')) {
+    const idx = chunk.indexOf(':');
+    if (idx <= 0) continue;
+    const key = chunk.slice(0, idx).trim().toLowerCase();
+    const value = chunk.slice(idx + 1).trim();
+    if (key && value && !remove.has(key)) map.set(key, value);
   }
   return Array.from(map.entries())
     .map(([key, value]) => `${key}: ${value}`)
