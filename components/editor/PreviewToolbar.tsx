@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Maximize2, Minus, Plus, RefreshCw, Moon, Sun, Layers, Check, Frame } from 'lucide-react';
 import type { PreviewLayer } from '@/lib/stores/uiStore';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,8 @@ export default function PreviewToolbar() {
   const setPreviewLayer = useUiStore((s) => s.setPreviewLayer);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
   const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
+  const [widthDraft, setWidthDraft] = useState<string | null>(null);
+  const widthValue = widthDraft ?? String(sheetCanvasWidth);
 
   const stepZoom = (dir: 1 | -1) => {
     const idx = ZOOM_STEPS.indexOf(numericZoom);
@@ -65,6 +68,16 @@ export default function PreviewToolbar() {
       ? ZOOM_STEPS.findIndex((s) => s >= numericZoom)
       : Math.max(0, Math.min(ZOOM_STEPS.length - 1, idx + dir));
     setZoom(ZOOM_STEPS[nextIdx] ?? ZOOM_STEPS[2]);
+  };
+
+  const commitWidthDraft = () => {
+    const next = Number.parseInt(widthValue, 10);
+    if (!Number.isFinite(next)) {
+      setWidthDraft(null);
+      return;
+    }
+    setSheetCanvasWidth(next);
+    setWidthDraft(null);
   };
 
   // 모든 아이콘 버튼: h-8 w-8, 아이콘 h-4 w-4 — 통일성.
@@ -78,12 +91,23 @@ export default function PreviewToolbar() {
         <label className="inline-flex h-8 items-center gap-1.5 rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-[11px] text-muted-foreground">
           <span>W</span>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             min={320}
             max={2000}
             step={10}
-            value={sheetCanvasWidth}
-            onChange={(e) => setSheetCanvasWidth(Number(e.target.value))}
+            value={widthValue}
+            onFocus={() => setWidthDraft(String(sheetCanvasWidth))}
+            onChange={(e) => setWidthDraft(e.target.value.replace(/[^\d]/g, ''))}
+            onBlur={commitWidthDraft}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur();
+              } else if (e.key === 'Escape') {
+                setWidthDraft(null);
+                e.currentTarget.blur();
+              }
+            }}
             className="h-6 w-16 bg-transparent text-right font-mono text-foreground outline-none"
             aria-label="시트 가로 크기"
           />

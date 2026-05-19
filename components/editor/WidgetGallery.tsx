@@ -46,7 +46,7 @@ export default function WidgetGallery() {
   }, [search]);
 
   const addPreset = (preset: FriendlyWidgetPreset) => {
-    const id = appendFriendlyWidgetPreset(preset, { left: 24, top: 24 });
+    const id = appendFriendlyWidgetPreset(preset);
     if (id) {
       toast(`${preset.label}을 추가했어요.`, { duration: 1400 });
     } else {
