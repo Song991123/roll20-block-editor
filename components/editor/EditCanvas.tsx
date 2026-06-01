@@ -5,6 +5,7 @@ import { Layers, Search } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
+import { canReceiveChildren, getLayerRole } from '@/lib/editor/layerRoles';
 import { buildSheetParts } from '@/lib/preview/buildDoc';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { usePreviewStore } from '@/lib/stores/previewStore';
@@ -187,8 +188,18 @@ export default function EditCanvas() {
     e.stopPropagation();
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
-    const id = appendFriendlyWidgetPreset(preset, pos);
-    if (id) setLastMove(`${preset.label} 추가됨: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
+    const container = findDropContainer(hostRef.current, e.clientX, e.clientY);
+    const id = appendFriendlyWidgetPreset(preset, pos, {
+      mode: container ? 'flow' : 'absolute',
+      containerBlockId: container?.blockId ?? null,
+    });
+    if (id) {
+      setLastMove(
+        container
+          ? `${preset.label} inserted into ${container.label}`
+          : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
+      );
+    }
   }, []);
 
   const handleNativeDragOver = useCallback((event: Event) => {
@@ -208,8 +219,18 @@ export default function EditCanvas() {
     e.stopPropagation();
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
-    const id = appendFriendlyWidgetPreset(preset, pos);
-    if (id) setLastMove(`${preset.label} 추가됨: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`);
+    const container = findDropContainer(hostRef.current, e.clientX, e.clientY);
+    const id = appendFriendlyWidgetPreset(preset, pos, {
+      mode: container ? 'flow' : 'absolute',
+      containerBlockId: container?.blockId ?? null,
+    });
+    if (id) {
+      setLastMove(
+        container
+          ? `${preset.label} inserted into ${container.label}`
+          : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
+      );
+    }
   }, []);
 
   useEffect(() => {
@@ -558,6 +579,7 @@ const EditLayerRow = memo(function EditLayerRow({
   onSelect: () => void;
   onMove: (draggedId: string, targetId: string) => void;
 }) {
+  const role = getLayerRole(node.type);
   return (
     <button
       type="button"
@@ -588,49 +610,16 @@ const EditLayerRow = memo(function EditLayerRow({
     >
       <span
         aria-hidden
-        className={`grid h-4 w-4 shrink-0 place-items-center rounded border ${layerIconClass(node.type)}`}
+        title={role.canReceiveChildren ? `${role.label} container` : role.label}
+        className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[9px] ${role.className}`}
       >
-        {layerIconText(node.type)}
+        {role.icon}
       </span>
       <span className="truncate font-mono text-[10.5px]">{node.type}</span>
       {node.preview && <span className="truncate text-[10px] opacity-70">· {node.preview}</span>}
     </button>
   );
 });
-
-function layerIconClass(type: string): string {
-  if (isFrameLikeBlock(type)) return 'border-sky-500/60 bg-sky-500/15 text-sky-200';
-  if (type.includes('input') || type.includes('select') || type.includes('checkbox')) {
-    return 'border-emerald-500/60 bg-emerald-500/15 text-emerald-200';
-  }
-  if (type.includes('button') || type.includes('roll')) {
-    return 'border-amber-500/60 bg-amber-500/15 text-amber-200';
-  }
-  if (type.includes('text') || type.includes('label') || type.includes('heading')) {
-    return 'border-violet-500/60 bg-violet-500/15 text-violet-200';
-  }
-  return 'border-zinc-500/60 bg-zinc-500/15 text-zinc-200';
-}
-
-function layerIconText(type: string): string {
-  if (isFrameLikeBlock(type)) return '□';
-  if (type.includes('input') || type.includes('select') || type.includes('checkbox')) return 'I';
-  if (type.includes('button') || type.includes('roll')) return 'B';
-  if (type.includes('text') || type.includes('label') || type.includes('heading')) return 'T';
-  return '·';
-}
-
-function isFrameLikeBlock(type: string): boolean {
-  return (
-    type.includes('div') ||
-    type.includes('row') ||
-    type.includes('col') ||
-    type.includes('section') ||
-    type.includes('fieldset') ||
-    type.includes('table') ||
-    type.includes('grid')
-  );
-}
 
 function commitMove(pending: PendingMove): void {
   const adapter = getBlocklyAdapter();
@@ -933,6 +922,31 @@ function measureDropPosition(
     left: Math.max(0, Math.round(clientX - rect.left + target.scrollLeft)),
     top: Math.max(0, Math.round(clientY - rect.top + target.scrollTop)),
   };
+}
+
+function findDropContainer(
+  host: HTMLElement | null,
+  clientX: number,
+  clientY: number,
+): { blockId: string; label: string } | null {
+  const shadow = host?.shadowRoot;
+  if (!shadow) return null;
+  const start = shadow.elementFromPoint(clientX, clientY) as HTMLElement | null;
+  if (!start) return null;
+
+  const adapter = getBlocklyAdapter();
+  let cur: HTMLElement | null = start;
+  while (cur) {
+    const blockId = cur.dataset.r20BlockId;
+    if (blockId) {
+      const block = adapter.getBlock('html', blockId);
+      if (block && canReceiveChildren(block.type)) {
+        return { blockId, label: block.label || block.type };
+      }
+    }
+    cur = cur.parentElement;
+  }
+  return null;
 }
 
 function hasFriendlyWidgetPayload(dataTransfer: DataTransfer | null): boolean {

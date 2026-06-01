@@ -111,8 +111,10 @@ function copyCandidate(candidate) {
     relDir: candidate.relDir,
     referenceImage: ref,
     referenceRelativeToSheet: relative(candidate.dir, ref),
-    legacyMode: null,
-    legacyModeNote: 'Set true for legacy Roll20 sanitization fixtures, false for modern fixtures.',
+    autoPrefix: null,
+    autoPrefixNote: 'Controls preview auto-prefix/sanitize path only; this is not full Roll20 legacy CSS sanitization.',
+    legacyCssSanitize: null,
+    legacyCssSanitizeNote: 'Reserved for explicit old-Roll20 CSS sanitizer fixtures when implemented.',
     visualStatus: 'prepared-only',
     files,
   };

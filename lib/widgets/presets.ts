@@ -15,6 +15,11 @@ export type FriendlyWidgetPreset = {
   preview: 'box' | 'heading' | 'label' | 'text' | 'number' | 'textarea' | 'checkbox' | 'image' | 'button';
 };
 
+export type AppendFriendlyWidgetOptions = {
+  mode?: 'absolute' | 'flow';
+  containerBlockId?: string | null;
+};
+
 export const FRIENDLY_WIDGET_GROUPS: Record<FriendlyWidgetGroup, string> = {
   layout: '레이아웃',
   text: '글자',
@@ -185,11 +190,13 @@ export function findFriendlyWidgetPreset(id: string): FriendlyWidgetPreset | nul
 export function appendFriendlyWidgetPreset(
   preset: FriendlyWidgetPreset,
   position?: { left: number; top: number },
+  options: AppendFriendlyWidgetOptions = {},
 ): string | null {
   const state = useWorkspaceStore.getState();
   if (Date.now() - state.lastClearedAt < 1200) return null;
 
-  const targetPosition = findOpenWidgetPosition(position);
+  const requestedFlow = options.mode === 'flow' && Boolean(options.containerBlockId);
+  const targetPosition = requestedFlow ? position : findOpenWidgetPosition(position);
   const id = state.appendBlockToActive(preset.blockType, 'html');
   if (!id) return null;
 
@@ -200,7 +207,18 @@ export function appendFriendlyWidgetPreset(
   }
 
   const baseStyle = preset.fields.STYLE ?? '';
-  const style = withAbsolutePosition(baseStyle, targetPosition.left, targetPosition.top);
+  let useFlowStyle = false;
+  if (requestedFlow && options.containerBlockId) {
+    useFlowStyle = adapter.nestBlockInContainer('html', id, options.containerBlockId);
+    if (useFlowStyle) {
+      state.bumpStructure('html', adapter.countBlocks('html'));
+      state.setSelectedBlockId(id, 'tree');
+    }
+  }
+
+  const style = useFlowStyle
+    ? removeCssDeclarations(baseStyle, ['position', 'left', 'top'])
+    : withAbsolutePosition(baseStyle, targetPosition?.left ?? 24, targetPosition?.top ?? 24);
   if (style || adapter.hasBlockField('html', id, 'STYLE')) {
     adapter.setBlockField('html', id, 'STYLE', style);
   }
@@ -303,6 +321,21 @@ function withAbsolutePosition(style: string, left: number, top: number): string 
   map.set('position', 'absolute');
   map.set('left', `${Math.max(0, Math.round(left))}px`);
   map.set('top', `${Math.max(0, Math.round(top))}px`);
+  return Array.from(map.entries())
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('; ');
+}
+
+function removeCssDeclarations(style: string, props: string[]): string {
+  const remove = new Set(props.map((prop) => prop.toLowerCase()));
+  const map = new Map<string, string>();
+  for (const chunk of style.split(';')) {
+    const idx = chunk.indexOf(':');
+    if (idx <= 0) continue;
+    const key = chunk.slice(0, idx).trim().toLowerCase();
+    const value = chunk.slice(idx + 1).trim();
+    if (key && value && !remove.has(key)) map.set(key, value);
+  }
   return Array.from(map.entries())
     .map(([key, value]) => `${key}: ${value}`)
     .join('; ');

@@ -21,6 +21,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | DONE | Codex agents | Audit worker JS and rolltemplate/chat path. | Report: current branch already has chat tab; worker layer still needs long-term split. |
 | DONE | Codex agents | Audit CI/CD and browser roundtrip setup. | Report: use current `web-push-main` as source of truth; older `web` notes are stale where they conflict. |
 | DONE | Claude CLI | Run read-only cross-review when auth/tooling allows. | Claude CLI `2.1.144`; review confirmed current reports prove Node import determinism only. |
+| VERIFY | Codex | First Figma-like flow drop slice for edit mode. | Gallery drops over frame/flow/table DOM nodes now nest as flow children instead of always absolute. `lint` and `build` passed; still needs browser drag/drop smoke. |
 
 ## Critical Product Tasks
 
@@ -37,9 +38,11 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | TODO | P1 | Improve raw fallback coverage for sheets such as custom Magica. | Current custom-magica coverage is 95.7%, rawFallback 76. |
 | TODO | P1 | Make layer panel useful as a Figma-like hierarchy/reparenting surface. | Tree must allow grouping/reparenting, not just viewing. |
 | TODO | P1 | Define absolute positioning inside frames/groups. | Coordinates should be relative to containing block; frame must become `position: relative` when needed. |
+| VERIFY | P1 | Add shared DOM layer role classification for edit UX. | `lib/editor/layerRoles.ts` now gives frame/flow/table/control/action/text/media/runtime roles used by the layer panel and gallery drop detection. Needs canvas hover/drop affordance CSS next. |
 | TODO | P1 | Expand Roll20 worker simulator and chat rolltemplate rendering. | `on`, `getAttrs`, `setAttrs`, `getSectionIDs` first; then roll execution. |
 | TODO | P1 | Add explicit modern/legacy Roll20 preview/export mode checks. | Existing export toggle exists; preview-level proof still needed. |
-| DONE | P0 | Render prepared visual fixtures through the shared preview document path. | `reports/visual-fixture-render/visual-fixture-render.md`; rendered 2 copied fixtures through `buildSheetDoc`. This is not visual parity yet. |
+| VERIFY | P1 | Separate auto-prefix preview sanitize from real legacy Roll20 CSS sanitize in fixture reports. | `scripts/render_visual_fixture_doc.mjs` now reports `Auto-prefix` and `Legacy CSS sanitize` separately; actual legacy CSS sanitizer preview mode remains TODO. |
+| DONE | P0 | Render prepared visual fixtures through the shared preview document path. | `reports/visual-fixture-render/visual-fixture-render.md`; rendered 3 copied fixtures through `buildSheetDoc`. This is not visual parity yet. |
 
 ## Verified So Far
 
@@ -59,6 +62,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | DONE | Preview non-canvas node hiding | `script`, `script[type="text/worker"]`, and `rolltemplate` get final-source-order hidden CSS with zero layout/hit-test footprint in both build paths. |
 | DONE | Browser capture smoke for visual fixtures | Opened both generated fixture HTML files through Browser Use; captured local PNGs with 0 console errors. Full-page captures show fixture-state/viewport normalization is still needed before pixel diff. |
 | DONE | Browser-canvas diagnostic pixel diff | `reports/visual-fixture-diff/visual-fixture-diff-results.md`; 2 fixtures diffed with 0 browser console errors. Multi-mode diff added after first pass. |
+| DONE | Visual fixture render terminology refresh | `node scripts/render_visual_fixture_doc.mjs`; report now renders 3 fixtures and no longer labels preview auto-prefix as legacy sanitize. |
 
 ## Forbidden Claims
 

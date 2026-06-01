@@ -89,7 +89,7 @@ function listFixtures(root) {
     .sort((a, b) => basename(a).localeCompare(basename(b)));
 }
 
-function boolFromLegacyMode(value) {
+function boolFromAutoPrefix(value) {
   if (typeof value === 'boolean') return value;
   return true;
 }
@@ -121,12 +121,12 @@ for (const fixtureDir of fixtures) {
   const html = readText(join(fixtureDir, 'source.html'));
   const css = readMaybe(join(fixtureDir, 'source.css'));
   const i18n = readMaybe(join(fixtureDir, 'source.i18n'));
-  const legacyMode = boolFromLegacyMode(manifest.legacyMode);
+  const autoPrefix = boolFromAutoPrefix(manifest.autoPrefix ?? manifest.legacyMode);
   const rendered = buildSheetDoc({
     html,
     css,
     i18n,
-    sanitize: legacyMode,
+    sanitize: autoPrefix,
     darkMode: false,
     previewLayer: 'all',
   });
@@ -137,7 +137,8 @@ for (const fixtureDir of fixtures) {
     fixtureId,
     corpus: manifest.corpus,
     relDir: manifest.relDir,
-    legacyMode,
+    autoPrefix,
+    legacyCssSanitize: manifest.legacyCssSanitize ?? null,
     htmlBytes: Buffer.byteLength(html),
     cssBytes: Buffer.byteLength(css),
     i18nBytes: Buffer.byteLength(i18n),
@@ -172,15 +173,15 @@ const lines = [
   '',
   `Fixture count: ${results.length}`,
   '',
-  '| Fixture | Corpus | Legacy sanitize | Source HTML | Source CSS | Rendered HTML | Reference | Hidden-layer static check |',
-  '| --- | --- | ---: | ---: | ---: | ---: | --- | --- |',
+  '| Fixture | Corpus | Auto-prefix | Legacy CSS sanitize | Source HTML | Source CSS | Rendered HTML | Reference | Hidden-layer static check |',
+  '| --- | --- | ---: | --- | ---: | ---: | ---: | --- | --- |',
 ];
 
 for (const item of results) {
   const hidden = item.staticHiddenTags.outputHasPreviewHiddenCss
     ? `hidden css present; source script ${item.staticHiddenTags.sourceScriptTags}, rolltemplate ${item.staticHiddenTags.sourceRolltemplates}`
     : 'missing hidden css';
-  lines.push(`| \`${item.fixtureId}\` | ${item.corpus} | ${item.legacyMode ? 'on' : 'off'} | ${item.htmlBytes} | ${item.cssBytes} | ${item.renderedBytes} | ${item.reference ?? ''} | ${hidden} |`);
+  lines.push(`| \`${item.fixtureId}\` | ${item.corpus} | ${item.autoPrefix ? 'on' : 'off'} | ${item.legacyCssSanitize ?? 'not-applied'} | ${item.htmlBytes} | ${item.cssBytes} | ${item.renderedBytes} | ${item.reference ?? ''} | ${hidden} |`);
 }
 
 lines.push('');

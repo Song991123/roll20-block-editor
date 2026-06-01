@@ -6,7 +6,7 @@
  * Usage:
  *   node scripts/prepare_explicit_fixture.mjs <fixture_root> <fixture_id> \
  *     --html <path> --css <path> [--i18n <path>] [--reference <path>] \
- *     [--corpus <name>] [--rel <label>] [--legacy true|false|null]
+ *     [--corpus <name>] [--rel <label>] [--auto-prefix true|false|null] [--legacy-css-sanitize true|false|null]
  */
 
 import {
@@ -50,11 +50,11 @@ function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-function parseLegacy(value) {
+function parseTriState(value) {
   if (value === undefined || value === 'null') return null;
   if (value === 'true') return true;
   if (value === 'false') return false;
-  throw new Error(`--legacy must be true, false, or null. Got ${value}`);
+  throw new Error(`flag must be true, false, or null. Got ${value}`);
 }
 
 function copyTracked(label, source, destName) {
@@ -100,8 +100,10 @@ const manifest = {
   relDir: flags.rel ?? fixtureId,
   referenceImage: flags.reference ? resolve(flags.reference) : null,
   referenceRelativeToSheet,
-  legacyMode: parseLegacy(flags.legacy),
-  legacyModeNote: 'Set true for legacy Roll20 sanitization fixtures, false for modern fixtures.',
+  autoPrefix: parseTriState(flags['auto-prefix'] ?? flags.legacy),
+  autoPrefixNote: 'Controls preview auto-prefix/sanitize path only; this is not full Roll20 legacy CSS sanitization.',
+  legacyCssSanitize: parseTriState(flags['legacy-css-sanitize']),
+  legacyCssSanitizeNote: 'Reserved for explicit old-Roll20 CSS sanitizer fixtures when implemented.',
   visualStatus: flags.reference ? 'prepared-reference' : 'prepared-no-reference',
   files,
 };
