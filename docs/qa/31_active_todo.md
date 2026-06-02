@@ -21,7 +21,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | DONE | Codex agents | Audit worker JS and rolltemplate/chat path. | Report: current branch already has chat tab; worker layer still needs long-term split. |
 | DONE | Codex agents | Audit CI/CD and browser roundtrip setup. | Report: use current `web-push-main` as source of truth; older `web` notes are stale where they conflict. |
 | DONE | Claude CLI | Run read-only cross-review when auth/tooling allows. | Claude CLI `2.1.144`; review confirmed current reports prove Node import determinism only. |
-| VERIFY | Codex | First Figma-like flow drop slice for edit mode. | Gallery drops over frame/flow/table DOM nodes now nest as flow children instead of always absolute. `lint` and `build` passed; still needs browser drag/drop smoke. |
+| VERIFY | Codex | First Figma-like flow drop slice for edit mode. | Gallery drops over frame/flow/table DOM nodes now nest as flow children instead of always absolute. Droppable frame/flow/table nodes now get edit-canvas role attrs and drag target highlights. `lint`, `build`, and localhost edit-tab smoke passed; still needs real drag/drop smoke. |
 
 ## Critical Product Tasks
 
@@ -38,7 +38,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | TODO | P1 | Improve raw fallback coverage for sheets such as custom Magica. | Current custom-magica coverage is 95.7%, rawFallback 76. |
 | TODO | P1 | Make layer panel useful as a Figma-like hierarchy/reparenting surface. | Tree must allow grouping/reparenting, not just viewing. |
 | TODO | P1 | Define absolute positioning inside frames/groups. | Coordinates should be relative to containing block; frame must become `position: relative` when needed. |
-| VERIFY | P1 | Add shared DOM layer role classification for edit UX. | `lib/editor/layerRoles.ts` now gives frame/flow/table/control/action/text/media/runtime roles used by the layer panel and gallery drop detection. Needs canvas hover/drop affordance CSS next. |
+| VERIFY | P1 | Add shared DOM layer role classification for edit UX. | `lib/editor/layerRoles.ts` now gives frame/flow/table/control/action/text/media/runtime roles used by the layer panel, gallery drop detection, and Shadow DOM edit affordance CSS. Browser edit-tab smoke passed with 0 console errors; real drag/drop smoke still needed. |
 | TODO | P1 | Expand Roll20 worker simulator and chat rolltemplate rendering. | `on`, `getAttrs`, `setAttrs`, `getSectionIDs` first; then roll execution. |
 | TODO | P1 | Add explicit modern/legacy Roll20 preview/export mode checks. | Existing export toggle exists; preview-level proof still needed. |
 | VERIFY | P1 | Separate auto-prefix preview sanitize from real legacy Roll20 CSS sanitize in fixture reports. | `scripts/render_visual_fixture_doc.mjs` now reports `Auto-prefix` and `Legacy CSS sanitize` separately; actual legacy CSS sanitizer preview mode remains TODO. |

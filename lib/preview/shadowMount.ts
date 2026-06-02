@@ -110,6 +110,11 @@ export interface ShadowMountOptions {
   disableInlineTextEdit?: boolean;
   /** Edit-canvas mode: keep right-click free of the preview attribute/context menu. */
   disableContextMenu?: boolean;
+  /** Edit-canvas mode: classify visible DOM nodes for layer/drop affordances. */
+  getLayerRoleForBlock?: (blockId: string) => {
+    kind: string;
+    canReceiveChildren: boolean;
+  } | null;
 }
 
 export interface ShadowMountResult {
@@ -205,6 +210,28 @@ export function mountSheetShadow(
   outline: 2px dashed #f60;
   outline-offset: 2px;
 }
+[data-r20-can-drop="1"] {
+  outline: 1px dashed rgba(14, 165, 233, 0.35);
+  outline-offset: 2px;
+}
+[data-r20-layer-role="flow"] {
+  outline-color: rgba(6, 182, 212, 0.45);
+}
+[data-r20-layer-role="table"] {
+  outline-color: rgba(99, 102, 241, 0.45);
+}
+[data-r20-layer-role="frame"] {
+  outline-color: rgba(14, 165, 233, 0.45);
+}
+:host([data-r20-widget-dragging]) [data-r20-can-drop="1"] {
+  background-image: linear-gradient(rgba(14, 165, 233, 0.08), rgba(14, 165, 233, 0.08));
+  outline-width: 2px;
+}
+[data-r20-block-id].r20-drop-target {
+  background-image: linear-gradient(rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.14)) !important;
+  outline: 3px solid rgba(34, 197, 94, 0.75) !important;
+  outline-offset: 3px !important;
+}
 [data-r20-block-id] .r20-editing,
 [data-r20-block-id].r20-editing {
   outline: 2px dashed #16a34a;
@@ -230,6 +257,7 @@ ${opts.css}
   }
   container.innerHTML = opts.html;
   shadow.appendChild(container);
+  applyLayerRoleAttrs(container, opts.getLayerRoleForBlock);
 
   // Phase B — click delegation.
   // ShadowRoot 은 EventTarget — click 은 bubble phase 에서 shadow root 가 받음.
@@ -588,4 +616,19 @@ ${opts.css}
     },
     setSelected,
   };
+}
+
+function applyLayerRoleAttrs(
+  root: HTMLElement,
+  getLayerRoleForBlock?: ShadowMountOptions['getLayerRoleForBlock'],
+): void {
+  if (!getLayerRoleForBlock) return;
+  root.querySelectorAll<HTMLElement>('[data-r20-block-id]').forEach((el) => {
+    const id = el.dataset.r20BlockId;
+    if (!id) return;
+    const role = getLayerRoleForBlock(id);
+    if (!role) return;
+    el.setAttribute('data-r20-layer-role', role.kind);
+    if (role.canReceiveChildren) el.setAttribute('data-r20-can-drop', '1');
+  });
 }

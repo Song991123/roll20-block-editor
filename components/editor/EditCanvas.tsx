@@ -189,6 +189,7 @@ export default function EditCanvas() {
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     const container = findDropContainer(hostRef.current, e.clientX, e.clientY);
+    markDropContainer(hostRef.current, null);
     const id = appendFriendlyWidgetPreset(preset, pos, {
       mode: container ? 'flow' : 'absolute',
       containerBlockId: container?.blockId ?? null,
@@ -202,11 +203,21 @@ export default function EditCanvas() {
     }
   }, []);
 
+  const handleNativeDragLeave = useCallback((event: Event) => {
+    const e = event as DragEvent;
+    const host = hostRef.current;
+    if (!host) return;
+    const related = e.relatedTarget as Node | null;
+    if (related && (host === related || host.contains(related))) return;
+    markDropContainer(host, null);
+  }, []);
+
   const handleNativeDragOver = useCallback((event: Event) => {
     const e = event as DragEvent;
     if (!hasFriendlyWidgetPayload(e.dataTransfer)) return;
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    markDropContainer(hostRef.current, findDropContainer(hostRef.current, e.clientX, e.clientY)?.blockId ?? null);
   }, []);
 
   const handleNativeDrop = useCallback((event: Event) => {
@@ -220,6 +231,7 @@ export default function EditCanvas() {
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     const container = findDropContainer(hostRef.current, e.clientX, e.clientY);
+    markDropContainer(hostRef.current, null);
     const id = appendFriendlyWidgetPreset(preset, pos, {
       mode: container ? 'flow' : 'absolute',
       containerBlockId: container?.blockId ?? null,
@@ -245,6 +257,10 @@ export default function EditCanvas() {
       disableNativeControls: true,
       disableInlineTextEdit: true,
       disableContextMenu: true,
+      getLayerRoleForBlock: (blockId) => {
+        const block = getBlocklyAdapter().getBlock('html', blockId);
+        return block ? getLayerRole(block.type) : null;
+      },
       onSelect: (blockId) => setShadowSelectedRef.current?.(blockId),
       onDragStart: (blockId) => {
         const origin = resolveDragOrigin(host, blockId);
@@ -317,10 +333,13 @@ export default function EditCanvas() {
     const shadowBody = mounted.shadow.querySelector<HTMLElement>('body.charsheet');
     host.addEventListener('dragover', handleNativeDragOver);
     host.addEventListener('drop', handleNativeDrop);
+    host.addEventListener('dragleave', handleNativeDragLeave);
     mounted.shadow.addEventListener('dragover', handleNativeDragOver);
     mounted.shadow.addEventListener('drop', handleNativeDrop);
+    mounted.shadow.addEventListener('dragleave', handleNativeDragLeave);
     shadowBody?.addEventListener('dragover', handleNativeDragOver);
     shadowBody?.addEventListener('drop', handleNativeDrop);
+    shadowBody?.addEventListener('dragleave', handleNativeDragLeave);
     return () => {
       if (visualRafRef.current != null) window.cancelAnimationFrame(visualRafRef.current);
       if (commitTimerRef.current != null) window.clearTimeout(commitTimerRef.current);
@@ -330,10 +349,13 @@ export default function EditCanvas() {
       setShadowSelectedRef.current = null;
       host.removeEventListener('dragover', handleNativeDragOver);
       host.removeEventListener('drop', handleNativeDrop);
+      host.removeEventListener('dragleave', handleNativeDragLeave);
       mounted.shadow.removeEventListener('dragover', handleNativeDragOver);
       mounted.shadow.removeEventListener('drop', handleNativeDrop);
+      mounted.shadow.removeEventListener('dragleave', handleNativeDragLeave);
       shadowBody?.removeEventListener('dragover', handleNativeDragOver);
       shadowBody?.removeEventListener('drop', handleNativeDrop);
+      shadowBody?.removeEventListener('dragleave', handleNativeDragLeave);
       mounted.cleanup();
     };
   }, [
@@ -343,6 +365,7 @@ export default function EditCanvas() {
     snap,
     handleNativeDragOver,
     handleNativeDrop,
+    handleNativeDragLeave,
     cleanupDragVisual,
     lockVisualAtDrop,
     commitMoveLater,
@@ -947,6 +970,21 @@ function findDropContainer(
     cur = cur.parentElement;
   }
   return null;
+}
+
+function markDropContainer(host: HTMLElement | null, blockId: string | null): void {
+  const shadow = host?.shadowRoot;
+  if (!host || !shadow) return;
+  shadow.querySelectorAll<HTMLElement>('.r20-drop-target').forEach((el) => {
+    el.classList.remove('r20-drop-target');
+  });
+  if (!blockId) {
+    host.removeAttribute('data-r20-widget-dragging');
+    return;
+  }
+  host.setAttribute('data-r20-widget-dragging', '1');
+  const escaped = escapeAttr(blockId);
+  shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`)?.classList.add('r20-drop-target');
 }
 
 function hasFriendlyWidgetPayload(dataTransfer: DataTransfer | null): boolean {
