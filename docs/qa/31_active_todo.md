@@ -22,6 +22,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | DONE | Codex agents | Audit CI/CD and browser roundtrip setup. | Report: use current `web-push-main` as source of truth; older `web` notes are stale where they conflict. |
 | DONE | Claude CLI | Run read-only cross-review when auth/tooling allows. | Claude CLI `2.1.144`; review confirmed current reports prove Node import determinism only. |
 | VERIFY | Codex | First Figma-like flow drop slice for edit mode. | Gallery drops over frame/flow/table DOM nodes now nest as flow children instead of always absolute. Droppable frame/flow/table nodes now get edit-canvas role attrs and drag target highlights. `lint`, `build`, and localhost edit-tab smoke passed; still needs real drag/drop smoke. |
+| DONE | Codex | Organize project docs and operating rules. | Added `docs/operations/33_working_rules_and_requirements.md`, `docs/PROJECT_STRUCTURE.md`, `docs/README.md`, `reports/README.md`, and `scripts/README.md`; `lint` and `build` passed. |
 
 ## Critical Product Tasks
 
@@ -42,6 +43,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | TODO | P1 | Expand Roll20 worker simulator and chat rolltemplate rendering. | `on`, `getAttrs`, `setAttrs`, `getSectionIDs` first; then roll execution. |
 | TODO | P1 | Add explicit modern/legacy Roll20 preview/export mode checks. | Existing export toggle exists; preview-level proof still needed. |
 | VERIFY | P1 | Separate auto-prefix preview sanitize from real legacy Roll20 CSS sanitize in fixture reports. | `scripts/render_visual_fixture_doc.mjs` now reports `Auto-prefix` and `Legacy CSS sanitize` separately; actual legacy CSS sanitizer preview mode remains TODO. |
+| TODO | P2 | Move old duplicated QA files into `docs/qa/archive/` after checking references. | Do not move paths blindly; scripts/docs may cite current names. |
 | DONE | P0 | Render prepared visual fixtures through the shared preview document path. | `reports/visual-fixture-render/visual-fixture-render.md`; rendered 3 copied fixtures through `buildSheetDoc`. This is not visual parity yet. |
 
 ## Verified So Far
@@ -63,6 +65,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | DONE | Browser capture smoke for visual fixtures | Opened both generated fixture HTML files through Browser Use; captured local PNGs with 0 console errors. Full-page captures show fixture-state/viewport normalization is still needed before pixel diff. |
 | DONE | Browser-canvas diagnostic pixel diff | `reports/visual-fixture-diff/visual-fixture-diff-results.md`; 2 fixtures diffed with 0 browser console errors. Multi-mode diff added after first pass. |
 | DONE | Visual fixture render terminology refresh | `node scripts/render_visual_fixture_doc.mjs`; report now renders 3 fixtures and no longer labels preview auto-prefix as legacy sanitize. |
+| DONE | Documentation structure index | `docs/README.md`, `docs/PROJECT_STRUCTURE.md`, `reports/README.md`, and `scripts/README.md` document where future work should live. |
 
 ## Forbidden Claims
 
