@@ -2,11 +2,7 @@
 
 Date: 2026-06-12
 
-Start here when handing the project to Codex, Claude, or another agent.
-
-## Agent Rule
-
-Before changing code, every agent must read `docs/operations/33_working_rules_and_requirements.md` and follow its startup checklist. If a claim is not backed by current evidence, keep it in TODO/VERIFY.
+This index maps the project documentation set.
 
 ## Must Read First
 
@@ -39,6 +35,6 @@ Before changing code, every agent must read `docs/operations/33_working_rules_an
 | `docs/qa/` | Active work plans and QA summaries. |
 | `reports/` | Generated verification evidence. Read `reports/README.md` for report scope. |
 
-## Rule of Thumb
+## Evidence Rule
 
 If a claim is about visual parity, Roll20 behavior, import/export correctness, or drag/drop UX, cite the exact report or browser smoke that proves that claim. If no such evidence exists, keep the item in TODO.

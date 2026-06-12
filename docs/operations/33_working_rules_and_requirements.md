@@ -6,18 +6,19 @@ This document is the operating contract for Codex, Claude, and any other agents 
 
 ## 0. Mandatory Startup Checklist
 
-Every agent must do this before changing code or claiming status:
+Every agent must do this before changing code or claiming status. `AGENTS.md` is the repository-level entrypoint; this document is the expanded operating contract.
 
-1. Read `docs/operations/33_working_rules_and_requirements.md`.
-2. Read `docs/qa/31_active_todo.md`.
-3. Read `docs/qa/34_requirements_gap_matrix.md`.
-4. Read `docs/PROJECT_STRUCTURE.md`.
-5. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-6. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
-7. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-8. Check `git status --short --branch`.
-9. Check for unnecessary local dev servers before starting another one.
-10. Update `docs/qa/31_active_todo.md` after each coherent work batch.
+1. Read `AGENTS.md`.
+2. Read `docs/operations/33_working_rules_and_requirements.md`.
+3. Read `docs/qa/31_active_todo.md`.
+4. Read `docs/qa/34_requirements_gap_matrix.md`.
+5. Read `docs/PROJECT_STRUCTURE.md`.
+6. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+7. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
+8. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+9. Check `git status --short --branch`.
+10. Check for unnecessary local dev servers before starting another one.
+11. Update `docs/qa/31_active_todo.md` after each coherent work batch.
 
 ## 0.1 Source Safety
 
@@ -80,6 +81,7 @@ For preview/parity work, also run the relevant fixture/report script and record 
 - Commit and push to GitHub after each coherent work batch.
 - Run basic verification such as lint, build, browser load, and fixture scripts.
 - Keep unverified items in TODO. Do not silently promote them to done.
+- Do not put agent-only instructions into README files. README files are reserved for human/project presentation and documentation indexes.
 
 ## 2. Sheet Preview Verification
 
