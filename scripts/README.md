@@ -15,6 +15,8 @@ Run scripts from the project root unless noted otherwise.
 | `node scripts/prepare_explicit_fixture.mjs <fixture_root> <fixture_id> --html <path> --css <path> [--i18n <path>]` | Copy an explicit sheet into a fixture. |
 | `node scripts/render_visual_fixture_doc.mjs` | Render prepared visual fixtures into standalone preview HTML. |
 | `node scripts/make_visual_diff_pages.mjs` | Build visual diff pages and diagnostics. |
+| `node scripts/make_cascade_leak_pages.mjs` | Build browser-computed CSS cascade diagnostic pages from rendered fixture HTML. |
+| `node scripts/serve_static_dir.mjs <root_dir> [port]` | Serve workspace-owned reports/fixtures over localhost for browser verification. |
 | `node scripts/run_selected_roundtrip.mjs` | Run selected Node-side roundtrip checks. |
 
 ## Output Rules

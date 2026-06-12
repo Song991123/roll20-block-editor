@@ -16,7 +16,7 @@ This matrix breaks the operating requirements into actionable work. Use it with 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
 | VERIFY | P0 | Shared preview/edit render path. | `buildSheetDoc` and `buildSheetParts` share baseline/runtime/layer CSS; edit uses Shadow DOM mount. | Import real sheets and compare preview/edit screenshots. |
-| TODO | P0 | Computed CSS cascade leak report. | Not yet implemented. | Add script/browser diagnostic for selected fixture elements and CSS origins. |
+| VERIFY | P0 | Computed CSS cascade leak report. | Standalone `buildSheetDoc` report exists at `reports/cascade-leak/cascade-leak-results.md`; 3 fixtures measured in browser and found 0 app-like final winners in sampled visible sheet elements. | Extend the same diagnostic to the live Next.js edit Shadow DOM after importing a fixture. |
 | TODO | P0 | Actual Roll20 visual comparison. | Roll20 authenticated/manual comparison not recorded in current report. | Compare real Roll20 editor/sandbox with service render for selected sheets. |
 | DOING | P0 | Reference-image pixel diff pipeline. | Inventory/render/diff reports exist; viewport/crop/default state are not normalized. | Normalize viewport/state/crop and expand fixture set. |
 | TODO | P1 | Legacy mode verification. | Auto-prefix and legacy CSS sanitize are separated in reports; true legacy sanitizer not implemented. | Add explicit preview/export legacy mode checks. |

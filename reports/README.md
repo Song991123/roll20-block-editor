@@ -11,6 +11,7 @@ Reports are evidence, but each report has a limited scope. Do not use a report t
 | `visual-reference-inventory/` | Candidate reference images and sheet folders. | That any reference is the correct default state. |
 | `visual-fixture-render/` | Fixture HTML rendered through the preview document builder. | Pixel parity with Roll20 or reference images. |
 | `visual-fixture-diff/` | Browser/canvas screenshot diff diagnostics. | Final visual parity until viewport, crop, default state, translation, worker state, and assets are normalized. |
+| `cascade-leak/` | Browser-computed CSS cascade diagnostics for rendered fixture HTML. | Live Next.js edit-mode Shadow DOM leakage or visual parity. |
 
 ## Evidence Rules
 

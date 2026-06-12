@@ -27,6 +27,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | DONE | Codex | Split requirements into actionable gap matrix and branch plan. | Added `docs/qa/34_requirements_gap_matrix.md`, `docs/operations/34_branch_and_deployment_plan.md`, and CI workflow. `lint`, `build`, `main` CI, `dev` CI, and Pages deploy passed. |
 | DONE | Codex | Harden shared agent rules with mandatory references. | Added startup checklist, source safety, forbidden claims, branch/deploy rules, and minimum verification commands to `docs/operations/33_working_rules_and_requirements.md`; `lint` and `build` passed. |
 | DONE | Codex | Move agent-only rules out of README files. | Added root `AGENTS.md`, removed agent-only startup rule text from README files, and linked `AGENTS.md` from the operations rulebook; `lint` and `build` passed. |
+| DONE | Codex | Add standalone preview cascade leak diagnostics. | Added `scripts/make_cascade_leak_pages.mjs` and `scripts/serve_static_dir.mjs`; Browser-computed report: `reports/cascade-leak/cascade-leak-results.md`. |
 
 ## Critical Product Tasks
 
@@ -36,7 +37,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | DONE | P0 | Hide `script`, `script[type="text/worker"]`, and `rolltemplate` from sheet canvas in every render mode. | `lib/preview/buildDoc.ts` now hard-hides them after user CSS in iframe and shadow/edit render paths; fixture render report confirms source script/rolltemplate nodes remain for runtime/chat extraction. |
 | TODO | P0 | Preserve worker JS as a separate future block-coding workspace. | Current reports include worker matched/raw counts. |
 | TODO | P0 | Implement real browser L2 roundtrip: import -> emit -> import -> compare. | Current `reports/roundtrip-node/summary.md` is Node import determinism only. |
-| TODO | P0 | Add visual/cascade leak verification for Roll20 preview. | Need computed CSS origin and screenshot diff. |
+| VERIFY | P0 | Add visual/cascade leak verification for Roll20 preview. | Standalone `buildSheetDoc` cascade report exists: `reports/cascade-leak/cascade-leak-results.md` shows 0 app-like final winners across 3 fixtures. Still needs live Next.js edit Shadow DOM cascade report and screenshot diff normalization. |
 | DOING | P0 | Build screenshot-based sheet visual verification from existing preview images. | Inventory, fixture prep, shared preview render, and browser capture smoke are working. Next: normalize viewport/crop and add pixel diff against references. |
 | DONE | P0 | Add first browser-canvas pixel diff harness. | `reports/visual-fixture-diff/visual-fixture-diff-results.md`; first diagnostic diff computed for 2 fixtures. Needs viewport/state/crop normalization before parity gating. |
 | DOING | P0 | Normalize visual diff viewport, initial sheet state, and crop region. | First pass added multi-mode diff. Best diagnostics: AW2E 24.3% native top-left, Les Oublies 14.0% vertical crop. Still not parity gating. |

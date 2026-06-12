@@ -113,6 +113,8 @@ reports/visual-fixture-render/html/
 reports/visual-fixture-render/screenshots/
 reports/visual-fixture-diff/*.json
 reports/visual-fixture-diff/html/
+reports/cascade-leak/*.json
+reports/cascade-leak/html/
 test-fixtures/corpus-working/
 test-fixtures/visual/
 .tmp/
