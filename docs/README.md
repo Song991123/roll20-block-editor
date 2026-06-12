@@ -12,12 +12,17 @@ Start here when handing the project to Codex, Claude, or another agent.
 | `docs/qa/31_active_todo.md` | Live TODO board. Do not claim work is done if this still marks it TODO/VERIFY. |
 | `docs/PROJECT_STRUCTURE.md` | Folder map and organization rules. |
 | `docs/ux/32_dom_layer_editing_plan.md` | DOM/layer/Figma-like edit-mode plan. |
+| `reports/README.md` | Report scopes and evidence limits. |
+| `scripts/README.md` | Repeatable command index. |
 
 ## Specs
 
 | Folder | Contents |
 | --- | --- |
 | `docs/spec/` | Product/technical specs such as WYSIWYG mode, Roll20 baseline, composite blocks, and universal mapping contract. |
+| `docs/operations/` | Operating rules and agent handoff contracts. |
+| `docs/ux/` | DOM/layer editing and interaction plans. |
+| `docs/qa/` | Active TODO, QA checklists, current work plans, and archived QA snapshots. |
 | `docs/validation/` | Validation contracts and stable verification notes. |
 | `docs/perf/` | Performance audits and profiling notes. |
 

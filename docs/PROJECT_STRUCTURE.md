@@ -27,6 +27,7 @@ This file explains where things should live. It is intentionally conservative: d
 | `docs/spec/` | Product and technical specifications. |
 | `docs/ux/` | UX plans, DOM/layer editing model, interaction behavior. |
 | `docs/qa/` | Active TODO, QA checklists, current work plans. |
+| `docs/qa/archive/` | Old QA snapshots that are not current proof. |
 | `docs/validation/` | Validation contracts and verification reports that are stable enough to keep as docs. |
 | `docs/perf/` | Performance audit notes and profiling plans. |
 
@@ -58,5 +59,5 @@ This file explains where things should live. It is intentionally conservative: d
 | DONE | Add a `docs/README.md` index that links specs, QA, UX, validation, operations, and reports. |
 | DONE | Add `reports/README.md` to explain which reports are generated and which are evidence snapshots. |
 | DONE | Add `scripts/README.md` with command recipes. |
-| TODO | Move old duplicated QA report files into `docs/qa/archive/` only after checking references. |
+| DONE | Move old duplicated QA report files into `docs/qa/archive/` after checking references. |
 | TODO | Keep `.tmp/`, `.next/`, `out/`, and large copied fixtures out of hand-authored documentation. |
