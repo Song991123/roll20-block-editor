@@ -4,6 +4,10 @@ Date: 2026-06-12
 
 Start here when handing the project to Codex, Claude, or another agent.
 
+## Agent Rule
+
+Before changing code, every agent must read `docs/operations/33_working_rules_and_requirements.md` and follow its startup checklist. If a claim is not backed by current evidence, keep it in TODO/VERIFY.
+
 ## Must Read First
 
 | File | Purpose |
