@@ -8,9 +8,9 @@ Date: 2026-06-12
 | --- | --- | --- |
 | Production branch | `main` | `.github/workflows/deploy.yml` deploys only on `main` push. |
 | Production page | GitHub Pages | `https://song991123.github.io/roll20-block-editor/` returned HTTP 200 on 2026-06-12. |
-| Latest production deploy | Current | GitHub Actions latest Pages run used `e6cca54ae74de0e97c4b3b5ecf66ebd6e1dde965` and completed successfully on 2026-06-12. |
+| Latest production deploy | Current when checked | GitHub Actions latest Pages run completed successfully on 2026-06-12. Recheck after every push because documenting a SHA creates another deploy. |
 | Development branch | `dev` | Created from current `main` and pushed to origin. |
-| Development CI | New `CI` workflow | Runs lint/build on `main`, `dev`, and PRs; `main` and `dev` CI both passed for `e6cca54ae74de0e97c4b3b5ecf66ebd6e1dde965`. |
+| Development CI | New `CI` workflow | Runs lint/build on `main`, `dev`, and PRs; `main` and `dev` CI passed when checked on 2026-06-12. |
 
 ## Branch Rules
 
