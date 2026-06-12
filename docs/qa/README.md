@@ -10,6 +10,7 @@ Use this folder for active QA plans and current verification state.
 | --- | --- |
 | `31_active_todo.md` | Live TODO board. Start here before work. |
 | `30_roll20_reproduction_workplan.md` | Roll20 reproduction and validation work plan. |
+| `34_requirements_gap_matrix.md` | Requirement-by-requirement status and next action matrix. |
 
 ## Archive
 

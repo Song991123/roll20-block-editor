@@ -12,6 +12,8 @@ Start here when handing the project to Codex, Claude, or another agent.
 | `docs/qa/31_active_todo.md` | Live TODO board. Do not claim work is done if this still marks it TODO/VERIFY. |
 | `docs/PROJECT_STRUCTURE.md` | Folder map and organization rules. |
 | `docs/ux/32_dom_layer_editing_plan.md` | DOM/layer/Figma-like edit-mode plan. |
+| `docs/qa/34_requirements_gap_matrix.md` | Requirement-by-requirement gap matrix. |
+| `docs/operations/34_branch_and_deployment_plan.md` | Branch and deployment plan. |
 | `reports/README.md` | Report scopes and evidence limits. |
 | `scripts/README.md` | Repeatable command index. |
 
