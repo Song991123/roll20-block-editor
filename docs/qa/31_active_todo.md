@@ -24,7 +24,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | VERIFY | Codex | First Figma-like flow drop slice for edit mode. | Gallery drops over frame/flow/table DOM nodes now nest as flow children instead of always absolute. Droppable frame/flow/table nodes now get edit-canvas role attrs and drag target highlights. `lint`, `build`, and localhost edit-tab smoke passed; still needs real drag/drop smoke. |
 | DONE | Codex | Organize project docs and operating rules. | Added `docs/operations/33_working_rules_and_requirements.md`, `docs/PROJECT_STRUCTURE.md`, `docs/README.md`, `reports/README.md`, and `scripts/README.md`; `lint` and `build` passed. |
 | DONE | Codex | Archive stale QA markdown and add folder indexes. | Moved old `qa_*` snapshots into `docs/qa/archive/`; added README indexes for docs subfolders; `lint` and `build` passed. |
-| VERIFY | Codex | Split requirements into actionable gap matrix and branch plan. | Added `docs/qa/34_requirements_gap_matrix.md`, `docs/operations/34_branch_and_deployment_plan.md`, and CI workflow. Needs lint/build, commit, push, and `dev` branch push. |
+| DONE | Codex | Split requirements into actionable gap matrix and branch plan. | Added `docs/qa/34_requirements_gap_matrix.md`, `docs/operations/34_branch_and_deployment_plan.md`, and CI workflow. `lint`, `build`, `main` CI, `dev` CI, and Pages deploy passed. |
 
 ## Critical Product Tasks
 
@@ -45,7 +45,7 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 | TODO | P1 | Expand Roll20 worker simulator and chat rolltemplate rendering. | `on`, `getAttrs`, `setAttrs`, `getSectionIDs` first; then roll execution. |
 | TODO | P1 | Add explicit modern/legacy Roll20 preview/export mode checks. | Existing export toggle exists; preview-level proof still needed. |
 | VERIFY | P1 | Separate auto-prefix preview sanitize from real legacy Roll20 CSS sanitize in fixture reports. | `scripts/render_visual_fixture_doc.mjs` now reports `Auto-prefix` and `Legacy CSS sanitize` separately; actual legacy CSS sanitizer preview mode remains TODO. |
-| VERIFY | P0 | Establish `dev` branch and predeploy CI. | New CI workflow runs lint/build on `main`, `dev`, and PRs. `main` remains the only GitHub Pages deploy branch. |
+| DONE | P0 | Establish `dev` branch and predeploy CI. | `dev` branch pushed to origin; CI passed on `main` and `dev` for `e6cca54ae74de0e97c4b3b5ecf66ebd6e1dde965`. `main` remains the only GitHub Pages deploy branch. |
 | TODO | P1 | Decide separate public preview hosting for `dev`. | GitHub Pages currently provides one repo site; recommended options are Vercel/Netlify, a second Pages repo, or a same-site `/dev/` artifact merge. |
 | DONE | P2 | Move old duplicated QA files into `docs/qa/archive/` after checking references. | `rg` showed no code/script references outside QA self-references; archived old v1/v2 QA snapshots and added `docs/qa/README.md`. |
 | DONE | P0 | Render prepared visual fixtures through the shared preview document path. | `reports/visual-fixture-render/visual-fixture-render.md`; rendered 3 copied fixtures through `buildSheetDoc`. This is not visual parity yet. |

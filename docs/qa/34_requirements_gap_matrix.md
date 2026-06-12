@@ -44,5 +44,5 @@ This matrix breaks the operating requirements into actionable work. Use it with 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
 | DONE | P0 | Verify latest production deploy. | Pages 200; latest Actions run for `37c1090` succeeded. | Record each future deploy after push. |
-| VERIFY | P0 | Create `dev` branch and CI. | CI workflow added in this batch. | Push `dev` and confirm CI run. |
+| DONE | P0 | Create `dev` branch and CI. | `dev` was pushed to origin at `e6cca54ae74de0e97c4b3b5ecf66ebd6e1dde965`; `main` CI, `dev` CI, and Pages deploy all passed. | Use `dev` for pre-merge integration work. |
 | TODO | P1 | Separate public test page. | GitHub Pages is currently production only. | Choose Vercel/Netlify, second Pages repo, or same-site `/dev/`. |

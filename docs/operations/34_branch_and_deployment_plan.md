@@ -8,9 +8,9 @@ Date: 2026-06-12
 | --- | --- | --- |
 | Production branch | `main` | `.github/workflows/deploy.yml` deploys only on `main` push. |
 | Production page | GitHub Pages | `https://song991123.github.io/roll20-block-editor/` returned HTTP 200 on 2026-06-12. |
-| Latest production deploy | Current | GitHub Actions latest Pages run used `37c1090518d575d1212919758a16d7f83416fd87` and completed successfully on 2026-06-12. |
-| Development branch | `dev` | Create from current `main` and push to origin. |
-| Development CI | New `CI` workflow | Runs lint/build on `main`, `dev`, and PRs. |
+| Latest production deploy | Current | GitHub Actions latest Pages run used `e6cca54ae74de0e97c4b3b5ecf66ebd6e1dde965` and completed successfully on 2026-06-12. |
+| Development branch | `dev` | Created from current `main` and pushed to origin. |
+| Development CI | New `CI` workflow | Runs lint/build on `main`, `dev`, and PRs; `main` and `dev` CI both passed for `e6cca54ae74de0e97c4b3b5ecf66ebd6e1dde965`. |
 
 ## Branch Rules
 
@@ -46,7 +46,7 @@ Recommended next step: keep `main` as GitHub Pages production, create `dev` with
 
 | Status | Task |
 | --- | --- |
-| TODO | Push `dev` branch to origin at the current `main` commit. |
-| TODO | Confirm CI runs on `dev`. |
+| DONE | Push `dev` branch to origin at the current `main` commit. |
+| DONE | Confirm CI runs on `dev`. |
 | TODO | Decide public preview hosting strategy: Vercel/Netlify, second Pages repo, or same-site `/dev/` artifact merge. |
 | TODO | Add a deploy verification script that records page status, latest Actions SHA, and commit match. |
