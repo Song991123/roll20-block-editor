@@ -10,11 +10,12 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 4. Read `docs/qa/34_requirements_gap_matrix.md`.
 5. Read `docs/PROJECT_STRUCTURE.md`.
 6. Read `docs/operations/35_agent_progress_log.md`.
-7. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-8. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
-9. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-10. Run `git status --short --branch`.
-11. Check for unnecessary local dev servers before starting another one.
+7. Read `docs/operations/36_public_portfolio_and_copyright_rules.md`.
+8. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+9. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
+10. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+11. Run `git status --short --branch`.
+12. Check for unnecessary local dev servers before starting another one.
 
 ## Non-Negotiable Rules
 
@@ -25,6 +26,9 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Do not mark visual parity, full import/export, or all-sheet support as complete without exact current evidence.
 - Do not put agent-only instructions into README files. README files are human/project presentation material.
 - Record agent-facing progress in `docs/operations/35_agent_progress_log.md` and task status in `docs/qa/31_active_todo.md`, not in `README.md`.
+- Keep README as a Korean portfolio landing page: visual first, compact cards, details linked out.
+- Do not commit real or derived Roll20 sheet assets, public examples, local fixtures, generated reports, source screenshots, or third-party reference images.
+- Commit only from the active Next/React worktree (`web-push-main/`). Confirm with `git rev-parse --show-toplevel` before committing.
 
 ## Protected Source Folders
 
@@ -39,6 +43,8 @@ Allowed workspace-owned places for copied evidence:
 - `test-fixtures/`
 - `reports/`
 - `.tmp/`
+
+These places are local-only by default. Do not publish their generated contents unless the user explicitly approves a sanitized artifact.
 
 ## Forbidden Claims
 

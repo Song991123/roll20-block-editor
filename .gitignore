@@ -43,6 +43,22 @@ viewer-api.js
 # testing
 /coverage
 
+# local-only source/evidence: never publish real or derived Roll20 sheets.
+/public/examples/
+/data/examples/
+/test-fixtures/
+/reports/**
+!/reports/
+!/reports/README.md
+!/reports/.gitkeep
+/docs/portfolio/private/
+/docs/portfolio/assets/private/
+/docs/qa/archive/
+/docs/validation/verify/
+/docs/validation/working/
+/docs/validation/sheets/
+/docs/validation/27_source_corpus_manifest.md
+
 # next.js build outputs
 /.next/
 /out/
@@ -104,19 +120,6 @@ docs/qa/yshy_*.md
 docs/qa/yshy_*.html
 docs/qa/yshy_*.json
 docs/qa/yshy_*.xml
-reports/corpus-static-audit/*.json
-reports/roundtrip-node/**/roundtrip_report.json
-reports/roundtrip-node/**/raw/
-reports/visual-reference-inventory/*.json
-reports/visual-fixture-render/*.json
-reports/visual-fixture-render/html/
-reports/visual-fixture-render/screenshots/
-reports/visual-fixture-diff/*.json
-reports/visual-fixture-diff/html/
-reports/cascade-leak/*.json
-reports/cascade-leak/html/
-test-fixtures/corpus-working/
-test-fixtures/visual/
 .tmp/
 
 # === Validation phase (LOCAL ONLY — 사용자 시트 식별자 / 영시영 specific md) ===

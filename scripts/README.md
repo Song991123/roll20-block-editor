@@ -24,7 +24,8 @@ Run scripts from the project root unless noted otherwise.
 
 ## Output Rules
 
-- Scripts should write durable evidence to `reports/<pipeline>/`.
+- Scripts should write local evidence to ignored `reports/<pipeline>/`.
 - Temporary build files should go under `.tmp/`.
-- Copied external sheet files should go under `test-fixtures/`.
+- Copied external sheet files should go under ignored `test-fixtures/`.
+- Do not commit generated reports, fixture HTML, source screenshots, or copied sheet assets.
 - Scripts must not mutate external source folders.

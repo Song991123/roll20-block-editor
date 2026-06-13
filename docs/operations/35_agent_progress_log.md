@@ -20,26 +20,27 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 | Agent rules | `AGENTS.md` |
 | Live TODO | `docs/qa/31_active_todo.md` |
 | Requirement gaps | `docs/qa/34_requirements_gap_matrix.md` |
-| Verification evidence | `reports/` |
+| Verification evidence | local ignored `reports/` outputs plus summarized TODO notes |
 | Repeatable scripts | `scripts/` |
 
 ## 2026-06-14 Folder/Docs Review
 
 - Parent folder contains many legacy and experiment copies; current development must stay in `web-push-main/`.
 - Root `AGENTS.md` points agents to `web-push-main/AGENTS.md`; do not treat root-level `block-editor.html`, `viewer.html`, `PLAN.md`, or `HANDOFF.md` as current truth.
-- `README.md` in `web-push-main/` was rewritten as a Korean portfolio-style overview. Do not add agent-only status logs or internal task instructions there.
+- `README.md` in `web-push-main/` is a Korean portfolio-style overview. Keep it visual-first and do not add verification tables, agent-only status logs, or private sheet details there.
 - Agent progress and handoff notes belong in this file plus `docs/qa/31_active_todo.md`.
+- Real Roll20/user sheet fixtures and generated reports are local-only. Do not commit them to the public repo.
 - Folder guide exists at the parent level as `폴더 안내.md`; update it only when actual top-level folder roles change.
 
-## Verified Evidence Snapshot
+## Local Evidence Snapshot
 
 | Scope | Evidence |
 | --- | --- |
-| Browser L2 roundtrip | `reports/roundtrip-browser/browser-roundtrip-results.md`, 3 fixture scope only. |
-| YSHY mapping fidelity | `reports/mapping-fidelity/mapping-fidelity-yshy.md`, YSHY 1BU token-level exact categories. |
-| Edit flow smoke | `reports/edit-flow-smoke/edit-flow-smoke-results.md`, gallery drop and container nesting smoke. |
-| Standalone preview cascade | `reports/cascade-leak/cascade-leak-results.md`, standalone `buildSheetDoc` scope only. |
-| Live preview/edit Shadow DOM cascade | `reports/live-shadow-cascade/live-shadow-cascade-results.md`, 3 fixture scope only; app-like CSS winners 0 in preview/edit Shadow DOM. Imgur 403 asset loads are recorded separately. |
+| Browser L2 roundtrip | Local ignored `reports/roundtrip-browser/`; limited fixture scope only. |
+| Mapping fidelity | Local ignored `reports/mapping-fidelity/`; selected private fixture scope only. |
+| Edit flow smoke | Local ignored `reports/edit-flow-smoke/`; gallery drop and container nesting smoke. |
+| Standalone preview cascade | Local ignored `reports/cascade-leak/`; standalone `buildSheetDoc` scope only. |
+| Live preview/edit Shadow DOM cascade | Local ignored `reports/live-shadow-cascade/`; selected fixture scope only. |
 
 ## Next Development Sequence
 
@@ -48,6 +49,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 3. Layer panel explicit before/after/inside drop zones.
 4. Absolute positioning inside frames/groups with a clear UX mode.
 5. Worker JS separate workspace plan and first source-preserving implementation slice.
+6. Create a copyright-safe synthetic public example before re-enabling the sample loader.
 
 ## Reporting Guardrails
 

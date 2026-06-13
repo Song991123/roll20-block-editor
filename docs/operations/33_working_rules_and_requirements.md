@@ -14,12 +14,13 @@ Every agent must do this before changing code or claiming status. `AGENTS.md` is
 4. Read `docs/qa/34_requirements_gap_matrix.md`.
 5. Read `docs/PROJECT_STRUCTURE.md`.
 6. Read `docs/operations/35_agent_progress_log.md`.
-7. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-8. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
-9. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-10. Check `git status --short --branch`.
-11. Check for unnecessary local dev servers before starting another one.
-12. Update `docs/qa/31_active_todo.md` after each coherent work batch.
+7. Read `docs/operations/36_public_portfolio_and_copyright_rules.md`.
+8. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+9. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
+10. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+11. Check `git status --short --branch`.
+12. Check for unnecessary local dev servers before starting another one.
+13. Update `docs/qa/31_active_todo.md` after each coherent work batch.
 
 ## 0.1 Source Safety
 
@@ -36,6 +37,8 @@ Allowed workspace-owned places for copied evidence:
 - `test-fixtures/`
 - `reports/`
 - `.tmp/`
+
+These are local-only by default. They are intentionally ignored so real sheets, generated fixture HTML, private screenshots, source-derived report JSON, and third-party reference images do not ship with the public app.
 
 ## 0.2 Forbidden Claims
 
@@ -84,6 +87,9 @@ For preview/parity work, also run the relevant fixture/report script and record 
 - Keep unverified items in TODO. Do not silently promote them to done.
 - Do not put agent-only instructions into README files. README files are reserved for human/project presentation and documentation indexes.
 - Keep agent-facing progress and handoff notes in `docs/operations/35_agent_progress_log.md`, not in `README.md`.
+- Keep README as a Korean portfolio landing page: visual first, compact cards, details linked out.
+- Do not put verification tables, generated reports, fixture names, or private sheet details into README.
+- Before committing, confirm the git root is `web-push-main` and do not stage parent-folder material.
 
 ## 2. Sheet Preview Verification
 

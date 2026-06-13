@@ -1,16 +1,16 @@
-/**
- * Example registry — 정적 sample 시트 카탈로그.
+﻿/**
+ * Example registry ???뺤쟻 sample ?쒗듃 移댄깉濡쒓렇.
  *
  * Anchor:
- *   - docs/spec/10_system_architecture.md §4.4 (examplesStore)
- *   - feedback_general_purpose_blocks.md (V2 catalog generality 검증)
+ *   - docs/spec/10_system_architecture.md 짠4.4 (examplesStore)
+ *   - feedback_general_purpose_blocks.md (V2 catalog generality 寃利?
  *
- * V2 검증 (D&D 5e):
- *   `public/examples/dnd5e/*` 의 정적 XML / meta 를 fetch → adapter.hydrateFromXml
- *   으로 3 워크스페이스 (html/css/i18n) 채움.
+ * V2 寃利?(D&D 5e):
+ *   `public/examples/dnd5e/*` ???뺤쟻 XML / meta 瑜?fetch ??adapter.hydrateFromXml
+ *   ?쇰줈 3 ?뚰겕?ㅽ럹?댁뒪 (html/css/i18n) 梨꾩?.
  *
- * Generator 변경 0건 — 모든 D&D 5e 데이터는 example 파일 안에. lib/blocks/*.ts 의
- * generator 들은 일반화된 catalog 그대로 사용. 일반화 검증의 핵심.
+ * Generator 蹂寃?0嫄???紐⑤뱺 D&D 5e ?곗씠?곕뒗 example ?뚯씪 ?덉뿉. lib/blocks/*.ts ??
+ * generator ?ㅼ? ?쇰컲?붾맂 catalog 洹몃?濡??ъ슜. ?쇰컲??寃利앹쓽 ?듭떖.
  */
 
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
@@ -24,9 +24,9 @@ export interface ExampleDescriptor {
   name: string;
   shortName: string;
   description: string;
-  /** UI 표시 이모지 / 라벨. */
+  /** UI ?쒖떆 ?대え吏 / ?쇰꺼. */
   icon: string;
-  /** public/ 내 상대 경로 (basePath 자동 처리). */
+  /** public/ ???곷? 寃쎈줈 (basePath ?먮룞 泥섎━). */
   htmlXmlPath: string;
   cssXmlPath?: string;
   i18nXmlPath?: string;
@@ -35,62 +35,34 @@ export interface ExampleDescriptor {
 }
 
 /**
- * V2 (D&D 5e) + V3 (PbtA narrative) 가상 sample 2 종.
- * 둘 다 lib/blocks/ generator 변경 0건 — 같은 130-block 카탈로그가 능력치 무거운
- * 시스템과 narrative 시스템 양쪽을 다 cover 한다는 generality 검증.
+ * Public examples must be synthetic and copyright-safe.
+ * Real Roll20/community/user sheets belong in ignored local fixtures only.
  */
-export const EXAMPLES: ExampleDescriptor[] = [
-  {
-    id: 'dnd5e',
-    name: 'D&D 5e 캐릭터 시트',
-    shortName: 'D&D 5e',
-    description:
-      '능력치 6 / 내성 6 / 기능 18 + HP · AC · 이니셔티브 + 장비·마법 반복 섹션 + rolltemplate (V2 검증 sample).',
-    icon: '🐉',
-    htmlXmlPath: 'examples/dnd5e/dnd5e.xml',
-    cssXmlPath: 'examples/dnd5e/dnd5e.css.xml',
-    i18nXmlPath: 'examples/dnd5e/dnd5e.i18n.xml',
-    metaPath: 'examples/dnd5e/dnd5e.meta.json',
-    systemTags: ['d20', 'fantasy', 'tabletop', 'dnd'],
-  },
-  {
-    id: 'pbta_narrative',
-    name: 'PbtA Narrative 캐릭터 시트',
-    shortName: 'PbtA Narrative',
-    description:
-      'Cool/Hard/Hot/Sharp/Weird 5 stat + 5단 피해 시계 + 6 무브(2d6+stat) + 장비·Hx 반복 + 내력·성장 (V3 narrative 검증).',
-    icon: '🃏',
-    htmlXmlPath: 'examples/pbta_narrative/pbta.xml',
-    cssXmlPath: 'examples/pbta_narrative/pbta.css.xml',
-    i18nXmlPath: 'examples/pbta_narrative/pbta.i18n.xml',
-    metaPath: 'examples/pbta_narrative/pbta.meta.json',
-    systemTags: ['pbta', 'narrative', 'indie', 'no-stat-system'],
-  },
-];
+export const EXAMPLES: ExampleDescriptor[] = [];
 
 /**
- * 정적 asset URL 생성기. Next.js basePath 와 호환.
+ * ?뺤쟻 asset URL ?앹꽦湲? Next.js basePath ? ?명솚.
  *
- * 페이지가 `/roll20-block-editor/` 같은 basePath 아래에서 서빙되면,
- * 상대 경로 fetch 는 자동으로 같은 base 아래에서 resolve 된다 (trailingSlash:true).
- * SSR 단계에서는 basePath 가 없으므로 그대로 반환 (실 fetch 는 클라이언트만 실행).
+ * ?섏씠吏媛 `/roll20-block-editor/` 媛숈? basePath ?꾨옒?먯꽌 ?쒕튃?섎㈃,
+ * ?곷? 寃쎈줈 fetch ???먮룞?쇰줈 媛숈? base ?꾨옒?먯꽌 resolve ?쒕떎 (trailingSlash:true).
+ * SSR ?④퀎?먯꽌??basePath 媛 ?놁쑝誘濡?洹몃?濡?諛섑솚 (??fetch ???대씪?댁뼵?몃쭔 ?ㅽ뻾).
  */
 export function getExampleAssetUrl(relPath: string): string {
   const cleanRel = relPath.replace(/^\//, '');
   if (typeof window !== 'undefined') {
-    // window.location.href 가 basePath 포함 → 상대 URL 로 resolve 하면 base 자동 부착.
+    // window.location.href 媛 basePath ?ы븿 ???곷? URL 濡?resolve ?섎㈃ base ?먮룞 遺李?
     return new URL(cleanRel, window.location.href).toString();
   }
   return cleanRel;
 }
 
 /**
- * Example 단일 항목 로드 — html/css/i18n 3 워크스페이스를 동시에 채움.
+ * Example ?⑥씪 ??ぉ 濡쒕뱶 ??html/css/i18n 3 ?뚰겕?ㅽ럹?댁뒪瑜??숈떆??梨꾩?.
  *
- * 모든 fetch 가 끝난 뒤 adapter.hydrateFromXml 을 동기 호출 → workspace
- * changeListener 가 자동으로 bumpStructure 호출 (FINISHED_LOADING 이벤트).
+ * 紐⑤뱺 fetch 媛 ?앸궃 ??adapter.hydrateFromXml ???숆린 ?몄텧 ??workspace
+ * changeListener 媛 ?먮룞?쇰줈 bumpStructure ?몄텧 (FINISHED_LOADING ?대깽??.
  *
- * 실패 시 throw — 호출자가 toast 등으로 처리.
+ * ?ㅽ뙣 ??throw ???몄텧?먭? toast ?깆쑝濡?泥섎━.
  */
 export async function loadExampleIntoWorkspaces(
   descriptor: ExampleDescriptor,

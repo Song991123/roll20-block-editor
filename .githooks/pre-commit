@@ -1,0 +1,41 @@
+#!/bin/sh
+set -eu
+
+changes="$(git diff --cached --name-status -- \
+  'public/examples/**' \
+  'data/examples/**' \
+  'test-fixtures/**' \
+  'reports/**' \
+  'docs/portfolio/private/**' \
+  'docs/portfolio/assets/private/**' \
+  ':!reports/README.md' \
+  ':!reports/.gitkeep' || true)"
+
+blocked=""
+old_ifs="$IFS"
+IFS='
+'
+for line in $changes; do
+  status="${line%%	*}"
+  if [ "$status" != "D" ]; then
+    blocked="${blocked}${line}
+"
+  fi
+done
+IFS="$old_ifs"
+
+if [ -n "$blocked" ]; then
+  echo "Blocked commit: local-only Roll20 sheet fixtures/reports/assets are staged." >&2
+  echo "$blocked" >&2
+  echo "Keep real or derived sheets local. Commit scripts/docs only, or publish a sanitized artifact explicitly." >&2
+  exit 1
+fi
+
+root="$(git rev-parse --show-toplevel)"
+case "$root" in
+  *web-push-main) ;;
+  *)
+    echo "Blocked commit: git root is not web-push-main: $root" >&2
+    exit 1
+    ;;
+esac

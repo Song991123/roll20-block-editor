@@ -2,25 +2,29 @@
 
 Date: 2026-06-14
 
-Reports are evidence, but each report has a limited scope. Do not use a report to prove more than it actually checked.
+`reports/` is a local verification output folder. Generated report files are ignored by Git because they may contain real Roll20 sheet names, derived HTML, screenshots, asset URLs, or private fixture details.
 
-| Report Folder | Scope | Does Not Prove |
-| --- | --- | --- |
-| `corpus-static-audit/` | Static inventory of sheet corpus files and risk flags. | Visual parity or import correctness. |
-| `roundtrip-node/` | Node-side import/emit diagnostics for selected fixtures. | Browser behavior, real Roll20 behavior, or pixel parity. |
-| `visual-reference-inventory/` | Candidate reference images and sheet folders. | That any reference is the correct default state. |
-| `visual-fixture-render/` | Fixture HTML rendered through the preview document builder. | Pixel parity with Roll20 or reference images. |
-| `visual-fixture-diff/` | Browser/canvas screenshot diff diagnostics. | Final visual parity until viewport, crop, default state, translation, worker state, and assets are normalized. |
-| `cascade-leak/` | Browser-computed CSS cascade diagnostics for rendered fixture HTML. | Live Next.js edit-mode Shadow DOM leakage or visual parity. |
-| `live-shadow-cascade/` | Live static Next.js app import path, preview Shadow DOM, and edit Shadow DOM computed CSS winner diagnostics for 3 fixtures. | Roll20 visual parity, screenshot parity, or asset availability. |
-| `edit-flow-smoke/` | Headless-browser smoke for gallery widget drop: hook paths plus real dragover/drop DragEvents (background -> absolute, container -> flow nesting). | OS-level pointer drags, existing-object mouse drag, imported-sheet behavior, or visual parity. |
-| `roundtrip-browser/` | Browser L2 roundtrip (import -> emit -> re-import -> emit compare, ids stripped) for 3 fixtures. | Source fidelity (e1 vs source), visual parity, all-sheet support, or roundtrip-with-edits. |
-| `mapping-fidelity/` | Source-vs-emit multiset audit of Roll20-meaningful tokens (attr names, roll buttons, i18n keys, placeholders, CSS selectors) for YSHY 1부, plus the fixed-defect ledger. | Visual parity, Roll20 sandbox runtime behavior, or the same exactness for sheets other than YSHY 1부. |
+Keep this README as the only public index unless the user explicitly approves a sanitized report artifact.
+
+## Local Report Types
+
+| Folder | Local Scope |
+| --- | --- |
+| `corpus-static-audit/` | Static inventory of local source corpora and risk flags. |
+| `roundtrip-node/` | Node-side import/emit diagnostics for selected local fixtures. |
+| `roundtrip-browser/` | Browser-side import/emit roundtrip diagnostics. |
+| `edit-flow-smoke/` | Browser evidence for edit-mode drag/drop behavior. |
+| `mapping-fidelity/` | Source-vs-emit token audits for selected private fixtures. |
+| `visual-reference-inventory/` | Local reference image inventory. |
+| `visual-fixture-render/` | Standalone fixture HTML render output. |
+| `visual-fixture-diff/` | Browser screenshot/pixel-diff diagnostics. |
+| `cascade-leak/` | Standalone preview CSS cascade diagnostics. |
+| `live-shadow-cascade/` | Live app preview/edit Shadow DOM cascade diagnostics. |
 
 ## Evidence Rules
 
-- A successful render means the pipeline produced HTML, not that the sheet is visually correct.
-- A pixel diff number is diagnostic until the compared states are proven equivalent.
-- Console errors/warnings must be recorded with browser runs.
+- A local report can support an internal TODO claim, but it should not be published automatically.
+- A successful render means the pipeline produced HTML, not that the sheet is visually identical to Roll20.
+- Pixel diff scores are diagnostic until viewport, crop, default state, assets, and translations are normalized.
 - Legacy CSS sanitize must be reported separately from auto-prefix.
-- GitHub Pages checks must be recorded separately from local checks.
+- If a public artifact is needed, create a sanitized summary without real sheet contents, screenshots, names, or asset URLs.
