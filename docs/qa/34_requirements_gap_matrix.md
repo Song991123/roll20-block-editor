@@ -25,7 +25,8 @@ This matrix breaks the operating requirements into actionable work. Use it with 
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
-| TODO | P0 | L2 browser roundtrip. | Node roundtrip exists; browser import/edit/export/import compare does not. | Build browser-driven roundtrip script. |
+| DONE | P0 | L2 browser roundtrip. | 3/3 fixtures PASS (`reports/roundtrip-browser/`). Section/toggle multi-class guard + worker-body normalization made import idempotent over its own emit. | Add an edit step between roundtrips; expand fixture set. |
+| DONE | P0 | Roll20 mapping fidelity for the real user sheet. | `reports/mapping-fidelity/mapping-fidelity-yshy.md`: every Roll20-meaningful token category (attr names, inputs, roll buttons name+value, data-i18n, placeholders, disabled, translation keys, CSS selectors) is now an exact multiset match for YSHY 1부; 10 import/emit defects fixed. | Extend the same token audit to AW2E/Les-Oublies raw-fallback regions and to export(.zip) output. |
 | TODO | P0 | Worker JS separate workspace. | Worker matched/raw counts exist in reports; worker block workspace not split. | Design worker workspace and preserve source mapping. |
 | TODO | P1 | Rolltemplate/chat rendering. | Chat tab exists; rolltemplate parity not proven. | Expand rolltemplate execution/render checks. |
 
@@ -34,8 +35,8 @@ This matrix breaks the operating requirements into actionable work. Use it with 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
 | VERIFY | P0 | Edit mode is real preview plus overlays. | Edit canvas uses `buildSheetParts` and Shadow DOM. | Compare imported sheet edit vs preview screenshots. |
-| VERIFY | P1 | Flow-aware gallery drop. | Gallery drop can nest into frame/flow/table and strip absolute positioning. | Add stable real drag/drop browser smoke. |
-| VERIFY | P1 | Droppable container affordances. | `data-r20-layer-role`, `data-r20-can-drop`, candidate and target highlights exist. | Verify with real drag/drop and screenshot. |
+| DONE | P1 | Flow-aware gallery drop. | Browser smoke PASS with real dragover/drop DragEvents: background drop -> absolute, container drop -> flow nesting without `position:absolute`. Report: `reports/edit-flow-smoke/edit-flow-smoke-results.md`. | Extend to mouse-driven drag of existing objects and imported sheets. |
+| DONE | P1 | Droppable container affordances. | Real drag/drop + screenshots captured: dropped section exposes `data-r20-layer-role="frame"`, `data-r20-can-drop="1"`; nested input visible in `c2-input-nested.png` and in the layer panel. | Add hover-time drop-target highlight screenshot during an in-flight drag. |
 | TODO | P1 | Before/after/inside drop zones. | Current layer move tries nest first then fallback before; zones are not explicit. | Implement explicit layer panel zones and canvas insertion indicators. |
 | TODO | P1 | Absolute positioning inside frames/groups. | Drag commit supports containing block measurement and relative parent fallback. | Add explicit UX mode and tests for absolute-inside-frame. |
 

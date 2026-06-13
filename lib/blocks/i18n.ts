@@ -112,7 +112,11 @@ function pickI18nTextTag(raw: string): string {
 function sanitizeKey(raw: string): string {
   const s = String(raw ?? '').trim();
   if (!s) return '';
-  return s.replace(/[^A-Za-z0-9_.\-]/g, '');
+  // 과거: [^A-Za-z0-9_.\-] 전부 제거 → "fighting(brawl)-u" 가 "fightingbrawl-u" 로,
+  // "Move rate-u" 가 "Moverate-u" 로 망가져 사용자의 translation.json 과 키가
+  // 어긋남 (Roll20 은 키에 공백/괄호/슬래시/한글 허용 — 영시영 원본이 실증).
+  // attribute escape 는 attr()/escapeAttr 가 담당하므로 여기서는 제어문자만 제거.
+  return s.replace(/[\u0000-\u001F\u007F]/g, '');
 }
 
 /** JSON 문자열 escape — locale value emit 용. */
@@ -244,6 +248,18 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본 값')
         .appendField(new Blockly.FieldTextInput(''), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('값(value)')
+        .appendField(new Blockly.FieldTextInput(''), 'VALUE');
+      b.appendDummyInput()
+        .appendField('잠금')
+        .appendField(
+          new Blockly.FieldDropdown([
+            ['아니오', 'FALSE'],
+            ['예', 'TRUE'],
+          ]),
+          'DISABLED',
+        );
+      b.appendDummyInput()
         .appendField('이름')
         .appendField(new Blockly.FieldTextInput(''), 'NAME');
       b.appendDummyInput()
@@ -277,10 +293,16 @@ export const I18N_BLOCKS: BlockDef[] = [
       const accept = String(b.getFieldValue('ACCEPT') ?? '');
       const min = String(b.getFieldValue('MIN') ?? '');
       const max = String(b.getFieldValue('MAX') ?? '');
+      const value = String(b.getFieldValue('VALUE') ?? '');
+      const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
       // raw class/name — sheet- / attr_ prefix 보존. (i18n_button 컨벤션과 동일.)
+      // DEFAULT 는 placeholder 속성으로 — value 로 내보내면 실제 속성값이
+      // 안내문 텍스트로 오염된다 (YSHY 맵핑 검증에서 발견). value 속성은
+      // 별도 VALUE 필드 (san_thresh 처럼 placeholder + value 둘 다 있는 입력).
       return (
         `<input${attr('type', type)}${attr('class', cls)}${attr('name', name)}` +
-        `${attr('data-i18n-placeholder', key)}${attr('value', def)}` +
+        `${attr('data-i18n-placeholder', key)}${attr('placeholder', def)}${attr('value', value)}` +
+        `${disabled ? ' disabled="true"' : ''}` +
         `${attr('accept', accept)}${attr('min', min)}${attr('max', max)}${styleAttr(style)}>`
       );
     },

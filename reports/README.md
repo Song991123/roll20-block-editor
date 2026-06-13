@@ -12,6 +12,9 @@ Reports are evidence, but each report has a limited scope. Do not use a report t
 | `visual-fixture-render/` | Fixture HTML rendered through the preview document builder. | Pixel parity with Roll20 or reference images. |
 | `visual-fixture-diff/` | Browser/canvas screenshot diff diagnostics. | Final visual parity until viewport, crop, default state, translation, worker state, and assets are normalized. |
 | `cascade-leak/` | Browser-computed CSS cascade diagnostics for rendered fixture HTML. | Live Next.js edit-mode Shadow DOM leakage or visual parity. |
+| `edit-flow-smoke/` | Headless-browser smoke for gallery widget drop: hook paths plus real dragover/drop DragEvents (background -> absolute, container -> flow nesting). | OS-level pointer drags, existing-object mouse drag, imported-sheet behavior, or visual parity. |
+| `roundtrip-browser/` | Browser L2 roundtrip (import -> emit -> re-import -> emit compare, ids stripped) for 3 fixtures. | Source fidelity (e1 vs source), visual parity, all-sheet support, or roundtrip-with-edits. |
+| `mapping-fidelity/` | Source-vs-emit multiset audit of Roll20-meaningful tokens (attr names, roll buttons, i18n keys, placeholders, CSS selectors) for YSHY 1부, plus the fixed-defect ledger. | Visual parity, Roll20 sandbox runtime behavior, or the same exactness for sheets other than YSHY 1부. |
 
 ## Evidence Rules
 

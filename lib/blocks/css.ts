@@ -414,7 +414,27 @@ export const CSS_BLOCKS: BlockDef[] = [
     generator: (block, ctx) => {
       const bb = block as Blockly.Block;
       const base = (ctx.valueToCode(block, 'BASE', ORDER.NONE) || '').trim();
-      const tail = String(bb.getFieldValue('TAIL') ?? '').replace(/[{}\r\n\s]/g, '').trim();
+      // 공백 제거는 따옴표 밖에서만 — [class="repcontainer editmode"] 같은
+      // attribute selector 의 quoted value 안 공백을 지우면 selector 가
+      // 통째로 깨진다 (YSHY CSS 검증에서 발견).
+      const rawTail = String(bb.getFieldValue('TAIL') ?? '');
+      let tail = '';
+      let quote: string | null = null;
+      for (const ch of rawTail) {
+        if (quote) {
+          if (ch === '{' || ch === '}' || ch === '\r' || ch === '\n') continue;
+          tail += ch;
+          if (ch === quote) quote = null;
+        } else if (ch === '"' || ch === "'") {
+          quote = ch;
+          tail += ch;
+        } else if (/[{}\r\n\s]/.test(ch)) {
+          continue;
+        } else {
+          tail += ch;
+        }
+      }
+      tail = tail.trim();
       if (!base) return [tail, ORDER.ATOMIC];
       if (!tail) return [base, ORDER.ATOMIC];
       return [`${base}${tail}`, ORDER.ATOMIC];

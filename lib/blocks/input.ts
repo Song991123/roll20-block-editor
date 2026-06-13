@@ -99,6 +99,21 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('기본값')
         .appendField(new Blockly.FieldTextInput(''), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('안내문')
+        .appendField(new Blockly.FieldTextInput(''), 'PLACEHOLDER');
+      b.appendDummyInput()
+        .appendField('번역 키')
+        .appendField(new Blockly.FieldTextInput(''), 'I18N');
+      b.appendDummyInput()
+        .appendField('잠금')
+        .appendField(
+          new Blockly.FieldDropdown([
+            ['아니오', 'FALSE'],
+            ['예', 'TRUE'],
+          ]),
+          'DISABLED',
+        );
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -109,7 +124,14 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const name = String(b.getFieldValue('NAME') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const def = String(b.getFieldValue('DEFAULT') ?? '');
-      return `<input type="text"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', def)}${styleAttr(style)}>`;
+      const ph = String(b.getFieldValue('PLACEHOLDER') ?? '');
+      const i18n = String(b.getFieldValue('I18N') ?? '');
+      const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
+      return (
+        `<input type="text"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', def)}` +
+        `${attr('placeholder', ph)}${attr('data-i18n', i18n)}` +
+        `${disabled ? ' disabled="true"' : ''}${styleAttr(style)}>`
+      );
     },
   },
 
@@ -137,6 +159,18 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('기본값')
         .appendField(new Blockly.FieldTextInput('0'), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('안내문')
+        .appendField(new Blockly.FieldTextInput(''), 'PLACEHOLDER');
+      b.appendDummyInput()
+        .appendField('잠금')
+        .appendField(
+          new Blockly.FieldDropdown([
+            ['아니오', 'FALSE'],
+            ['예', 'TRUE'],
+          ]),
+          'DISABLED',
+        );
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -149,9 +183,12 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const min = String(b.getFieldValue('MIN') ?? '');
       const max = String(b.getFieldValue('MAX') ?? '');
       const def = String(b.getFieldValue('DEFAULT') ?? '');
+      const ph = String(b.getFieldValue('PLACEHOLDER') ?? '');
+      const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
       return (
         `<input type="number"${sheetClassAttr(cls)}${nameAttr(name)}` +
-        `${attr('min', min)}${attr('max', max)}${attr('value', def)}${styleAttr(style)}>`
+        `${attr('min', min)}${attr('max', max)}${attr('value', def)}` +
+        `${attr('placeholder', ph)}${disabled ? ' disabled="true"' : ''}${styleAttr(style)}>`
       );
     },
   },
@@ -276,6 +313,12 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('기본값')
         .appendField(new Blockly.FieldTextInput(''), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('안내문')
+        .appendField(new Blockly.FieldTextInput(''), 'PLACEHOLDER');
+      b.appendDummyInput()
+        .appendField('안내문 번역 키')
+        .appendField(new Blockly.FieldTextInput(''), 'I18N_PLACEHOLDER');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -288,9 +331,12 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const rowsRaw = Number(b.getFieldValue('ROWS') ?? 3);
       const rows = Number.isFinite(rowsRaw) && rowsRaw >= 1 ? Math.floor(rowsRaw) : 3;
       const def = String(b.getFieldValue('DEFAULT') ?? '');
+      const ph = String(b.getFieldValue('PLACEHOLDER') ?? '');
+      const i18nPh = String(b.getFieldValue('I18N_PLACEHOLDER') ?? '');
       return (
         `<textarea${sheetClassAttr(cls)}${nameAttr(name)}` +
-        ` rows="${rows}"${styleAttr(style)}>${escapeAttr(def)}</textarea>`
+        ` rows="${rows}"${attr('placeholder', ph)}${attr('data-i18n-placeholder', i18nPh)}` +
+        `${styleAttr(style)}>${escapeAttr(def)}</textarea>`
       );
     },
   },

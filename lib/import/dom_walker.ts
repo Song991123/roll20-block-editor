@@ -42,8 +42,81 @@ export function parseHtml(html: string): DomNode {
 // 1) 브라우저 native — 가장 정확.
 // ---------------------------------------------------------------------------
 
+/**
+ * 비-void 요소의 self-closing 표기 (`<button ... />`) 를 명시적 닫힘
+ * (`<button ...></button>`) 으로 정규화한다.
+ *
+ * 이유: HTML5 native DOMParser 는 비-void 요소의 `/>` 를 무시하고 태그를
+ * "연 채로" 둔다 → 뒤따르는 형제 input/button 들이 전부 그 요소의 자식으로
+ * 삼켜진다. 영시영 1부처럼 `<button ... />` 표기를 쓰는 실전 시트에서
+ * 브라우저 import 만 입력칸 57개 + roll 버튼 49개가 소실되는 원인이었다
+ * (Node fallback 파서와 Roll20 은 self-close 를 닫힘으로 처리).
+ * 따옴표 안의 `/>`, `<` 는 건드리지 않도록 quote-aware 스캐너로 처리.
+ */
+export function normalizeSelfClosingTags(html: string): string {
+  let out = '';
+  let i = 0;
+  const n = html.length;
+  while (i < n) {
+    const lt = html.indexOf('<', i);
+    if (lt < 0) {
+      out += html.slice(i);
+      break;
+    }
+    out += html.slice(i, lt);
+    // comment / doctype / closing tag / raw-text 시작은 그대로 통과.
+    if (html.startsWith('<!--', lt)) {
+      const end = html.indexOf('-->', lt);
+      const stop = end < 0 ? n : end + 3;
+      out += html.slice(lt, stop);
+      i = stop;
+      continue;
+    }
+    const m = /^<([a-zA-Z][a-zA-Z0-9-]*)/.exec(html.slice(lt));
+    if (!m) {
+      out += html[lt];
+      i = lt + 1;
+      continue;
+    }
+    const tag = m[1].toLowerCase();
+    // quote-aware 로 태그 끝 '>' 탐색.
+    let j = lt + 1;
+    let quote: string | null = null;
+    while (j < n) {
+      const c = html[j];
+      if (quote) {
+        if (c === quote) quote = null;
+      } else if (c === '"' || c === "'") {
+        quote = c;
+      } else if (c === '>') {
+        break;
+      }
+      j += 1;
+    }
+    if (j >= n) {
+      out += html.slice(lt);
+      break;
+    }
+    const rawTag = html.slice(lt, j + 1);
+    if (rawTag.endsWith('/>') && !VOID_TAGS.has(tag)) {
+      out += `${rawTag.slice(0, -2).replace(/\s+$/, '')}></${tag}>`;
+    } else {
+      out += rawTag;
+    }
+    i = j + 1;
+    // raw-text 요소 내부는 스캔 없이 통과 (script 안의 '<' 보호).
+    if (RAW_TEXT_TAGS.has(tag) && !rawTag.endsWith('/>')) {
+      const close = html.toLowerCase().indexOf(`</${tag}`, i);
+      const stop = close < 0 ? n : close;
+      out += html.slice(i, stop);
+      i = stop;
+    }
+  }
+  return out;
+}
+
 function parseWithDomParser(html: string): DomNode {
-  const wrap = `<!doctype html><html><head></head><body>${html}</body></html>`;
+  const wrap = `<!doctype html><html><head></head><body>${normalizeSelfClosingTags(html)}</body></html>`;
   const doc = new DOMParser().parseFromString(wrap, 'text/html');
   const root: DomNode = { type: 'root', children: [], parent: null };
   for (const child of Array.from(doc.body.childNodes)) {

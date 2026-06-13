@@ -396,7 +396,9 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
   // empty cells (kind === 'empty') 는 그대로 'spacer' (slot 미할당).
   fields.CELL_LAYOUT = slotByIdx.join(',');
   // 각 cell 의 td.CLASS 직렬화 (round-trip 시 빈 td 의 class 보존).
-  fields.CELL_TD_CLASSES = cells.map((c) => c.td.fields?.CLASS ?? '').join('\u0001');
+  // 구분자는 탭 — \u0001 은 XML 1.0 불법 문자라 workspace XML 직렬화
+  // (autosave/export/hydrate) 를 깨뜨린다.
+  fields.CELL_TD_CLASSES = cells.map((c) => c.td.fields?.CLASS ?? '').join('\t');
 
   if (checkboxIdx >= 0) {
     const cb = cells[checkboxIdx].inner!;

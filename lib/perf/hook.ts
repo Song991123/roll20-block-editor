@@ -22,6 +22,10 @@ import { importSheet as importPipeline } from '@/lib/import';
 import { emitAll } from '@/lib/preview/emit';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
+import {
+  appendFriendlyWidgetPreset,
+  findFriendlyWidgetPreset,
+} from '@/lib/widgets/presets';
 
 export interface PerfMeasure {
   label: string;
@@ -55,6 +59,19 @@ export interface PerfImportResult {
   heapAfterMb: number | null;
 }
 
+export interface PerfEditFlowDropResult {
+  containerId: string | null;
+  widgetId: string | null;
+  nested: boolean;
+  widgetStyle: string | null;
+  htmlContainsNestedWidget: boolean;
+  htmlHasAbsoluteWidget: boolean;
+  htmlLen: number;
+  cssLen: number;
+  i18nLen: number;
+  warnings: number;
+}
+
 export interface PerfHook {
   /** Workspace 인스턴스별 + 누적 블록 수 + root (top-level) 블록 수. */
   getWorkspace: () => PerfWorkspaceSnap;
@@ -71,6 +88,11 @@ export interface PerfHook {
   measure: <T>(label: string, fn: () => T | Promise<T>) => Promise<PerfMeasure & { value: T }>;
   /** 영시영 / 다른 시트 raw HTML/CSS/i18n 을 generic pipeline 으로 import 후 hydrate. */
   importSheet: (input: { html: string; css?: string; i18n?: string }) => Promise<PerfImportResult>;
+  appendFriendlyWidgetForEditSmoke: (input?: {
+    containerPresetId?: string;
+    widgetPresetId?: string;
+    mode?: 'flow' | 'absolute';
+  }) => PerfEditFlowDropResult;
   /** 현재 활성 워크스페이스의 모든 블록 제거 (re-측정 용). */
   clearAll: () => void;
   /** Heap (MB) — performance.memory 비표준 API 사용 가능 시. */
@@ -186,6 +208,16 @@ function isEnabled(): boolean {
   }
 }
 
+function findBlockOpeningTag(html: string, blockId: string): string {
+  const marker = `data-r20-block-id="${blockId}"`;
+  const markerIndex = html.indexOf(marker);
+  if (markerIndex < 0) return '';
+  const start = html.lastIndexOf('<', markerIndex);
+  const end = html.indexOf('>', markerIndex);
+  if (start < 0 || end < 0 || start > markerIndex) return '';
+  return html.slice(start, end + 1);
+}
+
 function buildHook(): PerfHook {
   const tracker = new LongTaskTracker();
 
@@ -237,7 +269,7 @@ function buildHook(): PerfHook {
         heapBeforeMb !== null && heapAfterMb !== null
           ? Math.round((heapAfterMb - heapBeforeMb) * 100) / 100
           : null;
-       
+
       console.log(`[perf] ${label}: ${ms.toFixed(1)}ms (heap ${heapBeforeMb}→${heapAfterMb}MB)`);
       return { label, ms, heapBeforeMb, heapAfterMb, heapDeltaMb, value };
     },
@@ -255,6 +287,15 @@ function buildHook(): PerfHook {
       if (css) adapter.hydrateFromXml('css', result.css);
       if (i18n) adapter.hydrateFromXml('i18n', result.i18n);
       const injectEnd = nowMs();
+
+      // hydrateFromXml 은 Blockly events disabled 로 돌므로 changeListener 의
+      // bumpStructure 가 안 탄다 → store 메타 blockCount 0 유지 → preview/edit
+      // 가 빈 상태 placeholder 를 보여줌 (UI sweep 에서 발견). 실제
+      // ImportDialog 와 동일하게 명시적으로 bump.
+      const bump = useWorkspaceStore.getState().bumpStructure;
+      bump('html', adapter.countBlocks('html'));
+      bump('css', adapter.countBlocks('css'));
+      bump('i18n', adapter.countBlocks('i18n'));
 
       // emit pipeline cost (synchronous emitAll — bypass 500ms debounce).
       const emitT0 = nowMs();
@@ -290,6 +331,68 @@ function buildHook(): PerfHook {
         warnings: result.warnings.length,
         heapBeforeMb,
         heapAfterMb,
+      };
+    },
+
+    appendFriendlyWidgetForEditSmoke: ({
+      containerPresetId = 'section',
+      widgetPresetId = 'text-input',
+      mode = 'flow',
+    } = {}) => {
+      const adapter = getBlocklyAdapter();
+      const store = useWorkspaceStore.getState();
+      const containerPreset = findFriendlyWidgetPreset(containerPresetId);
+      const widgetPreset = findFriendlyWidgetPreset(widgetPresetId);
+      if (!containerPreset || !widgetPreset) {
+        throw new Error(`Unknown friendly widget preset: ${containerPresetId} / ${widgetPresetId}`);
+      }
+
+      // 측정 hook 전용 우회: appendFriendlyWidgetPreset 은 사용자가 clearAll 직후
+      // 1.2s 안에 실수로 드롭하는 것을 막는 가드가 있다 (lastClearedAt). smoke 는
+      // clearAll → 즉시 append 순서로 돌므로 가드를 리셋해 결정적으로 만든다.
+      useWorkspaceStore.setState({ lastClearedAt: 0 });
+
+      const containerId = appendFriendlyWidgetPreset(
+        containerPreset,
+        { left: 32, top: 32 },
+        { mode: 'absolute' },
+      );
+      const widgetId = appendFriendlyWidgetPreset(
+        widgetPreset,
+        { left: 48, top: 48 },
+        {
+          mode,
+          containerBlockId: mode === 'flow' ? containerId : null,
+        },
+      );
+      const emitOut = emitAll({
+        html: adapter.getWorkspace('html'),
+        css: adapter.getWorkspace('css'),
+        i18n: adapter.getWorkspace('i18n'),
+      });
+      store.setEmitCache({
+        html: emitOut.html,
+        css: emitOut.css,
+        i18n: emitOut.i18n,
+      });
+      store.setEmitWarnings(emitOut.warnings);
+
+      const widgetSnapshot = widgetId
+        ? adapter.listAllBlocks('html').find((block) => block.id === widgetId)
+        : null;
+      const widgetTag = widgetId ? findBlockOpeningTag(emitOut.html, widgetId) : '';
+      const nested = Boolean(widgetSnapshot && widgetSnapshot.depth > 0);
+      return {
+        containerId,
+        widgetId,
+        nested,
+        widgetStyle: widgetId ? adapter.getBlockField('html', widgetId, 'STYLE') : null,
+        htmlContainsNestedWidget: nested,
+        htmlHasAbsoluteWidget: /(?:^|;)\s*position\s*:\s*absolute/i.test(widgetTag),
+        htmlLen: emitOut.html.length,
+        cssLen: emitOut.css.length,
+        i18nLen: emitOut.i18n.length,
+        warnings: emitOut.warnings.length,
       };
     },
 
@@ -358,7 +461,7 @@ function buildHook(): PerfHook {
       const longtasks = tracker.stop();
       const longtasksMs = longtasks.reduce((s, e) => s + e.duration, 0);
       const blockCount = adapter.listAllBlocks(key).length;
-       
+
       console.log(
         `[perf] injectXml(${key}, before=${before}): total=${totalMs.toFixed(1)}ms ` +
           `(domParse=${domParseMs.toFixed(1)}, domToWorkspace=${domToWorkspaceMs.toFixed(1)}) ` +
@@ -401,7 +504,7 @@ function buildHook(): PerfHook {
       const longestLongtaskMs = longtasks.reduce((m, e) => Math.max(m, e.duration), 0);
       const blockCount = adapter.listAllBlocks(key).length;
       const chunkCount = Math.ceil(blockCount / Math.max(1, chunkSize)) || 0;
-       
+
       console.log(
         `[perf] injectXmlChunked(${key}, chunk=${chunkSize}): total=${totalMs.toFixed(1)}ms ` +
           `longtasks=${longtasksMs.toFixed(0)}ms (max=${longestLongtaskMs.toFixed(0)}ms) ` +
@@ -439,7 +542,7 @@ export function installPerfHook(): void {
   const w = window as unknown as { [HOOK_KEY]?: PerfHook };
   if (w[HOOK_KEY]) return;
   w[HOOK_KEY] = buildHook();
-   
+
   console.log(
     '[perf] window.__perfHook installed. localStorage.removeItem("__perfOn") + reload 로 비활성.',
   );
