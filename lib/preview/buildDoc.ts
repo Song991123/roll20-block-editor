@@ -516,6 +516,10 @@ script {
 }
 `;
 
+function styleSourceChunk(source: string, css: string): string {
+  return `\n/* r20-style-source:${source} */\n${css}\n`;
+}
+
 function jsonScriptText(value: string | undefined): string {
   return JSON.stringify(value ?? '')
     .replace(/</g, '\\u003c')
@@ -718,14 +722,14 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   // user CSS 가 마지막 source order 라 동일 specificity 셀렉터에선 사용자 우선.
   const darkMode = opts.darkMode === true;
   const css = [
-    roll20BaseShadowCss,
-    darkMode ? roll20DarkmodeShadowCss : '',
-    ROLL20_DIALOG_OPEN_CSS,
-    roll20BaselineCss,
-    runtimeCss,
-    layerFilterCss('.charsheet'),
-    prefixedCss,
-    ROLL20_PREVIEW_HIDDEN_CSS,
+    styleSourceChunk('roll20-base', roll20BaseShadowCss),
+    darkMode ? styleSourceChunk('roll20-darkmode', roll20DarkmodeShadowCss) : '',
+    styleSourceChunk('roll20-dialog-context', ROLL20_DIALOG_OPEN_CSS),
+    styleSourceChunk('roll20-baseline-fallback', roll20BaselineCss),
+    styleSourceChunk('app-preview-runtime', runtimeCss),
+    styleSourceChunk('app-layer-filter', layerFilterCss('.charsheet')),
+    styleSourceChunk('sheet-user-css', prefixedCss),
+    styleSourceChunk('preview-hidden-runtime', ROLL20_PREVIEW_HIDDEN_CSS),
   ].join('\n');
 
   const html = `

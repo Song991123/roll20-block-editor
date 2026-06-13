@@ -1,6 +1,6 @@
 # Script Index
 
-Date: 2026-06-12
+Date: 2026-06-14
 
 Run scripts from the project root unless noted otherwise.
 
@@ -16,6 +16,7 @@ Run scripts from the project root unless noted otherwise.
 | `node scripts/render_visual_fixture_doc.mjs` | Render prepared visual fixtures into standalone preview HTML. |
 | `node scripts/make_visual_diff_pages.mjs` | Build visual diff pages and diagnostics. |
 | `node scripts/make_cascade_leak_pages.mjs` | Build browser-computed CSS cascade diagnostic pages from rendered fixture HTML. |
+| `node scripts/live_shadow_cascade_smoke.mjs --out-dir ./out --report-dir reports/live-shadow-cascade [--only <fixtureId>]` | Live static app smoke for preview/edit Shadow DOM CSS winners after real browser import. Needs `corepack pnpm run build` first. |
 | `node scripts/serve_static_dir.mjs <root_dir> [port]` | Serve workspace-owned reports/fixtures over localhost for browser verification. |
 | `node scripts/run_selected_roundtrip.mjs` | Run selected Node-side roundtrip checks. |
 | `node scripts/edit_flow_browser_smoke.mjs --out-dir ./out --report-dir reports/edit-flow-smoke` | Headless-browser smoke for the flow drop slice: perf-hook append paths plus real dragover/drop DragEvents on the edit canvas. Needs `corepack pnpm run build` first and a playwright chromium-headless-shell install. |

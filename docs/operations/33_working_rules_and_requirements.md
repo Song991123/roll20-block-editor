@@ -13,12 +13,13 @@ Every agent must do this before changing code or claiming status. `AGENTS.md` is
 3. Read `docs/qa/31_active_todo.md`.
 4. Read `docs/qa/34_requirements_gap_matrix.md`.
 5. Read `docs/PROJECT_STRUCTURE.md`.
-6. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-7. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
-8. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-9. Check `git status --short --branch`.
-10. Check for unnecessary local dev servers before starting another one.
-11. Update `docs/qa/31_active_todo.md` after each coherent work batch.
+6. Read `docs/operations/35_agent_progress_log.md`.
+7. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+8. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
+9. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+10. Check `git status --short --branch`.
+11. Check for unnecessary local dev servers before starting another one.
+12. Update `docs/qa/31_active_todo.md` after each coherent work batch.
 
 ## 0.1 Source Safety
 
@@ -82,6 +83,7 @@ For preview/parity work, also run the relevant fixture/report script and record 
 - Run basic verification such as lint, build, browser load, and fixture scripts.
 - Keep unverified items in TODO. Do not silently promote them to done.
 - Do not put agent-only instructions into README files. README files are reserved for human/project presentation and documentation indexes.
+- Keep agent-facing progress and handoff notes in `docs/operations/35_agent_progress_log.md`, not in `README.md`.
 
 ## 2. Sheet Preview Verification
 

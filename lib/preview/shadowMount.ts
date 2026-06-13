@@ -144,6 +144,33 @@ export interface ShadowMountResult {
   updateBlock: (blockId: string, newOuterHtml: string) => boolean;
 }
 
+function appendStyleElement(shadow: ShadowRoot, css: string, source: string): void {
+  const styleEl = document.createElement('style');
+  styleEl.setAttribute('data-r20-style-source', source);
+  styleEl.textContent = css;
+  shadow.appendChild(styleEl);
+}
+
+function appendSourceMarkedStyles(shadow: ShadowRoot, css: string): void {
+  const marker = /\/\*\s*r20-style-source:([a-z0-9_-]+)\s*\*\//gi;
+  let lastIndex = 0;
+  let currentSource = 'shadow-combined';
+  let found = false;
+  let match: RegExpExecArray | null;
+
+  while ((match = marker.exec(css)) !== null) {
+    const chunk = css.slice(lastIndex, match.index);
+    if (chunk.trim()) appendStyleElement(shadow, chunk, currentSource);
+    currentSource = match[1] ?? 'shadow-combined';
+    lastIndex = marker.lastIndex;
+    found = true;
+  }
+
+  const tail = css.slice(lastIndex);
+  if (tail.trim()) appendStyleElement(shadow, tail, currentSource);
+  if (!found && !tail.trim()) appendStyleElement(shadow, css, 'shadow-combined');
+}
+
 /**
  * host element 의 Shadow Root 에 user 시트를 박는다.
  *
@@ -163,12 +190,11 @@ export function mountSheetShadow(
   // reset
   shadow.innerHTML = '';
 
-  const styleEl = document.createElement('style');
   // :host reset — outer page CSS 가 새지 않게.
   // contain: layout style — Shadow 안 reflow 가 outer 에 안 새도록.
   // .r20-selected — Phase B 선택 outline (orange #f60 + 2px offset).
   // .r20-dragging — Phase C drag 중 cursor: grabbing + 약한 opacity 로 시각 피드백.
-  styleEl.textContent = `
+  appendStyleElement(shadow, `
 :host {
   /* all: initial — outer page 의 Tailwind / shadcn / global utility 룰이
      host 자체에 박는 색/폰트/박스 모델 등 모든 상속 가능 속성을 reset.
@@ -239,9 +265,8 @@ export function mountSheetShadow(
   background: rgba(22, 163, 74, 0.06);
   cursor: text !important;
 }
-${opts.css}
-`;
-  shadow.appendChild(styleEl);
+`, 'edit-shadow-host-reset');
+  appendSourceMarkedStyles(shadow, opts.css);
 
   // spec 25 + isolation fix — wrapper 를 <body class="charsheet"> 로 만들어
   // Roll20 base.css 의 body{} 룰이 정상 매칭되도록. createElement('body') 는

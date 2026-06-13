@@ -9,11 +9,12 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 3. Read `docs/qa/31_active_todo.md`.
 4. Read `docs/qa/34_requirements_gap_matrix.md`.
 5. Read `docs/PROJECT_STRUCTURE.md`.
-6. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-7. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
-8. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-9. Run `git status --short --branch`.
-10. Check for unnecessary local dev servers before starting another one.
+6. Read `docs/operations/35_agent_progress_log.md`.
+7. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+8. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
+9. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+10. Run `git status --short --branch`.
+11. Check for unnecessary local dev servers before starting another one.
 
 ## Non-Negotiable Rules
 
@@ -23,6 +24,7 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Keep unverified work as `TODO`, `VERIFY`, or `BLOCKED`.
 - Do not mark visual parity, full import/export, or all-sheet support as complete without exact current evidence.
 - Do not put agent-only instructions into README files. README files are human/project presentation material.
+- Record agent-facing progress in `docs/operations/35_agent_progress_log.md` and task status in `docs/qa/31_active_todo.md`, not in `README.md`.
 
 ## Protected Source Folders
 

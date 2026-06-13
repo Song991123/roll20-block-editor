@@ -20,6 +20,8 @@
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import { importSheet as importPipeline } from '@/lib/import';
 import { emitAll } from '@/lib/preview/emit';
+import { usePreviewStore, type PreviewRenderMode } from '@/lib/stores/previewStore';
+import { useUiStore, type MainMode } from '@/lib/stores/uiStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
 import {
@@ -88,6 +90,8 @@ export interface PerfHook {
   measure: <T>(label: string, fn: () => T | Promise<T>) => Promise<PerfMeasure & { value: T }>;
   /** 영시영 / 다른 시트 raw HTML/CSS/i18n 을 generic pipeline 으로 import 후 hydrate. */
   importSheet: (input: { html: string; css?: string; i18n?: string }) => Promise<PerfImportResult>;
+  setMainMode: (mode: MainMode) => void;
+  setPreviewRenderMode: (mode: PreviewRenderMode) => void;
   appendFriendlyWidgetForEditSmoke: (input?: {
     containerPresetId?: string;
     widgetPresetId?: string;
@@ -332,6 +336,14 @@ function buildHook(): PerfHook {
         heapBeforeMb,
         heapAfterMb,
       };
+    },
+
+    setMainMode: (mode) => {
+      useUiStore.getState().setMainMode(mode);
+    },
+
+    setPreviewRenderMode: (mode) => {
+      usePreviewStore.getState().setRenderMode(mode);
     },
 
     appendFriendlyWidgetForEditSmoke: ({

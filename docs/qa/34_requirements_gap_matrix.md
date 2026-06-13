@@ -16,9 +16,9 @@ This matrix breaks the operating requirements into actionable work. Use it with 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
 | VERIFY | P0 | Shared preview/edit render path. | `buildSheetDoc` and `buildSheetParts` share baseline/runtime/layer CSS; edit uses Shadow DOM mount. | Import real sheets and compare preview/edit screenshots. |
-| VERIFY | P0 | Computed CSS cascade leak report. | Standalone `buildSheetDoc` report exists at `reports/cascade-leak/cascade-leak-results.md`; 3 fixtures measured in browser and found 0 app-like final winners in sampled visible sheet elements. | Extend the same diagnostic to the live Next.js edit Shadow DOM after importing a fixture. |
+| VERIFY | P0 | Computed CSS cascade leak report. | Standalone `buildSheetDoc` report (`reports/cascade-leak/cascade-leak-results.md`) and live static app Shadow DOM report (`reports/live-shadow-cascade/live-shadow-cascade-results.md`) both found 0 app-like final winners in sampled visible sheet elements across 3 fixtures. | Keep as VERIFY until preview/edit screenshot comparison and asset parity are normalized. |
 | TODO | P0 | Actual Roll20 visual comparison. | Roll20 authenticated/manual comparison not recorded in current report. | Compare real Roll20 editor/sandbox with service render for selected sheets. |
-| DOING | P0 | Reference-image pixel diff pipeline. | Inventory/render/diff reports exist; viewport/crop/default state are not normalized. | Normalize viewport/state/crop and expand fixture set. |
+| DOING | P0 | Reference-image pixel diff pipeline. | Inventory/render/diff reports exist; viewport/crop/default state are not normalized. Live cascade smoke also recorded external imgur 403s for AW2E/YSHY fixture assets. | Normalize viewport/state/crop, classify/cache external image assets, and expand fixture set. |
 | TODO | P1 | Legacy mode verification. | Auto-prefix and legacy CSS sanitize are separated in reports; true legacy sanitizer not implemented. | Add explicit preview/export legacy mode checks. |
 
 ## Import/Export and Runtime
