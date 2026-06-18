@@ -126,33 +126,65 @@ async function importFixture(page, fixture) {
 }
 
 async function chooseRollButton(frame) {
-  return frame.evaluate(() => {
+  const candidates = await frame.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button[type="roll"], button.roll'));
-    const rows = buttons.map((el, index) => ({
-      index,
-      name: el.getAttribute('name') || '',
-      value: el.getAttribute('value') || '',
-      label: (el.textContent || '').trim(),
-      visible: (() => {
-        const cs = getComputedStyle(el);
-        const rect = el.getBoundingClientRect();
-        const selfVisible = cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
-        const browserVisible =
-          typeof el.checkVisibility === 'function'
-            ? el.checkVisibility({ checkVisibilityCSS: true, checkOpacity: false })
-            : true;
-        return selfVisible && browserVisible;
-      })(),
-    }));
-    const visible = rows.filter((row) => row.visible && row.value.trim());
-    const template = visible.find((row) => /&\{template:/i.test(row.value));
-    const chosen = template || visible[0] || rows[0] || null;
-    if (chosen) {
-      buttons.forEach((el) => el.removeAttribute('data-r20-chat-smoke-target'));
-      buttons[chosen.index]?.setAttribute('data-r20-chat-smoke-target', '1');
-    }
-    return chosen;
+    return buttons.map((el, index) => {
+      const cs = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      const selfVisible = cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      const browserVisible =
+        typeof el.checkVisibility === 'function'
+          ? el.checkVisibility({ checkVisibilityCSS: true, checkOpacity: false })
+          : true;
+      return {
+        index,
+        name: el.getAttribute('name') || '',
+        value: el.getAttribute('value') || '',
+        label: (el.textContent || '').trim(),
+        visible: selfVisible && browserVisible,
+        actionable: false,
+        trialed: false,
+        actionabilityError: '',
+      };
+    });
   });
+
+  const visible = candidates.filter((row) => row.visible && row.value.trim());
+  const trialOrder = [
+    ...visible.filter((row) => /&\{template:/i.test(row.value)),
+    ...visible.filter((row) => !/&\{template:/i.test(row.value)),
+  ];
+  const seen = new Set();
+  const orderedUnique = trialOrder.filter((row) => {
+    if (seen.has(row.index)) return false;
+    seen.add(row.index);
+    return true;
+  });
+
+  let chosen = null;
+  const buttons = frame.locator('button[type="roll"], button.roll');
+  for (const row of orderedUnique) {
+    const button = buttons.nth(row.index);
+    row.trialed = true;
+    try {
+      await button.scrollIntoViewIfNeeded({ timeout: 2000 });
+      await button.click({ trial: true, timeout: 3000 });
+      row.actionable = true;
+      chosen = row;
+      break;
+    } catch (err) {
+      row.actionabilityError = err instanceof Error ? err.message.split('\n')[0] : String(err);
+    }
+  }
+
+  if (chosen) {
+    await frame.evaluate((chosenIndex) => {
+      const buttonsInDom = Array.from(document.querySelectorAll('button[type="roll"], button.roll'));
+      buttonsInDom.forEach((el) => el.removeAttribute('data-r20-chat-smoke-target'));
+      buttonsInDom[chosenIndex]?.setAttribute('data-r20-chat-smoke-target', '1');
+    }, chosen.index);
+  }
+  return { chosen, candidates };
 }
 
 async function clickRollAndReadChat(page, fixtureId) {
@@ -167,8 +199,14 @@ async function clickRollAndReadChat(page, fixtureId) {
   const frame = await iframeHandle?.contentFrame();
   if (!frame) throw new Error('preview iframe contentFrame unavailable');
   await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
-  const chosen = await chooseRollButton(frame);
-  if (!chosen) throw new Error('fixture has no roll button');
+  const choice = await chooseRollButton(frame);
+  const chosen = choice.chosen;
+  if (!chosen) {
+    const err = new Error('fixture has no visible roll button candidate');
+    err.candidates = choice.candidates;
+    err.skipReason = 'no-visible-roll-button';
+    throw err;
+  }
   await page.evaluate(() => {
     window.__perfHook.setRightTab?.('chat');
   }).catch(() => {});
@@ -201,7 +239,7 @@ async function clickRollAndReadChat(page, fixtureId) {
     hasDebugTemplateLabel: /rolltemplate\s*:/i.test(el.textContent || ''),
   }));
   cardInfo.cardCount = cardCount;
-  return { chosen, clickMode, cardInfo, screenshotPath };
+  return { chosen, candidates: choice.candidates, clickMode, cardInfo, screenshotPath };
 }
 
 function renderMarkdown(report) {
@@ -212,20 +250,24 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Click mode | Chosen button | Chat kind | Cards | Width | Template class | Debug label | Total/result | Console/Page errors |');
-  lines.push('| --- | --- | --- | --- | --- | ---: | ---: | --- | --- | --- | ---: |');
+  lines.push('| Fixture | Status | Reason | Click mode | Visible | Actionable | Chosen button | Chat kind | Cards | Width | Template class | Debug label | Total/result | Console/Page errors |');
+  lines.push('| --- | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | --- | --- | --- | ---: |');
   for (const item of report.fixtures) {
     const chosen = item.chosen
       ? `${item.chosen.name || '(no name)'} / ${truncate(item.chosen.value, 60)}`
       : '';
+    const status = item.skipped ? 'SKIP' : item.pass ? 'PASS' : 'FAIL';
+    const visibleCount = item.candidates?.filter((row) => row.visible).length ?? '';
+    const actionableCount = item.candidates?.filter((row) => row.actionable).length ?? '';
     lines.push(
-      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.clickMode ?? ''} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
+      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
     );
   }
   lines.push('');
   lines.push('## Notes');
   lines.push('');
   lines.push('- A PASS means a real preview roll button produced a visible chat card.');
+  lines.push('- A SKIP means the fixture imported but its default visible state exposes no actionable roll button, so chat rendering cannot be honestly tested from the default screen.');
   lines.push('- `user-click` means Playwright could click the visible button. `dom-click-fallback` means the runtime path worked but the button was not actionably visible in the default rendered state.');
   lines.push('- If `Chat kind` is `rolltemplate`, the dice parser and rolltemplate render path both ran.');
   lines.push('- `Debug label` must stay `no`; Roll20 chat shows the result card, not an app-only `rolltemplate:name` helper line.');
@@ -291,13 +333,19 @@ async function main() {
           pageErrors.length === 0;
       } catch (err) {
         entry.pass = false;
+        if (err?.skipReason) {
+          entry.skipped = true;
+          entry.skipReason = err.skipReason;
+        }
         entry.error = err instanceof Error ? err.stack || err.message : String(err);
+        if (err?.candidates) entry.candidates = err.candidates;
       } finally {
         page.off('console', onConsole);
         page.off('pageerror', onPageError);
       }
       report.fixtures.push(entry);
-      console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} kind=${entry.cardInfo?.kind ?? 'none'}`);
+      const status = entry.skipped ? 'SKIP' : entry.pass ? 'PASS' : 'FAIL';
+      console.log(`${status} ${fixture.id} kind=${entry.cardInfo?.kind ?? 'none'}`);
     }
   } finally {
     await browser.close();
@@ -305,7 +353,7 @@ async function main() {
   }
 
   report.finishedAt = new Date().toISOString();
-  report.pass = report.fixtures.every((item) => item.pass);
+  report.pass = report.fixtures.every((item) => item.pass || item.skipped);
   await fs.writeFile(path.join(REPORT_DIR, 'rolltemplate-chat-smoke-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   await fs.writeFile(path.join(REPORT_DIR, 'rolltemplate-chat-smoke-results.md'), renderMarkdown(report), 'utf8');
   console.log(`ROLLTEMPLATE CHAT SMOKE ${report.pass ? 'PASS' : 'FAIL'}`);

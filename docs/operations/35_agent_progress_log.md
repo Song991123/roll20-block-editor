@@ -101,7 +101,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest local ignored report: `reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.md` PASS for AW2E, Les-Oublies, and YSHY 1BU.
 - Follow-up hardening removed the visible app-only `rolltemplate:name` helper line, constrains rolltemplate chat cards to 280px, and clears simulated chat between fixtures so screenshots/results cannot accidentally reuse a prior fixture's card.
 - Current smoke checks each fixture has exactly 1 resulting chat card, `Debug label=no`, and rolltemplate card width 280px.
-- Click-mode evidence: AW2E and YSHY used `user-click`; Les-Oublies required `dom-click-fallback`, so its default visible/actionable state remains a follow-up.
+- Click-mode evidence: AW2E and YSHY used `user-click`; Les-Oublies is now SKIP because the default render has 40 roll buttons in DOM but 0 visible/actionable buttons.
+- The old `dom-click-fallback` path was removed from the proof claim for Les-Oublies because it clicked hidden DOM rather than what a user can actually click.
 - Scope note: this proves the local app's roll button bridge, dice/rolltemplate parser path, and ChatPane render path for selected fixtures only. It does not prove actual Roll20 chat parity, worker parity, or all-sheet support.
 
 ## Reporting Guardrails
