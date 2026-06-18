@@ -173,6 +173,30 @@ function summarizeRenderDiagnostics(sheetEl) {
   };
 }
 
+function summarizeEditCanvasLayout() {
+  const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+  const shadow = host?.shadowRoot;
+  const root = shadow?.querySelector('#charsheet-root');
+  if (!host || !root) return { status: 'missing' };
+  const hostRect = host.getBoundingClientRect();
+  const rootRect = root.getBoundingClientRect();
+  let contentHeight = Math.max(root.scrollHeight, root.offsetHeight, Math.ceil(rootRect.height));
+  root.querySelectorAll('*').forEach((el) => {
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0 && rect.height <= 0) return;
+    contentHeight = Math.max(contentHeight, Math.ceil(rect.bottom - rootRect.top + root.scrollTop));
+  });
+  return {
+    status: 'ok',
+    hostHeight: Math.round(hostRect.height),
+    rootHeight: Math.round(rootRect.height),
+    contentHeight,
+    hostContentDelta: Math.round(hostRect.height - contentHeight),
+  };
+}
+
 function summarizeResourceIssue(kind, request, response = null) {
   const url = request.url();
   let host = '';
@@ -303,12 +327,31 @@ async function captureEdit(page, fixtureId) {
   }, null, { timeout: 30000 });
   const sheet = page.locator('[data-testid="edit-canvas-shadow-host"] #charsheet-root').first();
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-edit.png`);
+  await page.waitForFunction(() => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const shadow = host?.shadowRoot;
+    const root = shadow?.querySelector('#charsheet-root');
+    if (!host || !root) return false;
+    const hostRect = host.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    let contentHeight = Math.max(root.scrollHeight, root.offsetHeight, Math.ceil(rootRect.height));
+    root.querySelectorAll('*').forEach((el) => {
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') return;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 && rect.height <= 0) return;
+      contentHeight = Math.max(contentHeight, Math.ceil(rect.bottom - rootRect.top + root.scrollTop));
+    });
+    const delta = Math.round(hostRect.height - contentHeight);
+    return hostRect.height >= contentHeight && Math.abs(delta) <= 24;
+  }, null, { timeout: 30000 });
   const box = await sheet.boundingBox();
   const dom = await sheet.evaluate(summarizeSheetElement);
   const diagnostics = await sheet.evaluate(summarizeRenderDiagnostics);
   const appOcclusion = await collectAppOcclusion(page, box);
+  const layout = await page.evaluate(summarizeEditCanvasLayout);
   await withHiddenAppChrome(page, () => sheet.screenshot({ path: output }));
-  return { path: output, box, dom, diagnostics, appOcclusion };
+  return { path: output, box, dom, diagnostics, appOcclusion, layout };
 }
 
 async function diffPngs(page, previewPath, editPath) {
@@ -449,11 +492,15 @@ async function main() {
       entry.editDom = entry.editCapture.dom;
       entry.editDiagnostics = entry.editCapture.diagnostics;
       entry.editAppOcclusion = entry.editCapture.appOcclusion;
+      entry.editLayout = entry.editCapture.layout;
       entry.diff = await diffPngs(page, entry.previewCapture.path, entry.editCapture.path);
       entry.pass =
         entry.import?.blockCount > 0 &&
         entry.previewDom.status === 'ok' &&
         entry.editDom.status === 'ok' &&
+        entry.editLayout?.status === 'ok' &&
+        entry.editLayout.hostHeight >= entry.editLayout.contentHeight &&
+        Math.abs(entry.editLayout.hostContentDelta) <= 24 &&
         consoleErrors.length === 0 &&
         pageErrors.length === 0;
     } catch (err) {
@@ -512,6 +559,15 @@ function renderMarkdown(report) {
   lines.push(`- Browser viewport for capture: ${VIEWPORT.width}x${VIEWPORT.height}.`);
   lines.push('- Screenshots are local-only and ignored by Git.');
   lines.push('- App chrome is hidden only during root screenshots; toolbar overlap is still measured separately.');
+  lines.push('');
+  lines.push('## Edit Canvas Height Diagnostics');
+  lines.push('');
+  lines.push('| Fixture | Host height | Root height | Content height | Host-content delta |');
+  lines.push('| --- | ---: | ---: | ---: | ---: |');
+  for (const item of report.fixtures) {
+    const l = item.editLayout ?? {};
+    lines.push(`| \`${item.id}\` | ${l.hostHeight ?? ''} | ${l.rootHeight ?? ''} | ${l.contentHeight ?? ''} | ${l.hostContentDelta ?? ''} |`);
+  }
   lines.push('');
   lines.push('## Render Diagnostics');
   lines.push('');

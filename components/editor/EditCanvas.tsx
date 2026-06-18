@@ -18,7 +18,6 @@ import {
   appendFriendlyWidgetPreset,
   decodeFriendlyWidgetDrag,
 } from '@/lib/widgets/presets';
-import PreviewToolbar from './PreviewToolbar';
 
 const WORKSPACE_ORDER: WorkspaceKey[] = ['html', 'css', 'i18n'];
 type LayerDropMode = 'before' | 'inside' | 'after';
@@ -102,6 +101,7 @@ export default function EditCanvas() {
   const darkMode = usePreviewStore((s) => s.darkMode);
   const [lastMove, setLastMove] = useState<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [editCanvasHeight, setEditCanvasHeight] = useState(900);
   const [optimisticMoves, setOptimisticMoves] = useState<Record<string, OptimisticMove>>({});
   const [layerSearch, setLayerSearch] = useState('');
 
@@ -374,6 +374,23 @@ export default function EditCanvas() {
 
     setShadowSelectedRef.current = mounted.setSelected;
     const shadowBody = mounted.shadow.querySelector<HTMLElement>('body[data-r20-shadow-body], body.charsheet');
+    const shadowRootEl = mounted.shadow.querySelector<HTMLElement>('#charsheet-root');
+    const updateCanvasHeight = () => {
+      const nextHeight = measureShadowSheetHeight(mounted.shadow);
+      setEditCanvasHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
+    };
+    updateCanvasHeight();
+    const resizeObserver = new ResizeObserver(updateCanvasHeight);
+    if (shadowRootEl) resizeObserver.observe(shadowRootEl);
+    const mutationObserver = new MutationObserver(updateCanvasHeight);
+    if (shadowRootEl) {
+      mutationObserver.observe(shadowRootEl, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        attributeFilter: ['class', 'style', 'hidden', 'value', 'checked'],
+      });
+    }
     host.addEventListener('dragover', handleNativeDragOver);
     host.addEventListener('drop', handleNativeDrop);
     host.addEventListener('dragleave', handleNativeDragLeave);
@@ -392,6 +409,8 @@ export default function EditCanvas() {
       host.removeEventListener('dragover', handleNativeDragOver);
       host.removeEventListener('drop', handleNativeDrop);
       host.removeEventListener('dragleave', handleNativeDragLeave);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
       mounted.shadow.removeEventListener('dragover', handleNativeDragOver);
       mounted.shadow.removeEventListener('drop', handleNativeDrop);
       mounted.shadow.removeEventListener('dragleave', handleNativeDragLeave);
@@ -513,14 +532,14 @@ export default function EditCanvas() {
               className="mx-auto"
               style={{
                 width: `${sheetCanvasWidth * scale}px`,
-                minHeight: `${Math.max(600, 900 * scale)}px`,
+                height: `${editCanvasHeight * scale}px`,
                 maxWidth: 'none',
               }}
             >
               <div
                 style={{
                   width: `${sheetCanvasWidth}px`,
-                  minHeight: '900px',
+                  height: `${editCanvasHeight}px`,
                   transform: `scale(${scale})`,
                   transformOrigin: 'top left',
                 }}
@@ -528,8 +547,8 @@ export default function EditCanvas() {
                 <div
                   ref={hostRef}
                   data-testid="edit-canvas-shadow-host"
-                  className="block min-h-[900px] overflow-visible bg-white"
-                  style={{ width: `${sheetCanvasWidth}px` }}
+                  className="block overflow-visible bg-white"
+                  style={{ width: `${sheetCanvasWidth}px`, height: `${editCanvasHeight}px` }}
                   onDragOver={onDragOver}
                   onDrop={onDrop}
                 />
@@ -538,7 +557,6 @@ export default function EditCanvas() {
           )}
         </div>
       </div>
-      <PreviewToolbar />
     </div>
   );
 }
@@ -1223,6 +1241,25 @@ function getShadowBlockElement(host: HTMLElement, blockId: string): HTMLElement 
 function getHostScale(host: HTMLElement): number {
   const rect = host.getBoundingClientRect();
   return host.offsetWidth > 0 ? rect.width / host.offsetWidth : 1;
+}
+
+function measureShadowSheetHeight(shadow: ShadowRoot): number {
+  const root =
+    shadow.querySelector<HTMLElement>('#charsheet-root') ??
+    shadow.querySelector<HTMLElement>('body.charsheet') ??
+    shadow.querySelector<HTMLElement>('.charsheet');
+  if (!root) return 900;
+
+  const rootRect = root.getBoundingClientRect();
+  let maxBottom = Math.max(root.scrollHeight, root.offsetHeight, Math.ceil(rootRect.height));
+  root.querySelectorAll<HTMLElement>('*').forEach((el) => {
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0 && rect.height <= 0) return;
+    maxBottom = Math.max(maxBottom, Math.ceil(rect.bottom - rootRect.top + root.scrollTop));
+  });
+  return Math.max(120, Math.min(60000, maxBottom));
 }
 
 function measureBlockPosition(
