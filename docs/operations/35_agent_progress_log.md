@@ -387,3 +387,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added `scripts/roll20_preupload_verification.mjs` and package alias `corepack pnpm run verify:roll20-preupload`.
 - The gate runs payload hygiene, cleaned-payload visual roundtrip, default-state selector audit, asset/resource audit, and local evidence guard in order, then writes an ignored `preupload-verification-results.md/.json` under the actual-compare run folder.
 - Latest local ignored validation for `reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1` PASS. This means the 3 prepared payloads are locally upload-ready; it still does not prove Roll20 visual parity because actual sandbox screenshots are missing.
+
+## 2026-06-18 Export Dialog Roll20 Readiness UI Slice
+
+- Added a user-facing `Roll20 업로드 준비 상태` section to `components/editor/ExportDialog.tsx`.
+- The dialog now separates local zip composition readiness (`sheet.html`, `sheet.css`, `translation.json`, `sheet.json + README`) from actual Roll20 verification, which remains pending until a Custom Sheet Sandbox or new test room upload screenshot exists.
+- The section explicitly tells users to compare legacy sanitize ON/OFF zips in Sandbox for old sheets, and keeps existing real rooms observation-only.
+- Latest local validation:
+  - `corepack pnpm run lint`: PASS.
+  - `corepack pnpm run build`: PASS.
+  - `corepack pnpm run guard:roll20-evidence reports\roll20-actual-compare\2026-06-18-pseudo-fix-v1`: PASS.
+- Browser MCP reached `http://127.0.0.1:3000/` and confirmed the app title/header, but could not open the export dialog through role click, coordinate click, or DOM node click in this session. Treat this UI slice as code/build verified, but keep interactive modal verification open.
+- Scope note: this improves user-facing status clarity only. It does not upload to Roll20 and does not prove Roll20 visual parity.

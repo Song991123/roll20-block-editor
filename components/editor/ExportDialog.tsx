@@ -20,7 +20,14 @@
 
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { AlertTriangle, Info, ShieldAlert, FileArchive } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CircleDashed,
+  FileArchive,
+  Info,
+  ShieldAlert,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -82,6 +89,44 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     for (const w of combinedWarnings) c[w.severity] += 1;
     return c;
   }, [combinedWarnings]);
+
+  const uploadReadiness = useMemo(() => {
+    const htmlBytes = byteSize(emitCache.html);
+    const cssBytes = byteSize(emitCache.css);
+    const translationText = emitCache.i18n.trim();
+    const translationBytes = byteSize(translationText.length > 0 ? translationText : '{}');
+    return [
+      {
+        label: 'sheet.html',
+        detail: htmlBytes > 0 ? `${formatBytes(htmlBytes)} 준비됨` : '비어 있음',
+        ok: htmlBytes > 0,
+      },
+      {
+        label: 'sheet.css',
+        detail: cssBytes > 0 ? `${formatBytes(cssBytes)} 준비됨` : '비어 있음',
+        ok: cssBytes > 0,
+      },
+      {
+        label: 'translation.json',
+        detail:
+          translationText.length > 0
+            ? `${formatBytes(translationBytes)} 준비됨`
+            : '빈 번역은 {}로 내보냄',
+        ok: true,
+      },
+      {
+        label: 'sheet.json + README',
+        detail: '메타데이터와 등록 순서 포함',
+        ok: true,
+      },
+      {
+        label: 'Roll20 실제 검증',
+        detail: 'Sandbox나 테스트 방에 업로드한 뒤 화면 비교 필요',
+        ok: false,
+        pending: true,
+      },
+    ];
+  }, [emitCache]);
 
   async function handleDownload() {
     if (blocked) return;
@@ -260,6 +305,61 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               </div>
             )}
           </section>
+          <section
+            className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+            data-testid="export-roll20-readiness"
+          >
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium">Roll20 업로드 준비 상태</div>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  이 항목은 zip 구성 파일의 로컬 준비 여부입니다. 실제 Roll20 화면 일치 여부는 Sandbox나 테스트 방에 올려 캡처로 확인해야 합니다.
+                </p>
+              </div>
+              <span
+                className="shrink-0 rounded border border-amber-500/35 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200"
+                data-testid="export-roll20-verification-badge"
+              >
+                실제 검증 필요
+              </span>
+            </div>
+            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {uploadReadiness.map((item) => (
+                <li
+                  key={item.label}
+                  className="flex items-start gap-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[12px]"
+                  data-testid="export-roll20-readiness-item"
+                  data-state={item.pending ? 'pending' : item.ok ? 'ready' : 'missing'}
+                >
+                  {item.pending ? (
+                    <CircleDashed
+                      className="mt-[1px] h-4 w-4 shrink-0 text-amber-500"
+                      aria-hidden
+                    />
+                  ) : item.ok ? (
+                    <CheckCircle2
+                      className="mt-[1px] h-4 w-4 shrink-0 text-emerald-500"
+                      aria-hidden
+                    />
+                  ) : (
+                    <AlertTriangle
+                      className="mt-[1px] h-4 w-4 shrink-0 text-amber-500"
+                      aria-hidden
+                    />
+                  )}
+                  <span>
+                    <span className="font-medium">{item.label}</span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      {item.detail}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
+              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 따로 Sandbox에 올려 비교하세요. 기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은 Custom Sheet Sandbox 또는 새 테스트 방에서 진행합니다.
+            </div>
+          </section>
           {/* Stage 19 — 구버전 Roll20 sandbox 호환 모드 토글 (additive). */}
           <section
             className="rounded border border-border bg-[var(--bg-elevated)] p-3"
@@ -368,4 +468,13 @@ function severityLabelClass(s: EmitWarning['severity']): string {
   if (s === 'error') return 'font-semibold text-red-500';
   if (s === 'warning') return 'font-semibold text-amber-500';
   return 'font-semibold text-muted-foreground';
+}
+
+function byteSize(value: string): number {
+  return new TextEncoder().encode(value).length;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
 }
