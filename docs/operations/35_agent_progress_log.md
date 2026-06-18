@@ -1102,3 +1102,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `row-width +1/+2px` and `actual root width +1/+2px` do not remove the wrapping and do not improve mismatch.
 - Interpretation: the remaining issue is not a simple available-width off-by-one. The closest geometry candidate still loses on visual diff, so the next P0 is to inspect pixel mismatch areas/overlay for the geometry-best candidate and confirm whether the actual Roll20 screenshot state/crop/background differs before promoting any generic nowrap/native-input patch.
 - Claim boundary: no production renderer CSS changed in this slice. This only improves diagnostics and prevents a false "geometry fixed = visual parity" claim.
+
+## 2026-06-19 Full-Root Candidate Mismatch Distribution
+
+- Added vertical, horizontal, and decile mismatch distribution capture to `scripts/roll20_full_root_candidate_smoke.mjs`.
+- Latest command: `corepack pnpm run smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest Les-Oublies result:
+  - Pixel best `normal-actual-root-width-source`: mismatch `8.58%`, geometry score `1129.775`, root delta `375.375px`, dominant diff `top 12.35%`, `left 9.65%`, `d0 15.99%`.
+  - Geometry best `sandbox-nowrap-text-input-276-source`: mismatch `9.09%`, geometry score `8.606`, root delta `-0.656px`, dominant diff `top 13.07%`, `left 9.83%`, `d1 20.18%`.
+- Interpretation: the geometry-best candidate fixes root height and row 0/3 height but shifts or exposes a worse visual mismatch in the upper sheet region, especially vertical decile `d1`. Do not promote the diagnostic nowrap/native-input patch to production CSS yet.
+- Follow-up verification passed: `node --check scripts\roll20_full_root_candidate_smoke.mjs`, `corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run classify:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Claim boundary: this is still diagnostic only. AW2E/YSHY actual full-root screenshots are missing, and Les-Oublies still classifies as `sheet root geometry/height differs after full-height capture`.

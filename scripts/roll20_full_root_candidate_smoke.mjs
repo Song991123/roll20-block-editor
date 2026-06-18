@@ -528,6 +528,22 @@ async function compareImages(page, { localFile, actualFile, comparedSize }) {
       let mismatch = 0;
       let sumSq = 0;
       const bounds = { left: width, top: height, right: -1, bottom: -1 };
+      const verticalBands = [
+        { id: 'top', start: 0, end: Math.floor(height / 3), mismatch: 0, total: 0 },
+        { id: 'middle', start: Math.floor(height / 3), end: Math.floor((height * 2) / 3), mismatch: 0, total: 0 },
+        { id: 'bottom', start: Math.floor((height * 2) / 3), end: height, mismatch: 0, total: 0 },
+      ];
+      const horizontalBands = [
+        { id: 'left', start: 0, end: Math.floor(width / 2), mismatch: 0, total: 0 },
+        { id: 'right', start: Math.floor(width / 2), end: width, mismatch: 0, total: 0 },
+      ];
+      const deciles = Array.from({ length: 10 }, (_, index) => ({
+        id: `d${index}`,
+        start: Math.floor((height * index) / 10),
+        end: Math.floor((height * (index + 1)) / 10),
+        mismatch: 0,
+        total: 0,
+      }));
       for (let i = 0, p = 0; i < local.data.length; i += 4, p += 1) {
         const x = p % width;
         const y = Math.floor(p / width);
@@ -537,6 +553,9 @@ async function compareImages(page, { localFile, actualFile, comparedSize }) {
         const delta = dr + dg + db;
         const hit = delta > threshold;
         sumSq += dr * dr + dg * dg + db * db;
+        addBand(verticalBands, y, hit);
+        addBand(horizontalBands, x, hit);
+        addBand(deciles, y, hit);
         if (hit) {
           mismatch += 1;
           bounds.left = Math.min(bounds.left, x);
@@ -551,6 +570,22 @@ async function compareImages(page, { localFile, actualFile, comparedSize }) {
       }
       overlayCtx.putImageData(overlayData, 0, 0);
       const totalPixels = width * height;
+      function summarizeBands(bands) {
+        return bands.map((band) => ({
+          id: band.id,
+          start: band.start,
+          end: band.end,
+          mismatchPixels: band.mismatch,
+          totalPixels: band.total,
+          mismatchRatio: band.total > 0 ? Number((band.mismatch / band.total).toFixed(6)) : null,
+        }));
+      }
+      function dominantBand(bands) {
+        return summarizeBands(bands).reduce((best, band) => {
+          if (!best || (band.mismatchRatio ?? -1) > (best.mismatchRatio ?? -1)) return band;
+          return best;
+        }, null);
+      }
       return {
         comparedSize: { w: width, h: height },
         mismatchPixels: mismatch,
@@ -558,8 +593,22 @@ async function compareImages(page, { localFile, actualFile, comparedSize }) {
         mismatchRatio: Number((mismatch / totalPixels).toFixed(6)),
         rmsRgb: Number(Math.sqrt(sumSq / (totalPixels * 3)).toFixed(3)),
         bounds: mismatch ? [bounds.left, bounds.top, bounds.right - bounds.left + 1, bounds.bottom - bounds.top + 1] : null,
+        mismatchDistribution: {
+          verticalBands: summarizeBands(verticalBands),
+          horizontalBands: summarizeBands(horizontalBands),
+          deciles: summarizeBands(deciles),
+          dominantVerticalBand: dominantBand(verticalBands),
+          dominantHorizontalBand: dominantBand(horizontalBands),
+          dominantDecile: dominantBand(deciles),
+        },
         overlayDataUrl: overlay.toDataURL('image/png'),
       };
+      function addBand(bands, position, hit) {
+        const band = bands.find((item) => position >= item.start && position < item.end) ?? bands[bands.length - 1];
+        if (!band) return;
+        band.total += 1;
+        if (hit) band.mismatch += 1;
+      }
     },
     { localUrl, actualUrl, comparedSize, threshold },
   );
@@ -764,13 +813,13 @@ function renderMarkdown(report) {
       lines.push(`Existing app local-preview reference: ${pct(fixture.baselineReference.mismatchRatio)} at ${fmtSize(fixture.baselineReference.localSize)}.`);
     }
     lines.push('');
-    lines.push('| Candidate | Sandbox | State hint | Patch | Mismatch | Geometry score | Row0/Row3 delta | Root size | Height delta | Bounds | Screenshot | Overlay |');
-    lines.push('| --- | ---: | ---: | --- | ---: | ---: | --- | --- | ---: | --- | --- | --- |');
+    lines.push('| Candidate | Sandbox | State hint | Patch | Mismatch | Dominant diff | Geometry score | Row0/Row3 delta | Root size | Height delta | Bounds | Screenshot | Overlay |');
+    lines.push('| --- | ---: | ---: | --- | ---: | --- | ---: | --- | --- | ---: | --- | --- | --- |');
     for (const candidate of fixture.candidates) {
       const rowDeltas = candidate.geometryFit
         ? `${num(candidate.geometryFit.row0Delta)}/${num(candidate.geometryFit.row3Delta)}`
         : '';
-      lines.push(`| ${candidate.id} | ${candidate.roll20SandboxSanitize ? 'on' : 'off'} | ${candidate.applyStateHint ? 'on' : 'off'} | ${candidate.contextPatch ?? ''} | ${pct(candidate.mismatchRatio)} | ${num(candidate.geometryFit?.score)} | ${rowDeltas} | ${fmtSize(candidate.localSize)} | ${num(candidate.rootHeightDelta)} | ${Array.isArray(candidate.bounds) ? candidate.bounds.join(',') : ''} | \`${path.relative(runDir, candidate.screenshot)}\` | \`${path.relative(runDir, candidate.overlay)}\` |`);
+      lines.push(`| ${candidate.id} | ${candidate.roll20SandboxSanitize ? 'on' : 'off'} | ${candidate.applyStateHint ? 'on' : 'off'} | ${candidate.contextPatch ?? ''} | ${pct(candidate.mismatchRatio)} | ${fmtDominantDiff(candidate.mismatchDistribution)} | ${num(candidate.geometryFit?.score)} | ${rowDeltas} | ${fmtSize(candidate.localSize)} | ${num(candidate.rootHeightDelta)} | ${Array.isArray(candidate.bounds) ? candidate.bounds.join(',') : ''} | \`${path.relative(runDir, candidate.screenshot)}\` | \`${path.relative(runDir, candidate.overlay)}\` |`);
     }
     if (fixture.targetGeometry?.status === 'COMPARED') {
       lines.push('');
@@ -815,6 +864,18 @@ function fmtSize(size) {
   const w = size.w ?? size.width;
   const h = size.h ?? size.height;
   return w && h ? `${Math.round(w)}x${Math.round(h)}` : '';
+}
+
+function fmtDominantDiff(distribution) {
+  if (!distribution) return '';
+  const vertical = distribution.dominantVerticalBand;
+  const horizontal = distribution.dominantHorizontalBand;
+  const decile = distribution.dominantDecile;
+  return [
+    vertical ? `${vertical.id} ${pct(vertical.mismatchRatio)}` : null,
+    horizontal ? `${horizontal.id} ${pct(horizontal.mismatchRatio)}` : null,
+    decile ? `${decile.id} ${pct(decile.mismatchRatio)}` : null,
+  ].filter(Boolean).join('<br>');
 }
 
 function num(value) {

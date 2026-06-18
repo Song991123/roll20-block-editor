@@ -187,6 +187,17 @@ mismatch but with poor geometry score `1129.775`; geometry best is
 mismatch `9.09%`. This means the next P0 is not an off-by-one width patch. The
 geometry-best overlay/crop/state needs inspection before any generic nowrap or
 native-input CSS is promoted to production.
+2026-06-19 mismatch-distribution follow-up:
+`scripts/roll20_full_root_candidate_smoke.mjs` now records dominant vertical,
+horizontal, and decile diff regions per candidate. Latest Les-Oublies evidence:
+pixel best `normal-actual-root-width-source` has dominant diff `top 12.35%`,
+`left 9.65%`, `d0 15.99%`; geometry best
+`sandbox-nowrap-text-input-276-source` has dominant diff `top 13.07%`,
+`left 9.83%`, `d1 20.18%`. The geometry-best candidate fixes the root height
+but worsens the upper-sheet visual mismatch, so the next P0 is to inspect the
+top/d1 overlay and actual Roll20 screenshot state/background/crop before any
+production renderer CSS change. AW2E/YSHY still need actual full-root
+screenshots; this remains diagnostic only, not visual parity.
 Follow-up actual layout-context probe:
 Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
 ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.
