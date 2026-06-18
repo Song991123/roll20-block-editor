@@ -101,13 +101,16 @@ comparison, and root-relative computed-style samples. Les-Oublies now selects
 mismatch `21.49%` and native mismatch `21.55%`. This is not a material parity
 gain over `21.67%`; it proves width/context alone is not the fix. The best local
 candidate root width can match actual `852px`, but root height still differs
-(`4121.575px` actual vs `4963.266px` local). The strongest current clue is flow
-layout: the first `.sheet-2colrow` is `310.6px` high in actual Roll20 and
-`554px` locally, and `.sheet-col` evidence shows actual keeps the first columns
-side-by-side while local flow wraps/extends. Next P0 is to capture/compare a
-fresh actual iframe probe for `.sheet-2colrow`, `.sheet-col`, image natural
-sizes, and full-height/scroll-stitched root before changing generic renderer
-CSS.
+(`4121.575px` actual vs `4963.266px` local). The smoke now labels selector
+samples that came from older `visibleTop` fallback data instead of a selected
+live selector probe; `.sheet-2colrow`, `.sheet-col`, and `img` counts are
+therefore partial and must not be treated as exact Roll20 counts. A later
+read-only Chrome frameLocator check saw the generated Roll20 iframe expose
+`.sheet-2colrow=4` and `.sheet-col=15`, so the safe current clue is root
+height/geometry mismatch, not confirmed selector-count loss. Next P0 is to
+capture/compare a fresh actual iframe selected-selector probe for
+`.sheet-2colrow`, `.sheet-col`, image natural sizes, and full-height/
+scroll-stitched root before changing generic renderer CSS.
 
 | Status | Owner | Task | Evidence / Next Check |
 | --- | --- | --- | --- |

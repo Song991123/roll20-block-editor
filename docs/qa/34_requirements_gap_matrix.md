@@ -68,11 +68,14 @@ Les-Oublies best candidate is `sandbox-actual-root-width-no-state` with CSS
 mismatch `21.49%`, native mismatch `21.55%`, and style score `339`. The old
 `21.38%` value came from a less fair local DPR setup, so treat `21.49%` as the
 current same-context evidence. Actual-root-width matching lowers computed-style
-distance but not the image mismatch. The concrete remaining clue is flow/height:
-actual root height `4121.575px` vs local `4963.266px`, first `.sheet-2colrow`
-height `310.6px` actual vs `554px` local, and `.sheet-col` samples indicating
-Roll20 keeps the first columns side-by-side while local rendering wraps/extends
-the flow.
+distance but not the image mismatch. The concrete remaining clue is root
+height/geometry: actual root height `4121.575px` vs local `4963.266px`. The
+latest smoke labels `.sheet-2colrow`, `.sheet-col`, and `img` actual selector
+samples as `visibleTop-fallback (partial)`, so their counts are provisional and
+must not drive renderer changes by themselves. A later read-only Chrome
+frameLocator check saw the generated Roll20 iframe expose `.sheet-2colrow=4`
+and `.sheet-col=15`; next work needs a fresh selected-selector geometry probe
+and full-height/scroll-stitched root capture before generic CSS changes.
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |

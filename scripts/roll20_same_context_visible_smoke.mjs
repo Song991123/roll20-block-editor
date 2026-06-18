@@ -280,7 +280,9 @@ function scoreComputedStyleComparison(comparison) {
   let score = 0;
   score += (comparison.rootDiffs ?? []).length * 20;
   for (const diff of comparison.selectorDiffs ?? []) {
-    score += Math.abs(diff.countDelta ?? 0) * 10;
+    if (!diff.actualPartial && !diff.localPartial) {
+      score += Math.abs(diff.countDelta ?? 0) * 10;
+    }
     score += (diff.sampleDiffs ?? []).length;
   }
   return score;
@@ -683,6 +685,10 @@ function compareComputedStyles(actualProbe, localProbe) {
       actualCount: actualEntry.count ?? 0,
       localCount: localEntry?.count ?? 0,
       countDelta: (localEntry?.count ?? 0) - (actualEntry.count ?? 0),
+      actualSource: actualEntry.source ?? 'selected',
+      localSource: localEntry?.source ?? 'selected',
+      actualPartial: Boolean(actualEntry.partial),
+      localPartial: Boolean(localEntry?.partial),
       sampleDiffs: compareNodeStyle(actualSample, localSample, fields).slice(0, 12),
     });
   }
@@ -716,19 +722,19 @@ function normalizeSampleForSelector(sample, root, selector) {
 
 function findProbeSelectorEntry(probe, selector) {
   const direct = (probe.selected ?? []).find((entry) => entry.selector === selector);
-  if (direct) return direct;
+  if (direct) return { ...direct, source: direct.source ?? 'selected', partial: Boolean(direct.partial) };
   if (selector === 'img') {
     const samples = (probe.visibleTop ?? []).filter((entry) => entry.tag === 'IMG');
-    if (samples.length) return { selector, count: samples.length, samples };
+    if (samples.length) return { selector, count: samples.length, samples, source: 'visibleTop-fallback', partial: true };
   }
   if (selector.startsWith('.')) {
     const className = selector.slice(1);
     const samples = (probe.visibleTop ?? []).filter((entry) =>
       typeof entry.className === 'string' && entry.className.split(/\s+/).includes(className),
     );
-    if (samples.length) return { selector, count: samples.length, samples };
+    if (samples.length) return { selector, count: samples.length, samples, source: 'visibleTop-fallback', partial: true };
   }
-  return { selector, count: 0, samples: [] };
+  return { selector, count: 0, samples: [], source: 'missing', partial: false };
 }
 
 function compareNodeStyle(actualNode, localNode, fields) {
@@ -760,12 +766,20 @@ function buildComputedStyleNotes(rootDiffs, selectorDiffs, actualState, localSta
   const rootHeight = rootDiffs.find((diff) => diff.field === 'rect.height');
   if (rootWidth) notes.push(`root width differs actual=${rootWidth.actual} local=${rootWidth.local}`);
   if (rootHeight) notes.push(`root height differs actual=${rootHeight.actual} local=${rootHeight.local}`);
+  const partialSelectors = selectorDiffs
+    .filter((diff) => diff.actualPartial || diff.localPartial)
+    .map((diff) => diff.selector);
+  if (partialSelectors.length) {
+    notes.push(`selector counts are partial for ${partialSelectors.join(', ')}; refresh the live iframe selected-selector probe before renderer CSS changes`);
+  }
   if (actualState?.sheetTab !== localState?.sheetTab || actualState?.sheetTabForBtn !== localState?.sheetTabForBtn) {
     notes.push(`state differs actual=${JSON.stringify(actualState)} local=${JSON.stringify(localState)}`);
   }
   for (const selector of ['.sheet-fullsheet', '.sheet-combat', 'table', 'input']) {
     const diff = selectorDiffs.find((entry) => entry.selector === selector);
-    if (diff && diff.countDelta !== 0) notes.push(`${selector} count differs actual=${diff.actualCount} local=${diff.localCount}`);
+    if (diff && diff.countDelta !== 0 && !diff.actualPartial && !diff.localPartial) {
+      notes.push(`${selector} count differs actual=${diff.actualCount} local=${diff.localCount}`);
+    }
   }
   return notes;
 }
@@ -802,11 +816,13 @@ function renderMarkdown(report) {
       lines.push('');
       for (const note of fixture.computedStyleComparison.notable ?? []) lines.push(`- ${note}`);
       lines.push('');
-      lines.push('| Selector | Actual count | Local count | Sample diffs |');
-      lines.push('| --- | ---: | ---: | --- |');
+      lines.push('| Selector | Actual count | Local count | Actual source | Local source | Sample diffs |');
+      lines.push('| --- | ---: | ---: | --- | --- | --- |');
       for (const diff of (fixture.computedStyleComparison.selectorDiffs ?? []).slice(0, 18)) {
         const sample = (diff.sampleDiffs ?? []).slice(0, 5).map((item) => `${item.field}: ${item.actual} -> ${item.local}`).join('<br>');
-        lines.push(`| \`${diff.selector}\` | ${diff.actualCount} | ${diff.localCount} | ${sample} |`);
+        const actualSource = diff.actualPartial ? `${diff.actualSource} (partial)` : diff.actualSource;
+        const localSource = diff.localPartial ? `${diff.localSource} (partial)` : diff.localSource;
+        lines.push(`| \`${diff.selector}\` | ${diff.actualCount} | ${diff.localCount} | ${actualSource} | ${localSource} | ${sample} |`);
       }
       lines.push('');
     }

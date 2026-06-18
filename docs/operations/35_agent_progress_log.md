@@ -928,3 +928,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - Root width can match actual (`852px`), but root height still differs: actual `4121.575px` vs local `4963.266px`.
   - The strongest new clue is flow/height behavior: first `.sheet-2colrow` is `310.6px` high in actual Roll20 and `554px` locally; `.sheet-col` samples show actual keeps the first columns side-by-side while local rendering wraps/extends the flow.
 - Scope note: this is still not Roll20 visual parity. The next renderer decision should be based on a fresh live iframe probe/full-height capture that confirms whether the column wrapping is generic Roll20 context behavior, not a Les-Oublies-specific patch target.
+
+## 2026-06-19 Same-Context Probe Source Truthfulness Slice
+
+- Updated `scripts/roll20_same_context_visible_smoke.mjs` so computed-style selector entries record whether they came from a real selected-selector probe, a missing selector, or the older `visibleTop` fallback.
+- Partial fallback entries no longer contribute selector-count penalty to the computed-style tie-breaker, and the Markdown report now shows `Actual source` / `Local source`.
+- Latest command: `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result still selects Les-Oublies `sandbox-actual-root-width-no-state` with CSS mismatch `21.49%` and native mismatch `21.55%`, but `.sheet-2colrow`, `.sheet-col`, and `img` actual entries are now explicitly labeled `visibleTop-fallback (partial)`.
+- Correction for future agents: do not treat the fallback `.sheet-2colrow=1` / `.sheet-col=2` counts as Roll20 truth. A later read-only Chrome frameLocator check saw the generated Roll20 iframe expose `.sheet-2colrow=4` and `.sheet-col=15`. The remaining proven clue is root height/geometry mismatch; collect fresh selected-selector geometry and full-height/scroll-stitched root evidence before changing generic renderer CSS.
