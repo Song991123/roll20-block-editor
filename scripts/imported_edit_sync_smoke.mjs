@@ -362,6 +362,178 @@ async function runImportedLayerReorder(page) {
   });
 }
 
+async function runImportedNonLeafLayerReorder(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    null,
+    { timeout: 30000 },
+  );
+  return page.evaluate(async () => {
+    function emittedIndex(id) {
+      return window.__perfHook.getEmitContent().html.indexOf(`data-r20-block-id="${id}"`);
+    }
+
+    function isRuntime(node) {
+      return /script|worker|rolltemplate/i.test(node?.type || '');
+    }
+
+    function directChildIds(graph, parentId, nextSiblingId = null) {
+      return graph
+        .filter((node) => node.parentId === parentId)
+        .filter((node) => !nextSiblingId || node.id !== nextSiblingId)
+        .map((node) => node.id);
+    }
+
+    function describe(root, node, childIds) {
+      const el = root.querySelector(`[data-r20-block-id="${CSS.escape(node.id)}"]`);
+      const rect = el?.getBoundingClientRect();
+      return {
+        blockId: node.id,
+        type: node.type,
+        tag: el?.tagName.toLowerCase() || node.type,
+        role: el?.getAttribute('data-r20-layer-role') || '',
+        childIds,
+        childCount: childIds.length,
+        nestedCount: el?.querySelectorAll('[data-r20-block-id]').length ?? node.childCount,
+        text: String(el?.textContent || '').trim().slice(0, 60),
+        visible: Boolean(
+          el &&
+            rect &&
+            rect.width >= 4 &&
+            rect.height >= 4 &&
+            getComputedStyle(el).display !== 'none' &&
+            getComputedStyle(el).visibility !== 'hidden',
+        ),
+      };
+    }
+
+    function findCandidate() {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const root = host?.shadowRoot?.querySelector('#charsheet-root');
+      if (!root) return null;
+
+      const graph = window.__perfHook.getBlockGraph?.('html') || [];
+      const byId = new Map(graph.map((node) => [node.id, node]));
+      const siblingsOf = (node) => graph.filter((candidate) => candidate.parentId === node.parentId && candidate.depth === node.depth);
+
+      for (const movingNode of graph) {
+        if (movingNode.childCount <= 0 || isRuntime(movingNode)) continue;
+        const childIds = directChildIds(graph, movingNode.id, movingNode.nextId);
+        if (childIds.length === 0) continue;
+        const row = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(movingNode.id)}"]`);
+        if (!row) continue;
+
+        const nextTarget = byId.get(movingNode.nextId || '');
+        const previousTarget = byId.get(movingNode.previousId || '');
+        const targetOptions = [
+          { direction: 'after', targetNode: nextTarget },
+          { direction: 'before', targetNode: previousTarget },
+        ].filter((item) => item.targetNode && !isRuntime(item.targetNode));
+
+        for (const option of targetOptions) {
+          const targetRow = document.querySelector(
+            `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(option.targetNode.id)}"]`,
+          );
+          if (!targetRow) continue;
+          const moving = describe(root, movingNode, childIds);
+          const target = describe(root, option.targetNode, directChildIds(graph, option.targetNode.id, option.targetNode.nextId));
+          if (!moving.visible || !target.visible) continue;
+          return {
+            direction: option.direction,
+            parentBlockId: movingNode.parentId || 'workspace-root',
+            moving,
+            target,
+            siblingCount: siblingsOf(movingNode).length,
+            beforeOrder: siblingsOf(movingNode).map((node) => node.id),
+          };
+        }
+      }
+      return null;
+    }
+
+    const candidate = findCandidate();
+    if (!candidate) {
+      return {
+        pass: false,
+        skipped: true,
+        reason: 'no imported visible non-leaf sibling subtree found',
+      };
+    }
+
+    const targetRow = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(candidate.target.blockId)}"]`,
+    );
+    if (!targetRow) return { pass: false, skipped: false, candidate, reason: 'target layer row missing' };
+
+    const beforeGraph = window.__perfHook.getBlockGraph?.('html') || [];
+    const before = {
+      movingIndex: emittedIndex(candidate.moving.blockId),
+      targetIndex: emittedIndex(candidate.target.blockId),
+      childParentIds: Object.fromEntries(
+        candidate.moving.childIds.map((id) => [id, beforeGraph.find((node) => node.id === id)?.parentId ?? null]),
+      ),
+    };
+    const rect = targetRow.getBoundingClientRect();
+    const dt = new DataTransfer();
+    dt.setData('application/x-r20-layer-block', candidate.moving.blockId);
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      clientX: Math.round(rect.left + rect.width / 2),
+      clientY: Math.round(rect.top + rect.height * (candidate.direction === 'after' ? 0.9 : 0.1)),
+    };
+    const over = new DragEvent('dragover', init);
+    Object.defineProperty(over, 'dataTransfer', { value: dt });
+    targetRow.dispatchEvent(over);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const mode = targetRow.getAttribute('data-r20-layer-drop-mode') || '';
+    const drop = new DragEvent('drop', init);
+    Object.defineProperty(drop, 'dataTransfer', { value: dt });
+    targetRow.dispatchEvent(drop);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const afterGraph = window.__perfHook.getBlockGraph?.('html') || [];
+    const movingAfter = afterGraph.find((node) => node.id === candidate.moving.blockId);
+    const targetAfter = afterGraph.find((node) => node.id === candidate.target.blockId);
+    const after = {
+      movingIndex: emittedIndex(candidate.moving.blockId),
+      targetIndex: emittedIndex(candidate.target.blockId),
+      childParentIds: Object.fromEntries(
+        candidate.moving.childIds.map((id) => [id, afterGraph.find((node) => node.id === id)?.parentId ?? null]),
+      ),
+      movingAfter,
+      targetAfter,
+    };
+    const childParentsPreserved = candidate.moving.childIds.every((id) => after.childParentIds[id] === candidate.moving.blockId);
+    const movedAcrossTarget =
+      candidate.direction === 'after'
+        ? before.movingIndex < before.targetIndex && after.movingIndex > after.targetIndex
+        : before.movingIndex > before.targetIndex && after.movingIndex < after.targetIndex;
+    const pass =
+      drop.defaultPrevented &&
+      after.movingIndex >= 0 &&
+      after.targetIndex >= 0 &&
+      childParentsPreserved &&
+      movedAcrossTarget;
+    return {
+      pass,
+      skipped: false,
+      candidate,
+      mode,
+      before,
+      after,
+      childParentsPreserved,
+      movedAcrossTarget,
+      dropPrevented: drop.defaultPrevented,
+    };
+  });
+}
+
 async function runImportedCanvasInsert(page) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
@@ -1119,15 +1291,15 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Flow insert | Free insert | Layer reorder | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
-  lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
+  lines.push('| Fixture | Status | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
+  lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
   lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, a second widget dropped in user-facing free mode as nested absolute content, and the edited emit survived a re-import/emit cycle.');
-  lines.push('- Layer reorder is recorded when the imported Blockly graph exposes a safe adjacent leaf sibling pair. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
+  lines.push('- Layer reorder is recorded when the imported Blockly graph exposes a safe adjacent leaf sibling pair. Non-leaf layer reorder records the stronger group/subtree case when a visible imported container with direct children has a safe adjacent sibling. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
   lines.push('');
@@ -1164,6 +1336,19 @@ function fmtLayerReorder(item) {
   }
   return `FAIL: ${item.reason || item.mode || 'not reordered'}`;
 }
+
+function fmtNonLeafLayerReorder(item) {
+  if (!item) return 'missing';
+  if (item.skipped) return `SKIP: ${item.reason || 'no subtree'}`;
+  if (item.pass) {
+    const moving = item.candidate?.moving;
+    const target = item.candidate?.target;
+    const direction = item.candidate?.direction || item.mode || '';
+    return `${moving?.tag || ''} ${direction} ${target?.tag || ''} (${moving?.childCount ?? 0} children)`;
+  }
+  return `FAIL: ${item.reason || item.mode || 'subtree not moved'}`;
+}
+
 
 function fmtCanvasInsert(item) {
   if (!item) return 'missing';
@@ -1243,6 +1428,7 @@ async function main() {
         entry.import = await importFixture(page, fixture);
         await page.waitForTimeout(1300);
         entry.layerReorder = await runImportedLayerReorder(page);
+        entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page);
         entry.canvasInsert = await runImportedCanvasInsert(page);
         entry.freeInsert = await runImportedFreeCanvasInsert(page);
         entry.attempts = [];
@@ -1282,6 +1468,7 @@ async function main() {
           entry.canvasInsert?.pass === true &&
           entry.freeInsert?.pass === true &&
           (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true) &&
+          (entry.nonLeafLayerReorder?.pass === true || entry.nonLeafLayerReorder?.skipped === true) &&
           isStableReimport(entry.reimport);
       } catch (err) {
         entry.error = String(err?.stack || err).slice(0, 1200);
