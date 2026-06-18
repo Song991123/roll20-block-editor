@@ -236,9 +236,10 @@ export function emitAll(
   const i18n = emitWorkspace(workspaces.i18n ?? null, 'i18n');
   const worker = emitWorkspace(workspaces.worker ?? null, 'worker');
   const workerBody = normalizeWorkerBody(worker.code);
+  const htmlCode = stripWorkerScriptsFromHtml(html.code);
   const htmlWithWorker = workerBody
-    ? `${html.code}${html.code ? '\n' : ''}<script type="text/worker">\n${workerBody}\n</script>`
-    : html.code;
+    ? `${htmlCode}${htmlCode ? '\n' : ''}<script type="text/worker">\n${workerBody}\n</script>`
+    : htmlCode;
   return {
     html: htmlWithWorker,
     css: css.code,
@@ -276,6 +277,19 @@ function normalizeWorkerBody(code: string): string {
   const rest = trimmed.slice(last).trim();
   if (rest) pieces.push(rest);
   return pieces.filter(Boolean).join('\n');
+}
+
+function stripWorkerScriptsFromHtml(html: string): string {
+  if (!html) return '';
+  return html.replace(/<script\b([^>]*)>[\s\S]*?<\/script>/gi, (full, rawAttrs: string) => {
+    const type = getScriptType(rawAttrs);
+    return type === 'text/worker' || type === '' ? '' : full;
+  });
+}
+
+function getScriptType(rawAttrs: string): string {
+  const typeMatch = /\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>/]+))/i.exec(rawAttrs ?? '');
+  return String(typeMatch?.[1] ?? typeMatch?.[2] ?? typeMatch?.[3] ?? '').trim().toLowerCase();
 }
 
 /**

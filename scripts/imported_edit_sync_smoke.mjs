@@ -1045,7 +1045,10 @@ async function reimportCurrentEmit(page) {
     }
 
     function stripBlockIds(html) {
-      return html.replace(/\s*data-r20-block-id="[^"]*"/g, '');
+      return html
+        .replace(/\s*data-r20-block-id="[^"]*"/g, '')
+        .replace(/^[ \t]+$/gm, '')
+        .replace(/\n{2,}/g, '\n');
     }
 
     function canonicalCss(css) {

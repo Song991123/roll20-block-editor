@@ -18,7 +18,10 @@
 'use client';
 
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { moveImportedWorkerBlocksToWorkspace } from '@/lib/blockly/workerWorkspace';
+import {
+  moveImportedWorkerBlocksToWorkspace,
+  replaceWorkerWorkspaceFromSourceHtml,
+} from '@/lib/blockly/workerWorkspace';
 import { importSheet as importPipeline } from '@/lib/import';
 import { emitAll } from '@/lib/preview/emit';
 import { usePreviewStore, type PreviewRenderMode } from '@/lib/stores/previewStore';
@@ -343,6 +346,7 @@ function buildHook(): PerfHook {
       adapter.hydrateFromXml('worker', emptyXml);
       adapter.hydrateFromXml('html', result.html);
       const workerMove = moveImportedWorkerBlocksToWorkspace();
+      const workerSource = replaceWorkerWorkspaceFromSourceHtml(html);
       adapter.hydrateFromXml('css', css ? result.css : emptyXml);
       adapter.hydrateFromXml('i18n', i18n ? result.i18n : emptyXml);
       const injectEnd = nowMs();
@@ -390,7 +394,7 @@ function buildHook(): PerfHook {
         totalMs: emitEnd - t0,
         matchPct,
         blockCount,
-        workerBlockCount: workerMove.targetCount,
+        workerBlockCount: workerSource.replaced ? workerSource.targetCount : workerMove.targetCount,
         warnings: result.warnings.length,
         heapBeforeMb,
         heapAfterMb,

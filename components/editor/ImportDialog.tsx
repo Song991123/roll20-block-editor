@@ -28,7 +28,10 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { importSheet } from '@/lib/import';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { moveImportedWorkerBlocksToWorkspace } from '@/lib/blockly/workerWorkspace';
+import {
+  moveImportedWorkerBlocksToWorkspace,
+  replaceWorkerWorkspaceFromSourceHtml,
+} from '@/lib/blockly/workerWorkspace';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 
 export interface ImportDialogProps {
@@ -151,6 +154,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         },
       });
       const workerMove = moveImportedWorkerBlocksToWorkspace();
+      const workerSource = replaceWorkerWorkspaceFromSourceHtml(htmlText);
       adapter.hydrateFromXml('css', result.css);
       adapter.hydrateFromXml('i18n', result.i18n);
       arrangeImportedWorkspace('html');
@@ -182,7 +186,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         cssMatched: result.stats.cssMatched,
         cssTotal: result.stats.cssTotal,
         i18nKeys: result.stats.i18nKeys,
-        workerBlocks: workerMove.targetCount,
+        workerBlocks: workerSource.replaced ? workerSource.targetCount : workerMove.targetCount,
         warnings: result.warnings.length,
         sanitizeDropped: result.stats.sanitizeDropped,
       });
