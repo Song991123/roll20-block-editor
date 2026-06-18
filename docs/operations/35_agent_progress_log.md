@@ -999,3 +999,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Fresh read-only Chrome/CDP state visibility probe saved ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-state-visibility.json`.
 - Actual Roll20 facts from that probe: hidden `attr_sheetTab` and `attr_sheetTabForBtn` both have `value` attribute and property `combat`, but `.sheet-section-oublie`, `.sheet-section-competences`, `.sheet-section-montures`, and `.sheet-combat` are visible. Next P0 is to compare the actual CSS selectors controlling those visible sections against local preview, rather than treating hidden attr state as the whole truth.
 - Scope note: this is diagnostic groundwork. It does not prove visual parity and it does not justify a Les-Oublies-specific CSS patch.
+
+## 2026-06-19 Roll20 State Visibility Selector Diagnostic
+
+- Added `scripts/roll20_state_visibility_diagnostics.mjs` and package script `corepack pnpm run diagnose:roll20-state-visibility`.
+- Latest command: `corepack pnpm run diagnose:roll20-state-visibility -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result: `official-roll20-Les-Oublies` is classified as `ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`.
+- Evidence shape: actual hidden state inputs are `sheetTab=combat` and `sheetTabForBtn=combat`; actual Roll20 still shows 9 sampled panels/sections; actual CSSOM state rules use unprefixed anchors such as `.tabstoggle[...]`; generated HTML anchors are `sheet-tabstoggle` and `sheet-tabstoggleforbtn`; sampled top-level panels have 0 matched state rules.
+- Interpretation: the old local Roll20 Sandbox expected-render assumption that CSS selectors are blanket-prefixed is incomplete for the actual generated character iframe path. Local preview can therefore hide/show panels differently from actual Roll20.
+- Next P0: separate source-preserving preview from actual Roll20 expected-render behavior, revise the sandbox sanitize/prefix model with this evidence, then rerun full-root candidates, preview/edit visual smoke, and actual Roll20 diff classification.
+- Scope note: this is a root-cause diagnostic for one captured generated fixture. It is not Roll20 visual parity and not all-sheet proof.

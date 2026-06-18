@@ -205,6 +205,22 @@ geometry comparison before renderer CSS changes.
 
 ## Verified So Far
 
+## Latest State Visibility Diagnostic
+
+2026-06-19: `corepack pnpm run diagnose:roll20-state-visibility --
+reports\roll20-actual-compare\2026-06-18-state-map-v1` writes ignored evidence
+under `state-visibility-diagnostics/` and reports Les-Oublies as
+`ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`. The captured actual
+Roll20 iframe has hidden `sheetTab=combat` / `sheetTabForBtn=combat`, but still
+shows sampled character/skills/combat/equipment/journal panels. The actual CSSOM
+state rules use unprefixed anchors such as `.tabstoggle[...]`, while generated
+HTML anchors are `sheet-tabstoggle` / `sheet-tabstoggleforbtn`; sampled panels
+have 0 matched state rules. This is a P0 root-cause clue for local preview vs
+actual Roll20 state divergence, not visual parity. Next action: separate
+source-preserving local preview from actual Roll20 expected-render behavior and
+revise the sandbox sanitize/prefix model using this evidence, then rerun
+full-root candidate and preview/edit regression smokes.
+
 | Status | Scope | Evidence |
 | --- | --- | --- |
 | DONE | Full corpus static inventory | `reports/corpus-static-audit/corpus-static-audit.md`; 1434 sheets, 18676 files. |

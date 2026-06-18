@@ -26,6 +26,16 @@ behavior, not visual parity proof.
 Roll20's sandbox preview script does more than load base CSS. The local preview
 must model these behaviors separately from our legacy compatibility toggle.
 
+Important update, 2026-06-19: a later read-only probe of the actual generated
+character iframe found that the rendered CSSOM for the uploaded Les-Oublies
+payload still contained unprefixed state selectors such as `.tabstoggle[...]`,
+while the rendered HTML state anchors were prefixed as `.sheet-tabstoggle`.
+Those selectors therefore did not match the actual panels, and Roll20 showed
+multiple tab panels even while the hidden state inputs were `combat`. Treat the
+older blanket CSS-prefix observation below as an incomplete settings-preview
+observation until it is reverified across another fixture and the actual
+character iframe path.
+
 ### CSS
 
 - Remove mobile CSS blocks marked by `/* start mobile */ ... /* end mobile */`.
@@ -85,6 +95,20 @@ diffs against the local baseline at `18.81%` mismatch. A real Roll20 roll button
 click produced a `sheet-rolltemplate-classic-roll` chat DOM message, but a
 trustworthy chat-pane screenshot is still missing. Therefore the current state is
 partial actual evidence, not Roll20 visual parity.
+
+Later evidence supersedes the `18.81%` visible-top screenshot as the main
+Les-Oublies generated-sheet comparison: a stitched full-height actual Roll20 root
+image is available locally and currently differs from the local preview by
+`6.90%`. This is still not parity. The new state visibility diagnostic command
+
+```bash
+corepack pnpm run diagnose:roll20-state-visibility -- reports\roll20-actual-compare\2026-06-18-state-map-v1
+```
+
+classifies the captured fixture as
+`ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`. This means the local
+Roll20 expected-render path must not blindly assume CSS selector prefixing until
+the actual character iframe behavior is modeled and rechecked.
 
 ## Implementation Implications
 
