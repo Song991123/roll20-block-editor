@@ -590,14 +590,18 @@ class DefaultAdapter implements BlocklyAdapter {
           render?: () => void;
         })
       | null;
+    const nextConnection = nextBlock?.previousConnection ?? null;
     try {
       moving.unplug?.(true);
-      if (!target.nextConnection || target.nextConnection.isConnected()) return false;
+      if (!target.nextConnection) return false;
+      if (target.nextConnection.isConnected()) {
+        target.nextConnection.disconnect();
+      }
       target.nextConnection.connect(moving.previousConnection);
       if (nextBlock) {
         if (!moving.nextConnection || moving.nextConnection.isConnected()) return false;
-        if (!nextBlock.previousConnection) return false;
-        moving.nextConnection.connect(nextBlock.previousConnection);
+        if (!nextConnection) return false;
+        moving.nextConnection.connect(nextConnection);
       }
       moving.initSvg?.();
       moving.render?.();

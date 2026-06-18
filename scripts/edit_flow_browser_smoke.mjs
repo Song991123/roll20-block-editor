@@ -431,21 +431,33 @@ async function main() {
     const targetId = beforeIds[0];
     const beforeIndicator = dragOverInput(targetId, 0.2);
     const afterIndicator = dragOverInput(targetId, 0.8);
-    const drop = dropOnInput(targetId, 0.2);
+    const beforeDrop = dropOnInput(targetId, 0.2);
     await new Promise((resolve) => setTimeout(resolve, 500));
-    const afterIds = childInputIds();
-    const newId = afterIds.find((id) => !beforeIds.includes(id)) ?? null;
+    const afterBeforeDropIds = childInputIds();
+    const beforeNewId = afterBeforeDropIds.find((id) => !beforeIds.includes(id)) ?? null;
+    const beforeNewIndexAfterEmit = beforeNewId ? emittedIndex(beforeNewId) : -1;
+    const targetIndexAfterBeforeDrop = emittedIndex(targetId);
+
+    const afterDrop = dropOnInput(targetId, 0.8);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const afterAfterDropIds = childInputIds();
+    const afterNewId = afterAfterDropIds.find((id) => !afterBeforeDropIds.includes(id)) ?? null;
     return {
       targetId,
       beforeIds,
       beforeIndicator,
       afterIndicator,
-      drop,
-      afterIds,
-      newId,
+      beforeDrop,
+      afterBeforeDropIds,
+      beforeNewId,
       targetIndexBeforeEmit: emittedIndex(targetId),
-      newIndexAfterEmit: newId ? emittedIndex(newId) : -1,
-      targetIndexAfterEmit: emittedIndex(targetId),
+      beforeNewIndexAfterEmit,
+      targetIndexAfterBeforeDrop,
+      afterDrop,
+      afterAfterDropIds,
+      afterNewId,
+      afterNewIndexAfterEmit: afterNewId ? emittedIndex(afterNewId) : -1,
+      targetIndexAfterAfterDrop: emittedIndex(targetId),
     };
   });
 
@@ -513,10 +525,13 @@ async function main() {
     canvasSiblingInsert.beforeIndicator?.activeTargetMode === 'before' &&
     canvasSiblingInsert.afterIndicator?.hostDropMode === 'after' &&
     canvasSiblingInsert.afterIndicator?.activeTargetMode === 'after' &&
-    canvasSiblingInsert.drop?.dispatched === true &&
-    typeof canvasSiblingInsert.newId === 'string' &&
-    canvasSiblingInsert.newIndexAfterEmit >= 0 &&
-    canvasSiblingInsert.newIndexAfterEmit < canvasSiblingInsert.targetIndexAfterEmit &&
+    canvasSiblingInsert.beforeDrop?.dispatched === true &&
+    typeof canvasSiblingInsert.beforeNewId === 'string' &&
+    canvasSiblingInsert.beforeNewIndexAfterEmit >= 0 &&
+    canvasSiblingInsert.beforeNewIndexAfterEmit < canvasSiblingInsert.targetIndexAfterBeforeDrop &&
+    canvasSiblingInsert.afterDrop?.dispatched === true &&
+    typeof canvasSiblingInsert.afterNewId === 'string' &&
+    canvasSiblingInsert.afterNewIndexAfterEmit > canvasSiblingInsert.targetIndexAfterAfterDrop &&
     Array.isArray(layerDropModes.modes) &&
     layerDropModes.modes.join(',') === 'before,inside,after' &&
     pageErrors.length === 0;
