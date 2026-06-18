@@ -165,6 +165,7 @@ async function classifyEntry(diffEntry, stateCandidate = null) {
     htmlStats,
     diffEntry,
   });
+  const stateCandidateApplied = isStateCandidateApplied(bestMismatch, stateCandidate);
 
   return {
     fixtureId,
@@ -199,9 +200,10 @@ async function classifyEntry(diffEntry, stateCandidate = null) {
     },
     stateDetails,
     stateCandidate,
+    stateCandidateApplied,
     categories,
     likelyCause: summarizeCause(categories, bestMismatch),
-    nextAction: nextAction(categories, stateCandidate),
+    nextAction: nextAction(categories, stateCandidate, stateCandidateApplied),
   };
 }
 
@@ -311,6 +313,10 @@ function dimensionSummary(referenceSize, captureSize, bestCrop) {
     widthRatio: rw ? Math.round((cw / rw) * 1000) / 1000 : null,
     heightRatio: rh ? Math.round((ch / rh) * 1000) / 1000 : null,
     bestCropY: cropY,
+    contextMismatch:
+      Math.abs(cw - rw) / rw >= 0.15 ||
+      Math.abs(ch - rh) / rh >= 1 ||
+      (typeof cropY === 'number' && cropY >= Math.max(240, rh * 0.75)),
   };
 }
 
@@ -342,6 +348,7 @@ function classifyCategories(input) {
   else if (assetRisk > 0) categories.push('possible asset/background contribution');
 
   if (cssStats.mediaQueries > 0 || sizeRisk >= 0.5) categories.push('viewport/sheet size');
+  if (sizeRisk >= 1.25 || captureCrop[1] >= 800) categories.push('reference/capture context mismatch');
   if (cssStats.absolutePositions + cssStats.fixedPositions >= 10) categories.push('positioning/layout CSS');
   if (htmlStats.dataI18n > 0) categories.push('translation/i18n');
   if ((diffEntry.consoleMessages?.length ?? 0) > 0 || (diffEntry.pageErrors?.length ?? 0) > 0) {
@@ -358,6 +365,7 @@ function summarizeCause(categories, bestMismatch) {
   const priority = [
     'viewport/crop/default-state offset',
     'default attr/state',
+    'reference/capture context mismatch',
     'Roll20 base/user CSS/rendering delta',
     'asset loading or background alignment',
     'positioning/layout CSS',
@@ -368,14 +376,28 @@ function summarizeCause(categories, bestMismatch) {
   return priority.filter((category) => categories.includes(category)).slice(0, 3).join('; ') || categories.slice(0, 3).join('; ');
 }
 
-function nextAction(categories, stateCandidate = null) {
+function isStateCandidateApplied(bestMismatch, stateCandidate = null) {
+  if (!stateCandidate || typeof stateCandidate.bestMismatchRatio !== 'number') return false;
+  return Math.abs(bestMismatch - stateCandidate.bestMismatchRatio) <= 0.002;
+}
+
+function nextAction(categories, stateCandidate = null, stateCandidateApplied = false) {
   if (
     stateCandidate &&
     stateCandidate.actionName &&
     stateCandidate.actionName !== 'initial' &&
     typeof stateCandidate.bestMismatchRatio === 'number'
   ) {
+    if (stateCandidateApplied) {
+      if (categories.includes('reference/capture context mismatch')) {
+        return `State ${stateCandidate.actionName} is already applied; normalize reference/capture crop or collect actual Roll20 screenshot before renderer changes.`;
+      }
+      return `State ${stateCandidate.actionName} is already applied; inspect remaining local style/layout delta, then compare against actual Roll20 screenshot.`;
+    }
     return `Re-run visual comparison in state ${stateCandidate.actionName} before renderer changes; local state candidate improved to ${pct(stateCandidate.bestMismatchRatio)}.`;
+  }
+  if (categories.includes('reference/capture context mismatch')) {
+    return 'Normalize reference/capture crop or collect an actual Roll20 screenshot with the same viewport before changing renderer CSS.';
   }
   if (categories.includes('viewport/crop/default-state offset')) {
     return 'Normalize initial tab/default state and crop before changing renderer CSS.';
@@ -403,8 +425,8 @@ function renderMarkdown(report) {
     '',
     'Scope: heuristic local-only diagnosis. This is not a Roll20 visual parity gate.',
     '',
-    '| Fixture | Best mismatch | Crop gain | Ref | Capture | Best crop | State hint | State risk | Asset risk | Likely cause | Next action |',
-    '| --- | ---: | ---: | --- | --- | --- | --- | ---: | ---: | --- | --- |',
+    '| Fixture | Best mismatch | Crop gain | Ref | Capture | Best crop | State hint | Applied | State risk | Asset risk | Likely cause | Next action |',
+    '| --- | ---: | ---: | --- | --- | --- | --- | --- | ---: | ---: | --- | --- |',
   ];
 
   for (const entry of report.entries) {
@@ -416,6 +438,7 @@ function renderMarkdown(report) {
       fmtSize(entry.diff.captureSize),
       fmtCrop(entry.diff.bestCaptureCrop),
       formatStateHint(entry.stateCandidate),
+      entry.stateCandidateApplied ? 'yes' : '',
       Math.round(entry.sourceSignals.stateRisk * 10) / 10,
       entry.sourceSignals.assetRisk,
       entry.likelyCause,
@@ -437,8 +460,8 @@ function renderMarkdown(report) {
       `- CSS state selectors: :checked=${entry.sourceSignals.css.checkedSelectors}, :not(:checked)=${entry.sourceSignals.css.notCheckedSelectors}, [value]=${entry.sourceSignals.css.valueSelectors}, sibling=${entry.sourceSignals.css.siblingSelectors}`,
       `- CSS/resource hints: urls=${entry.sourceSignals.css.urlRefs}, backgrounds=${entry.sourceSignals.css.backgroundUrls}, media=${entry.sourceSignals.css.mediaQueries}, absolute=${entry.sourceSignals.css.absolutePositions}`,
       `- I18n: has=${entry.manifest.hasI18n}, bytes=${entry.sourceSignals.i18n.bytes}, keyLikePairs=${entry.sourceSignals.i18n.keyLikePairs}`,
-      `- Dimension clue: reference=${entry.stateDetails.dimension.reference ?? 'n/a'}, capture=${entry.stateDetails.dimension.capture ?? 'n/a'}, delta=${entry.stateDetails.dimension.widthDeltaPx ?? 'n/a'}x${entry.stateDetails.dimension.heightDeltaPx ?? 'n/a'}, bestCropY=${entry.stateDetails.dimension.bestCropY ?? 'n/a'}`,
-      `- State candidate hint: ${formatStateHint(entry.stateCandidate)}`,
+    `- Dimension clue: reference=${entry.stateDetails.dimension.reference ?? 'n/a'}, capture=${entry.stateDetails.dimension.capture ?? 'n/a'}, delta=${entry.stateDetails.dimension.widthDeltaPx ?? 'n/a'}x${entry.stateDetails.dimension.heightDeltaPx ?? 'n/a'}, bestCropY=${entry.stateDetails.dimension.bestCropY ?? 'n/a'}`,
+      `- State candidate hint: ${formatStateHint(entry.stateCandidate)}${entry.stateCandidateApplied ? ' (already applied in this diff)' : ''}`,
       '',
     );
     if (entry.stateDetails.cssSelectors.length > 0) {

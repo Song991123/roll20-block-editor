@@ -700,3 +700,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run lint`: PASS.
   - `corepack pnpm run build`: PASS.
   - `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/edit-flow-smoke --port 4318`: PASS; the section layer row reported `roleKind=frame`, `canDrop=1`, `defaultDropMode=flow`, and visible text including `틀`, `담기 가능`, and `흐름`.
+
+## 2026-06-19 Visual Diff Classification State-Applied Gate
+
+- Fixed `scripts/classify_visual_fixture_diffs.mjs` so state-map hints are not treated as pending work when the current diff already reflects the same state.
+- Added `stateCandidateApplied` to the JSON report and an `Applied` column to the Markdown summary.
+- Added `reference/capture context mismatch` as a distinct category when the reference image and captured local preview have incompatible context, sheet height, or a large best-crop offset.
+- Latest local validation:
+  - `node --check scripts\classify_visual_fixture_diffs.mjs`: PASS.
+  - `node scripts\classify_visual_fixture_diffs.mjs reports\visual-fixture-diff test-fixtures\visual`: PASS.
+- Latest ignored classification output:
+  - AW2E: state `control_attr_class_Hardholder` is already applied; likely cause is `viewport/crop/default-state offset; default attr/state; reference/capture context mismatch`; next action is crop/context normalization or actual Roll20 screenshot collection before renderer CSS changes.
+  - Les-Oublies: state `act_fullsheet` is already applied; likely cause is `viewport/crop/default-state offset; default attr/state; reference/capture context mismatch`; next action is crop/context normalization or actual Roll20 screenshot collection before renderer CSS changes.
+- Scope note: this improves triage truthfulness. It does not reduce the visual mismatch by itself and does not prove Roll20 visual parity.
