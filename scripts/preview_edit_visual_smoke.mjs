@@ -32,6 +32,7 @@ const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/preview-edit-visual'));
 const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4186'));
+const VIEWPORT = { width: 2200, height: 1200 };
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -210,6 +211,13 @@ async function diffPngs(page, previewPath, editPath) {
       let mismatch = 0;
       let sumAbs = 0;
       const total = width * height;
+      const bounds = { left: width, top: height, right: -1, bottom: -1 };
+      const quadrants = {
+        topLeft: 0,
+        topRight: 0,
+        bottomLeft: 0,
+        bottomRight: 0,
+      };
       for (let i = 0; i < aData.length; i += 4) {
         const dr = Math.abs(aData[i] - bData[i]);
         const dg = Math.abs(aData[i + 1] - bData[i + 1]);
@@ -217,8 +225,20 @@ async function diffPngs(page, previewPath, editPath) {
         const da = Math.abs(aData[i + 3] - bData[i + 3]);
         const delta = dr + dg + db + da;
         sumAbs += delta;
-        if (delta > 24) mismatch += 1;
+        if (delta > 24) {
+          mismatch += 1;
+          const px = (i / 4) % width;
+          const py = Math.floor(i / 4 / width);
+          bounds.left = Math.min(bounds.left, px);
+          bounds.top = Math.min(bounds.top, py);
+          bounds.right = Math.max(bounds.right, px);
+          bounds.bottom = Math.max(bounds.bottom, py);
+          const horizontal = px < width / 2 ? 'Left' : 'Right';
+          const vertical = py < height / 2 ? 'top' : 'bottom';
+          quadrants[`${vertical}${horizontal}`] += 1;
+        }
       }
+      const dominantQuadrant = Object.entries(quadrants).sort((aEntry, bEntry) => bEntry[1] - aEntry[1])[0]?.[0] ?? null;
       return {
         previewSize: { width: a.naturalWidth, height: a.naturalHeight },
         editSize: { width: b.naturalWidth, height: b.naturalHeight },
@@ -226,6 +246,17 @@ async function diffPngs(page, previewPath, editPath) {
         mismatchPixels: mismatch,
         mismatchPct: total > 0 ? Math.round((mismatch / total) * 10000) / 100 : null,
         meanAbsChannelDelta: total > 0 ? Math.round((sumAbs / (total * 4)) * 100) / 100 : null,
+        mismatchBounds:
+          mismatch > 0
+            ? {
+                left: bounds.left,
+                top: bounds.top,
+                width: bounds.right - bounds.left + 1,
+                height: bounds.bottom - bounds.top + 1,
+              }
+            : null,
+        quadrants,
+        dominantQuadrant,
       };
     },
     {
@@ -249,7 +280,7 @@ async function main() {
   const report = { startedAt: new Date().toISOString(), fixtures: [] };
 
   for (const fixture of fixtures) {
-    const page = await browser.newPage({ viewport: { width: 1480, height: 960 } });
+    const page = await browser.newPage({ viewport: VIEWPORT });
     const consoleErrors = [];
     const pageErrors = [];
     page.on('console', (msg) => {
@@ -317,19 +348,21 @@ function renderMarkdown(report) {
     '',
     'Scope: local static app, real browser import path, preview iframe screenshot, and edit Shadow DOM screenshot. This does not prove actual Roll20 visual parity.',
     '',
-    '| Fixture | Blocks | Preview size | Edit size | Crop | Mismatch | Mean delta | Console errors | Page errors |',
-    '| --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: |',
+    '| Fixture | Blocks | Preview size | Edit size | Crop | Mismatch | Bounds | Dominant area | Mean delta | Console errors | Page errors |',
+    '| --- | ---: | --- | --- | --- | ---: | --- | --- | ---: | ---: | ---: |',
   ];
   for (const item of report.fixtures) {
     const d = item.diff ?? {};
     lines.push(
-      `| \`${item.id}\` | ${item.import?.blockCount ?? ''} | ${fmtSize(d.previewSize)} | ${fmtSize(d.editSize)} | ${fmtSize(d.crop)} | ${d.mismatchPct ?? ''}% | ${d.meanAbsChannelDelta ?? ''} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`,
+      `| \`${item.id}\` | ${item.import?.blockCount ?? ''} | ${fmtSize(d.previewSize)} | ${fmtSize(d.editSize)} | ${fmtSize(d.crop)} | ${d.mismatchPct ?? ''}% | ${fmtBounds(d.mismatchBounds)} | ${d.dominantQuadrant ?? ''} | ${d.meanAbsChannelDelta ?? ''} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`,
     );
   }
   lines.push('');
   lines.push('Notes:');
   lines.push('- PASS means the diagnostic ran without app/page errors and both preview/edit roots rendered.');
   lines.push('- Mismatch is a diagnostic over the shared top-left crop, not a visual parity gate yet.');
+  lines.push('- Bounds and dominant area are coarse triage hints for locating remaining preview/edit differences.');
+  lines.push(`- Browser viewport for capture: ${VIEWPORT.width}x${VIEWPORT.height}.`);
   lines.push('- Screenshots are local-only and ignored by Git.');
   return `${lines.join('\n')}\n`;
 }
@@ -337,6 +370,11 @@ function renderMarkdown(report) {
 function fmtSize(size) {
   if (!size) return '';
   return `${size.width}x${size.height}`;
+}
+
+function fmtBounds(bounds) {
+  if (!bounds) return '';
+  return `${bounds.left},${bounds.top} ${bounds.width}x${bounds.height}`;
 }
 
 main().catch((err) => {

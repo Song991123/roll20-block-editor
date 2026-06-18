@@ -236,21 +236,10 @@ export function mountSheetShadow(
   outline: 2px dashed #f60;
   outline-offset: 2px;
 }
-[data-r20-can-drop="1"] {
-  outline: 1px dashed rgba(14, 165, 233, 0.35);
-  outline-offset: 2px;
-}
-[data-r20-layer-role="flow"] {
-  outline-color: rgba(6, 182, 212, 0.45);
-}
-[data-r20-layer-role="table"] {
-  outline-color: rgba(99, 102, 241, 0.45);
-}
-[data-r20-layer-role="frame"] {
-  outline-color: rgba(14, 165, 233, 0.45);
-}
 :host([data-r20-widget-dragging]) [data-r20-can-drop="1"] {
   background-image: linear-gradient(rgba(14, 165, 233, 0.08), rgba(14, 165, 233, 0.08));
+  outline: 2px dashed rgba(14, 165, 233, 0.55);
+  outline-offset: 2px;
   outline-width: 2px;
 }
 [data-r20-block-id].r20-drop-target {
