@@ -819,3 +819,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Clicked a real Roll20 roll button in the generated sheet iframe; Roll20 created one `sheet-rolltemplate-classic-roll` chat DOM message. DOM evidence is local-only under the ignored screenshot folder.
 - Tried to capture the right Roll20 chat pane, but Roll20 UI overlays and Chrome screenshot coordinate behavior repeatedly produced non-chat images. Removed the misleading `roll20-chat.png`; chat screenshot/diff remains missing.
 - Scope note: this is the first real generated Roll20 sheet render/diff evidence. It is not visual parity, and it does not yet prove chat/rolltemplate screenshot parity or coverage for AW2E/YSHY.
+
+## 2026-06-19 Roll20 Actual Difference Classification Gate
+
+- Added `scripts/roll20_actual_difference_classify.mjs` and package script `corepack pnpm run classify:roll20-actual`.
+- The classifier reads ignored local evidence from a Roll20 actual run: local baseline, actual screenshot diff, sandbox sanitize audit, status report, and optional chat DOM evidence.
+- Latest command: `corepack pnpm run classify:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result: PASS as heuristic triage, not parity. Les-Oublies sandbox diff is classified as primarily `viewport/crop/sheet size`, because the actual Roll20 screenshot is `720x538` while the local preview is `850x4478`; the actual screenshot covers only `12.01%` of the local preview height.
+- Secondary Les-Oublies factors recorded by the classifier: Roll20 sandbox sanitize/prefix rewrites, local baseline state hint `act_fullsheet`, and Roll20 URL proxying for HTML/CSS assets.
+- Chat DOM evidence is recorded as existing for Les-Oublies (`sheet-rolltemplate-classic-roll`), but chat screenshot evidence remains missing and must not be counted as chat visual parity.
+- Next action: add a Roll20 character-iframe root crop capture path so actual screenshots compare sheet root to sheet root before changing renderer CSS.

@@ -143,6 +143,18 @@ whether the batch is still blocked/missing evidence. `roll20-room.png` is
 reported separately as read-only solo-room observation evidence, not as the
 required generated-sheet upload gate.
 
+After the diff helper, run the difference classifier before changing renderer
+CSS:
+
+```bash
+corepack pnpm run classify:roll20-actual -- reports/roll20-actual-compare/<run-label>
+```
+
+The classifier separates viewport/crop/sheet-size issues, Roll20 sandbox
+sanitize/prefix rewrites, default attr/state hints, asset URL proxying, and
+missing chat/room evidence. Its output is triage only. It must not be reported as
+visual parity.
+
 ## Chrome Safety
 
 - Use existing Chrome/Roll20 login state only for the requested verification.
