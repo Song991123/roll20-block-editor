@@ -29,6 +29,12 @@ type CanvasDropTarget = {
   siblingBlockId: string | null;
 };
 
+function formatDropModeLabel(mode: LayerDropMode): string {
+  if (mode === 'inside') return '안에 넣음';
+  if (mode === 'before') return '앞에 넣음';
+  return '뒤에 넣음';
+}
+
 type DragOrigin = {
   blockId: string;
   ws: WorkspaceKey;
@@ -224,10 +230,10 @@ export default function EditCanvas() {
     if (id) {
       setLastMove(
         freeInside
-          ? `${preset.label} free in ${target.label}`
+          ? `${preset.label} 자유 배치: ${target.label}`
           : target
-          ? `${preset.label} ${target.mode} ${target.label}`
-          : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
+          ? `${preset.label} ${formatDropModeLabel(target.mode)}: ${target.label}`
+          : `${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
       );
     }
   }, [editPlacementMode]);
@@ -273,10 +279,10 @@ export default function EditCanvas() {
     if (id) {
       setLastMove(
         freeInside
-          ? `${preset.label} free in ${target.label}`
+          ? `${preset.label} 자유 배치: ${target.label}`
           : target
-          ? `${preset.label} ${target.mode} ${target.label}`
-          : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
+          ? `${preset.label} ${formatDropModeLabel(target.mode)}: ${target.label}`
+          : `${preset.label} 추가: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
       );
     }
   }, [editPlacementMode]);
@@ -483,7 +489,7 @@ export default function EditCanvas() {
                 ? 'bg-[var(--color-primary,#2563eb)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
-            title="컨테이너 위에 놓으면 주변 요소와 함께 흐름 배치합니다."
+            title="틀 안에 놓으면 주변 요소와 함께 흐름 배치합니다."
             data-testid="edit-placement-flow"
           >
             흐름
@@ -497,14 +503,14 @@ export default function EditCanvas() {
                 ? 'bg-[var(--color-primary,#2563eb)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
-            title="컨테이너 안에 넣되 해당 틀 기준으로 자유 배치합니다."
+            title="틀 안에 넣되 해당 틀 기준으로 자유 배치합니다."
             data-testid="edit-placement-free"
           >
             자유
           </button>
         </div>
         <div className="ml-auto text-[10px] text-muted-foreground tabular-nums">
-          {lastMove ?? '요소를 끌어 옮기면 HTML/CSS 위치 값에 반영돼요.'}
+          {lastMove ?? '요소를 끌어 놓으면 HTML/CSS 위치 값에 반영돼요.'}
         </div>
       </div>
 
@@ -759,7 +765,7 @@ const EditLayerRow = memo(function EditLayerRow({
       )}
       <span
         aria-hidden
-        title={role.canReceiveChildren ? `${role.label} container` : role.label}
+        title={role.canReceiveChildren ? `${role.label} 컨테이너` : role.label}
         className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[9px] ${role.className}`}
       >
         {role.icon}

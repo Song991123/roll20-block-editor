@@ -608,3 +608,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Result: chooser opened, but `fileChooser.setFiles` returned `Not allowed` again. This remains the Chrome extension file URL access blocker, not a payload readiness failure.
 - Regenerated ignored handoff instructions with `corepack pnpm run handoff:roll20-upload -- official-roll20-Les-Oublies`; output is under `reports/roll20-actual-compare/2026-06-18-state-map-v1/roll20-upload-handoff`.
 - Next unblock: in Chrome, open `chrome://extensions`, open Details for the Codex extension, and enable `Allow access to file URLs`; then retry sandbox upload and capture `roll20-sandbox.png` / `roll20-chat.png`.
+
+## 2026-06-19 Edit UI Copy Cleanup + Smoke Gate
+
+- Cleaned the edit canvas and layer panel user-facing copy:
+  - edit toolbar labels now use readable `시트 편집`, `흐름`, `자유`, and Korean placement tooltips.
+  - layer role labels now use Korean names such as `틀`, `흐름`, `표`, `입력`, and `버튼`.
+  - friendly widget gallery preset names/descriptions now use readable Korean copy.
+- Hardened `scripts/edit_flow_browser_smoke.mjs` with an `editUiCopy` check. It now verifies the edit canvas contains `시트 편집`, `레이어`, `레이어 검색`, `흐름`, and `자유`, and that the scoped edit canvas text has no Han-range mojibake.
+- Latest validation:
+  - scoped source mojibake scan over `components/editor/EditCanvas.tsx`, `lib/editor/layerRoles.ts`, and `lib/widgets/presets.ts`: PASS.
+  - `corepack pnpm run lint`: PASS.
+  - `corepack pnpm run build`: PASS.
+  - `node scripts\edit_flow_browser_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --report-dir reports/edit-flow-smoke --port 4311`: PASS. Existing flow/free placement, layer reorder, absolute-in-frame, and edit UI copy checks all passed.
+- Scope note: this improves edit-mode usability and prevents this copy regression from returning. It does not prove actual Roll20 visual parity.

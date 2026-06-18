@@ -24,7 +24,7 @@ export type AppendFriendlyWidgetOptions = {
 
 export const FRIENDLY_WIDGET_GROUPS: Record<FriendlyWidgetGroup, string> = {
   layout: '레이아웃',
-  text: '글자',
+  text: '텍스트',
   input: '입력',
   action: '버튼',
   media: '이미지',
@@ -99,7 +99,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     id: 'number-input',
     group: 'input',
     label: '숫자 입력',
-    description: 'HP, 능력치, 수치 값',
+    description: 'HP, 능력치 같은 수치 값',
     blockType: 'r20_number_input',
     preview: 'number',
     fields: {
@@ -128,7 +128,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     id: 'checkbox',
     group: 'input',
     label: '체크박스',
-    description: 'ON/OFF 상태',
+    description: '켜짐/꺼짐 상태',
     blockType: 'r20_checkbox',
     preview: 'checkbox',
     fields: {
@@ -142,7 +142,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     id: 'chat-button',
     group: 'action',
     label: '채팅 버튼',
-    description: '누르면 채팅에 문장이나 매크로 전송',
+    description: '누르면 채팅에 문장이나 매크로를 보냅니다',
     blockType: 'r20_chat_button',
     preview: 'button',
     fields: {
@@ -157,7 +157,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     id: 'action-button',
     group: 'action',
     label: '액션 버튼',
-    description: '시트 worker clicked 이벤트용 버튼',
+    description: '시트 worker의 clicked 이벤트용 버튼',
     blockType: 'r20_action_button',
     preview: 'button',
     fields: {
@@ -246,7 +246,7 @@ export function appendFriendlyWidgetPreset(
     ? removeCssDeclarations(baseStyle, ['position', 'left', 'top'])
     : useContainerAbsoluteStyle
       ? withAbsolutePosition(baseStyle, position?.left ?? 24, position?.top ?? 24)
-    : withAbsolutePosition(baseStyle, targetPosition?.left ?? 24, targetPosition?.top ?? 24);
+      : withAbsolutePosition(baseStyle, targetPosition?.left ?? 24, targetPosition?.top ?? 24);
   if (style || adapter.hasBlockField('html', id, 'STYLE')) {
     adapter.setBlockField('html', id, 'STYLE', style);
   }

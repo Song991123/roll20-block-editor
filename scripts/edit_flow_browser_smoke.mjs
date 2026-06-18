@@ -125,6 +125,22 @@ async function main() {
   await page.evaluate(() => window.__perfHook.clearAll());
   await page.click('[data-testid="main-mode-edit"]');
   await page.waitForSelector('[data-testid="edit-canvas-scroll"]', { timeout: 15000 });
+  results.tests.editUiCopy = await page.evaluate(() => {
+    const root = document.querySelector('[data-testid="edit-canvas-root"]');
+    const text = root?.textContent || '';
+    const search = root?.querySelector('[placeholder="레이어 검색"]');
+    const hasExpectedLabels =
+      text.includes('시트 편집') &&
+      text.includes('흐름') &&
+      text.includes('자유') &&
+      text.includes('레이어') &&
+      Boolean(search);
+    return {
+      hasExpectedLabels,
+      hasMojibakeHan: /[\u3400-\u9fff\uf900-\ufaff]/u.test(text),
+      textSample: text.replace(/\s+/g, ' ').trim().slice(0, 300),
+    };
+  });
   // appendFriendlyWidgetPreset ignores drops for 1.2s after clearAll
   // (lastClearedAt guard). Test C uses the REAL product drop path on purpose,
   // so respect the guard instead of bypassing it.
@@ -783,6 +799,8 @@ async function main() {
 
   const pass =
     results.tests.hookFlow.nested === true &&
+    results.tests.editUiCopy.hasExpectedLabels === true &&
+    results.tests.editUiCopy.hasMojibakeHan === false &&
     results.tests.hookFlow.htmlHasAbsoluteWidget === false &&
     results.tests.hookAbsolute.nested === false &&
     results.tests.hookAbsolute.htmlHasAbsoluteWidget === true &&
