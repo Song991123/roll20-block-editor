@@ -42,12 +42,33 @@ const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const STATE_MAP_PATH = argOf('--state-map', '');
 const REPORT_DIR = path.join(RUN_DIR, 'preupload-verification');
 const NODE = process.execPath;
+const RUN_PARENT_DIR = path.dirname(RUN_DIR);
+const RUN_LABEL = path.basename(RUN_DIR);
 
 function maybeStateMapArgs() {
   return STATE_MAP_PATH ? ['--state-map', path.resolve(STATE_MAP_PATH)] : [];
 }
 
 const checks = [
+  {
+    id: 'local-baseline',
+    title: 'Fresh local baseline and upload payload generation',
+    command: [
+      NODE,
+      'scripts/roll20_actual_local_baseline.mjs',
+      '--out-dir',
+      OUT_DIR,
+      '--base-path',
+      BASE_PATH,
+      '--fixtures',
+      FIXTURES_DIR,
+      '--report-dir',
+      RUN_PARENT_DIR,
+      '--run-label',
+      RUN_LABEL,
+      ...maybeStateMapArgs(),
+    ],
+  },
   {
     id: 'payload-audit',
     title: 'Payload hygiene audit',

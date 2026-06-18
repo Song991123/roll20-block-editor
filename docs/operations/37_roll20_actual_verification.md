@@ -46,10 +46,11 @@ This document defines how agents verify that this editor's preview/edit output m
      `corepack pnpm run status:roll20-actual -- reports/roll20-actual-compare/<label> --require-actual`
    - Or run the full local pre-upload gate:
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor`
-   - The pre-upload gate reruns payload hygiene, Roll20 sandbox sanitize diagnostics, cleaned-payload visual roundtrip, default-state selector audit, asset/resource audit, and evidence guard. Passing means the payload is ready to upload; it still does not prove Roll20 visual parity.
+   - The pre-upload gate first regenerates the local baseline and upload payloads for the selected run, then reruns payload hygiene, Roll20 sandbox sanitize diagnostics, cleaned-payload visual roundtrip, default-state selector audit, asset/resource audit, and evidence guard. Passing means the payload is ready to upload; it still does not prove Roll20 visual parity.
    - If the local baseline was captured with action/control-state hints, pass the same state map through the pre-upload gate:
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json`
-   - `--state-map` affects only local screenshot state normalization for baseline/payload comparison. It may click a local action button or local checkbox/radio control before screenshot capture. It does not mutate the Roll20 upload payload files.
+     - `--state-map` affects only local screenshot state normalization for baseline/payload comparison. It may click a local action button or local checkbox/radio control before screenshot capture. It does not mutate the Roll20 upload payload files.
+     - If `payload-roundtrip` fails after renderer changes, regenerate the local baseline with the same code and state map before diagnosing export drift. A stale `local-preview.png` can create false visual mismatches even when source preview and cleaned payload render identically.
 2. Observe existing Roll20 solo rooms:
    - Use the user's logged-in Chrome session.
    - Identify rooms where the user is alone or intended for testing.
