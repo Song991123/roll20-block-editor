@@ -323,6 +323,17 @@ translation source is saved, the settings page must still save a Sheet.json
 manifest through `textarea[name=customcharsheet_json]`; otherwise Roll20 can
 store the source but the character iframe may not load the custom sheet.
 
+For legacy official sheets, preserve the source `sheet.json` legacy mode. A
+fixture whose official manifest declares `"legacy": true` must not be uploaded
+with a generated `"legacy": false` manifest. Also note that endpoint `200`
+responses are not enough for legacy coverage: AW2E returned `200` for generated
+and official source payloads but still produced an empty character iframe in the
+dedicated sandbox. A later YSHY restore through the same endpoint path also
+returned `200` but reopened blank, so treat this fallback as storage-only until
+a fresh iframe DOM/root check proves activation. Use the browser file-input
+upload path, a complete settings-form save path, or another verified Roll20
+sandbox condition before treating such a fixture as rendered.
+
 Agents must record this as an external Roll20 sandbox side effect in
 `docs/operations/35_agent_progress_log.md`. The fallback proves only that the
 payload reached the dedicated sandbox. It does not prove visual parity until a

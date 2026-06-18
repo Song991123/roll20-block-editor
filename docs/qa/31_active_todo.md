@@ -14,6 +14,27 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 actual-screen note, 2026-06-19 legacy manifest update:
+live Roll20 sandbox verification found that the AW2E official source
+`sheet.json` declares `"legacy": true`, while the generated local verification
+payload had been writing `"legacy": false`. `scripts/roll20_actual_local_baseline.mjs`
+now resolves fixture legacy mode from fixture metadata or the official source
+`sheet.json`; regenerating AW2E produced a payload `sheet.json` with
+`"legacy": true`. Applying the regenerated AW2E payload to the dedicated
+Roll20 sandbox still left the character iframe blank, and applying the official
+AW2E source files plus original `sheet.json` also left the iframe blank. Treat
+AW2E endpoint-fallback evidence as blocked/invalid until the file-input upload
+path or another Roll20 sandbox condition is verified. A later attempt to restore
+the YSHY generated payload through the same endpoint path also reopened as an
+empty iframe, so the endpoint fallback itself is now suspect as an activation
+path and must not be used as render proof without a fresh iframe DOM check.
+Current status remains
+partial: `corepack pnpm run status:roll20-actual --
+reports\roll20-actual-compare\2026-06-18-state-map-v1` reports
+`generatedActualScreenshots=3/6`, `generatedDiffed=3/6`,
+`roomObservationScreenshots=0/3`, and `roomObservationDiffed=0/3`; this does
+not prove AW2E visual parity.
+
 Current Roll20 actual-screen note, 2026-06-19 endpoint viewport update:
 the dedicated Roll20 sandbox endpoint fallback was reused for AW2E and YSHY.
 POSTs to `/sheetsandbox/savesheetsettings` accepted base64 HTML/CSS/translation,

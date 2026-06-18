@@ -13,6 +13,22 @@ This matrix breaks the operating requirements into actionable work. Use it with 
 
 ## Preview and Roll20 Parity
 
+Current Roll20 actual-screen note, 2026-06-19 legacy manifest correction:
+AW2E exposed a real verification-payload bug. The official AW2E `sheet.json`
+uses `"legacy": true`, but the local baseline generator had emitted
+`"legacy": false` for every fixture. The generator now resolves legacy mode
+from fixture metadata or the official source `sheet.json`, and regenerated AW2E
+payloads carry `"legacy": true`. However, reapplying that regenerated AW2E
+payload to the dedicated Roll20 sandbox still produced a blank character
+iframe; applying the official AW2E source HTML/CSS/translation plus original
+`sheet.json` also produced a blank iframe. Therefore AW2E endpoint-fallback
+evidence is currently not trustworthy for visual parity. A later YSHY restore
+through the same endpoint path also reopened as an empty iframe, so endpoint
+fallback success is now classified as storage-only evidence unless followed by
+a fresh iframe DOM/root check. Use this as a blocked/verification gap for Custom
+Sheet Sandbox activation behavior, not as proof that any fixture matches
+Roll20.
+
 Current Roll20 actual-screen note, 2026-06-19 endpoint viewport update:
 the dedicated Roll20 sandbox endpoint fallback was reused for AW2E and YSHY.
 POSTs to `/sheetsandbox/savesheetsettings` accepted base64 HTML/CSS/translation,

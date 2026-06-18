@@ -38,6 +38,9 @@ const REPORT_ROOT = path.resolve(argOf('--report-dir', 'reports/roll20-actual-co
 const RUN_LABEL = slug(argOf('--run-label', new Date().toISOString().slice(0, 19)));
 const ONLY = argOf('--only', '');
 const STATE_MAP_PATH = argOf('--state-map', '');
+const OFFICIAL_SHEETS_ROOT = path.resolve(
+  argOf('--official-sheets-root', process.env.ROLL20_OFFICIAL_SHEETS_ROOT || path.join(process.cwd(), '..', '..', 'roll20-character-sheets-master')),
+);
 const PORT = Number(argOf('--port', '4192'));
 const VIEWPORT = { width: 2200, height: 1200 };
 
@@ -95,6 +98,43 @@ async function readMaybe(file) {
   }
 }
 
+async function readJsonMaybe(file) {
+  const raw = await readMaybe(file);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw.replace(/^\uFEFF/, ''));
+  } catch {
+    return null;
+  }
+}
+
+async function resolveLegacyMode(dir, fixtureManifest) {
+  if (typeof fixtureManifest?.legacyMode === 'boolean') {
+    return { legacy: fixtureManifest.legacyMode, source: 'fixture-manifest.legacyMode' };
+  }
+  if (typeof fixtureManifest?.legacy === 'boolean') {
+    return { legacy: fixtureManifest.legacy, source: 'fixture-manifest.legacy' };
+  }
+
+  const sourceDir = typeof fixtureManifest?.sourceDir === 'string' ? fixtureManifest.sourceDir : '';
+  const candidates = [
+    path.join(dir, 'sheet.json'),
+    sourceDir ? path.join(sourceDir, 'sheet.json') : '',
+  ];
+  if (fixtureManifest?.corpus === 'official-roll20' && fixtureManifest?.relDir) {
+    candidates.push(path.join(OFFICIAL_SHEETS_ROOT, fixtureManifest.relDir, 'sheet.json'));
+  }
+
+  for (const candidate of candidates.filter(Boolean)) {
+    const sheetJson = await readJsonMaybe(candidate);
+    if (typeof sheetJson?.legacy === 'boolean') {
+      return { legacy: sheetJson.legacy, source: path.relative(process.cwd(), candidate) || candidate };
+    }
+  }
+
+  return { legacy: false, source: 'default:false' };
+}
+
 async function listFixtures() {
   const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
   const out = [];
@@ -104,12 +144,16 @@ async function listFixtures() {
     const dir = path.join(FIXTURES_DIR, ent.name);
     const html = await readMaybe(path.join(dir, 'source.html'));
     if (!html) continue;
+    const fixtureManifest = await readJsonMaybe(path.join(dir, 'manifest.json'));
+    const legacyMode = await resolveLegacyMode(dir, fixtureManifest);
     out.push({
       id: ent.name,
       dir,
       html,
       css: await readMaybe(path.join(dir, 'source.css')),
       i18n: await readMaybe(path.join(dir, 'source.i18n')),
+      manifest: fixtureManifest,
+      legacyMode,
     });
   }
   return out.sort((a, b) => a.id.localeCompare(b.id));
@@ -413,12 +457,12 @@ function stripInternalBlockIds(html) {
   return { html: cleaned, removed };
 }
 
-function buildManifest(fixtureId) {
+function buildManifest(fixtureId, legacyMode) {
   return JSON.stringify({
     html: 'sheet.html',
     css: 'sheet.css',
     translations: 'translation.json',
-    legacy: false,
+    legacy: legacyMode?.legacy === true,
     useroptions: [],
     name: `${fixtureId} local verification`,
     authors: 'Local verification',
@@ -461,11 +505,11 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('## Summary');
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | HTML bytes | CSS bytes | Translation bytes | Internal ids stripped | Preview size | Preview state | Edit size | Roll buttons | Blocking warnings |');
-  lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | ---: | --- |');
+  lines.push('| Fixture | Status | Legacy | Blocks | HTML bytes | CSS bytes | Translation bytes | Internal ids stripped | Preview size | Preview state | Edit size | Roll buttons | Blocking warnings |');
+  lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | ---: | --- |');
   for (const item of report.fixtures) {
     lines.push(
-      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? 0} | ${item.emitBytes.html} | ${item.emitBytes.css} | ${item.emitBytes.translation} | ${item.removedInternalBlockIds ?? 0} | ${fmtRect(item.previewDom?.rect)} | ${fmtStateCandidate(item.previewDom?.stateCandidate)} | ${fmtRect(item.editDom?.rect)} | ${item.previewDom?.rollButtonCount ?? 0}/${item.editDom?.rollButtonCount ?? 0} | ${item.blockingWarnings.join(', ') || 'none'} |`,
+      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${fmtLegacyMode(item.legacyMode)} | ${item.import?.blockCount ?? 0} | ${item.emitBytes.html} | ${item.emitBytes.css} | ${item.emitBytes.translation} | ${item.removedInternalBlockIds ?? 0} | ${fmtRect(item.previewDom?.rect)} | ${fmtStateCandidate(item.previewDom?.stateCandidate)} | ${fmtRect(item.editDom?.rect)} | ${item.previewDom?.rollButtonCount ?? 0}/${item.editDom?.rollButtonCount ?? 0} | ${item.blockingWarnings.join(', ') || 'none'} |`,
     );
   }
   lines.push('');
@@ -499,6 +543,11 @@ function fmtStateCandidate(candidate) {
     .map(([key, state]) => `${key}=${state.valueAttribute || state.value || state.checkedAttribute || state.checked || ''}`)
     .join(', ');
   return `${action} APPLIED${attrs ? ` (${attrs})` : ''}`;
+}
+
+function fmtLegacyMode(mode) {
+  if (!mode) return 'false';
+  return `${mode.legacy ? 'true' : 'false'} (${mode.source ?? 'unknown'})`;
 }
 
 async function main() {
@@ -563,12 +612,13 @@ async function main() {
           css: imported.emit.css ?? '',
           translation: normalizeTranslation(imported.emit.i18n ?? ''),
         };
-        const manifest = buildManifest(fixture.id);
+        const manifest = buildManifest(fixture.id, fixture.legacyMode);
         const readme = [
           `Roll20 local verification payload for ${fixture.id}`,
           '',
           'Generated locally for Custom Sheet Sandbox/test-room verification.',
           'Do not commit this payload if it contains real or derived sheet source.',
+          `Legacy mode: ${fixture.legacyMode.legacy ? 'true' : 'false'} (${fixture.legacyMode.source})`,
           '',
         ].join('\n');
 
@@ -591,6 +641,7 @@ async function main() {
           translation: Buffer.byteLength(emit.translation),
           zip: zipBytes,
         };
+        entry.legacyMode = fixture.legacyMode;
         entry.removedInternalBlockIds = htmlPayload.removed;
         entry.emitSha256 = {
           html: sha256(emit.html),
