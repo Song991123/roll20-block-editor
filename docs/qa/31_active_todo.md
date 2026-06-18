@@ -133,6 +133,16 @@ wrap/placement plus table 4 and table 5 height deltas of about `106px` and
 levels plus `white-space`, `word-spacing`, `letter-spacing`, and `zoom`; the
 next fresh Roll20 iframe probe should capture the same depth before any generic
 renderer CSS patch.
+2026-06-19 deep-probe follow-up: a fresh ignored Chrome/CDP target-geometry
+probe from the dedicated Roll20 sandbox iframe is now preferred by
+`diagnose:roll20-geometry`. The report normalizes y positions relative to the
+sheet root because the Roll20 iframe may be scrolled, and it no longer truncates
+nested target comparisons at 12 children. The table height problem is now
+localized to Roll20 repeating control rows: table 4 rows 1/16 and table 5 rows
+16/17 are `Modify+Add` rows where actual Roll20 is `37.6px` high and the local
+candidate is `86.734px` high, about `49px` extra per row. This is a generic
+repeating-control/runtime CSS investigation target, not a Les-Oublies-specific
+sheet patch. Row 0/3 inline-block wrap remains the other active geometry gap.
 Follow-up actual layout-context probe:
 Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
 ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.

@@ -109,9 +109,11 @@ async function analyzeSameContextFixture(fixture) {
     .filter((item) => item.importanceScore > 0 && !isRootWrapperSelector(item.selector))
     .sort((a, b) => b.importanceScore - a.importanceScore)
     .slice(0, 12);
-  const actualTargetGeometry = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixture.fixtureId}-target-geometry.json`));
+  const actualTargetGeometry = await readActualTargetGeometry(fixture.fixtureId);
   const localTargetGeometry = fixture.bestCandidate.metrics?.targetGeometry ?? null;
-  const targetGeometry = compareTargetGeometry(actualTargetGeometry, localTargetGeometry);
+  const targetGeometry = compareTargetGeometry(actualTargetGeometry, localTargetGeometry, {
+    actualRootY: actualTargetGeometry?.root?.rect?.y ?? 0,
+  });
 
   return {
     fixtureId: fixture.fixtureId,
@@ -137,9 +139,12 @@ async function analyzeSameContextFixture(fixture) {
 }
 
 async function analyzeFullRootFixture(fixture) {
-  const actualTargetGeometry = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixture.fixtureId}-target-geometry.json`));
+  const actualTargetGeometry = await readActualTargetGeometry(fixture.fixtureId);
   const localTargetGeometry = fixture.bestCandidate.metrics?.targetGeometry ?? null;
-  const targetGeometry = compareTargetGeometry(actualTargetGeometry, localTargetGeometry);
+  const targetGeometry = compareTargetGeometry(actualTargetGeometry, localTargetGeometry, {
+    actualRootY: actualTargetGeometry?.root?.rect?.y ?? 0,
+    localRootY: fixture.bestCandidate.rootRect?.y ?? 0,
+  });
   const contentFindings = buildFindingsFromFullRootGeometry(fixture.targetGeometry);
   const topFindings = contentFindings.slice(0, 12);
   const selectorFindings = contentFindings;
@@ -295,16 +300,16 @@ function normalizeFullRootFinding(finding, kind) {
   };
 }
 
-function compareTargetGeometry(actual, local) {
+function compareTargetGeometry(actual, local, offsets = {}) {
   if (!actual || !local) {
     return {
       status: 'SKIP',
       reason: !actual ? 'missing actual target geometry probe' : 'missing local target geometry in same-context candidate',
     };
   }
-  const rows = compareIndexedTargets(actual.rows ?? [], local.rows ?? []);
-  const tables = compareIndexedTargets(actual.tables ?? [], local.tables ?? []);
-  const images = compareIndexedTargets(actual.images ?? [], local.images ?? []);
+  const rows = compareIndexedTargets(actual.rows ?? [], local.rows ?? [], offsets);
+  const tables = compareIndexedTargets(actual.tables ?? [], local.tables ?? [], offsets);
+  const images = compareIndexedTargets(actual.images ?? [], local.images ?? [], offsets);
   const topRows = rows
     .filter((row) => row.status === 'COMPARED')
     .sort((a, b) => Math.abs(b.heightDelta ?? 0) - Math.abs(a.heightDelta ?? 0))
@@ -323,7 +328,13 @@ function compareTargetGeometry(actual, local) {
   };
 }
 
-function compareIndexedTargets(actualItems, localItems) {
+async function readActualTargetGeometry(fixtureId) {
+  const probeDir = path.join(runDir, 'live-iframe-probe');
+  return await readJsonIfExists(path.join(probeDir, `${fixtureId}-target-geometry-deep.json`)) ??
+    await readJsonIfExists(path.join(probeDir, `${fixtureId}-target-geometry.json`));
+}
+
+function compareIndexedTargets(actualItems, localItems, offsets = {}) {
   const length = Math.max(actualItems.length, localItems.length);
   const items = [];
   for (let index = 0; index < length; index += 1) {
@@ -344,14 +355,18 @@ function compareIndexedTargets(actualItems, localItems) {
       selector: targetLabel(actual, local),
       actual: summarizeTarget(actual),
       local: summarizeTarget(local),
-      yDelta: delta(local.rect?.y, actual.rect?.y),
+      yDelta: delta(normalizedY(local.rect?.y, offsets.localRootY), normalizedY(actual.rect?.y, offsets.actualRootY)),
       widthDelta: delta(local.rect?.width, actual.rect?.width),
       heightDelta: delta(local.rect?.height, actual.rect?.height),
       childCount: { actual: actual.children?.length ?? 0, local: local.children?.length ?? 0 },
-      childComparisons: compareIndexedTargets(actual.children ?? [], local.children ?? []).slice(0, 12),
+      childComparisons: compareIndexedTargets(actual.children ?? [], local.children ?? [], offsets),
     });
   }
   return items;
+}
+
+function normalizedY(value, rootY = 0) {
+  return typeof value === 'number' ? Number((value - (rootY || 0)).toFixed(3)) : value;
 }
 
 function summarizeTarget(item) {
@@ -375,6 +390,10 @@ function summarizeTarget(item) {
       overflow: item.style?.overflow,
       fontSize: item.style?.fontSize,
       lineHeight: item.style?.lineHeight,
+      whiteSpace: item.style?.whiteSpace,
+      wordSpacing: item.style?.wordSpacing,
+      letterSpacing: item.style?.letterSpacing,
+      zoom: item.style?.zoom,
     },
   };
 }
@@ -595,9 +614,39 @@ function renderMarkdown(report) {
         const childDeltas = (row.childComparisons ?? [])
           .filter((child) => child.status === 'COMPARED')
           .slice(0, 4)
-          .map((child) => `${child.selector}: y ${num(child.yDelta)}px, h ${num(child.heightDelta)}px`)
+          .map((child) => `${child.selector}: rel-y ${num(childRelativeYDelta(row, child))}px, h ${num(child.heightDelta)}px`)
           .join('<br>');
         lines.push(`| ${row.index} | ${num(row.actual.rect?.height)} | ${num(row.local.rect?.height)} | ${num(row.heightDelta)} | ${row.childCount.actual}/${row.childCount.local} | ${childDeltas} |`);
+      }
+      const topTables = (fixture.targetGeometry.tables ?? [])
+        .filter((item) => item.status === 'COMPARED' && Math.abs(item.heightDelta ?? 0) >= 10)
+        .sort((a, b) => Math.abs(b.heightDelta ?? 0) - Math.abs(a.heightDelta ?? 0))
+        .slice(0, 6);
+      if (topTables.length) {
+        lines.push('');
+        lines.push('### Target Table Details');
+        lines.push('');
+        lines.push('| Table | Actual height | Local height | Delta | Child count | First child deltas |');
+        lines.push('| ---: | ---: | ---: | ---: | ---: | --- |');
+        for (const table of topTables) {
+          const childDeltas = (table.childComparisons ?? [])
+            .filter((child) => child.status === 'COMPARED')
+            .slice(0, 6)
+            .map((child) => `${child.selector}: rel-y ${num(childRelativeYDelta(table, child))}px, h ${num(child.heightDelta)}px`)
+            .join('<br>');
+          lines.push(`| ${table.index} | ${num(table.actual.rect?.height)} | ${num(table.local.rect?.height)} | ${num(table.heightDelta)} | ${table.childCount.actual}/${table.childCount.local} | ${childDeltas} |`);
+        }
+        const tableRows = buildTargetTableRowRows(topTables);
+        if (tableRows.length) {
+          lines.push('');
+          lines.push('### Target Table Row Details');
+          lines.push('');
+          lines.push('| Table | Row | Selector | Actual height | Local height | Delta | Actual text | Local text |');
+          lines.push('| ---: | ---: | --- | ---: | ---: | ---: | --- | --- |');
+          for (const row of tableRows) {
+            lines.push(`| ${row.tableIndex} | ${row.rowIndex} | \`${row.selector}\` | ${num(row.actualHeight)} | ${num(row.localHeight)} | ${num(row.heightDelta)} | ${escapeTableText(row.actualText)} | ${escapeTableText(row.localText)} |`);
+          }
+        }
       }
     }
     if (fixture.unresolvedGeometryGaps?.length) {
@@ -623,6 +672,35 @@ function renderMarkdown(report) {
     lines.push('- Full-height/scroll-stitched Roll20 root capture is still required before full-sheet parity claims.');
   }
   return `${lines.join('\n')}\n`;
+}
+
+function buildTargetTableRowRows(tables) {
+  return tables
+    .flatMap((table) => {
+      const tbody = (table.childComparisons ?? []).find((child) => child.status === 'COMPARED' && child.selector === 'TBODY');
+      return (tbody?.childComparisons ?? [])
+        .filter((row) => row.status === 'COMPARED' && Math.abs(row.heightDelta ?? 0) >= 5)
+        .map((row) => ({
+          tableIndex: table.index,
+          rowIndex: row.index,
+          selector: row.selector,
+          actualHeight: row.actual?.rect?.height,
+          localHeight: row.local?.rect?.height,
+          heightDelta: row.heightDelta,
+          actualText: row.actual?.text ?? '',
+          localText: row.local?.text ?? '',
+        }));
+    })
+    .sort((a, b) => Math.abs(b.heightDelta ?? 0) - Math.abs(a.heightDelta ?? 0))
+    .slice(0, 24);
+}
+
+function escapeTableText(value) {
+  return String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80)
+    .replaceAll('|', '\\|');
 }
 
 function findField(diffs, field) {

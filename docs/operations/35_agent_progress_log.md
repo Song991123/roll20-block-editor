@@ -1032,3 +1032,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Current unresolved gaps are narrowed to row 0 and row 3 inline-block wrap/relative placement plus table 4 and table 5 height deltas around `106px` and `104px`.
 - `scripts/roll20_full_root_candidate_smoke.mjs` and `scripts/roll20_actual_local_baseline.mjs` now capture two descendant levels plus `white-space`, `word-spacing`, `letter-spacing`, and `zoom` in local target geometry. The next fresh Roll20 iframe probe should capture the same fields/depth before a generic renderer CSS patch.
 - Verification so far: full-root candidate smoke PASS/SKIP and geometry diagnostic PASS/SKIP against the existing local-only evidence. This does not prove Roll20 visual parity.
+
+## 2026-06-19 Roll20 Deep Geometry Probe Row Isolation
+
+- Continued from the full-root fallback batch and reused only the dedicated Roll20 Custom Sheet Sandbox iframe evidence; existing rooms were not inspected or modified.
+- Updated `scripts/roll20_geometry_delta_diagnostics.mjs` to prefer `live-iframe-probe/<fixture>-target-geometry-deep.json`, normalize target y positions relative to each sheet root, preserve all nested child comparisons instead of truncating at 12 children, and render a `Target Table Row Details` section for large table deltas.
+- Latest command: `corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result:
+  - AW2E and YSHY remain SKIP because generated Roll20 sandbox screenshots/full-root captures are still missing.
+  - Les-Oublies remains COMPARED, with actual full-root `852x4122` versus local candidate about `841px` taller.
+  - Row 0 and row 3 still show inline-block/relative-y wrap gaps.
+  - Table 4 rows 1/16 and table 5 rows 16/17 are now isolated as Roll20 repeating control `Modify+Add` rows: actual `37.6px`, local `86.734px`, about `49px` extra per row.
+- Interpretation: the big table deltas are no longer a generic table-height mystery. They point to Roll20 repeating control/runtime CSS behavior that local preview/edit does not yet match. This is still not Roll20 visual parity and does not justify a Les-Oublies-specific patch.
+- Next P0: inspect the actual/local DOM/CSS around repeating control rows and implement a generic Roll20 repeating-control rendering fix only if it holds across fixtures; keep row 0/3 inline-block wrapping as the parallel geometry gap.
