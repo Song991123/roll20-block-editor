@@ -452,10 +452,69 @@ async function main() {
 
   report.finishedAt = new Date().toISOString();
   report.pass = report.fixtures.every((item) => item.pass);
+  const stateMap = buildStateMap(report);
   await fs.writeFile(path.join(REPORT_DIR, 'visual-state-candidates-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   await fs.writeFile(path.join(REPORT_DIR, 'visual-state-candidates-results.md'), renderMarkdown(report), 'utf8');
+  await fs.writeFile(path.join(REPORT_DIR, 'visual-state-candidates-state-map.json'), `${JSON.stringify(stateMap, null, 2)}\n`, 'utf8');
+  await fs.writeFile(path.join(REPORT_DIR, 'visual-state-candidates-state-map.md'), renderStateMapMarkdown(stateMap), 'utf8');
   console.log(`VISUAL STATE CANDIDATE SMOKE ${report.pass ? 'PASS' : 'FAIL'}`);
   if (!report.pass) process.exitCode = 1;
+}
+
+function buildStateMap(report) {
+  const fixtures = {};
+  for (const item of report.fixtures ?? []) {
+    const best = item.bestCandidate ?? null;
+    const initial = item.candidates?.find((candidate) => candidate.name === 'initial') ?? null;
+    const bestState = Object.fromEntries(
+      (best?.state ?? []).map((row) => [
+        row.name.replace(/^attr_/, ''),
+        row.value,
+      ]),
+    );
+    fixtures[item.id] = {
+      fixtureId: item.id,
+      actionName: best?.name ?? null,
+      actionLabel: best?.label ?? null,
+      hiddenAttrs: bestState,
+      bestMismatchRatio: best?.diff?.best?.mismatchRatio ?? null,
+      initialMismatchRatio: initial?.diff?.best?.mismatchRatio ?? null,
+      bestCaptureCrop: best?.diff?.best?.captureCrop ?? null,
+      candidateCount: item.candidates?.length ?? 0,
+      sourceReport: path.join(REPORT_DIR, 'visual-state-candidates-results.json'),
+      scope: 'local preview action-state hint; not Roll20 visual parity',
+    };
+  }
+  return {
+    generatedAt: report.finishedAt ?? report.startedAt,
+    sourceReport: path.join(REPORT_DIR, 'visual-state-candidates-results.json'),
+    scope: 'local preview action-state hints for downstream visual diff triage',
+    fixtures,
+  };
+}
+
+function renderStateMapMarkdown(stateMap) {
+  const lines = [
+    '# Visual State Candidate State Map',
+    '',
+    `Generated: ${stateMap.generatedAt}`,
+    '',
+    'Scope: local preview action-state hints for downstream visual diff triage. This is not actual Roll20 visual parity.',
+    '',
+    '| Fixture | Recommended action | Best mismatch | Initial mismatch | Hidden attrs | Best crop |',
+    '| --- | --- | ---: | ---: | --- | --- |',
+  ];
+  for (const item of Object.values(stateMap.fixtures ?? {})) {
+    const attrs = Object.entries(item.hiddenAttrs ?? {})
+      .map(([key, value]) => `${key}=${value}`)
+      .join(', ');
+    lines.push(
+      `| \`${item.fixtureId}\` | ${item.actionName ?? ''}${item.actionLabel ? ` (${escapePipe(item.actionLabel)})` : ''} | ${pct(item.bestMismatchRatio)} | ${pct(item.initialMismatchRatio)} | ${escapePipe(attrs)} | ${(item.bestCaptureCrop ?? []).join(',')} |`,
+    );
+  }
+  lines.push('');
+  lines.push('Use this as a hint when normalizing fixture default tab/state before pixel comparison. Do not commit generated state maps or screenshots.');
+  return `${lines.join('\n')}\n`;
 }
 
 main().catch((err) => {

@@ -21,6 +21,7 @@ const FIXTURE_ROOT = path.resolve(args[1] ?? 'test-fixtures/visual');
 const RESULT_JSON = path.join(REPORT_DIR, 'visual-fixture-diff-results.json');
 const OUT_JSON = path.join(REPORT_DIR, 'visual-fixture-diff-classification.json');
 const OUT_MD = path.join(REPORT_DIR, 'visual-fixture-diff-classification.md');
+const STATE_MAP_JSON = path.resolve(REPORT_DIR, '..', 'visual-state-candidates', 'visual-state-candidates-state-map.json');
 
 const HTML_PATTERNS = {
   inputs: /<input\b/gi,
@@ -83,14 +84,19 @@ async function main() {
   }
 
   const diffReport = await readJson(RESULT_JSON);
+  const stateMap = existsSync(STATE_MAP_JSON)
+    ? (await readJson(STATE_MAP_JSON)).fixtures ?? {}
+    : {};
   const entries = [];
   for (const diffEntry of diffReport.entries ?? []) {
-    entries.push(await classifyEntry(diffEntry));
+    const fixtureId = diffEntry.fixtureId ?? diffEntry.result?.fixtureId ?? 'unknown-fixture';
+    entries.push(await classifyEntry(diffEntry, stateMap[fixtureId] ?? null));
   }
 
   const report = {
     generatedAt: new Date().toISOString(),
     sourceDiffReport: RESULT_JSON,
+    sourceStateMap: existsSync(STATE_MAP_JSON) ? STATE_MAP_JSON : null,
     fixtureRoot: FIXTURE_ROOT,
     scope: 'heuristic local-only diagnosis; not a Roll20 parity gate',
     pass: entries.every((entry) => entry.status !== 'error'),
@@ -108,7 +114,7 @@ async function main() {
   process.exitCode = report.pass ? 0 : 1;
 }
 
-async function classifyEntry(diffEntry) {
+async function classifyEntry(diffEntry, stateCandidate = null) {
   const fixtureId = diffEntry.fixtureId ?? diffEntry.result?.fixtureId ?? 'unknown-fixture';
   const fixtureDir = path.join(FIXTURE_ROOT, fixtureId);
   const manifestPath = path.join(fixtureDir, 'manifest.json');
@@ -192,9 +198,10 @@ async function classifyEntry(diffEntry) {
       sizeRisk,
     },
     stateDetails,
+    stateCandidate,
     categories,
     likelyCause: summarizeCause(categories, bestMismatch),
-    nextAction: nextAction(categories),
+    nextAction: nextAction(categories, stateCandidate),
   };
 }
 
@@ -361,7 +368,15 @@ function summarizeCause(categories, bestMismatch) {
   return priority.filter((category) => categories.includes(category)).slice(0, 3).join('; ') || categories.slice(0, 3).join('; ');
 }
 
-function nextAction(categories) {
+function nextAction(categories, stateCandidate = null) {
+  if (
+    stateCandidate &&
+    stateCandidate.actionName &&
+    stateCandidate.actionName !== 'initial' &&
+    typeof stateCandidate.bestMismatchRatio === 'number'
+  ) {
+    return `Re-run visual comparison in state ${stateCandidate.actionName} before renderer changes; local state candidate improved to ${pct(stateCandidate.bestMismatchRatio)}.`;
+  }
   if (categories.includes('viewport/crop/default-state offset')) {
     return 'Normalize initial tab/default state and crop before changing renderer CSS.';
   }
@@ -388,8 +403,8 @@ function renderMarkdown(report) {
     '',
     'Scope: heuristic local-only diagnosis. This is not a Roll20 visual parity gate.',
     '',
-    '| Fixture | Best mismatch | Crop gain | Ref | Capture | Best crop | State risk | Asset risk | Likely cause | Next action |',
-    '| --- | ---: | ---: | --- | --- | --- | ---: | ---: | --- | --- |',
+    '| Fixture | Best mismatch | Crop gain | Ref | Capture | Best crop | State hint | State risk | Asset risk | Likely cause | Next action |',
+    '| --- | ---: | ---: | --- | --- | --- | --- | ---: | ---: | --- | --- |',
   ];
 
   for (const entry of report.entries) {
@@ -400,6 +415,7 @@ function renderMarkdown(report) {
       fmtSize(entry.diff.referenceSize),
       fmtSize(entry.diff.captureSize),
       fmtCrop(entry.diff.bestCaptureCrop),
+      formatStateHint(entry.stateCandidate),
       Math.round(entry.sourceSignals.stateRisk * 10) / 10,
       entry.sourceSignals.assetRisk,
       entry.likelyCause,
@@ -422,6 +438,7 @@ function renderMarkdown(report) {
       `- CSS/resource hints: urls=${entry.sourceSignals.css.urlRefs}, backgrounds=${entry.sourceSignals.css.backgroundUrls}, media=${entry.sourceSignals.css.mediaQueries}, absolute=${entry.sourceSignals.css.absolutePositions}`,
       `- I18n: has=${entry.manifest.hasI18n}, bytes=${entry.sourceSignals.i18n.bytes}, keyLikePairs=${entry.sourceSignals.i18n.keyLikePairs}`,
       `- Dimension clue: reference=${entry.stateDetails.dimension.reference ?? 'n/a'}, capture=${entry.stateDetails.dimension.capture ?? 'n/a'}, delta=${entry.stateDetails.dimension.widthDeltaPx ?? 'n/a'}x${entry.stateDetails.dimension.heightDeltaPx ?? 'n/a'}, bestCropY=${entry.stateDetails.dimension.bestCropY ?? 'n/a'}`,
+      `- State candidate hint: ${formatStateHint(entry.stateCandidate)}`,
       '',
     );
     if (entry.stateDetails.cssSelectors.length > 0) {
@@ -443,6 +460,20 @@ function renderMarkdown(report) {
     }
   }
   return `${lines.join('\n')}\n`;
+}
+
+function formatStateHint(candidate) {
+  if (!candidate?.actionName) return '';
+  const attrs = Object.entries(candidate.hiddenAttrs ?? {})
+    .map(([key, value]) => `${key}=${value}`)
+    .join(', ');
+  const action = candidate.actionLabel
+    ? `${candidate.actionName} (${candidate.actionLabel})`
+    : candidate.actionName;
+  const mismatch = typeof candidate.bestMismatchRatio === 'number'
+    ? `best ${pct(candidate.bestMismatchRatio)}`
+    : '';
+  return [action, mismatch, attrs].filter(Boolean).join('; ');
 }
 
 function mdCell(value) {
