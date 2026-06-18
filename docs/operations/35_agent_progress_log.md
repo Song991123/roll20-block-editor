@@ -582,3 +582,21 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run smoke:imported-edit-sync -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync --only yshy-commission-1bu --port 4296`: interaction PASS, resources WARN.
   - `corepack pnpm run smoke:imported-edit-sync:strict -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync --only official-roll20-AW2E --port 4298`: PASS, proving strict mode succeeds when resources load.
 - Scope note: this does not fix YSHY's external asset failures yet. It prevents future visual-parity work from treating an edit-interaction PASS as a full visual readiness PASS.
+
+## 2026-06-19 Preview Capture Resource Strictness Slice
+
+- Hardened `scripts/capture_visual_fixture_previews.mjs` so local preview screenshot captures now separate:
+  - `Status`: imported fixture rendered in the preview iframe without visible runtime nodes or console/page errors.
+  - `Resources`: browser-rendered image/font resource loading.
+- Added `--fail-on-resource-issues true` and package scripts:
+  - `corepack pnpm run capture:visual-fixtures`
+  - `corepack pnpm run capture:visual-fixtures:strict`
+- Latest local validation:
+  - `node --check scripts\capture_visual_fixture_previews.mjs`: PASS.
+  - `corepack pnpm run build`: PASS.
+  - `corepack pnpm run capture:visual-fixtures -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only yshy-commission-1bu --port 4301`: PASS, resources PASS.
+  - `corepack pnpm run capture:visual-fixtures:strict -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only official-roll20-AW2E --port 4302`: PASS, resources PASS.
+  - `corepack pnpm run capture:visual-fixtures:strict -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only yshy-commission-1bu --port 4303`: PASS, resources PASS.
+  - `corepack pnpm run lint`: PASS.
+  - `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS.
+- Scope note: this proves the local preview capture path is not hiding resource failures for the checked fixtures. It does not prove actual Roll20 visual parity, and it does not clear the imported edit/reimport resource WARN path.

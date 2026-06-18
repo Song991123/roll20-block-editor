@@ -39,6 +39,7 @@ const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/visual-fixture-re
 const STATE_MAP_PATH = argOf('--state-map', '');
 const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4211'));
+const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 'true';
 const VIEWPORT = { width: 2200, height: 1400 };
 
 const MIME = {
@@ -366,14 +367,15 @@ function renderMarkdown(report) {
   lines.push(`Generated: ${report.finishedAt ?? report.startedAt}`);
   lines.push('');
   lines.push('Scope: local static app preview iframe only. These screenshots feed the visual fixture diff harness and are not actual Roll20 visual parity evidence.');
+  lines.push('Status and resource status are separated. Use `--fail-on-resource-issues true` for visual-parity work where external images/fonts must load.');
   if (report.stateMapPath) lines.push(`State map: \`${report.stateMapPath}\`${report.stateMapMissing ? ' (missing; initial states used)' : ''}`);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | State applied | Size | Visible elements | Roll buttons | Runtime nodes | Console/Page errors | Resources |');
-  lines.push('| --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: |');
+  lines.push('| Fixture | Status | Resources | Blocks | State applied | Size | Visible elements | Roll buttons | Runtime nodes | Console/Page errors | Resource issues |');
+  lines.push('| --- | --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: |');
   for (const item of report.fixtures) {
     const dom = item.capture?.dom ?? {};
     lines.push(
-      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? 0} | ${fmtStateCandidate(item.capture?.stateCandidate)} | ${dom.rect ? `${dom.rect.width}x${dom.rect.height}` : ''} | ${dom.visibleElementCount ?? ''} | ${dom.rollButtonCount ?? ''} | ${dom.visibleRuntimeNodeCount ?? ''} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} | ${sumResourceIssues(item.resourceIssues)} |`,
+      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${item.import?.blockCount ?? 0} | ${fmtStateCandidate(item.capture?.stateCandidate)} | ${dom.rect ? `${dom.rect.width}x${dom.rect.height}` : ''} | ${dom.visibleElementCount ?? ''} | ${dom.rollButtonCount ?? ''} | ${dom.visibleRuntimeNodeCount ?? ''} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} | ${item.resourceIssueCount ?? sumResourceIssues(item.resourceIssues)} |`,
     );
   }
   lines.push('');
@@ -399,6 +401,8 @@ async function main() {
     fixturesDir: FIXTURES_DIR,
     stateMapPath: stateMap.path,
     stateMapMissing: Boolean(stateMap.missing),
+    failOnResourceIssues: FAIL_ON_RESOURCE_ISSUES,
+    scopeNote: 'status pass means preview rendered; resource pass is separate because visual parity needs assets to load',
     fixtures: [],
   };
 
@@ -449,8 +453,11 @@ async function main() {
       entry.consoleErrors = consoleErrors;
       entry.pageErrors = pageErrors;
       entry.resourceIssues = summarizeResourceIssues(resourceIssues);
+      entry.resourceIssueCount = sumResourceIssues(entry.resourceIssues);
+      entry.resourcePass = entry.resourceIssueCount === 0;
+      if (FAIL_ON_RESOURCE_ISSUES && !entry.resourcePass) entry.pass = false;
       report.fixtures.push(entry);
-      console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} state=${fmtStateCandidate(entry.capture?.stateCandidate)}`);
+      console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} state=${fmtStateCandidate(entry.capture?.stateCandidate)} resources=${entry.resourcePass ? 'PASS' : 'WARN'}`);
       await page.close();
     }
   } finally {
