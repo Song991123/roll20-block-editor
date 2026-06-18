@@ -211,6 +211,25 @@ for that segment in the stitch manifest. This makes the stitcher draw the whole
 clipped image into the CSS destination rectangle and avoids confusing Roll20
 geometry evidence with browser screenshot scaling artifacts.
 
+Before treating any stitched full-root file as sheet-root evidence, audit the
+metadata:
+
+```bash
+corepack pnpm run audit:roll20-root-stitch -- reports/roll20-actual-compare/<run-label>
+```
+
+This audit must pass before renderer CSS conclusions are drawn from
+`roll20-sandbox-root-full.png`. A failed audit means the evidence can include
+Roll20 VTT toolbar/grid context, missing top/bottom sheet segments, or screenshot
+scale mismatch. In that case, recapture with sheet-root-only clipping first.
+
+2026-06-19 Chrome observation note: the Roll20 editor character iframe exposed
+`.charactersheet` via CDP `DOM.getBoxModel` at about `852px` CSS width and
+`4122px` CSS height. Chrome screenshots needed `devicePixelRatio` correction
+for clean sheet-only clipping; uncorrected full-image clipped segments scaled
+`682px` source width into `852px` destination width and visibly included VTT
+grid/toolbar context. Treat that older stitched evidence as suspect.
+
 When the iframe DOM/CSS remains unreadable, run the context diagnostic after the
 diff/classifier/crop diagnostics:
 

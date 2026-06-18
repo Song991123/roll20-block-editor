@@ -24,6 +24,7 @@
     "status:roll20-actual": "node scripts/roll20_actual_status.mjs",
     "crop:roll20-actual": "node scripts/roll20_actual_screenshot_crop.mjs",
     "stitch:roll20-actual-root": "node scripts/roll20_actual_stitch_root.mjs",
+    "audit:roll20-root-stitch": "node scripts/roll20_root_stitch_audit.mjs",
     "classify:roll20-actual": "node scripts/roll20_actual_difference_classify.mjs",
     "diagnose:roll20-visible-crop": "node scripts/roll20_visible_crop_diagnostics.mjs",
     "diagnose:roll20-visible-context": "node scripts/roll20_visible_context_diagnostics.mjs",

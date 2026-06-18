@@ -211,6 +211,17 @@ are scaled to claimed root width `852px`. Next P0 is to recapture generated
 Roll20 full-root screenshots with sheet-root-only clipping that excludes VTT
 toolbar/grid before applying renderer CSS changes. Treat the current full-root
 geometry/height diagnosis as lower-confidence until that capture is normalized.
+2026-06-19 Chrome DPR capture probe:
+CDP `DOM.getBoxModel` in the Roll20 editor tab can read the actual
+`.charactersheet` box (`852px` wide, about `4121.6px` tall). A screenshot clip
+using `devicePixelRatio=1.25` correction produced clean sheet-only visible
+evidence; uncorrected clips still included VTT grid context. Added
+`corepack pnpm run audit:roll20-root-stitch -- <run-dir>` to fail suspect or
+incomplete stitched-root evidence. Latest audit intentionally FAILs the current
+Les-Oublies evidence because the old full-root stitch scales `682px -> 852px`
+full-image segments and the first DPR-corrected manifest is incomplete. Do not
+use current full-root diff for renderer CSS decisions until a complete
+DPR-corrected sheet-root-only stitch passes this audit.
 Follow-up actual layout-context probe:
 Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
 ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.

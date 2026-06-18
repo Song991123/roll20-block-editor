@@ -1122,3 +1122,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_actual_difference_classify.mjs` to read `roll20-sandbox-root-full.json` and classify this evidence as `actual full-root crop/stitch includes non-sheet context or scale mismatch` when full-image clipped segments are scaled into the claimed root width.
 - Latest classifier evidence: Les-Oublies uses `8/8` full-image clipped segments with source width `682px` scaled to `852px`; next action is to recapture Roll20 full-root evidence with sheet-root-only clipping that excludes the VTT toolbar/grid before renderer CSS changes.
 - Claim boundary: the previous full-root geometry/height findings are now lower-confidence until the actual Roll20 capture is normalized. This does not roll back local renderer work; it prevents a false CSS patch based on contaminated evidence.
+
+## 2026-06-19 Chrome DPR Sheet-Root Capture Probe
+
+- Used the logged-in Roll20 editor Chrome tab in read-only/scroll-capture mode only. Existing rooms/settings were not modified.
+- CDP `DOM.getBoxModel` can identify the actual iframe `.charactersheet` box at about `x=431.4`, `y=167.3`, `w=852`, `h=4121.6` CSS pixels.
+- A DPR-corrected screenshot clip (`x/y/w/h * 1.25`) produced a clean sheet-only visible crop, while the uncorrected clip still included left-side Roll20 grid context.
+- A first attempt to automate multiple DPR-corrected segments timed out and produced an incomplete ignored manifest, so it was not promoted as valid evidence.
+- Added `scripts/roll20_root_stitch_audit.mjs` and package script `corepack pnpm run audit:roll20-root-stitch -- <run-dir>` to fail suspect stitched-root evidence before renderer CSS conclusions are drawn.
+- Latest audit against `reports\roll20-actual-compare\2026-06-18-state-map-v1` intentionally FAILs Les-Oublies: the old stitched full-root uses `8/8` full-image clipped segments scaled `682px -> 852px`, and the incomplete DPR manifest has top/coverage gaps.
+- Next P0: rerun the Chrome capture in smaller chunks from true sheet top, generate a complete DPR-corrected sheet-root-only manifest, stitch it, then rerun stitch audit, screenshot diff, classifier, and geometry diagnostics.
