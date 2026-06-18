@@ -37,6 +37,9 @@ This document defines how agents verify that this editor's preview/edit output m
    - Then run the local evidence guard before any Roll20 upload:
      `corepack pnpm run guard:roll20-evidence -- reports/roll20-actual-compare/<label>`
    - The guard must pass. It verifies that copied fixtures, generated reports, private screenshots, and public example folders are not tracked/staged, and that the local baseline, payload audit, and cleaned-payload roundtrip outputs exist for the selected run.
+   - Or run the full local pre-upload gate:
+     `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor`
+   - The pre-upload gate reruns payload hygiene, cleaned-payload visual roundtrip, default-state selector audit, asset/resource audit, and evidence guard. Passing means the payload is ready to upload; it still does not prove Roll20 visual parity.
 2. Observe existing Roll20 solo rooms:
    - Use the user's logged-in Chrome session.
    - Identify rooms where the user is alone or intended for testing.
