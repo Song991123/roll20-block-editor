@@ -19,6 +19,7 @@
  */
 
 import { autoPrefixHtmlClasses, autoPrefixCssClasses } from './prefix';
+import { sanitizeForRoll20Legacy } from '../emit/sanitize';
 import {
   roll20BaseIframeCss,
   roll20BaseShadowCss,
@@ -35,6 +36,8 @@ export interface BuildDocOptions {
   i18n?: string;
   /** D4 ① — true 면 user html/css 에 autoPrefix 적용. */
   sanitize?: boolean;
+  /** 구버전 Roll20 CSS 무해화. Auto-prefix와 별개이며 기본값은 OFF. */
+  legacyCssSanitize?: boolean;
   /** 다크 모드 토큰 부착 — body[data-theme=dark]. */
   darkMode?: boolean;
   /** spec 17 §9 — 9 레이어 필터. 'all' 이면 dim 없음. */
@@ -652,6 +655,7 @@ ${scope} [data-r20-hovered="1"] {
  */
 export function buildSheetDoc(opts: BuildDocOptions): string {
   const sanitize = opts.sanitize !== false; // default ON
+  const legacyCssSanitize = opts.legacyCssSanitize === true;
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
 
@@ -660,6 +664,9 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
+  const previewCss = legacyCssSanitize
+    ? sanitizeForRoll20Legacy(prefixedCss).sanitized
+    : prefixedCss;
 
   const bodyInner = prefixedHtml ? applyTranslationsToHtml(prefixedHtml, opts.i18n) : EMPTY_PLACEHOLDER;
 
@@ -677,7 +684,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <style id="r20-baseline-fallback">${roll20BaselineCss}</style>
 <style id="r20-runtime">${runtimeCss}</style>
 <style id="r20-layer-filter">${layerFilterCss()}</style>
-<style id="r20-user">${prefixedCss}</style>
+<style id="r20-user">${previewCss}</style>
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
 <body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}">
@@ -708,11 +715,15 @@ ${bodyInner}
  */
 export function buildSheetParts(opts: BuildDocOptions): { html: string; css: string } {
   const sanitize = opts.sanitize !== false;
+  const legacyCssSanitize = opts.legacyCssSanitize === true;
   const userHtml = (opts.html ?? '').trim();
   const userCss = (opts.css ?? '').trim();
 
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
+  const previewCss = legacyCssSanitize
+    ? sanitizeForRoll20Legacy(prefixedCss).sanitized
+    : prefixedCss;
 
   const bodyInner = prefixedHtml ? applyTranslationsToHtml(prefixedHtml, opts.i18n) : EMPTY_PLACEHOLDER;
 
@@ -729,7 +740,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
     styleSourceChunk('roll20-baseline-fallback', roll20BaselineCss),
     styleSourceChunk('app-preview-runtime', runtimeCss),
     styleSourceChunk('app-layer-filter', layerFilterCss('.charsheet')),
-    styleSourceChunk('sheet-user-css', prefixedCss),
+    styleSourceChunk('sheet-user-css', previewCss),
     styleSourceChunk('preview-hidden-runtime', ROLL20_PREVIEW_HIDDEN_CSS),
   ].join('\n');
 

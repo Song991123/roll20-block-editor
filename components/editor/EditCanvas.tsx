@@ -98,6 +98,7 @@ export default function EditCanvas() {
   const editPlacementMode = useUiStore((s) => s.editPlacementMode);
   const setEditPlacementMode = useUiStore((s) => s.setEditPlacementMode);
   const sanitize = usePreviewStore((s) => s.sanitize);
+  const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const darkMode = usePreviewStore((s) => s.darkMode);
   const [lastMove, setLastMove] = useState<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
@@ -123,11 +124,12 @@ export default function EditCanvas() {
         css: emitCss,
         i18n: emitI18n,
         sanitize,
+        legacyCssSanitize,
         darkMode,
         previewLayer: effectiveLayer,
         includeEditorOverlays: false,
       }),
-    [optimisticHtml, emitCss, emitI18n, sanitize, darkMode, effectiveLayer],
+    [optimisticHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, darkMode, effectiveLayer],
   );
 
   const snap = useCallback(

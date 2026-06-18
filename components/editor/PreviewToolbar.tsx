@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Maximize2, Minus, Plus, RefreshCw, Moon, Sun, Layers, Check, Frame } from 'lucide-react';
+import { Maximize2, Minus, Plus, RefreshCw, Moon, Sun, Layers, Check, Frame, ShieldAlert } from 'lucide-react';
 import type { PreviewLayer } from '@/lib/stores/uiStore';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,6 +50,8 @@ export default function PreviewToolbar() {
   const setZoom = useUiStore((s) => s.setPreviewZoom);
   const darkMode = usePreviewStore((s) => s.darkMode);
   const setDarkMode = usePreviewStore((s) => s.setDarkMode);
+  const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
+  const setLegacyCssSanitize = usePreviewStore((s) => s.setLegacyCssSanitize);
   const renderMode = usePreviewStore((s) => s.renderMode);
   const setRenderMode = usePreviewStore((s) => s.setRenderMode);
 
@@ -191,6 +193,31 @@ export default function PreviewToolbar() {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top">{darkMode ? '라이트' : '다크'} 미리보기</TooltipContent>
+        </Tooltip>
+
+        <span className="mx-1.5 h-5 w-px bg-border" />
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant={legacyCssSanitize ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 gap-1.5 px-2.5 text-[11px]"
+              onClick={() => setLegacyCssSanitize(!legacyCssSanitize)}
+              aria-label="구버전 Roll20 CSS 무해화"
+              aria-pressed={legacyCssSanitize}
+              data-testid="preview-legacy-css-toggle"
+            >
+              <ShieldAlert className="h-3.5 w-3.5" />
+              <span>구버전 CSS</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            {legacyCssSanitize
+              ? '구버전 Roll20 CSS 무해화 적용 중'
+              : '신버전/원본 CSS 기준 미리보기'}
+          </TooltipContent>
         </Tooltip>
 
         <span className="mx-1.5 h-5 w-px bg-border" />

@@ -56,6 +56,7 @@ export default function PreviewMain() {
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
   const darkMode = usePreviewStore((s) => s.darkMode);
   const sanitize = usePreviewStore((s) => s.sanitize);
+  const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const sandbox = usePreviewStore((s) => s.iframeSandbox);
   const renderMode = usePreviewStore((s) => s.renderMode);
   const setRenderMode = usePreviewStore((s) => s.setRenderMode);
@@ -111,11 +112,12 @@ export default function PreviewMain() {
         css: emitCss,
         i18n: emitI18n,
         sanitize,
+        legacyCssSanitize,
         darkMode,
         previewLayer,
         includeEditorOverlays: false,
       }),
-    [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer],
+    [emitHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, darkMode, previewLayer],
   );
 
   // spec 21 Phase A — Shadow DOM 모드 mount.
@@ -150,11 +152,12 @@ export default function PreviewMain() {
         css: emitCss,
         i18n: emitI18n,
         sanitize,
+        legacyCssSanitize,
         darkMode,
         previewLayer,
         includeEditorOverlays: true,
       }),
-    [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer],
+    [emitHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, darkMode, previewLayer],
   );
   useEffect(() => {
     if (renderMode !== 'shadow') return;
