@@ -28,16 +28,19 @@ const TARGETS = [
     id: 'sandbox',
     filename: 'roll20-sandbox.png',
     evidence: 'Custom Sheet Sandbox or new test-room initial sheet screenshot',
+    requiredForGeneratedSheetCheck: true,
   },
   {
     id: 'chat',
     filename: 'roll20-chat.png',
     evidence: 'Roll20 chat or rolltemplate smoke screenshot',
+    requiredForGeneratedSheetCheck: true,
   },
   {
     id: 'room',
     filename: 'roll20-room.png',
     evidence: 'Read-only existing solo-room observation screenshot',
+    requiredForGeneratedSheetCheck: false,
   },
 ];
 
@@ -57,17 +60,37 @@ async function main() {
     fixtures.push(await inspectFixture(runDir, fixtureId, diffReport));
   }
 
-  const actualTargetCount = fixtures.length * TARGETS.length;
-  const actualPresentCount = fixtures.flatMap((fixture) => fixture.actualTargets).filter((target) => target.exists).length;
-  const diffedCount = fixtures.flatMap((fixture) => fixture.actualTargets).filter((target) => target.diffStatus === 'DIFFED').length;
-  const failedDiffCount = fixtures.flatMap((fixture) => fixture.actualTargets).filter((target) => target.diffStatus === 'FAIL').length;
+  const allTargets = fixtures.flatMap((fixture) => fixture.actualTargets);
+  const generatedTargets = allTargets.filter((target) => target.requiredForGeneratedSheetCheck);
+  const observationTargets = allTargets.filter((target) => !target.requiredForGeneratedSheetCheck);
+  const actualTargetCount = allTargets.length;
+  const actualPresentCount = allTargets.filter((target) => target.exists).length;
+  const diffedCount = allTargets.filter((target) => target.diffStatus === 'DIFFED').length;
+  const failedDiffCount = allTargets.filter((target) => target.diffStatus === 'FAIL').length;
+  const generatedTargetCount = generatedTargets.length;
+  const generatedPresentCount = generatedTargets.filter((target) => target.exists).length;
+  const generatedDiffedCount = generatedTargets.filter((target) => target.diffStatus === 'DIFFED').length;
+  const observationTargetCount = observationTargets.length;
+  const observationPresentCount = observationTargets.filter((target) => target.exists).length;
+  const observationDiffedCount = observationTargets.filter((target) => target.diffStatus === 'DIFFED').length;
   const localReady =
     Boolean(preupload.pass) &&
     fixtures.every((fixture) => fixture.localBaselineReady && fixture.payloadReady) &&
     failedDiffCount === 0;
-  const actualEvidenceComplete = actualPresentCount === actualTargetCount && diffedCount === actualTargetCount;
-  const commandPass = localReady && (!REQUIRE_ACTUAL || actualEvidenceComplete);
-  const status = statusOf({ localReady, actualEvidenceComplete, actualPresentCount, actualTargetCount, diffedCount });
+  const generatedEvidenceComplete =
+    generatedPresentCount === generatedTargetCount && generatedDiffedCount === generatedTargetCount;
+  const roomObservationComplete =
+    observationTargetCount === 0 ||
+    (observationPresentCount === observationTargetCount && observationDiffedCount === observationTargetCount);
+  const actualEvidenceComplete = generatedEvidenceComplete && roomObservationComplete;
+  const commandPass = localReady && (!REQUIRE_ACTUAL || generatedEvidenceComplete);
+  const status = statusOf({
+    localReady,
+    generatedEvidenceComplete,
+    generatedPresentCount,
+    generatedTargetCount,
+    generatedDiffedCount,
+  });
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -86,11 +109,27 @@ async function main() {
       actualMissingCount: actualTargetCount - actualPresentCount,
       diffedCount,
       failedDiffCount,
+      generatedTargetCount,
+      generatedPresentCount,
+      generatedMissingCount: generatedTargetCount - generatedPresentCount,
+      generatedDiffedCount,
+      observationTargetCount,
+      observationPresentCount,
+      observationMissingCount: observationTargetCount - observationPresentCount,
+      observationDiffedCount,
       blockerEvidenceCount: blockerEvidence.length,
     },
     blockerEvidence,
     fixtures,
-    nextAction: buildNextAction({ preupload, actualPresentCount, actualTargetCount, diffedCount, blockerEvidence }),
+    nextAction: buildNextAction({
+      preupload,
+      generatedPresentCount,
+      generatedTargetCount,
+      generatedDiffedCount,
+      observationPresentCount,
+      observationTargetCount,
+      blockerEvidence,
+    }),
   };
 
   await fs.mkdir(outDir, { recursive: true });
@@ -216,6 +255,7 @@ function inspectTarget(fixtureId, screenshots, target, diffReport) {
     screenshot: fileStatus(file),
     exists: existsSync(file),
     diffStatus: diffItem?.status ?? 'NOT_RUN',
+    requiredForGeneratedSheetCheck: Boolean(target.requiredForGeneratedSheetCheck),
     bestMismatchRatio: diffItem?.result?.best?.mismatchRatio ?? null,
     note: diffItem?.note ?? (existsSync(file) ? 'screenshot present; diff not run yet' : 'missing actual Roll20 screenshot'),
   };
@@ -225,28 +265,45 @@ function fileStatus(file) {
   return { path: rel(file), exists: existsSync(file) };
 }
 
-function buildNextAction({ preupload, actualPresentCount, actualTargetCount, diffedCount, blockerEvidence }) {
+function buildNextAction({
+  preupload,
+  generatedPresentCount,
+  generatedTargetCount,
+  generatedDiffedCount,
+  observationPresentCount,
+  observationTargetCount,
+  blockerEvidence,
+}) {
   if (!preupload.pass) {
     return 'Run or fix the local pre-upload gate before attempting Roll20 Sandbox upload.';
   }
-  if (actualPresentCount < actualTargetCount) {
+  if (generatedPresentCount < generatedTargetCount) {
     if (blockerEvidence.length > 0) {
       return 'Chrome file upload is still blocked in the recorded evidence. Enable Allow access to file URLs for the Codex extension, upload payloads in Roll20 Sandbox, capture screenshots, then rerun screenshot diff and this status command.';
     }
-    return 'Upload payloads in Roll20 Custom Sheet Sandbox/test room, capture roll20-sandbox.png and roll20-chat.png, optionally capture roll20-room.png from a solo room, then rerun screenshot diff and this status command.';
+    return 'Upload payloads in Roll20 Custom Sheet Sandbox/test room, capture roll20-sandbox.png and roll20-chat.png, then rerun screenshot diff and this status command. Existing solo-room screenshots are optional observation evidence, not part of the generated-sheet gate.';
   }
-  if (diffedCount < actualTargetCount) {
+  if (generatedDiffedCount < generatedTargetCount) {
     return 'Actual screenshots exist. Run node scripts/roll20_actual_screenshot_diff.mjs for this run, then classify differences.';
+  }
+  if (observationPresentCount < observationTargetCount) {
+    return 'Generated-sheet actual evidence is diffed. Optionally add read-only solo-room observation screenshots, then classify differences before making any parity claim.';
   }
   return 'Classify diff results by wrapper/context, base CSS, cascade, default state, translation, worker JS, rolltemplate/chat, asset loading, viewport/crop, or edit overlay before making any parity claim.';
 }
 
-function statusOf({ localReady, actualEvidenceComplete, actualPresentCount, actualTargetCount, diffedCount }) {
+function statusOf({
+  localReady,
+  generatedEvidenceComplete,
+  generatedPresentCount,
+  generatedTargetCount,
+  generatedDiffedCount,
+}) {
   if (!localReady) return 'LOCAL_PREUPLOAD_NOT_READY';
-  if (actualEvidenceComplete) return 'ACTUAL_SCREENSHOTS_DIFFED';
-  if (actualPresentCount === 0) return 'PREUPLOAD_READY_MISSING_ACTUAL';
-  if (actualPresentCount < actualTargetCount) return 'PARTIAL_ACTUAL_SCREENSHOTS';
-  if (diffedCount < actualTargetCount) return 'ACTUAL_SCREENSHOTS_NEED_DIFF';
+  if (generatedEvidenceComplete) return 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED';
+  if (generatedPresentCount === 0) return 'PREUPLOAD_READY_MISSING_GENERATED_ACTUAL';
+  if (generatedPresentCount < generatedTargetCount) return 'PARTIAL_GENERATED_ACTUAL_SCREENSHOTS';
+  if (generatedDiffedCount < generatedTargetCount) return 'GENERATED_ACTUAL_SCREENSHOTS_NEED_DIFF';
   return 'ACTUAL_STATUS_NEEDS_REVIEW';
 }
 
@@ -263,12 +320,17 @@ function renderMarkdown(report) {
     '',
     `- Pre-upload gate: ${report.preupload.pass ? 'PASS' : 'MISSING/FAIL'}`,
     `- Fixtures: ${report.summary.fixtures}`,
-    `- Actual screenshots: ${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
-    `- Screenshot diffs: ${report.summary.diffedCount}/${report.summary.actualTargetCount}`,
+    `- Generated-sheet screenshots: ${report.summary.generatedPresentCount}/${report.summary.generatedTargetCount}`,
+    `- Generated-sheet diffs: ${report.summary.generatedDiffedCount}/${report.summary.generatedTargetCount}`,
+    `- Solo-room observation screenshots: ${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
+    `- Solo-room observation diffs: ${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
+    `- All actual screenshots: ${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
+    `- All screenshot diffs: ${report.summary.diffedCount}/${report.summary.actualTargetCount}`,
     `- Blocker evidence files: ${report.summary.blockerEvidenceCount}`,
     `- Status: ${report.status}`,
     `- Command gate: ${report.commandPass ? 'PASS' : 'NEEDS ACTION'}`,
-    `- Actual evidence complete: ${report.actualEvidenceComplete ? 'yes' : 'no'}`,
+    `- Generated-sheet actual evidence complete: ${report.summary.generatedDiffedCount === report.summary.generatedTargetCount ? 'yes' : 'no'}`,
+    `- All actual evidence complete, including optional room observation: ${report.actualEvidenceComplete ? 'yes' : 'no'}`,
     '',
     `Next action: ${report.nextAction}`,
     '',
@@ -300,6 +362,8 @@ function renderMarkdown(report) {
     '',
     '- Missing Roll20 screenshots are unverified, never PASS.',
     '- A DIFFED target is diagnostic evidence, not a parity claim until the mismatch is classified.',
+    '- `sandbox` and `chat` targets are the generated-sheet actual-screen gate.',
+    '- `room` targets are read-only solo-room observation evidence and are reported separately.',
     '- Existing Roll20 rooms are observation-only; generated payloads go to Custom Sheet Sandbox or a new test room.',
   );
   return `${lines.join('\n')}\n`;
@@ -310,8 +374,10 @@ function renderConsoleSummary(report, outDir) {
     `ROLL20 ACTUAL STATUS ${report.status}`,
     `run=${rel(report.runDir)}`,
     `preupload=${report.preupload.pass ? 'PASS' : 'MISSING/FAIL'}`,
-    `actualScreenshots=${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
-    `diffed=${report.summary.diffedCount}/${report.summary.actualTargetCount}`,
+    `generatedActualScreenshots=${report.summary.generatedPresentCount}/${report.summary.generatedTargetCount}`,
+    `generatedDiffed=${report.summary.generatedDiffedCount}/${report.summary.generatedTargetCount}`,
+    `roomObservationScreenshots=${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
+    `roomObservationDiffed=${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
     `commandGate=${report.commandPass ? 'PASS' : 'NEEDS_ACTION'}`,
     `out=${rel(outDir)}`,
   ].join('\n');

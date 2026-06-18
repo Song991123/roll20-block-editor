@@ -39,7 +39,7 @@ This document defines how agents verify that this editor's preview/edit output m
    - The guard must pass. It verifies that copied fixtures, generated reports, private screenshots, and public example folders are not tracked/staged, and that the local baseline, payload audit, and cleaned-payload roundtrip outputs exist for the selected run.
    - To summarize the current actual-screen evidence state without making a parity claim:
      `corepack pnpm run status:roll20-actual -- reports/roll20-actual-compare/<label>`
-   - To fail when Roll20 screenshots are still missing:
+   - To fail when generated-sheet Roll20 Sandbox/chat screenshots and diffs are still missing:
      `corepack pnpm run status:roll20-actual -- reports/roll20-actual-compare/<label> --require-actual`
    - Or run the full local pre-upload gate:
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor`
@@ -134,8 +134,11 @@ missing, the target stays SKIP and must remain unverified.
 
 Use `corepack pnpm run status:roll20-actual -- <run-dir> --require-actual` after
 the diff helper when a work batch claims actual-screen coverage. This command
-does not prove visual parity by itself; it proves whether the required evidence
-files and diffs exist or whether the batch is still blocked/missing evidence.
+does not prove visual parity by itself; it proves whether the generated-sheet
+`roll20-sandbox.png` and `roll20-chat.png` evidence files and diffs exist or
+whether the batch is still blocked/missing evidence. `roll20-room.png` is
+reported separately as read-only solo-room observation evidence, not as the
+required generated-sheet upload gate.
 
 ## Chrome Safety
 
