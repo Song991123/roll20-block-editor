@@ -1175,3 +1175,26 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - It lists AW2E and YSHY as missing generated actual + chat evidence, and Les-Oublies as missing chat evidence.
 - Verification boundary: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --require-actual` still fails as expected with `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=1/6`, and `commandGate=NEEDS_ACTION`.
 - Next P0 remains actual Roll20 capture for AW2E/YSHY and trustworthy Roll20 chat screenshots. Do not promote the Les-Oublies diagnostic CSS candidate to production before that cross-fixture evidence exists.
+
+## 2026-06-19 Endpoint Fallback Captured AW2E and YSHY Viewports
+
+- Used only the dedicated Roll20 Custom Sheet Sandbox campaign `21639681`; existing rooms and existing chat archives were not modified.
+- Reused the observed sandbox endpoint fallback for the two missing generated fixtures:
+  - AW2E: POST `/sheetsandbox/savesheetsettings` accepted base64 `html`, `css`, and `translation`; `/campaigns/savesettings/21639681` saved the AW2E `customcharsheet_json`.
+  - YSHY: the same endpoint/settings path accepted the larger generated payload and saved the YSHY `customcharsheet_json`.
+- Reopened the sandbox character in the Roll20 editor. AW2E and YSHY both rendered in the character iframe; YSHY was additionally confirmed by iframe text markers such as `이름`, `플레이어`, `직업`, `나이`, `이성`, and `근력`.
+- Captured ignored local viewport evidence:
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-sandbox.png`
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/yshy-commission-1bu/screenshots/roll20-sandbox.png`
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/yshy-commission-1bu/screenshots/roll20-sandbox-dom-evidence.json`
+- Latest actual screenshot diff:
+  - AW2E sandbox mismatch `14.90%` from viewport evidence.
+  - Les-Oublies sandbox mismatch `6.57%` from DPR-corrected full-root evidence.
+  - YSHY sandbox mismatch `45.05%` from viewport evidence.
+- Latest classifier:
+  - AW2E and YSHY classify as `viewport/crop/sheet size dominates current diff`.
+  - Les-Oublies remains `sheet root geometry/height differs after full-height capture`.
+- Latest status:
+  - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `generatedActualScreenshots=3/6`, `generatedDiffed=3/6`, and `commandGate=PASS`.
+  - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --require-actual` still fails as expected because all three `roll20-chat.png` screenshots are missing.
+- Claim boundary: this proves all three prepared generated fixtures can reach and render in the dedicated Roll20 sandbox. It is not Roll20 visual parity. Next P0 is DPR-corrected sheet-root/full-root capture for AW2E/YSHY and a trustworthy Roll20 chat screenshot/DOM-to-screenshot path.
