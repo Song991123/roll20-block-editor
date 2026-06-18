@@ -980,3 +980,22 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_actual_difference_classify.mjs` so full-height evidence is explicitly categorized. Latest classifier result: `sheet root geometry/height differs after full-height capture`.
 - Status remains partial: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=1/6`, `generatedDiffed=1/6`, `roomObservationScreenshots=0/3`, and `roomObservationDiffed=0/3`.
 - Scope note: this replaces the old visible-top `21.67%` crop as the main generated-sheet evidence for Les-Oublies, but it is still not Roll20 visual parity. AW2E/YSHY actual screenshots and trustworthy chat screenshots remain missing. Next renderer work should compare actual-vs-local row/table/control geometry before applying generic CSS changes.
+
+## 2026-06-19 Roll20 Full-Root Candidate + State Visibility Probe
+
+- Added `scripts/roll20_full_root_candidate_smoke.mjs` and package script `corepack pnpm run smoke:roll20-full-root-candidates`.
+- The script compares local full-root render candidates against stitched `roll20-sandbox-root-full.png`, separating source/default state, state-map, local Sandbox expected sanitize, and actual-root-width candidates.
+- Latest command: `corepack pnpm run smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest Les-Oublies result:
+  - Existing app `local-preview.png` reference remains the closest current screenshot at `6.90%`.
+  - Best direct local candidate is `normal-actual-root-width-source` at `8.52%`.
+  - State-map and source/default candidates are visually close, so a simple local state toggle is not enough.
+  - Best direct local root is still about `841px` taller than the stitched Roll20 root.
+  - Row/table geometry remains the dominant clue: row 0 `310.6px` actual vs `554px` local; row 3 `140.2px` actual vs `318.563px` local; tables 4/5 are about `106px`/`104px` taller locally.
+- Added `targetGeometry` capture to `scripts/roll20_actual_local_baseline.mjs` so future local baselines include app preview/edit rows, tables, images, inputs, and roll/action button geometry.
+- Verification smoke for the new local baseline geometry field:
+  `node scripts\roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir reports\roll20-actual-compare --run-label 2026-06-19-local-geometry-smoke --only official-roll20-Les-Oublies --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json` PASS.
+- A second no-state local geometry smoke showed source/default local preview was much shorter (`1189px`) than actual Roll20 (`4122px`), so the actual default display cannot be inferred from hidden attr values alone.
+- Fresh read-only Chrome/CDP state visibility probe saved ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-state-visibility.json`.
+- Actual Roll20 facts from that probe: hidden `attr_sheetTab` and `attr_sheetTabForBtn` both have `value` attribute and property `combat`, but `.sheet-section-oublie`, `.sheet-section-competences`, `.sheet-section-montures`, and `.sheet-combat` are visible. Next P0 is to compare the actual CSS selectors controlling those visible sections against local preview, rather than treating hidden attr state as the whole truth.
+- Scope note: this is diagnostic groundwork. It does not prove visual parity and it does not justify a Les-Oublies-specific CSS patch.
