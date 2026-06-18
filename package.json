@@ -23,6 +23,7 @@
     "classify:visual-fixtures": "node scripts/classify_visual_fixture_diffs.mjs",
     "smoke:export-dialog": "node scripts/export_dialog_browser_smoke.mjs",
     "smoke:worker-state": "node scripts/sheet_worker_state_smoke.mjs",
+    "smoke:visual-state-candidates": "node scripts/visual_state_candidate_smoke.mjs",
     "diff:visual-fixtures": "node scripts/make_visual_diff_pages.mjs && node scripts/run_visual_fixture_diff_pages.mjs reports/visual-fixture-diff && node scripts/classify_visual_fixture_diffs.mjs reports/visual-fixture-diff test-fixtures/visual"
   },
   "dependencies": {
