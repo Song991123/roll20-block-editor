@@ -111,6 +111,18 @@ counts. The remaining clue is not selector-count loss, but geometry: first
 deltas, and full root height mismatch. Next P0 is full-height/scroll-stitched
 Roll20 root capture plus deeper row/table/control height comparison before
 changing generic renderer CSS.
+Follow-up geometry delta diagnostic:
+`corepack pnpm run diagnose:roll20-geometry --
+reports\roll20-actual-compare\2026-06-18-state-map-v1` now writes an ignored
+row/table/input height report. It confirms selected counts match and ranks the
+content issue as `.sheet-2colrow` geometry, not selector loss. A targeted actual
+Roll20 row probe shows row 0 actual is `310.6px` with two inline columns on one
+line, while the local best candidate wraps the second column to the next line
+and makes row 0 `554px`. A diagnostic `sandbox-inline-block-fit-tolerance`
+candidate proves the wrap can be removed (`554px -> 297px`), but its image
+mismatch is slightly worse (`21.56%` vs `21.49%`), so this is evidence, not a
+production CSS patch. Next P0 remains full-height/scroll-stitched capture plus
+generic Roll20 inline-block/rounding context investigation.
 
 | Status | Owner | Task | Evidence / Next Check |
 | --- | --- | --- | --- |

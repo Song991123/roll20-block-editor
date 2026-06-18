@@ -945,3 +945,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Actual Roll20 facts from the fresh probe: state `sheetTab=combat` / `sheetTabForBtn=combat`; root rect `852x4121.575`; `.sheet-2colrow=4`, `.sheet-col=15`, `img=5`, `table=8`, `input=135`.
 - Rerunning `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1` keeps best candidate `sandbox-actual-root-width-no-state` at CSS mismatch `21.49%`, but computed-style score improves from `339` to `147` because selector counts now come from selected probes and match local counts.
 - Updated conclusion: the remaining Les-Oublies actual/local problem is not selector-count loss. It is geometry/height: first `.sheet-2colrow` height `310.6px` actual vs `554px` local, table/input height deltas, and full root height mismatch. Next P0 is full-height/scroll-stitched Roll20 capture plus deeper row/table/control height comparison.
+
+## 2026-06-19 Roll20 Geometry Delta Diagnostic
+
+- Added `scripts/roll20_geometry_delta_diagnostics.mjs` and package script `corepack pnpm run diagnose:roll20-geometry`.
+- Extended `scripts/roll20_same_context_visible_smoke.mjs` so candidate metrics include target geometry for `.sheet-2colrow`, first tables, and images.
+- Captured actual Roll20 target geometry from the dedicated sandbox iframe as ignored evidence: `live-iframe-probe/official-roll20-Les-Oublies-target-geometry.json`.
+- Latest command: `corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Result: selected selector counts match; row 0 is the top content geometry delta. Actual row 0 is `310.6px` high with two inline columns on the same line. The best local candidate wraps the second `.sheet-col` to the next line and makes row 0 `554px`.
+- Added a diagnostic same-context candidate `sandbox-inline-block-fit-tolerance-no-state`; it removes the row 0 wrap and lowers local row 0 to `297px`, but the overall image mismatch is slightly worse (`21.56%` vs current best `21.49%`). Do not promote it to production CSS yet.
+- Next P0: full-height/scroll-stitched Roll20 capture and a generic Roll20 inline-block/rounding context investigation. Avoid Les-Oublies-specific CSS patches.

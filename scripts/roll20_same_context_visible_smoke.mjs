@@ -192,6 +192,13 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, br
         captureMode: 'root-top-left',
         contextPatch: { mode: 'roll20-dialog-padding', rootWidth: actualRootWidth },
       });
+      candidateInputs.push({
+        id: 'sandbox-inline-block-fit-tolerance-no-state',
+        applyStateHint: false,
+        roll20SandboxSanitize: true,
+        captureMode: 'root-top-left',
+        contextPatch: { mode: 'inline-block-fit-tolerance', rootWidth: actualRootWidth },
+      });
     }
 
     candidateInputs.push(
@@ -361,6 +368,44 @@ async function renderCandidate({
         },
       };
     }
+    function pickTargetGeometry(el, depth = 0) {
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      const children = depth > 0 ? [] : Array.from(el.children).slice(0, 30).map((child) => pickTargetGeometry(child, depth + 1));
+      return {
+        tag: el.tagName,
+        id: el.id || '',
+        className: typeof el.className === 'string' ? el.className : String(el.className || ''),
+        name: el.getAttribute('name') || '',
+        type: el.getAttribute('type') || '',
+        text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 100),
+        rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+        scroll: { width: el.scrollWidth || 0, height: el.scrollHeight || 0 },
+        natural: el.tagName === 'IMG' ? { width: el.naturalWidth || 0, height: el.naturalHeight || 0, complete: Boolean(el.complete), src: el.currentSrc || el.src || '' } : null,
+        style: {
+          display: cs.display,
+          visibility: cs.visibility,
+          position: cs.position,
+          float: cs.float,
+          clear: cs.clear,
+          boxSizing: cs.boxSizing,
+          width: cs.width,
+          height: cs.height,
+          minHeight: cs.minHeight,
+          maxHeight: cs.maxHeight,
+          margin: cs.margin,
+          padding: cs.padding,
+          border: cs.border,
+          overflow: cs.overflow,
+          fontSize: cs.fontSize,
+          lineHeight: cs.lineHeight,
+          verticalAlign: cs.verticalAlign,
+          backgroundColor: cs.backgroundColor,
+        },
+        children,
+      };
+    }
     function rect(el) {
       if (!el) return null;
       const r = el.getBoundingClientRect();
@@ -404,6 +449,11 @@ async function renderCandidate({
           }).slice(0, 3);
           return { selector, count: nodes.length, samples: visible.map(pickStyle) };
         }),
+      },
+      targetGeometry: {
+        rows: Array.from(document.querySelectorAll('.sheet-2colrow')).map((row, index) => ({ index, ...pickTargetGeometry(row) })),
+        tables: Array.from(document.querySelectorAll('table')).slice(0, 12).map((table, index) => ({ index, ...pickTargetGeometry(table) })),
+        images: Array.from(document.querySelectorAll('img')).map((image, index) => ({ index, ...pickTargetGeometry(image) })),
       },
     };
   });
@@ -523,6 +573,23 @@ async function applyRenderContextPatch(page, contextPatch) {
       dialog.style.paddingLeft = '20px';
       dialog.style.paddingRight = '20px';
       dialog.style.boxSizing = 'border-box';
+    } else if (patch.mode === 'inline-block-fit-tolerance') {
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+      const style = document.createElement('style');
+      style.setAttribute('data-r20-diagnostic-context-patch', 'inline-block-fit-tolerance');
+      style.textContent = `
+        .ui-dialog .charsheet .sheet-2colrow,
+        .ui-dialog .charsheet .sheet-3colrow {
+          word-spacing: -1px;
+        }
+        .ui-dialog .charsheet .sheet-2colrow > .sheet-col,
+        .ui-dialog .charsheet .sheet-3colrow > .sheet-col {
+          word-spacing: normal;
+        }
+      `;
+      document.head.append(style);
     }
   }, contextPatch);
 }

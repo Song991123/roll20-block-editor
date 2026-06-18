@@ -77,6 +77,14 @@ actual/local deltas are geometry, including first `.sheet-2colrow` height
 `310.6px` actual vs `554px` local, table/input height differences, and the full
 root height mismatch. Next work needs full-height/scroll-stitched root capture
 and deeper row/table/control height comparison before generic CSS changes.
+`corepack pnpm run diagnose:roll20-geometry --
+reports\roll20-actual-compare\2026-06-18-state-map-v1` adds that deeper report:
+actual/local selector counts match, row 0 is the strongest content delta, and
+the local best candidate wraps the second `.sheet-col` to the next line. A
+diagnostic inline-block tolerance candidate removes that wrap and reduces row 0
+height from `554px` to `297px`, but it does not improve the image diff
+(`21.56%` vs current best `21.49%`). Treat this as a root-cause clue, not a
+production CSS patch.
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |

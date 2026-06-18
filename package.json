@@ -26,6 +26,7 @@
     "classify:roll20-actual": "node scripts/roll20_actual_difference_classify.mjs",
     "diagnose:roll20-visible-crop": "node scripts/roll20_visible_crop_diagnostics.mjs",
     "diagnose:roll20-visible-context": "node scripts/roll20_visible_context_diagnostics.mjs",
+    "diagnose:roll20-geometry": "node scripts/roll20_geometry_delta_diagnostics.mjs",
     "smoke:roll20-same-context-visible": "node scripts/roll20_same_context_visible_smoke.mjs",
     "verify:roll20-preupload": "node scripts/roll20_preupload_verification.mjs",
     "classify:visual-fixtures": "node scripts/classify_visual_fixture_diffs.mjs",
