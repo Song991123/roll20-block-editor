@@ -68,6 +68,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest local ignored smoke report: `reports/edit-flow-smoke/edit-flow-smoke-results.json` PASS. The moved section's computed position and emitted CSS rule both reported `left: 464px; top: 256px`.
 - Scope note: this proves synthetic edit-flow behavior in the static app only. Imported real-sheet object drag and actual Roll20 visual parity remain unproven.
 
+## 2026-06-18 Preview/Edit Visual Smoke Setup
+
+- Added `scripts/preview_edit_visual_smoke.mjs` for local imported-fixture preview/edit screenshot comparison.
+- The script imports ignored fixtures through `window.__perfHook.importSheet`, captures only `#charsheet-root` for preview and edit, then computes a browser-canvas pixel diff over the shared crop.
+- Latest local ignored report: `reports/preview-edit-visual/preview-edit-visual-results.md` PASS as a diagnostic pipeline with 0 console/page errors.
+- Current mismatch diagnostics: AW2E 29.95%, Les-Oublies 24.59%, YSHY 1BU 8.07%. These numbers are not a parity gate yet; they identify the next visual-difference work.
+- Added `window.__perfHook.setPreviewZoom` so visual smoke scripts can force 100% zoom and avoid fit-to-width artifacts.
+
 ## Reporting Guardrails
 
 - Do not claim Roll20 visual parity yet.

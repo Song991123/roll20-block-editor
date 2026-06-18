@@ -17,6 +17,7 @@ Run scripts from the project root unless noted otherwise.
 | `node scripts/make_visual_diff_pages.mjs` | Build visual diff pages and diagnostics. |
 | `node scripts/make_cascade_leak_pages.mjs` | Build browser-computed CSS cascade diagnostic pages from rendered fixture HTML. |
 | `node scripts/live_shadow_cascade_smoke.mjs --out-dir ./out --report-dir reports/live-shadow-cascade [--only <fixtureId>]` | Live static app smoke for preview/edit Shadow DOM CSS winners after real browser import. Needs `corepack pnpm run build` first. |
+| `node scripts/preview_edit_visual_smoke.mjs --out-dir ./out --report-dir reports/preview-edit-visual [--only <fixtureId>]` | Live static app screenshot smoke comparing imported fixture preview root vs edit root. Writes local-only screenshots and pixel diagnostics; not a Roll20 parity gate. Needs `corepack pnpm run build` first. |
 | `node scripts/roll20_actual_compare_manifest.mjs [run-label]` | Create an ignored local checklist/report scaffold for Roll20 room/sandbox/test-room comparison evidence. |
 | `node scripts/serve_static_dir.mjs <root_dir> [port]` | Serve workspace-owned reports/fixtures over localhost for browser verification. |
 | `node scripts/run_selected_roundtrip.mjs` | Run selected Node-side roundtrip checks. |
