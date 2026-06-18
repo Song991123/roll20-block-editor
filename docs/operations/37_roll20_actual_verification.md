@@ -31,6 +31,9 @@ This document defines how agents verify that this editor's preview/edit output m
    - Then run payload hygiene audit before uploading:
      `corepack pnpm run audit:payload -- reports/roll20-actual-compare/<label>`
    - The payload audit must pass before upload. It checks for app UI/edit overlay/internal id leakage, valid Roll20 JSON translation payloads, and zip/file consistency.
+   - Then run the Roll20 sandbox sanitize diagnostic before uploading:
+     `corepack pnpm run audit:roll20-sandbox-sanitize -- reports/roll20-actual-compare/<label>`
+   - The sandbox sanitize audit must pass before upload. It applies the observed Roll20 Custom Sheet Sandbox sanitize/prefix approximation to generated payload HTML/CSS and reports expected selector prefixing, URL proxy/drop behavior, runtime stripping, and allow-list effects. Passing means no locally detected fatal reject/empty payload condition; it does not prove Roll20 visual parity.
    - Then run cleaned-payload visual roundtrip before uploading:
      `corepack pnpm run smoke:payload-roundtrip -- reports/roll20-actual-compare/<label> --out-dir ./out --base-path /roll20-block-editor`
    - The payload roundtrip smoke must pass before upload. It re-imports the cleaned Roll20 payload, captures a preview screenshot, and compares it against the local baseline preview so export-only cleanup cannot silently change the sheet before Roll20 sees it.
@@ -43,7 +46,7 @@ This document defines how agents verify that this editor's preview/edit output m
      `corepack pnpm run status:roll20-actual -- reports/roll20-actual-compare/<label> --require-actual`
    - Or run the full local pre-upload gate:
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor`
-   - The pre-upload gate reruns payload hygiene, cleaned-payload visual roundtrip, default-state selector audit, asset/resource audit, and evidence guard. Passing means the payload is ready to upload; it still does not prove Roll20 visual parity.
+   - The pre-upload gate reruns payload hygiene, Roll20 sandbox sanitize diagnostics, cleaned-payload visual roundtrip, default-state selector audit, asset/resource audit, and evidence guard. Passing means the payload is ready to upload; it still does not prove Roll20 visual parity.
    - If the local baseline was captured with action/control-state hints, pass the same state map through the pre-upload gate:
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json`
    - `--state-map` affects only local screenshot state normalization for baseline/payload comparison. It may click a local action button or local checkbox/radio control before screenshot capture. It does not mutate the Roll20 upload payload files.

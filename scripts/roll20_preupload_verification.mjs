@@ -54,6 +54,11 @@ const checks = [
     command: [NODE, 'scripts/roll20_payload_audit.mjs', RUN_DIR],
   },
   {
+    id: 'sandbox-sanitize-audit',
+    title: 'Roll20 sandbox sanitize audit',
+    command: [NODE, 'scripts/roll20_sandbox_sanitize_audit.mjs', RUN_DIR],
+  },
+  {
     id: 'payload-roundtrip',
     title: 'Cleaned-payload visual roundtrip',
     command: [
