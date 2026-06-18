@@ -63,7 +63,7 @@ export default function PreviewEmptyState() {
         가운데 화면은 실제 Roll20 시트가 렌더되는 자리예요. 왼쪽에서 블록이나 요소를
         끌어오면 바로 배치할 수 있어요.
         <br />
-        오른쪽 속성 패널에서 이름, 값, 클래스, 위치를 조정할 수 있어요.
+        오른쪽 속성 패널에서 이름, 값, 클래스, 위치를 조정할 수 있습니다.
       </p>
 
       <div className="mb-7 grid w-full max-w-md gap-2">
@@ -135,7 +135,7 @@ function Hint({
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
           <span
-            className="text-[10px] font-mono tabular-nums"
+            className="font-mono text-[10px] tabular-nums"
             style={{ color: accent }}
             aria-hidden
           >

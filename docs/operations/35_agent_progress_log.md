@@ -622,3 +622,23 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run build`: PASS.
   - `node scripts\edit_flow_browser_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --report-dir reports/edit-flow-smoke --port 4311`: PASS. Existing flow/free placement, layer reorder, absolute-in-frame, and edit UI copy checks all passed.
 - Scope note: this improves edit-mode usability and prevents this copy regression from returning. It does not prove actual Roll20 visual parity.
+
+## 2026-06-19 Core Shell/Export Copy Verification Refresh
+
+- Rechecked the core shell copy after finding stale mojibake expectations in `docs/qa/31_active_todo.md` and `scripts/export_dialog_browser_smoke.mjs`.
+- Cleaned the user-facing Korean copy in:
+  - `components/editor/EditorHeader.tsx`
+  - `components/editor/PreviewEmptyState.tsx`
+  - `components/editor/ExportDialog.tsx`
+- Hardened `scripts/export_dialog_browser_smoke.mjs` so it now verifies:
+  - header title, empty-state title, blank-sheet CTA, and hidden public sample UI;
+  - no mojibake in initial shell text;
+  - export dialog title, 5 readiness items, `실제 검증 필요` badge, legacy toggle copy, and local-vs-actual Roll20 verification warning;
+  - no mojibake in export dialog text;
+  - import dialog opening and edit-mode tab selection.
+- Latest validation:
+  - `node --check scripts\export_dialog_browser_smoke.mjs`: PASS.
+  - `corepack pnpm run lint`: PASS.
+  - `corepack pnpm run build`: PASS.
+  - `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke --port 4312`: PASS with 0 console/page errors.
+- Scope note: this keeps the app's core flow readable and its export UI honest about Roll20 actual-screen verification. It does not prove actual Roll20 visual parity; Custom Sheet Sandbox/test-room screenshots are still missing.

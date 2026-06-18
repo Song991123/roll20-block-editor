@@ -61,7 +61,7 @@ function startServer() {
 }
 
 function hasMojibake(text) {
-  return /[�]|(?:\?[가-힣])|(?:[援寃以踰遺留釉瑜湲])/.test(text);
+  return /[\u3400-\u9fff\uf900-\ufaff\ufffd]/u.test(text);
 }
 
 async function main() {
@@ -108,13 +108,21 @@ async function main() {
 
     await page.click('[data-testid="header-export-button"]');
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', { timeout: 15000 });
-    result.checks.exportDialog = await page.evaluate(() => ({
-      hasTitle: document.body.innerText.includes('Roll20용 zip 내보내기'),
-      hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
-      readinessItemCount: document.querySelectorAll('[data-testid="export-roll20-readiness-item"]').length,
-      badgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
-      downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
-    }));
+    result.checks.exportDialog = await page.evaluate(() => {
+      const dialogText = document.querySelector('[role="dialog"]')?.textContent ?? '';
+      return {
+        hasTitle: dialogText.includes('Roll20용 zip 내보내기'),
+        hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
+        readinessItemCount: document.querySelectorAll('[data-testid="export-roll20-readiness-item"]').length,
+        badgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
+        hasLegacyToggle: dialogText.includes('구버전 Roll20 무해화'),
+        hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox 또는 테스트 방에 올린 뒤 캡처로 확인해야 합니다.'),
+        downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
+        dialogText,
+      };
+    });
+    result.checks.exportDialog.hasMojibake = hasMojibake(result.checks.exportDialog.dialogText);
+    delete result.checks.exportDialog.dialogText;
     await page.screenshot({ path: path.join(REPORT_DIR, 'export-dialog.png') });
 
     await page.keyboard.press('Escape');
@@ -148,6 +156,9 @@ async function main() {
     if (!result.checks.exportDialog.hasReadiness) failures.push('export readiness panel missing');
     if (result.checks.exportDialog.readinessItemCount !== 5) failures.push('export readiness item count mismatch');
     if (result.checks.exportDialog.badgeText !== '실제 검증 필요') failures.push('export verification badge mismatch');
+    if (!result.checks.exportDialog.hasLegacyToggle) failures.push('legacy toggle copy missing');
+    if (!result.checks.exportDialog.hasLocalVsActualCopy) failures.push('local-vs-actual verification copy missing');
+    if (result.checks.exportDialog.hasMojibake) failures.push('mojibake detected in export dialog text');
     if (!result.checks.importDialog.hasTitle) failures.push('import dialog title missing');
     if (result.checks.importDialog.textareaCount < 1) failures.push('import dialog textarea missing');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');

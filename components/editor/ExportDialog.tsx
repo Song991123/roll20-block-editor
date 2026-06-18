@@ -100,7 +100,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       },
       {
         label: 'Roll20 실제 검증',
-        detail: 'Sandbox나 테스트 방 업로드 후 화면 캡처 비교가 필요합니다',
+        detail: 'Sandbox 테스트와 업로드 화면 캡처 비교가 아직 필요합니다',
         ok: false,
         pending: true,
       },
@@ -291,8 +291,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <div>
                 <div className="text-sm font-medium">Roll20 업로드 준비 상태</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  이 항목은 zip 구성 파일의 로컬 준비 여부입니다. 실제 Roll20 화면 일치
-                  여부는 Sandbox나 테스트 방에 올려 캡처로 확인해야 합니다.
+                  이 항목은 zip 구성 파일의 로컬 준비 여부입니다. 실제 Roll20 화면 일치는
+                  Sandbox 또는 테스트 방에 올린 뒤 캡처로 확인해야 합니다.
                 </p>
               </div>
               <span
@@ -336,9 +336,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               ))}
             </ul>
             <div className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
-              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 따로 Sandbox에
-              올려 비교하세요. 기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은
-              Custom Sheet Sandbox 또는 새 테스트 방에서 진행합니다.
+              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 각각 Sandbox에 올려
+              비교하세요. 기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은 Custom Sheet
+              Sandbox 또는 새 테스트 방에서 진행합니다.
             </div>
           </section>
 
@@ -358,8 +358,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <span className="flex-1">
                 <span className="font-medium">구버전 Roll20 무해화</span>
                 <span className="ml-1 text-[11px] text-muted-foreground">
-                  끄면 원본 CSS 그대로, 켜면 구버전에서 막힐 수 있는 CSS를 변환하거나
-                  제거하고 보고서를 zip에 넣습니다.
+                  끄면 원본 CSS를 그대로 내보냅니다. 켜면 구버전에서 막힐 수 있는 CSS를
+                  변환하거나 제거하고 보고서를 zip에 넣습니다.
                 </span>
               </span>
             </label>
@@ -369,12 +369,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 data-testid="export-legacy-warnings"
               >
                 최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은
-                sanitize-warnings.json에 포함됩니다.
+                sanitize-warnings.json에 저장됩니다.
               </div>
             )}
             {legacyMode && legacyWarnings.length === 0 && (
               <div className="mt-2 text-[11px] text-muted-foreground">
-                내보내기 시 CSS를 검사하고 sanitize-warnings.json을 함께 생성합니다.
+                내보내기 때 CSS를 검사하고 sanitize-warnings.json을 함께 생성합니다.
               </div>
             )}
           </section>
