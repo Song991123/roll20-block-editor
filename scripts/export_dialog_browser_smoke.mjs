@@ -115,6 +115,9 @@ async function main() {
         hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
         readinessItemCount: document.querySelectorAll('[data-testid="export-roll20-readiness-item"]').length,
         badgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
+        hasSandboxDiagnostics: Boolean(document.querySelector('[data-testid="export-roll20-sandbox-diagnostics"]')),
+        sandboxDiagnosticItemCount: document.querySelectorAll('[data-testid="export-roll20-sandbox-diagnostic-item"]').length,
+        sandboxStatus: document.querySelector('[data-testid="export-roll20-sandbox-status"]')?.textContent?.trim() ?? '',
         hasLegacyToggle: dialogText.includes('구버전 Roll20 무해화'),
         hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox 또는 테스트 방에 올린 뒤 캡처로 확인해야 합니다.'),
         downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
@@ -156,6 +159,11 @@ async function main() {
     if (!result.checks.exportDialog.hasReadiness) failures.push('export readiness panel missing');
     if (result.checks.exportDialog.readinessItemCount !== 5) failures.push('export readiness item count mismatch');
     if (result.checks.exportDialog.badgeText !== '실제 검증 필요') failures.push('export verification badge mismatch');
+    if (!result.checks.exportDialog.hasSandboxDiagnostics) failures.push('export sandbox diagnostics panel missing');
+    if (result.checks.exportDialog.sandboxDiagnosticItemCount !== 4) failures.push('export sandbox diagnostics item count mismatch');
+    if (!['치명 오류 없음', '수정 필요'].includes(result.checks.exportDialog.sandboxStatus)) {
+      failures.push('export sandbox diagnostics status mismatch');
+    }
     if (!result.checks.exportDialog.hasLegacyToggle) failures.push('legacy toggle copy missing');
     if (!result.checks.exportDialog.hasLocalVsActualCopy) failures.push('local-vs-actual verification copy missing');
     if (result.checks.exportDialog.hasMojibake) failures.push('mojibake detected in export dialog text');

@@ -31,10 +31,16 @@ import {
 import { DEFAULT_METADATA } from '@/lib/export/manifest';
 import { analyzeEmit } from '@/lib/export/warnings';
 import { buildZip, triggerDownload } from '@/lib/export/zip_builder';
+import { prepareRoll20Payload } from '@/lib/export/payload';
 import {
   sanitizeForRoll20Legacy,
   type SanitizeWarning,
 } from '@/lib/emit/sanitize';
+import {
+  sanitizeRoll20SandboxCss,
+  sanitizeRoll20SandboxHtml,
+  type Roll20SandboxWarning,
+} from '@/lib/emit/roll20SandboxSanitize';
 
 export interface ExportDialogProps {
   open: boolean;
@@ -106,6 +112,44 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       },
     ];
   }, [emitCache]);
+
+  const sandboxDiagnostics = useMemo(() => {
+    const payload = prepareRoll20Payload({
+      html: emitCache.html,
+      css: emitCache.css,
+      translation: emitCache.i18n,
+      warnings: [],
+    });
+    const cssForSandbox =
+      legacyMode && payload.css ? sanitizeForRoll20Legacy(payload.css).sanitized : payload.css;
+    const htmlResult = sanitizeRoll20SandboxHtml(payload.html);
+    const cssResult = sanitizeRoll20SandboxCss(cssForSandbox);
+    const htmlWarnings = countSandboxWarnings(htmlResult.warnings);
+    const cssWarnings = countSandboxWarnings(cssResult.warnings);
+    const fatal =
+      !payload.html.trim() ||
+      (cssForSandbox.trim().length > 0 && !cssResult.css.trim()) ||
+      cssResult.warnings.some((warning) => warning.code === 'css-rejected');
+
+    return {
+      fatal,
+      htmlChanged: htmlResult.html !== payload.html,
+      cssChanged: cssResult.css !== cssForSandbox,
+      htmlBeforeBytes: byteSize(payload.html),
+      htmlAfterBytes: byteSize(htmlResult.html),
+      cssBeforeBytes: byteSize(cssForSandbox),
+      cssAfterBytes: byteSize(cssResult.css),
+      runtimeStripped: htmlWarnings['html-runtime-stripped'] ?? 0,
+      classPrefixed: htmlWarnings['html-class-prefixed'] ?? 0,
+      tagStripped: htmlWarnings['html-tag-stripped'] ?? 0,
+      selectorPrefixed: cssWarnings['css-selector-prefixed'] ?? 0,
+      urlsProxied:
+        (htmlWarnings['html-url-proxied'] ?? 0) + (cssWarnings['css-url-proxied'] ?? 0),
+      urlsDropped:
+        (htmlWarnings['html-url-dropped'] ?? 0) + (cssWarnings['css-url-dropped'] ?? 0),
+      cssRejected: cssWarnings['css-rejected'] ?? 0,
+    };
+  }, [emitCache, legacyMode]);
 
   async function handleDownload() {
     if (blocked) return;
@@ -344,6 +388,68 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
           <section
             className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+            data-testid="export-roll20-sandbox-diagnostics"
+          >
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium">Roll20 Sandbox 예상 변환</div>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  Roll20 Custom Sheet Sandbox가 업로드 순간에 적용하는 HTML/CSS 정리 규칙을
+                  로컬에서 미리 계산한 값입니다. 실제 동일성은 Sandbox나 테스트 방 스크린샷으로
+                  따로 확인해야 합니다.
+                </p>
+              </div>
+              <span
+                className={`shrink-0 rounded border px-2 py-1 text-[11px] font-medium ${
+                  sandboxDiagnostics.fatal
+                    ? 'border-red-500/35 bg-red-500/10 text-red-700 dark:text-red-200'
+                    : 'border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
+                }`}
+                data-testid="export-roll20-sandbox-status"
+              >
+                {sandboxDiagnostics.fatal ? '수정 필요' : '치명 오류 없음'}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <DiagnosticRow
+                label="HTML 정리"
+                state={sandboxDiagnostics.htmlChanged ? 'rewritten' : 'same'}
+                detail={`${formatBytes(sandboxDiagnostics.htmlBeforeBytes)} -> ${formatBytes(
+                  sandboxDiagnostics.htmlAfterBytes,
+                )}, 런타임 숨김 ${sandboxDiagnostics.runtimeStripped}건`}
+              />
+              <DiagnosticRow
+                label="CSS 정리"
+                state={
+                  sandboxDiagnostics.cssRejected > 0
+                    ? 'fatal'
+                    : sandboxDiagnostics.cssChanged
+                      ? 'rewritten'
+                      : 'same'
+                }
+                detail={`${formatBytes(sandboxDiagnostics.cssBeforeBytes)} -> ${formatBytes(
+                  sandboxDiagnostics.cssAfterBytes,
+                )}, selector prefix ${sandboxDiagnostics.selectorPrefixed}건`}
+              />
+              <DiagnosticRow
+                label="클래스/태그"
+                state={
+                  sandboxDiagnostics.classPrefixed + sandboxDiagnostics.tagStripped > 0
+                    ? 'rewritten'
+                    : 'same'
+                }
+                detail={`class prefix ${sandboxDiagnostics.classPrefixed}건, tag 제거 ${sandboxDiagnostics.tagStripped}건`}
+              />
+              <DiagnosticRow
+                label="외부 URL"
+                state={sandboxDiagnostics.urlsDropped > 0 ? 'rewritten' : 'same'}
+                detail={`proxy ${sandboxDiagnostics.urlsProxied}건, drop ${sandboxDiagnostics.urlsDropped}건`}
+              />
+            </div>
+          </section>
+
+          <section
+            className="rounded border border-border bg-[var(--bg-elevated)] p-3"
             data-testid="export-legacy-section"
           >
             <label className="flex cursor-pointer select-none items-start gap-2 text-[12px]">
@@ -403,6 +509,53 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       </DialogContent>
     </Dialog>
   );
+}
+
+function DiagnosticRow({
+  label,
+  state,
+  detail,
+}: {
+  label: string;
+  state: 'same' | 'rewritten' | 'fatal';
+  detail: string;
+}) {
+  const iconClass =
+    state === 'fatal'
+      ? 'text-red-500'
+      : state === 'rewritten'
+        ? 'text-amber-500'
+        : 'text-emerald-500';
+  const labelText =
+    state === 'fatal' ? '거부 위험' : state === 'rewritten' ? '재작성 예상' : '변경 없음';
+  return (
+    <div
+      className="flex items-start gap-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[12px]"
+      data-testid="export-roll20-sandbox-diagnostic-item"
+      data-state={state}
+    >
+      {state === 'same' ? (
+        <CheckCircle2 className={`mt-[1px] h-4 w-4 shrink-0 ${iconClass}`} aria-hidden />
+      ) : (
+        <AlertTriangle className={`mt-[1px] h-4 w-4 shrink-0 ${iconClass}`} aria-hidden />
+      )}
+      <span>
+        <span className="font-medium">{label}</span>
+        <span className="ml-1 text-[11px] text-muted-foreground">({labelText})</span>
+        <span className="block text-[11px] text-muted-foreground">{detail}</span>
+      </span>
+    </div>
+  );
+}
+
+function countSandboxWarnings(
+  warnings: Roll20SandboxWarning[],
+): Partial<Record<Roll20SandboxWarning['code'], number>> {
+  const counts: Partial<Record<Roll20SandboxWarning['code'], number>> = {};
+  for (const warning of warnings) {
+    counts[warning.code] = (counts[warning.code] ?? 0) + 1;
+  }
+  return counts;
 }
 
 function Field({
