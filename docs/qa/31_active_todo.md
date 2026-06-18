@@ -198,6 +198,19 @@ but worsens the upper-sheet visual mismatch, so the next P0 is to inspect the
 top/d1 overlay and actual Roll20 screenshot state/background/crop before any
 production renderer CSS change. AW2E/YSHY still need actual full-root
 screenshots; this remains diagnostic only, not visual parity.
+2026-06-19 actual full-root crop/stitch correction:
+dominant decile crop triplets are now written by
+`scripts/roll20_full_root_candidate_smoke.mjs`. Inspecting the geometry-best
+Les-Oublies crop showed the actual `roll20-sandbox-root-full.png` includes
+Roll20 VTT toolbar/grid pixels on the left while the local crop is sheet-only.
+`scripts/roll20_actual_difference_classify.mjs` now reads
+`roll20-sandbox-root-full.json` and classifies Les-Oublies as
+`actual full-root crop/stitch includes non-sheet context or scale mismatch`.
+Latest evidence: `8/8` full-image clipped segments with source width `682px`
+are scaled to claimed root width `852px`. Next P0 is to recapture generated
+Roll20 full-root screenshots with sheet-root-only clipping that excludes VTT
+toolbar/grid before applying renderer CSS changes. Treat the current full-root
+geometry/height diagnosis as lower-confidence until that capture is normalized.
 Follow-up actual layout-context probe:
 Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
 ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.

@@ -1113,3 +1113,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Interpretation: the geometry-best candidate fixes root height and row 0/3 height but shifts or exposes a worse visual mismatch in the upper sheet region, especially vertical decile `d1`. Do not promote the diagnostic nowrap/native-input patch to production CSS yet.
 - Follow-up verification passed: `node --check scripts\roll20_full_root_candidate_smoke.mjs`, `corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run classify:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - Claim boundary: this is still diagnostic only. AW2E/YSHY actual full-root screenshots are missing, and Les-Oublies still classifies as `sheet root geometry/height differs after full-height capture`.
+
+## 2026-06-19 Actual Full-Root Crop/Stitch Suspect
+
+- Extended `scripts/roll20_full_root_candidate_smoke.mjs` again so each candidate writes dominant decile crop triplets: actual, local, and overlay.
+- Visual inspection of the geometry-best Les-Oublies crop (`sandbox-nowrap-text-input-276-source`, dominant `d1 412-824`) showed the actual crop includes Roll20 VTT toolbar/grid pixels on the left while the local crop is sheet-only.
+- The full actual image `roll20-sandbox-root-full.png` also visibly contains repeated Roll20 VTT toolbar/grid context beside the sheet window, so it is not safe to treat that file as a clean sheet-root-only capture.
+- Updated `scripts/roll20_actual_difference_classify.mjs` to read `roll20-sandbox-root-full.json` and classify this evidence as `actual full-root crop/stitch includes non-sheet context or scale mismatch` when full-image clipped segments are scaled into the claimed root width.
+- Latest classifier evidence: Les-Oublies uses `8/8` full-image clipped segments with source width `682px` scaled to `852px`; next action is to recapture Roll20 full-root evidence with sheet-root-only clipping that excludes the VTT toolbar/grid before renderer CSS changes.
+- Claim boundary: the previous full-root geometry/height findings are now lower-confidence until the actual Roll20 capture is normalized. This does not roll back local renderer work; it prevents a false CSS patch based on contaminated evidence.

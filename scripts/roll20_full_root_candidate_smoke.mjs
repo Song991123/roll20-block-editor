@@ -205,6 +205,7 @@ async function compareExistingReference({ comparePage, localPreviewFile, actualF
     comparedSize,
   });
   delete compare.overlayDataUrl;
+  delete compare.dominantCropDataUrls;
   return {
     id: 'local-baseline-preview',
     screenshot: localPreviewFile,
@@ -345,7 +346,13 @@ async function renderCandidate({
   });
   const overlay = path.join(artifactDir, `${id}-overlay.png`);
   await writeDataUrl(overlay, compare.overlayDataUrl);
+  const dominantCrop = await writeDominantCropArtifacts({
+    artifactDir,
+    candidateId: id,
+    cropDataUrls: compare.dominantCropDataUrls,
+  });
   delete compare.overlayDataUrl;
+  delete compare.dominantCropDataUrls;
   return {
     id,
     roll20SandboxSanitize,
@@ -353,6 +360,7 @@ async function renderCandidate({
     contextPatch: formatRenderContextPatch(contextPatch),
     screenshot,
     overlay,
+    dominantCrop,
     localSize: await imageSize(comparePage, screenshot),
     rootRect: metrics.rootRect,
     rootHeightDelta: typeof metrics.rootRect?.height === 'number'
@@ -513,7 +521,7 @@ async function compareImages(page, { localFile, actualFile, comparedSize }) {
         canvas.height = height;
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         ctx.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight, 0, 0, width, height);
-        return ctx.getImageData(0, 0, width, height);
+        return { canvas, data: ctx.getImageData(0, 0, width, height).data };
       }
       const [localImage, actualImage] = await Promise.all([loadImage(localUrl), loadImage(actualUrl)]);
       const width = Math.max(1, Math.round(comparedSize.w ?? comparedSize[0]));
@@ -586,6 +594,33 @@ async function compareImages(page, { localFile, actualFile, comparedSize }) {
           return best;
         }, null);
       }
+      const mismatchDistribution = {
+        verticalBands: summarizeBands(verticalBands),
+        horizontalBands: summarizeBands(horizontalBands),
+        deciles: summarizeBands(deciles),
+        dominantVerticalBand: dominantBand(verticalBands),
+        dominantHorizontalBand: dominantBand(horizontalBands),
+        dominantDecile: dominantBand(deciles),
+      };
+      function cropDataUrl(sourceCanvas, crop) {
+        if (!crop || crop.end <= crop.start) return null;
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = width;
+        cropCanvas.height = crop.end - crop.start;
+        cropCanvas.getContext('2d').drawImage(
+          sourceCanvas,
+          0,
+          crop.start,
+          width,
+          cropCanvas.height,
+          0,
+          0,
+          width,
+          cropCanvas.height,
+        );
+        return cropCanvas.toDataURL('image/png');
+      }
+      const dominantCrop = mismatchDistribution.dominantDecile;
       return {
         comparedSize: { w: width, h: height },
         mismatchPixels: mismatch,
@@ -593,15 +628,16 @@ async function compareImages(page, { localFile, actualFile, comparedSize }) {
         mismatchRatio: Number((mismatch / totalPixels).toFixed(6)),
         rmsRgb: Number(Math.sqrt(sumSq / (totalPixels * 3)).toFixed(3)),
         bounds: mismatch ? [bounds.left, bounds.top, bounds.right - bounds.left + 1, bounds.bottom - bounds.top + 1] : null,
-        mismatchDistribution: {
-          verticalBands: summarizeBands(verticalBands),
-          horizontalBands: summarizeBands(horizontalBands),
-          deciles: summarizeBands(deciles),
-          dominantVerticalBand: dominantBand(verticalBands),
-          dominantHorizontalBand: dominantBand(horizontalBands),
-          dominantDecile: dominantBand(deciles),
-        },
+        mismatchDistribution,
         overlayDataUrl: overlay.toDataURL('image/png'),
+        dominantCropDataUrls: dominantCrop ? {
+          id: dominantCrop.id,
+          start: dominantCrop.start,
+          end: dominantCrop.end,
+          actual: cropDataUrl(actual.canvas, dominantCrop),
+          local: cropDataUrl(local.canvas, dominantCrop),
+          overlay: cropDataUrl(overlay, dominantCrop),
+        } : null,
       };
       function addBand(bands, position, hit) {
         const band = bands.find((item) => position >= item.start && position < item.end) ?? bands[bands.length - 1];
@@ -813,13 +849,13 @@ function renderMarkdown(report) {
       lines.push(`Existing app local-preview reference: ${pct(fixture.baselineReference.mismatchRatio)} at ${fmtSize(fixture.baselineReference.localSize)}.`);
     }
     lines.push('');
-    lines.push('| Candidate | Sandbox | State hint | Patch | Mismatch | Dominant diff | Geometry score | Row0/Row3 delta | Root size | Height delta | Bounds | Screenshot | Overlay |');
-    lines.push('| --- | ---: | ---: | --- | ---: | --- | ---: | --- | --- | ---: | --- | --- | --- |');
+    lines.push('| Candidate | Sandbox | State hint | Patch | Mismatch | Dominant diff | Dominant crop | Geometry score | Row0/Row3 delta | Root size | Height delta | Bounds | Screenshot | Overlay |');
+    lines.push('| --- | ---: | ---: | --- | ---: | --- | --- | ---: | --- | --- | ---: | --- | --- | --- |');
     for (const candidate of fixture.candidates) {
       const rowDeltas = candidate.geometryFit
         ? `${num(candidate.geometryFit.row0Delta)}/${num(candidate.geometryFit.row3Delta)}`
         : '';
-      lines.push(`| ${candidate.id} | ${candidate.roll20SandboxSanitize ? 'on' : 'off'} | ${candidate.applyStateHint ? 'on' : 'off'} | ${candidate.contextPatch ?? ''} | ${pct(candidate.mismatchRatio)} | ${fmtDominantDiff(candidate.mismatchDistribution)} | ${num(candidate.geometryFit?.score)} | ${rowDeltas} | ${fmtSize(candidate.localSize)} | ${num(candidate.rootHeightDelta)} | ${Array.isArray(candidate.bounds) ? candidate.bounds.join(',') : ''} | \`${path.relative(runDir, candidate.screenshot)}\` | \`${path.relative(runDir, candidate.overlay)}\` |`);
+      lines.push(`| ${candidate.id} | ${candidate.roll20SandboxSanitize ? 'on' : 'off'} | ${candidate.applyStateHint ? 'on' : 'off'} | ${candidate.contextPatch ?? ''} | ${pct(candidate.mismatchRatio)} | ${fmtDominantDiff(candidate.mismatchDistribution)} | ${fmtDominantCrop(candidate.dominantCrop)} | ${num(candidate.geometryFit?.score)} | ${rowDeltas} | ${fmtSize(candidate.localSize)} | ${num(candidate.rootHeightDelta)} | ${Array.isArray(candidate.bounds) ? candidate.bounds.join(',') : ''} | \`${path.relative(runDir, candidate.screenshot)}\` | \`${path.relative(runDir, candidate.overlay)}\` |`);
     }
     if (fixture.targetGeometry?.status === 'COMPARED') {
       lines.push('');
@@ -878,6 +914,17 @@ function fmtDominantDiff(distribution) {
   ].filter(Boolean).join('<br>');
 }
 
+function fmtDominantCrop(crop) {
+  if (!crop) return '';
+  const label = `${crop.id} ${crop.start}-${crop.end}`;
+  return [
+    label,
+    crop.actual ? `actual: \`${path.relative(runDir, crop.actual)}\`` : null,
+    crop.local ? `local: \`${path.relative(runDir, crop.local)}\`` : null,
+    crop.overlay ? `overlay: \`${path.relative(runDir, crop.overlay)}\`` : null,
+  ].filter(Boolean).join('<br>');
+}
+
 function num(value) {
   return typeof value === 'number' && Number.isFinite(value) ? String(Math.round(value * 1000) / 1000) : '';
 }
@@ -922,6 +969,24 @@ async function imageDataUrl(file) {
 async function writeDataUrl(file, dataUrl) {
   const base64 = dataUrl.split(',')[1] ?? '';
   await writeFile(file, Buffer.from(base64, 'base64'));
+}
+
+async function writeDominantCropArtifacts({ artifactDir, candidateId, cropDataUrls }) {
+  if (!cropDataUrls?.id) return null;
+  const safeBand = cropDataUrls.id.replace(/[^a-z0-9_-]/gi, '_');
+  const base = path.join(artifactDir, `${candidateId}-dominant-${safeBand}`);
+  const result = {
+    id: cropDataUrls.id,
+    start: cropDataUrls.start,
+    end: cropDataUrls.end,
+  };
+  for (const key of ['actual', 'local', 'overlay']) {
+    if (!cropDataUrls[key]) continue;
+    const file = `${base}-${key}.png`;
+    await writeDataUrl(file, cropDataUrls[key]);
+    result[key] = file;
+  }
+  return result;
 }
 
 function resolveBuildDocModule() {

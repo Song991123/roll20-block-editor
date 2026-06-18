@@ -71,6 +71,7 @@ async function classifyFixture({ fixtureId, diffReport, baseline, sanitize, stat
   const statusFixture = status?.fixtures?.find((fixture) => fixture.fixtureId === fixtureId || fixture.id === fixtureId) ?? null;
   const screenshotDir = path.join(runDir, 'local-baseline', fixtureId, 'screenshots');
   const chatDomEvidence = await readJsonIfExists(path.join(screenshotDir, 'roll20-chat-dom-evidence.json'));
+  const actualFullRootMeta = await readJsonIfExists(path.join(screenshotDir, 'roll20-sandbox-root-full.json'));
   const diffItems = Object.fromEntries(
     (diffReport.items ?? [])
       .filter((item) => item.fixtureId === fixtureId)
@@ -83,9 +84,9 @@ async function classifyFixture({ fixtureId, diffReport, baseline, sanitize, stat
     sandboxSanitize: summarizeSanitize(sanitizeFixture),
     chatDomEvidence: summarizeChatDom(chatDomEvidence),
     targets: {
-      sandbox: classifyTarget('sandbox', diffItems.sandbox, baselineFixture, sanitizeFixture, chatDomEvidence),
-      chat: classifyTarget('chat', diffItems.chat, baselineFixture, sanitizeFixture, chatDomEvidence),
-      room: classifyTarget('room', diffItems.room, baselineFixture, sanitizeFixture, chatDomEvidence),
+      sandbox: classifyTarget('sandbox', diffItems.sandbox, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMeta),
+      chat: classifyTarget('chat', diffItems.chat, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMeta),
+      room: classifyTarget('room', diffItems.room, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMeta),
     },
     statusSummary: statusFixture ? summarizeStatusFixture(statusFixture) : null,
   };
@@ -166,7 +167,7 @@ function summarizeStatusFixture(fixture) {
   };
 }
 
-function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomEvidence) {
+function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMeta = null) {
   if (!item) {
     return { target, status: 'MISSING_REPORT_ITEM', primaryClassification: 'missing diff report item' };
   }
@@ -210,10 +211,15 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
   const mismatchRatio = Number(best.mismatchRatio ?? result.topLeft?.mismatchRatio ?? 1);
   const categories = [];
   const evidence = [];
+  const stitchEvidence = usedFullRoot ? analyzeFullRootStitchMeta(actualFullRootMeta) : null;
 
   if (usedFullRoot) {
     categories.push('full-height stitched root');
     evidence.push(`stitched Roll20 sheet root ${actualSize[0]}x${actualSize[1]} compared against local preview ${localSize[0]}x${localSize[1]}`);
+  }
+  if (stitchEvidence?.suspect) {
+    categories.push('actual full-root crop/stitch suspect');
+    evidence.push(stitchEvidence.reason);
   }
   if (actualSize[1] && localSize[1] && actualSize[1] < localSize[1] * 0.35) {
     categories.push('viewport/crop/sheet size');
@@ -253,7 +259,9 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
     evidence.push(`Roll20 sanitizer proxies ${sanitizeFixture.html?.warningCounts?.['html-url-proxied'] ?? 0} HTML URLs and ${sanitizeFixture.css?.warningCounts?.['css-url-proxied'] ?? 0} CSS URLs`);
   }
 
-  const primaryClassification = categories.includes('sheet root geometry/height')
+  const primaryClassification = categories.includes('actual full-root crop/stitch suspect')
+    ? 'actual full-root crop/stitch includes non-sheet context or scale mismatch'
+    : categories.includes('sheet root geometry/height')
     ? 'sheet root geometry/height differs after full-height capture'
     : categories.includes('viewport/crop/sheet size')
     ? 'viewport/crop/sheet size dominates current diff'
@@ -276,6 +284,7 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
     sizeRatio,
     comparedHeightRatio,
     rootHeightDeltaRatio,
+    fullRootStitchEvidence: stitchEvidence,
     primaryClassification,
     matchedVisibleViewport,
     categories,
@@ -285,6 +294,9 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
 }
 
 function buildTargetNextAction({ target, categories, mismatchRatio }) {
+  if (target === 'sandbox' && categories.includes('actual full-root crop/stitch suspect')) {
+    return 'Recapture Roll20 full-root evidence using clipped character-iframe sheet-root screenshots that exclude VTT toolbar/grid and preserve the sheet-root CSS width before renderer CSS changes.';
+  }
   if (target === 'sandbox' && categories.includes('sheet root geometry/height')) {
     return 'Compare Roll20 actual vs local Sandbox expected DOM/CSS geometry for rows, tables, and controls before applying renderer CSS changes.';
   }
@@ -306,8 +318,32 @@ function buildTargetNextAction({ target, categories, mismatchRatio }) {
   return 'Treat as a small residual diff only after viewport/state/crop are normalized.';
 }
 
+function analyzeFullRootStitchMeta(meta) {
+  if (!meta?.segments?.length || !meta.outputSize?.w) return null;
+  const outputWidth = Number(meta.outputSize.w);
+  const narrowSegments = meta.segments.filter((segment) => {
+    const imageWidth = Number(segment.imageSize?.width ?? 0);
+    const destWidth = Number(segment.destPx?.w ?? outputWidth);
+    return segment.cropImageFull === true && imageWidth > 0 && destWidth > 0 && imageWidth < destWidth * 0.9;
+  });
+  if (!narrowSegments.length) {
+    return { suspect: false, checked: true };
+  }
+  const first = narrowSegments[0];
+  return {
+    suspect: true,
+    checked: true,
+    narrowSegmentCount: narrowSegments.length,
+    segmentCount: meta.segments.length,
+    reason: `full-root stitch uses ${narrowSegments.length}/${meta.segments.length} full-image clipped segments with source width ${first.imageSize?.width}px scaled to ${first.destPx?.w ?? outputWidth}px; verify the capture excludes Roll20 VTT chrome/grid before treating this as sheet-root geometry evidence`,
+  };
+}
+
 function buildGlobalNextActions(fixtures) {
   const actions = [];
+  if (fixtures.some((fixture) => fixture.targets.sandbox?.categories?.includes('actual full-root crop/stitch suspect'))) {
+    actions.push('Recapture generated Roll20 full-root screenshots with sheet-root-only clipping; current stitched evidence may include VTT toolbar/grid context.');
+  }
   if (fixtures.some((fixture) => fixture.targets.sandbox?.categories?.includes('sheet root geometry/height'))) {
     actions.push('Compare actual Roll20 vs local Sandbox expected row/table/control geometry for the diffed full-height fixture.');
   }
