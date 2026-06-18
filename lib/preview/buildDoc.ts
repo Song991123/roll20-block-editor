@@ -19,6 +19,10 @@
  */
 
 import { autoPrefixHtmlClasses, autoPrefixCssClasses } from './prefix';
+import {
+  sanitizeRoll20SandboxCss,
+  sanitizeRoll20SandboxHtml,
+} from '../emit/roll20SandboxSanitize';
 import { sanitizeForRoll20Legacy } from '../emit/sanitize';
 import {
   roll20BaseIframeCss,
@@ -38,6 +42,8 @@ export interface BuildDocOptions {
   sanitize?: boolean;
   /** 구버전 Roll20 CSS 무해화. Auto-prefix와 별개이며 기본값은 OFF. */
   legacyCssSanitize?: boolean;
+  /** 실제 Roll20 Custom Sheet Sandbox sanitize/prefix 근사치. 진단용 preview 옵션. */
+  roll20SandboxSanitize?: boolean;
   /** 다크 모드 토큰 부착 — body[data-theme=dark]. */
   darkMode?: boolean;
   /** spec 17 §9 — 9 레이어 필터. 'all' 이면 dim 없음. */
@@ -685,6 +691,7 @@ ${scope} [data-r20-hovered="1"] {
 export function buildSheetDoc(opts: BuildDocOptions): string {
   const sanitize = opts.sanitize !== false; // default ON
   const legacyCssSanitize = opts.legacyCssSanitize === true;
+  const roll20SandboxSanitize = opts.roll20SandboxSanitize === true;
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
 
@@ -693,11 +700,21 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
-  const previewCss = legacyCssSanitize
-    ? sanitizeForRoll20Legacy(prefixedCss).sanitized
+  const sandboxHtml = roll20SandboxSanitize
+    ? sanitizeRoll20SandboxHtml(prefixedHtml).html
+    : prefixedHtml;
+  const sandboxCss = roll20SandboxSanitize
+    ? sanitizeRoll20SandboxCss(prefixedCss).css
     : prefixedCss;
+  const previewCss = legacyCssSanitize
+    ? sanitizeForRoll20Legacy(sandboxCss).sanitized
+    : sandboxCss;
 
-  const bodyInner = prefixedHtml ? applyTranslationsToHtml(prefixedHtml, opts.i18n) : EMPTY_PLACEHOLDER;
+  const bodyInner = sandboxHtml
+    ? applyTranslationsToHtml(sandboxHtml, opts.i18n)
+    : userHtml
+      ? ''
+      : EMPTY_PLACEHOLDER;
 
   return `<!doctype html>
 <html lang="ko"${darkMode ? ' data-theme="dark"' : ''}>
@@ -716,7 +733,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <style id="r20-user">${previewCss}</style>
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
-<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}">
+<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}" data-roll20-sandbox-sanitize="${roll20SandboxSanitize ? '1' : '0'}">
 <div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">

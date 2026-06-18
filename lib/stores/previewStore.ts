@@ -27,6 +27,7 @@ interface PreviewStore {
   darkMode: boolean;
   sanitize: boolean;        // D4 ① — default ON
   legacyCssSanitize: boolean; // 구버전 Roll20 CSS 무해화 preview/edit toggle.
+  roll20SandboxSanitize: boolean; // 실제 Roll20 Custom Sheet Sandbox sanitize/prefix 예상 preview toggle.
   autoRegen: boolean;       // 큰 시트 OFF 권장
   iframeSandbox: string;    // allow-scripts only — 사용자 시트 안 script 는 unique origin 안에서만 실행 (parent 접근 X). preview bridge script 동작 필요.
   renderMode: PreviewRenderMode;   // Roll20 sandbox parity default; Shadow DOM is edit mode.
@@ -36,6 +37,7 @@ interface PreviewStore {
   setDarkMode: (v: boolean) => void;
   setSanitize: (v: boolean) => void;
   setLegacyCssSanitize: (v: boolean) => void;
+  setRoll20SandboxSanitize: (v: boolean) => void;
   setAutoRegen: (v: boolean) => void;
   setRenderMode: (mode: PreviewRenderMode) => void;
   setDynamicToggle: (attr: string, on: boolean) => void;
@@ -46,6 +48,7 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   darkMode: false,
   sanitize: true,            // D4 ① default ON
   legacyCssSanitize: false,
+  roll20SandboxSanitize: false,
   autoRegen: true,
   iframeSandbox: 'allow-scripts',
   renderMode: 'iframe',
@@ -54,6 +57,7 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   setDarkMode: (v) => set({ darkMode: v }),
   setSanitize: (v) => set({ sanitize: v }),
   setLegacyCssSanitize: (v) => set({ legacyCssSanitize: v }),
+  setRoll20SandboxSanitize: (v) => set({ roll20SandboxSanitize: v }),
   setAutoRegen: (v) => set({ autoRegen: v }),
   setRenderMode: (mode) => set({ renderMode: mode }),
   setDynamicToggle: (attr, on) =>

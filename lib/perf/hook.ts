@@ -114,6 +114,7 @@ export interface PerfHook {
   setPreviewZoom: (zoom: PreviewZoom) => void;
   setPreviewRenderMode: (mode: PreviewRenderMode) => void;
   setLegacyCssSanitize: (enabled: boolean) => void;
+  setRoll20SandboxSanitize: (enabled: boolean) => void;
   appendFriendlyWidgetForEditSmoke: (input?: {
     containerPresetId?: string;
     widgetPresetId?: string;
@@ -416,6 +417,10 @@ function buildHook(): PerfHook {
 
     setLegacyCssSanitize: (enabled) => {
       usePreviewStore.getState().setLegacyCssSanitize(enabled);
+    },
+
+    setRoll20SandboxSanitize: (enabled) => {
+      usePreviewStore.getState().setRoll20SandboxSanitize(enabled);
     },
 
     appendFriendlyWidgetForEditSmoke: ({

@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils/cn';
 import { useUiStore, type MainMode, type EditSubmode } from '@/lib/stores/uiStore';
+import { usePreviewStore } from '@/lib/stores/previewStore';
 import {
   Tooltip,
   TooltipContent,
@@ -41,6 +42,9 @@ export default function MainAreaToolbar() {
   const mainSplit = useUiStore((s) => s.mainSplit);
   const editSubmode = useUiStore((s) => s.editSubmode);
   const setEditSubmode = useUiStore((s) => s.setEditSubmode);
+  const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
+  const setRoll20SandboxSanitize = usePreviewStore((s) => s.setRoll20SandboxSanitize);
+  const previewVisible = mainMode === 'split' || mainMode === 'preview';
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -81,6 +85,32 @@ export default function MainAreaToolbar() {
         </div>
 
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground tabular-nums">
+          {previewVisible && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-pressed={roll20SandboxSanitize}
+                  aria-label="Roll20 Sandbox 예상 렌더"
+                  data-testid="preview-roll20-sandbox-sanitize-toggle"
+                  onClick={() => setRoll20SandboxSanitize(!roll20SandboxSanitize)}
+                  className={cn(
+                    'inline-flex items-center rounded border px-2 py-1 text-[11px] transition-colors',
+                    roll20SandboxSanitize
+                      ? 'border-amber-500/40 bg-amber-500/15 text-amber-200'
+                      : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+                  )}
+                >
+                  Sandbox 예상
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {roll20SandboxSanitize
+                  ? 'Roll20 Custom Sheet Sandbox sanitize/prefix 예상 렌더'
+                  : '원본 보존 preview 렌더'}
+              </TooltipContent>
+            </Tooltip>
+          )}
           {mainMode === 'edit' && (
             <div
               role="tablist"

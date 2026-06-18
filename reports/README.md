@@ -24,6 +24,7 @@ Keep this README as the only public index unless the user explicitly approves a 
 | `preview-edit-visual/` | Local screenshot and pixel diagnostics for imported fixture preview root vs edit root. |
 | `asset-resource-audit/` | Local HTML/CSS asset URL inventory and reachability diagnostics. |
 | `legacy-fixture-visual/` | Local imported-fixture modern/legacy preview screenshots and legacy-risk CSS diagnostics. |
+| `roll20-sandbox-preview-smoke/` | Local browser smoke for the Roll20 Custom Sheet Sandbox expected-render preview toggle. |
 | `rolltemplate-chat-smoke/` | Local preview iframe roll button -> ChatPane rolltemplate rendering smoke. |
 | `roll20-actual-compare/` | Local Roll20 room/sandbox/test-room screenshot comparison and classification notes. |
 
