@@ -1026,14 +1026,21 @@ function markDropContainer(host: HTMLElement | null, blockId: string | null): vo
   if (!host || !shadow) return;
   shadow.querySelectorAll<HTMLElement>('.r20-drop-target').forEach((el) => {
     el.classList.remove('r20-drop-target');
+    el.removeAttribute('data-r20-drop-mode');
   });
   if (!blockId) {
     host.removeAttribute('data-r20-widget-dragging');
+    host.removeAttribute('data-r20-drop-target');
+    host.removeAttribute('data-r20-drop-mode');
     return;
   }
   host.setAttribute('data-r20-widget-dragging', '1');
+  host.setAttribute('data-r20-drop-target', blockId);
+  host.setAttribute('data-r20-drop-mode', 'inside');
   const escaped = escapeAttr(blockId);
-  shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`)?.classList.add('r20-drop-target');
+  const target = shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`);
+  target?.classList.add('r20-drop-target');
+  target?.setAttribute('data-r20-drop-mode', 'inside');
 }
 
 function hasFriendlyWidgetPayload(dataTransfer: DataTransfer | null): boolean {

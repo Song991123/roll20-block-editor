@@ -157,6 +157,29 @@ async function main() {
         dropPrevented: drop.defaultPrevented,
       };
     };
+    window.__smokeDragOver = (presetId, clientX, clientY) => {
+      const dt = new DataTransfer();
+      dt.setData('application/x-r20-friendly-widget', JSON.stringify({ id: presetId }));
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const shadowTarget = host?.shadowRoot?.elementFromPoint(clientX, clientY) ?? null;
+      const domTarget = document.elementFromPoint(clientX, clientY);
+      const target = shadowTarget ?? domTarget;
+      if (!target) return { dispatched: false, reason: 'no element at point' };
+      const event = new DragEvent('dragover', { bubbles: true, cancelable: true, composed: true, clientX, clientY });
+      Object.defineProperty(event, 'dataTransfer', { value: dt });
+      target.dispatchEvent(event);
+      const active = host?.shadowRoot?.querySelector('.r20-drop-target') ?? null;
+      return {
+        dispatched: true,
+        targetTag: target.tagName,
+        viaShadow: Boolean(shadowTarget),
+        dragoverPrevented: event.defaultPrevented,
+        hostDragging: host?.getAttribute('data-r20-widget-dragging') ?? null,
+        hostDropMode: host?.getAttribute('data-r20-drop-mode') ?? null,
+        activeTargetId: active?.getAttribute('data-r20-block-id') ?? null,
+        activeTargetMode: active?.getAttribute('data-r20-drop-mode') ?? null,
+      };
+    };
   });
 
   // C1: drop 'section' onto the canvas background (empty state) -> absolute.
@@ -258,6 +281,12 @@ async function main() {
   }, sectionInfo.blockId);
 
   await page.screenshot({ path: path.join(REPORT_DIR, 'c1b-section-moved.png') });
+
+  const c2Indicator = await page.evaluate(
+    ([x, y]) => window.__smokeDragOver('text-input', x, y),
+    [sectionInfo.cx + dragDelta.x, sectionInfo.cy + dragDelta.y],
+  );
+  await page.screenshot({ path: path.join(REPORT_DIR, 'c2-drop-indicator.png') });
 
   // C2: drop 'text-input' with coordinates over the section -> flow nesting.
   const c2 = await page.evaluate(
@@ -394,7 +423,7 @@ async function main() {
     { sectionId: sectionInfo.blockId, inputId: dragDropState.nestedInputBlockId },
   );
 
-  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2, c3, state: dragDropState, nestedReorder, layerDropModes };
+  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2Indicator, c2, c3, state: dragDropState, nestedReorder, layerDropModes };
   results.consoleErrors = consoleErrors;
   results.pageErrors = pageErrors;
 
@@ -413,6 +442,11 @@ async function main() {
     movedSectionInfo.emittedLeft === movedSectionInfo.computedLeft &&
     movedSectionInfo.emittedTop === movedSectionInfo.computedTop &&
     movedSectionInfo.emittedHasAbsolute === true &&
+    c2Indicator.dispatched === true &&
+    c2Indicator.hostDragging === '1' &&
+    c2Indicator.hostDropMode === 'inside' &&
+    c2Indicator.activeTargetId === sectionInfo.blockId &&
+    c2Indicator.activeTargetMode === 'inside' &&
     dragDropState.nestedInputFound === true &&
     dragDropState.nestedInputAbsolute === false &&
     dragDropState.rootHtmlBlocks === 1 &&

@@ -295,6 +295,9 @@ export function mountSheetShadow(
   outline: 3px solid rgba(34, 197, 94, 0.75) !important;
   outline-offset: 3px !important;
 }
+[data-r20-block-id].r20-drop-target[data-r20-drop-mode="inside"] {
+  box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.55) !important;
+}
 [data-r20-block-id] .r20-editing,
 [data-r20-block-id].r20-editing {
   outline: 2px dashed #16a34a;
