@@ -280,8 +280,14 @@ export default function EditCanvas() {
       disableInlineTextEdit: true,
       disableContextMenu: true,
       getLayerRoleForBlock: (blockId) => {
-        const block = getBlocklyAdapter().getBlock('html', blockId);
-        return block ? getLayerRole(block.type) : null;
+        const adapter = getBlocklyAdapter();
+        const block = adapter.getBlock('html', blockId);
+        if (!block) return null;
+        const role = getLayerRole(block.type);
+        return {
+          ...role,
+          canReceiveChildren: role.canReceiveChildren && adapter.canNestInContainer('html', blockId),
+        };
       },
       onSelect: (blockId) => setShadowSelectedRef.current?.(blockId),
       onDragStart: (blockId) => {
@@ -1023,7 +1029,7 @@ function findCanvasDropTarget(
     const blockId = cur.dataset.r20BlockId;
     if (blockId) {
       const block = adapter.getBlock('html', blockId);
-      if (block && canReceiveChildren(block.type)) {
+      if (block && canReceiveChildren(block.type) && adapter.canNestInContainer('html', blockId)) {
         return {
           blockId,
           label: block.label || block.type,

@@ -151,6 +151,7 @@ export interface BlocklyAdapter {
   moveBlockDown(key: WorkspaceKey, blockId: string): boolean;
   moveBlockBefore(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   moveBlockAfter(key: WorkspaceKey, blockId: string, targetId: string): boolean;
+  canNestInContainer(key: WorkspaceKey, targetId: string): boolean;
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
@@ -612,6 +613,18 @@ class DefaultAdapter implements BlocklyAdapter {
     } catch {
       return false;
     }
+  }
+
+  canNestInContainer(key: WorkspaceKey, targetId: string): boolean {
+    const ws = this.workspaces[key];
+    const target = ws?.getBlockById(targetId) as
+      | (Blockly.Block & { inputList?: Array<{ connection?: Blockly.Connection | null }> })
+      | null;
+    if (!ws || !target) return false;
+    return (target.inputList ?? []).some((input) => {
+      const connection = input.connection;
+      return Boolean(connection && connection.type === Blockly.ConnectionType.NEXT_STATEMENT);
+    });
   }
 
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {

@@ -44,6 +44,18 @@ export interface PerfWorkspaceSnap {
   rootBlocks: Record<WorkspaceKey, number>;
 }
 
+export interface PerfBlockGraphNode {
+  id: string;
+  type: string;
+  depth: number;
+  label: string;
+  parentId: string | null;
+  previousId: string | null;
+  nextId: string | null;
+  hasNextTarget: boolean;
+  childCount: number;
+}
+
 export interface PerfEmitSnap {
   htmlLen: number;
   cssLen: number;
@@ -78,6 +90,7 @@ export interface PerfEditFlowDropResult {
 export interface PerfHook {
   /** Workspace 인스턴스별 + 누적 블록 수 + root (top-level) 블록 수. */
   getWorkspace: () => PerfWorkspaceSnap;
+  getBlockGraph: (key?: WorkspaceKey) => PerfBlockGraphNode[];
   /** emit 결과 (lazy emit). 길이만 — 본문 dump X (사용자 시트 식별자 leak 방지). */
   getEmitCache: () => PerfEmitSnap;
   /**
@@ -246,6 +259,36 @@ function buildHook(): PerfHook {
         totalBlocks: html.total + css.total + i18n.total,
         rootBlocks: { html: html.root, css: css.root, i18n: i18n.root },
       };
+    },
+
+    getBlockGraph: (key = 'html') => {
+      const adapter = getBlocklyAdapter();
+      const ws = adapter.getWorkspace(key);
+      if (!ws) return [];
+      const snapshots = new Map(adapter.listAllBlocks(key).map((block) => [block.id, block]));
+      return ws.getAllBlocks(false).map((block) => {
+        const snap = snapshots.get(block.id);
+        const previousBlock =
+          (block as { getPreviousBlock?: () => { id?: string } | null }).getPreviousBlock?.() ??
+          block.previousConnection?.targetBlock() ??
+          null;
+        const nextBlock =
+          (block as { getNextBlock?: () => { id?: string } | null }).getNextBlock?.() ??
+          block.nextConnection?.targetBlock() ??
+          null;
+        const parentBlock = (block as { getParent?: () => { id?: string } | null }).getParent?.() ?? null;
+        return {
+          id: block.id,
+          type: block.type,
+          depth: snap?.depth ?? 0,
+          label: snap?.label ?? block.type,
+          parentId: parentBlock?.id ?? null,
+          previousId: previousBlock?.id ?? null,
+          nextId: nextBlock?.id ?? null,
+          hasNextTarget: Boolean(block.nextConnection?.targetBlock()),
+          childCount: block.getChildren(false).filter((child) => child.id !== nextBlock?.id).length,
+        };
+      });
     },
 
     getEmitCache: () => {

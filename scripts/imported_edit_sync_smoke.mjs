@@ -251,6 +251,250 @@ async function chooseEditTarget(page, excludedIds = []) {
   }, excludedIds);
 }
 
+async function runImportedLayerReorder(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    null,
+    { timeout: 30000 },
+  );
+  return page.evaluate(async () => {
+    function emittedIndex(id) {
+      return window.__perfHook.getEmitContent().html.indexOf(`data-r20-block-id="${id}"`);
+    }
+
+    function findPair() {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const root = host?.shadowRoot?.querySelector('#charsheet-root');
+      if (!root) return null;
+
+      const graph = window.__perfHook.getBlockGraph?.('html') || [];
+      const byId = new Map(graph.map((node) => [node.id, node]));
+      const describe = (node) => {
+        const el = root.querySelector(`[data-r20-block-id="${CSS.escape(node.id)}"]`);
+        const rect = el?.getBoundingClientRect();
+        return {
+          blockId: node.id,
+          type: node.type,
+          tag: el?.tagName.toLowerCase() || node.type,
+          role: el?.getAttribute('data-r20-layer-role') || '',
+          nestedCount: el?.querySelectorAll('[data-r20-block-id]').length ?? node.childCount,
+          text: String(el?.textContent || '').trim().slice(0, 60),
+          visible: Boolean(
+            el &&
+              rect &&
+              rect.width >= 4 &&
+              rect.height >= 4 &&
+              getComputedStyle(el).display !== 'none' &&
+              getComputedStyle(el).visibility !== 'hidden',
+          ),
+        };
+      };
+
+      for (const movingNode of graph) {
+        if (!movingNode.previousId || movingNode.hasNextTarget || movingNode.childCount > 0) continue;
+        if (/script|worker|rolltemplate/i.test(movingNode.type)) continue;
+        const targetNode = byId.get(movingNode.previousId);
+        if (!targetNode || targetNode.nextId !== movingNode.id) continue;
+        if (/script|worker|rolltemplate/i.test(targetNode.type)) continue;
+        const targetRow = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetNode.id)}"]`);
+        const movingRow = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(movingNode.id)}"]`);
+        if (!targetRow || !movingRow) continue;
+        const target = describe(targetNode);
+        const moving = describe(movingNode);
+        if (!target.visible || !moving.visible) continue;
+        return {
+          parentBlockId: movingNode.parentId || 'workspace-root',
+          target,
+          moving,
+          siblingCount: graph.filter((node) => node.parentId === movingNode.parentId && node.depth === movingNode.depth).length,
+          beforeOrder: graph
+            .filter((node) => node.parentId === movingNode.parentId && node.depth === movingNode.depth)
+            .map((node) => node.id),
+        };
+      }
+      return null;
+    }
+
+    const pair = findPair();
+    if (!pair) return { pass: false, skipped: true, reason: 'no imported leaf sibling pair found' };
+    const targetRow = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(pair.target.blockId)}"]`,
+    );
+    if (!targetRow) return { pass: false, skipped: false, pair, reason: 'target layer row missing' };
+
+    const before = {
+      movingIndex: emittedIndex(pair.moving.blockId),
+      targetIndex: emittedIndex(pair.target.blockId),
+    };
+    const rect = targetRow.getBoundingClientRect();
+    const dt = new DataTransfer();
+    dt.setData('application/x-r20-layer-block', pair.moving.blockId);
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      clientX: Math.round(rect.left + rect.width / 2),
+      clientY: Math.round(rect.top + rect.height * 0.12),
+    };
+    const over = new DragEvent('dragover', init);
+    Object.defineProperty(over, 'dataTransfer', { value: dt });
+    targetRow.dispatchEvent(over);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const mode = targetRow.getAttribute('data-r20-layer-drop-mode') || '';
+    const drop = new DragEvent('drop', init);
+    Object.defineProperty(drop, 'dataTransfer', { value: dt });
+    targetRow.dispatchEvent(drop);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const after = {
+      movingIndex: emittedIndex(pair.moving.blockId),
+      targetIndex: emittedIndex(pair.target.blockId),
+    };
+    const pass =
+      before.movingIndex > before.targetIndex &&
+      after.movingIndex >= 0 &&
+      after.targetIndex >= 0 &&
+      after.movingIndex < after.targetIndex;
+    return { pass, skipped: false, pair, mode, before, after };
+  });
+}
+
+async function runImportedCanvasInsert(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    null,
+    { timeout: 30000 },
+  );
+  return page.evaluate(async () => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    if (!host || !root) return { pass: false, reason: 'missing edit shadow root' };
+
+    const beforeIds = new Set(
+      Array.from(root.querySelectorAll('[data-r20-block-id]'))
+        .map((el) => el.getAttribute('data-r20-block-id'))
+        .filter(Boolean),
+    );
+    const candidates = Array.from(root.querySelectorAll('[data-r20-can-drop="1"][data-r20-block-id]'))
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return {
+          el,
+          blockId: el.getAttribute('data-r20-block-id') || '',
+          role: el.getAttribute('data-r20-layer-role') || '',
+          rect,
+          visible:
+            cs.display !== 'none' &&
+            cs.visibility !== 'hidden' &&
+            rect.width >= 40 &&
+            rect.height >= 24,
+          nestedCount: el.querySelectorAll('[data-r20-block-id]').length,
+        };
+      })
+      .filter((item) => item.visible && /^(frame|flow)$/.test(item.role))
+      .sort((a, b) => a.nestedCount - b.nestedCount || a.rect.width * a.rect.height - b.rect.width * b.rect.height);
+    if (candidates.length === 0) return { pass: false, reason: 'no visible imported frame/flow drop target' };
+
+    const attempts = [];
+    for (const target of candidates.slice(0, 24)) {
+      const dt = new DataTransfer();
+      dt.setData('application/x-r20-friendly-widget', JSON.stringify({ id: 'text-input' }));
+      const clientX = Math.round(target.rect.left + target.rect.width / 2);
+      const clientY = Math.round(target.rect.top + Math.min(target.rect.height - 2, Math.max(2, target.rect.height / 2)));
+      const shadowTarget = host.shadowRoot?.elementFromPoint(clientX, clientY);
+      const eventTarget = shadowTarget || target.el;
+      const init = { bubbles: true, cancelable: true, composed: true, clientX, clientY };
+      const over = new DragEvent('dragover', init);
+      Object.defineProperty(over, 'dataTransfer', { value: dt });
+      eventTarget.dispatchEvent(over);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const indicator = {
+        hostDropMode: host.getAttribute('data-r20-drop-mode'),
+        activeTargetId: host.getAttribute('data-r20-drop-target'),
+      };
+      if (!indicator.hostDropMode) {
+        attempts.push({
+          pass: false,
+          target: {
+            blockId: target.blockId,
+            role: target.role,
+            width: Math.round(target.rect.width),
+            height: Math.round(target.rect.height),
+          },
+          indicator,
+          overPrevented: over.defaultPrevented,
+          dropPrevented: false,
+          newId: null,
+          style: '',
+          emittedTag: '',
+          skippedDrop: true,
+        });
+        continue;
+      }
+      const drop = new DragEvent('drop', init);
+      Object.defineProperty(drop, 'dataTransfer', { value: dt });
+      eventTarget.dispatchEvent(drop);
+      await new Promise((resolve) => setTimeout(resolve, 700));
+
+      const freshRoot = host.shadowRoot?.querySelector('#charsheet-root');
+      const newInput = Array.from(freshRoot?.querySelectorAll('input[data-r20-block-id]') ?? [])
+        .find((el) => !beforeIds.has(el.getAttribute('data-r20-block-id') || ''));
+      const newId = newInput?.getAttribute('data-r20-block-id') || null;
+      const style = newInput?.getAttribute('style') || '';
+      const emit = window.__perfHook.getEmitContent();
+      const emittedTag = newId ? findBlockOpeningTag(emit.html, newId) : '';
+      const emittedStyle = emittedTag.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] || '';
+      const pass =
+        over.defaultPrevented &&
+        drop.defaultPrevented &&
+        Boolean(indicator.hostDropMode) &&
+        Boolean(newId) &&
+        !/position\s*:\s*absolute/i.test(`${style};${emittedStyle}`);
+      const attempt = {
+        pass,
+        target: {
+          blockId: target.blockId,
+          role: target.role,
+          width: Math.round(target.rect.width),
+          height: Math.round(target.rect.height),
+        },
+        indicator,
+        overPrevented: over.defaultPrevented,
+        dropPrevented: drop.defaultPrevented,
+        newId,
+        style,
+        emittedTag,
+      };
+      attempts.push(attempt);
+      if (newId) return { ...attempt, attempts };
+    }
+    return { pass: false, reason: 'no imported canvas insertion attempt created flow content', attempts };
+
+    function findBlockOpeningTag(html, blockId) {
+      let marker = `data-r20-block-id="${blockId}"`;
+      let markerIndex = html.indexOf(marker);
+      if (markerIndex < 0) {
+        marker = `data-r20-block-id='${blockId}'`;
+        markerIndex = html.indexOf(marker);
+      }
+      if (markerIndex < 0) return '';
+      const start = html.lastIndexOf('<', markerIndex);
+      const end = html.indexOf('>', markerIndex);
+      if (start < 0 || end < 0 || start > markerIndex) return '';
+      return html.slice(start, end + 1);
+    }
+  });
+}
+
 async function getEditBlockState(page, blockId) {
   return page.evaluate((id) => {
     function styleSummary(el) {
@@ -690,14 +934,15 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
-  lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: |');
+  lines.push('| Fixture | Status | Blocks | Canvas insert | Layer reorder | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
+  lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? ''} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
-  lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, and the edited emit survived a re-import/emit cycle.');
+  lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, and the edited emit survived a re-import/emit cycle.');
+  lines.push('- Layer reorder is recorded when the imported Blockly graph exposes a safe adjacent leaf sibling pair. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
   lines.push('');
@@ -724,6 +969,21 @@ function fmtEmit(item) {
 function fmtReimport(item) {
   if (!item) return 'reimport missing';
   return isStableReimport(item) ? 'reimport stable' : 'reimport drift';
+}
+
+function fmtLayerReorder(item) {
+  if (!item) return 'missing';
+  if (item.skipped) return `SKIP: ${item.reason || 'no pair'}`;
+  if (item.pass) {
+    return `${item.pair?.moving?.tag || ''} before ${item.pair?.target?.tag || ''}`;
+  }
+  return `FAIL: ${item.reason || item.mode || 'not reordered'}`;
+}
+
+function fmtCanvasInsert(item) {
+  if (!item) return 'missing';
+  if (item.pass) return `inside ${item.target?.role || ''} ${item.target?.width || ''}x${item.target?.height || ''}`.trim();
+  return `FAIL: ${item.reason || item.indicator?.hostDropMode || 'not inserted'}`;
 }
 
 function sumResourceIssues(items) {
@@ -788,6 +1048,9 @@ async function main() {
         await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
         await warmPerfHook(page);
         entry.import = await importFixture(page, fixture);
+        await page.waitForTimeout(1300);
+        entry.layerReorder = await runImportedLayerReorder(page);
+        entry.canvasInsert = await runImportedCanvasInsert(page);
         entry.attempts = [];
         const excludedIds = [];
         for (let attemptIndex = 0; attemptIndex < 24; attemptIndex += 1) {
@@ -820,7 +1083,11 @@ async function main() {
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-edit.png`) });
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-preview.png`) });
         entry.reimport = await reimportCurrentEmit(page);
-        entry.pass = entry.pass && isStableReimport(entry.reimport);
+        entry.pass =
+          entry.pass &&
+          entry.canvasInsert?.pass === true &&
+          (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true) &&
+          isStableReimport(entry.reimport);
       } catch (err) {
         entry.error = String(err?.stack || err).slice(0, 1200);
       }
