@@ -965,3 +965,18 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The local generated payload also contains source `.outline`/`.sheet-outline`; the issue is not wrapper loss.
 - Added a diagnostic same-context candidate `sandbox-dpr-border-snap-no-state` to test whether DPR-scaled border widths alone explain the wrap. It did not change row 0 wrapping and did not beat the current best mismatch.
 - Current strongest clue remains inline-block whitespace/fit behavior: `sandbox-inline-block-fit-tolerance-no-state` keeps row 0 columns on one line but slightly worsens overall image mismatch, so it remains a diagnostic clue only.
+
+## 2026-06-19 Roll20 Full-Height Root Stitch Evidence
+
+- Used the logged-in Chrome Roll20 editor tab for the dedicated verification sandbox only; existing rooms were not inspected or modified.
+- Added `scripts/roll20_actual_stitch_root.mjs` and package script `corepack pnpm run stitch:roll20-actual-root`.
+- Chrome/CDP read `#dialog-window` and `.charactersheet` metrics from the generated Les-Oublies character iframe: root `852x4121.575`, viewport `900x672`, scroller `#dialog-window`.
+- Captured 8 local-only clipped root segments under the ignored report folder and stitched them with:
+  `corepack pnpm run stitch:roll20-actual-root -- --manifest reports\roll20-actual-compare\2026-06-18-state-map-v1\local-baseline\official-roll20-Les-Oublies\screenshots\roll20-root-stitch-clipped-manifest.json --out reports\roll20-actual-compare\2026-06-18-state-map-v1\local-baseline\official-roll20-Les-Oublies\screenshots\roll20-sandbox-root-full.png`.
+- Updated the stitcher to support `"cropImage": "full"` for pre-clipped segment screenshots, avoiding browser screenshot scale ambiguity.
+- Latest diff command:
+  `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest Les-Oublies generated Roll20 sandbox result: full-height actual `852x4122` vs local preview `850x4478`, mismatch `6.90%`.
+- Updated `scripts/roll20_actual_difference_classify.mjs` so full-height evidence is explicitly categorized. Latest classifier result: `sheet root geometry/height differs after full-height capture`.
+- Status remains partial: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=1/6`, `generatedDiffed=1/6`, `roomObservationScreenshots=0/3`, and `roomObservationDiffed=0/3`.
+- Scope note: this replaces the old visible-top `21.67%` crop as the main generated-sheet evidence for Les-Oublies, but it is still not Roll20 visual parity. AW2E/YSHY actual screenshots and trustworthy chat screenshots remain missing. Next renderer work should compare actual-vs-local row/table/control geometry before applying generic CSS changes.

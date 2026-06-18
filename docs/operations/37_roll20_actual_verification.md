@@ -121,7 +121,8 @@ to the local baseline screenshots using one of these names:
 | Path | Meaning |
 | --- | --- |
 | `local-baseline/<fixture>/screenshots/roll20-sandbox.png` | Screenshot from Custom Sheet Sandbox or a new test room. |
-| `local-baseline/<fixture>/screenshots/roll20-sandbox-root.png` | Preferred normalized sheet-root crop from Custom Sheet Sandbox or a new test room. When present, diff/status helpers use this before the fallback `roll20-sandbox.png`. |
+| `local-baseline/<fixture>/screenshots/roll20-sandbox-root.png` | Normalized visible sheet-root crop from Custom Sheet Sandbox or a new test room. When present, diff/status helpers use this before the fallback `roll20-sandbox.png`. |
+| `local-baseline/<fixture>/screenshots/roll20-sandbox-root-full.png` | Preferred stitched full-height sheet-root screenshot from Custom Sheet Sandbox or a new test room. When present, diff/status helpers use this before `roll20-sandbox-root.png` and `roll20-sandbox.png`. |
 | `local-baseline/<fixture>/screenshots/roll20-room.png` | Read-only screenshot from an existing solo room. |
 | `local-baseline/<fixture>/screenshots/roll20-chat.png` | Rolltemplate/chat screenshot from Roll20. |
 
@@ -189,6 +190,26 @@ classify the result as partial-height viewport/crop evidence. If the diff helper
 also compares against a matching local visible viewport, inspect any remaining
 visible-crop mismatch separately, then capture a full-height/scroll-stitched
 Roll20 sheet root before making any full-sheet parity claim.
+
+When Chrome/CDP can read and scroll the character iframe or its Roll20
+`#dialog-window` scroller, capture multiple viewport segments and stitch them
+into the preferred full-height root evidence:
+
+```bash
+corepack pnpm run stitch:roll20-actual-root -- --manifest <roll20-root-stitch-manifest.json> --out <roll20-sandbox-root-full.png>
+```
+
+The manifest and segment PNGs are local-only evidence. They must remain under
+`reports/roll20-actual-compare/<label>/...` and must not be committed. A stitched
+image changes the comparison from visible-top evidence to fuller root evidence,
+but it is still diagnostic until the mismatch is classified.
+
+When the browser screenshot API returns pixels in a coordinate scale that does
+not match `devicePixelRatio`, prefer clipped root-segment screenshots. Save each
+visible root slice with Chrome's screenshot `clip`, then set `"cropImage": "full"`
+for that segment in the stitch manifest. This makes the stitcher draw the whole
+clipped image into the CSS destination rectangle and avoids confusing Roll20
+geometry evidence with browser screenshot scaling artifacts.
 
 When the iframe DOM/CSS remains unreadable, run the context diagnostic after the
 diff/classifier/crop diagnostics:

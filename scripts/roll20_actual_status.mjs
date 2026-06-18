@@ -27,7 +27,7 @@ const TARGETS = [
   {
     id: 'sandbox',
     filename: 'roll20-sandbox.png',
-    preferredFilename: 'roll20-sandbox-root.png',
+    preferredFilenames: ['roll20-sandbox-root-full.png', 'roll20-sandbox-root.png'],
     evidence: 'Custom Sheet Sandbox or new test-room initial sheet screenshot',
     requiredForGeneratedSheetCheck: true,
   },
@@ -248,7 +248,9 @@ async function inspectFixture(runDir, fixtureId, diffReport) {
 }
 
 function inspectTarget(fixtureId, screenshots, target, diffReport) {
-  const preferredFile = target.preferredFilename ? path.join(screenshots, target.preferredFilename) : null;
+  const preferredFiles = (target.preferredFilenames ?? (target.preferredFilename ? [target.preferredFilename] : []))
+    .map((filename) => path.join(screenshots, filename));
+  const preferredFile = preferredFiles.find((file) => existsSync(file)) ?? preferredFiles[0] ?? null;
   const fallbackFile = path.join(screenshots, target.filename);
   const file = preferredFile && existsSync(preferredFile) ? preferredFile : fallbackFile;
   const diffItem = diffReport.items.find((item) => item.fixtureId === fixtureId && item.target === target.id);
@@ -257,6 +259,7 @@ function inspectTarget(fixtureId, screenshots, target, diffReport) {
     evidence: target.evidence,
     screenshot: fileStatus(file),
     preferredScreenshot: preferredFile ? fileStatus(preferredFile) : null,
+    preferredScreenshots: preferredFiles.map(fileStatus),
     fallbackScreenshot: preferredFile ? fileStatus(fallbackFile) : null,
     exists: existsSync(file),
     diffStatus: diffItem?.status ?? 'NOT_RUN',
@@ -286,7 +289,7 @@ function buildNextAction({
     if (blockerEvidence.length > 0) {
       return 'Chrome file upload is still blocked in the recorded evidence. Enable Allow access to file URLs for the Codex extension, upload payloads in Roll20 Sandbox, capture screenshots, then rerun screenshot diff and this status command.';
     }
-    return 'Upload payloads in Roll20 Custom Sheet Sandbox/test room, capture roll20-sandbox.png and roll20-chat.png, then rerun screenshot diff and this status command. Existing solo-room screenshots are optional observation evidence, not part of the generated-sheet gate.';
+    return 'Upload payloads in Roll20 Custom Sheet Sandbox/test room, capture roll20-sandbox-root-full.png or roll20-sandbox-root.png plus roll20-chat.png, then rerun screenshot diff and this status command. Existing solo-room screenshots are optional observation evidence, not part of the generated-sheet gate.';
   }
   if (generatedDiffedCount < generatedTargetCount) {
     return 'Actual screenshots exist. Run node scripts/roll20_actual_screenshot_diff.mjs for this run, then classify differences.';

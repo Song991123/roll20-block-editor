@@ -10,7 +10,8 @@
  *     reports/roll20-actual-compare/<run-label>
  *
  * Expected optional actual screenshot names per fixture:
- *   - screenshots/roll20-sandbox-root.png (preferred normalized sheet-root crop)
+ *   - screenshots/roll20-sandbox-root-full.png (preferred stitched full-height sheet-root capture)
+ *   - screenshots/roll20-sandbox-root.png (fallback normalized sheet-root crop)
  *   - screenshots/roll20-sandbox.png (fallback full/viewport sandbox screenshot)
  *   - screenshots/roll20-room.png
  *   - screenshots/roll20-chat.png
@@ -52,16 +53,28 @@ async function listFixtureDirs() {
 
 function actualTargets(fixtureDir) {
   const shots = path.join(fixtureDir, 'screenshots');
+  const sandboxRootFull = path.join(shots, 'roll20-sandbox-root-full.png');
   const sandboxRoot = path.join(shots, 'roll20-sandbox-root.png');
   const sandboxFallback = path.join(shots, 'roll20-sandbox.png');
+  const sandboxRootFullMeta = sandboxRootFull.replace(/\.png$/i, '.json');
   const sandboxRootMeta = sandboxRoot.replace(/\.png$/i, '.json');
+  const sandboxActual = existsSync(sandboxRootFull)
+    ? sandboxRootFull
+    : existsSync(sandboxRoot)
+      ? sandboxRoot
+      : sandboxFallback;
+  const sandboxActualMeta = existsSync(sandboxRootFull) && existsSync(sandboxRootFullMeta)
+    ? sandboxRootFullMeta
+    : existsSync(sandboxRoot) && existsSync(sandboxRootMeta)
+      ? sandboxRootMeta
+      : null;
   return [
     {
       name: 'sandbox',
       local: path.join(shots, 'local-preview.png'),
-      actual: existsSync(sandboxRoot) ? sandboxRoot : sandboxFallback,
-      actualMeta: existsSync(sandboxRoot) && existsSync(sandboxRootMeta) ? sandboxRootMeta : null,
-      expected: [sandboxRoot, sandboxFallback],
+      actual: sandboxActual,
+      actualMeta: sandboxActualMeta,
+      expected: [sandboxRootFull, sandboxRoot, sandboxFallback],
       purpose: 'Local preview vs Roll20 Custom Sheet Sandbox/test-room initial sheet.',
     },
     {
@@ -236,6 +249,8 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Place Roll20 screenshots next to the local baseline screenshots:');
   lines.push('');
+  lines.push('- `local-baseline/<fixture>/screenshots/roll20-sandbox-root-full.png`');
+  lines.push('- `local-baseline/<fixture>/screenshots/roll20-sandbox-root.png`');
   lines.push('- `local-baseline/<fixture>/screenshots/roll20-sandbox.png`');
   lines.push('- `local-baseline/<fixture>/screenshots/roll20-room.png`');
   lines.push('- `local-baseline/<fixture>/screenshots/roll20-chat.png`');
