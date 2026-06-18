@@ -15,6 +15,7 @@ Run scripts from the project root unless noted otherwise.
 | `node scripts/prepare_explicit_fixture.mjs <fixture_root> <fixture_id> --html <path> --css <path> [--i18n <path>]` | Copy an explicit sheet into a fixture. |
 | `node scripts/render_visual_fixture_doc.mjs` | Render prepared visual fixtures into standalone preview HTML. |
 | `node scripts/make_visual_diff_pages.mjs` | Build visual diff pages and diagnostics. |
+| `corepack pnpm run diff:visual-fixtures` | Generate visual diff pages, then run them in headless Chromium and collect `visual-fixture-diff-results.md/.json`. This automates reference-image diagnostics but is still not a Roll20 visual parity gate. |
 | `node scripts/make_cascade_leak_pages.mjs` | Build browser-computed CSS cascade diagnostic pages from rendered fixture HTML. |
 | `node scripts/live_shadow_cascade_smoke.mjs --out-dir ./out --report-dir reports/live-shadow-cascade [--only <fixtureId>]` | Live static app smoke for preview/edit Shadow DOM CSS winners after real browser import. Needs `corepack pnpm run build` first. |
 | `node scripts/preview_edit_visual_smoke.mjs --out-dir ./out --report-dir reports/preview-edit-visual [--only <fixtureId>]` | Live static app screenshot smoke comparing imported fixture preview root vs edit root. Writes local-only screenshots and pixel diagnostics; not a Roll20 parity gate. Needs `corepack pnpm run build` first. |

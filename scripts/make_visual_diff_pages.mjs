@@ -24,12 +24,16 @@ const captureRoot = resolve(args[1] ?? 'reports/visual-fixture-render/screenshot
 const outDir = resolve(args[2] ?? 'reports/visual-fixture-diff');
 const requestedIds = new Set(args.slice(3));
 
-function slash(path) {
-  return path.replace(/\\/g, '/');
+function mimeFor(path) {
+  const ext = extname(path).toLowerCase();
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  if (ext === '.webp') return 'image/webp';
+  if (ext === '.gif') return 'image/gif';
+  return 'image/png';
 }
 
-function fileUrl(path) {
-  return `file:///${slash(resolve(path)).split('/').map(encodeURIComponent).join('/')}`;
+function imageDataUrl(path) {
+  return `data:${mimeFor(path)};base64,${readFileSync(path).toString('base64')}`;
 }
 
 function htmlEscape(value) {
@@ -60,6 +64,8 @@ function findReference(fixtureDir) {
 }
 
 function buildDiffPage({ fixtureId, referencePath, capturePath }) {
+  const referenceSrc = imageDataUrl(referencePath);
+  const captureSrc = imageDataUrl(capturePath);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -80,7 +86,7 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
 <h1>${htmlEscape(fixtureId)}</h1>
 <pre data-testid="result">pending</pre>
 <div class="grid">
-  <figure><figcaption>Reference</figcaption><img id="reference" src="${fileUrl(referencePath)}"></figure>
+  <figure><figcaption>Reference</figcaption><img id="reference" src="${referenceSrc}"></figure>
   <figure><figcaption>Capture crop</figcaption><canvas id="capture"></canvas></figure>
   <figure><figcaption>Diff</figcaption><canvas id="diff"></canvas></figure>
 </div>
@@ -92,7 +98,7 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
   var diffCanvas = document.getElementById('diff');
   var result = document.querySelector('[data-testid="result"]');
   var capture = new Image();
-  capture.src = ${JSON.stringify(fileUrl(capturePath))};
+  capture.src = ${JSON.stringify(captureSrc)};
   function fail(message) {
     result.textContent = JSON.stringify({ fixtureId: ${JSON.stringify(fixtureId)}, status: 'error', message: String(message) }, null, 2);
   }
@@ -103,8 +109,11 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
       if (!reference.naturalWidth || !reference.naturalHeight || !capture.naturalWidth || !capture.naturalHeight) {
         return fail('image dimensions unavailable');
       }
-      function compare(mode, w, h, capX, capY, refMode, paint) {
+      function compare(mode, w, h, capX, capY, refX, refY, refW, refH, refMode, paint) {
         if (!w || !h || capX < 0 || capY < 0 || capX + w > capture.naturalWidth || capY + h > capture.naturalHeight) {
+          return null;
+        }
+        if (!refW || !refH || refX < 0 || refY < 0 || refX + refW > reference.naturalWidth || refY + refH > reference.naturalHeight) {
           return null;
         }
         refCanvas.width = w;
@@ -118,8 +127,10 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
         capCtx.clearRect(0, 0, w, h);
         if (refMode === 'scale-full') {
           refCtx.drawImage(reference, 0, 0, reference.naturalWidth, reference.naturalHeight, 0, 0, w, h);
+        } else if (refMode === 'scale-crop') {
+          refCtx.drawImage(reference, refX, refY, refW, refH, 0, 0, w, h);
         } else {
-          refCtx.drawImage(reference, 0, 0, w, h, 0, 0, w, h);
+          refCtx.drawImage(reference, refX, refY, w, h, 0, 0, w, h);
         }
         capCtx.drawImage(capture, capX, capY, w, h, 0, 0, w, h);
         var ref = refCtx.getImageData(0, 0, w, h);
@@ -152,15 +163,45 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
           mode: mode,
           comparedSize: [w, h],
           captureCrop: [capX, capY, w, h],
+          referenceCrop: [refX, refY, refW, refH],
           mismatchPixels: mismatch,
           totalPixels: w * h,
           mismatchRatio: Number((mismatch / (w * h)).toFixed(6)),
           rmsRgb: Number(Math.sqrt(sumSq / (w * h * 3)).toFixed(3))
         };
       }
+      function better(a, b) {
+        if (!a) return b;
+        if (!b) return a;
+        return b.mismatchRatio < a.mismatchRatio ? b : a;
+      }
+      function searchCaptureCrop(mode, w, h, refMode, refX, refY, refW, refH, step) {
+        var best = null;
+        var maxX = Math.max(0, capture.naturalWidth - w);
+        var maxY = Math.max(0, capture.naturalHeight - h);
+        for (var y = 0; y <= maxY; y += step) {
+          for (var x = 0; x <= maxX; x += step) {
+            best = better(best, compare(mode, w, h, x, y, refX, refY, refW, refH, refMode, false));
+          }
+        }
+        if (!best) return null;
+        var coarseX = best.captureCrop[0];
+        var coarseY = best.captureCrop[1];
+        var startX = Math.max(0, coarseX - step);
+        var endX = Math.min(maxX, coarseX + step);
+        var startY = Math.max(0, coarseY - step);
+        var endY = Math.min(maxY, coarseY + step);
+        for (var ry = startY; ry <= endY; ry += 2) {
+          for (var rx = startX; rx <= endX; rx += 2) {
+            best = better(best, compare(mode, w, h, rx, ry, refX, refY, refW, refH, refMode, false));
+          }
+        }
+        return best;
+      }
       var nativeW = Math.min(reference.naturalWidth, capture.naturalWidth);
       var nativeH = Math.min(reference.naturalHeight, capture.naturalHeight);
-      var nativeTopLeft = compare('native-top-left', nativeW, nativeH, 0, 0, 'crop-top-left', false);
+      var nativeTopLeft = compare('native-top-left', nativeW, nativeH, 0, 0, 0, 0, nativeW, nativeH, 'crop-top-left', false);
+      var nativeBestXY = searchCaptureCrop('native-best-xy', nativeW, nativeH, 'crop-top-left', 0, 0, nativeW, nativeH, 32);
       var scale = Math.min(1, capture.naturalWidth / reference.naturalWidth);
       var scaledW = Math.max(1, Math.round(reference.naturalWidth * scale));
       var scaledH = Math.max(1, Math.round(reference.naturalHeight * scale));
@@ -169,25 +210,16 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
         scaledW = Math.max(1, Math.round(scaledW * heightScale));
         scaledH = Math.max(1, Math.round(scaledH * heightScale));
       }
-      var scaledTopLeft = compare('scaled-reference-top-left', scaledW, scaledH, 0, 0, 'scale-full', false);
-      var bestScaled = null;
-      var maxY = Math.max(0, capture.naturalHeight - scaledH);
-      for (var y = 0; y <= maxY; y += 8) {
-        var candidate = compare('scaled-reference-best-y', scaledW, scaledH, 0, y, 'scale-full', false);
-        if (candidate && (!bestScaled || candidate.mismatchRatio < bestScaled.mismatchRatio)) {
-          bestScaled = candidate;
-        }
-      }
-      if (bestScaled && bestScaled.captureCrop[1] !== maxY) {
-        var nextY = Math.min(maxY, bestScaled.captureCrop[1] + 4);
-        var refined = compare('scaled-reference-best-y', scaledW, scaledH, 0, nextY, 'scale-full', false);
-        if (refined && refined.mismatchRatio < bestScaled.mismatchRatio) bestScaled = refined;
-      }
-      var candidates = [nativeTopLeft, scaledTopLeft, bestScaled].filter(Boolean);
+      var scaledTopLeft = compare('scaled-reference-top-left', scaledW, scaledH, 0, 0, 0, 0, reference.naturalWidth, reference.naturalHeight, 'scale-full', false);
+      var bestScaled = searchCaptureCrop('scaled-reference-best-xy', scaledW, scaledH, 'scale-full', 0, 0, reference.naturalWidth, reference.naturalHeight, 32);
+      var candidates = [nativeTopLeft, nativeBestXY, scaledTopLeft, bestScaled].filter(Boolean);
       var best = candidates.reduce(function (acc, item) {
         return !acc || item.mismatchRatio < acc.mismatchRatio ? item : acc;
       }, null);
-      if (best) compare(best.mode, best.comparedSize[0], best.comparedSize[1], best.captureCrop[0], best.captureCrop[1], best.mode === 'native-top-left' ? 'crop-top-left' : 'scale-full', true);
+      if (best) {
+        var paintRefMode = best.mode === 'native-top-left' || best.mode === 'native-best-xy' ? 'crop-top-left' : 'scale-full';
+        compare(best.mode, best.comparedSize[0], best.comparedSize[1], best.captureCrop[0], best.captureCrop[1], best.referenceCrop[0], best.referenceCrop[1], best.referenceCrop[2], best.referenceCrop[3], paintRefMode, true);
+      }
       result.textContent = JSON.stringify({
         fixtureId: ${JSON.stringify(fixtureId)},
         status: 'diffed',
@@ -195,9 +227,12 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
         captureSize: [capture.naturalWidth, capture.naturalHeight],
         bestMode: best ? best.mode : null,
         nativeTopLeft: nativeTopLeft,
+        nativeBestXY: nativeBestXY,
         scaledTopLeft: scaledTopLeft,
         bestScaled: bestScaled,
-        note: 'Diagnostic diff with scaled reference and coarse vertical crop search. This is still not a visual parity pass/fail gate.'
+        bestScaleSearch: bestScaled,
+        best: best,
+        note: 'Diagnostic diff with scaled reference and 2D crop/scale search. This is still not a visual parity pass/fail gate.'
       }, null, 2);
     } catch (err) {
       fail(err && err.message ? err.message : err);
