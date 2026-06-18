@@ -24,6 +24,7 @@
     "status:roll20-actual": "node scripts/roll20_actual_status.mjs",
     "crop:roll20-actual": "node scripts/roll20_actual_screenshot_crop.mjs",
     "classify:roll20-actual": "node scripts/roll20_actual_difference_classify.mjs",
+    "diagnose:roll20-visible-crop": "node scripts/roll20_visible_crop_diagnostics.mjs",
     "verify:roll20-preupload": "node scripts/roll20_preupload_verification.mjs",
     "classify:visual-fixtures": "node scripts/classify_visual_fixture_diffs.mjs",
     "smoke:preview-edit-visual": "node scripts/preview_edit_visual_smoke.mjs",

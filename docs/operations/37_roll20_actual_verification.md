@@ -163,6 +163,18 @@ have its own mismatch. Treat a matched visible viewport mismatch as a concrete
 CSS/assets/default-state investigation target, but do not use it as proof of
 full-sheet parity.
 
+For a matched visible viewport mismatch, run the local crop diagnostic:
+
+```bash
+corepack pnpm run diagnose:roll20-visible-crop -- reports/roll20-actual-compare/<run-label>
+```
+
+This writes ignored crop/overlay PNGs and reports whether simple top-aligned
+horizontal crop drift explains the mismatch. A low crop gain means the next
+inspection should focus on actual/local CSS, default state, asset rendering, and
+Roll20 scale/layout context. The diagnostic is still local-only triage, not
+visual parity.
+
 If Chrome can capture the visible Roll20 editor but the character iframe
 document cannot be read, save a full viewport screenshot plus measured
 iframe/dialog metadata under the ignored screenshot folder, then crop a

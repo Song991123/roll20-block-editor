@@ -854,3 +854,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Current Les-Oublies evidence has two distinct signals: the actual Roll20 crop is only `760x556` versus the local full preview `850x4478`, and that matched visible viewport still mismatches by `21.67%`.
 - The classifier next action now points to visible-crop CSS/assets/default-state investigation while keeping full-height/scroll-stitched Roll20 evidence as the required gate before any full-sheet parity claim.
 - Scope note: this is evidence classification and TODO alignment only. It does not change the renderer and does not prove visual parity.
+
+## 2026-06-19 Roll20 Visible Crop Diagnostics Slice
+
+- Added `scripts/roll20_visible_crop_diagnostics.mjs` and package script `corepack pnpm run diagnose:roll20-visible-crop`.
+- The script consumes existing ignored actual-screen evidence, normalizes `roll20-sandbox-root.png` to the measured CSS crop size, compares it to the matching local visible crop, and writes local-only PNG artifacts: `local-visible-crop.png`, `best-local-visible-crop.png`, `actual-visible-normalized.png`, and `visible-diff-overlay.png`.
+- Latest command: `corepack pnpm run diagnose:roll20-visible-crop -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest Les-Oublies result: visible crop `760x556`, mismatch `21.67%`, top-aligned local crop gain `0.34%`, mismatch bounds `0,0,760,556`, dominant band `bottom`, dominant quadrant `bottomLeft`.
+- Interpretation: simple horizontal crop drift does not explain the mismatch. Next investigation should compare actual/local visible CSS, default state, asset rendering, and Roll20 scale/layout context before renderer changes.
+- Scope note: this is local-only visual diagnosis. It does not prove Roll20 visual parity and does not replace full-height/scroll-stitched Roll20 root evidence.
