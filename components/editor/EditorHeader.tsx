@@ -214,6 +214,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 className="h-8 gap-1.5"
                 onClick={() => setImportOpen(true)}
                 aria-label="파일에서 불러오기"
+                data-testid="header-import-button"
               >
                 <FolderOpen className="h-4 w-4" />
                 <span className="hidden sm:inline">불러오기</span>
@@ -252,6 +253,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 className="h-8 gap-1.5"
                 onClick={() => setExportOpen(true)}
                 aria-label="Roll20용 파일 내보내기"
+                data-testid="header-export-button"
               >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">내보내기</span>

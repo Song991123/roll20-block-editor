@@ -1,0 +1,174 @@
+#!/usr/bin/env node
+/**
+ * Browser smoke for header import/export actions and the Roll20 export
+ * readiness panel.
+ *
+ * Runs against the statically exported app in `out/`. The app is built with
+ * `basePath=/roll20-block-editor` for GitHub Pages, so this local server strips
+ * that prefix before reading files from disk.
+ */
+
+import http from 'node:http';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { chromium } from 'playwright-core';
+
+const args = process.argv.slice(2);
+function argOf(name, fallback) {
+  const i = args.indexOf(name);
+  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
+}
+
+const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
+const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
+const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/export-dialog-smoke'));
+const PORT = Number(argOf('--port', '4182'));
+
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
+  '.txt': 'text/plain',
+  '.ico': 'image/x-icon',
+};
+
+function startServer() {
+  const server = http.createServer(async (req, res) => {
+    try {
+      let url = decodeURIComponent((req.url ?? '/').split('?')[0]);
+      if (url.startsWith(BASE_PATH)) url = url.slice(BASE_PATH.length) || '/';
+      if (url.endsWith('/')) url += 'index.html';
+      const file = path.join(OUT_DIR, path.normalize(url).replace(/^([/\\])+/, ''));
+      if (!file.startsWith(OUT_DIR)) {
+        res.writeHead(403).end();
+        return;
+      }
+      const body = await fs.readFile(file);
+      res.writeHead(200, {
+        'content-type': MIME[path.extname(file)] ?? 'application/octet-stream',
+        'cache-control': 'no-store',
+      });
+      res.end(body);
+    } catch {
+      res.writeHead(404).end('not found');
+    }
+  });
+  return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)));
+}
+
+async function main() {
+  await fs.mkdir(REPORT_DIR, { recursive: true });
+  const server = await startServer();
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1480, height: 960 } });
+  const consoleIssues = [];
+  const pageErrors = [];
+
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' || msg.type() === 'warning') {
+      consoleIssues.push(`${msg.type()}: ${msg.text()}`);
+    }
+  });
+  page.on('pageerror', (err) => pageErrors.push(String(err)));
+
+  const result = {
+    status: 'PASS',
+    url: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
+    startedAt: new Date().toISOString(),
+    checks: {},
+    consoleIssues,
+    pageErrors,
+  };
+
+  try {
+    await page.goto(result.url, { waitUntil: 'load' });
+
+    await page.click('[data-testid="header-export-button"]');
+    await page.waitForSelector('[data-testid="export-roll20-readiness"]', { timeout: 15000 });
+    result.checks.exportDialog = await page.evaluate(() => ({
+      hasTitle: document.body.innerText.includes('Roll20용 .zip 내보내기'),
+      hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
+      readinessItemCount: document.querySelectorAll('[data-testid="export-roll20-readiness-item"]').length,
+      badgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
+      downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
+    }));
+    await page.screenshot({ path: path.join(REPORT_DIR, 'export-dialog.png') });
+
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('[data-testid="export-roll20-readiness"]', {
+      state: 'detached',
+      timeout: 5000,
+    }).catch(() => {});
+
+    await page.click('[data-testid="header-import-button"]');
+    await page.waitForSelector('[role="dialog"]', { timeout: 15000 });
+    result.checks.importDialog = await page.evaluate(() => ({
+      hasTitle: document.body.innerText.includes('외부 시트 불러오기'),
+      textareaCount: document.querySelectorAll('textarea').length,
+      hasProgressNode: Boolean(document.querySelector('[data-testid="import-progress"]')),
+    }));
+
+    await page.keyboard.press('Escape');
+    await page.click('[data-testid="main-mode-edit"]');
+    result.checks.mainModeEdit = await page.evaluate(() => ({
+      editSelected: document.querySelector('[data-testid="main-mode-edit"]')?.getAttribute('aria-selected'),
+      splitSelected: document.querySelector('[data-testid="main-mode-split"]')?.getAttribute('aria-selected'),
+    }));
+
+    const failures = [];
+    if (!result.checks.exportDialog.hasTitle) failures.push('export dialog title missing');
+    if (!result.checks.exportDialog.hasReadiness) failures.push('export readiness panel missing');
+    if (result.checks.exportDialog.readinessItemCount !== 5) failures.push('export readiness item count mismatch');
+    if (result.checks.exportDialog.badgeText !== '실제 검증 필요') failures.push('export verification badge mismatch');
+    if (!result.checks.importDialog.hasTitle) failures.push('import dialog title missing');
+    if (result.checks.importDialog.textareaCount < 1) failures.push('import dialog textarea missing');
+    if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
+    if (consoleIssues.length > 0) failures.push('console errors/warnings present');
+    if (pageErrors.length > 0) failures.push('page errors present');
+
+    if (failures.length > 0) {
+      result.status = 'FAIL';
+      result.failures = failures;
+    }
+  } finally {
+    await browser.close();
+    server.close();
+  }
+
+  result.finishedAt = new Date().toISOString();
+  await fs.writeFile(
+    path.join(REPORT_DIR, 'export-dialog-smoke-results.json'),
+    `${JSON.stringify(result, null, 2)}\n`,
+  );
+  await fs.writeFile(
+    path.join(REPORT_DIR, 'export-dialog-smoke-results.md'),
+    [
+      '# Export Dialog Browser Smoke',
+      '',
+      `Status: ${result.status}`,
+      `URL: \`${result.url}\``,
+      '',
+      '## Checks',
+      '',
+      '```json',
+      JSON.stringify(result.checks, null, 2),
+      '```',
+      '',
+      `Console issues: ${consoleIssues.length}`,
+      `Page errors: ${pageErrors.length}`,
+      '',
+    ].join('\n'),
+  );
+
+  console.log(JSON.stringify(result, null, 2));
+  if (result.status !== 'PASS') process.exit(1);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

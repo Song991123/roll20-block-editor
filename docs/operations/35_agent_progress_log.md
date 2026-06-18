@@ -397,5 +397,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run lint`: PASS.
   - `corepack pnpm run build`: PASS.
   - `corepack pnpm run guard:roll20-evidence reports\roll20-actual-compare\2026-06-18-pseudo-fix-v1`: PASS.
-- Browser MCP reached `http://127.0.0.1:3000/` and confirmed the app title/header, but could not open the export dialog through role click, coordinate click, or DOM node click in this session. Treat this UI slice as code/build verified, but keep interactive modal verification open.
+- Follow-up root cause: the first browser check used the dev server/static server with the wrong production `basePath`, so the page rendered HTML but client events were not a valid signal.
+- Added stable header action selectors and `scripts/export_dialog_browser_smoke.mjs` with package alias `corepack pnpm run smoke:export-dialog`.
+- Latest static-app validation: `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke` PASS. It opens the export dialog, confirms 5 readiness items, confirms the `실제 검증 필요` badge, opens the import dialog, and verifies main mode tab clicks with 0 console/page errors.
 - Scope note: this improves user-facing status clarity only. It does not upload to Roll20 and does not prove Roll20 visual parity.
