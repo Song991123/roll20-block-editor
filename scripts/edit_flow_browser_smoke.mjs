@@ -684,6 +684,85 @@ async function main() {
     }, { setup, delta });
   })();
 
+  const freePlacementWidgetDrop = await (async () => {
+    const setup = await page.evaluate(async () => {
+      const html = '<div class="free-target" style="width:360px; min-height:180px; padding:16px; border:1px solid #999"></div>';
+      await window.__perfHook.importSheet({ html, css: '', i18n: '{}' });
+      window.__perfHook.setMainMode('edit');
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const frame = host?.shadowRoot?.querySelector('.sheet-free-target');
+      const rect = frame?.getBoundingClientRect();
+      return {
+        frameId: frame?.getAttribute('data-r20-block-id') ?? null,
+        dropPoint: rect
+          ? {
+              x: Math.round(rect.left + rect.width * 0.58),
+              y: Math.round(rect.top + rect.height * 0.42),
+            }
+          : null,
+      };
+    });
+    if (!setup.frameId || !setup.dropPoint) {
+      return { dropped: false, reason: 'missing free target setup', setup };
+    }
+    await page.click('[data-testid="edit-placement-free"]');
+    const drop = await page.evaluate(
+      ({ x, y }) => window.__smokeDrop('text-input', x, y),
+      setup.dropPoint,
+    );
+    await page.waitForTimeout(500);
+    return await page.evaluate(({ setup, drop }) => {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const root = host?.shadowRoot;
+      const frame = root?.querySelector(`[data-r20-block-id="${CSS.escape(setup.frameId)}"]`);
+      const input = frame?.querySelector('input[name="attr_name"][data-r20-block-id]');
+      const frameStyle = frame ? getComputedStyle(frame) : null;
+      const inputStyle = input ? getComputedStyle(input) : null;
+      const emitted = window.__perfHook.getEmitContent();
+      const inputId = input?.getAttribute('data-r20-block-id') ?? null;
+      function openingTag(blockId) {
+        const marker = `data-r20-block-id="${blockId}"`;
+        const markerIndex = emitted.html.indexOf(marker);
+        if (markerIndex < 0) return '';
+        const start = emitted.html.lastIndexOf('<', markerIndex);
+        const end = emitted.html.indexOf('>', markerIndex);
+        return start >= 0 && end > start ? emitted.html.slice(start, end + 1) : '';
+      }
+      function styleOf(tag) {
+        return tag.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+      }
+      function px(text, prop) {
+        const match = text.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px`, 'i'));
+        return match ? Math.round(Number.parseFloat(match[1])) : null;
+      }
+      const frameTag = openingTag(setup.frameId);
+      const inputTag = inputId ? openingTag(inputId) : '';
+      const frameInline = styleOf(frameTag);
+      const inputInline = styleOf(inputTag);
+      const frameIndex = emitted.html.indexOf(`data-r20-block-id="${setup.frameId}"`);
+      const inputIndex = inputId ? emitted.html.indexOf(`data-r20-block-id="${inputId}"`) : -1;
+      const frameEndIndex = emitted.html.indexOf('</div>', frameIndex);
+      return {
+        dropped: true,
+        setup,
+        drop,
+        inputId,
+        frameTag,
+        inputTag,
+        frameComputedPosition: frameStyle?.position ?? null,
+        inputComputedPosition: inputStyle?.position ?? null,
+        inputComputedLeft: inputStyle ? Math.round(Number.parseFloat(inputStyle.left)) : null,
+        inputComputedTop: inputStyle ? Math.round(Number.parseFloat(inputStyle.top)) : null,
+        frameHasRelative: /position\s*:\s*relative/i.test(frameInline),
+        inputHasAbsolute: /position\s*:\s*absolute/i.test(inputInline),
+        emittedLeft: px(inputInline, 'left'),
+        emittedTop: px(inputInline, 'top'),
+        inputNestedInFrame: frameIndex >= 0 && inputIndex > frameIndex && inputIndex < frameEndIndex,
+      };
+    }, { setup, drop });
+  })();
+
   results.tests.realDrag = {
     c1,
     sectionInfo,
@@ -697,6 +776,7 @@ async function main() {
     layerDropModes,
     nonLeafLayerReorder,
     absoluteInsideFrame,
+    freePlacementWidgetDrop,
   };
   results.consoleErrors = consoleErrors;
   results.pageErrors = pageErrors;
@@ -755,6 +835,14 @@ async function main() {
     absoluteInsideFrame.inputHasAbsolute === true &&
     absoluteInsideFrame.emittedLeft === absoluteInsideFrame.inputComputedLeft &&
     absoluteInsideFrame.emittedTop === absoluteInsideFrame.inputComputedTop &&
+    freePlacementWidgetDrop.drop?.dispatched === true &&
+    freePlacementWidgetDrop.inputNestedInFrame === true &&
+    freePlacementWidgetDrop.frameComputedPosition === 'relative' &&
+    freePlacementWidgetDrop.inputComputedPosition === 'absolute' &&
+    freePlacementWidgetDrop.frameHasRelative === true &&
+    freePlacementWidgetDrop.inputHasAbsolute === true &&
+    freePlacementWidgetDrop.emittedLeft === freePlacementWidgetDrop.inputComputedLeft &&
+    freePlacementWidgetDrop.emittedTop === freePlacementWidgetDrop.inputComputedTop &&
     pageErrors.length === 0;
 
   results.pass = pass;

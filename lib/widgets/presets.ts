@@ -16,7 +16,7 @@ export type FriendlyWidgetPreset = {
 };
 
 export type AppendFriendlyWidgetOptions = {
-  mode?: 'absolute' | 'flow';
+  mode?: 'absolute' | 'flow' | 'absolute-in-container';
   containerBlockId?: string | null;
   placement?: 'inside' | 'before' | 'after';
   siblingBlockId?: string | null;
@@ -198,6 +198,7 @@ export function appendFriendlyWidgetPreset(
   if (Date.now() - state.lastClearedAt < 1200) return null;
 
   const requestedFlow = options.mode === 'flow' && Boolean(options.containerBlockId || options.siblingBlockId);
+  const requestedAbsoluteInContainer = options.mode === 'absolute-in-container' && Boolean(options.containerBlockId);
   const targetPosition = requestedFlow ? position : findOpenWidgetPosition(position);
   const id = state.appendBlockToActive(preset.blockType, 'html');
   if (!id) return null;
@@ -210,6 +211,7 @@ export function appendFriendlyWidgetPreset(
 
   const baseStyle = preset.fields.STYLE ?? '';
   let useFlowStyle = false;
+  let useContainerAbsoluteStyle = false;
   if (requestedFlow && options.placement === 'before' && options.siblingBlockId) {
     useFlowStyle = adapter.moveBlockBefore('html', id, options.siblingBlockId);
     if (useFlowStyle) {
@@ -228,10 +230,22 @@ export function appendFriendlyWidgetPreset(
       state.bumpStructure('html', adapter.countBlocks('html'));
       state.setSelectedBlockId(id, 'tree');
     }
+  } else if (requestedAbsoluteInContainer && options.containerBlockId) {
+    useContainerAbsoluteStyle = adapter.nestBlockInContainer('html', id, options.containerBlockId);
+    if (useContainerAbsoluteStyle) {
+      state.bumpStructure('html', adapter.countBlocks('html'));
+      state.setSelectedBlockId(id, 'tree');
+      const parentStyle = adapter.getBlockField('html', options.containerBlockId, 'STYLE') ?? '';
+      if (adapter.hasBlockField('html', options.containerBlockId, 'STYLE') && !hasPositionDeclaration(parentStyle)) {
+        adapter.setBlockField('html', options.containerBlockId, 'STYLE', upsertCssDeclarations(parentStyle, { position: 'relative' }));
+      }
+    }
   }
 
   const style = useFlowStyle
     ? removeCssDeclarations(baseStyle, ['position', 'left', 'top'])
+    : useContainerAbsoluteStyle
+      ? withAbsolutePosition(baseStyle, position?.left ?? 24, position?.top ?? 24)
     : withAbsolutePosition(baseStyle, targetPosition?.left ?? 24, targetPosition?.top ?? 24);
   if (style || adapter.hasBlockField('html', id, 'STYLE')) {
     adapter.setBlockField('html', id, 'STYLE', style);
@@ -349,6 +363,27 @@ function removeCssDeclarations(style: string, props: string[]): string {
     const key = chunk.slice(0, idx).trim().toLowerCase();
     const value = chunk.slice(idx + 1).trim();
     if (key && value && !remove.has(key)) map.set(key, value);
+  }
+  return Array.from(map.entries())
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('; ');
+}
+
+function hasPositionDeclaration(style: string): boolean {
+  return /(?:^|;)\s*position\s*:/i.test(style);
+}
+
+function upsertCssDeclarations(style: string, declarations: Record<string, string>): string {
+  const map = new Map<string, string>();
+  for (const chunk of style.split(';')) {
+    const idx = chunk.indexOf(':');
+    if (idx <= 0) continue;
+    const key = chunk.slice(0, idx).trim().toLowerCase();
+    const value = chunk.slice(idx + 1).trim();
+    if (key && value) map.set(key, value);
+  }
+  for (const [key, value] of Object.entries(declarations)) {
+    map.set(key.toLowerCase(), value);
   }
   return Array.from(map.entries())
     .map(([key, value]) => `${key}: ${value}`)

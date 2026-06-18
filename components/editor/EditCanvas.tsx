@@ -95,6 +95,8 @@ export default function EditCanvas() {
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
   const snapEnabled = useUiStore((s) => s.snapEnabled);
   const toggleSnap = useUiStore((s) => s.toggleSnapEnabled);
+  const editPlacementMode = useUiStore((s) => s.editPlacementMode);
+  const setEditPlacementMode = useUiStore((s) => s.setEditPlacementMode);
   const sanitize = usePreviewStore((s) => s.sanitize);
   const darkMode = usePreviewStore((s) => s.darkMode);
   const [lastMove, setLastMove] = useState<string | null>(null);
@@ -205,23 +207,28 @@ export default function EditCanvas() {
     e.preventDefault();
     e.stopPropagation();
 
-    const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     const target = findCanvasDropTarget(hostRef.current, e.clientX, e.clientY);
+    const freeInside = editPlacementMode === 'free' && target?.mode === 'inside';
+    const pos = freeInside && target?.containerBlockId
+      ? measureDropPositionInBlock(hostRef.current, target.containerBlockId, e.clientX, e.clientY)
+      : measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     markDropContainer(hostRef.current, null);
     const id = appendFriendlyWidgetPreset(preset, pos, {
-      mode: target ? 'flow' : 'absolute',
+      mode: freeInside ? 'absolute-in-container' : target ? 'flow' : 'absolute',
       placement: target?.mode,
       containerBlockId: target?.containerBlockId ?? target?.blockId ?? null,
       siblingBlockId: target?.siblingBlockId ?? null,
     });
     if (id) {
       setLastMove(
-        target
+        freeInside
+          ? `${preset.label} free in ${target.label}`
+          : target
           ? `${preset.label} ${target.mode} ${target.label}`
           : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
       );
     }
-  }, []);
+  }, [editPlacementMode]);
 
   const handleNativeDragLeave = useCallback((event: Event) => {
     const e = event as DragEvent;
@@ -249,23 +256,28 @@ export default function EditCanvas() {
     e.preventDefault();
     e.stopPropagation();
 
-    const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     const target = findCanvasDropTarget(hostRef.current, e.clientX, e.clientY);
+    const freeInside = editPlacementMode === 'free' && target?.mode === 'inside';
+    const pos = freeInside && target?.containerBlockId
+      ? measureDropPositionInBlock(hostRef.current, target.containerBlockId, e.clientX, e.clientY)
+      : measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
     markDropContainer(hostRef.current, null);
     const id = appendFriendlyWidgetPreset(preset, pos, {
-      mode: target ? 'flow' : 'absolute',
+      mode: freeInside ? 'absolute-in-container' : target ? 'flow' : 'absolute',
       placement: target?.mode,
       containerBlockId: target?.containerBlockId ?? target?.blockId ?? null,
       siblingBlockId: target?.siblingBlockId ?? null,
     });
     if (id) {
       setLastMove(
-        target
+        freeInside
+          ? `${preset.label} free in ${target.label}`
+          : target
           ? `${preset.label} ${target.mode} ${target.label}`
           : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
       );
     }
-  }, []);
+  }, [editPlacementMode]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -440,6 +452,36 @@ export default function EditCanvas() {
         >
           snap {snapEnabled ? '8px' : 'off'}
         </button>
+        <div className="flex items-center overflow-hidden rounded border border-border bg-[var(--bg-elevated-2)]" data-testid="edit-placement-mode">
+          <button
+            type="button"
+            onClick={() => setEditPlacementMode('flow')}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              editPlacementMode === 'flow'
+                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="컨테이너 위에 놓으면 주변 요소와 함께 흐름 배치합니다."
+            data-testid="edit-placement-flow"
+          >
+            흐름
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditPlacementMode('free')}
+            className={cn(
+              'border-l border-border px-2 py-0.5 text-xs',
+              editPlacementMode === 'free'
+                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="컨테이너 안에 넣되 해당 틀 기준으로 자유 배치합니다."
+            data-testid="edit-placement-free"
+          >
+            자유
+          </button>
+        </div>
         <div className="ml-auto text-[10px] text-muted-foreground tabular-nums">
           {lastMove ?? '요소를 끌어 옮기면 HTML/CSS 위치 값에 반영돼요.'}
         </div>
@@ -1010,6 +1052,24 @@ function measureDropPosition(
   return {
     left: Math.max(0, Math.round(clientX - rect.left + target.scrollLeft)),
     top: Math.max(0, Math.round(clientY - rect.top + target.scrollTop)),
+  };
+}
+
+function measureDropPositionInBlock(
+  host: HTMLElement | null,
+  blockId: string,
+  clientX: number,
+  clientY: number,
+): { left: number; top: number } {
+  const shadow = host?.shadowRoot;
+  const escaped = escapeAttr(blockId);
+  const target = shadow?.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`);
+  if (!host || !target) return { left: 24, top: 24 };
+  const scale = getHostScale(host) || 1;
+  const rect = target.getBoundingClientRect();
+  return {
+    left: Math.max(0, Math.round((clientX - rect.left) / scale + target.scrollLeft)),
+    top: Math.max(0, Math.round((clientY - rect.top) / scale + target.scrollTop)),
   };
 }
 
