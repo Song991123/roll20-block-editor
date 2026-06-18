@@ -1191,13 +1191,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - AW2E sandbox mismatch `14.90%` from viewport evidence.
   - Les-Oublies sandbox mismatch `6.57%` from DPR-corrected full-root evidence.
   - YSHY sandbox mismatch `45.05%` from viewport evidence.
+- Later status validation supersedes the AW2E viewport evidence as `SUSPECT`; the PNG remains local evidence but no longer counts as generated actual render proof without positive iframe DOM/root sidecar evidence.
 - Latest classifier:
   - AW2E and YSHY classify as `viewport/crop/sheet size dominates current diff`.
   - Les-Oublies remains `sheet root geometry/height differs after full-height capture`.
 - Latest status:
-  - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `generatedActualScreenshots=3/6`, `generatedDiffed=3/6`, and `commandGate=PASS`.
+  - This section's old status count was superseded by the later status truthfulness gate. Current status reports `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`, and AW2E `SUSPECT`.
   - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --require-actual` still fails as expected because all three `roll20-chat.png` screenshots are missing.
-- Claim boundary: this proves all three prepared generated fixtures can reach and render in the dedicated Roll20 sandbox. It is not Roll20 visual parity. Next P0 is DPR-corrected sheet-root/full-root capture for AW2E/YSHY and a trustworthy Roll20 chat screenshot/DOM-to-screenshot path.
+- Claim boundary: this section is superseded by the later AW2E blank recheck and status truthfulness gate. It does not prove all three prepared fixtures render in Roll20. Next P0 is file-input/full-activation verification for AW2E and trustworthy Roll20 chat screenshot/DOM-to-screenshot evidence.
 
 ## 2026-06-19 AW2E Legacy Manifest and Endpoint Blank Recheck
 
@@ -1210,3 +1211,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Current conclusion: AW2E now proves the legacy manifest preservation bug, but live Roll20 evidence shows endpoint 200 responses are storage-only evidence unless a fresh iframe DOM/root check confirms rendering. Treat previous endpoint viewport evidence as suspect until the Roll20 file-input upload path, a full settings-form save path, or another sandbox activation condition is verified.
 - Verification run after the code change: `node scripts\roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label 2026-06-18-state-map-v1 --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json --only official-roll20-AW2E --port 4392` PASS; `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`; `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1` PASS.
 - Claim boundary: this is a generator correctness fix plus a live Roll20 blocker discovery. It is not AW2E/YSHY visual parity and not edit-mode readiness.
+
+## 2026-06-19 Actual Status Demotes Unproven Endpoint Viewports
+
+- Rechecked the dedicated Roll20 sandbox settings page and found the real settings form submits many fields through `#settingsform` to `/campaigns/savesettings/21639681`; earlier endpoint fallback saves posted only `customcharsheet_json`, so those responses are insufficient activation proof.
+- Clicked the visible `#save-changes-button` to submit the full settings form after restoring the YSHY manifest. Roll20 reported `Your changes were saved successfully`, but reopening the sandbox character still produced an empty iframe (`bodyLen=0`, no `.charactersheet`, no inputs/buttons).
+- Tried the browser filechooser path against the in-editor Sheet Sandbox Tools. Clicking the visible HTML label did not open a chooser, and forcing the hidden `#sheetHtml` input also timed out. Raw CDP `DOM.setFileInputFiles` is blocked in this environment and explicitly redirects agents back to the filechooser flow.
+- Updated `scripts/roll20_actual_status.mjs` so fallback `roll20-sandbox.png` counts only when a positive DOM/root sidecar proves the iframe rendered. DPR/full-root evidence with sidecars still counts; unproven fallback viewport images are reported as `SUSPECT` and excluded from generated evidence counts.
+- Latest status command: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` now reports `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`, `roomObservationScreenshots=0/3`, and `roomObservationDiffed=0/3`. Fixture table: AW2E `SUSPECT`, Les-Oublies `DIFFED`, YSHY `DIFFED`.
+- Claim boundary: this is a truthfulness fix to prevent endpoint-storage screenshots from masquerading as actual Roll20 render proof. It does not unblock file upload or prove visual parity.

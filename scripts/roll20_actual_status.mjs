@@ -247,17 +247,20 @@ async function inspectFixture(runDir, fixtureId, diffReport) {
       edit: fileStatus(localEdit),
     },
     payloadFiles,
-    actualTargets: TARGETS.map((target) => inspectTarget(fixtureId, screenshots, target, diffReport)),
+    actualTargets: await Promise.all(TARGETS.map((target) => inspectTarget(fixtureId, screenshots, target, diffReport))),
   };
 }
 
-function inspectTarget(fixtureId, screenshots, target, diffReport) {
+async function inspectTarget(fixtureId, screenshots, target, diffReport) {
   const preferredFiles = (target.preferredFilenames ?? (target.preferredFilename ? [target.preferredFilename] : []))
     .map((filename) => path.join(screenshots, filename));
   const preferredFile = preferredFiles.find((file) => existsSync(file)) ?? preferredFiles[0] ?? null;
   const fallbackFile = path.join(screenshots, target.filename);
   const file = preferredFile && existsSync(preferredFile) ? preferredFile : fallbackFile;
   const diffItem = diffReport.items.find((item) => item.fixtureId === fixtureId && item.target === target.id);
+  const rawExists = existsSync(file);
+  const validation = await validateActualTargetEvidence({ screenshots, target, file, fallbackFile, preferredFile });
+  const exists = rawExists && validation.ok;
   return {
     id: target.id,
     evidence: target.evidence,
@@ -265,16 +268,68 @@ function inspectTarget(fixtureId, screenshots, target, diffReport) {
     preferredScreenshot: preferredFile ? fileStatus(preferredFile) : null,
     preferredScreenshots: preferredFiles.map(fileStatus),
     fallbackScreenshot: preferredFile ? fileStatus(fallbackFile) : null,
-    exists: existsSync(file),
-    diffStatus: diffItem?.status ?? 'NOT_RUN',
+    rawExists,
+    exists,
+    validation,
+    diffStatus: exists ? (diffItem?.status ?? 'NOT_RUN') : (rawExists ? 'SUSPECT' : 'NOT_RUN'),
     requiredForGeneratedSheetCheck: Boolean(target.requiredForGeneratedSheetCheck),
-    bestMismatchRatio: diffItem?.result?.best?.mismatchRatio ?? null,
-    note: diffItem?.note ?? (existsSync(file) ? 'screenshot present; diff not run yet' : 'missing actual Roll20 screenshot'),
+    bestMismatchRatio: exists ? (diffItem?.result?.best?.mismatchRatio ?? null) : null,
+    note: validation.ok
+      ? (diffItem?.note ?? (rawExists ? 'screenshot present; diff not run yet' : 'missing actual Roll20 screenshot'))
+      : validation.note,
   };
 }
 
 function fileStatus(file) {
   return { path: rel(file), exists: existsSync(file) };
+}
+
+async function validateActualTargetEvidence({ screenshots, target, file, fallbackFile, preferredFile }) {
+  if (target.id !== 'sandbox') return { ok: true, kind: 'not-required', note: '' };
+  if (!existsSync(file)) return { ok: false, kind: 'missing', note: 'missing actual Roll20 screenshot' };
+
+  const selectedName = path.basename(file);
+  const fallbackName = path.basename(fallbackFile);
+  if (selectedName !== fallbackName) {
+    const sidecar = file.replace(/\.(png|jpg|jpeg)$/i, '.json');
+    const completeManifest = path.join(screenshots, 'roll20-root-dpr-complete-manifest.json');
+    const correctedManifest = path.join(screenshots, 'roll20-root-dpr-corrected-manifest.json');
+    if (existsSync(sidecar) || existsSync(completeManifest) || existsSync(correctedManifest)) {
+      return { ok: true, kind: 'root-capture', note: `root evidence present for ${selectedName}` };
+    }
+    return {
+      ok: false,
+      kind: 'root-capture-missing-sidecar',
+      note: `${selectedName} exists, but no root capture sidecar/manifest proves the iframe root was active`,
+    };
+  }
+
+  const domEvidence = await readJsonIfExists(path.join(screenshots, 'roll20-sandbox-dom-evidence.json'));
+  if (domEvidence && hasPositiveDomEvidence(domEvidence)) {
+    return { ok: true, kind: 'dom-evidence', note: 'fallback viewport screenshot has positive iframe DOM evidence' };
+  }
+  return {
+    ok: false,
+    kind: preferredFile && preferredFile !== fallbackFile ? 'preferred-missing-fallback-unproven' : 'fallback-unproven',
+    note: 'fallback roll20-sandbox.png exists, but no positive iframe DOM/root evidence proves the sheet rendered',
+  };
+}
+
+async function readJsonIfExists(file) {
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(await fs.readFile(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function hasPositiveDomEvidence(evidence) {
+  if (Number(evidence.bodyLen ?? 0) > 0) return true;
+  if (Number(evidence.roots ?? evidence.rootCount ?? 0) > 0) return true;
+  if (Array.isArray(evidence.rootSamples) && evidence.rootSamples.some((sample) => String(sample ?? '').trim().length > 0)) return true;
+  if (evidence.textMarkers && Object.values(evidence.textMarkers).some(Boolean)) return true;
+  return false;
 }
 
 function buildNextAction({
@@ -354,7 +409,7 @@ function renderMarkdown(report) {
 
   for (const fixture of report.fixtures) {
     const targetStatus = Object.fromEntries(
-      fixture.actualTargets.map((target) => [target.id, target.exists ? target.diffStatus : 'MISSING']),
+      fixture.actualTargets.map((target) => [target.id, target.exists ? target.diffStatus : (target.rawExists ? 'SUSPECT' : 'MISSING')]),
     );
     lines.push(
       `| \`${fixture.fixtureId}\` | ${fixture.localBaselineReady ? 'ready' : 'missing'} | ${fixture.payloadReady ? 'ready' : 'missing'} | ${targetStatus.sandbox} | ${targetStatus.chat} | ${targetStatus.room} |`,
@@ -373,6 +428,7 @@ function renderMarkdown(report) {
     '## Evidence Rules',
     '',
     '- Missing Roll20 screenshots are unverified, never PASS.',
+    '- A fallback `roll20-sandbox.png` is SUSPECT unless a DOM/root sidecar proves the Roll20 iframe actually rendered the sheet.',
     '- A DIFFED target is diagnostic evidence, not a parity claim until the mismatch is classified.',
     '- `sandbox` and `chat` targets are the generated-sheet actual-screen gate.',
     '- `room` targets are read-only solo-room observation evidence and are reported separately.',

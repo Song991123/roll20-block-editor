@@ -369,3 +369,8 @@ screenshot destinations, and the diff command to run after screenshots exist.
 If the dedicated sandbox upload fallback above is used instead of file chooser
 upload, still keep the handoff/checklist and status commands current. Screenshot
 evidence remains the gate; endpoint success alone is not Roll20 visual parity.
+Fallback viewport screenshots are not enough by themselves: `roll20-sandbox.png`
+must have positive iframe DOM/root sidecar evidence, or the status command will
+report it as `SUSPECT` and exclude it from generated actual evidence counts.
+DPR-corrected full-root/root captures with their JSON sidecars/manifests remain
+the preferred evidence.
