@@ -15,13 +15,15 @@ import path from 'node:path';
 import { chromium } from 'playwright-core';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const positional = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--out-dir' && args[index - 1] !== '--base-path' && args[index - 1] !== '--report-dir' && args[index - 1] !== '--port' && args[index - 1] !== '--threshold');
+const valuedArgs = new Set(['--out-dir', '--base-path', '--report-dir', '--port', '--threshold', '--state-map']);
+const positional = args.filter((arg, index) => !arg.startsWith('--') && !valuedArgs.has(args[index - 1]));
 const RUN_DIR = path.resolve(positional[0] ?? 'reports/roll20-actual-compare/2026-06-18-payload-clean-v2');
 const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const REPORT_DIR = path.resolve(argOf('--report-dir', path.join(RUN_DIR, 'payload-roundtrip-visual')));
 const PORT = Number(argOf('--port', '4193'));
 const MISMATCH_THRESHOLD_PCT = Number(argOf('--threshold', '2'));
+const STATE_MAP_PATH = argOf('--state-map', '');
 const VIEWPORT = { width: 2200, height: 1200 };
 
 const MIME = {
@@ -81,6 +83,36 @@ async function listPayloadFixtures() {
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
+async function loadStateMap() {
+  if (!STATE_MAP_PATH) return { path: null, fixtures: {} };
+  const resolvedPath = path.resolve(STATE_MAP_PATH);
+  const raw = await fs.readFile(resolvedPath, 'utf8');
+  const parsed = JSON.parse(raw);
+  return {
+    path: resolvedPath,
+    fixtures: parsed.fixtures && typeof parsed.fixtures === 'object' ? parsed.fixtures : {},
+  };
+}
+
+function sanitizeStateCandidate(candidate) {
+  if (!candidate || typeof candidate !== 'object') return null;
+  return {
+    fixtureId: candidate.fixtureId ?? '',
+    actionName: candidate.actionName ?? '',
+    actionLabel: candidate.actionLabel ?? '',
+    hiddenAttrs: candidate.hiddenAttrs && typeof candidate.hiddenAttrs === 'object' ? candidate.hiddenAttrs : {},
+    bestMismatchRatio: candidate.bestMismatchRatio ?? null,
+    initialMismatchRatio: candidate.initialMismatchRatio ?? null,
+    bestCaptureCrop: Array.isArray(candidate.bestCaptureCrop) ? candidate.bestCaptureCrop : null,
+    candidateCount: candidate.candidateCount ?? null,
+    scope: candidate.scope ?? 'local preview action-state hint; not Roll20 visual parity',
+  };
+}
+
+function cssAttrValue(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 async function warmPerfHook(page) {
   await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
   await page.waitForFunction(
@@ -120,7 +152,66 @@ async function importPayload(page, fixture) {
   }, payload);
 }
 
-async function capturePayloadPreview(page, outFile) {
+async function collectHiddenState(sheet, hiddenAttrs) {
+  if (!hiddenAttrs || Object.keys(hiddenAttrs).length === 0) return {};
+  return sheet.evaluate((sheetEl, expectedAttrs) => {
+    const out = {};
+    for (const [key, expected] of Object.entries(expectedAttrs)) {
+      const names = [key, key.startsWith('attr_') ? key.slice(5) : `attr_${key}`];
+      const control = names
+        .map((name) => sheetEl.querySelector(`[name="${CSS.escape(name)}"]`))
+        .find(Boolean);
+      out[key] = {
+        expected,
+        found: Boolean(control),
+        name: control?.getAttribute('name') ?? '',
+        value: control && 'value' in control ? control.value : '',
+        valueAttribute: control?.getAttribute('value') ?? '',
+        checked: control && 'checked' in control ? Boolean(control.checked) : null,
+        checkedAttribute: control?.getAttribute('checked') ?? null,
+      };
+    }
+    return out;
+  }, hiddenAttrs);
+}
+
+async function applyPreviewStateCandidate(page, frame, sheet, candidate) {
+  const sanitized = sanitizeStateCandidate(candidate);
+  if (!sanitized) return null;
+  const result = {
+    ...sanitized,
+    applied: false,
+    skippedReason: '',
+    hiddenStateBefore: await collectHiddenState(sheet, sanitized.hiddenAttrs),
+    hiddenStateAfter: {},
+  };
+
+  if (!sanitized.actionName || sanitized.actionName === 'initial') {
+    result.skippedReason = 'initial-state';
+    result.hiddenStateAfter = result.hiddenStateBefore;
+    return result;
+  }
+
+  const button = frame.locator(`button[name="${cssAttrValue(sanitized.actionName)}"]`).first();
+  if ((await button.count()) === 0) {
+    result.skippedReason = 'action-button-not-found';
+    result.hiddenStateAfter = result.hiddenStateBefore;
+    return result;
+  }
+
+  try {
+    await button.scrollIntoViewIfNeeded({ timeout: 5000 });
+    await button.click({ timeout: 10000 });
+    await page.waitForTimeout(350);
+    result.applied = true;
+  } catch (err) {
+    result.skippedReason = `click-failed: ${err instanceof Error ? err.message : String(err)}`;
+  }
+  result.hiddenStateAfter = await collectHiddenState(sheet, sanitized.hiddenAttrs);
+  return result;
+}
+
+async function capturePayloadPreview(page, outFile, stateCandidate) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setPreviewRenderMode('iframe');
@@ -129,8 +220,9 @@ async function capturePayloadPreview(page, outFile) {
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
+  const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);
   await sheet.screenshot({ path: outFile });
-  return sheet.evaluate((sheetEl) => {
+  const summary = await sheet.evaluate((sheetEl) => {
     const rect = sheetEl.getBoundingClientRect();
     const elements = Array.from(sheetEl.querySelectorAll('*'));
     return {
@@ -155,6 +247,8 @@ async function capturePayloadPreview(page, outFile) {
       }).length,
     };
   });
+  summary.stateCandidate = stateCandidateResult;
+  return summary;
 }
 
 async function diffImages(page, baselineFile, payloadFile) {
@@ -308,18 +402,20 @@ function renderMarkdown(report) {
   lines.push(`Generated: ${report.finishedAt}`);
   lines.push('');
   lines.push('Scope: local cleaned-payload re-import check. This does not prove actual Roll20 visual parity.');
+  if (report.stateMapPath) lines.push(`State map: \`${report.stateMapPath}\``);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Baseline size | Payload size | Mismatch | Bounds | Roll buttons | Visible runtime nodes | Console/Page errors | Resources |');
-  lines.push('| --- | --- | ---: | --- | --- | ---: | --- | ---: | ---: | ---: | ---: |');
+  lines.push('| Fixture | Status | Blocks | Baseline size | Payload size | Preview state | Mismatch | Bounds | Roll buttons | Visible runtime nodes | Console/Page errors | Resources |');
+  lines.push('| --- | --- | ---: | --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: |');
   for (const item of report.fixtures) {
     const d = item.diff ?? {};
     const best = d.best ?? {};
     lines.push(
-      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.result?.blockCount ?? 0} | ${fmtSize(d.baselineSize)} | ${fmtSize(d.payloadSize)} | ${best.mismatchPct ?? ''}% | ${fmtBounds(best.mismatchBounds)} | ${item.previewDom?.rollButtonCount ?? 0} | ${item.previewDom?.visibleScriptCount ?? 0} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} | ${sumResourceIssues(item.resourceIssues)} |`,
+      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.result?.blockCount ?? 0} | ${fmtSize(d.baselineSize)} | ${fmtSize(d.payloadSize)} | ${fmtStateCandidate(item.previewDom?.stateCandidate)} | ${best.mismatchPct ?? ''}% | ${fmtBounds(best.mismatchBounds)} | ${item.previewDom?.rollButtonCount ?? 0} | ${item.previewDom?.visibleScriptCount ?? 0} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} | ${sumResourceIssues(item.resourceIssues)} |`,
     );
   }
   lines.push('');
   lines.push(`Gate: mismatch must be <= ${report.mismatchThresholdPct}% and no page/console errors. Script/rolltemplate nodes must remain visually hidden.`);
+  lines.push('Optional `--state-map` applies local preview action-state hints before the payload screenshot only. It does not change payload files.');
   lines.push('');
   lines.push('If this fails, fix export cleanup or import roundtrip before uploading the payload to Roll20.');
   return `${lines.join('\n')}\n`;
@@ -335,6 +431,18 @@ function fmtBounds(bounds) {
   return `${bounds.left},${bounds.top} ${bounds.width}x${bounds.height}`;
 }
 
+function fmtStateCandidate(candidate) {
+  if (!candidate) return 'initial';
+  const action = candidate.actionName || 'initial';
+  if (!candidate.applied && action === 'initial') return 'initial';
+  if (candidate.skippedReason) return `${action} SKIP:${candidate.skippedReason}`;
+  if (!candidate.applied) return `${action} SKIP`;
+  const attrs = Object.entries(candidate.hiddenStateAfter ?? {})
+    .map(([key, state]) => `${key}=${state.valueAttribute || state.value || state.checkedAttribute || state.checked || ''}`)
+    .join(', ');
+  return `${action} APPLIED${attrs ? ` (${attrs})` : ''}`;
+}
+
 function sumResourceIssues(items) {
   if (!Array.isArray(items)) return 0;
   return items.reduce((sum, item) => sum + (item.count ?? 0), 0);
@@ -346,12 +454,14 @@ async function main() {
   await fs.mkdir(path.join(REPORT_DIR, 'screenshots'), { recursive: true });
   const fixtures = await listPayloadFixtures();
   if (fixtures.length === 0) throw new Error(`no payload fixtures under ${baselineDir}`);
+  const stateMap = await loadStateMap();
 
   const server = await startServer();
   const browser = await chromium.launch({ headless: true });
   const report = {
     startedAt: new Date().toISOString(),
     runDir: RUN_DIR,
+    stateMapPath: stateMap.path,
     mismatchThresholdPct: MISMATCH_THRESHOLD_PCT,
     fixtures: [],
   };
@@ -389,7 +499,8 @@ async function main() {
         await warmPerfHook(page);
         entry.import = await importPayload(page, fixture);
         entry.payloadScreenshot = path.join(REPORT_DIR, 'screenshots', `${fixture.id}-payload-preview.png`);
-        entry.previewDom = await capturePayloadPreview(page, entry.payloadScreenshot);
+        entry.previewStateCandidate = sanitizeStateCandidate(stateMap.fixtures[fixture.id]);
+        entry.previewDom = await capturePayloadPreview(page, entry.payloadScreenshot, entry.previewStateCandidate);
         entry.diff = await diffImages(page, fixture.baselineScreenshot, entry.payloadScreenshot);
         entry.pass =
           (entry.import?.result?.blockCount ?? 0) > 0 &&

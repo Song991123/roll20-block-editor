@@ -19,7 +19,8 @@
  *     reports/roll20-actual-compare/<label> \
  *     --fixtures test-fixtures/visual \
  *     --out-dir ./out \
- *     --base-path /roll20-block-editor
+ *     --base-path /roll20-block-editor \
+ *     [--state-map reports/visual-state-candidates/visual-state-candidates-state-map.json]
  */
 
 import { spawnSync } from 'node:child_process';
@@ -38,8 +39,13 @@ function argOf(name, fallback) {
 const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
+const STATE_MAP_PATH = argOf('--state-map', '');
 const REPORT_DIR = path.join(RUN_DIR, 'preupload-verification');
 const NODE = process.execPath;
+
+function maybeStateMapArgs() {
+  return STATE_MAP_PATH ? ['--state-map', path.resolve(STATE_MAP_PATH)] : [];
+}
 
 const checks = [
   {
@@ -58,6 +64,7 @@ const checks = [
       OUT_DIR,
       '--base-path',
       BASE_PATH,
+      ...maybeStateMapArgs(),
     ],
   },
   {
@@ -116,6 +123,7 @@ async function main() {
     fixtureRoot: FIXTURES_DIR,
     outDir: OUT_DIR,
     basePath: BASE_PATH,
+    stateMapPath: STATE_MAP_PATH ? path.resolve(STATE_MAP_PATH) : null,
     scope: 'local pre-upload gate; not Roll20 visual parity',
     pass: results.length === checks.length && results.every((result) => result.ok),
     results,
