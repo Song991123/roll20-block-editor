@@ -343,3 +343,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Do not collapse standalone preview evidence into live edit-mode evidence.
 - Do not call auto-prefix real legacy sanitize.
 - Do not edit protected external source corpus folders.
+
+## 2026-06-18 Roll20 Evidence Guard Slice
+
+- Added `scripts/roll20_actual_evidence_guard.mjs` and package alias `corepack pnpm run guard:roll20-evidence`.
+- The guard checks the active git root, `.gitignore`, `.githooks/pre-commit`, tracked files, and staged files so local fixtures, generated reports, private screenshots, and public example folders do not leak into commits.
+- When given a `reports/roll20-actual-compare/<label>` run folder, it also checks that local baseline, payload hygiene audit, and cleaned-payload visual roundtrip outputs exist and have no `FAIL` marker before any Roll20 sandbox/test-room upload attempt.
+- Scope note: this is a safety/checklist gate only. It does not upload to Roll20 and does not prove Roll20 visual parity.

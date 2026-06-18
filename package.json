@@ -15,6 +15,7 @@
     "smoke:legacy-preview": "node scripts/roll20_legacy_preview_smoke.mjs",
     "smoke:legacy-fixture-visual": "node scripts/roll20_legacy_fixture_visual_smoke.mjs",
     "smoke:payload-roundtrip": "node scripts/roll20_payload_roundtrip_visual_smoke.mjs",
+    "guard:roll20-evidence": "node scripts/roll20_actual_evidence_guard.mjs",
     "diff:visual-fixtures": "node scripts/make_visual_diff_pages.mjs && node scripts/run_visual_fixture_diff_pages.mjs reports/visual-fixture-diff"
   },
   "dependencies": {

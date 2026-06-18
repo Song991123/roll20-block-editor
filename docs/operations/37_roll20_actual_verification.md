@@ -34,6 +34,9 @@ This document defines how agents verify that this editor's preview/edit output m
    - Then run cleaned-payload visual roundtrip before uploading:
      `corepack pnpm run smoke:payload-roundtrip -- reports/roll20-actual-compare/<label> --out-dir ./out --base-path /roll20-block-editor`
    - The payload roundtrip smoke must pass before upload. It re-imports the cleaned Roll20 payload, captures a preview screenshot, and compares it against the local baseline preview so export-only cleanup cannot silently change the sheet before Roll20 sees it.
+   - Then run the local evidence guard before any Roll20 upload:
+     `corepack pnpm run guard:roll20-evidence -- reports/roll20-actual-compare/<label>`
+   - The guard must pass. It verifies that copied fixtures, generated reports, private screenshots, and public example folders are not tracked/staged, and that the local baseline, payload audit, and cleaned-payload roundtrip outputs exist for the selected run.
 2. Observe existing Roll20 solo rooms:
    - Use the user's logged-in Chrome session.
    - Identify rooms where the user is alone or intended for testing.
@@ -69,6 +72,9 @@ This document defines how agents verify that this editor's preview/edit output m
 - Local-only source/fixture root: `test-fixtures/`
 - Local-only private screenshots: `docs/portfolio/private/` or the report root.
 - Public commit rule: commit scripts and sanitized docs only. Do not commit generated evidence.
+- Public leak guard:
+  `corepack pnpm run guard:roll20-evidence -- reports/roll20-actual-compare/<label>`
+  must be run before committing a Roll20 actual-screen verification batch.
 
 ## Local Baseline Artifact Layout
 
@@ -87,6 +93,7 @@ This document defines how agents verify that this editor's preview/edit output m
 | `actual-screenshot-diff/actual-screenshot-diff-results.md` / `.json` | Local-only screenshot comparison report generated after Roll20 screenshots are placed beside local baseline screenshots. Missing Roll20 screenshots are SKIP, not PASS. |
 | `payload-audit/roll20-payload-audit-results.md` / `.json` | Local-only upload payload hygiene report. Must pass before Custom Sheet Sandbox/test-room upload. |
 | `payload-roundtrip-visual/payload-roundtrip-visual-results.md` / `.json` | Local-only cleaned-payload re-import visual report. Must pass before Custom Sheet Sandbox/test-room upload. |
+| evidence guard command output | Console-only safety result from `corepack pnpm run guard:roll20-evidence -- <run-dir>`. It must be PASS before upload/commit, but does not prove Roll20 visual parity. |
 
 Passing this local baseline proves the selected fixture can be imported, emitted,
 captured locally, and packaged for Roll20. It does not prove the generated sheet
@@ -121,6 +128,7 @@ missing, the target stays SKIP and must remain unverified.
 - Do not inspect cookies, local storage, passwords, or session stores.
 - Do not read private room/chat contents beyond what is necessary to identify that the room is safe for observation.
 - Confirm before creating a new Roll20 room or submitting sheet code if the action has not already been explicitly authorized for that exact destination.
+- Existing solo rooms are for default-state/wrapper/chat observation only. Generated sheets go to Custom Sheet Sandbox first, then a new test room only when sandbox evidence is insufficient.
 
 ## File Upload Gotcha
 
