@@ -1024,3 +1024,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run smoke:export-dialog` PASS in empty and imported Les-Oublies modes.
 - Interpretation: the local Sandbox expected preview no longer over-applies CSS state selector prefixing. This removes one false local/actual divergence source, but it does not reduce the remaining full-root height problem by itself.
 - Next P0: continue row/table/control geometry work. Current actual generated Les-Oublies root remains `852x4122`, while direct local candidates are still around `852x4964`; AW2E/YSHY actual screenshots and trustworthy chat screenshots are still missing.
+
+## 2026-06-19 Geometry Diagnostic Full-Root Fallback
+
+- Updated `scripts/roll20_geometry_delta_diagnostics.mjs` so `corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1` can use the newer `full-root-candidate-smoke` report when the older same-context visible smoke is SKIP.
+- Latest ignored report now compares the stitched full-height Roll20 root against the best local full-root candidate for Les-Oublies and keeps the claim boundary as diagnostic only.
+- Current unresolved gaps are narrowed to row 0 and row 3 inline-block wrap/relative placement plus table 4 and table 5 height deltas around `106px` and `104px`.
+- `scripts/roll20_full_root_candidate_smoke.mjs` and `scripts/roll20_actual_local_baseline.mjs` now capture two descendant levels plus `white-space`, `word-spacing`, `letter-spacing`, and `zoom` in local target geometry. The next fresh Roll20 iframe probe should capture the same fields/depth before a generic renderer CSS patch.
+- Verification so far: full-root candidate smoke PASS/SKIP and geometry diagnostic PASS/SKIP against the existing local-only evidence. This does not prove Roll20 visual parity.

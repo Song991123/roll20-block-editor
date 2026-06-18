@@ -279,9 +279,13 @@ async function renderCandidate({
           overflow: cs.overflow,
           fontSize: cs.fontSize,
           lineHeight: cs.lineHeight,
+          whiteSpace: cs.whiteSpace,
+          wordSpacing: cs.wordSpacing,
+          letterSpacing: cs.letterSpacing,
+          zoom: cs.zoom,
           verticalAlign: cs.verticalAlign,
         },
-        children: depth > 0 ? [] : Array.from(el.children).slice(0, 30).map((child) => target(child, depth + 1)),
+        children: depth >= 2 ? [] : Array.from(el.children).slice(0, 30).map((child) => target(child, depth + 1)),
       };
     };
     return {

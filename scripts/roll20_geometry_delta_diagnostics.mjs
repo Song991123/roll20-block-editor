@@ -25,17 +25,29 @@ if (!args[0]) {
 
 const outDir = path.join(runDir, 'geometry-delta-diagnostics');
 const sameContextFile = path.join(runDir, 'same-context-visible-smoke', 'same-context-visible-smoke-results.json');
+const fullRootFile = path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json');
 
 async function main() {
-  const sameContext = await readJsonRequired(sameContextFile);
+  const sameContext = await readJsonIfExists(sameContextFile);
+  const fullRoot = await readJsonIfExists(fullRootFile);
+  if (!sameContext && !fullRoot) {
+    throw new Error(`Missing required report: ${sameContextFile} or ${fullRootFile}`);
+  }
+
   const fixtures = [];
-  for (const fixture of sameContext.fixtures ?? []) {
-    fixtures.push(await analyzeFixture(fixture));
+  const fixtureIds = new Set([
+    ...(sameContext?.fixtures ?? []).map((fixture) => fixture.fixtureId),
+    ...(fullRoot?.fixtures ?? []).map((fixture) => fixture.fixtureId),
+  ]);
+  for (const fixtureId of fixtureIds) {
+    const sameFixture = (sameContext?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId);
+    const fullFixture = (fullRoot?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId);
+    fixtures.push(await analyzeFixture(sameFixture, fullFixture));
   }
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
-    source: path.relative(runDir, sameContextFile),
+    sources: [sameContext ? path.relative(runDir, sameContextFile) : null, fullRoot ? path.relative(runDir, fullRootFile) : null].filter(Boolean),
     scope: 'local-only geometry delta diagnostics; not Roll20 visual parity',
     pass: true,
     fixtures,
@@ -60,7 +72,22 @@ async function main() {
   console.log(`ROLL20 GEOMETRY DELTA DIAGNOSTICS OK ${outDir}`);
 }
 
-async function analyzeFixture(fixture) {
+async function analyzeFixture(sameContextFixture, fullRootFixture) {
+  if (sameContextFixture?.status === 'COMPARED' && sameContextFixture.computedStyleComparison && sameContextFixture.bestCandidate) {
+    return analyzeSameContextFixture(sameContextFixture);
+  }
+  if (fullRootFixture?.status === 'COMPARED' && fullRootFixture.bestCandidate) {
+    return analyzeFullRootFixture(fullRootFixture);
+  }
+  const fixture = sameContextFixture ?? fullRootFixture ?? {};
+  return {
+    fixtureId: fixture.fixtureId,
+    status: 'SKIP',
+    reason: fixture.reason ?? 'missing computed-style comparison, full-root candidate, or best candidate',
+  };
+}
+
+async function analyzeSameContextFixture(fixture) {
   if (fixture.status !== 'COMPARED' || !fixture.computedStyleComparison || !fixture.bestCandidate) {
     return {
       fixtureId: fixture.fixtureId,
@@ -105,6 +132,166 @@ async function analyzeFixture(fixture) {
     targetGeometry,
     interpretation: buildInterpretation({ root, topFindings, contentFindings, selectorFindings, targetGeometry }),
     nextChecks: buildNextChecks({ root, topFindings, contentFindings, selectorFindings, targetGeometry }),
+    unresolvedGeometryGaps: buildUnresolvedGeometryGaps(targetGeometry),
+  };
+}
+
+async function analyzeFullRootFixture(fixture) {
+  const actualTargetGeometry = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixture.fixtureId}-target-geometry.json`));
+  const localTargetGeometry = fixture.bestCandidate.metrics?.targetGeometry ?? null;
+  const targetGeometry = compareTargetGeometry(actualTargetGeometry, localTargetGeometry);
+  const contentFindings = buildFindingsFromFullRootGeometry(fixture.targetGeometry);
+  const topFindings = contentFindings.slice(0, 12);
+  const selectorFindings = contentFindings;
+  const root = {
+    widthDelta: delta(fixture.bestCandidate.rootRect?.width, fixture.actual?.outputCss?.w ?? fixture.actual?.size?.w),
+    heightDelta: fixture.bestCandidate.rootHeightDelta ?? delta(fixture.bestCandidate.rootRect?.height, fixture.actual?.outputCss?.h ?? fixture.actual?.size?.h),
+    fullHeightEvidence: true,
+    width: null,
+    height: {
+      field: 'rect.height',
+      actual: fixture.actual?.outputCss?.h ?? fixture.actual?.size?.h ?? null,
+      local: fixture.bestCandidate.rootRect?.height ?? fixture.bestCandidate.localSize?.h ?? null,
+      delta: fixture.bestCandidate.rootHeightDelta ?? null,
+    },
+    boxSizing: null,
+    fontSize: null,
+    lineHeight: null,
+    background: null,
+  };
+
+  return {
+    fixtureId: fixture.fixtureId,
+    status: 'COMPARED',
+    evidenceSource: 'full-root-candidate-smoke',
+    bestCandidate: {
+      id: fixture.bestCandidate.id,
+      mismatchRatio: fixture.bestCandidate.mismatchRatio,
+      nativeMismatchRatio: fixture.bestCandidate.nativeCompare?.mismatchRatio ?? null,
+      computedStyleScore: fixture.bestCandidate.computedStyleScore ?? null,
+    },
+    countsMatched: Boolean(
+      fixture.targetGeometry?.counts?.rows?.actual === fixture.targetGeometry?.counts?.rows?.local &&
+      fixture.targetGeometry?.counts?.images?.actual === fixture.targetGeometry?.counts?.images?.local &&
+      fixture.targetGeometry?.counts?.tables?.actual === fixture.targetGeometry?.counts?.tables?.local,
+    ),
+    root,
+    selectorFindings,
+    topFindings,
+    contentFindings,
+    targetGeometry,
+    interpretation: buildInterpretation({ root, topFindings, contentFindings, selectorFindings, targetGeometry }),
+    nextChecks: buildNextChecks({ root, topFindings, contentFindings, selectorFindings, targetGeometry }),
+    unresolvedGeometryGaps: buildUnresolvedGeometryGaps(targetGeometry),
+  };
+}
+
+function buildUnresolvedGeometryGaps(targetGeometry) {
+  if (targetGeometry?.status !== 'COMPARED') return [];
+  const gaps = [];
+  const tallTables = (targetGeometry.tables ?? [])
+    .filter((item) => item.status === 'COMPARED' && Math.abs(item.heightDelta ?? 0) >= 50)
+    .map((item) => ({
+      kind: 'table',
+      index: item.index,
+      selector: item.selector,
+      heightDelta: item.heightDelta,
+      reason: 'table delta is large, but current target probe only captures shallow table children',
+      nextProbe: 'capture table descendants: tbody/tr/td/input/button/textarea/select with rect, display, padding, border, line-height, and value/default visibility',
+    }));
+  const wrappedRows = (targetGeometry.rows ?? [])
+    .filter((item) => {
+      if (item.status !== 'COMPARED') return false;
+      const children = item.childComparisons ?? [];
+      if (children.length < 2) return false;
+      return children.some((child) => {
+        const relDelta = childRelativeYDelta(item, child);
+        return typeof relDelta === 'number' && Math.abs(relDelta) >= 50;
+      });
+    })
+    .map((item) => ({
+      kind: 'row-wrap',
+      index: item.index,
+      selector: item.selector,
+      heightDelta: item.heightDelta,
+      reason: 'child y deltas indicate local/actual inline-block wrapping or vertical placement differs',
+      nextProbe: 'capture row child inline metrics: x/y/width/margin/border/word-spacing/white-space plus parent available width',
+    }));
+  gaps.push(...wrappedRows, ...tallTables);
+  return gaps;
+}
+
+function childRelativeYDelta(parent, child) {
+  const actualParentY = parent.actual?.rect?.y;
+  const localParentY = parent.local?.rect?.y;
+  const actualChildY = child.actual?.rect?.y;
+  const localChildY = child.local?.rect?.y;
+  if (![actualParentY, localParentY, actualChildY, localChildY].every((value) => typeof value === 'number')) return null;
+  return Number(((localChildY - localParentY) - (actualChildY - actualParentY)).toFixed(3));
+}
+
+function buildFindingsFromFullRootGeometry(targetGeometry) {
+  if (!targetGeometry || targetGeometry.status !== 'COMPARED') return [];
+  return [
+    ...(targetGeometry.rowFindings ?? []).map((finding) => normalizeFullRootFinding(finding, 'row')),
+    ...(targetGeometry.tableFindings ?? []).map((finding) => normalizeFullRootFinding(finding, 'table')),
+    ...(targetGeometry.imageFindings ?? []).map((finding) => normalizeFullRootFinding(finding, 'image')),
+  ]
+    .filter(Boolean)
+    .sort((a, b) => b.importanceScore - a.importanceScore)
+    .slice(0, 24);
+}
+
+function normalizeFullRootFinding(finding, kind) {
+  if (!finding || finding.status !== 'COMPARED') return null;
+  const heightDelta = typeof finding.heightDelta === 'number' ? finding.heightDelta : delta(finding.localRect?.height, finding.actualRect?.height);
+  const yDelta = typeof finding.yDelta === 'number' ? finding.yDelta : delta(finding.localRect?.y, finding.actualRect?.y);
+  const widthDelta = typeof finding.widthDelta === 'number' ? finding.widthDelta : delta(finding.localRect?.width, finding.actualRect?.width);
+  const importanceScore =
+    Math.abs(heightDelta ?? 0) * 4 +
+    Math.abs(yDelta ?? 0) * 1.5 +
+    Math.abs(widthDelta ?? 0) +
+    (kind === 'row' ? 20 : 0) +
+    (finding.childCount?.actual !== finding.childCount?.local ? 40 : 0);
+  return {
+    selector: finding.selector ?? kind,
+    actualCount: finding.childCount?.actual ?? '',
+    localCount: finding.childCount?.local ?? '',
+    countDelta: typeof finding.childCount?.actual === 'number' && typeof finding.childCount?.local === 'number'
+      ? finding.childCount.local - finding.childCount.actual
+      : 0,
+    countExact: finding.childCount?.actual === finding.childCount?.local,
+    countSource: `full-root:${kind}`,
+    actualSource: 'full-root',
+    localSource: 'full-root',
+    actualPartial: false,
+    localPartial: false,
+    rect: {
+      yDelta,
+      heightDelta,
+      widthDelta,
+      y: fieldDiff('rect.y', finding.actualRect?.y, finding.localRect?.y, yDelta),
+      height: fieldDiff('rect.height', finding.actualRect?.height, finding.localRect?.height, heightDelta),
+      width: fieldDiff('rect.width', finding.actualRect?.width, finding.localRect?.width, widthDelta),
+    },
+    style: {
+      height: fieldDiff('style.height', finding.actualStyle?.height, finding.localStyle?.height, null),
+      lineHeight: valuesDiffer(finding.actualStyle?.lineHeight, finding.localStyle?.lineHeight)
+        ? fieldDiff('style.lineHeight', finding.actualStyle?.lineHeight, finding.localStyle?.lineHeight, null)
+        : null,
+      padding: valuesDiffer(finding.actualStyle?.padding, finding.localStyle?.padding)
+        ? fieldDiff('style.padding', finding.actualStyle?.padding, finding.localStyle?.padding, null)
+        : null,
+      margin: valuesDiffer(finding.actualStyle?.margin, finding.localStyle?.margin)
+        ? fieldDiff('style.margin', finding.actualStyle?.margin, finding.localStyle?.margin, null)
+        : null,
+      fontSize: valuesDiffer(finding.actualStyle?.fontSize, finding.localStyle?.fontSize)
+        ? fieldDiff('style.fontSize', finding.actualStyle?.fontSize, finding.localStyle?.fontSize, null)
+        : null,
+      backgroundImage: null,
+    },
+    importanceScore: Number(importanceScore.toFixed(3)),
+    sampleDiffs: [],
   };
 }
 
@@ -313,19 +500,23 @@ function buildInterpretation({ root, topFindings, contentFindings, selectorFindi
 function buildNextChecks({ root, topFindings, contentFindings, selectorFindings, targetGeometry }) {
   const checks = [];
   if (root.heightDelta !== null) {
-    checks.push('Capture full-height or scroll-stitched Roll20 root screenshots so the root height delta can be tied to visual areas, not just top-crop evidence.');
+    if (root.fullHeightEvidence) {
+      checks.push('Use the existing stitched full-height Roll20 root evidence to inspect which row/table/control geometry deltas account for the remaining root height delta.');
+    } else {
+      checks.push('Capture full-height or scroll-stitched Roll20 root screenshots so the root height delta can be tied to visual areas, not just top-crop evidence.');
+    }
   }
-  const twoCol = selectorFindings.find((item) => item.selector === '.sheet-2colrow');
-  if (twoCol?.rect.heightDelta !== null && Math.abs(twoCol.rect.heightDelta) >= 50) {
+  const twoCol = selectorFindings.find((item) => item.selector.includes('sheet-2colrow'));
+  if (twoCol?.rect?.heightDelta !== null && Math.abs(twoCol?.rect?.heightDelta ?? 0) >= 50) {
     checks.push('Inspect every `.sheet-2colrow` child in actual/local probes, including child image/table heights and whether hidden descendants affect flow differently.');
   }
   if (targetGeometry?.status === 'COMPARED') {
     const row = targetGeometry.topRows?.[0];
     if (row) checks.push(`Targeted row probe currently points at row ${row.index} (${row.selector}) with height delta ${num(row.heightDelta)}px; inspect its child comparisons before renderer CSS changes.`);
   }
-  const table = selectorFindings.find((item) => item.selector === 'table');
-  const input = selectorFindings.find((item) => item.selector === 'input');
-  if (table?.rect.heightDelta || input?.rect.heightDelta) {
+  const table = selectorFindings.find((item) => item.selector.toLowerCase() === 'table');
+  const input = selectorFindings.find((item) => item.selector.toLowerCase() === 'input');
+  if (table?.rect?.heightDelta || input?.rect?.heightDelta) {
     checks.push('Compare Roll20 baseline table/control CSS for height, line-height, border, and padding before patching user CSS output.');
   }
   if (contentFindings.some((item) => item.selector.includes('button'))) {
@@ -336,13 +527,14 @@ function buildNextChecks({ root, topFindings, contentFindings, selectorFindings,
 }
 
 function renderMarkdown(report) {
+  const hasFullHeightEvidence = report.fixtures.some((fixture) => fixture.status === 'COMPARED' && fixture.root?.fullHeightEvidence);
   const lines = [
     '# Roll20 Geometry Delta Diagnostics',
     '',
     `Run dir: \`${report.runDir}\``,
     `Generated: ${report.generatedAt}`,
     '',
-    'Scope: local-only comparison of actual Roll20 iframe computed geometry versus the best local same-context candidate. This is not a Roll20 visual parity claim.',
+    'Scope: local-only comparison of actual Roll20 iframe computed geometry versus the best available local candidate evidence. This is not a Roll20 visual parity claim.',
     '',
     '| Fixture | Status | Best candidate | CSS mismatch | Root height delta | Counts matched | Top geometry finding |',
     '| --- | --- | --- | ---: | ---: | ---: | --- |',
@@ -352,7 +544,9 @@ function renderMarkdown(report) {
       lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} |  |  |  |  | ${fixture.reason ?? ''} |`);
       continue;
     }
-    const top = fixture.contentFindings[0] ?? fixture.topFindings[0];
+    const top = [...(fixture.contentFindings ?? [])]
+      .filter((item) => typeof item.rect?.heightDelta === 'number')
+      .sort((a, b) => Math.abs(b.rect.heightDelta) - Math.abs(a.rect.heightDelta))[0] ?? fixture.contentFindings[0] ?? fixture.topFindings[0];
     lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.bestCandidate.id} | ${pct(fixture.bestCandidate.mismatchRatio)} | ${num(fixture.root.heightDelta)}px | ${fixture.countsMatched ? 'yes' : 'no'} | ${top ? `${top.selector}: height ${num(top.rect.heightDelta)}px, y ${num(top.rect.yDelta)}px` : ''} |`);
   }
 
@@ -401,9 +595,19 @@ function renderMarkdown(report) {
         const childDeltas = (row.childComparisons ?? [])
           .filter((child) => child.status === 'COMPARED')
           .slice(0, 4)
-          .map((child) => `${child.selector}: ${num(child.heightDelta)}px`)
+          .map((child) => `${child.selector}: y ${num(child.yDelta)}px, h ${num(child.heightDelta)}px`)
           .join('<br>');
         lines.push(`| ${row.index} | ${num(row.actual.rect?.height)} | ${num(row.local.rect?.height)} | ${num(row.heightDelta)} | ${row.childCount.actual}/${row.childCount.local} | ${childDeltas} |`);
+      }
+    }
+    if (fixture.unresolvedGeometryGaps?.length) {
+      lines.push('');
+      lines.push('### Unresolved Deep-Probe Gaps');
+      lines.push('');
+      lines.push('| Kind | Index | Selector | Height delta | Why it matters | Next probe |');
+      lines.push('| --- | ---: | --- | ---: | --- | --- |');
+      for (const gap of fixture.unresolvedGeometryGaps) {
+        lines.push(`| ${gap.kind} | ${gap.index} | \`${gap.selector}\` | ${num(gap.heightDelta)} | ${gap.reason} | ${gap.nextProbe} |`);
       }
     }
   }
@@ -413,12 +617,29 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('- Matching selector counts here do not prove visual parity.');
   lines.push('- Geometry deltas here are root-cause clues only.');
-  lines.push('- Full-height/scroll-stitched Roll20 root capture is still required before full-sheet parity claims.');
+  if (hasFullHeightEvidence) {
+    lines.push('- The stitched full-height Roll20 root evidence narrows this fixture to geometry work, but it still does not prove full-sheet visual parity.');
+  } else {
+    lines.push('- Full-height/scroll-stitched Roll20 root capture is still required before full-sheet parity claims.');
+  }
   return `${lines.join('\n')}\n`;
 }
 
 function findField(diffs, field) {
   return diffs.find((diff) => diff.field === field) ?? null;
+}
+
+function fieldDiff(field, actual, local, explicitDelta) {
+  return {
+    field,
+    actual: actual ?? null,
+    local: local ?? null,
+    delta: explicitDelta ?? delta(local, actual),
+  };
+}
+
+function valuesDiffer(actual, local) {
+  return actual !== undefined && local !== undefined && actual !== local;
 }
 
 function isRootWrapperSelector(selector) {

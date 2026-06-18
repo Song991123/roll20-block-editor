@@ -123,6 +123,16 @@ candidate proves the wrap can be removed (`554px -> 297px`), but its image
 mismatch is slightly worse (`21.56%` vs `21.49%`), so this is evidence, not a
 production CSS patch. Next P0 remains full-height/scroll-stitched capture plus
 generic Roll20 inline-block/rounding context investigation.
+2026-06-19 follow-up: `diagnose:roll20-geometry` now falls back to the newer
+full-root candidate smoke when the older same-context visible report is SKIP,
+so it compares the stitched full-height Roll20 root against the best local
+full-root candidate instead of repeating visible-crop guidance. Current
+Les-Oublies unresolved gaps are narrowed to row 0 and row 3 inline-block
+wrap/placement plus table 4 and table 5 height deltas of about `106px` and
+`104px`. Local candidate/baseline geometry probes now capture two descendant
+levels plus `white-space`, `word-spacing`, `letter-spacing`, and `zoom`; the
+next fresh Roll20 iframe probe should capture the same depth before any generic
+renderer CSS patch.
 Follow-up actual layout-context probe:
 Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
 ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.
