@@ -610,6 +610,7 @@ export default function PreviewMain() {
             {renderMode === 'iframe' ? (
               <iframe
                 ref={iframeRef}
+                data-testid="preview-iframe"
                 title="시트 미리보기"
                 sandbox={sandbox}
                 srcDoc={srcdoc}

@@ -26,6 +26,8 @@ This document defines how agents verify that this editor's preview/edit output m
    - Capture local preview screenshot.
    - Capture local edit screenshot.
    - Export the generated zip or HTML/CSS/translation payload for sandbox use.
+   - Repeatable command:
+     `node scripts/roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label <label>`
 2. Observe existing Roll20 solo rooms:
    - Use the user's logged-in Chrome session.
    - Identify rooms where the user is alone or intended for testing.
@@ -61,6 +63,26 @@ This document defines how agents verify that this editor's preview/edit output m
 - Local-only source/fixture root: `test-fixtures/`
 - Local-only private screenshots: `docs/portfolio/private/` or the report root.
 - Public commit rule: commit scripts and sanitized docs only. Do not commit generated evidence.
+
+## Local Baseline Artifact Layout
+
+`scripts/roll20_actual_local_baseline.mjs` writes this structure under the ignored run folder:
+
+| Path | Use |
+| --- | --- |
+| `local-baseline-results.md` / `.json` | Local import/emit/payload summary and next Roll20 checklist. |
+| `local-baseline/<fixture>/screenshots/local-preview.png` | Local preview root screenshot. |
+| `local-baseline/<fixture>/screenshots/local-edit.png` | Local edit root screenshot. |
+| `local-baseline/<fixture>/payload/sheet.html` | Emitted HTML for Custom Sheet Sandbox/test room. |
+| `local-baseline/<fixture>/payload/sheet.css` | Emitted CSS for Custom Sheet Sandbox/test room. |
+| `local-baseline/<fixture>/payload/translation.json` | Emitted translation payload, normalized to `{}` when empty. |
+| `local-baseline/<fixture>/payload/sheet.json` | Minimal local verification manifest. |
+| `local-baseline/<fixture>/upload.zip` | Convenience zip containing the payload files. |
+
+Passing this local baseline proves the selected fixture can be imported, emitted,
+captured locally, and packaged for Roll20. It does not prove the generated sheet
+matches Roll20 until the sandbox/test-room screenshot and chat/roll smoke are
+captured and compared.
 
 ## Chrome Safety
 
