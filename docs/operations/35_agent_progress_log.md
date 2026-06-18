@@ -885,3 +885,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - Les-Oublies: previous actual visible mismatch `21.67%`; best local same-context candidate `normal-root-top-left` is `21.60%`; local Sandbox expected root is also `21.60%`; measured frame-inset and fit-visible-width candidates are worse (`24.09%`, `23.34%`).
 - Interpretation: local frame/inset/sandbox-width simulation does not materially explain the remaining Les-Oublies visible mismatch. Next P0 should collect actual computed-style/state/asset evidence when the iframe is readable and capture full-height/scroll-stitched Roll20 root evidence.
 - Scope note: this is still not Roll20 visual parity.
+
+## 2026-06-19 Roll20 Actual Iframe Computed-Style Probe
+
+- Reused the dedicated Roll20 Custom Sheet Sandbox and the existing generated Les-Oublies sheet, not a real user room.
+- Chrome/Playwright could not read the iframe through plain `contentDocument`, but frame access plus a CDP isolated execution world succeeded for the character iframe URL under `/editor/character/...`.
+- Saved local-only live iframe metrics and computed-style evidence under `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/`.
+- Actual Roll20 iframe facts from the ignored evidence:
+  - `form.sheetform` and `div.charactersheet` are present.
+  - actual default state is `sheetTab=combat` and `sheetTabForBtn=combat`.
+  - actual `.charactersheet` root rect is about `852x4121.575`; computed CSS is content-box, `width: 832px`, `padding: 10px`, `font-size: 13px`, `line-height: 18.5714px`, transparent background.
+  - actual `.sheet-combat` exists and `.sheet-fullsheet` does not; actual selected counts include 8 tables, 135 inputs, 40 roll buttons, and 6 action buttons.
+- Extended `scripts/roll20_same_context_visible_smoke.mjs` with no-state candidates and optional computed-style comparison against `live-iframe-probe/<fixture>-computed-styles.json`.
+- Latest command: `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result: Les-Oublies best local candidate is `normal-root-no-state` at `21.60%`, effectively unchanged from the prior `21.67%` actual visible mismatch. State-map mismatch alone is not the cause.
+- The computed-style comparison points to a concrete Roll20 baseline/root mismatch: the best local candidate still has app-like border-box sizing, `900px` root width, `14px` font, `20px` line-height, white root background, and `6px 12px` input padding.
+- Scope note: this is the strongest current root-cause evidence for the Roll20 visual mismatch, but it is not visual parity. Next renderer work should align local preview/edit baseline CSS and wrapper metrics to actual Roll20, then rerun the same-context visible smoke.

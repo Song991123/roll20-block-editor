@@ -111,6 +111,7 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, co
   const comparedSize = [Math.round(cssCrop.w), Math.round(cssCrop.h)];
   const artifactDir = path.join(outDir, fixtureId);
   await mkdir(artifactDir, { recursive: true });
+  const actualStyleProbe = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixtureId}-computed-styles.json`));
 
   const payload = {
     html: await readText(path.join(payloadDir, 'sheet.html')),
@@ -121,12 +122,45 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, co
   const candidates = [];
 
   candidates.push(await renderCandidate({
+    id: 'normal-root-no-state',
+    renderPage,
+    comparePage,
+    buildSheetDoc,
+    payload,
+    stateCandidate,
+    applyStateHint: false,
+    actualFile,
+    actualMeta,
+    comparedSize,
+    artifactDir,
+    roll20SandboxSanitize: false,
+    captureMode: 'root-top-left',
+  }));
+
+  candidates.push(await renderCandidate({
+    id: 'sandbox-root-no-state',
+    renderPage,
+    comparePage,
+    buildSheetDoc,
+    payload,
+    stateCandidate,
+    applyStateHint: false,
+    actualFile,
+    actualMeta,
+    comparedSize,
+    artifactDir,
+    roll20SandboxSanitize: true,
+    captureMode: 'root-top-left',
+  }));
+
+  candidates.push(await renderCandidate({
     id: 'normal-root-top-left',
     renderPage,
     comparePage,
     buildSheetDoc,
     payload,
     stateCandidate,
+    applyStateHint: true,
     actualFile,
     actualMeta,
     comparedSize,
@@ -142,6 +176,7 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, co
     buildSheetDoc,
     payload,
     stateCandidate,
+    applyStateHint: true,
     actualFile,
     actualMeta,
     comparedSize,
@@ -157,6 +192,7 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, co
     buildSheetDoc,
     payload,
     stateCandidate,
+    applyStateHint: true,
     actualFile,
     actualMeta,
     comparedSize,
@@ -172,6 +208,7 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, co
     buildSheetDoc,
     payload,
     stateCandidate,
+    applyStateHint: true,
     actualFile,
     actualMeta,
     comparedSize,
@@ -203,6 +240,9 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, co
     candidates,
     bestCandidate,
     interpretation: interpretCandidates(candidates, previousMismatchRatio),
+    computedStyleComparison: actualStyleProbe && bestCandidate
+      ? compareComputedStyles(actualStyleProbe, bestCandidate.metrics?.styleProbe)
+      : null,
   };
 }
 
@@ -213,6 +253,7 @@ async function renderCandidate({
   buildSheetDoc,
   payload,
   stateCandidate,
+  applyStateHint,
   actualFile,
   actualMeta,
   comparedSize,
@@ -233,23 +274,90 @@ async function renderCandidate({
   const iframeHeight = Math.max(1, Math.round((actualMeta.cssCrop.h ?? comparedSize[1]) + (actualMeta.insetCss?.top ?? 0) + (actualMeta.insetCss?.bottom ?? 0)));
   await renderPage.setViewportSize({ width: Math.max(iframeWidth, comparedSize[0]), height: Math.max(iframeHeight, comparedSize[1]) });
   await renderPage.setContent(doc, { waitUntil: 'load' });
-  await applyStateCandidate(renderPage, stateCandidate);
+  if (applyStateHint) await applyStateCandidate(renderPage, stateCandidate);
   await renderPage.waitForTimeout(300);
 
   const metrics = await renderPage.evaluate(() => {
     const root = document.querySelector('#charsheet-root');
     const dialog = document.querySelector('#dialog-window');
     const body = document.body;
+    function pickStyle(el) {
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return {
+        tag: el.tagName,
+        id: el.id || '',
+        className: typeof el.className === 'string' ? el.className : String(el.className || ''),
+        name: el.getAttribute('name') || '',
+        type: el.getAttribute('type') || '',
+        text: (el.textContent || '').trim().slice(0, 80),
+        rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+        scroll: { width: el.scrollWidth, height: el.scrollHeight },
+        style: {
+          display: cs.display,
+          position: cs.position,
+          boxSizing: cs.boxSizing,
+          width: cs.width,
+          height: cs.height,
+          minWidth: cs.minWidth,
+          maxWidth: cs.maxWidth,
+          margin: cs.margin,
+          padding: cs.padding,
+          border: cs.border,
+          overflow: cs.overflow,
+          fontFamily: cs.fontFamily,
+          fontSize: cs.fontSize,
+          lineHeight: cs.lineHeight,
+          color: cs.color,
+          backgroundColor: cs.backgroundColor,
+          backgroundImage: cs.backgroundImage.slice(0, 160),
+          transform: cs.transform,
+          zoom: cs.zoom || '',
+        },
+      };
+    }
     function rect(el) {
       if (!el) return null;
       const r = el.getBoundingClientRect();
       return { x: r.x, y: r.y, width: r.width, height: r.height };
     }
+    const selectors = [
+      'html',
+      'body',
+      'form.sheetform',
+      '.charactersheet',
+      '#charsheet-root',
+      '.sheet-tabstoggle',
+      '.sheet-fullsheet',
+      '.sheet-combat',
+      'table',
+      'tr',
+      'td',
+      'input',
+      'button[type="roll"]',
+      'button[type="action"]',
+    ];
     return {
       bodyScroll: { width: body.scrollWidth, height: body.scrollHeight },
       rootRect: rect(root),
       dialogRect: rect(dialog),
       sandboxMode: body.getAttribute('data-roll20-sandbox-sanitize') ?? '',
+      styleProbe: {
+        root: pickStyle(root),
+        state: {
+          sheetTab: document.querySelector('[name="attr_sheetTab"]')?.value || null,
+          sheetTabForBtn: document.querySelector('[name="attr_sheetTabForBtn"]')?.value || null,
+        },
+        selected: selectors.map((selector) => {
+          const nodes = Array.from(document.querySelectorAll(selector));
+          const visible = nodes.filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 || r.height > 0 || selector === 'html' || selector === 'body';
+          }).slice(0, 3);
+          return { selector, count: nodes.length, samples: visible.map(pickStyle) };
+        }),
+      },
     };
   });
 
@@ -312,6 +420,7 @@ async function renderCandidate({
   return {
     id,
     roll20SandboxSanitize,
+    applyStateHint,
     captureMode,
     screenshot: outFile,
     overlay: overlayFile,
@@ -435,10 +544,96 @@ function interpretCandidates(candidates, previousMismatchRatio) {
     if (gain > 0.03) notes.push(`same-context candidate improves mismatch by ${pct(gain)} over previous ${pct(previousMismatchRatio)}`);
     else notes.push(`same-context candidates do not materially beat previous ${pct(previousMismatchRatio)}`);
   }
+  if (best && best.applyStateHint === false) notes.push('best candidate does not apply the local state-map hint');
   if (best?.id?.includes('sandbox')) notes.push('best candidate uses local sandbox sanitize approximation');
   if (best?.id === 'sandbox-frame-inset') notes.push('Roll20 frame inset simulation is currently closest');
   if (best?.mismatchRatio > 0.15) notes.push('large visible delta remains after local context simulation');
   notes.push('full-height Roll20 capture is still required before a parity claim');
+  return notes;
+}
+
+function compareComputedStyles(actualProbe, localProbe) {
+  if (!actualProbe || !localProbe) return null;
+  const fields = [
+    'display',
+    'position',
+    'boxSizing',
+    'width',
+    'height',
+    'margin',
+    'padding',
+    'overflow',
+    'fontFamily',
+    'fontSize',
+    'lineHeight',
+    'backgroundColor',
+    'backgroundImage',
+  ];
+  const actualRoot = actualProbe.root ?? null;
+  const localRoot = localProbe.root ?? null;
+  const rootDiffs = compareNodeStyle(actualRoot, localRoot, fields);
+  const selectorDiffs = [];
+  for (const actualEntry of actualProbe.selected ?? []) {
+    const localEntry = (localProbe.selected ?? []).find((entry) => entry.selector === actualEntry.selector);
+    const actualSample = actualEntry.samples?.[0] ?? null;
+    const localSample = localEntry?.samples?.[0] ?? null;
+    selectorDiffs.push({
+      selector: actualEntry.selector,
+      actualCount: actualEntry.count ?? 0,
+      localCount: localEntry?.count ?? 0,
+      countDelta: (localEntry?.count ?? 0) - (actualEntry.count ?? 0),
+      sampleDiffs: compareNodeStyle(actualSample, localSample, fields).slice(0, 12),
+    });
+  }
+  return {
+    source: 'actual live-iframe-probe computed styles vs best local same-context candidate',
+    actualCapturedAt: actualProbe.capturedAt ?? null,
+    rootDiffs,
+    state: {
+      actual: actualProbe.state ?? null,
+      local: localProbe.state ?? null,
+    },
+    selectorDiffs,
+    notable: buildComputedStyleNotes(rootDiffs, selectorDiffs, actualProbe.state, localProbe.state),
+  };
+}
+
+function compareNodeStyle(actualNode, localNode, fields) {
+  if (!actualNode || !localNode) {
+    return [{ field: 'node', actual: actualNode ? 'present' : 'missing', local: localNode ? 'present' : 'missing' }];
+  }
+  const diffs = [];
+  const rectFields = ['x', 'y', 'width', 'height'];
+  for (const field of rectFields) {
+    const actual = actualNode.rect?.[field] ?? null;
+    const local = localNode.rect?.[field] ?? null;
+    if (actual !== local) diffs.push({ field: `rect.${field}`, actual, local, delta: numericDelta(local, actual) });
+  }
+  for (const field of fields) {
+    const actual = actualNode.style?.[field] ?? null;
+    const local = localNode.style?.[field] ?? null;
+    if (actual !== local) diffs.push({ field: `style.${field}`, actual, local });
+  }
+  return diffs;
+}
+
+function numericDelta(local, actual) {
+  return typeof local === 'number' && typeof actual === 'number' ? Number((local - actual).toFixed(3)) : null;
+}
+
+function buildComputedStyleNotes(rootDiffs, selectorDiffs, actualState, localState) {
+  const notes = [];
+  const rootWidth = rootDiffs.find((diff) => diff.field === 'rect.width');
+  const rootHeight = rootDiffs.find((diff) => diff.field === 'rect.height');
+  if (rootWidth) notes.push(`root width differs actual=${rootWidth.actual} local=${rootWidth.local}`);
+  if (rootHeight) notes.push(`root height differs actual=${rootHeight.actual} local=${rootHeight.local}`);
+  if (actualState?.sheetTab !== localState?.sheetTab || actualState?.sheetTabForBtn !== localState?.sheetTabForBtn) {
+    notes.push(`state differs actual=${JSON.stringify(actualState)} local=${JSON.stringify(localState)}`);
+  }
+  for (const selector of ['.sheet-fullsheet', '.sheet-combat', 'table', 'input']) {
+    const diff = selectorDiffs.find((entry) => entry.selector === selector);
+    if (diff && diff.countDelta !== 0) notes.push(`${selector} count differs actual=${diff.actualCount} local=${diff.localCount}`);
+  }
   return notes;
 }
 
@@ -463,12 +658,25 @@ function renderMarkdown(report) {
     lines.push('');
     lines.push(`Actual normalized crop: ${fixture.actualNormalizedSize?.join('x') ?? ''}`);
     lines.push('');
-    lines.push('| Candidate | Sandbox sanitize | Capture mode | Mismatch | RMS | Bounds | Screenshot | Overlay |');
-    lines.push('| --- | ---: | --- | ---: | ---: | ---: | --- | --- |');
+    lines.push('| Candidate | Sandbox sanitize | State hint | Capture mode | Mismatch | RMS | Bounds | Screenshot | Overlay |');
+    lines.push('| --- | ---: | ---: | --- | ---: | ---: | ---: | --- | --- |');
     for (const candidate of fixture.candidates) {
-      lines.push(`| ${candidate.id} | ${candidate.roll20SandboxSanitize ? 'on' : 'off'} | ${candidate.captureMode} | ${pct(candidate.mismatchRatio)} | ${candidate.rmsRgb} | ${Array.isArray(candidate.bounds) ? candidate.bounds.join(',') : ''} | \`${path.relative(runDir, candidate.screenshot)}\` | \`${path.relative(runDir, candidate.overlay)}\` |`);
+      lines.push(`| ${candidate.id} | ${candidate.roll20SandboxSanitize ? 'on' : 'off'} | ${candidate.applyStateHint ? 'on' : 'off'} | ${candidate.captureMode} | ${pct(candidate.mismatchRatio)} | ${candidate.rmsRgb} | ${Array.isArray(candidate.bounds) ? candidate.bounds.join(',') : ''} | \`${path.relative(runDir, candidate.screenshot)}\` | \`${path.relative(runDir, candidate.overlay)}\` |`);
     }
     lines.push('');
+    if (fixture.computedStyleComparison) {
+      lines.push('### Computed Style Comparison');
+      lines.push('');
+      for (const note of fixture.computedStyleComparison.notable ?? []) lines.push(`- ${note}`);
+      lines.push('');
+      lines.push('| Selector | Actual count | Local count | Sample diffs |');
+      lines.push('| --- | ---: | ---: | --- |');
+      for (const diff of (fixture.computedStyleComparison.selectorDiffs ?? []).slice(0, 14)) {
+        const sample = (diff.sampleDiffs ?? []).slice(0, 5).map((item) => `${item.field}: ${item.actual} -> ${item.local}`).join('<br>');
+        lines.push(`| \`${diff.selector}\` | ${diff.actualCount} | ${diff.localCount} | ${sample} |`);
+      }
+      lines.push('');
+    }
   }
   lines.push('## Claim Boundary');
   lines.push('');
@@ -518,6 +726,11 @@ async function readText(file) {
 
 async function readMaybe(file) {
   return existsSync(file) ? readText(file) : '';
+}
+
+async function readJsonIfExists(file) {
+  if (!existsSync(file)) return null;
+  return JSON.parse(await readFile(file, 'utf8'));
 }
 
 async function imageDataUrl(file) {

@@ -216,6 +216,29 @@ them against the existing actual Roll20 root crop. If these candidates do not
 materially improve the mismatch, do not keep tuning crop/inset guesses; move to
 actual computed-style/state/asset evidence and full-height Roll20 capture.
 
+If Chrome/Playwright frame access or a CDP isolated execution world can read the
+Roll20 character iframe, save local-only JSON probes under:
+
+```text
+reports/roll20-actual-compare/<run-label>/live-iframe-probe/<fixture-id>-iframe-metrics.json
+reports/roll20-actual-compare/<run-label>/live-iframe-probe/<fixture-id>-computed-styles.json
+```
+
+The computed-style probe should include the actual default state, root rect,
+root computed style, and representative selectors such as `html`, `body`,
+`form.sheetform`, `.charactersheet`, `.sheet-fullsheet`, `.sheet-combat`,
+`table`, `input`, and Roll20 buttons. Then rerun:
+
+```bash
+corepack pnpm run smoke:roll20-same-context-visible -- reports/roll20-actual-compare/<run-label>
+```
+
+When the matching probe file exists, the smoke report compares actual iframe
+computed styles against the best local candidate. Treat these CSS differences as
+renderer root-cause evidence, but still not as visual parity. Keep the JSON files
+ignored and never commit actual Roll20 sheet source, screenshots, or probe
+outputs.
+
 ## Chrome Safety
 
 - Use existing Chrome/Roll20 login state only for the requested verification.

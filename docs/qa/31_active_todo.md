@@ -55,6 +55,21 @@ previous `21.67%`. This means measured local context simulation does not
 materially explain the remaining visible mismatch; next work should prioritize
 actual computed-style/state/asset evidence and full-height/scroll-stitched
 Roll20 root capture rather than more crop/inset guessing.
+Follow-up live iframe computed-style probe:
+Chrome/CDP could read the actual Roll20 character iframe for the generated
+Les-Oublies sandbox sheet. Local ignored evidence is under
+`reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/`.
+Actual Roll20 state is `sheetTab=combat` / `sheetTabForBtn=combat`; adding
+no-state local candidates only moved the same-context smoke best result to
+`normal-root-no-state` at `21.60%`, so the state-map mismatch alone does not
+explain the visible delta. The computed-style comparison now shows a concrete
+Roll20 baseline mismatch: actual `.charactersheet` is content-box, `832px`
+computed width plus `10px` padding, `13px` font, `18.5714px` line-height, and
+transparent background, while the best local candidate still uses app-like
+`border-box`, `900px` root width, `14px` font, `20px` line-height, white
+background, and Bootstrap/app-style input padding. Next renderer work should
+align local preview/edit baseline CSS with these actual Roll20 values before
+tuning crop/inset guesses.
 
 | Status | Owner | Task | Evidence / Next Check |
 | --- | --- | --- | --- |
