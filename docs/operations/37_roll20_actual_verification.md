@@ -141,3 +141,12 @@ Codex Chrome extension:
 2. Open Details for the Codex extension.
 3. Enable `Allow access to file URLs`.
 4. Return to the Roll20 sandbox editor and retry the upload.
+
+If the upload remains blocked, generate a local handoff checklist:
+
+```bash
+corepack pnpm run handoff:roll20-upload -- reports/roll20-actual-compare/<label> [fixture-id]
+```
+
+The checklist stays under the ignored run folder and lists exact payload files,
+screenshot destinations, and the diff command to run after screenshots exist.
