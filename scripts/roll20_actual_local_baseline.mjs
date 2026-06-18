@@ -14,7 +14,8 @@
  *   node scripts/roll20_actual_local_baseline.mjs \
  *     --out-dir ./out --base-path /roll20-block-editor \
  *     --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare \
- *     --run-label 2026-06-18-local-baseline [--only fixture-id]
+ *     --run-label 2026-06-18-local-baseline [--only fixture-id] \
+ *     [--state-map reports/visual-state-candidates/visual-state-candidates-state-map.json]
  */
 
 import crypto from 'node:crypto';
@@ -36,6 +37,7 @@ const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const REPORT_ROOT = path.resolve(argOf('--report-dir', 'reports/roll20-actual-compare'));
 const RUN_LABEL = slug(argOf('--run-label', new Date().toISOString().slice(0, 19)));
 const ONLY = argOf('--only', '');
+const STATE_MAP_PATH = argOf('--state-map', '');
 const PORT = Number(argOf('--port', '4192'));
 const VIEWPORT = { width: 2200, height: 1200 };
 
@@ -113,6 +115,38 @@ async function listFixtures() {
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
+async function loadStateMap() {
+  if (!STATE_MAP_PATH) {
+    return { path: null, fixtures: {} };
+  }
+  const resolvedPath = path.resolve(STATE_MAP_PATH);
+  const raw = await fs.readFile(resolvedPath, 'utf8');
+  const parsed = JSON.parse(raw);
+  return {
+    path: resolvedPath,
+    fixtures: parsed.fixtures && typeof parsed.fixtures === 'object' ? parsed.fixtures : {},
+  };
+}
+
+function sanitizeStateCandidate(candidate) {
+  if (!candidate || typeof candidate !== 'object') return null;
+  return {
+    fixtureId: candidate.fixtureId ?? '',
+    actionName: candidate.actionName ?? '',
+    actionLabel: candidate.actionLabel ?? '',
+    hiddenAttrs: candidate.hiddenAttrs && typeof candidate.hiddenAttrs === 'object' ? candidate.hiddenAttrs : {},
+    bestMismatchRatio: candidate.bestMismatchRatio ?? null,
+    initialMismatchRatio: candidate.initialMismatchRatio ?? null,
+    bestCaptureCrop: Array.isArray(candidate.bestCaptureCrop) ? candidate.bestCaptureCrop : null,
+    candidateCount: candidate.candidateCount ?? null,
+    scope: candidate.scope ?? 'local preview action-state hint; not Roll20 visual parity',
+  };
+}
+
+function cssAttrValue(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 async function warmPerfHook(page) {
   await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
   await page.waitForFunction(
@@ -148,7 +182,67 @@ async function importFixture(page, fixture) {
   }, fixture);
 }
 
-async function capturePreview(page, outFile) {
+async function collectHiddenState(sheet, hiddenAttrs) {
+  if (!hiddenAttrs || Object.keys(hiddenAttrs).length === 0) return {};
+  return sheet.evaluate((sheetEl, expectedAttrs) => {
+    const out = {};
+    for (const [key, expected] of Object.entries(expectedAttrs)) {
+      const names = [key, key.startsWith('attr_') ? key.slice(5) : `attr_${key}`];
+      const control = names
+        .map((name) => sheetEl.querySelector(`[name="${CSS.escape(name)}"]`))
+        .find(Boolean);
+      out[key] = {
+        expected,
+        found: Boolean(control),
+        name: control?.getAttribute('name') ?? '',
+        value: control && 'value' in control ? control.value : '',
+        valueAttribute: control?.getAttribute('value') ?? '',
+        checked: control && 'checked' in control ? Boolean(control.checked) : null,
+        checkedAttribute: control?.getAttribute('checked') ?? null,
+      };
+    }
+    return out;
+  }, hiddenAttrs);
+}
+
+async function applyPreviewStateCandidate(page, frame, sheet, candidate) {
+  const sanitized = sanitizeStateCandidate(candidate);
+  if (!sanitized) return null;
+  const result = {
+    ...sanitized,
+    applied: false,
+    skippedReason: '',
+    hiddenStateBefore: await collectHiddenState(sheet, sanitized.hiddenAttrs),
+    hiddenStateAfter: {},
+  };
+
+  if (!sanitized.actionName || sanitized.actionName === 'initial') {
+    result.skippedReason = 'initial-state';
+    result.hiddenStateAfter = result.hiddenStateBefore;
+    return result;
+  }
+
+  const button = frame.locator(`button[name="${cssAttrValue(sanitized.actionName)}"]`).first();
+  const count = await button.count();
+  if (count === 0) {
+    result.skippedReason = 'action-button-not-found';
+    result.hiddenStateAfter = result.hiddenStateBefore;
+    return result;
+  }
+
+  try {
+    await button.scrollIntoViewIfNeeded({ timeout: 5000 });
+    await button.click({ timeout: 10000 });
+    await page.waitForTimeout(350);
+    result.applied = true;
+  } catch (err) {
+    result.skippedReason = `click-failed: ${err instanceof Error ? err.message : String(err)}`;
+  }
+  result.hiddenStateAfter = await collectHiddenState(sheet, sanitized.hiddenAttrs);
+  return result;
+}
+
+async function capturePreview(page, outFile, stateCandidate) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setPreviewRenderMode('iframe');
@@ -157,8 +251,11 @@ async function capturePreview(page, outFile) {
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
+  const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);
   await sheet.screenshot({ path: outFile });
-  return sheet.evaluate(summarizeSheetElement);
+  const summary = await sheet.evaluate(summarizeSheetElement);
+  summary.stateCandidate = stateCandidateResult;
+  return summary;
 }
 
 async function captureEdit(page, outFile) {
@@ -273,11 +370,11 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('## Summary');
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | HTML bytes | CSS bytes | Translation bytes | Internal ids stripped | Preview size | Edit size | Roll buttons | Blocking warnings |');
-  lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |');
+  lines.push('| Fixture | Status | Blocks | HTML bytes | CSS bytes | Translation bytes | Internal ids stripped | Preview size | Preview state | Edit size | Roll buttons | Blocking warnings |');
+  lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | ---: | --- |');
   for (const item of report.fixtures) {
     lines.push(
-      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? 0} | ${item.emitBytes.html} | ${item.emitBytes.css} | ${item.emitBytes.translation} | ${item.removedInternalBlockIds ?? 0} | ${fmtRect(item.previewDom?.rect)} | ${fmtRect(item.editDom?.rect)} | ${item.previewDom?.rollButtonCount ?? 0}/${item.editDom?.rollButtonCount ?? 0} | ${item.blockingWarnings.join(', ') || 'none'} |`,
+      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? 0} | ${item.emitBytes.html} | ${item.emitBytes.css} | ${item.emitBytes.translation} | ${item.removedInternalBlockIds ?? 0} | ${fmtRect(item.previewDom?.rect)} | ${fmtStateCandidate(item.previewDom?.stateCandidate)} | ${fmtRect(item.editDom?.rect)} | ${item.previewDom?.rollButtonCount ?? 0}/${item.editDom?.rollButtonCount ?? 0} | ${item.blockingWarnings.join(', ') || 'none'} |`,
     );
   }
   lines.push('');
@@ -291,6 +388,7 @@ function renderMarkdown(report) {
   lines.push('## Scope');
   lines.push('');
   lines.push('- Proves local import -> emit -> payload package generation for selected ignored fixtures only.');
+  lines.push('- Optional `--state-map` changes only the local preview screenshot state before capture. It does not mutate exported payloads or the edit screenshot.');
   lines.push('- Does not prove actual Roll20 visual parity or all-sheet support.');
   return `${lines.join('\n')}\n`;
 }
@@ -298,6 +396,18 @@ function renderMarkdown(report) {
 function fmtRect(rect) {
   if (!rect) return '';
   return `${rect.width}x${rect.height}`;
+}
+
+function fmtStateCandidate(candidate) {
+  if (!candidate) return 'initial';
+  const action = candidate.actionName || 'initial';
+  if (!candidate.applied && action === 'initial') return 'initial';
+  if (candidate.skippedReason) return `${action} SKIP:${candidate.skippedReason}`;
+  if (!candidate.applied) return `${action} SKIP`;
+  const attrs = Object.entries(candidate.hiddenStateAfter ?? {})
+    .map(([key, state]) => `${key}=${state.valueAttribute || state.value || state.checkedAttribute || state.checked || ''}`)
+    .join(', ');
+  return `${action} APPLIED${attrs ? ` (${attrs})` : ''}`;
 }
 
 async function main() {
@@ -308,6 +418,7 @@ async function main() {
   if (fixtures.length === 0) {
     throw new Error(`No fixtures found in ${FIXTURES_DIR}${ONLY ? ` matching ${ONLY}` : ''}`);
   }
+  const stateMap = await loadStateMap();
 
   const server = await startServer();
   const browser = await chromium.launch({ headless: true });
@@ -324,6 +435,7 @@ async function main() {
     runLabel: RUN_LABEL,
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
     reportDir: runDir,
+    stateMapPath: stateMap.path,
     fixtures: [],
     consoleErrors,
     pageErrors,
@@ -396,7 +508,8 @@ async function main() {
         };
         entry.blockingWarnings = blockingExportWarnings({ ...emit, i18n: emit.translation });
         entry.previewScreenshot = path.join(screenshotDir, 'local-preview.png');
-        entry.previewDom = await capturePreview(page, entry.previewScreenshot);
+        entry.previewStateCandidate = sanitizeStateCandidate(stateMap.fixtures[fixture.id]);
+        entry.previewDom = await capturePreview(page, entry.previewScreenshot, entry.previewStateCandidate);
         entry.editScreenshot = path.join(screenshotDir, 'local-edit.png');
         entry.editDom = await captureEdit(page, entry.editScreenshot);
         entry.pass =
