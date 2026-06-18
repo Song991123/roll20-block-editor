@@ -15,12 +15,13 @@ Every agent must do this before changing code or claiming status. `AGENTS.md` is
 5. Read `docs/PROJECT_STRUCTURE.md`.
 6. Read `docs/operations/35_agent_progress_log.md`.
 7. Read `docs/operations/36_public_portfolio_and_copyright_rules.md`.
-8. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-9. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
-10. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-11. Check `git status --short --branch`.
-12. Check for unnecessary local dev servers before starting another one.
-13. Update `docs/qa/31_active_todo.md` after each coherent work batch.
+8. Read `docs/operations/37_roll20_actual_verification.md` for Roll20 actual-screen checks.
+9. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
+11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+12. Check `git status --short --branch`.
+13. Check for unnecessary local dev servers before starting another one.
+14. Update `docs/qa/31_active_todo.md` after each coherent work batch.
 
 ## 0.1 Source Safety
 
@@ -114,6 +115,10 @@ For preview/parity work, also run the relevant fixture/report script and record 
 - Make iframe preview, Shadow preview, and EditCanvas share the same Roll20 baseline/runtime/layer CSS conditions.
 - Inspect the actual Roll20 editor when authenticated access is available.
 - Verify the GitHub Pages deployment after push when the change affects deployed behavior.
+- Split Roll20 actual-screen verification into two tracks:
+  - Existing solo rooms are read-only observation targets.
+  - Generated sheet upload/apply checks must use Custom Sheet Sandbox first, or a newly-created test room if sandbox is insufficient.
+- Do not modify existing real rooms, characters, settings, chat, handouts, macros, or sheet code unless the user explicitly authorizes that exact edit.
 
 ## 4. Visual Comparison Pipeline
 

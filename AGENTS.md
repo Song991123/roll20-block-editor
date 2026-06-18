@@ -11,11 +11,12 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 5. Read `docs/PROJECT_STRUCTURE.md`.
 6. Read `docs/operations/35_agent_progress_log.md`.
 7. Read `docs/operations/36_public_portfolio_and_copyright_rules.md`.
-8. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-9. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
-10. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-11. Run `git status --short --branch`.
-12. Check for unnecessary local dev servers before starting another one.
+8. For Roll20 actual-screen verification, read `docs/operations/37_roll20_actual_verification.md`.
+9. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
+11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+12. Run `git status --short --branch`.
+13. Check for unnecessary local dev servers before starting another one.
 
 ## Non-Negotiable Rules
 
@@ -29,6 +30,8 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Keep README as a Korean portfolio landing page: visual first, compact cards, details linked out.
 - Do not commit real or derived Roll20 sheet assets, public examples, local fixtures, generated reports, source screenshots, or third-party reference images.
 - Commit only from the active Next/React worktree (`web-push-main/`). Confirm with `git rev-parse --show-toplevel` before committing.
+- Roll20 actual-screen verification has two tracks: read-only observation of existing solo rooms, and write/apply checks only in Custom Sheet Sandbox or a newly-created test room.
+- Existing Roll20 rooms are observation-only unless the user explicitly authorizes a specific edit in that specific room.
 
 ## Protected Source Folders
 

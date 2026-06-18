@@ -10,6 +10,7 @@ This index maps the project documentation set.
 | --- | --- |
 | `docs/operations/33_working_rules_and_requirements.md` | Current operating rules and product requirements. |
 | `docs/operations/36_public_portfolio_and_copyright_rules.md` | Public README, copyright-safe assets, and commit boundary rules. |
+| `docs/operations/37_roll20_actual_verification.md` | Roll20 real-screen verification workflow, sandbox/test-room policy, and evidence boundary. |
 | `docs/qa/31_active_todo.md` | Live TODO board. Do not claim work is done if this still marks it TODO/VERIFY. |
 | `docs/PROJECT_STRUCTURE.md` | Folder map and organization rules. |
 | `docs/ux/32_dom_layer_editing_plan.md` | DOM/layer/Figma-like edit-mode plan. |

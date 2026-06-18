@@ -43,6 +43,7 @@ This file explains where things should live. It is intentionally conservative: d
 | `reports/visual-reference-inventory/` | Reference image inventory. |
 | `reports/visual-fixture-render/` | Standalone fixture HTML render evidence. |
 | `reports/visual-fixture-diff/` | Browser screenshot/pixel-diff diagnostics. |
+| `reports/roll20-actual-compare/` | Local-only evidence for Roll20 room observation, sandbox upload checks, and preview/edit comparison. Never commit generated contents. |
 
 ## Current Organization Rules
 

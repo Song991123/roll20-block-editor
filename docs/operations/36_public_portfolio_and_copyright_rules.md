@@ -21,8 +21,10 @@ This repo may be public while the product is still stabilizing. Treat the public
 - Real sheet verification belongs in ignored local folders only:
   - `test-fixtures/`
   - `reports/<pipeline>/`
+  - `reports/roll20-actual-compare/`
   - `.tmp/`
   - `docs/portfolio/private/`
+- Roll20 room screenshots, sandbox screenshots, exported custom sheet zips, and room/sheet names are verification evidence, not public assets.
 - Public examples must be synthetic and copyright-safe. `public/examples/` is ignored until such examples are intentionally created.
 - If the project later becomes private, this rule can be revisited, but public branches should still avoid redistributing third-party sheet assets.
 

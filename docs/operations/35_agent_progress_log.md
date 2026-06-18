@@ -44,12 +44,21 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 ## Next Development Sequence
 
-1. Preview/edit screenshot comparison for the same imported fixture.
-2. Asset loading parity: classify or cache external image resources that return 403 in browser fixtures.
-3. Layer panel explicit before/after/inside drop zones.
-4. Absolute positioning inside frames/groups with a clear UX mode.
-5. Worker JS separate workspace plan and first source-preserving implementation slice.
-6. Create a copyright-safe synthetic public example before re-enabling the sample loader.
+1. Local preview/edit screenshot baseline for a selected ignored fixture.
+2. Roll20 Room View Check: observe existing solo rooms only; no edits.
+3. Roll20 Custom Sheet Upload Check: use Custom Sheet Sandbox first, or a new test room if sandbox is insufficient.
+4. Asset loading parity: classify or cache external image resources that return 403 in browser fixtures.
+5. Layer panel explicit before/after/inside drop zones.
+6. Absolute positioning inside frames/groups with a clear UX mode.
+7. Worker JS separate workspace plan and first source-preserving implementation slice.
+8. Create a copyright-safe synthetic public example before re-enabling the sample loader.
+
+## 2026-06-18 Roll20 Actual Verification Setup
+
+- Added `docs/operations/37_roll20_actual_verification.md` as the source of truth for solo-room observation, sandbox/test-room upload checks, and local-only evidence.
+- Chrome Roll20 reachability was checked at `https://app.roll20.net/campaigns/search`; the page was reachable in a logged-in state.
+- No existing Roll20 room was inspected in detail, edited, or modified.
+- Created `scripts/roll20_actual_compare_manifest.mjs` to generate ignored local report scaffolds under `reports/roll20-actual-compare/`.
 
 ## Reporting Guardrails
 
