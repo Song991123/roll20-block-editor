@@ -162,10 +162,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       var el = nodes[i];
       if (el.type === 'checkbox') {
         el.checked = String(value) === String(el.value || '1') || value === true || value === 1 || value === '1';
+        if (el.checked) el.setAttribute('checked', 'checked');
+        else el.removeAttribute('checked');
       } else if (el.type === 'radio') {
         el.checked = String(el.value) === String(value);
+        if (el.checked) el.setAttribute('checked', 'checked');
+        else el.removeAttribute('checked');
       } else {
-        el.value = value == null ? '' : String(value);
+        var nextValue = value == null ? '' : String(value);
+        el.value = nextValue;
+        el.setAttribute('value', nextValue);
       }
     }
   }
