@@ -78,11 +78,34 @@ This document defines how agents verify that this editor's preview/edit output m
 | `local-baseline/<fixture>/payload/translation.json` | Emitted translation payload, normalized to `{}` when empty. |
 | `local-baseline/<fixture>/payload/sheet.json` | Minimal local verification manifest. |
 | `local-baseline/<fixture>/upload.zip` | Convenience zip containing the payload files. |
+| `actual-screenshot-diff/actual-screenshot-diff-results.md` / `.json` | Local-only screenshot comparison report generated after Roll20 screenshots are placed beside local baseline screenshots. Missing Roll20 screenshots are SKIP, not PASS. |
 
 Passing this local baseline proves the selected fixture can be imported, emitted,
 captured locally, and packaged for Roll20. It does not prove the generated sheet
 matches Roll20 until the sandbox/test-room screenshot and chat/roll smoke are
 captured and compared.
+
+## Screenshot Diff Helper
+
+After a Roll20 sandbox/test-room or solo-room screenshot is captured, save it next
+to the local baseline screenshots using one of these names:
+
+| Path | Meaning |
+| --- | --- |
+| `local-baseline/<fixture>/screenshots/roll20-sandbox.png` | Screenshot from Custom Sheet Sandbox or a new test room. |
+| `local-baseline/<fixture>/screenshots/roll20-room.png` | Read-only screenshot from an existing solo room. |
+| `local-baseline/<fixture>/screenshots/roll20-chat.png` | Rolltemplate/chat screenshot from Roll20. |
+
+Then run:
+
+```bash
+node scripts/roll20_actual_screenshot_diff.mjs reports/roll20-actual-compare/<run-label>
+```
+
+The helper compares local preview screenshots against the actual Roll20
+screenshots with a diagnostic crop search. The result is evidence for
+classification, not an automatic visual parity claim. If a Roll20 screenshot is
+missing, the target stays SKIP and must remain unverified.
 
 ## Chrome Safety
 

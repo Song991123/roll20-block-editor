@@ -1,0 +1,280 @@
+#!/usr/bin/env node
+/**
+ * Compare local baseline screenshots with Roll20 actual-screen screenshots.
+ *
+ * This is a local-only helper for reports/roll20-actual-compare/<run>/.
+ * It never logs into Roll20. Capture Roll20 screenshots manually or with a
+ * browser tool, place them under each fixture's screenshots folder, then run:
+ *
+ *   node scripts/roll20_actual_screenshot_diff.mjs \
+ *     reports/roll20-actual-compare/<run-label>
+ *
+ * Expected optional actual screenshot names per fixture:
+ *   - screenshots/roll20-sandbox.png
+ *   - screenshots/roll20-room.png
+ *   - screenshots/roll20-chat.png
+ *
+ * A missing Roll20 screenshot is reported as SKIP, not PASS.
+ */
+
+import { existsSync } from 'node:fs';
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { chromium } from 'playwright-core';
+
+const args = process.argv.slice(2);
+const RUN_DIR = path.resolve(args[0] ?? 'reports/roll20-actual-compare/latest');
+const BASELINE_DIR = path.join(RUN_DIR, 'local-baseline');
+const OUT_DIR = path.join(RUN_DIR, 'actual-screenshot-diff');
+const THRESHOLD = Number(argOf('--threshold', '60'));
+const SEARCH_STEP = Number(argOf('--search-step', '16'));
+
+function argOf(name, fallback) {
+  const i = args.indexOf(name);
+  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
+}
+
+function fileUrl(file) {
+  return pathToFileURL(path.resolve(file)).href;
+}
+
+async function listFixtureDirs() {
+  const entries = await readdir(BASELINE_DIR, { withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => path.join(BASELINE_DIR, entry.name))
+    .sort((a, b) => path.basename(a).localeCompare(path.basename(b)));
+}
+
+function actualTargets(fixtureDir) {
+  const shots = path.join(fixtureDir, 'screenshots');
+  return [
+    {
+      name: 'sandbox',
+      local: path.join(shots, 'local-preview.png'),
+      actual: path.join(shots, 'roll20-sandbox.png'),
+      purpose: 'Local preview vs Roll20 Custom Sheet Sandbox/test-room initial sheet.',
+    },
+    {
+      name: 'room',
+      local: path.join(shots, 'local-preview.png'),
+      actual: path.join(shots, 'roll20-room.png'),
+      purpose: 'Local preview vs existing solo-room observation.',
+    },
+    {
+      name: 'chat',
+      local: path.join(shots, 'local-preview.png'),
+      actual: path.join(shots, 'roll20-chat.png'),
+      purpose: 'Roll20 chat/rolltemplate screenshot presence marker; visual diff is diagnostic only.',
+    },
+  ];
+}
+
+async function comparePair(page, pair) {
+  return page.evaluate(
+    async ({ localUrl, actualUrl, threshold, searchStep }) => {
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error(`image load failed: ${src}`));
+          image.src = src;
+        });
+      }
+
+      function drawToCanvas(image) {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(image, 0, 0);
+        return { canvas, ctx, data: ctx.getImageData(0, 0, canvas.width, canvas.height) };
+      }
+
+      function compareAt(localData, actualCanvas, crop, compareSize) {
+        const [x, y] = crop;
+        const [w, h] = compareSize;
+        const scratch = document.createElement('canvas');
+        scratch.width = w;
+        scratch.height = h;
+        const ctx = scratch.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(actualCanvas, x, y, w, h, 0, 0, w, h);
+        const actual = ctx.getImageData(0, 0, w, h);
+        let mismatch = 0;
+        let sumSq = 0;
+        let minX = w;
+        let minY = h;
+        let maxX = -1;
+        let maxY = -1;
+        for (let i = 0, p = 0; i < actual.data.length; i += 4, p += 1) {
+          const dr = Math.abs(localData.data[i] - actual.data[i]);
+          const dg = Math.abs(localData.data[i + 1] - actual.data[i + 1]);
+          const db = Math.abs(localData.data[i + 2] - actual.data[i + 2]);
+          const delta = dr + dg + db;
+          sumSq += dr * dr + dg * dg + db * db;
+          if (delta > threshold) {
+            mismatch += 1;
+            const px = p % w;
+            const py = Math.floor(p / w);
+            minX = Math.min(minX, px);
+            minY = Math.min(minY, py);
+            maxX = Math.max(maxX, px);
+            maxY = Math.max(maxY, py);
+          }
+        }
+        return {
+          crop: [x, y, w, h],
+          mismatchPixels: mismatch,
+          totalPixels: w * h,
+          mismatchRatio: Number((mismatch / (w * h)).toFixed(6)),
+          rmsRgb: Number(Math.sqrt(sumSq / (w * h * 3)).toFixed(3)),
+          bounds: mismatch ? [minX, minY, maxX - minX + 1, maxY - minY + 1] : null,
+        };
+      }
+
+      const [localImage, actualImage] = await Promise.all([loadImage(localUrl), loadImage(actualUrl)]);
+      const local = drawToCanvas(localImage);
+      const actual = drawToCanvas(actualImage);
+      const w = Math.min(local.canvas.width, actual.canvas.width);
+      const h = Math.min(local.canvas.height, actual.canvas.height);
+      const localScratch = document.createElement('canvas');
+      localScratch.width = w;
+      localScratch.height = h;
+      const localCtx = localScratch.getContext('2d', { willReadFrequently: true });
+      localCtx.drawImage(local.canvas, 0, 0, w, h, 0, 0, w, h);
+      const localCropData = localCtx.getImageData(0, 0, w, h);
+
+      const candidates = [];
+      candidates.push({ mode: 'top-left', ...compareAt(localCropData, actual.canvas, [0, 0], [w, h]) });
+      const maxX = Math.max(0, actual.canvas.width - w);
+      const maxY = Math.max(0, actual.canvas.height - h);
+      for (let y = 0; y <= maxY; y += searchStep) {
+        for (let x = 0; x <= maxX; x += searchStep) {
+          if (x === 0 && y === 0) continue;
+          candidates.push({ mode: 'best-crop', ...compareAt(localCropData, actual.canvas, [x, y], [w, h]) });
+        }
+      }
+      const best = candidates.reduce((acc, item) => (!acc || item.mismatchRatio < acc.mismatchRatio ? item : acc), null);
+      return {
+        status: 'DIFFED',
+        localSize: [local.canvas.width, local.canvas.height],
+        actualSize: [actual.canvas.width, actual.canvas.height],
+        comparedSize: [w, h],
+        topLeft: candidates[0],
+        best,
+        note: 'Diagnostic local-vs-Roll20 screenshot diff. Viewport/crop/default state still need human classification before parity claims.',
+      };
+    },
+    {
+      localUrl: fileUrl(pair.local),
+      actualUrl: fileUrl(pair.actual),
+      threshold: THRESHOLD,
+      searchStep: SEARCH_STEP,
+    },
+  );
+}
+
+function renderMarkdown(report) {
+  const lines = [];
+  lines.push('# Roll20 Actual Screenshot Diff');
+  lines.push('');
+  lines.push(`Run dir: \`${report.runDir}\``);
+  lines.push(`Generated: ${report.generatedAt}`);
+  lines.push('');
+  lines.push('This report is local-only and ignored by Git. Do not commit Roll20 screenshots or generated diff reports.');
+  lines.push('');
+  lines.push('## Summary');
+  lines.push('');
+  lines.push('| Fixture | Target | Status | Local size | Actual size | Best mismatch | Best crop | Notes |');
+  lines.push('| --- | --- | --- | --- | --- | ---: | --- | --- |');
+  for (const item of report.items) {
+    const best = item.result?.best;
+    lines.push(`| \`${item.fixtureId}\` | ${item.target} | ${item.status} | ${fmtSize(item.result?.localSize)} | ${fmtSize(item.result?.actualSize)} | ${best ? pct(best.mismatchRatio) : ''} | ${best ? best.crop.join(',') : ''} | ${item.note ?? ''} |`);
+  }
+  lines.push('');
+  lines.push('## How To Add Evidence');
+  lines.push('');
+  lines.push('Place Roll20 screenshots next to the local baseline screenshots:');
+  lines.push('');
+  lines.push('- `local-baseline/<fixture>/screenshots/roll20-sandbox.png`');
+  lines.push('- `local-baseline/<fixture>/screenshots/roll20-room.png`');
+  lines.push('- `local-baseline/<fixture>/screenshots/roll20-chat.png`');
+  lines.push('');
+  lines.push('Then rerun this script. Missing actual screenshots remain SKIP and must not be reported as verified.');
+  lines.push('');
+  lines.push('## Scope');
+  lines.push('');
+  lines.push('- This compares screenshots only. It does not log into Roll20 or mutate rooms.');
+  lines.push('- High mismatch must be classified by wrapper/context, base CSS, default state, translation, worker JS, rolltemplate/chat, asset loading, viewport/crop, or edit overlay.');
+  lines.push('- A low mismatch is still not a Roll20 visual parity claim until default state and crop are reviewed.');
+  return `${lines.join('\n')}\n`;
+}
+
+function fmtSize(size) {
+  return Array.isArray(size) ? `${size[0]}x${size[1]}` : '';
+}
+
+function pct(ratio) {
+  return `${(ratio * 100).toFixed(2)}%`;
+}
+
+async function main() {
+  if (!existsSync(BASELINE_DIR)) {
+    throw new Error(`Missing local baseline dir: ${BASELINE_DIR}`);
+  }
+  await mkdir(OUT_DIR, { recursive: true });
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
+  const report = {
+    generatedAt: new Date().toISOString(),
+    runDir: RUN_DIR,
+    threshold: THRESHOLD,
+    searchStep: SEARCH_STEP,
+    items: [],
+  };
+  try {
+    for (const fixtureDir of await listFixtureDirs()) {
+      const fixtureId = path.basename(fixtureDir);
+      for (const pair of actualTargets(fixtureDir)) {
+        const item = {
+          fixtureId,
+          target: pair.name,
+          purpose: pair.purpose,
+          local: pair.local,
+          actual: pair.actual,
+        };
+        if (!existsSync(pair.local)) {
+          item.status = 'FAIL';
+          item.note = 'missing local baseline screenshot';
+        } else if (!existsSync(pair.actual)) {
+          item.status = 'SKIP';
+          item.note = `missing ${path.basename(pair.actual)}`;
+        } else {
+          item.result = await comparePair(page, pair);
+          item.status = 'DIFFED';
+          item.note = item.result.note;
+        }
+        report.items.push(item);
+        console.log(`${item.status} ${fixtureId} ${pair.name}${item.result?.best ? ` mismatch=${pct(item.result.best.mismatchRatio)}` : ''}`);
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+
+  report.summary = {
+    diffed: report.items.filter((item) => item.status === 'DIFFED').length,
+    skipped: report.items.filter((item) => item.status === 'SKIP').length,
+    failed: report.items.filter((item) => item.status === 'FAIL').length,
+  };
+  await writeFile(path.join(OUT_DIR, 'actual-screenshot-diff-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  await writeFile(path.join(OUT_DIR, 'actual-screenshot-diff-results.md'), renderMarkdown(report), 'utf8');
+  if (report.summary.failed > 0) process.exitCode = 1;
+  console.log(`ROLL20 ACTUAL SCREENSHOT DIFF ${report.summary.failed ? 'FAIL' : 'OK'} ${OUT_DIR}`);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
