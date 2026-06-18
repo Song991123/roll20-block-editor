@@ -123,7 +123,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     const cssForSandbox =
       legacyMode && payload.css ? sanitizeForRoll20Legacy(payload.css).sanitized : payload.css;
     const htmlResult = sanitizeRoll20SandboxHtml(payload.html);
-    const cssResult = sanitizeRoll20SandboxCss(cssForSandbox);
+    const cssResult = sanitizeRoll20SandboxCss(cssForSandbox, { prefixSelectors: false });
     const htmlWarnings = countSandboxWarnings(htmlResult.warnings);
     const cssWarnings = countSandboxWarnings(cssResult.warnings);
     const fatal =

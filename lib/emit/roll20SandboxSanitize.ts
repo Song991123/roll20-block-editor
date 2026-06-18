@@ -36,6 +36,17 @@ export interface Roll20SandboxHtmlResult {
   warnings: Roll20SandboxWarning[];
 }
 
+export interface Roll20SandboxCssOptions {
+  /**
+   * Older settings-preview evidence suggested selector prefixing. The later
+   * actual character iframe probe showed uploaded CSS state selectors can remain
+   * unprefixed while HTML classes are sheet-prefixed. Keep the old behavior as
+   * the default for backwards-compatible diagnostics, and let actual-render
+   * callers opt out explicitly.
+   */
+  prefixSelectors?: boolean;
+}
+
 const ROLL20_DIRECT_URL_PREFIXES = [
   'https://s3.amazonaws.com/files.d20.io',
   'https://files.d20.io',
@@ -82,7 +93,11 @@ const HTML_ALLOWED_TAGS = new Set([
 
 const CLASS_PREFIX_EXCEPTIONS = ['attr_', 'sheet-', 'repeating_', 'roll_', 'act_'];
 
-export function sanitizeRoll20SandboxCss(css: string): Roll20SandboxCssResult {
+export function sanitizeRoll20SandboxCss(
+  css: string,
+  options: Roll20SandboxCssOptions = {},
+): Roll20SandboxCssResult {
+  const prefixSelectors = options.prefixSelectors !== false;
   const warnings: Roll20SandboxWarning[] = [];
   let out = stripMobileCss(css, warnings);
   out = out.replace(/\/\*[\s\S]*?\*\//g, '');
@@ -102,15 +117,17 @@ export function sanitizeRoll20SandboxCss(css: string): Roll20SandboxCssResult {
     return rewritten ? `url("${rewritten}")` : '';
   });
 
-  out = out.replace(/([^{]+){([^}]*)}/g, (full, selectorText: string, body: string) => {
-    const selectors = selectorText.trim();
-    if (!selectors) return full;
-    const prefixed = selectors
-      .split(',')
-      .map((selector) => prefixRoll20Selector(selector.trim(), warnings))
-      .join(',');
-    return full.replace(selectorText, prefixed).replace(body, body);
-  });
+  if (prefixSelectors) {
+    out = out.replace(/([^{]+){([^}]*)}/g, (full, selectorText: string, body: string) => {
+      const selectors = selectorText.trim();
+      if (!selectors) return full;
+      const prefixed = selectors
+        .split(',')
+        .map((selector) => prefixRoll20Selector(selector.trim(), warnings))
+        .join(',');
+      return full.replace(selectorText, prefixed).replace(body, body);
+    });
+  }
 
   return { css: out, warnings };
 }

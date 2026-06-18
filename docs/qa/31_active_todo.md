@@ -221,6 +221,18 @@ source-preserving local preview from actual Roll20 expected-render behavior and
 revise the sandbox sanitize/prefix model using this evidence, then rerun
 full-root candidate and preview/edit regression smokes.
 
+2026-06-19 follow-up: actual-iframe sandbox CSS prefix alignment is implemented.
+`sanitizeRoll20SandboxCss()` now has an explicit `prefixSelectors: false` mode,
+and `buildSheetDoc()` / ExportDialog diagnostics / sandbox sanitize audit use
+that mode for Roll20 actual expected-render evidence. Verification passed:
+`test:roll20-sandbox-sanitize` 6/6, `audit:roll20-sandbox-sanitize`,
+`smoke:roll20-sandbox-preview`, `smoke:preview-edit-visual`, empty/imported
+`smoke:export-dialog`, `lint`, `build`, and evidence guard. The full-root
+candidate smoke still leaves Les-Oublies at `8.52%` best direct mismatch with
+local root about `841px` taller than actual, so visual parity is still TODO.
+Next P0 remains row/table/control geometry and additional actual Roll20
+screenshots for AW2E/YSHY plus trustworthy chat evidence.
+
 | Status | Scope | Evidence |
 | --- | --- | --- |
 | DONE | Full corpus static inventory | `reports/corpus-static-audit/corpus-static-audit.md`; 1434 sheets, 18676 files. |

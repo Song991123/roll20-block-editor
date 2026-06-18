@@ -94,6 +94,16 @@ wrap or beat the current best. The next generic renderer investigation should
 focus on inline-block whitespace/fit behavior and full-height/scroll-stitched
 evidence before any production CSS patch.
 
+2026-06-19 sandbox selector-prefix alignment update: the state visibility
+diagnostic proved that the actual generated character iframe can keep CSS state
+selectors unprefixed while uploaded HTML anchors are `sheet-` prefixed. The
+local actual expected-render path now uses `sanitizeRoll20SandboxCss(css, {
+prefixSelectors: false })` instead of blanket-prefixing CSS selectors. Sanitizer
+tests, sandbox sanitize audit, sandbox preview smoke, preview/edit visual smoke,
+export dialog smokes, lint, build, and the Roll20 evidence guard passed. This
+removes one false local/actual state divergence source; it does not solve the
+remaining full-root geometry/height mismatch.
+
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
 | VERIFY | P0 | Shared preview/edit render path. | `buildSheetDoc` and `buildSheetParts` share baseline/runtime/layer CSS. Latest renderer-regression run after removing the Shadow edit forced `border-box` reset: `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4336` PASS with AW2E 1.75%, Les-Oublies 2.02%, YSHY 1BU 1.01%. The DOM-signature gate continues to cover imported fixture preview root vs edit root, mismatch bounds/quadrants, roll-button diagnostics, edit canvas height diagnostics, app-toolbar occlusion metrics, matching preview/edit screenshot dimensions, edit host/content height delta 0, toolbar overlap 0, visible runtime nodes 0, and DOM signature parity for all 3 prepared fixtures. `scripts/imported_edit_sync_smoke.mjs` additionally proves selected imported input nodes can move through edit mode, land at the same preview position, emit matching absolute CSS, accept imported canvas flow insertion as non-absolute content, preserve imported non-leaf subtrees through layer reorder, and survive edited emit -> re-import -> emit stability checks for 3 fixtures. | Fix remaining fixture-specific visual differences and then compare against actual Roll20 sandbox/test-room output before marking DONE. |

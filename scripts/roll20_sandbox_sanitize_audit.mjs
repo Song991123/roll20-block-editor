@@ -102,7 +102,7 @@ async function auditFixture(fixture, sanitizer) {
   const cssFile = join(fixture.payloadDir, 'sheet.css');
   const html = existsSync(htmlFile) ? readFileSync(htmlFile, 'utf8') : '';
   const css = existsSync(cssFile) ? readFileSync(cssFile, 'utf8') : '';
-  const cssResult = sanitizer.sanitizeRoll20SandboxCss(css);
+  const cssResult = sanitizer.sanitizeRoll20SandboxCss(css, { prefixSelectors: false });
   const htmlResult = sanitizer.sanitizeRoll20SandboxHtml(html);
 
   const issues = [];

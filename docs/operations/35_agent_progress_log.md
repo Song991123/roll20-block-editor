@@ -1009,3 +1009,18 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Interpretation: the old local Roll20 Sandbox expected-render assumption that CSS selectors are blanket-prefixed is incomplete for the actual generated character iframe path. Local preview can therefore hide/show panels differently from actual Roll20.
 - Next P0: separate source-preserving preview from actual Roll20 expected-render behavior, revise the sandbox sanitize/prefix model with this evidence, then rerun full-root candidates, preview/edit visual smoke, and actual Roll20 diff classification.
 - Scope note: this is a root-cause diagnostic for one captured generated fixture. It is not Roll20 visual parity and not all-sheet proof.
+
+## 2026-06-19 Actual-Iframe Sandbox CSS Prefix Alignment
+
+- Added a `prefixSelectors: false` option to `sanitizeRoll20SandboxCss()` for the actual generated character iframe path while keeping the older selector-prefix behavior available for backward-compatible diagnostics.
+- `buildSheetDoc()` now treats `roll20SandboxSanitize` as an actual Roll20 expected-render mode: HTML goes through the sandbox HTML sanitizer from source HTML, while CSS goes through URL/reject/comment cleanup without blanket selector prefixing.
+- Export dialog sandbox diagnostics and `scripts/roll20_sandbox_sanitize_audit.mjs` now use the same actual-iframe CSS mode, so fixture diagnostics report `selector prefix 0` when matching the latest Roll20 evidence.
+- Verification:
+  - `corepack pnpm run test:roll20-sandbox-sanitize` PASS, 6/6.
+  - `corepack pnpm run audit:roll20-sandbox-sanitize -- reports\roll20-actual-compare\2026-06-18-state-map-v1` PASS; Les-Oublies CSS warnings now show URL proxying only, not selector prefixing.
+  - `corepack pnpm run smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1` PASS/SKIP; Les-Oublies best direct candidate remains `normal-actual-root-width-source` at `8.52%`, and `sandbox-actual-root-width-source` now ties it at `8.52%`.
+  - `corepack pnpm run smoke:roll20-sandbox-preview -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --fixture official-roll20-Les-Oublies --report-dir reports/roll20-sandbox-preview-smoke --port 4331` PASS; sandbox preview has `selector prefix 0` behavior and runtime nodes hidden.
+  - `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4336` PASS with AW2E `1.75%`, Les-Oublies `2.02%`, YSHY `1.01%`.
+  - `corepack pnpm run smoke:export-dialog` PASS in empty and imported Les-Oublies modes.
+- Interpretation: the local Sandbox expected preview no longer over-applies CSS state selector prefixing. This removes one false local/actual divergence source, but it does not reduce the remaining full-root height problem by itself.
+- Next P0: continue row/table/control geometry work. Current actual generated Les-Oublies root remains `852x4122`, while direct local candidates are still around `852x4964`; AW2E/YSHY actual screenshots and trustworthy chat screenshots are still missing.

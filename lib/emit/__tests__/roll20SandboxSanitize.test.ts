@@ -37,6 +37,25 @@ function testCssPrefixesSelectors(): void {
   );
 }
 
+function testCssCanPreserveActualIframeSelectors(): void {
+  const r = sanitizeRoll20SandboxCss(`
+    .tabstoggle[value="combat"] ~ div.sheet-combat { display: block; }
+    .character, .skills { display: none; }
+  `, { prefixSelectors: false });
+
+  expectContains(
+    r.css,
+    '.tabstoggle[value="combat"] ~ div.sheet-combat',
+    'preserves actual iframe state selector shape',
+  );
+  expectContains(r.css, '.character, .skills', 'preserves unprefixed hide selectors');
+  expectNotContains(r.css, '.charsheet .tabstoggle', 'does not blanket-prefix selectors');
+  assert(
+    !r.warnings.some((w) => w.code === 'css-selector-prefixed'),
+    'no selector prefix warning when prefixSelectors=false',
+  );
+}
+
 function testCssUrlRewrite(): void {
   const r = sanitizeRoll20SandboxCss(`
     .a { background: url("https://example.com/a.png"); }
@@ -92,6 +111,7 @@ function testHtmlRuntimeAndUrlHandling(): void {
 
 const tests: Array<[string, () => void]> = [
   ['CSS selector prefixing', testCssPrefixesSelectors],
+  ['CSS actual iframe selector preservation', testCssCanPreserveActualIframeSelectors],
   ['CSS URL rewrite', testCssUrlRewrite],
   ['CSS unsafe rejection', testCssRejectsUnsafeTokens],
   ['HTML allow-list/class prefix', testHtmlClassPrefixAndAllowList],

@@ -117,6 +117,11 @@ the actual character iframe behavior is modeled and rechecked.
 - Preview/edit/export should be able to report which layer was applied:
   source-preserving mode, Roll20 sandbox sanitize/prefix, and legacy
   compatibility mode.
+- For the actual generated character iframe path, do not blanket-prefix CSS
+  selectors until another probe proves that Roll20 does so in that path. The
+  current implementation uses `sanitizeRoll20SandboxCss(css, {
+  prefixSelectors: false })` for local actual expected-render diagnostics while
+  preserving the older prefixing behavior as an explicit sanitizer option.
 - Screenshot diff classification must not request more renderer CSS changes
   when the remaining mismatch is missing actual Roll20 screenshot or crop/state
   context.

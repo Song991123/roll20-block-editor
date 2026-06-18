@@ -700,10 +700,10 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
   const sandboxHtml = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxHtml(prefixedHtml).html
+    ? sanitizeRoll20SandboxHtml(userHtml).html
     : prefixedHtml;
   const sandboxCss = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxCss(prefixedCss).css
+    ? sanitizeRoll20SandboxCss(userCss, { prefixSelectors: false }).css
     : prefixedCss;
   const previewCss = legacyCssSanitize
     ? sanitizeForRoll20Legacy(sandboxCss).sanitized
