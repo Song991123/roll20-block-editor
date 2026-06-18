@@ -26,6 +26,7 @@
     "classify:visual-fixtures": "node scripts/classify_visual_fixture_diffs.mjs",
     "smoke:preview-edit-visual": "node scripts/preview_edit_visual_smoke.mjs",
     "smoke:roll20-sandbox-preview": "node scripts/roll20_sandbox_preview_smoke.mjs",
+    "smoke:roll20-sandbox-preview:all": "node scripts/roll20_sandbox_preview_smoke.mjs --all",
     "smoke:edit-flow": "node scripts/edit_flow_browser_smoke.mjs",
     "smoke:export-dialog": "node scripts/export_dialog_browser_smoke.mjs",
     "smoke:imported-edit-sync": "node scripts/imported_edit_sync_smoke.mjs",

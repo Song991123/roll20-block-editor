@@ -786,3 +786,20 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4332`: PASS for AW2E, Les-Oublies, and YSHY 1BU with the same mismatch bounds as before.
   - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: still `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`.
 - Scope note: this is a local Roll20 Sandbox expected-render diagnostic. It does not prove actual Roll20 visual parity; generated Roll20 Sandbox/chat screenshots remain missing until the Chrome upload permission blocker is resolved.
+
+## 2026-06-19 Roll20 Sandbox Expected Preview All-Fixture Gate
+
+- Extended `scripts/roll20_sandbox_preview_smoke.mjs` with `--all` and added package script `corepack pnpm run smoke:roll20-sandbox-preview:all`.
+- The smoke now loops over every prepared ignored visual fixture, writes per-fixture screenshots under the ignored report folder, and separates sanitizer render failures from console/resource warnings.
+- Latest validation:
+  - `node --check scripts\roll20_sandbox_preview_smoke.mjs`: PASS.
+  - `corepack pnpm run lint`: PASS.
+  - `corepack pnpm run build`: PASS.
+  - `corepack pnpm run smoke:roll20-sandbox-preview:all -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-sandbox-preview-smoke --port 4333`: PASS with `Console status=WARN`.
+  - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: still `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`.
+- Fixture evidence from the ignored local report:
+  - AW2E: runtime nodes `2 -> 0`, sandbox bytes `115081`, page errors 0.
+  - Les-Oublies: runtime nodes `4 -> 0`, sandbox bytes `69755`, page errors 0.
+  - YSHY 1BU: runtime nodes `20 -> 0`, sandbox bytes `678830`, page errors 0.
+- Console WARN reasons were Roll20 image-proxy font CORS and source sheet numeric-expression warnings; these remain diagnostics, not sanitizer render failures. Pass `--fail-on-console-issues` when a strict console gate is needed.
+- Scope note: this expands local expected-render coverage only. It still does not prove actual Roll20 visual parity until generated Roll20 Sandbox/chat screenshots are captured and diffed.

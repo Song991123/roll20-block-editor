@@ -22,7 +22,9 @@ function argOf(name, fallback) {
 const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
-const FIXTURE_ID = argOf('--fixture', 'official-roll20-Les-Oublies');
+const RUN_ALL = args.includes('--all');
+const FAIL_ON_CONSOLE_ISSUES = args.includes('--fail-on-console-issues');
+const FIXTURE_ID = argOf('--fixture', RUN_ALL ? '' : 'official-roll20-Les-Oublies');
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/roll20-sandbox-preview-smoke'));
 const PORT = Number(argOf('--port', '4331'));
 
@@ -80,6 +82,24 @@ async function loadFixture(id) {
     css: await readMaybe(path.join(dir, 'source.css')),
     i18n: await readMaybe(path.join(dir, 'source.i18n')),
   };
+}
+
+async function loadFixtures() {
+  if (FIXTURE_ID) return [await loadFixture(FIXTURE_ID)];
+  const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
+  const ids = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  const fixtures = [];
+  for (const id of ids) {
+    const fixture = await loadFixture(id).catch(() => null);
+    if (fixture) fixtures.push(fixture);
+  }
+  if (fixtures.length === 0) {
+    throw new Error(`no fixtures with source.html found under ${FIXTURES_DIR}`);
+  }
+  return fixtures;
 }
 
 async function warmPerfHook(page) {
@@ -159,9 +179,64 @@ async function summarizePreview(page) {
   throw new Error('failed to summarize preview iframe');
 }
 
+async function validateFixture(page, fixture) {
+  const checks = {};
+  const failures = [];
+  checks.importedFixture = await importFixture(page, fixture);
+  if ((checks.importedFixture?.blockCount ?? 0) <= 0) {
+    failures.push(`fixture ${fixture.id} did not import any blocks`);
+    return { fixture: fixture.id, status: 'FAIL', checks, failures };
+  }
+
+  await page.waitForSelector('[data-testid="preview-roll20-sandbox-sanitize-toggle"]', {
+    timeout: 15000,
+  });
+
+  checks.normalPreview = await summarizePreview(page);
+
+  await page.evaluate(() => {
+    window.__perfHook.setRoll20SandboxSanitize(true);
+  });
+  await page.waitForTimeout(800);
+  checks.sandboxPreview = await summarizePreview(page);
+
+  const safeId = fixture.id.replace(/[^a-zA-Z0-9_.-]/g, '_');
+  await page.screenshot({
+    path: path.join(REPORT_DIR, `${safeId}-sandbox-preview-page.png`),
+    fullPage: true,
+  });
+
+  if (checks.normalPreview.sandboxMode !== '0') failures.push('normal preview sandbox marker mismatch');
+  if (checks.sandboxPreview.sandboxMode !== '1') failures.push('sandbox preview marker mismatch');
+  if (
+    checks.normalPreview.rootInnerBytes === checks.sandboxPreview.rootInnerBytes &&
+    checks.normalPreview.userCssBytes === checks.sandboxPreview.userCssBytes &&
+    checks.normalPreview.colgroupCount === checks.sandboxPreview.colgroupCount &&
+    checks.normalPreview.sourceWorkerScriptCount === checks.sandboxPreview.sourceWorkerScriptCount
+  ) {
+    failures.push('sandbox preview did not produce a measurable sanitized render change');
+  }
+  if (checks.sandboxPreview.colgroupCount > checks.normalPreview.colgroupCount) {
+    failures.push('sandbox preview increased stripped table structure count');
+  }
+  if (checks.sandboxPreview.sourceWorkerScriptCount > 0) {
+    failures.push('sandbox preview still has visible source worker scripts in the sheet root');
+  }
+  if (checks.sandboxPreview.rolltemplateCount > 0) {
+    failures.push('sandbox preview still has rolltemplates in the sheet root');
+  }
+
+  return {
+    fixture: fixture.id,
+    status: failures.length > 0 ? 'FAIL' : 'PASS',
+    checks,
+    failures,
+  };
+}
+
 async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
-  const fixture = await loadFixture(FIXTURE_ID);
+  const fixtures = await loadFixtures();
   const server = await startServer();
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1480, height: 960 } });
@@ -177,10 +252,12 @@ async function main() {
 
   const result = {
     status: 'PASS',
+    consoleStatus: 'PASS',
     url: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
-    fixture: fixture.id,
+    fixtureMode: FIXTURE_ID ? 'single' : 'all',
+    fixtureCount: fixtures.length,
     startedAt: new Date().toISOString(),
-    checks: {},
+    fixtures: [],
     consoleIssues,
     pageErrors,
   };
@@ -194,46 +271,16 @@ async function main() {
     });
     await page.goto(result.url, { waitUntil: 'load' });
     await warmPerfHook(page);
-    result.checks.importedFixture = await importFixture(page, fixture);
-    if ((result.checks.importedFixture?.blockCount ?? 0) <= 0) {
-      throw new Error(`fixture ${fixture.id} did not import any blocks`);
+    for (const fixture of fixtures) {
+      result.fixtures.push(await validateFixture(page, fixture));
     }
-
-    await page.waitForSelector('[data-testid="preview-roll20-sandbox-sanitize-toggle"]', {
-      timeout: 15000,
-    });
-
-    result.checks.normalPreview = await summarizePreview(page);
-
-    await page.evaluate(() => {
-      window.__perfHook.setRoll20SandboxSanitize(true);
-    });
-    await page.waitForTimeout(800);
-    result.checks.sandboxPreview = await summarizePreview(page);
-
-    await page.screenshot({ path: path.join(REPORT_DIR, 'sandbox-preview-page.png'), fullPage: true });
-
-    const failures = [];
-    if (result.checks.normalPreview.sandboxMode !== '0') failures.push('normal preview sandbox marker mismatch');
-    if (result.checks.sandboxPreview.sandboxMode !== '1') failures.push('sandbox preview marker mismatch');
-    if (
-      result.checks.normalPreview.rootInnerBytes === result.checks.sandboxPreview.rootInnerBytes &&
-      result.checks.normalPreview.userCssBytes === result.checks.sandboxPreview.userCssBytes &&
-      result.checks.normalPreview.colgroupCount === result.checks.sandboxPreview.colgroupCount &&
-      result.checks.normalPreview.sourceWorkerScriptCount === result.checks.sandboxPreview.sourceWorkerScriptCount
-    ) {
-      failures.push('sandbox preview did not produce a measurable sanitized render change');
+    const failures = result.fixtures.flatMap((item) =>
+      item.status === 'PASS' ? [] : item.failures.map((failure) => `${item.fixture}: ${failure}`),
+    );
+    if (consoleIssues.length > 0) {
+      result.consoleStatus = 'WARN';
+      if (FAIL_ON_CONSOLE_ISSUES) failures.push('console errors/warnings present');
     }
-    if (result.checks.sandboxPreview.colgroupCount > result.checks.normalPreview.colgroupCount) {
-      failures.push('sandbox preview increased stripped table structure count');
-    }
-    if (result.checks.sandboxPreview.sourceWorkerScriptCount > 0) {
-      failures.push('sandbox preview still has visible source worker scripts in the sheet root');
-    }
-    if (result.checks.sandboxPreview.rolltemplateCount > 0) {
-      failures.push('sandbox preview still has rolltemplates in the sheet root');
-    }
-    if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');
 
     if (failures.length > 0) {
@@ -256,15 +303,29 @@ async function main() {
       '# Roll20 Sandbox Preview Smoke',
       '',
       `Status: ${result.status}`,
-      `Fixture: \`${fixture.id}\``,
+      `Fixtures: ${result.fixtureCount}`,
+      `Console status: ${result.consoleStatus}`,
       `URL: \`${result.url}\``,
       '',
       'This proves only the local preview toggle and sanitizer approximation path. It is not actual Roll20 visual parity.',
+      'Console/resource issues are recorded separately because local Roll20 image-proxy CORS or source sheet numeric-expression warnings can be useful diagnostics without invalidating the sanitizer render path.',
+      '',
+      '## Fixture Summary',
+      '',
+      '| Fixture | Status | Normal bytes | Sandbox bytes | Normal runtime | Sandbox runtime |',
+      '| --- | --- | ---: | ---: | ---: | ---: |',
+      ...result.fixtures.map((item) => {
+        const normal = item.checks.normalPreview ?? {};
+        const sandbox = item.checks.sandboxPreview ?? {};
+        const normalRuntime = (normal.rolltemplateCount ?? 0) + (normal.sourceWorkerScriptCount ?? 0);
+        const sandboxRuntime = (sandbox.rolltemplateCount ?? 0) + (sandbox.sourceWorkerScriptCount ?? 0);
+        return `| \`${item.fixture}\` | ${item.status} | ${normal.rootInnerBytes ?? 0} | ${sandbox.rootInnerBytes ?? 0} | ${normalRuntime} | ${sandboxRuntime} |`;
+      }),
       '',
       '## Checks',
       '',
       '```json',
-      JSON.stringify(result.checks, null, 2),
+      JSON.stringify(result.fixtures, null, 2),
       '```',
       '',
       `Console issues: ${consoleIssues.length}`,
