@@ -115,6 +115,42 @@ async function warmPerfHook(page) {
   );
 }
 
+function summarizeResourceIssue(kind, request, response = null) {
+  const url = request.url();
+  let host = '';
+  try {
+    host = new URL(url).host;
+  } catch {
+    host = '';
+  }
+  return {
+    kind,
+    status: response?.status?.() ?? null,
+    resourceType: request.resourceType(),
+    host,
+    url: url.slice(0, 500),
+  };
+}
+
+function summarizeResourceIssues(issues) {
+  const map = new Map();
+  for (const issue of issues || []) {
+    const key = `${issue.kind}|${issue.status ?? ''}|${issue.resourceType}|${issue.host}`;
+    const item = map.get(key) || {
+      kind: issue.kind,
+      status: issue.status,
+      resourceType: issue.resourceType,
+      host: issue.host,
+      count: 0,
+      examples: [],
+    };
+    item.count += 1;
+    if (item.examples.length < 3) item.examples.push(issue.url);
+    map.set(key, item);
+  }
+  return Array.from(map.values()).sort((a, b) => b.count - a.count || String(a.host).localeCompare(String(b.host)));
+}
+
 async function importFixture(page, fixture) {
   return page.evaluate(async ({ html, css, i18n }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -664,6 +700,14 @@ function renderMarkdown(report) {
   lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, and the edited emit survived a re-import/emit cycle.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
+  lines.push('');
+  lines.push('## Resource Diagnostics');
+  lines.push('');
+  lines.push('| Fixture | Resource issues | Top failures |');
+  lines.push('| --- | ---: | --- |');
+  for (const item of report.fixtures) {
+    lines.push(`| \`${item.id}\` | ${sumResourceIssues(item.resourceIssues)} | ${fmtResourceIssues(item.resourceIssues)} |`);
+  }
   return `${lines.join('\n')}\n`;
 }
 
@@ -680,6 +724,19 @@ function fmtEmit(item) {
 function fmtReimport(item) {
   if (!item) return 'reimport missing';
   return isStableReimport(item) ? 'reimport stable' : 'reimport drift';
+}
+
+function sumResourceIssues(items) {
+  if (!Array.isArray(items)) return 0;
+  return items.reduce((sum, item) => sum + (item.count ?? 0), 0);
+}
+
+function fmtResourceIssues(items) {
+  if (!Array.isArray(items) || items.length === 0) return '';
+  return items
+    .slice(0, 3)
+    .map((item) => `${item.count}x ${item.status ?? item.kind} ${item.resourceType} ${item.host || '(local)'}`)
+    .join('<br>');
 }
 
 async function main() {
@@ -704,10 +761,21 @@ async function main() {
       const page = await browser.newPage({ viewport: VIEWPORT });
       const consoleErrors = [];
       const pageErrors = [];
+      const resourceIssues = [];
       page.on('console', (msg) => {
         if (msg.type() === 'error') consoleErrors.push(msg.text().slice(0, 500));
       });
       page.on('pageerror', (err) => pageErrors.push(String(err).slice(0, 500)));
+      page.on('response', (response) => {
+        const status = response.status();
+        if (status >= 400) resourceIssues.push(summarizeResourceIssue('http', response.request(), response));
+      });
+      page.on('requestfailed', (request) => {
+        resourceIssues.push({
+          ...summarizeResourceIssue('failed', request),
+          failure: request.failure()?.errorText ?? '',
+        });
+      });
       await page.addInitScript(() => {
         try {
           window.localStorage.setItem('__perfOn', '1');
@@ -758,6 +826,7 @@ async function main() {
       }
       entry.consoleErrors = consoleErrors;
       entry.pageErrors = pageErrors;
+      entry.resourceIssues = summarizeResourceIssues(resourceIssues);
       report.fixtures.push(entry);
       console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} target=${entry.target?.tag ?? 'none'} edit=${fmtRel(entry.editAfter)} preview=${fmtRel(entry.previewAfter)}`);
       await page.close();

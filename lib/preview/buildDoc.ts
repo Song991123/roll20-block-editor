@@ -667,6 +667,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <html lang="ko"${darkMode ? ' data-theme="dark"' : ''}>
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>시트 미리보기</title>
 <!-- spec 25 + isolation fix: 실 Roll20 sandbox CSS (ground truth) → 우리 보조 baseline → runtime overlay → user CSS -->

@@ -54,6 +54,7 @@ import { roll20ShadowDocumentFontFaceCss } from './roll20_base';
 
 const DRAG_THRESHOLD_PX = 3;
 const ROLL20_FONT_STYLE_ID = 'r20-shadow-document-font-faces';
+const ROLL20_REFERRER_META_ID = 'r20-shadow-referrer-policy';
 
 export interface ShadowMountOptions {
   /** 박을 user HTML — 이미 autoPrefix 처리된 상태 가정. */
@@ -184,6 +185,18 @@ function ensureRoll20DocumentFonts(css: string): void {
   if (!styleEl.parentNode) document.head.appendChild(styleEl);
 }
 
+function ensureRoll20DocumentReferrerPolicy(): void {
+  if (typeof document === 'undefined') return;
+  const existing =
+    document.querySelector<HTMLMetaElement>('meta[name="referrer"]') ??
+    document.getElementById(ROLL20_REFERRER_META_ID);
+  const meta = existing instanceof HTMLMetaElement ? existing : document.createElement('meta');
+  meta.id = ROLL20_REFERRER_META_ID;
+  meta.name = 'referrer';
+  meta.content = 'no-referrer';
+  if (!meta.parentNode) document.head.prepend(meta);
+}
+
 function appendSourceMarkedStyles(shadow: ShadowRoot, css: string): void {
   const marker = /\/\*\s*r20-style-source:([a-z0-9_-]+)\s*\*\//gi;
   let lastIndex = 0;
@@ -216,6 +229,7 @@ export function mountSheetShadow(
   host: HTMLElement,
   opts: ShadowMountOptions,
 ): ShadowMountResult {
+  ensureRoll20DocumentReferrerPolicy();
   ensureRoll20DocumentFonts(opts.css);
   let shadow = host.shadowRoot;
   if (!shadow) {
