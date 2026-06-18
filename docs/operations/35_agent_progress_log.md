@@ -1086,3 +1086,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Interpretation: for the currently uploaded generated Les-Oublies evidence, the remaining Roll20 delta is not caused by source import vs emitted payload drift. It is still the local Roll20 layout context versus actual Roll20 iframe layout context: actual row 0 is `310.6px`, local source/payload preview row 0 is `553px`, and direct candidate row 0 is `554px`.
 - Additional computed evidence: row 0 child computed styles are mostly identical (`width: 380px`, `display: inline-block`, `word-spacing: 0px`, content-box, same margins), but actual Roll20 places child 2 at `x=459.775` while local wraps it to the next line. This points to subpixel inline-block fitting/whitespace/context behavior, not selector loss or payload cleanup.
 - Claim boundary: this is still diagnostic evidence only. Do not ship a generic `word-spacing` or `font-size:0` patch until it improves visual mismatch, because prior candidates fixed geometry but worsened image diff.
+
+## 2026-06-19 Geometry-Fit vs Pixel-Best Candidate Split
+
+- Extended `scripts/roll20_full_root_candidate_smoke.mjs` with more diagnostic-only layout-context candidates:
+  - actual root width `+1px` and `+2px`;
+  - row width `calc(100% + 1px/2px)`;
+  - `white-space: nowrap` with child `.sheet-col { white-space: normal }`;
+  - nowrap plus text input native-height candidate.
+- Added a separate `geometryFit` score and `bestGeometryCandidate` to the full-root smoke report, so future agents do not confuse the visually best candidate with the geometry closest candidate.
+- Latest command: `corepack pnpm run smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result for Les-Oublies:
+  - Pixel best remains `normal-actual-root-width-source`, mismatch `8.58%`, but its geometry is poor: score `1129.775`, root delta `375.375px`, row0/row3 deltas `243.4px/133.8px`.
+  - Geometry best is `sandbox-nowrap-text-input-276-source`, score `8.606`, root delta `-0.656px`, row0/row3 deltas `0.775px/-3.2px`, but mismatch worsens to `9.09%`.
+  - `row-width +1/+2px` and `actual root width +1/+2px` do not remove the wrapping and do not improve mismatch.
+- Interpretation: the remaining issue is not a simple available-width off-by-one. The closest geometry candidate still loses on visual diff, so the next P0 is to inspect pixel mismatch areas/overlay for the geometry-best candidate and confirm whether the actual Roll20 screenshot state/crop/background differs before promoting any generic nowrap/native-input patch.
+- Claim boundary: no production renderer CSS changed in this slice. This only improves diagnostics and prevents a false "geometry fixed = visual parity" claim.

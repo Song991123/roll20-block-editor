@@ -176,6 +176,17 @@ export payload preview are both `850x3771`, both have row 0 at `553px`, and both
 have row 3 at `274px`; actual Roll20 remains `852x4122`, row 0 `310.6px`, row 3
 `140.2px`. This rules out emitted-payload drift as the current Les-Oublies root
 cause and keeps the next P0 on actual Roll20 inline-block fitting/layout context.
+2026-06-19 geometry-fit split follow-up:
+`smoke:roll20-full-root-candidates` now separates pixel best from geometry best.
+Additional diagnostic candidates tested actual root width `+1/+2px`, row width
+`+1/+2px`, `white-space: nowrap`, and nowrap plus text input `27.6px`.
+Les-Oublies pixel best is still `normal-actual-root-width-source` at `8.58%`
+mismatch but with poor geometry score `1129.775`; geometry best is
+`sandbox-nowrap-text-input-276-source` with near-matching root/row geometry
+(`rootDelta -0.656px`, row0 `+0.775px`, row3 `-3.2px`) but worse visual
+mismatch `9.09%`. This means the next P0 is not an off-by-one width patch. The
+geometry-best overlay/crop/state needs inspection before any generic nowrap or
+native-input CSS is promoted to production.
 Follow-up actual layout-context probe:
 Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
 ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.
