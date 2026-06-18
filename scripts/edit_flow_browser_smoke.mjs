@@ -299,6 +299,73 @@ async function main() {
     };
   });
 
+  const c3 = await page.evaluate(
+    ([x, y]) => window.__smokeDrop('text-input', x, y),
+    [sectionInfo.cx + dragDelta.x, sectionInfo.cy + dragDelta.y + 24],
+  );
+  await page.waitForFunction(
+    () => {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return (host?.shadowRoot?.querySelectorAll('div[data-r20-block-id] input[data-r20-block-id]').length ?? 0) >= 2;
+    },
+    null,
+    { timeout: 15000 },
+  );
+
+  const nestedReorder = await page.evaluate(async () => {
+    function childInputIds() {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return Array.from(host?.shadowRoot?.querySelectorAll('div[data-r20-block-id] input[data-r20-block-id]') ?? [])
+        .map((el) => el.getAttribute('data-r20-block-id'))
+        .filter(Boolean);
+    }
+    function emittedOrder(ids) {
+      const html = window.__perfHook.getEmitContent().html;
+      return ids
+        .map((id) => ({ id, index: html.indexOf(`data-r20-block-id="${id}"`) }))
+        .sort((a, b) => a.index - b.index)
+        .map((item) => item.id);
+    }
+    const before = childInputIds();
+    const emittedBefore = emittedOrder(before);
+    const [targetId, movingId] = emittedBefore;
+    const targetRow = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`,
+    );
+    if (!targetRow || !movingId) {
+      return { before, emittedBefore, moved: false, reason: 'missing layer row or second emitted input' };
+    }
+    const rect = targetRow.getBoundingClientRect();
+    const dt = new DataTransfer();
+    dt.setData('application/x-r20-layer-block', movingId);
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      clientX: Math.round(rect.left + rect.width / 2),
+      clientY: Math.round(rect.top + rect.height * 0.12),
+    };
+    const over = new DragEvent('dragover', init);
+    Object.defineProperty(over, 'dataTransfer', { value: dt });
+    targetRow.dispatchEvent(over);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const mode = targetRow.getAttribute('data-r20-layer-drop-mode') || '';
+    const drop = new DragEvent('drop', init);
+    Object.defineProperty(drop, 'dataTransfer', { value: dt });
+    targetRow.dispatchEvent(drop);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const after = childInputIds();
+    return {
+      before,
+      emittedBefore,
+      mode,
+      moved: true,
+      after,
+      emittedAfter: emittedOrder(before),
+      targetId,
+      movingId,
+    };
+  });
+
   const layerDropModes = await page.evaluate(
     async ({ sectionId, inputId }) => {
       const row = document.querySelector(
@@ -306,7 +373,7 @@ async function main() {
       );
       if (!row || !inputId) return { found: Boolean(row), inputId: Boolean(inputId), modes: [] };
       const modes = [];
-      for (const ratio of [0.12, 0.5, 0.88]) {
+      for (const ratio of [0.2, 0.5, 0.8]) {
         const rect = row.getBoundingClientRect();
         const dt = new DataTransfer();
         dt.setData('application/x-r20-layer-block', inputId);
@@ -327,7 +394,7 @@ async function main() {
     { sectionId: sectionInfo.blockId, inputId: dragDropState.nestedInputBlockId },
   );
 
-  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2, state: dragDropState, layerDropModes };
+  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2, c3, state: dragDropState, nestedReorder, layerDropModes };
   results.consoleErrors = consoleErrors;
   results.pageErrors = pageErrors;
 
@@ -349,6 +416,11 @@ async function main() {
     dragDropState.nestedInputFound === true &&
     dragDropState.nestedInputAbsolute === false &&
     dragDropState.rootHtmlBlocks === 1 &&
+    c3.dispatched === true &&
+    nestedReorder.mode === 'before' &&
+    nestedReorder.emittedBefore?.length >= 2 &&
+    nestedReorder.emittedAfter?.[0] === nestedReorder.movingId &&
+    nestedReorder.emittedAfter?.[0] !== nestedReorder.emittedBefore?.[0] &&
     Array.isArray(layerDropModes.modes) &&
     layerDropModes.modes.join(',') === 'before,inside,after' &&
     pageErrors.length === 0;

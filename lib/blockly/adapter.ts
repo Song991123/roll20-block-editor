@@ -512,6 +512,7 @@ class DefaultAdapter implements BlocklyAdapter {
     const moving = ws?.getBlockById(blockId);
     const target = ws?.getBlockById(targetId);
     if (!ws || !moving || !target || moving === target) return false;
+    if (this.moveNestedBlockBefore(moving, target)) return true;
     if ((moving as { getParent?: () => unknown }).getParent?.()) return false;
     if ((target as { getParent?: () => unknown }).getParent?.()) return false;
     const targetXY = target.getRelativeToSurfaceXY();
@@ -525,12 +526,88 @@ class DefaultAdapter implements BlocklyAdapter {
     const moving = ws?.getBlockById(blockId);
     const target = ws?.getBlockById(targetId);
     if (!ws || !moving || !target || moving === target) return false;
+    if (this.moveNestedBlockAfter(moving, target)) return true;
     if ((moving as { getParent?: () => unknown }).getParent?.()) return false;
     if ((target as { getParent?: () => unknown }).getParent?.()) return false;
     const targetXY = target.getRelativeToSurfaceXY();
     const movingXY = moving.getRelativeToSurfaceXY();
     moving.moveBy(targetXY.x - movingXY.x, targetXY.y - movingXY.y + 24);
     return true;
+  }
+
+  private moveNestedBlockBefore(movingRaw: Blockly.Block, targetRaw: Blockly.Block): boolean {
+    const moving = movingRaw as Blockly.Block & {
+      previousConnection?: Blockly.Connection | null;
+      nextConnection?: Blockly.Connection | null;
+      unplug?: (healStack?: boolean) => void;
+      initSvg?: () => void;
+      render?: () => void;
+    };
+    const target = targetRaw as Blockly.Block & {
+      previousConnection?: Blockly.Connection | null;
+      nextConnection?: Blockly.Connection | null;
+      initSvg?: () => void;
+      render?: () => void;
+    };
+    if (!moving.previousConnection || !target.previousConnection) return false;
+    if (!moving.nextConnection || moving.nextConnection.targetBlock()) return false;
+    const insertionConnection = target.previousConnection.targetConnection;
+    if (!insertionConnection) return false;
+    try {
+      moving.unplug?.(true);
+      if (!moving.previousConnection || !target.previousConnection) return false;
+      insertionConnection.connect(moving.previousConnection);
+      if (!moving.nextConnection || moving.nextConnection.isConnected()) return false;
+      moving.nextConnection.connect(target.previousConnection);
+      moving.initSvg?.();
+      moving.render?.();
+      target.initSvg?.();
+      target.render?.();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private moveNestedBlockAfter(movingRaw: Blockly.Block, targetRaw: Blockly.Block): boolean {
+    const moving = movingRaw as Blockly.Block & {
+      previousConnection?: Blockly.Connection | null;
+      nextConnection?: Blockly.Connection | null;
+      unplug?: (healStack?: boolean) => void;
+      initSvg?: () => void;
+      render?: () => void;
+    };
+    const target = targetRaw as Blockly.Block & {
+      nextConnection?: Blockly.Connection | null;
+      initSvg?: () => void;
+      render?: () => void;
+    };
+    if (!moving.previousConnection || !moving.nextConnection || moving.nextConnection.targetBlock()) return false;
+    if (!target.nextConnection) return false;
+    const nextBlock = target.nextConnection.targetBlock() as
+      | (Blockly.Block & {
+          previousConnection?: Blockly.Connection | null;
+          render?: () => void;
+        })
+      | null;
+    try {
+      moving.unplug?.(true);
+      if (!target.nextConnection || target.nextConnection.isConnected()) return false;
+      target.nextConnection.connect(moving.previousConnection);
+      if (nextBlock) {
+        if (!moving.nextConnection || moving.nextConnection.isConnected()) return false;
+        if (!nextBlock.previousConnection) return false;
+        moving.nextConnection.connect(nextBlock.previousConnection);
+      }
+      moving.initSvg?.();
+      moving.render?.();
+      target.initSvg?.();
+      target.render?.();
+      nextBlock?.render?.();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {
