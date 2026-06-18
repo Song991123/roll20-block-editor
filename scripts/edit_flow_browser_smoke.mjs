@@ -288,6 +288,7 @@ async function main() {
       ?.parentElement?.querySelector('.ml-auto');
     return {
       nestedInputFound: Boolean(nestedInput),
+      nestedInputBlockId: nestedInput?.getAttribute('data-r20-block-id') ?? null,
       nestedInputStyle: nestedInput?.getAttribute('style') ?? null,
       nestedInputAbsolute: /position\s*:\s*absolute/i.test(nestedInput?.getAttribute('style') ?? ''),
       statusText: statusEl?.textContent ?? null,
@@ -298,7 +299,35 @@ async function main() {
     };
   });
 
-  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2, state: dragDropState };
+  const layerDropModes = await page.evaluate(
+    async ({ sectionId, inputId }) => {
+      const row = document.querySelector(
+        `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(sectionId)}"]`,
+      );
+      if (!row || !inputId) return { found: Boolean(row), inputId: Boolean(inputId), modes: [] };
+      const modes = [];
+      for (const ratio of [0.12, 0.5, 0.88]) {
+        const rect = row.getBoundingClientRect();
+        const dt = new DataTransfer();
+        dt.setData('application/x-r20-layer-block', inputId);
+        const event = new DragEvent('dragover', {
+          bubbles: true,
+          cancelable: true,
+          clientX: Math.round(rect.left + rect.width / 2),
+          clientY: Math.round(rect.top + rect.height * ratio),
+        });
+        Object.defineProperty(event, 'dataTransfer', { value: dt });
+        row.dispatchEvent(event);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        modes.push(row.getAttribute('data-r20-layer-drop-mode') || '');
+      }
+      row.dispatchEvent(new DragEvent('dragleave', { bubbles: true, cancelable: true }));
+      return { found: true, inputId: true, modes };
+    },
+    { sectionId: sectionInfo.blockId, inputId: dragDropState.nestedInputBlockId },
+  );
+
+  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2, state: dragDropState, layerDropModes };
   results.consoleErrors = consoleErrors;
   results.pageErrors = pageErrors;
 
@@ -320,6 +349,8 @@ async function main() {
     dragDropState.nestedInputFound === true &&
     dragDropState.nestedInputAbsolute === false &&
     dragDropState.rootHtmlBlocks === 1 &&
+    Array.isArray(layerDropModes.modes) &&
+    layerDropModes.modes.join(',') === 'before,inside,after' &&
     pageErrors.length === 0;
 
   results.pass = pass;

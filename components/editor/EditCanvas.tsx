@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { DragEvent as ReactDragEvent } from 'react';
 import { Layers, Search } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
@@ -20,6 +21,7 @@ import {
 import PreviewToolbar from './PreviewToolbar';
 
 const WORKSPACE_ORDER: WorkspaceKey[] = ['html', 'css', 'i18n'];
+type LayerDropMode = 'before' | 'inside' | 'after';
 
 type DragOrigin = {
   blockId: string;
@@ -519,11 +521,15 @@ function EditLayerPanel({
   });
 
   const moveLayer = useCallback(
-    (draggedId: string, targetId: string) => {
+    (draggedId: string, targetId: string, mode: LayerDropMode) => {
       if (draggedId === targetId) return;
       const adapter = getBlocklyAdapter();
-      const nested = adapter.nestBlockInContainer(tab, draggedId, targetId);
-      const moved = nested || adapter.moveBlockBefore(tab, draggedId, targetId);
+      const moved =
+        mode === 'inside'
+          ? adapter.nestBlockInContainer(tab, draggedId, targetId)
+          : mode === 'after'
+            ? adapter.moveBlockAfter(tab, draggedId, targetId)
+            : adapter.moveBlockBefore(tab, draggedId, targetId);
       if (!moved) return;
       bumpStructure(tab, adapter.countBlocks(tab));
       setSelected(draggedId, 'tree');
@@ -609,37 +615,69 @@ const EditLayerRow = memo(function EditLayerRow({
   node: BlockSnapshot;
   selected: boolean;
   onSelect: () => void;
-  onMove: (draggedId: string, targetId: string) => void;
+  onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
 }) {
+  const [dropMode, setDropMode] = useState<LayerDropMode | null>(null);
   const role = getLayerRole(node.type);
+  const pickMode = useCallback(
+    (e: ReactDragEvent<HTMLElement>): LayerDropMode => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5;
+      if (y < 0.28) return 'before';
+      if (y > 0.72) return 'after';
+      return role.canReceiveChildren ? 'inside' : y < 0.5 ? 'before' : 'after';
+    },
+    [role.canReceiveChildren],
+  );
   return (
     <button
       type="button"
       draggable
+      data-testid="edit-layer-row"
+      data-r20-block-id={node.id}
+      data-r20-layer-drop-mode={dropMode ?? ''}
       onClick={onSelect}
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-layer-block', node.id);
         e.dataTransfer.effectAllowed = 'move';
       }}
+      onDragLeave={() => setDropMode(null)}
+      onDragEnd={() => setDropMode(null)}
       onDragOver={(e) => {
         if (!e.dataTransfer.types.includes('application/x-r20-layer-block')) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
+        setDropMode(pickMode(e));
       }}
       onDrop={(e) => {
         const draggedId = e.dataTransfer.getData('application/x-r20-layer-block');
         if (!draggedId) return;
         e.preventDefault();
         e.stopPropagation();
-        onMove(draggedId, node.id);
+        const mode = pickMode(e);
+        setDropMode(null);
+        onMove(draggedId, node.id, mode);
       }}
-      className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs ${
+      className={`relative flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs ${
         selected
           ? 'bg-orange-500/20 text-foreground ring-1 ring-orange-500/60'
           : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
+      } ${
+        dropMode === 'inside'
+          ? 'ring-1 ring-sky-400/80'
+          : dropMode === 'before'
+            ? 'shadow-[inset_0_2px_0_rgba(96,165,250,0.95)]'
+            : dropMode === 'after'
+              ? 'shadow-[inset_0_-2px_0_rgba(96,165,250,0.95)]'
+              : ''
       }`}
       style={{ paddingLeft: `${8 + node.depth * 12}px` }}
     >
+      {dropMode && (
+        <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 rounded bg-sky-500 px-1.5 py-0.5 text-[9px] font-medium text-white">
+          {dropMode}
+        </span>
+      )}
       <span
         aria-hidden
         title={role.canReceiveChildren ? `${role.label} container` : role.label}

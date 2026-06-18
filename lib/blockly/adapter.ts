@@ -150,6 +150,7 @@ export interface BlocklyAdapter {
    */
   moveBlockDown(key: WorkspaceKey, blockId: string): boolean;
   moveBlockBefore(key: WorkspaceKey, blockId: string, targetId: string): boolean;
+  moveBlockAfter(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
@@ -516,6 +517,19 @@ class DefaultAdapter implements BlocklyAdapter {
     const targetXY = target.getRelativeToSurfaceXY();
     const movingXY = moving.getRelativeToSurfaceXY();
     moving.moveBy(targetXY.x - movingXY.x, targetXY.y - movingXY.y - 24);
+    return true;
+  }
+
+  moveBlockAfter(key: WorkspaceKey, blockId: string, targetId: string): boolean {
+    const ws = this.workspaces[key];
+    const moving = ws?.getBlockById(blockId);
+    const target = ws?.getBlockById(targetId);
+    if (!ws || !moving || !target || moving === target) return false;
+    if ((moving as { getParent?: () => unknown }).getParent?.()) return false;
+    if ((target as { getParent?: () => unknown }).getParent?.()) return false;
+    const targetXY = target.getRelativeToSurfaceXY();
+    const movingXY = moving.getRelativeToSurfaceXY();
+    moving.moveBy(targetXY.x - movingXY.x, targetXY.y - movingXY.y + 24);
     return true;
   }
 
