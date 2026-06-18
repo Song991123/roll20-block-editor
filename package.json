@@ -11,6 +11,7 @@
     "smoke:worker": "node scripts/worker_workspace_smoke.mjs",
     "audit:worker": "node scripts/worker_source_audit.mjs",
     "audit:payload": "node scripts/roll20_payload_audit.mjs",
+    "audit:state-selectors": "node scripts/roll20_state_selector_audit.mjs",
     "audit:legacy-export": "node scripts/roll20_legacy_export_audit.mjs",
     "smoke:legacy-preview": "node scripts/roll20_legacy_preview_smoke.mjs",
     "smoke:legacy-fixture-visual": "node scripts/roll20_legacy_fixture_visual_smoke.mjs",
