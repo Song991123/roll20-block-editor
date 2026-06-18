@@ -113,6 +113,7 @@ export interface PerfHook {
   setMainMode: (mode: MainMode) => void;
   setPreviewZoom: (zoom: PreviewZoom) => void;
   setPreviewRenderMode: (mode: PreviewRenderMode) => void;
+  setLegacyCssSanitize: (enabled: boolean) => void;
   appendFriendlyWidgetForEditSmoke: (input?: {
     containerPresetId?: string;
     widgetPresetId?: string;
@@ -411,6 +412,10 @@ function buildHook(): PerfHook {
 
     setPreviewRenderMode: (mode) => {
       usePreviewStore.getState().setRenderMode(mode);
+    },
+
+    setLegacyCssSanitize: (enabled) => {
+      usePreviewStore.getState().setLegacyCssSanitize(enabled);
     },
 
     appendFriendlyWidgetForEditSmoke: ({

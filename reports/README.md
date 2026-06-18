@@ -22,6 +22,7 @@ Keep this README as the only public index unless the user explicitly approves a 
 | `cascade-leak/` | Standalone preview CSS cascade diagnostics. |
 | `live-shadow-cascade/` | Live app preview/edit Shadow DOM cascade diagnostics. |
 | `preview-edit-visual/` | Local screenshot and pixel diagnostics for imported fixture preview root vs edit root. |
+| `legacy-fixture-visual/` | Local imported-fixture modern/legacy preview screenshots and legacy-risk CSS diagnostics. |
 | `rolltemplate-chat-smoke/` | Local preview iframe roll button -> ChatPane rolltemplate rendering smoke. |
 | `roll20-actual-compare/` | Local Roll20 room/sandbox/test-room screenshot comparison and classification notes. |
 
