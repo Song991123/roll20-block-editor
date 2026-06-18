@@ -137,6 +137,15 @@ export default function EditCanvas() {
     return () => ro.disconnect();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (commitTimerRef.current != null) {
+        window.clearTimeout(commitTimerRef.current);
+        commitTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const cleanupDragVisual = useCallback(() => {
     const origin = dragOriginRef.current;
     if (!origin) return;
@@ -309,6 +318,7 @@ export default function EditCanvas() {
         const pending = pendingMoveRef.current;
         if (origin && pending) {
           lockVisualAtDrop(origin, pending);
+          patchEmitCacheAfterMove(pending);
           setOptimisticMoves((moves) => ({
             ...moves,
             [pending.blockId]: {
@@ -342,7 +352,6 @@ export default function EditCanvas() {
     shadowBody?.addEventListener('dragleave', handleNativeDragLeave);
     return () => {
       if (visualRafRef.current != null) window.cancelAnimationFrame(visualRafRef.current);
-      if (commitTimerRef.current != null) window.clearTimeout(commitTimerRef.current);
       cleanupDragVisual();
       pendingMoveRef.current = null;
       dragOriginRef.current = null;

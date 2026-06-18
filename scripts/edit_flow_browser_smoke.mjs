@@ -181,9 +181,16 @@ async function main() {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
     const el = host.shadowRoot.querySelector('div[data-r20-block-id]');
     const rect = el.getBoundingClientRect();
+    const style = el.getAttribute('style') ?? '';
+    const readPx = (prop) => {
+      const match = style.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px`, 'i'));
+      return match ? Math.round(Number.parseFloat(match[1])) : null;
+    };
     return {
       blockId: el.dataset.r20BlockId,
-      style: el.getAttribute('style'),
+      style,
+      left: readPx('left'),
+      top: readPx('top'),
       canDrop: el.getAttribute('data-r20-can-drop'),
       layerRole: el.getAttribute('data-r20-layer-role'),
       cx: Math.round(rect.x + rect.width / 2),
@@ -191,10 +198,71 @@ async function main() {
     };
   });
 
+  // C1b: drag the existing section itself. This catches the rollback-feeling
+  // path: pointer drag should keep the visual position and update emitted HTML
+  // immediately, while the Blockly/CSS model commit follows behind.
+  const dragDelta = { x: 96, y: 40 };
+  await page.mouse.move(sectionInfo.cx, sectionInfo.cy);
+  await page.mouse.down();
+  await page.mouse.move(sectionInfo.cx + 20, sectionInfo.cy + 10, { steps: 2 });
+  await page.mouse.move(sectionInfo.cx + dragDelta.x, sectionInfo.cy + dragDelta.y, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(250);
+
+  const movedSectionInfo = await page.evaluate((blockId) => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const escaped = CSS.escape(blockId);
+    const el = host.shadowRoot.querySelector(`div[data-r20-block-id="${escaped}"]`);
+    const style = el?.getAttribute('style') ?? '';
+    const computed = el ? getComputedStyle(el) : null;
+    const emit = window.__perfHook.getEmitContent();
+    const marker = `data-r20-block-id="${blockId}"`;
+    const markerIndex = emit.html.indexOf(marker);
+    const tagStart = markerIndex >= 0 ? emit.html.lastIndexOf('<', markerIndex) : -1;
+    const tagEnd = markerIndex >= 0 ? emit.html.indexOf('>', markerIndex) : -1;
+    const emittedTag = tagStart >= 0 && tagEnd > tagStart ? emit.html.slice(tagStart, tagEnd + 1) : '';
+    const readPx = (text, prop) => {
+      const match = text.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px`, 'i'));
+      return match ? Math.round(Number.parseFloat(match[1])) : null;
+    };
+    const readClassRule = () => {
+      const classAttr = emittedTag.match(/\sclass=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+      const classNames = classAttr
+        .split(/\s+/)
+        .filter((name) => name.includes('r20-node'))
+        .flatMap((name) => (name.startsWith('sheet-') ? [name, name.slice('sheet-'.length)] : [name]));
+      for (const className of classNames) {
+        const escapedClass = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const match = emit.css.match(new RegExp(`[^{}]*\\.${escapedClass}[^{}]*\\{([^}]*)\\}`, 'm'));
+        if (match) return match[1];
+      }
+      return '';
+    };
+    const styleAttr = emittedTag.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+    const cssRule = readClassRule();
+    const emittedLeft = readPx(styleAttr, 'left') ?? readPx(cssRule, 'left');
+    const emittedTop = readPx(styleAttr, 'top') ?? readPx(cssRule, 'top');
+    return {
+      style,
+      computedPosition: computed?.position ?? null,
+      computedLeft: computed ? Math.round(Number.parseFloat(computed.left)) : null,
+      computedTop: computed ? Math.round(Number.parseFloat(computed.top)) : null,
+      emittedTag,
+      emittedCssRule: cssRule,
+      left: readPx(style, 'left'),
+      top: readPx(style, 'top'),
+      emittedLeft,
+      emittedTop,
+      emittedHasAbsolute: /position\s*:\s*absolute/i.test(`${styleAttr};${cssRule}`),
+    };
+  }, sectionInfo.blockId);
+
+  await page.screenshot({ path: path.join(REPORT_DIR, 'c1b-section-moved.png') });
+
   // C2: drop 'text-input' with coordinates over the section -> flow nesting.
   const c2 = await page.evaluate(
     ([x, y]) => window.__smokeDrop('text-input', x, y),
-    [sectionInfo.cx, sectionInfo.cy],
+    [sectionInfo.cx + dragDelta.x, sectionInfo.cy + dragDelta.y],
   );
 
   await page.waitForFunction(
@@ -230,7 +298,7 @@ async function main() {
     };
   });
 
-  results.tests.realDrag = { c1, sectionInfo, c2, state: dragDropState };
+  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2, state: dragDropState };
   results.consoleErrors = consoleErrors;
   results.pageErrors = pageErrors;
 
@@ -241,6 +309,14 @@ async function main() {
     results.tests.hookAbsolute.htmlHasAbsoluteWidget === true &&
     c1.dispatched === true &&
     /position\s*:\s*absolute/i.test(sectionInfo.style ?? '') &&
+    movedSectionInfo.computedPosition === 'absolute' &&
+    typeof movedSectionInfo.computedLeft === 'number' &&
+    typeof movedSectionInfo.computedTop === 'number' &&
+    movedSectionInfo.computedLeft > sectionInfo.left + 24 &&
+    movedSectionInfo.computedTop > sectionInfo.top + 16 &&
+    movedSectionInfo.emittedLeft === movedSectionInfo.computedLeft &&
+    movedSectionInfo.emittedTop === movedSectionInfo.computedTop &&
+    movedSectionInfo.emittedHasAbsolute === true &&
     dragDropState.nestedInputFound === true &&
     dragDropState.nestedInputAbsolute === false &&
     dragDropState.rootHtmlBlocks === 1 &&
