@@ -677,3 +677,26 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - YSHY 1BU: preview/edit nodes `6336/6336`, blocks `5820/5820`, sequence hash `0e0258ca/0e0258ca`, mismatch `0.85%`.
   - Visible runtime nodes are 0 for all 3 fixtures.
 - Scope note: this is stronger local evidence that edit mode uses the same rendered sheet structure with overlays outside the root capture. It still does not prove actual Roll20 visual parity.
+
+## 2026-06-19 Roll20 Upload Blocker Recheck + Layer Row UX Slice
+
+- Rechecked the kept Chrome Roll20 verification tab at `https://app.roll20.net/editor`.
+- Sandbox DOM state:
+  - `#sheetHtml`, `#sheetCss`, and `#sheetTranslation` exist.
+  - Visible upload controls are `label.btn.html`, `label.btn.css`, and `label.btn.translation`.
+  - Hidden `#sheetHtml` direct click did not open a usable file chooser.
+  - CDP `DOM.setFileInputFiles` is not allowed by the browser capability and instructs using the file chooser flow instead.
+  - Visible `label.btn.html` did open the chooser, but `fileChooser.setFiles` still failed with `Not allowed`.
+- Current blocker remains Chrome Codex extension local-file access, not missing Roll20 controls or missing payload files.
+- While actual Roll20 upload is blocked, improved edit-layer row affordance:
+  - layer rows now expose `data-r20-layer-role-kind`, `data-r20-can-drop`, and `data-r20-default-drop-mode`;
+  - rows visibly show the role label, `담기 가능` for containers, and default placement mode (`흐름` / `자유`);
+  - drag target badges now use Korean labels (`앞에 넣음`, `안에 넣음`, `뒤에 넣음`) instead of raw `before/inside/after`.
+- `scripts/edit_flow_browser_smoke.mjs` now checks the new layer row affordance attributes/text for the section row.
+- Added package script `corepack pnpm run smoke:edit-flow`.
+- Validation:
+  - `node --check scripts\edit_flow_browser_smoke.mjs`: PASS.
+  - `git diff --check`: PASS with CRLF warnings only.
+  - `corepack pnpm run lint`: PASS.
+  - `corepack pnpm run build`: PASS.
+  - `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/edit-flow-smoke --port 4318`: PASS; the section layer row reported `roleKind=frame`, `canDrop=1`, `defaultDropMode=flow`, and visible text including `틀`, `담기 가능`, and `흐름`.

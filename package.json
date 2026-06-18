@@ -23,6 +23,7 @@
     "verify:roll20-preupload": "node scripts/roll20_preupload_verification.mjs",
     "classify:visual-fixtures": "node scripts/classify_visual_fixture_diffs.mjs",
     "smoke:preview-edit-visual": "node scripts/preview_edit_visual_smoke.mjs",
+    "smoke:edit-flow": "node scripts/edit_flow_browser_smoke.mjs",
     "smoke:export-dialog": "node scripts/export_dialog_browser_smoke.mjs",
     "smoke:imported-edit-sync": "node scripts/imported_edit_sync_smoke.mjs",
     "smoke:imported-edit-sync:strict": "node scripts/imported_edit_sync_smoke.mjs --fail-on-resource-issues true",

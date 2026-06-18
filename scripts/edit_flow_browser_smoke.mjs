@@ -484,6 +484,12 @@ async function main() {
       );
       if (!row || !inputId) return { found: Boolean(row), inputId: Boolean(inputId), modes: [] };
       const modes = [];
+      const attrs = {
+        roleKind: row.getAttribute('data-r20-layer-role-kind') || '',
+        canDrop: row.getAttribute('data-r20-can-drop') || '',
+        defaultDropMode: row.getAttribute('data-r20-default-drop-mode') || '',
+        text: row.textContent?.replace(/\s+/g, ' ').trim() || '',
+      };
       for (const ratio of [0.2, 0.5, 0.8]) {
         const rect = row.getBoundingClientRect();
         const dt = new DataTransfer();
@@ -500,7 +506,7 @@ async function main() {
         modes.push(row.getAttribute('data-r20-layer-drop-mode') || '');
       }
       row.dispatchEvent(new DragEvent('dragleave', { bubbles: true, cancelable: true }));
-      return { found: true, inputId: true, modes };
+      return { found: true, inputId: true, modes, attrs };
     },
     { sectionId: sectionInfo.blockId, inputId: dragDropState.nestedInputBlockId },
   );
@@ -840,6 +846,11 @@ async function main() {
     canvasSiblingInsert.afterNewIndexAfterEmit > canvasSiblingInsert.targetIndexAfterAfterDrop &&
     Array.isArray(layerDropModes.modes) &&
     layerDropModes.modes.join(',') === 'before,inside,after' &&
+    layerDropModes.attrs?.roleKind === 'frame' &&
+    layerDropModes.attrs?.canDrop === '1' &&
+    layerDropModes.attrs?.defaultDropMode === 'flow' &&
+    layerDropModes.attrs?.text?.includes('담기 가능') &&
+    layerDropModes.attrs?.text?.includes('흐름') &&
     nonLeafLayerReorder.mode === 'after' &&
     nonLeafLayerReorder.movingBefore?.childCount >= 1 &&
     nonLeafLayerReorder.movingBefore?.hasNextTarget === true &&

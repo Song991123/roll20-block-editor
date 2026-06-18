@@ -45,7 +45,7 @@ Run scripts from the project root unless noted otherwise.
 | `node scripts/roll20_actual_screenshot_diff.mjs reports/roll20-actual-compare/<label>` | Compare local baseline screenshots against local-only Roll20 screenshots named `roll20-sandbox.png`, `roll20-room.png`, or `roll20-chat.png`. Missing Roll20 screenshots are SKIP, not PASS. |
 | `node scripts/serve_static_dir.mjs <root_dir> [port]` | Serve workspace-owned reports/fixtures over localhost for browser verification. |
 | `node scripts/run_selected_roundtrip.mjs` | Run selected Node-side roundtrip checks. |
-| `node scripts/edit_flow_browser_smoke.mjs --out-dir ./out --report-dir reports/edit-flow-smoke` | Headless-browser smoke for the flow drop slice: perf-hook append paths plus real dragover/drop DragEvents on the edit canvas. Needs `corepack pnpm run build` first and a playwright chromium-headless-shell install. |
+| `corepack pnpm run smoke:edit-flow -- --out-dir ./out --report-dir reports/edit-flow-smoke` | Headless-browser smoke for the flow drop slice: perf-hook append paths plus real dragover/drop DragEvents on the edit canvas. Needs `corepack pnpm run build` first and a playwright chromium-headless-shell install. |
 | `node scripts/browser_roundtrip_smoke.mjs --out-dir ./out --report-dir reports/roundtrip-browser [--only <fixtureId>]` | Browser L2 roundtrip: importSheet -> emit -> re-import -> compare (block ids stripped) over `test-fixtures/visual/*`. Same build/browser prerequisites as the edit-flow smoke. |
 
 ## Output Rules

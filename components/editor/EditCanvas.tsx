@@ -601,7 +601,7 @@ function EditLayerPanel({
   const virtualizer = useVirtualizer({
     count: filtered.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 30,
+    estimateSize: () => 42,
     overscan: 10,
   });
 
@@ -720,7 +720,11 @@ const EditLayerRow = memo(function EditLayerRow({
       draggable
       data-testid="edit-layer-row"
       data-r20-block-id={node.id}
+      data-r20-layer-role-kind={role.kind}
+      data-r20-can-drop={role.canReceiveChildren ? '1' : '0'}
+      data-r20-default-drop-mode={role.defaultDropMode}
       data-r20-layer-drop-mode={dropMode ?? ''}
+      aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
       onClick={onSelect}
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-layer-block', node.id);
@@ -743,7 +747,7 @@ const EditLayerRow = memo(function EditLayerRow({
         setDropMode(null);
         onMove(draggedId, node.id, mode);
       }}
-      className={`relative flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs ${
+      className={`relative flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs ${
         selected
           ? 'bg-orange-500/20 text-foreground ring-1 ring-orange-500/60'
           : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
@@ -760,7 +764,7 @@ const EditLayerRow = memo(function EditLayerRow({
     >
       {dropMode && (
         <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 rounded bg-sky-500 px-1.5 py-0.5 text-[9px] font-medium text-white">
-          {dropMode}
+          {formatDropModeLabel(dropMode)}
         </span>
       )}
       <span
@@ -770,8 +774,27 @@ const EditLayerRow = memo(function EditLayerRow({
       >
         {role.icon}
       </span>
-      <span className="truncate font-mono text-[10.5px]">{node.type}</span>
-      {node.preview && <span className="truncate text-[10px] opacity-70">· {node.preview}</span>}
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate font-mono text-[10.5px]">{node.type}</span>
+          <span className="shrink-0 rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
+            {role.label}
+          </span>
+          {role.canReceiveChildren && (
+            <span className="shrink-0 rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-200">
+              담기 가능
+            </span>
+          )}
+          {role.defaultDropMode !== 'none' && (
+            <span className="shrink-0 rounded border border-border/80 bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
+              {role.defaultDropMode === 'flow' ? '흐름' : '자유'}
+            </span>
+          )}
+        </span>
+        {node.preview && (
+          <span className="block truncate text-[10px] opacity-70">· {node.preview}</span>
+        )}
+      </span>
     </button>
   );
 });
