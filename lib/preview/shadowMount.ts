@@ -295,7 +295,7 @@ export function mountSheetShadow(
   // Roll20 base.css 의 body{} 룰이 정상 매칭되도록. createElement('body') 는
   // HTMLBodyElement 를 반환하지만 shadow 안에서는 일반 flow content 로 동작.
   const container = document.createElement('body');
-  container.className = 'charsheet';
+  container.setAttribute('data-r20-shadow-body', '1');
   container.setAttribute('data-layer', opts.layer ?? 'all');
   if (opts.darkMode) {
     container.setAttribute('data-theme', 'dark');
@@ -304,6 +304,18 @@ export function mountSheetShadow(
     host.removeAttribute('data-theme');
   }
   container.innerHTML = opts.html;
+  // buildSheetParts already emits the real Roll20 .charsheet root. Put layer
+  // state there so Shadow edit mode matches the iframe preview selector shape.
+  const layerRoot =
+    container.querySelector<HTMLElement>('#charsheet-root.charsheet') ??
+    container.querySelector<HTMLElement>('.charactersheet.charsheet') ??
+    container.querySelector<HTMLElement>('.charsheet');
+  layerRoot?.setAttribute('data-layer', opts.layer ?? 'all');
+  // srcdoc preview loads sheet images without the app page as referrer. Match
+  // that in Shadow edit mode so hotlink-sensitive sheet assets resolve the same.
+  container.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+    if (!img.referrerPolicy) img.referrerPolicy = 'no-referrer';
+  });
   shadow.appendChild(container);
   applyLayerRoleAttrs(container, opts.getLayerRoleForBlock);
 

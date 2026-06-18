@@ -39,6 +39,7 @@ This file explains where things should live. It is intentionally conservative: d
 | `reports/roundtrip-node/` | Node-side import/emit roundtrip diagnostics. |
 | `reports/roundtrip-browser/` | Browser-side import/emit roundtrip diagnostics. |
 | `reports/edit-flow-smoke/` | Browser evidence for edit-mode drag/drop nesting behavior. |
+| `reports/imported-edit-sync/` | Browser evidence for imported fixture edit drag, preview sync, and emitted position data. |
 | `reports/mapping-fidelity/` | Attribute and block mapping fidelity evidence. |
 | `reports/visual-reference-inventory/` | Reference image inventory. |
 | `reports/visual-fixture-render/` | Standalone fixture HTML render evidence. |

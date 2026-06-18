@@ -340,7 +340,7 @@ export default function EditCanvas() {
     });
 
     setShadowSelectedRef.current = mounted.setSelected;
-    const shadowBody = mounted.shadow.querySelector<HTMLElement>('body.charsheet');
+    const shadowBody = mounted.shadow.querySelector<HTMLElement>('body[data-r20-shadow-body], body.charsheet');
     host.addEventListener('dragover', handleNativeDragOver);
     host.addEventListener('drop', handleNativeDrop);
     host.addEventListener('dragleave', handleNativeDragLeave);
@@ -877,8 +877,10 @@ function htmlOrCssHasPosition(
   const style = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
   if (parseCssPx(style, 'left') === left && parseCssPx(style, 'top') === top) return true;
   const className = designClassForBlock(blockId);
-  if (!tagHasClass(tag.text, className)) return false;
-  const declarations = readCssRuleDeclarations(css, className);
+  if (!tagHasClass(tag.text, className) && !tagHasClass(tag.text, `sheet-${className}`)) return false;
+  const declarations =
+    readCssRuleDeclarations(css, className) ||
+    readCssRuleDeclarations(css, `sheet-${className}`);
   return parseCssPx(declarations, 'left') === left && parseCssPx(declarations, 'top') === top;
 }
 

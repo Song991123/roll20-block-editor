@@ -14,6 +14,7 @@ Keep this README as the only public index unless the user explicitly approves a 
 | `roundtrip-node/` | Node-side import/emit diagnostics for selected local fixtures. |
 | `roundtrip-browser/` | Browser-side import/emit roundtrip diagnostics. |
 | `edit-flow-smoke/` | Browser evidence for edit-mode drag/drop behavior. |
+| `imported-edit-sync/` | Local browser smoke for imported fixture object drag, edit/preview sync, and emitted position data. |
 | `mapping-fidelity/` | Source-vs-emit token audits for selected private fixtures. |
 | `visual-reference-inventory/` | Local reference image inventory. |
 | `visual-fixture-render/` | Standalone fixture HTML render output. |
