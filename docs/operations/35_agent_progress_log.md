@@ -936,3 +936,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest command: `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - Latest result still selects Les-Oublies `sandbox-actual-root-width-no-state` with CSS mismatch `21.49%` and native mismatch `21.55%`, but `.sheet-2colrow`, `.sheet-col`, and `img` actual entries are now explicitly labeled `visibleTop-fallback (partial)`.
 - Correction for future agents: do not treat the fallback `.sheet-2colrow=1` / `.sheet-col=2` counts as Roll20 truth. A later read-only Chrome frameLocator check saw the generated Roll20 iframe expose `.sheet-2colrow=4` and `.sheet-col=15`. The remaining proven clue is root height/geometry mismatch; collect fresh selected-selector geometry and full-height/scroll-stitched root evidence before changing generic renderer CSS.
+
+## 2026-06-19 Fresh Roll20 Iframe Geometry Probe
+
+- Used the logged-in Chrome Roll20 editor tab for the dedicated verification sandbox only; did not inspect or modify existing real rooms.
+- CDP `Page.getFrameTree` found the generated character iframe under `/editor/character/21639681/...`; `Page.createIsolatedWorld` plus read-only `Runtime.evaluate` captured fresh selected-selector geometry from inside the iframe.
+- Saved ignored evidence to `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/official-roll20-Les-Oublies-computed-styles.json`.
+- Actual Roll20 facts from the fresh probe: state `sheetTab=combat` / `sheetTabForBtn=combat`; root rect `852x4121.575`; `.sheet-2colrow=4`, `.sheet-col=15`, `img=5`, `table=8`, `input=135`.
+- Rerunning `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1` keeps best candidate `sandbox-actual-root-width-no-state` at CSS mismatch `21.49%`, but computed-style score improves from `339` to `147` because selector counts now come from selected probes and match local counts.
+- Updated conclusion: the remaining Les-Oublies actual/local problem is not selector-count loss. It is geometry/height: first `.sheet-2colrow` height `310.6px` actual vs `554px` local, table/input height deltas, and full root height mismatch. Next P0 is full-height/scroll-stitched Roll20 capture plus deeper row/table/control height comparison.
