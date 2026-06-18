@@ -11,6 +11,7 @@
     "smoke:worker": "node scripts/worker_workspace_smoke.mjs",
     "audit:worker": "node scripts/worker_source_audit.mjs",
     "audit:payload": "node scripts/roll20_payload_audit.mjs",
+    "audit:legacy-export": "node scripts/roll20_legacy_export_audit.mjs",
     "smoke:payload-roundtrip": "node scripts/roll20_payload_roundtrip_visual_smoke.mjs"
   },
   "dependencies": {
