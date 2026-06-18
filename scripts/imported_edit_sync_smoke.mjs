@@ -9,6 +9,7 @@
  *   3. Drag one visible imported sheet node with the real pointer path.
  *   4. Verify the same block id moved in edit mode and in preview mode.
  *   5. Verify emitted HTML/CSS contains an absolute position for that block.
+ *   6. Re-import the edited emit and verify the emit is stable after the edit.
  *
  * Scope: local static app only. This does not prove actual Roll20 parity.
  *
@@ -162,25 +163,31 @@ async function chooseEditTarget(page, excludedIds = []) {
           rect.width <= Math.max(32, rootRect.width * 0.75) &&
           rect.height <= Math.max(24, rootRect.height * 0.75);
         const roleScore =
-          role === 'frame' ? 100 :
-          role === 'flow' ? 90 :
-          role === 'media' ? 80 :
-          role === 'text' ? 70 :
-          role === 'action' ? 60 :
-          role === 'control' ? 40 :
-          role === 'table' ? 30 :
+          role === 'control' ? 120 :
+          role === 'action' ? 110 :
+          role === 'media' ? 100 :
+          role === 'text' ? 90 :
+          role === 'other' ? 65 :
+          role === 'frame' ? 45 :
+          role === 'flow' ? 35 :
+          role === 'table' ? 25 :
           10;
         const area = rect.width * rect.height;
+        const nestedBlocks = el.querySelectorAll('[data-r20-block-id]').length;
         const structuralPenalty = /\bsheet-col\b|\bsheet-row\b|\bsheet-section-initiative\b/.test(className)
           ? 70
           : 0;
+        const classlessInlinePenalty = role === 'frame' && el.tagName.toLowerCase() === 'span' && !className.trim()
+          ? 45
+          : 0;
+        const nestedPenalty = Math.min(80, nestedBlocks * 8);
         return {
           blockId,
           tag: el.tagName.toLowerCase(),
           role,
           visible,
           score: visible && !excludedSet.has(blockId)
-            ? roleScore - Math.min(25, area / 20000) - structuralPenalty
+            ? roleScore - Math.min(25, area / 20000) - structuralPenalty - classlessInlinePenalty - nestedPenalty
             : -1000,
           rect: {
             x: Math.round(rect.x),
@@ -199,6 +206,7 @@ async function chooseEditTarget(page, excludedIds = []) {
             y: Math.round(rect.top + rect.height / 2),
           },
           text: (el.textContent || '').trim().slice(0, 80),
+          nestedBlocks,
         };
       })
       .filter((item) => item.visible && item.blockId)
@@ -528,6 +536,79 @@ async function emittedPositionState(page, blockId) {
   }, blockId);
 }
 
+async function reimportCurrentEmit(page) {
+  return page.evaluate(async () => {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const e1 = window.__perfHook.getEmitContent();
+    const r2 = await importLive({
+      html: e1.html,
+      css: e1.css,
+      i18n: e1.i18n,
+    });
+    const e2 = window.__perfHook.getEmitContent();
+    const n1 = stripBlockIds(e1.html);
+    const n2 = stripBlockIds(e2.html);
+    const css1 = canonicalCss(e1.css);
+    const css2 = canonicalCss(e2.css);
+    return {
+      import: r2,
+      emit1: { htmlLen: e1.html.length, cssLen: e1.css.length, i18nLen: e1.i18n.length },
+      emit2: { htmlLen: e2.html.length, cssLen: e2.css.length, i18nLen: e2.i18n.length },
+      stable: {
+        html: n1 === n2,
+        htmlRawWithIds: e1.html === e2.html,
+        css: css1 === css2,
+        cssRaw: e1.css === e2.css,
+        i18n: e1.i18n === e2.i18n,
+        blockCount: r2.blockCount > 0,
+      },
+      firstDiff: {
+        html: n1 === n2 ? null : diffSnippet(n1, n2),
+        css: css1 === css2 ? null : diffSnippet(css1, css2),
+        cssRaw: e1.css === e2.css ? null : diffSnippet(e1.css, e2.css),
+        i18n: e1.i18n === e2.i18n ? null : diffSnippet(e1.i18n, e2.i18n),
+      },
+    };
+
+    async function importLive(input) {
+      window.__perfHook.clearAll();
+      await sleep(700);
+      let last = null;
+      for (let i = 0; i < 40; i += 1) {
+        last = await window.__perfHook.importSheet(input);
+        if (last.blockCount > 0) return last;
+        await sleep(500);
+      }
+      return last;
+    }
+
+    function stripBlockIds(html) {
+      return html.replace(/\s*data-r20-block-id="[^"]*"/g, '');
+    }
+
+    function canonicalCss(css) {
+      return String(css || '')
+        .replace(/\/\*\s*r20-design-css:managed\s*\*\//g, '')
+        .replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/\s+/g, ' ').trim())
+        .replace(/\s+/g, ' ')
+        .replace(/\s*([{}:;,>+~])\s*/g, '$1')
+        .replace(/;}/g, '}')
+        .trim();
+    }
+
+    function diffSnippet(a, b) {
+      const n = Math.min(a.length, b.length);
+      let i = 0;
+      while (i < n && a[i] === b[i]) i += 1;
+      return {
+        index: i,
+        before: a.slice(Math.max(0, i - 80), i + 80),
+        after: b.slice(Math.max(0, i - 80), i + 80),
+      };
+    }
+  });
+}
+
 function closeEnough(a, b, tolerance) {
   return typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) <= tolerance;
 }
@@ -551,6 +632,15 @@ function isSyncedMoveAttempt(entry, pageErrors) {
   );
 }
 
+function isStableReimport(reimport) {
+  return Boolean(
+    reimport?.stable?.html &&
+    reimport?.stable?.css &&
+    reimport?.stable?.i18n &&
+    reimport?.stable?.blockCount,
+  );
+}
+
 function cssPx(value) {
   const n = Number.parseFloat(String(value ?? ''));
   return Number.isFinite(n) ? Math.round(n) : null;
@@ -564,14 +654,14 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Target | Role | Before | Edit after | Preview after | Emitted | Console errors | Page errors |');
+  lines.push('| Fixture | Status | Blocks | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
   lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? ''} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? ''} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
-  lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, and emitted HTML/CSS contained absolute position data.');
+  lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, and the edited emit survived a re-import/emit cycle.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
   return `${lines.join('\n')}\n`;
@@ -585,6 +675,11 @@ function fmtRel(item) {
 function fmtEmit(item) {
   if (!item) return '';
   return item.hasAbsolute ? `${item.left},${item.top}` : 'no absolute';
+}
+
+function fmtReimport(item) {
+  if (!item) return 'reimport missing';
+  return isStableReimport(item) ? 'reimport stable' : 'reimport drift';
 }
 
 async function main() {
@@ -627,7 +722,7 @@ async function main() {
         entry.import = await importFixture(page, fixture);
         entry.attempts = [];
         const excludedIds = [];
-        for (let attemptIndex = 0; attemptIndex < 8; attemptIndex += 1) {
+        for (let attemptIndex = 0; attemptIndex < 24; attemptIndex += 1) {
           const target = await chooseEditTarget(page, excludedIds);
           if (!target) break;
           const attempt = { target };
@@ -656,6 +751,8 @@ async function main() {
         if (!entry.target) throw new Error('No imported node produced a synced editable move');
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-edit.png`) });
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-preview.png`) });
+        entry.reimport = await reimportCurrentEmit(page);
+        entry.pass = entry.pass && isStableReimport(entry.reimport);
       } catch (err) {
         entry.error = String(err?.stack || err).slice(0, 1200);
       }
