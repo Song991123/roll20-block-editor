@@ -1161,3 +1161,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - The combined inline-block whitespace/fit plus input-height diagnostic reaches the best current score, but it is still not a production CSS patch because AW2E/YSHY actual full-root captures are missing.
 - Follow-up verification passed: `node --check scripts\roll20_full_root_candidate_smoke.mjs`, `corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run classify:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - Claim boundary: this narrows the actual Roll20 mismatch to inline-block whitespace/fit behavior plus control-height interaction for Les-Oublies only. Do not claim Roll20 visual parity or all-sheet support.
+
+## 2026-06-19 Missing Actual Evidence Handoff Tightening
+
+- Reconnected to the user's logged-in Chrome Roll20 verification tabs and confirmed the dedicated sandbox settings/editor tabs are still open. Existing real rooms were not modified.
+- Retried the standard file chooser upload flow against the sandbox tool inputs. The chooser path timed out before accepting the AW2E HTML file, matching the known Chrome extension file-upload blocker.
+- Tried a lighter CDP-based inspection path, but deep Roll20 editor DOM/CDP calls timed out repeatedly because the editor page is very large. No new Roll20 actual screenshot was captured in this batch.
+- Updated `scripts/roll20_upload_handoff.mjs`:
+  - `--missing-only` now filters the rendered handoff report to fixtures that still need generated actual or chat evidence.
+  - The report now records current evidence state, visible generated screenshot targets, DPR full-root target, stitch manifest path, stitch/audit/diff/status commands, and a clearer console `visibleEntries` count.
+- Latest command: `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only`.
+  - It writes local-only ignored handoff evidence under `reports\roll20-actual-compare\2026-06-18-state-map-v1\roll20-upload-handoff`.
+  - It lists AW2E and YSHY as missing generated actual + chat evidence, and Les-Oublies as missing chat evidence.
+- Verification boundary: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --require-actual` still fails as expected with `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=1/6`, and `commandGate=NEEDS_ACTION`.
+- Next P0 remains actual Roll20 capture for AW2E/YSHY and trustworthy Roll20 chat screenshots. Do not promote the Les-Oublies diagnostic CSS candidate to production before that cross-fixture evidence exists.

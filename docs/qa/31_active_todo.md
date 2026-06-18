@@ -49,6 +49,21 @@ remove the row wrap and provide most of the improvement. This remains
 diagnostic-only: do not promote `word-spacing`, `nowrap`, or input-height CSS to
 production until repeated actual Roll20 captures across AW2E/YSHY or additional
 fixtures confirm it is a generic Roll20 runtime behavior.
+Follow-up upload/capture handoff update: direct Chrome upload automation was
+retried against the dedicated Roll20 sandbox. The standard file chooser path
+timed out, and heavier editor CDP inspection also timed out on the Roll20 editor
+DOM, so no new actual Roll20 screenshot was captured in this batch. The handoff
+script now supports `--missing-only` and lists exact payload files, screenshot
+targets, stitch manifest path, stitch/audit/diff/status commands, and whether
+generated actual/chat evidence is still missing. Latest command
+`corepack pnpm run handoff:roll20-upload --
+reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only` writes
+local-only ignored handoff evidence and shows 3 visible entries: AW2E and YSHY
+need generated actual + chat evidence, while Les-Oublies still needs chat
+evidence. `corepack pnpm run status:roll20-actual --
+reports\roll20-actual-compare\2026-06-18-state-map-v1 --require-actual`
+correctly fails with `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`,
+`generatedActualScreenshots=1/6`, and `commandGate=NEEDS_ACTION`.
 
 Current Roll20 actual-screen note, 2026-06-19: the older Les-Oublies `18.81%`
 full/viewport sandbox screenshot diff is superseded by the preferred

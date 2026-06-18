@@ -19,7 +19,9 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const [RUN_DIR_ARG, ONLY] = parseArgs(args);
+const positionalArgs = args.filter((arg) => !arg.startsWith('--'));
+const [RUN_DIR_ARG, ONLY] = parseArgs(positionalArgs);
+const MISSING_ONLY = args.includes('--missing-only');
 const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
 
 function parseArgs(rawArgs) {
@@ -55,13 +57,19 @@ async function main() {
     privacy: 'local-only ignored report; do not commit generated evidence',
     blocker:
       'Chrome extension file upload is blocked until Allow access to file URLs is enabled for the Codex extension.',
+    missingOnly: MISSING_ONLY,
     entries,
   };
+
+  const visibleEntries = MISSING_ONLY
+    ? entries.filter((entry) => entry.evidence.needsGeneratedActual || entry.evidence.needsChat)
+    : entries;
+  report.visibleEntries = visibleEntries.length;
 
   await fs.mkdir(outDir, { recursive: true });
   await fs.writeFile(path.join(outDir, 'roll20-upload-handoff.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   await fs.writeFile(path.join(outDir, 'roll20-upload-handoff.md'), renderMarkdown(report), 'utf8');
-  console.log(JSON.stringify({ outDir, runDir, entries: entries.length }, null, 2));
+  console.log(JSON.stringify({ outDir, runDir, entries: entries.length, visibleEntries: report.visibleEntries, missingOnly: MISSING_ONLY }, null, 2));
 }
 
 async function findLatestPreuploadRun() {
@@ -103,15 +111,33 @@ async function buildEntry(runDir, fixtureId) {
     translation: path.join(payload, 'translation.json'),
     zip: path.join(root, 'upload.zip'),
   };
+  const screenshotTargets = {
+    sandbox: withRelative(path.join(screenshots, 'roll20-sandbox.png')),
+    sandboxRoot: withRelative(path.join(screenshots, 'roll20-sandbox-root.png')),
+    sandboxFullRootDpr: withRelative(path.join(screenshots, 'roll20-sandbox-root-full-dpr-corrected.png')),
+    sandboxFullRootDprMeta: withRelative(path.join(screenshots, 'roll20-sandbox-root-full-dpr-corrected.json')),
+    chat: withRelative(path.join(screenshots, 'roll20-chat.png')),
+    room: withRelative(path.join(screenshots, 'roll20-room.png')),
+  };
+  const stitchManifest = withRelative(path.join(screenshots, 'roll20-root-dpr-complete-manifest.json'));
+  const evidence = {
+    hasSandboxViewport: existsSync(screenshotTargets.sandbox.path),
+    hasSandboxRoot: existsSync(screenshotTargets.sandboxRoot.path),
+    hasSandboxFullRootDpr: existsSync(screenshotTargets.sandboxFullRootDpr.path),
+    hasChat: existsSync(screenshotTargets.chat.path),
+    needsGeneratedActual: !existsSync(screenshotTargets.sandboxFullRootDpr.path) && !existsSync(screenshotTargets.sandboxRoot.path) && !existsSync(screenshotTargets.sandbox.path),
+    needsChat: !existsSync(screenshotTargets.chat.path),
+  };
   return {
     fixtureId,
+    evidence,
     files: Object.fromEntries(Object.entries(files).map(([key, file]) => [key, { path: file, relativePath: rel(file), exists: existsSync(file) }])),
-    screenshotTargets: {
-      sandbox: withRelative(path.join(screenshots, 'roll20-sandbox.png')),
-      chat: withRelative(path.join(screenshots, 'roll20-chat.png')),
-      room: withRelative(path.join(screenshots, 'roll20-room.png')),
-    },
+    screenshotTargets,
+    stitchManifest,
+    nextStitchCommand: `corepack pnpm run stitch:roll20-actual-root -- --manifest ${stitchManifest.relativePath} --out ${screenshotTargets.sandboxFullRootDpr.relativePath}`,
+    nextAuditCommand: `corepack pnpm run audit:roll20-root-stitch -- ${path.relative(process.cwd(), runDir)}`,
     nextDiffCommand: `node scripts/roll20_actual_screenshot_diff.mjs ${path.relative(process.cwd(), runDir)}`,
+    nextStatusCommand: `corepack pnpm run status:roll20-actual -- ${path.relative(process.cwd(), runDir)} --require-actual`,
   };
 }
 
@@ -142,16 +168,28 @@ function renderMarkdown(report) {
     '2. Upload `sheet.html` with the `HTML` button.',
     '3. Upload `sheet.css` with the `CSS` button.',
     '4. Upload `translation.json` with the `Translation` button, when present.',
-    '5. Capture the loaded sheet screenshot as `roll20-sandbox.png` beside the local baseline screenshots.',
-    '6. Click a roll button if available and capture chat as `roll20-chat.png`.',
-    '7. Run the screenshot diff command listed below.',
+    '5. Capture the loaded sheet viewport as `roll20-sandbox.png` beside the local baseline screenshots.',
+    '6. Prefer a DPR-corrected full sheet-root segment capture and stitch it to `roll20-sandbox-root-full-dpr-corrected.png`.',
+    '7. Click a roll button if available and capture chat as `roll20-chat.png`.',
+    '8. Run the stitch audit, screenshot diff, and status commands listed below.',
     '',
     '## Payloads',
     '',
   ];
 
-  for (const entry of report.entries) {
+  const visibleEntries = report.missingOnly
+    ? report.entries.filter((entry) => entry.evidence.needsGeneratedActual || entry.evidence.needsChat)
+    : report.entries;
+  if (report.missingOnly) {
+    lines.push(`Missing-only mode: ${visibleEntries.length}/${report.entries.length} fixtures still need generated actual or chat evidence.`, '');
+  }
+
+  for (const entry of visibleEntries) {
     lines.push(`### ${entry.fixtureId}`, '');
+    lines.push('| Evidence | Current |', '| --- | --- |');
+    lines.push(`| generated actual screenshot | ${entry.evidence.needsGeneratedActual ? 'MISSING' : 'present'} |`);
+    lines.push(`| chat screenshot | ${entry.evidence.needsChat ? 'MISSING' : 'present'} |`);
+    lines.push('');
     lines.push('| Artifact | Exists | Path |', '| --- | --- | --- |');
     for (const [name, file] of Object.entries(entry.files)) {
       lines.push(`| ${name} | ${file.exists ? 'yes' : 'NO'} | \`${file.relativePath}\` |`);
@@ -160,7 +198,16 @@ function renderMarkdown(report) {
     for (const [name, target] of Object.entries(entry.screenshotTargets)) {
       lines.push(`| ${name} | \`${target.relativePath}\` |`);
     }
-    lines.push('', `Diff command: \`${entry.nextDiffCommand}\``, '');
+    lines.push('');
+    lines.push(`Stitch manifest: \`${entry.stitchManifest.relativePath}\``);
+    lines.push(`Stitch command: \`${entry.nextStitchCommand}\``);
+    lines.push(`Audit command: \`${entry.nextAuditCommand}\``);
+    lines.push(`Diff command: \`${entry.nextDiffCommand}\``);
+    lines.push(`Status gate: \`${entry.nextStatusCommand}\``);
+    lines.push('');
+  }
+  if (!visibleEntries.length) {
+    lines.push('No missing generated actual/chat evidence for the selected fixtures.', '');
   }
   return `${lines.join('\n')}\n`;
 }
