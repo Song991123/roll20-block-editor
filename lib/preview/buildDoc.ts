@@ -262,6 +262,42 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       });
     });
   }
+  function isRepeatingFieldset(el) {
+    if (!el || el.tagName !== 'FIELDSET') return false;
+    return /(?:^|\s)repeating_[^\\s]+/.test(el.getAttribute('class') || '');
+  }
+  function hasRoll20RepeatingRuntime(el) {
+    var node = el.nextElementSibling;
+    var sawContainer = false;
+    var sawControl = false;
+    while (node) {
+      if (node.classList && node.classList.contains('repcontainer')) sawContainer = true;
+      if (node.classList && node.classList.contains('repcontrol')) sawControl = true;
+      if (sawContainer && sawControl) return true;
+      if (node.tagName === 'FIELDSET' || !(node.classList && (node.classList.contains('repcontainer') || node.classList.contains('repcontrol')))) break;
+      node = node.nextElementSibling;
+    }
+    return false;
+  }
+  function emulateRoll20RepeatingSections() {
+    document.querySelectorAll('fieldset[class^="repeating_"], fieldset[class*=" repeating_"]').forEach(function (fieldset) {
+      if (!isRepeatingFieldset(fieldset) || hasRoll20RepeatingRuntime(fieldset)) return;
+      var container = document.createElement('div');
+      container.className = 'repcontainer';
+      var control = document.createElement('div');
+      control.className = 'repcontrol';
+      var edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'repcontrol_edit';
+      edit.textContent = 'Modify';
+      var add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'repcontrol_add';
+      add.textContent = '+Add';
+      control.append(edit, add);
+      fieldset.after(container, control);
+    });
+  }
   function sheetWorkerGetSectionIDs(section, cb) {
     var safe = String(section || '').replace(/^repeating_/, '');
     var ids = {};
@@ -447,6 +483,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     });
   } catch (e) {}
   applyTranslations();
+  emulateRoll20RepeatingSections();
   installSheetWorkers();
   scheduleResize();
 })();
@@ -612,6 +649,20 @@ function applyTranslationsToHtml(html: string, i18n: string | undefined): string
   return template.innerHTML;
 }
 
+function addRoll20RepeatingRuntimeHtml(html: string): string {
+  if (!html || !/repeating_/.test(html)) return html;
+  const runtime = '<div class="repcontainer"></div><div class="repcontrol"><button type="button" class="repcontrol_edit">Modify</button><button type="button" class="repcontrol_add">+Add</button></div>';
+  return html.replace(/<fieldset\b[^>]*>[\s\S]*?<\/fieldset>/gi, (fieldset, offset, source) => {
+    const startTag = fieldset.match(/^<fieldset\b[^>]*>/i)?.[0] ?? '';
+    if (!/\bclass=(["'])[^"']*\brepeating_[^"']*\1/i.test(startTag)) return fieldset;
+    const after = String(source).slice(offset + fieldset.length);
+    if (/^\s*<div\b[^>]*\bclass=(["'])[^"']*\brepcontainer\b[^"']*\1>\s*<\/div>\s*<div\b[^>]*\bclass=(["'])[^"']*\brepcontrol\b[^"']*\2>/i.test(after)) {
+      return fieldset;
+    }
+    return `${fieldset}${runtime}`;
+  });
+}
+
 
 /**
  * spec 17 §9 — 9 레이어 CSS 필터.
@@ -710,7 +761,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
     : sandboxCss;
 
   const bodyInner = sandboxHtml
-    ? applyTranslationsToHtml(sandboxHtml, opts.i18n)
+    ? addRoll20RepeatingRuntimeHtml(applyTranslationsToHtml(sandboxHtml, opts.i18n))
     : userHtml
       ? ''
       : EMPTY_PLACEHOLDER;
@@ -769,7 +820,9 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
     ? sanitizeForRoll20Legacy(prefixedCss).sanitized
     : prefixedCss;
 
-  const bodyInner = prefixedHtml ? applyTranslationsToHtml(prefixedHtml, opts.i18n) : EMPTY_PLACEHOLDER;
+  const bodyInner = prefixedHtml
+    ? addRoll20RepeatingRuntimeHtml(applyTranslationsToHtml(prefixedHtml, opts.i18n))
+    : EMPTY_PLACEHOLDER;
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
   // layerFilterCss scope = '.charsheet' 로 selector 일관성 유지.

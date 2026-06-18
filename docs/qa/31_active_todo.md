@@ -143,6 +143,17 @@ localized to Roll20 repeating control rows: table 4 rows 1/16 and table 5 rows
 candidate is `86.734px` high, about `49px` extra per row. This is a generic
 repeating-control/runtime CSS investigation target, not a Les-Oublies-specific
 sheet patch. Row 0/3 inline-block wrap remains the other active geometry gap.
+2026-06-19 repeating-runtime follow-up: preview/edit now hide
+`fieldset.repeating_*` prototypes and add Roll20-like `repcontainer` plus
+`repcontrol` (`Modify`, `+Add`) nodes during rendering only; the exported source
+HTML is not mutated. Direct full-root candidate evidence improved root height
+delta from `841.266px` before the repeating work to `375.375px` after the
+runtime emulation. `diagnose:roll20-geometry` now shows table 4/5 height deltas
+are no longer the active large gap; row 0 and row 3 `.sheet-2colrow` wrapping
+remain. Current direct candidate mismatch is `8.58%` and the prior actual
+Roll20 full-root screenshot diff improved from `6.90%` to `6.63%` after a fresh
+local baseline/diff. The classifier still reports `sheet root geometry/height
+differs after full-height capture`, so this is not visual parity.
 Follow-up actual layout-context probe:
 Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
 ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.

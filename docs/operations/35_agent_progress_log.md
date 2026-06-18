@@ -1045,3 +1045,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - Table 4 rows 1/16 and table 5 rows 16/17 are now isolated as Roll20 repeating control `Modify+Add` rows: actual `37.6px`, local `86.734px`, about `49px` extra per row.
 - Interpretation: the big table deltas are no longer a generic table-height mystery. They point to Roll20 repeating control/runtime CSS behavior that local preview/edit does not yet match. This is still not Roll20 visual parity and does not justify a Les-Oublies-specific patch.
 - Next P0: inspect the actual/local DOM/CSS around repeating control rows and implement a generic Roll20 repeating-control rendering fix only if it holds across fixtures; keep row 0/3 inline-block wrapping as the parallel geometry gap.
+
+## 2026-06-19 Roll20 Repeating Runtime Emulation Slice
+
+- Implemented a generic preview/edit render-only Roll20 repeating runtime approximation:
+  - `fieldset.repeating_*` prototypes are hidden in preview runtime CSS to match actual Roll20.
+  - iframe preview bridge adds sibling `div.repcontainer` and `div.repcontrol` controls with `Modify` and `+Add`.
+  - Shadow edit mount applies the same DOM transform after mounting, so edit mode and preview mode do not diverge.
+  - Exported HTML/CSS payloads are not mutated by this render-only transform.
+- Latest direct full-root candidate command:
+  `corepack pnpm run smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Result: Les-Oublies direct local root height delta improved from `841.266px` before the repeating runtime work to `375.375px`; after the transform, table 4/5 are no longer the large geometry deltas in `diagnose:roll20-geometry`.
+- Fresh local baseline plus existing Roll20 full-root screenshot diff now reports Les-Oublies generated sandbox mismatch `6.63%`, improved from the previous `6.90%`.
+- Remaining major gaps: row 0 `DIV.sheet-2colrow` still wraps/places the second column too low (`310.6px` actual vs `554px` local), and row 3 remains too tall (`140.2px` actual vs `274px` local).
+- Claim boundary: this is a generic renderer-parity improvement, not Roll20 visual parity. AW2E/YSHY generated Roll20 full-root captures are still missing, and Les-Oublies still classifies as sheet root geometry/height mismatch after the fresh baseline/diff.

@@ -197,6 +197,36 @@ function ensureRoll20DocumentReferrerPolicy(): void {
   if (!meta.parentNode) document.head.prepend(meta);
 }
 
+function emulateRoll20RepeatingSections(root: ParentNode): void {
+  root.querySelectorAll<HTMLFieldSetElement>('fieldset[class^="repeating_"], fieldset[class*=" repeating_"]').forEach((fieldset) => {
+    if (!/(?:^|\s)repeating_[^\s]+/.test(fieldset.getAttribute('class') || '')) return;
+    let node = fieldset.nextElementSibling;
+    let sawContainer = false;
+    let sawControl = false;
+    while (node) {
+      if (node.classList.contains('repcontainer')) sawContainer = true;
+      if (node.classList.contains('repcontrol')) sawControl = true;
+      if (sawContainer && sawControl) return;
+      if (node.tagName === 'FIELDSET' || !(node.classList.contains('repcontainer') || node.classList.contains('repcontrol'))) break;
+      node = node.nextElementSibling;
+    }
+    const container = document.createElement('div');
+    container.className = 'repcontainer';
+    const control = document.createElement('div');
+    control.className = 'repcontrol';
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'repcontrol_edit';
+    edit.textContent = 'Modify';
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'repcontrol_add';
+    add.textContent = '+Add';
+    control.append(edit, add);
+    fieldset.after(container, control);
+  });
+}
+
 function appendSourceMarkedStyles(shadow: ShadowRoot, css: string): void {
   const marker = /\/\*\s*r20-style-source:([a-z0-9_-]+)\s*\*\//gi;
   let lastIndex = 0;
@@ -326,6 +356,7 @@ export function mountSheetShadow(
     host.removeAttribute('data-theme');
   }
   container.innerHTML = opts.html;
+  emulateRoll20RepeatingSections(container);
   // buildSheetParts already emits the real Roll20 .charsheet root. Put layer
   // state there so Shadow edit mode matches the iframe preview selector shape.
   const layerRoot =
