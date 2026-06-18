@@ -1,0 +1,308 @@
+#!/usr/bin/env node
+/**
+ * Roll button -> chat/rolltemplate browser smoke.
+ *
+ * Imports ignored fixtures through the static app, clicks a real roll button
+ * inside the preview iframe, then verifies that the right-side ChatPane renders
+ * a result card. Prefer a rolltemplate button when a fixture has one.
+ *
+ * Scope: local app runtime only. This does not prove Roll20 actual chat parity.
+ *
+ * Usage:
+ *   node scripts/rolltemplate_chat_smoke.mjs \
+ *     --out-dir ./out --base-path /roll20-block-editor \
+ *     --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke
+ */
+
+import http from 'node:http';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+import { chromium } from 'playwright-core';
+
+const args = process.argv.slice(2);
+function argOf(name, fallback) {
+  const i = args.indexOf(name);
+  return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
+}
+
+const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
+const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
+const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
+const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/rolltemplate-chat-smoke'));
+const ONLY = argOf('--only', '');
+const PORT = Number(argOf('--port', '4196'));
+const VIEWPORT = { width: 2200, height: 1200 };
+
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2',
+  '.txt': 'text/plain',
+  '.ico': 'image/x-icon',
+};
+
+function startServer() {
+  const server = http.createServer(async (req, res) => {
+    try {
+      let url = decodeURIComponent((req.url ?? '/').split('?')[0]);
+      if (url.startsWith(BASE_PATH)) url = url.slice(BASE_PATH.length) || '/';
+      if (url.endsWith('/')) url += 'index.html';
+      const file = path.join(OUT_DIR, path.normalize(url).replace(/^([/\\])+/, ''));
+      if (!file.startsWith(OUT_DIR)) {
+        res.writeHead(403).end();
+        return;
+      }
+      const body = await fs.readFile(file);
+      res.writeHead(200, { 'content-type': MIME[path.extname(file)] ?? 'application/octet-stream' });
+      res.end(body);
+    } catch {
+      res.writeHead(404).end('not found');
+    }
+  });
+  return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)));
+}
+
+async function readMaybe(file) {
+  try {
+    return await fs.readFile(file, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+async function listFixtures() {
+  const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
+  const out = [];
+  for (const ent of entries) {
+    if (!ent.isDirectory()) continue;
+    if (ONLY && ent.name !== ONLY) continue;
+    const dir = path.join(FIXTURES_DIR, ent.name);
+    const html = await readMaybe(path.join(dir, 'source.html'));
+    if (!html) continue;
+    out.push({
+      id: ent.name,
+      html,
+      css: await readMaybe(path.join(dir, 'source.css')),
+      i18n: await readMaybe(path.join(dir, 'source.i18n')),
+    });
+  }
+  return out.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+async function warmPerfHook(page) {
+  await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
+  await page.waitForFunction(
+    async () => {
+      try {
+        const r = await window.__perfHook.importSheet({ html: '<button type="roll" value="1d20">r</button>' });
+        return r.blockCount > 0;
+      } catch {
+        return false;
+      }
+    },
+    null,
+    { timeout: 30000, polling: 1000 },
+  );
+}
+
+async function importFixture(page, fixture) {
+  return page.evaluate(async ({ html, css, i18n }) => {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    window.__perfHook.clearAll();
+    await sleep(700);
+    let last = null;
+    for (let i = 0; i < 40; i += 1) {
+      last = await window.__perfHook.importSheet({ html, css, i18n });
+      if (last.blockCount > 0) return last;
+      await sleep(500);
+    }
+    return last;
+  }, fixture);
+}
+
+async function chooseRollButton(frame) {
+  return frame.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll('button[type="roll"], button.roll'));
+    const rows = buttons.map((el, index) => ({
+      index,
+      name: el.getAttribute('name') || '',
+      value: el.getAttribute('value') || '',
+      label: (el.textContent || '').trim(),
+      visible: (() => {
+        const cs = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        const selfVisible = cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+        const browserVisible =
+          typeof el.checkVisibility === 'function'
+            ? el.checkVisibility({ checkVisibilityCSS: true, checkOpacity: false })
+            : true;
+        return selfVisible && browserVisible;
+      })(),
+    }));
+    const visible = rows.filter((row) => row.visible && row.value.trim());
+    const template = visible.find((row) => /&\{template:/i.test(row.value));
+    const chosen = template || visible[0] || rows[0] || null;
+    if (chosen) {
+      buttons.forEach((el) => el.removeAttribute('data-r20-chat-smoke-target'));
+      buttons[chosen.index]?.setAttribute('data-r20-chat-smoke-target', '1');
+    }
+    return chosen;
+  });
+}
+
+async function clickRollAndReadChat(page, fixtureId) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setPreviewRenderMode('iframe');
+    window.__perfHook.setMainMode('preview');
+  });
+  const iframe = page.locator('[data-testid="preview-iframe"]').first();
+  await iframe.waitFor({ state: 'visible', timeout: 30000 });
+  const iframeHandle = await iframe.elementHandle();
+  const frame = await iframeHandle?.contentFrame();
+  if (!frame) throw new Error('preview iframe contentFrame unavailable');
+  await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
+  const chosen = await chooseRollButton(frame);
+  if (!chosen) throw new Error('fixture has no roll button');
+  await page.evaluate(() => {
+    window.__perfHook.setRightTab?.('chat');
+  }).catch(() => {});
+
+  const button = frame.locator('[data-r20-chat-smoke-target="1"]').first();
+  let clickMode = 'user-click';
+  try {
+    await button.scrollIntoViewIfNeeded({ timeout: 5000 });
+    await button.click({ timeout: 10000 });
+  } catch (err) {
+    clickMode = 'dom-click-fallback';
+    await frame.evaluate(() => {
+      const target = document.querySelector('[data-r20-chat-smoke-target="1"]');
+      if (!target) throw new Error('roll smoke target missing before fallback click');
+      target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    });
+  }
+
+  const card = page.locator('[data-testid="chat-list"] [data-r20-chat-card]').first();
+  await card.waitFor({ state: 'visible', timeout: 30000 });
+  const screenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat.png`);
+  await page.locator('[data-testid="chat-list"]').screenshot({ path: screenshotPath });
+  const cardInfo = await card.evaluate((el) => ({
+    kind: el.getAttribute('data-r20-chat-kind') || '',
+    text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 400),
+    hasTemplateClass: Boolean(el.querySelector('[class*="sheet-rolltemplate-"]')),
+    hasTotal: Boolean(el.querySelector('.rt-total, strong')),
+  }));
+  return { chosen, clickMode, cardInfo, screenshotPath };
+}
+
+function renderMarkdown(report) {
+  const lines = [];
+  lines.push('# Rolltemplate Chat Smoke');
+  lines.push('');
+  lines.push(`Generated: ${report.startedAt}`);
+  lines.push('');
+  lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
+  lines.push('');
+  lines.push('| Fixture | Status | Click mode | Chosen button | Chat kind | Template class | Total/result | Console/Page errors |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: |');
+  for (const item of report.fixtures) {
+    const chosen = item.chosen
+      ? `${item.chosen.name || '(no name)'} / ${truncate(item.chosen.value, 60)}`
+      : '';
+    lines.push(
+      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.clickMode ?? ''} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
+    );
+  }
+  lines.push('');
+  lines.push('## Notes');
+  lines.push('');
+  lines.push('- A PASS means a real preview roll button produced a visible chat card.');
+  lines.push('- `user-click` means Playwright could click the visible button. `dom-click-fallback` means the runtime path worked but the button was not actionably visible in the default rendered state.');
+  lines.push('- If `Chat kind` is `rolltemplate`, the dice parser and rolltemplate render path both ran.');
+  lines.push('- Screenshots are local-only and ignored by Git.');
+  return `${lines.join('\n')}\n`;
+}
+
+function truncate(value, max) {
+  const text = String(value ?? '');
+  return text.length > max ? `${text.slice(0, max - 3)}...` : text;
+}
+
+function escapePipe(value) {
+  return String(value ?? '').replace(/\|/g, '\\|');
+}
+
+async function main() {
+  await fs.mkdir(path.join(REPORT_DIR, 'screenshots'), { recursive: true });
+  const fixtures = await listFixtures();
+  if (fixtures.length === 0) throw new Error(`No fixtures found in ${FIXTURES_DIR}`);
+
+  const server = await startServer();
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: VIEWPORT });
+  const report = {
+    startedAt: new Date().toISOString(),
+    baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
+    fixtures: [],
+  };
+
+  try {
+    page.on('dialog', async (dialog) => {
+      await dialog.accept(dialog.defaultValue() || '0').catch(() => {});
+    });
+    await page.goto(report.baseUrl, { waitUntil: 'networkidle' });
+    await page.evaluate(() => localStorage.setItem('__perfOn', '1'));
+    await page.reload({ waitUntil: 'networkidle' });
+    await warmPerfHook(page);
+
+    for (const fixture of fixtures) {
+      const consoleErrors = [];
+      const pageErrors = [];
+      const onConsole = (msg) => {
+        if (['error', 'warning'].includes(msg.type())) consoleErrors.push({ type: msg.type(), text: msg.text() });
+      };
+      const onPageError = (err) => pageErrors.push(String(err));
+      page.on('console', onConsole);
+      page.on('pageerror', onPageError);
+      const entry = { id: fixture.id, consoleErrors, pageErrors };
+      try {
+        entry.import = await importFixture(page, fixture);
+        const clicked = await clickRollAndReadChat(page, fixture.id);
+        Object.assign(entry, clicked);
+        entry.pass =
+          (entry.import?.blockCount ?? 0) > 0 &&
+          Boolean(entry.chosen?.value) &&
+          Boolean(entry.cardInfo?.kind) &&
+          consoleErrors.filter((msg) => msg.type === 'error').length === 0 &&
+          pageErrors.length === 0;
+      } catch (err) {
+        entry.pass = false;
+        entry.error = err instanceof Error ? err.stack || err.message : String(err);
+      } finally {
+        page.off('console', onConsole);
+        page.off('pageerror', onPageError);
+      }
+      report.fixtures.push(entry);
+      console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} kind=${entry.cardInfo?.kind ?? 'none'}`);
+    }
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+
+  report.finishedAt = new Date().toISOString();
+  report.pass = report.fixtures.every((item) => item.pass);
+  await fs.writeFile(path.join(REPORT_DIR, 'rolltemplate-chat-smoke-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  await fs.writeFile(path.join(REPORT_DIR, 'rolltemplate-chat-smoke-results.md'), renderMarkdown(report), 'utf8');
+  console.log(`ROLLTEMPLATE CHAT SMOKE ${report.pass ? 'PASS' : 'FAIL'}`);
+  if (!report.pass) process.exitCode = 1;
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

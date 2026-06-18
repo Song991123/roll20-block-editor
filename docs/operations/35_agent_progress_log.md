@@ -94,6 +94,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest local ignored report: `reports/roll20-actual-compare/2026-06-18-local-baseline-smoke/local-baseline-results.md` PASS for AW2E, Les-Oublies, and YSHY 1BU. All 3 generated payloads had no blocking export warnings and matching preview/edit roll button counts.
 - Scope note: this is the local baseline/payload preparation step only. It does not prove actual Roll20 visual parity until the payload is applied in Custom Sheet Sandbox or a new test room and compared.
 
+## 2026-06-18 Rolltemplate Chat Smoke Slice
+
+- Added `scripts/rolltemplate_chat_smoke.mjs` for local preview iframe -> ChatPane rolltemplate smoke.
+- The script imports ignored fixtures through the static app, chooses a real roll button, clicks it, and verifies that a visible chat card appears.
+- Latest local ignored report: `reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.md` PASS for AW2E, Les-Oublies, and YSHY 1BU.
+- Click-mode evidence: AW2E and YSHY used `user-click`; Les-Oublies required `dom-click-fallback`, so its default visible/actionable state remains a follow-up.
+- Scope note: this proves the local app's roll button bridge, dice/rolltemplate parser path, and ChatPane render path for selected fixtures only. It does not prove actual Roll20 chat parity, worker parity, or all-sheet support.
+
 ## Reporting Guardrails
 
 - Do not claim Roll20 visual parity yet.
