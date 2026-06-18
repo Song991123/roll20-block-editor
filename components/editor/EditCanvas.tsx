@@ -22,6 +22,13 @@ import PreviewToolbar from './PreviewToolbar';
 
 const WORKSPACE_ORDER: WorkspaceKey[] = ['html', 'css', 'i18n'];
 type LayerDropMode = 'before' | 'inside' | 'after';
+type CanvasDropTarget = {
+  blockId: string;
+  label: string;
+  mode: LayerDropMode;
+  containerBlockId: string | null;
+  siblingBlockId: string | null;
+};
 
 type DragOrigin = {
   blockId: string;
@@ -199,16 +206,18 @@ export default function EditCanvas() {
     e.stopPropagation();
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
-    const container = findDropContainer(hostRef.current, e.clientX, e.clientY);
+    const target = findCanvasDropTarget(hostRef.current, e.clientX, e.clientY);
     markDropContainer(hostRef.current, null);
     const id = appendFriendlyWidgetPreset(preset, pos, {
-      mode: container ? 'flow' : 'absolute',
-      containerBlockId: container?.blockId ?? null,
+      mode: target ? 'flow' : 'absolute',
+      placement: target?.mode,
+      containerBlockId: target?.containerBlockId ?? target?.blockId ?? null,
+      siblingBlockId: target?.siblingBlockId ?? null,
     });
     if (id) {
       setLastMove(
-        container
-          ? `${preset.label} inserted into ${container.label}`
+        target
+          ? `${preset.label} ${target.mode} ${target.label}`
           : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
       );
     }
@@ -228,7 +237,7 @@ export default function EditCanvas() {
     if (!hasFriendlyWidgetPayload(e.dataTransfer)) return;
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-    markDropContainer(hostRef.current, findDropContainer(hostRef.current, e.clientX, e.clientY)?.blockId ?? null);
+    markDropContainer(hostRef.current, findCanvasDropTarget(hostRef.current, e.clientX, e.clientY));
   }, []);
 
   const handleNativeDrop = useCallback((event: Event) => {
@@ -241,16 +250,18 @@ export default function EditCanvas() {
     e.stopPropagation();
 
     const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
-    const container = findDropContainer(hostRef.current, e.clientX, e.clientY);
+    const target = findCanvasDropTarget(hostRef.current, e.clientX, e.clientY);
     markDropContainer(hostRef.current, null);
     const id = appendFriendlyWidgetPreset(preset, pos, {
-      mode: container ? 'flow' : 'absolute',
-      containerBlockId: container?.blockId ?? null,
+      mode: target ? 'flow' : 'absolute',
+      placement: target?.mode,
+      containerBlockId: target?.containerBlockId ?? target?.blockId ?? null,
+      siblingBlockId: target?.siblingBlockId ?? null,
     });
     if (id) {
       setLastMove(
-        container
-          ? `${preset.label} inserted into ${container.label}`
+        target
+          ? `${preset.label} ${target.mode} ${target.label}`
           : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
       );
     }
@@ -996,11 +1007,11 @@ function measureDropPosition(
   };
 }
 
-function findDropContainer(
+function findCanvasDropTarget(
   host: HTMLElement | null,
   clientX: number,
   clientY: number,
-): { blockId: string; label: string } | null {
+): CanvasDropTarget | null {
   const shadow = host?.shadowRoot;
   if (!shadow) return null;
   const start = shadow.elementFromPoint(clientX, clientY) as HTMLElement | null;
@@ -1013,7 +1024,24 @@ function findDropContainer(
     if (blockId) {
       const block = adapter.getBlock('html', blockId);
       if (block && canReceiveChildren(block.type)) {
-        return { blockId, label: block.label || block.type };
+        return {
+          blockId,
+          label: block.label || block.type,
+          mode: 'inside',
+          containerBlockId: blockId,
+          siblingBlockId: null,
+        };
+      }
+      if (block) {
+        const rect = cur.getBoundingClientRect();
+        const y = rect.height > 0 ? (clientY - rect.top) / rect.height : 0.5;
+        return {
+          blockId,
+          label: block.label || block.type,
+          mode: y < 0.5 ? 'before' : 'after',
+          containerBlockId: null,
+          siblingBlockId: blockId,
+        };
       }
     }
     cur = cur.parentElement;
@@ -1021,26 +1049,26 @@ function findDropContainer(
   return null;
 }
 
-function markDropContainer(host: HTMLElement | null, blockId: string | null): void {
+function markDropContainer(host: HTMLElement | null, dropTarget: CanvasDropTarget | null): void {
   const shadow = host?.shadowRoot;
   if (!host || !shadow) return;
   shadow.querySelectorAll<HTMLElement>('.r20-drop-target').forEach((el) => {
     el.classList.remove('r20-drop-target');
     el.removeAttribute('data-r20-drop-mode');
   });
-  if (!blockId) {
+  if (!dropTarget) {
     host.removeAttribute('data-r20-widget-dragging');
     host.removeAttribute('data-r20-drop-target');
     host.removeAttribute('data-r20-drop-mode');
     return;
   }
   host.setAttribute('data-r20-widget-dragging', '1');
-  host.setAttribute('data-r20-drop-target', blockId);
-  host.setAttribute('data-r20-drop-mode', 'inside');
-  const escaped = escapeAttr(blockId);
-  const target = shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`);
-  target?.classList.add('r20-drop-target');
-  target?.setAttribute('data-r20-drop-mode', 'inside');
+  host.setAttribute('data-r20-drop-target', dropTarget.blockId);
+  host.setAttribute('data-r20-drop-mode', dropTarget.mode);
+  const escaped = escapeAttr(dropTarget.blockId);
+  const targetEl = shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`);
+  targetEl?.classList.add('r20-drop-target');
+  targetEl?.setAttribute('data-r20-drop-mode', dropTarget.mode);
 }
 
 function hasFriendlyWidgetPayload(dataTransfer: DataTransfer | null): boolean {

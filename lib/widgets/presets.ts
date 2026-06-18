@@ -18,6 +18,8 @@ export type FriendlyWidgetPreset = {
 export type AppendFriendlyWidgetOptions = {
   mode?: 'absolute' | 'flow';
   containerBlockId?: string | null;
+  placement?: 'inside' | 'before' | 'after';
+  siblingBlockId?: string | null;
 };
 
 export const FRIENDLY_WIDGET_GROUPS: Record<FriendlyWidgetGroup, string> = {
@@ -195,7 +197,7 @@ export function appendFriendlyWidgetPreset(
   const state = useWorkspaceStore.getState();
   if (Date.now() - state.lastClearedAt < 1200) return null;
 
-  const requestedFlow = options.mode === 'flow' && Boolean(options.containerBlockId);
+  const requestedFlow = options.mode === 'flow' && Boolean(options.containerBlockId || options.siblingBlockId);
   const targetPosition = requestedFlow ? position : findOpenWidgetPosition(position);
   const id = state.appendBlockToActive(preset.blockType, 'html');
   if (!id) return null;
@@ -208,7 +210,19 @@ export function appendFriendlyWidgetPreset(
 
   const baseStyle = preset.fields.STYLE ?? '';
   let useFlowStyle = false;
-  if (requestedFlow && options.containerBlockId) {
+  if (requestedFlow && options.placement === 'before' && options.siblingBlockId) {
+    useFlowStyle = adapter.moveBlockBefore('html', id, options.siblingBlockId);
+    if (useFlowStyle) {
+      state.bumpStructure('html', adapter.countBlocks('html'));
+      state.setSelectedBlockId(id, 'tree');
+    }
+  } else if (requestedFlow && options.placement === 'after' && options.siblingBlockId) {
+    useFlowStyle = adapter.moveBlockAfter('html', id, options.siblingBlockId);
+    if (useFlowStyle) {
+      state.bumpStructure('html', adapter.countBlocks('html'));
+      state.setSelectedBlockId(id, 'tree');
+    }
+  } else if (requestedFlow && options.containerBlockId) {
     useFlowStyle = adapter.nestBlockInContainer('html', id, options.containerBlockId);
     if (useFlowStyle) {
       state.bumpStructure('html', adapter.countBlocks('html'));

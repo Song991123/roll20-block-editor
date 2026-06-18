@@ -298,6 +298,12 @@ export function mountSheetShadow(
 [data-r20-block-id].r20-drop-target[data-r20-drop-mode="inside"] {
   box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.55) !important;
 }
+[data-r20-block-id].r20-drop-target[data-r20-drop-mode="before"] {
+  box-shadow: inset 0 4px 0 rgba(59, 130, 246, 0.85) !important;
+}
+[data-r20-block-id].r20-drop-target[data-r20-drop-mode="after"] {
+  box-shadow: inset 0 -4px 0 rgba(59, 130, 246, 0.85) !important;
+}
 [data-r20-block-id] .r20-editing,
 [data-r20-block-id].r20-editing {
   outline: 2px dashed #16a34a;

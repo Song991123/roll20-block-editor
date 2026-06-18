@@ -395,6 +395,60 @@ async function main() {
     };
   });
 
+  const canvasSiblingInsert = await page.evaluate(async () => {
+    function childInputIds() {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return Array.from(host?.shadowRoot?.querySelectorAll('div[data-r20-block-id] input[data-r20-block-id]') ?? [])
+        .map((el) => el.getAttribute('data-r20-block-id'))
+        .filter(Boolean);
+    }
+    function emittedIndex(id) {
+      return window.__perfHook.getEmitContent().html.indexOf(`data-r20-block-id="${id}"`);
+    }
+    function dragOverInput(targetId, ratio) {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const el = host?.shadowRoot?.querySelector(`[data-r20-block-id="${CSS.escape(targetId)}"]`);
+      if (!host || !el) return { dispatched: false, reason: 'missing target' };
+      const rect = el.getBoundingClientRect();
+      return window.__smokeDragOver(
+        'text-input',
+        Math.round(rect.left + rect.width / 2),
+        Math.round(rect.top + rect.height * ratio),
+      );
+    }
+    function dropOnInput(targetId, ratio) {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const el = host?.shadowRoot?.querySelector(`[data-r20-block-id="${CSS.escape(targetId)}"]`);
+      if (!host || !el) return { dispatched: false, reason: 'missing target' };
+      const rect = el.getBoundingClientRect();
+      return window.__smokeDrop(
+        'text-input',
+        Math.round(rect.left + rect.width / 2),
+        Math.round(rect.top + rect.height * ratio),
+      );
+    }
+    const beforeIds = childInputIds();
+    const targetId = beforeIds[0];
+    const beforeIndicator = dragOverInput(targetId, 0.2);
+    const afterIndicator = dragOverInput(targetId, 0.8);
+    const drop = dropOnInput(targetId, 0.2);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const afterIds = childInputIds();
+    const newId = afterIds.find((id) => !beforeIds.includes(id)) ?? null;
+    return {
+      targetId,
+      beforeIds,
+      beforeIndicator,
+      afterIndicator,
+      drop,
+      afterIds,
+      newId,
+      targetIndexBeforeEmit: emittedIndex(targetId),
+      newIndexAfterEmit: newId ? emittedIndex(newId) : -1,
+      targetIndexAfterEmit: emittedIndex(targetId),
+    };
+  });
+
   const layerDropModes = await page.evaluate(
     async ({ sectionId, inputId }) => {
       const row = document.querySelector(
@@ -423,7 +477,7 @@ async function main() {
     { sectionId: sectionInfo.blockId, inputId: dragDropState.nestedInputBlockId },
   );
 
-  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2Indicator, c2, c3, state: dragDropState, nestedReorder, layerDropModes };
+  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2Indicator, c2, c3, state: dragDropState, nestedReorder, canvasSiblingInsert, layerDropModes };
   results.consoleErrors = consoleErrors;
   results.pageErrors = pageErrors;
 
@@ -455,6 +509,14 @@ async function main() {
     nestedReorder.emittedBefore?.length >= 2 &&
     nestedReorder.emittedAfter?.[0] === nestedReorder.movingId &&
     nestedReorder.emittedAfter?.[0] !== nestedReorder.emittedBefore?.[0] &&
+    canvasSiblingInsert.beforeIndicator?.hostDropMode === 'before' &&
+    canvasSiblingInsert.beforeIndicator?.activeTargetMode === 'before' &&
+    canvasSiblingInsert.afterIndicator?.hostDropMode === 'after' &&
+    canvasSiblingInsert.afterIndicator?.activeTargetMode === 'after' &&
+    canvasSiblingInsert.drop?.dispatched === true &&
+    typeof canvasSiblingInsert.newId === 'string' &&
+    canvasSiblingInsert.newIndexAfterEmit >= 0 &&
+    canvasSiblingInsert.newIndexAfterEmit < canvasSiblingInsert.targetIndexAfterEmit &&
     Array.isArray(layerDropModes.modes) &&
     layerDropModes.modes.join(',') === 'before,inside,after' &&
     pageErrors.length === 0;
