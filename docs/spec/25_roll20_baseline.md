@@ -108,7 +108,7 @@ iframe 모드 (`buildSheetDoc`):
 
 ```html
 <head>
-  <style>${roll20BaselineCss}</style>       <!-- 1. Roll20 default look -->
+  <style>${roll20BaseIframeCss}</style>     <!-- 1. Roll20 base + charsheet + jquery -->
   <style>${runtimeCss}</style>              <!-- 2. 우리 overlay -->
   <style>${layerFilterCss()}</style>        <!-- 3. layer 필터 -->
   <style>${prefixedCss}</style>             <!-- 4. 사용자 CSS (autoPrefix 후) -->
@@ -119,7 +119,7 @@ Shadow DOM 모드 (`buildSheetParts`):
 
 ```ts
 const css = [
-  roll20BaselineCss,        // 1
+  roll20BaseShadowCss,      // 1
   runtimeCss,               // 2
   layerFilterCss('.charsheet'), // 3
   prefixedCss,              // 4
@@ -218,7 +218,7 @@ phase). baseline 은 폰트/폼/그리드 default 만 담당.
 | `lib/preview/roll20_baseline.css` | **신규**. reference copy. 439 line. |
 | `lib/preview/runtime.ts` | 슬림. form / typography / table 룰을 baseline 으로 이주. 151 line (이전 295). |
 | `lib/preview/runtime.css` | 동기 슬림. 129 line. |
-| `lib/preview/buildDoc.ts` | `roll20BaselineCss` import + iframe `<style>` 순서 + `buildSheetParts` css 배열. |
+| `lib/preview/buildDoc.ts` | `roll20BaseIframeCss` / `roll20BaseShadowCss` 주입 순서 + `buildSheetParts` css 배열. |
 
 영향 영역 0:
 
@@ -273,10 +273,9 @@ D:\훙냥냥\마렌상\영시영 시트 고치기\roll20-base\
 <head>
   <style id="roll20-base">${roll20BaseIframeCss}</style>              <!-- 1. base + charsheet + jquery (실 파일) -->
   <style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>     <!-- 2. dark mode (옵션) -->
-  <style id="r20-baseline-fallback">${roll20BaselineCss}</style>      <!-- 3. 보조 baseline (override candidate) -->
-  <style id="r20-runtime">${runtimeCss}</style>                       <!-- 4. 우리 overlay -->
-  <style id="r20-layer-filter">${layerFilterCss()}</style>            <!-- 5. layer 필터 -->
-  <style id="r20-user">${prefixedCss}</style>                         <!-- 6. 사용자 CSS (마지막) -->
+  <style id="r20-runtime">${runtimeCss}</style>                       <!-- 3. 우리 overlay -->
+  <style id="r20-layer-filter">${layerFilterCss()}</style>            <!-- 4. layer 필터 -->
+  <style id="r20-user">${prefixedCss}</style>                         <!-- 5. 사용자 CSS (마지막) -->
 </head>
 ```
 
@@ -286,12 +285,24 @@ D:\훙냥냥\마렌상\영시영 시트 고치기\roll20-base\
 const css = [
   roll20BaseShadowCss,             // :root → :host, html[data-theme] → :host([data-theme])
   darkMode ? roll20DarkmodeShadowCss : '',
-  roll20BaselineCss,               // 우리 보조 (이미 .charsheet 스코프)
   runtimeCss,
   layerFilterCss('.charsheet'),
   prefixedCss,
 ].join('\n');
 ```
+
+2026-06-19 actual iframe probe update:
+
+- `roll20BaselineCss` is kept only as an old reference artifact and is not injected
+  into iframe or Shadow render paths. It overrode real Roll20 values with stale
+  `border-box`, `14px`, `20px`, and `6px 12px` guesses.
+- Full `vtt.css` is not injected into sheet preview/edit. It contains VTT/app UI
+  rules such as `proxima-nova` that do not match the actual Roll20 character
+  iframe. Chat/VTT styling must be extracted separately for `ChatPane`.
+- Shadow edit mode must not force `box-sizing: border-box` on sheet descendants.
+  The actual Roll20 character iframe probe measured the `.charactersheet` root as
+  content-box, so edit overlays may add affordances but must not change the
+  rendered sheet box model.
 
 ### §8.4 Shadow DOM isolation 보강
 

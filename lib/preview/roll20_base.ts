@@ -19,11 +19,14 @@
 
 import {
   roll20BaseCss,
-  roll20VttCss,
   roll20CharsheetCss,
   roll20JqueryCss,
   roll20DarkmodeCss,
 } from './roll20_base_inline';
+
+// Keep full VTT/app CSS out of sheet preview/edit. The actual Roll20 character
+// iframe uses sheet-facing base/charactersheet/jquery rules; VTT/chat rules
+// belong in a separate ChatPane baseline so they cannot override sheet CSS.
 
 /**
  * descendant prefix `.ui-dialog ` 제거.
@@ -74,7 +77,6 @@ function rewriteForShadow(css: string): string {
  */
 export const roll20BaseIframeCss = [
   stripUiDialogPrefix(roll20BaseCss),
-  stripUiDialogPrefix(roll20VttCss),
   stripUiDialogPrefix(roll20CharsheetCss),
   stripUiDialogPrefix(roll20JqueryCss),
 ].join('\n');
@@ -82,7 +84,6 @@ export const roll20BaseIframeCss = [
 /** Shadow DOM 모드 합성본. */
 export const roll20BaseShadowCss = [
   rewriteForShadow(roll20BaseCss),
-  rewriteForShadow(roll20VttCss),
   rewriteForShadow(roll20CharsheetCss),
   rewriteForShadow(roll20JqueryCss),
 ].join('\n');
@@ -95,7 +96,6 @@ export const roll20BaseShadowCss = [
  */
 export const roll20ShadowDocumentFontFaceCss = [
   extractRoll20GlyphFontFaces(roll20BaseCss),
-  extractRoll20GlyphFontFaces(roll20VttCss),
   extractRoll20GlyphFontFaces(roll20CharsheetCss),
 ].filter(Boolean).join('\n');
 

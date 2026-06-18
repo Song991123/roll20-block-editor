@@ -274,7 +274,6 @@ export function mountSheetShadow(
   cursor: grabbing !important;
   user-select: none !important;
 }
-:host *, :host *::before, :host *::after { box-sizing: border-box; }
 [data-r20-block-id].r20-selected {
   outline: 2px solid #f60;
   outline-offset: 2px;

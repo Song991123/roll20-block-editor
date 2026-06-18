@@ -70,6 +70,27 @@ transparent background, while the best local candidate still uses app-like
 background, and Bootstrap/app-style input padding. Next renderer work should
 align local preview/edit baseline CSS with these actual Roll20 values before
 tuning crop/inset guesses.
+Renderer alignment slice:
+the obsolete hand-written `roll20BaselineCss` fallback was removed from iframe
+and Shadow render paths, and the full Roll20 `vtt.css` dump was removed from the
+sheet preview baseline because it injected app/VTT UI font rules into the sheet.
+The Shadow edit host also no longer forces every rendered sheet element to
+`box-sizing: border-box`; actual Roll20 probe evidence showed the sheet root is
+content-box, and the forced edit-only box model was a preview/edit divergence
+risk.
+After this change, `corepack pnpm run smoke:roll20-same-context-visible --
+reports\roll20-actual-compare\2026-06-18-state-map-v1` reports Les-Oublies best
+candidate `normal-root-no-state` at `21.38%` instead of `21.60%`. The improvement
+is small but the computed-style probe is cleaner: `html` no longer differs, and
+input font/background/padding no longer show the app-like `proxima`/white/padded
+override. Remaining deltas are root width/context (`852` actual vs `900` local in
+the same-context probe), full-height mismatch, table-count/structure mismatch,
+and control height/button background details. This is still not visual parity.
+Regression check after the Shadow box-model change:
+`corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path
+/roll20-block-editor --fixtures test-fixtures/visual --report-dir
+reports/preview-edit-visual --port 4336` PASS: AW2E `1.75%`, Les-Oublies
+`2.02%`, YSHY 1BU `1.01%`.
 
 | Status | Owner | Task | Evidence / Next Check |
 | --- | --- | --- | --- |
@@ -97,7 +118,7 @@ tuning crop/inset guesses.
 
 | Status | Priority | Task | Notes |
 | --- | ---: | --- | --- |
-| VERIFY | P0 | Make edit canvas and preview render from the same emitted HTML/CSS path, with edit overlays only. | `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4314` PASS: AW2E 1.76%, Les-Oublies 1.68%, YSHY 1BU 0.85%, with matching preview/edit screenshot dimensions, edit host/content height delta 0, preview/edit toolbar overlap 0, 0 visible runtime nodes, and DOM signature parity PASS for node counts, block-id counts, tag/control counts, and sequence hash. Edit no longer keeps a fixed 900px canvas shell or renders the preview toolbar over the sheet. `scripts/imported_edit_sync_smoke.mjs` also PASS for 3 imported fixtures after fixing Shadow image referrer behavior and optimistic move clearing, and now includes imported visible-node move sync, imported canvas flow insertion, edited emit -> re-import -> emit stability, safe imported layer reorder where available, and non-leaf subtree reorder for all 3 prepared fixtures. Needs remaining fixture-specific visual fixes and actual Roll20 comparison before DONE. |
+| VERIFY | P0 | Make edit canvas and preview render from the same emitted HTML/CSS path, with edit overlays only. | Latest renderer-regression check after removing the Shadow edit forced `border-box` reset: `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4336` PASS: AW2E 1.75%, Les-Oublies 2.02%, YSHY 1BU 1.01%. Earlier DOM-signature gate PASS showed matching preview/edit screenshot dimensions, edit host/content height delta 0, preview/edit toolbar overlap 0, 0 visible runtime nodes, and DOM signature parity PASS for node counts, block-id counts, tag/control counts, and sequence hash. Edit no longer keeps a fixed 900px canvas shell or renders the preview toolbar over the sheet. `scripts/imported_edit_sync_smoke.mjs` also PASS for 3 imported fixtures after fixing Shadow image referrer behavior and optimistic move clearing, and now includes imported visible-node move sync, imported canvas flow insertion, edited emit -> re-import -> emit stability, safe imported layer reorder where available, and non-leaf subtree reorder for all 3 prepared fixtures. Needs remaining fixture-specific visual fixes and actual Roll20 comparison before DONE. |
 | DONE | P0 | Hide `script`, `script[type="text/worker"]`, and `rolltemplate` from sheet canvas in every render mode. | `lib/preview/buildDoc.ts` now hard-hides them after user CSS in iframe and shadow/edit render paths; fixture render report confirms source script/rolltemplate nodes remain for runtime/chat extraction. |
 | VERIFY | P0 | Preserve worker JS as a separate future block-coding workspace. | Worker workspace split is implemented and now source-audited: import replaces the worker workspace from source `<script type="text/worker">` bodies, including nested/raw worker scripts, strips worker scripts from visual HTML, and emit appends one Roll20 worker script without duplicate visual/runtime leakage. `corepack pnpm run audit:worker -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/worker-source-audit` PASS for AW2E, Les-Oublies, and YSHY 1BU with exact worker source bodies. `corepack pnpm run smoke:worker`, `scripts/browser_roundtrip_smoke.mjs`, and `scripts/imported_edit_sync_smoke.mjs` also PASS for the 3 prepared ignored fixtures. Still needs broader corpus audit and actual Roll20 sandbox/test-room worker runtime parity before DONE. |
 | DONE | P0 | Implement real browser L2 roundtrip: import -> emit -> import -> compare. | **3/3 fixtures PASS** (AW2E, Les-Oublies, YSHY 1遺 6531 blocks): `reports/roundtrip-browser/browser-roundtrip-results.md`. Fix chain: worker wrapper newline + indent growth, section/toggle multi-class guard, whitespace-only line growth. This proves browser emit stability for 3 fixtures only ??NOT all-sheet support. Imported edit-step smoke now exists separately in `reports/imported-edit-sync/`; expand fixtures next. |

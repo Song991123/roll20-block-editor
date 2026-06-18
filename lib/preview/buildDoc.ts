@@ -30,7 +30,6 @@ import {
   roll20DarkmodeIframeCss,
   roll20DarkmodeShadowCss,
 } from './roll20_base';
-import { roll20BaselineCss } from './roll20_baseline';
 import { runtimeCss } from './runtime';
 
 export interface BuildDocOptions {
@@ -723,11 +722,10 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>시트 미리보기</title>
-<!-- spec 25 + isolation fix: 실 Roll20 sandbox CSS (ground truth) → 우리 보조 baseline → runtime overlay → user CSS -->
+<!-- spec 25 + actual Roll20 probe: 실 Roll20 sandbox CSS (ground truth) → runtime overlay → user CSS -->
 <style id="roll20-base">${roll20BaseIframeCss}</style>${darkMode ? `
 <style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>` : ''}
 <style id="roll20-dialog-open">${ROLL20_DIALOG_OPEN_CSS}</style>
-<style id="r20-baseline-fallback">${roll20BaselineCss}</style>
 <style id="r20-runtime">${runtimeCss}</style>
 <style id="r20-layer-filter">${layerFilterCss()}</style>
 <style id="r20-user">${previewCss}</style>
@@ -775,15 +773,14 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
   // layerFilterCss scope = '.charsheet' 로 selector 일관성 유지.
-  // spec 25 + isolation fix — 실 Roll20 sandbox CSS (ground truth, :root→:host
-  // rewrite) 먼저 → 우리 보조 baseline → runtime overlay → user CSS.
+  // spec 25 + actual Roll20 probe: 실 Roll20 sandbox CSS (ground truth, :root→:host
+  // rewrite) 먼저 → runtime overlay → user CSS.
   // user CSS 가 마지막 source order 라 동일 specificity 셀렉터에선 사용자 우선.
   const darkMode = opts.darkMode === true;
   const css = [
     styleSourceChunk('roll20-base', roll20BaseShadowCss),
     darkMode ? styleSourceChunk('roll20-darkmode', roll20DarkmodeShadowCss) : '',
     styleSourceChunk('roll20-dialog-context', ROLL20_DIALOG_OPEN_CSS),
-    styleSourceChunk('roll20-baseline-fallback', roll20BaselineCss),
     styleSourceChunk('app-preview-runtime', runtimeCss),
     styleSourceChunk('app-layer-filter', layerFilterCss('.charsheet')),
     styleSourceChunk('sheet-user-css', previewCss),

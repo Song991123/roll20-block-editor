@@ -27,8 +27,9 @@ export const runtimeCss = String.raw`
 html, body {
   margin: 0;
   padding: 0;
-  min-height: 100vh;
-  background: var(--r20-bg, #ffffff);
+  min-height: 0;
+  overflow: visible;
+  background: #ffffff;
 }
 
 /* preview-only — fieldset[class*=repeating_] 시각 hint

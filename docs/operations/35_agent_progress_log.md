@@ -901,3 +901,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest result: Les-Oublies best local candidate is `normal-root-no-state` at `21.60%`, effectively unchanged from the prior `21.67%` actual visible mismatch. State-map mismatch alone is not the cause.
 - The computed-style comparison points to a concrete Roll20 baseline/root mismatch: the best local candidate still has app-like border-box sizing, `900px` root width, `14px` font, `20px` line-height, white root background, and `6px 12px` input padding.
 - Scope note: this is the strongest current root-cause evidence for the Roll20 visual mismatch, but it is not visual parity. Next renderer work should align local preview/edit baseline CSS and wrapper metrics to actual Roll20, then rerun the same-context visible smoke.
+
+## 2026-06-19 Roll20 Baseline CSS Alignment Slice
+
+- Removed `roll20BaselineCss` from the live iframe and Shadow render paths. That hand-written fallback was overriding the actual Roll20 dump with stale Bootstrap-like guesses.
+- Removed full `vtt.css` injection from `roll20BaseIframeCss` and `roll20BaseShadowCss`. The live Roll20 character iframe did not match those VTT/app UI font rules, and local inputs were inheriting app-like `proxima-nova` before this fix.
+- Kept Roll20 `base.css`, `charactersheet.css`, `jquery.css`, and optional dark mode CSS as the sheet preview baseline. Chat/VTT UI styling remains a separate future ChatPane concern.
+- Adjusted preview runtime `html, body` reset to stop forcing a viewport-height shell and to keep a Roll20-like white body background.
+- Removed the Shadow edit-only `:host * { box-sizing: border-box; }` reset. Actual Roll20 probe evidence showed the sheet root is content-box, so edit mode should not force a different box model than iframe preview.
+- Latest command: `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result: Les-Oublies best candidate is `normal-root-no-state` at `21.38%`, improved from the prior `21.60%`.
+- Local preview/edit regression command: `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4336`.
+- Local preview/edit result: PASS with AW2E `1.75%`, Les-Oublies `2.02%`, and YSHY 1BU `1.01%`.
+- Computed-style result: prior `html` diffs and input font/background/padding app-style diffs are gone. Remaining diffs include actual root context/width (`852` actual vs `900` local in this probe), full-sheet height, table count (`8` actual vs `11` local), input height, and roll-button background/geometry.
+- Scope note: this is real movement toward Roll20 actual parity, not completion. AW2E/YSHY actual screenshots and full-height Roll20 capture are still missing.
