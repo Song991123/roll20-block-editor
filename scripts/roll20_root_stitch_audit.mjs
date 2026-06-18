@@ -46,18 +46,33 @@ async function main() {
 async function auditFixture(fixtureId) {
   const shotsDir = path.join(runDir, 'local-baseline', fixtureId, 'screenshots');
   const stitchedMeta = await readJsonIfExists(path.join(shotsDir, 'roll20-sandbox-root-full.json'));
+  const dprCorrectedMeta = await readJsonIfExists(path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.json'));
   const dprManifest = await readJsonIfExists(path.join(shotsDir, 'roll20-root-dpr-corrected-manifest.json'));
+  const dprCompleteManifest = await readJsonIfExists(path.join(shotsDir, 'roll20-root-dpr-complete-manifest.json'));
   const checks = [];
   if (stitchedMeta) checks.push(auditStitchedMeta(stitchedMeta, 'roll20-sandbox-root-full.json'));
+  if (dprCorrectedMeta) checks.push(auditStitchedMeta(dprCorrectedMeta, 'roll20-sandbox-root-full-dpr-corrected.json'));
   if (dprManifest) checks.push(auditCaptureManifest(dprManifest, 'roll20-root-dpr-corrected-manifest.json'));
+  if (dprCompleteManifest) checks.push(auditCaptureManifest(dprCompleteManifest, 'roll20-root-dpr-complete-manifest.json'));
   if (!checks.length) {
     return { fixtureId, status: 'SKIP', primaryIssue: 'missing stitched root metadata', checks: [] };
   }
   const failing = checks.flatMap((check) => check.issues.map((issue) => ({ source: check.source, ...issue })));
+  const preferredSources = new Set([
+    'roll20-sandbox-root-full-dpr-corrected.json',
+    'roll20-root-dpr-complete-manifest.json',
+  ]);
+  const preferredChecks = checks.filter((check) => preferredSources.has(check.source));
+  const preferredFailing = preferredChecks.flatMap((check) => check.issues.map((issue) => ({ source: check.source, ...issue })));
+  const hasTrustedPreferred = preferredChecks.length > 0 && preferredFailing.length === 0;
   return {
     fixtureId,
-    status: failing.length ? 'FAIL' : 'PASS',
-    primaryIssue: failing[0]?.message ?? null,
+    status: hasTrustedPreferred || failing.length === 0 ? 'PASS' : 'FAIL',
+    primaryIssue: hasTrustedPreferred ? null : failing[0]?.message ?? null,
+    trustedEvidence: hasTrustedPreferred ? preferredChecks.map((check) => check.source) : [],
+    supersededIssues: hasTrustedPreferred
+      ? failing.filter((issue) => !preferredSources.has(issue.source))
+      : [],
     checks,
   };
 }
@@ -138,10 +153,10 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local evidence audit only. This is not Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Primary issue | Checks |');
-  lines.push('| --- | --- | --- | --- |');
+  lines.push('| Fixture | Status | Trusted evidence | Primary issue | Checks |');
+  lines.push('| --- | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
-    lines.push(`| ${fixture.fixtureId} | ${fixture.status} | ${fixture.primaryIssue ?? ''} | ${fixture.checks.map((check) => `${check.source}: ${check.status}`).join('<br>')} |`);
+    lines.push(`| ${fixture.fixtureId} | ${fixture.status} | ${(fixture.trustedEvidence ?? []).join('<br>')} | ${fixture.primaryIssue ?? ''} | ${fixture.checks.map((check) => `${check.source}: ${check.status}`).join('<br>')} |`);
   }
   lines.push('');
   lines.push('## Issues');
@@ -149,6 +164,15 @@ function renderMarkdown(report) {
     for (const check of fixture.checks) {
       for (const issue of check.issues) {
         lines.push(`- ${fixture.fixtureId} / ${check.source} / ${issue.code}: ${issue.message}`);
+      }
+    }
+  }
+  if (report.fixtures.some((fixture) => fixture.supersededIssues?.length)) {
+    lines.push('');
+    lines.push('## Superseded Issues');
+    for (const fixture of report.fixtures) {
+      for (const issue of fixture.supersededIssues ?? []) {
+        lines.push(`- ${fixture.fixtureId} / ${issue.source} / ${issue.code}: ${issue.message}`);
       }
     }
   }

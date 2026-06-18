@@ -71,7 +71,10 @@ async function classifyFixture({ fixtureId, diffReport, baseline, sanitize, stat
   const statusFixture = status?.fixtures?.find((fixture) => fixture.fixtureId === fixtureId || fixture.id === fixtureId) ?? null;
   const screenshotDir = path.join(runDir, 'local-baseline', fixtureId, 'screenshots');
   const chatDomEvidence = await readJsonIfExists(path.join(screenshotDir, 'roll20-chat-dom-evidence.json'));
-  const actualFullRootMeta = await readJsonIfExists(path.join(screenshotDir, 'roll20-sandbox-root-full.json'));
+  const actualFullRootMetas = {
+    'roll20-sandbox-root-full-dpr-corrected.png': await readJsonIfExists(path.join(screenshotDir, 'roll20-sandbox-root-full-dpr-corrected.json')),
+    'roll20-sandbox-root-full.png': await readJsonIfExists(path.join(screenshotDir, 'roll20-sandbox-root-full.json')),
+  };
   const diffItems = Object.fromEntries(
     (diffReport.items ?? [])
       .filter((item) => item.fixtureId === fixtureId)
@@ -84,9 +87,9 @@ async function classifyFixture({ fixtureId, diffReport, baseline, sanitize, stat
     sandboxSanitize: summarizeSanitize(sanitizeFixture),
     chatDomEvidence: summarizeChatDom(chatDomEvidence),
     targets: {
-      sandbox: classifyTarget('sandbox', diffItems.sandbox, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMeta),
-      chat: classifyTarget('chat', diffItems.chat, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMeta),
-      room: classifyTarget('room', diffItems.room, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMeta),
+      sandbox: classifyTarget('sandbox', diffItems.sandbox, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMetas),
+      chat: classifyTarget('chat', diffItems.chat, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMetas),
+      room: classifyTarget('room', diffItems.room, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMetas),
     },
     statusSummary: statusFixture ? summarizeStatusFixture(statusFixture) : null,
   };
@@ -167,7 +170,7 @@ function summarizeStatusFixture(fixture) {
   };
 }
 
-function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMeta = null) {
+function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomEvidence, actualFullRootMetas = {}) {
   if (!item) {
     return { target, status: 'MISSING_REPORT_ITEM', primaryClassification: 'missing diff report item' };
   }
@@ -197,10 +200,12 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
   const result = item.result ?? {};
   const best = result.best ?? {};
   const actualBasename = path.basename(item.actual ?? '');
+  const actualFullRootMeta = actualFullRootMetas[actualBasename] ?? null;
   const localSize = result.localSize ?? [];
   const actualRawSize = result.actualSize ?? [];
   const actualSize = result.actualNormalizedSize ?? actualRawSize;
-  const usedFullRoot = actualBasename === 'roll20-sandbox-root-full.png';
+  const usedFullRoot = actualBasename === 'roll20-sandbox-root-full-dpr-corrected.png' || actualBasename === 'roll20-sandbox-root-full.png';
+  const usedDprCorrectedFullRoot = actualBasename === 'roll20-sandbox-root-full-dpr-corrected.png';
   const usedRootCrop = usedFullRoot || actualBasename === 'roll20-sandbox-root.png' || Boolean(result.actualMeta?.cssCrop);
   const sizeRatio = localSize[0] && actualSize[0] ? actualSize[0] / localSize[0] : null;
   const comparedHeightRatio = localSize[1] && actualSize[1] ? actualSize[1] / localSize[1] : null;
@@ -214,7 +219,7 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
   const stitchEvidence = usedFullRoot ? analyzeFullRootStitchMeta(actualFullRootMeta) : null;
 
   if (usedFullRoot) {
-    categories.push('full-height stitched root');
+    categories.push(usedDprCorrectedFullRoot ? 'dpr-corrected full-height stitched root' : 'full-height stitched root');
     evidence.push(`stitched Roll20 sheet root ${actualSize[0]}x${actualSize[1]} compared against local preview ${localSize[0]}x${localSize[1]}`);
   }
   if (stitchEvidence?.suspect) {
@@ -277,6 +282,7 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
     actualRawSize,
     actualNormalizedSize: result.actualNormalizedSize ?? null,
     usedFullRoot,
+    usedDprCorrectedFullRoot,
     usedRootCrop,
     comparedSize,
     bounds: best.bounds ?? null,

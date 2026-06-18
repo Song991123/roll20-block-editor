@@ -10,7 +10,8 @@
  *     reports/roll20-actual-compare/<run-label>
  *
  * Expected optional actual screenshot names per fixture:
- *   - screenshots/roll20-sandbox-root-full.png (preferred stitched full-height sheet-root capture)
+ *   - screenshots/roll20-sandbox-root-full-dpr-corrected.png (preferred DPR-corrected stitched full-height sheet-root capture)
+ *   - screenshots/roll20-sandbox-root-full.png (fallback stitched full-height sheet-root capture)
  *   - screenshots/roll20-sandbox-root.png (fallback normalized sheet-root crop)
  *   - screenshots/roll20-sandbox.png (fallback full/viewport sandbox screenshot)
  *   - screenshots/roll20-room.png
@@ -53,28 +54,29 @@ async function listFixtureDirs() {
 
 function actualTargets(fixtureDir) {
   const shots = path.join(fixtureDir, 'screenshots');
+  const sandboxRootFullDprCorrected = path.join(shots, 'roll20-sandbox-root-full-dpr-corrected.png');
   const sandboxRootFull = path.join(shots, 'roll20-sandbox-root-full.png');
   const sandboxRoot = path.join(shots, 'roll20-sandbox-root.png');
   const sandboxFallback = path.join(shots, 'roll20-sandbox.png');
+  const sandboxRootFullDprCorrectedMeta = sandboxRootFullDprCorrected.replace(/\.png$/i, '.json');
   const sandboxRootFullMeta = sandboxRootFull.replace(/\.png$/i, '.json');
   const sandboxRootMeta = sandboxRoot.replace(/\.png$/i, '.json');
-  const sandboxActual = existsSync(sandboxRootFull)
-    ? sandboxRootFull
-    : existsSync(sandboxRoot)
-      ? sandboxRoot
-      : sandboxFallback;
-  const sandboxActualMeta = existsSync(sandboxRootFull) && existsSync(sandboxRootFullMeta)
-    ? sandboxRootFullMeta
-    : existsSync(sandboxRoot) && existsSync(sandboxRootMeta)
-      ? sandboxRootMeta
-      : null;
+  const sandboxCandidates = [
+    { screenshot: sandboxRootFullDprCorrected, meta: sandboxRootFullDprCorrectedMeta },
+    { screenshot: sandboxRootFull, meta: sandboxRootFullMeta },
+    { screenshot: sandboxRoot, meta: sandboxRootMeta },
+    { screenshot: sandboxFallback, meta: null },
+  ];
+  const sandboxSelected = sandboxCandidates.find((candidate) => existsSync(candidate.screenshot)) ?? sandboxCandidates.at(-1);
+  const sandboxActual = sandboxSelected.screenshot;
+  const sandboxActualMeta = sandboxSelected.meta && existsSync(sandboxSelected.meta) ? sandboxSelected.meta : null;
   return [
     {
       name: 'sandbox',
       local: path.join(shots, 'local-preview.png'),
       actual: sandboxActual,
       actualMeta: sandboxActualMeta,
-      expected: [sandboxRootFull, sandboxRoot, sandboxFallback],
+      expected: [sandboxRootFullDprCorrected, sandboxRootFull, sandboxRoot, sandboxFallback],
       purpose: 'Local preview vs Roll20 Custom Sheet Sandbox/test-room initial sheet.',
     },
     {
@@ -249,6 +251,7 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Place Roll20 screenshots next to the local baseline screenshots:');
   lines.push('');
+  lines.push('- `local-baseline/<fixture>/screenshots/roll20-sandbox-root-full-dpr-corrected.png`');
   lines.push('- `local-baseline/<fixture>/screenshots/roll20-sandbox-root-full.png`');
   lines.push('- `local-baseline/<fixture>/screenshots/roll20-sandbox-root.png`');
   lines.push('- `local-baseline/<fixture>/screenshots/roll20-sandbox.png`');

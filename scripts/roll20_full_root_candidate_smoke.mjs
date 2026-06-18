@@ -82,11 +82,12 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   const fixtureDir = path.join(runDir, 'local-baseline', fixtureId);
   const payloadDir = path.join(fixtureDir, 'payload');
   const shotsDir = path.join(fixtureDir, 'screenshots');
-  const actualFile = path.join(shotsDir, 'roll20-sandbox-root-full.png');
-  const actualMetaFile = actualFile.replace(/\.png$/i, '.json');
+  const actualEvidence = selectActualFullRootEvidence(shotsDir);
+  const actualFile = actualEvidence?.screenshot ?? path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.png');
+  const actualMetaFile = actualEvidence?.meta ?? actualFile.replace(/\.png$/i, '.json');
   const localPreviewFile = path.join(shotsDir, 'local-preview.png');
-  if (!existsSync(actualFile)) {
-    return { fixtureId, status: 'SKIP', reason: 'missing roll20-sandbox-root-full.png' };
+  if (!actualEvidence) {
+    return { fixtureId, status: 'SKIP', reason: 'missing roll20-sandbox-root-full-dpr-corrected.png or roll20-sandbox-root-full.png' };
   }
 
   const artifactDir = path.join(outDir, fixtureId);
@@ -174,6 +175,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     status: 'COMPARED',
     actual: {
       screenshot: actualFile,
+      evidenceKind: actualEvidence.kind,
       size: actualSize,
       outputCss: actualMeta?.outputCss ?? null,
       segmentCount: actualMeta?.segmentCount ?? null,
@@ -191,6 +193,22 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     interpretation: interpret({ bestCandidate, bestGeometryCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }),
     targetGeometry: compareTargetGeometry(actualTargetGeometry, bestCandidate?.metrics?.targetGeometry),
   };
+}
+
+function selectActualFullRootEvidence(shotsDir) {
+  const candidates = [
+    {
+      kind: 'dpr-corrected-full-root',
+      screenshot: path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.png'),
+      meta: path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.json'),
+    },
+    {
+      kind: 'legacy-full-root',
+      screenshot: path.join(shotsDir, 'roll20-sandbox-root-full.png'),
+      meta: path.join(shotsDir, 'roll20-sandbox-root-full.json'),
+    },
+  ];
+  return candidates.find((candidate) => existsSync(candidate.screenshot)) ?? null;
 }
 
 async function compareExistingReference({ comparePage, localPreviewFile, actualFile, actualSize }) {

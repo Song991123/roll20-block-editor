@@ -27,7 +27,11 @@ const TARGETS = [
   {
     id: 'sandbox',
     filename: 'roll20-sandbox.png',
-    preferredFilenames: ['roll20-sandbox-root-full.png', 'roll20-sandbox-root.png'],
+    preferredFilenames: [
+      'roll20-sandbox-root-full-dpr-corrected.png',
+      'roll20-sandbox-root-full.png',
+      'roll20-sandbox-root.png',
+    ],
     evidence: 'Custom Sheet Sandbox or new test-room initial sheet screenshot',
     requiredForGeneratedSheetCheck: true,
   },
@@ -289,7 +293,7 @@ function buildNextAction({
     if (blockerEvidence.length > 0) {
       return 'Chrome file upload is still blocked in the recorded evidence. Enable Allow access to file URLs for the Codex extension, upload payloads in Roll20 Sandbox, capture screenshots, then rerun screenshot diff and this status command.';
     }
-    return 'Upload payloads in Roll20 Custom Sheet Sandbox/test room, capture roll20-sandbox-root-full.png or roll20-sandbox-root.png plus roll20-chat.png, then rerun screenshot diff and this status command. Existing solo-room screenshots are optional observation evidence, not part of the generated-sheet gate.';
+    return 'Upload payloads in Roll20 Custom Sheet Sandbox/test room, capture roll20-sandbox-root-full-dpr-corrected.png or roll20-sandbox-root.png plus roll20-chat.png, then rerun screenshot diff and this status command. Existing solo-room screenshots are optional observation evidence, not part of the generated-sheet gate.';
   }
   if (generatedDiffedCount < generatedTargetCount) {
     return 'Actual screenshots exist. Run node scripts/roll20_actual_screenshot_diff.mjs for this run, then classify differences.';

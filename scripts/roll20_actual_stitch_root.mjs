@@ -7,7 +7,7 @@
  * Roll20 Custom Sheet Sandbox or test room. The output is ignored evidence,
  * usually:
  *
- *   local-baseline/<fixture>/screenshots/roll20-sandbox-root-full.png
+ *   local-baseline/<fixture>/screenshots/roll20-sandbox-root-full-dpr-corrected.png
  *
  * Manifest shape:
  *
@@ -43,7 +43,7 @@ const manifestPath = path.resolve(argOf('--manifest', args[0] ?? ''));
 const explicitOut = argOf('--out', '');
 
 if (!manifestPath) {
-  console.error('Usage: node scripts/roll20_actual_stitch_root.mjs --manifest <manifest.json> [--out <roll20-sandbox-root-full.png>]');
+  console.error('Usage: node scripts/roll20_actual_stitch_root.mjs --manifest <manifest.json> [--out <roll20-sandbox-root-full-dpr-corrected.png>]');
   process.exit(2);
 }
 
@@ -211,7 +211,7 @@ function normalizeScale(scale, viewportCss) {
 async function main() {
   if (!existsSync(manifestPath)) throw new Error(`Missing manifest: ${manifestPath}`);
   const manifest = JSON.parse((await readFile(manifestPath, 'utf8')).replace(/^\uFEFF/, ''));
-  const outputPath = path.resolve(explicitOut || resolveFromManifest(manifest.output || 'roll20-sandbox-root-full.png'));
+  const outputPath = path.resolve(explicitOut || resolveFromManifest(manifest.output || 'roll20-sandbox-root-full-dpr-corrected.png'));
   const result = await stitch({ manifest, outputPath });
   const infoPath = outputPath.replace(/\.png$/i, '.json');
   const info = {

@@ -122,7 +122,8 @@ to the local baseline screenshots using one of these names:
 | --- | --- |
 | `local-baseline/<fixture>/screenshots/roll20-sandbox.png` | Screenshot from Custom Sheet Sandbox or a new test room. |
 | `local-baseline/<fixture>/screenshots/roll20-sandbox-root.png` | Normalized visible sheet-root crop from Custom Sheet Sandbox or a new test room. When present, diff/status helpers use this before the fallback `roll20-sandbox.png`. |
-| `local-baseline/<fixture>/screenshots/roll20-sandbox-root-full.png` | Preferred stitched full-height sheet-root screenshot from Custom Sheet Sandbox or a new test room. When present, diff/status helpers use this before `roll20-sandbox-root.png` and `roll20-sandbox.png`. |
+| `local-baseline/<fixture>/screenshots/roll20-sandbox-root-full-dpr-corrected.png` | Preferred stitched full-height sheet-root screenshot from Custom Sheet Sandbox or a new test room when Chrome screenshots were captured with DPR-corrected sheet-root clips. Diff/status/candidate helpers use this before legacy full-root, visible root, and viewport screenshots. |
+| `local-baseline/<fixture>/screenshots/roll20-sandbox-root-full.png` | Legacy stitched full-height sheet-root screenshot. Use only as fallback when DPR-corrected evidence is missing, and audit it before renderer conclusions. |
 | `local-baseline/<fixture>/screenshots/roll20-room.png` | Read-only screenshot from an existing solo room. |
 | `local-baseline/<fixture>/screenshots/roll20-chat.png` | Rolltemplate/chat screenshot from Roll20. |
 
@@ -196,13 +197,18 @@ When Chrome/CDP can read and scroll the character iframe or its Roll20
 into the preferred full-height root evidence:
 
 ```bash
-corepack pnpm run stitch:roll20-actual-root -- --manifest <roll20-root-stitch-manifest.json> --out <roll20-sandbox-root-full.png>
+corepack pnpm run stitch:roll20-actual-root -- --manifest <roll20-root-stitch-manifest.json> --out <roll20-sandbox-root-full-dpr-corrected.png>
 ```
 
 The manifest and segment PNGs are local-only evidence. They must remain under
 `reports/roll20-actual-compare/<label>/...` and must not be committed. A stitched
 image changes the comparison from visible-top evidence to fuller root evidence,
 but it is still diagnostic until the mismatch is classified.
+
+When the capture uses DPR-corrected Chrome sheet-root clips, write the stitched
+output as `roll20-sandbox-root-full-dpr-corrected.png`. The diff/status/
+classifier/full-root candidate helpers prefer this file over the older
+`roll20-sandbox-root-full.png`.
 
 When the browser screenshot API returns pixels in a coordinate scale that does
 not match `devicePixelRatio`, prefer clipped root-segment screenshots. Save each
@@ -218,10 +224,12 @@ metadata:
 corepack pnpm run audit:roll20-root-stitch -- reports/roll20-actual-compare/<run-label>
 ```
 
-This audit must pass before renderer CSS conclusions are drawn from
-`roll20-sandbox-root-full.png`. A failed audit means the evidence can include
-Roll20 VTT toolbar/grid context, missing top/bottom sheet segments, or screenshot
-scale mismatch. In that case, recapture with sheet-root-only clipping first.
+This audit must pass before renderer CSS conclusions are drawn from stitched
+full-root evidence. A failed audit means the evidence can include Roll20 VTT
+toolbar/grid context, missing top/bottom sheet segments, or screenshot scale
+mismatch. In that case, recapture with sheet-root-only clipping first. If
+trusted DPR-corrected evidence exists, older suspect full-root metadata is
+recorded as superseded rather than blocking the fixture.
 
 2026-06-19 Chrome observation note: the Roll20 editor character iframe exposed
 `.charactersheet` via CDP `DOM.getBoxModel` at about `852px` CSS width and
