@@ -85,6 +85,14 @@ diagnostic inline-block tolerance candidate removes that wrap and reduces row 0
 height from `554px` to `297px`, but it does not improve the image diff
 (`21.56%` vs current best `21.49%`). Treat this as a root-cause clue, not a
 production CSS patch.
+Chrome/CDP then saved a read-only actual layout-context probe at
+`live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`. The source
+`.outline` is present as Roll20 `.sheet-outline`, so wrapper loss is not the
+cause. Actual row layout includes the Roll20 dialog chain and `20px` dialog
+padding; a DPR border-snapping diagnostic candidate did not remove the local row
+wrap or beat the current best. The next generic renderer investigation should
+focus on inline-block whitespace/fit behavior and full-height/scroll-stitched
+evidence before any production CSS patch.
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |

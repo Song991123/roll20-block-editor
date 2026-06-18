@@ -955,3 +955,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Result: selected selector counts match; row 0 is the top content geometry delta. Actual row 0 is `310.6px` high with two inline columns on the same line. The best local candidate wraps the second `.sheet-col` to the next line and makes row 0 `554px`.
 - Added a diagnostic same-context candidate `sandbox-inline-block-fit-tolerance-no-state`; it removes the row 0 wrap and lowers local row 0 to `297px`, but the overall image mismatch is slightly worse (`21.56%` vs current best `21.49%`). Do not promote it to production CSS yet.
 - Next P0: full-height/scroll-stitched Roll20 capture and a generic Roll20 inline-block/rounding context investigation. Avoid Les-Oublies-specific CSS patches.
+
+## 2026-06-19 Roll20 Layout Context Probe
+
+- Used the logged-in Chrome Roll20 editor tab for the dedicated verification sandbox only; existing rooms were not inspected or modified.
+- Captured a read-only iframe layout-context probe as ignored evidence: `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.
+- Actual Roll20 wrapper chain for the first `.sheet-2colrow`: row -> `.sheet-character` -> `.sheet-outline` -> `.charactersheet` -> `form.sheetform` -> `.tab-content` -> `.dialog.largedialog.characterviewer` -> `#dialog-window.ui-dialog`.
+- Actual wrapper metrics include `.dialog.largedialog.characterviewer { padding: 0 20px; width: 852px; }`, `.charactersheet { width: 832px; padding: 10px; }`, `.sheet-outline { width: 800px; padding: 10px; border: 1.6px solid gray; overflow: hidden; }`, and row width `800px`.
+- The local generated payload also contains source `.outline`/`.sheet-outline`; the issue is not wrapper loss.
+- Added a diagnostic same-context candidate `sandbox-dpr-border-snap-no-state` to test whether DPR-scaled border widths alone explain the wrap. It did not change row 0 wrapping and did not beat the current best mismatch.
+- Current strongest clue remains inline-block whitespace/fit behavior: `sandbox-inline-block-fit-tolerance-no-state` keeps row 0 columns on one line but slightly worsens overall image mismatch, so it remains a diagnostic clue only.

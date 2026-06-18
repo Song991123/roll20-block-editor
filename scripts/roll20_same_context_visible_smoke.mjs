@@ -199,6 +199,19 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, br
         captureMode: 'root-top-left',
         contextPatch: { mode: 'inline-block-fit-tolerance', rootWidth: actualRootWidth },
       });
+      if (actualDeviceScaleFactor > 1) {
+        candidateInputs.push({
+          id: 'sandbox-dpr-border-snap-no-state',
+          applyStateHint: false,
+          roll20SandboxSanitize: true,
+          captureMode: 'root-top-left',
+          contextPatch: {
+            mode: 'dpr-border-snap',
+            rootWidth: actualRootWidth,
+            deviceScaleFactor: actualDeviceScaleFactor,
+          },
+        });
+      }
     }
 
     candidateInputs.push(
@@ -587,6 +600,30 @@ async function applyRenderContextPatch(page, contextPatch) {
         .ui-dialog .charsheet .sheet-2colrow > .sheet-col,
         .ui-dialog .charsheet .sheet-3colrow > .sheet-col {
           word-spacing: normal;
+        }
+      `;
+      document.head.append(style);
+    } else if (patch.mode === 'dpr-border-snap') {
+      const scale = Math.max(1, Number(patch.deviceScaleFactor) || 1);
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+      const style = document.createElement('style');
+      style.setAttribute('data-r20-diagnostic-context-patch', 'dpr-border-snap');
+      style.textContent = `
+        #charsheet-root div.sheet-outline,
+        .ui-dialog .charsheet div.sheet-outline {
+          border-top-width: ${2 / scale}px !important;
+          border-right-width: ${2 / scale}px !important;
+          border-bottom-width: ${2 / scale}px !important;
+          border-left-width: ${2 / scale}px !important;
+        }
+        #charsheet-root div.sheet-small-outline,
+        .ui-dialog .charsheet div.sheet-small-outline {
+          border-top-width: ${1 / scale}px !important;
+          border-right-width: ${1 / scale}px !important;
+          border-bottom-width: ${1 / scale}px !important;
+          border-left-width: ${1 / scale}px !important;
         }
       `;
       document.head.append(style);

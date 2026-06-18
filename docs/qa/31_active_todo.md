@@ -123,6 +123,19 @@ candidate proves the wrap can be removed (`554px -> 297px`), but its image
 mismatch is slightly worse (`21.56%` vs `21.49%`), so this is evidence, not a
 production CSS patch. Next P0 remains full-height/scroll-stitched capture plus
 generic Roll20 inline-block/rounding context investigation.
+Follow-up actual layout-context probe:
+Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
+ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.
+Actual Roll20 has the expected source `.sheet-outline` wrapper, so the wrapper
+was not lost by import/export. The row chain is row -> `.sheet-character` ->
+`.sheet-outline` -> `.charactersheet` -> `form.sheetform` -> `.tab-content` ->
+`.dialog.largedialog.characterviewer` -> `#dialog-window.ui-dialog`. A new
+diagnostic `sandbox-dpr-border-snap-no-state` same-context candidate tested
+whether DPR-scaled border widths alone explain the row wrap; it did not beat the
+current best and row 0 still wrapped. The current strongest clue is still
+inline-block whitespace/fit behavior: a word-spacing tolerance candidate keeps
+row 0 on one line but slightly worsens overall image mismatch, so it is not a
+production patch.
 
 | Status | Owner | Task | Evidence / Next Check |
 | --- | --- | --- | --- |
