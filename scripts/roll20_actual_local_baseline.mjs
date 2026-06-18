@@ -196,7 +196,33 @@ function summarizeSheetElement(sheetEl) {
 
 function normalizeTranslation(i18n) {
   const text = (i18n ?? '').trim();
-  return text ? text : '{}';
+  if (!text) return '{}';
+  try {
+    JSON.parse(text);
+    return text;
+  } catch {
+    // Fall through to internal comment format from r20_locale_value.
+  }
+  const entries = {};
+  const re = /<!--\s*i18n(?:\[[^\]]+\])?\s+("(?:\\.|[^"\\])*")\s*:\s*("(?:\\.|[^"\\])*")\s*-->/g;
+  let match;
+  while ((match = re.exec(text))) {
+    try {
+      entries[JSON.parse(match[1])] = JSON.parse(match[2]);
+    } catch {
+      // Ignore malformed comment entries and keep valid ones.
+    }
+  }
+  return Object.keys(entries).length > 0 ? `${JSON.stringify(entries, null, 2)}\n` : text;
+}
+
+function stripInternalBlockIds(html) {
+  let removed = 0;
+  const cleaned = String(html ?? '').replace(/\sdata-r20-block-id=(?:"[^"]*"|'[^']*')/g, () => {
+    removed += 1;
+    return '';
+  });
+  return { html: cleaned, removed };
 }
 
 function buildManifest(fixtureId) {
@@ -247,11 +273,11 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('## Summary');
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | HTML bytes | CSS bytes | Translation bytes | Preview size | Edit size | Roll buttons | Blocking warnings |');
-  lines.push('| --- | --- | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |');
+  lines.push('| Fixture | Status | Blocks | HTML bytes | CSS bytes | Translation bytes | Internal ids stripped | Preview size | Edit size | Roll buttons | Blocking warnings |');
+  lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |');
   for (const item of report.fixtures) {
     lines.push(
-      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? 0} | ${item.emitBytes.html} | ${item.emitBytes.css} | ${item.emitBytes.translation} | ${fmtRect(item.previewDom?.rect)} | ${fmtRect(item.editDom?.rect)} | ${item.previewDom?.rollButtonCount ?? 0}/${item.editDom?.rollButtonCount ?? 0} | ${item.blockingWarnings.join(', ') || 'none'} |`,
+      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? 0} | ${item.emitBytes.html} | ${item.emitBytes.css} | ${item.emitBytes.translation} | ${item.removedInternalBlockIds ?? 0} | ${fmtRect(item.previewDom?.rect)} | ${fmtRect(item.editDom?.rect)} | ${item.previewDom?.rollButtonCount ?? 0}/${item.editDom?.rollButtonCount ?? 0} | ${item.blockingWarnings.join(', ') || 'none'} |`,
     );
   }
   lines.push('');
@@ -328,8 +354,9 @@ async function main() {
       try {
         const imported = await importFixture(page, fixture);
         entry.import = imported.result;
+        const htmlPayload = stripInternalBlockIds(imported.emit.html ?? '');
         const emit = {
-          html: imported.emit.html ?? '',
+          html: htmlPayload.html,
           css: imported.emit.css ?? '',
           translation: normalizeTranslation(imported.emit.i18n ?? ''),
         };
@@ -361,6 +388,7 @@ async function main() {
           translation: Buffer.byteLength(emit.translation),
           zip: zipBytes,
         };
+        entry.removedInternalBlockIds = htmlPayload.removed;
         entry.emitSha256 = {
           html: sha256(emit.html),
           css: sha256(emit.css),

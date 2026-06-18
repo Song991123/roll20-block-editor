@@ -28,6 +28,9 @@ This document defines how agents verify that this editor's preview/edit output m
    - Export the generated zip or HTML/CSS/translation payload for sandbox use.
    - Repeatable command:
      `node scripts/roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label <label>`
+   - Then run payload hygiene audit before uploading:
+     `corepack pnpm run audit:payload -- reports/roll20-actual-compare/<label>`
+   - The payload audit must pass before upload. It checks for app UI/edit overlay/internal id leakage, valid Roll20 JSON translation payloads, and zip/file consistency.
 2. Observe existing Roll20 solo rooms:
    - Use the user's logged-in Chrome session.
    - Identify rooms where the user is alone or intended for testing.
@@ -79,6 +82,7 @@ This document defines how agents verify that this editor's preview/edit output m
 | `local-baseline/<fixture>/payload/sheet.json` | Minimal local verification manifest. |
 | `local-baseline/<fixture>/upload.zip` | Convenience zip containing the payload files. |
 | `actual-screenshot-diff/actual-screenshot-diff-results.md` / `.json` | Local-only screenshot comparison report generated after Roll20 screenshots are placed beside local baseline screenshots. Missing Roll20 screenshots are SKIP, not PASS. |
+| `payload-audit/roll20-payload-audit-results.md` / `.json` | Local-only upload payload hygiene report. Must pass before Custom Sheet Sandbox/test-room upload. |
 
 Passing this local baseline proves the selected fixture can be imported, emitted,
 captured locally, and packaged for Roll20. It does not prove the generated sheet

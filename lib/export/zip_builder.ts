@@ -18,6 +18,7 @@ import {
   type SheetMetadata,
   ZIP_FILES,
 } from './types';
+import { prepareRoll20Payload } from './payload';
 
 export interface ZipResult {
   blob: Blob;
@@ -36,15 +37,16 @@ export async function buildZip(
   emit: EmitOutput,
   meta: SheetMetadata,
 ): Promise<ZipResult> {
+  const payload = prepareRoll20Payload(emit);
   const zip = new JSZip();
-  zip.file(ZIP_FILES.HTML, emit.html);
-  zip.file(ZIP_FILES.CSS, emit.css);
+  zip.file(ZIP_FILES.HTML, payload.html);
+  zip.file(ZIP_FILES.CSS, payload.css);
   // 빈 번역이면 "{}" 만 들어가도록 normalize.
-  const translation = emit.translation.trim().length > 0 ? emit.translation : '{}';
+  const translation = payload.translation.trim().length > 0 ? payload.translation : '{}';
   zip.file(ZIP_FILES.TRANSLATION, translation);
   zip.file(ZIP_FILES.MANIFEST, buildManifest(meta));
   zip.file(ZIP_FILES.README, buildReadme(meta));
-  for (const [name, content] of Object.entries(emit.extraFiles ?? {})) {
+  for (const [name, content] of Object.entries(payload.extraFiles ?? {})) {
     zip.file(name, content);
   }
 

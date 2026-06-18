@@ -23,7 +23,7 @@ function assert(cond: unknown, msg: string): void {
 async function testDndSmoke(): Promise<void> {
   const html = `
     <div class="sheet-tab"><h3 data-i18n="basic-info">Basic Info</h3></div>
-    <input type="text" name="attr_character_name" value="Hero">
+    <input data-r20-block-id="internal-name" type="text" name="attr_character_name" value="Hero">
     <input type="number" name="attr_level" min="1" max="20" value="3">
     <rolltemplate class="sheet-rolltemplate-default">
       <div>{{name}} rolls {{r1}}</div>
@@ -65,6 +65,9 @@ async function testDndSmoke(): Promise<void> {
   assert(manifest.authors === 'Tester', 'manifest.authors');
   assert(manifest.system === 'D&D 5e', 'manifest.system');
   assert(manifest.license === 'All rights reserved', 'manifest.license default');
+
+  const sheetHtml = await unpacked.files['sheet.html'].async('string');
+  assert(!sheetHtml.includes('data-r20-block-id'), 'export sheet.html strips internal block ids');
 
   const readme = await unpacked.files['README.txt'].async('string');
   assert(readme.includes('Roll20 커스텀 시트 등록 가이드'), 'README KR title');
@@ -135,6 +138,19 @@ function testInlineHandlerBlocked(): void {
 }
 
 // ── (4) 한국어 메시지 자연스러움 — 어색한 한자/영문 잔재 없는지 ────────────
+async function testI18nCommentExportedAsJson(): Promise<void> {
+  const html = `<div data-i18n="hello">Hello</div>`;
+  const css = '';
+  const translation = `<!-- i18n[ko] "hello": "안녕" -->`;
+  const zip = await buildZip(
+    { html, css, translation, warnings: [] },
+    { ...DEFAULT_METADATA, name: 'I18n Comment Sheet' },
+  );
+  const unpacked = await JSZip.loadAsync(await zip.blob.arrayBuffer());
+  const exported = JSON.parse(await unpacked.files['translation.json'].async('string'));
+  assert(exported.hello === '안녕', 'i18n comment format exported as Roll20 JSON');
+}
+
 function testKoreanMessages(): void {
   const samples = [
     `<iframe src="x"></iframe>`,
@@ -188,6 +204,8 @@ async function main(): Promise<void> {
   console.log('  ✓ eval → ERROR');
   testInlineHandlerBlocked();
   console.log('  ✓ onclick → ERROR');
+  await testI18nCommentExportedAsJson();
+  console.log('  ??i18n comment export JSON');
   testKoreanMessages();
   console.log('  ✓ Korean messages natural');
   testFileNameSlug();
