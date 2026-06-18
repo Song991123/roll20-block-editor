@@ -373,6 +373,7 @@ async function runImportedCanvasInsert(page) {
     null,
     { timeout: 30000 },
   );
+  await page.click('[data-testid="edit-placement-flow"]');
   return page.evaluate(async () => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
     const root = host?.shadowRoot?.querySelector('#charsheet-root');
@@ -491,6 +492,187 @@ async function runImportedCanvasInsert(page) {
       const end = html.indexOf('>', markerIndex);
       if (start < 0 || end < 0 || start > markerIndex) return '';
       return html.slice(start, end + 1);
+    }
+  });
+}
+
+async function runImportedFreeCanvasInsert(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
+  await page.waitForFunction(
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    null,
+    { timeout: 30000 },
+  );
+  await page.click('[data-testid="edit-placement-free"]');
+  return page.evaluate(async () => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    if (!host || !root) return { pass: false, reason: 'missing edit shadow root' };
+
+    const beforeIds = new Set(
+      Array.from(root.querySelectorAll('[data-r20-block-id]'))
+        .map((el) => el.getAttribute('data-r20-block-id'))
+        .filter(Boolean),
+    );
+    const candidates = Array.from(root.querySelectorAll('[data-r20-can-drop="1"][data-r20-block-id]'))
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return {
+          el,
+          blockId: el.getAttribute('data-r20-block-id') || '',
+          role: el.getAttribute('data-r20-layer-role') || '',
+          rect,
+          visible:
+            cs.display !== 'none' &&
+            cs.visibility !== 'hidden' &&
+            rect.width >= 56 &&
+            rect.height >= 32,
+          nestedCount: el.querySelectorAll('[data-r20-block-id]').length,
+        };
+      })
+      .filter((item) => item.visible && /^(frame|flow)$/.test(item.role))
+      .sort((a, b) => a.nestedCount - b.nestedCount || a.rect.width * a.rect.height - b.rect.width * b.rect.height);
+    if (candidates.length === 0) return { pass: false, reason: 'no visible imported frame/flow free-placement target' };
+
+    const attempts = [];
+    for (const target of candidates.slice(0, 30)) {
+      const points = [
+        { x: 0.5, y: 0.5 },
+        { x: 0.28, y: 0.32 },
+        { x: 0.72, y: 0.36 },
+        { x: 0.35, y: 0.72 },
+      ];
+      for (const point of points) {
+        const dt = new DataTransfer();
+        dt.setData('application/x-r20-friendly-widget', JSON.stringify({ id: 'text-input' }));
+        const clientX = Math.round(target.rect.left + target.rect.width * point.x);
+        const clientY = Math.round(target.rect.top + target.rect.height * point.y);
+        const shadowTarget = host.shadowRoot?.elementFromPoint(clientX, clientY);
+        const eventTarget = shadowTarget || target.el;
+        const init = { bubbles: true, cancelable: true, composed: true, clientX, clientY };
+        const over = new DragEvent('dragover', init);
+        Object.defineProperty(over, 'dataTransfer', { value: dt });
+        eventTarget.dispatchEvent(over);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        const indicator = {
+          hostDropMode: host.getAttribute('data-r20-drop-mode'),
+          activeTargetId: host.getAttribute('data-r20-drop-target'),
+        };
+        if (indicator.hostDropMode !== 'inside' || !indicator.activeTargetId) {
+          attempts.push({
+            pass: false,
+            target: summarizeTarget(target),
+            point,
+            indicator,
+            overPrevented: over.defaultPrevented,
+            dropPrevented: false,
+            newId: null,
+            skippedDrop: true,
+          });
+          continue;
+        }
+
+        const activeTarget = host.shadowRoot?.querySelector(`[data-r20-block-id="${CSS.escape(indicator.activeTargetId)}"]`);
+        const activeRect = activeTarget?.getBoundingClientRect();
+        const drop = new DragEvent('drop', init);
+        Object.defineProperty(drop, 'dataTransfer', { value: dt });
+        eventTarget.dispatchEvent(drop);
+        await new Promise((resolve) => setTimeout(resolve, 800));
+
+        const freshRoot = host.shadowRoot?.querySelector('#charsheet-root');
+        const newInput = Array.from(freshRoot?.querySelectorAll('input[data-r20-block-id]') ?? [])
+          .find((el) => !beforeIds.has(el.getAttribute('data-r20-block-id') || ''));
+        const newId = newInput?.getAttribute('data-r20-block-id') || null;
+        const parent = newInput?.parentElement?.closest('[data-r20-block-id]');
+        const parentId = parent?.getAttribute('data-r20-block-id') || null;
+        const inputStyle = newInput ? getComputedStyle(newInput) : null;
+        const parentStyle = parent ? getComputedStyle(parent) : null;
+        const emit = window.__perfHook.getEmitContent();
+        const emittedTag = newId ? findBlockOpeningTag(emit.html, newId) : '';
+        const emittedStyle = emittedTag.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] || '';
+        const parentIndex = parentId ? emit.html.indexOf(`data-r20-block-id="${parentId}"`) : -1;
+        const inputIndex = newId ? emit.html.indexOf(`data-r20-block-id="${newId}"`) : -1;
+        const parentCloseIndex = parentIndex >= 0 ? emit.html.indexOf('</', parentIndex) : -1;
+        const emittedLeft = readPx(emittedStyle, 'left');
+        const emittedTop = readPx(emittedStyle, 'top');
+        const computedLeft = inputStyle ? Math.round(Number.parseFloat(inputStyle.left)) : null;
+        const computedTop = inputStyle ? Math.round(Number.parseFloat(inputStyle.top)) : null;
+        const pass =
+          over.defaultPrevented &&
+          drop.defaultPrevented &&
+          Boolean(newId) &&
+          parentId === indicator.activeTargetId &&
+          inputStyle?.position === 'absolute' &&
+          ['relative', 'absolute', 'fixed', 'sticky'].includes(parentStyle?.position || '') &&
+          /position\s*:\s*absolute/i.test(emittedStyle) &&
+          emittedLeft === computedLeft &&
+          emittedTop === computedTop &&
+          parentIndex >= 0 &&
+          inputIndex > parentIndex &&
+          (parentCloseIndex < 0 || inputIndex < parentCloseIndex);
+        const attempt = {
+          pass,
+          target: summarizeTarget(target),
+          point,
+          indicator,
+          activeTarget: activeTarget && activeRect
+            ? {
+                blockId: indicator.activeTargetId,
+                role: activeTarget.getAttribute('data-r20-layer-role') || '',
+                width: Math.round(activeRect.width),
+                height: Math.round(activeRect.height),
+              }
+            : null,
+          overPrevented: over.defaultPrevented,
+          dropPrevented: drop.defaultPrevented,
+          newId,
+          parentId,
+          parentComputedPosition: parentStyle?.position ?? null,
+          inputComputedPosition: inputStyle?.position ?? null,
+          inputComputedLeft: computedLeft,
+          inputComputedTop: computedTop,
+          emittedLeft,
+          emittedTop,
+          emittedTag,
+        };
+        attempts.push(attempt);
+        if (pass) return { ...attempt, attempts };
+        if (newId) return { ...attempt, attempts };
+      }
+    }
+    return { pass: false, reason: 'no imported free-placement attempt created nested absolute content', attempts };
+
+    function summarizeTarget(target) {
+      return {
+        blockId: target.blockId,
+        role: target.role,
+        width: Math.round(target.rect.width),
+        height: Math.round(target.rect.height),
+      };
+    }
+
+    function findBlockOpeningTag(html, blockId) {
+      let marker = `data-r20-block-id="${blockId}"`;
+      let markerIndex = html.indexOf(marker);
+      if (markerIndex < 0) {
+        marker = `data-r20-block-id='${blockId}'`;
+        markerIndex = html.indexOf(marker);
+      }
+      if (markerIndex < 0) return '';
+      const start = html.lastIndexOf('<', markerIndex);
+      const end = html.indexOf('>', markerIndex);
+      if (start < 0 || end < 0 || start > markerIndex) return '';
+      return html.slice(start, end + 1);
+    }
+
+    function readPx(text, prop) {
+      const match = text.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px`, 'i'));
+      return match ? Math.round(Number.parseFloat(match[1])) : null;
     }
   });
 }
@@ -934,14 +1116,14 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Canvas insert | Layer reorder | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
-  lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
+  lines.push('| Fixture | Status | Blocks | Flow insert | Free insert | Layer reorder | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
+  lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
-  lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, and the edited emit survived a re-import/emit cycle.');
+  lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, a second widget dropped in user-facing free mode as nested absolute content, and the edited emit survived a re-import/emit cycle.');
   lines.push('- Layer reorder is recorded when the imported Blockly graph exposes a safe adjacent leaf sibling pair. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
@@ -983,6 +1165,14 @@ function fmtLayerReorder(item) {
 function fmtCanvasInsert(item) {
   if (!item) return 'missing';
   if (item.pass) return `inside ${item.target?.role || ''} ${item.target?.width || ''}x${item.target?.height || ''}`.trim();
+  return `FAIL: ${item.reason || item.indicator?.hostDropMode || 'not inserted'}`;
+}
+
+function fmtFreeInsert(item) {
+  if (!item) return 'missing';
+  if (item.pass) {
+    return `absolute in ${item.activeTarget?.role || item.target?.role || ''} ${item.emittedLeft},${item.emittedTop}`.trim();
+  }
   return `FAIL: ${item.reason || item.indicator?.hostDropMode || 'not inserted'}`;
 }
 
@@ -1051,6 +1241,7 @@ async function main() {
         await page.waitForTimeout(1300);
         entry.layerReorder = await runImportedLayerReorder(page);
         entry.canvasInsert = await runImportedCanvasInsert(page);
+        entry.freeInsert = await runImportedFreeCanvasInsert(page);
         entry.attempts = [];
         const excludedIds = [];
         for (let attemptIndex = 0; attemptIndex < 24; attemptIndex += 1) {
@@ -1086,6 +1277,7 @@ async function main() {
         entry.pass =
           entry.pass &&
           entry.canvasInsert?.pass === true &&
+          entry.freeInsert?.pass === true &&
           (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true) &&
           isStableReimport(entry.reimport);
       } catch (err) {
