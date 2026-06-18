@@ -874,3 +874,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - Les-Oublies: actual iframe DOM/CSS is not readable in the current evidence; top blocker is the full-height evidence gap (`760x556` actual visible crop is `12.42%` of local `850x4477`), followed by visible CSS/state/asset mismatch (`21.67%`, crop gain `0.34%`), sandbox sanitize rewrite, unconfirmed actual default state, asset proxying, and missing chat screenshot.
   - YSHY 1BU: generated Roll20 sandbox screenshot missing.
 - Scope note: this is triage only. It helps choose the next probe and explicitly says not to change renderer CSS from this report alone.
+
+## 2026-06-19 Roll20 Same-Context Visible Smoke Slice
+
+- Added `scripts/roll20_same_context_visible_smoke.mjs` and package script `corepack pnpm run smoke:roll20-same-context-visible`.
+- The script renders generated payloads locally through `buildSheetDoc`, applies the state hint when present, captures normal root, local Sandbox expected root, measured frame-inset, and fit-to-visible-width candidates, then compares each candidate against the existing actual Roll20 `roll20-sandbox-root.png`.
+- Latest command: `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result:
+  - AW2E/YSHY 1BU: SKIP because generated Roll20 sandbox root screenshots are still missing.
+  - Les-Oublies: previous actual visible mismatch `21.67%`; best local same-context candidate `normal-root-top-left` is `21.60%`; local Sandbox expected root is also `21.60%`; measured frame-inset and fit-visible-width candidates are worse (`24.09%`, `23.34%`).
+- Interpretation: local frame/inset/sandbox-width simulation does not materially explain the remaining Les-Oublies visible mismatch. Next P0 should collect actual computed-style/state/asset evidence when the iframe is readable and capture full-height/scroll-stitched Roll20 root evidence.
+- Scope note: this is still not Roll20 visual parity.

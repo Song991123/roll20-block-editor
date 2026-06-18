@@ -203,6 +203,19 @@ evidence into ranked hypotheses. It is a triage report only. It must not be used
 as a substitute for actual iframe computed-style evidence, full-height root
 capture, or a trustworthy chat screenshot.
 
+When the next question is whether the mismatch is mostly caused by the measured
+Roll20 visible frame/inset context, run:
+
+```bash
+corepack pnpm run smoke:roll20-same-context-visible -- reports/roll20-actual-compare/<run-label>
+```
+
+This renders local payload candidates with normal preview, local Sandbox expected
+sanitize, measured frame inset, and fit-to-visible-width captures, then compares
+them against the existing actual Roll20 root crop. If these candidates do not
+materially improve the mismatch, do not keep tuning crop/inset guesses; move to
+actual computed-style/state/asset evidence and full-height Roll20 capture.
+
 ## Chrome Safety
 
 - Use existing Chrome/Roll20 login state only for the requested verification.
