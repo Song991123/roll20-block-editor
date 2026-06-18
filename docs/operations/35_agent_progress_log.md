@@ -515,3 +515,18 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - Preview/edit mismatch improved from the previous 4.96% / 4.76% / 1.25% to AW2E 1.76%, Les-Oublies 1.68%, and YSHY 1BU 0.85%.
   - Edit host/content height delta is 0 for all 3 prepared fixtures, and preview/edit toolbar overlap is 0.
 - Scope note: this is stronger local preview/edit evidence only. Actual Roll20 sandbox/test-room parity remains unverified until the upload blocker is resolved and screenshots exist.
+
+## 2026-06-18 State-map Visual Diff Capture Slice
+
+- Added `scripts/capture_visual_fixture_previews.mjs`.
+- `corepack pnpm run diff:visual-fixtures` now captures live local preview PNGs first, applies `reports/visual-state-candidates/visual-state-candidates-state-map.json` when available, then generates/runs/classifies browser diff pages.
+- Hardened `scripts/run_visual_fixture_diff_pages.mjs` for large fullsheet data-URL pages by waiting for the result JSON directly and isolating each diff page in its own Chromium process.
+- Latest local validation:
+  - `node --check scripts\capture_visual_fixture_previews.mjs`: PASS.
+  - `node --check scripts\run_visual_fixture_diff_pages.mjs`: PASS.
+  - `corepack pnpm run build`: PASS.
+  - `corepack pnpm run smoke:visual-state-candidates -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-state-candidates`: PASS.
+  - `corepack pnpm run diff:visual-fixtures`: PASS. AW2E captured initial state and reports 18% best mismatch. Les-Oublies applied `act_fullsheet` and reports 8.84% best mismatch, replacing the stale default-state 13.51% diagnostic.
+  - `corepack pnpm run lint`: PASS.
+  - `corepack pnpm run guard:roll20-evidence`: PASS.
+- Scope note: this fixes the local reference-image diagnostic pipeline. It still does not prove actual Roll20 visual parity; Custom Sheet Sandbox/test-room screenshots are still blocked by Chrome file URL upload access.

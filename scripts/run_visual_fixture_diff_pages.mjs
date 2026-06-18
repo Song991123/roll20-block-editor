@@ -60,7 +60,6 @@ async function main() {
     throw new Error(`missing ${PAGES_JSON}; run scripts/make_visual_diff_pages.mjs first`);
   }
   const pages = JSON.parse(await fs.readFile(PAGES_JSON, 'utf8'));
-  const browser = await chromium.launch();
   const report = {
     generatedAt: new Date().toISOString(),
     pageManifest: PAGES_JSON,
@@ -68,6 +67,7 @@ async function main() {
   };
 
   for (const entry of pages.entries ?? []) {
+    const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1280, height: 960 } });
     const consoleMessages = [];
     const pageErrors = [];
@@ -86,11 +86,10 @@ async function main() {
     try {
       await page.goto(fileUrl(entry.pagePath), { waitUntil: 'domcontentloaded', timeout: 60000 });
       const resultLocator = page.locator('[data-testid="result"]');
-      await resultLocator.waitFor({ state: 'visible', timeout: 30000 });
       await page.waitForFunction(() => {
         const el = document.querySelector('[data-testid="result"]');
         return el && !/^pending\b/.test(el.textContent || '');
-      }, null, { timeout: 60000 });
+      }, null, { timeout: 180000 });
       const raw = await resultLocator.textContent();
       item.raw = raw;
       item.result = JSON.parse(raw || '{}');
@@ -103,13 +102,13 @@ async function main() {
     report.entries.push(item);
     console.log(`${item.pass ? 'PASS' : 'FAIL'} ${entry.fixtureId} best=${pct(item.result?.best?.mismatchRatio) || 'n/a'}`);
     await page.close();
+    await browser.close();
   }
 
   report.finishedAt = new Date().toISOString();
   report.pass = report.entries.every((entry) => entry.pass);
   await fs.writeFile(path.join(REPORT_DIR, 'visual-fixture-diff-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   await fs.writeFile(path.join(REPORT_DIR, 'visual-fixture-diff-results.md'), renderMarkdown(report), 'utf8');
-  await browser.close();
   console.log(report.pass ? 'VISUAL FIXTURE DIFF RUNNER PASS' : 'VISUAL FIXTURE DIFF RUNNER FAIL');
   process.exitCode = report.pass ? 0 : 1;
 }
