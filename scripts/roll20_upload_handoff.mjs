@@ -9,6 +9,9 @@
  * Usage:
  *   node scripts/roll20_upload_handoff.mjs \
  *     reports/roll20-actual-compare/<label> [fixture-id]
+ *
+ * If no run folder is provided, the newest ignored run with a PASS pre-upload
+ * report is selected. This avoids accidentally handing off stale payloads.
  */
 
 import { existsSync } from 'node:fs';
@@ -16,12 +19,22 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const RUN_DIR = path.resolve(args[0] ?? 'reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1');
-const ONLY = args[1] ?? '';
-const OUT_DIR = path.join(RUN_DIR, 'roll20-upload-handoff');
+const [RUN_DIR_ARG, ONLY] = parseArgs(args);
+const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
+
+function parseArgs(rawArgs) {
+  const first = rawArgs[0] ?? '';
+  const second = rawArgs[1] ?? '';
+  if (!first) return ['', ''];
+  const looksLikePath = first.includes('/') || first.includes('\\') || first.startsWith('.') || existsSync(first);
+  if (looksLikePath) return [first, second];
+  return ['', first];
+}
 
 async function main() {
-  const baselineDir = path.join(RUN_DIR, 'local-baseline');
+  const runDir = RUN_DIR_ARG ? path.resolve(RUN_DIR_ARG) : await findLatestPreuploadRun();
+  const outDir = path.join(runDir, 'roll20-upload-handoff');
+  const baselineDir = path.join(runDir, 'local-baseline');
   if (!existsSync(baselineDir)) {
     throw new Error(`missing local baseline folder: ${baselineDir}`);
   }
@@ -33,25 +46,55 @@ async function main() {
 
   const entries = [];
   for (const fixtureId of fixtureIds) {
-    entries.push(await buildEntry(fixtureId));
+    entries.push(await buildEntry(runDir, fixtureId));
   }
   const report = {
     generatedAt: new Date().toISOString(),
-    runDir: RUN_DIR,
+    runDir,
+    selectedAutomatically: !RUN_DIR_ARG,
     privacy: 'local-only ignored report; do not commit generated evidence',
     blocker:
       'Chrome extension file upload is blocked until Allow access to file URLs is enabled for the Codex extension.',
     entries,
   };
 
-  await fs.mkdir(OUT_DIR, { recursive: true });
-  await fs.writeFile(path.join(OUT_DIR, 'roll20-upload-handoff.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await fs.writeFile(path.join(OUT_DIR, 'roll20-upload-handoff.md'), renderMarkdown(report), 'utf8');
-  console.log(JSON.stringify({ outDir: OUT_DIR, entries: entries.length }, null, 2));
+  await fs.mkdir(outDir, { recursive: true });
+  await fs.writeFile(path.join(outDir, 'roll20-upload-handoff.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  await fs.writeFile(path.join(outDir, 'roll20-upload-handoff.md'), renderMarkdown(report), 'utf8');
+  console.log(JSON.stringify({ outDir, runDir, entries: entries.length }, null, 2));
 }
 
-async function buildEntry(fixtureId) {
-  const root = path.join(RUN_DIR, 'local-baseline', fixtureId);
+async function findLatestPreuploadRun() {
+  if (!existsSync(RUN_ROOT)) {
+    throw new Error(`missing Roll20 actual-compare report root: ${RUN_ROOT}`);
+  }
+  const entries = await fs.readdir(RUN_ROOT, { withFileTypes: true });
+  const candidates = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const runDir = path.join(RUN_ROOT, entry.name);
+    const preuploadJson = path.join(runDir, 'preupload-verification', 'preupload-verification-results.json');
+    const baselineDir = path.join(runDir, 'local-baseline');
+    if (!existsSync(preuploadJson) || !existsSync(baselineDir)) continue;
+    try {
+      const report = JSON.parse(await fs.readFile(preuploadJson, 'utf8'));
+      if (report.pass) {
+        const stat = await fs.stat(preuploadJson);
+        candidates.push({ runDir, mtimeMs: stat.mtimeMs });
+      }
+    } catch {
+      // Ignore malformed local reports.
+    }
+  }
+  candidates.sort((a, b) => b.mtimeMs - a.mtimeMs);
+  if (!candidates[0]) {
+    throw new Error(`no PASS pre-upload run found under ${RUN_ROOT}; pass an explicit run folder`);
+  }
+  return candidates[0].runDir;
+}
+
+async function buildEntry(runDir, fixtureId) {
+  const root = path.join(runDir, 'local-baseline', fixtureId);
   const payload = path.join(root, 'payload');
   const screenshots = path.join(root, 'screenshots');
   const files = {
@@ -68,7 +111,7 @@ async function buildEntry(fixtureId) {
       chat: withRelative(path.join(screenshots, 'roll20-chat.png')),
       room: withRelative(path.join(screenshots, 'roll20-room.png')),
     },
-    nextDiffCommand: `node scripts/roll20_actual_screenshot_diff.mjs ${path.relative(process.cwd(), RUN_DIR)}`,
+    nextDiffCommand: `node scripts/roll20_actual_screenshot_diff.mjs ${path.relative(process.cwd(), runDir)}`,
   };
 }
 
@@ -85,6 +128,7 @@ function renderMarkdown(report) {
     '# Roll20 Upload Handoff',
     '',
     `Generated: ${report.generatedAt}`,
+    `Run folder: \`${path.relative(process.cwd(), report.runDir)}\`${report.selectedAutomatically ? ' (auto-selected latest PASS pre-upload run)' : ''}`,
     '',
     'This folder is local-only and ignored by Git. Do not commit screenshots, copied sheet source, room names, character names, campaign IDs, or generated reports.',
     '',

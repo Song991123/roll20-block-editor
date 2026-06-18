@@ -151,8 +151,13 @@ Codex Chrome extension:
 If the upload remains blocked, generate a local handoff checklist:
 
 ```bash
-corepack pnpm run handoff:roll20-upload -- reports/roll20-actual-compare/<label> [fixture-id]
+corepack pnpm run handoff:roll20-upload -- [reports/roll20-actual-compare/<label>] [fixture-id]
 ```
+
+If the run folder is omitted, the handoff script selects the newest PASS
+pre-upload run. Agents must not try to bypass Chrome's blocked
+`chrome://extensions` automation page; the user must enable file URL access
+manually when that browser policy blocks inspection.
 
 The checklist stays under the ignored run folder and lists exact payload files,
 screenshot destinations, and the diff command to run after screenshots exist.
