@@ -863,3 +863,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest Les-Oublies result: visible crop `760x556`, mismatch `21.67%`, top-aligned local crop gain `0.34%`, mismatch bounds `0,0,760,556`, dominant band `bottom`, dominant quadrant `bottomLeft`.
 - Interpretation: simple horizontal crop drift does not explain the mismatch. Next investigation should compare actual/local visible CSS, default state, asset rendering, and Roll20 scale/layout context before renderer changes.
 - Scope note: this is local-only visual diagnosis. It does not prove Roll20 visual parity and does not replace full-height/scroll-stitched Roll20 root evidence.
+
+## 2026-06-19 Roll20 Visible Context Diagnostics Slice
+
+- Added `scripts/roll20_visible_context_diagnostics.mjs` and package script `corepack pnpm run diagnose:roll20-visible-context`.
+- The script reads existing ignored Roll20 actual evidence and consolidates local preview size/state, actual iframe/crop metadata, sandbox sanitize rewrites, visible-crop gain, chat DOM evidence, and missing screenshot status into ranked hypotheses.
+- Latest command: `corepack pnpm run diagnose:roll20-visible-context -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result:
+  - AW2E: generated Roll20 sandbox screenshot missing.
+  - Les-Oublies: actual iframe DOM/CSS is not readable in the current evidence; top blocker is the full-height evidence gap (`760x556` actual visible crop is `12.42%` of local `850x4477`), followed by visible CSS/state/asset mismatch (`21.67%`, crop gain `0.34%`), sandbox sanitize rewrite, unconfirmed actual default state, asset proxying, and missing chat screenshot.
+  - YSHY 1BU: generated Roll20 sandbox screenshot missing.
+- Scope note: this is triage only. It helps choose the next probe and explicitly says not to change renderer CSS from this report alone.

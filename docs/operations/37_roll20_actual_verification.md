@@ -190,6 +190,19 @@ also compares against a matching local visible viewport, inspect any remaining
 visible-crop mismatch separately, then capture a full-height/scroll-stitched
 Roll20 sheet root before making any full-sheet parity claim.
 
+When the iframe DOM/CSS remains unreadable, run the context diagnostic after the
+diff/classifier/crop diagnostics:
+
+```bash
+corepack pnpm run diagnose:roll20-visible-context -- reports/roll20-actual-compare/<run-label>
+```
+
+This command consolidates local preview size/state, actual iframe/crop metadata,
+Roll20 sandbox sanitize rewrites, visible-crop gain, and chat DOM-vs-screenshot
+evidence into ranked hypotheses. It is a triage report only. It must not be used
+as a substitute for actual iframe computed-style evidence, full-height root
+capture, or a trustworthy chat screenshot.
+
 ## Chrome Safety
 
 - Use existing Chrome/Roll20 login state only for the requested verification.
