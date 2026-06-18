@@ -151,6 +151,39 @@ required generated-sheet upload gate.
 - Confirm before creating a new Roll20 room or submitting sheet code if the action has not already been explicitly authorized for that exact destination.
 - Existing solo rooms are for default-state/wrapper/chat observation only. Generated sheets go to Custom Sheet Sandbox first, then a new test room only when sandbox evidence is insufficient.
 
+## Dedicated Sandbox Upload Fallback
+
+Use this fallback only in the dedicated verification Custom Sheet Sandbox or a
+new test room created for verification. Do not use it on existing real rooms.
+
+Chrome file chooser automation may fail with `fileChooser.setFiles failed: Not
+allowed`. The Roll20 in-editor `Sheet Sandbox Tools` file inputs were observed to
+read the chosen file with `FileReader`, then POST base64 source to:
+
+```text
+/sheetsandbox/savesheetsettings
+```
+
+Observed payload shape:
+
+```json
+{
+  "campaignid": "<sandbox campaign id>",
+  "html": "<base64 sheet HTML>"
+}
+```
+
+The same endpoint accepts `css` and `translation` keys. After the HTML/CSS/
+translation source is saved, the settings page must still save a Sheet.json
+manifest through `textarea[name=customcharsheet_json]`; otherwise Roll20 can
+store the source but the character iframe may not load the custom sheet.
+
+Agents must record this as an external Roll20 sandbox side effect in
+`docs/operations/35_agent_progress_log.md`. The fallback proves only that the
+payload reached the dedicated sandbox. It does not prove visual parity until a
+trustworthy `roll20-sandbox.png` and, separately, rolltemplate/chat evidence are
+captured and diffed.
+
 ## File Upload Gotcha
 
 Roll20 Custom Sheet Sandbox uploads HTML, CSS, and Translation through browser
@@ -176,3 +209,7 @@ manually when that browser policy blocks inspection.
 
 The checklist stays under the ignored run folder and lists exact payload files,
 screenshot destinations, and the diff command to run after screenshots exist.
+
+If the dedicated sandbox upload fallback above is used instead of file chooser
+upload, still keep the handoff/checklist and status commands current. Screenshot
+evidence remains the gate; endpoint success alone is not Roll20 visual parity.

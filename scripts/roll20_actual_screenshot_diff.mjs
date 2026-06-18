@@ -18,9 +18,8 @@
  */
 
 import { existsSync } from 'node:fs';
-import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const args = process.argv.slice(2);
@@ -35,8 +34,11 @@ function argOf(name, fallback) {
   return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
 }
 
-function fileUrl(file) {
-  return pathToFileURL(path.resolve(file)).href;
+async function imageDataUrl(file) {
+  const ext = path.extname(file).toLowerCase();
+  const mimeType = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
+  const bytes = await readFile(file);
+  return `data:${mimeType};base64,${bytes.toString('base64')}`;
 }
 
 async function listFixtureDirs() {
@@ -72,6 +74,7 @@ function actualTargets(fixtureDir) {
 }
 
 async function comparePair(page, pair) {
+  const [localUrl, actualUrl] = await Promise.all([imageDataUrl(pair.local), imageDataUrl(pair.actual)]);
   return page.evaluate(
     async ({ localUrl, actualUrl, threshold, searchStep }) => {
       function loadImage(src) {
@@ -167,8 +170,8 @@ async function comparePair(page, pair) {
       };
     },
     {
-      localUrl: fileUrl(pair.local),
-      actualUrl: fileUrl(pair.actual),
+      localUrl,
+      actualUrl,
       threshold: THRESHOLD,
       searchStep: SEARCH_STEP,
     },

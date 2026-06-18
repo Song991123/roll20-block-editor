@@ -803,3 +803,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - YSHY 1BU: runtime nodes `20 -> 0`, sandbox bytes `678830`, page errors 0.
 - Console WARN reasons were Roll20 image-proxy font CORS and source sheet numeric-expression warnings; these remain diagnostics, not sanitizer render failures. Pass `--fail-on-console-issues` when a strict console gate is needed.
 - Scope note: this expands local expected-render coverage only. It still does not prove actual Roll20 visual parity until generated Roll20 Sandbox/chat screenshots are captured and diffed.
+
+## 2026-06-19 Roll20 Actual Sandbox First Generated Sheet Evidence
+
+- Reused the dedicated Roll20 Custom Sheet Sandbox, not an existing real room.
+- The Roll20 editor's `Sheet Sandbox Tools` file chooser path remained blocked, but its handler was observed to POST base64 source to `/sheetsandbox/savesheetsettings`.
+- Applied the generated Les-Oublies payload through that dedicated-sandbox endpoint for HTML, CSS, and translation, then saved `customcharsheet_json` on the sandbox settings page so the character iframe would load the custom sheet.
+- Opened a sandbox character and confirmed the Roll20 character iframe contained the generated Les-Oublies sheet (`form.sheetform` and `div.charactersheet` were present).
+- Captured a trustworthy actual Roll20 sheet screenshot as ignored local evidence: `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-Les-Oublies/screenshots/roll20-sandbox.png`.
+- Fixed `scripts/roll20_actual_screenshot_diff.mjs` to load screenshots as PNG/JPEG data URLs instead of `file://` URLs, which avoided Windows/Korean-path browser image load failures.
+- Latest actual screenshot diff command: `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest actual screenshot diff result: Les-Oublies sandbox mismatch `18.81%`; AW2E/YSHY sandbox, room, and chat targets remain SKIP.
+- Latest status command: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest status result: `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=1/6`, `generatedDiffed=1/6`, `roomObservationScreenshots=0/3`, and `roomObservationDiffed=0/3`.
+- Clicked a real Roll20 roll button in the generated sheet iframe; Roll20 created one `sheet-rolltemplate-classic-roll` chat DOM message. DOM evidence is local-only under the ignored screenshot folder.
+- Tried to capture the right Roll20 chat pane, but Roll20 UI overlays and Chrome screenshot coordinate behavior repeatedly produced non-chat images. Removed the misleading `roll20-chat.png`; chat screenshot/diff remains missing.
+- Scope note: this is the first real generated Roll20 sheet render/diff evidence. It is not visual parity, and it does not yet prove chat/rolltemplate screenshot parity or coverage for AW2E/YSHY.

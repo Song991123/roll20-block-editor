@@ -71,13 +71,20 @@ Do not conflate these two layers:
 | Roll20 sandbox sanitize/prefix | Actual Roll20 custom sheet preview behavior for HTML/CSS source before rendering. | Observed and documented here; implementation gap remains. |
 | Legacy CSS compatibility toggle | Optional export/preview transform for older Roll20 CSS support, such as transform/keyframes/var/position handling. | Existing local sanitizer covers part of this but is not the actual sandbox prefix/sanitize contract. |
 
-## Current Blocker
+## Current Evidence Boundary
 
 Actual generated-sheet visual parity is still unproven. Chrome can reach the
-Roll20 Custom Sheet Sandbox, but automated file upload is blocked because the
-Codex Chrome extension cannot currently set local files in the chooser. Enable
-Chrome extension file access or manually place the generated payload and
-screenshots into the ignored report folder before claiming Roll20 visual parity.
+Roll20 Custom Sheet Sandbox. Automated file chooser upload is blocked because
+the Codex Chrome extension cannot currently set local files in the chooser, but
+the dedicated sandbox accepted generated source through the observed
+`/sheetsandbox/savesheetsettings` endpoint after base64 encoding each HTML/CSS/
+translation payload and saving `customcharsheet_json` on the settings page.
+
+The first generated Les-Oublies Roll20 sandbox screenshot exists locally and
+diffs against the local baseline at `18.81%` mismatch. A real Roll20 roll button
+click produced a `sheet-rolltemplate-classic-roll` chat DOM message, but a
+trustworthy chat-pane screenshot is still missing. Therefore the current state is
+partial actual evidence, not Roll20 visual parity.
 
 ## Implementation Implications
 
