@@ -36,6 +36,19 @@ AW2E `0%`, Les-Oublies `0%`, and YSHY `0%`. `verify:roll20-preupload` now
 regenerates local baseline/upload payloads before the audits so this stale
 baseline failure mode is less likely to recur. Les-Oublies remains the only
 fixture with generated actual Roll20 full-root screenshot evidence in this run.
+Follow-up full-root candidate decomposition: `corepack pnpm run
+smoke:roll20-full-root-candidates --
+reports\roll20-actual-compare\2026-06-18-state-map-v1` now clears each
+fixture's candidate artifact folder before writing crops, adds text-input-height
+only candidates, and writes a Component Effect Summary. Latest Les-Oublies
+result still finds diagnostic `sandbox-inline-block-text-input-276-source` as
+pixel/geometry best at `3.87%` mismatch and root delta `-0.656px`. The
+decomposition shows text-input height alone does not explain the Roll20 delta
+and actually worsens geometry, while inline-block whitespace/fit candidates
+remove the row wrap and provide most of the improvement. This remains
+diagnostic-only: do not promote `word-spacing`, `nowrap`, or input-height CSS to
+production until repeated actual Roll20 captures across AW2E/YSHY or additional
+fixtures confirm it is a generic Roll20 runtime behavior.
 
 Current Roll20 actual-screen note, 2026-06-19: the older Les-Oublies `18.81%`
 full/viewport sandbox screenshot diff is superseded by the preferred

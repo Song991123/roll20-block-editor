@@ -10,7 +10,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -91,6 +91,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   }
 
   const artifactDir = path.join(outDir, fixtureId);
+  await rm(artifactDir, { recursive: true, force: true });
   await mkdir(artifactDir, { recursive: true });
   const baselineFixture = baseline.fixtures?.find((fixture) => fixture.id === fixtureId) ?? null;
   const stateCandidate = baselineFixture?.previewDom?.stateCandidate ?? baselineFixture?.previewStateCandidate ?? null;
@@ -134,6 +135,10 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         { id: 'sandbox-inline-block-wordspace-075-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-wordspace', rootWidth: actualRootWidth, wordSpacing: -0.75 } },
         { id: 'sandbox-inline-block-wordspace-100-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-wordspace', rootWidth: actualRootWidth, wordSpacing: -1 } },
         { id: 'sandbox-inline-block-font-zero-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-font-zero', rootWidth: actualRootWidth } },
+        { id: 'sandbox-text-input-260-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-height', rootWidth: actualRootWidth, textInputHeight: 26 } },
+        { id: 'sandbox-text-input-270-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-height', rootWidth: actualRootWidth, textInputHeight: 27 } },
+        { id: 'sandbox-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
+        { id: 'sandbox-text-input-280-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-height', rootWidth: actualRootWidth, textInputHeight: 28 } },
         { id: 'sandbox-inline-block-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-text-input-height', rootWidth: actualRootWidth, wordSpacing: -0.75, textInputHeight: 27.6 } },
         { id: 'sandbox-nowrap-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-nowrap-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
       );
@@ -164,10 +169,10 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   const bestCandidate = candidatesWithGeometryFit.reduce((best, candidate) => pickBetterCandidate(best, candidate), null);
   const bestGeometryCandidate = candidatesWithGeometryFit.reduce((best, candidate) => pickBetterGeometryCandidate(best, candidate), null);
   const sourceBest = candidates
-    .filter((candidate) => !candidate.applyStateHint)
+    .filter((candidate) => !candidate.applyStateHint && !candidate.contextPatch)
     .reduce((best, candidate) => pickBetterCandidate(best, candidate), null);
   const stateBest = candidates
-    .filter((candidate) => candidate.applyStateHint)
+    .filter((candidate) => candidate.applyStateHint && !candidate.contextPatch)
     .reduce((best, candidate) => pickBetterCandidate(best, candidate), null);
 
   return {
@@ -190,6 +195,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     bestCandidate,
     bestGeometryCandidate,
     candidates: candidatesWithGeometryFit,
+    componentEffects: summarizeComponentEffects(candidatesWithGeometryFit),
     interpretation: interpret({ bestCandidate, bestGeometryCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }),
     targetGeometry: compareTargetGeometry(actualTargetGeometry, bestCandidate?.metrics?.targetGeometry),
   };
@@ -448,6 +454,17 @@ async function applyRenderContextPatch(page, patch) {
         .ui-dialog .charsheet .sheet-3colrow { font-size: 0; }
         .ui-dialog .charsheet .sheet-2colrow > .sheet-col,
         .ui-dialog .charsheet .sheet-3colrow > .sheet-col { font-size: 13px; }
+      `;
+      document.head.append(style);
+    } else if (patch.mode === 'text-input-height') {
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+      const style = document.createElement('style');
+      const textInputHeight = Number.isFinite(patch.textInputHeight) ? patch.textInputHeight : 27.6;
+      style.setAttribute('data-r20-diagnostic-context-patch', `text-input-height-${textInputHeight}`);
+      style.textContent = `
+        .ui-dialog .charsheet input[type="text"] { min-height: ${textInputHeight}px; }
       `;
       document.head.append(style);
     } else if (patch.mode === 'inline-block-text-input-height') {
@@ -784,9 +801,45 @@ function summarizeGeometryFit({ actualSize, actualTargetGeometry, candidate }) {
   };
 }
 
+function summarizeComponentEffects(candidates) {
+  const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  const base = byId.get('sandbox-actual-root-width-source') ?? byId.get('sandbox-source-state') ?? null;
+  if (!base) return [];
+  const trackedIds = [
+    'sandbox-row-width-plus-1-source',
+    'sandbox-row-width-plus-2-source',
+    'sandbox-inline-block-nowrap-source',
+    'sandbox-inline-block-wordspace-025-source',
+    'sandbox-inline-block-wordspace-050-source',
+    'sandbox-inline-block-wordspace-075-source',
+    'sandbox-inline-block-wordspace-100-source',
+    'sandbox-inline-block-font-zero-source',
+    'sandbox-text-input-260-source',
+    'sandbox-text-input-270-source',
+    'sandbox-text-input-276-source',
+    'sandbox-text-input-280-source',
+    'sandbox-inline-block-text-input-276-source',
+    'sandbox-nowrap-text-input-276-source',
+  ];
+  return trackedIds
+    .map((id) => byId.get(id))
+    .filter(Boolean)
+    .map((candidate) => ({
+      id: candidate.id,
+      patch: candidate.contextPatch ?? '',
+      mismatchDelta: delta(candidate.mismatchRatio, base.mismatchRatio),
+      geometryScoreDelta: delta(candidate.geometryFit?.score, base.geometryFit?.score),
+      rootHeightDeltaChange: delta(candidate.rootHeightDelta, base.rootHeightDelta),
+      row0DeltaChange: delta(candidate.geometryFit?.row0Delta, base.geometryFit?.row0Delta),
+      row3DeltaChange: delta(candidate.geometryFit?.row3Delta, base.geometryFit?.row3Delta),
+      localSize: candidate.localSize ?? null,
+    }));
+}
+
 function formatRenderContextPatch(patch) {
   if (!patch) return null;
   if (patch.mode === 'inline-block-wordspace') return `${patch.mode}:${patch.wordSpacing}px`;
+  if (patch.mode === 'text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
   if (patch.mode === 'inline-block-text-input-height') return `${patch.mode}:${patch.wordSpacing}px:${patch.textInputHeight}px`;
   if (patch.mode === 'inline-block-nowrap-text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
   if (patch.mode === 'row-width-fudge') return `${patch.mode}:${patch.extraWidth}px`;
@@ -874,6 +927,18 @@ function renderMarkdown(report) {
         ? `${num(candidate.geometryFit.row0Delta)}/${num(candidate.geometryFit.row3Delta)}`
         : '';
       lines.push(`| ${candidate.id} | ${candidate.roll20SandboxSanitize ? 'on' : 'off'} | ${candidate.applyStateHint ? 'on' : 'off'} | ${candidate.contextPatch ?? ''} | ${pct(candidate.mismatchRatio)} | ${fmtDominantDiff(candidate.mismatchDistribution)} | ${fmtDominantCrop(candidate.dominantCrop)} | ${num(candidate.geometryFit?.score)} | ${rowDeltas} | ${fmtSize(candidate.localSize)} | ${num(candidate.rootHeightDelta)} | ${Array.isArray(candidate.bounds) ? candidate.bounds.join(',') : ''} | \`${path.relative(runDir, candidate.screenshot)}\` | \`${path.relative(runDir, candidate.overlay)}\` |`);
+    }
+    if (fixture.componentEffects?.length) {
+      lines.push('');
+      lines.push('### Component Effect Summary');
+      lines.push('');
+      lines.push('Baseline: `sandbox-actual-root-width-source`. Negative mismatch delta is visually better; negative geometry-score delta is geometrically closer.');
+      lines.push('');
+      lines.push('| Candidate | Patch | Mismatch delta | Geometry score delta | Root height delta change | Row0 delta change | Row3 delta change | Local size |');
+      lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |');
+      for (const effect of fixture.componentEffects) {
+        lines.push(`| ${effect.id} | ${effect.patch} | ${pct(effect.mismatchDelta)} | ${num(effect.geometryScoreDelta)} | ${num(effect.rootHeightDeltaChange)} | ${num(effect.row0DeltaChange)} | ${num(effect.row3DeltaChange)} | ${fmtSize(effect.localSize)} |`);
+      }
     }
     if (fixture.targetGeometry?.status === 'COMPARED') {
       lines.push('');

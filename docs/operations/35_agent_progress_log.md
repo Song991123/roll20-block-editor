@@ -1148,3 +1148,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_preupload_verification.mjs` so `verify:roll20-preupload` first regenerates the local baseline and upload payloads for the selected run before running payload audit, sandbox sanitize audit, payload roundtrip, state selector audit, asset audit, and evidence guard.
 - Rerunning `corepack pnpm run verify:roll20-preupload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixtures test-fixtures\visual --out-dir ./out --base-path /roll20-block-editor --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json` now PASSes all checks, including evidence guard.
 - Claim boundary: this is stronger Roll20 actual-screen evidence and a much better renderer clue, not visual parity and not a production CSS patch. AW2E/YSHY generated actual screenshots and trustworthy chat screenshots remain missing.
+
+## 2026-06-19 Full-Root Candidate Component Decomposition
+
+- Updated `scripts/roll20_full_root_candidate_smoke.mjs` so each fixture's ignored candidate artifact directory is cleared before writing new screenshots/crops. This prevents stale dominant-crop PNGs from being mistaken for current evidence.
+- Added diagnostic text-input-height-only candidates (`26`, `27`, `27.6`, `28px`) and a Component Effect Summary that compares each layout-context candidate against `sandbox-actual-root-width-source`.
+- Latest command: `corepack pnpm run smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest Les-Oublies result:
+  - Pixel and geometry best remain `sandbox-inline-block-text-input-276-source`, mismatch `3.87%`, root delta `-0.656px`, geometry score `8.606`.
+  - Text-input-height-only candidates do not improve pixel mismatch (`~6.25%-6.28%`) and worsen geometry/root height, so input height alone is not the root cause.
+  - Inline-block whitespace/fit candidates provide most of the gain by removing the row wrap (`~4.35%-4.47%` before input-height combination).
+  - The combined inline-block whitespace/fit plus input-height diagnostic reaches the best current score, but it is still not a production CSS patch because AW2E/YSHY actual full-root captures are missing.
+- Follow-up verification passed: `node --check scripts\roll20_full_root_candidate_smoke.mjs`, `corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run classify:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Claim boundary: this narrows the actual Roll20 mismatch to inline-block whitespace/fit behavior plus control-height interaction for Les-Oublies only. Do not claim Roll20 visual parity or all-sheet support.
