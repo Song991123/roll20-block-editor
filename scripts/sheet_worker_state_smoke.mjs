@@ -53,6 +53,13 @@ const SYNTHETIC_SHEET = {
   <div class="character">Character panel</div>
   <div class="combat">Combat panel</div>
 </div>
+<div class="duplicate-attr">
+  <label><input type="checkbox" class="visible-lock" name="attr_lock"> Visible lock</label>
+  <div class="anchor-scope">
+    <input type="checkbox" class="local-lock" name="attr_lock" style="display:none">
+    <div class="choice">Choice list that should hide when mirrored lock is checked</div>
+  </div>
+</div>
 <script type="text/worker">
   on("clicked:character", function () {
     setAttrs({ sheetTab: "character" });
@@ -74,6 +81,9 @@ const SYNTHETIC_SHEET = {
 .tabstoggle[value="combat"] ~ .combat {
   display: block;
   color: rgb(120, 40, 20);
+}
+.local-lock:checked ~ .choice {
+  display: none;
 }
 `,
   i18n: '{}',
@@ -134,8 +144,12 @@ async function readState(frame) {
     const input = document.querySelector('[name="attr_sheetTab"]');
     const character = document.querySelector('.sheet-character');
     const combat = document.querySelector('.sheet-combat');
+    const visibleLock = document.querySelector('.sheet-visible-lock');
+    const localLock = document.querySelector('.sheet-local-lock');
+    const choice = document.querySelector('.sheet-choice');
     const charStyle = character ? getComputedStyle(character) : null;
     const combatStyle = combat ? getComputedStyle(combat) : null;
+    const choiceStyle = choice ? getComputedStyle(choice) : null;
     return {
       inputValueProperty: input?.value ?? null,
       inputValueAttribute: input?.getAttribute('value') ?? null,
@@ -143,6 +157,11 @@ async function readState(frame) {
       combatDisplay: combatStyle?.display ?? null,
       characterText: character?.textContent?.trim() ?? '',
       combatText: combat?.textContent?.trim() ?? '',
+      visibleLockChecked: visibleLock?.checked ?? null,
+      visibleLockCheckedAttribute: visibleLock?.getAttribute('checked') ?? null,
+      localLockChecked: localLock?.checked ?? null,
+      localLockCheckedAttribute: localLock?.getAttribute('checked') ?? null,
+      choiceDisplay: choiceStyle?.display ?? null,
     };
   });
 }
@@ -174,6 +193,16 @@ function renderMarkdown(report) {
     );
   }
   lines.push('');
+  lines.push('## Duplicate Attribute Mirror');
+  lines.push('');
+  lines.push('| Step | Visible lock | Hidden anchor | Choice display | Status |');
+  lines.push('| --- | --- | --- | --- | --- |');
+  for (const step of report.duplicateAttrSteps ?? []) {
+    lines.push(
+      `| ${step.name} | ${step.state.visibleLockChecked} / ${step.state.visibleLockCheckedAttribute ?? ''} | ${step.state.localLockChecked} / ${step.state.localLockCheckedAttribute ?? ''} | ${step.state.choiceDisplay} | ${step.pass ? 'PASS' : 'FAIL'} |`,
+    );
+  }
+  lines.push('');
   lines.push(`Console/page errors: ${report.consoleErrors.length + report.pageErrors.length}`);
   lines.push(`Screenshot: \`${report.screenshotPath}\``);
   return `${lines.join('\n')}\n`;
@@ -195,6 +224,7 @@ async function main() {
     startedAt: new Date().toISOString(),
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
     steps: [],
+    duplicateAttrSteps: [],
     consoleErrors,
     pageErrors,
   };
@@ -234,6 +264,30 @@ async function main() {
     const combat = await readState(frame);
     report.steps.push({ name: 'after-combat-click', state: combat, pass: passForState(combat, 'combat') });
 
+    const beforeLock = await readState(frame);
+    report.duplicateAttrSteps.push({
+      name: 'before-visible-lock-click',
+      state: beforeLock,
+      pass: beforeLock.visibleLockChecked === false && beforeLock.localLockChecked === false && beforeLock.choiceDisplay !== 'none',
+    });
+    await frame.locator('.sheet-visible-lock').click({ timeout: 10000 });
+    await frame.waitForFunction(() => {
+      const localLock = document.querySelector('.sheet-local-lock');
+      const choice = document.querySelector('.sheet-choice');
+      return localLock?.checked === true && localLock?.getAttribute('checked') === 'checked' && getComputedStyle(choice).display === 'none';
+    }, null, { timeout: 10000 });
+    const afterLock = await readState(frame);
+    report.duplicateAttrSteps.push({
+      name: 'after-visible-lock-click',
+      state: afterLock,
+      pass:
+        afterLock.visibleLockChecked === true &&
+        afterLock.localLockChecked === true &&
+        afterLock.visibleLockCheckedAttribute === 'checked' &&
+        afterLock.localLockCheckedAttribute === 'checked' &&
+        afterLock.choiceDisplay === 'none',
+    });
+
     report.screenshotPath = path.join(REPORT_DIR, 'sheet-worker-state.png');
     await frame.locator('#charsheet-root').screenshot({ path: report.screenshotPath });
   } finally {
@@ -244,6 +298,7 @@ async function main() {
   report.finishedAt = new Date().toISOString();
   report.pass =
     report.steps.every((step) => step.pass) &&
+    report.duplicateAttrSteps.every((step) => step.pass) &&
     report.consoleErrors.filter((msg) => msg.type === 'error').length === 0 &&
     report.pageErrors.length === 0;
 

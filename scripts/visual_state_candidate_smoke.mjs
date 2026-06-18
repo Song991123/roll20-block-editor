@@ -40,6 +40,7 @@ const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4201'));
 const VIEWPORT = { width: 2200, height: 1400 };
 const MAX_ACTIONS = Number(argOf('--max-actions', '12'));
+const MAX_CONTROL_CANDIDATES = Number(argOf('--max-controls', '28'));
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -180,6 +181,85 @@ async function listActionCandidates(frame) {
     .slice(0, MAX_ACTIONS);
 }
 
+async function listControlCandidates(frame) {
+  const controls = await frame.evaluate(() => {
+    function labelFor(el) {
+      const id = el.getAttribute('id');
+      const explicit = id ? document.querySelector(`label[for="${CSS.escape(id)}"]`) : null;
+      const next = el.nextElementSibling?.tagName === 'LABEL' ? el.nextElementSibling : null;
+      const parent = el.closest('label');
+      const nearby = explicit || next || parent;
+      return (nearby?.textContent || el.parentElement?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    }
+    return Array.from(document.querySelectorAll('input[type="checkbox"], input[type="radio"]')).map((el, index) => {
+      const cs = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      const selfVisible = cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      const browserVisible =
+        typeof el.checkVisibility === 'function'
+          ? el.checkVisibility({ checkVisibilityCSS: true, checkOpacity: false })
+          : true;
+      const name = el.getAttribute('name') || '';
+      const value = el.getAttribute('value') || '';
+      const className = el.getAttribute('class') || '';
+      const label = labelFor(el);
+      const haystack = `${name} ${value} ${className} ${label}`;
+      let priority = 0;
+      if (/lock|unlock|class|playbook|tab|sheet/i.test(haystack)) priority += 20;
+      if (/attr_(class|lock_class|sheet|tab|page|mode)/i.test(name)) priority += 20;
+      if (/chopper|angel|battlebabe|brainer|driver|gunlugger|hardholder|hocus|skinner|savvy|waterbearer|marine/i.test(haystack)) priority += 10;
+      if (el.checked) priority += 2;
+      return {
+        index,
+        type: el.getAttribute('type') || '',
+        name,
+        value,
+        className,
+        label,
+        checked: el.checked,
+        visible: selfVisible && browserVisible,
+        priority,
+      };
+    });
+  });
+  const visible = controls
+    .filter((row) => row.visible && row.name && row.priority > 0)
+    .sort((a, b) => b.priority - a.priority || a.index - b.index)
+    .slice(0, MAX_CONTROL_CANDIDATES);
+
+  const singleCandidates = [];
+  const comboCandidates = [];
+  const seen = new Set();
+  for (const control of visible) {
+    const key = `${control.type}|${control.name}|${control.value}|${control.className}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    singleCandidates.push({
+      name: `control_${safeFilePart(control.name)}_${safeFilePart(control.value || control.label || control.type)}`,
+      label: control.label || `${control.name}=${control.value}`,
+      kind: 'control',
+      controls: [{ ...control, checked: true }],
+    });
+  }
+
+  const lock = visible.find((row) => /lock|unlock|attr_lock_class/i.test(`${row.name} ${row.className} ${row.label}`));
+  const classControls = visible.filter((row) => /attr_class|sheet-class|playbook|class/i.test(`${row.name} ${row.className} ${row.label}`) && row !== lock);
+  if (lock) {
+    for (const control of classControls.slice(0, 20)) {
+      comboCandidates.push({
+        name: `combo_${safeFilePart(lock.name)}_${safeFilePart(control.value || control.label || control.name)}`,
+        label: `${lock.label || lock.name} + ${control.label || control.value || control.name}`,
+        kind: 'control-combo',
+        controls: [
+          { ...control, checked: true },
+          { ...lock, checked: true },
+        ],
+      });
+    }
+  }
+  return [...comboCandidates, ...singleCandidates].slice(0, MAX_CONTROL_CANDIDATES);
+}
+
 async function readState(frame) {
   return frame.evaluate(() => {
     return Array.from(document.querySelectorAll('input[type="hidden"][name^="attr_"]'))
@@ -215,6 +295,44 @@ async function captureAndCompare(comparePage, frame, fixture, candidate, screens
     state: await readState(frame),
     diff,
   };
+}
+
+async function applyCandidate(frame, candidate) {
+  if (candidate.kind === 'control' || candidate.kind === 'control-combo') {
+    return frame.evaluate((candidateToApply) => {
+      function matches(el, control) {
+        if ((el.getAttribute('type') || '') !== control.type) return false;
+        if ((el.getAttribute('name') || '') !== control.name) return false;
+        if ((el.getAttribute('value') || '') !== control.value) return false;
+        if ((el.getAttribute('class') || '') !== control.className) return false;
+        return true;
+      }
+      const applied = [];
+      for (const control of candidateToApply.controls || []) {
+        const el = Array.from(document.querySelectorAll('input[type="checkbox"], input[type="radio"]')).find((input) => matches(input, control));
+        if (!el) {
+          applied.push({ ...control, applied: false, reason: 'not-found' });
+          continue;
+        }
+        el.scrollIntoView({ block: 'center', inline: 'center' });
+        if (control.checked && !el.checked) el.click();
+        else if (!control.checked && el.checked) el.click();
+        applied.push({
+          type: el.getAttribute('type') || '',
+          name: el.getAttribute('name') || '',
+          value: el.getAttribute('value') || '',
+          className: el.getAttribute('class') || '',
+          checked: el.checked,
+          applied: true,
+        });
+      }
+      return applied;
+    }, candidate);
+  }
+  const button = frame.locator(`button[name="${candidate.name.replace(/"/g, '\\"')}"]`).first();
+  await button.scrollIntoViewIfNeeded({ timeout: 3000 });
+  await button.click({ timeout: 5000 });
+  return [{ actionName: candidate.name, applied: true }];
 }
 
 async function compareImages(page, referenceSrc, captureSrc) {
@@ -416,16 +534,19 @@ async function main() {
         entry.candidates.push(initial);
 
         const actions = await listActionCandidates(frame);
+        const controls = await listControlCandidates(frame);
         entry.actionCandidates = actions;
-        for (const action of actions) {
+        entry.controlCandidates = controls;
+        for (const action of [...actions, ...controls]) {
           await importFixture(page, fixture);
           frame = await getPreviewFrame(page);
-          const button = frame.locator(`button[name="${action.name.replace(/"/g, '\\"')}"]`).first();
           try {
-            await button.scrollIntoViewIfNeeded({ timeout: 3000 });
-            await button.click({ timeout: 5000 });
-            await frame.waitForTimeout(300);
-            entry.candidates.push(await captureAndCompare(comparePage, frame, fixture, action, screenshotDir, referenceDataUrl));
+            const appliedControls = await applyCandidate(frame, action);
+            await frame.waitForTimeout(350);
+            entry.candidates.push({
+              ...(await captureAndCompare(comparePage, frame, fixture, action, screenshotDir, referenceDataUrl)),
+              appliedControls,
+            });
           } catch (err) {
             entry.candidates.push({
               ...action,
@@ -476,6 +597,9 @@ function buildStateMap(report) {
       fixtureId: item.id,
       actionName: best?.name ?? null,
       actionLabel: best?.label ?? null,
+      candidateKind: best?.kind ?? (best?.name === 'initial' ? 'initial' : 'action'),
+      controls: Array.isArray(best?.controls) ? best.controls : [],
+      appliedControls: Array.isArray(best?.appliedControls) ? best.appliedControls : [],
       hiddenAttrs: bestState,
       bestMismatchRatio: best?.diff?.best?.mismatchRatio ?? null,
       initialMismatchRatio: initial?.diff?.best?.mismatchRatio ?? null,

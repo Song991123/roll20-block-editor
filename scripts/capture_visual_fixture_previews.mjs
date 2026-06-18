@@ -122,6 +122,9 @@ function sanitizeStateCandidate(candidate) {
     fixtureId: candidate.fixtureId ?? '',
     actionName: candidate.actionName ?? '',
     actionLabel: candidate.actionLabel ?? '',
+    candidateKind: candidate.candidateKind ?? '',
+    controls: Array.isArray(candidate.controls) ? candidate.controls : [],
+    appliedControls: Array.isArray(candidate.appliedControls) ? candidate.appliedControls : [],
     hiddenAttrs: candidate.hiddenAttrs && typeof candidate.hiddenAttrs === 'object' ? candidate.hiddenAttrs : {},
     bestMismatchRatio: candidate.bestMismatchRatio ?? null,
     initialMismatchRatio: candidate.initialMismatchRatio ?? null,
@@ -216,6 +219,43 @@ async function applyPreviewStateCandidate(page, frame, sheet, candidate) {
   if (!sanitized.actionName || sanitized.actionName === 'initial') {
     result.skippedReason = 'initial-state';
     result.hiddenStateAfter = result.hiddenStateBefore;
+    return result;
+  }
+
+  if (Array.isArray(sanitized.controls) && sanitized.controls.length > 0) {
+    result.appliedControls = await frame.evaluate((candidateToApply) => {
+      function matches(el, control) {
+        if ((el.getAttribute('type') || '') !== control.type) return false;
+        if ((el.getAttribute('name') || '') !== control.name) return false;
+        if ((el.getAttribute('value') || '') !== control.value) return false;
+        if ((el.getAttribute('class') || '') !== control.className) return false;
+        return true;
+      }
+      const applied = [];
+      for (const control of candidateToApply.controls || []) {
+        const el = Array.from(document.querySelectorAll('input[type="checkbox"], input[type="radio"]')).find((input) => matches(input, control));
+        if (!el) {
+          applied.push({ ...control, applied: false, reason: 'not-found' });
+          continue;
+        }
+        el.scrollIntoView({ block: 'center', inline: 'center' });
+        if (control.checked && !el.checked) el.click();
+        else if (!control.checked && el.checked) el.click();
+        applied.push({
+          type: el.getAttribute('type') || '',
+          name: el.getAttribute('name') || '',
+          value: el.getAttribute('value') || '',
+          className: el.getAttribute('class') || '',
+          checked: el.checked,
+          applied: true,
+        });
+      }
+      return applied;
+    }, sanitized);
+    await page.waitForTimeout(500);
+    result.applied = result.appliedControls.some((control) => control.applied);
+    if (!result.applied) result.skippedReason = 'controls-not-applied';
+    result.hiddenStateAfter = await collectHiddenState(sheet, sanitized.hiddenAttrs);
     return result;
   }
 

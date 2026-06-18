@@ -175,6 +175,23 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       }
     }
   }
+  function mirrorChangedSheetAttr(el) {
+    if (!el || !el.getAttribute) return;
+    var rawName = el.getAttribute('name') || '';
+    if (rawName.indexOf('attr_') !== 0) return;
+    var key = rawName.substring(5);
+    var value;
+    if (el.tagName === 'INPUT' && (el.type === 'checkbox' || el.type === 'radio')) {
+      value = el.checked ? (el.value || '1') : '';
+    } else {
+      value = el.value == null ? '' : String(el.value);
+    }
+    settingAttrs = true;
+    writeSheetAttr(key, value);
+    settingAttrs = false;
+    triggerSheetWorker('change:' + key, { sourceAttribute: key });
+    scheduleResize();
+  }
   function sheetWorkerGetAttrs(names, cb) {
     var out = {};
     (names || []).forEach(function (n) { out[n] = readSheetAttr(n); });
@@ -319,6 +336,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       node = node.parentNode;
     }
   }, false);
+  document.addEventListener('change', function (e) {
+    if (settingAttrs) return;
+    var target = e.target;
+    if (!target || !target.matches || !target.matches('input[name^="attr_"], select[name^="attr_"], textarea[name^="attr_"]')) return;
+    mirrorChangedSheetAttr(target);
+  }, true);
   window.addEventListener('message', function (e) {
     if (!e.data) return;
     if (e.data.type === 'r20:highlight') {

@@ -40,9 +40,9 @@ This document defines how agents verify that this editor's preview/edit output m
    - Or run the full local pre-upload gate:
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor`
    - The pre-upload gate reruns payload hygiene, cleaned-payload visual roundtrip, default-state selector audit, asset/resource audit, and evidence guard. Passing means the payload is ready to upload; it still does not prove Roll20 visual parity.
-   - If the local baseline was captured with action-state hints, pass the same state map through the pre-upload gate:
+   - If the local baseline was captured with action/control-state hints, pass the same state map through the pre-upload gate:
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json`
-   - `--state-map` affects only local screenshot state normalization for baseline/payload comparison. It does not mutate the Roll20 upload payload files.
+   - `--state-map` affects only local screenshot state normalization for baseline/payload comparison. It may click a local action button or local checkbox/radio control before screenshot capture. It does not mutate the Roll20 upload payload files.
 2. Observe existing Roll20 solo rooms:
    - Use the user's logged-in Chrome session.
    - Identify rooms where the user is alone or intended for testing.
