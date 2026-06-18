@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "analyze": "cross-env ANALYZE=true next build --webpack"
+    "analyze": "cross-env ANALYZE=true next build --webpack",
+    "smoke:worker": "node scripts/worker_workspace_smoke.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

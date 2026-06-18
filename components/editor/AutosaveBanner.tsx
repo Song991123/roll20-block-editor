@@ -19,7 +19,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import { WORKSPACE_KEYS, useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import {
   deleteWorkspace,
   AUTOSAVE_KEY,
@@ -46,8 +46,6 @@ function relativeTime(ts: number): string {
   const day = Math.floor(hr / 24);
   return `${day}일 전`;
 }
-
-const WORKSPACE_KEYS: WorkspaceKey[] = ['html', 'css', 'i18n'];
 
 export default function AutosaveBanner({ xml, meta, onDismiss }: Props) {
   const [busy, setBusy] = useState(false);

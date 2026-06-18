@@ -22,11 +22,13 @@
 
 import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import {
+  WORKSPACE_KEYS,
+  useWorkspaceStore,
+  type WorkspaceKey,
+} from '@/lib/stores/workspaceStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { AUTOSAVE_KEY, saveWorkspace, type SaveError } from './indexeddb';
-
-const WORKSPACE_KEYS: WorkspaceKey[] = ['html', 'css', 'i18n'];
 
 /** 복합 XML 형태 — 3 워크스페이스 합본. spec 22 §3.2. */
 const COMBINED_XML_VERSION = 1;
@@ -79,6 +81,7 @@ export function parseCombinedXml(
       html: out.html ?? '',
       css: out.css ?? '',
       i18n: out.i18n ?? '',
+      worker: out.worker ?? '',
     };
   } catch {
     return null;
@@ -114,13 +117,9 @@ export function installAutosave(): () => void {
   // 3 워크스페이스 합산 version — 어느 하나라도 바뀌면 trigger.
   unsubVersion = useWorkspaceStore.subscribe((state, prev) => {
     const sumNow =
-      state.workspaces.html.structureVersion +
-      state.workspaces.css.structureVersion +
-      state.workspaces.i18n.structureVersion;
+      WORKSPACE_KEYS.reduce((sum, key) => sum + state.workspaces[key].structureVersion, 0);
     const sumPrev =
-      prev.workspaces.html.structureVersion +
-      prev.workspaces.css.structureVersion +
-      prev.workspaces.i18n.structureVersion;
+      WORKSPACE_KEYS.reduce((sum, key) => sum + prev.workspaces[key].structureVersion, 0);
     if (sumNow !== sumPrev) trigger();
   });
 
@@ -171,9 +170,7 @@ async function runSave(): Promise<void> {
     const xml = buildCombinedXml();
     const state = useWorkspaceStore.getState();
     const blockCount =
-      state.workspaces.html.blockCount +
-      state.workspaces.css.blockCount +
-      state.workspaces.i18n.blockCount;
+      WORKSPACE_KEYS.reduce((sum, key) => sum + state.workspaces[key].blockCount, 0);
     const result = await saveWorkspace(AUTOSAVE_KEY, xml, {
       ts: Date.now(),
       blockCount,

@@ -11,8 +11,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type SidebarLeftMode = 'blocks';
 export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴림 결과)
-export type CodeSubTab = 'html' | 'css' | 'i18n';
-export type WorkspaceKey = 'html' | 'css' | 'i18n';
+export type CodeSubTab = 'html' | 'css' | 'i18n' | 'worker';
+export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'worker';
 export type PreviewZoom = 'fit' | number;               // D52
 // D26 ②-재재 — 메인 영역 분할 뷰. 'split' default (양쪽 동시), 'assemble'/'preview' = 한쪽만 max.
 export type MainMode = 'split' | 'assemble' | 'preview' | 'edit';
@@ -135,7 +135,7 @@ const DEFAULT_STATE = {
   codeSubTab: 'html' as CodeSubTab,
   treeWorkspaceTab: 'html' as WorkspaceKey,
   blocksSearch: '',
-  blocksExpandedCategories: ['container', 'input', 'display', 'dice', 'i18n'],
+  blocksExpandedCategories: ['container', 'input', 'display', 'dice', 'i18n', 'sheet_worker'],
   blocksAdvancedShown: false,
   treeExpanded: {} as Record<string, boolean>,
   treeSearch: '',

@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { importSheet } from '@/lib/import';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { moveImportedWorkerBlocksToWorkspace } from '@/lib/blockly/workerWorkspace';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 
 export interface ImportDialogProps {
@@ -94,6 +95,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     cssMatched: number;
     cssTotal: number;
     i18nKeys: number;
+    workerBlocks: number;
     warnings: number;
     sanitizeDropped: number;
   }>(null);
@@ -124,10 +126,13 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       });
       const adapter = getBlocklyAdapter();
       const ws = useWorkspaceStore.getState();
+      const emptyXml = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
       // Reset before hydrate to avoid duplicate top blocks.
       ws.resetWorkspace('html');
       ws.resetWorkspace('css');
       ws.resetWorkspace('i18n');
+      ws.resetWorkspace('worker');
+      adapter.hydrateFromXml('worker', emptyXml);
 
       // html 워크스페이스가 가장 큼 (6K 가능) → chunked. css/i18n 은 보통 작음.
       // top-level 카운트는 chunked 가 자체 측정 → progress callback 으로 수신.
@@ -145,11 +150,13 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           }
         },
       });
+      const workerMove = moveImportedWorkerBlocksToWorkspace();
       adapter.hydrateFromXml('css', result.css);
       adapter.hydrateFromXml('i18n', result.i18n);
       arrangeImportedWorkspace('html');
       arrangeImportedWorkspace('css');
       arrangeImportedWorkspace('i18n');
+      arrangeImportedWorkspace('worker');
       // chunked 토스트 정리.
       if (htmlTotal >= PROGRESS_THRESHOLD) {
         toast.dismiss(PROGRESS_TOAST_ID);
@@ -158,12 +165,15 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       const htmlBlocks = adapter.getWorkspace('html')?.getAllBlocks(false).length ?? 0;
       const cssBlocks = adapter.getWorkspace('css')?.getAllBlocks(false).length ?? 0;
       const i18nBlocks = adapter.getWorkspace('i18n')?.getAllBlocks(false).length ?? 0;
+      const workerBlocks = adapter.getWorkspace('worker')?.getAllBlocks(false).length ?? 0;
       ws.bumpStructure('html', htmlBlocks);
       ws.bumpStructure('css', cssBlocks);
       ws.bumpStructure('i18n', i18nBlocks);
+      ws.bumpStructure('worker', workerBlocks);
       ws.markSaved('html');
       ws.markSaved('css');
       ws.markSaved('i18n');
+      ws.markSaved('worker');
       setReport({
         coverage: result.stats.coverage,
         matched: result.stats.htmlMatched,
@@ -172,6 +182,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         cssMatched: result.stats.cssMatched,
         cssTotal: result.stats.cssTotal,
         i18nKeys: result.stats.i18nKeys,
+        workerBlocks: workerMove.targetCount,
         warnings: result.warnings.length,
         sanitizeDropped: result.stats.sanitizeDropped,
       });

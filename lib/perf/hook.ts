@@ -18,6 +18,7 @@
 'use client';
 
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { moveImportedWorkerBlocksToWorkspace } from '@/lib/blockly/workerWorkspace';
 import { importSheet as importPipeline } from '@/lib/import';
 import { emitAll } from '@/lib/preview/emit';
 import { usePreviewStore, type PreviewRenderMode } from '@/lib/stores/previewStore';
@@ -60,6 +61,7 @@ export interface PerfEmitSnap {
   htmlLen: number;
   cssLen: number;
   i18nLen: number;
+  workerLen: number;
 }
 
 export interface PerfImportResult {
@@ -69,6 +71,7 @@ export interface PerfImportResult {
   totalMs: number;
   matchPct: number;
   blockCount: number;
+  workerBlockCount: number;
   warnings: number;
   heapBeforeMb: number | null;
   heapAfterMb: number | null;
@@ -99,7 +102,7 @@ export interface PerfHook {
    * 우려 있으나 perf 측정 사용자는 같은 사용자라 OK). Stage 2 round-trip
    * 측정 phase 에서만 활성.
    */
-  getEmitContent: () => { html: string; css: string; i18n: string };
+  getEmitContent: () => { html: string; css: string; i18n: string; worker: string };
   /** sync / async 작업 timing + heap delta. */
   measure: <T>(label: string, fn: () => T | Promise<T>) => Promise<PerfMeasure & { value: T }>;
   /** 영시영 / 다른 시트 raw HTML/CSS/i18n 을 generic pipeline 으로 import 후 hydrate. */
@@ -254,10 +257,11 @@ function buildHook(): PerfHook {
       const html = countBlocks('html');
       const css = countBlocks('css');
       const i18n = countBlocks('i18n');
+      const worker = countBlocks('worker');
       return {
-        blockCount: { html: html.total, css: css.total, i18n: i18n.total },
-        totalBlocks: html.total + css.total + i18n.total,
-        rootBlocks: { html: html.root, css: css.root, i18n: i18n.root },
+        blockCount: { html: html.total, css: css.total, i18n: i18n.total, worker: worker.total },
+        totalBlocks: html.total + css.total + i18n.total + worker.total,
+        rootBlocks: { html: html.root, css: css.root, i18n: i18n.root, worker: worker.root },
       };
     },
 
@@ -297,6 +301,7 @@ function buildHook(): PerfHook {
         htmlLen: cache.html.length,
         cssLen: cache.css.length,
         i18nLen: cache.i18n.length,
+        workerLen: cache.worker.length,
       };
     },
 
@@ -306,6 +311,7 @@ function buildHook(): PerfHook {
         html: cache.html,
         css: cache.css,
         i18n: cache.i18n,
+        worker: cache.worker,
       };
     },
 
@@ -333,9 +339,12 @@ function buildHook(): PerfHook {
 
       // hydrate three workspaces.
       const injectT0 = nowMs();
+      const emptyXml = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
+      adapter.hydrateFromXml('worker', emptyXml);
       adapter.hydrateFromXml('html', result.html);
-      if (css) adapter.hydrateFromXml('css', result.css);
-      if (i18n) adapter.hydrateFromXml('i18n', result.i18n);
+      const workerMove = moveImportedWorkerBlocksToWorkspace();
+      adapter.hydrateFromXml('css', css ? result.css : emptyXml);
+      adapter.hydrateFromXml('i18n', i18n ? result.i18n : emptyXml);
       const injectEnd = nowMs();
 
       // hydrateFromXml 은 Blockly events disabled 로 돌므로 changeListener 의
@@ -346,6 +355,7 @@ function buildHook(): PerfHook {
       bump('html', adapter.countBlocks('html'));
       bump('css', adapter.countBlocks('css'));
       bump('i18n', adapter.countBlocks('i18n'));
+      bump('worker', adapter.countBlocks('worker'));
 
       // emit pipeline cost (synchronous emitAll — bypass 500ms debounce).
       const emitT0 = nowMs();
@@ -353,6 +363,7 @@ function buildHook(): PerfHook {
         html: adapter.getWorkspace('html'),
         css: adapter.getWorkspace('css'),
         i18n: adapter.getWorkspace('i18n'),
+        worker: adapter.getWorkspace('worker'),
       });
       const emitEnd = nowMs();
 
@@ -361,6 +372,7 @@ function buildHook(): PerfHook {
         html: emitOut.html,
         css: emitOut.css,
         i18n: emitOut.i18n,
+        worker: emitOut.worker,
       });
       useWorkspaceStore.getState().setEmitWarnings(emitOut.warnings);
 
@@ -378,6 +390,7 @@ function buildHook(): PerfHook {
         totalMs: emitEnd - t0,
         matchPct,
         blockCount,
+        workerBlockCount: workerMove.targetCount,
         warnings: result.warnings.length,
         heapBeforeMb,
         heapAfterMb,
@@ -431,11 +444,13 @@ function buildHook(): PerfHook {
         html: adapter.getWorkspace('html'),
         css: adapter.getWorkspace('css'),
         i18n: adapter.getWorkspace('i18n'),
+        worker: adapter.getWorkspace('worker'),
       });
       store.setEmitCache({
         html: emitOut.html,
         css: emitOut.css,
         i18n: emitOut.i18n,
+        worker: emitOut.worker,
       });
       store.setEmitWarnings(emitOut.warnings);
 

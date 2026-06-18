@@ -10,6 +10,7 @@ const APP_VERSION = 'v0.1.0';
 const WORKSPACE_LABEL = {
   html: 'HTML',
   css: 'CSS',
+  worker: 'Worker',
   i18n: '번역',
 } as const;
 

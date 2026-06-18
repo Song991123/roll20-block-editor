@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 const SUB_TABS = [
   { id: 'html', label: 'HTML' },
   { id: 'css', label: 'CSS' },
+  { id: 'worker', label: 'Worker' },
   { id: 'i18n', label: '번역' },
 ] as const;
 
@@ -48,7 +49,7 @@ export default function CodeTabs() {
         <ToggleGroup
           type="single"
           value={subTab}
-          onValueChange={(v) => v && setSubTab(v as 'html' | 'css' | 'i18n')}
+          onValueChange={(v) => v && setSubTab(v as 'html' | 'css' | 'i18n' | 'worker')}
           size="sm"
           className="w-full"
         >

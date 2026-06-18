@@ -23,14 +23,13 @@ import * as Blockly from 'blockly';
 import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import {
+  WORKSPACE_KEYS,
   useWorkspaceStore,
   type WorkspaceKey,
 } from '@/lib/stores/workspaceStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { registerAllBlocks, getBlockDef } from '@/lib/blocks/registry';
 import { playSfx } from '@/lib/sfx';
-
-const WORKSPACE_KEYS: WorkspaceKey[] = ['html', 'css', 'i18n'];
 
 interface Props {
   /** true = 메인 영역에 visible (블록 조립 가능). false = off-screen (모델만 유지). */
@@ -265,6 +264,11 @@ export default function BlocklyModelHost({ visible }: Props) {
       <div
         id="bl-host-i18n"
         className={`blockly-host-slot${activeWorkspace === 'i18n' ? ' is-active' : ''}`}
+        style={{ width: 480, height: 360 }}
+      />
+      <div
+        id="bl-host-worker"
+        className={`blockly-host-slot${activeWorkspace === 'worker' ? ' is-active' : ''}`}
         style={{ width: 480, height: 360 }}
       />
     </div>

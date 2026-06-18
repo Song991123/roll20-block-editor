@@ -11,7 +11,8 @@
 import { create } from 'zustand';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 
-export type WorkspaceKey = 'html' | 'css' | 'i18n';
+export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'worker';
+export const WORKSPACE_KEYS: WorkspaceKey[] = ['html', 'css', 'i18n', 'worker'];
 
 /**
  * Phase A — WYSIWYG 위젯 인스턴스 (spec 17 §10).
@@ -75,6 +76,7 @@ export interface EmitOutput {
   html: string;
   css: string;
   i18n: string;
+  worker: string;
 }
 
 export type EmitSeverity = 'error' | 'warning' | 'info';
@@ -195,9 +197,10 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
     html: { ...emptyMeta },
     css: { ...emptyMeta },
     i18n: { ...emptyMeta },
+    worker: { ...emptyMeta },
   },
   activeWorkspace: 'html',
-  emitCache: { html: '', css: '', i18n: '' },
+  emitCache: { html: '', css: '', i18n: '', worker: '' },
   emitWarnings: [],
   lastClearedAt: 0,
   selectedBlockId: null,
@@ -245,7 +248,7 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
     const adapter = getBlocklyAdapter();
     const empty = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
     // Blockly workspace SVG 안의 블록을 비움 (changeListener 가 store sync 도 시도).
-    for (const key of ['html', 'css', 'i18n'] as const) {
+    for (const key of WORKSPACE_KEYS) {
       try {
         adapter.hydrateFromXml(key, empty);
       } catch {
@@ -257,8 +260,9 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
         html: { ...emptyMeta },
         css: { ...emptyMeta },
         i18n: { ...emptyMeta },
+        worker: { ...emptyMeta },
       },
-      emitCache: { html: '', css: '', i18n: '' },
+      emitCache: { html: '', css: '', i18n: '', worker: '' },
       emitWarnings: [],
       lastClearedAt: Date.now(),
       selectedBlockId: null,
@@ -351,10 +355,10 @@ export function hasBlockingError(warnings: EmitWarning[]): boolean {
 
 /** Derived: 모든 워크스페이스 합산 블록 수 (statusbar 용). */
 export function totalBlockCount(workspaces: Record<WorkspaceKey, WorkspaceMeta>): number {
-  return workspaces.html.blockCount + workspaces.css.blockCount + workspaces.i18n.blockCount;
+  return WORKSPACE_KEYS.reduce((sum, key) => sum + workspaces[key].blockCount, 0);
 }
 
 /** Derived: 어느 워크스페이스든 dirty 면 dirty. */
 export function anyDirty(workspaces: Record<WorkspaceKey, WorkspaceMeta>): boolean {
-  return workspaces.html.dirty || workspaces.css.dirty || workspaces.i18n.dirty;
+  return WORKSPACE_KEYS.some((key) => workspaces[key].dirty);
 }
