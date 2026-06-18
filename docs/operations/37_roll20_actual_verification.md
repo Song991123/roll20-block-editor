@@ -113,3 +113,15 @@ missing, the target stays SKIP and must remain unverified.
 - Do not inspect cookies, local storage, passwords, or session stores.
 - Do not read private room/chat contents beyond what is necessary to identify that the room is safe for observation.
 - Confirm before creating a new Roll20 room or submitting sheet code if the action has not already been explicitly authorized for that exact destination.
+
+## File Upload Gotcha
+
+Roll20 Custom Sheet Sandbox uploads HTML, CSS, and Translation through browser
+file inputs in the in-editor `Sheet Sandbox Tools` dialog. If Chrome reports
+`fileChooser.setFiles failed: Not allowed`, enable local file access for the
+Codex Chrome extension:
+
+1. Open `chrome://extensions`.
+2. Open Details for the Codex extension.
+3. Enable `Allow access to file URLs`.
+4. Return to the Roll20 sandbox editor and retry the upload.

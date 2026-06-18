@@ -135,6 +135,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `scripts/edit_flow_browser_smoke.mjs`: PASS.
 - Scope note: this is local preview/edit sync evidence only. Actual Roll20 room/sandbox visual and chat parity remain unverified.
 
+## 2026-06-18 Roll20 Sandbox Reachability Slice
+
+- Chrome Roll20 session was reachable and logged in.
+- Created a new isolated Custom Sheet Sandbox for verification rather than modifying existing user sandboxes or real rooms.
+- Launched the sandbox editor and confirmed the built-in `Sheet Sandbox Tools` dialog has separate file inputs for HTML, CSS, and Translation.
+- Tried the first payload upload through the browser file chooser. Upload did not reach Roll20 because the Codex Chrome extension rejected local file access with `fileChooser.setFiles failed: Not allowed`.
+- Local-only evidence is under ignored `reports/roll20-actual-compare/2026-06-18-actual-diff-ready/roll20-sandbox-observation/`.
+- Next action: enable `Allow access to file URLs` for the Codex Chrome extension, then retry payload upload in the kept sandbox editor tab and capture actual Roll20 screenshots.
+- Scope note: this proves actual Roll20 sandbox reachability and upload UI discovery only. It does not prove Roll20 visual parity.
+
 ## Reporting Guardrails
 
 - Do not claim Roll20 visual parity yet.
