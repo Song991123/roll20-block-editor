@@ -34,6 +34,27 @@ function fmtCrop(crop) {
   return Array.isArray(crop) ? crop.join(',') : '';
 }
 
+function classify(result) {
+  if (!result?.best) return 'no-result';
+  const best = result.best;
+  const native = result.nativeTopLeft;
+  const cropGain = typeof result.cropImprovementRatio === 'number' ? result.cropImprovementRatio : 0;
+  const bestRatio = best.mismatchRatio ?? 1;
+  const notes = [];
+  if (cropGain >= 0.05) notes.push('crop/state offset likely');
+  else if (cropGain >= 0.01) notes.push('minor crop offset');
+  else notes.push('crop does not explain most mismatch');
+  if (bestRatio >= 0.15) notes.push('large visual/style/default-state delta');
+  else if (bestRatio >= 0.05) notes.push('medium delta');
+  else notes.push('low diagnostic delta');
+  if (best.dominantBand && best.dominantBand !== 'center') notes.push(`edge-heavy:${best.dominantBand}`);
+  if (best.dominantQuadrant) notes.push(`quadrant:${best.dominantQuadrant}`);
+  if (native && best.captureCrop && (best.captureCrop[0] !== 0 || best.captureCrop[1] !== 0)) {
+    notes.push(`best-crop:${best.captureCrop[0]},${best.captureCrop[1]}`);
+  }
+  return notes.join('; ');
+}
+
 async function main() {
   if (!existsSync(PAGES_JSON)) {
     throw new Error(`missing ${PAGES_JSON}; run scripts/make_visual_diff_pages.mjs first`);
@@ -74,6 +95,7 @@ async function main() {
       item.raw = raw;
       item.result = JSON.parse(raw || '{}');
       item.status = item.result.status === 'diffed' ? 'diffed' : 'error';
+      item.classification = classify(item.result);
     } catch (error) {
       item.error = String(error?.stack || error).slice(0, 1200);
     }
@@ -100,19 +122,20 @@ function renderMarkdown(report) {
     '',
     'Scope: automated browser-canvas diagnostic diff between copied reference images and captured local preview renders. This is not a Roll20 visual parity pass/fail gate.',
     '',
-    '| Fixture | Reference size | Capture size | Best mode | Best crop | Best mismatch | Native top-left | Scale/crop search | Console | Status |',
-    '| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- | --- |',
+    '| Fixture | Reference size | Capture size | Best mode | Best crop | Best bounds | Best mismatch | Native top-left | Crop gain | Dominant area | Classification | Console | Status |',
+    '| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- |',
   ];
   for (const item of report.entries) {
     const result = item.result ?? {};
     lines.push(
-      `| \`${item.fixtureId}\` | ${fmtSize(result.referenceSize)} | ${fmtSize(result.captureSize)} | ${result.bestMode ?? ''} | ${fmtCrop(result.best?.captureCrop)} | ${pct(result.best?.mismatchRatio)} | ${pct(result.nativeTopLeft?.mismatchRatio)} | ${pct(result.bestScaleSearch?.mismatchRatio)} | ${item.consoleMessages?.length ?? 0} warnings/errors | ${item.pass ? 'PASS' : 'FAIL'} |`,
+      `| \`${item.fixtureId}\` | ${fmtSize(result.referenceSize)} | ${fmtSize(result.captureSize)} | ${result.bestMode ?? ''} | ${fmtCrop(result.best?.captureCrop)} | ${fmtCrop(result.best?.mismatchBounds)} | ${pct(result.best?.mismatchRatio)} | ${pct(result.nativeTopLeft?.mismatchRatio)} | ${pct(result.cropImprovementRatio)} | ${result.best?.dominantBand ?? ''}/${result.best?.dominantQuadrant ?? ''} | ${item.classification ?? classify(result)} | ${item.consoleMessages?.length ?? 0} warnings/errors | ${item.pass ? 'PASS' : 'FAIL'} |`,
     );
   }
   lines.push('');
   lines.push('Interpretation:');
   lines.push('- PASS means the diff pages loaded and produced JSON without browser console/page errors.');
   lines.push('- `Best mismatch` is diagnostic after 2D crop/scale search; it is not visual parity.');
+  lines.push('- `Classification` is a heuristic triage hint. It points to likely next investigation, not a pass/fail claim.');
   lines.push('- High mismatch still needs classification by viewport, default tab/state, asset loading, wrapper/context, or CSS differences.');
   lines.push('- Generated pages and screenshots are local-only and ignored by Git.');
   return `${lines.join('\n')}\n`;

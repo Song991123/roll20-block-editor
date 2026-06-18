@@ -139,12 +139,31 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
         var diff = diffCtx.createImageData(w, h);
         var mismatch = 0;
         var sumSq = 0;
+        var bounds = { left: w, top: h, right: -1, bottom: -1 };
+        var quadrants = { topLeft: 0, topRight: 0, bottomLeft: 0, bottomRight: 0 };
+        var bands = { top: 0, right: 0, bottom: 0, left: 0, center: 0 };
         for (var i = 0; i < ref.data.length; i += 4) {
           var dr = Math.abs(ref.data[i] - cap.data[i]);
           var dg = Math.abs(ref.data[i + 1] - cap.data[i + 1]);
           var db = Math.abs(ref.data[i + 2] - cap.data[i + 2]);
           var delta = dr + dg + db;
-          if (delta > threshold) mismatch += 1;
+          if (delta > threshold) {
+            mismatch += 1;
+            var px = (i / 4) % w;
+            var py = Math.floor(i / 4 / w);
+            bounds.left = Math.min(bounds.left, px);
+            bounds.top = Math.min(bounds.top, py);
+            bounds.right = Math.max(bounds.right, px);
+            bounds.bottom = Math.max(bounds.bottom, py);
+            quadrants[(py < h / 2 ? 'top' : 'bottom') + (px < w / 2 ? 'Left' : 'Right')] += 1;
+            var edgeX = Math.max(24, Math.round(w * 0.08));
+            var edgeY = Math.max(24, Math.round(h * 0.08));
+            if (py < edgeY) bands.top += 1;
+            else if (py >= h - edgeY) bands.bottom += 1;
+            else if (px < edgeX) bands.left += 1;
+            else if (px >= w - edgeX) bands.right += 1;
+            else bands.center += 1;
+          }
           sumSq += dr * dr + dg * dg + db * db;
           diff.data[i] = delta > threshold ? 255 : cap.data[i];
           diff.data[i + 1] = delta > threshold ? 0 : cap.data[i + 1];
@@ -167,7 +186,12 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
           mismatchPixels: mismatch,
           totalPixels: w * h,
           mismatchRatio: Number((mismatch / (w * h)).toFixed(6)),
-          rmsRgb: Number(Math.sqrt(sumSq / (w * h * 3)).toFixed(3))
+          rmsRgb: Number(Math.sqrt(sumSq / (w * h * 3)).toFixed(3)),
+          mismatchBounds: mismatch > 0 ? [bounds.left, bounds.top, bounds.right - bounds.left + 1, bounds.bottom - bounds.top + 1] : null,
+          mismatchQuadrants: quadrants,
+          mismatchBands: bands,
+          dominantQuadrant: Object.keys(quadrants).sort(function (a, b) { return quadrants[b] - quadrants[a]; })[0],
+          dominantBand: Object.keys(bands).sort(function (a, b) { return bands[b] - bands[a]; })[0]
         };
       }
       function better(a, b) {
@@ -232,6 +256,7 @@ pre { white-space: pre-wrap; background: #09090b; border: 1px solid #3f3f46; pad
         bestScaled: bestScaled,
         bestScaleSearch: bestScaled,
         best: best,
+        cropImprovementRatio: nativeTopLeft && best ? Number((nativeTopLeft.mismatchRatio - best.mismatchRatio).toFixed(6)) : null,
         note: 'Diagnostic diff with scaled reference and 2D crop/scale search. This is still not a visual parity pass/fail gate.'
       }, null, 2);
     } catch (err) {
