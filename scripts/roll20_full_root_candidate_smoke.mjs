@@ -123,7 +123,12 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
       candidateInputs.push(
         { id: 'normal-actual-root-width-source', roll20SandboxSanitize: false, applyStateHint: false, contextPatch: { mode: 'actual-root-width', rootWidth: actualRootWidth } },
         { id: 'sandbox-actual-root-width-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'actual-root-width', rootWidth: actualRootWidth } },
-        { id: 'sandbox-inline-block-fit-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-fit-tolerance', rootWidth: actualRootWidth } },
+        { id: 'sandbox-inline-block-wordspace-025-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-wordspace', rootWidth: actualRootWidth, wordSpacing: -0.25 } },
+        { id: 'sandbox-inline-block-wordspace-050-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-wordspace', rootWidth: actualRootWidth, wordSpacing: -0.5 } },
+        { id: 'sandbox-inline-block-wordspace-075-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-wordspace', rootWidth: actualRootWidth, wordSpacing: -0.75 } },
+        { id: 'sandbox-inline-block-wordspace-100-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-wordspace', rootWidth: actualRootWidth, wordSpacing: -1 } },
+        { id: 'sandbox-inline-block-font-zero-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-font-zero', rootWidth: actualRootWidth } },
+        { id: 'sandbox-inline-block-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-text-input-height', rootWidth: actualRootWidth, wordSpacing: -0.75, textInputHeight: 27.6 } },
       );
     }
     for (const input of candidateInputs) {
@@ -333,7 +338,7 @@ async function renderCandidate({
     id,
     roll20SandboxSanitize,
     applyStateHint,
-    contextPatch: contextPatch?.mode ?? null,
+    contextPatch: formatRenderContextPatch(contextPatch),
     screenshot,
     overlay,
     localSize: await imageSize(comparePage, screenshot),
@@ -355,17 +360,47 @@ async function applyRenderContextPatch(page, patch) {
       dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
       dialog.style.paddingLeft = '0px';
       dialog.style.paddingRight = '0px';
-    } else if (patch.mode === 'inline-block-fit-tolerance') {
+    } else if (patch.mode === 'inline-block-wordspace') {
       dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
       dialog.style.paddingLeft = '0px';
       dialog.style.paddingRight = '0px';
       const style = document.createElement('style');
-      style.setAttribute('data-r20-diagnostic-context-patch', 'inline-block-fit-tolerance');
+      style.setAttribute('data-r20-diagnostic-context-patch', `inline-block-wordspace-${patch.wordSpacing}`);
+      const wordSpacing = Number.isFinite(patch.wordSpacing) ? patch.wordSpacing : -1;
       style.textContent = `
         .ui-dialog .charsheet .sheet-2colrow,
-        .ui-dialog .charsheet .sheet-3colrow { word-spacing: -1px; }
+        .ui-dialog .charsheet .sheet-3colrow { word-spacing: ${wordSpacing}px; }
         .ui-dialog .charsheet .sheet-2colrow > .sheet-col,
         .ui-dialog .charsheet .sheet-3colrow > .sheet-col { word-spacing: normal; }
+      `;
+      document.head.append(style);
+    } else if (patch.mode === 'inline-block-font-zero') {
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+      const style = document.createElement('style');
+      style.setAttribute('data-r20-diagnostic-context-patch', 'inline-block-font-zero');
+      style.textContent = `
+        .ui-dialog .charsheet .sheet-2colrow,
+        .ui-dialog .charsheet .sheet-3colrow { font-size: 0; }
+        .ui-dialog .charsheet .sheet-2colrow > .sheet-col,
+        .ui-dialog .charsheet .sheet-3colrow > .sheet-col { font-size: 13px; }
+      `;
+      document.head.append(style);
+    } else if (patch.mode === 'inline-block-text-input-height') {
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+      const style = document.createElement('style');
+      const wordSpacing = Number.isFinite(patch.wordSpacing) ? patch.wordSpacing : -0.75;
+      const textInputHeight = Number.isFinite(patch.textInputHeight) ? patch.textInputHeight : 27.6;
+      style.setAttribute('data-r20-diagnostic-context-patch', `inline-block-text-input-height-${textInputHeight}`);
+      style.textContent = `
+        .ui-dialog .charsheet .sheet-2colrow,
+        .ui-dialog .charsheet .sheet-3colrow { word-spacing: ${wordSpacing}px; }
+        .ui-dialog .charsheet .sheet-2colrow > .sheet-col,
+        .ui-dialog .charsheet .sheet-3colrow > .sheet-col { word-spacing: normal; }
+        .ui-dialog .charsheet input[type="text"] { min-height: ${textInputHeight}px; }
       `;
       document.head.append(style);
     }
@@ -559,6 +594,13 @@ function pickBetterCandidate(best, candidate) {
     if (candidateAbsHeight < bestAbsHeight) return candidate;
   }
   return best;
+}
+
+function formatRenderContextPatch(patch) {
+  if (!patch) return null;
+  if (patch.mode === 'inline-block-wordspace') return `${patch.mode}:${patch.wordSpacing}px`;
+  if (patch.mode === 'inline-block-text-input-height') return `${patch.mode}:${patch.wordSpacing}px:${patch.textInputHeight}px`;
+  return patch.mode ?? null;
 }
 
 function summarizeStateCandidate(candidate) {

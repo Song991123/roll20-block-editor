@@ -1059,3 +1059,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Fresh local baseline plus existing Roll20 full-root screenshot diff now reports Les-Oublies generated sandbox mismatch `6.63%`, improved from the previous `6.90%`.
 - Remaining major gaps: row 0 `DIV.sheet-2colrow` still wraps/places the second column too low (`310.6px` actual vs `554px` local), and row 3 remains too tall (`140.2px` actual vs `274px` local).
 - Claim boundary: this is a generic renderer-parity improvement, not Roll20 visual parity. AW2E/YSHY generated Roll20 full-root captures are still missing, and Les-Oublies still classifies as sheet root geometry/height mismatch after the fresh baseline/diff.
+
+## 2026-06-19 Inline-Block Candidate Diagnostic Slice
+
+- Extended `scripts/roll20_full_root_candidate_smoke.mjs` with multiple diagnostic-only inline-block candidates:
+  - word-spacing tolerances at `-0.25px`, `-0.5px`, `-0.75px`, and `-1px`;
+  - a `font-size: 0` row candidate with child font restoration;
+  - a combined inline-block plus text-input native height candidate using `min-height: 27.6px`.
+- Latest command: `corepack pnpm run smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Result: the current direct best remains `normal-actual-root-width-source` at `8.58%` mismatch and `rootDelta 375.375px`.
+- The combined `sandbox-inline-block-text-input-276-source` candidate is geometry-useful but visually worse: it nearly matches the full root height (`852x4122`, `rootDelta -0.656px`) and row 0/table 0 geometry (`row0 311.375px`, `table0 198.375px`, text input `27.594px`), but image mismatch worsens to `9.10%`.
+- Fresh local baseline/diff/classifier after the diagnostic rerun:
+  - `node scripts\roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir reports\roll20-actual-compare --run-label 2026-06-18-state-map-v1 --only official-roll20-Les-Oublies --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json` PASS.
+  - `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1` still reports Les-Oublies sandbox mismatch `6.63%`.
+  - `corepack pnpm run classify:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` still classifies the fixture as `sheet root geometry/height differs after full-height capture`.
+  - `corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1` still ranks row 0 and row 3 wrapping as the active top gap.
+- Interpretation: do not promote the diagnostic inline-block/native-input CSS to production yet. It proves a plausible geometry mechanism, but visual mismatch gets worse and the app local-preview screenshot remains closer than direct candidate renders. Next P0 is to compare actual Chrome-local preview against Roll20 Chrome or inspect the app preview path difference before adding generic renderer CSS.

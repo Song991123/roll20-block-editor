@@ -154,6 +154,18 @@ remain. Current direct candidate mismatch is `8.58%` and the prior actual
 Roll20 full-root screenshot diff improved from `6.90%` to `6.63%` after a fresh
 local baseline/diff. The classifier still reports `sheet root geometry/height
 differs after full-height capture`, so this is not visual parity.
+2026-06-19 inline-block candidate follow-up: `smoke:roll20-full-root-candidates`
+now tests word-spacing tolerances (`-0.25px` to `-1px`), a font-size-zero
+inline-block diagnostic, and a combined inline-block plus text-input native
+height diagnostic. The combined `sandbox-inline-block-text-input-276-source`
+candidate is useful evidence because it nearly matches full-root height
+(`rootDelta -0.656px`) and fixes row 0/table 0 geometry (`row0 311.375px`,
+`table0 198.375px`, text input `27.594px`), but its image mismatch is worse
+(`9.10%` versus the current direct best `8.58%` and the app local-preview diff
+`6.63%`). Do not promote this to production CSS yet. Next P0 is to inspect why
+the app local-preview path remains visually closer than direct candidates and to
+capture/compare actual Chrome-local preview versus Roll20 Chrome before adding a
+generic inline-block/native-input metric patch.
 Follow-up actual layout-context probe:
 Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
 ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.
