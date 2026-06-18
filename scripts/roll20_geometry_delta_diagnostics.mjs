@@ -26,10 +26,14 @@ if (!args[0]) {
 const outDir = path.join(runDir, 'geometry-delta-diagnostics');
 const sameContextFile = path.join(runDir, 'same-context-visible-smoke', 'same-context-visible-smoke-results.json');
 const fullRootFile = path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json');
+const localBaselineFile = path.join(runDir, 'local-baseline-results.json');
+const payloadRoundtripFile = path.join(runDir, 'payload-roundtrip-visual', 'payload-roundtrip-visual-results.json');
 
 async function main() {
   const sameContext = await readJsonIfExists(sameContextFile);
   const fullRoot = await readJsonIfExists(fullRootFile);
+  const localBaseline = await readJsonIfExists(localBaselineFile);
+  const payloadRoundtrip = await readJsonIfExists(payloadRoundtripFile);
   if (!sameContext && !fullRoot) {
     throw new Error(`Missing required report: ${sameContextFile} or ${fullRootFile}`);
   }
@@ -38,16 +42,25 @@ async function main() {
   const fixtureIds = new Set([
     ...(sameContext?.fixtures ?? []).map((fixture) => fixture.fixtureId),
     ...(fullRoot?.fixtures ?? []).map((fixture) => fixture.fixtureId),
+    ...(localBaseline?.fixtures ?? []).map((fixture) => fixture.id ?? fixture.fixtureId),
+    ...(payloadRoundtrip?.fixtures ?? []).map((fixture) => fixture.id ?? fixture.fixtureId),
   ]);
   for (const fixtureId of fixtureIds) {
     const sameFixture = (sameContext?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId);
     const fullFixture = (fullRoot?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId);
-    fixtures.push(await analyzeFixture(sameFixture, fullFixture));
+    const localBaselineFixture = (localBaseline?.fixtures ?? []).find((fixture) => (fixture.id ?? fixture.fixtureId) === fixtureId);
+    const payloadRoundtripFixture = (payloadRoundtrip?.fixtures ?? []).find((fixture) => (fixture.id ?? fixture.fixtureId) === fixtureId);
+    fixtures.push(await analyzeFixture(sameFixture, fullFixture, localBaselineFixture, payloadRoundtripFixture));
   }
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
-    sources: [sameContext ? path.relative(runDir, sameContextFile) : null, fullRoot ? path.relative(runDir, fullRootFile) : null].filter(Boolean),
+    sources: [
+      sameContext ? path.relative(runDir, sameContextFile) : null,
+      fullRoot ? path.relative(runDir, fullRootFile) : null,
+      localBaseline ? path.relative(runDir, localBaselineFile) : null,
+      payloadRoundtrip ? path.relative(runDir, payloadRoundtripFile) : null,
+    ].filter(Boolean),
     scope: 'local-only geometry delta diagnostics; not Roll20 visual parity',
     pass: true,
     fixtures,
@@ -72,12 +85,12 @@ async function main() {
   console.log(`ROLL20 GEOMETRY DELTA DIAGNOSTICS OK ${outDir}`);
 }
 
-async function analyzeFixture(sameContextFixture, fullRootFixture) {
+async function analyzeFixture(sameContextFixture, fullRootFixture, localBaselineFixture, payloadRoundtripFixture) {
   if (sameContextFixture?.status === 'COMPARED' && sameContextFixture.computedStyleComparison && sameContextFixture.bestCandidate) {
-    return analyzeSameContextFixture(sameContextFixture);
+    return analyzeSameContextFixture(sameContextFixture, localBaselineFixture, payloadRoundtripFixture);
   }
   if (fullRootFixture?.status === 'COMPARED' && fullRootFixture.bestCandidate) {
-    return analyzeFullRootFixture(fullRootFixture);
+    return analyzeFullRootFixture(fullRootFixture, localBaselineFixture, payloadRoundtripFixture);
   }
   const fixture = sameContextFixture ?? fullRootFixture ?? {};
   return {
@@ -87,7 +100,7 @@ async function analyzeFixture(sameContextFixture, fullRootFixture) {
   };
 }
 
-async function analyzeSameContextFixture(fixture) {
+async function analyzeSameContextFixture(fixture, localBaselineFixture, payloadRoundtripFixture) {
   if (fixture.status !== 'COMPARED' || !fixture.computedStyleComparison || !fixture.bestCandidate) {
     return {
       fixtureId: fixture.fixtureId,
@@ -114,6 +127,12 @@ async function analyzeSameContextFixture(fixture) {
   const targetGeometry = compareTargetGeometry(actualTargetGeometry, localTargetGeometry, {
     actualRootY: actualTargetGeometry?.root?.rect?.y ?? 0,
   });
+  const appLocalPreviewGeometry = compareAppLocalPreviewGeometry(actualTargetGeometry, localBaselineFixture, {
+    actualSize: fixture.actualSize ?? null,
+  });
+  const emittedPayloadPreviewGeometry = compareEmittedPayloadPreviewGeometry(actualTargetGeometry, payloadRoundtripFixture, {
+    actualSize: fixture.actualSize ?? null,
+  });
 
   return {
     fixtureId: fixture.fixtureId,
@@ -132,13 +151,15 @@ async function analyzeSameContextFixture(fixture) {
     topFindings,
     contentFindings,
     targetGeometry,
+    appLocalPreviewGeometry,
+    emittedPayloadPreviewGeometry,
     interpretation: buildInterpretation({ root, topFindings, contentFindings, selectorFindings, targetGeometry }),
     nextChecks: buildNextChecks({ root, topFindings, contentFindings, selectorFindings, targetGeometry }),
     unresolvedGeometryGaps: buildUnresolvedGeometryGaps(targetGeometry),
   };
 }
 
-async function analyzeFullRootFixture(fixture) {
+async function analyzeFullRootFixture(fixture, localBaselineFixture, payloadRoundtripFixture) {
   const actualTargetGeometry = await readActualTargetGeometry(fixture.fixtureId);
   const localTargetGeometry = fixture.bestCandidate.metrics?.targetGeometry ?? null;
   const targetGeometry = compareTargetGeometry(actualTargetGeometry, localTargetGeometry, {
@@ -164,6 +185,13 @@ async function analyzeFullRootFixture(fixture) {
     lineHeight: null,
     background: null,
   };
+  const appLocalPreviewGeometry = compareAppLocalPreviewGeometry(actualTargetGeometry, localBaselineFixture, {
+    actualSize: fixture.actual?.outputCss ?? fixture.actual?.size ?? null,
+    baselineReference: fixture.baselineReference ?? null,
+  });
+  const emittedPayloadPreviewGeometry = compareEmittedPayloadPreviewGeometry(actualTargetGeometry, payloadRoundtripFixture, {
+    actualSize: fixture.actual?.outputCss ?? fixture.actual?.size ?? null,
+  });
 
   return {
     fixtureId: fixture.fixtureId,
@@ -185,9 +213,75 @@ async function analyzeFullRootFixture(fixture) {
     topFindings,
     contentFindings,
     targetGeometry,
+    appLocalPreviewGeometry,
+    emittedPayloadPreviewGeometry,
     interpretation: buildInterpretation({ root, topFindings, contentFindings, selectorFindings, targetGeometry }),
     nextChecks: buildNextChecks({ root, topFindings, contentFindings, selectorFindings, targetGeometry }),
     unresolvedGeometryGaps: buildUnresolvedGeometryGaps(targetGeometry),
+  };
+}
+
+function compareAppLocalPreviewGeometry(actualTargetGeometry, localBaselineFixture, options = {}) {
+  const localPreviewGeometry = localBaselineFixture?.previewDom?.targetGeometry ?? null;
+  const actualSize = options.actualSize ?? null;
+  const localRoot = localBaselineFixture?.previewDom?.rect ?? null;
+  if (!actualTargetGeometry || !localPreviewGeometry) {
+    return {
+      status: 'SKIP',
+      reason: !actualTargetGeometry ? 'missing actual target geometry probe' : 'missing app local-preview target geometry',
+    };
+  }
+  const targetGeometry = compareTargetGeometry(actualTargetGeometry, localPreviewGeometry, {
+    actualRootY: actualTargetGeometry?.root?.rect?.y ?? 0,
+    localRootY: localRoot?.top ?? localRoot?.y ?? 0,
+  });
+  return {
+    status: 'COMPARED',
+    source: 'local-baseline-results previewDom.targetGeometry',
+    localPreviewSize: localRoot ? { width: localRoot.width ?? null, height: localRoot.height ?? null } : null,
+    actualSize,
+    rootHeightDelta: delta(localRoot?.height, actualSize?.h ?? actualSize?.height ?? null),
+    baselineReferenceMismatch: options.baselineReference?.mismatchRatio ?? null,
+    stateHint: summarizeLocalStateHint(localBaselineFixture?.previewDom?.stateCandidate ?? localBaselineFixture?.previewStateCandidate),
+    targetGeometry,
+    topRows: targetGeometry.topRows ?? [],
+  };
+}
+
+function compareEmittedPayloadPreviewGeometry(actualTargetGeometry, payloadRoundtripFixture, options = {}) {
+  const payloadPreviewGeometry = payloadRoundtripFixture?.previewDom?.targetGeometry ?? null;
+  const actualSize = options.actualSize ?? null;
+  const payloadRoot = payloadRoundtripFixture?.previewDom?.rect ?? null;
+  if (!actualTargetGeometry || !payloadPreviewGeometry) {
+    return {
+      status: 'SKIP',
+      reason: !actualTargetGeometry ? 'missing actual target geometry probe' : 'missing payload roundtrip target geometry; rerun payload roundtrip smoke',
+    };
+  }
+  const targetGeometry = compareTargetGeometry(actualTargetGeometry, payloadPreviewGeometry, {
+    actualRootY: actualTargetGeometry?.root?.rect?.y ?? 0,
+    localRootY: payloadRoot?.top ?? payloadRoot?.y ?? 0,
+  });
+  return {
+    status: 'COMPARED',
+    source: 'payload-roundtrip-visual previewDom.targetGeometry',
+    payloadPreviewSize: payloadRoot ? { width: payloadRoot.width ?? null, height: payloadRoot.height ?? null } : null,
+    actualSize,
+    rootHeightDelta: delta(payloadRoot?.height, actualSize?.h ?? actualSize?.height ?? null),
+    roundtripMismatchPct: payloadRoundtripFixture?.diff?.best?.mismatchPct ?? null,
+    stateHint: summarizeLocalStateHint(payloadRoundtripFixture?.previewDom?.stateCandidate ?? payloadRoundtripFixture?.previewStateCandidate),
+    targetGeometry,
+    topRows: targetGeometry.topRows ?? [],
+  };
+}
+
+function summarizeLocalStateHint(candidate) {
+  if (!candidate) return null;
+  return {
+    actionName: candidate.actionName ?? null,
+    actionLabel: candidate.actionLabel ?? null,
+    hiddenAttrs: candidate.hiddenAttrs ?? null,
+    applied: candidate.applied ?? Boolean(candidate.appliedControls?.length),
   };
 }
 
@@ -604,6 +698,26 @@ function renderMarkdown(report) {
     lines.push('### Next Checks');
     lines.push('');
     for (const check of fixture.nextChecks) lines.push(`- ${check}`);
+    if (fixture.appLocalPreviewGeometry?.status === 'COMPARED') {
+      renderPreviewGeometrySection(lines, 'App Local Preview Geometry', fixture.appLocalPreviewGeometry, {
+        sizeLabel: 'App local preview size',
+        sizeKey: 'localPreviewSize',
+        mismatchLabel: 'screenshot mismatch',
+        mismatchText: pct(fixture.appLocalPreviewGeometry.baselineReferenceMismatch),
+        rowLocalLabel: 'App preview height',
+      });
+    }
+    if (fixture.emittedPayloadPreviewGeometry?.status === 'COMPARED') {
+      renderPreviewGeometrySection(lines, 'Export Payload Preview Geometry', fixture.emittedPayloadPreviewGeometry, {
+        sizeLabel: 'Payload preview size',
+        sizeKey: 'payloadPreviewSize',
+        mismatchLabel: 'source-vs-payload mismatch',
+        mismatchText: typeof fixture.emittedPayloadPreviewGeometry.roundtripMismatchPct === 'number'
+          ? `${num(fixture.emittedPayloadPreviewGeometry.roundtripMismatchPct)}%`
+          : '',
+        rowLocalLabel: 'Payload preview height',
+      });
+    }
     if (fixture.targetGeometry?.status === 'COMPARED') {
       lines.push('');
       lines.push('### Target Row Details');
@@ -672,6 +786,30 @@ function renderMarkdown(report) {
     lines.push('- Full-height/scroll-stitched Roll20 root capture is still required before full-sheet parity claims.');
   }
   return `${lines.join('\n')}\n`;
+}
+
+function renderPreviewGeometrySection(lines, title, geometry, options) {
+  const topRow = geometry.topRows?.[0];
+  lines.push('');
+  lines.push(`### ${title}`);
+  lines.push('');
+  lines.push(`Source: \`${geometry.source}\``);
+  lines.push(`State hint: \`${JSON.stringify(geometry.stateHint ?? {})}\``);
+  lines.push(`${options.sizeLabel}: ${fmtSize(geometry[options.sizeKey])}; actual size: ${fmtSize(geometry.actualSize)}; root height delta: ${num(geometry.rootHeightDelta)}px; ${options.mismatchLabel}: ${options.mismatchText}.`);
+  if (topRow) {
+    lines.push(`Top preview row gap: row ${topRow.index} ${topRow.selector}, height delta ${num(topRow.heightDelta)}px, first child relative-y delta ${num(childRelativeYDelta(topRow, topRow.childComparisons?.find((child) => child.status === 'COMPARED') ?? {}))}px.`);
+  }
+  lines.push('');
+  lines.push(`| Row | Actual height | ${options.rowLocalLabel} | Delta | First child deltas |`);
+  lines.push('| ---: | ---: | ---: | ---: | --- |');
+  for (const row of geometry.topRows ?? []) {
+    const childDeltas = (row.childComparisons ?? [])
+      .filter((child) => child.status === 'COMPARED')
+      .slice(0, 4)
+      .map((child) => `${child.selector}: rel-y ${num(childRelativeYDelta(row, child))}px, h ${num(child.heightDelta)}px`)
+      .join('<br>');
+    lines.push(`| ${row.index} | ${num(row.actual.rect?.height)} | ${num(row.local.rect?.height)} | ${num(row.heightDelta)} | ${childDeltas} |`);
+  }
 }
 
 function buildTargetTableRowRows(tables) {
@@ -743,6 +881,15 @@ function num(value) {
 
 function pct(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `${(value * 100).toFixed(2)}%` : '';
+}
+
+function fmtSize(size) {
+  if (!size) return '';
+  const width = size.w ?? size.width;
+  const height = size.h ?? size.height;
+  return typeof width === 'number' && typeof height === 'number'
+    ? `${Math.round(width)}x${Math.round(height)}`
+    : '';
 }
 
 async function readJsonRequired(file) {

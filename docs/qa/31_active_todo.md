@@ -166,6 +166,16 @@ candidate is useful evidence because it nearly matches full-root height
 the app local-preview path remains visually closer than direct candidates and to
 capture/compare actual Chrome-local preview versus Roll20 Chrome before adding a
 generic inline-block/native-input metric patch.
+2026-06-19 source-vs-payload split follow-up:
+`scripts/roll20_payload_roundtrip_visual_smoke.mjs` now records target geometry,
+and `diagnose:roll20-geometry` now renders separate app source-preview and
+export-payload-preview geometry sections. Latest payload roundtrip still FAILs
+overall because AW2E/YSHY exceed the strict local 2% gate, but Les-Oublies
+PASSes with `0%` source-vs-payload mismatch. Les-Oublies source preview and
+export payload preview are both `850x3771`, both have row 0 at `553px`, and both
+have row 3 at `274px`; actual Roll20 remains `852x4122`, row 0 `310.6px`, row 3
+`140.2px`. This rules out emitted-payload drift as the current Les-Oublies root
+cause and keeps the next P0 on actual Roll20 inline-block fitting/layout context.
 Follow-up actual layout-context probe:
 Chrome/CDP read-only probing of the dedicated Roll20 sandbox iframe saved
 ignored evidence at `live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`.

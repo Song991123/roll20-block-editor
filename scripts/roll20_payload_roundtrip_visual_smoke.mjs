@@ -263,33 +263,85 @@ async function capturePayloadPreview(page, outFile, stateCandidate) {
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);
   await sheet.screenshot({ path: outFile });
-  const summary = await sheet.evaluate((sheetEl) => {
-    const rect = sheetEl.getBoundingClientRect();
-    const elements = Array.from(sheetEl.querySelectorAll('*'));
-    return {
-      rect: {
-        width: Math.round(rect.width),
-        height: Math.round(rect.height),
-        left: Math.round(rect.left),
-        top: Math.round(rect.top),
-      },
-      elementCount: elements.length,
-      visibleElementCount: elements.filter((el) => {
-        const cs = getComputedStyle(el);
-        const r = el.getBoundingClientRect();
-        return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0;
-      }).length,
-      rollButtonCount: sheetEl.querySelectorAll('button[type="roll"], button.roll').length,
-      visibleScriptCount: elements.filter((el) => {
-        if (!['SCRIPT', 'ROLLTEMPLATE'].includes(el.tagName)) return false;
-        const cs = getComputedStyle(el);
-        const r = el.getBoundingClientRect();
-        return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0;
-      }).length,
-    };
-  });
+  const summary = await sheet.evaluate(summarizeSheetElement);
   summary.stateCandidate = stateCandidateResult;
   return summary;
+}
+
+function summarizeSheetElement(sheetEl) {
+  const rect = sheetEl.getBoundingClientRect();
+  const elements = Array.from(sheetEl.querySelectorAll('*'));
+  function target(el, depth = 0) {
+    const cs = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    return {
+      tag: el.tagName,
+      className: typeof el.className === 'string' ? el.className : String(el.className || ''),
+      name: el.getAttribute('name') || '',
+      type: el.getAttribute('type') || '',
+      text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+      rect: {
+        x: Number(r.x.toFixed(3)),
+        y: Number(r.y.toFixed(3)),
+        width: Number(r.width.toFixed(3)),
+        height: Number(r.height.toFixed(3)),
+      },
+      scroll: { width: el.scrollWidth || 0, height: el.scrollHeight || 0 },
+      natural: el.tagName === 'IMG'
+        ? { width: el.naturalWidth || 0, height: el.naturalHeight || 0, complete: Boolean(el.complete), src: el.currentSrc || el.src || '' }
+        : null,
+      style: {
+        display: cs.display,
+        position: cs.position,
+        float: cs.float,
+        clear: cs.clear,
+        boxSizing: cs.boxSizing,
+        width: cs.width,
+        height: cs.height,
+        margin: cs.margin,
+        padding: cs.padding,
+        border: cs.border,
+        overflow: cs.overflow,
+        fontSize: cs.fontSize,
+        lineHeight: cs.lineHeight,
+        whiteSpace: cs.whiteSpace,
+        wordSpacing: cs.wordSpacing,
+        letterSpacing: cs.letterSpacing,
+        zoom: cs.zoom,
+        verticalAlign: cs.verticalAlign,
+      },
+      children: depth >= 2 ? [] : Array.from(el.children).slice(0, 30).map((child) => target(child, depth + 1)),
+    };
+  }
+  return {
+    rect: {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+    },
+    elementCount: elements.length,
+    visibleElementCount: elements.filter((el) => {
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0;
+    }).length,
+    rollButtonCount: sheetEl.querySelectorAll('button[type="roll"], button.roll').length,
+    visibleScriptCount: elements.filter((el) => {
+      if (!['SCRIPT', 'ROLLTEMPLATE'].includes(el.tagName)) return false;
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0;
+    }).length,
+    targetGeometry: {
+      rows: Array.from(sheetEl.querySelectorAll('.sheet-2colrow')).map((row, index) => ({ index, ...target(row) })),
+      tables: Array.from(sheetEl.querySelectorAll('table')).slice(0, 12).map((table, index) => ({ index, ...target(table) })),
+      images: Array.from(sheetEl.querySelectorAll('img')).map((image, index) => ({ index, ...target(image) })),
+      inputs: Array.from(sheetEl.querySelectorAll('input')).slice(0, 20).map((input, index) => ({ index, ...target(input) })),
+      rollButtons: Array.from(sheetEl.querySelectorAll('button[type="roll"], button.roll')).slice(0, 20).map((button, index) => ({ index, ...target(button) })),
+      actionButtons: Array.from(sheetEl.querySelectorAll('button[type="action"]')).slice(0, 20).map((button, index) => ({ index, ...target(button) })),
+    },
+  };
 }
 
 async function diffImages(page, baselineFile, payloadFile) {
