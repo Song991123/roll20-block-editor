@@ -145,6 +145,97 @@ function summarizeSheetElement(sheetEl) {
   };
 }
 
+function summarizeRenderDiagnostics(sheetEl) {
+  const rollButtons = Array.from(sheetEl.querySelectorAll('button[type="roll"], button.roll'))
+    .slice(0, 8)
+    .map((el) => {
+      const cs = getComputedStyle(el);
+      const before = getComputedStyle(el, '::before');
+      const rect = el.getBoundingClientRect();
+      return {
+        text: (el.textContent || '').trim(),
+        beforeContent: before.content,
+        fontFamily: cs.fontFamily,
+        beforeFontFamily: before.fontFamily,
+        color: cs.color,
+        beforeColor: before.color,
+        fontSize: cs.fontSize,
+        beforeFontSize: before.fontSize,
+        textIndent: cs.textIndent,
+        overflow: cs.overflow,
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      };
+    });
+  return {
+    rollButtonCount: sheetEl.querySelectorAll('button[type="roll"], button.roll').length,
+    rollButtons,
+  };
+}
+
+async function collectAppOcclusion(page, sheetBox) {
+  if (!sheetBox) return [];
+  return page.evaluate((box) => {
+    const target = {
+      left: box.x,
+      top: box.y,
+      right: box.x + box.width,
+      bottom: box.y + box.height,
+    };
+    const selectors = ['[data-testid="preview-toolbar"]'];
+    const out = [];
+    for (const selector of selectors) {
+      document.querySelectorAll(selector).forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const left = Math.max(target.left, rect.left);
+        const top = Math.max(target.top, rect.top);
+        const right = Math.min(target.right, rect.right);
+        const bottom = Math.min(target.bottom, rect.bottom);
+        const width = Math.max(0, right - left);
+        const height = Math.max(0, bottom - top);
+        if (width <= 0 || height <= 0) return;
+        out.push({
+          selector,
+          rect: {
+            left: Math.round(rect.left),
+            top: Math.round(rect.top),
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+          },
+          overlap: {
+            left: Math.round(left),
+            top: Math.round(top),
+            width: Math.round(width),
+            height: Math.round(height),
+          },
+          overlapPixels: Math.round(width * height),
+        });
+      });
+    }
+    return out;
+  }, sheetBox);
+}
+
+async function withHiddenAppChrome(page, fn) {
+  await page.evaluate(() => {
+    document.querySelectorAll('[data-testid="preview-toolbar"]').forEach((el) => {
+      el.setAttribute('data-r20-smoke-hidden', el.style.visibility || '');
+      el.style.visibility = 'hidden';
+    });
+  });
+  try {
+    return await fn();
+  } finally {
+    await page.evaluate(() => {
+      document.querySelectorAll('[data-r20-smoke-hidden]').forEach((el) => {
+        const prev = el.getAttribute('data-r20-smoke-hidden') || '';
+        el.style.visibility = prev;
+        el.removeAttribute('data-r20-smoke-hidden');
+      });
+    });
+  }
+}
+
 async function capturePreview(page, fixtureId) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
@@ -156,9 +247,11 @@ async function capturePreview(page, fixtureId) {
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-preview.png`);
   const box = await sheet.boundingBox();
-  await sheet.screenshot({ path: output });
   const dom = await sheet.evaluate(summarizeSheetElement);
-  return { path: output, box, dom };
+  const diagnostics = await sheet.evaluate(summarizeRenderDiagnostics);
+  const appOcclusion = await collectAppOcclusion(page, box);
+  await withHiddenAppChrome(page, () => sheet.screenshot({ path: output }));
+  return { path: output, box, dom, diagnostics, appOcclusion };
 }
 
 async function captureEdit(page, fixtureId) {
@@ -175,9 +268,11 @@ async function captureEdit(page, fixtureId) {
   const sheet = page.locator('[data-testid="edit-canvas-shadow-host"] #charsheet-root').first();
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-edit.png`);
   const box = await sheet.boundingBox();
-  await sheet.screenshot({ path: output });
   const dom = await sheet.evaluate(summarizeSheetElement);
-  return { path: output, box, dom };
+  const diagnostics = await sheet.evaluate(summarizeRenderDiagnostics);
+  const appOcclusion = await collectAppOcclusion(page, box);
+  await withHiddenAppChrome(page, () => sheet.screenshot({ path: output }));
+  return { path: output, box, dom, diagnostics, appOcclusion };
 }
 
 async function diffPngs(page, previewPath, editPath) {
@@ -301,8 +396,12 @@ async function main() {
       entry.import = await waitForLiveImport(page, fixture);
       entry.previewCapture = await capturePreview(page, fixture.id);
       entry.previewDom = entry.previewCapture.dom;
+      entry.previewDiagnostics = entry.previewCapture.diagnostics;
+      entry.previewAppOcclusion = entry.previewCapture.appOcclusion;
       entry.editCapture = await captureEdit(page, fixture.id);
       entry.editDom = entry.editCapture.dom;
+      entry.editDiagnostics = entry.editCapture.diagnostics;
+      entry.editAppOcclusion = entry.editCapture.appOcclusion;
       entry.diff = await diffPngs(page, entry.previewCapture.path, entry.editCapture.path);
       entry.pass =
         entry.import?.blockCount > 0 &&
@@ -364,6 +463,17 @@ function renderMarkdown(report) {
   lines.push('- Bounds and dominant area are coarse triage hints for locating remaining preview/edit differences.');
   lines.push(`- Browser viewport for capture: ${VIEWPORT.width}x${VIEWPORT.height}.`);
   lines.push('- Screenshots are local-only and ignored by Git.');
+  lines.push('- App chrome is hidden only during root screenshots; toolbar overlap is still measured separately.');
+  lines.push('');
+  lines.push('## Render Diagnostics');
+  lines.push('');
+  lines.push('| Fixture | Preview roll buttons | Edit roll buttons | Preview toolbar overlap | Edit toolbar overlap |');
+  lines.push('| --- | ---: | ---: | ---: | ---: |');
+  for (const item of report.fixtures) {
+    lines.push(
+      `| \`${item.id}\` | ${item.previewDiagnostics?.rollButtonCount ?? ''} | ${item.editDiagnostics?.rollButtonCount ?? ''} | ${sumOverlap(item.previewAppOcclusion)} | ${sumOverlap(item.editAppOcclusion)} |`,
+    );
+  }
   return `${lines.join('\n')}\n`;
 }
 
@@ -375,6 +485,11 @@ function fmtSize(size) {
 function fmtBounds(bounds) {
   if (!bounds) return '';
   return `${bounds.left},${bounds.top} ${bounds.width}x${bounds.height}`;
+}
+
+function sumOverlap(items) {
+  if (!Array.isArray(items)) return 0;
+  return items.reduce((sum, item) => sum + (item.overlapPixels ?? 0), 0);
 }
 
 main().catch((err) => {

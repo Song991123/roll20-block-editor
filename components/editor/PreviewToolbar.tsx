@@ -86,7 +86,10 @@ export default function PreviewToolbar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex h-11 shrink-0 items-center justify-center gap-1 border-t border-border bg-[var(--bg-elevated)] px-3 text-xs">
+      <div
+        className="flex h-11 shrink-0 items-center justify-center gap-1 border-t border-border bg-[var(--bg-elevated)] px-3 text-xs"
+        data-testid="preview-toolbar"
+      >
         {/* 줌 컨트롤 그룹 */}
         <label className="inline-flex h-8 items-center gap-1.5 rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-[11px] text-muted-foreground">
           <span>W</span>

@@ -41,6 +41,13 @@ function stripUiDialogPrefix(css: string): string {
   return css.replace(/(^|,)(\s*)\.ui-dialog(\s+)/g, '$1$2');
 }
 
+function extractRoll20GlyphFontFaces(css: string): string {
+  const blocks = css.match(/@font-face\s*{[\s\S]*?}/g) ?? [];
+  return blocks
+    .filter((block) => /font-family\s*:\s*['"]?(?:dicefontd\d+|pictos|pictos custom|pictos three|fontello)\b/i.test(block))
+    .join('\n');
+}
+
 /**
  * Shadow DOM 모드 — `:root` 를 `:host` 로 rewrite + `.ui-dialog` prefix 제거.
  */
@@ -79,6 +86,18 @@ export const roll20BaseShadowCss = [
   rewriteForShadow(roll20CharsheetCss),
   rewriteForShadow(roll20JqueryCss),
 ].join('\n');
+
+/**
+ * Shadow DOM styles can reference Roll20 glyph fonts, but Chromium does not
+ * reliably register @font-face rules scoped inside a shadow tree for rendering.
+ * Register only Roll20 icon/dice font faces at document level; do not expose
+ * Roll20 selector rules to the app document.
+ */
+export const roll20ShadowDocumentFontFaceCss = [
+  extractRoll20GlyphFontFaces(roll20BaseCss),
+  extractRoll20GlyphFontFaces(roll20VttCss),
+  extractRoll20GlyphFontFaces(roll20CharsheetCss),
+].filter(Boolean).join('\n');
 
 /** Dark mode — iframe / shadow 공용. */
 export const roll20DarkmodeIframeCss = roll20DarkmodeCss;

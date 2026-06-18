@@ -50,7 +50,10 @@
  */
 
 /** Drag threshold — pointerdown 이후 이만큼 움직여야 drag 으로 간주 (px). */
+import { roll20ShadowDocumentFontFaceCss } from './roll20_base';
+
 const DRAG_THRESHOLD_PX = 3;
+const ROLL20_FONT_STYLE_ID = 'r20-shadow-document-font-faces';
 
 export interface ShadowMountOptions {
   /** 박을 user HTML — 이미 autoPrefix 처리된 상태 가정. */
@@ -151,6 +154,36 @@ function appendStyleElement(shadow: ShadowRoot, css: string, source: string): vo
   shadow.appendChild(styleEl);
 }
 
+function extractSourceChunk(css: string, source: string): string {
+  const marker = `/* r20-style-source:${source} */`;
+  const start = css.indexOf(marker);
+  if (start < 0) return '';
+  const bodyStart = start + marker.length;
+  const next = css.indexOf('/* r20-style-source:', bodyStart);
+  return css.slice(bodyStart, next < 0 ? undefined : next);
+}
+
+function extractDocumentFontCssFromUserCss(css: string): string {
+  const userCss = extractSourceChunk(css, 'sheet-user-css');
+  if (!userCss.trim()) return '';
+  const imports = userCss.match(/@import\s+[^;]+;/gi) ?? [];
+  const fontFaces = userCss.match(/@font-face\s*{[\s\S]*?}/gi) ?? [];
+  return [...imports, ...fontFaces].join('\n');
+}
+
+function ensureRoll20DocumentFonts(css: string): void {
+  if (typeof document === 'undefined') return;
+  const documentFontCss = [
+    roll20ShadowDocumentFontFaceCss,
+    extractDocumentFontCssFromUserCss(css),
+  ].filter((chunk) => chunk.trim()).join('\n');
+  if (!documentFontCss.trim()) return;
+  const styleEl = document.getElementById(ROLL20_FONT_STYLE_ID) ?? document.createElement('style');
+  styleEl.id = ROLL20_FONT_STYLE_ID;
+  if (styleEl.textContent !== documentFontCss) styleEl.textContent = documentFontCss;
+  if (!styleEl.parentNode) document.head.appendChild(styleEl);
+}
+
 function appendSourceMarkedStyles(shadow: ShadowRoot, css: string): void {
   const marker = /\/\*\s*r20-style-source:([a-z0-9_-]+)\s*\*\//gi;
   let lastIndex = 0;
@@ -183,6 +216,7 @@ export function mountSheetShadow(
   host: HTMLElement,
   opts: ShadowMountOptions,
 ): ShadowMountResult {
+  ensureRoll20DocumentFonts(opts.css);
   let shadow = host.shadowRoot;
   if (!shadow) {
     shadow = host.attachShadow({ mode: 'open' });
