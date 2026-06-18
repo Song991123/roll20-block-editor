@@ -1,23 +1,5 @@
 'use client';
 
-/**
- * ExportDialog — Roll20 등록용 .zip 다운로드 모달.
- *
- * Anchor:
- *   - docs/spec/16_redesign_decision_log.md D16 ① (.zip + README.txt)
- *   - docs/spec/16_redesign_decision_log.md D18 ① (ERROR 차단)
- *   - docs/spec/12_roll20_output_spec.md §5 (sheet.json 메타)
- *
- * 흐름:
- *   1) 헤더 [다운로드] 버튼 → 본 모달 오픈.
- *   2) workspaceStore.emitCache + emitWarnings + 본 모달 단의 추가 export warning
- *      (warnings.ts) 을 합쳐 표시.
- *   3) ERROR 가 있으면 다운로드 버튼 disabled.
- *   4) 다운로드 클릭 → zip_builder.buildZip → triggerDownload + 토스트.
- *
- * 시스템 specific 0 — D&D / PbtA / CoC 분기 없음.
- */
-
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
@@ -49,7 +31,6 @@ import {
 import { DEFAULT_METADATA } from '@/lib/export/manifest';
 import { analyzeEmit } from '@/lib/export/warnings';
 import { buildZip, triggerDownload } from '@/lib/export/zip_builder';
-// Stage 19 — 구버전 Roll20 sandbox 호환 모드 (anchor: docs/spec/19_sanitize_and_default_view.md).
 import {
   sanitizeForRoll20Legacy,
   type SanitizeWarning,
@@ -66,11 +47,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   const [meta, setMeta] = useState<SheetMetadata>(DEFAULT_METADATA);
   const [busy, setBusy] = useState(false);
-  // Stage 19 — 구버전 sandbox 호환 모드 (default off — 사용자 명시 opt-in).
   const [legacyMode, setLegacyMode] = useState(false);
   const [legacyWarnings, setLegacyWarnings] = useState<SanitizeWarning[]>([]);
 
-  // 본 모달이 보이는 동안에만 합산 — emitCache 변동 시 자동 재계산.
   const combinedWarnings = useMemo<EmitWarning[]>(() => {
     if (!open) return [];
     const exportWarnings = analyzeEmit({
@@ -111,17 +90,17 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         detail:
           translationText.length > 0
             ? `${formatBytes(translationBytes)} 준비됨`
-            : '빈 번역은 {}로 내보냄',
+            : '번역 파일은 빈 객체({})로 내보냅니다',
         ok: true,
       },
       {
         label: 'sheet.json + README',
-        detail: '메타데이터와 등록 순서 포함',
+        detail: '메타데이터와 Roll20 등록 순서를 함께 넣습니다',
         ok: true,
       },
       {
         label: 'Roll20 실제 검증',
-        detail: 'Sandbox나 테스트 방에 업로드한 뒤 화면 비교 필요',
+        detail: 'Sandbox나 테스트 방 업로드 후 화면 캡처 비교가 필요합니다',
         ok: false,
         pending: true,
       },
@@ -132,7 +111,6 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     if (blocked) return;
     setBusy(true);
     try {
-      // Stage 19 — 구버전 호환 모드 on 시 CSS sanitize.
       let cssForZip = emitCache.css;
       let collectedWarnings: SanitizeWarning[] = [];
       const extraFiles: Record<string, string> = {};
@@ -183,27 +161,27 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileArchive className="h-5 w-5" />
-            Roll20용 .zip 내보내기
+            Roll20용 zip 내보내기
           </DialogTitle>
           <DialogDescription>
-            Roll20 Custom Sheet Sandbox에 올릴 파일을 .zip으로 묶습니다. sheet.html, sheet.css, translation.json, sheet.json, README.txt가 포함돼요.
+            Roll20 Custom Sheet Sandbox에 올릴 파일을 zip으로 묶습니다. sheet.html,
+            sheet.css, translation.json, sheet.json, README.txt가 포함돼요.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* ── 메타 폼 ───────────────────────────────────────────────── */}
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="시트 이름" hint="비어 있으면 Untitled Sheet">
               <input
                 type="text"
                 value={meta.name}
                 onChange={(e) => setMeta({ ...meta, name: e.target.value })}
-                placeholder="예: 내 캐릭터 시트"
+                placeholder="예: 나의 캐릭터 시트"
                 className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 text-sm"
                 data-testid="export-meta-name"
               />
             </Field>
-            <Field label="작가" hint="비어 있으면 Anonymous">
+            <Field label="작성자" hint="비어 있으면 Anonymous">
               <input
                 type="text"
                 value={meta.author}
@@ -219,7 +197,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 value={meta.version}
                 onChange={(e) => setMeta({ ...meta, version: e.target.value })}
                 placeholder="0.1.0"
-                className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 text-sm font-mono"
+                className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 font-mono text-sm"
                 data-testid="export-meta-version"
               />
             </Field>
@@ -242,19 +220,18 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 ))}
               </select>
             </Field>
-            <Field label="시스템" hint="자유 입력 (D&D 5e, PbtA, ...)" full>
+            <Field label="시스템" hint="자유 입력 (D&D 5e, PbtA, CoC 등)" full>
               <input
                 type="text"
                 value={meta.system}
                 onChange={(e) => setMeta({ ...meta, system: e.target.value })}
-                placeholder="예: Dungeons & Dragons 5e (선택)"
+                placeholder="예: Call of Cthulhu 7th"
                 className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 text-sm"
                 data-testid="export-meta-system"
               />
             </Field>
           </section>
 
-          {/* ── 검사 결과 ─────────────────────────────────────────────── */}
           <section
             className="rounded border border-border bg-[var(--bg-elevated)] p-3"
             data-testid="export-warnings"
@@ -273,7 +250,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 감지된 문제가 없어요. 바로 내보낼 수 있습니다.
               </div>
             ) : (
-              <ul className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <ul className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
                 {combinedWarnings.map((w, i) => (
                   <li
                     key={`${w.code}-${i}`}
@@ -288,7 +265,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                       <span className="font-mono text-[11px] text-muted-foreground">
                         {w.code}
                       </span>{' '}
-                      — {w.message}
+                      {w.message}
                     </span>
                   </li>
                 ))}
@@ -305,6 +282,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               </div>
             )}
           </section>
+
           <section
             className="rounded border border-border bg-[var(--bg-elevated)] p-3"
             data-testid="export-roll20-readiness"
@@ -313,7 +291,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <div>
                 <div className="text-sm font-medium">Roll20 업로드 준비 상태</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  이 항목은 zip 구성 파일의 로컬 준비 여부입니다. 실제 Roll20 화면 일치 여부는 Sandbox나 테스트 방에 올려 캡처로 확인해야 합니다.
+                  이 항목은 zip 구성 파일의 로컬 준비 여부입니다. 실제 Roll20 화면 일치
+                  여부는 Sandbox나 테스트 방에 올려 캡처로 확인해야 합니다.
                 </p>
               </div>
               <span
@@ -357,15 +336,17 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               ))}
             </ul>
             <div className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
-              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 따로 Sandbox에 올려 비교하세요. 기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은 Custom Sheet Sandbox 또는 새 테스트 방에서 진행합니다.
+              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 따로 Sandbox에
+              올려 비교하세요. 기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은
+              Custom Sheet Sandbox 또는 새 테스트 방에서 진행합니다.
             </div>
           </section>
-          {/* Stage 19 — 구버전 Roll20 sandbox 호환 모드 토글 (additive). */}
+
           <section
             className="rounded border border-border bg-[var(--bg-elevated)] p-3"
             data-testid="export-legacy-section"
           >
-            <label className="flex items-start gap-2 text-[12px] cursor-pointer select-none">
+            <label className="flex cursor-pointer select-none items-start gap-2 text-[12px]">
               <input
                 type="checkbox"
                 checked={legacyMode}
@@ -377,7 +358,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <span className="flex-1">
                 <span className="font-medium">구버전 Roll20 무해화</span>
                 <span className="ml-1 text-[11px] text-muted-foreground">
-                  끄면 원본 CSS 그대로, 켜면 구버전에서 막힐 수 있는 CSS를 변환/제거하고 보고서를 zip에 넣습니다.
+                  끄면 원본 CSS 그대로, 켜면 구버전에서 막힐 수 있는 CSS를 변환하거나
+                  제거하고 보고서를 zip에 넣습니다.
                 </span>
               </span>
             </label>
@@ -386,7 +368,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 className="mt-2 text-[11px] text-muted-foreground"
                 data-testid="export-legacy-warnings"
               >
-                최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 sanitize-warnings.json에 포함됩니다.
+                최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은
+                sanitize-warnings.json에 포함됩니다.
               </div>
             )}
             {legacyMode && legacyWarnings.length === 0 && (
@@ -414,15 +397,13 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             data-testid="export-download-button"
           >
             <FileArchive className="mr-1.5 h-4 w-4" />
-            {busy ? '압축 중…' : '내보내기 (.zip)'}
+            {busy ? '압축 중...' : '내보내기 (.zip)'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 function Field({
   label,
@@ -441,9 +422,9 @@ function Field({
         {label}
       </span>
       {children}
-      {hint && (
+      {hint ? (
         <span className="text-[10.5px] text-muted-foreground/70">{hint}</span>
-      )}
+      ) : null}
     </label>
   );
 }

@@ -48,3 +48,9 @@ This matrix breaks the operating requirements into actionable work. Use it with 
 | DONE | P0 | Verify latest production deploy. | Pages 200; latest Actions run for `37c1090` succeeded. | Record each future deploy after push. |
 | DONE | P0 | Create `dev` branch and CI. | `dev` was pushed to origin; `main` CI, `dev` CI, and Pages deploy passed when checked on 2026-06-12. | Use `dev` for pre-merge integration work and recheck Actions after each push. |
 | TODO | P1 | Separate public test page. | GitHub Pages is currently production only. | Choose Vercel/Netlify, second Pages repo, or same-site `/dev/`. |
+
+## User-Facing UI Clarity
+
+| Status | Priority | Requirement | Current Evidence | Next Action |
+| --- | ---: | --- | --- | --- |
+| VERIFY | P1 | Remove confusing app UI chrome and broken text from core flows. | Header, empty preview state, and export dialog now use readable Korean copy. Public sample UI is hidden when `EXAMPLES` is empty, matching the copyright rule that real sample sheets must not ship publicly. `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke` PASS confirms header/empty-state text, no sample UI in the empty public catalog state, no mojibake in initial shell text, export readiness, import dialog opening, and edit tab selection with 0 console/page errors. | Continue auditing remaining editor panels/dialogs for mojibake or translation-style labels; do not claim full UI copy cleanup yet. |

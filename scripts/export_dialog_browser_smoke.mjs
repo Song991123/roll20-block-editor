@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Browser smoke for header import/export actions and the Roll20 export
- * readiness panel.
+ * Browser smoke for header import/export actions, the empty editor shell, and
+ * the Roll20 export readiness panel.
  *
  * Runs against the statically exported app in `out/`. The app is built with
  * `basePath=/roll20-block-editor` for GitHub Pages, so this local server strips
@@ -60,6 +60,10 @@ function startServer() {
   return new Promise((resolve) => server.listen(PORT, '127.0.0.1', () => resolve(server)));
 }
 
+function hasMojibake(text) {
+  return /[�]|(?:\?[가-힣])|(?:[援寃以踰遺留釉瑜湲])/.test(text);
+}
+
 async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
   const server = await startServer();
@@ -87,10 +91,25 @@ async function main() {
   try {
     await page.goto(result.url, { waitUntil: 'load' });
 
+    result.checks.shell = await page.evaluate(() => {
+      const bodyText = document.body.innerText;
+      return {
+        hasHeaderTitle: bodyText.includes('Roll20 시트 편집기'),
+        hasEmptyTitle: bodyText.includes('새 Roll20 시트를 만들어볼까요?'),
+        hasBlankCta: bodyText.includes('빈 시트로 시작'),
+        hasSampleCta: bodyText.includes('샘플 시트 보기'),
+        hasSampleMenu: bodyText.includes('샘플 시트'),
+        bodyText,
+      };
+    });
+    result.checks.shell.hasMojibake = hasMojibake(result.checks.shell.bodyText);
+    delete result.checks.shell.bodyText;
+    await page.screenshot({ path: path.join(REPORT_DIR, 'initial-shell.png') });
+
     await page.click('[data-testid="header-export-button"]');
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', { timeout: 15000 });
     result.checks.exportDialog = await page.evaluate(() => ({
-      hasTitle: document.body.innerText.includes('Roll20용 .zip 내보내기'),
+      hasTitle: document.body.innerText.includes('Roll20용 zip 내보내기'),
       hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
       readinessItemCount: document.querySelectorAll('[data-testid="export-roll20-readiness-item"]').length,
       badgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
@@ -107,7 +126,7 @@ async function main() {
     await page.click('[data-testid="header-import-button"]');
     await page.waitForSelector('[role="dialog"]', { timeout: 15000 });
     result.checks.importDialog = await page.evaluate(() => ({
-      hasTitle: document.body.innerText.includes('외부 시트 불러오기'),
+      hasTitle: document.body.innerText.includes('시트 불러오기'),
       textareaCount: document.querySelectorAll('textarea').length,
       hasProgressNode: Boolean(document.querySelector('[data-testid="import-progress"]')),
     }));
@@ -120,6 +139,11 @@ async function main() {
     }));
 
     const failures = [];
+    if (!result.checks.shell.hasHeaderTitle) failures.push('header title missing');
+    if (!result.checks.shell.hasEmptyTitle) failures.push('empty state title missing');
+    if (!result.checks.shell.hasBlankCta) failures.push('blank sheet CTA missing');
+    if (result.checks.shell.hasSampleCta || result.checks.shell.hasSampleMenu) failures.push('sample UI visible with empty public catalog');
+    if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');
     if (!result.checks.exportDialog.hasTitle) failures.push('export dialog title missing');
     if (!result.checks.exportDialog.hasReadiness) failures.push('export readiness panel missing');
     if (result.checks.exportDialog.readinessItemCount !== 5) failures.push('export readiness item count mismatch');
