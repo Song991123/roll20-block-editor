@@ -550,13 +550,13 @@ class DefaultAdapter implements BlocklyAdapter {
       initSvg?: () => void;
       render?: () => void;
     };
-    if (!moving.previousConnection || !target.previousConnection) return false;
-    if (!moving.nextConnection || moving.nextConnection.targetBlock()) return false;
-    const insertionConnection = target.previousConnection.targetConnection;
-    if (!insertionConnection) return false;
+    if (!moving.previousConnection || !moving.nextConnection || !target.previousConnection) return false;
+    if (this.containsInputDescendant(movingRaw, targetRaw)) return false;
     try {
       moving.unplug?.(true);
       if (!moving.previousConnection || !target.previousConnection) return false;
+      const insertionConnection = target.previousConnection.targetConnection;
+      if (!insertionConnection || moving.previousConnection.isConnected()) return false;
       insertionConnection.connect(moving.previousConnection);
       if (!moving.nextConnection || moving.nextConnection.isConnected()) return false;
       moving.nextConnection.connect(target.previousConnection);
@@ -583,21 +583,25 @@ class DefaultAdapter implements BlocklyAdapter {
       initSvg?: () => void;
       render?: () => void;
     };
-    if (!moving.previousConnection || !moving.nextConnection || moving.nextConnection.targetBlock()) return false;
+    if (!moving.previousConnection || !moving.nextConnection) return false;
     if (!target.nextConnection) return false;
-    const nextBlock = target.nextConnection.targetBlock() as
-      | (Blockly.Block & {
-          previousConnection?: Blockly.Connection | null;
-          render?: () => void;
-        })
-      | null;
-    const nextConnection = nextBlock?.previousConnection ?? null;
+    if (this.containsInputDescendant(movingRaw, targetRaw)) return false;
+    let nextBlock: (Blockly.Block & { previousConnection?: Blockly.Connection | null; render?: () => void }) | null = null;
+    let nextConnection: Blockly.Connection | null = null;
     try {
       moving.unplug?.(true);
       if (!target.nextConnection) return false;
+      nextBlock = target.nextConnection.targetBlock() as
+        | (Blockly.Block & {
+            previousConnection?: Blockly.Connection | null;
+            render?: () => void;
+          })
+        | null;
+      nextConnection = nextBlock?.previousConnection ?? null;
       if (target.nextConnection.isConnected()) {
         target.nextConnection.disconnect();
       }
+      if (moving.previousConnection.isConnected()) return false;
       target.nextConnection.connect(moving.previousConnection);
       if (nextBlock) {
         if (!moving.nextConnection || moving.nextConnection.isConnected()) return false;
@@ -613,6 +617,30 @@ class DefaultAdapter implements BlocklyAdapter {
     } catch {
       return false;
     }
+  }
+
+  private containsInputDescendant(rootRaw: Blockly.Block, candidate: Blockly.Block): boolean {
+    const root = rootRaw as Blockly.Block & {
+      inputList?: Array<{ connection?: Blockly.Connection | null }>;
+      nextConnection?: Blockly.Connection | null;
+    };
+    const stack = (root.inputList ?? [])
+      .map((input) => input.connection?.targetBlock())
+      .filter((block): block is Blockly.Block => Boolean(block));
+    while (stack.length) {
+      let block: Blockly.Block | null = stack.pop() ?? null;
+      while (block) {
+        if (block === candidate) return true;
+        const childInputs = (block as Blockly.Block & { inputList?: Array<{ connection?: Blockly.Connection | null }> })
+          .inputList ?? [];
+        for (const input of childInputs) {
+          const child = input.connection?.targetBlock();
+          if (child) stack.push(child);
+        }
+        block = (block as Blockly.Block & { nextConnection?: Blockly.Connection | null }).nextConnection?.targetBlock() ?? null;
+      }
+    }
+    return false;
   }
 
   canNestInContainer(key: WorkspaceKey, targetId: string): boolean {

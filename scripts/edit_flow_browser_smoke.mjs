@@ -489,7 +489,102 @@ async function main() {
     { sectionId: sectionInfo.blockId, inputId: dragDropState.nestedInputBlockId },
   );
 
-  results.tests.realDrag = { c1, sectionInfo, movedSectionInfo, c2Indicator, c2, c3, state: dragDropState, nestedReorder, canvasSiblingInsert, layerDropModes };
+  const nonLeafLayerReorder = await page.evaluate(async () => {
+    const html = [
+      '<div class="outer" style="width:520px; min-height:180px; padding:12px">',
+      '  <div class="group-a" style="padding:8px">',
+      '    <input type="text" name="attr_input_a" value="A">',
+      '  </div>',
+      '  <div class="group-b" style="padding:8px">',
+      '    <input type="text" name="attr_input_b" value="B">',
+      '  </div>',
+      '</div>',
+    ].join('\n');
+    await window.__perfHook.importSheet({ html, css: '', i18n: '{}' });
+    window.__perfHook.setMainMode('edit');
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const root = host?.shadowRoot;
+    const groupA = root?.querySelector('.sheet-group-a');
+    const groupB = root?.querySelector('.sheet-group-b');
+    const inputA = root?.querySelector('input[name="attr_input_a"]');
+    const inputB = root?.querySelector('input[name="attr_input_b"]');
+    const groupAId = groupA?.getAttribute('data-r20-block-id') ?? null;
+    const groupBId = groupB?.getAttribute('data-r20-block-id') ?? null;
+    const inputAId = inputA?.getAttribute('data-r20-block-id') ?? null;
+    const inputBId = inputB?.getAttribute('data-r20-block-id') ?? null;
+    if (!groupAId || !groupBId || !inputAId || !inputBId) {
+      return { moved: false, reason: 'missing imported synthetic ids', groupAId, groupBId, inputAId, inputBId };
+    }
+
+    const beforeGraph = window.__perfHook.getBlockGraph('html');
+    const movingBefore = beforeGraph.find((node) => node.id === groupAId);
+    const targetBefore = beforeGraph.find((node) => node.id === groupBId);
+    const row = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(groupBId)}"]`,
+    );
+    if (!row) return { moved: false, reason: 'missing target layer row', groupAId, groupBId };
+    const rect = row.getBoundingClientRect();
+    const dt = new DataTransfer();
+    dt.setData('application/x-r20-layer-block', groupAId);
+    const init = {
+      bubbles: true,
+      cancelable: true,
+      clientX: Math.round(rect.left + rect.width / 2),
+      clientY: Math.round(rect.top + rect.height * 0.9),
+    };
+    const over = new DragEvent('dragover', init);
+    Object.defineProperty(over, 'dataTransfer', { value: dt });
+    row.dispatchEvent(over);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const mode = row.getAttribute('data-r20-layer-drop-mode') || '';
+    const drop = new DragEvent('drop', init);
+    Object.defineProperty(drop, 'dataTransfer', { value: dt });
+    row.dispatchEvent(drop);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    const emitted = window.__perfHook.getEmitContent().html;
+    const afterGraph = window.__perfHook.getBlockGraph('html');
+    const groupAIndex = emitted.indexOf('sheet-group-a');
+    const groupBIndex = emitted.indexOf('sheet-group-b');
+    const inputAIndex = emitted.indexOf('attr_input_a');
+    const inputBIndex = emitted.indexOf('attr_input_b');
+    const groupAEndIndex = emitted.indexOf('</div>', groupAIndex);
+    const groupBEndIndex = emitted.indexOf('</div>', groupBIndex);
+    const movingAfter = afterGraph.find((node) => node.id === groupAId);
+    const targetAfter = afterGraph.find((node) => node.id === groupBId);
+    return {
+      moved: true,
+      mode,
+      groupAId,
+      groupBId,
+      inputAId,
+      inputBId,
+      movingBefore,
+      targetBefore,
+      movingAfter,
+      targetAfter,
+      indexes: { groupAIndex, groupBIndex, inputAIndex, inputBIndex, groupAEndIndex, groupBEndIndex },
+      groupAAfterGroupB: groupAIndex > groupBIndex,
+      inputAStayedInsideGroupA: groupAIndex >= 0 && inputAIndex > groupAIndex && inputAIndex < groupAEndIndex,
+      inputBStayedInsideGroupB: groupBIndex >= 0 && inputBIndex > groupBIndex && inputBIndex < groupBEndIndex,
+    };
+  });
+
+  results.tests.realDrag = {
+    c1,
+    sectionInfo,
+    movedSectionInfo,
+    c2Indicator,
+    c2,
+    c3,
+    state: dragDropState,
+    nestedReorder,
+    canvasSiblingInsert,
+    layerDropModes,
+    nonLeafLayerReorder,
+  };
   results.consoleErrors = consoleErrors;
   results.pageErrors = pageErrors;
 
@@ -534,6 +629,12 @@ async function main() {
     canvasSiblingInsert.afterNewIndexAfterEmit > canvasSiblingInsert.targetIndexAfterAfterDrop &&
     Array.isArray(layerDropModes.modes) &&
     layerDropModes.modes.join(',') === 'before,inside,after' &&
+    nonLeafLayerReorder.mode === 'after' &&
+    nonLeafLayerReorder.movingBefore?.childCount >= 1 &&
+    nonLeafLayerReorder.movingBefore?.hasNextTarget === true &&
+    nonLeafLayerReorder.groupAAfterGroupB === true &&
+    nonLeafLayerReorder.inputAStayedInsideGroupA === true &&
+    nonLeafLayerReorder.inputBStayedInsideGroupB === true &&
     pageErrors.length === 0;
 
   results.pass = pass;
