@@ -23,6 +23,8 @@ const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/export-dialog-smoke'));
 const PORT = Number(argOf('--port', '4182'));
+const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
+const FIXTURE_ID = argOf('--fixture', '');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -64,8 +66,71 @@ function hasMojibake(text) {
   return /[\u3400-\u9fff\uf900-\ufaff\ufffd]/u.test(text);
 }
 
+async function readMaybe(file) {
+  try {
+    return await fs.readFile(file, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+async function loadFixture(id) {
+  if (!id) return null;
+  const dir = path.join(FIXTURES_DIR, id);
+  const html = await readMaybe(path.join(dir, 'source.html'));
+  if (!html) throw new Error(`fixture ${id} is missing source.html under ${FIXTURES_DIR}`);
+  return {
+    id,
+    html,
+    css: await readMaybe(path.join(dir, 'source.css')),
+    i18n: await readMaybe(path.join(dir, 'source.i18n')),
+  };
+}
+
+async function warmPerfHook(page) {
+  await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
+  await page.waitForFunction(
+    async () => {
+      try {
+        const r = await window.__perfHook.importSheet({ html: '<div>ready</div>' });
+        return r.blockCount > 0;
+      } catch {
+        return false;
+      }
+    },
+    null,
+    { timeout: 30000, polling: 1000 },
+  );
+}
+
+async function importFixture(page, fixture) {
+  return page.evaluate(async ({ html, css, i18n }) => {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const bytes = (value) => new TextEncoder().encode(value ?? '').length;
+    window.__perfHook.clearAll();
+    await sleep(700);
+    let last = null;
+    for (let i = 0; i < 40; i += 1) {
+      last = await window.__perfHook.importSheet({ html, css, i18n });
+      if (last.blockCount > 0) break;
+      await sleep(500);
+    }
+    const emit = window.__perfHook.getEmitContent();
+    return {
+      result: last,
+      emitBytes: {
+        html: bytes(emit.html),
+        css: bytes(emit.css),
+        i18n: bytes(emit.i18n),
+        worker: bytes(emit.worker),
+      },
+    };
+  }, fixture);
+}
+
 async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
+  const fixture = await loadFixture(FIXTURE_ID);
   const server = await startServer();
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1480, height: 960 } });
@@ -89,7 +154,21 @@ async function main() {
   };
 
   try {
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.setItem('__perfOn', '1');
+        window.localStorage.removeItem('r20be-autosave');
+      } catch {}
+    });
     await page.goto(result.url, { waitUntil: 'load' });
+
+    if (fixture) {
+      await warmPerfHook(page);
+      result.checks.importedFixture = await importFixture(page, fixture);
+      if ((result.checks.importedFixture.result?.blockCount ?? 0) <= 0) {
+        throw new Error(`fixture ${fixture.id} did not import any blocks`);
+      }
+    }
 
     result.checks.shell = await page.evaluate(() => {
       const bodyText = document.body.innerText;
@@ -118,6 +197,10 @@ async function main() {
         hasSandboxDiagnostics: Boolean(document.querySelector('[data-testid="export-roll20-sandbox-diagnostics"]')),
         sandboxDiagnosticItemCount: document.querySelectorAll('[data-testid="export-roll20-sandbox-diagnostic-item"]').length,
         sandboxStatus: document.querySelector('[data-testid="export-roll20-sandbox-status"]')?.textContent?.trim() ?? '',
+        sandboxDiagnosticStates: Array.from(document.querySelectorAll('[data-testid="export-roll20-sandbox-diagnostic-item"]')).map((el) => ({
+          state: el.getAttribute('data-state') ?? '',
+          text: el.textContent?.trim() ?? '',
+        })),
         hasLegacyToggle: dialogText.includes('구버전 Roll20 무해화'),
         hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox 또는 테스트 방에 올린 뒤 캡처로 확인해야 합니다.'),
         downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
@@ -151,8 +234,8 @@ async function main() {
 
     const failures = [];
     if (!result.checks.shell.hasHeaderTitle) failures.push('header title missing');
-    if (!result.checks.shell.hasEmptyTitle) failures.push('empty state title missing');
-    if (!result.checks.shell.hasBlankCta) failures.push('blank sheet CTA missing');
+    if (!fixture && !result.checks.shell.hasEmptyTitle) failures.push('empty state title missing');
+    if (!fixture && !result.checks.shell.hasBlankCta) failures.push('blank sheet CTA missing');
     if (result.checks.shell.hasSampleCta || result.checks.shell.hasSampleMenu) failures.push('sample UI visible with empty public catalog');
     if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');
     if (!result.checks.exportDialog.hasTitle) failures.push('export dialog title missing');
@@ -163,6 +246,12 @@ async function main() {
     if (result.checks.exportDialog.sandboxDiagnosticItemCount !== 4) failures.push('export sandbox diagnostics item count mismatch');
     if (!['치명 오류 없음', '수정 필요'].includes(result.checks.exportDialog.sandboxStatus)) {
       failures.push('export sandbox diagnostics status mismatch');
+    }
+    if (fixture && result.checks.exportDialog.sandboxStatus !== '치명 오류 없음') {
+      failures.push('imported fixture sandbox diagnostics should have no fatal error');
+    }
+    if (fixture && !result.checks.exportDialog.sandboxDiagnosticStates.some((item) => item.state === 'rewritten')) {
+      failures.push('imported fixture sandbox diagnostics did not report any expected rewrite');
     }
     if (!result.checks.exportDialog.hasLegacyToggle) failures.push('legacy toggle copy missing');
     if (!result.checks.exportDialog.hasLocalVsActualCopy) failures.push('local-vs-actual verification copy missing');
