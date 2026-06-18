@@ -134,6 +134,11 @@ async function classifyEntry(diffEntry) {
     looksJson: /^\s*[{[]/.test(i18n),
     keyLikePairs: countMatches(i18n, /"[^"]+"\s*:/g),
   };
+  const stateDetails = {
+    cssSelectors: extractCssStateSelectors(css),
+    inputDefaults: extractInputDefaults(html),
+    dimension: dimensionSummary(result.referenceSize, result.captureSize, best.captureCrop),
+  };
 
   const stateRisk = scoreStateRisk(htmlStats, cssStats);
   const assetRisk = scoreAssetRisk(cssStats, html);
@@ -186,6 +191,7 @@ async function classifyEntry(diffEntry) {
       assetRisk,
       sizeRisk,
     },
+    stateDetails,
     categories,
     likelyCause: summarizeCause(categories, bestMismatch),
     nextAction: nextAction(categories),
@@ -220,6 +226,85 @@ function scoreSizeRisk(referenceSize, captureSize) {
   const [cw, ch] = captureSize;
   if (!rw || !rh || !cw || !ch) return 0;
   return Math.abs(cw - rw) / rw + Math.abs(ch - rh) / rh;
+}
+
+function extractCssStateSelectors(css) {
+  const selectors = [];
+  const cleanCss = css
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/@import[^;]+;/gi, '');
+  const ruleRe = /([^{}]+)\{[^{}]*\}/g;
+  let match;
+  while ((match = ruleRe.exec(cleanCss))) {
+    const raw = match[1]
+      .split(',')
+      .map((selector) => selector.trim())
+      .filter(Boolean);
+    for (const selector of raw) {
+      const normalized = selector.replace(/\s+/g, ' ');
+      const reasons = [];
+      if (/:not\(\s*:checked\s*\)/i.test(normalized)) reasons.push(':not(:checked)');
+      if (/:checked\b/i.test(normalized.replace(/:not\(\s*:checked\s*\)/gi, ''))) reasons.push(':checked');
+      if (/\[[^\]]*\bvalue\s*=/i.test(normalized)) reasons.push('[value]');
+      if (/(?:~|\+)\s*(?:\.|#|\w|\[)/.test(normalized)) reasons.push('sibling');
+      if (reasons.length > 0) selectors.push({ selector: normalized, reasons });
+      if (selectors.length >= 20) return selectors;
+    }
+  }
+  return selectors;
+}
+
+function extractInputDefaults(html) {
+  const defaults = [];
+  const inputRe = /<input\b[^>]*>/gi;
+  let match;
+  while ((match = inputRe.exec(html))) {
+    const tag = match[0];
+    const type = attrValue(tag, 'type') || 'text';
+    const name = attrValue(tag, 'name') || attrValue(tag, 'class') || '';
+    const value = attrValue(tag, 'value') || '';
+    const checked = /\bchecked(?:\s|=|>)/i.test(tag);
+    if (
+      type === 'hidden' ||
+      type === 'checkbox' ||
+      type === 'radio' ||
+      checked ||
+      value
+    ) {
+      defaults.push({
+        type,
+        name: name.slice(0, 80),
+        value: value.slice(0, 80),
+        checked,
+      });
+    }
+    if (defaults.length >= 24) return defaults;
+  }
+  return defaults;
+}
+
+function attrValue(tag, attr) {
+  const re = new RegExp(`\\b${attr}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i');
+  const match = tag.match(re);
+  return match ? (match[1] ?? match[2] ?? match[3] ?? '') : '';
+}
+
+function dimensionSummary(referenceSize, captureSize, bestCrop) {
+  if (!Array.isArray(referenceSize) || !Array.isArray(captureSize)) {
+    return { note: 'missing size data' };
+  }
+  const [rw, rh] = referenceSize;
+  const [cw, ch] = captureSize;
+  const cropY = Array.isArray(bestCrop) ? bestCrop[1] : null;
+  return {
+    reference: `${rw}x${rh}`,
+    capture: `${cw}x${ch}`,
+    widthDeltaPx: cw - rw,
+    heightDeltaPx: ch - rh,
+    widthRatio: rw ? Math.round((cw / rw) * 1000) / 1000 : null,
+    heightRatio: rh ? Math.round((ch / rh) * 1000) / 1000 : null,
+    bestCropY: cropY,
+  };
 }
 
 function classifyCategories(input) {
@@ -336,8 +421,26 @@ function renderMarkdown(report) {
       `- CSS state selectors: :checked=${entry.sourceSignals.css.checkedSelectors}, :not(:checked)=${entry.sourceSignals.css.notCheckedSelectors}, [value]=${entry.sourceSignals.css.valueSelectors}, sibling=${entry.sourceSignals.css.siblingSelectors}`,
       `- CSS/resource hints: urls=${entry.sourceSignals.css.urlRefs}, backgrounds=${entry.sourceSignals.css.backgroundUrls}, media=${entry.sourceSignals.css.mediaQueries}, absolute=${entry.sourceSignals.css.absolutePositions}`,
       `- I18n: has=${entry.manifest.hasI18n}, bytes=${entry.sourceSignals.i18n.bytes}, keyLikePairs=${entry.sourceSignals.i18n.keyLikePairs}`,
+      `- Dimension clue: reference=${entry.stateDetails.dimension.reference ?? 'n/a'}, capture=${entry.stateDetails.dimension.capture ?? 'n/a'}, delta=${entry.stateDetails.dimension.widthDeltaPx ?? 'n/a'}x${entry.stateDetails.dimension.heightDeltaPx ?? 'n/a'}, bestCropY=${entry.stateDetails.dimension.bestCropY ?? 'n/a'}`,
       '',
     );
+    if (entry.stateDetails.cssSelectors.length > 0) {
+      lines.push('State selector samples:', '');
+      for (const sample of entry.stateDetails.cssSelectors.slice(0, 8)) {
+        lines.push(`- \`${sample.selector}\` (${sample.reasons.join(', ')})`);
+      }
+      lines.push('');
+    }
+    if (entry.stateDetails.inputDefaults.length > 0) {
+      lines.push('Input/default samples:', '');
+      for (const sample of entry.stateDetails.inputDefaults.slice(0, 8)) {
+        const name = sample.name || '(unnamed)';
+        const value = sample.value ? ` value=${sample.value}` : '';
+        const checked = sample.checked ? ' checked' : '';
+        lines.push(`- ${sample.type} \`${name}\`${value}${checked}`);
+      }
+      lines.push('');
+    }
   }
   return `${lines.join('\n')}\n`;
 }
