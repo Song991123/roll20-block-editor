@@ -14,6 +14,19 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 actual-screen note, 2026-06-19: the older Les-Oublies `18.81%`
+full/viewport sandbox screenshot diff is superseded by the preferred
+`roll20-sandbox-root.png` crop path. `corepack pnpm run crop:roll20-actual`
+created a local-only root crop from measured iframe metadata, and
+`node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`
+now reports Les-Oublies sandbox mismatch `21.67%` after CSS-size normalization.
+`corepack pnpm run classify:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`
+still classifies the diff as viewport/crop/sheet-size dominated because the
+normalized root crop is `760x556` while the local preview is `850x4478`.
+This is partial actual Roll20 evidence, not visual parity; next evidence step is
+full-height/scroll-stitched Roll20 root capture or a matching local visible
+viewport crop.
+
 | Status | Owner | Task | Evidence / Next Check |
 | --- | --- | --- | --- |
 | DOING | Codex | Keep this TODO board current while work proceeds. | Update after each implementation/verification batch. |

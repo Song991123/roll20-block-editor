@@ -829,3 +829,21 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Secondary Les-Oublies factors recorded by the classifier: Roll20 sandbox sanitize/prefix rewrites, local baseline state hint `act_fullsheet`, and Roll20 URL proxying for HTML/CSS assets.
 - Chat DOM evidence is recorded as existing for Les-Oublies (`sheet-rolltemplate-classic-roll`), but chat screenshot evidence remains missing and must not be counted as chat visual parity.
 - Next action: add a Roll20 character-iframe root crop capture path so actual screenshots compare sheet root to sheet root before changing renderer CSS.
+
+## 2026-06-19 Roll20 Actual Root Crop Slice
+
+- Reopened the dedicated Roll20 Custom Sheet Sandbox editor and created/saved a sandbox-only test character so the generated Les-Oublies sheet viewer iframe opened in the Roll20 character dialog.
+- Captured a local-only full viewport screenshot and iframe/dialog metadata under the ignored run folder. The visible Roll20 page showed the generated Les-Oublies sheet, but the iframe `contentDocument` was unavailable to the automation layer and CDP was blocked by a paused document response.
+- Added `scripts/roll20_actual_screenshot_crop.mjs` and package script `corepack pnpm run crop:roll20-actual` to crop a Roll20 viewport screenshot into a preferred `roll20-sandbox-root.png` using measured metadata and CSS-pixel insets.
+- Updated `scripts/roll20_actual_screenshot_diff.mjs` so sandbox diffs prefer `roll20-sandbox-root.png` over `roll20-sandbox.png` and scale a root crop back to its CSS crop size when adjacent crop metadata exists.
+- Updated `scripts/roll20_actual_status.mjs` so `roll20-sandbox-root.png` counts as the preferred generated-sheet sandbox screenshot while the older `roll20-sandbox.png` remains a fallback.
+- Latest local-only crop command used `--inset-css 140,116,0,0`, producing a `760x556` CSS crop (`608x444` screenshot pixels) from the visible Roll20 sheet area.
+- Latest validation:
+  - `node --check scripts\roll20_actual_screenshot_crop.mjs`: PASS.
+  - `node --check scripts\roll20_actual_screenshot_diff.mjs`: PASS.
+  - `node --check scripts\roll20_actual_status.mjs`: PASS.
+  - `node --check scripts\roll20_actual_difference_classify.mjs`: PASS.
+  - `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS, Les-Oublies sandbox mismatch `21.67%`.
+  - `corepack pnpm run classify:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS, classifies the remaining Les-Oublies mismatch as viewport/crop/sheet-size because the normalized root crop is only `760x556` versus local preview `850x4478`.
+  - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS, still `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`.
+- Scope note: this proves the Roll20 generated sheet is visibly rendering and that root-crop evidence can be produced from the dedicated sandbox. It does not prove visual parity; next evidence step is a full-height/scroll-stitched Roll20 root capture or matching local visible viewport crop, plus trustworthy chat screenshot evidence.

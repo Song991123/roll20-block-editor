@@ -10,7 +10,8 @@
  *     reports/roll20-actual-compare/<run-label>
  *
  * Expected optional actual screenshot names per fixture:
- *   - screenshots/roll20-sandbox.png
+ *   - screenshots/roll20-sandbox-root.png (preferred normalized sheet-root crop)
+ *   - screenshots/roll20-sandbox.png (fallback full/viewport sandbox screenshot)
  *   - screenshots/roll20-room.png
  *   - screenshots/roll20-chat.png
  *
@@ -51,11 +52,16 @@ async function listFixtureDirs() {
 
 function actualTargets(fixtureDir) {
   const shots = path.join(fixtureDir, 'screenshots');
+  const sandboxRoot = path.join(shots, 'roll20-sandbox-root.png');
+  const sandboxFallback = path.join(shots, 'roll20-sandbox.png');
+  const sandboxRootMeta = sandboxRoot.replace(/\.png$/i, '.json');
   return [
     {
       name: 'sandbox',
       local: path.join(shots, 'local-preview.png'),
-      actual: path.join(shots, 'roll20-sandbox.png'),
+      actual: existsSync(sandboxRoot) ? sandboxRoot : sandboxFallback,
+      actualMeta: existsSync(sandboxRoot) && existsSync(sandboxRootMeta) ? sandboxRootMeta : null,
+      expected: [sandboxRoot, sandboxFallback],
       purpose: 'Local preview vs Roll20 Custom Sheet Sandbox/test-room initial sheet.',
     },
     {
@@ -75,8 +81,9 @@ function actualTargets(fixtureDir) {
 
 async function comparePair(page, pair) {
   const [localUrl, actualUrl] = await Promise.all([imageDataUrl(pair.local), imageDataUrl(pair.actual)]);
+  const actualMeta = pair.actualMeta ? JSON.parse(await readFile(pair.actualMeta, 'utf8')) : null;
   return page.evaluate(
-    async ({ localUrl, actualUrl, threshold, searchStep }) => {
+    async ({ localUrl, actualUrl, actualMeta, threshold, searchStep }) => {
       function loadImage(src) {
         return new Promise((resolve, reject) => {
           const image = new Image();
@@ -139,8 +146,26 @@ async function comparePair(page, pair) {
       const [localImage, actualImage] = await Promise.all([loadImage(localUrl), loadImage(actualUrl)]);
       const local = drawToCanvas(localImage);
       const actual = drawToCanvas(actualImage);
-      const w = Math.min(local.canvas.width, actual.canvas.width);
-      const h = Math.min(local.canvas.height, actual.canvas.height);
+      const actualCompareCanvas = document.createElement('canvas');
+      const actualCssCrop = actualMeta?.cssCrop;
+      const normalizeActualToCssSize = Boolean(actualCssCrop?.w && actualCssCrop?.h);
+      actualCompareCanvas.width = normalizeActualToCssSize ? Math.round(actualCssCrop.w) : actual.canvas.width;
+      actualCompareCanvas.height = normalizeActualToCssSize ? Math.round(actualCssCrop.h) : actual.canvas.height;
+      const actualCompareCtx = actualCompareCanvas.getContext('2d', { willReadFrequently: true });
+      actualCompareCtx.drawImage(
+        actual.canvas,
+        0,
+        0,
+        actual.canvas.width,
+        actual.canvas.height,
+        0,
+        0,
+        actualCompareCanvas.width,
+        actualCompareCanvas.height,
+      );
+
+      const w = Math.min(local.canvas.width, actualCompareCanvas.width);
+      const h = Math.min(local.canvas.height, actualCompareCanvas.height);
       const localScratch = document.createElement('canvas');
       localScratch.width = w;
       localScratch.height = h;
@@ -149,13 +174,13 @@ async function comparePair(page, pair) {
       const localCropData = localCtx.getImageData(0, 0, w, h);
 
       const candidates = [];
-      candidates.push({ mode: 'top-left', ...compareAt(localCropData, actual.canvas, [0, 0], [w, h]) });
-      const maxX = Math.max(0, actual.canvas.width - w);
-      const maxY = Math.max(0, actual.canvas.height - h);
+      candidates.push({ mode: 'top-left', ...compareAt(localCropData, actualCompareCanvas, [0, 0], [w, h]) });
+      const maxX = Math.max(0, actualCompareCanvas.width - w);
+      const maxY = Math.max(0, actualCompareCanvas.height - h);
       for (let y = 0; y <= maxY; y += searchStep) {
         for (let x = 0; x <= maxX; x += searchStep) {
           if (x === 0 && y === 0) continue;
-          candidates.push({ mode: 'best-crop', ...compareAt(localCropData, actual.canvas, [x, y], [w, h]) });
+          candidates.push({ mode: 'best-crop', ...compareAt(localCropData, actualCompareCanvas, [x, y], [w, h]) });
         }
       }
       const best = candidates.reduce((acc, item) => (!acc || item.mismatchRatio < acc.mismatchRatio ? item : acc), null);
@@ -163,6 +188,16 @@ async function comparePair(page, pair) {
         status: 'DIFFED',
         localSize: [local.canvas.width, local.canvas.height],
         actualSize: [actual.canvas.width, actual.canvas.height],
+        actualNormalizedSize: normalizeActualToCssSize ? [actualCompareCanvas.width, actualCompareCanvas.height] : null,
+        actualMeta: actualMeta
+          ? {
+              rectKey: actualMeta.rectKey ?? null,
+              insetCss: actualMeta.insetCss ?? null,
+              cssCrop: actualMeta.cssCrop ?? null,
+              pixelCrop: actualMeta.pixelCrop ?? null,
+              scale: actualMeta.scale ?? null,
+            }
+          : null,
         comparedSize: [w, h],
         topLeft: candidates[0],
         best,
@@ -172,6 +207,7 @@ async function comparePair(page, pair) {
     {
       localUrl,
       actualUrl,
+      actualMeta,
       threshold: THRESHOLD,
       searchStep: SEARCH_STEP,
     },
@@ -252,7 +288,9 @@ async function main() {
           item.note = 'missing local baseline screenshot';
         } else if (!existsSync(pair.actual)) {
           item.status = 'SKIP';
-          item.note = `missing ${path.basename(pair.actual)}`;
+          item.note = pair.expected
+            ? `missing ${pair.expected.map((file) => path.basename(file)).join(' or ')}`
+            : `missing ${path.basename(pair.actual)}`;
         } else {
           item.result = await comparePair(page, pair);
           item.status = 'DIFFED';

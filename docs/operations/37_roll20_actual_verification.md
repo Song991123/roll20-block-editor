@@ -121,6 +121,7 @@ to the local baseline screenshots using one of these names:
 | Path | Meaning |
 | --- | --- |
 | `local-baseline/<fixture>/screenshots/roll20-sandbox.png` | Screenshot from Custom Sheet Sandbox or a new test room. |
+| `local-baseline/<fixture>/screenshots/roll20-sandbox-root.png` | Preferred normalized sheet-root crop from Custom Sheet Sandbox or a new test room. When present, diff/status helpers use this before the fallback `roll20-sandbox.png`. |
 | `local-baseline/<fixture>/screenshots/roll20-room.png` | Read-only screenshot from an existing solo room. |
 | `local-baseline/<fixture>/screenshots/roll20-chat.png` | Rolltemplate/chat screenshot from Roll20. |
 
@@ -154,6 +155,20 @@ The classifier separates viewport/crop/sheet-size issues, Roll20 sandbox
 sanitize/prefix rewrites, default attr/state hints, asset URL proxying, and
 missing chat/room evidence. Its output is triage only. It must not be reported as
 visual parity.
+
+If Chrome can capture the visible Roll20 editor but the character iframe
+document cannot be read, save a full viewport screenshot plus measured
+iframe/dialog metadata under the ignored screenshot folder, then crop a
+preferred sheet-root image:
+
+```bash
+corepack pnpm run crop:roll20-actual -- --image <viewport.png> --meta <meta.json> --out <roll20-sandbox-root.png> --rect iframeRect --inset-css left,top,right,bottom
+```
+
+This crop is diagnostic. If it captures only the visible top of a tall sheet,
+classify the result as viewport/crop evidence and either capture a
+full-height/scroll-stitched Roll20 sheet root or compare against a matching
+local visible viewport crop before making renderer changes.
 
 ## Chrome Safety
 

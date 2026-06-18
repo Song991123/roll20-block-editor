@@ -196,7 +196,9 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
   const result = item.result ?? {};
   const best = result.best ?? {};
   const localSize = result.localSize ?? [];
-  const actualSize = result.actualSize ?? [];
+  const actualRawSize = result.actualSize ?? [];
+  const actualSize = result.actualNormalizedSize ?? actualRawSize;
+  const usedRootCrop = Boolean(result.actualMeta?.cssCrop);
   const sizeRatio = localSize[0] && actualSize[0] ? actualSize[0] / localSize[0] : null;
   const comparedHeightRatio = localSize[1] && actualSize[1] ? actualSize[1] / localSize[1] : null;
   const crop = best.crop ?? [];
@@ -206,11 +208,15 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
 
   if (actualSize[1] && localSize[1] && actualSize[1] < localSize[1] * 0.35) {
     categories.push('viewport/crop/sheet size');
-    evidence.push(`actual screenshot height ${actualSize[1]} is only ${pct(comparedHeightRatio)} of local preview height ${localSize[1]}`);
+    evidence.push(`${usedRootCrop ? 'normalized root crop' : 'actual screenshot'} height ${actualSize[1]} is only ${pct(comparedHeightRatio)} of local preview height ${localSize[1]}`);
   }
   if (actualSize[0] && localSize[0] && actualSize[0] < localSize[0] * 0.95) {
     categories.push('dialog viewport clipped horizontally');
-    evidence.push(`actual screenshot width ${actualSize[0]} is ${pct(sizeRatio)} of local preview width ${localSize[0]}`);
+    evidence.push(`${usedRootCrop ? 'normalized root crop' : 'actual screenshot'} width ${actualSize[0]} is ${pct(sizeRatio)} of local preview width ${localSize[0]}`);
+  }
+  if (usedRootCrop) {
+    categories.push('root crop captured');
+    evidence.push(`root crop came from ${result.actualMeta.rectKey ?? 'unknown rect'} with inset ${JSON.stringify(result.actualMeta.insetCss ?? {})}`);
   }
   if (Array.isArray(crop) && (crop[0] !== 0 || crop[1] !== 0)) {
     categories.push('crop offset');
@@ -241,6 +247,9 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
     mismatchPercent: pct(mismatchRatio),
     localSize,
     actualSize,
+    actualRawSize,
+    actualNormalizedSize: result.actualNormalizedSize ?? null,
+    usedRootCrop,
     comparedSize: result.comparedSize ?? null,
     bounds: best.bounds ?? null,
     crop,
@@ -254,8 +263,11 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
 }
 
 function buildTargetNextAction({ target, categories, mismatchRatio }) {
+  if (target === 'sandbox' && categories.includes('viewport/crop/sheet size') && categories.includes('root crop captured')) {
+    return 'Capture a full-height or scroll-stitched Roll20 sheet-root screenshot, or compare against a matching local viewport crop, before renderer CSS changes.';
+  }
   if (target === 'sandbox' && categories.includes('viewport/crop/sheet size')) {
-    return 'Recapture Roll20 actual sheet root with normalized crop/scale, excluding Roll20 character tab chrome when possible, before renderer CSS changes.';
+    return 'Capture Roll20 actual sheet root with normalized crop/scale, excluding Roll20 character tab chrome when possible, before renderer CSS changes.';
   }
   if (categories.includes('Roll20 sandbox sanitize/prefix')) {
     return 'Compare actual Roll20 DOM/CSS after sanitize against local Sandbox expected preview DOM/CSS for the same fixture.';
@@ -268,7 +280,9 @@ function buildTargetNextAction({ target, categories, mismatchRatio }) {
 
 function buildGlobalNextActions(fixtures) {
   const actions = [];
-  if (fixtures.some((fixture) => fixture.targets.sandbox?.primaryClassification?.includes('viewport'))) {
+  if (fixtures.some((fixture) => fixture.targets.sandbox?.categories?.includes('root crop captured') && fixture.targets.sandbox?.categories?.includes('viewport/crop/sheet size'))) {
+    actions.push('Capture full-height/scroll-stitched Roll20 sheet-root evidence or compare against a matching local visible viewport crop.');
+  } else if (fixtures.some((fixture) => fixture.targets.sandbox?.primaryClassification?.includes('viewport'))) {
     actions.push('Add a Roll20 character-iframe root crop capture path so sandbox screenshots compare sheet root to sheet root.');
   }
   if (fixtures.some((fixture) => fixture.targets.chat?.primaryClassification?.includes('chat screenshot missing'))) {

@@ -22,6 +22,7 @@
     "guard:roll20-evidence": "node scripts/roll20_actual_evidence_guard.mjs",
     "handoff:roll20-upload": "node scripts/roll20_upload_handoff.mjs",
     "status:roll20-actual": "node scripts/roll20_actual_status.mjs",
+    "crop:roll20-actual": "node scripts/roll20_actual_screenshot_crop.mjs",
     "classify:roll20-actual": "node scripts/roll20_actual_difference_classify.mjs",
     "verify:roll20-preupload": "node scripts/roll20_preupload_verification.mjs",
     "classify:visual-fixtures": "node scripts/classify_visual_fixture_diffs.mjs",

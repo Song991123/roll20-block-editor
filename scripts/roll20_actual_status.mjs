@@ -27,6 +27,7 @@ const TARGETS = [
   {
     id: 'sandbox',
     filename: 'roll20-sandbox.png',
+    preferredFilename: 'roll20-sandbox-root.png',
     evidence: 'Custom Sheet Sandbox or new test-room initial sheet screenshot',
     requiredForGeneratedSheetCheck: true,
   },
@@ -247,12 +248,16 @@ async function inspectFixture(runDir, fixtureId, diffReport) {
 }
 
 function inspectTarget(fixtureId, screenshots, target, diffReport) {
-  const file = path.join(screenshots, target.filename);
+  const preferredFile = target.preferredFilename ? path.join(screenshots, target.preferredFilename) : null;
+  const fallbackFile = path.join(screenshots, target.filename);
+  const file = preferredFile && existsSync(preferredFile) ? preferredFile : fallbackFile;
   const diffItem = diffReport.items.find((item) => item.fixtureId === fixtureId && item.target === target.id);
   return {
     id: target.id,
     evidence: target.evidence,
     screenshot: fileStatus(file),
+    preferredScreenshot: preferredFile ? fileStatus(preferredFile) : null,
+    fallbackScreenshot: preferredFile ? fileStatus(fallbackFile) : null,
     exists: existsSync(file),
     diffStatus: diffItem?.status ?? 'NOT_RUN',
     requiredForGeneratedSheetCheck: Boolean(target.requiredForGeneratedSheetCheck),

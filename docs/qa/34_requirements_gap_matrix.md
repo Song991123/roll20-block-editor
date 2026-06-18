@@ -13,6 +13,15 @@ This matrix breaks the operating requirements into actionable work. Use it with 
 
 ## Preview and Roll20 Parity
 
+Current Roll20 actual-screen note, 2026-06-19: the preferred sandbox evidence is
+now `roll20-sandbox-root.png` when present. The crop helper normalizes a visible
+Roll20 character iframe screenshot from a full viewport capture plus metadata.
+For the current Les-Oublies evidence, the root crop diff is `21.67%`, and the
+classifier says the remaining diff is still dominated by viewport/crop/sheet
+size because only the visible top of the tall sheet was captured. Do not make
+renderer CSS changes from this number alone; capture full-height/scroll-stitched
+Roll20 root evidence or compare a matching local visible viewport first.
+
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
 | VERIFY | P0 | Shared preview/edit render path. | `buildSheetDoc` and `buildSheetParts` share baseline/runtime/layer CSS; `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4314` captures imported fixture preview root vs edit root with 0 console/page errors, mismatch bounds/quadrants, roll-button diagnostics, edit canvas height diagnostics, app-toolbar occlusion metrics, and DOM signature parity. Current diagnostic mismatch: AW2E 1.76%, Les-Oublies 1.68%, YSHY 1BU 0.85%; preview/edit screenshot dimensions match, edit host/content height delta is 0, toolbar overlap is 0, visible runtime nodes are 0, and DOM signature parity PASS for all 3 prepared fixtures. `scripts/imported_edit_sync_smoke.mjs` additionally proves selected imported input nodes can move through edit mode, land at the same preview position, emit matching absolute CSS, accept imported canvas flow insertion as non-absolute content, preserve imported non-leaf subtrees through layer reorder, and survive edited emit -> re-import -> emit stability checks for 3 fixtures. | Fix remaining fixture-specific visual differences and then compare against actual Roll20 sandbox/test-room output before marking DONE. |
