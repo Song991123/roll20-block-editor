@@ -1,23 +1,5 @@
 'use client';
 
-/**
- * ChatPane — Roll20 채팅 패널 시뮬레이션 (우측 사이드 [채팅] 탭).
- *
- * Anchor:
- *   - docs/spec/08_wireframes.md W2-D
- *   - lib/stores/chatStore.ts (rolls)
- *   - lib/dice/executor.ts (RollResult)
- *
- * 동작:
- *   - chatStore.rolls 를 최신 카드 위로 렌더 (max 50)
- *   - 카드 = 발신자 / 표현식 / 결과 (총합 + dice breakdown) / 타임스탬프
- *   - rolltemplate 결과는 사용자 정의 rolltemplate body 안 `{{key}}` 치환
- *   - d20=20 → crit 강조 (배경 초록), d20=1 → fumble 강조 (배경 적색)
- *   - "지우기" 버튼 — 전체 history clear
- *
- * 굴림 발생은 lib/dice 의 executor 가 담당. 본 컴포넌트는 read-only 뷰.
- */
-
 import { useMemo } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -112,17 +94,17 @@ function CardExpr({ detail, expression }: { detail: RollDetail; expression: stri
       <DiceBreakdown detail={detail} />
       {missing.length > 0 && (
         <div className="mt-1.5 text-[11px] text-amber-400">
-          ❓ 미정의 attr: {missing.map((m) => `@{${m}}`).join(', ')}
+          미정 attr: {missing.map((m) => `@{${m}}`).join(', ')}
         </div>
       )}
       {detail.isCrit && (
         <div className="mt-1.5 text-[11px] font-semibold text-green-400">
-          ✨ 크리티컬 (d20 = 20)
+          크리티컬 (d20 = 20)
         </div>
       )}
       {detail.isFumble && (
         <div className="mt-1.5 text-[11px] font-semibold text-red-400">
-          💥 펌블 (d20 = 1)
+          펌블 (d20 = 1)
         </div>
       )}
     </>
@@ -149,25 +131,22 @@ function CardRolltemplate({
 
   return (
     <div>
-      <div className="text-[11px] text-[var(--fg-muted)] mb-1.5">
-        🎲 rolltemplate:{result.templateName}
-      </div>
       <div
         className={[
           'rt-card text-xs',
           safeRolltemplateClass(result.templateName),
-          customBody ? '' : 'rounded border border-border bg-[var(--bg-elevated-2)] p-2',
+          customBody ? '' : 'rounded border border-[#c8c8c8] bg-white p-2 text-[#222]',
         ].join(' ')}
         dangerouslySetInnerHTML={{ __html: innerHtml }}
       />
       {result.anyCrit && (
-        <div className="mt-1.5 text-[11px] font-semibold text-green-400">
-          ✨ 크리티컬 포함
+        <div className="mt-1.5 text-[11px] font-semibold text-green-600">
+          크리티컬 포함
         </div>
       )}
       {result.anyFumble && (
-        <div className="mt-1.5 text-[11px] font-semibold text-red-400">
-          💥 펌블 포함
+        <div className="mt-1.5 text-[11px] font-semibold text-red-600">
+          펌블 포함
         </div>
       )}
     </div>
@@ -177,7 +156,7 @@ function CardRolltemplate({
 function CardError({ error }: { error: ErrorResult }) {
   return (
     <div className="rounded border border-red-500/40 bg-red-500/5 p-2 text-xs text-red-400">
-      <div className="font-semibold mb-1">⚠ 굴림 실패</div>
+      <div className="font-semibold mb-1">굴림 실패</div>
       <div>{error.message}</div>
       {error.raw && (
         <div className="mt-1 font-mono text-[10px] text-[var(--fg-muted)]">{error.raw}</div>
@@ -192,20 +171,27 @@ function CardChat({ chat }: { chat: ChatTextResult }) {
 
 function RollCard({ card, emittedHtml }: { card: ChatRoll; emittedHtml: string }) {
   const r = card.result;
+  const isRolltemplate = r.kind === 'rolltemplate';
   return (
     <div
       data-r20-chat-card
       data-r20-chat-kind={r.kind}
+      data-r20-chat-rolltemplate={isRolltemplate ? '1' : undefined}
       data-r20-chat-crit={r.kind === 'expr' && r.isCrit ? '1' : undefined}
       data-r20-chat-fumble={r.kind === 'expr' && r.isFumble ? '1' : undefined}
       className={[
-        'rounded border bg-[var(--bg-elevated)] p-2.5',
-        r.kind === 'expr' && r.isCrit
-          ? 'border-green-500/40 bg-green-500/5'
-          : r.kind === 'expr' && r.isFumble
-            ? 'border-red-500/40 bg-red-500/5'
-            : 'border-border',
-      ].join(' ')}
+        isRolltemplate
+          ? 'w-full max-w-[280px] self-center rounded-sm border border-[#b7b7b7] bg-[#f7f7f7] p-2 text-[#222] shadow-sm'
+          : 'rounded border bg-[var(--bg-elevated)] p-2.5',
+        !isRolltemplate &&
+          (r.kind === 'expr' && r.isCrit
+            ? 'border-green-500/40 bg-green-500/5'
+            : r.kind === 'expr' && r.isFumble
+              ? 'border-red-500/40 bg-red-500/5'
+              : 'border-border'),
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="text-[11px] font-semibold text-foreground/80">
@@ -261,10 +247,10 @@ export default function ChatPane() {
         <div className="p-2 flex flex-col gap-2" data-testid="chat-list">
           {rolls.length === 0 ? (
             <div className="text-center text-[11px] text-[var(--fg-muted)] py-8">
-              굴림 버튼을 클릭하면 결과가 여기에 표시됩니다.
+              미리보기에서 굴림 버튼을 클릭하면 결과가 여기에 표시됩니다.
               <br />
               <span className="text-[10px] opacity-70">
-                미리보기 모드에서 시트의 <code>type=&quot;roll&quot;</code> 버튼을 클릭하세요.
+                시트의 <code>type=&quot;roll&quot;</code> 버튼을 눌러보세요.
               </span>
             </div>
           ) : (

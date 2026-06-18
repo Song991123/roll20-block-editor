@@ -21,6 +21,7 @@ import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import { importSheet as importPipeline } from '@/lib/import';
 import { emitAll } from '@/lib/preview/emit';
 import { usePreviewStore, type PreviewRenderMode } from '@/lib/stores/previewStore';
+import { useChatStore } from '@/lib/stores/chatStore';
 import { useUiStore, type MainMode, type PreviewZoom } from '@/lib/stores/uiStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
@@ -99,6 +100,7 @@ export interface PerfHook {
     mode?: 'flow' | 'absolute';
   }) => PerfEditFlowDropResult;
   /** 현재 활성 워크스페이스의 모든 블록 제거 (re-측정 용). */
+  clearChat: () => void;
   clearAll: () => void;
   /** Heap (MB) — performance.memory 비표준 API 사용 가능 시. */
   getHeapMb: () => number | null;
@@ -537,6 +539,10 @@ function buildHook(): PerfHook {
         heapBeforeMb,
         heapAfterMb,
       };
+    },
+
+    clearChat: () => {
+      useChatStore.getState().clear();
     },
 
     clearAll: () => {

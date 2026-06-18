@@ -8,14 +8,6 @@ import Inspector from './Inspector';
 import CodeTabs from './CodeTabs';
 import ChatPane from './ChatPane';
 
-/**
- * 우측 사이드 — [속성] / [코드] / [채팅] tabs (D49 + dice 채팅 확장).
- *
- * Anchor: docs/spec/08_wireframes.md W2-D / W2-E.
- *
- * [채팅] 탭: 미리보기 영역의 굴림 버튼 클릭 시 결과 카드 누적.
- * 새 굴림 발생 시 자동으로 [채팅] 탭 활성화 (PreviewMain 의 click handler 가 setTab).
- */
 export default function SidebarRight() {
   const tab = useUiStore((s) => s.sidebarRightTab);
   const setTab = useUiStore((s) => s.setSidebarRightTab);

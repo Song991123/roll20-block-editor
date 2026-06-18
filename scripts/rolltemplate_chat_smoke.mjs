@@ -113,6 +113,7 @@ async function importFixture(page, fixture) {
   return page.evaluate(async ({ html, css, i18n }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     window.__perfHook.clearAll();
+    window.__perfHook.clearChat?.();
     await sleep(700);
     let last = null;
     for (let i = 0; i < 40; i += 1) {
@@ -190,12 +191,16 @@ async function clickRollAndReadChat(page, fixtureId) {
   await card.waitFor({ state: 'visible', timeout: 30000 });
   const screenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat.png`);
   await page.locator('[data-testid="chat-list"]').screenshot({ path: screenshotPath });
+  const cardCount = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').count();
   const cardInfo = await card.evaluate((el) => ({
     kind: el.getAttribute('data-r20-chat-kind') || '',
     text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 400),
     hasTemplateClass: Boolean(el.querySelector('[class*="sheet-rolltemplate-"]')),
     hasTotal: Boolean(el.querySelector('.rt-total, strong')),
+    width: Math.round(el.getBoundingClientRect().width),
+    hasDebugTemplateLabel: /rolltemplate\s*:/i.test(el.textContent || ''),
   }));
+  cardInfo.cardCount = cardCount;
   return { chosen, clickMode, cardInfo, screenshotPath };
 }
 
@@ -207,14 +212,14 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Click mode | Chosen button | Chat kind | Template class | Total/result | Console/Page errors |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: |');
+  lines.push('| Fixture | Status | Click mode | Chosen button | Chat kind | Cards | Width | Template class | Debug label | Total/result | Console/Page errors |');
+  lines.push('| --- | --- | --- | --- | --- | ---: | ---: | --- | --- | --- | ---: |');
   for (const item of report.fixtures) {
     const chosen = item.chosen
       ? `${item.chosen.name || '(no name)'} / ${truncate(item.chosen.value, 60)}`
       : '';
     lines.push(
-      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.clickMode ?? ''} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
+      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.clickMode ?? ''} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
     );
   }
   lines.push('');
@@ -223,6 +228,7 @@ function renderMarkdown(report) {
   lines.push('- A PASS means a real preview roll button produced a visible chat card.');
   lines.push('- `user-click` means Playwright could click the visible button. `dom-click-fallback` means the runtime path worked but the button was not actionably visible in the default rendered state.');
   lines.push('- If `Chat kind` is `rolltemplate`, the dice parser and rolltemplate render path both ran.');
+  lines.push('- `Debug label` must stay `no`; Roll20 chat shows the result card, not an app-only `rolltemplate:name` helper line.');
   lines.push('- Screenshots are local-only and ignored by Git.');
   return `${lines.join('\n')}\n`;
 }
@@ -277,6 +283,10 @@ async function main() {
           (entry.import?.blockCount ?? 0) > 0 &&
           Boolean(entry.chosen?.value) &&
           Boolean(entry.cardInfo?.kind) &&
+          entry.cardInfo?.cardCount === 1 &&
+          entry.cardInfo?.hasDebugTemplateLabel === false &&
+          (entry.cardInfo?.kind !== 'rolltemplate' ||
+            ((entry.cardInfo?.width ?? 0) > 0 && (entry.cardInfo?.width ?? 9999) <= 300)) &&
           consoleErrors.filter((msg) => msg.type === 'error').length === 0 &&
           pageErrors.length === 0;
       } catch (err) {
