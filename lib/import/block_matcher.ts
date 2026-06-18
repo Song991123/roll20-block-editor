@@ -17,7 +17,7 @@
 import type { DomNode } from './dom_walker';
 import { firstTextContent, allTextContent } from './dom_walker';
 import { parseAttrRefToken } from './expression_parser';
-import { parseSheetWorkerScript, type ParsedBlock } from './script_parser';
+import { parseSheetWorkerScript } from './script_parser';
 
 export interface MatchedBlock {
   /** 130 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
@@ -544,10 +544,13 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
             hint: `matched=${parsed.stats.matched} raw=${parsed.stats.unparsed}`,
           });
         }
+        // Keep parsed worker stats for reports, but preserve source as raw JS.
+        // Parsed children can mix statement/reporter shapes; auto-inserting
+        // them under r20_raw_worker breaks Blockly XML hydration.
         return {
           blockType: 'r20_raw_worker',
           fields: { JS: body },
-          children: { CHILDREN: parsed.blocks.map(parsedToMatched) },
+          children: {},
         };
       }
     }
@@ -1089,28 +1092,6 @@ function matchSheetWorkerReporter(body: string): MatchedBlock | null {
     };
   }
   return null;
-}
-
-// Stage worker-1: ParsedBlock (script_parser.ts) → MatchedBlock (import).
-// ParsedBlock 의 인터페이스가 MatchedBlock 과 동일한 shape — 재귀 변환만 수행.
-function parsedToMatched(p: ParsedBlock): MatchedBlock {
-  const children: Record<string, MatchedBlock[]> = {};
-  for (const [name, arr] of Object.entries(p.children ?? {})) {
-    children[name] = arr.map(parsedToMatched);
-  }
-  const out: MatchedBlock = {
-    blockType: p.blockType,
-    fields: p.fields,
-    children,
-  };
-  if (p.valueInputs) {
-    const vi: Record<string, MatchedBlock> = {};
-    for (const [name, inner] of Object.entries(p.valueInputs)) {
-      vi[name] = parsedToMatched(inner);
-    }
-    out.valueInputs = vi;
-  }
-  return out;
 }
 
 function rawExpression(expr: string): MatchedBlock {
