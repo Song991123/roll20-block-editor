@@ -23,6 +23,8 @@
     "verify:roll20-preupload": "node scripts/roll20_preupload_verification.mjs",
     "classify:visual-fixtures": "node scripts/classify_visual_fixture_diffs.mjs",
     "smoke:export-dialog": "node scripts/export_dialog_browser_smoke.mjs",
+    "smoke:imported-edit-sync": "node scripts/imported_edit_sync_smoke.mjs",
+    "smoke:imported-edit-sync:strict": "node scripts/imported_edit_sync_smoke.mjs --fail-on-resource-issues true",
     "smoke:worker-state": "node scripts/sheet_worker_state_smoke.mjs",
     "smoke:visual-state-candidates": "node scripts/visual_state_candidate_smoke.mjs",
     "diff:visual-fixtures": "node scripts/capture_visual_fixture_previews.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json && node scripts/make_visual_diff_pages.mjs && node scripts/run_visual_fixture_diff_pages.mjs reports/visual-fixture-diff && node scripts/classify_visual_fixture_diffs.mjs reports/visual-fixture-diff test-fixtures/visual"

@@ -38,6 +38,7 @@ const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4196'));
 const VIEWPORT = { width: 2200, height: 1200 };
 const DRAG_DELTA = { x: Number(argOf('--dx', '80')), y: Number(argOf('--dy', '48')) };
+const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 'true';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -1291,14 +1292,15 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
-  lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
+  lines.push('| Fixture | Status | Interaction | Resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
+  lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
   lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, a second widget dropped in user-facing free mode as nested absolute content, and the edited emit survived a re-import/emit cycle.');
+  lines.push('- Interaction and resource status are separated. Use `--fail-on-resource-issues true` for visual-parity work where external images/fonts must load.');
   lines.push('- Layer reorder is recorded when the imported Blockly graph exposes a safe adjacent leaf sibling pair. Non-leaf layer reorder records the stronger group/subtree case when a visible imported container with direct children has a safe adjacent sibling. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
@@ -1391,6 +1393,9 @@ async function main() {
   const report = {
     startedAt: new Date().toISOString(),
     dragDelta: DRAG_DELTA,
+    failOnResourceIssues: FAIL_ON_RESOURCE_ISSUES,
+    scopeNote:
+      'interaction pass means edit/preview sync worked; resource pass is separate because visual parity needs assets to load',
     fixtures: [],
   };
 
@@ -1463,21 +1468,25 @@ async function main() {
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-edit.png`) });
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-preview.png`) });
         entry.reimport = await reimportCurrentEmit(page);
-        entry.pass =
+        entry.interactionPass =
           entry.pass &&
           entry.canvasInsert?.pass === true &&
           entry.freeInsert?.pass === true &&
           (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true) &&
           (entry.nonLeafLayerReorder?.pass === true || entry.nonLeafLayerReorder?.skipped === true) &&
           isStableReimport(entry.reimport);
+        entry.pass = entry.interactionPass;
       } catch (err) {
         entry.error = String(err?.stack || err).slice(0, 1200);
       }
       entry.consoleErrors = consoleErrors;
       entry.pageErrors = pageErrors;
       entry.resourceIssues = summarizeResourceIssues(resourceIssues);
+      entry.resourceIssueCount = sumResourceIssues(entry.resourceIssues);
+      entry.resourcePass = entry.resourceIssueCount === 0;
+      if (FAIL_ON_RESOURCE_ISSUES && !entry.resourcePass) entry.pass = false;
       report.fixtures.push(entry);
-      console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} target=${entry.target?.tag ?? 'none'} edit=${fmtRel(entry.editAfter)} preview=${fmtRel(entry.previewAfter)}`);
+      console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} interaction=${entry.interactionPass ? 'PASS' : 'FAIL'} resources=${entry.resourcePass ? 'PASS' : 'WARN'} target=${entry.target?.tag ?? 'none'} edit=${fmtRel(entry.editAfter)} preview=${fmtRel(entry.previewAfter)}`);
       await page.close();
     }
   } finally {
