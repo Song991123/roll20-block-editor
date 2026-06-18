@@ -65,7 +65,22 @@ const PSEUDOS: Array<[string, string]> = [
   ['focus', 'focus'],
   ['checked', 'checked'],
   ['disabled', 'disabled'],
+  ['not', 'not'],
+  ['active', 'active'],
+  ['visited', 'visited'],
+  ['required', 'required'],
+  ['optional', 'optional'],
+  ['valid', 'valid'],
+  ['invalid', 'invalid'],
+  ['empty', 'empty'],
+  ['first-child', 'first-child'],
+  ['last-child', 'last-child'],
   ['nth-child', 'nth-child'],
+  ['nth-last-child', 'nth-last-child'],
+  ['first-of-type', 'first-of-type'],
+  ['last-of-type', 'last-of-type'],
+  ['nth-of-type', 'nth-of-type'],
+  ['nth-last-of-type', 'nth-last-of-type'],
 ];
 
 /** 의사 요소 (::pseudo-element) — Roll20 시트에서 자주 쓰는 8 종. */
