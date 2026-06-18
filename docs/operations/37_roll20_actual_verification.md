@@ -156,6 +156,13 @@ sanitize/prefix rewrites, default attr/state hints, asset URL proxying, and
 missing chat/room evidence. Its output is triage only. It must not be reported as
 visual parity.
 
+When a preferred `roll20-sandbox-root.png` has adjacent crop metadata, the
+classifier must keep two signals separate: the crop may still be only the
+visible top of a tall Roll20 sheet, and the compared visible viewport may still
+have its own mismatch. Treat a matched visible viewport mismatch as a concrete
+CSS/assets/default-state investigation target, but do not use it as proof of
+full-sheet parity.
+
 If Chrome can capture the visible Roll20 editor but the character iframe
 document cannot be read, save a full viewport screenshot plus measured
 iframe/dialog metadata under the ignored screenshot folder, then crop a
@@ -166,9 +173,10 @@ corepack pnpm run crop:roll20-actual -- --image <viewport.png> --meta <meta.json
 ```
 
 This crop is diagnostic. If it captures only the visible top of a tall sheet,
-classify the result as viewport/crop evidence and either capture a
-full-height/scroll-stitched Roll20 sheet root or compare against a matching
-local visible viewport crop before making renderer changes.
+classify the result as partial-height viewport/crop evidence. If the diff helper
+also compares against a matching local visible viewport, inspect any remaining
+visible-crop mismatch separately, then capture a full-height/scroll-stitched
+Roll20 sheet root before making any full-sheet parity claim.
 
 ## Chrome Safety
 

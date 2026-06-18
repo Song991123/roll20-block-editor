@@ -847,3 +847,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run classify:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS, classifies the remaining Les-Oublies mismatch as viewport/crop/sheet-size because the normalized root crop is only `760x556` versus local preview `850x4478`.
   - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS, still `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`.
 - Scope note: this proves the Roll20 generated sheet is visibly rendering and that root-crop evidence can be produced from the dedicated sandbox. It does not prove visual parity; next evidence step is a full-height/scroll-stitched Roll20 root capture or matching local visible viewport crop, plus trustworthy chat screenshot evidence.
+
+## 2026-06-19 Roll20 Visible Crop Classification Slice
+
+- Updated `scripts/roll20_actual_difference_classify.mjs` so `roll20-sandbox-root.png` runs with crop metadata now report a separate `matched visible viewport diff` category.
+- Current Les-Oublies evidence has two distinct signals: the actual Roll20 crop is only `760x556` versus the local full preview `850x4478`, and that matched visible viewport still mismatches by `21.67%`.
+- The classifier next action now points to visible-crop CSS/assets/default-state investigation while keeping full-height/scroll-stitched Roll20 evidence as the required gate before any full-sheet parity claim.
+- Scope note: this is evidence classification and TODO alignment only. It does not change the renderer and does not prove visual parity.

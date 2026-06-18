@@ -201,6 +201,8 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
   const usedRootCrop = Boolean(result.actualMeta?.cssCrop);
   const sizeRatio = localSize[0] && actualSize[0] ? actualSize[0] / localSize[0] : null;
   const comparedHeightRatio = localSize[1] && actualSize[1] ? actualSize[1] / localSize[1] : null;
+  const comparedSize = result.comparedSize ?? null;
+  const matchedVisibleViewport = usedRootCrop && Array.isArray(comparedSize) && comparedSize[0] > 0 && comparedSize[1] > 0;
   const crop = best.crop ?? [];
   const mismatchRatio = Number(best.mismatchRatio ?? result.topLeft?.mismatchRatio ?? 1);
   const categories = [];
@@ -217,6 +219,10 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
   if (usedRootCrop) {
     categories.push('root crop captured');
     evidence.push(`root crop came from ${result.actualMeta.rectKey ?? 'unknown rect'} with inset ${JSON.stringify(result.actualMeta.insetCss ?? {})}`);
+  }
+  if (matchedVisibleViewport) {
+    categories.push('matched visible viewport diff');
+    evidence.push(`matched visible viewport ${comparedSize[0]}x${comparedSize[1]} mismatch is ${pct(mismatchRatio)}`);
   }
   if (Array.isArray(crop) && (crop[0] !== 0 || crop[1] !== 0)) {
     categories.push('crop offset');
@@ -250,12 +256,13 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
     actualRawSize,
     actualNormalizedSize: result.actualNormalizedSize ?? null,
     usedRootCrop,
-    comparedSize: result.comparedSize ?? null,
+    comparedSize,
     bounds: best.bounds ?? null,
     crop,
     sizeRatio,
     comparedHeightRatio,
     primaryClassification,
+    matchedVisibleViewport,
     categories,
     evidence,
     nextAction: buildTargetNextAction({ target, categories, mismatchRatio }),
@@ -264,7 +271,10 @@ function classifyTarget(target, item, baselineFixture, sanitizeFixture, chatDomE
 
 function buildTargetNextAction({ target, categories, mismatchRatio }) {
   if (target === 'sandbox' && categories.includes('viewport/crop/sheet size') && categories.includes('root crop captured')) {
-    return 'Capture a full-height or scroll-stitched Roll20 sheet-root screenshot, or compare against a matching local viewport crop, before renderer CSS changes.';
+    if (categories.includes('matched visible viewport diff') && mismatchRatio > 0.05) {
+      return 'Inspect visible-crop CSS/assets/default-state differences, while separately capturing full-height or scroll-stitched Roll20 evidence before any full-sheet parity claim.';
+    }
+    return 'Capture a full-height or scroll-stitched Roll20 sheet-root screenshot before any full-sheet parity claim.';
   }
   if (target === 'sandbox' && categories.includes('viewport/crop/sheet size')) {
     return 'Capture Roll20 actual sheet root with normalized crop/scale, excluding Roll20 character tab chrome when possible, before renderer CSS changes.';
@@ -281,7 +291,7 @@ function buildTargetNextAction({ target, categories, mismatchRatio }) {
 function buildGlobalNextActions(fixtures) {
   const actions = [];
   if (fixtures.some((fixture) => fixture.targets.sandbox?.categories?.includes('root crop captured') && fixture.targets.sandbox?.categories?.includes('viewport/crop/sheet size'))) {
-    actions.push('Capture full-height/scroll-stitched Roll20 sheet-root evidence or compare against a matching local visible viewport crop.');
+    actions.push('Inspect the matched visible viewport diff, then capture full-height/scroll-stitched Roll20 sheet-root evidence before a full-sheet parity claim.');
   } else if (fixtures.some((fixture) => fixture.targets.sandbox?.primaryClassification?.includes('viewport'))) {
     actions.push('Add a Roll20 character-iframe root crop capture path so sandbox screenshots compare sheet root to sheet root.');
   }
