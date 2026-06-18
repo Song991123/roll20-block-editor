@@ -47,7 +47,6 @@ async function main() {
   const fixtureIds = await listFixtureIds(path.join(runDir, 'local-baseline'));
   const browser = await chromium.launch({ headless: true });
   const comparePage = await browser.newPage({ viewport: { width: 1200, height: 900 } });
-  const renderPage = await browser.newPage({ viewport: { width: 1200, height: 900 } });
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -75,8 +74,8 @@ async function main() {
         baseline,
         diffItem,
         buildSheetDoc,
+        browser,
         comparePage,
-        renderPage,
       });
       report.fixtures.push(item);
       console.log(`${item.status} ${fixtureId} best=${item.bestCandidate?.id ?? ''} mismatch=${pct(item.bestCandidate?.mismatchRatio)}`);
@@ -100,13 +99,16 @@ async function main() {
   console.log(`ROLL20 SAME-CONTEXT VISIBLE SMOKE OK ${outDir}`);
 }
 
-async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, comparePage, renderPage }) {
+async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, browser, comparePage }) {
   const fixtureDir = path.join(runDir, 'local-baseline', fixtureId);
   const payloadDir = path.join(fixtureDir, 'payload');
   const shotsDir = path.join(fixtureDir, 'screenshots');
   const actualFile = path.join(shotsDir, 'roll20-sandbox-root.png');
   const baselineFixture = baseline.fixtures?.find((fixture) => fixture.id === fixtureId) ?? null;
   const actualMeta = diffItem.result.actualMeta;
+  const actualDeviceScaleFactor = actualMeta.scale?.x
+    ? Number((1 / actualMeta.scale.x).toFixed(3))
+    : 1;
   const cssCrop = actualMeta.cssCrop;
   const comparedSize = [Math.round(cssCrop.w), Math.round(cssCrop.h)];
   const artifactDir = path.join(outDir, fixtureId);
@@ -119,106 +121,121 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, co
     i18n: await readMaybe(path.join(payloadDir, 'translation.json')),
   };
   const stateCandidate = baselineFixture?.previewDom?.stateCandidate ?? baselineFixture?.previewStateCandidate ?? null;
+  const actualRootWidth = Number(actualStyleProbe?.root?.rect?.width ?? 0) || null;
+  const actualCssScale = Number(actualMeta.scale?.x ?? 0) || null;
   const candidates = [];
+  const renderContext = await browser.newContext({
+    viewport: { width: 1200, height: 900 },
+    deviceScaleFactor: actualDeviceScaleFactor,
+  });
+  const renderPage = await renderContext.newPage();
 
-  candidates.push(await renderCandidate({
-    id: 'normal-root-no-state',
-    renderPage,
-    comparePage,
-    buildSheetDoc,
-    payload,
-    stateCandidate,
-    applyStateHint: false,
-    actualFile,
-    actualMeta,
-    comparedSize,
-    artifactDir,
-    roll20SandboxSanitize: false,
-    captureMode: 'root-top-left',
-  }));
+  try {
+    const commonCandidateInput = {
+      renderPage,
+      comparePage,
+      buildSheetDoc,
+      payload,
+      stateCandidate,
+      actualFile,
+      actualMeta,
+      comparedSize,
+      artifactDir,
+    };
+    const candidateInputs = [
+      {
+        id: 'normal-root-no-state',
+        applyStateHint: false,
+        roll20SandboxSanitize: false,
+        captureMode: 'root-top-left',
+      },
+      {
+        id: 'sandbox-root-no-state',
+        applyStateHint: false,
+        roll20SandboxSanitize: true,
+        captureMode: 'root-top-left',
+      },
+    ];
 
-  candidates.push(await renderCandidate({
-    id: 'sandbox-root-no-state',
-    renderPage,
-    comparePage,
-    buildSheetDoc,
-    payload,
-    stateCandidate,
-    applyStateHint: false,
-    actualFile,
-    actualMeta,
-    comparedSize,
-    artifactDir,
-    roll20SandboxSanitize: true,
-    captureMode: 'root-top-left',
-  }));
+    if (actualRootWidth) {
+      candidateInputs.push(
+        {
+          id: 'normal-actual-root-width-no-state',
+          applyStateHint: false,
+          roll20SandboxSanitize: false,
+          captureMode: 'root-top-left',
+          contextPatch: { mode: 'actual-root-width', rootWidth: actualRootWidth },
+        },
+        {
+          id: 'sandbox-actual-root-width-no-state',
+          applyStateHint: false,
+          roll20SandboxSanitize: true,
+          captureMode: 'root-top-left',
+          contextPatch: { mode: 'actual-root-width', rootWidth: actualRootWidth },
+        },
+      );
 
-  candidates.push(await renderCandidate({
-    id: 'normal-root-top-left',
-    renderPage,
-    comparePage,
-    buildSheetDoc,
-    payload,
-    stateCandidate,
-    applyStateHint: true,
-    actualFile,
-    actualMeta,
-    comparedSize,
-    artifactDir,
-    roll20SandboxSanitize: false,
-    captureMode: 'root-top-left',
-  }));
+      if (actualCssScale) {
+        candidateInputs.push({
+          id: 'sandbox-actual-css-scale-no-state',
+          applyStateHint: false,
+          roll20SandboxSanitize: true,
+          captureMode: 'root-top-left',
+          contextPatch: { mode: 'actual-css-scale', rootWidth: actualRootWidth, scale: actualCssScale },
+        });
+      }
 
-  candidates.push(await renderCandidate({
-    id: 'sandbox-root-top-left',
-    renderPage,
-    comparePage,
-    buildSheetDoc,
-    payload,
-    stateCandidate,
-    applyStateHint: true,
-    actualFile,
-    actualMeta,
-    comparedSize,
-    artifactDir,
-    roll20SandboxSanitize: true,
-    captureMode: 'root-top-left',
-  }));
+      candidateInputs.push({
+        id: 'normal-roll20-dialog-padding-no-state',
+        applyStateHint: false,
+        roll20SandboxSanitize: false,
+        captureMode: 'root-top-left',
+        contextPatch: { mode: 'roll20-dialog-padding', rootWidth: actualRootWidth },
+      });
+    }
 
-  candidates.push(await renderCandidate({
-    id: 'sandbox-frame-inset',
-    renderPage,
-    comparePage,
-    buildSheetDoc,
-    payload,
-    stateCandidate,
-    applyStateHint: true,
-    actualFile,
-    actualMeta,
-    comparedSize,
-    artifactDir,
-    roll20SandboxSanitize: true,
-    captureMode: 'frame-inset',
-  }));
+    candidateInputs.push(
+      {
+        id: 'normal-root-top-left',
+        applyStateHint: true,
+        roll20SandboxSanitize: false,
+        captureMode: 'root-top-left',
+      },
+      {
+        id: 'sandbox-root-top-left',
+        applyStateHint: true,
+        roll20SandboxSanitize: true,
+        captureMode: 'root-top-left',
+      },
+      {
+        id: 'sandbox-frame-inset',
+        applyStateHint: true,
+        roll20SandboxSanitize: true,
+        captureMode: 'frame-inset',
+      },
+      {
+        id: 'sandbox-fit-visible-width',
+        applyStateHint: true,
+        roll20SandboxSanitize: true,
+        captureMode: 'fit-visible-width',
+      },
+    );
 
-  candidates.push(await renderCandidate({
-    id: 'sandbox-fit-visible-width',
-    renderPage,
-    comparePage,
-    buildSheetDoc,
-    payload,
-    stateCandidate,
-    applyStateHint: true,
-    actualFile,
-    actualMeta,
-    comparedSize,
-    artifactDir,
-    roll20SandboxSanitize: true,
-    captureMode: 'fit-visible-width',
-  }));
+    for (const candidateInput of candidateInputs) {
+      candidates.push(await renderCandidate({ ...commonCandidateInput, ...candidateInput }));
+    }
+  } finally {
+    await renderContext.close();
+  }
 
-  const bestCandidate = candidates.reduce((best, candidate) =>
-    !best || candidate.mismatchRatio < best.mismatchRatio ? candidate : best, null);
+  if (actualStyleProbe) {
+    for (const candidate of candidates) {
+      candidate.computedStyleScore = scoreComputedStyleComparison(
+        compareComputedStyles(actualStyleProbe, candidate.metrics?.styleProbe),
+      );
+    }
+  }
+  const bestCandidate = candidates.reduce((best, candidate) => pickBetterCandidate(best, candidate), null);
   const previousMismatchRatio = diffItem.result.best?.mismatchRatio ?? null;
   return {
     fixtureId,
@@ -229,6 +246,7 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, co
     actualNormalizedSize: diffItem.result.actualNormalizedSize ?? null,
     comparedSize,
     actualMeta,
+    actualDeviceScaleFactor,
     stateCandidate: stateCandidate
       ? {
           actionName: stateCandidate.actionName ?? null,
@@ -246,6 +264,28 @@ async function processFixture({ fixtureId, baseline, diffItem, buildSheetDoc, co
   };
 }
 
+function pickBetterCandidate(best, candidate) {
+  if (!best) return candidate;
+  const mismatchDelta = candidate.mismatchRatio - best.mismatchRatio;
+  if (mismatchDelta < -0.000001) return candidate;
+  if (mismatchDelta > 0.000001) return best;
+  const candidateScore = candidate.computedStyleScore ?? Number.POSITIVE_INFINITY;
+  const bestScore = best.computedStyleScore ?? Number.POSITIVE_INFINITY;
+  if (candidateScore < bestScore) return candidate;
+  return best;
+}
+
+function scoreComputedStyleComparison(comparison) {
+  if (!comparison) return Number.POSITIVE_INFINITY;
+  let score = 0;
+  score += (comparison.rootDiffs ?? []).length * 20;
+  for (const diff of comparison.selectorDiffs ?? []) {
+    score += Math.abs(diff.countDelta ?? 0) * 10;
+    score += (diff.sampleDiffs ?? []).length;
+  }
+  return score;
+}
+
 async function renderCandidate({
   id,
   renderPage,
@@ -260,6 +300,7 @@ async function renderCandidate({
   artifactDir,
   roll20SandboxSanitize,
   captureMode,
+  contextPatch = null,
 }) {
   const doc = buildSheetDoc({
     html: payload.html,
@@ -274,6 +315,7 @@ async function renderCandidate({
   const iframeHeight = Math.max(1, Math.round((actualMeta.cssCrop.h ?? comparedSize[1]) + (actualMeta.insetCss?.top ?? 0) + (actualMeta.insetCss?.bottom ?? 0)));
   await renderPage.setViewportSize({ width: Math.max(iframeWidth, comparedSize[0]), height: Math.max(iframeHeight, comparedSize[1]) });
   await renderPage.setContent(doc, { waitUntil: 'load' });
+  if (contextPatch) await applyRenderContextPatch(renderPage, contextPatch);
   if (applyStateHint) await applyStateCandidate(renderPage, stateCandidate);
   await renderPage.waitForTimeout(300);
 
@@ -331,6 +373,9 @@ async function renderCandidate({
       '.sheet-tabstoggle',
       '.sheet-fullsheet',
       '.sheet-combat',
+      '.sheet-2colrow',
+      '.sheet-col',
+      'img',
       'table',
       'tr',
       'td',
@@ -417,16 +462,67 @@ async function renderCandidate({
   const overlayFile = path.join(artifactDir, `${id}-overlay.png`);
   await writeDataUrl(overlayFile, compare.overlayDataUrl);
   delete compare.overlayDataUrl;
+  const nativePixelSize = actualMeta.pixelCrop?.w && actualMeta.pixelCrop?.h
+    ? [Math.round(actualMeta.pixelCrop.w), Math.round(actualMeta.pixelCrop.h)]
+    : null;
+  const nativeCompare = nativePixelSize && (nativePixelSize[0] !== comparedSize[0] || nativePixelSize[1] !== comparedSize[1])
+    ? await compareImages(comparePage, {
+        localFile: outFile,
+        actualFile,
+        comparedSize: nativePixelSize,
+      })
+    : null;
+  let nativeOverlayFile = null;
+  if (nativeCompare) {
+    nativeOverlayFile = path.join(artifactDir, `${id}-native-overlay.png`);
+    await writeDataUrl(nativeOverlayFile, nativeCompare.overlayDataUrl);
+    delete nativeCompare.overlayDataUrl;
+  }
   return {
     id,
     roll20SandboxSanitize,
     applyStateHint,
     captureMode,
+    contextPatch: contextPatch?.mode ?? null,
     screenshot: outFile,
     overlay: overlayFile,
+    nativeOverlay: nativeOverlayFile,
+    nativeCompare: nativeCompare
+      ? {
+          comparedSize: nativeCompare.comparedSize,
+          mismatchRatio: nativeCompare.mismatchRatio,
+          rmsRgb: nativeCompare.rmsRgb,
+          bounds: nativeCompare.bounds,
+        }
+      : null,
     metrics,
     ...compare,
   };
+}
+
+async function applyRenderContextPatch(page, contextPatch) {
+  await page.evaluate((patch) => {
+    const dialogWindow = document.querySelector('#dialog-window');
+    const dialog = document.querySelector('#dialog-window .dialog.largedialog');
+    if (!(dialogWindow instanceof HTMLElement) || !(dialog instanceof HTMLElement)) return;
+    if (patch.mode === 'actual-root-width') {
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+    } else if (patch.mode === 'actual-css-scale') {
+      const scale = Math.max(0.1, Number(patch.scale) || 1);
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth / scale))}px`;
+      dialogWindow.style.zoom = String(scale);
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+    } else if (patch.mode === 'roll20-dialog-padding') {
+      const paddingX = 40;
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth + paddingX))}px`;
+      dialog.style.paddingLeft = '20px';
+      dialog.style.paddingRight = '20px';
+      dialog.style.boxSizing = 'border-box';
+    }
+  }, contextPatch);
 }
 
 async function applyStateCandidate(page, candidate) {
@@ -537,7 +633,7 @@ async function compareImages(page, { localFile, actualFile, comparedSize }) {
 }
 
 function interpretCandidates(candidates, previousMismatchRatio) {
-  const best = candidates.reduce((acc, item) => (!acc || item.mismatchRatio < acc.mismatchRatio ? item : acc), null);
+  const best = candidates.reduce((acc, item) => pickBetterCandidate(acc, item), null);
   const notes = [];
   if (best && typeof previousMismatchRatio === 'number') {
     const gain = previousMismatchRatio - best.mismatchRatio;
@@ -573,12 +669,17 @@ function compareComputedStyles(actualProbe, localProbe) {
   const localRoot = localProbe.root ?? null;
   const rootDiffs = compareNodeStyle(actualRoot, localRoot, fields);
   const selectorDiffs = [];
-  for (const actualEntry of actualProbe.selected ?? []) {
-    const localEntry = (localProbe.selected ?? []).find((entry) => entry.selector === actualEntry.selector);
-    const actualSample = actualEntry.samples?.[0] ?? null;
-    const localSample = localEntry?.samples?.[0] ?? null;
+  const selectors = Array.from(new Set([
+    ...(actualProbe.selected ?? []).map((entry) => entry.selector),
+    ...(localProbe.selected ?? []).map((entry) => entry.selector),
+  ].filter(Boolean)));
+  for (const selector of selectors) {
+    const actualEntry = findProbeSelectorEntry(actualProbe, selector);
+    const localEntry = findProbeSelectorEntry(localProbe, selector);
+    const actualSample = normalizeSampleForSelector(actualEntry.samples?.[0] ?? null, actualRoot, selector);
+    const localSample = normalizeSampleForSelector(localEntry?.samples?.[0] ?? null, localRoot, selector);
     selectorDiffs.push({
-      selector: actualEntry.selector,
+      selector,
       actualCount: actualEntry.count ?? 0,
       localCount: localEntry?.count ?? 0,
       countDelta: (localEntry?.count ?? 0) - (actualEntry.count ?? 0),
@@ -596,6 +697,38 @@ function compareComputedStyles(actualProbe, localProbe) {
     selectorDiffs,
     notable: buildComputedStyleNotes(rootDiffs, selectorDiffs, actualProbe.state, localProbe.state),
   };
+}
+
+function normalizeSampleForSelector(sample, root, selector) {
+  if (!sample || !root?.rect || !sample.rect) return sample;
+  if (selector === 'html' || selector === 'body' || selector === 'form.sheetform' || selector === '.charactersheet' || selector === '#charsheet-root') {
+    return sample;
+  }
+  return {
+    ...sample,
+    rect: {
+      ...sample.rect,
+      x: Number((sample.rect.x - root.rect.x).toFixed(3)),
+      y: Number((sample.rect.y - root.rect.y).toFixed(3)),
+    },
+  };
+}
+
+function findProbeSelectorEntry(probe, selector) {
+  const direct = (probe.selected ?? []).find((entry) => entry.selector === selector);
+  if (direct) return direct;
+  if (selector === 'img') {
+    const samples = (probe.visibleTop ?? []).filter((entry) => entry.tag === 'IMG');
+    if (samples.length) return { selector, count: samples.length, samples };
+  }
+  if (selector.startsWith('.')) {
+    const className = selector.slice(1);
+    const samples = (probe.visibleTop ?? []).filter((entry) =>
+      typeof entry.className === 'string' && entry.className.split(/\s+/).includes(className),
+    );
+    if (samples.length) return { selector, count: samples.length, samples };
+  }
+  return { selector, count: 0, samples: [] };
 }
 
 function compareNodeStyle(actualNode, localNode, fields) {
@@ -658,10 +791,10 @@ function renderMarkdown(report) {
     lines.push('');
     lines.push(`Actual normalized crop: ${fixture.actualNormalizedSize?.join('x') ?? ''}`);
     lines.push('');
-    lines.push('| Candidate | Sandbox sanitize | State hint | Capture mode | Mismatch | RMS | Bounds | Screenshot | Overlay |');
-    lines.push('| --- | ---: | ---: | --- | ---: | ---: | ---: | --- | --- |');
+    lines.push('| Candidate | Sandbox sanitize | State hint | Context patch | Style score | Capture mode | CSS mismatch | Native mismatch | RMS | Bounds | Screenshot | Overlay |');
+    lines.push('| --- | ---: | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | --- | --- |');
     for (const candidate of fixture.candidates) {
-      lines.push(`| ${candidate.id} | ${candidate.roll20SandboxSanitize ? 'on' : 'off'} | ${candidate.applyStateHint ? 'on' : 'off'} | ${candidate.captureMode} | ${pct(candidate.mismatchRatio)} | ${candidate.rmsRgb} | ${Array.isArray(candidate.bounds) ? candidate.bounds.join(',') : ''} | \`${path.relative(runDir, candidate.screenshot)}\` | \`${path.relative(runDir, candidate.overlay)}\` |`);
+      lines.push(`| ${candidate.id} | ${candidate.roll20SandboxSanitize ? 'on' : 'off'} | ${candidate.applyStateHint ? 'on' : 'off'} | ${candidate.contextPatch ?? ''} | ${Number.isFinite(candidate.computedStyleScore) ? candidate.computedStyleScore : ''} | ${candidate.captureMode} | ${pct(candidate.mismatchRatio)} | ${pct(candidate.nativeCompare?.mismatchRatio)} | ${candidate.rmsRgb} | ${Array.isArray(candidate.bounds) ? candidate.bounds.join(',') : ''} | \`${path.relative(runDir, candidate.screenshot)}\` | \`${path.relative(runDir, candidate.overlay)}\` |`);
     }
     lines.push('');
     if (fixture.computedStyleComparison) {
@@ -671,7 +804,7 @@ function renderMarkdown(report) {
       lines.push('');
       lines.push('| Selector | Actual count | Local count | Sample diffs |');
       lines.push('| --- | ---: | ---: | --- |');
-      for (const diff of (fixture.computedStyleComparison.selectorDiffs ?? []).slice(0, 14)) {
+      for (const diff of (fixture.computedStyleComparison.selectorDiffs ?? []).slice(0, 18)) {
         const sample = (diff.sampleDiffs ?? []).slice(0, 5).map((item) => `${item.field}: ${item.actual} -> ${item.local}`).join('<br>');
         lines.push(`| \`${diff.selector}\` | ${diff.actualCount} | ${diff.localCount} | ${sample} |`);
       }

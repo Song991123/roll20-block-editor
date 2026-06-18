@@ -915,3 +915,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Local preview/edit result: PASS with AW2E `1.75%`, Les-Oublies `2.02%`, and YSHY 1BU `1.01%`.
 - Computed-style result: prior `html` diffs and input font/background/padding app-style diffs are gone. Remaining diffs include actual root context/width (`852` actual vs `900` local in this probe), full-sheet height, table count (`8` actual vs `11` local), input height, and roll-button background/geometry.
 - Scope note: this is real movement toward Roll20 actual parity, not completion. AW2E/YSHY actual screenshots and full-height Roll20 capture are still missing.
+
+## 2026-06-19 Roll20 Same-Context DPR + Column Flow Diagnostic
+
+- Refined `scripts/roll20_same_context_visible_smoke.mjs` so local payload candidates render in a per-fixture Playwright context using the measured Roll20 screenshot scale. Current Les-Oublies crop metadata maps to `deviceScaleFactor=1.25`.
+- Added context candidates for actual Roll20 root width, actual CSS scale, and Roll20-like dialog padding. The report now includes native-pixel mismatch alongside CSS-size mismatch, and uses computed-style score as a tie-breaker when image mismatch is effectively equal.
+- Expanded computed-style probes for `.sheet-2colrow`, `.sheet-col`, and `img`. Selector sample coordinates are normalized relative to the sheet root so the report focuses on layout differences instead of the Roll20 iframe's page offset.
+- Latest command: `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Latest result:
+  - AW2E/YSHY 1BU: SKIP because generated Roll20 sandbox root screenshots are still missing.
+  - Les-Oublies: best candidate `sandbox-actual-root-width-no-state`, CSS mismatch `21.49%`, native mismatch `21.55%`, computed-style score `339`.
+  - Root width can match actual (`852px`), but root height still differs: actual `4121.575px` vs local `4963.266px`.
+  - The strongest new clue is flow/height behavior: first `.sheet-2colrow` is `310.6px` high in actual Roll20 and `554px` locally; `.sheet-col` samples show actual keeps the first columns side-by-side while local rendering wraps/extends the flow.
+- Scope note: this is still not Roll20 visual parity. The next renderer decision should be based on a fresh live iframe probe/full-height capture that confirms whether the column wrapping is generic Roll20 context behavior, not a Les-Oublies-specific patch target.
