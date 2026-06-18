@@ -572,6 +572,118 @@ async function main() {
     };
   });
 
+  const absoluteInsideFrame = await (async () => {
+    const setup = await page.evaluate(async () => {
+      const html = [
+        '<div class="abs-frame" style="width:360px; min-height:160px; padding:16px; border:1px solid #999">',
+        '  <input type="text" name="attr_frame_input" value="free" style="width:120px">',
+        '</div>',
+      ].join('\n');
+      await window.__perfHook.importSheet({ html, css: '', i18n: '{}' });
+      window.__perfHook.setMainMode('edit');
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const root = host?.shadowRoot;
+      const frame = root?.querySelector('.sheet-abs-frame');
+      const input = root?.querySelector('input[name="attr_frame_input"]');
+      const frameRect = frame?.getBoundingClientRect();
+      const inputRect = input?.getBoundingClientRect();
+      return {
+        frameId: frame?.getAttribute('data-r20-block-id') ?? null,
+        inputId: input?.getAttribute('data-r20-block-id') ?? null,
+        inputCenter: inputRect
+          ? {
+              x: Math.round(inputRect.left + inputRect.width / 2),
+              y: Math.round(inputRect.top + inputRect.height / 2),
+            }
+          : null,
+        frameRect: frameRect
+          ? {
+              left: Math.round(frameRect.left),
+              top: Math.round(frameRect.top),
+              width: Math.round(frameRect.width),
+              height: Math.round(frameRect.height),
+            }
+          : null,
+        inputRect: inputRect
+          ? {
+              left: Math.round(inputRect.left),
+              top: Math.round(inputRect.top),
+              width: Math.round(inputRect.width),
+              height: Math.round(inputRect.height),
+            }
+          : null,
+      };
+    });
+    if (!setup.inputCenter || !setup.inputId || !setup.frameId) {
+      return { moved: false, reason: 'missing frame/input setup', setup };
+    }
+    const delta = { x: 80, y: 32 };
+    await page.mouse.move(setup.inputCenter.x, setup.inputCenter.y);
+    await page.mouse.down();
+    await page.mouse.move(setup.inputCenter.x + 20, setup.inputCenter.y + 8, { steps: 2 });
+    await page.mouse.move(setup.inputCenter.x + delta.x, setup.inputCenter.y + delta.y, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+    return await page.evaluate(({ setup, delta }) => {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const root = host?.shadowRoot;
+      const frame = root?.querySelector(`[data-r20-block-id="${CSS.escape(setup.frameId)}"]`);
+      const input = root?.querySelector(`[data-r20-block-id="${CSS.escape(setup.inputId)}"]`);
+      const frameStyle = frame ? getComputedStyle(frame) : null;
+      const inputStyle = input ? getComputedStyle(input) : null;
+      const emitted = window.__perfHook.getEmitContent();
+      function openingTag(blockId) {
+        const marker = `data-r20-block-id="${blockId}"`;
+        const markerIndex = emitted.html.indexOf(marker);
+        if (markerIndex < 0) return '';
+        const start = emitted.html.lastIndexOf('<', markerIndex);
+        const end = emitted.html.indexOf('>', markerIndex);
+        return start >= 0 && end > start ? emitted.html.slice(start, end + 1) : '';
+      }
+      function cssRuleForTag(tag) {
+        const classAttr = tag.match(/\sclass=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+        const classNames = classAttr
+          .split(/\s+/)
+          .filter((name) => name.includes('r20-node'))
+          .flatMap((name) => (name.startsWith('sheet-') ? [name, name.slice('sheet-'.length)] : [name]));
+        for (const className of classNames) {
+          const escaped = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const match = emitted.css.match(new RegExp(`[^{}]*\\.${escaped}[^{}]*\\{([^}]*)\\}`, 'm'));
+          if (match) return match[1];
+        }
+        return '';
+      }
+      function px(text, prop) {
+        const match = text.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px`, 'i'));
+        return match ? Math.round(Number.parseFloat(match[1])) : null;
+      }
+      const frameTag = openingTag(setup.frameId);
+      const inputTag = openingTag(setup.inputId);
+      const frameRule = cssRuleForTag(frameTag);
+      const inputRule = cssRuleForTag(inputTag);
+      const frameInline = frameTag.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+      const inputInline = inputTag.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+      return {
+        moved: true,
+        setup,
+        delta,
+        frameTag,
+        inputTag,
+        frameRule,
+        inputRule,
+        frameComputedPosition: frameStyle?.position ?? null,
+        inputComputedPosition: inputStyle?.position ?? null,
+        inputComputedLeft: inputStyle ? Math.round(Number.parseFloat(inputStyle.left)) : null,
+        inputComputedTop: inputStyle ? Math.round(Number.parseFloat(inputStyle.top)) : null,
+        frameHasRelative: /position\s*:\s*relative/i.test(`${frameInline};${frameRule}`),
+        inputHasAbsolute: /position\s*:\s*absolute/i.test(`${inputInline};${inputRule}`),
+        emittedLeft: px(inputInline, 'left') ?? px(inputRule, 'left'),
+        emittedTop: px(inputInline, 'top') ?? px(inputRule, 'top'),
+      };
+    }, { setup, delta });
+  })();
+
   results.tests.realDrag = {
     c1,
     sectionInfo,
@@ -584,6 +696,7 @@ async function main() {
     canvasSiblingInsert,
     layerDropModes,
     nonLeafLayerReorder,
+    absoluteInsideFrame,
   };
   results.consoleErrors = consoleErrors;
   results.pageErrors = pageErrors;
@@ -635,6 +748,13 @@ async function main() {
     nonLeafLayerReorder.groupAAfterGroupB === true &&
     nonLeafLayerReorder.inputAStayedInsideGroupA === true &&
     nonLeafLayerReorder.inputBStayedInsideGroupB === true &&
+    absoluteInsideFrame.moved === true &&
+    absoluteInsideFrame.frameComputedPosition === 'relative' &&
+    absoluteInsideFrame.inputComputedPosition === 'absolute' &&
+    absoluteInsideFrame.frameHasRelative === true &&
+    absoluteInsideFrame.inputHasAbsolute === true &&
+    absoluteInsideFrame.emittedLeft === absoluteInsideFrame.inputComputedLeft &&
+    absoluteInsideFrame.emittedTop === absoluteInsideFrame.inputComputedTop &&
     pageErrors.length === 0;
 
   results.pass = pass;
