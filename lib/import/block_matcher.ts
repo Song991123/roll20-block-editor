@@ -239,7 +239,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (inputType === 'hidden') {
       return {
         blockType: 'r20_hidden_input',
-        fields: { NAME: name, DEFAULT: a.value || '0', STYLE: a.style || '' },
+        fields: { NAME: name, DEFAULT: a.value || '0', CLASS: cls, STYLE: a.style || '' },
         children: {},
       };
     }

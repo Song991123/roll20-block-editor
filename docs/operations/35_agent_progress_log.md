@@ -101,9 +101,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest local ignored report: `reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.md` PASS for AW2E, Les-Oublies, and YSHY 1BU.
 - Follow-up hardening removed the visible app-only `rolltemplate:name` helper line, constrains rolltemplate chat cards to 280px, and clears simulated chat between fixtures so screenshots/results cannot accidentally reuse a prior fixture's card.
 - Current smoke checks each fixture has exactly 1 resulting chat card, `Debug label=no`, and rolltemplate card width 280px.
-- Click-mode evidence: AW2E and YSHY used `user-click`; Les-Oublies is now SKIP because the default render has 40 roll buttons in DOM but 0 visible/actionable buttons.
-- The old `dom-click-fallback` path was removed from the proof claim for Les-Oublies because it clicked hidden DOM rather than what a user can actually click.
+- Click-mode evidence: AW2E, Les-Oublies, and YSHY all use `user-click`.
+- Les-Oublies was temporarily SKIP after the hidden-DOM click fallback was removed. Root cause was importer/emitter loss of `class="sheet-tabstoggle..."` on hidden inputs; preserving that class restored the Roll20 CSS default-tab selector and actionable roll buttons.
 - Scope note: this proves the local app's roll button bridge, dice/rolltemplate parser path, and ChatPane render path for selected fixtures only. It does not prove actual Roll20 chat parity, worker parity, or all-sheet support.
+
+## 2026-06-18 Hidden Input Class Preservation Slice
+
+- Fixed `r20_hidden_input` import/export so hidden inputs preserve their `class` attribute as well as name, value, and style.
+- This matters for Roll20 sheets that use hidden attribute controls as CSS state switches. Les-Oublies uses `.sheet-tabstoggle[value="combat"] ~ div.sheet-combat`; without the class, the emitted sheet kept the value but lost the selector anchor, leaving the default screen falsely empty.
+- Latest local ignored validation after the fix:
+  - `scripts/rolltemplate_chat_smoke.mjs`: AW2E, Les-Oublies, and YSHY 1BU PASS with user-click, exactly 1 chat card, 280px card width, and no debug label.
+  - `scripts/browser_roundtrip_smoke.mjs`: 3/3 PASS.
+  - `scripts/preview_edit_visual_smoke.mjs`: PASS with AW2E 4.96%, Les-Oublies 4.76%, YSHY 1BU 1.26%.
+- Scope note: this is local import/render/chat evidence only. Actual Roll20 sandbox/test-room visual and chat parity remain unverified.
 
 ## Reporting Guardrails
 

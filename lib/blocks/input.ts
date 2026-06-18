@@ -396,6 +396,9 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('기본값')
         .appendField(new Blockly.FieldTextInput('0'), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('Class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -405,7 +408,8 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '');
       const def = String(b.getFieldValue('DEFAULT') ?? '');
-      return `<input type="hidden"${nameAttr(name)}${attr('value', def)}${styleAttr(style)}>`;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      return `<input type="hidden"${sheetClassAttr(cls)}${nameAttr(name)}${attr('value', def)}${styleAttr(style)}>`;
     },
   },
 
