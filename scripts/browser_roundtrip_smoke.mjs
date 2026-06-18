@@ -5,12 +5,13 @@
  * First REAL browser L2 roundtrip (docs/qa/31_active_todo.md P0):
  *   in headless Chromium, for each prepared fixture:
  *     r1 = window.__perfHook.importSheet({html, css, i18n})   (real import pipeline)
- *     e1 = window.__perfHook.getEmitContent()                  (emitted HTML/CSS/i18n)
+ *     e1 = window.__perfHook.getEmitContent()                  (emitted HTML/CSS/i18n/worker)
  *     clearAll
  *     r2 = window.__perfHook.importSheet(e1)                   (re-import of own emit)
  *     e2 = window.__perfHook.getEmitContent()
- *   PASS per fixture when e1 === e2 (html/css/i18n string equality),
- *   r1.blockCount === r2.blockCount, and no page errors.
+ *   PASS per fixture when e1 === e2 (html/css/i18n/worker string equality),
+ *   r1.blockCount === r2.blockCount, worker block counts stay stable, and no
+ *   page errors.
  *
  * This proves browser-side import->emit->import->emit stability (L2
  * determinism through the live app bundle). It does NOT prove visual parity
@@ -195,8 +196,20 @@ async function main() {
       const { r1, e1, r2, e2 } = roundtrip;
       entry.import1 = { ms: Math.round(r1.totalMs), blockCount: r1.blockCount, matchPct: r1.matchPct, warnings: r1.warnings };
       entry.import2 = { ms: Math.round(r2.totalMs), blockCount: r2.blockCount, matchPct: r2.matchPct, warnings: r2.warnings };
-      entry.emit1 = { htmlLen: e1.html.length, cssLen: e1.css.length, i18nLen: e1.i18n.length };
-      entry.emit2 = { htmlLen: e2.html.length, cssLen: e2.css.length, i18nLen: e2.i18n.length };
+      entry.emit1 = {
+        htmlLen: e1.html.length,
+        cssLen: e1.css.length,
+        i18nLen: e1.i18n.length,
+        workerLen: e1.worker.length,
+        workerScriptCount: (e1.html.match(/<script\s+type=["']text\/worker["']>/gi) ?? []).length,
+      };
+      entry.emit2 = {
+        htmlLen: e2.html.length,
+        cssLen: e2.css.length,
+        i18nLen: e2.i18n.length,
+        workerLen: e2.worker.length,
+        workerScriptCount: (e2.html.match(/<script\s+type=["']text\/worker["']>/gi) ?? []).length,
+      };
       const n1 = stripBlockIds(e1.html);
       const n2 = stripBlockIds(e2.html);
       entry.stable = {
@@ -204,7 +217,9 @@ async function main() {
         htmlRawWithIds: e1.html === e2.html,
         css: e1.css === e2.css,
         i18n: e1.i18n === e2.i18n,
+        worker: e1.worker === e2.worker,
         blockCount: r1.blockCount === r2.blockCount,
+        workerBlockCount: r1.workerBlockCount === r2.workerBlockCount,
       };
       if (!entry.stable.html) {
         const i = firstDiffIndex(n1, n2);
@@ -218,11 +233,17 @@ async function main() {
         const i = firstDiffIndex(e1.i18n, e2.i18n);
         entry.i18nFirstDiff = { index: i, e1: e1.i18n.slice(Math.max(0, i - 60), i + 60), e2: e2.i18n.slice(Math.max(0, i - 60), i + 60) };
       }
+      if (!entry.stable.worker) {
+        const i = firstDiffIndex(e1.worker, e2.worker);
+        entry.workerFirstDiff = { index: i, e1: e1.worker.slice(Math.max(0, i - 60), i + 60), e2: e2.worker.slice(Math.max(0, i - 60), i + 60) };
+      }
       entry.pass =
         entry.stable.html &&
         entry.stable.css &&
         entry.stable.i18n &&
+        entry.stable.worker &&
         entry.stable.blockCount &&
+        entry.stable.workerBlockCount &&
         r1.blockCount > 0 &&
         e1.html.length > 0 &&
         pageErrors.length === 0;

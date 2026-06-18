@@ -254,6 +254,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest validation: `corepack pnpm run lint` PASS, `corepack pnpm run build` PASS, `corepack pnpm run smoke:worker` PASS, and `scripts/imported_edit_sync_smoke.mjs` PASS for the 3 prepared ignored fixtures.
 - Scope note: this is a source-preserving workspace split and local static-app smoke. It is not a claim that worker JS block coding is complete or that actual Roll20 worker behavior is parity-verified.
 
+## 2026-06-18 Worker Roundtrip Guard Slice
+
+- Strengthened `scripts/browser_roundtrip_smoke.mjs` so L2 browser roundtrip now checks `worker` raw body equality, worker block-count stability, worker body length, and emitted worker script count in addition to HTML/CSS/i18n stability.
+- Latest local ignored validation: `node scripts/browser_roundtrip_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --report-dir reports/roundtrip-browser` PASS for AW2E, Les-Oublies, and YSHY 1BU.
+- Scope note: this catches worker split drift in the local app bundle, but still does not prove actual Roll20 worker runtime parity.
+
 ## Reporting Guardrails
 
 - Do not claim Roll20 visual parity yet.
