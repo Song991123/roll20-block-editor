@@ -145,6 +145,58 @@ function summarizeSheetElement(sheetEl) {
   };
 }
 
+function summarizeSheetSignature(sheetEl) {
+  function localHashString(value) {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i += 1) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+  }
+
+  const nodes = [sheetEl, ...sheetEl.querySelectorAll('*')];
+  const tagCounts = {};
+  const controlNames = {};
+  const blockIds = [];
+  const sequence = [];
+  let visibleRuntimeNodeCount = 0;
+  for (const el of nodes) {
+    const tag = el.tagName.toLowerCase();
+    tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
+    const name = el.getAttribute('name');
+    const type = el.getAttribute('type');
+    if (name && ['input', 'button', 'select', 'textarea'].includes(tag)) {
+      const key = `${tag}:${type ?? ''}:${name}`;
+      controlNames[key] = (controlNames[key] ?? 0) + 1;
+    }
+    const blockId = el.getAttribute('data-r20-block-id');
+    if (blockId) blockIds.push(blockId);
+    const cs = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    const visible = cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    if (visible && (tag === 'script' || tag === 'rolltemplate')) visibleRuntimeNodeCount += 1;
+    if (sequence.length < 120) {
+      sequence.push([
+        tag,
+        type ?? '',
+        name ?? '',
+        blockId ? 'block' : '',
+        visible ? 'visible' : 'hidden',
+      ].join('|'));
+    }
+  }
+  return {
+    nodeCount: nodes.length,
+    blockIdCount: blockIds.length,
+    uniqueBlockIdCount: new Set(blockIds).size,
+    tagCounts,
+    controlNames,
+    sequenceHash: localHashString(sequence.join('\n')),
+    visibleRuntimeNodeCount,
+  };
+}
+
 function summarizeRenderDiagnostics(sheetEl) {
   const rollButtons = Array.from(sheetEl.querySelectorAll('button[type="roll"], button.roll'))
     .slice(0, 8)
@@ -309,9 +361,10 @@ async function capturePreview(page, fixtureId) {
   const box = await sheet.boundingBox();
   const dom = await sheet.evaluate(summarizeSheetElement);
   const diagnostics = await sheet.evaluate(summarizeRenderDiagnostics);
+  const signature = await sheet.evaluate(summarizeSheetSignature);
   const appOcclusion = await collectAppOcclusion(page, box);
   await withHiddenAppChrome(page, () => sheet.screenshot({ path: output }));
-  return { path: output, box, dom, diagnostics, appOcclusion };
+  return { path: output, box, dom, diagnostics, signature, appOcclusion };
 }
 
 async function captureEdit(page, fixtureId) {
@@ -348,10 +401,11 @@ async function captureEdit(page, fixtureId) {
   const box = await sheet.boundingBox();
   const dom = await sheet.evaluate(summarizeSheetElement);
   const diagnostics = await sheet.evaluate(summarizeRenderDiagnostics);
+  const signature = await sheet.evaluate(summarizeSheetSignature);
   const appOcclusion = await collectAppOcclusion(page, box);
   const layout = await page.evaluate(summarizeEditCanvasLayout);
   await withHiddenAppChrome(page, () => sheet.screenshot({ path: output }));
-  return { path: output, box, dom, diagnostics, appOcclusion, layout };
+  return { path: output, box, dom, diagnostics, signature, appOcclusion, layout };
 }
 
 async function diffPngs(page, previewPath, editPath) {
@@ -487,10 +541,13 @@ async function main() {
       entry.previewCapture = await capturePreview(page, fixture.id);
       entry.previewDom = entry.previewCapture.dom;
       entry.previewDiagnostics = entry.previewCapture.diagnostics;
+      entry.previewSignature = entry.previewCapture.signature;
       entry.previewAppOcclusion = entry.previewCapture.appOcclusion;
       entry.editCapture = await captureEdit(page, fixture.id);
       entry.editDom = entry.editCapture.dom;
       entry.editDiagnostics = entry.editCapture.diagnostics;
+      entry.editSignature = entry.editCapture.signature;
+      entry.domSignatureParity = compareSheetSignatures(entry.previewSignature, entry.editSignature);
       entry.editAppOcclusion = entry.editCapture.appOcclusion;
       entry.editLayout = entry.editCapture.layout;
       entry.diff = await diffPngs(page, entry.previewCapture.path, entry.editCapture.path);
@@ -501,6 +558,7 @@ async function main() {
         entry.editLayout?.status === 'ok' &&
         entry.editLayout.hostHeight >= entry.editLayout.contentHeight &&
         Math.abs(entry.editLayout.hostContentDelta) <= 24 &&
+        entry.domSignatureParity.pass &&
         consoleErrors.length === 0 &&
         pageErrors.length === 0;
     } catch (err) {
@@ -534,6 +592,38 @@ async function main() {
   process.exitCode = report.pass ? 0 : 1;
 }
 
+function compareSheetSignatures(preview, edit) {
+  const failures = [];
+  if (!preview || !edit) {
+    failures.push('missing signature');
+  } else {
+    if (preview.nodeCount !== edit.nodeCount) failures.push(`nodeCount ${preview.nodeCount} != ${edit.nodeCount}`);
+    if (preview.blockIdCount !== edit.blockIdCount) failures.push(`blockIdCount ${preview.blockIdCount} != ${edit.blockIdCount}`);
+    if (preview.uniqueBlockIdCount !== edit.uniqueBlockIdCount) {
+      failures.push(`uniqueBlockIdCount ${preview.uniqueBlockIdCount} != ${edit.uniqueBlockIdCount}`);
+    }
+    if (preview.sequenceHash !== edit.sequenceHash) failures.push(`sequenceHash ${preview.sequenceHash} != ${edit.sequenceHash}`);
+    if (preview.visibleRuntimeNodeCount !== 0 || edit.visibleRuntimeNodeCount !== 0) {
+      failures.push(`visible runtime nodes preview=${preview.visibleRuntimeNodeCount} edit=${edit.visibleRuntimeNodeCount}`);
+    }
+    const tagDiff = compareCountMaps(preview.tagCounts, edit.tagCounts, 'tag');
+    const controlDiff = compareCountMaps(preview.controlNames, edit.controlNames, 'control');
+    failures.push(...tagDiff, ...controlDiff);
+  }
+  return { pass: failures.length === 0, failures };
+}
+
+function compareCountMaps(a = {}, b = {}, label) {
+  const failures = [];
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const key of Array.from(keys).sort()) {
+    if ((a[key] ?? 0) !== (b[key] ?? 0)) {
+      failures.push(`${label}:${key} ${a[key] ?? 0} != ${b[key] ?? 0}`);
+    }
+  }
+  return failures;
+}
+
 function renderMarkdown(report) {
   const lines = [
     '# Preview/Edit Visual Smoke',
@@ -559,6 +649,17 @@ function renderMarkdown(report) {
   lines.push(`- Browser viewport for capture: ${VIEWPORT.width}x${VIEWPORT.height}.`);
   lines.push('- Screenshots are local-only and ignored by Git.');
   lines.push('- App chrome is hidden only during root screenshots; toolbar overlap is still measured separately.');
+  lines.push('');
+  lines.push('## DOM Signature Parity');
+  lines.push('');
+  lines.push('| Fixture | Status | Preview nodes | Edit nodes | Preview blocks | Edit blocks | Sequence hash | Visible runtime nodes | Failures |');
+  lines.push('| --- | --- | ---: | ---: | ---: | ---: | --- | ---: | --- |');
+  for (const item of report.fixtures) {
+    const parity = item.domSignatureParity;
+    lines.push(
+      `| \`${item.id}\` | ${parity?.pass ? 'PASS' : 'FAIL'} | ${item.previewSignature?.nodeCount ?? ''} | ${item.editSignature?.nodeCount ?? ''} | ${item.previewSignature?.blockIdCount ?? ''} | ${item.editSignature?.blockIdCount ?? ''} | ${item.previewSignature?.sequenceHash ?? ''}/${item.editSignature?.sequenceHash ?? ''} | ${(item.previewSignature?.visibleRuntimeNodeCount ?? 0) + (item.editSignature?.visibleRuntimeNodeCount ?? 0)} | ${fmtFailures(parity?.failures)} |`,
+    );
+  }
   lines.push('');
   lines.push('## Edit Canvas Height Diagnostics');
   lines.push('');
@@ -615,6 +716,11 @@ function fmtResourceIssues(items) {
     .slice(0, 3)
     .map((item) => `${item.count}x ${item.status ?? item.kind} ${item.resourceType} ${item.host || '(local)'}`)
     .join('<br>');
+}
+
+function fmtFailures(items) {
+  if (!Array.isArray(items) || items.length === 0) return '';
+  return items.slice(0, 4).join('<br>');
 }
 
 main().catch((err) => {
