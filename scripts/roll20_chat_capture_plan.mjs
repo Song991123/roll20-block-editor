@@ -17,6 +17,7 @@ const runDir = path.resolve(args[0] ?? '');
 const onlyFixture = args.find((arg, index) => index > 0 && !arg.startsWith('--')) ?? '';
 const INCLUDE_ALL = args.includes('--all');
 const SELF_TEST = args.includes('--self-test');
+const REQUIRE_CURRENT_METRICS = args.includes('--require-current-metrics');
 const MAX_CHAT_SIDECAR_AGE_MS = 5 * 60 * 1000;
 
 if (SELF_TEST) {
@@ -62,6 +63,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir,
     includeAll: INCLUDE_ALL,
+    requireCurrentMetrics: REQUIRE_CURRENT_METRICS,
     fixtureFilter: onlyFixture || null,
     scope: 'local-only Roll20 chat capture handoff plan; not Roll20 visual parity',
     currentStatus: {
@@ -106,12 +108,14 @@ function buildEntry(fixtureId, status, chatParity) {
   const screenshots = path.join(fixtureDir, 'screenshots');
   const payloadHtml = path.join(fixtureDir, 'payload', 'sheet.html');
   const chat = validateChatEvidence(screenshots);
+  const currentMetrics = validateCurrentChatMetrics(screenshots);
   const statusFixture = (status?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId);
   const statusChatTarget = statusFixture?.actualTargets?.find((target) => target.id === 'chat') ?? null;
   const parityFixture = (chatParity?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId) ?? null;
   const rollButtons = extractRollButtonNames(payloadHtml);
   const captureReasons = [];
   if (!chat.ok) captureReasons.push(chat.note);
+  if (REQUIRE_CURRENT_METRICS && !currentMetrics.ok) captureReasons.push(currentMetrics.note);
   if (parityFixture?.status === 'NEEDS_NORMALIZED_CAPTURE') {
     captureReasons.push('chat parity diagnostic needs normalized rolltemplate crop metadata');
   }
@@ -126,6 +130,7 @@ function buildEntry(fixtureId, status, chatParity) {
     needsCapture,
     captureReasons,
     chat,
+    currentMetrics,
     statusTarget: statusChatTarget
       ? {
           exists: Boolean(statusChatTarget.exists),
@@ -152,10 +157,48 @@ function buildEntry(fixtureId, status, chatParity) {
       `Click a real sheet roll button${rollButtons.length ? ` such as ${rollButtons.slice(0, 4).map((name) => `\`${name}\``).join(', ')}` : ''}.`,
       'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
+      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, fontEvidence, and viewportEvidence.',
       'Keep screenshot and DOM sidecar timestamps within 5 minutes.',
       'Rerun screenshot diff, chat parity diagnostics, renderer action gate, and status.',
     ],
   };
+}
+
+function validateCurrentChatMetrics(screenshots) {
+  const domEvidenceFile = path.join(screenshots, 'roll20-chat-dom-evidence.json');
+  const domEvidence = readJsonIfExists(domEvidenceFile);
+  if (!domEvidence) {
+    return {
+      ok: false,
+      status: 'MISSING_SIDECAR',
+      note: 'Roll20 chat DOM sidecar is missing; current row/typography metrics cannot be checked',
+    };
+  }
+  const template = domEvidence.latestTemplate
+    ?? [...(domEvidence.rolltemplates ?? [])].reverse().find((item) => item?.rect?.width)
+    ?? null;
+  const table = findTemplateChild(template, 'table');
+  const missing = [];
+  if (!template?.computedStyle) missing.push('latestTemplate.computedStyle');
+  if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) missing.push('latestTemplate.rowMetrics');
+  if (!table?.computedStyle) missing.push('table.computedStyle');
+  if (!table?.boxMetrics) missing.push('table.boxMetrics');
+  if (!domEvidence.fontEvidence?.checks) missing.push('fontEvidence.checks');
+  if (!domEvidence.viewportEvidence?.devicePixelRatio) missing.push('viewportEvidence.devicePixelRatio');
+  return {
+    ok: missing.length === 0,
+    status: missing.length ? 'MISSING_CURRENT_METRICS' : 'PRESENT',
+    missing,
+    templateClass: template?.className ?? '',
+    note: missing.length
+      ? `Roll20 chat DOM sidecar predates current row/typography probe fields: missing ${missing.join(', ')}`
+      : 'Roll20 chat DOM sidecar includes current row/typography metrics',
+  };
+}
+
+function findTemplateChild(template, selector) {
+  const children = template?.computedChildren ?? template?.elements ?? [];
+  return children.find((child) => child?.selector === selector) ?? null;
 }
 
 function validateChatEvidence(screenshots) {
@@ -772,6 +815,7 @@ function renderMarkdown(report) {
     `- Chat actual CSS inactive: ${report.currentStatus.chatActualCssInactive}`,
     `- Chat scoped/prefix mismatch: ${report.currentStatus.chatActualCssScopedMismatch}`,
     `- Chat normalized high mismatch: ${report.currentStatus.chatNormalizedHighMismatch}`,
+    `- Require current row/typography metrics: ${report.requireCurrentMetrics ? 'YES' : 'no'}`,
     '',
     '## Planned Captures',
     '',
@@ -805,6 +849,7 @@ function renderMarkdown(report) {
     if (entry.captureReasons.length) lines.push(`- Capture reason: ${entry.captureReasons.join('; ')}`);
     lines.push(`- Chat status: ${entry.chat.status}`);
     lines.push(`- Reason: ${entry.chat.note}`);
+    lines.push(`- Current metrics: ${entry.currentMetrics.status}${entry.currentMetrics.missing?.length ? ` (${entry.currentMetrics.missing.join(', ')})` : ''}`);
     if (entry.chat.sidecarFreshness) {
       lines.push(`- Sidecar freshness: ${entry.chat.sidecarFreshness.deltaSeconds}s (${entry.chat.sidecarFreshness.ok ? 'ok' : 'stale'})`);
     }

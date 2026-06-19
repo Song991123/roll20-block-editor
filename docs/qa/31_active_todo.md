@@ -1,3 +1,12 @@
+## 2026-06-20 Codex Update - Current-metric Roll20 chat recapture gate
+
+Status: PARTIAL. Roll20 chat/template parity is still NOT done; the next real recapture blocker is now encoded in tooling.
+
+- DONE: Added `--require-current-metrics` to `plan:roll20-chat-capture`. It now treats a Roll20 chat sidecar as stale when it lacks current renderer-diagnostic fields: `latestTemplate.computedStyle`, `latestTemplate.rowMetrics`, table computed style, table box metrics, `fontEvidence.checks`, and `viewportEvidence.devicePixelRatio`.
+- RESULT: `plan:roll20-chat-capture -- reports/.../2026-06-18-state-map-v1 yshy-commission-1bu --require-current-metrics` now reports `NEEDS_CAPTURE` even though the old YSHY screenshot/sidecar pair exists, because the sidecar predates the current row/typography probe.
+- RESULT: Running the same plan across all fixtures reports AW2E, Les-Oublies, and YSHY as needing current-metric recapture. This reconciles the prior contradiction where `status:roll20-actual` accepted chat evidence while `diagnose:roll20-chat-rows` said `NEEDS_RECAPTURE`.
+- STILL TODO P0: Load/reroll YSHY in the dedicated Roll20 Sandbox/test room, capture `roll20-chat.png` and `roll20-chat-dom-evidence.json` from the same `sheet-rolltemplate-coc` action, and rerun screenshot diff, chat parity, renderer gate, and status.
+
 ## 2026-06-20 Codex Update - Roll20 shell typography candidate rejected
 
 Status: PARTIAL. Roll20 chat/template parity is still NOT done; one live-style hypothesis is now reproducibly rejected.

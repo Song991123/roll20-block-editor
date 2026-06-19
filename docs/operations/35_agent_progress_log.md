@@ -1,3 +1,13 @@
+## 2026-06-20 05:11 +09:00 - Current-metric Roll20 chat recapture gate
+
+Status: PARTIAL. This batch turns the YSHY recapture requirement into a repeatable gate instead of a manual note.
+
+- Added `--require-current-metrics` to `scripts/roll20_chat_capture_plan.mjs`.
+- The plan now inspects `roll20-chat-dom-evidence.json` for current row/typography fields and marks capture needed when sidecars lack `latestTemplate.computedStyle`, `latestTemplate.rowMetrics`, table computed style, table box metrics, `fontEvidence.checks`, or `viewportEvidence.devicePixelRatio`.
+- Verified YSHY specifically now plans `NEEDS_CAPTURE` because the existing `sheet-rolltemplate-coc` sidecar has only basic rect/class/text evidence.
+- Verified all three current fixtures plan recapture under this stricter mode, matching `diagnose:roll20-chat-rows` and preventing status/gate output from being mistaken for current-metric chat evidence.
+- Next P0 remains actual Roll20 YSHY reroll/recapture in Sandbox/test room with a same-action screenshot and DOM sidecar.
+
 ## 2026-06-20 04:52 +09:00 - Roll20 shell typography candidate rejected
 
 Status: PARTIAL. This batch adds a reproducible diagnostic switch and rejects it for production.
