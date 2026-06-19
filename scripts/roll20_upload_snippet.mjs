@@ -156,7 +156,23 @@ function renderSnippet({ fixtureId, payload }) {
     if (!input) return { selector, status: 'missing' };
     const transfer = new DataTransfer();
     transfer.items.add(new File([bytesFromBase64(item.base64)], item.name, { type }));
-    input.files = transfer.files;
+    try {
+      input.files = transfer.files;
+    } catch {
+      // Some browser/page combinations expose HTMLInputElement.files as read-only.
+      // Defining an own property keeps Roll20's change handlers able to read the
+      // generated FileList during Custom Sheet Sandbox verification.
+      Object.defineProperty(input, 'files', {
+        configurable: true,
+        value: transfer.files,
+      });
+    }
+    if (!input.files?.length) {
+      Object.defineProperty(input, 'files', {
+        configurable: true,
+        value: transfer.files,
+      });
+    }
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
     await sleep(1200);

@@ -1,3 +1,28 @@
+## 2026-06-19 19:50 +09:00 - Roll20 upload attempt and live chat evidence
+
+Status: PARTIAL ACTUAL EVIDENCE, NOT VISUAL PARITY.
+
+What happened:
+- Chrome file chooser capture failed for hidden `#sheetHtml/#sheetCss/#sheetTranslation` inputs and visible Sandbox Tools labels in the current Codex Chrome wrapper.
+- Raw CDP `DOM.setFileInputFiles` is blocked by the extension allowlist.
+- The generated upload snippet executed in the Roll20 editor, but file input state cannot be trusted from the current isolated/read-only automation contexts.
+- Improved `scripts/roll20_upload_snippet.mjs` so generated snippets fall back to defining an own `files` property when direct `input.files = ...` is ignored.
+
+Actual Roll20 evidence saved locally only:
+- `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-sandbox-after-upload-attempt.png`
+- `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-sandbox-after-upload-attempt-dom-evidence.json`
+- `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-chat-after-roll-attempt-page.png`
+- `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-chat-after-roll-attempt-dom-evidence.json`
+
+Observed facts:
+- Character iframe had `.charactersheet` root, 13 roll buttons, and AW2E-looking text content.
+- Clicking a visible iframe roll button produced actual Roll20 chat DOM with `sheet-rolltemplate-coc` classes, messageCount 9, templateCount 2, last template width about 267px and height about 545px.
+- Chat DOM confirms Roll20 runtime uses `.sheet-rolltemplate-*` for template wrappers and unprefixed `.inlinerollresult` style runtime classes, matching the latest export selector preservation direction.
+
+Not done / next:
+- The evidence is fixture-mixed/suspect: the iframe text looked AW2E while the new chat template was `sheet-rolltemplate-coc`. Do not count it as AW2E visual parity.
+- Need a reliable upload path or user-assisted file chooser access, then recapture the expected fixture with accepted filenames and normalized chat/root evidence.
+- Current `status:roll20-actual` remains `rendererReady=NO`, `rendererBlockers=7`.
 ## 2026-06-19 19:45 +09:00 - Rolltemplate runtime selector preservation
 
 Status: IMPLEMENTED + LOCAL PREUPLOAD VERIFIED, ACTUAL ROLL20 RECAPTURE STILL REQUIRED.
