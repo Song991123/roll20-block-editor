@@ -1492,3 +1492,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Wired `plan:roll20-root-capture` into `scripts/roll20_actual_status.mjs`, `scripts/roll20_renderer_action_gate.mjs`, and `scripts/roll20_upload_handoff.mjs` so the next action is no longer a prose-only instruction.
 - Verified generated markdown for `2026-06-18-state-map-v1` includes the AW2E root capture plan command in actual status, renderer action gate, and upload handoff outputs.
 - Claim boundary: this is workflow/handoff alignment. It does not add trusted AW2E root evidence or change renderer CSS.
+
+## 2026-06-19 AW2E Trusted DPR Root Evidence
+
+- Reclaimed the dedicated Roll20 editor tab and confirmed AW2E is visibly rendered in the character iframe. The ordinary page DOM still cannot read iframe `contentDocument`, and CDP target discovery/auto-attach remains unsupported in the Chrome extension surface.
+- Used top-page CDP `Page.captureScreenshot` with a DPR `1.25` sheet-root clip to capture `aw2e-root-dpr-complete-segments-20260619/segment-000..023.png`. The accepted segment set has no byte-identical duplicates; the trailing repeated bottom frames were excluded.
+- Generated ignored local `roll20-root-dpr-complete-manifest.json`, stitched `roll20-sandbox-root-full-dpr-corrected.png` at `850x9168`, and reran the evidence gates.
+- Verification: `audit:roll20-root-stitch` PASS for AW2E, Les-Oublies, and YSHY; `roll20_actual_screenshot_diff` reports AW2E sandbox mismatch `10.52%`; `smoke:roll20-full-root-candidates` reports AW2E best `normal-source-state` at `8.98%` with root delta `+2424.938px`; `status:roll20-actual` now reports `trustedFullRoot=3/3`.
+- Latest renderer gate still holds production CSS with one blocker: the best diagnostic patch is not uniform across fixtures (`none` for AW2E, `inline-block+text-input-height` for Les-Oublies, `text-input-height` for YSHY). This is actual evidence progress, not Roll20 visual parity.
