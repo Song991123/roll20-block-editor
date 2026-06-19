@@ -502,8 +502,10 @@ function buildNextAction({
     return 'Run or fix the local pre-upload gate before attempting Roll20 Sandbox upload.';
   }
   if (rootStitchAudit.exists && rootStitchAudit.trustedFullRootCount < rootStitchAudit.fixtureCount) {
-    const missing = rootStitchAudit.missingTrustedFixtures.map((fixture) => fixture.fixtureId).join(', ');
-    return `Capture trusted DPR-corrected full-root Roll20 evidence for ${missing}, then rerun root stitch audit, screenshot diff, full-root candidate smoke, and renderer action gate.`;
+    const missingIds = rootStitchAudit.missingTrustedFixtures.map((fixture) => fixture.fixtureId);
+    const missing = missingIds.join(', ');
+    const fixtureArg = missingIds.length === 1 ? ` ${missingIds[0]}` : '';
+    return `Run corepack pnpm run plan:roll20-root-capture -- ${rel(path.resolve(runDirFromReport(rootStitchAudit.file)))}${fixtureArg}, then capture trusted DPR-corrected full-root Roll20 evidence for ${missing} and rerun root stitch audit, screenshot diff, full-root candidate smoke, and renderer action gate.`;
   }
   if (generatedPresentCount < generatedTargetCount) {
     if (blockerEvidence.length > 0) {
@@ -521,6 +523,13 @@ function buildNextAction({
     return 'Renderer action gate is still HOLD. Resolve its listed blockers before changing production renderer CSS.';
   }
   return 'Classify diff results by wrapper/context, base CSS, cascade, default state, translation, worker JS, rolltemplate/chat, asset loading, viewport/crop, or edit overlay before making any parity claim.';
+}
+
+function runDirFromReport(reportFile) {
+  const absolute = path.resolve(reportFile);
+  const marker = `${path.sep}root-stitch-audit${path.sep}`;
+  if (absolute.includes(marker)) return absolute.slice(0, absolute.indexOf(marker));
+  return path.dirname(path.dirname(absolute));
 }
 
 function statusOf({

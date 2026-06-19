@@ -30,7 +30,7 @@ async function main() {
   const geometry = await readJsonIfExists(path.join(runDir, 'geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, geometry });
-  const recommendation = recommend(fixtures, status);
+  const recommendation = recommend(fixtures, status, runDir);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -123,7 +123,7 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, geo
   });
 }
 
-function recommend(fixtures, status) {
+function recommend(fixtures, status, activeRunDir) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -197,7 +197,9 @@ function recommend(fixtures, status) {
     nextActions.push(`Capture roll20-chat.png screenshots with fresh DOM sidecars for ${missingChat.map((fixture) => fixture.fixtureId).join(', ')}.`);
   }
   if (missingFullRootCandidates.length) {
-    nextActions.push(`Capture or stitch DPR-corrected full-root evidence, then rerun root-stitch audit and full-root candidate smoke for ${missingFullRootCandidates.map((fixture) => fixture.fixtureId).join(', ')}.`);
+    const ids = missingFullRootCandidates.map((fixture) => fixture.fixtureId);
+    const fixtureArg = ids.length === 1 ? ` ${ids[0]}` : '';
+    nextActions.push(`Run corepack pnpm run plan:roll20-root-capture -- ${path.relative(process.cwd(), activeRunDir)}${fixtureArg}, then capture or stitch DPR-corrected full-root evidence and rerun root-stitch audit/full-root candidate smoke for ${ids.join(', ')}.`);
   }
   const largeDiagnosticRootDeltas = fixtures.filter((fixture) => {
     const delta = fixture.diagnosticBestCandidate?.rootHeightDelta;

@@ -1486,3 +1486,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The ignored report for `2026-06-18-state-map-v1 official-roll20-AW2E` now states: generated screenshots/diffs `6/6`, trusted full-root `2/3`, renderer action `HOLD_PRODUCTION_RENDERER_PATCH`, rendererReady `NO`, trusted examples `2`, planned missing fixture `1`.
 - The AW2E plan lists the three required trusted-root outputs, the existing diagnostic-only segment captures, a browser metrics snippet, and the exact stitch/audit/diff/renderer-ready commands to run after recapture.
 - Claim boundary: this is recapture handoff automation only. It does not add trusted AW2E full-root evidence and does not prove Roll20 visual parity.
+
+## 2026-06-19 Root Capture Plan Linkage
+
+- Wired `plan:roll20-root-capture` into `scripts/roll20_actual_status.mjs`, `scripts/roll20_renderer_action_gate.mjs`, and `scripts/roll20_upload_handoff.mjs` so the next action is no longer a prose-only instruction.
+- Verified generated markdown for `2026-06-18-state-map-v1` includes the AW2E root capture plan command in actual status, renderer action gate, and upload handoff outputs.
+- Claim boundary: this is workflow/handoff alignment. It does not add trusted AW2E root evidence or change renderer CSS.

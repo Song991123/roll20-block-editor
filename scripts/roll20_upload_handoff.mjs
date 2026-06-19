@@ -147,6 +147,7 @@ async function buildEntry(runDir, fixtureId) {
     files: Object.fromEntries(Object.entries(files).map(([key, file]) => [key, { path: file, relativePath: rel(file), exists: existsSync(file) }])),
     screenshotTargets,
     stitchManifest,
+    nextRootCapturePlanCommand: `corepack pnpm run plan:roll20-root-capture -- ${path.relative(process.cwd(), runDir)} ${fixtureId}`,
     nextStitchCommand: `corepack pnpm run stitch:roll20-actual-root -- --manifest ${stitchManifest.relativePath} --out ${screenshotTargets.sandboxFullRootDpr.relativePath}`,
     nextAuditCommand: `corepack pnpm run audit:roll20-root-stitch -- ${path.relative(process.cwd(), runDir)}`,
     nextDiffCommand: `node scripts/roll20_actual_screenshot_diff.mjs ${path.relative(process.cwd(), runDir)}`,
@@ -345,6 +346,7 @@ function renderMarkdown(report) {
     }
     lines.push('');
     lines.push(`Stitch manifest: \`${entry.stitchManifest.relativePath}\``);
+    lines.push(`Root capture plan: \`${entry.nextRootCapturePlanCommand}\``);
     lines.push(`Stitch command: \`${entry.nextStitchCommand}\``);
     lines.push(`Audit command: \`${entry.nextAuditCommand}\``);
     lines.push(`Diff command: \`${entry.nextDiffCommand}\``);

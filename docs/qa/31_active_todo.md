@@ -651,3 +651,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: current AW2E plan reports generated screenshots/diffs `6/6`, trusted full-root `2/3`, renderer action `HOLD_PRODUCTION_RENDERER_PATCH`, rendererReady `NO`, and AW2E missing `roll20-root-dpr-complete-manifest.json`, `roll20-sandbox-root-full-dpr-corrected.png`, and sidecar JSON.
 - CURRENT: the plan uses Les-Oublies/YSHY trusted manifests as examples and lists AW2E diagnostic-only captures plus post-capture stitch/audit/diff/renderer-ready commands.
 - STILL TODO: run the actual Roll20 DPR-corrected sheet-root capture for AW2E and rerun the generated plan/gates until trusted full-root reaches `3/3`.
+
+## 2026-06-19 Root Capture Plan Linkage TODO Note
+
+- DONE: `status:roll20-actual`, `gate:roll20-renderer-action`, and `handoff:roll20-upload` now point directly to `corepack pnpm run plan:roll20-root-capture -- <run-dir> [fixture-id]` when trusted full-root evidence is missing.
+- VERIFIED: current `2026-06-18-state-map-v1` reports the AW2E plan command in status next action, renderer gate next actions, and upload handoff markdown.
+- CURRENT: this reduces handoff ambiguity; `generatedActualScreenshots=6/6` still does not mean rendererReady because trusted full-root remains `2/3`.
+- STILL TODO: perform the actual AW2E DPR-corrected full-root capture and rerun the linked gates until rendererReady can pass.
