@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Roll20 chat current metrics complete
+
+Status: PARTIAL. Actual Roll20 chat evidence is now current for the 3-fixture set, but renderer/chat parity still fails.
+
+- DONE: Reclaimed only the dedicated `Codex Roll20 Verify` Roll20 Sandbox/editor. No existing real room was edited.
+- DONE: Recaptured AW2E, Les-Oublies, and YSHY `roll20-chat.png` plus same-action `roll20-chat-dom-evidence.json` with current row/typography/text-rendering fields.
+- RESULT: `plan:roll20-chat-capture -- --require-current-metrics` now reports `ALL_CHAT_EVIDENCE_TRUSTED`, `plannedFixtures=0/3`.
+- RESULT: `status:roll20-actual -- --require-actual` now reports `chatCurrentMetrics=3/3`, `chatCurrentMetricsMissing=0`, `chatCaptureSuspects=0`, and `chatActualCaptureScaleSuspect=0`.
+- RESULT: `diagnose:roll20-chat-candidate-style` now rejects `text-auto-aa` with actual Roll20 style evidence. `no-shadow` and `table-scale-x` remain rejected; `roll20-break-word` is not enough for a global renderer patch.
+- STILL TODO P0: Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`; current blocker is real chat/template mismatch, not stale sidecar evidence. Latest chat parity reports `3/3` normalized high mismatch and authoritative max aligned mismatch `23.07%`.
+- STILL TODO P0: Fix ChatPane/Roll20 shell-template sizing and per-template renderer modeling before touching edit-mode UX claims or production renderer CSS.
+
 ## 2026-06-20 Codex Update - Text rasterization sidecar fields
 
 Status: PARTIAL. The remaining `text-auto-aa` candidate now has a concrete evidence path; actual Roll20 chat sidecars must be recaptured.
