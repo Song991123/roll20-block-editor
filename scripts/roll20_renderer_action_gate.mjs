@@ -634,6 +634,7 @@ function patchFamily(patch) {
   if (patch.startsWith('sheet-class-alias-css')) return 'sheet-class-alias-css:all';
   if (patch.startsWith('sheet-class-alias-text-input-height')) return 'sheet-class-alias-css+text-input-height';
   if (patch.startsWith('inline-block-text-input-height')) return 'inline-block+text-input-height';
+  if (patch.startsWith('inline-block-nowrap-text-input-height')) return 'nowrap+text-input-height';
   if (patch.startsWith('inline-block')) return 'inline-block';
   if (patch.startsWith('text-input-height')) return 'text-input-height';
   return patch.split(':')[0] || patch;

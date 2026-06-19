@@ -14,6 +14,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer safety note, 2026-06-19 promotion-risk gate:
+`diagnose:roll20-renderer-blocker` now writes a `Promotion Risk` section for every diagnostic patch family. Latest report keeps the renderer at `DO_NOT_PROMOTE_DIRECTLY` because `gate:roll20-renderer-action` still has 2 blockers: fixture-best families differ (`none` for AW2E reliable source, `inline-block+text-input-height` for Les-Oublies/YSHY) and AW2E trusted stitched root still disagrees with the live sidecar by `2620.088px`. The matrix now explicitly says that `inline-block+text-input-height` helps Les-Oublies/YSHY but is not fixture-best everywhere, so it must remain diagnostic until actual Roll20 computed styles for `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, text inputs, and textarea prove a generic wrapper/base-context correction.
 Current Roll20 renderer experiment note, 2026-06-19 production-path inline-flow patch rejected:
 A temporary production-path experiment added the diagnostic inline-block/input-height CSS directly to `buildSheetDoc`/`buildSheetParts`, then reran `smoke:roll20-full-root-candidates`, `gate:roll20-renderer-action`, and `diagnose:roll20-renderer-blocker`. Les-Oublies/YSHY baseline improved to the previous best range, but the best candidates moved to additional inline-block word-spacing patches and the renderer gate still held with AW2E root-cutoff disagreement. The temporary CSS was removed and the candidate/matrix reports were regenerated back to the non-experiment production path. Next work must prove real Roll20 wrapper/base context before shipping any inline-flow CSS.
 Current Roll20 renderer blocker note, 2026-06-19 targeted experiment boundary:

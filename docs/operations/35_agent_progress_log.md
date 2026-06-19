@@ -67,6 +67,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 | Verification evidence | local ignored `reports/` outputs plus summarized TODO notes |
 | Repeatable scripts | `scripts/` |
 
+
+## 2026-06-19 Renderer Promotion-Risk Guard
+
+- Added a `Promotion Risk` section to `scripts/roll20_renderer_blocker_matrix.mjs` so broad-help diagnostic CSS candidates are not mistaken for production renderer patches.
+- Latest matrix now marks every current diagnostic patch family as `DO_NOT_PROMOTE_DIRECTLY` while the renderer action gate still has 2 blockers.
+- `inline-block+text-input-height` helps Les-Oublies and YSHY, but it is not fixture-best everywhere and AW2E still has the trusted stitched-root vs live-sidecar root disagreement. Next evidence needed: actual Roll20 computed-style comparison for row/column/input/textarea context before any inline-flow CSS is promoted.
 ## 2026-06-19 Production Inline-Flow Experiment Rejected
 
 - Temporarily added the current diagnostic inline-block/input-height CSS to the real preview/edit render path, then reran `smoke:roll20-full-root-candidates`, `gate:roll20-renderer-action`, and `diagnose:roll20-renderer-blocker`.

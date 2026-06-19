@@ -41,6 +41,7 @@ async function main() {
     blockers: actionGate?.recommendation?.blockers ?? [],
     fixtures,
     matrix,
+    promotionRisks: assessPromotionRisks(fixtures, matrix, actionGate),
     conclusion: conclude(fixtures, matrix),
   };
   await mkdir(outDir, { recursive: true });
@@ -132,6 +133,68 @@ function conclude(fixtures, matrix) {
   };
 }
 
+function assessPromotionRisks(fixtures, matrix, actionGate) {
+  const bestFamilies = new Map();
+  for (const fixture of fixtures) {
+    const family = fixture.bestPatch || 'none';
+    if (!bestFamilies.has(family)) bestFamilies.set(family, []);
+    bestFamilies.get(family).push(fixture.fixtureId);
+  }
+  const fixtureCount = fixtures.length;
+  const rows = matrix.map((row) => {
+    const broadButNotUniform = row.helps >= Math.max(2, Math.ceil(fixtureCount / 2)) && row.helps < fixtureCount && row.hurts === 0;
+    const dangerousRootShift = row.cells.some((cell) => (
+      Number.isFinite(cell.rootHeightDeltaChange) && Math.abs(cell.rootHeightDeltaChange) > 500
+    ));
+    const missingCoverage = row.missing > 0;
+    const isBestSomewhere = bestFamilies.has(row.patch);
+    const risk = missingCoverage || row.hurts > 0 || dangerousRootShift || broadButNotUniform || !isBestSomewhere
+      ? 'DO_NOT_PROMOTE_DIRECTLY'
+      : 'EXPERIMENT_ONLY';
+    const reasons = [];
+    if (row.hurts > 0) reasons.push(`hurts ${row.hurts}/${fixtureCount} fixture(s)`);
+    if (missingCoverage) reasons.push(`missing from ${row.missing}/${fixtureCount} fixture(s)`);
+    if (dangerousRootShift) reasons.push('contains >500px root-height shift');
+    if (broadButNotUniform) reasons.push('helps multiple fixtures but is not fixture-best everywhere');
+    if (!isBestSomewhere) reasons.push('not best for any fixture');
+    if (!reasons.length) reasons.push('requires local production-path experiment before reviewed renderer patch');
+    return {
+      patch: row.patch,
+      risk,
+      reason: reasons.join('; '),
+      bestFor: bestFamilies.get(row.patch) ?? [],
+      helps: row.helps,
+      neutral: row.neutral,
+      hurts: row.hurts,
+      missing: row.missing,
+    };
+  });
+  const gateBlockers = actionGate?.recommendation?.blockers ?? [];
+  const gateWarnings = actionGate?.recommendation?.warnings ?? [];
+  return {
+    summary: summarizePromotionRisk(rows, bestFamilies, gateBlockers),
+    fixtureBestFamilies: Object.fromEntries(bestFamilies),
+    gateBlockers,
+    gateWarnings,
+    rows,
+  };
+}
+
+function summarizePromotionRisk(rows, bestFamilies, gateBlockers) {
+  const broadCandidateRows = rows.filter((row) => row.helps >= 2 && row.hurts === 0);
+  const bestFamilyCount = bestFamilies.size;
+  if (gateBlockers?.length) {
+    return `DO_NOT_PROMOTE_DIRECTLY: renderer gate still has ${gateBlockers.length} blocker(s).`;
+  }
+  if (bestFamilyCount > 1) {
+    return `DO_NOT_PROMOTE_DIRECTLY: fixture best families differ (${[...bestFamilies.keys()].join(', ')}).`;
+  }
+  if (broadCandidateRows.length) {
+    return `EXPERIMENT_ONLY: broad-help candidates exist (${broadCandidateRows.map((row) => row.patch).join(', ')}), but they still need production-path and actual Roll20 context proof.`;
+  }
+  return 'HOLD: no broad candidate is safe to promote from this matrix alone.';
+}
+
 function renderMarkdown(report) {
   const lines = [];
   lines.push('# Roll20 Renderer Blocker Matrix');
@@ -169,10 +232,21 @@ function renderMarkdown(report) {
     lines.push(`| ${row.patch} | ${row.helps} | ${row.neutral} | ${row.hurts} | ${row.missing} | ${cells} |`);
   }
   lines.push('');
+  lines.push('## Promotion Risk');
+  lines.push('');
+  lines.push(report.promotionRisks.summary);
+  lines.push('');
+  lines.push('| Patch family | Risk | Reason | Best for | Helps/Neutral/Hurts/Missing |');
+  lines.push('| --- | --- | --- | --- | --- |');
+  for (const row of report.promotionRisks.rows) {
+    lines.push(`| ${row.patch} | ${row.risk} | ${escapePipe(row.reason)} | ${row.bestFor.map((id) => `\`${id}\``).join('<br>')} | ${row.helps}/${row.neutral}/${row.hurts}/${row.missing} |`);
+  }
+  lines.push('');
   lines.push('## Next Action');
   lines.push('');
-  lines.push('- Keep production renderer CSS on HOLD until a candidate patch family repeats across the compared fixtures.');
-  lines.push('- Investigate AW2E root-height drift separately because its best local root is still much taller than actual Roll20.');
+  lines.push('- Keep production renderer CSS on HOLD when `Promotion Risk` says `DO_NOT_PROMOTE_DIRECTLY`, even if a candidate helps two fixtures.');
+  lines.push('- Capture/compare actual Roll20 computed styles for `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, `input[type="text"]`, and textarea before turning inline-flow/input-height candidates into renderer CSS.');
+  lines.push('- Resolve AW2E root-cutoff/root-height disagreement before using AW2E pixel-best candidates as production evidence.');
   lines.push('- Use this report after each candidate-smoke rerun to avoid promoting a fixture-specific CSS tweak.');
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -216,6 +290,10 @@ function signed(value) {
   const rounded = round(value);
   if (rounded == null) return '';
   return rounded > 0 ? `+${rounded}` : `${rounded}`;
+}
+
+function escapePipe(value) {
+  return String(value ?? '').replace(/\|/g, '\\|');
 }
 
 main().catch((error) => {
