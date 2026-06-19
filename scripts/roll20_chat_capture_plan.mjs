@@ -412,7 +412,11 @@ function renderDomProbeSnippet(entry) {
       fontFamily: style.fontFamily,
       fontSize: style.fontSize,
       fontWeight: style.fontWeight,
+      fontStretch: style.fontStretch,
+      fontKerning: style.fontKerning,
+      fontVariantLigatures: style.fontVariantLigatures,
       lineHeight: style.lineHeight,
+      letterSpacing: style.letterSpacing,
       color: style.color,
       backgroundColor: style.backgroundColor,
       backgroundImage: style.backgroundImage,
@@ -423,7 +427,12 @@ function renderDomProbeSnippet(entry) {
       whiteSpace: style.whiteSpace,
       wordBreak: style.wordBreak,
       overflowWrap: style.overflowWrap,
+      borderCollapse: style.borderCollapse,
+      borderSpacing: style.borderSpacing,
+      tableLayout: style.tableLayout,
       transform: style.transform,
+      transformOrigin: style.transformOrigin,
+      zoom: style.zoom,
     };
   };
   const summarizeElement = (el, selector) => {
@@ -434,6 +443,14 @@ function renderDomProbeSnippet(entry) {
       className: el.className,
       rect: cloneRect(rectOf(el)),
       computedStyle: readStyle(el),
+      boxMetrics: {
+        offsetWidth: el.offsetWidth,
+        offsetHeight: el.offsetHeight,
+        clientWidth: el.clientWidth,
+        clientHeight: el.clientHeight,
+        scrollWidth: el.scrollWidth,
+        scrollHeight: el.scrollHeight,
+      },
       text: (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 500),
     };
   };
@@ -544,6 +561,20 @@ function renderDomProbeSnippet(entry) {
     templates: templateInfos.slice(-5),
     chatCssEvidence,
     fontEvidence: checkFonts(),
+    viewportEvidence: {
+      devicePixelRatio: window.devicePixelRatio,
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      visualViewport: window.visualViewport
+        ? {
+            width: window.visualViewport.width,
+            height: window.visualViewport.height,
+            scale: window.visualViewport.scale,
+            offsetLeft: window.visualViewport.offsetLeft,
+            offsetTop: window.visualViewport.offsetTop,
+          }
+        : null,
+    },
     textMarkers: {
       rolltemplate: templates.length > 0,
       sheetRolltemplate: templates.some((template) => String(template.className).includes('sheet-rolltemplate-')),

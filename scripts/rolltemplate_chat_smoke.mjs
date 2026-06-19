@@ -264,7 +264,11 @@ async function clickRollAndReadChat(page, fixtureId) {
         fontFamily: style.fontFamily,
         fontSize: style.fontSize,
         fontWeight: style.fontWeight,
+        fontStretch: style.fontStretch,
+        fontKerning: style.fontKerning,
+        fontVariantLigatures: style.fontVariantLigatures,
         lineHeight: style.lineHeight,
+        letterSpacing: style.letterSpacing,
         color: style.color,
         backgroundColor: style.backgroundColor,
         backgroundImage: style.backgroundImage,
@@ -275,7 +279,12 @@ async function clickRollAndReadChat(page, fixtureId) {
         whiteSpace: style.whiteSpace,
         wordBreak: style.wordBreak,
         overflowWrap: style.overflowWrap,
+        borderCollapse: style.borderCollapse,
+        borderSpacing: style.borderSpacing,
+        tableLayout: style.tableLayout,
         transform: style.transform,
+        transformOrigin: style.transformOrigin,
+        zoom: style.zoom,
       };
     };
     const summarizeElement = (node, selector) => {
@@ -296,6 +305,14 @@ async function clickRollAndReadChat(page, fixtureId) {
           bottom: rect.bottom,
         },
         computedStyle: readStyle(node),
+        boxMetrics: {
+          offsetWidth: node.offsetWidth,
+          offsetHeight: node.offsetHeight,
+          clientWidth: node.clientWidth,
+          clientHeight: node.clientHeight,
+          scrollWidth: node.scrollWidth,
+          scrollHeight: node.scrollHeight,
+        },
         text: (node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 500),
       };
     };
@@ -384,6 +401,20 @@ async function clickRollAndReadChat(page, fixtureId) {
           }
         : null,
       fontEvidence: checkFonts(),
+      viewportEvidence: {
+        devicePixelRatio: window.devicePixelRatio,
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        visualViewport: window.visualViewport
+          ? {
+              width: window.visualViewport.width,
+              height: window.visualViewport.height,
+              scale: window.visualViewport.scale,
+              offsetLeft: window.visualViewport.offsetLeft,
+              offsetTop: window.visualViewport.offsetTop,
+            }
+          : null,
+      },
       hasDebugTemplateLabel: /rolltemplate\s*:/i.test(el.textContent || ''),
     };
   });

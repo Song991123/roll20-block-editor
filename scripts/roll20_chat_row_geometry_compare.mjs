@@ -20,8 +20,14 @@ const rows = [];
 for (const fixtureId of fixtureIds) {
   const localFixture = localSmoke?.fixtures?.find((fixture) => fixture.id === fixtureId);
   const localRows = localFixture?.cardInfo?.templateComputed?.rowMetrics ?? null;
+  const localTemplate = localFixture?.cardInfo?.templateComputed ?? null;
+  const localTable = localTemplate?.computedChildren?.find((child) => child.selector === 'table') ?? null;
   const actualSidecarFile = path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
   const actualSidecar = await readJsonIfExists(actualSidecarFile);
+  const actualTemplate = actualSidecar?.latestTemplate
+    ?? [...(actualSidecar?.rolltemplates ?? [])].reverse().find((template) => template?.rect?.width)
+    ?? null;
+  const actualTable = actualTemplate?.elements?.find((child) => child.selector === 'table') ?? null;
   const actualRows = actualSidecar?.latestTemplate?.rowMetrics
     ?? [...(actualSidecar?.rolltemplates ?? [])].reverse().find((template) => Array.isArray(template?.rowMetrics))?.rowMetrics
     ?? null;
@@ -54,6 +60,7 @@ for (const fixtureId of fixtureIds) {
 
   const maxAbsTopDelta = maxAbs(deltas.map((row) => row.topDelta));
   const maxAbsHeightDelta = maxAbs(deltas.map((row) => row.heightDelta));
+  const maxAbsWidthDelta = maxAbs(deltas.map((row) => row.widthDelta));
   rows.push({
     fixtureId,
     status: 'COMPARED',
@@ -62,6 +69,8 @@ for (const fixtureId of fixtureIds) {
     comparedRows: rowCount,
     maxAbsTopDelta,
     maxAbsHeightDelta,
+    maxAbsWidthDelta,
+    templateMetrics: compareTemplateMetrics(localTemplate, actualTemplate, localTable, actualTable),
     deltas,
   });
 }
@@ -94,6 +103,39 @@ function maxAbs(values) {
   return finite.length ? Math.max(...finite.map((value) => Math.abs(value))) : null;
 }
 
+function compareTemplateMetrics(localTemplate, actualTemplate, localTable, actualTable) {
+  return {
+    templateWidthDelta: delta(localTemplate?.computedStyleNumberWidth ?? numberFromCssPx(localTemplate?.computedStyle?.width), actualTemplate?.rect?.width),
+    templateHeightDelta: delta(numberFromCssPx(localTemplate?.computedStyle?.height), actualTemplate?.rect?.height),
+    tableRectWidthDelta: delta(localTable?.rect?.width, actualTable?.rect?.width),
+    tableScrollWidthDelta: delta(localTable?.boxMetrics?.scrollWidth, actualTable?.boxMetrics?.scrollWidth),
+    tableOffsetWidthDelta: delta(localTable?.boxMetrics?.offsetWidth, actualTable?.boxMetrics?.offsetWidth),
+    styleDeltas: {
+      tableLayout: stylePair(localTable, actualTable, 'tableLayout'),
+      borderCollapse: stylePair(localTable, actualTable, 'borderCollapse'),
+      borderSpacing: stylePair(localTable, actualTable, 'borderSpacing'),
+      fontFamily: stylePair(localTable, actualTable, 'fontFamily'),
+      fontSize: stylePair(localTable, actualTable, 'fontSize'),
+      fontKerning: stylePair(localTable, actualTable, 'fontKerning'),
+      letterSpacing: stylePair(localTable, actualTable, 'letterSpacing'),
+      transform: stylePair(localTable, actualTable, 'transform'),
+      zoom: stylePair(localTable, actualTable, 'zoom'),
+    },
+  };
+}
+
+function stylePair(localElement, actualElement, key) {
+  const local = localElement?.computedStyle?.[key] ?? null;
+  const actual = actualElement?.computedStyle?.[key] ?? null;
+  return local === actual ? null : { local, actual };
+}
+
+function numberFromCssPx(value) {
+  if (typeof value === 'number') return value;
+  const match = String(value ?? '').match(/^-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : null;
+}
+
 function renderMarkdown(runDirLabel, localSmokeLabel, fixtures) {
   const lines = [
     '# Roll20 Chat Row Geometry',
@@ -102,11 +144,11 @@ function renderMarkdown(runDirLabel, localSmokeLabel, fixtures) {
     `Run: \`${runDirLabel}\``,
     `Local smoke: \`${localSmokeLabel}\``,
     '',
-    '| Fixture | Status | Local rows | Actual rows | Compared | Max top delta | Max height delta | Note |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| Fixture | Status | Local rows | Actual rows | Compared | Max top delta | Max height delta | Max width delta | Table width delta | Note |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ];
   for (const fixture of fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.localRowCount ?? ''} | ${fixture.actualRowCount ?? ''} | ${fixture.comparedRows ?? ''} | ${fixture.maxAbsTopDelta ?? ''} | ${fixture.maxAbsHeightDelta ?? ''} | ${fixture.reason ?? ''} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.localRowCount ?? ''} | ${fixture.actualRowCount ?? ''} | ${fixture.comparedRows ?? ''} | ${fixture.maxAbsTopDelta ?? ''} | ${fixture.maxAbsHeightDelta ?? ''} | ${fixture.maxAbsWidthDelta ?? ''} | ${fixture.templateMetrics?.tableRectWidthDelta ?? ''} | ${fixture.reason ?? ''} |`);
   }
   lines.push('');
   lines.push('Rows can only be compared after actual Roll20 chat sidecars are recaptured with rowMetrics.');
