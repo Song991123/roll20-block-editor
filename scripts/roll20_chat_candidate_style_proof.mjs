@@ -104,20 +104,43 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
     return summarizeOverflowWrap(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   if (candidate.name === 'text-auto-aa') {
-    return {
-      fixtureId,
-      status: 'NO_COMPUTED_STYLE_PROOF',
-      finding: 'text-rendering/font-smoothing candidate is not captured by current computed-style sidecars',
-      evidence: [
-        { selector: 'root', key: 'textRendering', localCandidate: null, actual: null },
-      ],
-    };
+    return summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   return {
     fixtureId,
     status: 'UNKNOWN_CANDIDATE',
     finding: `no style-proof rule for ${candidate.name}`,
     evidence: [],
+  };
+}
+
+function summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const keys = ['textRendering', 'webkitFontSmoothing', 'mozOsxFontSmoothing'];
+  const requiredKeys = new Set(['textRendering', 'webkitFontSmoothing']);
+  const evidence = comparableNodes(actualTemplate)
+    .flatMap(({ selector }) => keys.map((key) => ({
+      selector,
+      key,
+      localCandidate: styleValue(candidateTemplate, selector, key),
+      actual: styleValue(actualTemplate, selector, key),
+    })));
+  const requiredEvidence = evidence.filter((item) => requiredKeys.has(item.key));
+  const missingActual = requiredEvidence.filter((item) => item.actual == null).length;
+  const missingLocal = requiredEvidence.filter((item) => item.localCandidate == null).length;
+  if (missingActual || missingLocal) {
+    return {
+      fixtureId,
+      status: 'NO_COMPUTED_STYLE_PROOF',
+      finding: `text-rasterization fields missing from ${missingLocal ? 'local candidate' : ''}${missingLocal && missingActual ? ' and ' : ''}${missingActual ? 'actual Roll20 sidecar' : ''}`,
+      evidence,
+    };
+  }
+  const matches = evidence.filter((item) => sameValue(item.localCandidate, item.actual)).length;
+  return {
+    fixtureId,
+    status: matches === evidence.length ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: `${matches}/${evidence.length} text-rasterization fields match actual Roll20`,
+    evidence,
   };
 }
 

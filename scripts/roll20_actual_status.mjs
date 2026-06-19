@@ -518,6 +518,8 @@ function validateCurrentChatMetrics(fixtureId, domEvidence, file) {
   if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) missing.push('latestTemplate.rowMetrics');
   if (!table?.computedStyle) missing.push('table.computedStyle');
   if (!table?.boxMetrics) missing.push('table.boxMetrics');
+  if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');
+  if (table?.computedStyle && !hasTextRasterizationFields(table.computedStyle)) missing.push('table.computedStyle.textRasterization');
   if (!domEvidence.fontEvidence?.checks) missing.push('fontEvidence.checks');
   if (!domEvidence.viewportEvidence?.devicePixelRatio) missing.push('viewportEvidence.devicePixelRatio');
   return {
@@ -531,6 +533,12 @@ function validateCurrentChatMetrics(fixtureId, domEvidence, file) {
       ? `Roll20 chat DOM sidecar predates current row/typography probe fields: missing ${missing.join(', ')}`
       : 'Roll20 chat DOM sidecar includes current row/typography metrics',
   };
+}
+
+function hasTextRasterizationFields(style) {
+  return Object.prototype.hasOwnProperty.call(style, 'textRendering') &&
+    Object.prototype.hasOwnProperty.call(style, 'webkitFontSmoothing') &&
+    Object.prototype.hasOwnProperty.call(style, 'mozOsxFontSmoothing');
 }
 
 function findTemplateChild(template, selector) {

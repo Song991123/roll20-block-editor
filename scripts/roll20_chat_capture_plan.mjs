@@ -176,7 +176,7 @@ function buildEntry(fixtureId, status, chatParity) {
       'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'If CDP captures the wrong region on a high-DPR Roll20 tab, verify the coordinate space with a debug crop: multiply the CSS template rect by devicePixelRatio, capture the physical PNG, then DPR-correct/downscale it back to the CSS clip size and record captureDprCorrection in the sidecar.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
-      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, fontEvidence, and viewportEvidence.',
+      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, text-rendering/font-smoothing fields, fontEvidence, and viewportEvidence.',
       'Keep screenshot and DOM sidecar timestamps within 5 minutes.',
       'Rerun screenshot diff, chat parity diagnostics, renderer action gate, and status.',
     ],
@@ -210,6 +210,8 @@ function validateCurrentChatMetrics(screenshots) {
   if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) missing.push('latestTemplate.rowMetrics');
   if (!table?.computedStyle) missing.push('table.computedStyle');
   if (!table?.boxMetrics) missing.push('table.boxMetrics');
+  if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');
+  if (table?.computedStyle && !hasTextRasterizationFields(table.computedStyle)) missing.push('table.computedStyle.textRasterization');
   if (!domEvidence.fontEvidence?.checks) missing.push('fontEvidence.checks');
   if (!domEvidence.viewportEvidence?.devicePixelRatio) missing.push('viewportEvidence.devicePixelRatio');
   return {
@@ -218,9 +220,15 @@ function validateCurrentChatMetrics(screenshots) {
     missing,
     templateClass: template?.className ?? '',
     note: missing.length
-      ? `Roll20 chat DOM sidecar predates current row/typography probe fields: missing ${missing.join(', ')}`
-      : 'Roll20 chat DOM sidecar includes current row/typography metrics',
+      ? `Roll20 chat DOM sidecar predates current row/typography/text-rasterization probe fields: missing ${missing.join(', ')}`
+      : 'Roll20 chat DOM sidecar includes current row/typography/text-rasterization metrics',
   };
+}
+
+function hasTextRasterizationFields(style) {
+  return Object.prototype.hasOwnProperty.call(style, 'textRendering') &&
+    Object.prototype.hasOwnProperty.call(style, 'webkitFontSmoothing') &&
+    Object.prototype.hasOwnProperty.call(style, 'mozOsxFontSmoothing');
 }
 
 function findTemplateChild(template, selector) {
@@ -493,6 +501,9 @@ function renderDomProbeSnippet(entry) {
       backgroundSize: style.backgroundSize,
       backgroundPosition: style.backgroundPosition,
       textAlign: style.textAlign,
+      textRendering: style.textRendering,
+      webkitFontSmoothing: style.webkitFontSmoothing,
+      mozOsxFontSmoothing: style.MozOsxFontSmoothing,
       textShadow: style.textShadow,
       whiteSpace: style.whiteSpace,
       wordBreak: style.wordBreak,
