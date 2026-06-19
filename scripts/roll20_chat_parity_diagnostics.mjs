@@ -150,6 +150,7 @@ async function compareFixture(page, fixtureId) {
     actualCrop,
     localSize: diff.localSize,
     actualSize: diff.actualSize,
+    actualSource: diff.actualSource,
     comparedSize: diff.comparedSize,
     mismatchRatio: diff.mismatchRatio,
     mismatchPct: pct(diff.mismatchRatio),
@@ -336,10 +337,10 @@ function renderMarkdown(report) {
   lines.push(`Max mismatch: ${pct(report.summary.maxMismatchRatio)}`);
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
   lines.push('');
-  lines.push('| Fixture | Status | Mode | Actual CSS | Local | Actual | Rolltemplates | Local size | Actual size | Mismatch | RMS | Note |');
-  lines.push('| --- | --- | --- | --- | --- | --- | ---: | --- | --- | ---: | ---: | --- |');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Local | Actual | Rolltemplates | Local size | Actual PNG | Actual source | Compared | Mismatch | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | ---: | ---: | --- |');
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} | ${fixture.actualSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} | ${fixture.actualSize?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');
