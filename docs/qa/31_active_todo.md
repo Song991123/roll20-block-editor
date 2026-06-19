@@ -14,6 +14,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 actual-status note, 2026-06-19 reliable full-root accounting:
+`status:roll20-actual` now separates raw trusted full-root files from reliable trusted full-root evidence. AW2E still has a root-cutoff HIGH diagnostic, so the latest status prints `trustedFullRoot=3/3`, `reliableTrustedFullRoot=2/3`, and `trustedFullRootCutoffRisk=1`. This prevents stale/cutoff root evidence from being mistaken for renderer readiness. Renderer remains HOLD and `rendererReady=NO`.
 Current Roll20 renderer note, 2026-06-19 scroll-metrics geometry candidate selection:
 `smoke:roll20-full-root-candidates` now uses the geometry-best candidate, not merely the root-height closest candidate, when producing `targetGeometry`; root-height ties are broken by geometry score before pixel mismatch. Latest AW2E scroll-metrics warning now reports `sandbox-source-state` rootDelta +8.188px, panelY +16.6px, panelH +0.2px, and chosen state panels maxYDelta 16.6px instead of the earlier inflated 552.6px from a worse attr-class candidate. Renderer remains HOLD because pixel-best still over-hides and the old trusted stitched root still disagrees with the live sidecar root.
 Current Roll20 renderer note, 2026-06-19 Roll20 chrome selector scoping:

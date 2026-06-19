@@ -1,3 +1,8 @@
+## 2026-06-19 Reliable Full-Root Status Accounting
+
+- Updated `scripts/roll20_actual_status.mjs` to read root-cutoff diagnostics and discount high-risk stitched roots from reliable renderer readiness.
+- Latest status now reports `trustedFullRoot=3/3`, `reliableTrustedFullRoot=2/3`, and `trustedFullRootCutoffRisk=1` for the active Roll20 actual run.
+- This is a reporting/guardrail fix: it prevents stale/cutoff root evidence from looking production-ready while AW2E still needs authoritative full-root promotion or recapture.
 ## 2026-06-19 Scroll Metrics Geometry Candidate Selection
 
 - Adjusted `scripts/roll20_full_root_candidate_smoke.mjs` so target geometry reporting prefers `bestGeometryCandidate` before root-height-only candidates.

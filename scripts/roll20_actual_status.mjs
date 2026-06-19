@@ -63,6 +63,7 @@ async function main() {
   const diffReport = await readDiff(runDir);
   const blockerEvidence = await readBlockerEvidence(runDir);
   const rootStitchAudit = await readRootStitchAudit(runDir);
+  const rootCutoff = await readRootCutoff(runDir);
   const rendererAction = await readRendererAction(runDir);
   const fixtures = [];
   for (const fixtureId of await listFixtureIds(baselineDir)) {
@@ -91,8 +92,13 @@ async function main() {
   const trustedFullRootComplete =
     rootStitchAudit.fixtureCount > 0 &&
     rootStitchAudit.trustedFullRootCount === rootStitchAudit.fixtureCount;
+  const cutoffRiskFixtureIds = new Set(rootCutoff.highRiskFixtures.map((fixture) => fixture.fixtureId));
+  const reliableTrustedFullRootCount = Math.max(0, rootStitchAudit.trustedFullRootCount - cutoffRiskFixtureIds.size);
+  const reliableTrustedFullRootComplete =
+    rootStitchAudit.fixtureCount > 0 &&
+    reliableTrustedFullRootCount === rootStitchAudit.fixtureCount;
   const rendererReady =
-    trustedFullRootComplete &&
+    reliableTrustedFullRootComplete &&
     rendererAction.exists &&
     rendererAction.action !== 'HOLD_PRODUCTION_RENDERER_PATCH' &&
     rendererAction.action !== 'MISSING_RENDERER_ACTION_GATE';
@@ -142,6 +148,9 @@ async function main() {
       trustedFullRootCount: rootStitchAudit.trustedFullRootCount,
       trustedFullRootTotal: rootStitchAudit.fixtureCount,
       trustedFullRootMissing: rootStitchAudit.missingTrustedFixtures,
+      trustedFullRootCutoffRiskCount: rootCutoff.highRiskFixtures.length,
+      reliableTrustedFullRootCount,
+      reliableTrustedFullRootComplete,
       rendererAction: rendererAction.action,
       rendererBlockerCount: rendererAction.blockerCount,
       trustedFullRootComplete,
@@ -149,6 +158,7 @@ async function main() {
     },
     blockerEvidence,
     rootStitchAudit,
+    rootCutoff,
     rendererAction,
     fixtures,
     nextAction: buildNextAction({
@@ -160,6 +170,7 @@ async function main() {
       observationTargetCount,
       blockerEvidence,
       rootStitchAudit,
+      rootCutoff,
       rendererAction,
     }),
   };
@@ -273,6 +284,32 @@ async function readRootStitchAudit(runDir) {
         fixtureId: fixture.fixtureId,
         status: fixture.status ?? 'MISSING',
         primaryIssue: fixture.primaryIssue ?? '',
+      })),
+  };
+}
+
+async function readRootCutoff(runDir) {
+  const file = path.join(runDir, 'root-cutoff-diagnostics', 'root-cutoff-diagnostics-results.json');
+  if (!existsSync(file)) {
+    return {
+      exists: false,
+      file: rel(file),
+      highRiskFixtures: [],
+      note: 'missing root cutoff diagnostic report',
+    };
+  }
+  const report = JSON.parse(await fs.readFile(file, 'utf8'));
+  const fixtures = Array.isArray(report.fixtures) ? report.fixtures : [];
+  return {
+    exists: true,
+    file: rel(file),
+    highRiskFixtures: fixtures
+      .filter((fixture) => fixture.cutoff?.risk === 'HIGH')
+      .map((fixture) => ({
+        fixtureId: fixture.fixtureId,
+        stitchedHeight: fixture.stitchedRoot?.height ?? null,
+        sidecarHeight: fixture.sidecarRoot?.height ?? null,
+        heightDelta: fixture.cutoff?.heightDelta ?? null,
       })),
   };
 }
@@ -496,6 +533,7 @@ function buildNextAction({
   observationTargetCount,
   blockerEvidence,
   rootStitchAudit,
+  rootCutoff,
   rendererAction,
 }) {
   if (!preupload.pass) {
@@ -506,6 +544,12 @@ function buildNextAction({
     const missing = missingIds.join(', ');
     const fixtureArg = missingIds.length === 1 ? ` ${missingIds[0]}` : '';
     return `Run corepack pnpm run plan:roll20-root-capture -- ${rel(path.resolve(runDirFromReport(rootStitchAudit.file)))}${fixtureArg}, then capture trusted DPR-corrected full-root Roll20 evidence for ${missing} and rerun root stitch audit, screenshot diff, full-root candidate smoke, and renderer action gate.`;
+  }
+  if (rootCutoff.exists && rootCutoff.highRiskFixtures.length > 0) {
+    const fixtures = rootCutoff.highRiskFixtures
+      .map((fixture) => `${fixture.fixtureId} stitched=${fixture.stitchedHeight} sidecar=${fixture.sidecarHeight}`)
+      .join('; ');
+    return `Trusted full-root files exist, but root cutoff diagnostics mark them unreliable for ${fixtures}. Promote or recapture an authoritative full-root source before treating renderer output as ready.`;
   }
   if (generatedPresentCount < generatedTargetCount) {
     if (blockerEvidence.length > 0) {
@@ -565,6 +609,7 @@ function renderMarkdown(report) {
     `- Solo-room observation screenshots: ${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
     `- Solo-room observation diffs: ${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
     `- Trusted full-root evidence: ${report.summary.trustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
+    `- Reliable trusted full-root evidence: ${report.summary.reliableTrustedFullRootCount}/${report.summary.trustedFullRootTotal} (cutoff risk: ${report.summary.trustedFullRootCutoffRiskCount})`,
     `- Renderer action: ${report.summary.rendererAction} (${report.summary.rendererBlockerCount} blockers)`,
     `- Renderer ready for production CSS: ${report.summary.rendererReady ? 'yes' : 'NO'}`,
     `- All actual screenshots: ${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
@@ -630,6 +675,8 @@ function renderConsoleSummary(report, outDir) {
     `roomObservationScreenshots=${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
     `roomObservationDiffed=${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
     `trustedFullRoot=${report.summary.trustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
+    `reliableTrustedFullRoot=${report.summary.reliableTrustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
+    `trustedFullRootCutoffRisk=${report.summary.trustedFullRootCutoffRiskCount}`,
     `rendererAction=${report.summary.rendererAction}`,
     `rendererBlockers=${report.summary.rendererBlockerCount}`,
     `rendererReady=${report.summary.rendererReady ? 'YES' : 'NO'}`,
