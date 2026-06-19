@@ -1435,3 +1435,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_renderer_action_gate.mjs` to read `diagnosticBestCandidate`, print it as a `WARNING`, and keep trusted renderer blockers unchanged.
 - Latest gate remains `HOLD_PRODUCTION_RENDERER_PATCH`: AW2E has only diagnostic full-root comparison, trusted full-root evidence remains 2/3 fixtures, and patch-family agreement is still missing.
 - Claim boundary: this expands root-cause visibility without making any visual parity or production renderer claim.
+
+## 2026-06-19 AW2E Long Diagnostic Full-Root Capture
+
+- Reclaimed the dedicated Roll20 Sandbox editor tab that exposes AW2E controls through the visible DOM and captured a longer ignored local segment set, `aw2e-long-scroll-segment-00..37.jpg`, from the visible iframe area.
+- The long overlap diagnostic stitched to `aw2e-long-overlap-stitch-diagnostic.png` at `720x12062` from 38 segments. The last captured segment repeated, so the scroll likely reached the bottom of the visible Roll20 sheet viewport.
+- Rerunning `smoke:roll20-full-root-candidates` changed AW2E from `sandbox-text-input-270-source` at `7.93%` / root delta `+10398.063px` to `normal-actual-root-width-source` at `8.87%` / root delta `+1726.938px`.
+- Interpretation: the earlier 10-segment diagnostic was too short. The remaining 1726px height gap is still too large for renderer CSS work and likely needs trusted DPR-corrected capture, better coverage validation, or default/hidden-state investigation.
+- Updated `scripts/roll20_renderer_action_gate.mjs` so large diagnostic root-height deltas create an explicit next action. Latest gate remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: this is stronger actual Roll20 diagnostic evidence, not visual parity and not trusted full-root evidence.

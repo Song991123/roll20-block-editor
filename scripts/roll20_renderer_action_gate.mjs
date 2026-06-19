@@ -199,6 +199,13 @@ function recommend(fixtures, status) {
   if (missingFullRootCandidates.length) {
     nextActions.push(`Capture or stitch DPR-corrected full-root evidence, then rerun root-stitch audit and full-root candidate smoke for ${missingFullRootCandidates.map((fixture) => fixture.fixtureId).join(', ')}.`);
   }
+  const largeDiagnosticRootDeltas = fixtures.filter((fixture) => {
+    const delta = fixture.diagnosticBestCandidate?.rootHeightDelta;
+    return typeof delta === 'number' && Math.abs(delta) > 1000;
+  });
+  if (largeDiagnosticRootDeltas.length) {
+    nextActions.push(`Resolve large diagnostic root-height deltas before CSS work: ${largeDiagnosticRootDeltas.map((fixture) => `${fixture.fixtureId} ${num(fixture.diagnosticBestCandidate.rootHeightDelta)}px`).join(', ')}. Check whether capture coverage or Roll20 default/hidden state differs from local render.`);
+  }
   if (patchFamilies.size > 1) {
     nextActions.push('Compare the differing diagnostic patch families before promoting CSS: current fixtures do not agree on one generic renderer fix.');
   }
