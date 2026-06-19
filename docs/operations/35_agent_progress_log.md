@@ -1571,3 +1571,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest AW2E evidence: actual checked value is `Hardholder`, actual visible panel count is `15`, and `24` checked show selectors are unprefixed while the emitted/Roll20 HTML class shape is `sheet-` prefixed.
 - `scripts/roll20_renderer_action_gate.mjs` now reads this report and surfaces the result as root-cause evidence while keeping production renderer CSS on HOLD.
 - Claim boundary: this explains the AW2E default-state/selector mismatch more precisely. It does not prove Roll20 visual parity and does not authorize blanket `sheet-` alias CSS or forced checked-state patches.
+
+## 2026-06-19 AW2E Actual-Visible Candidate Probe
+
+- Updated `scripts/roll20_full_root_candidate_smoke.mjs` to read the local ignored attr-class visibility diagnostic and add actual-sidecar-based candidates.
+- Added two diagnostic-only paths: explicit display of actual visible target classes after playbook hide aliasing, and forced attr_class values from actual visible/checked lists.
+- Latest AW2E full-root result: actual-visible explicit candidate is `9.04%` mismatch with root delta `+1310.5px`; actual-visible forced checked is `9.06%` / `+1310.5px`; actual-visible-plus-checked is `9.02%` / `+1861.5px`.
+- The height-closest candidate remains `sandbox-sheet-alias-attr-class-state-first-13-source` at root delta `+208.5px`; pixel-best remains over-hidden `sandbox-sheet-alias-playbook-hide-source` at `7.22%` and `-6636.125px`.
+- Claim boundary: actual display-visible panel names are not sufficient to model AW2E Roll20 default state. This is diagnostic evidence only and still keeps renderer action on HOLD.

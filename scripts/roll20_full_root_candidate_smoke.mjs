@@ -117,6 +117,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     i18n: await readMaybe(path.join(payloadDir, 'translation.json')),
   };
   const attrClassValues = collectInputValues(payload.html, 'attr_class');
+  const attrClassVisibility = await readAttrClassVisibilityDiagnostic(fixtureId);
   const stateProbeValues = deriveAttrClassStateProbeValues({ payload, stateCandidate, maxCount: 14 });
 
   const context = await browser.newContext({ viewport: { width: Math.max(1200, Math.round((actualRootWidth ?? 900) + 80)), height: 900 } });
@@ -157,7 +158,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         { id: 'sandbox-sheet-alias-control-state-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'control-state-only', rootWidth: actualRootWidth } },
         { id: 'sandbox-sheet-alias-playbook-state-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth } },
       );
-      candidateInputs.push(...buildAttrClassStateCandidateInputs({ actualRootWidth, stateProbeValues }));
+      candidateInputs.push(...buildAttrClassStateCandidateInputs({ actualRootWidth, stateProbeValues, attrClassVisibility }));
     }
     for (const input of candidateInputs) {
       candidates.push(await renderCandidate({
@@ -210,6 +211,13 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
       stateHint: summarizeStateCandidate(stateCandidate),
       attrClassValues: attrClassValues.slice(0, 50),
       derivedStateProbeValues: stateProbeValues,
+      actualAttrClassVisibility: attrClassVisibility
+        ? {
+            checkedValues: attrClassVisibility.checkedValues,
+            visiblePanelValueNames: attrClassVisibility.visiblePanelValueNames,
+            selectorMismatchCount: attrClassVisibility.selectorMismatchCount,
+          }
+        : null,
     },
     baselineReference,
     bestCandidate: actualEvidence.diagnosticOnly ? null : bestCandidate,
@@ -552,7 +560,7 @@ async function applyRenderContextPatch(page, patch, payload = null) {
       if (patch.forceAttrClass || patch.forceAttrClasses) forceAttrClass(patch.forceAttrClasses || patch.forceAttrClass);
       const style = document.createElement('style');
       style.setAttribute('data-r20-diagnostic-context-patch', 'sheet-class-alias-css');
-      style.textContent = aliasCss;
+      style.textContent = [aliasCss, buildExplicitDisplayCss(patch.explicitDisplayClasses)].filter(Boolean).join('\n');
       document.head.append(style);
     } else if (patch.mode === 'sheet-class-alias-text-input-height') {
       dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
@@ -581,6 +589,20 @@ async function applyRenderContextPatch(page, patch, payload = null) {
           else node.removeAttribute('checked');
         }
       });
+    }
+    function buildExplicitDisplayCss(classNames) {
+      const classes = Array.isArray(classNames)
+        ? classNames.map((item) => String(item || '').trim()).filter(Boolean)
+        : [];
+      if (!classes.length) return '';
+      const selectors = classes.map((className) => {
+        const sheetClass = className.startsWith('sheet-') ? className : `sheet-${className}`;
+        return `.ui-dialog .charsheet .${CSS.escape(sheetClass)}`;
+      });
+      return [
+        '/* diagnostic only: explicitly display actual Roll20 attr_class-visible target classes */',
+        `${selectors.join(', ')} { display: block !important; }`,
+      ].join('\n');
     }
   }, { patch, aliasCss });
 }
@@ -695,9 +717,80 @@ function splitSelectorList(selectorText) {
   return parts.filter(Boolean);
 }
 
-function buildAttrClassStateCandidateInputs({ actualRootWidth, stateProbeValues }) {
+async function readAttrClassVisibilityDiagnostic(fixtureId) {
+  const file = path.join(runDir, 'attr-class-visibility-diagnostics', 'attr-class-visibility-diagnostics-results.json');
+  if (!existsSync(file)) return null;
+  const report = await readJsonIfExists(file);
+  const fixture = (report?.fixtures ?? []).find((item) => item.fixtureId === fixtureId);
+  if (!fixture?.actualSummary) return null;
+  const visiblePanelValueNames = (fixture.actualSummary.visiblePanelValueNames ?? [])
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  const checkedValues = (fixture.actualSummary.checkedValues ?? [])
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  if (!visiblePanelValueNames.length && !checkedValues.length) return null;
+  return {
+    checkedValues,
+    visiblePanelValueNames,
+    visibleTargetClasses: (fixture.selectorRows ?? [])
+      .filter((row) => row.actual?.visiblePanel)
+      .map((row) => String(row.targetClass || '').trim())
+      .filter(Boolean),
+    selectorMismatchCount: fixture.selectorSummary?.selectorMismatchCount ?? 0,
+    checkedVisibleContradiction: Boolean(fixture.actualSummary.checkedVisibleContradiction),
+  };
+}
+
+function buildAttrClassStateCandidateInputs({ actualRootWidth, stateProbeValues, attrClassVisibility = null }) {
   if (!actualRootWidth || !stateProbeValues?.values?.length) return [];
   const inputs = [];
+  const actualVisibleValues = filterKnownAttrClassValues(attrClassVisibility?.visiblePanelValueNames ?? [], stateProbeValues.values);
+  const actualCheckedValues = filterKnownAttrClassValues(attrClassVisibility?.checkedValues ?? [], stateProbeValues.values);
+  const actualVisibleTargetClasses = uniqueStrings(attrClassVisibility?.visibleTargetClasses ?? []);
+  if (actualVisibleTargetClasses.length) {
+    inputs.push({
+      id: 'sandbox-sheet-alias-attr-class-actual-visible-explicit-source',
+      roll20SandboxSanitize: true,
+      applyStateHint: false,
+      contextPatch: {
+        mode: 'sheet-class-alias-css',
+        aliasMode: 'playbook-hide-only',
+        rootWidth: actualRootWidth,
+        explicitDisplayClasses: actualVisibleTargetClasses,
+        attrClassVisibilitySource: 'actual-visible-explicit',
+      },
+    });
+  }
+  if (actualVisibleValues.length) {
+    inputs.push({
+      id: 'sandbox-sheet-alias-attr-class-actual-visible-source',
+      roll20SandboxSanitize: true,
+      applyStateHint: false,
+      contextPatch: {
+        mode: 'sheet-class-alias-css',
+        aliasMode: 'playbook-state-only',
+        rootWidth: actualRootWidth,
+        forceAttrClasses: actualVisibleValues,
+        attrClassVisibilitySource: 'actual-visible-panels',
+      },
+    });
+  }
+  const actualVisiblePlusChecked = mergeKnownAttrClassValues(actualVisibleValues, actualCheckedValues, stateProbeValues.values);
+  if (actualVisiblePlusChecked.length && actualVisiblePlusChecked.length !== actualVisibleValues.length) {
+    inputs.push({
+      id: 'sandbox-sheet-alias-attr-class-actual-visible-plus-checked-source',
+      roll20SandboxSanitize: true,
+      applyStateHint: false,
+      contextPatch: {
+        mode: 'sheet-class-alias-css',
+        aliasMode: 'playbook-state-only',
+        rootWidth: actualRootWidth,
+        forceAttrClasses: actualVisiblePlusChecked,
+        attrClassVisibilitySource: 'actual-visible-plus-checked',
+      },
+    });
+  }
   if (stateProbeValues.primaryValue) {
     inputs.push({
       id: `sandbox-sheet-alias-attr-class-state-${slug(stateProbeValues.primaryValue)}-source`,
@@ -727,6 +820,35 @@ function buildAttrClassStateCandidateInputs({ actualRootWidth, stateProbeValues 
     });
   }
   return inputs;
+}
+
+function filterKnownAttrClassValues(values, knownValues) {
+  const bySlug = new Map(knownValues.map((value) => [slug(value), value]));
+  const out = [];
+  const seen = new Set();
+  for (const value of values) {
+    const known = bySlug.get(slug(value));
+    if (!known || seen.has(known)) continue;
+    out.push(known);
+    seen.add(known);
+  }
+  return out;
+}
+
+function mergeKnownAttrClassValues(left, right, knownValues) {
+  return filterKnownAttrClassValues([...left, ...right], knownValues);
+}
+
+function uniqueStrings(values) {
+  const out = [];
+  const seen = new Set();
+  for (const value of values) {
+    const text = String(value || '').trim();
+    if (!text || seen.has(text)) continue;
+    out.push(text);
+    seen.add(text);
+  }
+  return out;
 }
 
 function deriveAttrClassStateProbeValues({ payload, stateCandidate, maxCount = 14 }) {
@@ -1153,6 +1275,7 @@ function summarizeComponentEffects(candidates) {
   const trackedCandidates = [
     ...trackedIds.map((id) => byId.get(id)).filter(Boolean),
     ...candidates.filter((candidate) => candidate.id.includes('sandbox-sheet-alias-attr-class-state')),
+    ...candidates.filter((candidate) => candidate.id.includes('sandbox-sheet-alias-attr-class-actual')),
   ];
   const seen = new Set();
   return trackedCandidates
@@ -1187,7 +1310,9 @@ function formatRenderContextPatch(patch) {
       : patch.forceAttrClass
         ? `:${patch.forceAttrClass}`
         : '';
-    return `${patch.mode}:${patch.aliasMode}${forced}`;
+    const explicit = patch.explicitDisplayClasses?.length ? `:${patch.explicitDisplayClasses.length}-explicit` : '';
+    const source = patch.attrClassVisibilitySource ? `:${patch.attrClassVisibilitySource}` : '';
+    return `${patch.mode}:${patch.aliasMode}${forced}${explicit}${source}`;
   }
   if (patch.mode === 'row-width-fudge') return `${patch.mode}:${patch.extraWidth}px`;
   if (patch.mode === 'actual-root-width' && typeof patch.rootWidth === 'number') return `${patch.mode}:${patch.rootWidth}px`;
