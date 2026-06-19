@@ -1529,3 +1529,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest AW2E evidence: pixel best is still `sandbox-sheet-alias-playbook-hide-source` at `7.22%`, but it is far too short (`850x2532`, root delta `-6636.125px`). The closest-height candidate is `sandbox-sheet-alias-playbook-state-through-quarantine-source` at `850x9377`, root delta `+208.5px`; `through-news` is `850x8844`, root delta `-324.5px`.
 - Interpretation: AW2E actual Roll20 likely has roughly 12-13 playbook sections visible. This points to default/state modeling, not a generic renderer CSS patch.
 - Claim boundary: this is still local diagnostic evidence against trusted actual screenshots. It does not prove visual parity and renderer action remains HOLD.
+## 2026-06-19 Playbook State Diagnostic Automation
+
+- Added `scripts/roll20_playbook_state_diagnostics.mjs` and package command `diagnose:roll20-playbook-state` to summarize playbook/default-state candidates from full-root smoke output.
+- The report separates pixel-best from height-closest candidates so a visually lower mismatch cannot be mistaken for a structurally correct default state.
+- Latest `2026-06-18-state-map-v1` result: AW2E has `playbookSignal=YES`; Les-Oublies and YSHY have `playbookSignal=NO` and should not be interpreted through AW2E playbook heuristics.
+- AW2E pixel-best remains `sandbox-sheet-alias-playbook-hide-source` at `7.22%`, but it is far too short (`-6636.125px`). Height-closest is `sandbox-sheet-alias-playbook-state-through-quarantine-source` at root delta `+208.5px`, making it the next default-state probe target.
+- Claim boundary: this is derived diagnostic evidence only. It does not prove Roll20 visual parity, and renderer action remains HOLD.

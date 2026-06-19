@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 playbook-state diagnostic automation:
+Added `scripts/roll20_playbook_state_diagnostics.mjs` and `corepack pnpm run diagnose:roll20-playbook-state -- reports\roll20-actual-compare\2026-06-18-state-map-v1`. Latest report marks AW2E `playbookSignal=YES` while Les-Oublies/YSHY are `NO`. AW2E pixel-best and height-closest candidates disagree: pixel best is `sandbox-sheet-alias-playbook-hide-source` (`7.22%`, root `-6636.125px`), height closest is `sandbox-sheet-alias-playbook-state-through-quarantine-source` (`8.98%`, root `+208.5px`). This is a default/playbook state probe target, not visual parity or renderer readiness. Renderer remains HOLD.
+
 Current Roll20 renderer note, 2026-06-19 AW2E playbook state height probe:
 `smoke:roll20-full-root-candidates` now records a separate `closestRootHeightCandidate`. AW2E pixel best remains `sandbox-sheet-alias-playbook-hide-source` at `7.22%`, but it is structurally wrong (`850x2532`, root delta `-6636.125px`). The closest height candidate is `sandbox-sheet-alias-playbook-state-through-quarantine-source`, with `850x9377` and root delta `+208.5px`; `through-news` is `850x8844` / `-324.5px`. This strongly suggests AW2E actual Roll20 state is around 12-13 playbook sections visible, not all visible and not only Hardholder. Next P0: capture/derive actual Roll20 playbook/default attr state before any renderer CSS promotion.
 
