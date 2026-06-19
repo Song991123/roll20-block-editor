@@ -1,3 +1,14 @@
+## 2026-06-20 Custom Rolltemplate App-Class Leak Removed
+
+- Removed app UI wrapper classes from imported/custom rolltemplate card roots in `components/editor/ChatPane.tsx`.
+- Custom rolltemplate bodies now mount with `sheet-rolltemplate-*` only, so Tailwind `text-xs` and the app fallback card class no longer directly override the custom template root.
+- Kept the previous app card styling only for the generated fallback rolltemplate body, where there is no imported custom Roll20 template to preserve.
+- Verification: production build passed; `rolltemplate_chat_smoke` still passed for AW2E, Les-Oublies, and YSHY.
+- Diagnostics after the change: chat parity remains `HIGH_MISMATCH` with authoritative normalized high mismatch `2/3` and max aligned mismatch `21.45%`.
+- Current raw crop mismatches: AW2E `7.09%`, Les-Oublies `18.38%`, YSHY `24.84%`.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`; this patch fixes a real CSS isolation bug but does not prove Roll20 visual parity.
+- Next P0: continue with a narrower per-template chat renderer model rather than global ChatPane width/font/paint CSS.
+
 ## 2026-06-20 Cell Metrics Candidate Rejected
 
 - Added hidden diagnostic-only ChatPane typography policy `roll20-cell-metrics`.

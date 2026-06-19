@@ -453,15 +453,18 @@ function CardRolltemplate({
         anyFumble: result.anyFumble,
       }, translations)
     : defaultRolltemplateBody(result);
+  const rolltemplateClassName = customBody
+    ? safeRolltemplateClass(result.templateName)
+    : [
+        'rt-card text-xs',
+        safeRolltemplateClass(result.templateName),
+        'rounded border border-[#c8c8c8] bg-white p-2 text-[#222]',
+      ].join(' ');
 
   return (
     <div>
       <div
-        className={[
-          'rt-card text-xs',
-          safeRolltemplateClass(result.templateName),
-          customBody ? '' : 'rounded border border-[#c8c8c8] bg-white p-2 text-[#222]',
-        ].join(' ')}
+        className={rolltemplateClassName}
         dangerouslySetInnerHTML={{ __html: innerHtml }}
       />
       {result.anyCrit && (

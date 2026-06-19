@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - Custom rolltemplate app class leak removed
+
+Status: PARTIAL. A real app-CSS leak in ChatPane custom rolltemplate roots was removed, but Roll20 chat/template visual parity is still blocked.
+
+- DONE: `components/editor/ChatPane.tsx` now renders imported/custom rolltemplate bodies with only the Roll20-style `sheet-rolltemplate-*` class on the template root.
+- DONE: The app fallback card classes (`rt-card text-xs rounded ...`) remain only for generated/default fallback rolltemplates that have no imported custom body.
+- RESULT: Functional local rolltemplate smoke still PASSes all 3 prepared fixtures.
+- RESULT: Updated chat parity remains `HIGH_MISMATCH`: authoritative normalized high mismatch `2/3`, max aligned mismatch `21.45%`.
+- RESULT: Raw current mismatches are AW2E `7.09%`, Les-Oublies `18.38%`, YSHY `24.84%`; aligned policy evidence still reports Les-Oublies `12.98%` and YSHY `21.45%` as blockers.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; removing the app class leak is correct isolation work, not a sufficient renderer fix.
+- VERIFIED: `corepack pnpm run build`, `rolltemplate_chat_smoke`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-style`, `diagnose:roll20-chat-shell-geometry`, `diagnose:roll20-chat-font-cell`, `diagnose:roll20-chat-renderer-policy`, `diagnose:roll20-chat-residual`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build a narrower per-template chat renderer model. Current evidence splits Les-Oublies toward shadow/border/rasterization and YSHY toward geometry/width conflict; do not promote one global ChatPane CSS patch.
+
 ## 2026-06-20 Codex Update - Cell metrics candidate rejected
 
 Status: PARTIAL. Roll20 chat/template parity is still blocked; a narrow cell metrics hypothesis was tested and rejected.
