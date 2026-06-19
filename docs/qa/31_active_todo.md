@@ -7,6 +7,7 @@ Status: PARTIAL. Roll20 chat/template parity is still NOT done, but the YSHY mis
 - DECISION: Do not promote the shell/root-font candidate yet. The live style mismatch is real, but pixel parity needs a narrower fix that does not regress AW2E/YSHY aligned crops.
 - FOLLOW-UP RESULT: Added diagnostic-only `--chat-shadow-policy no-template-shadow`. This reduced YSHY raw/aligned mismatch from `28.36%/22.46%` to `27.09%/21.14%` while AW2E and Les-Oublies stayed at `12.78%/7.49%` and `10.09%/9.14%`.
 - DECISION: Keep shadow suppression diagnostic-only. Actual Roll20 computed style still has the 16-layer dark text-shadow, so this is evidence that local shadow/font compositing contributes to the dark-pixel gap, not a production-safe renderer patch.
+- REJECTED: A `soft-template-shadow` candidate reduced YSHY similarly (`27.11%` raw) but regressed AW2E and Les-Oublies (`14.98%`, `11.44%`) and raised aligned high mismatch from `1/3` to `2/3`. It was not kept.
 - DONE: Added luma/row/column mismatch breakdown to `diagnose:roll20-chat-parity` so chat diffs are not only a single percentage. The markdown table now includes bright mismatch share, dark mismatch share, and worst row band.
 - DONE: Added diagnostic-only `__r20ChatTextPolicy=roll20-auto-aa` support in ChatPane and `rolltemplate_chat_smoke --chat-text-policy roll20-auto-aa`.
 - RESULT: `roll20-auto-aa` did not change the current local-vs-actual PNG mismatch numbers. Default and candidate both report AW2E `12.78%/7.49%`, Les-Oublies `10.09%/9.14%`, and YSHY `28.36%/22.46%` raw/aligned.

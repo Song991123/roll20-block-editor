@@ -8,6 +8,7 @@ Status: PARTIAL. This batch improves diagnosis and rejects another unsafe produc
 - Added diagnostic-only `__r20ChatShadowPolicy=no-template-shadow` plus `rolltemplate_chat_smoke --chat-shadow-policy no-template-shadow`.
 - Shadow suppression improved only YSHY: raw/aligned `28.36%/22.46% -> 27.09%/21.14%`. AW2E and Les-Oublies stayed unchanged at `12.78%/7.49%` and `10.09%/9.14%`.
 - Decision: keep the shadow switch diagnostic-only because actual Roll20 computed style still includes the dark 16-layer text-shadow. This narrows root cause toward local shadow/font compositing rather than a missing user CSS rule.
+- Tested and rejected a `soft-template-shadow` candidate. It kept YSHY near the no-shadow result (`27.11%` raw) but regressed AW2E/Les-Oublies and increased aligned high mismatch to `2/3`, so the code was reverted and only the existing no-shadow diagnostic remains.
 - Added breakdown fields to `scripts/roll20_chat_parity_diagnostics.mjs`: row bands, column bands, and luma buckets for raw and best-aligned comparison. This makes it possible to distinguish text/highlight mismatch from broad background mismatch.
 - Added diagnostic-only `__r20ChatTextPolicy=roll20-auto-aa` in `components/editor/ChatPane.tsx` and `--chat-text-policy roll20-auto-aa` in `scripts/rolltemplate_chat_smoke.mjs`. The smoke markdown now records both chat font policy and chat text policy.
 - Rebuilt, regenerated default local chat smoke, generated the text-AA candidate smoke, and compared both against the same Roll20 actual evidence.
