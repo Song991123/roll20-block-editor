@@ -219,6 +219,18 @@ function renderSnippet({ fixtureId, payload, validation }) {
     if (!input) return { selector, status: 'missing' };
     const transfer = new DataTransfer();
     transfer.items.add(new File([bytesFromBase64(item.base64)], item.name, { type }));
+    const result = {
+      selector,
+      status: 'pending',
+      fileName: item.name,
+      transferFiles: transfer.files.length,
+      beforeAssignFiles: input.files?.length ?? 0,
+      afterAssignFiles: 0,
+      beforeDispatchFiles: 0,
+      afterDispatchFiles: 0,
+      afterWaitFiles: 0,
+      clearedAfterDispatch: false,
+    };
     try {
       input.files = transfer.files;
     } catch {
@@ -233,13 +245,21 @@ function renderSnippet({ fixtureId, payload, validation }) {
     if (!input.files?.length) {
       Object.defineProperty(input, 'files', {
         configurable: true,
-        value: transfer.files,
+        get: () => transfer.files,
       });
     }
+    result.afterAssignFiles = input.files?.length ?? 0;
+    result.beforeDispatchFiles = input.files?.length ?? 0;
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
+    result.afterDispatchFiles = input.files?.length ?? 0;
     await sleep(1200);
-    return { selector, status: input.files?.length ? 'dispatched' : 'no-file-on-input', fileName: input.files?.[0]?.name ?? null };
+    result.afterWaitFiles = input.files?.length ?? 0;
+    result.clearedAfterDispatch = result.beforeDispatchFiles > 0 && result.afterWaitFiles === 0;
+    result.status = result.beforeDispatchFiles > 0
+      ? 'dispatched'
+      : 'no-file-on-input';
+    return result;
   };
   const setManifest = () => {
     const rawText = new TextDecoder().decode(bytesFromBase64(DATA.payload.manifest.base64));

@@ -1,4 +1,16 @@
 
+## 2026-06-19 Codex Update - YSHY actual Roll20 chat recapture completed
+
+Status: PARTIAL overall, but DONE for the missing YSHY generated chat evidence.
+
+- Ran the generated YSHY Roll20 upload fallback in the dedicated `Codex Roll20 Verify` Sandbox editor via CDP. Local validation remained PASS: `translation.json` object with 399 keys, `sheet.json` PASS, settings manifest wrapper PASS.
+- Confirmed the Sandbox character iframe changed to the YSHY/CoC Korean sheet after upload by reading visible sheet text such as `근력`, `민첩`, `정신`, `기준치`, and Korean skill rows.
+- Clicked a real YSHY roll control (`roll_str_check` candidate after confirming duplicate count) and confirmed Roll20 chat changed from messages `9` to `10`, rolltemplates `1` to `2`.
+- Captured fresh ignored local-only `roll20-chat.png` and `roll20-chat-dom-evidence.json` for `yshy-commission-1bu`; normalized `latestTemplate/latestMessage` after browser serialization repeated object references.
+- Actual status improved to `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`: generated actual screenshots `6/6`, generated diffs `6/6`.
+- Renderer gate remains HOLD, but blockers dropped to 3: Les-Oublies still needs normalized rolltemplate crop metadata, actual Roll20 chat crop differs from local ChatPane for 2/2 normalized fixtures (max `98.31%`), and diagnostic renderer patch is not uniform across fixtures.
+- Next P0: recapture or normalize `official-roll20-Les-Oublies` chat DOM sidecar so chat parity becomes normalized `3/3`; then diagnose why Roll20 rolltemplate crop differs from local ChatPane so severely.
+
 ## 2026-06-19 Codex Update - YSHY upload snippet validation
 
 Status: PARTIAL. This improves the next Roll20 upload attempt, but does not complete YSHY actual recapture.
