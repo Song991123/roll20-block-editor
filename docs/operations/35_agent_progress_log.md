@@ -1,3 +1,12 @@
+
+## 2026-06-19 Rolltemplate CSS investigation
+
+- Found a real local bug: ChatPane was extracting rolltemplate CSS from raw emitted CSS without Roll20 auto-prefix, so emitted dot-rolltemplate selectors did not match rendered dot-sheet-rolltemplate DOM.
+- Patched ChatPane to apply autoPrefixCssClasses before extracting rolltemplate CSS.
+- Patched rolltemplate body rendering to normalize user class tokens to Roll20-style sheet-* classes while preserving runtime classes: inlinerollresult, fullcrit, fullfail, importantroll.
+- Browser/Chrome observation showed the current Roll20 actual chat evidence is not applying user rolltemplate CSS: style text lacks dot-sheet-rolltemplate-aw and dot-sheet-rolltemplate-coc, and computed styles remain Roll20 default chat styles.
+- Therefore the current high YSHY mismatch after the patch is evidence-context mismatch, not proof that the local CSS-enabled renderer is wrong.
+- Keep TODO open until actual Roll20 upload/capture proves whether chat CSS is active for correctly configured custom sheet sandbox/test room.
 ## 2026-06-19 Roll20 Chat Evidence Normalization Follow-up
 
 - Recaptured YSHY 1BU actual Roll20 chat evidence from the dedicated sandbox after opening the chat tab, scrolling the target message fully into view, and clicking the same iframe `[name="roll_str_check"]` roll button used by local smoke. Evidence is local-only under ignored `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/yshy-commission-1bu/screenshots/`.

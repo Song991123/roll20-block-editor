@@ -1,3 +1,19 @@
+
+## 2026-06-19 Rolltemplate chat CSS parity update
+
+Status: DOING, not parity.
+
+Evidence now:
+- Implemented: local ChatPane now runs emitted rolltemplate CSS through the same Roll20 auto-prefix path used by preview, and rolltemplate body class tokens are normalized to Roll20-style sheet-* classes before rendering.
+- Verified: corepack pnpm run build PASS, corepack pnpm run lint PASS, corepack pnpm run guard:roll20-evidence PASS, git diff --check PASS.
+- Local chat smoke after CSS activation: AW2E and YSHY render paths still produce rolltemplate cards, but the smoke command currently FAILs because external sheet assets return 403/resource errors; Les-Oublies PASSes.
+- Actual Roll20 Chrome observation: current AW2E/YSHY Roll20 editor tabs have rolltemplate DOM, but page styles do not contain .sheet-rolltemplate-aw or .sheet-rolltemplate-coc; computed styles show Roll20 default chat typography/background, not user rolltemplate CSS.
+- Chat parity numbers after local CSS activation: AW2E mismatch 9.90% (was 11.65% immediately before this patch), YSHY mismatch 96.93% because current actual evidence is CSS-inactive while local now applies rolltemplate CSS, Les-Oublies still needs normalized actual crop evidence.
+
+Decision:
+- Keep production renderer gate on HOLD.
+- Do not claim Roll20 chat parity from the current actual screenshots, because they are CSS-inactive evidence.
+- Next P0: recapture or upload a Roll20 sandbox/test-room state where sheet CSS is actually active in chat, or explicitly classify Roll20 sandbox chat as CSS-inactive and align the local simulator to that verified behavior only if repeated across correctly uploaded sheets.
 ## 2026-06-19 Active TODO Refresh - Normalized Chat Evidence
 
 - DONE: Recaptured YSHY 1BU actual Roll20 chat evidence from the dedicated sandbox after clicking the same iframe `[name="roll_str_check"]` button used by local smoke. The ignored sidecar now records a latest `sheet-rolltemplate-coc` rect and CDP physical clip with no visible `#textchat` dialog overlap.

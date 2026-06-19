@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { normalizeTranslationForRoll20 } from '@/lib/export/payload';
 import { useChatStore, type ChatRoll } from '@/lib/stores/chatStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { autoPrefixCssClasses } from '@/lib/preview/prefix';
 import type {
   ChatTextResult,
   ErrorResult,
@@ -33,7 +34,8 @@ function safeRolltemplateClass(name: string): string {
 }
 
 function extractRolltemplateCss(css: string): string {
-  const matches = css.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
+  const prefixedCss = autoPrefixCssClasses(css);
+  const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
   return matches ? matches.join('\n') : '';
 }
 

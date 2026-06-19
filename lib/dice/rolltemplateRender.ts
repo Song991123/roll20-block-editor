@@ -58,7 +58,7 @@ export function renderTemplateBody(
 ): string {
   const map = new Map<string, RolltemplateFieldResult>();
   for (const f of fields) map.set(f.key, f);
-  const sectionRendered = renderRolltemplateSections(body, map, flags);
+  const sectionRendered = prefixRolltemplateClasses(renderRolltemplateSections(body, map, flags));
 
   // Mustache `{{ key }}` 토큰 (식별자 only) 치환.
   const rendered = sectionRendered.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (full, raw) => {
@@ -83,6 +83,28 @@ export function renderTemplateBody(
     return escapeHtml(translateText(f.text, translations));
   });
   return applyDataI18n(rendered, translations);
+}
+
+const ROLL20_UNPREFIXED_RUNTIME_CLASSES = new Set([
+  'inlinerollresult',
+  'fullcrit',
+  'fullfail',
+  'importantroll',
+]);
+
+function prefixRolltemplateClasses(html: string): string {
+  return html.replace(/\bclass\s*=\s*(["'])(.*?)\1/gi, (full, quote, rawClass) => {
+    const prefixed = String(rawClass)
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => {
+        if (token.startsWith('sheet-')) return token;
+        if (ROLL20_UNPREFIXED_RUNTIME_CLASSES.has(token)) return token;
+        return `sheet-${token}`;
+      })
+      .join(' ');
+    return `class=${quote}${prefixed}${quote}`;
+  });
 }
 
 function translateText(text: string, translations: Record<string, string>): string {
