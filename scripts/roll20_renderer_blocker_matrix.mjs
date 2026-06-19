@@ -245,7 +245,7 @@ function renderMarkdown(report) {
   lines.push('## Next Action');
   lines.push('');
   lines.push('- Keep production renderer CSS on HOLD when `Promotion Risk` says `DO_NOT_PROMOTE_DIRECTLY`, even if a candidate helps two fixtures.');
-  lines.push('- Capture/compare actual Roll20 computed styles for `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, `input[type="text"]`, and textarea before turning inline-flow/input-height candidates into renderer CSS.');
+  lines.push('- Run `corepack pnpm run diagnose:roll20-computed-style-context -- <run>` after refreshing actual Roll20 computed-style sidecars for `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, `input[type="text"]`, and textarea.');
   lines.push('- Resolve AW2E root-cutoff/root-height disagreement before using AW2E pixel-best candidates as production evidence.');
   lines.push('- Use this report after each candidate-smoke rerun to avoid promoting a fixture-specific CSS tweak.');
   lines.push('');

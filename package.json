@@ -37,6 +37,7 @@
     "diagnose:roll20-state-visibility": "node scripts/roll20_state_visibility_diagnostics.mjs",
     "gate:roll20-renderer-action": "node scripts/roll20_renderer_action_gate.mjs",
     "diagnose:roll20-renderer-blocker": "node scripts/roll20_renderer_blocker_matrix.mjs",
+    "diagnose:roll20-computed-style-context": "node scripts/roll20_computed_style_context_diagnostics.mjs",
     "diagnose:roll20-height-drift": "node scripts/roll20_height_drift_diagnostics.mjs",
     "diagnose:roll20-visibility-selectors": "node scripts/roll20_visibility_selector_diagnostics.mjs",
     "diagnose:roll20-playbook-state": "node scripts/roll20_playbook_state_diagnostics.mjs",

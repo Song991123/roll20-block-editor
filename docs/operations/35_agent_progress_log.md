@@ -68,6 +68,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 | Repeatable scripts | `scripts/` |
 
 
+
+## 2026-06-19 Computed-Style Context Diagnostic
+
+- Added `scripts/roll20_computed_style_context_diagnostics.mjs` and package script `diagnose:roll20-computed-style-context`.
+- Latest active run status: `DO_NOT_PROMOTE_DIRECTLY`, compared `1/3`, missing actual computed-style sidecars for AW2E and YSHY.
+- Les-Oublies best style candidate is `sandbox-inline-block-text-input-276-source`; input height is close, but row/column/table style and count differences remain. This supports the current rule: no inline-flow/input-height production CSS until the real Roll20 computed-style probe is refreshed for every fixture.
 ## 2026-06-19 Renderer Promotion-Risk Guard
 
 - Added a `Promotion Risk` section to `scripts/roll20_renderer_blocker_matrix.mjs` so broad-help diagnostic CSS candidates are not mistaken for production renderer patches.

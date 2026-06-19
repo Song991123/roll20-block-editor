@@ -14,6 +14,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer safety note, 2026-06-19 computed-style context diagnostic:
+Added `diagnose:roll20-computed-style-context` to compare actual Roll20 computed-style sidecars against local full-root candidates for `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, table, input, and textarea. Latest run is `DO_NOT_PROMOTE_DIRECTLY`: compared `1/3` fixtures, missing actual style sidecars for AW2E and YSHY, and Les-Oublies still has style/count differences even though `sandbox-inline-block-text-input-276-source` matches input height closely. Next P0 is refreshing actual computed-style sidecars for all fixtures before any inline-flow/input-height renderer CSS is promoted.
 Current Roll20 renderer safety note, 2026-06-19 promotion-risk gate:
 `diagnose:roll20-renderer-blocker` now writes a `Promotion Risk` section for every diagnostic patch family. Latest report keeps the renderer at `DO_NOT_PROMOTE_DIRECTLY` because `gate:roll20-renderer-action` still has 2 blockers: fixture-best families differ (`none` for AW2E reliable source, `inline-block+text-input-height` for Les-Oublies/YSHY) and AW2E trusted stitched root still disagrees with the live sidecar by `2620.088px`. The matrix now explicitly says that `inline-block+text-input-height` helps Les-Oublies/YSHY but is not fixture-best everywhere, so it must remain diagnostic until actual Roll20 computed styles for `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, text inputs, and textarea prove a generic wrapper/base-context correction.
 Current Roll20 renderer experiment note, 2026-06-19 production-path inline-flow patch rejected:
