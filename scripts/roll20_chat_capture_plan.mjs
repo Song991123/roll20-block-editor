@@ -16,11 +16,19 @@ const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const runDir = path.resolve(args[0] ?? '');
 const onlyFixture = args.find((arg, index) => index > 0 && !arg.startsWith('--')) ?? '';
 const INCLUDE_ALL = args.includes('--all');
+const SELF_TEST = args.includes('--self-test');
 const MAX_CHAT_SIDECAR_AGE_MS = 5 * 60 * 1000;
 
-if (!args[0]) {
+if (SELF_TEST) {
+  runSelfTest();
+} else if (!args[0]) {
   console.error('Usage: node scripts/roll20_chat_capture_plan.mjs reports/roll20-actual-compare/<label> [fixture-id] [--all]');
   process.exit(2);
+} else {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }
 
 const outDir = path.join(runDir, 'roll20-chat-capture-plan');
@@ -344,6 +352,106 @@ function renderDomProbeSnippet(entry) {
 })();\n`;
 }
 
+function runSelfTest() {
+  const snippet = renderDomProbeSnippet({ fixtureId: 'self-test' });
+  const syntax = validateSnippetSyntax('self-test', snippet);
+  if (!syntax.ok) {
+    console.error(`ROLL20 CHAT CAPTURE PLAN SELF_TEST FAIL syntax ${syntax.error}`);
+    process.exitCode = 1;
+    return;
+  }
+  const template = fakeElement({
+    className: 'sheet-rolltemplate-aw',
+    rect: { x: 120, y: 180, width: 260, height: 90, right: 380, bottom: 270 },
+    textContent: 'rolls Succeeds',
+    outerHTML: '<div class="sheet-rolltemplate-aw"><table><tbody><tr><td>rolls</td></tr></tbody></table></div>',
+  });
+  const message = fakeElement({
+    className: 'message general you',
+    rect: { x: 100, y: 160, width: 300, height: 130, right: 400, bottom: 290 },
+    textContent: 'GM rolls Succeeds',
+    contains: (node) => node === template,
+  });
+  const textchat = fakeElement({
+    id: 'textchat',
+    className: 'textchatcontainer',
+    rect: { x: 90, y: 40, width: 340, height: 780, right: 430, bottom: 820 },
+    textContent: 'chat',
+  });
+  const style = { tagName: 'STYLE', textContent: '.sheet-rolltemplate-aw table{border-collapse:collapse;}' };
+  const activeTab = fakeElement({
+    className: 'active',
+    rect: { x: 0, y: 0, width: 1, height: 1, right: 1, bottom: 1 },
+  });
+  const fakeDocument = {
+    querySelector(selector) {
+      if (selector.includes('#textchattab.active')) return activeTab;
+      if (selector.includes('#textchat')) return textchat;
+      return null;
+    },
+    querySelectorAll(selector) {
+      if (selector.includes('.message')) return [message];
+      if (selector.includes('rolltemplate')) return [template];
+      if (selector === 'style, link[rel="stylesheet"]') return [style];
+      if (selector === 'style') return [style];
+      if (selector === 'link[rel="stylesheet"]') return [];
+      return [];
+    },
+  };
+  const fakeWindow = {
+    innerWidth: 1280,
+    innerHeight: 900,
+    visualViewport: {
+      width: 1280,
+      height: 900,
+      scale: 1,
+      offsetLeft: 0,
+      offsetTop: 0,
+    },
+  };
+  const capturedLogs = [];
+  const fakeConsole = { log: (value) => capturedLogs.push(value) };
+  let evidence;
+  try {
+    // eslint-disable-next-line no-new-func
+    evidence = new Function('document', 'window', 'console', `return ${snippet}`)(fakeDocument, fakeWindow, fakeConsole);
+  } catch (error) {
+    console.error(`ROLL20 CHAT CAPTURE PLAN SELF_TEST FAIL runtime ${String(error?.message || error)}`);
+    process.exitCode = 1;
+    return;
+  }
+  const failures = [];
+  if (evidence.fixtureId !== 'self-test') failures.push('fixtureId mismatch');
+  if (!evidence.clip?.width || !evidence.clip?.height) failures.push('missing clip');
+  if (!evidence.screenshotClipApplied?.width || !evidence.screenshotCssClip?.width) failures.push('missing screenshot clip aliases');
+  if (!Array.isArray(evidence.rolltemplates) || evidence.rolltemplates.length !== 1) failures.push('missing rolltemplates array');
+  if (!evidence.rolltemplates?.[0]?.rect?.width) failures.push('missing rolltemplate rect');
+  if (evidence.chatCssEvidence?.classification !== 'EXPECTED_RULE_PRESENT') failures.push(`unexpected css classification ${evidence.chatCssEvidence?.classification}`);
+  if (!evidence.textMarkers?.rolltemplate || !evidence.textMarkers?.sheetRolltemplate) failures.push('missing text markers');
+  if (!capturedLogs.some((value) => String(value).includes('"rolltemplates"'))) failures.push('console JSON did not include rolltemplates');
+  if (failures.length) {
+    console.error(`ROLL20 CHAT CAPTURE PLAN SELF_TEST FAIL ${failures.join('; ')}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log('ROLL20 CHAT CAPTURE PLAN SELF_TEST PASS');
+  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence');
+}
+
+function fakeElement({ id = '', className = '', rect, textContent = '', outerHTML = '', contains = () => false }) {
+  return {
+    id,
+    className,
+    textContent,
+    outerHTML,
+    tagName: 'DIV',
+    contains,
+    getBoundingClientRect() {
+      return rect;
+    },
+  };
+}
+
 function validateSnippetSyntax(fixtureId, snippet) {
   try {
     // eslint-disable-next-line no-new-func
@@ -479,8 +587,3 @@ function escapeCell(value) {
 function rel(file) {
   return path.relative(process.cwd(), file);
 }
-
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});

@@ -1,3 +1,12 @@
+
+## 2026-06-19 Codex Update - Roll20 chat capture probe self-test
+
+Status: DONE for capture-tool hardening, NOT DONE for actual Roll20 parity.
+
+- Added `test:roll20-chat-capture-plan` to self-test the browser-side Roll20 chat DOM probe before using it for fresh captures.
+- The self-test verifies required evidence fields: `clip`, `screenshotClipApplied`, `screenshotCssClip`, `rolltemplates[].rect`, and `chatCssEvidence`.
+- Re-ran the active actual-screen status and renderer gate. Result remains `HOLD_PRODUCTION_RENDERER_PATCH` with 7 blockers.
+- Next P0 remains actual Roll20 recapture: `official-roll20-AW2E` and `yshy-commission-1bu` need fresh same-moment `roll20-chat.png` + `roll20-chat-dom-evidence.json`; `official-roll20-Les-Oublies` needs normalized rolltemplate crop metadata.
 ## 2026-06-19 Chat Capture Snippet Metadata Fix
 
 - DONE: strengthened `plan:roll20-chat-capture` snippets so future Roll20 chat sidecars include `rolltemplates[].rect`, top-level `clip`, `screenshotClipApplied`, `screenshotCssClip`, and `chatCssEvidence`.

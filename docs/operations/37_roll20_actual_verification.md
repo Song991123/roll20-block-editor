@@ -182,6 +182,17 @@ rolltemplate crop comparison and CSS activation classification. This is
 planning/snippet output only. It does not replace the actual Roll20 screenshot,
 and it does not prove chat visual parity.
 
+Before relying on a new version of the generated chat probe, run:
+
+```bash
+corepack pnpm run test:roll20-chat-capture-plan
+```
+
+This self-test executes the generated snippet against a fake Roll20 chat DOM and
+verifies the expected evidence shape. It proves only that the capture helper can
+emit the required fields; it does not prove that Roll20 has been captured or
+that local chat rendering matches Roll20.
+
 Use `corepack pnpm run status:roll20-actual -- <run-dir> --require-actual` after
 the diff helper when a work batch claims actual-screen coverage. This command
 does not prove visual parity by itself; it proves whether the generated-sheet
