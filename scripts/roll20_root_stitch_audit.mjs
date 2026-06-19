@@ -54,8 +54,8 @@ async function auditFixture(fixtureId) {
   const checks = [];
   if (stitchedMeta) checks.push(auditStitchedMeta(stitchedMeta, 'roll20-sandbox-root-full.json'));
   if (dprCorrectedMeta) checks.push(auditStitchedMeta(dprCorrectedMeta, 'roll20-sandbox-root-full-dpr-corrected.json'));
-  if (dprManifest) checks.push(auditCaptureManifest(dprManifest, 'roll20-root-dpr-corrected-manifest.json'));
-  if (dprCompleteManifest) checks.push(auditCaptureManifest(dprCompleteManifest, 'roll20-root-dpr-complete-manifest.json'));
+  if (dprManifest) checks.push(await auditCaptureManifest(dprManifest, 'roll20-root-dpr-corrected-manifest.json', shotsDir));
+  if (dprCompleteManifest) checks.push(await auditCaptureManifest(dprCompleteManifest, 'roll20-root-dpr-complete-manifest.json', shotsDir));
   if (!checks.length) {
     const hasDiagnostics = overlapDiagnostics.length > 0;
     return {
@@ -207,6 +207,14 @@ function auditStitchedMeta(meta, source) {
       message: `${narrowScaled.length}/${segments.length} full-image clipped segments scale source width ${first.imageSize?.width}px into destination width ${first.destPx?.w ?? outputWidth}px; this can include VTT chrome/grid instead of sheet-root-only pixels`,
     });
   }
+  const duplicateSegments = Number(meta.segmentHashSummary?.duplicateSegmentCount ?? 0);
+  if (duplicateSegments > 0) {
+    issues.push({
+      code: 'duplicate_segment_capture',
+      severity: 'fail',
+      message: `${duplicateSegments} stitched segment image entries are byte-identical; recapture without repeated bottom/viewport frames before trusting this full-root evidence`,
+    });
+  }
   issues.push(...coverageIssues({
     outputHeight: Number(meta.outputSize?.h ?? meta.outputCss?.h ?? 0),
     segments: segments.map((segment) => ({ y: Number(segment.destPx?.y ?? 0), h: Number(segment.destPx?.h ?? 0) })),
@@ -214,7 +222,7 @@ function auditStitchedMeta(meta, source) {
   return { source, status: issues.length ? 'FAIL' : 'PASS', segmentCount: segments.length, issues };
 }
 
-function auditCaptureManifest(manifest, source) {
+async function auditCaptureManifest(manifest, source, shotsDir) {
   const segments = Array.isArray(manifest.segments) ? manifest.segments : [];
   const issues = coverageIssues({
     outputHeight: Number(manifest.outputCss?.h ?? 0),
@@ -228,7 +236,46 @@ function auditCaptureManifest(manifest, source) {
       message: `first captured segment starts at sheet y=${round(firstY)}px; recapture from the top before stitching`,
     });
   }
+  const hashSummary = await summarizeManifestSegmentHashes(manifest, shotsDir);
+  if (hashSummary.duplicateSegmentCount > 0) {
+    issues.push({
+      code: 'duplicate_segment_capture',
+      severity: 'fail',
+      message: `${hashSummary.duplicateSegmentCount} manifest segment image entries are byte-identical; recapture without repeated bottom/viewport frames before stitching`,
+    });
+  }
   return { source, status: issues.length ? 'FAIL' : 'PASS', segmentCount: segments.length, issues };
+}
+
+async function summarizeManifestSegmentHashes(manifest, shotsDir) {
+  const segments = Array.isArray(manifest.segments) ? manifest.segments : [];
+  const items = [];
+  for (const [index, segment] of segments.entries()) {
+    const file = resolveManifestImage(segment.image, shotsDir);
+    if (!file || !existsSync(file)) continue;
+    const bytes = await readFile(file);
+    items.push({
+      index,
+      file,
+      hash: createHash('sha256').update(bytes).digest('hex'),
+    });
+  }
+  const groups = new Map();
+  for (const item of items) {
+    if (!groups.has(item.hash)) groups.set(item.hash, []);
+    groups.get(item.hash).push(item);
+  }
+  const duplicateGroups = [...groups.values()].filter((group) => group.length > 1);
+  return {
+    hashedSegmentCount: items.length,
+    uniqueHashCount: groups.size,
+    duplicateSegmentCount: duplicateGroups.reduce((sum, group) => sum + group.length, 0),
+  };
+}
+
+function resolveManifestImage(file, shotsDir) {
+  if (!file || typeof file !== 'string') return '';
+  return path.isAbsolute(file) ? file : path.resolve(shotsDir, file);
 }
 
 function coverageIssues({ outputHeight, segments }) {

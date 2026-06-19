@@ -1460,3 +1460,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added duplicate segment hashing to the overlap diagnostic and root-stitch audit path. The latest AW2E long diagnostic has 38 segments with one duplicate group: segments 36 and 37 are byte-identical.
 - Latest renderer gate still holds production CSS and now exposes the duplicate-segment clue in the blocker: AW2E best diagnostic `aw2e-long-overlap-stitch-diagnostic.json`, 38 segments, max score `6.605`, duplicate segments `2`.
 - Claim boundary: the blocker is now more precise. AW2E needs a true DPR-corrected manifest/root capture or another verified scroll metadata source; the current overlap stitch remains diagnostic-only.
+
+## 2026-06-19 Trusted Stitch Duplicate Guard
+
+- Hardened the trusted full-root path, not just the diagnostic path: `roll20_actual_stitch_root.mjs` now writes segment hash summaries into stitched metadata, and `roll20_root_stitch_audit.mjs` fails trusted stitched metadata or capture manifests that reuse byte-identical segment images.
+- This prevents a repeated bottom viewport frame from being accidentally stitched and counted as DPR-corrected full-root evidence.
+- Verification: `node --check` for the changed scripts, `audit:roll20-root-stitch`, `gate:roll20-renderer-action`, and `status:roll20-actual` all pass on `2026-06-18-state-map-v1`. Les-Oublies/YSHY remain trusted PASS; AW2E remains diagnostic-only SKIP.
+- Claim boundary: this is evidence-hardening toward Roll20 parity. It does not add AW2E trusted root evidence and does not change renderer CSS.

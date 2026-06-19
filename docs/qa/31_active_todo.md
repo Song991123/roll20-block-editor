@@ -622,3 +622,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: Regenerating `aw2e-long-overlap-stitch-diagnostic.png` from 38 ignored local segments reports `duplicateSegments=2`, `duplicateGroups=1`; segments 36 and 37 are byte-identical.
 - CURRENT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH` and now names AW2E's best diagnostic as 38 segments, max score `6.605`, duplicate segments `2`.
 - STILL TODO: recapture AW2E with real DPR-corrected sheet-root segment metadata or a manifest-backed scroll source. Do not promote the current overlap stitch to trusted full-root evidence.
+
+## 2026-06-19 Trusted Stitch Duplicate Guard TODO Note
+
+- DONE: `scripts/roll20_actual_stitch_root.mjs` now records SHA-256 duplicate segment summaries in stitched full-root metadata.
+- DONE: `scripts/roll20_root_stitch_audit.mjs` now fails trusted stitched metadata or DPR capture manifests when segment image entries are byte-identical.
+- VERIFIED: Existing trusted DPR evidence for Les-Oublies and YSHY still passes `audit:roll20-root-stitch`; AW2E remains `SKIP` because it has only diagnostic overlap evidence.
+- CURRENT: `gate:roll20-renderer-action` still holds production CSS and preserves the AW2E duplicate-segment blocker detail.
+- STILL TODO: recapture AW2E with non-duplicate DPR-corrected sheet-root segments plus manifest-backed coverage before running it as trusted full-root evidence.

@@ -35,6 +35,7 @@
 
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 
@@ -132,6 +133,7 @@ async function stitch({ manifest, outputPath }) {
       scrollTop: segment.scrollTop ?? null,
     });
   }
+  const segmentHashSummary = await summarizePreparedSegmentHashes(prepared);
 
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: Math.min(1200, Math.max(100, outputSize.w)), height: 800 } });
@@ -193,10 +195,41 @@ async function stitch({ manifest, outputPath }) {
     return {
       outputSize,
       segments: result.segmentReports,
+      segmentHashSummary,
     };
   } finally {
     await browser.close();
   }
+}
+
+async function summarizePreparedSegmentHashes(prepared) {
+  const items = [];
+  for (const segment of prepared) {
+    const bytes = await readFile(segment.imagePath);
+    items.push({
+      index: segment.index,
+      file: segment.imagePath,
+      hash: createHash('sha256').update(bytes).digest('hex'),
+    });
+  }
+  const groups = new Map();
+  for (const item of items) {
+    if (!groups.has(item.hash)) groups.set(item.hash, []);
+    groups.get(item.hash).push(item);
+  }
+  const duplicateGroups = [...groups.values()]
+    .filter((group) => group.length > 1)
+    .map((group) => ({
+      hash: group[0].hash,
+      indexes: group.map((item) => item.index),
+      files: group.map((item) => path.relative(process.cwd(), item.file)),
+    }));
+  return {
+    hashedSegmentCount: items.length,
+    uniqueHashCount: groups.size,
+    duplicateSegmentCount: duplicateGroups.reduce((sum, group) => sum + group.indexes.length, 0),
+    duplicateGroups,
+  };
 }
 
 function normalizeScale(scale, viewportCss) {
@@ -226,6 +259,7 @@ async function main() {
     outputCss: manifest.outputCss,
     outputSize: result.outputSize,
     segmentCount: result.segments.length,
+    segmentHashSummary: result.segmentHashSummary,
     segments: result.segments,
     scope: 'local-only stitched Roll20 root evidence; not Roll20 visual parity',
   };
