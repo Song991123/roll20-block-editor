@@ -30,7 +30,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - `README.md` in `web-push-main/` is a Korean portfolio-style overview. Keep it visual-first and do not add verification tables, agent-only status logs, or private sheet details there.
 - Agent progress and handoff notes belong in this file plus `docs/qa/31_active_todo.md`.
 - Real Roll20/user sheet fixtures and generated reports are local-only. Do not commit them to the public repo.
-- Folder guide exists at the parent level as `폴더 안내.md`; update it only when actual top-level folder roles change.
+- Folder guide exists at the parent level as `?�더 ?�내.md`; update it only when actual top-level folder roles change.
 
 ## Local Evidence Snapshot
 
@@ -231,9 +231,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 ## 2026-06-18 Free Placement Mode Slice
 
-- Added a user-facing edit placement mode control with `흐름` and `자유` choices. `흐름` keeps gallery drops as flow/nesting operations; `자유` lets a drop inside a capable frame become a nested absolute child.
+- Added a user-facing edit placement mode control with `?�름` and `?�유` choices. `?�름` keeps gallery drops as flow/nesting operations; `?�유` lets a drop inside a capable frame become a nested absolute child.
 - `appendFriendlyWidgetPreset()` now accepts `absolute-in-container`, nests the new widget into the target frame, writes child `position:absolute; left/top`, and adds a parent `position:relative` fallback when needed.
-- Expanded `scripts/edit_flow_browser_smoke.mjs` with a copyright-safe synthetic free-placement import. The smoke clicks `자유`, drops a gallery text input into a frame, and verifies the emitted HTML nests the input inside the frame with matching computed/emitted absolute coordinates.
+- Expanded `scripts/edit_flow_browser_smoke.mjs` with a copyright-safe synthetic free-placement import. The smoke clicks `?�유`, drops a gallery text input into a frame, and verifies the emitted HTML nests the input inside the frame with matching computed/emitted absolute coordinates.
 - Latest local ignored validation: `corepack pnpm run lint` PASS, `corepack pnpm run build` PASS, and `scripts/edit_flow_browser_smoke.mjs` PASS.
 - Scope note: this proves the user-facing synthetic free-placement path only. Imported real-sheet frame placement, UX screenshots, and actual Roll20 visual parity remain unverified.
 
@@ -307,7 +307,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Rechecked the existing Chrome Roll20 verification tab. The Custom Sheet Sandbox dialog is open and exposes visible HTML/CSS/Translation upload labels backed by `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`.
 - A visible HTML label upload attempt for the YSHY local payload still failed at `fileChooser.setFiles` with `Not allowed`. This confirms the remaining actual Roll20 upload blocker is Chrome extension file URL access, not a missing sandbox control.
 - Added `legacyCssSanitize` to the preview store and wired it through both local render paths: `buildSheetDoc` for iframe preview and `buildSheetParts` for Shadow/edit preview.
-- Added the toolbar `구버전 CSS` toggle (`data-testid="preview-legacy-css-toggle"`) so users can compare modern/original CSS preview against legacy Roll20 CSS sanitize locally before export.
+- Added the toolbar `구버??CSS` toggle (`data-testid="preview-legacy-css-toggle"`) so users can compare modern/original CSS preview against legacy Roll20 CSS sanitize locally before export.
 - Added `scripts/roll20_legacy_preview_smoke.mjs` and package alias `corepack pnpm run smoke:legacy-preview`.
 - Latest local ignored validation: `corepack pnpm run smoke:legacy-preview -- --report-dir reports/legacy-preview-smoke` PASS. It proves iframe and Shadow/edit user CSS chunks both preserve modern CSS when OFF and route through `sanitizeForRoll20Legacy` when ON.
 - Scope note: this is local preview/edit option plumbing and synthetic CSS proof. It does not prove actual Roll20 legacy visual parity; that still needs Sandbox/test-room upload and screenshots after Chrome file upload is enabled.
@@ -390,7 +390,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 ## 2026-06-18 Export Dialog Roll20 Readiness UI Slice
 
-- Added a user-facing `Roll20 업로드 준비 상태` section to `components/editor/ExportDialog.tsx`.
+- Added a user-facing `Roll20 ?�로??준�??�태` section to `components/editor/ExportDialog.tsx`.
 - The dialog now separates local zip composition readiness (`sheet.html`, `sheet.css`, `translation.json`, `sheet.json + README`) from actual Roll20 verification, which remains pending until a Custom Sheet Sandbox or new test room upload screenshot exists.
 - The section explicitly tells users to compare legacy sanitize ON/OFF zips in Sandbox for old sheets, and keeps existing real rooms observation-only.
 - Latest local validation:
@@ -399,7 +399,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run guard:roll20-evidence reports\roll20-actual-compare\2026-06-18-pseudo-fix-v1`: PASS.
 - Follow-up root cause: the first browser check used the dev server/static server with the wrong production `basePath`, so the page rendered HTML but client events were not a valid signal.
 - Added stable header action selectors and `scripts/export_dialog_browser_smoke.mjs` with package alias `corepack pnpm run smoke:export-dialog`.
-- Latest static-app validation: `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke` PASS. It opens the export dialog, confirms 5 readiness items, confirms the `실제 검증 필요` badge, opens the import dialog, and verifies main mode tab clicks with 0 console/page errors.
+- Latest static-app validation: `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke` PASS. It opens the export dialog, confirms 5 readiness items, confirms the `?�제 검�??�요` badge, opens the import dialog, and verifies main mode tab clicks with 0 console/page errors.
 - Scope note: this improves user-facing status clarity only. It does not upload to Roll20 and does not prove Roll20 visual parity.
 
 ## 2026-06-18 Roll20 Upload Recheck + Visual State Detail Slice
@@ -612,10 +612,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 ## 2026-06-19 Edit UI Copy Cleanup + Smoke Gate
 
 - Cleaned the edit canvas and layer panel user-facing copy:
-  - edit toolbar labels now use readable `시트 편집`, `흐름`, `자유`, and Korean placement tooltips.
-  - layer role labels now use Korean names such as `틀`, `흐름`, `표`, `입력`, and `버튼`.
+  - edit toolbar labels now use readable `?�트 ?�집`, `?�름`, `?�유`, and Korean placement tooltips.
+  - layer role labels now use Korean names such as `?�`, `?�름`, `??, `?�력`, and `버튼`.
   - friendly widget gallery preset names/descriptions now use readable Korean copy.
-- Hardened `scripts/edit_flow_browser_smoke.mjs` with an `editUiCopy` check. It now verifies the edit canvas contains `시트 편집`, `레이어`, `레이어 검색`, `흐름`, and `자유`, and that the scoped edit canvas text has no Han-range mojibake.
+- Hardened `scripts/edit_flow_browser_smoke.mjs` with an `editUiCopy` check. It now verifies the edit canvas contains `?�트 ?�집`, `?�이??, `?�이??검??, `?�름`, and `?�유`, and that the scoped edit canvas text has no Han-range mojibake.
 - Latest validation:
   - scoped source mojibake scan over `components/editor/EditCanvas.tsx`, `lib/editor/layerRoles.ts`, and `lib/widgets/presets.ts`: PASS.
   - `corepack pnpm run lint`: PASS.
@@ -633,7 +633,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Hardened `scripts/export_dialog_browser_smoke.mjs` so it now verifies:
   - header title, empty-state title, blank-sheet CTA, and hidden public sample UI;
   - no mojibake in initial shell text;
-  - export dialog title, 5 readiness items, `실제 검증 필요` badge, legacy toggle copy, and local-vs-actual Roll20 verification warning;
+  - export dialog title, 5 readiness items, `?�제 검�??�요` badge, legacy toggle copy, and local-vs-actual Roll20 verification warning;
   - no mojibake in export dialog text;
   - import dialog opening and edit-mode tab selection.
 - Latest validation:
@@ -690,8 +690,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Current blocker remains Chrome Codex extension local-file access, not missing Roll20 controls or missing payload files.
 - While actual Roll20 upload is blocked, improved edit-layer row affordance:
   - layer rows now expose `data-r20-layer-role-kind`, `data-r20-can-drop`, and `data-r20-default-drop-mode`;
-  - rows visibly show the role label, `담기 가능` for containers, and default placement mode (`흐름` / `자유`);
-  - drag target badges now use Korean labels (`앞에 넣음`, `안에 넣음`, `뒤에 넣음`) instead of raw `before/inside/after`.
+  - rows visibly show the role label, `?�기 가?? for containers, and default placement mode (`?�름` / `?�유`);
+  - drag target badges now use Korean labels (`?�에 ?�음`, `?�에 ?�음`, `?�에 ?�음`) instead of raw `before/inside/after`.
 - `scripts/edit_flow_browser_smoke.mjs` now checks the new layer row affordance attributes/text for the section row.
 - Added package script `corepack pnpm run smoke:edit-flow`.
 - Validation:
@@ -699,7 +699,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `git diff --check`: PASS with CRLF warnings only.
   - `corepack pnpm run lint`: PASS.
   - `corepack pnpm run build`: PASS.
-  - `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/edit-flow-smoke --port 4318`: PASS; the section layer row reported `roleKind=frame`, `canDrop=1`, `defaultDropMode=flow`, and visible text including `틀`, `담기 가능`, and `흐름`.
+  - `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/edit-flow-smoke --port 4318`: PASS; the section layer row reported `roleKind=frame`, `canDrop=1`, `defaultDropMode=flow`, and visible text including `?�`, `?�기 가??, and `?�름`.
 
 ## 2026-06-19 Visual Diff Classification State-Applied Gate
 
@@ -739,7 +739,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 ## 2026-06-19 Export Sandbox Diagnostics UI Slice
 
-- Added a user-facing `Roll20 Sandbox 예상 변환` panel to `components/editor/ExportDialog.tsx`.
+- Added a user-facing `Roll20 Sandbox ?�상 변?? panel to `components/editor/ExportDialog.tsx`.
 - The panel uses the same observed sandbox sanitizer module as the local audit (`sanitizeRoll20SandboxHtml/Css`) against the prepared Roll20 payload, and reports HTML/CSS rewrite risk, runtime stripping, class/tag rewrites, URL proxy/drop counts, and fatal reject risk.
 - This is diagnostic only: it does not mutate the downloaded zip payload and does not replace actual Roll20 Sandbox/test-room screenshot verification.
 - Hardened `scripts/export_dialog_browser_smoke.mjs` so the static app smoke now checks the Sandbox diagnostics panel, 4 diagnostic rows, and the status badge.
@@ -759,7 +759,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest imported-fixture validation:
   - `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke-imported --fixtures test-fixtures/visual --fixture official-roll20-Les-Oublies --port 4325`: PASS.
   - Imported fixture stats: 653 blocks, 4 worker blocks, emitted bytes HTML 82409 / CSS 12922 / worker 7496.
-  - Export dialog reported `치명 오류 없음`, 4 diagnostics rows, expected rewrite rows for HTML/CSS/classes, 0 console/page errors, and no mojibake.
+  - Export dialog reported `치명 ?�류 ?�음`, 4 diagnostics rows, expected rewrite rows for HTML/CSS/classes, 0 console/page errors, and no mojibake.
 - Rechecked empty-workspace export smoke too:
   - `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke --port 4326`: PASS.
 - Additional validation:
@@ -772,7 +772,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 - Added a preview-only Roll20 Custom Sheet Sandbox expected-render mode.
 - `buildSheetDoc` can now apply `sanitizeRoll20SandboxHtml/Css` after auto-prefix and before optional legacy CSS sanitize, while normal preview remains source-preserving by default.
-- Added `roll20SandboxSanitize` to `usePreviewStore`, exposed it through `window.__perfHook.setRoll20SandboxSanitize()`, and surfaced a compact `Sandbox 예상` toggle in the main toolbar whenever preview is visible.
+- Added `roll20SandboxSanitize` to `usePreviewStore`, exposed it through `window.__perfHook.setRoll20SandboxSanitize()`, and surfaced a compact `Sandbox ?�상` toggle in the main toolbar whenever preview is visible.
 - Added package script `corepack pnpm run smoke:roll20-sandbox-preview`.
 - Latest imported-fixture browser validation:
   - `corepack pnpm run smoke:roll20-sandbox-preview -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --fixture official-roll20-Les-Oublies --report-dir reports/roll20-sandbox-preview-smoke --port 4331`: PASS.
@@ -1182,7 +1182,7 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Reused the observed sandbox endpoint fallback for the two missing generated fixtures:
   - AW2E: POST `/sheetsandbox/savesheetsettings` accepted base64 `html`, `css`, and `translation`; `/campaigns/savesettings/21639681` saved the AW2E `customcharsheet_json`.
   - YSHY: the same endpoint/settings path accepted the larger generated payload and saved the YSHY `customcharsheet_json`.
-- Reopened the sandbox character in the Roll20 editor. AW2E and YSHY both rendered in the character iframe; YSHY was additionally confirmed by iframe text markers such as `이름`, `플레이어`, `직업`, `나이`, `이성`, and `근력`.
+- Reopened the sandbox character in the Roll20 editor. AW2E and YSHY both rendered in the character iframe; YSHY was additionally confirmed by iframe text markers such as `?�름`, `?�레?�어`, `직업`, `?�이`, `?�성`, and `근력`.
 - Captured ignored local viewport evidence:
   - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-sandbox.png`
   - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/yshy-commission-1bu/screenshots/roll20-sandbox.png`
@@ -1260,3 +1260,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - YSHY: missing `roll20-chat.png`.
 - Interpretation: local app chat smoke can stay useful, but actual Roll20 rolltemplate/chat visual parity remains unverified until trustworthy chat screenshots are captured.
 - Verification passed: `node --check scripts\roll20_actual_status.mjs`, `node --check scripts\roll20_upload_handoff.mjs`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only`, `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+
+## 2026-06-19 Local ChatPane Roll20 Shell Alignment
+
+- Rewrote `components/editor/ChatPane.tsx` copy that was still mojibake into readable Korean.
+- Wrapped local chat output in Roll20-like structural classes:
+  - `.textchatcontainer.withoutavatars` around the chat list.
+  - `.message.general` on each chat card.
+  - `.spacer`, `.by`, and `.tstamp` inside each card.
+- Kept rolltemplate cards constrained to the Roll20-style 280px width used by the existing smoke.
+- Updated `scripts/rolltemplate_chat_smoke.mjs` so PASS now requires the shell markers as well as rolltemplate kind, one visible card, <=300px width, and no debug template label.
+- Latest local smoke: `node scripts\rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke --port 4411`.
+  - AW2E, Les-Oublies, and YSHY all PASS.
+  - All three produced rolltemplate cards at 280px with `textchatcontainer`, `message`, `spacer`, `by`, and `tstamp` present.
+- Claim boundary: this improves local Roll20-chat comparison readiness. Actual Roll20 chat visual parity still requires trustworthy `roll20-chat.png` evidence.

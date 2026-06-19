@@ -180,9 +180,10 @@ function RollCard({ card, emittedHtml }: { card: ChatRoll; emittedHtml: string }
       data-r20-chat-crit={r.kind === 'expr' && r.isCrit ? '1' : undefined}
       data-r20-chat-fumble={r.kind === 'expr' && r.isFumble ? '1' : undefined}
       className={[
+        'message general',
         isRolltemplate
-          ? 'w-full max-w-[280px] self-center rounded-sm border border-[#b7b7b7] bg-[#f7f7f7] p-2 text-[#222] shadow-sm'
-          : 'rounded border bg-[var(--bg-elevated)] p-2.5',
+          ? 'w-full max-w-[280px] self-center text-[#222]'
+          : 'rounded border bg-[var(--bg-elevated)]',
         !isRolltemplate &&
           (r.kind === 'expr' && r.isCrit
             ? 'border-green-500/40 bg-green-500/5'
@@ -193,20 +194,22 @@ function RollCard({ card, emittedHtml }: { card: ChatRoll; emittedHtml: string }
         .filter(Boolean)
         .join(' ')}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="text-[11px] font-semibold text-foreground/80">
-          {card.sender || 'Sheet'}
+      <div className="spacer rounded-sm border border-[#b7b7b7] bg-[#f7f7f7] p-2 shadow-sm">
+        <div className="by flex items-center justify-between mb-1">
+          <span className="text-[11px] font-semibold text-foreground/80">
+            {card.sender || 'Sheet'}
+          </span>
+          <time className="tstamp text-[10px] text-[var(--fg-muted)] font-mono">
+            {formatTime(card.ts)}
+          </time>
         </div>
-        <time className="text-[10px] text-[var(--fg-muted)] font-mono">
-          {formatTime(card.ts)}
-        </time>
+        {r.kind === 'expr' && <CardExpr detail={r} expression={card.expression} />}
+        {r.kind === 'rolltemplate' && (
+          <CardRolltemplate result={r} emittedHtml={emittedHtml} />
+        )}
+        {r.kind === 'error' && <CardError error={r} />}
+        {r.kind === 'chat' && <CardChat chat={r} />}
       </div>
-      {r.kind === 'expr' && <CardExpr detail={r} expression={card.expression} />}
-      {r.kind === 'rolltemplate' && (
-        <CardRolltemplate result={r} emittedHtml={emittedHtml} />
-      )}
-      {r.kind === 'error' && <CardError error={r} />}
-      {r.kind === 'chat' && <CardChat chat={r} />}
     </div>
   );
 }
@@ -219,7 +222,7 @@ export default function ChatPane() {
   const rolltemplateCss = useMemo(() => extractRolltemplateCss(emittedCss), [emittedCss]);
 
   return (
-    <div className="flex h-full flex-col min-h-0">
+    <div className="r20-chat-pane flex h-full flex-col min-h-0">
       {rolltemplateCss.trim() && (
         <style
           data-r20-chat-user-css
@@ -244,10 +247,13 @@ export default function ChatPane() {
         </Button>
       </div>
       <ScrollArea className="flex-1 min-h-0">
-        <div className="p-2 flex flex-col gap-2" data-testid="chat-list">
+        <div
+          className="textchatcontainer withoutavatars p-2 flex flex-col gap-2"
+          data-testid="chat-list"
+        >
           {rolls.length === 0 ? (
             <div className="text-center text-[11px] text-[var(--fg-muted)] py-8">
-              미리보기에서 굴림 버튼을 클릭하면 결과가 여기에 표시됩니다.
+              미리보기에서 굴림 버튼을 누르면 결과가 여기에 표시됩니다.
               <br />
               <span className="text-[10px] opacity-70">
                 시트의 <code>type=&quot;roll&quot;</code> 버튼을 눌러보세요.

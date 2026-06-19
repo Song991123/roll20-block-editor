@@ -232,6 +232,11 @@ async function clickRollAndReadChat(page, fixtureId) {
   const cardCount = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').count();
   const cardInfo = await card.evaluate((el) => ({
     kind: el.getAttribute('data-r20-chat-kind') || '',
+    hasMessageClass: el.classList.contains('message'),
+    hasSpacer: Boolean(el.querySelector('.spacer')),
+    hasSenderLine: Boolean(el.querySelector('.by')),
+    hasTimestamp: Boolean(el.querySelector('.tstamp')),
+    hasTextchatContainer: Boolean(el.closest('.textchatcontainer')),
     text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 400),
     hasTemplateClass: Boolean(el.querySelector('[class*="sheet-rolltemplate-"]')),
     hasTotal: Boolean(el.querySelector('.rt-total, strong')),
@@ -250,8 +255,8 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Reason | Click mode | Visible | Actionable | Chosen button | Chat kind | Cards | Width | Template class | Debug label | Total/result | Console/Page errors |');
-  lines.push('| --- | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | --- | --- | --- | ---: |');
+  lines.push('| Fixture | Status | Reason | Click mode | Visible | Actionable | Chosen button | Chat kind | Cards | Width | Roll20 shell | Template class | Debug label | Total/result | Console/Page errors |');
+  lines.push('| --- | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | --- | --- | --- | --- | ---: |');
   for (const item of report.fixtures) {
     const chosen = item.chosen
       ? `${item.chosen.name || '(no name)'} / ${truncate(item.chosen.value, 60)}`
@@ -260,7 +265,7 @@ function renderMarkdown(report) {
     const visibleCount = item.candidates?.filter((row) => row.visible).length ?? '';
     const actionableCount = item.candidates?.filter((row) => row.actionable).length ?? '';
     lines.push(
-      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
+      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
     );
   }
   lines.push('');
@@ -282,6 +287,17 @@ function truncate(value, max) {
 
 function escapePipe(value) {
   return String(value ?? '').replace(/\|/g, '\\|');
+}
+
+function roll20ShellStatus(cardInfo) {
+  if (!cardInfo) return '';
+  const ok =
+    cardInfo.hasTextchatContainer &&
+    cardInfo.hasMessageClass &&
+    cardInfo.hasSpacer &&
+    cardInfo.hasSenderLine &&
+    cardInfo.hasTimestamp;
+  return ok ? 'yes' : 'no';
 }
 
 async function main() {
@@ -329,6 +345,11 @@ async function main() {
           entry.cardInfo?.hasDebugTemplateLabel === false &&
           (entry.cardInfo?.kind !== 'rolltemplate' ||
             ((entry.cardInfo?.width ?? 0) > 0 && (entry.cardInfo?.width ?? 9999) <= 300)) &&
+          entry.cardInfo?.hasTextchatContainer === true &&
+          entry.cardInfo?.hasMessageClass === true &&
+          entry.cardInfo?.hasSpacer === true &&
+          entry.cardInfo?.hasSenderLine === true &&
+          entry.cardInfo?.hasTimestamp === true &&
           consoleErrors.filter((msg) => msg.type === 'error').length === 0 &&
           pageErrors.length === 0;
       } catch (err) {
