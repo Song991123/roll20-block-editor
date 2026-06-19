@@ -58,6 +58,8 @@ async function main() {
       report.fixtures.push(item);
       if (item.status === 'COMPARED') {
         console.log(`${item.status} ${fixtureId} best=${item.bestCandidate.id} mismatch=${pct(item.bestCandidate.mismatchRatio)} rootDelta=${num(item.bestCandidate.rootHeightDelta)}`);
+      } else if (item.status === 'DIAGNOSTIC_COMPARED') {
+        console.log(`${item.status} ${fixtureId} diagnosticBest=${item.diagnosticBestCandidate.id} mismatch=${pct(item.diagnosticBestCandidate.mismatchRatio)} rootDelta=${num(item.diagnosticBestCandidate.rootHeightDelta)}`);
       } else {
         console.log(`${item.status} ${fixtureId} ${item.reason}`);
       }
@@ -68,8 +70,10 @@ async function main() {
 
   report.summary = {
     compared: report.fixtures.filter((fixture) => fixture.status === 'COMPARED').length,
+    diagnosticCompared: report.fixtures.filter((fixture) => fixture.status === 'DIAGNOSTIC_COMPARED').length,
     skipped: report.fixtures.filter((fixture) => fixture.status === 'SKIP').length,
     bestMismatchRatio: minOrNull(report.fixtures.map((fixture) => fixture.bestCandidate?.mismatchRatio)),
+    bestDiagnosticMismatchRatio: minOrNull(report.fixtures.map((fixture) => fixture.diagnosticBestCandidate?.mismatchRatio)),
     parityVerified: false,
   };
 
@@ -82,7 +86,9 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   const fixtureDir = path.join(runDir, 'local-baseline', fixtureId);
   const payloadDir = path.join(fixtureDir, 'payload');
   const shotsDir = path.join(fixtureDir, 'screenshots');
-  const actualEvidence = selectActualFullRootEvidence(shotsDir);
+  const trustedActualEvidence = selectActualFullRootEvidence(shotsDir);
+  const diagnosticActualEvidence = trustedActualEvidence ? null : await selectDiagnosticFullRootEvidence(shotsDir);
+  const actualEvidence = trustedActualEvidence ?? diagnosticActualEvidence;
   const actualFile = actualEvidence?.screenshot ?? path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.png');
   const actualMetaFile = actualEvidence?.meta ?? actualFile.replace(/\.png$/i, '.json');
   const localPreviewFile = path.join(shotsDir, 'local-preview.png');
@@ -177,10 +183,11 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
 
   return {
     fixtureId,
-    status: 'COMPARED',
+    status: actualEvidence.diagnosticOnly ? 'DIAGNOSTIC_COMPARED' : 'COMPARED',
     actual: {
       screenshot: actualFile,
       evidenceKind: actualEvidence.kind,
+      diagnosticOnly: Boolean(actualEvidence.diagnosticOnly),
       size: actualSize,
       outputCss: actualMeta?.outputCss ?? null,
       segmentCount: actualMeta?.segmentCount ?? null,
@@ -192,7 +199,8 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
       stateHint: summarizeStateCandidate(stateCandidate),
     },
     baselineReference,
-    bestCandidate,
+    bestCandidate: actualEvidence.diagnosticOnly ? null : bestCandidate,
+    diagnosticBestCandidate: actualEvidence.diagnosticOnly ? bestCandidate : null,
     bestGeometryCandidate,
     candidates: candidatesWithGeometryFit,
     componentEffects: summarizeComponentEffects(candidatesWithGeometryFit),
@@ -215,6 +223,28 @@ function selectActualFullRootEvidence(shotsDir) {
     },
   ];
   return candidates.find((candidate) => existsSync(candidate.screenshot)) ?? null;
+}
+
+async function selectDiagnosticFullRootEvidence(shotsDir) {
+  if (!existsSync(shotsDir)) return null;
+  const entries = await readdir(shotsDir, { withFileTypes: true });
+  const diagnostics = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || !/overlap-stitch-diagnostic\.json$/i.test(entry.name)) continue;
+    const meta = path.join(shotsDir, entry.name);
+    const screenshot = meta.replace(/\.json$/i, '.png');
+    if (!existsSync(screenshot)) continue;
+    const json = await readJsonIfExists(meta);
+    const segmentCount = Number(json?.segments?.length ?? json?.placements?.length ?? 0);
+    diagnostics.push({
+      kind: 'overlap-diagnostic-full-root',
+      diagnosticOnly: true,
+      screenshot,
+      meta,
+      segmentCount,
+    });
+  }
+  return diagnostics.sort((a, b) => b.segmentCount - a.segmentCount)[0] ?? null;
 }
 
 async function compareExistingReference({ comparePage, localPreviewFile, actualFile, actualSize }) {
@@ -908,12 +938,18 @@ function renderMarkdown(report) {
   lines.push('| Fixture | Status | Actual size | Pixel best | Pixel mismatch | Geometry best | Geometry score | Best local root | Notes |');
   lines.push('| --- | --- | --- | --- | ---: | --- | ---: | --- | --- |');
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fmtSize(fixture.actual?.size)} | ${fixture.bestCandidate?.id ?? ''} | ${pct(fixture.bestCandidate?.mismatchRatio)} | ${fixture.bestGeometryCandidate?.id ?? ''} | ${num(fixture.bestGeometryCandidate?.geometryFit?.score)} | ${fmtSize(fixture.bestCandidate?.localSize)} | ${(fixture.interpretation ?? [fixture.reason ?? '']).join('<br>')} |`);
+    const displayBest = fixture.bestCandidate ?? fixture.diagnosticBestCandidate ?? null;
+    const bestLabel = fixture.diagnosticBestCandidate ? `${fixture.diagnosticBestCandidate.id} (diagnostic only)` : displayBest?.id ?? '';
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fmtSize(fixture.actual?.size)} | ${bestLabel} | ${pct(displayBest?.mismatchRatio)} | ${fixture.bestGeometryCandidate?.id ?? ''} | ${num(fixture.bestGeometryCandidate?.geometryFit?.score)} | ${fmtSize(displayBest?.localSize)} | ${(fixture.interpretation ?? [fixture.reason ?? '']).join('<br>')} |`);
   }
-  for (const fixture of report.fixtures.filter((item) => item.status === 'COMPARED')) {
+  for (const fixture of report.fixtures.filter((item) => item.status === 'COMPARED' || item.status === 'DIAGNOSTIC_COMPARED')) {
     lines.push('');
     lines.push(`## ${fixture.fixtureId}`);
     lines.push('');
+    if (fixture.actual?.diagnosticOnly) {
+      lines.push('Evidence mode: `DIAGNOSTIC_ONLY`. This result may guide investigation but must not be used as trusted full-root parity evidence.');
+      lines.push('');
+    }
     lines.push(`Actual state: \`${JSON.stringify(fixture.actual.state ?? {})}\``);
     lines.push(`Local state hint: \`${JSON.stringify(fixture.localBaseline.stateHint ?? {})}\``);
     if (fixture.baselineReference) {

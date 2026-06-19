@@ -46,6 +46,7 @@ async function main() {
 
   console.log(`ROLL20 RENDERER ACTION ${recommendation.action}`);
   for (const reason of recommendation.blockers) console.log(`BLOCKER ${reason}`);
+  for (const warning of recommendation.warnings) console.log(`WARNING ${warning}`);
   for (const note of recommendation.positiveFindings) console.log(`EVIDENCE ${note}`);
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
@@ -86,6 +87,16 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, geo
             rootHeightDelta: fullRootFixture.bestCandidate.rootHeightDelta ?? null,
             patch: fullRootFixture.bestCandidate.contextPatch ?? '',
             localSize: fullRootFixture.bestCandidate.localSize ?? null,
+          }
+        : null,
+      diagnosticBestCandidate: fullRootFixture?.diagnosticBestCandidate
+        ? {
+            id: fullRootFixture.diagnosticBestCandidate.id,
+            mismatchRatio: fullRootFixture.diagnosticBestCandidate.mismatchRatio,
+            mismatchPct: pctNumber(fullRootFixture.diagnosticBestCandidate.mismatchRatio),
+            rootHeightDelta: fullRootFixture.diagnosticBestCandidate.rootHeightDelta ?? null,
+            patch: fullRootFixture.diagnosticBestCandidate.contextPatch ?? '',
+            localSize: fullRootFixture.diagnosticBestCandidate.localSize ?? null,
           }
         : null,
       stateVisibility: stateFixture
@@ -159,6 +170,9 @@ function recommend(fixtures, status) {
 
   for (const fixture of compared) {
     positiveFindings.push(`${fixture.fixtureId} best diagnostic candidate ${fixture.bestCandidate.id} at ${fixture.bestCandidate.mismatchPct}% with root delta ${num(fixture.bestCandidate.rootHeightDelta)}px`);
+  }
+  for (const fixture of fixtures.filter((item) => item.diagnosticBestCandidate && !item.bestCandidate)) {
+    warnings.push(`${fixture.fixtureId} has diagnostic-only full-root comparison ${fixture.diagnosticBestCandidate.id} at ${fixture.diagnosticBestCandidate.mismatchPct}% with root delta ${num(fixture.diagnosticBestCandidate.rootHeightDelta)}px; this must not count as trusted renderer evidence`);
   }
 
   const matchedState = fixtures.filter((fixture) => fixture.stateVisibility?.matchedLocalExpected === true);
@@ -248,20 +262,30 @@ function renderMarkdown(report) {
     for (const finding of report.recommendation.positiveFindings) lines.push(`- ${finding}`);
     lines.push('');
   }
+  if (report.recommendation.warnings.length) {
+    lines.push('### Diagnostic Warnings', '');
+    for (const warning of report.recommendation.warnings) lines.push(`- ${warning}`);
+    lines.push('');
+  }
   lines.push('### Next Actions', '');
   for (const action of report.recommendation.nextActions) lines.push(`- ${action}`);
   lines.push('');
 
   lines.push('## Fixture Evidence', '');
-  lines.push('| Fixture | Sandbox | Chat | Full-root best | Root stitch audit | Patch | State visibility | Top panel delta |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
+  lines.push('| Fixture | Sandbox | Chat | Full-root best | Diagnostic best | Root stitch audit | Patch | State visibility | Top panel delta |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
     const topDelta = fixture.stateVisibility?.largestHeightDeltas?.[0];
     lines.push([
       `| \`${fixture.fixtureId}\``,
       fmtValidation(fixture.sandboxEvidence),
       fmtValidation(fixture.chatEvidence),
-      fixture.bestCandidate ? `${fixture.bestCandidate.mismatchPct}% / root ${num(fixture.bestCandidate.rootHeightDelta)}px` : fixture.fullRootReason || fixture.fullRootStatus,
+      fixture.bestCandidate
+        ? `${fixture.bestCandidate.mismatchPct}% / root ${num(fixture.bestCandidate.rootHeightDelta)}px`
+        : fixture.diagnosticBestCandidate
+          ? 'trusted missing'
+          : fixture.fullRootReason || fixture.fullRootStatus,
+      fixture.diagnosticBestCandidate ? `${fixture.diagnosticBestCandidate.mismatchPct}% / root ${num(fixture.diagnosticBestCandidate.rootHeightDelta)}px` : '',
       fmtRootStitchAudit(fixture.rootStitchAudit),
       fixture.bestCandidate?.patch || '',
       fixture.stateVisibility ? `${fixture.stateVisibility.matchedLocalExpected ? 'matched' : 'not matched'} ${fixture.stateVisibility.localVisibleCount ?? ''}/${fixture.stateVisibility.actualVisibleCount ?? ''}` : '',

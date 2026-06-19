@@ -1428,3 +1428,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_renderer_action_gate.mjs` so the AW2E blocker now says it has only overlap diagnostic evidence and names the best diagnostic file/segment count/max score.
 - Latest gate remains `HOLD_PRODUCTION_RENDERER_PATCH`: AW2E still lacks trusted DPR-corrected full-root evidence, only 2/3 fixtures have full-root candidate comparisons, and Les-Oublies/YSHY still prefer different diagnostic patch families.
 - Claim boundary: this improves actual evidence truthfulness and gives future agents a clearer next action. It does not prove Roll20 visual parity and does not justify production renderer CSS changes.
+## 2026-06-19 Diagnostic-Only AW2E Candidate Comparison
+
+- Updated `scripts/roll20_full_root_candidate_smoke.mjs` so overlap-stitch full-root images can be compared as `DIAGNOSTIC_COMPARED` while keeping trusted `bestCandidate` empty.
+- AW2E diagnostic-only full-root comparison now reports `sandbox-text-input-270-source` at `7.93%`, with local root height delta `+10398.063px`. This is useful for triage, but it strongly reinforces that the overlap stitch is not trusted full-root evidence.
+- Updated `scripts/roll20_renderer_action_gate.mjs` to read `diagnosticBestCandidate`, print it as a `WARNING`, and keep trusted renderer blockers unchanged.
+- Latest gate remains `HOLD_PRODUCTION_RENDERER_PATCH`: AW2E has only diagnostic full-root comparison, trusted full-root evidence remains 2/3 fixtures, and patch-family agreement is still missing.
+- Claim boundary: this expands root-cause visibility without making any visual parity or production renderer claim.
