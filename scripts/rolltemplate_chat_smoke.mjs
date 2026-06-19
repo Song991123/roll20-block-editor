@@ -581,6 +581,7 @@ async function main() {
       if (
         policy === 'tight-cell-spacing' ||
         policy === 'table-scale-x' ||
+        policy === 'coc-table-scale-x' ||
         policy === 'roll20-message-padding' ||
         policy === 'roll20-break-word'
       ) {

@@ -18,6 +18,7 @@ const candidates = [
   ['soft-shadow-rejected', 'reports/rolltemplate-chat-smoke-soft-template-shadow/screenshots'],
   ['tight-cell-spacing', 'reports/rolltemplate-chat-smoke-tight-cell-spacing/screenshots'],
   ['table-scale-x', 'reports/rolltemplate-chat-smoke-table-scale-x/screenshots'],
+  ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
   ['roll20-message-padding', 'reports/rolltemplate-chat-smoke-roll20-message-padding/screenshots'],
   ['roll20-break-word', 'reports/rolltemplate-chat-smoke-roll20-break-word/screenshots'],
   ['shell-typography', 'reports/rolltemplate-chat-smoke-shell-typography/screenshots'],

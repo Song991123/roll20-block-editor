@@ -1,3 +1,14 @@
+## 2026-06-20 CoC Rolltemplate Table-Scale Candidate
+
+- Added diagnostic-only ChatPane geometry policy `coc-table-scale-x`, scoped to `.sheet-rolltemplate-coc table`.
+- Added `rolltemplate_chat_smoke` support and candidate-comparison coverage at `reports/rolltemplate-chat-smoke-coc-table-scale-x`.
+- The candidate mechanically PASSed AW2E, Les-Oublies, and YSHY smoke.
+- Candidate comparison result: `coc-table-scale-x` improves YSHY aligned mismatch from `21.45%` to `20.11%` (`-1.34%`) with `0` regressions.
+- Global `table-scale-x` still remains rejected because it regresses another fixture; this new candidate proves the narrower per-template path is safer but still not production-ready.
+- Renderer policy keeps YSHY as `CANDIDATE_ONLY_DO_NOT_EXPOSE`; actual Roll20 style proof or a better intrinsic-width model is still required.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`; no visual parity claim and no public UI/default renderer change.
+- Next P0: prove or replace the YSHY/CoC width candidate using actual Roll20 style evidence, then separately address Les shell/message width.
+
 ## 2026-06-20 Per-Template Chat Width Model
 
 - Added `scripts/roll20_chat_width_model.mjs` and package alias `diagnose:roll20-chat-width`.

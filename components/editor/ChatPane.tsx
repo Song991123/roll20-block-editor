@@ -40,6 +40,7 @@ type ChatGeometryPolicy =
   | 'default'
   | 'tight-cell-spacing'
   | 'table-scale-x'
+  | 'coc-table-scale-x'
   | 'roll20-message-padding'
   | 'roll20-break-word';
 type ChatTypographyPolicy =
@@ -76,6 +77,7 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
   if (
     value === 'tight-cell-spacing' ||
     value === 'table-scale-x' ||
+    value === 'coc-table-scale-x' ||
     value === 'roll20-message-padding' ||
     value === 'roll20-break-word'
   ) return value;
@@ -169,6 +171,10 @@ const roll20ChatShellCss = `
   letter-spacing: -0.075px !important;
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="table-scale-x"] [class*="sheet-rolltemplate-"] table {
+  transform: scaleX(0.981);
+  transform-origin: left top;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-scale-x"] .sheet-rolltemplate-coc table {
   transform: scaleX(0.981);
   transform-origin: left top;
 }

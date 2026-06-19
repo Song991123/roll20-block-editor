@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - CoC rolltemplate table-scale candidate isolated
+
+Status: PARTIAL. A fixture-local YSHY/CoC chat-width candidate now exists, but Roll20 chat/template parity is still blocked and the candidate is not product-enabled.
+
+- DONE: Added diagnostic-only `coc-table-scale-x` ChatPane geometry policy for `.sheet-rolltemplate-coc table`.
+- DONE: Added smoke support and candidate-comparison coverage through `reports/rolltemplate-chat-smoke-coc-table-scale-x`.
+- RESULT: Functional smoke PASSed all 3 prepared fixtures.
+- RESULT: Candidate comparison shows `coc-table-scale-x` improves YSHY aligned mismatch `21.45% -> 20.11%` (`-1.34%`) with `0` regressions, unlike global `table-scale-x` which remains `reject-regresses-fixtures`.
+- RESULT: Renderer policy still keeps YSHY as `CANDIDATE_ONLY_DO_NOT_EXPOSE`; the candidate is fixture-local and still needs actual Roll20 style proof before any renderer-model/default use.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; this is a narrower diagnostic candidate, not Roll20 visual parity.
+- VERIFIED: `corepack pnpm run build`, `rolltemplate_chat_smoke` with `--chat-geometry-policy coc-table-scale-x`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-renderer-policy`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Add actual-style proof for the YSHY/CoC table transform candidate or create a more faithful intrinsic-width model that explains the `4.607x` actual table/crop ratio without relying on visual-only scaling.
+
 ## 2026-06-20 Codex Update - Per-template chat width model added
 
 Status: PARTIAL. Roll20 chat/template parity is still blocked, but the width/overflow blocker is now separated by fixture/template instead of treated as one global CSS problem.
