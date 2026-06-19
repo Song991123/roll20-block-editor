@@ -1,4 +1,16 @@
 
+## 2026-06-19 Codex Update - Roll20 actual AW2E chat recapture
+
+Status: PARTIAL. Actual Roll20 parity is still NOT DONE.
+
+- Captured fresh local-only Roll20 chat evidence for `official-roll20-AW2E` under ignored `reports/roll20-actual-compare/2026-06-18-state-map-v1/`.
+- Status improved from generated actual screenshots `4/6` to `5/6`; `official-roll20-AW2E` is no longer listed as stale chat evidence.
+- New diagnostic result: AW2E normalized rolltemplate chat crop mismatch is `95.13%`, so Roll20 chat visual parity is clearly not achieved.
+- Current status still holds production renderer changes: `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, `rendererReady=NO`, `rendererBlockers=7`.
+- Remaining missing generated evidence: `yshy-commission-1bu:chat:chat-screenshot-dom-stale`.
+- Observed Roll20 sandbox warning: `Translation JSON parse error` while the sandbox tools were open. Local exported YSHY/AW2E `translation.json` files parse successfully, so investigate Roll20 upload/settings packaging rather than assuming source JSON is invalid.
+- Attempted YSHY sandbox upload through Roll20 file chooser, but Chrome automation returned `Not allowed` on `fileChooser.setFiles`. To continue actual YSHY capture, enable file upload access for the Codex Chrome extension or upload the three local payload files manually in the Roll20 Sandbox Tools: `sheet.html`, `sheet.css`, `translation.json`.
+
 ## 2026-06-19 Codex Update - Roll20 chat capture probe self-test
 
 Status: DONE for capture-tool hardening, NOT DONE for actual Roll20 parity.
