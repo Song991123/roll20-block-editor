@@ -110,6 +110,13 @@ classifies the captured fixture as
 Roll20 expected-render path must not blindly assume CSS selector prefixing until
 the actual character iframe behavior is modeled and rechecked.
 
+2026-06-19 update: the dedicated sandbox endpoint/settings-form fallback also
+rendered YSHY 1BU in the actual Roll20 character iframe. Fresh local-only
+computed-style evidence found a `.charactersheet` root at `850px` width with
+`1049` inputs, `808` roll buttons, `88` tables, and `9` scripts. The active
+computed-style diagnostic now compares `3/3` fixtures with
+`missingActualStyle=0`, but still reports `DO_NOT_PROMOTE_DIRECTLY`.
+
 ## Implementation Implications
 
 - Add a dedicated local module for Roll20 sandbox sanitize/prefix behavior,

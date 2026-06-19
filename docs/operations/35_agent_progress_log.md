@@ -71,6 +71,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 
 
+
+## 2026-06-19 YSHY Actual Roll20 Computed-Style Sidecar
+
+- Used only the dedicated Roll20 Custom Sheet Sandbox campaign `21639681`; existing rooms were not modified.
+- Standard Chrome file chooser still fails at `fileChooser.setFiles` with `Not allowed`, but the visible input probe proved the chooser path itself opens once inputs are made visible.
+- Applied YSHY 1BU through the observed endpoint/settings-form fallback: `/sheetsandbox/savesheetsettings` accepted HTML/CSS/translation and the full `#settingsform` save accepted wrapped `customcharsheet_json`.
+- Opened sandbox character `-OvSWvivVPTt2z_4goPF`; the actual Roll20 iframe rendered a live `.charactersheet` root at `850px` width with `1049` inputs, `808` roll buttons, `88` tables, `9` textareas, and `9` scripts.
+- Saved ignored local sidecar `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/yshy-commission-1bu-computed-styles.json`.
+- Latest diagnostics: `diagnose:roll20-computed-style-context => compared=3/3, missingActualStyle=0`, but still `DO_NOT_PROMOTE_DIRECTLY`; `status:roll20-actual => rendererReady=NO`, `rendererBlockers=2`.
+- Claim boundary: this proves YSHY actual Roll20 iframe/style capture, not visual parity and not production renderer readiness.
 ## 2026-06-19 YSHY Sandbox Upload Automation Blocker
 
 - Reclaimed the dedicated Roll20 Custom Sheet Sandbox editor/settings tabs only; no existing room was modified.
