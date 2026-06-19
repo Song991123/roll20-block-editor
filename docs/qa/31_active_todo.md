@@ -14,6 +14,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer gate note, 2026-06-19 scroll-metrics reliable candidate:
+`gate:roll20-renderer-action` now allows a root-cutoff HIGH fixture to contribute a reliable renderer candidate when its scroll-metrics source render is tightly aligned (`rootDelta <= 50px`, `panelY <= 50px`, `panelH <= 10px`). Latest AW2E uses the scroll-metrics source candidate with rootDelta +8.188px, panelY +16.6px, panelH +0.2px, so the reliable evidence shortage blocker is gone. Renderer still HOLDs because reliable patch families disagree across fixtures: `none` for AW2E, `inline-block+text-input-height` for Les-Oublies, and `text-input-height` for YSHY; the old trusted stitched root cutoff warning remains as evidence hygiene, not as the AW2E renderer comparison source.
 Current Roll20 renderer gate note, 2026-06-19 reliable patch-family comparison:
 `gate:roll20-renderer-action` now excludes fixtures with root-cutoff HIGH from reliable patch-family comparison. Latest gate reports reliable cross-fixture renderer evidence `2/3`, explicitly warns that AW2E's old trusted full-root candidate is excluded, and keeps HOLD. Remaining blockers are now phrased as reliable-evidence shortage, Les/YSHY patch-family disagreement, and AW2E stitched-vs-sidecar root disagreement.
 Current Roll20 actual-status note, 2026-06-19 reliable full-root accounting:

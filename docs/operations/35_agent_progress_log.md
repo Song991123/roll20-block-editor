@@ -1,3 +1,8 @@
+## 2026-06-19 Scroll Metrics Reliable Renderer Candidate
+
+- Updated `scripts/roll20_renderer_action_gate.mjs` to use a scroll-metrics source candidate for reliable patch-family comparison when a cutoff-HIGH fixture has tight root/panel alignment.
+- Latest AW2E scroll-metrics source candidate qualifies with rootDelta +8.188px, panelY +16.6px, and panelH +0.2px. The gate now compares AW2E as `none`, Les-Oublies as `inline-block+text-input-height`, and YSHY as `text-input-height`.
+- Renderer remains HOLD. The reliable evidence shortage blocker is gone, but the remaining blocker is real cross-fixture patch-family disagreement plus the old AW2E stitched-root cutoff warning.
 ## 2026-06-19 Reliable Renderer Gate Patch-Family Comparison
 
 - Updated `scripts/roll20_renderer_action_gate.mjs` so root-cutoff HIGH fixtures are excluded from reliable patch-family comparison.

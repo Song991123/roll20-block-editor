@@ -236,9 +236,10 @@ function recommend(fixtures, status, activeRunDir) {
     blockers.push(`missing trustworthy Roll20 chat screenshots for ${missingChat.map((fixture) => fixture.fixtureId).join(', ')}`);
   }
 
-  const highRootCutoffRisk = fixtures.filter((fixture) => fixture.rootCutoff?.risk === 'HIGH');
   const compared = fixtures.filter((fixture) => fixture.bestCandidate);
-  const reliableCompared = compared.filter((fixture) => fixture.rootCutoff?.risk !== 'HIGH');
+  const reliableCompared = fixtures
+    .map((fixture) => ({ fixture, candidate: reliableRendererCandidate(fixture) }))
+    .filter((item) => item.candidate);
   const missingFullRootCandidates = fixtures.filter((fixture) => !fixture.bestCandidate);
   if (missingFullRootCandidates.length) {
     blockers.push(`missing full-root candidate comparison for ${missingFullRootCandidates.map(formatMissingFullRoot).join('; ')}`);
@@ -248,8 +249,8 @@ function recommend(fixtures, status, activeRunDir) {
   }
 
   const patchFamilies = new Map();
-  for (const fixture of reliableCompared) {
-    const family = patchFamily(fixture.bestCandidate?.patch);
+  for (const { fixture, candidate } of reliableCompared) {
+    const family = patchFamily(candidate?.patch);
     if (!patchFamilies.has(family)) patchFamilies.set(family, []);
     patchFamilies.get(family).push(fixture.fixtureId);
   }
@@ -257,6 +258,7 @@ function recommend(fixtures, status, activeRunDir) {
     blockers.push(`best diagnostic patch is not uniform across fixtures: ${[...patchFamilies.entries()].map(([patch, ids]) => `${patch}=>${ids.join(',')}`).join('; ')}`);
   }
 
+  const highRootCutoffRisk = fixtures.filter((fixture) => fixture.rootCutoff?.risk === 'HIGH');
   if (highRootCutoffRisk.length) {
     blockers.push(`trusted stitched root height disagrees with live sidecar root for ${highRootCutoffRisk.map((fixture) => `${fixture.fixtureId} delta=${num(fixture.rootCutoff.heightDelta)}px`).join(', ')}`);
   }
@@ -266,6 +268,9 @@ function recommend(fixtures, status, activeRunDir) {
   }
   for (const fixture of compared.filter((item) => item.rootCutoff?.risk === 'HIGH')) {
     warnings.push(`${fixture.fixtureId} trusted full-root candidate result is excluded from reliable patch-family comparison because root-cutoff risk is HIGH.`);
+  }
+  for (const { fixture, candidate } of reliableCompared.filter((item) => item.candidate?.evidenceSource === 'scroll-metrics-source')) {
+    warnings.push(`${fixture.fixtureId} uses scroll-metrics source candidate for reliable patch-family comparison: root delta ${num(candidate.rootHeightDelta)}px, panelY=${num(candidate.statePanelYDelta)}px, panelH=${num(candidate.statePanelHeightDelta)}px.`);
   }
   for (const fixture of fixtures.filter((item) => item.diagnosticBestCandidate && !item.bestCandidate)) {
     warnings.push(`${fixture.fixtureId} has diagnostic-only full-root comparison ${fixture.diagnosticBestCandidate.id} at ${fixture.diagnosticBestCandidate.mismatchPct}% with root delta ${num(fixture.diagnosticBestCandidate.rootHeightDelta)}px; this must not count as trusted renderer evidence`);
@@ -368,6 +373,21 @@ function recommend(fixtures, status, activeRunDir) {
     positiveFindings,
     nextActions,
   };
+}
+
+function reliableRendererCandidate(fixture) {
+  if (fixture.rootCutoff?.risk !== 'HIGH' && fixture.bestCandidate) {
+    return { ...fixture.bestCandidate, evidenceSource: 'trusted-full-root' };
+  }
+  const source = fixture.scrollMetricsComparison?.sourceCandidate;
+  if (!source) return null;
+  const rootDelta = Math.abs(Number(source.rootHeightDelta ?? Number.POSITIVE_INFINITY));
+  const panelY = Math.abs(Number(source.statePanelYDelta ?? Number.POSITIVE_INFINITY));
+  const panelH = Math.abs(Number(source.statePanelHeightDelta ?? Number.POSITIVE_INFINITY));
+  if (rootDelta <= 50 && panelY <= 50 && panelH <= 10) {
+    return { ...source, evidenceSource: 'scroll-metrics-source' };
+  }
+  return null;
 }
 
 function formatMissingFullRoot(fixture) {
