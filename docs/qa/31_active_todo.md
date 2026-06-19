@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 AW2E attr_class visibility diagnostics:
+Added `scripts/roll20_attr_class_visibility_diagnostics.mjs` and `corepack pnpm run diagnose:roll20-attr-class-visibility -- reports\roll20-actual-compare\2026-06-18-state-map-v1 [fixture-id]`. Latest AW2E run compares the actual Roll20 attr_class sidecar with emitted payload selector/class shapes: actual checked value is still `Hardholder`, but actual visible panel values count is `15` and `24` checked show selectors are unprefixed while the emitted/Roll20 HTML shape is `sheet-` prefixed. `gate:roll20-renderer-action` now includes this as positive root-cause evidence while still returning `HOLD_PRODUCTION_RENDERER_PATCH`; `rendererReady=NO`. Next P0 is to model Roll20 selector prefix/default-state behavior without promoting blanket `sheet-` alias CSS or forced checked-state candidates.
+
 Current Roll20 renderer note, 2026-06-19 AW2E actual attr_class sidecar:
 Chrome/CDP read the generated AW2E Roll20 character iframe in the dedicated sandbox without modifying existing rooms. Ignored local sidecar `live-iframe-probe/official-roll20-AW2E-attr-class-state.json` records 81 `attr_class`/`class` inputs and actual checked value `Hardholder`. The updated attr-class plan now marks AW2E `CAPTURED_NEEDS_ANALYSIS`: actual checked `Hardholder` does not explain the height-closest `first-13` candidate (`+208.5px`) while Hardholder-only is far too short. Updated playbook diagnostics and renderer gate now point to selector prefix/state visibility analysis instead of repeating the same capture. Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` and `rendererReady=NO`.
 

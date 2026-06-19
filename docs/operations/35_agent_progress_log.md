@@ -1563,3 +1563,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_playbook_state_diagnostics.mjs` and `scripts/roll20_renderer_action_gate.mjs` to read the sidecar and report the key contradiction: actual checked `Hardholder` does not explain the height-closest `sandbox-sheet-alias-attr-class-state-first-13-source`; next work is selector prefix/state visibility analysis, not forcing more checked values.
 - Verification: `node --check` for changed scripts, `plan:roll20-attr-class-state`, `diagnose:roll20-playbook-state`, `gate:roll20-renderer-action`, `status:roll20-actual`, `guard:roll20-evidence`, `lint`, and `build` passed. `gate:roll20-renderer-ready` still fails as expected with `rendererReady=NO`.
 - Claim boundary: this is real Roll20 state evidence and diagnostic routing, not visual parity and not a production renderer CSS patch.
+
+## 2026-06-19 AW2E Attr Class Visibility Diagnostics
+
+- Added `scripts/roll20_attr_class_visibility_diagnostics.mjs` and package alias `diagnose:roll20-attr-class-visibility`.
+- The diagnostic reads only ignored local evidence: the actual Roll20 iframe attr_class sidecar plus emitted payload HTML/CSS.
+- Latest AW2E evidence: actual checked value is `Hardholder`, actual visible panel count is `15`, and `24` checked show selectors are unprefixed while the emitted/Roll20 HTML class shape is `sheet-` prefixed.
+- `scripts/roll20_renderer_action_gate.mjs` now reads this report and surfaces the result as root-cause evidence while keeping production renderer CSS on HOLD.
+- Claim boundary: this explains the AW2E default-state/selector mismatch more precisely. It does not prove Roll20 visual parity and does not authorize blanket `sheet-` alias CSS or forced checked-state patches.

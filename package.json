@@ -39,6 +39,7 @@
     "diagnose:roll20-height-drift": "node scripts/roll20_height_drift_diagnostics.mjs",
     "diagnose:roll20-visibility-selectors": "node scripts/roll20_visibility_selector_diagnostics.mjs",
     "diagnose:roll20-playbook-state": "node scripts/roll20_playbook_state_diagnostics.mjs",
+    "diagnose:roll20-attr-class-visibility": "node scripts/roll20_attr_class_visibility_diagnostics.mjs",
     "plan:roll20-attr-class-state": "node scripts/roll20_attr_class_state_capture_plan.mjs",
     "smoke:roll20-same-context-visible": "node scripts/roll20_same_context_visible_smoke.mjs",
     "smoke:roll20-full-root-candidates": "node scripts/roll20_full_root_candidate_smoke.mjs",
