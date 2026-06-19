@@ -35,6 +35,7 @@ function safeRolltemplateClass(name: string): string {
 
 type ChatFontPolicy = 'default' | 'roll20-chat-fallback';
 type ChatTextPolicy = 'default' | 'roll20-auto-aa';
+type ChatShadowPolicy = 'default' | 'no-template-shadow';
 
 function currentChatFontPolicy(): ChatFontPolicy {
   if (typeof window === 'undefined') return 'default';
@@ -47,6 +48,13 @@ function currentChatTextPolicy(): ChatTextPolicy {
   if (typeof window === 'undefined') return 'default';
   return window.localStorage.getItem('__r20ChatTextPolicy') === 'roll20-auto-aa'
     ? 'roll20-auto-aa'
+    : 'default';
+}
+
+function currentChatShadowPolicy(): ChatShadowPolicy {
+  if (typeof window === 'undefined') return 'default';
+  return window.localStorage.getItem('__r20ChatShadowPolicy') === 'no-template-shadow'
+    ? 'no-template-shadow'
     : 'default';
 }
 
@@ -108,6 +116,10 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-text-policy="roll20-auto-aa"] .textchatcontainer {
   text-rendering: auto;
   -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-shadow-policy="no-template-shadow"] [class*="sheet-rolltemplate-"],
+.r20-chat-pane[data-r20-chat-shadow-policy="no-template-shadow"] [class*="sheet-rolltemplate-"] * {
+  text-shadow: none !important;
 }
 .r20-chat-pane .textchatcontainer .content {
   line-height: 1.25em;
@@ -451,6 +463,7 @@ export default function ChatPane() {
   const emittedI18n = useWorkspaceStore((s) => s.emitCache.i18n);
   const chatFontPolicy = currentChatFontPolicy();
   const chatTextPolicy = currentChatTextPolicy();
+  const chatShadowPolicy = currentChatShadowPolicy();
   const rolltemplateCss = useMemo(
     () => extractRolltemplateCss(emittedCss, chatFontPolicy),
     [emittedCss, chatFontPolicy],
@@ -461,6 +474,7 @@ export default function ChatPane() {
     <div
       className="r20-chat-pane flex h-full flex-col min-h-0"
       data-r20-chat-text-policy={chatTextPolicy}
+      data-r20-chat-shadow-policy={chatShadowPolicy}
     >
       <style data-r20-chat-shell-css dangerouslySetInnerHTML={{ __html: roll20ChatShellCss }} />
       {rolltemplateCss.trim() && (

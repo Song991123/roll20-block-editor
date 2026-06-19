@@ -33,6 +33,7 @@ const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4196'));
 const CHAT_FONT_POLICY = argOf('--chat-font-policy', 'default');
 const CHAT_TEXT_POLICY = argOf('--chat-text-policy', 'default');
+const CHAT_SHADOW_POLICY = argOf('--chat-shadow-policy', 'default');
 const VIEWPORT = { width: 2200, height: 1200 };
 
 const MIME = {
@@ -395,6 +396,7 @@ function renderMarkdown(report) {
   lines.push(`Generated: ${report.startedAt}`);
   lines.push(`Chat font policy: \`${report.chatFontPolicy ?? 'default'}\``);
   lines.push(`Chat text policy: \`${report.chatTextPolicy ?? 'default'}\``);
+  lines.push(`Chat shadow policy: \`${report.chatShadowPolicy ?? 'default'}\``);
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
@@ -461,6 +463,7 @@ async function main() {
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
     chatFontPolicy: CHAT_FONT_POLICY,
     chatTextPolicy: CHAT_TEXT_POLICY,
+    chatShadowPolicy: CHAT_SHADOW_POLICY,
     fixtures: [],
   };
 
@@ -486,6 +489,13 @@ async function main() {
         localStorage.removeItem('__r20ChatTextPolicy');
       }
     }, CHAT_TEXT_POLICY);
+    await page.evaluate((policy) => {
+      if (policy === 'no-template-shadow') {
+        localStorage.setItem('__r20ChatShadowPolicy', 'no-template-shadow');
+      } else {
+        localStorage.removeItem('__r20ChatShadowPolicy');
+      }
+    }, CHAT_SHADOW_POLICY);
     await page.reload({ waitUntil: 'networkidle' });
     await warmPerfHook(page);
 
