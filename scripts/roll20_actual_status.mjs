@@ -318,14 +318,25 @@ async function validateActualTargetEvidence({ screenshots, target, file, fallbac
 
 async function validateChatEvidence(screenshots, file) {
   const domEvidence = await readJsonIfExists(path.join(screenshots, 'roll20-chat-dom-evidence.json'));
+  const chatPageScreenshot = path.join(screenshots, 'roll20-chat-page.png');
+  const hasChatPageScreenshot = existsSync(chatPageScreenshot);
   const hasDomEvidence = Boolean(domEvidence);
   const hasRenderedChatDom = hasPositiveChatDomEvidence(domEvidence);
   if (!existsSync(file)) {
     if (hasRenderedChatDom) {
       return {
         ok: false,
-        kind: 'chat-dom-only',
-        note: 'Roll20 chat DOM evidence exists, but roll20-chat.png is missing; visual rolltemplate/chat evidence is still unverified',
+        kind: hasChatPageScreenshot ? 'chat-dom-page-screenshot-only' : 'chat-dom-only',
+        note: hasChatPageScreenshot
+          ? 'Roll20 chat DOM evidence exists and roll20-chat-page.png exists, but roll20-chat.png is missing; page screenshots are not accepted as chat visual evidence'
+          : 'Roll20 chat DOM evidence exists, but roll20-chat.png is missing; visual rolltemplate/chat evidence is still unverified',
+      };
+    }
+    if (hasChatPageScreenshot) {
+      return {
+        ok: false,
+        kind: hasDomEvidence ? 'chat-page-screenshot-dom-empty' : 'chat-page-screenshot-only',
+        note: 'roll20-chat-page.png exists, but roll20-chat.png is missing; page screenshots are not accepted as chat visual evidence',
       };
     }
     return { ok: false, kind: hasDomEvidence ? 'chat-dom-empty' : 'missing', note: 'missing Roll20 chat screenshot' };

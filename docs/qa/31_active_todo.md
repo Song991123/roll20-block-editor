@@ -29,12 +29,13 @@ label. This is still local app evidence only, not actual Roll20 chat parity.
 
 Current Roll20 actual-screen note, 2026-06-19 chat evidence split:
 `scripts/roll20_actual_status.mjs` and `scripts/roll20_upload_handoff.mjs` now
-distinguish Roll20 chat DOM evidence from a trustworthy `roll20-chat.png`
-screenshot. Latest status/handoff rerun shows AW2E and YSHY still have missing
-chat screenshots, while Les-Oublies has `chat-dom-only`: Roll20 chat DOM
-evidence exists, but no visual chat screenshot has been captured. This means
-local rolltemplate/chat smoke remains useful, but actual Roll20 rolltemplate
-visual parity is still unverified.
+distinguish Roll20 chat DOM evidence and page-level screenshots from a
+trustworthy `roll20-chat.png` screenshot. Latest status/handoff rerun shows
+AW2E and YSHY still have missing chat screenshots, while Les-Oublies is
+`chat-dom-page-screenshot-only` / `DOM_PAGE_ONLY`: Roll20 chat DOM evidence and
+`roll20-chat-page.png` exist, but the page screenshot is not accepted as chat
+visual evidence. This means local rolltemplate/chat smoke remains useful, but
+actual Roll20 rolltemplate visual parity is still unverified.
 
 Current Roll20 actual-screen note, 2026-06-19 handoff alignment update:
 Chrome could still claim the dedicated Roll20 editor tab, but the ordinary page

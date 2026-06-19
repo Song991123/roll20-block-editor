@@ -1282,3 +1282,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Re-ran preview/edit visual smoke on port 4422; AW2E, Les-Oublies, and YSHY 1BU PASSed with diagnostic mismatches of 1.87%, 2.07%, and 1.02%. This is local preview/edit evidence only.
 - Hardened `scripts/imported_edit_sync_smoke.mjs`: non-leaf layer reorder candidates now require a true sibling target with the same parent/depth, preventing parent/child containers from masquerading as sibling reorder targets; free absolute-in-frame checks no longer rely on a naive first closing tag after DOM nesting is already proven.
 - Latest imported edit sync rerun on port 4424 PASSed all 3 prepared fixtures. AW2E/YSHY still have external-image resource WARNs, so visual parity remains unproven.
+## 2026-06-19 Chat Page Screenshot Rejected As Chat Evidence
+
+- Tightened the actual Roll20 chat evidence gate again: `roll20-chat-page.png` is now reported separately from `roll20-chat.png`.
+- Les-Oublies currently has Roll20 chat DOM evidence plus `roll20-chat-page.png`, but no trustworthy `roll20-chat.png`; status reports `chat-dom-page-screenshot-only` and handoff reports `DOM_PAGE_ONLY`.
+- The handoff report now lists current existence for screenshot targets, including `chatPage`, so agents can see that a page screenshot exists without mistaking it for rolltemplate/chat visual evidence.
+- AW2E and YSHY still have missing chat screenshots. Actual Roll20 rolltemplate visual parity remains unverified.

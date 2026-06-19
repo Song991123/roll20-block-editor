@@ -118,6 +118,7 @@ async function buildEntry(runDir, fixtureId) {
     sandboxFullRootDpr: withRelative(path.join(screenshots, 'roll20-sandbox-root-full-dpr-corrected.png')),
     sandboxFullRootDprMeta: withRelative(path.join(screenshots, 'roll20-sandbox-root-full-dpr-corrected.json')),
     chat: withRelative(path.join(screenshots, 'roll20-chat.png')),
+    chatPage: withRelative(path.join(screenshots, 'roll20-chat-page.png')),
     chatDomEvidence: withRelative(path.join(screenshots, 'roll20-chat-dom-evidence.json')),
     room: withRelative(path.join(screenshots, 'roll20-room.png')),
   };
@@ -188,15 +189,26 @@ function validateSandboxEvidence(screenshots) {
 
 function validateChatEvidence(screenshots) {
   const screenshot = path.join(screenshots, 'roll20-chat.png');
+  const pageScreenshot = path.join(screenshots, 'roll20-chat-page.png');
   const domEvidence = readJsonIfExists(path.join(screenshots, 'roll20-chat-dom-evidence.json'));
+  const hasPageScreenshot = existsSync(pageScreenshot);
   const hasDomEvidence = Boolean(domEvidence);
   const hasRenderedChatDom = hasPositiveChatDomEvidence(domEvidence);
   if (!existsSync(screenshot)) {
     if (hasRenderedChatDom) {
       return {
         ok: false,
-        status: 'DOM_ONLY',
-        note: 'Roll20 chat DOM evidence exists, but roll20-chat.png is missing',
+        status: hasPageScreenshot ? 'DOM_PAGE_ONLY' : 'DOM_ONLY',
+        note: hasPageScreenshot
+          ? 'Roll20 chat DOM evidence exists and roll20-chat-page.png exists, but roll20-chat.png is missing; page screenshots are not accepted as chat visual evidence'
+          : 'Roll20 chat DOM evidence exists, but roll20-chat.png is missing',
+      };
+    }
+    if (hasPageScreenshot) {
+      return {
+        ok: false,
+        status: hasDomEvidence ? 'PAGE_DOM_EMPTY' : 'PAGE_ONLY',
+        note: 'roll20-chat-page.png exists, but roll20-chat.png is missing; page screenshots are not accepted as chat visual evidence',
       };
     }
     return { ok: false, status: hasDomEvidence ? 'DOM_EMPTY' : 'MISSING', note: 'missing Roll20 chat screenshot' };
@@ -250,7 +262,7 @@ function rel(file) {
 }
 
 function withRelative(file) {
-  return { path: file, relativePath: rel(file) };
+  return { path: file, relativePath: rel(file), exists: existsSync(file) };
 }
 
 function renderMarkdown(report) {
@@ -300,9 +312,9 @@ function renderMarkdown(report) {
     for (const [name, file] of Object.entries(entry.files)) {
       lines.push(`| ${name} | ${file.exists ? 'yes' : 'NO'} | \`${file.relativePath}\` |`);
     }
-    lines.push('', '| Screenshot | Save As |', '| --- | --- |');
+    lines.push('', '| Screenshot | Current | Save As |', '| --- | --- | --- |');
     for (const [name, target] of Object.entries(entry.screenshotTargets)) {
-      lines.push(`| ${name} | \`${target.relativePath}\` |`);
+      lines.push(`| ${name} | ${target.exists ? 'exists' : 'missing'} | \`${target.relativePath}\` |`);
     }
     lines.push('');
     lines.push(`Stitch manifest: \`${entry.stitchManifest.relativePath}\``);

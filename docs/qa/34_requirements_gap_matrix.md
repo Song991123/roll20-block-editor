@@ -23,8 +23,11 @@ improves local comparison readiness but is not actual Roll20 chat parity.
 
 Current Roll20 actual-screen note, 2026-06-19 chat evidence split:
 `scripts/roll20_actual_status.mjs` and `scripts/roll20_upload_handoff.mjs` now
-separate chat DOM evidence from visual chat screenshot evidence. Latest rerun
-shows Les-Oublies has `chat-dom-only`, while AW2E and YSHY are missing
+separate chat DOM evidence and page-level screenshots from visual chat
+screenshot evidence. Latest rerun shows Les-Oublies has
+`chat-dom-page-screenshot-only` / `DOM_PAGE_ONLY`: `roll20-chat-page.png` exists
+beside DOM evidence, but it is not accepted as chat visual evidence because
+`roll20-chat.png` is still missing. AW2E and YSHY are also missing
 `roll20-chat.png`. Actual Roll20 rolltemplate/chat visual parity remains
 unverified even though the local app chat smoke passes.
 
