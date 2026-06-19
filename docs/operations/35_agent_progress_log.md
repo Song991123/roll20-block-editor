@@ -1412,3 +1412,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated actual evidence image loaders in screenshot diff, crop, stitch, visible-crop diagnostics, same-context visible smoke, and full-root candidate smoke to sniff PNG/JPEG magic bytes before building data URLs.
 - Rerun evidence stayed stable: actual screenshot diff still reports AW2E sandbox 14.01%, Les-Oublies sandbox 6.57%, YSHY sandbox 22.93%; full-root candidate smoke still compares Les-Oublies and YSHY while skipping AW2E full-root; renderer gate still holds production CSS.
 - Claim boundary: this is evidence pipeline hardening. It does not add trusted AW2E full-root evidence and does not prove Roll20 visual parity.
+
+## 2026-06-19 AW2E Overlap Stitch Diagnostic
+
+- Captured five ignored local AW2E Roll20 editor/root scroll segments under `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/` after the visible editor showed generated AW2E controls.
+- Added `scripts/roll20_overlap_stitch_diagnostic.mjs` and package command `corepack pnpm run stitch:roll20-overlap-diagnostic` to visually stitch scrolled segments by overlap when iframe DOM/scrollTop remains unreadable.
+- Generated ignored diagnostic output `aw2e-overlap-stitch-diagnostic.png` at `720x2093` from five segment JPGs. It is useful for continuity inspection, but visible seams remain, so it is not trusted full-root evidence and must not be renamed/promoted to `roll20-sandbox-root-full-dpr-corrected.png`.
+- Claim boundary: this is actual Roll20 evidence-pipeline work only. It does not change the renderer, does not prove Roll20 visual parity, and the next action remains stricter DPR-corrected AW2E full-root capture/manifest or a validated stitch path before production renderer CSS changes.

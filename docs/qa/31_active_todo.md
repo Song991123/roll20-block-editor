@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 actual-screen note, 2026-06-19 AW2E full-root capture attempt:
+AW2E actual Roll20 editor segment capture succeeded with five ignored local screenshots under `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/`. Added `scripts/roll20_overlap_stitch_diagnostic.mjs` and `corepack pnpm run stitch:roll20-overlap-diagnostic` to inspect segment continuity when iframe DOM/scrollTop cannot be read. The generated `aw2e-overlap-stitch-diagnostic.png` is `720x2093` and useful for diagnosis, but visible seams remain, so it is not promoted to trusted `roll20-sandbox-root-full-dpr-corrected.png` evidence. Renderer action remains HOLD until AW2E gets a stricter DPR-corrected full-root capture/manifest or a validated stitch path.
+
 Current Roll20 renderer/chat note, 2026-06-19 actual evidence gate cleanup:
 `scripts/roll20_renderer_action_gate.mjs` now treats generated-sheet Sandbox/chat evidence separately from optional solo-room observation evidence. Latest gate rerun no longer blocks on `actual evidence incomplete` once `status:roll20-actual` reports `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedActualScreenshots=6/6`, and `generatedDiffed=6/6`. Production renderer CSS is still HOLD because only 2/3 fixtures have full-root candidates and the best diagnostic patch family is not uniform across fixtures.
 
