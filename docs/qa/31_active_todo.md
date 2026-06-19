@@ -1,4 +1,14 @@
 
+## 2026-06-19 Codex Update - Chat probe JSON serialization hardening
+
+Status: DONE for capture-tool hardening, NOT DONE for Roll20 parity.
+
+- Updated `roll20_chat_capture_plan.mjs` so generated DOM probe snippets clone `chatRect`, `clip`, `screenshotClipApplied`, and `screenshotCssClip` instead of reusing the same object reference.
+- Extended `test:roll20-chat-capture-plan` to verify JSON serialization and to fail if `[Circular]` appears or clip aliases are lost.
+- Re-ran chat capture planning: planned fixtures are now `2/3` (`official-roll20-Les-Oublies`, `yshy-commission-1bu`). `official-roll20-AW2E` no longer needs stale recapture after the previous actual Roll20 evidence update.
+- Current chat parity remains high mismatch: AW2E `95.13%`, YSHY `96.93%`; this is evidence against visual parity, not a pass.
+- Next P0: recapture YSHY via Roll20 Sandbox Tools after file upload access is available or manual upload is done, then recapture Les-Oublies with normalized crop metadata.
+
 ## 2026-06-19 Codex Update - Roll20 actual AW2E chat recapture
 
 Status: PARTIAL. Actual Roll20 parity is still NOT DONE.

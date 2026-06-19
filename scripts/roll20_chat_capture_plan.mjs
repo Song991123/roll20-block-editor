@@ -266,6 +266,7 @@ function renderDomProbeSnippet(entry) {
     const r = el.getBoundingClientRect();
     return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
   };
+  const cloneRect = (rect) => rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom } : null;
   const clip = rectOf(textchat) || { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight, right: window.innerWidth, bottom: window.innerHeight };
   const templateInfos = templates.map((template, index) => ({
     index,
@@ -315,10 +316,10 @@ function renderDomProbeSnippet(entry) {
     pageUrl: '[redacted-url]',
     activeRightTab: document.querySelector('#textchattab.active, .textchattab.active') ? 'textchattab' : null,
     chatSelector: textchat ? (textchat.id ? '#' + textchat.id : textchat.className) : null,
-    chatRect: clip,
-    clip,
-    screenshotClipApplied: clip,
-    screenshotCssClip: clip,
+    chatRect: cloneRect(clip),
+    clip: cloneRect(clip),
+    screenshotClipApplied: cloneRect(clip),
+    screenshotCssClip: cloneRect(clip),
     messageCount: messages.length,
     rolltemplateCount: templates.length,
     latestMessage: latestMessage ? {
@@ -424,11 +425,24 @@ function runSelfTest() {
   if (evidence.fixtureId !== 'self-test') failures.push('fixtureId mismatch');
   if (!evidence.clip?.width || !evidence.clip?.height) failures.push('missing clip');
   if (!evidence.screenshotClipApplied?.width || !evidence.screenshotCssClip?.width) failures.push('missing screenshot clip aliases');
+  if (evidence.chatRect === evidence.clip) failures.push('chatRect and clip reused the same object');
+  if (evidence.clip === evidence.screenshotClipApplied) failures.push('clip and screenshotClipApplied reused the same object');
+  if (evidence.clip === evidence.screenshotCssClip) failures.push('clip and screenshotCssClip reused the same object');
   if (!Array.isArray(evidence.rolltemplates) || evidence.rolltemplates.length !== 1) failures.push('missing rolltemplates array');
   if (!evidence.rolltemplates?.[0]?.rect?.width) failures.push('missing rolltemplate rect');
   if (evidence.chatCssEvidence?.classification !== 'EXPECTED_RULE_PRESENT') failures.push(`unexpected css classification ${evidence.chatCssEvidence?.classification}`);
   if (!evidence.textMarkers?.rolltemplate || !evidence.textMarkers?.sheetRolltemplate) failures.push('missing text markers');
   if (!capturedLogs.some((value) => String(value).includes('"rolltemplates"'))) failures.push('console JSON did not include rolltemplates');
+  try {
+    const json = JSON.stringify(evidence);
+    const parsed = JSON.parse(json);
+    if (json.includes('[Circular]')) failures.push('serialized evidence contains [Circular]');
+    if (!parsed.clip?.width || !parsed.screenshotClipApplied?.width || !parsed.screenshotCssClip?.width) {
+      failures.push('serialized evidence lost clip aliases');
+    }
+  } catch (error) {
+    failures.push(`evidence is not JSON serializable: ${String(error?.message || error)}`);
+  }
   if (failures.length) {
     console.error(`ROLL20 CHAT CAPTURE PLAN SELF_TEST FAIL ${failures.join('; ')}`);
     process.exitCode = 1;
