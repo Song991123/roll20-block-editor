@@ -1,3 +1,14 @@
+## 2026-06-20 05:32 +09:00 - Status/gate current-metric chat blocker
+
+Status: PARTIAL. This batch prevents old Roll20 chat sidecars from being mistaken for current row/typography evidence.
+
+- Updated `scripts/roll20_actual_status.mjs` to inspect fixture chat DOM sidecars for current renderer-diagnostic fields and print `chatCurrentMetrics` / `chatCurrentMetricsMissing`.
+- Updated `scripts/roll20_renderer_action_gate.mjs` to treat missing current row/typography metrics as a production renderer blocker.
+- Verification result: current `2026-06-18-state-map-v1` status reports `chatCurrentMetrics=0/3`, `chatCurrentMetricsMissing=3`.
+- Verification result: renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH` and now lists the current-metric sidecar gap as an explicit blocker for AW2E, Les-Oublies, and YSHY.
+- Claim boundary: this is gate truthfulness and handoff automation only. It does not prove Roll20 chat parity and does not change production renderer CSS.
+- Next P0: recapture same-action Roll20 `roll20-chat.png` plus `roll20-chat-dom-evidence.json` with current metrics, prioritizing YSHY `sheet-rolltemplate-coc`.
+
 ## 2026-06-20 05:11 +09:00 - Current-metric Roll20 chat recapture gate
 
 Status: PARTIAL. This batch turns the YSHY recapture requirement into a repeatable gate instead of a manual note.

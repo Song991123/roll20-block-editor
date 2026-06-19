@@ -71,6 +71,7 @@ async function main() {
   for (const fixtureId of await listFixtureIds(baselineDir)) {
     fixtures.push(await inspectFixture(runDir, fixtureId, diffReport));
   }
+  const chatCurrentMetrics = await readChatCurrentMetrics(runDir, fixtures.map((fixture) => fixture.fixtureId));
 
   const allTargets = fixtures.flatMap((fixture) => fixture.actualTargets);
   const generatedTargets = allTargets.filter((target) => target.requiredForGeneratedSheetCheck);
@@ -176,6 +177,10 @@ async function main() {
       chatParityActualCaptureScaleSuspect: chatParity.actualCaptureScaleSuspect,
       chatParityMaxNormalizedMismatchPct: chatParity.maxNormalizedMismatchPct,
       chatParityMaxAlignedMismatchPct: chatParity.maxAlignedMismatchPct,
+      chatCurrentMetricsPresent: chatCurrentMetrics.presentCount,
+      chatCurrentMetricsTotal: chatCurrentMetrics.total,
+      chatCurrentMetricsMissing: chatCurrentMetrics.missingCount,
+      chatCurrentMetricsMissingFixtures: chatCurrentMetrics.missingFixtures.map((fixture) => fixture.fixtureId),
       trustedFullRootComplete,
       rendererReady,
     },
@@ -185,6 +190,7 @@ async function main() {
     scrollMetricsReplacement,
     rendererAction,
     chatParity,
+    chatCurrentMetrics,
     fixtures,
     nextAction: buildNextAction({
       preupload,
@@ -199,6 +205,7 @@ async function main() {
       scrollMetricsReplacement,
       rendererAction,
       chatParity,
+      chatCurrentMetrics,
       fixtures,
     }),
   };
@@ -458,6 +465,65 @@ async function readChatParity(runDir) {
   };
 }
 
+async function readChatCurrentMetrics(runDir, fixtureIds) {
+  const fixtures = [];
+  for (const fixtureId of fixtureIds) {
+    const file = path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
+    const domEvidence = await readJsonIfExists(file);
+    fixtures.push(validateCurrentChatMetrics(fixtureId, domEvidence, file));
+  }
+  const presentFixtures = fixtures.filter((fixture) => fixture.ok);
+  const missingFixtures = fixtures.filter((fixture) => !fixture.ok);
+  return {
+    total: fixtures.length,
+    presentCount: presentFixtures.length,
+    missingCount: missingFixtures.length,
+    presentFixtures,
+    missingFixtures,
+    fixtures,
+  };
+}
+
+function validateCurrentChatMetrics(fixtureId, domEvidence, file) {
+  if (!domEvidence) {
+    return {
+      fixtureId,
+      ok: false,
+      status: 'MISSING_SIDECAR',
+      file: rel(file),
+      missing: ['roll20-chat-dom-evidence.json'],
+      note: 'Roll20 chat DOM sidecar is missing; current row/typography metrics cannot be checked',
+    };
+  }
+  const template = domEvidence.latestTemplate
+    ?? [...(domEvidence.rolltemplates ?? [])].reverse().find((item) => item?.rect?.width)
+    ?? null;
+  const table = findTemplateChild(template, 'table');
+  const missing = [];
+  if (!template?.computedStyle) missing.push('latestTemplate.computedStyle');
+  if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) missing.push('latestTemplate.rowMetrics');
+  if (!table?.computedStyle) missing.push('table.computedStyle');
+  if (!table?.boxMetrics) missing.push('table.boxMetrics');
+  if (!domEvidence.fontEvidence?.checks) missing.push('fontEvidence.checks');
+  if (!domEvidence.viewportEvidence?.devicePixelRatio) missing.push('viewportEvidence.devicePixelRatio');
+  return {
+    fixtureId,
+    ok: missing.length === 0,
+    status: missing.length ? 'MISSING_CURRENT_METRICS' : 'PRESENT',
+    file: rel(file),
+    missing,
+    templateClass: template?.className ?? '',
+    note: missing.length
+      ? `Roll20 chat DOM sidecar predates current row/typography probe fields: missing ${missing.join(', ')}`
+      : 'Roll20 chat DOM sidecar includes current row/typography metrics',
+  };
+}
+
+function findTemplateChild(template, selector) {
+  const children = template?.computedChildren ?? template?.elements ?? [];
+  return children.find((child) => child?.selector === selector) ?? null;
+}
+
 async function listFixtureIds(baselineDir) {
   const entries = await fs.readdir(baselineDir, { withFileTypes: true });
   return entries
@@ -685,6 +751,7 @@ function buildNextAction({
   scrollMetricsReplacement,
   rendererAction,
   chatParity,
+  chatCurrentMetrics,
   fixtures,
 }) {
   if (!preupload.pass) {
@@ -728,6 +795,12 @@ function buildNextAction({
   }
   if (chatParity?.exists && chatParity.needsNormalizedCapture > 0) {
     return 'Roll20 chat evidence exists but is not normalized for every fixture. Recapture roll20-chat.png with fresh DOM sidecars that include rolltemplate rect/clip metadata, then rerun diagnose:roll20-chat-parity.';
+  }
+  if (chatCurrentMetrics?.missingCount > 0) {
+    const missing = chatCurrentMetrics.missingFixtures
+      .map((fixture) => `${fixture.fixtureId} (${fixture.missing.join(', ')})`)
+      .join('; ');
+    return `Roll20 chat screenshots are normalized, but current row/typography sidecar fields are missing for ${missing}. Run corepack pnpm run plan:roll20-chat-capture -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))} --require-current-metrics, recapture same-action roll20-chat.png plus roll20-chat-dom-evidence.json, then rerun screenshot diff, diagnose:roll20-chat-parity, gate:roll20-renderer-action, and this status command.`;
   }
   if (chatParity?.exists && chatParity.actualCropGeometrySuspect > 0) {
     return 'Roll20 chat evidence has element-crop geometry suspects. Recapture roll20-chat.png with element-bound template screenshots and fresh DOM sidecars before tuning local ChatPane CSS from pixel diffs.';
@@ -811,6 +884,7 @@ function renderMarkdown(report) {
     `- Renderer ready for production CSS: ${report.summary.rendererReady ? 'yes' : 'NO'}`,
     `- Chat parity diagnostic: ${report.summary.chatParityExists ? 'present' : 'missing'} (${report.summary.chatParityCompared}/${report.summary.chatParityFixtures} compared, normalized ${report.summary.chatParityNormalizedCompared}/${report.summary.chatParityFixtures})`,
     `- Chat blockers: needs normalized capture ${report.summary.chatParityNeedsNormalizedCapture}, crop geometry suspect ${report.summary.chatParityActualCropGeometrySuspect}, aligned high mismatch ${report.summary.chatParityAlignedHighMismatch}, authoritative normalized high mismatch ${report.summary.chatParityAuthoritativeNormalizedHighMismatch}, actual CSS inactive ${report.summary.chatParityActualCssInactive}, scoped/prefix mismatch ${report.summary.chatParityActualCssScopedMismatch}, actual CSS unknown ${report.summary.chatParityActualCssUnknown}`,
+    `- Chat current row/typography sidecars: ${report.summary.chatCurrentMetricsPresent}/${report.summary.chatCurrentMetricsTotal} current (${report.summary.chatCurrentMetricsMissing} missing)`,
     `- Max normalized chat mismatch: ${report.summary.chatParityMaxNormalizedMismatchPct ?? 'n/a'}%`,
     `- Max aligned chat mismatch: ${report.summary.chatParityMaxAlignedMismatchPct ?? 'n/a'}%`,
     `- All actual screenshots: ${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
@@ -876,6 +950,13 @@ function renderMarkdown(report) {
     }
   }
 
+  if (report.chatCurrentMetrics?.missingCount > 0) {
+    lines.push('', '## Chat Current-Metric Recapture Needed', '', '| Fixture | Status | Missing fields | Sidecar |', '| --- | --- | --- | --- |');
+    for (const fixture of report.chatCurrentMetrics.missingFixtures) {
+      lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${escapeCell(fixture.missing.join(', '))} | \`${fixture.file}\` |`);
+    }
+  }
+
   lines.push(
     '',
     '## Evidence Rules',
@@ -911,6 +992,8 @@ function renderConsoleSummary(report, outDir) {
     `chatParity=${report.summary.chatParityExists ? 'PRESENT' : 'MISSING'}`,
     `chatNormalizedCompared=${report.summary.chatParityNormalizedCompared}/${report.summary.chatParityFixtures}`,
     `chatNeedsNormalizedCapture=${report.summary.chatParityNeedsNormalizedCapture}`,
+    `chatCurrentMetrics=${report.summary.chatCurrentMetricsPresent}/${report.summary.chatCurrentMetricsTotal}`,
+    `chatCurrentMetricsMissing=${report.summary.chatCurrentMetricsMissing}`,
     `chatActualCssInactive=${report.summary.chatParityActualCssInactive}`,
     `chatActualCssScopedMismatch=${report.summary.chatParityActualCssScopedMismatch}`,
     `chatActualCaptureScaleSuspect=${report.summary.chatParityActualCaptureScaleSuspect}`,

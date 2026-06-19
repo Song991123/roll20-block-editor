@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - Status/gate now surface stale Roll20 chat sidecars
+
+Status: PARTIAL. Roll20 chat/template parity is still NOT done; the status and renderer gate now expose the stale-sidecar blocker directly.
+
+- DONE: `status:roll20-actual` now reads each fixture's `roll20-chat-dom-evidence.json` and reports whether current row/typography fields are present.
+- RESULT: Current run reports `chatCurrentMetrics=0/3` and `chatCurrentMetricsMissing=3` for AW2E, Les-Oublies, and YSHY. The old chat screenshots are normalized enough for crop comparison, but their DOM sidecars predate the current row/typography probe.
+- DONE: `gate:roll20-renderer-action` now adds a blocker when current Roll20 chat sidecars lack `latestTemplate.computedStyle`, `latestTemplate.rowMetrics`, table computed style, table box metrics, `fontEvidence.checks`, or `viewportEvidence.devicePixelRatio`.
+- RESULT: Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH` with 3 blockers: YSHY/local ChatPane mismatch, stale current-metric chat sidecars, and split renderer patch family.
+- STILL TODO P0: Recapture Roll20 chat for all 3 fixtures, prioritizing YSHY `sheet-rolltemplate-coc`, using the `--require-current-metrics` capture plan. Then rerun screenshot diff, chat parity, renderer gate, and status before changing production ChatPane CSS.
+
 ## 2026-06-20 Codex Update - Current-metric Roll20 chat recapture gate
 
 Status: PARTIAL. Roll20 chat/template parity is still NOT done; the next real recapture blocker is now encoded in tooling.

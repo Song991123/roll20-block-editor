@@ -44,6 +44,7 @@ async function main() {
     recommendation,
     inputFlowAxis: summarizeInputFlowAxis(inputFlowAxis),
     chatParity: summarizeChatParity(chatParity),
+    chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
   };
@@ -227,6 +228,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
   const generatedEvidenceComplete = Boolean(generatedSummaryComplete || generatedStatusComplete);
   const inputFlowSummary = summarizeInputFlowAxis(inputFlowAxis);
   const chatParitySummary = summarizeChatParity(chatParity);
+  const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
 
   if (!generatedEvidenceComplete) {
     blockers.push(`generated-sheet actual evidence incomplete: status=${status?.status ?? 'unknown'}`);
@@ -262,6 +264,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     if (chatParitySummary.authoritativeNormalizedHighMismatch > 0) {
       blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${chatParitySummary.authoritativeNormalizedHighMismatch}/${chatParitySummary.normalizedCompared} geometry-authoritative normalized fixtures after small-offset alignment; max aligned mismatch ${chatParitySummary.maxAlignedMismatchPct}% (raw max ${chatParitySummary.maxNormalizedMismatchPct}%)`);
     }
+  }
+  if (chatCurrentMetrics.missing > 0) {
+    blockers.push(`actual Roll20 chat sidecars lack current row/typography metrics for ${chatCurrentMetrics.missing}/${chatCurrentMetrics.total} fixtures (${chatCurrentMetrics.missingFixtures.join(', ')}); run plan:roll20-chat-capture with --require-current-metrics and recapture same-action chat screenshot+DOM sidecars before tuning ChatPane CSS`);
   }
 
   const compared = fixtures.filter((fixture) => fixture.bestCandidate);
@@ -338,7 +343,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     positiveFindings.push(`input-flow axis diagnostic: status=${inputFlowSummary.status}, applyCandidate=${inputFlowSummary.applyCandidateFixtures.length}, blockGlobalModel=${inputFlowSummary.blockGlobalModelFixtures.length}, globalSafe=${inputFlowSummary.globalModelSafe ? 'YES' : 'NO'}`);
   }
   if (chatParitySummary) {
-    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, alignedHighMismatch=${chatParitySummary.alignedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, maxNormalizedMismatch=${chatParitySummary.maxNormalizedMismatchPct}%, maxAlignedMismatch=${chatParitySummary.maxAlignedMismatchPct}%`);
+    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, alignedHighMismatch=${chatParitySummary.alignedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, currentMetricMissing=${chatCurrentMetrics.missing}/${chatCurrentMetrics.total}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, maxNormalizedMismatch=${chatParitySummary.maxNormalizedMismatchPct}%, maxAlignedMismatch=${chatParitySummary.maxAlignedMismatchPct}%`);
   }
 
   const action = blockers.length
@@ -359,6 +364,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
   }
   if (chatParitySummary?.needsNormalizedCapture > 0) {
     nextActions.push('Recapture actual Roll20 chat DOM sidecars with rolltemplate rect/clip metadata for element-level chat parity comparison.');
+  }
+  if (chatCurrentMetrics.missing > 0) {
+    nextActions.push(`Run corepack pnpm run plan:roll20-chat-capture -- ${path.relative(process.cwd(), activeRunDir)} --require-current-metrics, then recapture current row/typography chat evidence for ${chatCurrentMetrics.missingFixtures.join(', ')}.`);
   }
   if (chatParitySummary?.authoritativeNormalizedHighMismatch > 0) {
     if (chatParitySummary.actualChatCssScopedMismatch > 0) {
@@ -501,6 +509,18 @@ function summarizeChatParity(report) {
   };
 }
 
+function summarizeChatCurrentMetrics(status) {
+  const missingFixtures = Array.isArray(status?.summary?.chatCurrentMetricsMissingFixtures)
+    ? status.summary.chatCurrentMetricsMissingFixtures
+    : [];
+  return {
+    present: Number(status?.summary?.chatCurrentMetricsPresent ?? 0),
+    total: Number(status?.summary?.chatCurrentMetricsTotal ?? 0),
+    missing: Number(status?.summary?.chatCurrentMetricsMissing ?? 0),
+    missingFixtures,
+  };
+}
+
 function reliableRendererCandidate(fixture) {
   if (fixture.rootCutoff?.risk !== 'HIGH' && fixture.bestCandidate) {
     return { ...fixture.bestCandidate, evidenceSource: 'trusted-full-root' };
@@ -606,6 +626,12 @@ function renderMarkdown(report) {
     lines.push(`- Compared: ${report.chatParity.compared}/${report.chatParity.fixtures}`);
     lines.push(`- Normalized compared: ${report.chatParity.normalizedCompared}/${report.chatParity.fixtures}`);
     lines.push(`- Needs normalized capture: ${report.chatParity.needsNormalizedCapture}`);
+    if (report.chatCurrentMetrics) {
+      lines.push(`- Current row/typography sidecars: ${report.chatCurrentMetrics.present}/${report.chatCurrentMetrics.total} current (${report.chatCurrentMetrics.missing} missing)`);
+      if (report.chatCurrentMetrics.missingFixtures.length) {
+        lines.push(`- Current metric recapture fixtures: ${report.chatCurrentMetrics.missingFixtures.join(', ')}`);
+      }
+    }
     lines.push(`- High mismatch: ${report.chatParity.highMismatch}`);
     lines.push(`- Normalized high mismatch: ${report.chatParity.normalizedHighMismatch}`);
     lines.push(`- Actual chat CSS inactive: ${report.chatParity.actualChatCssInactive}`);
