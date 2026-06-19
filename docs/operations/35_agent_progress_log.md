@@ -1603,3 +1603,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest AW2E plan: `NEEDS_CAPTURE`, `plannedFixtures=1`, root cutoff disagreement `stitched=9168px`, `sidecar=11788.087890625px`, `delta=2620.088px`.
 - The plan now requires manifest outputCss to cover or explain authoritative Roll20 `.charactersheet/form` root height and records whether placements came from readable scrollTop/root metrics or visual overlap.
 - Claim boundary: this is evidence-gate hardening only. It does not add new Roll20 screenshots, does not make the renderer ready, and does not prove Roll20 visual parity.
+## 2026-06-19 AW2E Root Container Metrics Sidecar
+
+- Claimed only the dedicated Roll20 verification editor tab and used Chrome/CDP read-only iframe evaluation; no existing room/settings were modified.
+- Saved ignored local sidecar `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/official-roll20-AW2E-root-container-metrics.json`.
+- Updated `scripts/roll20_root_cutoff_diagnostics.mjs` to prefer that root/container sidecar over the older attr_class sidecar when comparing stitched evidence against live Roll20 metrics.
+- Latest root cutoff diagnostic still reports `HIGH`: stitched `9168px`, live root/form `11788.087890625px`, delta `2620.088px`, dialog scroll `top=11223.2`, `h=626/11849`.
+- Claim boundary: this is stronger actual Roll20 measurement evidence, not a new screenshot, not renderer readiness, and not visual parity.

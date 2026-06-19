@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 AW2E root container metrics sidecar:
+Chrome/CDP read the dedicated Roll20 character iframe in read-only mode and saved ignored local sidecar `live-iframe-probe/official-roll20-AW2E-root-container-metrics.json`. Latest `diagnose:roll20-root-cutoff` now uses that sidecar before the older attr_class sidecar and reports source `official-roll20-AW2E-root-container-metrics.json`, root/form height `11788.087890625px`, dialog scroller `top=11223.2, h=626/11849`, stitched height `9168px`, delta `2620.088px`, risk `HIGH`. Existing rooms/settings were not modified. Renderer remains HOLD and `rendererReady=NO`; next P0 is recapturing or deriving full-root segments against the authoritative `11788.087890625px` root height.
+
 Current Roll20 renderer note, 2026-06-19 root capture plan cutoff blocker:
 `plan:roll20-root-capture` now treats high root-cutoff risk as a capture target even when trusted DPR full-root files already exist. Latest AW2E plan reports `NEEDS_CAPTURE`, `plannedFixtures=1`, with issue `trusted root cutoff disagreement: stitched=9168px sidecar=11788.087890625px delta=2620.088px`. This prevents `trustedFullRoot=3/3` from being mistaken for renderer readiness when live sidecar root/container metrics disagree. Renderer remains HOLD and `rendererReady=NO`.
 

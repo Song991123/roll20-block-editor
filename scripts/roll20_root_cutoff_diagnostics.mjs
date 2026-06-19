@@ -61,6 +61,7 @@ async function analyzeFixture({ fixtureId, fullRoot }) {
   const shotsDir = path.join(runDir, 'local-baseline', fixtureId, 'screenshots');
   const stitchMeta = await readJsonIfExists(path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.json'));
   const stitchManifest = await readJsonIfExists(path.join(shotsDir, 'roll20-root-dpr-complete-manifest.json'));
+  const rootMetricsSidecar = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixtureId}-root-container-metrics.json`));
   const attrSidecar = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixtureId}-attr-class-state.json`));
   const geometrySidecar = await readJsonIfExists(path.join(runDir, 'attr-class-panel-geometry-diagnostics', 'attr-class-panel-geometry-diagnostics-results.json'));
   const panelGeometry = (geometrySidecar?.fixtures ?? []).find((item) => item.fixtureId === fixtureId) ?? null;
@@ -73,7 +74,13 @@ async function analyzeFixture({ fixtureId, fullRoot }) {
     };
   }
 
-  const sidecarRoot = attrSidecar?.documents?.[0]?.root?.rect ?? null;
+  const sidecarRoot = rootMetricsSidecar?.root?.rect ?? attrSidecar?.documents?.[0]?.root?.rect ?? null;
+  const sidecarSource = rootMetricsSidecar?.root?.rect
+    ? `${fixtureId}-root-container-metrics.json`
+    : attrSidecar?.documents?.[0]?.root?.rect
+      ? `${fixtureId}-attr-class-state.json`
+      : null;
+  const dialogScroller = rootMetricsSidecar?.scrollers?.find((item) => item.id === 'dialog-window') ?? null;
   const stitchedHeight = Number(stitchMeta.outputSize?.h ?? stitchMeta.outputCss?.h ?? fixture.actual?.size?.h ?? 0) || null;
   const sidecarHeight = Number(sidecarRoot?.height ?? 0) || null;
   const segmentSummary = summarizeSegments(stitchManifest ?? stitchMeta);
@@ -91,10 +98,14 @@ async function analyzeFixture({ fixtureId, fullRoot }) {
     },
     sidecarRoot: sidecarRoot
       ? {
+          source: sidecarSource,
           width: round(sidecarRoot.width),
           height: sidecarHeight,
           x: round(sidecarRoot.x),
           y: round(sidecarRoot.y),
+          dialogScrollTop: round(dialogScroller?.scroll?.scrollTop),
+          dialogScrollHeight: round(dialogScroller?.scroll?.scrollHeight),
+          dialogClientHeight: round(dialogScroller?.scroll?.clientHeight),
         }
       : null,
     segmentSummary,
@@ -181,8 +192,8 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: stitched root vs live sidecar root cutoff diagnostic. This is not Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Stitched H | Sidecar H | Delta | Risk | Segments | Placement | Clipped | Below | Interpretation |');
-  lines.push('| --- | --- | ---: | ---: | ---: | --- | ---: | --- | --- | --- | --- |');
+  lines.push('| Fixture | Status | Stitched H | Sidecar H | Delta | Risk | Sidecar source | Dialog scroll | Segments | Placement | Clipped | Below | Interpretation |');
+  lines.push('| --- | --- | ---: | ---: | ---: | --- | --- | --- | ---: | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
     lines.push([
       `| \`${fixture.fixtureId}\``,
@@ -191,6 +202,8 @@ function renderMarkdown(report) {
       String(fixture.sidecarRoot?.height ?? ''),
       String(fixture.cutoff?.heightDelta ?? ''),
       fixture.cutoff?.risk ?? '',
+      fixture.sidecarRoot?.source ?? '',
+      fmtScroll(fixture.sidecarRoot),
       String(fixture.segmentSummary?.segmentCount ?? fixture.stitchedRoot?.segmentCount ?? ''),
       fixture.segmentSummary?.placementSource ?? '',
       fixture.cutoff?.clippedValues?.join(', ') || '',
@@ -206,6 +219,12 @@ function renderMarkdown(report) {
   lines.push('- Generated reports and sidecars remain ignored local evidence.');
   lines.push('');
   return `${lines.join('\n')}\n`;
+}
+
+function fmtScroll(sidecarRoot) {
+  if (!sidecarRoot) return '';
+  if (sidecarRoot.dialogScrollTop == null) return '';
+  return `top=${sidecarRoot.dialogScrollTop}, h=${sidecarRoot.dialogClientHeight}/${sidecarRoot.dialogScrollHeight}`;
 }
 
 async function readJsonIfExists(file) {
