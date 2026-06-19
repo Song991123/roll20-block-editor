@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Roll20 upload snippet Ace manifest and chat probe hardening
+
+Status: PARTIAL. Upload/capture tooling is more trustworthy; Roll20 visual/chat parity is still NOT done.
+
+- Fixed `scripts/roll20_upload_snippet.mjs` so generated Roll20 Sandbox/settings snippets update the observed Roll20 Ace editor instance `editors.json` as well as `customcharsheet_json` textareas. This closes the stale-manifest path where the settings page could still save the previous fixture even after the textarea looked updated.
+- Generated snippet results now report `aceJsonSet`, `editorKeys`, and manifest `valueLength` so future Roll20 upload logs can prove whether the real settings editor was touched.
+- Hardened the generated `plan:roll20-chat-capture` DOM probe so it picks a visible chat root from `#textchat`, `.textchatcontainer`, then `#rightsidebar`, and records both `chatSelector` and `chatElementSelector`. This reduces future clip/sidecar mismatches.
+- Current measured status after the latest trusted captures: `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, `chatNormalizedCompared=3/3`, `chatNeedsNormalizedCapture=0`, `chatActualCaptureScaleSuspect=0`, `chatNormalizedHighMismatch=3`, `rendererReady=NO`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`.
+- Current measured chat parity is failing, not passing: all 3 normalized fixtures are high mismatch, with max normalized mismatch `94.44%`. The next P0 is fixing local ChatPane / rolltemplate shell sizing and template rendering against the now-trusted actual Roll20 evidence.
+- Verification: `node --check scripts\roll20_upload_snippet.mjs`, `node --check scripts\roll20_chat_capture_plan.mjs`, `corepack pnpm run test:roll20-chat-capture-plan`, `corepack pnpm run snippet:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 yshy-commission-1bu`, generated snippet `node --check`, `corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run diagnose:roll20-chat-parity -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build` PASS.
+
 ## 2026-06-20 Codex Update - AW2E chat recaptured as true PNG 1x
 
 Status: PARTIAL. One evidence-quality blocker closed; Roll20 visual/chat parity is still NOT done.

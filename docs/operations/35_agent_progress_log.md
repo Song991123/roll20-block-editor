@@ -1,3 +1,14 @@
+## 2026-06-20 01:55 +09:00 - Roll20 upload manifest and chat probe hardening
+
+Status: PARTIAL. This improves the reliability of future Roll20 Sandbox uploads/captures; it does not prove Roll20 parity.
+
+- Fixed `scripts/roll20_upload_snippet.mjs` so the generated settings fallback updates Roll20's observed Ace editor object `editors.json` in addition to the hidden/visible `customcharsheet_json` fields. This directly addresses the stale AW2E/YSHY manifest risk found on the settings page.
+- The generated snippet now logs `aceJsonSet`, `editorKeys`, and manifest length in its `Manifest:` result, making future handoff logs auditable.
+- Hardened `scripts/roll20_chat_capture_plan.mjs` generated DOM probe to select a visible chat root in priority order `#textchat`, `.textchatcontainer`, `#rightsidebar` instead of accepting the first selector match. The sidecar now records both the chosen selector and the actual element identity.
+- Verification: `node --check scripts\roll20_upload_snippet.mjs`, `node --check scripts\roll20_chat_capture_plan.mjs`, `corepack pnpm run test:roll20-chat-capture-plan`, YSHY snippet generation, generated snippet syntax check, `plan:roll20-chat-capture`, `diagnose:roll20-chat-parity`, `status:roll20-actual`, `gate:roll20-renderer-action`, `guard:roll20-evidence`, `corepack pnpm run lint`, and `corepack pnpm run build` PASS.
+- Current active run remains renderer-blocked: all actual chat captures are trusted (`plannedFixtures=0/3`, `chatActualCaptureScaleSuspect=0`), but normalized local-vs-actual chat mismatch is still high for 3/3 fixtures, with max mismatch `94.44%`.
+- Next P0 after the remaining verification commands is the actual implementation fix: align local ChatPane/rolltemplate shell and sizing against the trusted Roll20 evidence before touching edit-mode UX.
+
 ## 2026-06-20 01:20 +09:00 - AW2E Roll20 chat PNG 1x recapture
 
 Status: PARTIAL. AW2E no longer blocks on capture format/scale; YSHY still does.

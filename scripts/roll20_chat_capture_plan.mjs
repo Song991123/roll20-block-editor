@@ -337,7 +337,22 @@ function extractRollButtonNames(file) {
 function renderDomProbeSnippet(entry) {
   return `(() => {
   const fixtureId = ${JSON.stringify(entry.fixtureId)};
-  const textchat = document.querySelector('#textchat, #rightsidebar, .textchatcontainer');
+  const isVisible = (el) => {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+  };
+  const chooseVisibleChatRoot = () => {
+    const candidates = [
+      '#textchat',
+      '.textchatcontainer',
+      '#rightsidebar',
+    ].flatMap((selector) => Array.from(document.querySelectorAll(selector)).map((el) => ({ selector, el })));
+    return candidates.find((candidate) => isVisible(candidate.el)) || candidates[0] || null;
+  };
+  const chatRootCandidate = chooseVisibleChatRoot();
+  const textchat = chatRootCandidate?.el || null;
   const messages = Array.from(document.querySelectorAll('#textchat .message, #textchat .chatlogmessage, #rightsidebar .message, #rightsidebar .chatlogmessage'));
   const templates = Array.from(document.querySelectorAll('[class*="sheet-rolltemplate-"], [class*="rolltemplate-"]'));
   const latestTemplate = templates[templates.length - 1] || null;
@@ -396,7 +411,8 @@ function renderDomProbeSnippet(entry) {
     captureMethod: 'Browser DOM probe paired with a manually or automation-captured roll20-chat.png',
     pageUrl: '[redacted-url]',
     activeRightTab: document.querySelector('#textchattab.active, .textchattab.active') ? 'textchattab' : null,
-    chatSelector: textchat ? (textchat.id ? '#' + textchat.id : textchat.className) : null,
+    chatSelector: chatRootCandidate ? chatRootCandidate.selector : null,
+    chatElementSelector: textchat ? (textchat.id ? '#' + textchat.id : textchat.className) : null,
     chatRect: cloneRect(clip),
     clip: cloneRect(clip),
     screenshotClipApplied: cloneRect(clip),

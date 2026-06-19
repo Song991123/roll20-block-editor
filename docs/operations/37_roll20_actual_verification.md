@@ -398,6 +398,14 @@ the plain `sheet.json`; only the settings-page fallback wraps it before filling
 remain storage/configuration evidence only until a fresh character iframe
 DOM/root screenshot proves the custom sheet actually rendered.
 
+2026-06-20 recheck: the settings page may keep the real JSON source in an Ace
+editor registry named `editors.json`. Updating only
+`textarea[name="customcharsheet_json"]` can leave the Ace editor holding the
+previous fixture manifest, which then saves stale sheet metadata. Generated
+upload snippets must set both the textarea/value targets and
+`editors.json.setValue(text, -1)` when that object is present, then record
+`aceJsonSet` and `editorKeys` in the local ignored handoff log.
+
 For legacy official sheets, preserve the source `sheet.json` legacy mode. A
 fixture whose official manifest declares `"legacy": true` must not be uploaded
 with a generated `"legacy": false` manifest. Also note that endpoint `200`
@@ -462,6 +470,7 @@ the preferred evidence.
 - The generated snippet embeds source-derived payload bytes and must not be committed.
 - Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. It creates browser `File` objects and dispatches `change` events on `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`, then fills `customcharsheet_json` when that field exists.
 - When filling `customcharsheet_json`, the generated snippet wraps the plain export `sheet.json` into the settings-page `{ sheet, userOptions, jsoninfo }` shape described above. This keeps exported zip payloads plain while matching the observed settings fallback structure.
+- On settings pages with an Ace editor, the generated snippet must also update `editors.json`; the logged `aceJsonSet` field is evidence that the real settings editor was touched.
 - The snippet report validates `translation.json`, `sheet.json`, and the generated settings-page manifest before embedding them. If Roll20 still displays a translation JSON parse warning after a PASS report, treat it as an upload/settings application problem until a fresh Roll20-side sidecar proves otherwise.
 - The snippet runtime logs visible Roll20 Sandbox warning text after dispatching the file changes. Preserve that console result in the local ignored report notes when diagnosing translation/i18n failures.
 - This is a fallback for Chrome file chooser blocking. It is not Roll20 visual parity and still requires fresh sandbox root/chat screenshots plus status/diff gates afterward.

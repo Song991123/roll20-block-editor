@@ -303,6 +303,8 @@ function renderSnippet({ fixtureId, payload, validation }) {
     const rawText = new TextDecoder().decode(bytesFromBase64(DATA.payload.manifest.base64));
     const text = buildSettingsManifest(rawText);
     const targets = Array.from(document.querySelectorAll('textarea[name="customcharsheet_json"], [name="customcharsheet_json"]'));
+    const editorKeys = typeof editors === 'object' && editors ? Object.keys(editors) : [];
+    let aceJsonSet = false;
     for (const el of targets) {
       if ('value' in el) {
         el.value = text;
@@ -310,13 +312,24 @@ function renderSnippet({ fixtureId, payload, validation }) {
         el.dispatchEvent(new Event('change', { bubbles: true }));
       }
     }
+    if (typeof editors === 'object' && editors?.json && typeof editors.json.setValue === 'function') {
+      editors.json.setValue(text, -1);
+      if (typeof editors.json.clearSelection === 'function') editors.json.clearSelection();
+      aceJsonSet = true;
+    }
     const ace = document.querySelector('[data-target="customcharsheet_json"] .ace_text-input, .ace_text-input[name="customcharsheet_json"]');
     if (ace && 'value' in ace) {
       ace.value = text;
       ace.dispatchEvent(new Event('input', { bubbles: true }));
       ace.dispatchEvent(new Event('change', { bubbles: true }));
     }
-    return { status: targets.length ? 'manifest-set' : 'manifest-target-missing', targets: targets.length };
+    return {
+      status: targets.length || aceJsonSet ? 'manifest-set' : 'manifest-target-missing',
+      targets: targets.length,
+      aceJsonSet,
+      editorKeys,
+      valueLength: text.length,
+    };
   };
   const inspectSandboxMessages = () => {
     const text = (document.querySelector('#sheetsandbox')?.innerText || document.body?.innerText || '').replace(/\\s+/g, ' ').trim();
