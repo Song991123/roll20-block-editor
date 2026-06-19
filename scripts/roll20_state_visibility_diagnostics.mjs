@@ -12,6 +12,7 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { chromium } from 'playwright-core';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const runDir = path.resolve(args[0] ?? '');
@@ -29,8 +30,13 @@ const repoRoot = process.cwd();
 async function main() {
   const fixtureIds = await discoverFixtureIds();
   const fixtures = [];
-  for (const fixtureId of fixtureIds) {
-    fixtures.push(await analyzeFixture(fixtureId));
+  const browser = await chromium.launch({ headless: true });
+  try {
+    for (const fixtureId of fixtureIds) {
+      fixtures.push(await analyzeFixture(fixtureId, browser));
+    }
+  } finally {
+    await browser.close();
   }
 
   const report = {
@@ -71,7 +77,7 @@ async function discoverFixtureIds() {
   return [...ids].sort();
 }
 
-async function analyzeFixture(fixtureId) {
+async function analyzeFixture(fixtureId, browser) {
   const stateFile = path.join(probeDir, `${fixtureId}-state-visibility.json`);
   const rulesFile = path.join(probeDir, `${fixtureId}-css-state-rules.json`);
   const payloadHtmlFile = path.join(localBaselineDir, fixtureId, 'payload', 'sheet.html');
@@ -96,6 +102,12 @@ async function analyzeFixture(fixtureId) {
   const payloadStateSelectors = summarizePayloadSelectors(payloadCss);
   const payloadClasses = summarizePayloadClasses(payloadHtml);
   const localExpectedCssMode = await detectLocalExpectedCssMode();
+  const localExpectedVisibility = await compareLocalExpectedVisibility({
+    browser,
+    payloadHtml,
+    payloadCss,
+    actualVisiblePanels,
+  });
   const prefixMismatch = diagnosePrefixMismatch({
     actualStateRules,
     payloadStateSelectors,
@@ -118,9 +130,113 @@ async function analyzeFixture(fixtureId) {
     prefixMismatch,
     primaryFinding: prefixMismatch.kind,
     localExpectedCssMode,
-    interpretation: buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRules, payloadStateSelectors, payloadClasses, prefixMismatch, localExpectedCssMode }),
-    nextChecks: buildNextChecks(prefixMismatch, localExpectedCssMode),
+    localExpectedVisibility,
+    interpretation: buildInterpretation({
+      stateSummary,
+      actualVisiblePanels,
+      actualStateRules,
+      payloadStateSelectors,
+      payloadClasses,
+      prefixMismatch,
+      localExpectedCssMode,
+      localExpectedVisibility,
+    }),
+    nextChecks: buildNextChecks(prefixMismatch, localExpectedCssMode, localExpectedVisibility),
   };
+}
+
+async function compareLocalExpectedVisibility({ browser, payloadHtml, payloadCss, actualVisiblePanels }) {
+  if (!payloadHtml && !payloadCss) {
+    return {
+      status: 'SKIP',
+      reason: 'missing payload HTML/CSS',
+      matched: false,
+    };
+  }
+  const selectors = [...new Set(actualVisiblePanels.map((panel) => panel.selector).filter(Boolean))];
+  if (!selectors.length) {
+    return {
+      status: 'SKIP',
+      reason: 'actual probe did not include visible panel selectors',
+      matched: false,
+    };
+  }
+
+  const page = await browser.newPage({ viewport: { width: 1200, height: 1600 }, deviceScaleFactor: 1 });
+  try {
+    await page.setContent(buildLocalExpectedStateDoc(payloadHtml, payloadCss), { waitUntil: 'load' });
+    const localPanels = await page.evaluate((panelSelectors) => {
+      return panelSelectors.map((selector) => {
+        const node = document.querySelector(selector);
+        if (!node) {
+          return {
+            selector,
+            exists: false,
+            display: null,
+            visibility: null,
+            height: null,
+            visible: false,
+          };
+        }
+        const style = getComputedStyle(node);
+        const rect = node.getBoundingClientRect();
+        return {
+          selector,
+          exists: true,
+          className: node.getAttribute('class') ?? '',
+          display: style.display,
+          visibility: style.visibility,
+          height: Number(rect.height.toFixed(3)),
+          visible: style.display !== 'none' && style.visibility !== 'hidden' && rect.height > 0,
+        };
+      });
+    }, selectors);
+
+    const actualVisibleSelectors = selectors;
+    const localVisibleSelectors = localPanels.filter((panel) => panel.visible).map((panel) => panel.selector);
+    const localVisibleSet = new Set(localVisibleSelectors);
+    const actualVisibleSet = new Set(actualVisibleSelectors);
+    const missingLocally = actualVisibleSelectors.filter((selector) => !localVisibleSet.has(selector));
+    const extraLocally = localVisibleSelectors.filter((selector) => !actualVisibleSet.has(selector));
+    return {
+      status: 'COMPARED',
+      matched: missingLocally.length === 0 && extraLocally.length === 0,
+      actualVisibleCount: actualVisibleSelectors.length,
+      localVisibleCount: localVisibleSelectors.length,
+      missingLocally,
+      extraLocally,
+      panels: localPanels,
+    };
+  } finally {
+    await page.close();
+  }
+}
+
+function buildLocalExpectedStateDoc(payloadHtml, payloadCss) {
+  return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+html, body { margin: 0; padding: 0; background: transparent; }
+.ui-dialog .charsheet { box-sizing: content-box; font-size: 13px; line-height: 18.5714px; background: transparent; }
+${payloadCss}
+</style>
+</head>
+<body>
+<div class="ui-dialog ui-widget ui-widget-content ui-corner-all" id="dialog-window">
+  <div class="dialog largedialog characterviewer">
+    <div class="tab-content" id="tab-content">
+      <form class="sheetform">
+        <div class="charactersheet tab-pane active charsheet lang-undefined" id="charsheet-root">
+${payloadHtml}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
 }
 
 async function detectLocalExpectedCssMode() {
@@ -308,7 +424,7 @@ function diagnosePrefixMismatch({ actualStateRules, payloadStateSelectors, paylo
   };
 }
 
-function buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRules, payloadStateSelectors, payloadClasses, prefixMismatch, localExpectedCssMode }) {
+function buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRules, payloadStateSelectors, payloadClasses, prefixMismatch, localExpectedCssMode, localExpectedVisibility }) {
   const notes = [];
   if (stateSummary.sheetTab || stateSummary.sheetTabForBtn) {
     notes.push(`actual hidden state inputs are sheetTab=${stateSummary.sheetTab ?? 'unknown'} / sheetTabForBtn=${stateSummary.sheetTabForBtn ?? 'unknown'}`);
@@ -336,10 +452,18 @@ function buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRul
       notes.push('root cause hypothesis: Roll20 actual uploaded HTML is sheet-prefixed while the observed CSS state selectors remain unprefixed, so local auto-prefix/sandbox expected preview can hide/show panels differently than actual Roll20');
     }
   }
+  if (localExpectedVisibility?.status === 'COMPARED') {
+    notes.push(`local Sandbox expected wrapper shows ${localExpectedVisibility.localVisibleCount}/${localExpectedVisibility.actualVisibleCount} of the actual-visible sampled panels`);
+    if (localExpectedVisibility.matched) {
+      notes.push('local Sandbox expected panel visibility matches the captured actual visible panel set for this sample; remaining mismatch should be treated as geometry/assets/control styling until another fixture disproves it');
+    } else {
+      notes.push('local Sandbox expected panel visibility does not match the captured actual visible panel set; inspect state selector modeling before geometry CSS changes');
+    }
+  }
   return notes;
 }
 
-function buildNextChecks(prefixMismatch, localExpectedCssMode) {
+function buildNextChecks(prefixMismatch, localExpectedCssMode, localExpectedVisibility) {
   const checks = [
     'Do not claim Roll20 visual parity from this diagnostic.',
     'Rerun full-root candidate smoke after any preview/export sanitize change.',
@@ -348,7 +472,11 @@ function buildNextChecks(prefixMismatch, localExpectedCssMode) {
   if (prefixMismatch.kind === 'ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML') {
     if (localExpectedCssMode.previewUsesUnprefixedCss) {
       checks.unshift('Local Sandbox expected preview already uses unprefixed CSS selector modeling; next reverify this actual Roll20 state behavior with another fixture before changing renderer CSS.');
-      checks.unshift('Compare local Sandbox expected preview visibility against the captured actual visible panels so intentional all-panel visibility is not mistaken for a renderer regression.');
+      if (localExpectedVisibility?.status === 'COMPARED' && localExpectedVisibility.matched) {
+        checks.unshift('For this fixture, local Sandbox expected panel visibility matches actual sampled panel visibility; prioritize geometry/assets/control styling before more state-selector changes.');
+      } else {
+        checks.unshift('Compare local Sandbox expected preview visibility against the captured actual visible panels so intentional all-panel visibility is not mistaken for a renderer regression.');
+      }
     } else {
       checks.unshift('Patch the local Roll20 actual/sandbox expected path so CSS prefixing behavior is modeled from observed Roll20 evidence, not the older blanket-prefix assumption.');
     }
@@ -415,6 +543,28 @@ function renderMarkdown(report) {
     lines.push(`- Preview keeps sandbox CSS selectors unprefixed: ${fixture.localExpectedCssMode.previewUsesUnprefixedCss ? 'yes' : 'no'}`);
     for (const item of fixture.localExpectedCssMode.evidence) {
       lines.push(`- \`${item.file}\`: ${item.prefixSelectorsFalse ? 'uses `prefixSelectors: false`' : 'no direct `prefixSelectors: false` evidence'}`);
+    }
+    lines.push('');
+    lines.push('### Local Expected Visibility');
+    lines.push('');
+    if (fixture.localExpectedVisibility.status === 'COMPARED') {
+      lines.push(`- Match actual visible panel set: ${fixture.localExpectedVisibility.matched ? 'yes' : 'no'}`);
+      lines.push(`- Actual visible panels: ${fixture.localExpectedVisibility.actualVisibleCount}`);
+      lines.push(`- Local Sandbox expected visible panels: ${fixture.localExpectedVisibility.localVisibleCount}`);
+      if (fixture.localExpectedVisibility.missingLocally.length) {
+        lines.push(`- Missing locally: ${fixture.localExpectedVisibility.missingLocally.map((selector) => `\`${selector}\``).join(', ')}`);
+      }
+      if (fixture.localExpectedVisibility.extraLocally.length) {
+        lines.push(`- Extra locally: ${fixture.localExpectedVisibility.extraLocally.map((selector) => `\`${selector}\``).join(', ')}`);
+      }
+      lines.push('');
+      lines.push('| Selector | Local display | Local height | Local visible |');
+      lines.push('| --- | --- | ---: | --- |');
+      for (const panel of fixture.localExpectedVisibility.panels) {
+        lines.push(`| \`${panel.selector}\` | ${panel.exists ? `${panel.display}/${panel.visibility}` : 'missing'} | ${panel.height ?? ''} | ${panel.visible ? 'yes' : 'no'} |`);
+      }
+    } else {
+      lines.push(`- ${fixture.localExpectedVisibility.reason ?? 'not compared'}`);
     }
     lines.push('');
     lines.push('### Next Checks');

@@ -1294,3 +1294,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The diagnostic still reports Les-Oublies as `ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`, because actual Roll20 CSSOM state anchors are unprefixed while HTML anchors are `sheet-` prefixed and 9 sampled panels remain visible.
 - The report no longer tells agents to patch the local expected path for blanket selector-prefix behavior when that patch already exists. Next checks now point to cross-fixture re-verification and local Sandbox expected visibility comparison before renderer CSS changes.
 - Claim boundary: this is a report-truthfulness change, not Roll20 visual parity and not a production renderer CSS patch.
+## 2026-06-19 Local Expected Visibility Matches Les-Oublies Actual Sample
+
+- Extended `scripts/roll20_state_visibility_diagnostics.mjs` to render payload HTML/CSS in a local Roll20 wrapper and compare panel visibility against the captured actual Roll20 panel selector set.
+- Latest Les-Oublies rerun reports local Sandbox expected panel visibility matches actual sampled visibility `9/9`.
+- Interpretation: for this captured fixture, do not chase more state-selector changes before geometry/assets/control styling; the state behavior still needs cross-fixture re-verification because AW2E lacks trusted root evidence and chat screenshots are missing.
+- Claim boundary: this is local diagnostic narrowing, not Roll20 visual parity.

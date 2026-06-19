@@ -470,6 +470,8 @@ local root about `841px` taller than actual, so visual parity is still TODO.
 Next P0 remains row/table/control geometry and additional actual Roll20
 screenshots for AW2E/YSHY plus trustworthy chat evidence.
 Follow-up state-diagnostic report wording update: `scripts/roll20_state_visibility_diagnostics.mjs` now records that local Sandbox expected render paths already keep CSS selectors unprefixed (`prefixSelectors: false` in `buildSheetDoc`, ExportDialog diagnostics, and sandbox sanitize audit). The Les-Oublies finding remains `ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`, but the next action is cross-fixture re-verification and local Sandbox expected visibility comparison, not reintroducing blanket CSS selector prefixing.
+Follow-up local expected visibility comparison: `scripts/roll20_state_visibility_diagnostics.mjs` now renders the payload HTML/CSS in a local Roll20 wrapper and compares the actual-visible panel selector set. Latest rerun for Les-Oublies reports local Sandbox expected visibility matches actual sampled visibility `9/9`; keep cross-fixture re-verification open, but for this fixture prioritize geometry/assets/control styling over more state-selector changes.
+
 
 
 | Status | Scope | Evidence |

@@ -179,6 +179,13 @@ The report still classifies the captured Les-Oublies fixture as
 `ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`, but its next action is
 now cross-fixture re-verification and local Sandbox expected visibility
 comparison, not re-applying blanket CSS selector prefixing.
+Follow-up local expected visibility comparison: the same diagnostic now renders
+the local payload HTML/CSS in a Roll20 wrapper and compares the captured
+actual-visible panel selector set. Latest Les-Oublies rerun reports local
+Sandbox expected panel visibility matches the actual sampled panel set `9/9`.
+This narrows this fixture's remaining mismatch toward geometry/assets/control
+styling; cross-fixture state re-verification is still required before broad
+claims.
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
