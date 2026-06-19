@@ -44,6 +44,9 @@ async function main() {
   console.log(`fixtures=${fixtures.length}`);
   console.log(`inlineBest=${report.summary.inlineBestFixtures.length}`);
   console.log(`sourceGeometryBest=${report.summary.sourceGeometryFixtures.length}`);
+  console.log(`applyCandidate=${report.summary.applyCandidateFixtures.length}`);
+  console.log(`blockGlobalModel=${report.summary.blockGlobalModelFixtures.length}`);
+  console.log(`globalModelSafe=${report.summary.globalModelSafe ? 'YES' : 'NO'}`);
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
 
@@ -72,6 +75,7 @@ function analyzeFixture(fixture, scrollMetricsFixture) {
   const nowrapSummary = summarizeCandidate(nowrapText, actual);
   const delta = compareCandidateSummaries(sourceSummary, inlineSummary);
   const diagnosis = diagnoseFixture({ fixture, sourceSummary, inlineSummary, nowrapSummary, best, delta });
+  const modelBoundary = classifyModelBoundary({ sourceSummary, inlineSummary, rendererModelSummary, diagnosis });
   return {
     fixtureId: fixture.fixtureId,
     status: actual ? 'COMPARED' : 'MISSING_ACTUAL_STYLE',
@@ -84,6 +88,7 @@ function analyzeFixture(fixture, scrollMetricsFixture) {
     nowrapText: nowrapSummary,
     sourceToInlineDelta: delta,
     diagnosis,
+    modelBoundary,
   };
 }
 
@@ -203,6 +208,54 @@ function diagnoseFixture({ fixture, sourceSummary, inlineSummary, nowrapSummary,
   };
 }
 
+function classifyModelBoundary({ sourceSummary, inlineSummary, rendererModelSummary, diagnosis }) {
+  if (!sourceSummary || !inlineSummary || !rendererModelSummary) {
+    return {
+      status: 'INSUFFICIENT_EVIDENCE',
+      model: null,
+      reasons: ['source, inline/text-input, or production-path renderer-model candidate is missing'],
+    };
+  }
+  const reasons = [];
+  const modelMatchesDiagnostic =
+    rendererModelSummary.rootHeightDelta === inlineSummary.rootHeightDelta &&
+    rendererModelSummary.mismatchPct === inlineSummary.mismatchPct;
+  if (modelMatchesDiagnostic) {
+    reasons.push('production-path renderer model reproduces the diagnostic inline/text-input candidate');
+  } else {
+    reasons.push('production-path renderer model does not exactly reproduce the diagnostic inline/text-input candidate');
+  }
+  if (diagnosis.rootImproves) reasons.push(`root delta improves from ${sourceSummary.rootHeightDelta}px to ${inlineSummary.rootHeightDelta}px`);
+  if (diagnosis.mismatchImproves) reasons.push(`pixel mismatch improves from ${sourceSummary.mismatchPct}% to ${inlineSummary.mismatchPct}%`);
+  if (diagnosis.rootWorsensMaterially) reasons.push(`root delta worsens materially from ${sourceSummary.rootHeightDelta}px to ${inlineSummary.rootHeightDelta}px`);
+
+  if (
+    modelMatchesDiagnostic &&
+    diagnosis.status === 'INLINE_TEXT_INPUT_IS_FIXTURE_BEST' &&
+    diagnosis.rootImproves &&
+    diagnosis.mismatchImproves &&
+    !diagnosis.rootWorsensMaterially
+  ) {
+    return {
+      status: 'APPLY_CANDIDATE_FOR_THIS_AXIS',
+      model: rendererModelSummary.patch,
+      reasons,
+    };
+  }
+  if (diagnosis.status === 'SOURCE_OR_OTHER_AXIS_DOMINATES' || diagnosis.rootWorsensMaterially) {
+    return {
+      status: 'BLOCK_GLOBAL_MODEL',
+      model: rendererModelSummary.patch,
+      reasons,
+    };
+  }
+  return {
+    status: 'EXPERIMENT_ONLY',
+    model: rendererModelSummary.patch,
+    reasons,
+  };
+}
+
 function findCandidate(candidates, ids) {
   for (const id of ids) {
     const found = candidates.find((candidate) => candidate.id === id);
@@ -249,11 +302,16 @@ function summarize(fixtures) {
   const compared = fixtures.filter((fixture) => fixture.status === 'COMPARED');
   const inlineBestFixtures = compared.filter((fixture) => fixture.diagnosis.status === 'INLINE_TEXT_INPUT_IS_FIXTURE_BEST').map((fixture) => fixture.fixtureId);
   const sourceGeometryFixtures = compared.filter((fixture) => fixture.diagnosis.status === 'SOURCE_OR_OTHER_AXIS_DOMINATES').map((fixture) => fixture.fixtureId);
+  const applyCandidateFixtures = compared.filter((fixture) => fixture.modelBoundary.status === 'APPLY_CANDIDATE_FOR_THIS_AXIS').map((fixture) => fixture.fixtureId);
+  const blockGlobalModelFixtures = compared.filter((fixture) => fixture.modelBoundary.status === 'BLOCK_GLOBAL_MODEL').map((fixture) => fixture.fixtureId);
   return {
     status: inlineBestFixtures.length && sourceGeometryFixtures.length ? 'SPLIT_RENDERER_AXIS_CONFIRMED' : 'NEEDS_MORE_FIXTURES',
     compared: compared.length,
     inlineBestFixtures,
     sourceGeometryFixtures,
+    applyCandidateFixtures,
+    blockGlobalModelFixtures,
+    globalModelSafe: applyCandidateFixtures.length === compared.length && blockGlobalModelFixtures.length === 0,
   };
 }
 
@@ -268,10 +326,26 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push(`Summary: **${report.summary.status}**`);
   lines.push('');
-  lines.push('| Fixture | Diagnosis | Best family | Source | Inline/text-input | Source -> inline | Notes |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- |');
+  lines.push('| Fixture | Diagnosis | Boundary | Best family | Source | Inline/text-input | Source -> inline | Notes |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.diagnosis.status}<br>${fixture.candidateEvidence} | ${fixture.diagnosis.bestFamily} | ${fmtCandidate(fixture.source)} | ${fmtCandidate(fixture.inlineText)} | ${fmtDelta(fixture.sourceToInlineDelta)} | ${fixture.diagnosis.notes.join('<br>')} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.diagnosis.status}<br>${fixture.candidateEvidence} | ${fixture.modelBoundary.status}<br>${fixture.modelBoundary.model ?? ''} | ${fixture.diagnosis.bestFamily} | ${fmtCandidate(fixture.source)} | ${fmtCandidate(fixture.inlineText)} | ${fmtDelta(fixture.sourceToInlineDelta)} | ${fixture.diagnosis.notes.join('<br>')} |`);
+  }
+  lines.push('');
+  lines.push('## Model Boundary');
+  lines.push('');
+  lines.push(`Global model safe: **${report.summary.globalModelSafe ? 'yes' : 'NO'}**`);
+  lines.push('');
+  lines.push(`- Apply candidate fixtures: ${report.summary.applyCandidateFixtures.map((id) => `\`${id}\``).join(', ') || 'none'}`);
+  lines.push(`- Block global model fixtures: ${report.summary.blockGlobalModelFixtures.map((id) => `\`${id}\``).join(', ') || 'none'}`);
+  lines.push('');
+  for (const fixture of report.fixtures) {
+    lines.push(`### ${fixture.fixtureId} boundary`);
+    lines.push('');
+    lines.push(`Status: **${fixture.modelBoundary.status}**`);
+    lines.push('');
+    for (const reason of fixture.modelBoundary.reasons) lines.push(`- ${reason}`);
+    lines.push('');
   }
   lines.push('');
   lines.push('## Selector Height Snapshot');

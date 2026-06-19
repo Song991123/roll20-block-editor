@@ -1,3 +1,8 @@
+# 2026-06-19 Input-Flow Boundary TODO Update
+
+- DONE: input-flow model boundary is now machine-readable and surfaced in the renderer action gate.
+- Current status: `applyCandidate=2` (Les-Oublies, YSHY), `blockGlobalModel=1` (AW2E), `globalModelSafe=NO`.
+- TODO P0: add more fixture coverage before any automatic model selection. A model can be considered for product use only after the gate proves no source/state-dominant fixture is harmed.
 # 2026-06-19 Production-Path Input-Flow TODO Update
 
 - VERIFY: `roll20RendererModel` now exists in the real preview builder as a gated diagnostic option, with candidate coverage in `smoke:roll20-full-root-candidates`.

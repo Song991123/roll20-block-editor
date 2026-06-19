@@ -1,3 +1,8 @@
+# 2026-06-19 Input-Flow Model Boundary Gate
+
+- Extended `diagnose:roll20-input-flow-axis` with explicit model-boundary statuses: `APPLY_CANDIDATE_FOR_THIS_AXIS`, `BLOCK_GLOBAL_MODEL`, and `globalModelSafe`.
+- Latest result: apply candidates are Les-Oublies and YSHY; AW2E blocks global input-flow because scroll-metrics source rootDelta `+8.188px` worsens to `+47.188px` under input-flow.
+- `gate:roll20-renderer-action` now surfaces this boundary directly: input-flow is candidate-only for Les-Oublies/YSHY and blocked by AW2E. Renderer remains HOLD and `rendererReady=NO`.
 # 2026-06-19 Production-Path Input-Flow Renderer Model Candidate
 
 - Added a gated `roll20RendererModel` option to `buildSheetDoc()` / `buildSheetParts()` with `input-flow-27` and `input-flow-276`. Default remains `default`; this is not exposed as a finished user feature and must stay off until gates pass.

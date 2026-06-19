@@ -151,6 +151,13 @@ patch numbers for Les-Oublies and YSHY while preserving the AW2E warning: AW2E
 still prefers source-state under scroll-metrics. Keep the action gate as the
 authority before enabling any model globally.
 
+2026-06-19 boundary-gate update: `diagnose:roll20-input-flow-axis` now emits
+machine-readable model boundaries. Current evidence marks Les-Oublies and YSHY
+as `APPLY_CANDIDATE_FOR_THIS_AXIS`, but AW2E as `BLOCK_GLOBAL_MODEL`; therefore
+`globalModelSafe=NO`. `gate:roll20-renderer-action` surfaces this directly and
+must continue to block global input-flow until broader fixture evidence proves
+that source/state-dominant sheets are not harmed.
+
 ## Implementation Implications
 
 - Add a dedicated local module for Roll20 sandbox sanitize/prefix behavior,

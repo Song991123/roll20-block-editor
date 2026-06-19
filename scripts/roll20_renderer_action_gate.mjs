@@ -32,14 +32,16 @@ async function main() {
   const attrClassVisibility = await readJsonIfExists(path.join(runDir, 'attr-class-visibility-diagnostics', 'attr-class-visibility-diagnostics-results.json'));
   const attrClassGeometry = await readJsonIfExists(path.join(runDir, 'attr-class-panel-geometry-diagnostics', 'attr-class-panel-geometry-diagnostics-results.json'));
   const geometry = await readJsonIfExists(path.join(runDir, 'geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json'));
+  const inputFlowAxis = await readJsonIfExists(path.join(runDir, 'input-flow-axis-diagnostics', 'input-flow-axis-diagnostics-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
     scope: 'Roll20 renderer action gate; diagnostic only, not visual parity',
     recommendation,
+    inputFlowAxis: summarizeInputFlowAxis(inputFlowAxis),
     summary: summarize(fixtures),
     fixtures,
   };
@@ -210,7 +212,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -221,6 +223,7 @@ function recommend(fixtures, status, activeRunDir) {
     status.summary.generatedDiffedCount === status.summary.generatedTargetCount;
   const generatedStatusComplete = status?.status === 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED';
   const generatedEvidenceComplete = Boolean(generatedSummaryComplete || generatedStatusComplete);
+  const inputFlowSummary = summarizeInputFlowAxis(inputFlowAxis);
 
   if (!generatedEvidenceComplete) {
     blockers.push(`generated-sheet actual evidence incomplete: status=${status?.status ?? 'unknown'}`);
@@ -256,6 +259,9 @@ function recommend(fixtures, status, activeRunDir) {
   }
   if (patchFamilies.size > 1) {
     blockers.push(`best diagnostic patch is not uniform across fixtures: ${[...patchFamilies.entries()].map(([patch, ids]) => `${patch}=>${ids.join(',')}`).join('; ')}`);
+  }
+  if (inputFlowSummary?.globalModelSafe === false && inputFlowSummary.blockGlobalModelFixtures.length) {
+    warnings.push(`input-flow renderer model is not global-safe: apply candidates ${inputFlowSummary.applyCandidateFixtures.join(', ') || 'none'}; blocked by ${inputFlowSummary.blockGlobalModelFixtures.join(', ')}`);
   }
 
   const highRootCutoffRisk = fixtures.filter((fixture) => fixture.rootCutoff?.risk === 'HIGH');
@@ -303,6 +309,9 @@ function recommend(fixtures, status, activeRunDir) {
   for (const fixture of fixtures.filter((item) => item.rootCutoff)) {
     positiveFindings.push(`${fixture.fixtureId} root cutoff diagnostic: stitched=${fixture.rootCutoff.stitchedHeight}, sidecar=${fixture.rootCutoff.sidecarHeight}, delta=${num(fixture.rootCutoff.heightDelta)}px, risk=${fixture.rootCutoff.risk}`);
   }
+  if (inputFlowSummary) {
+    positiveFindings.push(`input-flow axis diagnostic: status=${inputFlowSummary.status}, applyCandidate=${inputFlowSummary.applyCandidateFixtures.length}, blockGlobalModel=${inputFlowSummary.blockGlobalModelFixtures.length}, globalSafe=${inputFlowSummary.globalModelSafe ? 'YES' : 'NO'}`);
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -334,6 +343,9 @@ function recommend(fixtures, status, activeRunDir) {
   }
   if (patchFamilies.size > 1) {
     nextActions.push('Compare the differing diagnostic patch families before promoting CSS: current fixtures do not agree on one generic renderer fix.');
+  }
+  if (inputFlowSummary?.globalModelSafe === false) {
+    nextActions.push(`Do not enable the input-flow renderer model globally. It is candidate-only for ${inputFlowSummary.applyCandidateFixtures.join(', ') || 'none'} and blocked by ${inputFlowSummary.blockGlobalModelFixtures.join(', ') || 'unknown fixtures'}.`);
   }
   if (unresolvedRootCutoffRisk.length) {
     nextActions.push(`Resolve root cutoff/capture-container disagreement before production CSS: ${unresolvedRootCutoffRisk.map((fixture) => `${fixture.fixtureId} stitched=${fixture.rootCutoff.stitchedHeight} sidecar=${fixture.rootCutoff.sidecarHeight}`).join('; ')}. Capture or derive authoritative Roll20 root/container height, then rerun full-root candidates.`);
@@ -380,6 +392,19 @@ function recommend(fixtures, status, activeRunDir) {
     warnings,
     positiveFindings,
     nextActions,
+  };
+}
+
+function summarizeInputFlowAxis(report) {
+  if (!report?.summary) return null;
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    compared: Number(report.summary.compared ?? 0),
+    inlineBestFixtures: report.summary.inlineBestFixtures ?? [],
+    sourceGeometryFixtures: report.summary.sourceGeometryFixtures ?? [],
+    applyCandidateFixtures: report.summary.applyCandidateFixtures ?? [],
+    blockGlobalModelFixtures: report.summary.blockGlobalModelFixtures ?? [],
+    globalModelSafe: Boolean(report.summary.globalModelSafe),
   };
 }
 
@@ -473,6 +498,14 @@ function renderMarkdown(report) {
   if (report.recommendation.warnings.length) {
     lines.push('### Diagnostic Warnings', '');
     for (const warning of report.recommendation.warnings) lines.push(`- ${warning}`);
+    lines.push('');
+  }
+  if (report.inputFlowAxis) {
+    lines.push('### Input-Flow Axis Boundary', '');
+    lines.push(`- Status: ${report.inputFlowAxis.status}`);
+    lines.push(`- Global model safe: ${report.inputFlowAxis.globalModelSafe ? 'YES' : 'NO'}`);
+    lines.push(`- Apply candidates: ${report.inputFlowAxis.applyCandidateFixtures.join(', ') || 'none'}`);
+    lines.push(`- Blocks global model: ${report.inputFlowAxis.blockGlobalModelFixtures.join(', ') || 'none'}`);
     lines.push('');
   }
   lines.push('### Next Actions', '');
