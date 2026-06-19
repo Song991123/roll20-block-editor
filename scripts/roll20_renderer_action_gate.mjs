@@ -37,9 +37,10 @@ async function main() {
   const chatStyle = await readJsonIfExists(path.join(runDir, 'chat-style-context-diagnostics', 'chat-style-context-diagnostics-results.json'));
   const chatCandidates = await readJsonIfExists(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
   const chatCandidateStyleProof = await readJsonIfExists(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json'));
+  const chatRendererPolicy = await readJsonIfExists(path.join(runDir, 'chat-renderer-policy', 'chat-renderer-policy-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -50,6 +51,7 @@ async function main() {
     chatStyle: summarizeChatStyle(chatStyle),
     chatCandidates: summarizeChatCandidates(chatCandidates),
     chatCandidateStyleProof: summarizeChatCandidateStyleProof(chatCandidateStyleProof),
+    chatRendererPolicy: summarizeChatRendererPolicy(chatRendererPolicy),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -221,7 +223,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -237,6 +239,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatStyleSummary = summarizeChatStyle(chatStyle);
   const chatCandidateSummary = summarizeChatCandidates(chatCandidates);
   const chatCandidateStyleProofSummary = summarizeChatCandidateStyleProof(chatCandidateStyleProof);
+  const chatRendererPolicySummary = summarizeChatRendererPolicy(chatRendererPolicy);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
   const styleProofStatusByName = new Map(
     (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
@@ -403,6 +406,14 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       blockers.push(`actual Roll20 chat table width deltas conflict across fixtures (${formatFixtureDeltas(chatStyleSummary.tableWidthDeltas)}); do not promote a single ChatPane width/padding patch without a narrower renderer model`);
     }
   }
+  if (!chatRendererPolicySummary) {
+    warnings.push('chat renderer rollout policy has not been run; run diagnose:roll20-chat-renderer-policy before exposing or promoting any ChatPane renderer model');
+  } else {
+    positiveFindings.push(`chat renderer rollout policy: global=${chatRendererPolicySummary.globalDecision}, publicUi=${chatRendererPolicySummary.publicUiDecision}, split=${chatRendererPolicySummary.splitDecisions ? 'YES' : 'NO'}, highMismatch=${chatRendererPolicySummary.highMismatch}, globalSafeCandidates=${chatRendererPolicySummary.globalSafeCandidates.join(', ') || 'none'}`);
+    if (chatRendererPolicySummary.globalDecision !== 'READY_FOR_REVIEW_NOT_AUTOMATIC') {
+      blockers.push(`chat renderer rollout policy holds global ChatPane patch: ${chatRendererPolicySummary.globalBlockers.join('; ') || chatRendererPolicySummary.globalDecision}`);
+    }
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -441,6 +452,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-style -- ${path.relative(process.cwd(), activeRunDir)} before the next ChatPane CSS candidate.`);
   } else if (chatStyleSummary.conflictingTableWidthDirection) {
     nextActions.push('Use chat-style context diagnostics to explain the opposite AW2E/YSHY table-width deltas before testing another global ChatPane width, padding, or wrap patch.');
+  }
+  if (!chatRendererPolicySummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-renderer-policy -- ${path.relative(process.cwd(), activeRunDir)} and keep the policy output local-only.`);
+  } else if (chatRendererPolicySummary.globalDecision !== 'READY_FOR_REVIEW_NOT_AUTOMATIC') {
+    nextActions.push(chatRendererPolicySummary.nextAction || 'Follow the chat renderer policy before any production ChatPane renderer change.');
   }
   if (!chatCandidateSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
@@ -636,6 +652,35 @@ function summarizeChatCandidateStyleProof(report) {
     rejectedCandidates: candidates.filter((candidate) => candidate.styleProofStatus === 'REJECT_STYLE_CONTRADICTION'),
     needsNewSidecarCandidates: candidates.filter((candidate) => candidate.styleProofStatus === 'NEEDS_NEW_SIDECAR_FIELDS'),
     styleCompatibleCandidates: candidates.filter((candidate) => candidate.styleProofStatus === 'STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW'),
+  };
+}
+
+function summarizeChatRendererPolicy(report) {
+  if (!report?.policy) return null;
+  return {
+    globalDecision: report.policy.globalDecision ?? 'UNKNOWN',
+    publicUiDecision: report.policy.publicUiDecision ?? 'UNKNOWN',
+    defaultModel: report.policy.defaultModel ?? 'default',
+    globalSafeCandidates: report.policy.globalSafeCandidates ?? [],
+    globalBlockers: report.policy.globalBlockers ?? [],
+    nextAction: report.policy.nextAction ?? '',
+    fixtures: Number(report.summary?.fixtures ?? report.fixtures?.length ?? 0),
+    compared: Number(report.summary?.compared ?? 0),
+    highMismatch: Number(report.summary?.highMismatch ?? 0),
+    splitDecisions: Boolean(report.summary?.splitDecisions),
+    conflictingTableWidthDirection: Boolean(report.summary?.conflictingTableWidthDirection),
+    fixtureDecisions: (report.fixtures ?? []).map((fixture) => ({
+      fixtureId: fixture.fixtureId,
+      decision: fixture.decision,
+      defaultAlignedMismatchPct: fixture.defaultAlignedMismatchPct ?? '',
+      tableWidthDeltaPx: fixture.tableWidthDeltaPx ?? null,
+      candidateModels: (fixture.candidateModels ?? []).map((candidate) => ({
+        name: candidate.name,
+        risk: candidate.risk,
+        fixtureAlignedDeltaPct: candidate.fixtureAlignedDeltaPct ?? null,
+        styleProofStatus: candidate.styleProofStatus,
+      })),
+    })),
   };
 }
 
@@ -911,6 +956,32 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | ---: | --- |');
       for (const candidate of report.chatCandidateStyleProof.candidates) {
         lines.push(`| \`${candidate.name}\` | ${candidate.styleProofStatus} | ${fmtPct(candidate.meanAlignedDeltaPct)} | ${candidate.fixtureStatuses.map((fixture) => `${fixture.fixtureId}:${fixture.status}`).join('<br>')} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatRendererPolicy) {
+    lines.push('### Chat Renderer Policy Boundary', '');
+    lines.push(`- Global decision: ${report.chatRendererPolicy.globalDecision}`);
+    lines.push(`- Public UI: ${report.chatRendererPolicy.publicUiDecision}`);
+    lines.push(`- Compared: ${report.chatRendererPolicy.compared}/${report.chatRendererPolicy.fixtures}`);
+    lines.push(`- High mismatch fixtures: ${report.chatRendererPolicy.highMismatch}`);
+    lines.push(`- Split decisions: ${report.chatRendererPolicy.splitDecisions ? 'YES' : 'NO'}`);
+    lines.push(`- Conflicting table-width direction: ${report.chatRendererPolicy.conflictingTableWidthDirection ? 'YES' : 'NO'}`);
+    lines.push(`- Global safe candidates: ${report.chatRendererPolicy.globalSafeCandidates.join(', ') || 'none'}`);
+    if (report.chatRendererPolicy.globalBlockers.length) {
+      lines.push(`- Policy blockers: ${report.chatRendererPolicy.globalBlockers.join('; ')}`);
+    }
+    lines.push(`- Policy next action: ${report.chatRendererPolicy.nextAction || 'none'}`);
+    if (report.chatRendererPolicy.fixtureDecisions.length) {
+      lines.push('');
+      lines.push('| Fixture | Decision | Default aligned | Table width delta | Candidate models |');
+      lines.push('| --- | --- | ---: | ---: | --- |');
+      for (const fixture of report.chatRendererPolicy.fixtureDecisions) {
+        const candidates = fixture.candidateModels
+          .map((candidate) => `${candidate.name} ${fmtPct(candidate.fixtureAlignedDeltaPct)} ${candidate.risk}/${candidate.styleProofStatus}`)
+          .join('<br>');
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fixture.defaultAlignedMismatchPct} | ${num(fixture.tableWidthDeltaPx)}px | ${candidates || 'none'} |`);
       }
     }
     lines.push('');

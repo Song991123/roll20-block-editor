@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Chat renderer policy gate
+
+Status: PARTIAL. Roll20 chat/template parity is still blocked, but the unsafe global-patch boundary is now explicit.
+
+- DONE: Added `diagnose:roll20-chat-renderer-policy`, which converts current actual Roll20 chat parity/style/candidate evidence into a diagnostic-only per-fixture renderer policy.
+- DONE: Wired the policy into `gate:roll20-renderer-action` so agents see the split before attempting another global ChatPane width/padding/font patch.
+- RESULT: Current policy is `HOLD_GLOBAL_CHAT_RENDERER_PATCH`, `publicUi=DO_NOT_EXPOSE`, with no global-safe candidates.
+- RESULT: Fixture decisions are split: `official-roll20-AW2E=KEEP_DEFAULT_CHAT_RENDERER`, `official-roll20-Les-Oublies=NEEDS_NEW_DIAGNOSTIC_MODEL`, `yshy-commission-1bu=CANDIDATE_ONLY_DO_NOT_EXPOSE`.
+- RESULT: The policy records the conflicting actual table-width deltas: AW2E `+33.134px`, Les-Oublies `+0.8px`, YSHY `-24.309px`.
+- VERIFIED: `corepack pnpm run diagnose:roll20-chat-renderer-policy -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+- STILL TODO P0: Create a new Les-Oublies chat diagnostic model and prove or reject the YSHY fixture-local candidates from actual Roll20 computed style before any production ChatPane CSS.
+
 ## 2026-06-20 Codex Update - Header manual save is real
 
 Status: PARTIAL. Header chrome is less misleading, but Roll20 visual parity is still not proven.

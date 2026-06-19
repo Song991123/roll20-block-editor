@@ -11,6 +11,15 @@ the success toast on `http://localhost:3000/`. This improves basic usability
 only; it does not affect Roll20 renderer parity, which remains blocked by
 `HOLD_PRODUCTION_RENDERER_PATCH`.
 
+Current Roll20 chat-renderer note, 2026-06-20 policy gate:
+`diagnose:roll20-chat-renderer-policy` now records the current actual Roll20
+chat evidence as an explicit diagnostic rollout policy. The current policy is
+`HOLD_GLOBAL_CHAT_RENDERER_PATCH` and `DO_NOT_EXPOSE`: AW2E keeps the default
+ChatPane renderer, Les-Oublies needs a new diagnostic model, and YSHY has only
+fixture-local candidates. This prevents a single global width/padding/font patch
+from being mistaken for Roll20 parity while table-width deltas conflict across
+fixtures.
+
 ## Server and Environment Hygiene
 
 | Status | Priority | Requirement | Current Evidence | Next Action |

@@ -2219,6 +2219,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - `audit:roll20-root-stitch` now reports the file as `DIAGNOSTIC_SCROLL_METRICS` with duplicate segments `0` and coverage issues `0`; `plan:roll20-root-capture` lists it as a `scroll-metrics` diagnostic.
 - Claim boundary: this is a promising recapture diagnostic. It is not yet promoted to the preferred trusted Roll20 root screenshot and does not make renderer CSS ready.
 
+## 2026-06-20 Chat Renderer Policy Gate
+
+- Added `scripts/roll20_chat_renderer_policy.mjs` and package alias `diagnose:roll20-chat-renderer-policy`.
+- The policy reads current actual Roll20 chat parity, chat style context, candidate comparison, and candidate style-proof reports. It emits local-only JSON/Markdown under `reports/roll20-actual-compare/<run>/chat-renderer-policy/`.
+- Wired the renderer action gate to read the policy and add a blocker when it holds global ChatPane renderer changes.
+- Current policy for `2026-06-18-state-map-v1`: `HOLD_GLOBAL_CHAT_RENDERER_PATCH`, `publicUi=DO_NOT_EXPOSE`, no global-safe candidates.
+- Current per-fixture decisions: AW2E keeps default, Les-Oublies needs a new diagnostic model, and YSHY has fixture-local candidates that must not be exposed.
+- Current root cause boundary: actual Roll20 chat table-width deltas conflict by fixture (`+33.134px`, `+0.8px`, `-24.309px`), so a single width/padding/font ChatPane patch remains unsafe.
+- Verification: `diagnose:roll20-chat-renderer-policy`, `gate:roll20-renderer-action`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+- Claim boundary: this is a guardrail and diagnostic handoff. It does not make Roll20 chat/template parity pass and does not change production ChatPane CSS.
+
 ## 2026-06-20 Header Manual Save Cleanup
 
 - Removed the product-surface placeholder `설정` and `도움말` header buttons.
