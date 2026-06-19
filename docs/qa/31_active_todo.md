@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - AW2E chat recaptured as true PNG 1x
+
+Status: PARTIAL. One evidence-quality blocker closed; Roll20 visual/chat parity is still NOT done.
+
+- Recaptured `official-roll20-AW2E` Roll20 chat evidence from the dedicated `Codex Roll20 Verify` Sandbox editor as true PNG with CDP `Page.captureScreenshot` and `clip.scale=1`.
+- Saved same-moment local-only ignored evidence beside the fixture: `roll20-chat.png` and `roll20-chat-dom-evidence.json`. These files remain under ignored `reports/` and must not be committed.
+- Current measured plan improved from `plannedFixtures=2/3` to `plannedFixtures=1/3`.
+- Remaining recapture target: `yshy-commission-1bu` is still `SCALE_OR_FORMAT_SUSPECT`; the older `roll20-chat-cdp-test.png` is PNG but captured at devicePixelRatio scale, not CSS 1x, so it must not be promoted as proof.
+- Tried applying YSHY HTML/CSS/translation in the dedicated Sandbox editor: file-input dispatch and endpoint fallback returned success, local payload validation passed, and the sandbox body text did not show a translation parse error, but opening existing characters still produced no `.charactersheet` / `.charsheet` root or roll buttons.
+- Next P0: make YSHY render in the dedicated Sandbox or another verified test room, then click a real `roll_str_check`-style button and recapture `roll20-chat.png` as true PNG CSS 1x with matching DOM sidecar.
+
 ## 2026-06-20 Codex Update - Chat capture plan now rejects JPEG/0.8x evidence
 
 Status: PARTIAL. The recapture plan is more truthful; Roll20 chat visual parity is still NOT done.

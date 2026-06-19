@@ -1,3 +1,14 @@
+## 2026-06-20 01:20 +09:00 - AW2E Roll20 chat PNG 1x recapture
+
+Status: PARTIAL. AW2E no longer blocks on capture format/scale; YSHY still does.
+
+- Used only the dedicated `Codex Roll20 Verify` Roll20 Sandbox/editor. Existing real rooms were not modified.
+- Applied regenerated AW2E upload snippet in the editor Sandbox Tools with file-input dispatch plus endpoint fallback to campaign `21639681`; all three endpoint posts returned `200`, and the Sandbox body text no longer showed the translation JSON parse warning.
+- Reused the visible AW2E `sheet-rolltemplate-aw` chat message in the dedicated editor, captured `roll20-chat.png` through CDP `Page.captureScreenshot` with `format=png` and `clip.scale=1`, and immediately wrote a matching DOM sidecar from the generated probe snippet.
+- Verification: `plan:roll20-chat-capture` now reports `plannedFixtures=1/3`; AW2E is no longer `SCALE_OR_FORMAT_SUSPECT`.
+- YSHY attempt: regenerated/applied YSHY snippet in the same dedicated Sandbox editor. File-input dispatch and endpoint fallback succeeded, local validation passed, and Sandbox body text did not show a parse warning; however existing character viewers still exposed no `.charactersheet` / `.charsheet` root and no roll buttons, so no new YSHY rolltemplate could be generated.
+- Claim boundary: AW2E capture quality improved, but AW2E mismatch remains high and Roll20 parity is still failing. YSHY remains the next recapture blocker.
+
 ## 2026-06-20 00:55 +09:00 - Chat capture plan evidence-quality rejection
 
 Status: PARTIAL. This closes a truthfulness gap in the next Roll20 recapture step, not visual parity.
