@@ -30,6 +30,7 @@
     "diagnose:roll20-visible-context": "node scripts/roll20_visible_context_diagnostics.mjs",
     "diagnose:roll20-geometry": "node scripts/roll20_geometry_delta_diagnostics.mjs",
     "diagnose:roll20-state-visibility": "node scripts/roll20_state_visibility_diagnostics.mjs",
+    "gate:roll20-renderer-action": "node scripts/roll20_renderer_action_gate.mjs",
     "smoke:roll20-same-context-visible": "node scripts/roll20_same_context_visible_smoke.mjs",
     "smoke:roll20-full-root-candidates": "node scripts/roll20_full_root_candidate_smoke.mjs",
     "verify:roll20-preupload": "node scripts/roll20_preupload_verification.mjs",

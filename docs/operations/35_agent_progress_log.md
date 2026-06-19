@@ -1305,3 +1305,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Extended `scripts/roll20_state_visibility_diagnostics.mjs` again so local expected panel samples include actual height, local height, and delta.
 - Latest Les-Oublies lightweight-wrapper sample still matches panel visibility `9/9`, and its largest sampled panel deltas are `.sheet-section-competences` +496.872px and `.sheet-skills` +496.272px.
 - Claim boundary: these height deltas are triage clues from a lightweight wrapper, not a production CSS fix. Use the full-root candidate smoke and actual Roll20 captures as stronger renderer evidence before patching generic CSS.
+## 2026-06-19 Renderer Action Gate Holds Production CSS
+
+- Added `scripts/roll20_renderer_action_gate.mjs` and package command `corepack pnpm run gate:roll20-renderer-action -- <run-dir>`.
+- The gate consolidates actual status, full-root candidate smoke, state visibility, and geometry diagnostics into one renderer-action recommendation.
+- Latest run for `reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Blockers: AW2E lacks trusted generated root evidence, all Roll20 chat screenshots are missing, only 2/3 fixtures have full-root candidates, and the best diagnostic patch is not uniform (`inline-block+text-input-height` for Les-Oublies vs `text-input-height` for YSHY).
+- Positive evidence: Les-Oublies diagnostic best is 3.87% with root delta -0.656px; YSHY best is 4.28% with root delta -0.375px; local Sandbox expected panel visibility matches actual sampled panels for Les-Oublies.
+- Claim boundary: this is a safety gate to prevent premature renderer CSS promotion, not visual parity.

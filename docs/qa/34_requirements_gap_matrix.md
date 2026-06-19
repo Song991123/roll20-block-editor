@@ -192,6 +192,14 @@ lightweight-wrapper sample highlights `.sheet-section-competences` (+496.872px)
 and `.sheet-skills` (+496.272px) as the largest local-over-actual panel deltas.
 Treat these as geometry triage clues only; the full-root candidate smoke remains
 the stronger renderer signal before CSS changes.
+Follow-up renderer action gate: `corepack pnpm run gate:roll20-renderer-action --
+reports\roll20-actual-compare\2026-06-18-state-map-v1` now consolidates actual
+status, full-root candidates, state visibility, and geometry diagnostics. Latest
+recommendation is `HOLD_PRODUCTION_RENDERER_PATCH` because AW2E lacks trusted
+root evidence, all Roll20 chat screenshots are missing, only 2/3 fixtures have
+full-root candidates, and the best diagnostic patch is not uniform across
+fixtures. Diagnostic CSS candidates must remain out of production until these
+blockers are cleared.
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
