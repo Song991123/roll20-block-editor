@@ -370,6 +370,29 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
       const localData = draw(localImage);
       const actualData = draw(actualImage, actualSource);
       const threshold = 60;
+      function createGeometryAccumulator() {
+        return { count: 0, minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity, sumX: 0, sumY: 0 };
+      }
+      function addGeometryPoint(geometry, x, y) {
+        geometry.count += 1;
+        geometry.minX = Math.min(geometry.minX, x);
+        geometry.minY = Math.min(geometry.minY, y);
+        geometry.maxX = Math.max(geometry.maxX, x);
+        geometry.maxY = Math.max(geometry.maxY, y);
+        geometry.sumX += x;
+        geometry.sumY += y;
+      }
+      function summarizeGeometry(geometry) {
+        if (!geometry.count) return { count: 0, bounds: null, centroid: null };
+        return {
+          count: geometry.count,
+          bounds: [geometry.minX, geometry.minY, geometry.maxX - geometry.minX + 1, geometry.maxY - geometry.minY + 1],
+          centroid: [
+            Number((geometry.sumX / geometry.count).toFixed(3)),
+            Number((geometry.sumY / geometry.count).toFixed(3)),
+          ],
+        };
+      }
       function diffAt(dx, dy) {
         const localX = Math.max(0, dx);
         const localY = Math.max(0, dy);
@@ -407,6 +430,12 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
           highlightEither: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
           shadowCandidate: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
         };
+        const maskGeometry = {
+          highlightLocal: createGeometryAccumulator(),
+          highlightActual: createGeometryAccumulator(),
+          shadowLocal: createGeometryAccumulator(),
+          shadowActual: createGeometryAccumulator(),
+        };
         for (let y = 0; y < h; y += 1) {
           for (let x = 0; x < w; x += 1) {
             const li = ((y + localY) * width + (x + localX)) * 4;
@@ -424,6 +453,10 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
             const actualLuma = 0.2126 * ar + 0.7152 * ag + 0.0722 * ab;
             const isHighlightEither = localLuma > 190 || actualLuma > 190;
             const isShadowCandidate = (localLuma < 70 || actualLuma < 70) && (localLuma > 25 || actualLuma > 25);
+            if (localLuma > 190) addGeometryPoint(maskGeometry.highlightLocal, x, y);
+            if (actualLuma > 190) addGeometryPoint(maskGeometry.highlightActual, x, y);
+            if (localLuma > 25 && localLuma < 70) addGeometryPoint(maskGeometry.shadowLocal, x, y);
+            if (actualLuma > 25 && actualLuma < 70) addGeometryPoint(maskGeometry.shadowActual, x, y);
             const bucket = localLuma < 80 && actualLuma < 80
               ? lumaBuckets.darkBoth
               : localLuma > 130 || actualLuma > 130
@@ -503,6 +536,9 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
                 },
               ]),
             ),
+            maskGeometry: Object.fromEntries(
+              Object.entries(maskGeometry).map(([key, geometry]) => [key, summarizeGeometry(geometry)]),
+            ),
           },
         };
       }
@@ -571,15 +607,15 @@ function renderMarkdown(report) {
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
   lines.push(`Max aligned mismatch: ${pct(report.summary.maxAlignedMismatchRatio)}`);
   lines.push('');
-  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | Highlight share | Bright share | Dark share | Worst row | RMS | Note |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | ---: | ---: | --- | ---: | --- |');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | Highlight share | Highlight delta | Bright share | Dark share | Worst row | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | --- | ---: | --- |');
   for (const fixture of report.fixtures) {
     const cropGeometry = fixture.actualCropGeometry?.suspect ? `SUSPECT: ${fixture.actualCropGeometry.reason}` : 'authoritative';
     const sizeDelta = fixture.widthDeltaPx === null || fixture.widthDeltaPx === undefined
       ? ''
       : `${fixture.widthDeltaPx}x${fixture.heightDeltaPx}`;
     const breakdown = summarizeBreakdown(fixture.bestAlignedDiffBreakdown ?? fixture.diffBreakdown);
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.highlightShare} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.highlightShare} | ${breakdown.highlightDelta} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');
@@ -590,16 +626,30 @@ function summarizeBreakdown(breakdown) {
   if (!breakdown) return { brightShare: '', darkShare: '', worstRow: '' };
   const buckets = breakdown.lumaBuckets ?? {};
   const masks = breakdown.masks ?? {};
+  const geometry = breakdown.maskGeometry ?? {};
   const highlight = masks.highlightEither?.mismatchShare;
   const bright = buckets.brightEither?.mismatchShare;
   const dark = buckets.darkBoth?.mismatchShare;
   const worst = [...(breakdown.rowBands ?? [])].sort((a, b) => (b.mismatchRatio ?? 0) - (a.mismatchRatio ?? 0))[0];
+  const highlightDelta = summarizeGeometryDelta(geometry.highlightLocal, geometry.highlightActual);
   return {
     highlightShare: typeof highlight === 'number' ? pct(highlight) : '',
+    highlightDelta,
     brightShare: typeof bright === 'number' ? pct(bright) : '',
     darkShare: typeof dark === 'number' ? pct(dark) : '',
     worstRow: worst ? `${worst.index}:${pct(worst.mismatchRatio)}` : '',
   };
+}
+
+function summarizeGeometryDelta(local, actual) {
+  if (!local?.centroid || !actual?.centroid) return '';
+  const dx = Number((local.centroid[0] - actual.centroid[0]).toFixed(2));
+  const dy = Number((local.centroid[1] - actual.centroid[1]).toFixed(2));
+  const localBounds = local.bounds ?? [];
+  const actualBounds = actual.bounds ?? [];
+  const dw = Number(((localBounds[2] ?? 0) - (actualBounds[2] ?? 0)).toFixed(2));
+  const dh = Number(((localBounds[3] ?? 0) - (actualBounds[3] ?? 0)).toFixed(2));
+  return `c ${dx},${dy}; b ${dw},${dh}`;
 }
 
 function pct(value) {
