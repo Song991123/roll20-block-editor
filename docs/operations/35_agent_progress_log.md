@@ -67,6 +67,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 | Verification evidence | local ignored `reports/` outputs plus summarized TODO notes |
 | Repeatable scripts | `scripts/` |
 
+## 2026-06-19 Unified Input-Flow Candidate Probe
+
+- Added diagnostic 27px input-flow candidates to `scripts/roll20_full_root_candidate_smoke.mjs`: `sandbox-inline-block-text-input-270-source` and `sandbox-nowrap-text-input-270-source`.
+- Tightened full-root candidate tie-breaking so equal root-height candidates choose the lower pixel mismatch. This makes Les-Oublies and YSHY converge on the same diagnostic family instead of splitting between 27.6px and text-input-only variants.
+- Latest active run: Les-Oublies best `sandbox-inline-block-text-input-270-source` at `3.76%` mismatch and rootDelta `-3.625px`; YSHY best `sandbox-inline-block-text-input-270-source` at `4.23%` and rootDelta `-0.375px`.
+- AW2E remains the exception: trusted full-root pixel candidates still disagree, and reliable gate comparison uses the scroll-metrics source candidate because its geometry is tight (`rootDelta +8.188px`, panelY `+16.6px`, panelH `+0.2px`).
+- Claim boundary: this is stronger evidence for a generic Roll20 inline-block/text-input-height axis, but production renderer CSS remains `HOLD_PRODUCTION_RENDERER_PATCH` and `rendererReady=NO`.
+
 ## 2026-06-14 Folder/Docs Review
 
 - Parent folder contains many legacy and experiment copies; current development must stay in `web-push-main/`.

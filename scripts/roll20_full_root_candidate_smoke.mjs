@@ -180,7 +180,9 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         { id: 'sandbox-text-input-280-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-height', rootWidth: actualRootWidth, textInputHeight: 28 } },
         { id: 'sandbox-textarea-150-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'textarea-height', rootWidth: actualRootWidth, textareaHeight: 150 } },
         { id: 'sandbox-text-input-280-textarea-150-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-textarea-height', rootWidth: actualRootWidth, textInputHeight: 28, textareaHeight: 150 } },
+        { id: 'sandbox-inline-block-text-input-270-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-text-input-height', rootWidth: actualRootWidth, wordSpacing: -0.75, textInputHeight: 27 } },
         { id: 'sandbox-inline-block-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-text-input-height', rootWidth: actualRootWidth, wordSpacing: -0.75, textInputHeight: 27.6 } },
+        { id: 'sandbox-nowrap-text-input-270-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-nowrap-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27 } },
         { id: 'sandbox-nowrap-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-nowrap-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
         { id: 'sandbox-sheet-class-alias-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', rootWidth: actualRootWidth } },
         { id: 'sandbox-sheet-class-alias-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
@@ -1417,6 +1419,7 @@ function pickBetterCandidate(best, candidate) {
     const candidateAbsHeight = Math.abs(candidate.rootHeightDelta ?? Number.POSITIVE_INFINITY);
     const bestAbsHeight = Math.abs(best.rootHeightDelta ?? Number.POSITIVE_INFINITY);
     if (candidateAbsHeight < bestAbsHeight) return candidate;
+    if (Math.abs(candidateAbsHeight - bestAbsHeight) <= 0.001 && candidate.mismatchRatio < best.mismatchRatio) return candidate;
   }
   return best;
 }
@@ -1497,7 +1500,9 @@ function summarizeComponentEffects(candidates) {
     'sandbox-text-input-280-source',
     'sandbox-textarea-150-source',
     'sandbox-text-input-280-textarea-150-source',
+    'sandbox-inline-block-text-input-270-source',
     'sandbox-inline-block-text-input-276-source',
+    'sandbox-nowrap-text-input-270-source',
     'sandbox-nowrap-text-input-276-source',
     'sandbox-sheet-class-alias-source',
     'sandbox-sheet-class-alias-text-input-276-source',

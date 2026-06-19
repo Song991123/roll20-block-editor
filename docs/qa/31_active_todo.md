@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer gate note, 2026-06-19 unified input-flow candidate probe:
+`smoke:roll20-full-root-candidates` now includes diagnostic `inline-block+text-input-height` and `inline-block-nowrap+text-input-height` candidates at `27px`, and root-height ties now prefer the lower pixel mismatch. Latest full-root candidate smoke converges Les-Oublies and YSHY on `sandbox-inline-block-text-input-270-source`: Les-Oublies `3.76%` mismatch with rootDelta `-3.625px`, YSHY `4.23%` mismatch with rootDelta `-0.375px`. AW2E still does not share that best family in the trusted full-root table, and its reliable comparison still uses the scroll-metrics source candidate (`rootDelta +8.188px`, panelY `+16.6px`, panelH `+0.2px`). Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` and `rendererReady=NO`; this is stronger cross-fixture evidence for a Roll20 input/inline-block axis, not production visual parity.
+
 Current Roll20 renderer gate note, 2026-06-19 scroll-metrics reliable candidate:
 `gate:roll20-renderer-action` now allows a root-cutoff HIGH fixture to contribute a reliable renderer candidate when its scroll-metrics source render is tightly aligned (`rootDelta <= 50px`, `panelY <= 50px`, `panelH <= 10px`). Latest AW2E uses the scroll-metrics source candidate with rootDelta +8.188px, panelY +16.6px, panelH +0.2px, so the reliable evidence shortage blocker is gone. Renderer still HOLDs because reliable patch families disagree across fixtures: `none` for AW2E, `inline-block+text-input-height` for Les-Oublies, and `text-input-height` for YSHY; the old trusted stitched root cutoff warning remains as evidence hygiene, not as the AW2E renderer comparison source.
 Current Roll20 renderer gate note, 2026-06-19 reliable patch-family comparison:
