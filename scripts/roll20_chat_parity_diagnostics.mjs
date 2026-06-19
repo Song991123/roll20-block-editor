@@ -132,6 +132,21 @@ async function compareFixture(page, fixtureId) {
     };
   }
 
+  const foreground = validateChatForeground(sidecarJson);
+  if (!foreground.ok) {
+    return {
+      fixtureId,
+      status: 'NEEDS_NORMALIZED_CAPTURE',
+      local: rel(local),
+      actual: rel(actual),
+      sidecar: rel(sidecar),
+      sidecarRolltemplateCount: Number(sidecarJson?.rolltemplateCount ?? sidecarJson?.rolltemplates?.length ?? 0),
+      actualChatCss: summarizeActualChatCss(sidecarJson),
+      foreground,
+      note: foreground.note,
+    };
+  }
+
   const actualCrop = buildActualTemplateCrop(sidecarJson);
   if (!actualCrop && existsSync(localTemplate)) {
     return {
@@ -176,6 +191,24 @@ async function compareFixture(page, fixtureId) {
     bounds: diff.bounds,
     note: 'Diagnostic local ChatPane vs actual Roll20 chat comparison. Requires human classification before a parity claim.',
   };
+}
+
+function validateChatForeground(sidecar) {
+  const chatSelector = String(sidecar?.chatSelector ?? '');
+  const chatElementSelector = String(sidecar?.chatElementSelector ?? '');
+  if (!chatElementSelector) {
+    return {
+      ok: false,
+      note: 'actual Roll20 chat sidecar was captured by an older probe without chatElementSelector, so the screenshot may show an overlapping character/dialog panel instead of foreground chat',
+    };
+  }
+  if (chatSelector === '#rightsidebar' && sidecar?.activeRightTab !== 'textchattab') {
+    return {
+      ok: false,
+      note: 'actual Roll20 chat sidecar selected broad #rightsidebar without an active text chat tab marker; recapture #textchat or .textchatcontainer foreground with the current probe',
+    };
+  }
+  return { ok: true, note: `actual Roll20 chat sidecar selected ${chatSelector || chatElementSelector}` };
 }
 
 async function sniffImageFormat(file) {

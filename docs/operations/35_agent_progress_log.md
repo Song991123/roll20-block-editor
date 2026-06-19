@@ -1,3 +1,15 @@
+## 2026-06-20 02:20 +09:00 - Roll20 chat foreground evidence correction
+
+Status: PARTIAL. This prevents tuning local ChatPane against the wrong actual screenshot crop.
+
+- Opened the current ignored `roll20-chat.png` files for AW2E, Les-Oublies, and YSHY and found they visually show overlapping character/dialog sheet content rather than the foreground Roll20 chat/template area.
+- The previous capture-quality check only proved PNG format and CSS 1x scale. It did not prove the screenshot foreground matched the DOM sidecar's rolltemplate rect.
+- Hardened `scripts/roll20_chat_capture_plan.mjs`, `scripts/roll20_actual_status.mjs`, `scripts/roll20_upload_handoff.mjs`, and `scripts/roll20_chat_parity_diagnostics.mjs` so older sidecars without `chatElementSelector` become foreground-suspect evidence.
+- Current corrected status: `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=3/6`, `generatedDiffed=3/6`, `chatNormalizedCompared=0/3`, `chatNeedsNormalizedCapture=3`, with all three chat screenshots missing trustworthy foreground proof.
+- Current renderer gate now HOLDs on missing trustworthy Roll20 chat screenshots and normalized crop evidence, not on the earlier misleading 3/3 chat high-mismatch values.
+- Also updated `scripts/rolltemplate_chat_smoke.mjs` so external resource 403 console messages are tracked as resource issues instead of failing local chat functionality. Latest local chat smoke PASSes all three prepared fixtures.
+- Next P0: recapture Roll20 chat from the actual foreground chat root with the current probe, then only after that use pixel mismatch to tune local ChatPane/rolltemplate styling.
+
 ## 2026-06-20 01:55 +09:00 - Roll20 upload manifest and chat probe hardening
 
 Status: PARTIAL. This improves the reliability of future Roll20 Sandbox uploads/captures; it does not prove Roll20 parity.

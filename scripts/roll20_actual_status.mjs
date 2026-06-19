@@ -576,6 +576,14 @@ async function validateChatEvidence(screenshots, file) {
         note: freshness.note,
       };
     }
+    const foreground = validateChatForeground(domEvidence);
+    if (!foreground.ok) {
+      return {
+        ok: false,
+        kind: 'chat-screenshot-foreground-suspect',
+        note: foreground.note,
+      };
+    }
     return { ok: true, kind: 'chat-screenshot-with-dom', note: 'Roll20 chat screenshot exists with supporting DOM evidence' };
   }
   if (hasDomEvidence) {
@@ -590,6 +598,24 @@ async function validateChatEvidence(screenshots, file) {
     kind: 'chat-screenshot-only',
     note: 'Roll20 chat screenshot exists, but no DOM sidecar proves which rolltemplate/message rendered',
   };
+}
+
+function validateChatForeground(domEvidence) {
+  const chatSelector = String(domEvidence?.chatSelector ?? '');
+  const chatElementSelector = String(domEvidence?.chatElementSelector ?? '');
+  if (!chatElementSelector) {
+    return {
+      ok: false,
+      note: 'Roll20 chat sidecar was captured by an older probe without chatElementSelector, so the screenshot cannot prove the chat root was foreground instead of an overlapping character/dialog panel',
+    };
+  }
+  if (chatSelector === '#rightsidebar' && domEvidence?.activeRightTab !== 'textchattab') {
+    return {
+      ok: false,
+      note: 'Roll20 chat sidecar selected broad #rightsidebar without an active text chat tab marker; recapture #textchat or .textchatcontainer foreground with the current probe',
+    };
+  }
+  return { ok: true, note: `Roll20 chat sidecar selected ${chatSelector || chatElementSelector}` };
 }
 
 async function validateSidecarFreshness(screenshot, sidecar) {

@@ -164,6 +164,14 @@ missing, lacks rendered rolltemplate markers, or is stale relative to the PNG.
 Default Roll20 chat tips, invite text, or page-level screenshots are not accepted
 as rolltemplate visual evidence.
 
+The chat PNG must also prove foreground chat capture, not just a matching
+timestamp and image scale. Roll20 character/dialog windows can overlap the broad
+`#rightsidebar` area while the DOM sidecar still finds hidden or background chat
+templates. Current probes must record `chatElementSelector`; older sidecars that
+lack it are foreground-suspect and must be recaptured. Prefer a visible
+`#textchat` or `.textchatcontainer` root. A broad `#rightsidebar` capture is
+accepted only when the sidecar also proves the text chat tab/root is foreground.
+
 When `status:roll20-actual` reports `missingGenerated=<fixture>:chat:<reason>`,
 generate a focused chat recapture plan:
 

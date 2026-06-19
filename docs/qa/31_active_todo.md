@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Roll20 chat evidence foreground correction
+
+Status: PARTIAL. This corrects a false-positive evidence claim; Roll20 chat parity is still NOT done.
+
+- Visual inspection of the current `roll20-chat.png` files showed they captured overlapping character/dialog sheet content, not the foreground Roll20 chat/template area. The previous `chatActualCaptureScaleSuspect=0` was not enough to prove correct foreground capture.
+- Hardened `scripts/roll20_chat_capture_plan.mjs`, `scripts/roll20_actual_status.mjs`, `scripts/roll20_upload_handoff.mjs`, and `scripts/roll20_chat_parity_diagnostics.mjs` so older sidecars without `chatElementSelector` are `FOREGROUND_SUSPECT` / `NEEDS_NORMALIZED_CAPTURE`.
+- Re-ran the active status: `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=3/6`, `generatedDiffed=3/6`, `chatNormalizedCompared=0/3`, `chatNeedsNormalizedCapture=3`, and missing chat evidence for AW2E, Les-Oublies, and YSHY as `chat-screenshot-foreground-suspect`.
+- Re-ran the renderer gate: production renderer patch remains `HOLD`, now blocked by incomplete generated-sheet actual evidence and missing trustworthy Roll20 chat screenshots rather than by a misleading 3/3 high-mismatch comparison.
+- Local ChatPane smoke was corrected to separate functional errors from external resource 403s. Latest `node scripts\rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke --port 4452` PASS for all three fixtures; AW2E/YSHY still record resource issues separately.
+- Verification: `node --check` for changed scripts PASS, `corepack pnpm run test:roll20-chat-capture-plan` PASS, `plan:roll20-chat-capture` reports `plannedFixtures=3/3`, `diagnose:roll20-chat-parity` reports `NEEDS_NORMALIZED_CAPTURE`, `status:roll20-actual` reports `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`, `guard:roll20-evidence` PASS, `corepack pnpm run lint` PASS, and `corepack pnpm run build` PASS.
+- NEXT P0: recapture actual Roll20 chat foreground with the current DOM probe, preferably targeting `#textchat` or `.textchatcontainer` rather than broad `#rightsidebar`, then rerun diff/status/gate before tuning ChatPane CSS.
+
 ## 2026-06-20 Codex Update - Roll20 upload snippet Ace manifest and chat probe hardening
 
 Status: PARTIAL. Upload/capture tooling is more trustworthy; Roll20 visual/chat parity is still NOT done.

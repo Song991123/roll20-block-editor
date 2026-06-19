@@ -74,6 +74,14 @@ async function readMaybe(file) {
   }
 }
 
+function rel(file) {
+  return path.relative(process.cwd(), file);
+}
+
+function isResourceConsoleIssue(msg) {
+  return msg?.type === 'error' && /^Failed to load resource:/i.test(String(msg.text ?? ''));
+}
+
 async function listFixtures() {
   const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
   const out = [];
@@ -263,7 +271,14 @@ async function clickRollAndReadChat(page, fixtureId) {
     hasDebugTemplateLabel: /rolltemplate\s*:/i.test(el.textContent || ''),
   }));
   cardInfo.cardCount = cardCount;
-  return { chosen, candidates: choice.candidates, clickMode, cardInfo, screenshotPath, templateScreenshotPath };
+  return {
+    chosen,
+    candidates: choice.candidates,
+    clickMode,
+    cardInfo,
+    screenshotPath: rel(screenshotPath),
+    templateScreenshotPath: rel(templateScreenshotPath),
+  };
 }
 
 function renderMarkdown(report) {
@@ -274,8 +289,8 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Reason | Click mode | Visible | Actionable | Chosen button | Chat kind | Cards | Message width | Template width | Roll20 shell | Template class | Debug label | Total/result | Console/Page errors |');
-  lines.push('| --- | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | --- | --- | --- | --- | ---: |');
+  lines.push('| Fixture | Status | Reason | Click mode | Visible | Actionable | Chosen button | Chat kind | Cards | Message width | Template width | Roll20 shell | Template class | Debug label | Total/result | Functional errors | Resource issues |');
+  lines.push('| --- | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
     const chosen = item.chosen
       ? `${item.chosen.name || '(no name)'} / ${truncate(item.chosen.value, 60)}`
@@ -283,8 +298,12 @@ function renderMarkdown(report) {
     const status = item.skipped ? 'SKIP' : item.pass ? 'PASS' : 'FAIL';
     const visibleCount = item.candidates?.filter((row) => row.visible).length ?? '';
     const actionableCount = item.candidates?.filter((row) => row.actionable).length ?? '';
+    const functionalErrors =
+      (item.consoleErrors?.filter((msg) => !isResourceConsoleIssue(msg)).length ?? 0) +
+      (item.pageErrors?.length ?? 0);
+    const resourceIssues = item.consoleErrors?.filter(isResourceConsoleIssue).length ?? 0;
     lines.push(
-      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.templateWidth ?? ''} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
+      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.templateWidth ?? ''} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${functionalErrors} | ${resourceIssues} |`,
     );
   }
   lines.push('');
@@ -295,6 +314,7 @@ function renderMarkdown(report) {
   lines.push('- `user-click` means Playwright could click the visible button. `dom-click-fallback` means the runtime path worked but the button was not actionably visible in the default rendered state.');
   lines.push('- If `Chat kind` is `rolltemplate`, the dice parser and rolltemplate render path both ran.');
   lines.push('- `Debug label` must stay `no`; Roll20 chat shows the result card, not an app-only `rolltemplate:name` helper line.');
+  lines.push('- Functional errors fail the smoke. External resource load failures are tracked separately because many private fixtures reference remote images/fonts that may 403 outside Roll20.');
   lines.push('- Screenshots are local-only and ignored by Git.');
   return `${lines.join('\n')}\n`;
 }
@@ -356,6 +376,9 @@ async function main() {
         entry.import = await importFixture(page, fixture);
         const clicked = await clickRollAndReadChat(page, fixture.id);
         Object.assign(entry, clicked);
+        const functionalConsoleErrors = consoleErrors.filter((msg) => !isResourceConsoleIssue(msg));
+        const resourceConsoleIssues = consoleErrors.filter(isResourceConsoleIssue);
+        entry.resourceConsoleIssues = resourceConsoleIssues;
         entry.pass =
           (entry.import?.blockCount ?? 0) > 0 &&
           Boolean(entry.chosen?.value) &&
@@ -369,7 +392,7 @@ async function main() {
           entry.cardInfo?.hasSpacer === true &&
           entry.cardInfo?.hasSenderLine === true &&
           entry.cardInfo?.hasTimestamp === true &&
-          consoleErrors.filter((msg) => msg.type === 'error').length === 0 &&
+          functionalConsoleErrors.filter((msg) => msg.type === 'error').length === 0 &&
           pageErrors.length === 0;
       } catch (err) {
         entry.pass = false;
