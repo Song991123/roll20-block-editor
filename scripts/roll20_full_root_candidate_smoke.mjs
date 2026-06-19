@@ -147,6 +147,8 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         { id: 'sandbox-text-input-280-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-height', rootWidth: actualRootWidth, textInputHeight: 28 } },
         { id: 'sandbox-inline-block-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-text-input-height', rootWidth: actualRootWidth, wordSpacing: -0.75, textInputHeight: 27.6 } },
         { id: 'sandbox-nowrap-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-nowrap-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
+        { id: 'sandbox-sheet-class-alias-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', rootWidth: actualRootWidth } },
+        { id: 'sandbox-sheet-class-alias-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
       );
     }
     for (const input of candidateInputs) {
@@ -295,7 +297,7 @@ async function renderCandidate({
   const viewportWidth = Math.max(1, Math.round(contextPatch?.rootWidth ?? baselineRootWidth));
   await page.setViewportSize({ width: viewportWidth, height: 900 });
   await page.setContent(doc, { waitUntil: 'load' });
-  if (contextPatch) await applyRenderContextPatch(page, contextPatch);
+  if (contextPatch) await applyRenderContextPatch(page, contextPatch, payload);
   if (applyStateHint) await applyStateCandidate(page, stateCandidate);
   await page.waitForTimeout(300);
 
@@ -425,8 +427,11 @@ async function renderCandidate({
   };
 }
 
-async function applyRenderContextPatch(page, patch) {
-  await page.evaluate((patch) => {
+async function applyRenderContextPatch(page, patch, payload = null) {
+  const aliasCss = patch?.mode?.startsWith('sheet-class-alias')
+    ? buildSheetClassAliasCss(payload?.css ?? '')
+    : '';
+  await page.evaluate(({ patch, aliasCss }) => {
     const dialogWindow = document.querySelector('#dialog-window');
     const dialog = document.querySelector('#dialog-window .dialog.largedialog');
     if (!(dialogWindow instanceof HTMLElement) || !(dialog instanceof HTMLElement)) return;
@@ -528,8 +533,109 @@ async function applyRenderContextPatch(page, patch) {
         .ui-dialog .charsheet input[type="text"] { min-height: ${textInputHeight}px; }
       `;
       document.head.append(style);
+    } else if (patch.mode === 'sheet-class-alias-css') {
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+      const style = document.createElement('style');
+      style.setAttribute('data-r20-diagnostic-context-patch', 'sheet-class-alias-css');
+      style.textContent = aliasCss;
+      document.head.append(style);
+    } else if (patch.mode === 'sheet-class-alias-text-input-height') {
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+      const aliasStyle = document.createElement('style');
+      aliasStyle.setAttribute('data-r20-diagnostic-context-patch', 'sheet-class-alias-css');
+      aliasStyle.textContent = aliasCss;
+      document.head.append(aliasStyle);
+      const style = document.createElement('style');
+      const textInputHeight = Number.isFinite(patch.textInputHeight) ? patch.textInputHeight : 27.6;
+      style.setAttribute('data-r20-diagnostic-context-patch', `sheet-class-alias-text-input-height-${textInputHeight}`);
+      style.textContent = `
+        .ui-dialog .charsheet input[type="text"] { min-height: ${textInputHeight}px; }
+      `;
+      document.head.append(style);
     }
-  }, patch);
+  }, { patch, aliasCss });
+}
+
+function buildSheetClassAliasCss(css) {
+  const rules = collectSimpleCssRules(css);
+  const aliasRules = [];
+  for (const rule of rules) {
+    const aliases = rule.selectors
+      .map((selector) => aliasSheetClassesInSelector(selector))
+      .filter((selector, index) => selector && selector !== rule.selectors[index]);
+    if (!aliases.length) continue;
+    aliasRules.push(`${aliases.join(', ')} {${rule.body}}`);
+  }
+  if (!aliasRules.length) return '';
+  return [
+    '/* diagnostic only: duplicate user CSS selectors for sheet-prefixed Roll20 HTML classes */',
+    ...aliasRules,
+  ].join('\n');
+}
+
+function collectSimpleCssRules(css) {
+  const out = [];
+  const withoutComments = String(css || '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const re = /([^{}@][^{}]*)\{([^{}]*)\}/g;
+  let match;
+  while ((match = re.exec(withoutComments))) {
+    const selectorText = match[1].trim();
+    const body = match[2];
+    if (!selectorText || !body.trim()) continue;
+    out.push({
+      selectors: splitSelectorList(selectorText),
+      body,
+    });
+  }
+  return out;
+}
+
+function aliasSheetClassesInSelector(selector) {
+  let changed = false;
+  const out = String(selector).replace(/\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*)/g, (full, className) => {
+    if (className.startsWith('sheet-') || className.startsWith('repeating_') || className.startsWith('roll_') || className.startsWith('act_')) {
+      return full;
+    }
+    changed = true;
+    return `.sheet-${className}`;
+  });
+  return changed ? out : selector;
+}
+
+function splitSelectorList(selectorText) {
+  const parts = [];
+  let start = 0;
+  let bracket = 0;
+  let paren = 0;
+  let quote = null;
+  for (let i = 0; i < selectorText.length; i += 1) {
+    const ch = selectorText[i];
+    if (quote) {
+      if (ch === '\\') i += 1;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === '[') {
+      bracket += 1;
+    } else if (ch === ']') {
+      bracket = Math.max(0, bracket - 1);
+    } else if (ch === '(') {
+      paren += 1;
+    } else if (ch === ')') {
+      paren = Math.max(0, paren - 1);
+    } else if (ch === ',' && bracket === 0 && paren === 0) {
+      parts.push(selectorText.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  parts.push(selectorText.slice(start).trim());
+  return parts.filter(Boolean);
 }
 
 async function applyStateCandidate(page, candidate) {
@@ -850,6 +956,8 @@ function summarizeComponentEffects(candidates) {
     'sandbox-text-input-280-source',
     'sandbox-inline-block-text-input-276-source',
     'sandbox-nowrap-text-input-276-source',
+    'sandbox-sheet-class-alias-source',
+    'sandbox-sheet-class-alias-text-input-276-source',
   ];
   return trackedIds
     .map((id) => byId.get(id))
@@ -872,6 +980,7 @@ function formatRenderContextPatch(patch) {
   if (patch.mode === 'text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
   if (patch.mode === 'inline-block-text-input-height') return `${patch.mode}:${patch.wordSpacing}px:${patch.textInputHeight}px`;
   if (patch.mode === 'inline-block-nowrap-text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
+  if (patch.mode === 'sheet-class-alias-text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
   if (patch.mode === 'row-width-fudge') return `${patch.mode}:${patch.extraWidth}px`;
   if (patch.mode === 'actual-root-width' && typeof patch.rootWidth === 'number') return `${patch.mode}:${patch.rootWidth}px`;
   return patch.mode ?? null;

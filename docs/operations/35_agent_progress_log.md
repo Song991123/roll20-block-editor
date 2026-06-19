@@ -1507,3 +1507,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest report on `2026-06-18-state-map-v1` concludes `HOLD_PRODUCTION_RENDERER_PATCH`: AW2E best patch family is `none`, Les-Oublies prefers `inline-block+text-input-height`, and YSHY prefers `text-input-height`.
 - The matrix shows no candidate patch family is uniform enough to promote. In particular, the Les-friendly inline-block/text-input combined patch helps Les by `-2.4%` but hurts YSHY by `+0.3%` and is neutral for AW2E.
 - Claim boundary: this is diagnostic guardrail work. It does not change renderer CSS, does not prove visual parity, and points the next P0 toward AW2E root-height drift/default-state/structure analysis.
+## 2026-06-19 AW2E Selector And Height Drift Diagnostics
+
+- Added `scripts/roll20_visibility_selector_diagnostics.mjs` and package command `diagnose:roll20-visibility-selectors` to detect emitted CSS hide selectors that only match emitted HTML through a `sheet-` alias.
+- Latest selector diagnostics on `2026-06-18-state-map-v1`: AW2E has `23` alias-only hide refs, Les-Oublies has `6`, and YSHY has `5` alias-only plus `33` missing hide refs. This points at a generic Roll20 class-prefix/default-state modeling problem, not a sheet-specific renderer patch.
+- Added `scripts/roll20_height_drift_diagnostics.mjs` and package command `diagnose:roll20-height-drift` to classify full-root height drift from existing ignored screenshot evidence.
+- Added diagnostic-only `sheet-class-alias-css` full-root candidates. AW2E mismatch improved from `8.98%` to `7.89%`, but the root-height delta flipped from `+2424.938px` to `-7393.125px`, so blanket aliasing hides too much content and must stay out of production.
+- Latest renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`: AW2E prefers `sheet-class-alias-css`, Les-Oublies prefers `inline-block+text-input-height`, and YSHY prefers `text-input-height`.
+- Claim boundary: this narrows the AW2E cause toward Roll20 `sheet-` selector/default-state behavior. It does not prove Roll20 visual parity and does not authorize production renderer CSS changes.
