@@ -583,7 +583,10 @@ async function main() {
         policy === 'table-scale-x' ||
         policy === 'coc-table-scale-x' ||
         policy === 'roll20-message-padding' ||
-        policy === 'roll20-break-word'
+        policy === 'roll20-break-word' ||
+        policy === 'roll20-intrinsic-spacing' ||
+        policy === 'roll20-border-spacing' ||
+        policy === 'roll20-letter-spacing'
       ) {
         localStorage.setItem('__r20ChatGeometryPolicy', policy);
       } else {

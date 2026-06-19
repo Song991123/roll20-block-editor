@@ -24,10 +24,11 @@ async function main() {
   const parity = await readOptionalJson(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
   const styleProof = await readOptionalJson(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json'));
   const widthModel = await readOptionalJson(path.join(runDir, 'chat-width-model', 'chat-width-model-results.json'));
+  const candidateComparison = await readOptionalJson(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
   const fixtures = [];
 
   for (const localFixture of localSmoke.fixtures ?? []) {
-    fixtures.push(await compareFixture(localFixture, { parity, styleProof, widthModel }));
+    fixtures.push(await compareFixture(localFixture, { parity, styleProof, widthModel, candidateComparison }));
   }
 
   const compared = fixtures.filter((fixture) => fixture.status === 'COMPARED');
@@ -86,6 +87,7 @@ async function compareFixture(localFixture, reports) {
 
   const parityFixture = findByFixtureId(reports.parity?.fixtures, fixtureId);
   const widthFixture = findByFixtureId(reports.widthModel?.fixtures, fixtureId);
+  const candidateEvidence = extractCandidateEvidence(reports.candidateComparison, fixtureId);
   const styleProof = extractStyleProof(reports.styleProof, fixtureId);
   const deltas = {
     rootWidthDelta: delta(local.root.width, actual.root.width),
@@ -107,7 +109,7 @@ async function compareFixture(localFixture, reports) {
     localTableVsCrop: ratio(local.table.width, local.crop.width),
     actualTableVsCrop: ratio(actual.table.width, actual.crop.width),
   };
-  const intrinsicDecision = decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, local, actual });
+  const intrinsicDecision = decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, local, actual });
 
   return {
     fixtureId,
@@ -119,13 +121,14 @@ async function compareFixture(localFixture, reports) {
       bestAlignedMismatchRatio: parityFixture?.bestAlignedMismatchRatio ?? null,
     },
     widthDecision: widthFixture?.widthDecision ?? '',
+    candidateEvidence,
     styleProof,
     local,
     actual,
     deltas,
     rowCellDeltas,
     ratios,
-    evidence: evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, local, actual }),
+    evidence: evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, local, actual }),
   };
 }
 
@@ -280,11 +283,60 @@ function extractStyleProof(styleProof, fixtureId) {
   };
 }
 
-function decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, local, actual }) {
+function extractCandidateEvidence(candidateComparison, fixtureId) {
+  const key = fixtureCandidateKey(fixtureId);
+  const candidates = {};
+  for (const name of ['roll20-border-spacing', 'roll20-letter-spacing', 'roll20-intrinsic-spacing', 'cell-metrics', 'coc-table-scale-x']) {
+    const row = (candidateComparison?.candidates ?? []).find((candidate) => candidate.name === name);
+    const delta = row?.fixtureAlignedDeltaPct?.[key] ?? null;
+    candidates[name] = {
+      risk: row?.promotionRisk ?? '',
+      alignedDeltaPct: typeof delta === 'number' ? delta : null,
+      regressedFixtures: row?.regressedFixtures ?? null,
+    };
+  }
+  const spacingCandidates = [
+    candidates['roll20-border-spacing'],
+    candidates['roll20-letter-spacing'],
+    candidates['roll20-intrinsic-spacing'],
+  ].filter((candidate) => candidate.risk);
+  const spacingHelped = spacingCandidates.some((candidate) =>
+    Number(candidate.alignedDeltaPct ?? 0) <= -0.5 && candidate.risk !== 'reject-regresses-fixtures',
+  );
+  const spacingRejectedOrNoGain = Boolean(spacingCandidates.length) && spacingCandidates.every((candidate) =>
+    candidate.risk === 'reject-regresses-fixtures' ||
+    candidate.risk === 'no-meaningful-gain' ||
+    Number(candidate.alignedDeltaPct ?? 0) >= -0.5,
+  );
+  return {
+    fixtureKey: key,
+    candidates,
+    spacingHelped,
+    spacingRejectedOrNoGain,
+  };
+}
+
+function fixtureCandidateKey(fixtureId) {
+  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
+  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
+  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  return fixtureId;
+}
+
+function decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, local, actual }) {
   const highMismatch = Number(parityFixture?.bestAlignedMismatchRatio ?? 0) > 0.1;
   if (!highMismatch && Math.abs(deltas.tableWidthDelta ?? 0) < 8) return 'INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE';
+  if (styleProof.transformContradicted && candidateEvidence.spacingRejectedOrNoGain && Math.abs(deltas.tableWidthDelta ?? 0) >= 8) {
+    return 'TRANSFORM_AND_SPACING_REJECTED_FONT_GLYPH_MODEL_REQUIRED';
+  }
   if (styleProof.transformContradicted && Math.abs(deltas.tableWidthDelta ?? 0) >= 8) {
     return 'TRANSFORM_REJECTED_INTRINSIC_WIDTH_MODEL_REQUIRED';
+  }
+  if (
+    candidateEvidence.spacingRejectedOrNoGain &&
+    (Math.abs(deltas.borderSpacingXDelta ?? 0) >= 0.5 || Math.abs(deltas.letterSpacingDelta ?? 0) >= 0.1)
+  ) {
+    return 'CSS_METRIC_CANDIDATES_REJECTED';
   }
   if (Math.abs(deltas.borderSpacingXDelta ?? 0) >= 0.5 || Math.abs(deltas.letterSpacingDelta ?? 0) >= 0.1) {
     return 'CSS_METRIC_DELTA_INTRINSIC_MODEL_REQUIRED';
@@ -304,8 +356,12 @@ function decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, wid
 
 function nextAction(decision) {
   switch (decision) {
+    case 'TRANSFORM_AND_SPACING_REJECTED_FONT_GLYPH_MODEL_REQUIRED':
+      return 'do not promote scale or spacing CSS; compare loaded font glyph metrics and Roll20 sanitize/CSS activation that changes intrinsic text width';
     case 'TRANSFORM_REJECTED_INTRINSIC_WIDTH_MODEL_REQUIRED':
       return 'do not promote scaleX; compare Roll20 sanitize/CSS activation, border-spacing, letter-spacing, and font glyph metrics for the table';
+    case 'CSS_METRIC_CANDIDATES_REJECTED':
+      return 'spacing/letter CSS candidates did not explain pixels; inspect font glyph metrics, sanitize/order, and text measurement sidecars next';
     case 'CSS_METRIC_DELTA_INTRINSIC_MODEL_REQUIRED':
       return 'model CSS metric deltas such as border-spacing/letter-spacing before another visual width candidate';
     case 'ROW_CONTENT_OR_CELL_COUNT_MODEL_REQUIRED':
@@ -321,9 +377,10 @@ function nextAction(decision) {
   }
 }
 
-function evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, local, actual }) {
+function evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, local, actual }) {
   const notes = [];
   if (styleProof.transformContradicted) notes.push('actual Roll20 table transform is none; scaleX candidate rejected');
+  if (candidateEvidence.spacingRejectedOrNoGain) notes.push('spacing/letter candidates rejected or no-gain in pixel comparison');
   if (Math.abs(deltas.tableWidthDelta ?? 0) >= 8) notes.push(`table width delta ${fmtPx(deltas.tableWidthDelta)}`);
   if (Math.abs(deltas.fontSizeDelta ?? 0) >= 0.5) notes.push(`table font-size delta ${fmtPx(deltas.fontSizeDelta)}`);
   if (Math.abs(deltas.letterSpacingDelta ?? 0) >= 0.1) notes.push(`letter-spacing delta ${fmtPx(deltas.letterSpacingDelta)}`);

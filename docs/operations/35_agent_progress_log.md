@@ -5,6 +5,10 @@
 - Latest result: `INTRINSIC_WIDTH_MODEL_REQUIRED`.
 - YSHY/CoC is now classified as `TRANSFORM_REJECTED_INTRINSIC_WIDTH_MODEL_REQUIRED`: table delta `-24.309px`, first-cell delta `-0.909px`, and actual Roll20 table transform is `none`.
 - AW2E and Les-Oublies are classified as `CSS_METRIC_DELTA_INTRINSIC_MODEL_REQUIRED`, which keeps broad/global ChatPane width or scale patches blocked.
+- Added diagnostic-only spacing candidates in `ChatPane`: `roll20-intrinsic-spacing`, `roll20-border-spacing`, and `roll20-letter-spacing`.
+- Current spacing candidate result: `roll20-border-spacing` is no meaningful gain, while `roll20-letter-spacing` and combined `roll20-intrinsic-spacing` regress YSHY from `21.45%` to `24.45%` aligned mismatch.
+- Updated the intrinsic-width model to read candidate comparison evidence. It now classifies AW2E/Les as `CSS_METRIC_CANDIDATES_REJECTED` and YSHY/CoC as `TRANSFORM_AND_SPACING_REJECTED_FONT_GLYPH_MODEL_REQUIRED`.
+- Next P0: build a font glyph/text-measurement and Roll20 sanitize/CSS-activation diagnostic rather than another scale, spacing, or global ChatPane width candidate.
 - The renderer action gate now reads the intrinsic-width report and surfaces these next actions while keeping production renderer action on HOLD.
 - Claim boundary: this is still diagnostic evidence. It does not prove Roll20 chat/template parity and does not authorize production CSS.
 - Extended `scripts/roll20_chat_candidate_style_proof.mjs` so it checks `single-fixture-only` candidates, not only `candidate-needs-style-proof`.

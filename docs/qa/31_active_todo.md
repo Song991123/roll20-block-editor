@@ -6,6 +6,9 @@ Status: PARTIAL. The YSHY/CoC width candidate was narrowed further: visual scali
 - RESULT: Current intrinsic-width status is `INTRINSIC_WIDTH_MODEL_REQUIRED`.
 - RESULT: `yshy-commission-1bu` is `TRANSFORM_REJECTED_INTRINSIC_WIDTH_MODEL_REQUIRED`: actual Roll20 rejects the `scaleX` explanation (`transform:none`) while table width is `-24.309px` from local.
 - RESULT: `official-roll20-AW2E` and `official-roll20-Les-Oublies` are `CSS_METRIC_DELTA_INTRINSIC_MODEL_REQUIRED`, so a global width/scale patch is still unsafe.
+- DONE: Added diagnostic-only spacing candidates: `roll20-intrinsic-spacing`, `roll20-border-spacing`, and `roll20-letter-spacing`.
+- RESULT: `roll20-border-spacing` has no meaningful pixel gain; `roll20-letter-spacing` and combined `roll20-intrinsic-spacing` regress YSHY (`21.45% -> 24.45%` aligned).
+- RESULT: Intrinsic model now classifies AW2E/Les as `CSS_METRIC_CANDIDATES_REJECTED` and YSHY as `TRANSFORM_AND_SPACING_REJECTED_FONT_GLYPH_MODEL_REQUIRED`.
 - RESULT: `gate:roll20-renderer-action` now includes the intrinsic-width model in evidence and next actions.
 - DONE: `diagnose:roll20-chat-candidate-style` now checks both `candidate-needs-style-proof` and `single-fixture-only` candidates.
 - DONE: Added style-proof coverage for `coc-table-scale-x` using its local smoke sidecar.
@@ -14,7 +17,7 @@ Status: PARTIAL. The YSHY/CoC width candidate was narrowed further: visual scali
 - RESULT: Renderer policy moves YSHY from `CANDIDATE_ONLY_DO_NOT_EXPOSE` to `NEEDS_NARROW_TEMPLATE_MODEL`.
 - RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` and now explicitly blocks style-contradicted candidates.
 - VERIFIED: `node --check scripts\roll20_chat_candidate_style_proof.mjs`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-renderer-policy`, and `gate:roll20-renderer-action`.
-- STILL TODO P0: Replace the transform hack with a narrow intrinsic-width candidate for YSHY/CoC based on CSS activation/sanitize, border-spacing, letter-spacing, and font glyph metrics rather than visual scaling.
+- STILL TODO P0: Replace the transform/spacing rejected path with a font glyph/text-measurement and Roll20 sanitize/CSS-activation diagnostic for YSHY/CoC.
 
 ## 2026-06-20 Codex Update - CoC rolltemplate table-scale candidate isolated
 

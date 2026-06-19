@@ -18,6 +18,9 @@ const CANDIDATE_SMOKE = {
   'table-scale-x': 'reports/rolltemplate-chat-smoke-table-scale-x/rolltemplate-chat-smoke-results.json',
   'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
   'roll20-break-word': 'reports/rolltemplate-chat-smoke-roll20-break-word/rolltemplate-chat-smoke-results.json',
+  'roll20-intrinsic-spacing': 'reports/rolltemplate-chat-smoke-intrinsic-spacing/rolltemplate-chat-smoke-results.json',
+  'roll20-border-spacing': 'reports/rolltemplate-chat-smoke-border-spacing/rolltemplate-chat-smoke-results.json',
+  'roll20-letter-spacing': 'reports/rolltemplate-chat-smoke-letter-spacing/rolltemplate-chat-smoke-results.json',
   'text-auto-aa': 'reports/rolltemplate-chat-smoke-text-auto-aa/rolltemplate-chat-smoke-results.json',
 };
 
@@ -103,6 +106,13 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   }
   if (candidate.name === 'roll20-break-word') {
     return summarizeOverflowWrap(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (
+    candidate.name === 'roll20-intrinsic-spacing' ||
+    candidate.name === 'roll20-border-spacing' ||
+    candidate.name === 'roll20-letter-spacing'
+  ) {
+    return summarizeIntrinsicSpacing(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   if (candidate.name === 'text-auto-aa') {
     return summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate);
@@ -199,6 +209,41 @@ function summarizeOverflowWrap(candidate, fixtureId, candidateTemplate, actualTe
     fixtureId,
     status: matches >= Math.ceil(evidence.length / 2) ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
     finding: `${matches}/${evidence.length} comparable nodes match actual Roll20 overflow-wrap`,
+    evidence,
+  };
+}
+
+function summarizeIntrinsicSpacing(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const targets = candidate.name === 'roll20-border-spacing'
+    ? [['table', 'borderSpacing']]
+    : candidate.name === 'roll20-letter-spacing'
+      ? [
+          ['table', 'letterSpacing'],
+          ['caption', 'letterSpacing'],
+          ['td:first', 'letterSpacing'],
+          ['sheet-template_label:first', 'letterSpacing'],
+          ['sheet-template_value:first', 'letterSpacing'],
+        ]
+      : [
+          ['table', 'borderSpacing'],
+          ['table', 'letterSpacing'],
+          ['caption', 'letterSpacing'],
+          ['td:first', 'letterSpacing'],
+          ['sheet-template_label:first', 'letterSpacing'],
+          ['sheet-template_value:first', 'letterSpacing'],
+        ];
+  const evidence = targets.map(([selector, key]) => ({
+    selector,
+    key,
+    localCandidate: styleValue(candidateTemplate, selector, key),
+    actual: styleValue(actualTemplate, selector, key),
+  }));
+  const comparable = evidence.filter((item) => item.localCandidate != null && item.actual != null);
+  const matches = comparable.filter((item) => sameValue(item.localCandidate, item.actual)).length;
+  return {
+    fixtureId,
+    status: comparable.length && matches === comparable.length ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: `${matches}/${comparable.length} intrinsic spacing fields match actual Roll20`,
     evidence,
   };
 }

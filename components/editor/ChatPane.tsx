@@ -42,7 +42,10 @@ type ChatGeometryPolicy =
   | 'table-scale-x'
   | 'coc-table-scale-x'
   | 'roll20-message-padding'
-  | 'roll20-break-word';
+  | 'roll20-break-word'
+  | 'roll20-intrinsic-spacing'
+  | 'roll20-border-spacing'
+  | 'roll20-letter-spacing';
 type ChatTypographyPolicy =
   | 'default'
   | 'roll20-shell-typography'
@@ -79,7 +82,10 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
     value === 'table-scale-x' ||
     value === 'coc-table-scale-x' ||
     value === 'roll20-message-padding' ||
-    value === 'roll20-break-word'
+    value === 'roll20-break-word' ||
+    value === 'roll20-intrinsic-spacing' ||
+    value === 'roll20-border-spacing' ||
+    value === 'roll20-letter-spacing'
   ) return value;
   return 'default';
 }
@@ -184,6 +190,22 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-break-word"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-break-word"] .r20-chat-card-group [class*="sheet-rolltemplate-"] * {
   overflow-wrap: break-word !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-intrinsic-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
+  border-spacing: 0 !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-border-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
+  border-spacing: 0 !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-intrinsic-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-intrinsic-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-intrinsic-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  letter-spacing: normal !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-letter-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-letter-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-letter-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  letter-spacing: normal !important;
 }
 .r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
 .r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
