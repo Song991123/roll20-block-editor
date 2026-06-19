@@ -129,6 +129,10 @@ function recommend(fixtures, status) {
   }
 
   const compared = fixtures.filter((fixture) => fixture.bestCandidate);
+  const missingFullRootCandidates = fixtures.filter((fixture) => !fixture.bestCandidate);
+  if (missingFullRootCandidates.length) {
+    blockers.push(`missing full-root candidate comparison for ${missingFullRootCandidates.map((fixture) => fixture.fixtureId).join(', ')}`);
+  }
   if (compared.length < 3) {
     blockers.push(`cross-fixture renderer evidence too small: ${compared.length}/${fixtures.length} fixtures have full-root candidates`);
   }
@@ -158,16 +162,25 @@ function recommend(fixtures, status) {
       ? 'EXPERIMENT_ONLY'
       : 'READY_FOR_REVIEWED_RENDERER_PATCH';
 
-  const nextActions = blockers.length
-    ? [
-        'Capture trusted AW2E full-root/root evidence through Roll20 file-input or another proven activation path.',
-        'Capture roll20-chat.png screenshots with DOM sidecar evidence for all prepared fixtures.',
-        'Keep diagnostic CSS candidates out of production until best-patch behavior is repeated across trusted fixtures.',
-      ]
-    : [
-        'Patch the smallest generic renderer behavior that matches the repeated candidate pattern.',
-        'Rerun full-root candidate, preview/edit visual, evidence guard, lint, and build.',
-      ];
+  const nextActions = blockers.length ? [] : [
+    'Patch the smallest generic renderer behavior that matches the repeated candidate pattern.',
+    'Rerun full-root candidate, preview/edit visual, evidence guard, lint, and build.',
+  ];
+  if (missingTrustedRoot.length) {
+    nextActions.push(`Capture trusted generated-sheet root evidence for ${missingTrustedRoot.map((fixture) => fixture.fixtureId).join(', ')}.`);
+  }
+  if (missingChat.length) {
+    nextActions.push(`Capture roll20-chat.png screenshots with fresh DOM sidecars for ${missingChat.map((fixture) => fixture.fixtureId).join(', ')}.`);
+  }
+  if (missingFullRootCandidates.length) {
+    nextActions.push(`Capture or stitch DPR-corrected full-root evidence, then rerun full-root candidate smoke for ${missingFullRootCandidates.map((fixture) => fixture.fixtureId).join(', ')}.`);
+  }
+  if (patchFamilies.size > 1) {
+    nextActions.push('Compare the differing diagnostic patch families before promoting CSS: current fixtures do not agree on one generic renderer fix.');
+  }
+  if (blockers.length) {
+    nextActions.push('Keep diagnostic CSS candidates out of production until trusted full-root evidence and best-patch behavior repeat across fixtures.');
+  }
 
   return {
     action,
@@ -233,7 +246,7 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('## Claim Boundary', '');
   lines.push('- `HOLD_PRODUCTION_RENDERER_PATCH` means diagnostic candidates may guide local experiments, but should not be promoted as generic renderer CSS.');
-  lines.push('- Missing actual screenshots, chat screenshots, or cross-fixture agreement must stay visible in TODO.');
+  lines.push('- Any missing actual screenshots, chat screenshots, full-root comparisons, or cross-fixture agreement must stay visible in TODO.');
   lines.push('- Generated reports remain local-only and ignored by Git.');
   return `${lines.join('\n')}\n`;
 }

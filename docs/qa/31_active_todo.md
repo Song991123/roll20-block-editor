@@ -586,3 +586,8 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `node --check scripts\roll20_upload_snippet.mjs`, `corepack pnpm run snippet:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 official-roll20-AW2E`, generated snippet `node --check`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `guard:roll20-evidence` were rerun.
 - CURRENT: `status:roll20-actual` remains `GENERATED_ACTUAL_SCREENSHOTS_DIFFED` with `generatedActualScreenshots=6/6` and `generatedDiffed=6/6`.
 - STILL TODO: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` because only 2/3 fixtures have full-root candidates and diagnostic patch families differ. Do not claim Roll20 visual parity.
+## 2026-06-19 Renderer Gate Next-Action Precision TODO Note
+
+- DONE: `scripts/roll20_renderer_action_gate.mjs` now reports the current blocker precisely as missing full-root candidate comparison for `official-roll20-AW2E` instead of implying that generated/chat evidence is still missing.
+- VERIFIED: `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1` now lists next actions only for AW2E DPR-corrected full-root evidence, cross-fixture patch-family comparison, and keeping diagnostic CSS out of production.
+- CURRENT: generated sandbox/chat evidence remains 6/6 diffed, but production renderer CSS still stays HOLD because full-root candidate evidence is only 2/3 and Les/YSHY prefer different diagnostic patch families.
