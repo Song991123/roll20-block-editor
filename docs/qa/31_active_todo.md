@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - YSHY chat font evidence added
+
+Status: PARTIAL. Root cause narrowed; parity is still NOT done.
+
+- DONE: Added computed-style evidence to future Roll20 chat DOM probe sidecars and local `rolltemplate_chat_smoke` reports. The recorded fields include template/table/caption/td/inlineroll style, rects, background image, line-height, font family, and text-shadow.
+- DONE: Added font availability checks for `BookkMyungjo-Bd` and generic sans-serif to both the Roll20 capture plan snippet and local smoke output.
+- FOUND: In the live Roll20 YSHY tab, `.sheet-rolltemplate-coc` CSS is present and computed styles mostly match local, but `document.fonts.check("700 12px BookkMyungjo-Bd")` is `false`. Local smoke currently reports the same font checks as `true`.
+- FOUND: Actual Roll20 YSHY first label cell is narrower than local (`14.95px` computed width actual vs `15.8594px` local) while line-height and text-shadow match. This points toward font availability/rendering metrics, not a missing rolltemplate CSS rule.
+- CURRENT: This batch does not yet change production ChatPane font behavior because the first font-face removal experiment did not change the current screenshot numbers. A safer next step is to add a Roll20-chat-font policy switch or diagnostic candidate and compare it across AW2E/Les/YSHY before promoting it.
+- STILL TODO P0: build a controlled local candidate that mimics actual Roll20 chat font availability for YSHY without regressing AW2E/Les, then rerun smoke/diagnose/status/gate.
+
 ## 2026-06-20 Codex Update - Chat parity aligned diagnostic stabilized
 
 Status: PARTIAL. Roll20 chat/template parity is closer and the reports now agree, but renderer readiness is still NOT done.

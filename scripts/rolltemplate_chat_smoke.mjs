@@ -244,21 +244,107 @@ async function clickRollAndReadChat(page, fixtureId) {
     await templateLocator.screenshot({ path: templateScreenshotPath });
   }
   const cardCount = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').count();
-  const cardInfo = await card.evaluate((el) => ({
-    kind: el.getAttribute('data-r20-chat-kind') || '',
-    hasMessageClass: el.classList.contains('message') || Boolean(el.querySelector('.message')),
-    messageCount: el.classList.contains('message') ? 1 : el.querySelectorAll('.message').length,
-    hasSpacer: Boolean(el.querySelector('.spacer')),
-    hasSenderLine: Boolean(el.querySelector('.by')),
-    hasTimestamp: Boolean(el.querySelector('.tstamp')),
-    hasTextchatContainer: Boolean(el.closest('.textchatcontainer')),
-    text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 400),
-    hasTemplateClass: Boolean(el.querySelector('[class*="sheet-rolltemplate-"]')),
-    hasTotal: Boolean(el.querySelector('.rt-total, strong')),
-    width: Math.round(el.getBoundingClientRect().width),
-    templateWidth: Math.round(el.querySelector('[class*="sheet-rolltemplate-"]')?.getBoundingClientRect().width ?? 0),
-    hasDebugTemplateLabel: /rolltemplate\s*:/i.test(el.textContent || ''),
-  }));
+  const cardInfo = await card.evaluate((el) => {
+    const readStyle = (node) => {
+      if (!node) return null;
+      const style = getComputedStyle(node);
+      return {
+        display: style.display,
+        position: style.position,
+        boxSizing: style.boxSizing,
+        width: style.width,
+        height: style.height,
+        margin: style.margin,
+        padding: style.padding,
+        border: style.border,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        lineHeight: style.lineHeight,
+        color: style.color,
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        backgroundSize: style.backgroundSize,
+        backgroundPosition: style.backgroundPosition,
+        textAlign: style.textAlign,
+        textShadow: style.textShadow,
+        whiteSpace: style.whiteSpace,
+        wordBreak: style.wordBreak,
+        overflowWrap: style.overflowWrap,
+        transform: style.transform,
+      };
+    };
+    const summarizeElement = (node, selector) => {
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
+      return {
+        selector,
+        tagName: node.tagName,
+        className: node.className,
+        rect: {
+          x: rect.x,
+          y: rect.y,
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          right: rect.right,
+          bottom: rect.bottom,
+        },
+        computedStyle: readStyle(node),
+        text: (node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 500),
+      };
+    };
+    const checkFonts = () => {
+      const specs = [
+        '12px BookkMyungjo-Bd',
+        '700 12px BookkMyungjo-Bd',
+        '12px "BookkMyungjo-Bd"',
+        '700 12px "BookkMyungjo-Bd"',
+        '13px "BookkMyungjo-Bd"',
+        '700 13px "BookkMyungjo-Bd"',
+        '12px sans-serif',
+      ];
+      return {
+        status: document.fonts?.status ?? null,
+        checks: specs.map((spec) => ({
+          spec,
+          ok: document.fonts?.check ? document.fonts.check(spec) : null,
+        })),
+      };
+    };
+    const template = el.querySelector('[class*="sheet-rolltemplate-"]');
+    return {
+      kind: el.getAttribute('data-r20-chat-kind') || '',
+      hasMessageClass: el.classList.contains('message') || Boolean(el.querySelector('.message')),
+      messageCount: el.classList.contains('message') ? 1 : el.querySelectorAll('.message').length,
+      hasSpacer: Boolean(el.querySelector('.spacer')),
+      hasSenderLine: Boolean(el.querySelector('.by')),
+      hasTimestamp: Boolean(el.querySelector('.tstamp')),
+      hasTextchatContainer: Boolean(el.closest('.textchatcontainer')),
+      text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 400),
+      hasTemplateClass: Boolean(template),
+      hasTotal: Boolean(el.querySelector('.rt-total, strong')),
+      width: Math.round(el.getBoundingClientRect().width),
+      templateWidth: Math.round(template?.getBoundingClientRect().width ?? 0),
+      templateComputed: template
+        ? {
+            className: template.className,
+            computedStyle: readStyle(template),
+            computedChildren: [
+              summarizeElement(template.querySelector('table'), 'table'),
+              summarizeElement(template.querySelector('caption'), 'caption'),
+              summarizeElement(template.querySelector('td'), 'td:first'),
+              summarizeElement(template.querySelector('td.sheet-template_label, .sheet-template_label'), 'sheet-template_label:first'),
+              summarizeElement(template.querySelector('td.sheet-template_value, .sheet-template_value'), 'sheet-template_value:first'),
+              summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
+            ].filter(Boolean),
+          }
+        : null,
+      fontEvidence: checkFonts(),
+      hasDebugTemplateLabel: /rolltemplate\s*:/i.test(el.textContent || ''),
+    };
+  });
   cardInfo.cardCount = cardCount;
   return {
     chosen,

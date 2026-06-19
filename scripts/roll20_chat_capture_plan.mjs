@@ -397,11 +397,78 @@ function renderDomProbeSnippet(entry) {
     return { x: r.x, y: r.y, left: r.left, top: r.top, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
   };
   const cloneRect = (rect) => rect ? { x: rect.x, y: rect.y, left: rect.left, top: rect.top, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom } : null;
+  const readStyle = (el) => {
+    if (!el) return null;
+    const style = window.getComputedStyle(el);
+    return {
+      display: style.display,
+      position: style.position,
+      boxSizing: style.boxSizing,
+      width: style.width,
+      height: style.height,
+      margin: style.margin,
+      padding: style.padding,
+      border: style.border,
+      fontFamily: style.fontFamily,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+      lineHeight: style.lineHeight,
+      color: style.color,
+      backgroundColor: style.backgroundColor,
+      backgroundImage: style.backgroundImage,
+      backgroundSize: style.backgroundSize,
+      backgroundPosition: style.backgroundPosition,
+      textAlign: style.textAlign,
+      textShadow: style.textShadow,
+      whiteSpace: style.whiteSpace,
+      wordBreak: style.wordBreak,
+      overflowWrap: style.overflowWrap,
+      transform: style.transform,
+    };
+  };
+  const summarizeElement = (el, selector) => {
+    if (!el) return null;
+    return {
+      selector,
+      tagName: el.tagName,
+      className: el.className,
+      rect: cloneRect(rectOf(el)),
+      computedStyle: readStyle(el),
+      text: (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 500),
+    };
+  };
+  const checkFonts = () => {
+    const specs = [
+      '12px BookkMyungjo-Bd',
+      '700 12px BookkMyungjo-Bd',
+      '12px "BookkMyungjo-Bd"',
+      '700 12px "BookkMyungjo-Bd"',
+      '13px "BookkMyungjo-Bd"',
+      '700 13px "BookkMyungjo-Bd"',
+      '12px sans-serif',
+    ];
+    return {
+      status: document.fonts?.status ?? null,
+      checks: specs.map((spec) => ({
+        spec,
+        ok: document.fonts?.check ? document.fonts.check(spec) : null,
+      })),
+    };
+  };
   const clip = rectOf(textchat) || { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight, right: window.innerWidth, bottom: window.innerHeight };
   const templateInfos = templates.map((template, index) => ({
     index,
     className: template.className,
     rect: cloneRect(rectOf(template)),
+    computedStyle: readStyle(template),
+    computedChildren: [
+      summarizeElement(template.querySelector('table'), 'table'),
+      summarizeElement(template.querySelector('caption'), 'caption'),
+      summarizeElement(template.querySelector('td'), 'td:first'),
+      summarizeElement(template.querySelector('td.sheet-template_label, .sheet-template_label'), 'sheet-template_label:first'),
+      summarizeElement(template.querySelector('td.sheet-template_value, .sheet-template_value'), 'sheet-template_value:first'),
+      summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
+    ].filter(Boolean),
     htmlSnippet: template.outerHTML.slice(0, 4000),
     text: (template.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 1000),
   }));
@@ -462,6 +529,7 @@ function renderDomProbeSnippet(entry) {
     rolltemplates: templateInfos,
     templates: templateInfos.slice(-5),
     chatCssEvidence,
+    fontEvidence: checkFonts(),
     textMarkers: {
       rolltemplate: templates.length > 0,
       sheetRolltemplate: templates.some((template) => String(template.className).includes('sheet-rolltemplate-')),
@@ -529,6 +597,34 @@ function runSelfTest() {
   const fakeWindow = {
     innerWidth: 1280,
     innerHeight: 900,
+    getComputedStyle() {
+      return {
+        display: 'block',
+        position: 'static',
+        boxSizing: 'content-box',
+        width: '260px',
+        height: '90px',
+        margin: '0px',
+        padding: '0px',
+        border: '0px none rgb(0, 0, 0)',
+        fontFamily: 'sans-serif',
+        fontSize: '12px',
+        fontWeight: '400',
+        lineHeight: 'normal',
+        color: 'rgb(0, 0, 0)',
+        backgroundColor: 'rgba(0, 0, 0, 0)',
+        backgroundImage: 'none',
+        backgroundSize: 'auto',
+        backgroundPosition: '0% 0%',
+        textAlign: 'start',
+        textShadow: 'none',
+        whiteSpace: 'normal',
+        wordBreak: 'normal',
+        overflowWrap: 'normal',
+        transform: 'none',
+        visibility: 'visible',
+      };
+    },
     visualViewport: {
       width: 1280,
       height: 900,
@@ -587,6 +683,12 @@ function fakeElement({ id = '', className = '', rect, textContent = '', outerHTM
     outerHTML,
     tagName: 'DIV',
     contains,
+    querySelector() {
+      return null;
+    },
+    querySelectorAll() {
+      return [];
+    },
     getBoundingClientRect() {
       return rect;
     },

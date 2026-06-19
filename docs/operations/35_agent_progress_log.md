@@ -1,3 +1,15 @@
+## 2026-06-20 03:03 +09:00 - YSHY chat font/root-cause probe
+
+Status: PARTIAL. YSHY chat mismatch has a concrete suspect, but no production renderer change is promoted yet.
+
+- Claimed the already-open dedicated Roll20 YSHY verification tab read-only and inspected the latest `.sheet-rolltemplate-coc` computed styles. No Roll20 room/settings data was modified.
+- Actual Roll20 computed styles mostly match local for YSHY: `content-box`, `line-height:17.0625px`, `font-size:12px`, `font-weight:700`, 16-layer `text-shadow`, and the same background image proxy path.
+- The key mismatch is font availability/metrics: actual Roll20 reports `document.fonts.check("700 12px BookkMyungjo-Bd") === false`, while local smoke reports the BookkMyungjo checks as `true`.
+- The measured cell geometry also points at font metrics: actual first label cell computed width is `14.95px`, local is `15.8594px`, with otherwise matching padding/line-height/text-shadow.
+- Updated `scripts/roll20_chat_capture_plan.mjs` and `scripts/rolltemplate_chat_smoke.mjs` to record computed style and font evidence so future Roll20 captures can prove this without manual browser inspection.
+- A quick experiment excluding `@font-face` from ChatPane rolltemplate extraction did not change current screenshot mismatch numbers in this environment, likely because the font remained available through cache or another injected style path. The experiment was reverted.
+- Next P0: create a controlled diagnostic candidate for Roll20-chat font availability/fallback and compare it across AW2E, Les-Oublies, and YSHY before making any production ChatPane font policy change.
+
 ## 2026-06-20 03:03 +09:00 - Chat parity aligned diagnostic and ChatPane asset stabilization
 
 Status: PARTIAL. Roll20 chat evidence is normalized and the biggest mismatch count is down, but visual parity is still not achieved.
