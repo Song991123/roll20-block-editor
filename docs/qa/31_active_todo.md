@@ -1,3 +1,10 @@
+## 2026-06-19 Chat Capture Plan Tool
+
+- DONE: added `corepack pnpm run plan:roll20-chat-capture -- <run> [fixture-id] [--all]` to produce a focused local-only Roll20 chat recapture plan.
+- VERIFIED: current plan for `reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `plannedFixtures=3/3`: AW2E and YSHY have stale screenshot/DOM sidecar pairs, while Les-Oublies has fresh chat evidence but still needs normalized rolltemplate crop metadata.
+- CURRENT: `status:roll20-actual` now points to the chat capture plan command when generated sheet roots are present but chat evidence is missing/suspect.
+- NEXT P0: use the generated plan/snippets to recapture Roll20 chat PNG + DOM sidecar from the same roll action, then rerun screenshot diff, chat parity diagnostics, renderer gate, and status.
+- CLAIM BOUNDARY: this is planning/tooling only. It does not prove Roll20 visual parity and does not remove renderer HOLD.
 ## 2026-06-19 Status Next-Action Correction
 
 - DONE: `status:roll20-actual` now prints fixture-level missing generated targets and no longer collapses current `4/6` generated evidence into a generic file-upload blocker.

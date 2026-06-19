@@ -1,3 +1,9 @@
+## 2026-06-19 - Roll20 chat capture plan tooling
+
+- Added `scripts/roll20_chat_capture_plan.mjs` and package alias `plan:roll20-chat-capture`.
+- The command reads ignored actual-compare evidence, identifies missing/stale chat targets, extracts suggested `roll_*` button names from payload HTML, and writes ignored handoff output plus browser-side DOM probe snippets under `roll20-chat-capture-plan/`.
+- Rerun on the active state-map run reports three planned captures: AW2E stale DOM, Les-Oublies needs normalized crop metadata, and YSHY stale DOM.
+- Updated `status:roll20-actual` next action to point directly to the new focused chat capture plan when roots are already present but generated chat evidence is incomplete.
 ## 2026-06-19 - Roll20 status next-action correction
 
 - Investigated the current `status:roll20-actual` output after selector/export fixes.

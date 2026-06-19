@@ -164,6 +164,21 @@ missing, lacks rendered rolltemplate markers, or is stale relative to the PNG.
 Default Roll20 chat tips, invite text, or page-level screenshots are not accepted
 as rolltemplate visual evidence.
 
+When `status:roll20-actual` reports `missingGenerated=<fixture>:chat:<reason>`,
+generate a focused chat recapture plan:
+
+```bash
+corepack pnpm run plan:roll20-chat-capture -- reports/roll20-actual-compare/<label> [fixture-id]
+```
+
+The plan writes ignored local output under
+`reports/roll20-actual-compare/<label>/roll20-chat-capture-plan/`. It lists the
+exact `roll20-chat.png` and `roll20-chat-dom-evidence.json` destinations,
+suggested roll button names from the generated payload, follow-up commands, and
+a browser-side DOM probe snippet. This is planning/snippet output only. It does
+not replace the actual Roll20 screenshot, and it does not prove chat visual
+parity.
+
 Use `corepack pnpm run status:roll20-actual -- <run-dir> --require-actual` after
 the diff helper when a work batch claims actual-screen coverage. This command
 does not prove visual parity by itself; it proves whether the generated-sheet

@@ -665,7 +665,7 @@ function buildNextAction({
     const missingSandbox = missingGenerated.filter((target) => target.targetId === 'sandbox');
     const missingChat = missingGenerated.filter((target) => target.targetId === 'chat');
     if (missingGenerated.length > 0 && missingSandbox.length === 0 && missingChat.length > 0) {
-      return `Generated sheet roots are present, but trustworthy Roll20 chat visual evidence is missing or suspect for ${missingChat.map((target) => `${target.fixtureId} (${target.kind})`).join(', ')}. Recapture roll20-chat.png with a fresh roll20-chat-dom-evidence.json sidecar from the same roll action, then rerun screenshot diff, diagnose:roll20-chat-parity, gate:roll20-renderer-action, and this status command.`;
+      return `Generated sheet roots are present, but trustworthy Roll20 chat visual evidence is missing or suspect for ${missingChat.map((target) => `${target.fixtureId} (${target.kind})`).join(', ')}. Run corepack pnpm run plan:roll20-chat-capture -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))} to create the focused recapture checklist, then recapture roll20-chat.png with a fresh roll20-chat-dom-evidence.json sidecar from the same roll action and rerun screenshot diff, diagnose:roll20-chat-parity, gate:roll20-renderer-action, and this status command.`;
     }
     if (missingSandbox.length > 0) {
       const missing = missingSandbox.map((target) => `${target.fixtureId} (${target.kind})`).join(', ');
