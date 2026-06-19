@@ -23,25 +23,6 @@ const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const runDir = path.resolve(args[0] ?? '');
 const outDir = path.join(runDir, 'full-root-candidate-smoke');
 const threshold = Number(argOf('--threshold', '60'));
-const PLAYBOOK_CLASS_VALUES = [
-  'Angel',
-  'Battlebabe',
-  'Brainer',
-  'Child-Thing',
-  'Chopper',
-  'Driver',
-  'Faceless',
-  'GunLugger',
-  'Hardholder',
-  'Hocus',
-  'Maestro',
-  'News',
-  'Quarantine',
-  'SavvyHead',
-  'Skinner',
-  'Waterbearer',
-  'Marine',
-];
 
 if (!args[0]) {
   console.error('Usage: node scripts/roll20_full_root_candidate_smoke.mjs reports/roll20-actual-compare/<label>');
@@ -135,6 +116,8 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     css: await readText(path.join(payloadDir, 'sheet.css')),
     i18n: await readMaybe(path.join(payloadDir, 'translation.json')),
   };
+  const attrClassValues = collectInputValues(payload.html, 'attr_class');
+  const stateProbeValues = deriveAttrClassStateProbeValues({ payload, stateCandidate, maxCount: 14 });
 
   const context = await browser.newContext({ viewport: { width: Math.max(1200, Math.round((actualRootWidth ?? 900) + 80)), height: 900 } });
   const page = await context.newPage();
@@ -173,11 +156,8 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         { id: 'sandbox-sheet-alias-playbook-hide-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-hide-only', rootWidth: actualRootWidth } },
         { id: 'sandbox-sheet-alias-control-state-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'control-state-only', rootWidth: actualRootWidth } },
         { id: 'sandbox-sheet-alias-playbook-state-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth } },
-        { id: 'sandbox-sheet-alias-playbook-state-hardholder-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth, forceAttrClass: 'Hardholder' } },
-        { id: 'sandbox-sheet-alias-playbook-state-through-news-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth, forceAttrClasses: PLAYBOOK_CLASS_VALUES.slice(0, 12) } },
-        { id: 'sandbox-sheet-alias-playbook-state-through-quarantine-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth, forceAttrClasses: PLAYBOOK_CLASS_VALUES.slice(0, 13) } },
-        { id: 'sandbox-sheet-alias-playbook-state-through-savvy-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth, forceAttrClasses: PLAYBOOK_CLASS_VALUES.slice(0, 14) } },
       );
+      candidateInputs.push(...buildAttrClassStateCandidateInputs({ actualRootWidth, stateProbeValues }));
     }
     for (const input of candidateInputs) {
       candidates.push(await renderCandidate({
@@ -228,6 +208,8 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
       previewSize: baselineFixture?.previewDom?.rect ?? null,
       previewScreenshot: existsSync(localPreviewFile) ? localPreviewFile : null,
       stateHint: summarizeStateCandidate(stateCandidate),
+      attrClassValues: attrClassValues.slice(0, 50),
+      derivedStateProbeValues: stateProbeValues,
     },
     baselineReference,
     bestCandidate: actualEvidence.diagnosticOnly ? null : bestCandidate,
@@ -630,17 +612,26 @@ function shouldAliasRule(rule, aliasMode) {
   if (aliasMode === 'hide-only') return isHide;
   if (aliasMode === 'show-only') return isShow;
   if (aliasMode === 'playbook-hide-only') {
-    return isHide && /\.angel\b/.test(selectorText) && /\.marine\b/.test(selectorText);
+    return isHide && looksLikeAttrClassVisibilitySelector(selectorText);
   }
   if (aliasMode === 'playbook-state-only') {
-    const playbookSelector = /\.angel\b/.test(selectorText) && /\.marine\b/.test(selectorText);
-    const playbookStateSelector = /\.isAngel:checked\b/.test(selectorText) && /\.isMarine:checked\b/.test(selectorText);
-    return (isHide && playbookSelector) || (isShow && playbookStateSelector);
+    const attrClassHide = isHide && looksLikeAttrClassVisibilitySelector(selectorText);
+    const attrClassShow = isShow && /:checked\b/.test(selectorText) && /~/.test(selectorText);
+    return attrClassHide || attrClassShow;
   }
   if (aliasMode === 'control-state-only') {
     return /:checked|\[value=|\[value\s*=/.test(selectorText);
   }
   return true;
+}
+
+function looksLikeAttrClassVisibilitySelector(selectorText) {
+  const text = String(selectorText || '');
+  if (/\.is[A-Z0-9_-]/.test(text) && /:checked\b/.test(text)) return true;
+  const classes = collectSelectorClasses(text)
+    .filter((className) => !['charsheet', 'sheetform'].includes(className));
+  const classCount = new Set(classes).size;
+  return classCount >= 5 && !/:checked\b/.test(text) && !/\[value\s*=/.test(text);
 }
 
 function collectSimpleCssRules(css) {
@@ -702,6 +693,118 @@ function splitSelectorList(selectorText) {
   }
   parts.push(selectorText.slice(start).trim());
   return parts.filter(Boolean);
+}
+
+function buildAttrClassStateCandidateInputs({ actualRootWidth, stateProbeValues }) {
+  if (!actualRootWidth || !stateProbeValues?.values?.length) return [];
+  const inputs = [];
+  if (stateProbeValues.primaryValue) {
+    inputs.push({
+      id: `sandbox-sheet-alias-attr-class-state-${slug(stateProbeValues.primaryValue)}-source`,
+      roll20SandboxSanitize: true,
+      applyStateHint: false,
+      contextPatch: {
+        mode: 'sheet-class-alias-css',
+        aliasMode: 'playbook-state-only',
+        rootWidth: actualRootWidth,
+        forceAttrClass: stateProbeValues.primaryValue,
+      },
+    });
+  }
+  for (const count of stateProbeValues.prefixCounts) {
+    const values = stateProbeValues.values.slice(0, count);
+    if (values.length !== count) continue;
+    inputs.push({
+      id: `sandbox-sheet-alias-attr-class-state-first-${count}-source`,
+      roll20SandboxSanitize: true,
+      applyStateHint: false,
+      contextPatch: {
+        mode: 'sheet-class-alias-css',
+        aliasMode: 'playbook-state-only',
+        rootWidth: actualRootWidth,
+        forceAttrClasses: values,
+      },
+    });
+  }
+  return inputs;
+}
+
+function deriveAttrClassStateProbeValues({ payload, stateCandidate, maxCount = 14 }) {
+  const values = collectInputValues(payload?.html ?? '', 'attr_class');
+  if (!values.length) {
+    return {
+      values: [],
+      primaryValue: null,
+      prefixCounts: [],
+      source: 'no attr_class inputs found',
+    };
+  }
+  const primaryValue = inferAttrClassPrimaryValue(stateCandidate, values);
+  const counts = new Set();
+  const capped = Math.min(values.length, maxCount);
+  for (const count of [1, 5, 10, 12, 13, 14, capped]) {
+    if (count > 1 && count <= capped) counts.add(count);
+  }
+  return {
+    values,
+    primaryValue,
+    prefixCounts: [...counts].sort((a, b) => a - b),
+    source: 'derived from emitted payload input[name=attr_class] values',
+  };
+}
+
+function inferAttrClassPrimaryValue(stateCandidate, values) {
+  const probes = [];
+  if (stateCandidate?.actionLabel) probes.push(String(stateCandidate.actionLabel));
+  if (stateCandidate?.actionName) probes.push(String(stateCandidate.actionName));
+  for (const control of stateCandidate?.appliedControls ?? []) {
+    if (control?.name === 'attr_class' || control?.name === 'class') probes.push(String(control.value ?? ''));
+  }
+  for (const text of probes) {
+    const explicit = /\battr_class\s*=\s*([^,\s]+)/i.exec(text)?.[1];
+    if (explicit && values.includes(explicit)) return explicit;
+    const direct = values.find((value) => value && text.includes(value));
+    if (direct) return direct;
+  }
+  return values[0] ?? null;
+}
+
+function collectInputValues(html, name) {
+  const values = [];
+  const seen = new Set();
+  const tagRe = /<(input|select|textarea)\b[^>]*>/gi;
+  let match;
+  while ((match = tagRe.exec(String(html || '')))) {
+    const attrs = parseTagAttrs(match[0]);
+    if (attrs.name !== name) continue;
+    const value = attrs.value ?? '';
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    values.push(value);
+  }
+  return values;
+}
+
+function parseTagAttrs(tag) {
+  const attrs = {};
+  const re = /\s([:\w-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  let match;
+  while ((match = re.exec(String(tag || '')))) {
+    attrs[match[1].toLowerCase()] = match[2] ?? match[3] ?? match[4] ?? '';
+  }
+  return attrs;
+}
+
+function collectSelectorClasses(selector) {
+  const classes = new Set();
+  const re = /\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*)/g;
+  let match;
+  while ((match = re.exec(String(selector || '')))) classes.add(match[1]);
+  return [...classes];
+}
+
+function slug(value) {
+  return String(value || 'value').toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '') || 'value';
 }
 
 async function applyStateCandidate(page, candidate) {
@@ -1047,9 +1150,18 @@ function summarizeComponentEffects(candidates) {
     'sandbox-sheet-alias-playbook-state-through-quarantine-source',
     'sandbox-sheet-alias-playbook-state-through-savvy-source',
   ];
-  return trackedIds
-    .map((id) => byId.get(id))
+  const trackedCandidates = [
+    ...trackedIds.map((id) => byId.get(id)).filter(Boolean),
+    ...candidates.filter((candidate) => candidate.id.includes('sandbox-sheet-alias-attr-class-state')),
+  ];
+  const seen = new Set();
+  return trackedCandidates
     .filter(Boolean)
+    .filter((candidate) => {
+      if (seen.has(candidate.id)) return false;
+      seen.add(candidate.id);
+      return true;
+    })
     .map((candidate) => ({
       id: candidate.id,
       patch: candidate.contextPatch ?? '',

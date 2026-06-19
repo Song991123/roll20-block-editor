@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 generic attr_class state probes:
+`smoke:roll20-full-root-candidates` no longer relies on a hardcoded AW2E playbook array for forced default-state candidates. It now derives `attr_class` values from each emitted payload's `input[name="attr_class"]` controls and adds generic `attr-class-state-first-N` probes. Latest AW2E result reproduces the earlier height bracket without sheet-name hardcoding: `first-12` is `850x8844` / `-324.5px`, `first-13` is `850x9377` / `+208.5px`, and `first-14` is `850x9946` / `+777.5px` against actual `850x9168`. Pixel best remains `sandbox-sheet-alias-playbook-hide-source` at `7.22%` but is too short (`-6636.125px`), so renderer CSS still stays HOLD. Next P0: capture or reconstruct the actual Roll20 checked/value state for the controlling `attr_class` inputs, then rerun the full-root/gate scripts before any production renderer change.
+
 Current Roll20 renderer note, 2026-06-19 playbook-state diagnostic automation:
 Added `scripts/roll20_playbook_state_diagnostics.mjs` and `corepack pnpm run diagnose:roll20-playbook-state -- reports\roll20-actual-compare\2026-06-18-state-map-v1`. Latest report marks AW2E `playbookSignal=YES` while Les-Oublies/YSHY are `NO`. AW2E pixel-best and height-closest candidates disagree: pixel best is `sandbox-sheet-alias-playbook-hide-source` (`7.22%`, root `-6636.125px`), height closest is `sandbox-sheet-alias-playbook-state-through-quarantine-source` (`8.98%`, root `+208.5px`). This is a default/playbook state probe target, not visual parity or renderer readiness. Renderer remains HOLD.
 

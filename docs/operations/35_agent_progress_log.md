@@ -1536,3 +1536,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest `2026-06-18-state-map-v1` result: AW2E has `playbookSignal=YES`; Les-Oublies and YSHY have `playbookSignal=NO` and should not be interpreted through AW2E playbook heuristics.
 - AW2E pixel-best remains `sandbox-sheet-alias-playbook-hide-source` at `7.22%`, but it is far too short (`-6636.125px`). Height-closest is `sandbox-sheet-alias-playbook-state-through-quarantine-source` at root delta `+208.5px`, making it the next default-state probe target.
 - Claim boundary: this is derived diagnostic evidence only. It does not prove Roll20 visual parity, and renderer action remains HOLD.
+
+## 2026-06-19 Generic Attr Class State Probes
+
+- Removed the AW2E-specific hardcoded playbook value array from `scripts/roll20_full_root_candidate_smoke.mjs`.
+- The full-root candidate smoke now derives `attr_class` probe values from emitted payload HTML and creates generic `sandbox-sheet-alias-attr-class-state-*` candidates.
+- Latest rerun on `2026-06-18-state-map-v1`: AW2E height-closest is now `sandbox-sheet-alias-attr-class-state-first-13-source` at root delta `+208.5px`; `first-12` brackets from below at `-324.5px`. This reproduces the earlier default-state clue without sheet-specific candidate values.
+- `scripts/roll20_playbook_state_diagnostics.mjs` now labels the report as `attr_class/playbook default-state` diagnostics and records derived probe values.
+- Claim boundary: this is diagnostic automation only. `gate:roll20-renderer-ready` still fails with `rendererReady=NO`, so no production renderer CSS or Roll20 visual parity claim is allowed.

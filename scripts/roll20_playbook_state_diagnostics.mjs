@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Summarize playbook/default-state candidates from full-root smoke output.
+ * Summarize attr_class/playbook default-state candidates from full-root smoke
+ * output.
  *
  * This reads ignored local report JSON only. It does not copy sheet source,
  * screenshots, or fixture payloads into tracked files and does not prove
@@ -33,7 +34,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir,
     source: path.relative(runDir, fullRootPath),
-    scope: 'playbook/default-state candidate diagnostics; not Roll20 visual parity',
+    scope: 'attr_class/playbook default-state candidate diagnostics; not Roll20 visual parity',
     fixtures,
     summary: {
       fixtures: fixtures.length,
@@ -66,6 +67,7 @@ function analyzeFixture(fixture) {
     actualSize: fixture.actual?.size ?? null,
     actualState: fixture.actual?.state ?? null,
     localStateHint: fixture.localBaseline?.stateHint ?? null,
+    derivedStateProbeValues: fixture.localBaseline?.derivedStateProbeValues ?? null,
     pixelBest,
     heightClosest,
     playbookSignal,
@@ -126,7 +128,7 @@ function renderMarkdown(report) {
   lines.push(`Generated: ${report.generatedAt}`);
   lines.push(`Run: \`${path.relative(process.cwd(), report.runDir)}\``);
   lines.push('');
-  lines.push('Scope: playbook/default-state candidate diagnostics. This is not Roll20 visual parity.');
+  lines.push('Scope: attr_class/playbook default-state candidate diagnostics. This is not Roll20 visual parity.');
   lines.push('');
   lines.push('| Fixture | Status | Signal | Actual | Pixel best | Height closest | Playbook candidates | Interpretation |');
   lines.push('| --- | --- | --- | --- | --- | --- | ---: | --- |');
@@ -139,6 +141,7 @@ function renderMarkdown(report) {
     lines.push('');
     lines.push(`Actual state: \`${JSON.stringify(fixture.actualState ?? {})}\``);
     lines.push(`Local state hint: \`${JSON.stringify(fixture.localStateHint ?? {})}\``);
+    lines.push(`Derived state probes: \`${JSON.stringify(fixture.derivedStateProbeValues ?? {})}\``);
     lines.push('');
     lines.push('| Candidate | Mismatch | Root delta | Local size | Patch |');
     lines.push('| --- | ---: | ---: | --- | --- |');
