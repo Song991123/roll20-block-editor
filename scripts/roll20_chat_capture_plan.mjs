@@ -77,6 +77,11 @@ async function main() {
       chatNeedsNormalizedCapture: Number(status?.summary?.chatParityNeedsNormalizedCapture ?? 0),
       chatActualCssInactive: Number(status?.summary?.chatParityActualCssInactive ?? 0),
       chatActualCssScopedMismatch: Number(status?.summary?.chatParityActualCssScopedMismatch ?? 0),
+      chatActualCaptureScaleSuspect: Number(status?.summary?.chatParityActualCaptureScaleSuspect ?? 0),
+      chatActualTemplatePixelSuspect: Number(status?.summary?.chatParityActualTemplatePixelSuspect ?? 0),
+      chatActualCropGeometrySuspect: Number(status?.summary?.chatParityActualCropGeometrySuspect ?? 0),
+      chatCaptureSuspects: Number(status?.summary?.chatCaptureSuspectCount ?? 0),
+      generatedAuthoritative: Boolean(status?.summary?.generatedEvidenceAuthoritative),
       chatNormalizedHighMismatch: Number(status?.summary?.chatParityNormalizedHighMismatch ?? 0),
     },
     entries,
@@ -119,6 +124,15 @@ function buildEntry(fixtureId, status, chatParity) {
   if (parityFixture?.status === 'NEEDS_NORMALIZED_CAPTURE') {
     captureReasons.push('chat parity diagnostic needs normalized rolltemplate crop metadata');
   }
+  if (parityFixture?.actualCropGeometry?.suspect) {
+    captureReasons.push(`chat parity diagnostic marks actual crop geometry suspect: ${parityFixture.actualCropGeometry.reason ?? 'recapture with element-bound template screenshot'}`);
+  }
+  if (parityFixture?.actualTemplatePixels?.suspect) {
+    captureReasons.push(`chat parity diagnostic marks actual template foreground pixels suspect: ${parityFixture.actualTemplatePixels.reason ?? 'recapture visible rolltemplate foreground'}`);
+  }
+  if (isCaptureScaleSuspect(parityFixture)) {
+    captureReasons.push('chat parity diagnostic marks actual screenshot scale/format suspect; recapture true PNG at CSS scale 1');
+  }
   const needsCapture = captureReasons.length > 0;
   const targets = {
     chatPng: fileTarget(path.join(screenshots, 'roll20-chat.png')),
@@ -145,6 +159,10 @@ function buildEntry(fixtureId, status, chatParity) {
           status: parityFixture.status ?? '',
           compareMode: parityFixture.compareMode ?? '',
           mismatchPct: pct(parityFixture.mismatchRatio),
+          bestAlignedMismatchPct: pct(parityFixture.bestAlignedMismatchRatio ?? parityFixture.mismatchRatio),
+          actualCropGeometrySuspect: Boolean(parityFixture.actualCropGeometry?.suspect),
+          actualTemplatePixelSuspect: Boolean(parityFixture.actualTemplatePixels?.suspect),
+          actualCaptureScaleSuspect: isCaptureScaleSuspect(parityFixture),
           actualCss: parityFixture.actualChatCss?.classification ?? '',
         }
       : null,
@@ -163,6 +181,14 @@ function buildEntry(fixtureId, status, chatParity) {
       'Rerun screenshot diff, chat parity diagnostics, renderer action gate, and status.',
     ],
   };
+}
+
+function isCaptureScaleSuspect(parityFixture) {
+  if (!parityFixture || parityFixture.status !== 'DIFFED') return false;
+  if (parityFixture.actualImageFormat && parityFixture.actualImageFormat !== 'png') return true;
+  const [scaleX, scaleY] = parityFixture.actualScreenshotScale ?? [];
+  if (scaleX == null || scaleY == null) return false;
+  return Math.abs(Number(scaleX) - 1) > 0.01 || Math.abs(Number(scaleY) - 1) > 0.01;
 }
 
 function validateCurrentChatMetrics(screenshots) {
@@ -815,6 +841,11 @@ function renderMarkdown(report) {
     `- Chat needs normalized capture: ${report.currentStatus.chatNeedsNormalizedCapture}`,
     `- Chat actual CSS inactive: ${report.currentStatus.chatActualCssInactive}`,
     `- Chat scoped/prefix mismatch: ${report.currentStatus.chatActualCssScopedMismatch}`,
+    `- Chat capture suspects: ${report.currentStatus.chatCaptureSuspects}`,
+    `- Chat crop geometry suspect: ${report.currentStatus.chatActualCropGeometrySuspect}`,
+    `- Chat template pixel suspect: ${report.currentStatus.chatActualTemplatePixelSuspect}`,
+    `- Chat scale/format suspect: ${report.currentStatus.chatActualCaptureScaleSuspect}`,
+    `- Generated authoritative evidence: ${report.currentStatus.generatedAuthoritative ? 'YES' : 'NO'}`,
     `- Chat normalized high mismatch: ${report.currentStatus.chatNormalizedHighMismatch}`,
     `- Require current row/typography metrics: ${report.requireCurrentMetrics ? 'YES' : 'no'}`,
     '',
@@ -855,7 +886,7 @@ function renderMarkdown(report) {
       lines.push(`- Sidecar freshness: ${entry.chat.sidecarFreshness.deltaSeconds}s (${entry.chat.sidecarFreshness.ok ? 'ok' : 'stale'})`);
     }
     if (entry.parity) {
-      lines.push(`- Chat parity diagnostic: ${entry.parity.status || 'unknown'}, mode=${entry.parity.compareMode || 'n/a'}, mismatch=${entry.parity.mismatchPct ?? 'n/a'}%, actualCss=${entry.parity.actualCss || 'n/a'}`);
+      lines.push(`- Chat parity diagnostic: ${entry.parity.status || 'unknown'}, mode=${entry.parity.compareMode || 'n/a'}, mismatch=${entry.parity.mismatchPct ?? 'n/a'}%, aligned=${entry.parity.bestAlignedMismatchPct ?? 'n/a'}%, cropSuspect=${entry.parity.actualCropGeometrySuspect ? 'YES' : 'no'}, pixelSuspect=${entry.parity.actualTemplatePixelSuspect ? 'YES' : 'no'}, scaleSuspect=${entry.parity.actualCaptureScaleSuspect ? 'YES' : 'no'}, actualCss=${entry.parity.actualCss || 'n/a'}`);
     }
     lines.push(`- Suggested roll buttons: ${entry.rollButtons.length ? entry.rollButtons.map((name) => `\`${name}\``).join(', ') : 'none detected in payload'}`);
     lines.push('- Checklist:');

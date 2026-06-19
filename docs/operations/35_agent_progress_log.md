@@ -15,6 +15,8 @@ Follow-up: Les-Oublies foreground was recaptured locally after narrowing the Rol
 
 Follow-up status hardening: `status:roll20-actual` now separates diffed screenshots from authoritative generated evidence. Current status is `GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT`, with `generatedAuthoritative=NO`, `chatCaptureSuspects=1`, and `actualEvidenceComplete=false`; `--require-actual` now fails until the suspect chat capture is replaced.
 
+Follow-up capture-plan hardening: `plan:roll20-chat-capture -- --require-current-metrics` now reads chat parity crop/pixel/scale suspects, not only missing files or stale current metrics. Current plan correctly reports `NEEDS_CAPTURE`, `plannedFixtures=1/3`, and lists Les-Oublies because its chat crop used manual coordinate calibration.
+
 ## 2026-06-20 05:13 +09:00 - AW2E/Les actual Roll20 chat current-metric recapture
 
 Status: PARTIAL. Current Roll20 chat sidecar coverage is now complete; visual/chat parity remains blocked.

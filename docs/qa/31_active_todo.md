@@ -15,6 +15,8 @@ Follow-up: Narrowed the Roll20 viewport and scrolled the text chat panel so the 
 
 Follow-up status hardening: `status:roll20-actual` now reports `GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT` instead of the overly broad `GENERATED_ACTUAL_SCREENSHOTS_DIFFED` when chat capture suspects remain. Current command output: `generatedAuthoritative=NO`, `chatCaptureSuspects=1`, `actualEvidenceComplete=false`; `--require-actual` correctly exits non-zero until authoritative chat evidence is recaptured.
 
+Follow-up capture-plan hardening: `plan:roll20-chat-capture -- --require-current-metrics` now includes chat parity crop/pixel/scale suspects in its recapture reasons. It currently reports `NEEDS_CAPTURE`, `plannedFixtures=1/3`, with Les-Oublies listed for manual coordinate calibration. This remains the next concrete Roll20 evidence task.
+
 ## 2026-06-20 Codex Update - AW2E/Les Roll20 chat current-metric recapture
 
 Status: PARTIAL. Current row/typography evidence is now complete for all three real Roll20 chat fixtures, but Roll20 chat/template parity is still failing.
