@@ -403,6 +403,10 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
           brightEither: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
           midTone: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
         };
+        const masks = {
+          highlightEither: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+          shadowCandidate: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+        };
         for (let y = 0; y < h; y += 1) {
           for (let x = 0; x < w; x += 1) {
             const li = ((y + localY) * width + (x + localX)) * 4;
@@ -418,12 +422,16 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
             const db = Math.abs(lb - ab);
             const localLuma = 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
             const actualLuma = 0.2126 * ar + 0.7152 * ag + 0.0722 * ab;
+            const isHighlightEither = localLuma > 190 || actualLuma > 190;
+            const isShadowCandidate = (localLuma < 70 || actualLuma < 70) && (localLuma > 25 || actualLuma > 25);
             const bucket = localLuma < 80 && actualLuma < 80
               ? lumaBuckets.darkBoth
               : localLuma > 130 || actualLuma > 130
                 ? lumaBuckets.brightEither
                 : lumaBuckets.midTone;
             bucket.pixels += 1;
+            if (isHighlightEither) masks.highlightEither.pixels += 1;
+            if (isShadowCandidate) masks.shadowCandidate.pixels += 1;
             const rowBand = rowBands[Math.min(7, Math.floor((y / h) * 8))];
             const colBand = colBands[Math.min(3, Math.floor((x / w) * 4))];
             rowBand.pixels += 1;
@@ -435,6 +443,14 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
               colBand.mismatchPixels += 1;
               bucket.mismatchPixels += 1;
               bucket.signedLumaDeltaSum += localLuma - actualLuma;
+              if (isHighlightEither) {
+                masks.highlightEither.mismatchPixels += 1;
+                masks.highlightEither.signedLumaDeltaSum += localLuma - actualLuma;
+              }
+              if (isShadowCandidate) {
+                masks.shadowCandidate.mismatchPixels += 1;
+                masks.shadowCandidate.signedLumaDeltaSum += localLuma - actualLuma;
+              }
               minX = Math.min(minX, x);
               minY = Math.min(minY, y);
               maxX = Math.max(maxX, x);
@@ -470,6 +486,19 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
                   mismatchShare: mismatchPixels ? bucket.mismatchPixels / mismatchPixels : 0,
                   avgSignedLumaDeltaOnMismatch: bucket.mismatchPixels
                     ? Number((bucket.signedLumaDeltaSum / bucket.mismatchPixels).toFixed(3))
+                    : 0,
+                },
+              ]),
+            ),
+            masks: Object.fromEntries(
+              Object.entries(masks).map(([key, mask]) => [
+                key,
+                {
+                  pixelRatio: totalPixels ? mask.pixels / totalPixels : 0,
+                  mismatchRatio: mask.pixels ? mask.mismatchPixels / mask.pixels : 0,
+                  mismatchShare: mismatchPixels ? mask.mismatchPixels / mismatchPixels : 0,
+                  avgSignedLumaDeltaOnMismatch: mask.mismatchPixels
+                    ? Number((mask.signedLumaDeltaSum / mask.mismatchPixels).toFixed(3))
                     : 0,
                 },
               ]),
@@ -542,15 +571,15 @@ function renderMarkdown(report) {
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
   lines.push(`Max aligned mismatch: ${pct(report.summary.maxAlignedMismatchRatio)}`);
   lines.push('');
-  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | Bright share | Dark share | Worst row | RMS | Note |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | ---: | --- | ---: | --- |');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | Highlight share | Bright share | Dark share | Worst row | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | ---: | ---: | --- | ---: | --- |');
   for (const fixture of report.fixtures) {
     const cropGeometry = fixture.actualCropGeometry?.suspect ? `SUSPECT: ${fixture.actualCropGeometry.reason}` : 'authoritative';
     const sizeDelta = fixture.widthDeltaPx === null || fixture.widthDeltaPx === undefined
       ? ''
       : `${fixture.widthDeltaPx}x${fixture.heightDeltaPx}`;
     const breakdown = summarizeBreakdown(fixture.bestAlignedDiffBreakdown ?? fixture.diffBreakdown);
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.highlightShare} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');
@@ -560,10 +589,13 @@ function renderMarkdown(report) {
 function summarizeBreakdown(breakdown) {
   if (!breakdown) return { brightShare: '', darkShare: '', worstRow: '' };
   const buckets = breakdown.lumaBuckets ?? {};
+  const masks = breakdown.masks ?? {};
+  const highlight = masks.highlightEither?.mismatchShare;
   const bright = buckets.brightEither?.mismatchShare;
   const dark = buckets.darkBoth?.mismatchShare;
   const worst = [...(breakdown.rowBands ?? [])].sort((a, b) => (b.mismatchRatio ?? 0) - (a.mismatchRatio ?? 0))[0];
   return {
+    highlightShare: typeof highlight === 'number' ? pct(highlight) : '',
     brightShare: typeof bright === 'number' ? pct(bright) : '',
     darkShare: typeof dark === 'number' ? pct(dark) : '',
     worstRow: worst ? `${worst.index}:${pct(worst.mismatchRatio)}` : '',
