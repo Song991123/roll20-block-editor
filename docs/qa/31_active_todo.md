@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - Chat mask strategy gate added
+
+Status: PARTIAL. Roll20 chat/template parity is still blocked, but the next renderer strategy is now less ambiguous.
+
+- DONE: Added `diagnose:roll20-chat-mask-strategy`, which reads existing chat parity/residual/candidate reports and classifies the next action from row-band, left-edge, luma, and mask evidence.
+- DONE: Wired the mask strategy summary into `gate:roll20-renderer-action`.
+- RESULT: Current strategy status is `STRATEGY_NEEDED`, high mismatch `2/3`.
+- RESULT: `official-roll20-Les-Oublies` is now classified as `RECROP_OR_SHELL_CONTEXT_BEFORE_CSS`; next step is to compare actual/local message shell padding, template crop x/y, and row-band masks before another CSS candidate.
+- RESULT: `yshy-commission-1bu` is now classified as `MODEL_TEMPLATE_WIDTH_BEFORE_PAINT`; next step is a per-template chat width model before paint CSS.
+- RESULT: `official-roll20-AW2E` stays `KEEP_DEFAULT_FOR_NOW` for this chat axis.
+- VERIFIED: `diagnose:roll20-chat-mask-strategy`, `node --check` for the new strategy script and renderer gate, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the Les crop/shell diagnostic probe and the YSHY per-template width model. This does not prove Roll20 visual parity and does not authorize production ChatPane CSS.
+
 ## 2026-06-20 Codex Update - Chat paint residual candidates tested
 
 Status: PARTIAL. Roll20 chat/template parity is still blocked; two paint/raster hypotheses were tested as diagnostic-only candidates and must not be promoted.

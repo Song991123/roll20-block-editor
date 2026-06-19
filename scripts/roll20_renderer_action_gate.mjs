@@ -39,9 +39,10 @@ async function main() {
   const chatCandidateStyleProof = await readJsonIfExists(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json'));
   const chatRendererPolicy = await readJsonIfExists(path.join(runDir, 'chat-renderer-policy', 'chat-renderer-policy-results.json'));
   const chatResidual = await readJsonIfExists(path.join(runDir, 'chat-residual-diagnostics', 'chat-residual-diagnostics-results.json'));
+  const chatMaskStrategy = await readJsonIfExists(path.join(runDir, 'chat-mask-strategy', 'chat-mask-strategy-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -54,6 +55,7 @@ async function main() {
     chatCandidateStyleProof: summarizeChatCandidateStyleProof(chatCandidateStyleProof),
     chatRendererPolicy: summarizeChatRendererPolicy(chatRendererPolicy),
     chatResidual: summarizeChatResidual(chatResidual),
+    chatMaskStrategy: summarizeChatMaskStrategy(chatMaskStrategy),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -225,7 +227,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -243,6 +245,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatCandidateStyleProofSummary = summarizeChatCandidateStyleProof(chatCandidateStyleProof);
   const chatRendererPolicySummary = summarizeChatRendererPolicy(chatRendererPolicy);
   const chatResidualSummary = summarizeChatResidual(chatResidual);
+  const chatMaskStrategySummary = summarizeChatMaskStrategy(chatMaskStrategy);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
   const styleProofStatusByName = new Map(
     (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
@@ -425,6 +428,14 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       positiveFindings.push(`${fixture.fixtureId} chat residual axis=${fixture.primaryResidualAxis}, next=${fixture.nextDiagnostic}`);
     }
   }
+  if (!chatMaskStrategySummary) {
+    warnings.push('chat mask strategy has not been run; run diagnose:roll20-chat-mask-strategy before trying another chat paint/crop candidate');
+  } else {
+    positiveFindings.push(`chat mask strategy: status=${chatMaskStrategySummary.status}, highMismatch=${chatMaskStrategySummary.highMismatch}/${chatMaskStrategySummary.totalFixtures}, decisions=${formatFindingCounts(chatMaskStrategySummary.decisions)}`);
+    for (const fixture of chatMaskStrategySummary.highMismatchFixtures) {
+      positiveFindings.push(`${fixture.fixtureId} chat mask decision=${fixture.strategyDecision}, next=${fixture.nextAction}`);
+    }
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -473,6 +484,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-residual -- ${path.relative(process.cwd(), activeRunDir)} before the next Les/YSHY chat renderer hypothesis.`);
   } else if (chatResidualSummary.highMismatchFixtures.length) {
     nextActions.push(...chatResidualSummary.highMismatchFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextDiagnostic}`));
+  }
+  if (!chatMaskStrategySummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-mask-strategy -- ${path.relative(process.cwd(), activeRunDir)} before another ChatPane paint/crop candidate.`);
+  } else if (chatMaskStrategySummary.highMismatchFixtures.length) {
+    nextActions.push(...chatMaskStrategySummary.highMismatchFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   if (!chatCandidateSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
@@ -717,6 +733,31 @@ function summarizeChatResidual(report) {
     highMismatch: Number(report.summary.highMismatch ?? fixtures.filter((fixture) => fixture.highMismatch).length),
     primaryAxes: report.summary.primaryAxes ?? {},
     nextDiagnostics: report.summary.nextDiagnostics ?? {},
+    highMismatchFixtures: fixtures.filter((fixture) => fixture.highMismatch),
+    fixtures,
+  };
+}
+
+function summarizeChatMaskStrategy(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    highMismatch: Boolean(fixture.highMismatch),
+    strategyDecision: fixture.strategyDecision ?? 'UNKNOWN',
+    residualAxis: fixture.residualAxis ?? '',
+    bestAlignedMismatchPct: fixture.bestAlignedMismatchPct ?? '',
+    leftColMismatchRatioPct: fixture.bandStats?.leftColMismatchRatioPct ?? '',
+    leftColMismatchSharePct: fixture.bandStats?.leftColMismatchSharePct ?? '',
+    topRowMismatchSharePct: fixture.bandStats?.topRowMismatchSharePct ?? '',
+    nextAction: fixture.nextAction ?? '',
+    blockers: fixture.blockers ?? [],
+  }));
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    highMismatch: Number(report.summary.highMismatch ?? fixtures.filter((fixture) => fixture.highMismatch).length),
+    decisions: report.summary.decisions ?? {},
+    productionSafe: Boolean(report.summary.productionSafe),
     highMismatchFixtures: fixtures.filter((fixture) => fixture.highMismatch),
     fixtures,
   };
@@ -1035,6 +1076,21 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | --- | ---: | --- | --- |');
       for (const fixture of report.chatResidual.highMismatchFixtures) {
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.policyDecision} | ${fixture.primaryResidualAxis} | ${fixture.bestAlignedMismatchPct} | ${fixture.nextDiagnostic} | ${fixture.residualSignals.join('<br>')} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatMaskStrategy) {
+    lines.push('### Chat Mask Strategy', '');
+    lines.push(`- Status: ${report.chatMaskStrategy.status}`);
+    lines.push(`- High mismatch fixtures: ${report.chatMaskStrategy.highMismatch}/${report.chatMaskStrategy.totalFixtures}`);
+    lines.push(`- Decisions: ${formatFindingCounts(report.chatMaskStrategy.decisions)}`);
+    if (report.chatMaskStrategy.highMismatchFixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Decision | Residual | Aligned mismatch | Left col | Top rows | Next action | Blockers |');
+      lines.push('| --- | --- | --- | ---: | ---: | ---: | --- | --- |');
+      for (const fixture of report.chatMaskStrategy.highMismatchFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.strategyDecision} | ${fixture.residualAxis} | ${fixture.bestAlignedMismatchPct} | ${fixture.leftColMismatchRatioPct} / share ${fixture.leftColMismatchSharePct} | ${fixture.topRowMismatchSharePct} | ${fixture.nextAction} | ${fixture.blockers.join('<br>')} |`);
       }
     }
     lines.push('');

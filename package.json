@@ -45,6 +45,7 @@
     "diagnose:roll20-chat-candidate-style": "node scripts/roll20_chat_candidate_style_proof.mjs",
     "diagnose:roll20-chat-renderer-policy": "node scripts/roll20_chat_renderer_policy.mjs",
     "diagnose:roll20-chat-residual": "node scripts/roll20_chat_residual_diagnostics.mjs",
+    "diagnose:roll20-chat-mask-strategy": "node scripts/roll20_chat_mask_strategy.mjs",
     "diagnose:roll20-chat-rows": "node scripts/roll20_chat_row_geometry_compare.mjs",
     "diagnose:roll20-chat-style": "node scripts/roll20_chat_style_context_diagnostics.mjs",
     "diagnose:roll20-chat-live-typography": "node scripts/roll20_chat_live_typography_compare.mjs",

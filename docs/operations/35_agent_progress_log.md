@@ -1,3 +1,13 @@
+## 2026-06-20 Chat Mask Strategy Gate
+
+- Added `scripts/roll20_chat_mask_strategy.mjs` and package alias `diagnose:roll20-chat-mask-strategy`.
+- The diagnostic reads existing local-only chat parity/residual/candidate reports and turns row-band, left-edge, luma, and mask evidence into a next renderer strategy.
+- Wired the strategy summary into `gate:roll20-renderer-action`.
+- Current result: `official-roll20-Les-Oublies` is `RECROP_OR_SHELL_CONTEXT_BEFORE_CSS`, so the next work should compare actual/local message shell padding, template crop x/y, and row-band masks before testing another CSS candidate.
+- Current result: `yshy-commission-1bu` is `MODEL_TEMPLATE_WIDTH_BEFORE_PAINT`, so paint candidates should wait until a per-template chat width model exists.
+- Current result: `official-roll20-AW2E` stays `KEEP_DEFAULT_FOR_NOW` on the chat axis.
+- Claim boundary: this is strategy/gating progress only. It does not prove Roll20 chat parity and does not enable production ChatPane renderer CSS.
+
 ## 2026-06-20 Chat Paint Residual Candidates
 
 - Added hidden diagnostic-only ChatPane paint policies: `roll20-dim-background` and `roll20-edge-shadow`.
