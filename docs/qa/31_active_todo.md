@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 attr_class state capture plan:
+Added `scripts/roll20_attr_class_state_capture_plan.mjs` and `corepack pnpm run plan:roll20-attr-class-state -- reports\roll20-actual-compare\2026-06-18-state-map-v1 [fixture-id]`. Latest run classifies AW2E as the only P0 attr_class capture target: 18 emitted `attr_class` values, actual height bracketed by `first-12` (`-324.5px`) and `first-13` (`+208.5px`). Les-Oublies/YSHY have 0 `attr_class` values for this specific probe. `gate:roll20-renderer-action` now points to the new plan command before renderer CSS work. This is planning/snippet automation only; the actual Roll20 checked/value sidecar is still TODO and `rendererReady=NO`.
+
 Current Roll20 renderer note, 2026-06-19 generic attr_class state probes:
 `smoke:roll20-full-root-candidates` no longer relies on a hardcoded AW2E playbook array for forced default-state candidates. It now derives `attr_class` values from each emitted payload's `input[name="attr_class"]` controls and adds generic `attr-class-state-first-N` probes. Latest AW2E result reproduces the earlier height bracket without sheet-name hardcoding: `first-12` is `850x8844` / `-324.5px`, `first-13` is `850x9377` / `+208.5px`, and `first-14` is `850x9946` / `+777.5px` against actual `850x9168`. Pixel best remains `sandbox-sheet-alias-playbook-hide-source` at `7.22%` but is too short (`-6636.125px`), so renderer CSS still stays HOLD. Next P0: capture or reconstruct the actual Roll20 checked/value state for the controlling `attr_class` inputs, then rerun the full-root/gate scripts before any production renderer change.
 

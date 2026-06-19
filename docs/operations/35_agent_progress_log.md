@@ -1544,3 +1544,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest rerun on `2026-06-18-state-map-v1`: AW2E height-closest is now `sandbox-sheet-alias-attr-class-state-first-13-source` at root delta `+208.5px`; `first-12` brackets from below at `-324.5px`. This reproduces the earlier default-state clue without sheet-specific candidate values.
 - `scripts/roll20_playbook_state_diagnostics.mjs` now labels the report as `attr_class/playbook default-state` diagnostics and records derived probe values.
 - Claim boundary: this is diagnostic automation only. `gate:roll20-renderer-ready` still fails with `rendererReady=NO`, so no production renderer CSS or Roll20 visual parity claim is allowed.
+
+## 2026-06-19 Attr Class State Capture Plan
+
+- Added `scripts/roll20_attr_class_state_capture_plan.mjs` and package alias `plan:roll20-attr-class-state` to generate ignored local reports and browser snippets for actual Roll20 `attr_class` checked/value capture.
+- Latest run on `2026-06-18-state-map-v1` marks `official-roll20-AW2E` as P0 with 18 emitted `attr_class` values. Its actual height is bracketed by `sandbox-sheet-alias-attr-class-state-first-12-source` (`-324.5px`) and `sandbox-sheet-alias-attr-class-state-first-13-source` (`+208.5px`).
+- Les-Oublies and YSHY have 0 emitted `attr_class` values for this probe, so the plan keeps them P1/no-bracket instead of mixing in unrelated sheet-alias diagnostics.
+- `scripts/roll20_renderer_action_gate.mjs` now links the attr_class capture plan as the next action when a fixture has `attr_class` values and pixel-best/height-closest state candidates disagree.
+- Verification: `node --check` for the new/changed scripts, `plan:roll20-attr-class-state`, `gate:roll20-renderer-action`, `status:roll20-actual`, `guard:roll20-evidence`, `lint`, and `build` passed. `gate:roll20-renderer-ready` still fails as expected with `rendererReady=NO`.
+- Claim boundary: this improves the next Roll20 state-capture step only. It does not capture the actual checked/value sidecar yet, does not change production renderer CSS, and does not prove Roll20 visual parity.

@@ -89,6 +89,17 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, geo
             localSize: fullRootFixture.bestCandidate.localSize ?? null,
           }
         : null,
+      closestRootHeightCandidate: fullRootFixture?.closestRootHeightCandidate
+        ? {
+            id: fullRootFixture.closestRootHeightCandidate.id,
+            mismatchRatio: fullRootFixture.closestRootHeightCandidate.mismatchRatio,
+            mismatchPct: pctNumber(fullRootFixture.closestRootHeightCandidate.mismatchRatio),
+            rootHeightDelta: fullRootFixture.closestRootHeightCandidate.rootHeightDelta ?? null,
+            patch: fullRootFixture.closestRootHeightCandidate.contextPatch ?? '',
+            localSize: fullRootFixture.closestRootHeightCandidate.localSize ?? null,
+          }
+        : null,
+      attrClassValueCount: Number(fullRootFixture?.localBaseline?.attrClassValues?.length ?? fullRootFixture?.localBaseline?.derivedStateProbeValues?.values?.length ?? 0),
       diagnosticBestCandidate: fullRootFixture?.diagnosticBestCandidate
         ? {
             id: fullRootFixture.diagnosticBestCandidate.id,
@@ -210,6 +221,17 @@ function recommend(fixtures, status, activeRunDir) {
   }
   if (patchFamilies.size > 1) {
     nextActions.push('Compare the differing diagnostic patch families before promoting CSS: current fixtures do not agree on one generic renderer fix.');
+  }
+  const attrClassStateTargets = compared.filter((fixture) => {
+    if (!fixture.attrClassValueCount) return false;
+    const closest = fixture.closestRootHeightCandidate;
+    if (!closest?.id) return false;
+    if (fixture.bestCandidate?.id && fixture.bestCandidate.id !== closest.id) return true;
+    return /attr-class-state|playbook-state/.test(closest.id);
+  });
+  if (attrClassStateTargets.length) {
+    const fixtureArg = attrClassStateTargets.length === 1 ? ` ${attrClassStateTargets[0].fixtureId}` : '';
+    nextActions.push(`Run corepack pnpm run plan:roll20-attr-class-state -- ${path.relative(process.cwd(), activeRunDir)}${fixtureArg} and capture the generated browser-side checked/value state sidecar before renderer CSS work.`);
   }
   if (blockers.length) {
     nextActions.push('Keep diagnostic CSS candidates out of production until trusted full-root evidence and best-patch behavior repeat across fixtures.');
