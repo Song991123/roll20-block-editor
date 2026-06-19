@@ -1,3 +1,8 @@
+## 2026-06-19 Reliable Renderer Gate Patch-Family Comparison
+
+- Updated `scripts/roll20_renderer_action_gate.mjs` so root-cutoff HIGH fixtures are excluded from reliable patch-family comparison.
+- Latest gate now reports reliable cross-fixture renderer evidence `2/3` and warns that AW2E's old trusted full-root candidate result is excluded because root-cutoff risk is HIGH.
+- Renderer remains HOLD. The next real blocker is AW2E authoritative full-root promotion/recapture, plus resolving the remaining Les/YSHY diagnostic patch-family disagreement.
 ## 2026-06-19 Reliable Full-Root Status Accounting
 
 - Updated `scripts/roll20_actual_status.mjs` to read root-cutoff diagnostics and discount high-risk stitched roots from reliable renderer readiness.
