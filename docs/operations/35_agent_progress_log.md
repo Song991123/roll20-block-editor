@@ -69,6 +69,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 
 
+
+## 2026-06-19 AW2E Computed-Style Sidecar Capture
+
+- Claimed the dedicated `Codex Roll20 Verify | Roll20` editor tab in read-only mode; no existing room/settings were modified.
+- CDP `Page.getFrameTree` found the generated character iframe at `/editor/character/21639681/-OvSWvivVPTt2z_4goPF/true?popout=false`; `Page.createIsolatedWorld` + `Runtime.evaluate` captured selected computed styles from inside the iframe.
+- Saved ignored local sidecar `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/official-roll20-AW2E-computed-styles.json`.
+- Rerunning `diagnose:roll20-computed-style-context` now compares `2/3` fixtures and reports `DO_NOT_PROMOTE_DIRECTLY`: AW2E still differs from local candidates (notably actual input height `27.6px` vs local best-style candidate `24px`), Les-Oublies still has row/column/table style/count differences, and YSHY still lacks an actual computed-style sidecar.
+
 ## 2026-06-19 Computed-Style Context Diagnostic
 
 - Added `scripts/roll20_computed_style_context_diagnostics.mjs` and package script `diagnose:roll20-computed-style-context`.

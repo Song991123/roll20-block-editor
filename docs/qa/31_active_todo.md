@@ -14,6 +14,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer safety note, 2026-06-19 AW2E computed-style sidecar captured:
+Chrome/CDP read-only probing of the dedicated Roll20 editor iframe saved ignored local sidecar `live-iframe-probe/official-roll20-AW2E-computed-styles.json`. Rerunning `diagnose:roll20-computed-style-context` now compares `2/3` fixtures and leaves only YSHY as `MISSING_ACTUAL_STYLE`. The result is still `DO_NOT_PROMOTE_DIRECTLY`: AW2E best style candidate is `sandbox-sheet-alias-attr-class-state-first-12-source` but actual input height is `27.6px` while the local best-style candidate input is `24px`; Les-Oublies still has row/column/table style/count differences. Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` and `rendererReady=NO`.
 Current Roll20 renderer safety note, 2026-06-19 computed-style context diagnostic:
 Added `diagnose:roll20-computed-style-context` to compare actual Roll20 computed-style sidecars against local full-root candidates for `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, table, input, and textarea. Latest run is `DO_NOT_PROMOTE_DIRECTLY`: compared `1/3` fixtures, missing actual style sidecars for AW2E and YSHY, and Les-Oublies still has style/count differences even though `sandbox-inline-block-text-input-276-source` matches input height closely. Next P0 is refreshing actual computed-style sidecars for all fixtures before any inline-flow/input-height renderer CSS is promoted.
 Current Roll20 renderer safety note, 2026-06-19 promotion-risk gate:
