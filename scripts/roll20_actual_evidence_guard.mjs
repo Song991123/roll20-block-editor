@@ -53,6 +53,7 @@ checkGitignore();
 checkPreCommitHook();
 checkTrackedLocalEvidence();
 checkStagedLocalEvidence();
+checkRendererModelGuard();
 if (runDirArg) checkRunFolder(runDirArg);
 
 const failed = results.filter((item) => !item.ok);
@@ -114,6 +115,20 @@ function checkStagedLocalEvidence() {
     .map(normalizePath)
     .filter((file) => !allowedTracked.has(file));
   check('no staged private fixtures/reports/examples', staged.length === 0, staged.slice(0, 20).join('\n') || 'ok');
+}
+
+function checkRendererModelGuard() {
+  try {
+    const output = execFileSync(process.execPath, [path.join(repoRoot, 'scripts/roll20_renderer_model_guard.mjs')], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const parsed = JSON.parse(output);
+    check('Roll20 renderer model remains diagnostic-only', parsed.status === 'PASS', parsed.status);
+  } catch (error) {
+    check('Roll20 renderer model remains diagnostic-only', false, error.stdout || error.message);
+  }
 }
 
 function gitLines(args) {

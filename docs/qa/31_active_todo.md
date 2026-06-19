@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Renderer model rollout guard
+
+Status: PARTIAL. The input-flow renderer model is still diagnostic-only, and accidental production enablement is now guarded.
+
+- DONE: Added `guard:roll20-renderer-model`, which scans app/component/lib production paths and fails if `input-flow-27` or `input-flow-276` is enabled outside the diagnostic `buildDoc` gate.
+- DONE: Connected the renderer-model guard into `guard:roll20-evidence` and `.githooks/pre-commit`.
+- RESULT: Current guard passes: no non-default renderer model is enabled in user-facing app paths, `buildDoc` keeps the explicit model union, defaults to `default`, and emits no renderer-model CSS for default.
+- RESULT: `diagnose:roll20-input-flow-axis` still reports `SPLIT_RENDERER_AXIS_CONFIRMED`, apply candidates `2`, block global model `1`, `globalModelSafe=NO`.
+- STILL TODO P0: Define the actual per-sheet/per-template boundary before exposing or enabling `roll20RendererModel` outside diagnostics.
+- VERIFIED: `guard:roll20-renderer-model`, `guard:roll20-evidence`, `diagnose:roll20-input-flow-axis`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+
 ## 2026-06-20 Codex Update - Renderer blocker matrix now includes chat axis
 
 Status: PARTIAL. Renderer parity is still blocked, but the diagnostic handoff is clearer and safer.

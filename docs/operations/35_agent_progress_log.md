@@ -1,3 +1,11 @@
+## 2026-06-20 Renderer Model Rollout Guard
+
+- Added `scripts/roll20_renderer_model_guard.mjs` and package script `guard:roll20-renderer-model`.
+- The guard fails if a non-default `roll20RendererModel` (`input-flow-27` or `input-flow-276`) is enabled in app/component/lib production paths outside the gated `buildDoc` implementation.
+- Wired the guard into `guard:roll20-evidence` and `.githooks/pre-commit` so future sessions cannot accidentally ship the diagnostic input-flow renderer model while `globalModelSafe=NO`.
+- Current evidence remains split: `diagnose:roll20-input-flow-axis` reports `SPLIT_RENDERER_AXIS_CONFIRMED`, apply candidates `2`, block global model `1`, and `globalModelSafe=NO`.
+- Verified: `guard:roll20-renderer-model`, `guard:roll20-evidence`, `diagnose:roll20-input-flow-axis`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+
 ## 2026-06-20 Renderer Blocker Matrix Chat Axis
 
 - Updated `scripts/roll20_renderer_blocker_matrix.mjs` to read chat parity/style/candidate reports in addition to full-root candidate reports.

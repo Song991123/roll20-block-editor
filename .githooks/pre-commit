@@ -39,3 +39,5 @@ case "$root" in
     exit 1
     ;;
 esac
+
+node "$root/scripts/roll20_renderer_model_guard.mjs" >/dev/null
