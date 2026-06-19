@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - Chat mismatch breakdown and text-AA candidate
+
+Status: PARTIAL. Roll20 chat/template parity is still NOT done, but the YSHY mismatch is now classified more precisely.
+
+- DONE: Added luma/row/column mismatch breakdown to `diagnose:roll20-chat-parity` so chat diffs are not only a single percentage. The markdown table now includes bright mismatch share, dark mismatch share, and worst row band.
+- DONE: Added diagnostic-only `__r20ChatTextPolicy=roll20-auto-aa` support in ChatPane and `rolltemplate_chat_smoke --chat-text-policy roll20-auto-aa`.
+- RESULT: `roll20-auto-aa` did not change the current local-vs-actual PNG mismatch numbers. Default and candidate both report AW2E `12.78%/7.49%`, Les-Oublies `10.09%/9.14%`, and YSHY `28.36%/22.46%` raw/aligned.
+- RESULT: YSHY best-aligned mismatch is mostly bright text/highlight pixels, not a missing large background: bright mismatch share `63.34%`, dark share `24.16%`, mid-tone share `12.50%`. Bright mismatches have local luma lower than actual by `-44.347` on average.
+- RESULT: Les-Oublies mismatch is almost entirely bright pixels (`97.91%` share). AW2E is also bright-dominant (`72.40%`) but much lower after alignment.
+- DECISION: Do not promote text antialiasing policy to production behavior. Keep the switch diagnostic-only.
+- STILL TODO P0: Compare actual/local computed text-shadow color, opacity, transform/scale, device pixel ratio, and chat screenshot compositing for YSHY. The current best evidence points to text/highlight rendering brightness rather than Roll20 user CSS absence.
+- STILL TODO P0: Production renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH` because YSHY chat crop still differs after alignment and the sheet-root renderer patch family is split across fixtures.
+
 ## 2026-06-20 Codex Update - Chat font fallback candidate rejected
 
 Status: PARTIAL. A concrete YSHY font hypothesis was tested and rejected for production.

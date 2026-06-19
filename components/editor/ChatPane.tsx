@@ -34,11 +34,19 @@ function safeRolltemplateClass(name: string): string {
 }
 
 type ChatFontPolicy = 'default' | 'roll20-chat-fallback';
+type ChatTextPolicy = 'default' | 'roll20-auto-aa';
 
 function currentChatFontPolicy(): ChatFontPolicy {
   if (typeof window === 'undefined') return 'default';
   return window.localStorage.getItem('__r20ChatFontPolicy') === 'roll20-chat-fallback'
     ? 'roll20-chat-fallback'
+    : 'default';
+}
+
+function currentChatTextPolicy(): ChatTextPolicy {
+  if (typeof window === 'undefined') return 'default';
+  return window.localStorage.getItem('__r20ChatTextPolicy') === 'roll20-auto-aa'
+    ? 'roll20-auto-aa'
     : 'default';
 }
 
@@ -96,6 +104,10 @@ const roll20ChatShellCss = `
   text-rendering: optimizeSpeed;
   padding: 0;
   gap: 0;
+}
+.r20-chat-pane[data-r20-chat-text-policy="roll20-auto-aa"] .textchatcontainer {
+  text-rendering: auto;
+  -webkit-font-smoothing: auto;
 }
 .r20-chat-pane .textchatcontainer .content {
   line-height: 1.25em;
@@ -438,6 +450,7 @@ export default function ChatPane() {
   const emittedCss = useWorkspaceStore((s) => s.emitCache.css);
   const emittedI18n = useWorkspaceStore((s) => s.emitCache.i18n);
   const chatFontPolicy = currentChatFontPolicy();
+  const chatTextPolicy = currentChatTextPolicy();
   const rolltemplateCss = useMemo(
     () => extractRolltemplateCss(emittedCss, chatFontPolicy),
     [emittedCss, chatFontPolicy],
@@ -445,7 +458,10 @@ export default function ChatPane() {
   const translations = useMemo(() => parseTranslations(emittedI18n), [emittedI18n]);
 
   return (
-    <div className="r20-chat-pane flex h-full flex-col min-h-0">
+    <div
+      className="r20-chat-pane flex h-full flex-col min-h-0"
+      data-r20-chat-text-policy={chatTextPolicy}
+    >
       <style data-r20-chat-shell-css dangerouslySetInnerHTML={{ __html: roll20ChatShellCss }} />
       {rolltemplateCss.trim() && (
         <style

@@ -1,3 +1,16 @@
+## 2026-06-20 03:45 +09:00 - Chat mismatch breakdown and text-AA candidate
+
+Status: PARTIAL. This batch improves diagnosis and rejects another unsafe production candidate; Roll20 parity is still not achieved.
+
+- Added breakdown fields to `scripts/roll20_chat_parity_diagnostics.mjs`: row bands, column bands, and luma buckets for raw and best-aligned comparison. This makes it possible to distinguish text/highlight mismatch from broad background mismatch.
+- Added diagnostic-only `__r20ChatTextPolicy=roll20-auto-aa` in `components/editor/ChatPane.tsx` and `--chat-text-policy roll20-auto-aa` in `scripts/rolltemplate_chat_smoke.mjs`. The smoke markdown now records both chat font policy and chat text policy.
+- Rebuilt, regenerated default local chat smoke, generated the text-AA candidate smoke, and compared both against the same Roll20 actual evidence.
+- Result: `roll20-auto-aa` produced the same current mismatch numbers as default, so it is not a production fix.
+- Current default/candidate numbers: AW2E raw/aligned `12.78%/7.49%`, Les-Oublies `10.09%/9.14%`, YSHY `28.36%/22.46%`.
+- Breakdown: YSHY best-aligned mismatch share is bright `63.34%`, dark `24.16%`, mid `12.50%`; bright mismatch local-vs-actual signed luma delta is `-44.347`, so the local crop is materially darker than actual on the pixels that differ.
+- Current gate remains `HOLD_PRODUCTION_RENDERER_PATCH`: `chatNormalizedCompared=3/3`, `chatActualCropGeometrySuspect=0`, `chatAlignedHighMismatch=1`, `chatMaxAlignedMismatch=22.46%`, `rendererReady=NO`.
+- Next P0: inspect YSHY actual/local text-shadow colors, opacity/compositing, transform/scale, and capture device-pixel behavior before touching production ChatPane CSS.
+
 ## 2026-06-20 03:03 +09:00 - Roll20 chat font fallback candidate rejected
 
 Status: PARTIAL. The YSHY font hypothesis was tested, but the candidate is not production-safe.

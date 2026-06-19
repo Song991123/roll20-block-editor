@@ -207,6 +207,8 @@ async function compareFixture(page, fixtureId) {
     bestAlignedMismatchPct: pct(diff.bestAlignedMismatchRatio),
     bestAlignedOffset: diff.bestAlignedOffset,
     bestAlignedComparedSize: diff.bestAlignedComparedSize,
+    diffBreakdown: diff.diffBreakdown,
+    bestAlignedDiffBreakdown: diff.bestAlignedDiffBreakdown,
     rmsRgb: diff.rmsRgb,
     bounds: diff.bounds,
     note: 'Diagnostic local ChatPane vs actual Roll20 chat comparison. Requires human classification before a parity claim.',
@@ -382,16 +384,57 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
         let minY = h;
         let maxX = -1;
         let maxY = -1;
+        const rowBands = Array.from({ length: 8 }, (_unused, index) => ({
+          index,
+          y0: Math.round((index * h) / 8),
+          y1: Math.round(((index + 1) * h) / 8),
+          pixels: 0,
+          mismatchPixels: 0,
+        }));
+        const colBands = Array.from({ length: 4 }, (_unused, index) => ({
+          index,
+          x0: Math.round((index * w) / 4),
+          x1: Math.round(((index + 1) * w) / 4),
+          pixels: 0,
+          mismatchPixels: 0,
+        }));
+        const lumaBuckets = {
+          darkBoth: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+          brightEither: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+          midTone: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+        };
         for (let y = 0; y < h; y += 1) {
           for (let x = 0; x < w; x += 1) {
             const li = ((y + localY) * width + (x + localX)) * 4;
             const ai = ((y + actualY) * width + (x + actualX)) * 4;
-            const dr = Math.abs(localData.data[li] - actualData.data[ai]);
-            const dg = Math.abs(localData.data[li + 1] - actualData.data[ai + 1]);
-            const db = Math.abs(localData.data[li + 2] - actualData.data[ai + 2]);
+            const lr = localData.data[li];
+            const lg = localData.data[li + 1];
+            const lb = localData.data[li + 2];
+            const ar = actualData.data[ai];
+            const ag = actualData.data[ai + 1];
+            const ab = actualData.data[ai + 2];
+            const dr = Math.abs(lr - ar);
+            const dg = Math.abs(lg - ag);
+            const db = Math.abs(lb - ab);
+            const localLuma = 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
+            const actualLuma = 0.2126 * ar + 0.7152 * ag + 0.0722 * ab;
+            const bucket = localLuma < 80 && actualLuma < 80
+              ? lumaBuckets.darkBoth
+              : localLuma > 130 || actualLuma > 130
+                ? lumaBuckets.brightEither
+                : lumaBuckets.midTone;
+            bucket.pixels += 1;
+            const rowBand = rowBands[Math.min(7, Math.floor((y / h) * 8))];
+            const colBand = colBands[Math.min(3, Math.floor((x / w) * 4))];
+            rowBand.pixels += 1;
+            colBand.pixels += 1;
             sumSq += dr * dr + dg * dg + db * db;
             if (dr + dg + db > threshold) {
               mismatchPixels += 1;
+              rowBand.mismatchPixels += 1;
+              colBand.mismatchPixels += 1;
+              bucket.mismatchPixels += 1;
+              bucket.signedLumaDeltaSum += localLuma - actualLuma;
               minX = Math.min(minX, x);
               minY = Math.min(minY, y);
               maxX = Math.max(maxX, x);
@@ -407,6 +450,31 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
           mismatchRatio: totalPixels ? mismatchPixels / totalPixels : 1,
           rmsRgb: totalPixels ? Number(Math.sqrt(sumSq / (totalPixels * 3)).toFixed(3)) : null,
           bounds: mismatchPixels ? [minX, minY, maxX - minX + 1, maxY - minY + 1] : null,
+          breakdown: {
+            rowBands: rowBands.map((band) => ({
+              index: band.index,
+              yRange: [band.y0, band.y1],
+              mismatchRatio: band.pixels ? band.mismatchPixels / band.pixels : 0,
+            })),
+            colBands: colBands.map((band) => ({
+              index: band.index,
+              xRange: [band.x0, band.x1],
+              mismatchRatio: band.pixels ? band.mismatchPixels / band.pixels : 0,
+            })),
+            lumaBuckets: Object.fromEntries(
+              Object.entries(lumaBuckets).map(([key, bucket]) => [
+                key,
+                {
+                  pixelRatio: totalPixels ? bucket.pixels / totalPixels : 0,
+                  mismatchRatio: bucket.pixels ? bucket.mismatchPixels / bucket.pixels : 0,
+                  mismatchShare: mismatchPixels ? bucket.mismatchPixels / mismatchPixels : 0,
+                  avgSignedLumaDeltaOnMismatch: bucket.mismatchPixels
+                    ? Number((bucket.signedLumaDeltaSum / bucket.mismatchPixels).toFixed(3))
+                    : 0,
+                },
+              ]),
+            ),
+          },
         };
       }
       const raw = diffAt(0, 0);
@@ -428,6 +496,8 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
         bestAlignedMismatchRatio: best?.mismatchRatio ?? null,
         bestAlignedOffset: best ? [best.dx, best.dy] : null,
         bestAlignedComparedSize: best?.comparedSize ?? null,
+        diffBreakdown: raw?.breakdown ?? null,
+        bestAlignedDiffBreakdown: best?.breakdown ?? null,
       };
     },
     { localUrl, actualUrl, actualCrop },
@@ -472,18 +542,32 @@ function renderMarkdown(report) {
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
   lines.push(`Max aligned mismatch: ${pct(report.summary.maxAlignedMismatchRatio)}`);
   lines.push('');
-  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | RMS | Note |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | --- |');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | Bright share | Dark share | Worst row | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | ---: | --- | ---: | --- |');
   for (const fixture of report.fixtures) {
     const cropGeometry = fixture.actualCropGeometry?.suspect ? `SUSPECT: ${fixture.actualCropGeometry.reason}` : 'authoritative';
     const sizeDelta = fixture.widthDeltaPx === null || fixture.widthDeltaPx === undefined
       ? ''
       : `${fixture.widthDeltaPx}x${fixture.heightDeltaPx}`;
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    const breakdown = summarizeBreakdown(fixture.bestAlignedDiffBreakdown ?? fixture.diffBreakdown);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');
   return `${lines.join('\n')}\n`;
+}
+
+function summarizeBreakdown(breakdown) {
+  if (!breakdown) return { brightShare: '', darkShare: '', worstRow: '' };
+  const buckets = breakdown.lumaBuckets ?? {};
+  const bright = buckets.brightEither?.mismatchShare;
+  const dark = buckets.darkBoth?.mismatchShare;
+  const worst = [...(breakdown.rowBands ?? [])].sort((a, b) => (b.mismatchRatio ?? 0) - (a.mismatchRatio ?? 0))[0];
+  return {
+    brightShare: typeof bright === 'number' ? pct(bright) : '',
+    darkShare: typeof dark === 'number' ? pct(dark) : '',
+    worstRow: worst ? `${worst.index}:${pct(worst.mismatchRatio)}` : '',
+  };
 }
 
 function pct(value) {

@@ -32,6 +32,7 @@ const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/rolltemplate-chat
 const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4196'));
 const CHAT_FONT_POLICY = argOf('--chat-font-policy', 'default');
+const CHAT_TEXT_POLICY = argOf('--chat-text-policy', 'default');
 const VIEWPORT = { width: 2200, height: 1200 };
 
 const MIME = {
@@ -393,6 +394,7 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push(`Generated: ${report.startedAt}`);
   lines.push(`Chat font policy: \`${report.chatFontPolicy ?? 'default'}\``);
+  lines.push(`Chat text policy: \`${report.chatTextPolicy ?? 'default'}\``);
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
@@ -458,6 +460,7 @@ async function main() {
     startedAt: new Date().toISOString(),
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
     chatFontPolicy: CHAT_FONT_POLICY,
+    chatTextPolicy: CHAT_TEXT_POLICY,
     fixtures: [],
   };
 
@@ -476,6 +479,13 @@ async function main() {
         localStorage.removeItem('__r20SuppressUserDocumentFonts');
       }
     }, CHAT_FONT_POLICY);
+    await page.evaluate((policy) => {
+      if (policy === 'roll20-auto-aa') {
+        localStorage.setItem('__r20ChatTextPolicy', 'roll20-auto-aa');
+      } else {
+        localStorage.removeItem('__r20ChatTextPolicy');
+      }
+    }, CHAT_TEXT_POLICY);
     await page.reload({ waitUntil: 'networkidle' });
     await warmPerfHook(page);
 
