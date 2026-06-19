@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - Per-template chat width model added
+
+Status: PARTIAL. Roll20 chat/template parity is still blocked, but the width/overflow blocker is now separated by fixture/template instead of treated as one global CSS problem.
+
+- DONE: Added `scripts/roll20_chat_width_model.mjs` and package alias `diagnose:roll20-chat-width`.
+- DONE: Wired the width model into `gate:roll20-renderer-action` and documented the command in `scripts/README.md`.
+- RESULT: Width model status is `WIDTH_MODEL_REQUIRED`, actionable `2/3`.
+- RESULT: `official-roll20-AW2E` is `WIDTH_SECONDARY_OR_ACCEPTABLE` on the chat-width axis for now.
+- RESULT: `official-roll20-Les-Oublies` is `CHAT_SHELL_WIDTH_MODEL_REQUIRED`: table width is nearly aligned (`+0.8px`) but shell/message/crop width still differs.
+- RESULT: `yshy-commission-1bu` is `TABLE_WIDTH_MODEL_REQUIRED`: actual table/crop ratio is `4.607x`, proving this is an overflowed large-table crop case rather than a normal narrow-card width patch.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; this model blocks unsafe global width/padding/overflow CSS until a per-template candidate is proven.
+- VERIFIED: `node --check` for the new script and renderer gate, `diagnose:roll20-chat-width`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the next targeted candidate from this split: Les shell/message width separately from YSHY intrinsic/overflowed table width, then rerun chat smoke/parity/candidate comparison.
+
 ## 2026-06-20 Codex Update - Custom rolltemplate app class leak removed
 
 Status: PARTIAL. A real app-CSS leak in ChatPane custom rolltemplate roots was removed, but Roll20 chat/template visual parity is still blocked.

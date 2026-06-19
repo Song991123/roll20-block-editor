@@ -1,3 +1,15 @@
+## 2026-06-20 Per-Template Chat Width Model
+
+- Added `scripts/roll20_chat_width_model.mjs` and package alias `diagnose:roll20-chat-width`.
+- The diagnostic compares local ChatPane sidecars with actual Roll20 chat DOM evidence and separates chat shell/message width, table intrinsic width, and overflowed table crop behavior.
+- Wired the width model summary into `gate:roll20-renderer-action` so future agents see it before trying ChatPane width, padding, or overflow CSS.
+- Current result: `WIDTH_MODEL_REQUIRED`, actionable `2/3`.
+- `official-roll20-AW2E`: `WIDTH_SECONDARY_OR_ACCEPTABLE`.
+- `official-roll20-Les-Oublies`: `CHAT_SHELL_WIDTH_MODEL_REQUIRED`, with table width nearly aligned but shell/message/crop width still needing a separate model.
+- `yshy-commission-1bu`: `TABLE_WIDTH_MODEL_REQUIRED`, actual table/crop ratio `4.607x`; this is an overflowed large-table crop case, not a generic narrow-card width patch.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`; this is evidence routing, not Roll20 visual parity.
+- Next P0: create a targeted candidate for Les shell/message width and a separate YSHY overflow/table intrinsic-width model. Do not merge them into one global ChatPane CSS patch.
+
 ## 2026-06-20 Custom Rolltemplate App-Class Leak Removed
 
 - Removed app UI wrapper classes from imported/custom rolltemplate card roots in `components/editor/ChatPane.tsx`.
