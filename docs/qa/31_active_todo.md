@@ -3,9 +3,11 @@
 Status: PARTIAL. Missing normalized chat evidence is closed; Roll20 chat visual parity is still NOT done.
 
 - Captured fresh local-only Roll20 Sandbox chat evidence for official-roll20-Les-Oublies from the already-open dedicated Codex Roll20 Verify editor. Existing rooms were not modified.
+- Corrected the Les capture from stale classic-roll chat evidence to the same visible roll_initiative / initiative-roll action used by local smoke.
 - Re-ran chat diagnostics for reports\roll20-actual-compare\2026-06-18-state-map-v1: compared=3/3, normalizedCompared=3/3, chatNeedsNormalizedCapture=0, normalizedHighMismatch=3.
-- Current measured chat crop mismatches: official-roll20-AW2E=95.13%, official-roll20-Les-Oublies=71.96%, yshy-commission-1bu=38.25%.
+- Current measured chat crop mismatches: official-roll20-AW2E=95.13%, official-roll20-Les-Oublies=33.16%, yshy-commission-1bu=38.25%.
 - Current measured status: rendererAction=HOLD_PRODUCTION_RENDERER_PATCH, rendererReady=NO, rendererBlockers=2, generatedActualScreenshots=6/6, generatedDiffed=6/6.
+- Updated scripts/roll20_chat_capture_plan.mjs so future DOM probe snippets preserve left/top rect fields and emit latestTemplate as a rolltemplates-compatible cloned object.
 - Next P0: fix or further diagnose actual Roll20 rolltemplate/chat shell sizing and template rendering differences now that user rolltemplate CSS is active for 3/3 normalized chat captures.
 
 ## 2026-06-20 Codex Update - Rolltemplate crop diagnostic corrected

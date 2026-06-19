@@ -264,14 +264,14 @@ function renderDomProbeSnippet(entry) {
   const rectOf = (el) => {
     if (!el) return null;
     const r = el.getBoundingClientRect();
-    return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
+    return { x: r.x, y: r.y, left: r.left, top: r.top, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
   };
-  const cloneRect = (rect) => rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom } : null;
+  const cloneRect = (rect) => rect ? { x: rect.x, y: rect.y, left: rect.left, top: rect.top, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom } : null;
   const clip = rectOf(textchat) || { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight, right: window.innerWidth, bottom: window.innerHeight };
   const templateInfos = templates.map((template, index) => ({
     index,
     className: template.className,
-    rect: rectOf(template),
+    rect: cloneRect(rectOf(template)),
     htmlSnippet: template.outerHTML.slice(0, 4000),
     text: (template.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 1000),
   }));
@@ -327,11 +327,7 @@ function renderDomProbeSnippet(entry) {
       rect: rectOf(latestMessage),
       text: (latestMessage.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 2000),
     } : null,
-    latestTemplate: latestTemplate ? {
-      className: latestTemplate.className,
-      rect: rectOf(latestTemplate),
-      text: (latestTemplate.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 2000),
-    } : null,
+    latestTemplate: templateInfos.length ? { ...templateInfos[templateInfos.length - 1] } : null,
     rolltemplates: templateInfos,
     templates: templateInfos.slice(-5),
     chatCssEvidence,
