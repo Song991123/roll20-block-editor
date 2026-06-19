@@ -172,6 +172,16 @@ lack it are foreground-suspect and must be recaptured. Prefer a visible
 `#textchat` or `.textchatcontainer` root. A broad `#rightsidebar` capture is
 accepted only when the sidecar also proves the text chat tab/root is foreground.
 
+On high-DPR Roll20 tabs, verify the screenshot coordinate space before trusting
+CDP chat crops. A CSS `getBoundingClientRect()` clip can capture the wrong
+screen region when the browser screenshot surface expects device-pixel
+coordinates. If a debug crop shows the Sandbox Tools, VTT grid, or another
+wrong region instead of the rolltemplate, multiply the CSS template rect by
+`devicePixelRatio`, capture a physical PNG, then DPR-correct/downscale that PNG
+back to the CSS clip size. Record this as `captureDprCorrection` in the sidecar
+and rerun the capture plan/status gates. Do not tune ChatPane CSS from a crop
+until the saved PNG visibly contains the intended rolltemplate.
+
 When `status:roll20-actual` reports `missingGenerated=<fixture>:chat:<reason>`,
 generate a focused chat recapture plan:
 

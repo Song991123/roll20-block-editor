@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - YSHY Roll20 chat current-metric recapture
+
+Status: PARTIAL. One real Roll20 chat fixture now has current row/typography evidence; Roll20 chat/template parity is still NOT done.
+
+- DONE: Applied YSHY generated HTML/CSS/translation to the dedicated Roll20 Custom Sheet Sandbox/test editor. File-input dispatch succeeded, but Roll20 later showed a translation parse warning; the endpoint fallback to `/sheetsandbox/savesheetsettings` returned `200` for HTML, CSS, and translation.
+- DONE: Captured visible `sheet-rolltemplate-coc` evidence from the actual Roll20 chat panel with current DOM sidecar fields: `latestTemplate.computedStyle`, `latestTemplate.rowMetrics`, table computed style, table box metrics, `fontEvidence.checks`, and `viewportEvidence.devicePixelRatio`.
+- FIXED CAPTURE PROCEDURE: The first CDP crop used CSS coordinates and captured the wrong Sandbox Tools region on a DPR `1.25` tab. The accepted capture used DPR-multiplied physical coordinates, then downscaled back to CSS pixel size and recorded the correction in the sidecar.
+- RESULT: `plan:roll20-chat-capture -- --require-current-metrics` now plans `2/3` fixtures instead of `3/3`; YSHY is no longer a current-metric blocker.
+- RESULT: Current status reports `chatCurrentMetrics=1/3`, `chatCurrentMetricsMissing=2`, `chatActualCaptureScaleSuspect=0`, `chatActualCropGeometrySuspect=0`, and `chatMaxAlignedMismatch=22.77%`.
+- STILL TODO P0: Recapture AW2E and Les-Oublies with same-action current-metric sidecars. Do not synthesize simplified chat commands just to make the metric count green; the rolltemplate screenshot must remain comparable to local smoke evidence.
+- STILL TODO P0: YSHY itself still has a high chat mismatch (`26.21%` raw, `22.77%` aligned). Treat the new sidecar as root-cause evidence, not parity.
+
 ## 2026-06-20 Codex Update - Status/gate now surface stale Roll20 chat sidecars
 
 Status: PARTIAL. Roll20 chat/template parity is still NOT done; the status and renderer gate now expose the stale-sidecar blocker directly.

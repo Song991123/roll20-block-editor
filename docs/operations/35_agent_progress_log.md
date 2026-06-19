@@ -1,3 +1,15 @@
+## 2026-06-20 06:10 +09:00 - YSHY actual Roll20 chat current-metric recapture
+
+Status: PARTIAL. This batch improves actual Roll20 evidence for YSHY only; it does not prove Roll20 chat parity.
+
+- Used the dedicated Roll20 verification editor/Sandbox tab only. No existing real room was modified.
+- Applied YSHY source through Sandbox Tools and then endpoint fallback. File inputs dispatched for HTML/CSS/translation, but Roll20 later displayed a translation parse warning; endpoint fallback returned `200` for all three source fields.
+- Recaptured the visible `sheet-rolltemplate-coc` chat card with current DOM evidence: template/table computed styles, row metrics, table box metrics, font checks, and viewport DPR.
+- Rejected a bad CDP crop that captured Sandbox Tools instead of the chat template. The working path multiplied the CSS template rect by DPR `1.25`, captured the physical Roll20 PNG, then downscaled it back to CSS-pixel dimensions and recorded `captureDprCorrection` in the sidecar.
+- Verification after recapture: `plan:roll20-chat-capture -- --require-current-metrics` now reports `plannedFixtures=2/3`; `status:roll20-actual` reports `chatCurrentMetrics=1/3`, `chatCurrentMetricsMissing=2`, `chatActualCaptureScaleSuspect=0`, and `chatMaxAlignedMismatch=22.77%`.
+- Current renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`: YSHY still has high chat mismatch, AW2E/Les-Oublies still lack current-metric sidecars, and the full-root renderer patch family remains split.
+- Next P0: recapture AW2E and Les-Oublies with true same-action current-metric chat sidecars. Avoid simplified synthetic chat commands unless the report labels them non-comparable diagnostic evidence.
+
 ## 2026-06-20 05:32 +09:00 - Status/gate current-metric chat blocker
 
 Status: PARTIAL. This batch prevents old Roll20 chat sidecars from being mistaken for current row/typography evidence.
