@@ -354,6 +354,9 @@ function fmtValidation(validation) {
 
 function patchFamily(patch) {
   if (!patch) return 'none';
+  if (patch.startsWith('sheet-class-alias-css:')) return patch;
+  if (patch.startsWith('sheet-class-alias-css')) return 'sheet-class-alias-css:all';
+  if (patch.startsWith('sheet-class-alias-text-input-height')) return 'sheet-class-alias-css+text-input-height';
   if (patch.startsWith('inline-block-text-input-height')) return 'inline-block+text-input-height';
   if (patch.startsWith('inline-block')) return 'inline-block';
   if (patch.startsWith('text-input-height')) return 'text-input-height';

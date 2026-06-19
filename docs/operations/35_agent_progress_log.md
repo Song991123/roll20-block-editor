@@ -1515,3 +1515,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added diagnostic-only `sheet-class-alias-css` full-root candidates. AW2E mismatch improved from `8.98%` to `7.89%`, but the root-height delta flipped from `+2424.938px` to `-7393.125px`, so blanket aliasing hides too much content and must stay out of production.
 - Latest renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`: AW2E prefers `sheet-class-alias-css`, Les-Oublies prefers `inline-block+text-input-height`, and YSHY prefers `text-input-height`.
 - Claim boundary: this narrows the AW2E cause toward Roll20 `sheet-` selector/default-state behavior. It does not prove Roll20 visual parity and does not authorize production renderer CSS changes.
+## 2026-06-19 AW2E Grouped Selector Candidate Smoke
+
+- Added grouped diagnostic `sheet-` alias candidates to `scripts/roll20_full_root_candidate_smoke.mjs`: `hide-only`, `show-only`, `playbook-hide-only`, and `control-state-only`.
+- Latest AW2E numbers: `normal-source-state` is `8.98%` mismatch with root delta `+2424.938px`; full alias is `7.89%` with root delta `-7393.125px`; `playbook-hide-only` is the best pixel candidate at `7.22%`, but still has root delta `-6636.125px` and local size `850x2532` versus actual `850x9168`.
+- The renderer gate now reports the AW2E patch family as `sheet-class-alias-css:playbook-hide-only`, not a vague blanket alias.
+- Interpretation: AW2E mismatch is strongly tied to playbook/default-state visibility, but the naive alias candidates over-hide content. The next P0 is actual Roll20 DOM/state/selector probing or a targeted state model, not production CSS promotion.
+- Claim boundary: this improves root-cause isolation only. It does not prove Roll20 visual parity and does not make the app renderer ready.

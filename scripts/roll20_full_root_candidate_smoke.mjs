@@ -149,6 +149,10 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         { id: 'sandbox-nowrap-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-nowrap-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
         { id: 'sandbox-sheet-class-alias-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', rootWidth: actualRootWidth } },
         { id: 'sandbox-sheet-class-alias-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
+        { id: 'sandbox-sheet-alias-hide-only-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'hide-only', rootWidth: actualRootWidth } },
+        { id: 'sandbox-sheet-alias-show-only-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'show-only', rootWidth: actualRootWidth } },
+        { id: 'sandbox-sheet-alias-playbook-hide-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-hide-only', rootWidth: actualRootWidth } },
+        { id: 'sandbox-sheet-alias-control-state-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'control-state-only', rootWidth: actualRootWidth } },
       );
     }
     for (const input of candidateInputs) {
@@ -429,7 +433,7 @@ async function renderCandidate({
 
 async function applyRenderContextPatch(page, patch, payload = null) {
   const aliasCss = patch?.mode?.startsWith('sheet-class-alias')
-    ? buildSheetClassAliasCss(payload?.css ?? '')
+    ? buildSheetClassAliasCss(payload?.css ?? '', patch.aliasMode ?? 'all')
     : '';
   await page.evaluate(({ patch, aliasCss }) => {
     const dialogWindow = document.querySelector('#dialog-window');
@@ -560,10 +564,11 @@ async function applyRenderContextPatch(page, patch, payload = null) {
   }, { patch, aliasCss });
 }
 
-function buildSheetClassAliasCss(css) {
+function buildSheetClassAliasCss(css, aliasMode = 'all') {
   const rules = collectSimpleCssRules(css);
   const aliasRules = [];
   for (const rule of rules) {
+    if (!shouldAliasRule(rule, aliasMode)) continue;
     const aliases = rule.selectors
       .map((selector) => aliasSheetClassesInSelector(selector))
       .filter((selector, index) => selector && selector !== rule.selectors[index]);
@@ -572,9 +577,26 @@ function buildSheetClassAliasCss(css) {
   }
   if (!aliasRules.length) return '';
   return [
-    '/* diagnostic only: duplicate user CSS selectors for sheet-prefixed Roll20 HTML classes */',
+    `/* diagnostic only: duplicate user CSS selectors for sheet-prefixed Roll20 HTML classes; mode=${aliasMode} */`,
     ...aliasRules,
   ].join('\n');
+}
+
+function shouldAliasRule(rule, aliasMode) {
+  if (aliasMode === 'all') return true;
+  const selectorText = rule.selectors.join(', ');
+  const body = String(rule.body || '');
+  const isHide = /display\s*:\s*none\b/i.test(body);
+  const isShow = /display\s*:\s*(block|inline|inline-block|flex|grid|table|table-row|table-cell)\b/i.test(body);
+  if (aliasMode === 'hide-only') return isHide;
+  if (aliasMode === 'show-only') return isShow;
+  if (aliasMode === 'playbook-hide-only') {
+    return isHide && /\.angel\b/.test(selectorText) && /\.marine\b/.test(selectorText);
+  }
+  if (aliasMode === 'control-state-only') {
+    return /:checked|\[value=|\[value\s*=/.test(selectorText);
+  }
+  return true;
 }
 
 function collectSimpleCssRules(css) {
@@ -958,6 +980,10 @@ function summarizeComponentEffects(candidates) {
     'sandbox-nowrap-text-input-276-source',
     'sandbox-sheet-class-alias-source',
     'sandbox-sheet-class-alias-text-input-276-source',
+    'sandbox-sheet-alias-hide-only-source',
+    'sandbox-sheet-alias-show-only-source',
+    'sandbox-sheet-alias-playbook-hide-source',
+    'sandbox-sheet-alias-control-state-source',
   ];
   return trackedIds
     .map((id) => byId.get(id))
@@ -981,6 +1007,7 @@ function formatRenderContextPatch(patch) {
   if (patch.mode === 'inline-block-text-input-height') return `${patch.mode}:${patch.wordSpacing}px:${patch.textInputHeight}px`;
   if (patch.mode === 'inline-block-nowrap-text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
   if (patch.mode === 'sheet-class-alias-text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
+  if (patch.mode === 'sheet-class-alias-css' && patch.aliasMode) return `${patch.mode}:${patch.aliasMode}`;
   if (patch.mode === 'row-width-fudge') return `${patch.mode}:${patch.extraWidth}px`;
   if (patch.mode === 'actual-root-width' && typeof patch.rootWidth === 'number') return `${patch.mode}:${patch.rootWidth}px`;
   return patch.mode ?? null;

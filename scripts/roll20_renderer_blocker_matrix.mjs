@@ -187,6 +187,9 @@ function patchFamily(value) {
   if (text.startsWith('inline-block-nowrap')) return 'inline-block-nowrap';
   if (text.startsWith('inline-block-font-zero')) return 'inline-block-font-zero';
   if (text.startsWith('text-input-height')) return 'text-input-height';
+  if (text.startsWith('sheet-class-alias-css:')) return text;
+  if (text.startsWith('sheet-class-alias-css')) return 'sheet-class-alias-css:all';
+  if (text.startsWith('sheet-class-alias-text-input-height')) return 'sheet-class-alias-css+text-input-height';
   if (text.startsWith('row-width-fudge')) return 'row-width-fudge';
   if (text.startsWith('actual-root-width')) return 'actual-root-width';
   return text;
