@@ -404,3 +404,11 @@ the preferred evidence.
 
 - The app export dialog now mirrors this verification rule: zip readiness is local-only, Chrome file chooser upload may require enabling file URL access for the Codex extension, and Roll20 visual parity still requires Sandbox/test-room screenshots.
 - The export dialog browser smoke asserts this text so future UI edits cannot silently collapse local readiness into actual Roll20 proof.
+
+## 2026-06-19 Sandbox Upload Snippet Fallback
+
+- Added `scripts/roll20_upload_snippet.mjs` and package command `corepack pnpm run snippet:roll20-upload`.
+- The helper writes ignored, local-only snippets under `reports/roll20-actual-compare/<label>/roll20-upload-handoff/snippets/`.
+- The generated snippet embeds source-derived payload bytes and must not be committed.
+- Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. It creates browser `File` objects and dispatches `change` events on `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`, then fills `customcharsheet_json` when that field exists.
+- This is a fallback for Chrome file chooser blocking. It is not Roll20 visual parity and still requires fresh sandbox root/chat screenshots plus status/diff gates afterward.

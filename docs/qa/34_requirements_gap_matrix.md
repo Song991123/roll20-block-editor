@@ -268,3 +268,8 @@ blockers are cleared.
 - User-facing upload readiness is now clearer: local zip file presence, Chrome/Codex upload permission, and actual Roll20 screenshot comparison are separate states.
 - Smoke coverage now fails if the export dialog stops warning that file chooser blocking needs file URL access or if it implies zip download proves Roll20 rendering.
 - This closes a UI-truthfulness gap only. The actual Roll20 visual comparison gap remains open: current status is still partial generated actual evidence, AW2E is still suspect, and Roll20 chat visual evidence is still missing.
+
+## 2026-06-19 Sandbox Upload Snippet Gap Note
+
+- Added a safer fallback path for the Chrome file chooser blocker: a generated Sandbox-only snippet can create in-page `File` objects from the already verified local-baseline payload.
+- The gap remains open until the snippet or normal file chooser is actually run in Roll20 and produces fresh iframe/root/chat evidence. Endpoint success, snippet generation, or handoff files are not rendering proof.

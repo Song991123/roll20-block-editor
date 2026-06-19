@@ -546,3 +546,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `smoke:export-dialog` passed for empty workspace on port 4432 and imported Les-Oublies fixture on port 4433 after `corepack pnpm run build`.
 - STILL TODO: actual Roll20 file chooser upload remains blocked until Chrome/Codex file URL access is enabled or another verified activation path is found.
 - STILL TODO: AW2E trusted root evidence and all trustworthy Roll20 chat screenshots remain missing; no Roll20 visual parity claim is allowed.
+
+## 2026-06-19 Sandbox Upload Snippet TODO Note
+
+- DONE: Added `corepack pnpm run snippet:roll20-upload` to generate ignored Custom Sheet Sandbox upload snippets from local-baseline payloads.
+- VERIFIED: `node --check scripts\roll20_upload_snippet.mjs`, `node --check scripts\roll20_upload_handoff.mjs`, and snippet generation for `official-roll20-AW2E` passed. The generated snippet also passed `node --check` syntax validation.
+- STILL TODO: run the snippet or normal file chooser inside the actual dedicated Roll20 Custom Sheet Sandbox, then capture trusted AW2E root evidence and Roll20 chat screenshots. Snippet generation alone is not visual parity.
+## 2026-06-19 Chrome Read-Only Check TODO Note
+
+- VERIFIED: Existing Roll20 editor/settings tabs are still open and the editor snapshot still contains `Sheet Sandbox Tools`.
+- BLOCKED/TODO: The current browser automation path exposed only read-only evaluation, and the file input ids were not visible in the snapshot, so the generated upload snippet was not executed in this batch.
+- NEXT: open/expand Sheet Sandbox Tools in the dedicated editor tab, run the generated snippet or normal file chooser upload, then capture trusted root/chat evidence.

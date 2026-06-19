@@ -1340,3 +1340,18 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/export_dialog_browser_smoke.mjs` so the smoke requires 6 readiness items plus the file-access blocker copy and zip-is-not-proof copy.
 - Verification passed after rebuilding static output: empty-workspace `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke --port 4432`, imported Les-Oublies fixture `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke-imported --fixtures test-fixtures/visual --fixture official-roll20-Les-Oublies --port 4433`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `git diff --check`.
 - Claim boundary: this improves user-facing truthfulness around the upload blocker. It does not unblock Chrome file chooser upload, does not add AW2E trusted root evidence, and does not prove Roll20 visual parity.
+
+## 2026-06-19 Sandbox Upload Snippet Fallback
+
+- Added `scripts/roll20_upload_snippet.mjs` and package command `corepack pnpm run snippet:roll20-upload`.
+- The helper generates ignored, local-only browser snippets under the Roll20 upload handoff folder. The snippets embed source-derived payload files, create in-page `File` objects, dispatch `change` on Roll20 Sandbox Tools inputs, and fill `customcharsheet_json` when the settings field exists.
+- Updated `scripts/roll20_upload_handoff.mjs` and `scripts/README.md` to point agents to this fallback when Chrome file chooser upload remains blocked.
+- Verification passed: `node --check scripts\roll20_upload_snippet.mjs`, `node --check scripts\roll20_upload_handoff.mjs`, `corepack pnpm run snippet:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 official-roll20-AW2E`, `node --check reports\roll20-actual-compare\2026-06-18-state-map-v1\roll20-upload-handoff\snippets\official-roll20-AW2E-upload-snippet.js`, and `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only`.
+- Claim boundary: this reduces the upload blocker but does not itself upload to Roll20 or prove visual parity. Actual screenshot evidence is still required.
+## 2026-06-19 Chrome Read-Only Check After Snippet Generator
+
+- Reconnected to the existing Chrome Roll20 session and listed Roll20 tabs.
+- Found the dedicated editor tab `https://app.roll20.net/editor` and settings tab `https://app.roll20.net/sheetsandbox/settings/21639681` still open.
+- Claimed the editor tab read-only and confirmed the visible snapshot still contains `Sheet Sandbox Tools`, but hidden file input ids such as `sheetHtml`, `sheetCss`, and `sheetTranslation` were not exposed in the current snapshot. No upload or page mutation was performed.
+- The browser runtime's Playwright evaluate surface is read-only, so the generated upload snippet was not executed through that path in this batch.
+- Claim boundary: the snippet generator is ready, but actual Roll20 upload/root/chat evidence is still missing until the snippet or normal file chooser is run in the dedicated sandbox and screenshots are captured.
