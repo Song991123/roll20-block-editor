@@ -151,6 +151,13 @@ fixture visible when its only generated-sheet screenshot is a fallback viewport
 without positive DOM/root evidence, because that fixture still lacks proven
 Roll20 render evidence.
 
+For Roll20 chat/rolltemplate checks, DOM evidence alone is not visual evidence.
+`roll20-chat-dom-evidence.json` may prove that a message or rolltemplate marker
+exists, but the generated-sheet gate still needs `roll20-chat.png` before chat
+visual parity can be investigated. The strongest evidence is both files: the
+PNG for visual comparison and the DOM sidecar tying that screenshot to a real
+Roll20 message/rolltemplate.
+
 Use `corepack pnpm run status:roll20-actual -- <run-dir> --require-actual` after
 the diff helper when a work batch claims actual-screen coverage. This command
 does not prove visual parity by itself; it proves whether the generated-sheet

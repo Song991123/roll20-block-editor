@@ -1249,3 +1249,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - YSHY: generated actual evidence present, still needs chat.
 - Verification passed: `node --check scripts\roll20_upload_handoff.mjs`, `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build`.
 - Claim boundary: this removes another stale/false-success path from agent handoff. It does not solve Roll20 upload activation or prove visual parity.
+
+## 2026-06-19 Chat DOM Evidence Is Not Chat Visual Evidence
+
+- Updated `scripts/roll20_actual_status.mjs` so the `chat` target distinguishes missing screenshot, DOM-only evidence, screenshot-only evidence, and screenshot plus DOM sidecar.
+- Updated `scripts/roll20_upload_handoff.mjs` with the same chat evidence split.
+- Latest status/handoff rerun:
+  - AW2E: missing `roll20-chat.png`.
+  - Les-Oublies: `chat-dom-only`; Roll20 chat DOM evidence exists, but `roll20-chat.png` is missing.
+  - YSHY: missing `roll20-chat.png`.
+- Interpretation: local app chat smoke can stay useful, but actual Roll20 rolltemplate/chat visual parity remains unverified until trustworthy chat screenshots are captured.
+- Verification passed: `node --check scripts\roll20_actual_status.mjs`, `node --check scripts\roll20_upload_handoff.mjs`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only`, `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build`.

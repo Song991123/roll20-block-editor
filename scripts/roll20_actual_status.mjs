@@ -285,6 +285,7 @@ function fileStatus(file) {
 }
 
 async function validateActualTargetEvidence({ screenshots, target, file, fallbackFile, preferredFile }) {
+  if (target.id === 'chat') return validateChatEvidence(screenshots, file);
   if (target.id !== 'sandbox') return { ok: true, kind: 'not-required', note: '' };
   if (!existsSync(file)) return { ok: false, kind: 'missing', note: 'missing actual Roll20 screenshot' };
 
@@ -315,6 +316,37 @@ async function validateActualTargetEvidence({ screenshots, target, file, fallbac
   };
 }
 
+async function validateChatEvidence(screenshots, file) {
+  const domEvidence = await readJsonIfExists(path.join(screenshots, 'roll20-chat-dom-evidence.json'));
+  const hasDomEvidence = Boolean(domEvidence);
+  const hasRenderedChatDom = hasPositiveChatDomEvidence(domEvidence);
+  if (!existsSync(file)) {
+    if (hasRenderedChatDom) {
+      return {
+        ok: false,
+        kind: 'chat-dom-only',
+        note: 'Roll20 chat DOM evidence exists, but roll20-chat.png is missing; visual rolltemplate/chat evidence is still unverified',
+      };
+    }
+    return { ok: false, kind: hasDomEvidence ? 'chat-dom-empty' : 'missing', note: 'missing Roll20 chat screenshot' };
+  }
+  if (hasRenderedChatDom) {
+    return { ok: true, kind: 'chat-screenshot-with-dom', note: 'Roll20 chat screenshot exists with supporting DOM evidence' };
+  }
+  if (hasDomEvidence) {
+    return {
+      ok: true,
+      kind: 'chat-screenshot-dom-empty',
+      note: 'Roll20 chat screenshot exists, but DOM evidence did not show rendered rolltemplate/message markers',
+    };
+  }
+  return {
+    ok: true,
+    kind: 'chat-screenshot-only',
+    note: 'Roll20 chat screenshot exists, but no DOM sidecar proves which rolltemplate/message rendered',
+  };
+}
+
 async function readJsonIfExists(file) {
   if (!existsSync(file)) return null;
   try {
@@ -328,6 +360,16 @@ function hasPositiveDomEvidence(evidence) {
   if (Number(evidence.bodyLen ?? 0) > 0) return true;
   if (Number(evidence.roots ?? evidence.rootCount ?? 0) > 0) return true;
   if (Array.isArray(evidence.rootSamples) && evidence.rootSamples.some((sample) => String(sample ?? '').trim().length > 0)) return true;
+  if (evidence.textMarkers && Object.values(evidence.textMarkers).some(Boolean)) return true;
+  return false;
+}
+
+function hasPositiveChatDomEvidence(evidence) {
+  if (!evidence) return false;
+  if (Number(evidence.messageCount ?? 0) > 0) return true;
+  if (Number(evidence.rolltemplateCount ?? 0) > 0) return true;
+  if (Array.isArray(evidence.messages) && evidence.messages.some((message) => String(message?.text ?? message ?? '').trim().length > 0)) return true;
+  if (Array.isArray(evidence.rolltemplates) && evidence.rolltemplates.length > 0) return true;
   if (evidence.textMarkers && Object.values(evidence.textMarkers).some(Boolean)) return true;
   return false;
 }
