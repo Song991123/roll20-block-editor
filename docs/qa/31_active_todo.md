@@ -2,6 +2,9 @@
 
 Status: PARTIAL. Roll20 chat/template parity is still NOT done, but the YSHY mismatch is now classified more precisely.
 
+- FOLLOW-UP RESULT: Tested a Roll20 shell/root-font candidate after live Chrome read-only style inspection showed actual YSHY root/table inherit `13.65px` Proxima while local custom rolltemplate root used app-added `text-xs`/`12px`.
+- FOLLOW-UP RESULT: Removing the app-added rolltemplate `text-xs`, with and without matching Proxima shell inheritance, did not improve the decisive aligned metric. It moved Les-Oublies raw below the high threshold but worsened AW2E and YSHY aligned comparison (`AW2E 7.49% -> 8.96%`, `YSHY 22.46% -> 22.54%` in the combined candidate).
+- DECISION: Do not promote the shell/root-font candidate yet. The live style mismatch is real, but pixel parity needs a narrower fix that does not regress AW2E/YSHY aligned crops.
 - DONE: Added luma/row/column mismatch breakdown to `diagnose:roll20-chat-parity` so chat diffs are not only a single percentage. The markdown table now includes bright mismatch share, dark mismatch share, and worst row band.
 - DONE: Added diagnostic-only `__r20ChatTextPolicy=roll20-auto-aa` support in ChatPane and `rolltemplate_chat_smoke --chat-text-policy roll20-auto-aa`.
 - RESULT: `roll20-auto-aa` did not change the current local-vs-actual PNG mismatch numbers. Default and candidate both report AW2E `12.78%/7.49%`, Les-Oublies `10.09%/9.14%`, and YSHY `28.36%/22.46%` raw/aligned.

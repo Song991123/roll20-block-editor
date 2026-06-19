@@ -2,6 +2,9 @@
 
 Status: PARTIAL. This batch improves diagnosis and rejects another unsafe production candidate; Roll20 parity is still not achieved.
 
+- Follow-up live Roll20 read-only inspection confirmed actual YSHY chat root/table inherits Proxima-style Roll20 chat font sizing (`13.65px`) while local custom rolltemplate root was affected by an app-added `text-xs` class (`12px`). This is a real style mismatch.
+- Tested the shell/root-font candidate locally by removing the app-added rolltemplate `text-xs` and trying Roll20-like Proxima shell inheritance. It did not pass the production-safety bar: Les-Oublies raw mismatch improved slightly, but AW2E and YSHY aligned comparisons worsened. The candidate was reverted.
+- Current decision: do not change production ChatPane shell/root font yet. Next candidate must explain why the real style mismatch is not translating cleanly to better pixel parity, especially the YSHY bright-pixel luma gap.
 - Added breakdown fields to `scripts/roll20_chat_parity_diagnostics.mjs`: row bands, column bands, and luma buckets for raw and best-aligned comparison. This makes it possible to distinguish text/highlight mismatch from broad background mismatch.
 - Added diagnostic-only `__r20ChatTextPolicy=roll20-auto-aa` in `components/editor/ChatPane.tsx` and `--chat-text-policy roll20-auto-aa` in `scripts/rolltemplate_chat_smoke.mjs`. The smoke markdown now records both chat font policy and chat text policy.
 - Rebuilt, regenerated default local chat smoke, generated the text-AA candidate smoke, and compared both against the same Roll20 actual evidence.
