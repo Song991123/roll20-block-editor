@@ -67,6 +67,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 | Verification evidence | local ignored `reports/` outputs plus summarized TODO notes |
 | Repeatable scripts | `scripts/` |
 
+## 2026-06-19 Production Inline-Flow Experiment Rejected
+
+- Temporarily added the current diagnostic inline-block/input-height CSS to the real preview/edit render path, then reran `smoke:roll20-full-root-candidates`, `gate:roll20-renderer-action`, and `diagnose:roll20-renderer-blocker`.
+- Result: Les-Oublies and YSHY baseline moved into the previous best range, but the best candidates shifted to further word-spacing patches. AW2E still held the gate because of the root-cutoff/live-sidecar disagreement.
+- The temporary CSS was removed and the ignored candidate/matrix reports were regenerated back to the normal production path.
+- Decision: do not ship hardcoded inline-flow CSS yet. The next implementation needs stronger proof that the behavior comes from actual Roll20 wrapper/base context, not from fixture-specific pixel tuning.
 ## 2026-06-19 Targeted Renderer Experiment Boundary
 
 - Reran `diagnose:roll20-renderer-blocker` after the 27px candidate smoke. The matrix now classifies the next action as `NEEDS_TARGETED_LOCAL_EXPERIMENT` rather than a direct production patch.
