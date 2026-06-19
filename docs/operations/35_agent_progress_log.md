@@ -1300,3 +1300,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest Les-Oublies rerun reports local Sandbox expected panel visibility matches actual sampled visibility `9/9`.
 - Interpretation: for this captured fixture, do not chase more state-selector changes before geometry/assets/control styling; the state behavior still needs cross-fixture re-verification because AW2E lacks trusted root evidence and chat screenshots are missing.
 - Claim boundary: this is local diagnostic narrowing, not Roll20 visual parity.
+## 2026-06-19 State Visibility Adds Sampled Height Deltas
+
+- Extended `scripts/roll20_state_visibility_diagnostics.mjs` again so local expected panel samples include actual height, local height, and delta.
+- Latest Les-Oublies lightweight-wrapper sample still matches panel visibility `9/9`, and its largest sampled panel deltas are `.sheet-section-competences` +496.872px and `.sheet-skills` +496.272px.
+- Claim boundary: these height deltas are triage clues from a lightweight wrapper, not a production CSS fix. Use the full-root candidate smoke and actual Roll20 captures as stronger renderer evidence before patching generic CSS.

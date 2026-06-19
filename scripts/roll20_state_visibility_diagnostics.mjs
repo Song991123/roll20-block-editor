@@ -165,6 +165,7 @@ async function compareLocalExpectedVisibility({ browser, payloadHtml, payloadCss
   const page = await browser.newPage({ viewport: { width: 1200, height: 1600 }, deviceScaleFactor: 1 });
   try {
     await page.setContent(buildLocalExpectedStateDoc(payloadHtml, payloadCss), { waitUntil: 'load' });
+    const actualBySelector = new Map(actualVisiblePanels.map((panel) => [panel.selector, panel]));
     const localPanels = await page.evaluate((panelSelectors) => {
       return panelSelectors.map((selector) => {
         const node = document.querySelector(selector);
@@ -191,6 +192,13 @@ async function compareLocalExpectedVisibility({ browser, payloadHtml, payloadCss
         };
       });
     }, selectors);
+    for (const panel of localPanels) {
+      const actual = actualBySelector.get(panel.selector);
+      panel.actualHeight = actual?.height ?? null;
+      panel.heightDelta = typeof actual?.height === 'number' && typeof panel.height === 'number'
+        ? Number((panel.height - actual.height).toFixed(3))
+        : null;
+    }
 
     const actualVisibleSelectors = selectors;
     const localVisibleSelectors = localPanels.filter((panel) => panel.visible).map((panel) => panel.selector);
@@ -206,6 +214,16 @@ async function compareLocalExpectedVisibility({ browser, payloadHtml, payloadCss
       missingLocally,
       extraLocally,
       panels: localPanels,
+      largestHeightDeltas: [...localPanels]
+        .filter((panel) => typeof panel.heightDelta === 'number')
+        .sort((a, b) => Math.abs(b.heightDelta) - Math.abs(a.heightDelta))
+        .slice(0, 5)
+        .map((panel) => ({
+          selector: panel.selector,
+          actualHeight: panel.actualHeight,
+          localHeight: panel.height,
+          heightDelta: panel.heightDelta,
+        })),
     };
   } finally {
     await page.close();
@@ -459,6 +477,10 @@ function buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRul
     } else {
       notes.push('local Sandbox expected panel visibility does not match the captured actual visible panel set; inspect state selector modeling before geometry CSS changes');
     }
+    const topDelta = localExpectedVisibility.largestHeightDeltas?.[0];
+    if (topDelta) {
+      notes.push(`largest sampled local-vs-actual panel height delta is ${topDelta.heightDelta}px at ${topDelta.selector}`);
+    }
   }
   return notes;
 }
@@ -557,11 +579,17 @@ function renderMarkdown(report) {
       if (fixture.localExpectedVisibility.extraLocally.length) {
         lines.push(`- Extra locally: ${fixture.localExpectedVisibility.extraLocally.map((selector) => `\`${selector}\``).join(', ')}`);
       }
+      if (fixture.localExpectedVisibility.largestHeightDeltas.length) {
+        lines.push('- Largest local-vs-actual height deltas:');
+        for (const delta of fixture.localExpectedVisibility.largestHeightDeltas) {
+          lines.push(`  - \`${delta.selector}\`: local ${delta.localHeight}px vs actual ${delta.actualHeight}px (${delta.heightDelta}px)`);
+        }
+      }
       lines.push('');
-      lines.push('| Selector | Local display | Local height | Local visible |');
-      lines.push('| --- | --- | ---: | --- |');
+      lines.push('| Selector | Local display | Actual height | Local height | Delta | Local visible |');
+      lines.push('| --- | --- | ---: | ---: | ---: | --- |');
       for (const panel of fixture.localExpectedVisibility.panels) {
-        lines.push(`| \`${panel.selector}\` | ${panel.exists ? `${panel.display}/${panel.visibility}` : 'missing'} | ${panel.height ?? ''} | ${panel.visible ? 'yes' : 'no'} |`);
+        lines.push(`| \`${panel.selector}\` | ${panel.exists ? `${panel.display}/${panel.visibility}` : 'missing'} | ${panel.actualHeight ?? ''} | ${panel.height ?? ''} | ${panel.heightDelta ?? ''} | ${panel.visible ? 'yes' : 'no'} |`);
       }
     } else {
       lines.push(`- ${fixture.localExpectedVisibility.reason ?? 'not compared'}`);

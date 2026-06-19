@@ -186,6 +186,12 @@ Sandbox expected panel visibility matches the actual sampled panel set `9/9`.
 This narrows this fixture's remaining mismatch toward geometry/assets/control
 styling; cross-fixture state re-verification is still required before broad
 claims.
+Follow-up sampled panel height delta update: the diagnostic now also reports
+local-vs-actual heights for the same sampled visible panels. Latest Les-Oublies
+lightweight-wrapper sample highlights `.sheet-section-competences` (+496.872px)
+and `.sheet-skills` (+496.272px) as the largest local-over-actual panel deltas.
+Treat these as geometry triage clues only; the full-root candidate smoke remains
+the stronger renderer signal before CSS changes.
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
