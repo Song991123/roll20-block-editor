@@ -538,3 +538,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - The chat PNG and DOM sidecar must be fresh relative to each other; stale pairs are reported as suspect instead of proof.
 - Temporary regression check copied a local PNG into the Les-Oublies chat target while the current sidecar had 0 rolltemplates. Status stayed `generatedActualScreenshots=2/6`, and screenshot diff reported Les-Oublies chat `SUSPECT`. The temporary PNG was removed.
 - Current actual status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`; no Roll20 chat visual parity claim is allowed.
+
+## 2026-06-19 Export Dialog Evidence-Boundary TODO Note
+
+- DONE: Export dialog now separates local zip readiness from browser upload permission and actual Roll20 screenshot verification.
+- DONE: Export dialog smoke now requires 6 readiness items, file-access blocker copy, and explicit zip-is-not-proof copy.
+- VERIFIED: `smoke:export-dialog` passed for empty workspace on port 4432 and imported Les-Oublies fixture on port 4433 after `corepack pnpm run build`.
+- STILL TODO: actual Roll20 file chooser upload remains blocked until Chrome/Codex file URL access is enabled or another verified activation path is found.
+- STILL TODO: AW2E trusted root evidence and all trustworthy Roll20 chat screenshots remain missing; no Roll20 visual parity claim is allowed.

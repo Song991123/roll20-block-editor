@@ -203,6 +203,8 @@ async function main() {
         })),
         hasLegacyToggle: dialogText.includes('구버전 Roll20 무해화'),
         hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox 또는 테스트 방에 올린 뒤 캡처로 확인해야 합니다.'),
+        hasFileAccessCopy: dialogText.includes('Chrome 파일 선택이 막히면 Codex 확장의 파일 URL 접근 권한을 켠 뒤 다시 업로드하세요.'),
+        hasZipIsNotProofCopy: dialogText.includes('zip 다운로드만으로는 Roll20 실제 표시가 검증된 것이 아닙니다.'),
         downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
         dialogText,
       };
@@ -240,7 +242,7 @@ async function main() {
     if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');
     if (!result.checks.exportDialog.hasTitle) failures.push('export dialog title missing');
     if (!result.checks.exportDialog.hasReadiness) failures.push('export readiness panel missing');
-    if (result.checks.exportDialog.readinessItemCount !== 5) failures.push('export readiness item count mismatch');
+    if (result.checks.exportDialog.readinessItemCount !== 6) failures.push('export readiness item count mismatch');
     if (result.checks.exportDialog.badgeText !== '실제 검증 필요') failures.push('export verification badge mismatch');
     if (!result.checks.exportDialog.hasSandboxDiagnostics) failures.push('export sandbox diagnostics panel missing');
     if (result.checks.exportDialog.sandboxDiagnosticItemCount !== 4) failures.push('export sandbox diagnostics item count mismatch');
@@ -255,6 +257,8 @@ async function main() {
     }
     if (!result.checks.exportDialog.hasLegacyToggle) failures.push('legacy toggle copy missing');
     if (!result.checks.exportDialog.hasLocalVsActualCopy) failures.push('local-vs-actual verification copy missing');
+    if (!result.checks.exportDialog.hasFileAccessCopy) failures.push('file-access blocker copy missing');
+    if (!result.checks.exportDialog.hasZipIsNotProofCopy) failures.push('zip-is-not-proof copy missing');
     if (result.checks.exportDialog.hasMojibake) failures.push('mojibake detected in export dialog text');
     if (!result.checks.importDialog.hasTitle) failures.push('import dialog title missing');
     if (result.checks.importDialog.textareaCount < 1) failures.push('import dialog textarea missing');

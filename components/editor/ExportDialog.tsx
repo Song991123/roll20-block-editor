@@ -105,8 +105,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         ok: true,
       },
       {
+        label: '브라우저 업로드 권한',
+        detail: 'Chrome 파일 선택이 막히면 Codex 확장의 파일 URL 접근 권한을 켜야 합니다',
+        ok: false,
+        pending: true,
+      },
+      {
         label: 'Roll20 실제 검증',
-        detail: 'Sandbox 테스트와 업로드 화면 캡처 비교가 아직 필요합니다',
+        detail: 'Sandbox 또는 테스트 방에 실제 업로드한 뒤 캡처 비교가 필요합니다',
         ok: false,
         pending: true,
       },
@@ -336,7 +342,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 <div className="text-sm font-medium">Roll20 업로드 준비 상태</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                   이 항목은 zip 구성 파일의 로컬 준비 여부입니다. 실제 Roll20 화면 일치는
-                  Sandbox 또는 테스트 방에 올린 뒤 캡처로 확인해야 합니다.
+                  Sandbox 또는 테스트 방에 올린 뒤 캡처로 확인해야 합니다. Chrome 파일
+                  선택이 막히면 Codex 확장의 파일 URL 접근 권한을 켠 뒤 다시 업로드하세요.
                 </p>
               </div>
               <span
@@ -382,7 +389,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             <div className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
               구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 각각 Sandbox에 올려
               비교하세요. 기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은 Custom Sheet
-              Sandbox 또는 새 테스트 방에서 진행합니다.
+              Sandbox 또는 새 테스트 방에서 진행합니다. zip 다운로드만으로는 Roll20 실제
+              표시가 검증된 것이 아닙니다.
             </div>
           </section>
 

@@ -262,3 +262,9 @@ blockers are cleared.
 - The chat PNG and DOM sidecar must be fresh relative to each other; stale pairs are reported as suspect instead of proof.
 - Temporary regression check copied a local PNG into the Les-Oublies chat target while the current sidecar had 0 rolltemplates. Status stayed `generatedActualScreenshots=2/6`, and screenshot diff reported Les-Oublies chat `SUSPECT`. The temporary PNG was removed.
 - Current actual status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`; no Roll20 chat visual parity claim is allowed.
+
+## 2026-06-19 Export Dialog Evidence-Boundary Gap Note
+
+- User-facing upload readiness is now clearer: local zip file presence, Chrome/Codex upload permission, and actual Roll20 screenshot comparison are separate states.
+- Smoke coverage now fails if the export dialog stops warning that file chooser blocking needs file URL access or if it implies zip download proves Roll20 rendering.
+- This closes a UI-truthfulness gap only. The actual Roll20 visual comparison gap remains open: current status is still partial generated actual evidence, AW2E is still suspect, and Roll20 chat visual evidence is still missing.

@@ -1331,3 +1331,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The chat PNG and DOM sidecar must be fresh relative to each other; stale pairs are reported as suspect instead of proof.
 - Temporary regression check copied a local PNG into the Les-Oublies chat target while the current sidecar had 0 rolltemplates. Status stayed `generatedActualScreenshots=2/6`, and screenshot diff reported Les-Oublies chat `SUSPECT`. The temporary PNG was removed.
 - Current actual status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`; no Roll20 chat visual parity claim is allowed.
+
+## 2026-06-19 Export Dialog Actual-Roll20 Evidence Boundary
+
+- Updated `components/editor/ExportDialog.tsx` so the Roll20 upload readiness panel separates local zip readiness from browser upload permission and actual Roll20 screenshot verification.
+- The readiness panel now has a distinct browser upload permission item and states that Chrome file chooser blocking requires enabling file URL access for the Codex extension before retrying upload.
+- The dialog also states that downloading a zip is not proof that Roll20 will display the sheet correctly.
+- Updated `scripts/export_dialog_browser_smoke.mjs` so the smoke requires 6 readiness items plus the file-access blocker copy and zip-is-not-proof copy.
+- Verification passed after rebuilding static output: empty-workspace `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke --port 4432`, imported Les-Oublies fixture `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke-imported --fixtures test-fixtures/visual --fixture official-roll20-Les-Oublies --port 4433`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `git diff --check`.
+- Claim boundary: this improves user-facing truthfulness around the upload blocker. It does not unblock Chrome file chooser upload, does not add AW2E trusted root evidence, and does not prove Roll20 visual parity.

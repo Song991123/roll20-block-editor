@@ -399,3 +399,8 @@ must have positive iframe DOM/root sidecar evidence, or the status command will
 report it as `SUSPECT` and exclude it from generated actual evidence counts.
 DPR-corrected full-root/root captures with their JSON sidecars/manifests remain
 the preferred evidence.
+
+## 2026-06-19 Export Dialog Upload Permission Note
+
+- The app export dialog now mirrors this verification rule: zip readiness is local-only, Chrome file chooser upload may require enabling file URL access for the Codex extension, and Roll20 visual parity still requires Sandbox/test-room screenshots.
+- The export dialog browser smoke asserts this text so future UI edits cannot silently collapse local readiness into actual Roll20 proof.
