@@ -348,6 +348,15 @@ translation source is saved, the settings page must still save a Sheet.json
 manifest through `textarea[name=customcharsheet_json]`; otherwise Roll20 can
 store the source but the character iframe may not load the custom sheet.
 
+When writing `customcharsheet_json` through the settings-page fallback, do not
+paste the export payload's plain `sheet.json` directly. The observed settings
+page reads a sandbox wrapper shaped like `{ sheet, userOptions, jsoninfo }`,
+where `jsoninfo` contains the actual Roll20 sheet manifest. The export zip keeps
+the plain `sheet.json`; only the settings-page fallback wraps it before filling
+`customcharsheet_json`. Endpoint/file-input success and a settings form `200`
+remain storage/configuration evidence only until a fresh character iframe
+DOM/root screenshot proves the custom sheet actually rendered.
+
 For legacy official sheets, preserve the source `sheet.json` legacy mode. A
 fixture whose official manifest declares `"legacy": true` must not be uploaded
 with a generated `"legacy": false` manifest. Also note that endpoint `200`
@@ -411,4 +420,5 @@ the preferred evidence.
 - The helper writes ignored, local-only snippets under `reports/roll20-actual-compare/<label>/roll20-upload-handoff/snippets/`.
 - The generated snippet embeds source-derived payload bytes and must not be committed.
 - Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. It creates browser `File` objects and dispatches `change` events on `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`, then fills `customcharsheet_json` when that field exists.
+- When filling `customcharsheet_json`, the generated snippet wraps the plain export `sheet.json` into the settings-page `{ sheet, userOptions, jsoninfo }` shape described above. This keeps exported zip payloads plain while matching the observed settings fallback structure.
 - This is a fallback for Chrome file chooser blocking. It is not Roll20 visual parity and still requires fresh sandbox root/chat screenshots plus status/diff gates afterward.

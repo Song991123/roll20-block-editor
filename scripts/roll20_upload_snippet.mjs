@@ -163,7 +163,8 @@ function renderSnippet({ fixtureId, payload }) {
     return { selector, status: input.files?.length ? 'dispatched' : 'no-file-on-input', fileName: input.files?.[0]?.name ?? null };
   };
   const setManifest = () => {
-    const text = new TextDecoder().decode(bytesFromBase64(DATA.payload.manifest.base64));
+    const rawText = new TextDecoder().decode(bytesFromBase64(DATA.payload.manifest.base64));
+    const text = buildSettingsManifest(rawText);
     const targets = Array.from(document.querySelectorAll('textarea[name="customcharsheet_json"], [name="customcharsheet_json"]'));
     for (const el of targets) {
       if ('value' in el) {
@@ -179,6 +180,25 @@ function renderSnippet({ fixtureId, payload }) {
       ace.dispatchEvent(new Event('change', { bubbles: true }));
     }
     return { status: targets.length ? 'manifest-set' : 'manifest-target-missing', targets: targets.length };
+  };
+  const buildSettingsManifest = (manifestText) => {
+    const parsed = JSON.parse(manifestText);
+    if (parsed && typeof parsed === 'object' && parsed.jsoninfo) {
+      return JSON.stringify(parsed, null, 2);
+    }
+    const userOptions = parsed.useroptions || parsed.userOptions || [];
+    const settingsManifest = {
+      sheet: {
+        short_name: parsed.short_name || 'custom',
+        long_name: parsed.long_name || parsed.name || 'Custom Sheet',
+        instructions: parsed.instructions || '',
+        preview_image: parsed.preview_image || 'https://via.placeholder.com/500x650.png?text=Placeholder+Image',
+        authors: parsed.authors || 'Local verification',
+      },
+      userOptions,
+      jsoninfo: parsed,
+    };
+    return JSON.stringify(settingsManifest, null, 2);
   };
   assertSandboxPage();
   const results = [];

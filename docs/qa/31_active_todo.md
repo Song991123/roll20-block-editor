@@ -579,3 +579,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only` now lists only Les-Oublies and YSHY as remaining visible entries.
 - STILL TODO: Les-Oublies and YSHY still need trustworthy Roll20 chat screenshots; only 2/3 fixtures have full-root candidates; `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
 - CLAIM BOUNDARY: This proves AW2E actual Roll20 rolltemplate/chat evidence, not full Roll20 visual parity.
+
+## 2026-06-19 Sandbox Settings Manifest Wrapper TODO Note
+
+- DONE: `scripts/roll20_upload_snippet.mjs` now wraps the plain export `sheet.json` into Roll20 settings fallback shape `{ sheet, userOptions, jsoninfo }` before filling `customcharsheet_json`.
+- VERIFIED: `node --check scripts\roll20_upload_snippet.mjs`, `corepack pnpm run snippet:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 official-roll20-AW2E`, generated snippet `node --check`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `guard:roll20-evidence` were rerun.
+- CURRENT: `status:roll20-actual` remains `GENERATED_ACTUAL_SCREENSHOTS_DIFFED` with `generatedActualScreenshots=6/6` and `generatedDiffed=6/6`.
+- STILL TODO: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` because only 2/3 fixtures have full-root candidates and diagnostic patch families differ. Do not claim Roll20 visual parity.
