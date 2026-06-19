@@ -16,11 +16,12 @@ const CANDIDATE_SMOKE = {
   default: 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json',
   'no-shadow': 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json',
   'table-scale-x': 'reports/rolltemplate-chat-smoke-table-scale-x/rolltemplate-chat-smoke-results.json',
+  'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
   'roll20-break-word': 'reports/rolltemplate-chat-smoke-roll20-break-word/rolltemplate-chat-smoke-results.json',
   'text-auto-aa': 'reports/rolltemplate-chat-smoke-text-auto-aa/rolltemplate-chat-smoke-results.json',
 };
 
-const TARGET_RISKS = new Set(['candidate-needs-style-proof']);
+const TARGET_RISKS = new Set(['candidate-needs-style-proof', 'single-fixture-only']);
 const COMPARABLE_SELECTORS = [
   'root',
   'table',
@@ -97,7 +98,7 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   if (candidate.name === 'no-shadow') {
     return summarizeNoShadow(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
-  if (candidate.name === 'table-scale-x') {
+  if (candidate.name === 'table-scale-x' || candidate.name === 'coc-table-scale-x') {
     return summarizeTableScale(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   if (candidate.name === 'roll20-break-word') {

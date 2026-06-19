@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - CoC table-scale candidate style-proof rejected
+
+Status: PARTIAL. The YSHY/CoC width candidate was narrowed further: visual scaling helps pixels, but actual Roll20 computed styles reject transform-based promotion.
+
+- DONE: `diagnose:roll20-chat-candidate-style` now checks both `candidate-needs-style-proof` and `single-fixture-only` candidates.
+- DONE: Added style-proof coverage for `coc-table-scale-x` using its local smoke sidecar.
+- RESULT: Style proof now reports `contradicted=2/2`: `no-shadow` and `coc-table-scale-x` are both contradicted by actual Roll20 computed styles.
+- RESULT: `coc-table-scale-x` is contradicted because actual Roll20 `.sheet-rolltemplate-coc table` has `transform: none`, while the candidate uses `scaleX(0.981)`.
+- RESULT: Renderer policy moves YSHY from `CANDIDATE_ONLY_DO_NOT_EXPOSE` to `NEEDS_NARROW_TEMPLATE_MODEL`.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` and now explicitly blocks style-contradicted candidates.
+- VERIFIED: `node --check scripts\roll20_chat_candidate_style_proof.mjs`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-renderer-policy`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Replace the transform hack with a narrow intrinsic-width model for YSHY/CoC, likely based on actual table width/typography/cell metrics rather than CSS transform.
+
 ## 2026-06-20 Codex Update - CoC rolltemplate table-scale candidate isolated
 
 Status: PARTIAL. A fixture-local YSHY/CoC chat-width candidate now exists, but Roll20 chat/template parity is still blocked and the candidate is not product-enabled.

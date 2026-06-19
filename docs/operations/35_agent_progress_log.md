@@ -1,3 +1,13 @@
+## 2026-06-20 CoC Table-Scale Style Proof Rejected
+
+- Extended `scripts/roll20_chat_candidate_style_proof.mjs` so it checks `single-fixture-only` candidates, not only `candidate-needs-style-proof`.
+- Added `coc-table-scale-x` to the candidate smoke lookup and routed it through the same table-transform proof as `table-scale-x`.
+- Result: style proof reports `contradicted=2/2`; both `no-shadow` and `coc-table-scale-x` are contradicted by actual Roll20 computed styles.
+- The decisive YSHY/CoC finding: actual Roll20 table `transform` is `none`, while the local candidate uses `scaleX(0.981)`.
+- Renderer policy now classifies YSHY as `NEEDS_NARROW_TEMPLATE_MODEL` instead of leaving the transform candidate as a viable private renderer candidate.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH` and explicitly lists `coc-table-scale-x` under actual-style contradictions.
+- Next P0: build a narrow intrinsic table-width model for `.sheet-rolltemplate-coc` instead of using CSS transform.
+
 ## 2026-06-20 CoC Rolltemplate Table-Scale Candidate
 
 - Added diagnostic-only ChatPane geometry policy `coc-table-scale-x`, scoped to `.sheet-rolltemplate-coc table`.
