@@ -273,3 +273,10 @@ blockers are cleared.
 
 - Added a safer fallback path for the Chrome file chooser blocker: a generated Sandbox-only snippet can create in-page `File` objects from the already verified local-baseline payload.
 - The gap remains open until the snippet or normal file chooser is actually run in Roll20 and produces fresh iframe/root/chat evidence. Endpoint success, snippet generation, or handoff files are not rendering proof.
+
+## 2026-06-19 AW2E Actual Roll20 Render Evidence Gap Note
+
+- The AW2E generated sheet is no longer only endpoint/storage evidence: the dedicated Roll20 Custom Sheet Sandbox character sheet tab visibly rendered AW2E controls (`Angel`, `Battlebabe`, `Brainer`, `Child-Thing`, `Chopper`, `Driver`, `Faceless`, `GunLugger`, `Hardholder`).
+- A trusted fallback screenshot now has positive DOM sidecar evidence at `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-sandbox-dom-evidence.json`.
+- Latest diff/status evidence: AW2E sandbox mismatch `14.01%`; total generated actual screenshots `3/6`; total generated diffs `3/6`.
+- Remaining gap: no fixture has trustworthy Roll20 chat/rolltemplate screenshot evidence, AW2E has no full-root candidate evidence yet, and production renderer CSS remains gated by `HOLD_PRODUCTION_RENDERER_PATCH`.

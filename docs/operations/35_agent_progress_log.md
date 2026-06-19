@@ -1355,3 +1355,18 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Claimed the editor tab read-only and confirmed the visible snapshot still contains `Sheet Sandbox Tools`, but hidden file input ids such as `sheetHtml`, `sheetCss`, and `sheetTranslation` were not exposed in the current snapshot. No upload or page mutation was performed.
 - The browser runtime's Playwright evaluate surface is read-only, so the generated upload snippet was not executed through that path in this batch.
 - Claim boundary: the snippet generator is ready, but actual Roll20 upload/root/chat evidence is still missing until the snippet or normal file chooser is run in the dedicated sandbox and screenshots are captured.
+
+## 2026-06-19 AW2E Actual Roll20 Render Evidence Captured
+
+- Reclaimed only the dedicated Roll20 Custom Sheet Sandbox editor tab. Existing rooms and private chat/log tabs were not modified.
+- The editor snapshot showed the verification character sheet tab with generated AW2E controls visible: `Angel`, `Battlebabe`, `Brainer`, `Child-Thing`, `Chopper`, `Driver`, `Faceless`, `GunLugger`, and `Hardholder`.
+- Saved ignored local evidence:
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-sandbox.png`
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-sandbox-dom-evidence.json`
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/official-roll20-AW2E-live-character-sheet-viewport.png`
+- Verification after capture:
+  - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: `generatedActualScreenshots=3/6`, then after diff `generatedDiffed=3/6`.
+  - `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`: AW2E sandbox diffed at `14.01%`.
+  - `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: still `HOLD_PRODUCTION_RENDERER_PATCH`.
+  - `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS.
+- Claim boundary: AW2E now has actual Roll20 render evidence for the generated sheet, but not full-root evidence, not Roll20 chat/rolltemplate visual evidence, and not visual parity.
