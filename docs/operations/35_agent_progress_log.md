@@ -1370,3 +1370,18 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: still `HOLD_PRODUCTION_RENDERER_PATCH`.
   - `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS.
 - Claim boundary: AW2E now has actual Roll20 render evidence for the generated sheet, but not full-root evidence, not Roll20 chat/rolltemplate visual evidence, and not visual parity.
+
+## 2026-06-19 AW2E Actual Roll20 Rolltemplate Chat Evidence Captured
+
+- Continued in the same dedicated Roll20 Custom Sheet Sandbox editor tab; no existing room or private room log was modified.
+- Clicked a visible AW2E stat roll button in the actual Roll20 sheet, submitted the Roll20 macro option dialog, and observed a new Roll20 chat message.
+- Saved ignored local evidence:
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-chat.png`
+  - `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-chat-dom-evidence.json`
+- The final screenshot was captured with CDP device-pixel coordinates because normal screenshot clipping mixed Roll20 CSS coordinates with Windows/Chrome scaling. The screenshot shows the actual Roll20 `#textchat` panel and the AW2E `.sheet-rolltemplate-aw` card.
+- Verification after capture:
+  - `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: `generatedActualScreenshots=4/6`, `generatedDiffed=4/6`.
+  - `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`: AW2E chat diffed at `58.97%` against the local chat render. This is evidence of a large remaining local-vs-actual chat visual gap, not parity.
+  - `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only`: visible entries reduced to Les-Oublies and YSHY.
+  - `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: still `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: AW2E now has actual Roll20 generated-sheet and rolltemplate/chat evidence. Roll20 visual parity is still not proven; Les-Oublies/YSHY chat evidence, cross-fixture full-root evidence, and a uniform renderer fix remain P0 before edit-mode UX work should become the main focus.

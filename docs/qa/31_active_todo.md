@@ -564,3 +564,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: Ignored local evidence was saved under `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/` as `roll20-sandbox.png` plus positive `roll20-sandbox-dom-evidence.json`.
 - VERIFIED: `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1` now diffs AW2E sandbox at `14.01%`. A follow-up `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `generatedActualScreenshots=3/6` and `generatedDiffed=3/6`.
 - STILL TODO: all Roll20 chat/rolltemplate screenshots are missing, AW2E still lacks full-root candidate evidence, and `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`. Do not claim Roll20 visual parity.
+
+## 2026-06-19 AW2E Actual Roll20 Chat Evidence TODO Note
+
+- VERIFIED: The dedicated Roll20 Custom Sheet Sandbox editor tab was used only for the verification character; existing rooms/private logs were not modified.
+- VERIFIED: Clicking a visible AW2E sheet roll button in actual Roll20 opened the macro option flow and, after submit, produced a Roll20 chat message with `.sheet-rolltemplate-aw` markers.
+- VERIFIED: Ignored local evidence now includes `roll20-chat.png` plus fresh `roll20-chat-dom-evidence.json` under `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/`.
+- VERIFIED: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `generatedActualScreenshots=4/6` and `generatedDiffed=4/6` after screenshot diff.
+- VERIFIED: `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only` now lists only Les-Oublies and YSHY as remaining visible entries.
+- STILL TODO: Les-Oublies and YSHY still need trustworthy Roll20 chat screenshots; only 2/3 fixtures have full-root candidates; `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- CLAIM BOUNDARY: This proves AW2E actual Roll20 rolltemplate/chat evidence, not full Roll20 visual parity.
