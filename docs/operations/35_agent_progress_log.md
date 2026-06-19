@@ -2054,6 +2054,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - AW2E pixel-best remains `sandbox-sheet-alias-playbook-hide-source` at `7.22%`, but it is far too short (`-6636.125px`). Height-closest is `sandbox-sheet-alias-playbook-state-through-quarantine-source` at root delta `+208.5px`, making it the next default-state probe target.
 - Claim boundary: this is derived diagnostic evidence only. It does not prove Roll20 visual parity, and renderer action remains HOLD.
 
+## 2026-06-20 Chat Candidate Regression Risk Table
+
+- Updated `scripts/roll20_chat_candidate_compare.mjs` so chat renderer candidates are judged across AW2E, Les-Oublies, and YSHY together.
+- The generated comparison now includes per-fixture aligned deltas, mean aligned delta, regression count, and `promotionRisk`.
+- Latest ignored local report classifies `no-shadow` and `table-scale-x` as numerically promising but still `candidate-needs-style-proof`; direct production CSS is still blocked because actual Roll20 computed styles and table-width deltas conflict across fixtures.
+- Negative controls are now easier to reject: `soft-shadow-rejected`, `roll20-message-padding`, `font-fallback`, `tight-cell-spacing`, and `shell-typography` all regress at least one fixture.
+- Claim boundary: this is diagnostic/reporting work only. It does not change production ChatPane rendering, does not make `rendererReady` pass, and does not prove Roll20 visual parity.
+
 ## 2026-06-19 Generic Attr Class State Probes
 
 - Removed the AW2E-specific hardcoded playbook value array from `scripts/roll20_full_root_candidate_smoke.mjs`.

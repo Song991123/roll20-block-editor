@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - Chat candidate regression risk table
+
+Status: PARTIAL. Candidate diagnostics are clearer; Roll20 renderer/chat parity is still blocked.
+
+- DONE: `diagnose:roll20-chat-candidates` now reports per-fixture aligned deltas, mean delta, regression count, and a promotion-risk label instead of leaning on the YSHY number alone.
+- RESULT: Latest candidate comparison shows `no-shadow` mean `-1.46%` and `table-scale-x` mean `-1.01%`, both marked `candidate-needs-style-proof` because they improve pixels without actual Roll20 computed-style proof.
+- RESULT: `soft-shadow-rejected`, `roll20-message-padding`, `font-fallback`, `tight-cell-spacing`, and `shell-typography` are now clearly classified as fixture-regressing candidates.
+- STILL TODO P0: Do not promote any ChatPane width/padding/shadow/table transform to production CSS until actual Roll20 style evidence explains the cross-fixture conflict.
+- STILL TODO P0: Renderer gate must remain `HOLD_PRODUCTION_RENDERER_PATCH`; no Roll20 visual parity or all-sheet support claim is allowed.
+
 ## 2026-06-20 Codex Update - Les chat authoritative recapture cleared
 
 Status: PARTIAL. The Les-Oublies chat crop trust blocker is cleared; Roll20 renderer/chat parity is still blocked.
