@@ -11,7 +11,7 @@
  *     reports/roll20-actual-compare/<run-label>
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
@@ -39,6 +39,9 @@ function fmtSize(size) {
 }
 
 function mimeFor(file) {
+  const bytes = readFileSync(file);
+  if (bytes[0] === 0xff && bytes[1] === 0xd8) return 'image/jpeg';
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
   const ext = path.extname(file).toLowerCase();
   return ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
 }

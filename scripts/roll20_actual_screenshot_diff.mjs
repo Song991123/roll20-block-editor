@@ -39,10 +39,15 @@ function argOf(name, fallback) {
 }
 
 async function imageDataUrl(file) {
-  const ext = path.extname(file).toLowerCase();
-  const mimeType = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
   const bytes = await readFile(file);
-  return `data:${mimeType};base64,${bytes.toString('base64')}`;
+  return `data:${mimeTypeForBytes(bytes, file)};base64,${bytes.toString('base64')}`;
+}
+
+function mimeTypeForBytes(bytes, file = '') {
+  if (bytes[0] === 0xff && bytes[1] === 0xd8) return 'image/jpeg';
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
+  const ext = path.extname(file).toLowerCase();
+  return ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'image/png';
 }
 
 async function listFixtureDirs() {

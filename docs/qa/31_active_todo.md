@@ -591,3 +591,8 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - DONE: `scripts/roll20_renderer_action_gate.mjs` now reports the current blocker precisely as missing full-root candidate comparison for `official-roll20-AW2E` instead of implying that generated/chat evidence is still missing.
 - VERIFIED: `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1` now lists next actions only for AW2E DPR-corrected full-root evidence, cross-fixture patch-family comparison, and keeping diagnostic CSS out of production.
 - CURRENT: generated sandbox/chat evidence remains 6/6 diffed, but production renderer CSS still stays HOLD because full-root candidate evidence is only 2/3 and Les/YSHY prefer different diagnostic patch families.
+## 2026-06-19 Roll20 Screenshot MIME Hardening TODO Note
+
+- DONE: Roll20 actual screenshot/diff/stitch scripts now detect PNG vs JPEG from file bytes instead of trusting the filename extension. This matters because the Chrome screenshot surface can return JPEG bytes even when agents save a `.png` filename.
+- VERIFIED: `node --check` passed for the changed scripts, and reruns of `roll20_actual_screenshot_diff`, `smoke:roll20-same-context-visible`, `smoke:roll20-full-root-candidates`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `guard:roll20-evidence` all completed successfully on `2026-06-18-state-map-v1`.
+- CURRENT: AW2E visible Roll20 sheet capture was possible in the dedicated sandbox editor, but browser control became unstable before a trustworthy DPR-corrected full-root stitch could be completed. The renderer gate remains HOLD with the same real blocker: AW2E lacks full-root candidate comparison.

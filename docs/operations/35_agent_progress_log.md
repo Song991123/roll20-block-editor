@@ -1406,3 +1406,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The gate now explicitly names `official-roll20-AW2E` as missing full-root candidate comparison while keeping generated sandbox/chat evidence separate.
 - Latest rerun: `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1` still returns `HOLD_PRODUCTION_RENDERER_PATCH`, now with targeted next actions: capture/stitch AW2E DPR-corrected full-root evidence, compare differing diagnostic patch families, and keep diagnostic CSS out of production until behavior repeats across fixtures.
 - Claim boundary: this is gate truthfulness and next-action hygiene. It does not render a new Roll20 screenshot and does not prove visual parity.
+## 2026-06-19 Roll20 Screenshot MIME Hardening
+
+- During AW2E full-root capture attempts, the Chrome screenshot surface returned JPEG bytes for some files that had been saved with `.png` names. Existing reports still loaded, but extension-based MIME selection is too fragile for Roll20 actual evidence.
+- Updated actual evidence image loaders in screenshot diff, crop, stitch, visible-crop diagnostics, same-context visible smoke, and full-root candidate smoke to sniff PNG/JPEG magic bytes before building data URLs.
+- Rerun evidence stayed stable: actual screenshot diff still reports AW2E sandbox 14.01%, Les-Oublies sandbox 6.57%, YSHY sandbox 22.93%; full-root candidate smoke still compares Les-Oublies and YSHY while skipping AW2E full-root; renderer gate still holds production CSS.
+- Claim boundary: this is evidence pipeline hardening. It does not add trusted AW2E full-root evidence and does not prove Roll20 visual parity.
