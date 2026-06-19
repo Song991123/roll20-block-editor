@@ -241,6 +241,7 @@ async function clickRollAndReadChat(page, fixtureId) {
     hasTemplateClass: Boolean(el.querySelector('[class*="sheet-rolltemplate-"]')),
     hasTotal: Boolean(el.querySelector('.rt-total, strong')),
     width: Math.round(el.getBoundingClientRect().width),
+    templateWidth: Math.round(el.querySelector('[class*="sheet-rolltemplate-"]')?.getBoundingClientRect().width ?? 0),
     hasDebugTemplateLabel: /rolltemplate\s*:/i.test(el.textContent || ''),
   }));
   cardInfo.cardCount = cardCount;
@@ -255,8 +256,8 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Reason | Click mode | Visible | Actionable | Chosen button | Chat kind | Cards | Width | Roll20 shell | Template class | Debug label | Total/result | Console/Page errors |');
-  lines.push('| --- | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | --- | --- | --- | --- | ---: |');
+  lines.push('| Fixture | Status | Reason | Click mode | Visible | Actionable | Chosen button | Chat kind | Cards | Message width | Template width | Roll20 shell | Template class | Debug label | Total/result | Console/Page errors |');
+  lines.push('| --- | --- | --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | --- | --- | --- | --- | ---: |');
   for (const item of report.fixtures) {
     const chosen = item.chosen
       ? `${item.chosen.name || '(no name)'} / ${truncate(item.chosen.value, 60)}`
@@ -265,7 +266,7 @@ function renderMarkdown(report) {
     const visibleCount = item.candidates?.filter((row) => row.visible).length ?? '';
     const actionableCount = item.candidates?.filter((row) => row.actionable).length ?? '';
     lines.push(
-      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
+      `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.templateWidth ?? ''} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} |`,
     );
   }
   lines.push('');
@@ -344,7 +345,7 @@ async function main() {
           entry.cardInfo?.cardCount === 1 &&
           entry.cardInfo?.hasDebugTemplateLabel === false &&
           (entry.cardInfo?.kind !== 'rolltemplate' ||
-            ((entry.cardInfo?.width ?? 0) > 0 && (entry.cardInfo?.width ?? 9999) <= 300)) &&
+            ((entry.cardInfo?.templateWidth ?? 0) > 0 && (entry.cardInfo?.templateWidth ?? 9999) <= 300)) &&
           entry.cardInfo?.hasTextchatContainer === true &&
           entry.cardInfo?.hasMessageClass === true &&
           entry.cardInfo?.hasSpacer === true &&

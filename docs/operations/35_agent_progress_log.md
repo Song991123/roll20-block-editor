@@ -1385,3 +1385,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only`: visible entries reduced to Les-Oublies and YSHY.
   - `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: still `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: AW2E now has actual Roll20 generated-sheet and rolltemplate/chat evidence. Roll20 visual parity is still not proven; Les-Oublies/YSHY chat evidence, cross-fixture full-root evidence, and a uniform renderer fix remain P0 before edit-mode UX work should become the main focus.
+
+## 2026-06-19 Roll20 Actual Evidence And Chat Shell Slice
+
+- Generated-sheet actual Roll20 evidence is now present and diffed for the current run: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedActualScreenshots=6/6`, and `generatedDiffed=6/6`.
+- `scripts/roll20_renderer_action_gate.mjs` now separates generated Sandbox/chat evidence from optional solo-room observation evidence. Missing `roll20-room.png` files no longer create a false generated-evidence blocker.
+- Production renderer CSS remains gated: `gate:roll20-renderer-action` is still `HOLD_PRODUCTION_RENDERER_PATCH` because only 2/3 fixtures have full-root candidates and Les-Oublies/YSHY prefer different diagnostic patch families.
+- `components/editor/ChatPane.tsx` now uses a Roll20-derived `textchatcontainer` / `message` / `spacer` / `by` / `tstamp` shell instead of app-card wrappers, and the remaining broken Korean chat labels were replaced.
+- `scripts/rolltemplate_chat_smoke.mjs` now measures message width separately from inner rolltemplate width, matching actual Roll20 evidence where the sidebar message is wider than the rendered template card.
+- Latest local verification: `node scripts\rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke --port 4411` PASS for AW2E, Les-Oublies, and YSHY. This is local app evidence only; actual Roll20 chat screenshots still mismatch heavily and visual parity is not proven.

@@ -107,8 +107,15 @@ function recommend(fixtures, status) {
   const warnings = [];
   const positiveFindings = [];
 
-  if (!status?.actualEvidenceComplete) {
-    blockers.push(`actual evidence incomplete: status=${status?.status ?? 'unknown'}`);
+  const generatedSummaryComplete =
+    Number(status?.summary?.generatedTargetCount ?? 0) > 0 &&
+    status.summary.generatedPresentCount === status.summary.generatedTargetCount &&
+    status.summary.generatedDiffedCount === status.summary.generatedTargetCount;
+  const generatedStatusComplete = status?.status === 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED';
+  const generatedEvidenceComplete = Boolean(generatedSummaryComplete || generatedStatusComplete);
+
+  if (!generatedEvidenceComplete) {
+    blockers.push(`generated-sheet actual evidence incomplete: status=${status?.status ?? 'unknown'}`);
   }
 
   const missingTrustedRoot = fixtures.filter((fixture) => !fixture.sandboxEvidence?.ok);

@@ -36,6 +36,114 @@ function extractRolltemplateCss(css: string): string {
   return matches ? matches.join('\n') : '';
 }
 
+const roll20ChatShellCss = `
+.r20-chat-pane {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.r20-chat-pane .textchatcontainer {
+  font-synthesis: style;
+  text-rendering: optimizeSpeed;
+  padding: 0;
+  gap: 0;
+}
+.r20-chat-pane .textchatcontainer .content {
+  line-height: 1.25em;
+  font-size: 1.05em;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+}
+.r20-chat-pane .textchatcontainer .tstamp {
+  display: none;
+  font-size: 0.8em;
+  color: #666;
+  padding: 0;
+  margin: -4px 0 2px;
+  position: relative;
+  left: -5px;
+  line-height: 1em;
+}
+.r20-chat-pane .textchatcontainer.withtimestamps .message .tstamp {
+  display: block;
+}
+.r20-chat-pane .textchatcontainer .by {
+  font-weight: 700;
+  position: relative;
+  left: -5px;
+}
+.r20-chat-pane .textchatcontainer .message {
+  position: relative;
+  margin: 0;
+  padding-left: 45px;
+  padding-right: 16px;
+  padding-bottom: 7px;
+  background: #f1f1f1;
+  color: #333;
+  font-size: 13px;
+  line-height: 18px;
+}
+.r20-chat-pane .textchatcontainer.withoutavatars .message {
+  padding-left: 15px;
+}
+.r20-chat-pane .textchatcontainer .message.you {
+  background: #d3e5f5;
+}
+.r20-chat-pane .textchatcontainer .message.error {
+  background: #ffbaba;
+  color: #333;
+}
+.r20-chat-pane .textchatcontainer .message .spacer {
+  height: 2px;
+  margin-left: -45px;
+  margin-right: -15px;
+  margin-bottom: 7px;
+  background: #d7d7d7;
+}
+.r20-chat-pane .textchatcontainer.withoutavatars .message .spacer {
+  margin-left: -15px;
+}
+.r20-chat-pane .textchatcontainer .inlinerollresult {
+  background-color: #fef68e;
+  border: 2px solid #fef68e;
+  padding: 0 3px;
+  font-weight: 700;
+  cursor: help;
+  font-size: 1.1em;
+}
+.r20-chat-pane .textchatcontainer .inlinerollresult.fullcrit {
+  border-color: #3fb315;
+}
+.r20-chat-pane .textchatcontainer .inlinerollresult.fullfail {
+  border-color: #b31515;
+}
+.r20-chat-pane .sheet-rolltemplate-default table {
+  width: 100%;
+  background-color: #fff;
+  border: 1px solid rgba(112, 32, 130, 1);
+}
+.r20-chat-pane .sheet-rolltemplate-default caption {
+  background-color: rgba(112, 32, 130, 1);
+  color: #fff;
+  font-family: "Helvetica Neue", Helvetica, sans-serif;
+  font-weight: 300;
+  font-size: 1.1em;
+  padding: 5px;
+}
+.r20-chat-pane .sheet-rolltemplate-default td {
+  padding: 5px;
+  line-height: 1.4em;
+  vertical-align: top;
+}
+.r20-chat-pane .sheet-rolltemplate-default td:first-child {
+  font-weight: 700;
+  text-align: right;
+  min-width: 50px;
+  padding-right: 10px;
+}
+.r20-chat-pane .sheet-rolltemplate-default tr:nth-child(even) {
+  background-color: #eee;
+}
+`;
+
 function DiceBreakdown({ detail }: { detail: RollDetail }) {
   if (!detail.dice.length) {
     return (
@@ -94,7 +202,7 @@ function CardExpr({ detail, expression }: { detail: RollDetail; expression: stri
       <DiceBreakdown detail={detail} />
       {missing.length > 0 && (
         <div className="mt-1.5 text-[11px] text-amber-400">
-          미정 attr: {missing.map((m) => `@{${m}}`).join(', ')}
+          아직 값이 없는 attr: {missing.map((m) => `@{${m}}`).join(', ')}
         </div>
       )}
       {detail.isCrit && (
@@ -181,9 +289,7 @@ function RollCard({ card, emittedHtml }: { card: ChatRoll; emittedHtml: string }
       data-r20-chat-fumble={r.kind === 'expr' && r.isFumble ? '1' : undefined}
       className={[
         'message general',
-        isRolltemplate
-          ? 'w-full max-w-[280px] self-center text-[#222]'
-          : 'rounded border bg-[var(--bg-elevated)]',
+        isRolltemplate ? 'text-[#222]' : 'rounded border bg-[var(--bg-elevated)]',
         !isRolltemplate &&
           (r.kind === 'expr' && r.isCrit
             ? 'border-green-500/40 bg-green-500/5'
@@ -194,15 +300,10 @@ function RollCard({ card, emittedHtml }: { card: ChatRoll; emittedHtml: string }
         .filter(Boolean)
         .join(' ')}
     >
-      <div className="spacer rounded-sm border border-[#b7b7b7] bg-[#f7f7f7] p-2 shadow-sm">
-        <div className="by flex items-center justify-between mb-1">
-          <span className="text-[11px] font-semibold text-foreground/80">
-            {card.sender || 'Sheet'}
-          </span>
-          <time className="tstamp text-[10px] text-[var(--fg-muted)] font-mono">
-            {formatTime(card.ts)}
-          </time>
-        </div>
+      <div className="spacer" aria-hidden="true" />
+      <time className="tstamp">{formatTime(card.ts)}</time>
+      <div className="by">{card.sender || 'Sheet'}:</div>
+      <div className="content">
         {r.kind === 'expr' && <CardExpr detail={r} expression={card.expression} />}
         {r.kind === 'rolltemplate' && (
           <CardRolltemplate result={r} emittedHtml={emittedHtml} />
@@ -223,6 +324,7 @@ export default function ChatPane() {
 
   return (
     <div className="r20-chat-pane flex h-full flex-col min-h-0">
+      <style data-r20-chat-shell-css dangerouslySetInnerHTML={{ __html: roll20ChatShellCss }} />
       {rolltemplateCss.trim() && (
         <style
           data-r20-chat-user-css
@@ -248,7 +350,7 @@ export default function ChatPane() {
       </div>
       <ScrollArea className="flex-1 min-h-0">
         <div
-          className="textchatcontainer withoutavatars p-2 flex flex-col gap-2"
+          className="textchatcontainer withoutavatars flex flex-col"
           data-testid="chat-list"
         >
           {rolls.length === 0 ? (
