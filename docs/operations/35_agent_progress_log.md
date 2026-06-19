@@ -1,3 +1,13 @@
+## 2026-06-20 00:55 +09:00 - Chat capture plan evidence-quality rejection
+
+Status: PARTIAL. This closes a truthfulness gap in the next Roll20 recapture step, not visual parity.
+
+- Extended `scripts/roll20_chat_capture_plan.mjs` so existing actual Roll20 chat screenshots are inspected by file bytes and sidecar clip scale before they can be treated as usable pixel evidence.
+- The plan now flags non-PNG or non-1x screenshots as `SCALE_OR_FORMAT_SUSPECT` and keeps them in the recapture queue.
+- Verification before broader CI: `node --check scripts\roll20_chat_capture_plan.mjs` PASS; `corepack pnpm run test:roll20-chat-capture-plan` PASS; `corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `plannedFixtures=2/3`.
+- Current recapture queue is exactly `official-roll20-AW2E` and `yshy-commission-1bu`; `official-roll20-Les-Oublies` remains the only current true PNG 1x chat capture.
+- Claim boundary: this prevents agents from tuning local ChatPane CSS against invalid JPEG/0.8x evidence. Actual Roll20 parity remains unproven and currently failing.
+
 ## 2026-06-20 00:40 +09:00 - Roll20 chat capture scale gate
 
 Status: PARTIAL. This prevents premature ChatPane CSS tuning from low-confidence pixel evidence.

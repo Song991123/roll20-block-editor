@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - Chat capture plan now rejects JPEG/0.8x evidence
+
+Status: PARTIAL. The recapture plan is more truthful; Roll20 chat visual parity is still NOT done.
+
+- Updated `plan:roll20-chat-capture` so it rejects actual Roll20 chat screenshots when the file bytes are not PNG or when the screenshot scale is not CSS 1x against the recorded clip.
+- Current measured plan: `plannedFixtures=2/3`, `snippetSyntax=PASS`.
+- Current recapture targets: `official-roll20-AW2E` and `yshy-commission-1bu` are `SCALE_OR_FORMAT_SUSPECT` because their `roll20-chat.png` files are JPEG bytes captured at about `0.8x`.
+- Current non-recapture fixture: `official-roll20-Les-Oublies` has true PNG 1x chat evidence, but still has a `29.21%` local-vs-actual rolltemplate crop mismatch.
+- Next P0: recapture AW2E and YSHY chat crops through CDP `Page.captureScreenshot` with `format=png` and `clip.scale=1`, then rerun `diagnose:roll20-chat-parity`, `status:roll20-actual`, and `gate:roll20-renderer-action`.
+
 ## 2026-06-20 Codex Update - Chat capture scale gate added
 
 Status: PARTIAL. Evidence quality improved; Roll20 chat visual parity is still NOT done.

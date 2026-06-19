@@ -169,6 +169,9 @@ function validateChatEvidence(screenshots) {
   const freshness = existsSync(screenshot) && existsSync(domEvidenceFile)
     ? validateSidecarFreshness(screenshot, domEvidenceFile)
     : null;
+  const screenshotQuality = existsSync(screenshot)
+    ? inspectScreenshotQuality(screenshot, domEvidence)
+    : null;
 
   if (!existsSync(screenshot)) {
     if (hasRenderedChatDom) {
@@ -204,6 +207,7 @@ function validateChatEvidence(screenshots) {
       screenshot: fileTarget(screenshot),
       sidecar: fileTarget(domEvidenceFile),
       sidecarFreshness: freshness,
+      screenshotQuality,
     };
   }
   if (!freshness.ok) {
@@ -214,6 +218,18 @@ function validateChatEvidence(screenshots) {
       screenshot: fileTarget(screenshot),
       sidecar: fileTarget(domEvidenceFile),
       sidecarFreshness: freshness,
+      screenshotQuality,
+    };
+  }
+  if (!screenshotQuality.ok) {
+    return {
+      ok: false,
+      status: 'SCALE_OR_FORMAT_SUSPECT',
+      note: screenshotQuality.note,
+      screenshot: fileTarget(screenshot),
+      sidecar: fileTarget(domEvidenceFile),
+      sidecarFreshness: freshness,
+      screenshotQuality,
     };
   }
   return {
@@ -223,7 +239,72 @@ function validateChatEvidence(screenshots) {
     screenshot: fileTarget(screenshot),
     sidecar: fileTarget(domEvidenceFile),
     sidecarFreshness: freshness,
+    screenshotQuality,
   };
+}
+
+function inspectScreenshotQuality(file, domEvidence) {
+  const image = readImageInfo(file);
+  const clip = domEvidence?.clip ?? domEvidence?.screenshotClipApplied ?? domEvidence?.screenshotCssClip ?? null;
+  const scale = image.width && image.height && clip?.width && clip?.height
+    ? {
+        x: Number((image.width / clip.width).toFixed(4)),
+        y: Number((image.height / clip.height).toFixed(4)),
+      }
+    : null;
+  const formatOk = image.format === 'png';
+  const scaleOk = !scale || (Math.abs(scale.x - 1) <= 0.01 && Math.abs(scale.y - 1) <= 0.01);
+  const bits = [`format=${image.format}`, `size=${image.width}x${image.height}`];
+  if (scale) bits.push(`scale=${scale.x}x${scale.y}`);
+  return {
+    ok: formatOk && scaleOk,
+    ...image,
+    scale,
+    note: formatOk && scaleOk
+      ? `Roll20 chat screenshot is true PNG at CSS scale 1 (${bits.join(', ')})`
+      : `Roll20 chat screenshot is not high-confidence pixel evidence (${bits.join(', ')}); recapture with CDP Page.captureScreenshot format=png and clip.scale=1`,
+  };
+}
+
+function readImageInfo(file) {
+  const bytes = readFileSync(file);
+  if (bytes.length >= 24 && bytes.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    return {
+      format: 'png',
+      width: bytes.readUInt32BE(16),
+      height: bytes.readUInt32BE(20),
+    };
+  }
+  if (bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    const size = readJpegSize(bytes);
+    return {
+      format: 'jpeg',
+      width: size?.width ?? 0,
+      height: size?.height ?? 0,
+    };
+  }
+  return { format: 'unknown', width: 0, height: 0 };
+}
+
+function readJpegSize(bytes) {
+  let i = 2;
+  while (i + 9 < bytes.length) {
+    if (bytes[i] !== 0xff) {
+      i += 1;
+      continue;
+    }
+    const marker = bytes[i + 1];
+    const length = bytes.readUInt16BE(i + 2);
+    if (marker >= 0xc0 && marker <= 0xc3) {
+      return {
+        width: bytes.readUInt16BE(i + 7),
+        height: bytes.readUInt16BE(i + 5),
+      };
+    }
+    if (!length) break;
+    i += 2 + length;
+  }
+  return null;
 }
 
 function validateSidecarFreshness(screenshot, sidecar) {
