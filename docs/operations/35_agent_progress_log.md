@@ -1,3 +1,9 @@
+## 2026-06-19 Actual Status Chat Gate Surface Update
+
+- Updated `scripts/roll20_actual_status.mjs` so the one-command actual status reads `chat-parity-diagnostics-results.json` and prints chat parity blockers beside renderer status.
+- Latest status output now includes `chatParity=PRESENT`, `chatNormalizedCompared=2/3`, `chatNeedsNormalizedCapture=1`, `chatActualCssInactive=2`, and `chatNormalizedHighMismatch=1`.
+- Claim boundary: this is reporting/guardrail work. It does not prove Roll20 visual parity. It prevents agents from ignoring the current CSS-inactive Roll20 chat evidence while the renderer gate remains HOLD.
+- Next P0 remains actual evidence capture: prove or recapture a Roll20 Sandbox/test-room chat state where user rolltemplate CSS is active, plus the missing normalized Les-Oublies rolltemplate rect/clip sidecar.
 
 ## 2026-06-19 Chat CSS Evidence Gate Update
 

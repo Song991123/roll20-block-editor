@@ -66,6 +66,7 @@ async function main() {
   const rootCutoff = await readRootCutoff(runDir);
   const scrollMetricsReplacement = await readScrollMetricsReplacement(runDir);
   const rendererAction = await readRendererAction(runDir);
+  const chatParity = await readChatParity(runDir);
   const fixtures = [];
   for (const fixtureId of await listFixtureIds(baselineDir)) {
     fixtures.push(await inspectFixture(runDir, fixtureId, diffReport));
@@ -160,6 +161,15 @@ async function main() {
       reliableTrustedFullRootComplete,
       rendererAction: rendererAction.action,
       rendererBlockerCount: rendererAction.blockerCount,
+      chatParityExists: chatParity.exists,
+      chatParityCompared: chatParity.compared,
+      chatParityFixtures: chatParity.fixtures,
+      chatParityNormalizedCompared: chatParity.normalizedCompared,
+      chatParityNeedsNormalizedCapture: chatParity.needsNormalizedCapture,
+      chatParityNormalizedHighMismatch: chatParity.normalizedHighMismatch,
+      chatParityActualCssInactive: chatParity.actualChatCssInactive,
+      chatParityActualCssUnknown: chatParity.actualChatCssUnknown,
+      chatParityMaxNormalizedMismatchPct: chatParity.maxNormalizedMismatchPct,
       trustedFullRootComplete,
       rendererReady,
     },
@@ -168,6 +178,7 @@ async function main() {
     rootCutoff,
     scrollMetricsReplacement,
     rendererAction,
+    chatParity,
     fixtures,
     nextAction: buildNextAction({
       preupload,
@@ -181,6 +192,7 @@ async function main() {
       rootCutoff,
       scrollMetricsReplacement,
       rendererAction,
+      chatParity,
     }),
   };
 
@@ -378,6 +390,49 @@ async function readRendererAction(runDir) {
     action: recommendation.action ?? 'UNKNOWN',
     blockerCount: Array.isArray(recommendation.blockers) ? recommendation.blockers.length : 0,
     blockers: recommendation.blockers ?? [],
+  };
+}
+
+async function readChatParity(runDir) {
+  const file = path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json');
+  if (!existsSync(file)) {
+    return {
+      exists: false,
+      file: rel(file),
+      fixtures: 0,
+      compared: 0,
+      normalizedCompared: 0,
+      needsNormalizedCapture: 0,
+      normalizedHighMismatch: 0,
+      actualChatCssInactive: 0,
+      actualChatCssUnknown: 0,
+      maxNormalizedMismatchPct: null,
+      note: 'missing chat parity diagnostic',
+    };
+  }
+  const report = JSON.parse(await fs.readFile(file, 'utf8'));
+  const summary = report.summary ?? {};
+  return {
+    exists: true,
+    file: rel(file),
+    generatedAt: report.generatedAt ?? null,
+    fixtures: Number(summary.fixtures ?? 0),
+    compared: Number(summary.compared ?? 0),
+    normalizedCompared: Number(summary.normalizedCompared ?? 0),
+    needsNormalizedCapture: Number(summary.needsNormalizedCapture ?? 0),
+    normalizedHighMismatch: Number(summary.normalizedHighMismatch ?? 0),
+    actualChatCssInactive: Number(summary.actualChatCssInactive ?? 0),
+    actualChatCssUnknown: Number(summary.actualChatCssUnknown ?? 0),
+    maxNormalizedMismatchPct: pctNumber(summary.maxNormalizedMismatchRatio ?? 0),
+    mismatchFixtures: (report.fixtures ?? [])
+      .filter((fixture) => fixture.status === 'DIFFED' && Number(fixture.mismatchRatio ?? 0) > 0.1)
+      .map((fixture) => ({
+        fixtureId: fixture.fixtureId,
+        mode: fixture.compareMode ?? '',
+        mismatchPct: pctNumber(fixture.mismatchRatio ?? 0),
+        actualCss: fixture.actualChatCss?.classification ?? '',
+      })),
+    note: 'diagnostic only; does not prove Roll20 chat visual parity',
   };
 }
 
@@ -581,6 +636,7 @@ function buildNextAction({
   rootCutoff,
   scrollMetricsReplacement,
   rendererAction,
+  chatParity,
 }) {
   if (!preupload.pass) {
     return 'Run or fix the local pre-upload gate before attempting Roll20 Sandbox upload.';
@@ -607,6 +663,15 @@ function buildNextAction({
   }
   if (generatedDiffedCount < generatedTargetCount) {
     return 'Actual screenshots exist. Run node scripts/roll20_actual_screenshot_diff.mjs for this run, then classify differences.';
+  }
+  if (chatParity?.exists && chatParity.needsNormalizedCapture > 0) {
+    return 'Roll20 chat evidence exists but is not normalized for every fixture. Recapture roll20-chat.png with fresh DOM sidecars that include rolltemplate rect/clip metadata, then rerun diagnose:roll20-chat-parity.';
+  }
+  if (chatParity?.exists && chatParity.actualChatCssInactive > 0) {
+    return 'Actual Roll20 chat CSS evidence is inactive for one or more fixtures. Prove a CSS-active Custom Sheet Sandbox/test-room chat state before treating local ChatPane mismatches as production renderer defects.';
+  }
+  if (chatParity?.exists && chatParity.normalizedHighMismatch > 0) {
+    return 'Roll20 chat screenshots are normalized but still differ from local ChatPane. Fix chat shell/template sizing after confirming actual Roll20 user rolltemplate CSS is active.';
   }
   if (observationPresentCount < observationTargetCount) {
     return 'Generated-sheet actual evidence is diffed. Optionally add read-only solo-room observation screenshots, then classify differences before making any parity claim.';
@@ -660,6 +725,9 @@ function renderMarkdown(report) {
     `- Reliable trusted full-root evidence: ${report.summary.reliableTrustedFullRootCount}/${report.summary.trustedFullRootTotal} (cutoff risk: ${report.summary.trustedFullRootCutoffRiskCount}, unresolved: ${report.summary.trustedFullRootCutoffUnresolvedCount}, scroll-metrics replacement: ${report.summary.trustedFullRootScrollMetricsReplacementCount})`,
     `- Renderer action: ${report.summary.rendererAction} (${report.summary.rendererBlockerCount} blockers)`,
     `- Renderer ready for production CSS: ${report.summary.rendererReady ? 'yes' : 'NO'}`,
+    `- Chat parity diagnostic: ${report.summary.chatParityExists ? 'present' : 'missing'} (${report.summary.chatParityCompared}/${report.summary.chatParityFixtures} compared, normalized ${report.summary.chatParityNormalizedCompared}/${report.summary.chatParityFixtures})`,
+    `- Chat blockers: needs normalized capture ${report.summary.chatParityNeedsNormalizedCapture}, normalized high mismatch ${report.summary.chatParityNormalizedHighMismatch}, actual CSS inactive ${report.summary.chatParityActualCssInactive}, actual CSS unknown ${report.summary.chatParityActualCssUnknown}`,
+    `- Max normalized chat mismatch: ${report.summary.chatParityMaxNormalizedMismatchPct ?? 'n/a'}%`,
     `- All actual screenshots: ${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
     `- All screenshot diffs: ${report.summary.diffedCount}/${report.summary.actualTargetCount}`,
     `- Blocker evidence files: ${report.summary.blockerEvidenceCount}`,
@@ -699,6 +767,24 @@ function renderMarkdown(report) {
     }
   }
 
+  if (report.chatParity.exists) {
+    lines.push('', '## Chat Parity Boundary', '');
+    lines.push(`- Report: \`${report.chatParity.file}\``);
+    lines.push(`- Compared: ${report.chatParity.compared}/${report.chatParity.fixtures}`);
+    lines.push(`- Normalized compared: ${report.chatParity.normalizedCompared}/${report.chatParity.fixtures}`);
+    lines.push(`- Needs normalized capture: ${report.chatParity.needsNormalizedCapture}`);
+    lines.push(`- Normalized high mismatch: ${report.chatParity.normalizedHighMismatch}`);
+    lines.push(`- Actual chat CSS inactive: ${report.chatParity.actualChatCssInactive}`);
+    lines.push(`- Actual chat CSS unknown: ${report.chatParity.actualChatCssUnknown}`);
+    lines.push(`- Max normalized mismatch: ${report.chatParity.maxNormalizedMismatchPct}%`);
+    if (report.chatParity.mismatchFixtures.length) {
+      lines.push('', '| Fixture | Mode | Mismatch | Actual CSS |', '| --- | --- | ---: | --- |');
+      for (const fixture of report.chatParity.mismatchFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.mode} | ${fixture.mismatchPct}% | ${fixture.actualCss} |`);
+      }
+    }
+  }
+
   lines.push(
     '',
     '## Evidence Rules',
@@ -730,6 +816,11 @@ function renderConsoleSummary(report, outDir) {
     `rendererAction=${report.summary.rendererAction}`,
     `rendererBlockers=${report.summary.rendererBlockerCount}`,
     `rendererReady=${report.summary.rendererReady ? 'YES' : 'NO'}`,
+    `chatParity=${report.summary.chatParityExists ? 'PRESENT' : 'MISSING'}`,
+    `chatNormalizedCompared=${report.summary.chatParityNormalizedCompared}/${report.summary.chatParityFixtures}`,
+    `chatNeedsNormalizedCapture=${report.summary.chatParityNeedsNormalizedCapture}`,
+    `chatActualCssInactive=${report.summary.chatParityActualCssInactive}`,
+    `chatNormalizedHighMismatch=${report.summary.chatParityNormalizedHighMismatch}`,
     `commandGate=${report.commandPass ? 'PASS' : 'NEEDS_ACTION'}`,
     `out=${rel(outDir)}`,
   ].join('\n');
@@ -737,6 +828,12 @@ function renderConsoleSummary(report, outDir) {
 
 function escapeCell(value) {
   return value.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').slice(0, 160);
+}
+
+function pctNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  return Number((number * 100).toFixed(2));
 }
 
 function rel(file) {

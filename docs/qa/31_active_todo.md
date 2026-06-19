@@ -1,3 +1,14 @@
+## 2026-06-19 Actual Status Chat Gate Final Rerun
+
+- VERIFY: after rerunning `gate:roll20-renderer-action` and then `status:roll20-actual`, the current status reads `rendererBlockers=6`.
+- Latest measured output: `generatedActualScreenshots=4/6`, `generatedDiffed=4/6`, `roomObservationScreenshots=0/3`, `reliableTrustedFullRoot=3/3`, `rendererReady=NO`, `chatNormalizedCompared=2/3`, `chatNeedsNormalizedCapture=1`, `chatActualCssInactive=2`, `chatNormalizedHighMismatch=1`.
+- Additional current gate blockers now visible: generated-sheet actual evidence is incomplete and trustworthy Roll20 chat screenshots are missing for AW2E and YSHY. Treat the earlier `rendererBlockers=4` note below as superseded by this rerun.
+## 2026-06-19 Actual Status Chat Gate Surface Update
+
+- VERIFY: `status:roll20-actual` now surfaces chat parity blockers directly, so the one-command status cannot hide Roll20 chat CSS/crop issues behind the broader renderer HOLD.
+- Latest command: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Current measured output: `generatedActualScreenshots=4/6`, `generatedDiffed=4/6`, `reliableTrustedFullRoot=3/3`, `rendererReady=NO`, `rendererBlockers=4`, `chatNormalizedCompared=2/3`, `chatNeedsNormalizedCapture=1`, `chatActualCssInactive=2`, `chatNormalizedHighMismatch=1`.
+- NEXT P0: recapture/prove a Roll20 Custom Sheet Sandbox or new test-room chat state where user rolltemplate CSS is active, and capture the missing normalized Les-Oublies rolltemplate rect/clip sidecar. Do not tune production ChatPane or renderer CSS from the current CSS-inactive actual chat evidence.
 
 ## 2026-06-19 Chat CSS Evidence Gate Update
 
