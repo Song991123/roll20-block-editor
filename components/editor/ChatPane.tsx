@@ -37,6 +37,7 @@ type ChatFontPolicy = 'default' | 'roll20-chat-fallback';
 type ChatTextPolicy = 'default' | 'roll20-auto-aa';
 type ChatShadowPolicy = 'default' | 'no-template-shadow';
 type ChatGeometryPolicy = 'default' | 'tight-cell-spacing' | 'table-scale-x';
+type ChatTypographyPolicy = 'default' | 'roll20-shell-typography';
 
 function currentChatFontPolicy(): ChatFontPolicy {
   if (typeof window === 'undefined') return 'default';
@@ -64,6 +65,13 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
   const value = window.localStorage.getItem('__r20ChatGeometryPolicy');
   if (value === 'tight-cell-spacing' || value === 'table-scale-x') return value;
   return 'default';
+}
+
+function currentChatTypographyPolicy(): ChatTypographyPolicy {
+  if (typeof window === 'undefined') return 'default';
+  return window.localStorage.getItem('__r20ChatTypographyPolicy') === 'roll20-shell-typography'
+    ? 'roll20-shell-typography'
+    : 'default';
 }
 
 function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'default'): string {
@@ -137,6 +145,12 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-geometry-policy="table-scale-x"] [class*="sheet-rolltemplate-"] table {
   transform: scaleX(0.981);
   transform-origin: left top;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
 }
 .r20-chat-pane .textchatcontainer .content {
   line-height: 1.25em;
@@ -482,6 +496,7 @@ export default function ChatPane() {
   const chatTextPolicy = currentChatTextPolicy();
   const chatShadowPolicy = currentChatShadowPolicy();
   const chatGeometryPolicy = currentChatGeometryPolicy();
+  const chatTypographyPolicy = currentChatTypographyPolicy();
   const rolltemplateCss = useMemo(
     () => extractRolltemplateCss(emittedCss, chatFontPolicy),
     [emittedCss, chatFontPolicy],
@@ -494,6 +509,7 @@ export default function ChatPane() {
       data-r20-chat-text-policy={chatTextPolicy}
       data-r20-chat-shadow-policy={chatShadowPolicy}
       data-r20-chat-geometry-policy={chatGeometryPolicy}
+      data-r20-chat-typography-policy={chatTypographyPolicy}
     >
       <style data-r20-chat-shell-css dangerouslySetInnerHTML={{ __html: roll20ChatShellCss }} />
       {rolltemplateCss.trim() && (

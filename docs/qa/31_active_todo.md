@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - Roll20 shell typography candidate rejected
+
+Status: PARTIAL. Roll20 chat/template parity is still NOT done; one live-style hypothesis is now reproducibly rejected.
+
+- DONE: Added diagnostic-only `--chat-typography-policy roll20-shell-typography` to local `rolltemplate_chat_smoke` and ChatPane. It applies the observed Roll20 shell typography (`13.65px`, normal letter spacing, Proxima stack) to rolltemplate roots/tables only when explicitly enabled through localStorage/smoke args.
+- RESULT: Fresh default local smoke remains functional PASS for AW2E, Les-Oublies, and YSHY and compares to actual Roll20 at raw mismatches AW2E `12.78%`, Les-Oublies `10.09%`, YSHY `28.36%`.
+- REJECTED: Fresh shell-typography candidate is also functional PASS but worsens pixels: AW2E `13.09%`, Les-Oublies `10.09%`, YSHY `30.52%`. Do not promote this as production ChatPane behavior.
+- INTERPRETATION: The live Roll20 shell font-size/letter-spacing mismatch is real, but direct shell typography override is not the missing renderer model. Continue investigating YSHY text/highlight/shadow compositing and actual `sheet-rolltemplate-coc` recapture instead.
+- STILL TODO P0: Recapture/probe YSHY `sheet-rolltemplate-coc` in actual Roll20 with current typography/row fields, then compare same-moment sidecar and screenshot before changing production ChatPane CSS.
+
 ## 2026-06-20 Codex Update - Live chat typography probe classified
 
 Status: PARTIAL. Roll20 chat/template parity is still NOT done; this batch prevents a live probe from being misread as the wrong fixture.

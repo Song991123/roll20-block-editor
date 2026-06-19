@@ -18,6 +18,7 @@ const candidates = [
   ['soft-shadow-rejected', 'reports/rolltemplate-chat-smoke-soft-template-shadow/screenshots'],
   ['tight-cell-spacing', 'reports/rolltemplate-chat-smoke-tight-cell-spacing/screenshots'],
   ['table-scale-x', 'reports/rolltemplate-chat-smoke-table-scale-x/screenshots'],
+  ['shell-typography', 'reports/rolltemplate-chat-smoke-shell-typography/screenshots'],
 ];
 
 const rows = [];

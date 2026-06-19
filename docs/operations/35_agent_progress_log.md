@@ -1,3 +1,13 @@
+## 2026-06-20 04:52 +09:00 - Roll20 shell typography candidate rejected
+
+Status: PARTIAL. This batch adds a reproducible diagnostic switch and rejects it for production.
+
+- Added diagnostic-only `ChatTypographyPolicy` with `roll20-shell-typography`, exposed through `rolltemplate_chat_smoke --chat-typography-policy roll20-shell-typography`.
+- Generated fresh default and shell-typography local chat smoke reports against the same build. Both are functional PASS for AW2E, Les-Oublies, and YSHY.
+- Fresh default actual comparison: AW2E `12.78%`, Les-Oublies `10.09%`, YSHY `28.36%` raw mismatch.
+- Fresh shell-typography actual comparison: AW2E `13.09%`, Les-Oublies `10.09%`, YSHY `30.52%` raw mismatch.
+- Decision: keep shell typography diagnostic-only and do not promote it. It confirms that the observed Roll20 shell typography mismatch is not sufficient as a direct CSS override; the next P0 remains YSHY same-fixture recapture/probe and text/shadow compositing.
+
 ## 2026-06-20 04:31 +09:00 - Live chat typography probe classified
 
 Status: PARTIAL. This batch adds guardrails around live Roll20 probe interpretation; parity is still not achieved.
