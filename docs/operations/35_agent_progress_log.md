@@ -1610,3 +1610,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_root_cutoff_diagnostics.mjs` to prefer that root/container sidecar over the older attr_class sidecar when comparing stitched evidence against live Roll20 metrics.
 - Latest root cutoff diagnostic still reports `HIGH`: stitched `9168px`, live root/form `11788.087890625px`, delta `2620.088px`, dialog scroll `top=11223.2`, `h=626/11849`.
 - Claim boundary: this is stronger actual Roll20 measurement evidence, not a new screenshot, not renderer readiness, and not visual parity.
+
+## 2026-06-19 AW2E Scroll Metrics Stitch Diagnostic
+
+- Used the read-only `#dialog-window` scroll metrics from the dedicated Roll20 sandbox iframe to capture 23 sheet-root-only segments under ignored local reports.
+- Stitched diagnostic `aw2e-root-scroll-metrics-stitch-20260619.png` is `852x11788`, matching the live root/form height rather than the older `9168px` trusted stitch.
+- `audit:roll20-root-stitch` now reports the file as `DIAGNOSTIC_SCROLL_METRICS` with duplicate segments `0` and coverage issues `0`; `plan:roll20-root-capture` lists it as a `scroll-metrics` diagnostic.
+- Claim boundary: this is a promising recapture diagnostic. It is not yet promoted to the preferred trusted Roll20 root screenshot and does not make renderer CSS ready.

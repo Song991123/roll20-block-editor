@@ -106,14 +106,27 @@ function buildFixturePlan(baseRunDir, fixture, trustedExamples, rootCutoff = nul
   const completeManifest = path.join(shotsDir, 'roll20-root-dpr-complete-manifest.json');
   const outputPng = path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.png');
   const outputJson = outputPng.replace(/\.png$/i, '.json');
-  const diagnostics = (fixture.overlapDiagnostics ?? []).map((item) => ({
-    source: item.source,
-    segmentCount: item.segmentCount ?? 0,
-    outputSize: item.outputSize ?? null,
-    duplicateSegmentCount: item.segmentHashSummary?.duplicateSegmentCount ?? 0,
-    maxOverlapScore: item.maxOverlapScore ?? null,
-    transitionSummary: item.transitionSummary ?? null,
-  }));
+  const diagnostics = [
+    ...(fixture.overlapDiagnostics ?? []).map((item) => ({
+      kind: 'visual-overlap',
+      source: item.source,
+      segmentCount: item.segmentCount ?? 0,
+      outputSize: item.outputSize ?? null,
+      duplicateSegmentCount: item.segmentHashSummary?.duplicateSegmentCount ?? 0,
+      maxOverlapScore: item.maxOverlapScore ?? null,
+      transitionSummary: item.transitionSummary ?? null,
+    })),
+    ...(fixture.scrollMetricsDiagnostics ?? []).map((item) => ({
+      kind: 'scroll-metrics',
+      source: item.source,
+      segmentCount: item.segmentCount ?? 0,
+      outputSize: item.outputSize ?? item.outputCss ?? null,
+      duplicateSegmentCount: item.segmentHashSummary?.duplicateSegmentCount ?? 0,
+      coverageIssueCount: item.coverageIssues?.length ?? null,
+      maxOverlapScore: null,
+      transitionSummary: null,
+    })),
+  ];
   const largestDiagnostic = diagnostics.slice().sort((a, b) => Number(b.segmentCount) - Number(a.segmentCount))[0] ?? null;
   return {
     fixtureId,
@@ -278,9 +291,9 @@ function renderMarkdown(report) {
     if (!fixture.diagnostics.length) {
       lines.push('- No overlap diagnostics found.', '');
     } else {
-      lines.push('| Source | Segments | Output | Duplicate segments | Max overlap |', '| --- | ---: | --- | ---: | ---: |');
+      lines.push('| Source | Kind | Segments | Output | Duplicate segments | Coverage issues | Max overlap |', '| --- | --- | ---: | --- | ---: | ---: | ---: |');
       for (const diagnostic of fixture.diagnostics) {
-        lines.push(`| \`${diagnostic.source}\` | ${diagnostic.segmentCount} | ${fmtSize(diagnostic.outputSize)} | ${diagnostic.duplicateSegmentCount} | ${diagnostic.maxOverlapScore ?? ''} |`);
+        lines.push(`| \`${diagnostic.source}\` | ${diagnostic.kind ?? ''} | ${diagnostic.segmentCount} | ${fmtSize(diagnostic.outputSize)} | ${diagnostic.duplicateSegmentCount} | ${diagnostic.coverageIssueCount ?? ''} | ${diagnostic.maxOverlapScore ?? ''} |`);
       }
       lines.push('');
     }

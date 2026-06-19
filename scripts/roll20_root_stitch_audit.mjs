@@ -51,13 +51,14 @@ async function auditFixture(fixtureId) {
   const dprManifest = await readJsonIfExists(path.join(shotsDir, 'roll20-root-dpr-corrected-manifest.json'));
   const dprCompleteManifest = await readJsonIfExists(path.join(shotsDir, 'roll20-root-dpr-complete-manifest.json'));
   const overlapDiagnostics = await readOverlapDiagnostics(shotsDir);
+  const scrollMetricsDiagnostics = await readScrollMetricsDiagnostics(shotsDir);
   const checks = [];
   if (stitchedMeta) checks.push(auditStitchedMeta(stitchedMeta, 'roll20-sandbox-root-full.json'));
   if (dprCorrectedMeta) checks.push(auditStitchedMeta(dprCorrectedMeta, 'roll20-sandbox-root-full-dpr-corrected.json'));
   if (dprManifest) checks.push(await auditCaptureManifest(dprManifest, 'roll20-root-dpr-corrected-manifest.json', shotsDir));
   if (dprCompleteManifest) checks.push(await auditCaptureManifest(dprCompleteManifest, 'roll20-root-dpr-complete-manifest.json', shotsDir));
   if (!checks.length) {
-    const hasDiagnostics = overlapDiagnostics.length > 0;
+    const hasDiagnostics = overlapDiagnostics.length > 0 || scrollMetricsDiagnostics.length > 0;
     return {
       fixtureId,
       status: 'SKIP',
@@ -66,6 +67,7 @@ async function auditFixture(fixtureId) {
         : 'missing stitched root metadata',
       checks: [],
       overlapDiagnostics,
+      scrollMetricsDiagnostics,
     };
   }
   const failing = checks.flatMap((check) => check.issues.map((issue) => ({ source: check.source, ...issue })));
@@ -82,11 +84,44 @@ async function auditFixture(fixtureId) {
     primaryIssue: hasTrustedPreferred ? null : failing[0]?.message ?? null,
     trustedEvidence: hasTrustedPreferred ? preferredChecks.map((check) => check.source) : [],
     overlapDiagnostics,
+    scrollMetricsDiagnostics,
     supersededIssues: hasTrustedPreferred
       ? failing.filter((issue) => !preferredSources.has(issue.source))
       : [],
     checks,
   };
+}
+
+async function readScrollMetricsDiagnostics(shotsDir) {
+  if (!existsSync(shotsDir)) return [];
+  const entries = await readdir(shotsDir, { withFileTypes: true });
+  const files = entries
+    .filter((entry) => entry.isFile() && /root-scroll-metrics-stitch.*\.json$/i.test(entry.name))
+    .map((entry) => entry.name)
+    .sort();
+  const diagnostics = [];
+  for (const file of files) {
+    const meta = await readJsonIfExists(path.join(shotsDir, file));
+    if (!meta) continue;
+    const segments = Array.isArray(meta.segments) ? meta.segments : [];
+    diagnostics.push({
+      source: file,
+      status: 'DIAGNOSTIC_SCROLL_METRICS',
+      segmentCount: Number(meta.segmentCount ?? segments.length ?? 0),
+      outputSize: meta.outputSize ?? null,
+      outputCss: meta.outputCss ?? null,
+      segmentHashSummary: meta.segmentHashSummary ?? null,
+      coverageIssues: coverageIssues({
+        outputHeight: Number(meta.outputSize?.h ?? meta.outputCss?.h ?? 0),
+        segments: segments.map((segment) => ({
+          y: Number(segment.destPx?.y ?? segment.destCss?.y ?? 0),
+          h: Number(segment.destPx?.h ?? segment.destCss?.h ?? 0),
+        })),
+      }),
+      scope: meta.scope ?? 'scroll-metrics diagnostic only; not trusted Roll20 full-root evidence',
+    });
+  }
+  return diagnostics;
 }
 
 async function readOverlapDiagnostics(shotsDir) {
@@ -327,6 +362,9 @@ function renderMarkdown(report) {
     const checks = [
       ...fixture.checks.map((check) => `${check.source}: ${check.status}`),
       diagnostics,
+      (fixture.scrollMetricsDiagnostics ?? [])
+        .map((diag) => `${diag.source}: ${diag.status} (${diag.segmentCount} seg, ${fmtSize(diag.outputSize)}, duplicate seg ${diag.segmentHashSummary?.duplicateSegmentCount ?? 'n/a'}, coverage issues ${diag.coverageIssues?.length ?? 'n/a'})`)
+        .join('<br>'),
     ].filter(Boolean).join('<br>');
     lines.push(`| ${fixture.fixtureId} | ${fixture.status} | ${(fixture.trustedEvidence ?? []).join('<br>')} | ${fixture.primaryIssue ?? ''} | ${checks} |`);
   }
@@ -365,6 +403,13 @@ async function readJsonIfExists(file) {
 
 function round(value) {
   return Math.round(value * 1000) / 1000;
+}
+
+function fmtSize(size) {
+  if (!size) return 'n/a';
+  const w = Number(size.w ?? size.width ?? 0);
+  const h = Number(size.h ?? size.height ?? 0);
+  return `${round(w)}x${round(h)}`;
 }
 
 function median(values) {

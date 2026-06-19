@@ -14,6 +14,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 AW2E scroll-metrics stitch diagnostic:
+Using the read-only iframe metrics, Chrome/CDP captured 23 ignored local sheet-root segments and stitched diagnostic aw2e-root-scroll-metrics-stitch-20260619.png at 852x11788 from manifest aw2e-root-scroll-metrics-manifest-20260619.json. audit:roll20-root-stitch now surfaces this as DIAGNOSTIC_SCROLL_METRICS, duplicate segments 0, coverage issues 0, and plan:roll20-root-capture lists it as scroll-metrics. This is stronger recapture evidence but not promoted to trusted roll20-sandbox-root-full-dpr-corrected.png; renderer remains HOLD and rendererReady=NO until the diagnostic is compared/classified and intentionally promoted or recaptured.
 Current Roll20 renderer note, 2026-06-19 AW2E root container metrics sidecar:
 Chrome/CDP read the dedicated Roll20 character iframe in read-only mode and saved ignored local sidecar `live-iframe-probe/official-roll20-AW2E-root-container-metrics.json`. Latest `diagnose:roll20-root-cutoff` now uses that sidecar before the older attr_class sidecar and reports source `official-roll20-AW2E-root-container-metrics.json`, root/form height `11788.087890625px`, dialog scroller `top=11223.2, h=626/11849`, stitched height `9168px`, delta `2620.088px`, risk `HIGH`. Existing rooms/settings were not modified. Renderer remains HOLD and `rendererReady=NO`; next P0 is recapturing or deriving full-root segments against the authoritative `11788.087890625px` root height.
 
