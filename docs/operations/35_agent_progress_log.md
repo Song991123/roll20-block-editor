@@ -13,6 +13,8 @@ Status: PARTIAL. This batch improves evidence truthfulness; Roll20 chat/template
 
 Follow-up: Les-Oublies foreground was recaptured locally after narrowing the Roll20 viewport and scrolling the text chat panel. The new local-only `roll20-chat.png` shows the `Initiative :` template text, so `chatActualTemplatePixelSuspect` is now `0`; however the sidecar is explicitly marked as manual coordinate calibration, so `chatActualCropGeometrySuspect=1` and the renderer gate still blocks CSS tuning. Suspect-including max aligned mismatch changed from `91.69%` to `65.02%`; authoritative max aligned mismatch remains `23.4%` across AW2E/YSHY.
 
+Follow-up status hardening: `status:roll20-actual` now separates diffed screenshots from authoritative generated evidence. Current status is `GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT`, with `generatedAuthoritative=NO`, `chatCaptureSuspects=1`, and `actualEvidenceComplete=false`; `--require-actual` now fails until the suspect chat capture is replaced.
+
 ## 2026-06-20 05:13 +09:00 - AW2E/Les actual Roll20 chat current-metric recapture
 
 Status: PARTIAL. Current Roll20 chat sidecar coverage is now complete; visual/chat parity remains blocked.

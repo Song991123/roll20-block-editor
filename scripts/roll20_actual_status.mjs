@@ -92,6 +92,12 @@ async function main() {
     failedDiffCount === 0;
   const generatedEvidenceComplete =
     generatedPresentCount === generatedTargetCount && generatedDiffedCount === generatedTargetCount;
+  const chatCaptureSuspectCount =
+    chatParity.needsNormalizedCapture +
+    chatParity.actualCropGeometrySuspect +
+    chatParity.actualTemplatePixelSuspect +
+    chatParity.actualCaptureScaleSuspect;
+  const generatedEvidenceAuthoritative = generatedEvidenceComplete && chatCaptureSuspectCount === 0;
   const trustedFullRootComplete =
     rootStitchAudit.fixtureCount > 0 &&
     rootStitchAudit.trustedFullRootCount === rootStitchAudit.fixtureCount;
@@ -112,14 +118,15 @@ async function main() {
   const roomObservationComplete =
     observationTargetCount === 0 ||
     (observationPresentCount === observationTargetCount && observationDiffedCount === observationTargetCount);
-  const actualEvidenceComplete = generatedEvidenceComplete && roomObservationComplete;
+  const actualEvidenceComplete = generatedEvidenceAuthoritative && roomObservationComplete;
   const commandPass =
     localReady &&
-    (!REQUIRE_ACTUAL || generatedEvidenceComplete) &&
+    (!REQUIRE_ACTUAL || generatedEvidenceAuthoritative) &&
     (!REQUIRE_RENDERER_READY || rendererReady);
   const status = statusOf({
     localReady,
     generatedEvidenceComplete,
+    generatedEvidenceAuthoritative,
     generatedPresentCount,
     generatedTargetCount,
     generatedDiffedCount,
@@ -147,6 +154,8 @@ async function main() {
       generatedPresentCount,
       generatedMissingCount: generatedTargetCount - generatedPresentCount,
       generatedDiffedCount,
+      generatedEvidenceAuthoritative,
+      chatCaptureSuspectCount,
       observationTargetCount,
       observationPresentCount,
       observationMissingCount: observationTargetCount - observationPresentCount,
@@ -198,6 +207,8 @@ async function main() {
       generatedPresentCount,
       generatedTargetCount,
       generatedDiffedCount,
+      generatedEvidenceAuthoritative,
+      chatCaptureSuspectCount,
       observationPresentCount,
       observationTargetCount,
       blockerEvidence,
@@ -855,11 +866,13 @@ function runDirFromReport(reportFile) {
 function statusOf({
   localReady,
   generatedEvidenceComplete,
+  generatedEvidenceAuthoritative,
   generatedPresentCount,
   generatedTargetCount,
   generatedDiffedCount,
 }) {
   if (!localReady) return 'LOCAL_PREUPLOAD_NOT_READY';
+  if (generatedEvidenceComplete && !generatedEvidenceAuthoritative) return 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT';
   if (generatedEvidenceComplete) return 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED';
   if (generatedPresentCount === 0) return 'PREUPLOAD_READY_MISSING_GENERATED_ACTUAL';
   if (generatedPresentCount < generatedTargetCount) return 'PARTIAL_GENERATED_ACTUAL_SCREENSHOTS';
@@ -882,6 +895,7 @@ function renderMarkdown(report) {
     `- Fixtures: ${report.summary.fixtures}`,
     `- Generated-sheet screenshots: ${report.summary.generatedPresentCount}/${report.summary.generatedTargetCount}`,
     `- Generated-sheet diffs: ${report.summary.generatedDiffedCount}/${report.summary.generatedTargetCount}`,
+    `- Generated-sheet authoritative evidence: ${report.summary.generatedEvidenceAuthoritative ? 'yes' : 'NO'} (chat capture suspects: ${report.summary.chatCaptureSuspectCount})`,
     `- Solo-room observation screenshots: ${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
     `- Solo-room observation diffs: ${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
     `- Trusted full-root evidence: ${report.summary.trustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
@@ -898,7 +912,7 @@ function renderMarkdown(report) {
     `- Blocker evidence files: ${report.summary.blockerEvidenceCount}`,
     `- Status: ${report.status}`,
     `- Command gate: ${report.commandPass ? 'PASS' : 'NEEDS ACTION'}`,
-    `- Generated-sheet actual evidence complete: ${report.summary.generatedDiffedCount === report.summary.generatedTargetCount ? 'yes' : 'no'}`,
+    `- Generated-sheet actual evidence complete: ${report.summary.generatedEvidenceAuthoritative ? 'yes' : 'NO'}`,
     `- All actual evidence complete, including optional room observation: ${report.actualEvidenceComplete ? 'yes' : 'no'}`,
     '',
     `Next action: ${report.nextAction}`,
@@ -986,6 +1000,8 @@ function renderConsoleSummary(report, outDir) {
     `preupload=${report.preupload.pass ? 'PASS' : 'MISSING/FAIL'}`,
     `generatedActualScreenshots=${report.summary.generatedPresentCount}/${report.summary.generatedTargetCount}`,
     `generatedDiffed=${report.summary.generatedDiffedCount}/${report.summary.generatedTargetCount}`,
+    `generatedAuthoritative=${report.summary.generatedEvidenceAuthoritative ? 'YES' : 'NO'}`,
+    `chatCaptureSuspects=${report.summary.chatCaptureSuspectCount}`,
     `roomObservationScreenshots=${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
     `roomObservationDiffed=${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
     `trustedFullRoot=${report.summary.trustedFullRootCount}/${report.summary.trustedFullRootTotal}`,

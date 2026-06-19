@@ -13,6 +13,8 @@ Status: PARTIAL. Evidence quality improved; renderer/chat parity remains blocked
 
 Follow-up: Narrowed the Roll20 viewport and scrolled the text chat panel so the Les-Oublies `Initiative :` template was visibly captured in ignored local evidence. `diagnose:roll20-chat-parity` now reports `actualTemplatePixelSuspect=0`, but the sidecar is marked with manual coordinate calibration, so `actualCropGeometrySuspect=1` and `NEEDS_AUTHORITATIVE_CAPTURE` is still correct. Current `status:roll20-actual`: `chatAuthoritativeNormalizedHighMismatch=2`, `chatActualCropGeometrySuspect=1`, `chatMaxAlignedMismatch=65.02%`, `rendererReady=NO`.
 
+Follow-up status hardening: `status:roll20-actual` now reports `GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT` instead of the overly broad `GENERATED_ACTUAL_SCREENSHOTS_DIFFED` when chat capture suspects remain. Current command output: `generatedAuthoritative=NO`, `chatCaptureSuspects=1`, `actualEvidenceComplete=false`; `--require-actual` correctly exits non-zero until authoritative chat evidence is recaptured.
+
 ## 2026-06-20 Codex Update - AW2E/Les Roll20 chat current-metric recapture
 
 Status: PARTIAL. Current row/typography evidence is now complete for all three real Roll20 chat fixtures, but Roll20 chat/template parity is still failing.
