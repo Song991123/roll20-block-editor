@@ -21,6 +21,7 @@ const candidates = [
   ['roll20-message-padding', 'reports/rolltemplate-chat-smoke-roll20-message-padding/screenshots'],
   ['roll20-break-word', 'reports/rolltemplate-chat-smoke-roll20-break-word/screenshots'],
   ['shell-typography', 'reports/rolltemplate-chat-smoke-shell-typography/screenshots'],
+  ['template-typography', 'reports/rolltemplate-chat-smoke-template-typography/screenshots'],
 ];
 
 const rows = [];

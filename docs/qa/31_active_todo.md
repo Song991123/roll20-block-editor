@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Template typography candidate rejected
+
+Status: PARTIAL. A plausible Les-Oublies chat hypothesis was tested and rejected; Roll20 chat/template parity is still blocked.
+
+- DONE: Added a hidden diagnostic-only `roll20-template-typography` ChatPane policy and `template-typography` candidate smoke path.
+- DONE: The candidate applies observed Roll20 template typography/color/letter-spacing/font-smoothing to rolltemplate roots, tables, captions, and cells for local comparison only. It is not exposed in product UI.
+- RESULT: Functional smoke passed for AW2E, Les-Oublies, and YSHY, so the candidate is mechanically testable.
+- RESULT: Pixel comparison rejected it: Les-Oublies improved only `12.90% -> 12.89%`, AW2E regressed `7.35% -> 7.76%`, and YSHY regressed badly `21.45% -> 31.00%`.
+- RESULT: `gate:roll20-renderer-action` now reports `template-typography` as a fixture-regressing candidate; it must not be promoted to production ChatPane CSS.
+- VERIFIED: `node scripts\rolltemplate_chat_smoke.mjs --out-dir .\out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir reports\rolltemplate-chat-smoke-template-typography --chat-typography-policy roll20-template-typography --port 4197`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-renderer-policy`, `gate:roll20-renderer-action`, and `corepack pnpm run lint`.
+- STILL TODO P0: Les-Oublies still needs a new diagnostic model. The remaining Les mismatch is not solved by simple template typography; next work should inspect background/border/shadow/anti-aliasing or crop shell effects from actual Roll20 evidence.
+
 ## 2026-06-20 Codex Update - Chat renderer policy gate
 
 Status: PARTIAL. Roll20 chat/template parity is still blocked, but the unsafe global-patch boundary is now explicit.

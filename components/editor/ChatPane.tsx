@@ -42,7 +42,7 @@ type ChatGeometryPolicy =
   | 'table-scale-x'
   | 'roll20-message-padding'
   | 'roll20-break-word';
-type ChatTypographyPolicy = 'default' | 'roll20-shell-typography';
+type ChatTypographyPolicy = 'default' | 'roll20-shell-typography' | 'roll20-template-typography';
 
 function currentChatFontPolicy(): ChatFontPolicy {
   if (typeof window === 'undefined') return 'default';
@@ -79,9 +79,9 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
 
 function currentChatTypographyPolicy(): ChatTypographyPolicy {
   if (typeof window === 'undefined') return 'default';
-  return window.localStorage.getItem('__r20ChatTypographyPolicy') === 'roll20-shell-typography'
-    ? 'roll20-shell-typography'
-    : 'default';
+  const value = window.localStorage.getItem('__r20ChatTypographyPolicy');
+  if (value === 'roll20-shell-typography' || value === 'roll20-template-typography') return value;
+  return 'default';
 }
 
 function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'default'): string {
@@ -168,6 +168,16 @@ const roll20ChatShellCss = `
   font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   font-size: 13.65px;
   letter-spacing: normal;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-template-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-template-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-template-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-template-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  color: rgb(64, 64, 64);
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
 }
 .r20-chat-pane .textchatcontainer .content {
   line-height: 1.25em;

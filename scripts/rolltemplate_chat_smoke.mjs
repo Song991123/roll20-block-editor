@@ -587,7 +587,7 @@ async function main() {
       }
     }, CHAT_GEOMETRY_POLICY);
     await page.evaluate((policy) => {
-      if (policy === 'roll20-shell-typography') {
+      if (policy === 'roll20-shell-typography' || policy === 'roll20-template-typography') {
         localStorage.setItem('__r20ChatTypographyPolicy', policy);
       } else {
         localStorage.removeItem('__r20ChatTypographyPolicy');

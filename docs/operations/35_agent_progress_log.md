@@ -2219,6 +2219,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - `audit:roll20-root-stitch` now reports the file as `DIAGNOSTIC_SCROLL_METRICS` with duplicate segments `0` and coverage issues `0`; `plan:roll20-root-capture` lists it as a `scroll-metrics` diagnostic.
 - Claim boundary: this is a promising recapture diagnostic. It is not yet promoted to the preferred trusted Roll20 root screenshot and does not make renderer CSS ready.
 
+## 2026-06-20 Template Typography Candidate Rejected
+
+- Tested the Les-Oublies hypothesis that the remaining chat mismatch was mainly template typography/color/letter-spacing/font-smoothing.
+- Added hidden diagnostic policy `roll20-template-typography` in `ChatPane` and candidate row `template-typography` in `roll20_chat_candidate_compare`.
+- Functional smoke passed for all three current fixtures, so the candidate is reproducible.
+- Candidate comparison rejected it as production CSS: Les-Oublies barely moved (`12.90% -> 12.89%`), AW2E regressed (`7.35% -> 7.76%`), and YSHY regressed heavily (`21.45% -> 31.00%`).
+- The renderer action gate now lists `template-typography` with the other fixture-regressing candidates.
+- Claim boundary: this is a negative-control diagnostic. It does not improve Roll20 parity and must not be exposed or promoted.
+- Next P0: investigate Les-Oublies background/border/shadow/anti-aliasing or crop-shell effects; simple template typography is not the root cause.
+
 ## 2026-06-20 Chat Renderer Policy Gate
 
 - Added `scripts/roll20_chat_renderer_policy.mjs` and package alias `diagnose:roll20-chat-renderer-policy`.
