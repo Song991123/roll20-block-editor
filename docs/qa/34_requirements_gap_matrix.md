@@ -244,3 +244,13 @@ blockers are cleared.
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
 | VERIFY | P1 | Remove confusing app UI chrome and broken text from core flows. | Header, empty preview state, and export dialog now use readable Korean copy. Public sample UI is hidden when `EXAMPLES` is empty, matching the copyright rule that real sheet samples must not ship publicly. `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke --port 4326` PASS confirms header/empty-state text, no sample UI in the empty public catalog state, no mojibake in initial shell or export dialog text, export readiness, `실제 검증 필요` badge, Roll20 Sandbox expected-transform diagnostics with 4 rows, legacy toggle copy, local-vs-actual verification warning copy, import dialog opening, and edit tab selection with 0 console/page errors. Imported-fixture mode also PASS on port 4325 and confirms the same export copy/diagnostics after a real fixture import. | Continue auditing remaining editor panels/dialogs for mojibake or translation-style labels; do not claim full UI copy cleanup yet. |
+
+## 2026-06-19 Roll20 Browser Recheck Gap Note
+
+- Dedicated Roll20 editor/settings tabs were reclaimed for Custom Sheet Sandbox verification only; no existing room was modified.
+- The sandbox settings page still held the YSHY `customcharsheet_json` manifest, so AW2E is not currently proven as the loaded generated sheet.
+- AW2E upload through the visible `Sheet Sandbox Tools` HTML file chooser still failed with Chrome `Not allowed`; the file-input/full-activation blocker remains.
+- An initial `roll20-chat.png` capture used uncorrected CSS clip coordinates and captured the sandbox tools dialog. That bad local PNG was removed.
+- A DPR-corrected chat capture showed the Roll20 chat panel, but only default chat tips/invite text, not a rolltemplate card.
+- Les-Oublies `roll20-chat-dom-evidence.json` was refreshed from the current DOM and now records 5 messages and 0 rolltemplates.
+- Latest actual status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`; Roll20 chat visual evidence is still missing.

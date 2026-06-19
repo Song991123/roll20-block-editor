@@ -1313,3 +1313,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Blockers: AW2E lacks trusted generated root evidence, all Roll20 chat screenshots are missing, only 2/3 fixtures have full-root candidates, and the best diagnostic patch is not uniform (`inline-block+text-input-height` for Les-Oublies vs `text-input-height` for YSHY).
 - Positive evidence: Les-Oublies diagnostic best is 3.87% with root delta -0.656px; YSHY best is 4.28% with root delta -0.375px; local Sandbox expected panel visibility matches actual sampled panels for Les-Oublies.
 - Claim boundary: this is a safety gate to prevent premature renderer CSS promotion, not visual parity.
+
+## 2026-06-19 Roll20 Browser Recheck: File Upload Still Blocked, Chat Evidence Reset
+
+- Reclaimed the dedicated Roll20 editor and sandbox settings tabs for the Custom Sheet Sandbox only; no existing room was modified.
+- The sandbox settings page still had the YSHY `customcharsheet_json` manifest active, so AW2E cannot be considered the currently loaded generated sheet.
+- Retried the visible `Sheet Sandbox Tools` HTML file chooser against the AW2E payload. Chrome still returned `fileChooser.setFiles failed` with `Not allowed`, matching the documented extension file-access blocker.
+- A first chat-pane screenshot attempt used uncorrected CSS coordinates and captured the sandbox tools dialog, not chat. The bad local `roll20-chat.png` was removed.
+- A DPR-corrected chat-pane screenshot captured the real Roll20 chat panel, but the current panel showed only default chat tips and invite text, not a rolltemplate card.
+- Refreshed `roll20-chat-dom-evidence.json` for Les-Oublies from the current DOM; it now records 5 messages and 0 rolltemplates. Latest status is back to `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`.
+- Claim boundary: there is still no trustworthy Roll20 chat visual evidence, and AW2E still lacks trusted generated root evidence.

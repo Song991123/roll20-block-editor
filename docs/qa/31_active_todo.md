@@ -520,3 +520,13 @@ Never write into:
 - `D:\??�깷??留덈????곗븣\0 CoC\?곸떆??H???�ㅻ?????�듃`
 
 If fixtures are needed, copy selected files into workspace-owned ignored folders only.
+
+## 2026-06-19 Roll20 Browser Recheck TODO Note
+
+- Dedicated Roll20 editor/settings tabs were reclaimed for Custom Sheet Sandbox verification only; no existing room was modified.
+- The sandbox settings page still held the YSHY `customcharsheet_json` manifest, so AW2E is not currently proven as the loaded generated sheet.
+- AW2E upload through the visible `Sheet Sandbox Tools` HTML file chooser still failed with Chrome `Not allowed`; the file-input/full-activation blocker remains.
+- An initial `roll20-chat.png` capture used uncorrected CSS clip coordinates and captured the sandbox tools dialog. That bad local PNG was removed.
+- A DPR-corrected chat capture showed the Roll20 chat panel, but only default chat tips/invite text, not a rolltemplate card.
+- Les-Oublies `roll20-chat-dom-evidence.json` was refreshed from the current DOM and now records 5 messages and 0 rolltemplates.
+- Latest actual status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`; Roll20 chat visual evidence is still missing.
