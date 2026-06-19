@@ -70,6 +70,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 
 
+
+## 2026-06-19 YSHY Sandbox Upload Automation Blocker
+
+- Reclaimed the dedicated Roll20 Custom Sheet Sandbox editor/settings tabs only; no existing room was modified.
+- Confirmed the settings page has only `customcharsheet_json`, while the editor page exposes `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`.
+- Attempted three upload automation paths for YSHY 1BU: generated snippet/DataTransfer dispatch, CDP `DOM.setFileInputFiles`, and visible label/file-chooser activation. None applied files: the snippet reported `no-file-on-input`, CDP file setting is unsupported in this extension surface, and the file chooser timed out.
+- Latest diagnostics remain `diagnose:roll20-computed-style-context => compared=2/3, missingActualStyle=1` and `status:roll20-actual => rendererReady=NO`.
+- Claim boundary: this is a real blocker record, not a Roll20 visual-parity result. Next P0 is enabling a working manual/alternate YSHY sandbox upload path, then capturing `live-iframe-probe/yshy-commission-1bu-computed-styles.json`.
 ## 2026-06-19 AW2E Computed-Style Sidecar Capture
 
 - Claimed the dedicated `Codex Roll20 Verify | Roll20` editor tab in read-only mode; no existing room/settings were modified.
