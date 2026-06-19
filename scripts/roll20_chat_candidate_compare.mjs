@@ -16,6 +16,8 @@ const candidates = [
   ['font-fallback-no-shadow-rejected', 'reports/rolltemplate-chat-smoke-font-fallback-no-shadow/screenshots'],
   ['text-auto-aa', 'reports/rolltemplate-chat-smoke-text-auto-aa/screenshots'],
   ['soft-shadow-rejected', 'reports/rolltemplate-chat-smoke-soft-template-shadow/screenshots'],
+  ['tight-cell-spacing', 'reports/rolltemplate-chat-smoke-tight-cell-spacing/screenshots'],
+  ['table-scale-x', 'reports/rolltemplate-chat-smoke-table-scale-x/screenshots'],
 ];
 
 const rows = [];
@@ -28,6 +30,11 @@ for (const [name, screenshotsRelative] of candidates) {
   execFileSync('node', ['scripts/roll20_chat_parity_diagnostics.mjs', runDir, screenshots], { stdio: 'pipe' });
   const report = JSON.parse(await readFile(diagnosticJson, 'utf8'));
   rows.push(summarizeReport(name, screenshotsRelative, report));
+}
+
+const defaultScreenshots = path.resolve('reports/rolltemplate-chat-smoke/screenshots');
+if (existsSync(defaultScreenshots)) {
+  execFileSync('node', ['scripts/roll20_chat_parity_diagnostics.mjs', runDir, defaultScreenshots], { stdio: 'pipe' });
 }
 
 const defaultRow = rows.find((row) => row.name === 'default' && row.status === 'OK');
