@@ -1,3 +1,15 @@
+
+## 2026-06-19 Current Roll20 Iframe Probe Refresh
+
+- Captured fresh ignored Chrome evidence from the dedicated Roll20 editor tab under `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/`.
+- Current character iframe frameId was readable through CDP `Page.getFrameTree` + `Page.createIsolatedWorld`; captured `.charactersheet` root metrics: width 852px, height 11788.0879px, content-box, font 13px / 18.5714px, textLength 16196, htmlLength 93382.
+- This is positive live iframe evidence only. It does not change `rendererReady=NO`, does not prove visual parity, and does not satisfy room-observation/chat evidence.
+
+## 2026-06-19 Current Roll20 Iframe Probe Refresh
+
+- Captured fresh ignored Chrome evidence from the dedicated Roll20 editor tab under `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/`.
+- Current character iframe frameId was readable through CDP `Page.getFrameTree` + `Page.createIsolatedWorld`; captured `.charactersheet` root metrics: width 852px, height 11788.0879px, content-box, font 13px / 18.5714px, textLength 16196, htmlLength 93382.
+- This is positive live iframe evidence only. It does not change `rendererReady=NO`, does not prove visual parity, and does not satisfy room-observation/chat evidence.
 # 2026-06-19 Input-Flow Model Boundary Gate
 
 - Extended `diagnose:roll20-input-flow-axis` with explicit model-boundary statuses: `APPLY_CANDIDATE_FOR_THIS_AXIS`, `BLOCK_GLOBAL_MODEL`, and `globalModelSafe`.

@@ -1,3 +1,15 @@
+
+## 2026-06-19 Active TODO Refresh - Live Roll20 Iframe Probe
+
+- VERIFY: Dedicated Roll20 editor tab is reachable and iframe root can be read with CDP isolated world. Latest observed root: 852px x 11788.0879px.
+- STILL OPEN: `roomObservationScreenshots=0/3`, `roomObservationDiffed=0/3`, `rendererReady=NO`, `rendererBlockers=1`.
+- NEXT P0: connect fresh iframe probe evidence to fixture-specific status only after a normalized root/chat capture is produced; do not count generic viewport evidence as parity.
+
+## 2026-06-19 Active TODO Refresh - Live Roll20 Iframe Probe
+
+- VERIFY: Dedicated Roll20 editor tab is reachable and iframe root can be read with CDP isolated world. Latest observed root: 852px x 11788.0879px.
+- STILL OPEN: `roomObservationScreenshots=0/3`, `roomObservationDiffed=0/3`, `rendererReady=NO`, `rendererBlockers=1`.
+- NEXT P0: connect fresh iframe probe evidence to fixture-specific status only after a normalized root/chat capture is produced; do not count generic viewport evidence as parity.
 # 2026-06-19 Input-Flow Boundary TODO Update
 
 - DONE: input-flow model boundary is now machine-readable and surfaced in the renderer action gate.
