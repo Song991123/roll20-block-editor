@@ -247,6 +247,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     if (chatParitySummary.needsNormalizedCapture > 0) {
       blockers.push(`actual Roll20 chat parity needs normalized rolltemplate crop evidence for ${chatParitySummary.needsNormalizedCapture}/${chatParitySummary.fixtures} fixtures`);
     }
+    if (chatParitySummary.actualChatCssInactive > 0) {
+      blockers.push(`actual Roll20 chat CSS evidence is inactive for ${chatParitySummary.actualChatCssInactive}/${chatParitySummary.fixtures} fixtures; do not treat CSS-active local ChatPane mismatch as a production renderer regression until Roll20 chat CSS activation is proven`);
+    }
     if (chatParitySummary.normalizedHighMismatch > 0) {
       blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${chatParitySummary.normalizedHighMismatch}/${chatParitySummary.normalizedCompared} normalized fixtures; max normalized mismatch ${chatParitySummary.maxNormalizedMismatchPct}%`);
     }
@@ -326,7 +329,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     positiveFindings.push(`input-flow axis diagnostic: status=${inputFlowSummary.status}, applyCandidate=${inputFlowSummary.applyCandidateFixtures.length}, blockGlobalModel=${inputFlowSummary.blockGlobalModelFixtures.length}, globalSafe=${inputFlowSummary.globalModelSafe ? 'YES' : 'NO'}`);
   }
   if (chatParitySummary) {
-    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, maxNormalizedMismatch=${chatParitySummary.maxNormalizedMismatchPct}%`);
+    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, maxNormalizedMismatch=${chatParitySummary.maxNormalizedMismatchPct}%`);
   }
 
   const action = blockers.length
@@ -349,7 +352,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     nextActions.push('Recapture actual Roll20 chat DOM sidecars with rolltemplate rect/clip metadata for element-level chat parity comparison.');
   }
   if (chatParitySummary?.normalizedHighMismatch > 0) {
-    nextActions.push('Fix local ChatPane rolltemplate shell sizing/content to match actual Roll20 chat, then rerun rolltemplate chat smoke and diagnose:roll20-chat-parity.');
+    if (chatParitySummary.actualChatCssInactive > 0) {
+      nextActions.push('First recapture or prove a Roll20 chat state where user rolltemplate CSS is active. Current actual chat CSS-inactive evidence can explain large CSS-active local/actual mismatches.');
+    } else {
+      nextActions.push('Fix local ChatPane rolltemplate shell sizing/content to match actual Roll20 chat, then rerun rolltemplate chat smoke and diagnose:roll20-chat-parity.');
+    }
   }
   if (missingFullRootCandidates.length) {
     const ids = missingFullRootCandidates.map((fixture) => fixture.fixtureId);
@@ -439,6 +446,8 @@ function summarizeChatParity(report) {
     needsNormalizedCapture: Number(report.summary.needsNormalizedCapture ?? 0),
     highMismatch: Number(report.summary.highMismatch ?? 0),
     normalizedHighMismatch: Number(report.summary.normalizedHighMismatch ?? 0),
+    actualChatCssInactive: Number(report.summary.actualChatCssInactive ?? 0),
+    actualChatCssUnknown: Number(report.summary.actualChatCssUnknown ?? 0),
     maxMismatchRatio: Number(report.summary.maxMismatchRatio ?? 0),
     maxMismatchPct: pctNumber(report.summary.maxMismatchRatio ?? 0),
     maxNormalizedMismatchRatio: Number(report.summary.maxNormalizedMismatchRatio ?? 0),
@@ -450,6 +459,7 @@ function summarizeChatParity(report) {
         mismatchPct: pctNumber(fixture.mismatchRatio),
         localSize: fixture.localSize ?? null,
         actualSize: fixture.actualSize ?? null,
+        actualChatCss: fixture.actualChatCss ?? null,
       })),
   };
 }
@@ -561,14 +571,16 @@ function renderMarkdown(report) {
     lines.push(`- Needs normalized capture: ${report.chatParity.needsNormalizedCapture}`);
     lines.push(`- High mismatch: ${report.chatParity.highMismatch}`);
     lines.push(`- Normalized high mismatch: ${report.chatParity.normalizedHighMismatch}`);
+    lines.push(`- Actual chat CSS inactive: ${report.chatParity.actualChatCssInactive}`);
+    lines.push(`- Actual chat CSS unknown: ${report.chatParity.actualChatCssUnknown}`);
     lines.push(`- Max mismatch: ${report.chatParity.maxMismatchPct}%`);
     lines.push(`- Max normalized mismatch: ${report.chatParity.maxNormalizedMismatchPct}%`);
     if (report.chatParity.fixturesWithMismatch?.length) {
       lines.push('');
-      lines.push('| Fixture | Mismatch | Local size | Actual size |');
-      lines.push('| --- | ---: | --- | --- |');
+      lines.push('| Fixture | Mismatch | Actual CSS | Local size | Actual size |');
+      lines.push('| --- | ---: | --- | --- | --- |');
       for (const fixture of report.chatParity.fixturesWithMismatch) {
-        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.mismatchPct}% | ${fmtSize(fixture.localSize)} | ${fmtSize(fixture.actualSize)} |`);
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.mismatchPct}% | ${fixture.actualChatCss?.classification ?? ''} | ${fmtSize(fixture.localSize)} | ${fmtSize(fixture.actualSize)} |`);
       }
     }
     lines.push('');

@@ -1,4 +1,19 @@
 
+## 2026-06-19 Chat CSS Evidence Gate Update
+
+Status: DOING, renderer still HOLD.
+
+Evidence now:
+- Added chatCssEvidence to local-only Roll20 chat sidecars for AW2E and YSHY by reading the current Roll20 editor tabs in Chrome without modifying the rooms/settings.
+- Both current actual chat captures are CSS_RULE_MISSING_IN_PAGE_STYLES: AW2E lacks .sheet-rolltemplate-aw rules and YSHY lacks .sheet-rolltemplate-coc rules in the Roll20 page styles.
+- Updated diagnose:roll20-chat-parity to report actualChatCssInactive/actualChatCssUnknown and per-fixture Actual CSS status.
+- Updated gate:roll20-renderer-action so CSS-inactive actual chat evidence is a separate blocker. This prevents agents from misreading the YSHY 96.93% mismatch as proof that local CSS-enabled ChatPane should be disabled.
+
+Current gate:
+- rendererReady=NO.
+- actualChatCssInactive=2/3, needsNormalizedCapture=1/3, normalizedHighMismatch=1/2.
+- Next P0: obtain or prove a Roll20 Sandbox/test-room chat state where user rolltemplate CSS is active. If Roll20 genuinely keeps chat rolltemplate CSS inactive for custom sheets, document that as Roll20 behavior and adjust the simulator only after repeated evidence across correctly uploaded sheets.
+
 ## 2026-06-19 Rolltemplate chat CSS parity update
 
 Status: DOING, not parity.

@@ -1,4 +1,11 @@
 
+## 2026-06-19 Chat CSS Evidence Gate Update
+
+- Added a diagnostic boundary for actual Roll20 chat CSS activation. Current local-only sidecars for AW2E and YSHY now include chatCssEvidence captured from Chrome editor tabs.
+- The current actual Roll20 chat evidence is CSS-inactive: expected sheet-rolltemplate CSS rules are absent from page styles even though rolltemplate DOM exists.
+- `scripts/roll20_chat_parity_diagnostics.mjs` now reports actualChatCssInactive/Unknown and per-fixture Actual CSS state.
+- `scripts/roll20_renderer_action_gate.mjs` now blocks on CSS-inactive actual chat evidence and changes the next action from local ChatPane tweaking to recapturing/proving CSS-active Roll20 chat evidence first.
+
 ## 2026-06-19 Rolltemplate CSS investigation
 
 - Found a real local bug: ChatPane was extracting rolltemplate CSS from raw emitted CSS without Roll20 auto-prefix, so emitted dot-rolltemplate selectors did not match rendered dot-sheet-rolltemplate DOM.

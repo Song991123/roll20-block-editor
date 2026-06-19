@@ -45,6 +45,8 @@ async function main() {
   const normalizedCompared = compared.filter((fixture) => fixture.compareMode === 'rolltemplate-crop');
   const highMismatch = compared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
   const normalizedHighMismatch = normalizedCompared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
+  const actualChatCssInactive = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
+  const actualChatCssUnknown = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -58,6 +60,8 @@ async function main() {
       needsNormalizedCapture: fixtures.filter((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE').length,
       highMismatch: highMismatch.length,
       normalizedHighMismatch: normalizedHighMismatch.length,
+      actualChatCssInactive: actualChatCssInactive.length,
+      actualChatCssUnknown: actualChatCssUnknown.length,
       maxMismatchRatio: compared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
       maxNormalizedMismatchRatio: normalizedCompared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
     },
@@ -105,6 +109,7 @@ async function compareFixture(page, fixtureId) {
     : path.join(localChatDir, `${fixtureId}-chat.png`);
   const actual = path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat.png');
   const sidecar = path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
+  const sidecarJson = await readJsonIfExists(sidecar);
   if (!existsSync(local) || !existsSync(actual)) {
     return {
       fixtureId,
@@ -112,11 +117,11 @@ async function compareFixture(page, fixtureId) {
       local: rel(local),
       actual: rel(actual),
       sidecar: rel(sidecar),
+      actualChatCss: summarizeActualChatCss(sidecarJson),
       note: !existsSync(local) ? 'missing local ChatPane screenshot' : 'missing actual Roll20 chat screenshot',
     };
   }
 
-  const sidecarJson = await readJsonIfExists(sidecar);
   const actualCrop = buildActualTemplateCrop(sidecarJson);
   if (!actualCrop && existsSync(localTemplate)) {
     return {
@@ -126,6 +131,7 @@ async function compareFixture(page, fixtureId) {
       actual: rel(actual),
       sidecar: rel(sidecar),
       sidecarRolltemplateCount: Number(sidecarJson?.rolltemplateCount ?? sidecarJson?.rolltemplates?.length ?? 0),
+      actualChatCss: summarizeActualChatCss(sidecarJson),
       note: 'actual Roll20 chat sidecar lacks rolltemplate rect/clip metadata for element-level comparison',
     };
   }
@@ -137,6 +143,7 @@ async function compareFixture(page, fixtureId) {
     actual: rel(actual),
     sidecar: rel(sidecar),
     sidecarRolltemplateCount: Number(sidecarJson?.rolltemplateCount ?? sidecarJson?.rolltemplates?.length ?? 0),
+    actualChatCss: summarizeActualChatCss(sidecarJson),
     compareMode: actualCrop ? 'rolltemplate-crop' : 'full-chat-fallback',
     actualCrop,
     localSize: diff.localSize,
@@ -147,6 +154,25 @@ async function compareFixture(page, fixtureId) {
     rmsRgb: diff.rmsRgb,
     bounds: diff.bounds,
     note: 'Diagnostic local ChatPane vs actual Roll20 chat comparison. Requires human classification before a parity claim.',
+  };
+}
+
+function summarizeActualChatCss(sidecar) {
+  const evidence = sidecar?.chatCssEvidence;
+  if (!evidence) {
+    return {
+      classification: 'UNKNOWN',
+      note: 'actual Roll20 chat sidecar has no chatCssEvidence field',
+    };
+  }
+  return {
+    classification: evidence.classification ?? 'UNKNOWN',
+    anyExpectedRulePresent: Boolean(evidence.anyExpectedRulePresent),
+    expectedRules: evidence.expectedRules ?? {},
+    styleTextLength: Number(evidence.styleTextLength ?? 0),
+    templateCount: Number(evidence.templateCount ?? 0),
+    capturedAt: evidence.capturedAt ?? null,
+    note: evidence.note ?? '',
   };
 }
 
@@ -265,13 +291,15 @@ function renderMarkdown(report) {
   lines.push(`Needs normalized capture: ${report.summary.needsNormalizedCapture}`);
   lines.push(`High mismatch: ${report.summary.highMismatch}`);
   lines.push(`Normalized high mismatch: ${report.summary.normalizedHighMismatch}`);
+  lines.push(`Actual chat CSS inactive: ${report.summary.actualChatCssInactive}`);
+  lines.push(`Actual chat CSS unknown: ${report.summary.actualChatCssUnknown}`);
   lines.push(`Max mismatch: ${pct(report.summary.maxMismatchRatio)}`);
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
   lines.push('');
-  lines.push('| Fixture | Status | Mode | Local | Actual | Rolltemplates | Local size | Actual size | Mismatch | RMS | Note |');
-  lines.push('| --- | --- | --- | --- | --- | ---: | --- | --- | ---: | ---: | --- |');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Local | Actual | Rolltemplates | Local size | Actual size | Mismatch | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | ---: | --- | --- | ---: | ---: | --- |');
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} | ${fixture.actualSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} | ${fixture.actualSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');
