@@ -25,6 +25,7 @@ const outDir = path.join(runDir, 'renderer-action-gate');
 async function main() {
   const status = await readJsonIfExists(path.join(runDir, 'actual-verification-status', 'actual-verification-status-results.json'));
   const fullRoot = await readJsonIfExists(path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json'));
+  const scrollMetricsFullRoot = await readJsonIfExists(path.join(runDir, 'full-root-candidate-smoke-scroll-metrics', 'full-root-candidate-smoke-results.json'));
   const rootStitchAudit = await readJsonIfExists(path.join(runDir, 'root-stitch-audit', 'root-stitch-audit-results.json'));
   const rootCutoff = await readJsonIfExists(path.join(runDir, 'root-cutoff-diagnostics', 'root-cutoff-diagnostics-results.json'));
   const stateVisibility = await readJsonIfExists(path.join(runDir, 'state-visibility-diagnostics', 'state-visibility-diagnostics-results.json'));
@@ -32,7 +33,7 @@ async function main() {
   const attrClassGeometry = await readJsonIfExists(path.join(runDir, 'attr-class-panel-geometry-diagnostics', 'attr-class-panel-geometry-diagnostics-results.json'));
   const geometry = await readJsonIfExists(path.join(runDir, 'geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json'));
 
-  const fixtures = mergeFixtures({ status, fullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
+  const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
   const recommendation = recommend(fixtures, status, runDir);
   const report = {
     generatedAt: new Date().toISOString(),
@@ -54,15 +55,16 @@ async function main() {
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
 
-function mergeFixtures({ status, fullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry }) {
+function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry }) {
   const ids = new Set();
-  for (const source of [status, fullRoot, rootStitchAudit, rootCutoff, attrClassVisibility, attrClassGeometry, stateVisibility, geometry]) {
+  for (const source of [status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, attrClassVisibility, attrClassGeometry, stateVisibility, geometry]) {
     for (const fixture of source?.fixtures ?? []) ids.add(fixture.fixtureId);
   }
 
   return [...ids].sort().map((fixtureId) => {
     const statusFixture = findFixture(status, fixtureId);
     const fullRootFixture = findFixture(fullRoot, fixtureId);
+    const scrollMetricsFullRootFixture = findFixture(scrollMetricsFullRoot, fixtureId);
     const rootStitchFixture = findFixture(rootStitchAudit, fixtureId);
     const rootCutoffFixture = findFixture(rootCutoff, fixtureId);
     const stateFixture = findFixture(stateVisibility, fixtureId);
@@ -128,6 +130,32 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, rootCutoff, stateVis
             rootHeightDelta: fullRootFixture.diagnosticBestCandidate.rootHeightDelta ?? null,
             patch: fullRootFixture.diagnosticBestCandidate.contextPatch ?? '',
             localSize: fullRootFixture.diagnosticBestCandidate.localSize ?? null,
+        }
+        : null,
+      scrollMetricsComparison: scrollMetricsFullRootFixture
+        ? {
+            status: scrollMetricsFullRootFixture.status,
+            actualSize: scrollMetricsFullRootFixture.actual?.size ?? null,
+            diagnosticBestCandidate: scrollMetricsFullRootFixture.diagnosticBestCandidate
+              ? {
+                  id: scrollMetricsFullRootFixture.diagnosticBestCandidate.id,
+                  mismatchRatio: scrollMetricsFullRootFixture.diagnosticBestCandidate.mismatchRatio,
+                  mismatchPct: pctNumber(scrollMetricsFullRootFixture.diagnosticBestCandidate.mismatchRatio),
+                  rootHeightDelta: scrollMetricsFullRootFixture.diagnosticBestCandidate.rootHeightDelta ?? null,
+                  patch: scrollMetricsFullRootFixture.diagnosticBestCandidate.contextPatch ?? '',
+                  localSize: scrollMetricsFullRootFixture.diagnosticBestCandidate.localSize ?? null,
+                }
+              : null,
+            closestRootHeightCandidate: scrollMetricsFullRootFixture.closestRootHeightCandidate
+              ? {
+                  id: scrollMetricsFullRootFixture.closestRootHeightCandidate.id,
+                  mismatchRatio: scrollMetricsFullRootFixture.closestRootHeightCandidate.mismatchRatio,
+                  mismatchPct: pctNumber(scrollMetricsFullRootFixture.closestRootHeightCandidate.mismatchRatio),
+                  rootHeightDelta: scrollMetricsFullRootFixture.closestRootHeightCandidate.rootHeightDelta ?? null,
+                  patch: scrollMetricsFullRootFixture.closestRootHeightCandidate.contextPatch ?? '',
+                  localSize: scrollMetricsFullRootFixture.closestRootHeightCandidate.localSize ?? null,
+                }
+              : null,
           }
         : null,
       stateVisibility: stateFixture
@@ -233,6 +261,11 @@ function recommend(fixtures, status, activeRunDir) {
   }
   for (const fixture of fixtures.filter((item) => item.diagnosticBestCandidate && !item.bestCandidate)) {
     warnings.push(`${fixture.fixtureId} has diagnostic-only full-root comparison ${fixture.diagnosticBestCandidate.id} at ${fixture.diagnosticBestCandidate.mismatchPct}% with root delta ${num(fixture.diagnosticBestCandidate.rootHeightDelta)}px; this must not count as trusted renderer evidence`);
+  }
+  for (const fixture of fixtures.filter((item) => item.scrollMetricsComparison?.diagnosticBestCandidate)) {
+    const best = fixture.scrollMetricsComparison.diagnosticBestCandidate;
+    const closest = fixture.scrollMetricsComparison.closestRootHeightCandidate;
+    warnings.push(`${fixture.fixtureId} scroll-metrics diagnostic uses actual ${fmtSize(fixture.scrollMetricsComparison.actualSize)}; pixel best ${best.id} at ${best.mismatchPct}% has root delta ${num(best.rootHeightDelta)}px${closest ? `, while height closest ${closest.id} has root delta ${num(closest.rootHeightDelta)}px` : ''}. This supersedes cutoff-prone 9168px-only conclusions but is still diagnostic-only.`);
   }
 
   const matchedState = fixtures.filter((fixture) => fixture.stateVisibility?.matchedLocalExpected === true);
@@ -409,8 +442,8 @@ function renderMarkdown(report) {
   lines.push('');
 
   lines.push('## Fixture Evidence', '');
-  lines.push('| Fixture | Sandbox | Chat | Full-root best | Diagnostic best | Root stitch audit | Root cutoff | Patch | State visibility | Attr class visibility | Attr class geometry | Top panel delta |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  lines.push('| Fixture | Sandbox | Chat | Full-root best | Diagnostic best | Scroll-metrics diagnostic | Root stitch audit | Root cutoff | Patch | State visibility | Attr class visibility | Attr class geometry | Top panel delta |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
     const topDelta = fixture.stateVisibility?.largestHeightDeltas?.[0];
     lines.push([
@@ -423,6 +456,7 @@ function renderMarkdown(report) {
           ? 'trusted missing'
           : fixture.fullRootReason || fixture.fullRootStatus,
       fixture.diagnosticBestCandidate ? `${fixture.diagnosticBestCandidate.mismatchPct}% / root ${num(fixture.diagnosticBestCandidate.rootHeightDelta)}px` : '',
+      fmtScrollMetricsComparison(fixture.scrollMetricsComparison),
       fmtRootStitchAudit(fixture.rootStitchAudit),
       fmtRootCutoff(fixture.rootCutoff),
       fixture.bestCandidate?.patch || '',
@@ -453,6 +487,16 @@ function fmtRootStitchAudit(audit) {
   return audit.trustedEvidence?.length
     ? `${audit.status}: ${audit.trustedEvidence.join('<br>')}`
     : `${audit.status}${audit.primaryIssue ? `: ${audit.primaryIssue}` : ''}`;
+}
+
+function fmtScrollMetricsComparison(comparison) {
+  if (!comparison) return '';
+  if (comparison.status !== 'DIAGNOSTIC_COMPARED') return comparison.status || '';
+  const best = comparison.diagnosticBestCandidate;
+  const closest = comparison.closestRootHeightCandidate;
+  const bestText = best ? `best ${best.mismatchPct}% / root ${num(best.rootHeightDelta)}px` : 'no pixel best';
+  const closestText = closest ? `closest ${closest.id} root ${num(closest.rootHeightDelta)}px` : 'no height closest';
+  return `${fmtSize(comparison.actualSize)} ${bestText}; ${closestText}`;
 }
 
 function fmtRootCutoff(cutoff) {
@@ -521,6 +565,13 @@ function pctNumber(value) {
 
 function num(value) {
   return typeof value === 'number' && Number.isFinite(value) ? Number(value.toFixed(3)) : '';
+}
+
+function fmtSize(size) {
+  if (!size) return 'unknown size';
+  const width = size.w ?? size.width;
+  const height = size.h ?? size.height;
+  return width && height ? `${width}x${height}` : 'unknown size';
 }
 
 main().catch((error) => {

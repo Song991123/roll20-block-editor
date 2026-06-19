@@ -20,18 +20,37 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..');
 const require = createRequire(import.meta.url);
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDir = path.resolve(args[0] ?? '');
-const outDir = path.join(runDir, 'full-root-candidate-smoke');
 const threshold = Number(argOf('--threshold', '60'));
+const actualEvidenceMode = argOf('--actual-evidence', 'trusted');
+const positionalArgs = positionalArguments(args);
+const runDir = path.resolve(positionalArgs[0] ?? '');
+const outDir = path.join(runDir, actualEvidenceMode === 'scroll-metrics'
+  ? 'full-root-candidate-smoke-scroll-metrics'
+  : 'full-root-candidate-smoke');
 
-if (!args[0]) {
-  console.error('Usage: node scripts/roll20_full_root_candidate_smoke.mjs reports/roll20-actual-compare/<label>');
+if (!positionalArgs[0]) {
+  console.error('Usage: node scripts/roll20_full_root_candidate_smoke.mjs reports/roll20-actual-compare/<label> [--actual-evidence trusted|scroll-metrics]');
+  process.exit(2);
+}
+
+if (!['trusted', 'scroll-metrics'].includes(actualEvidenceMode)) {
+  console.error(`Invalid --actual-evidence: ${actualEvidenceMode}`);
   process.exit(2);
 }
 
 function argOf(name, fallback) {
   const i = args.indexOf(name);
   return i >= 0 && args[i + 1] ? args[i + 1] : fallback;
+}
+
+function positionalArguments(rawArgs) {
+  const optionValueIndexes = new Set();
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    if (rawArgs[index]?.startsWith('--') && rawArgs[index + 1] && !rawArgs[index + 1].startsWith('--')) {
+      optionValueIndexes.add(index + 1);
+    }
+  }
+  return rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionValueIndexes.has(index));
 }
 
 async function main() {
@@ -46,6 +65,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir,
     scope: 'local full-root candidates compared against stitched Roll20 actual root; not visual parity',
+    actualEvidenceMode,
     threshold,
     fixtures: [],
     pass: true,
@@ -86,14 +106,24 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   const fixtureDir = path.join(runDir, 'local-baseline', fixtureId);
   const payloadDir = path.join(fixtureDir, 'payload');
   const shotsDir = path.join(fixtureDir, 'screenshots');
-  const trustedActualEvidence = selectActualFullRootEvidence(shotsDir);
-  const diagnosticActualEvidence = trustedActualEvidence ? null : await selectDiagnosticFullRootEvidence(shotsDir);
+  const trustedActualEvidence = actualEvidenceMode === 'scroll-metrics' ? null : selectActualFullRootEvidence(shotsDir);
+  const diagnosticActualEvidence = trustedActualEvidence
+    ? null
+    : actualEvidenceMode === 'scroll-metrics'
+      ? await selectScrollMetricsFullRootEvidence(shotsDir)
+      : await selectDiagnosticFullRootEvidence(shotsDir);
   const actualEvidence = trustedActualEvidence ?? diagnosticActualEvidence;
   const actualFile = actualEvidence?.screenshot ?? path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.png');
   const actualMetaFile = actualEvidence?.meta ?? actualFile.replace(/\.png$/i, '.json');
   const localPreviewFile = path.join(shotsDir, 'local-preview.png');
   if (!actualEvidence) {
-    return { fixtureId, status: 'SKIP', reason: 'missing roll20-sandbox-root-full-dpr-corrected.png or roll20-sandbox-root-full.png' };
+    return {
+      fixtureId,
+      status: 'SKIP',
+      reason: actualEvidenceMode === 'scroll-metrics'
+        ? 'missing scroll-metrics full-root diagnostic stitch'
+        : 'missing roll20-sandbox-root-full-dpr-corrected.png or roll20-sandbox-root-full.png',
+    };
   }
 
   const artifactDir = path.join(outDir, fixtureId);
@@ -267,6 +297,30 @@ async function selectDiagnosticFullRootEvidence(shotsDir) {
     });
   }
   return diagnostics.sort((a, b) => b.segmentCount - a.segmentCount)[0] ?? null;
+}
+
+async function selectScrollMetricsFullRootEvidence(shotsDir) {
+  if (!existsSync(shotsDir)) return null;
+  const entries = await readdir(shotsDir, { withFileTypes: true });
+  const diagnostics = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || !/root-scroll-metrics-stitch.*\.json$/i.test(entry.name)) continue;
+    const meta = path.join(shotsDir, entry.name);
+    const screenshot = meta.replace(/\.json$/i, '.png');
+    if (!existsSync(screenshot)) continue;
+    const json = await readJsonIfExists(meta);
+    const segmentCount = Number(json?.segmentCount ?? json?.segments?.length ?? 0);
+    const outputHeight = Number(json?.outputSize?.h ?? json?.outputCss?.h ?? 0);
+    diagnostics.push({
+      kind: 'scroll-metrics-diagnostic-full-root',
+      diagnosticOnly: true,
+      screenshot,
+      meta,
+      segmentCount,
+      outputHeight,
+    });
+  }
+  return diagnostics.sort((a, b) => (b.outputHeight - a.outputHeight) || (b.segmentCount - a.segmentCount))[0] ?? null;
 }
 
 async function compareExistingReference({ comparePage, localPreviewFile, actualFile, actualSize }) {

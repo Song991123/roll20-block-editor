@@ -1,3 +1,9 @@
+## 2026-06-19 AW2E Scroll Metrics Candidate Comparison
+
+- Added separate scroll-metrics candidate comparison mode through `diagnose:roll20-scroll-metrics-candidates`, writing to ignored `full-root-candidate-smoke-scroll-metrics` output so the default trusted renderer gate output is not overwritten.
+- Latest AW2E diagnostic comparison uses actual 852x11788. Pixel best remains `sandbox-sheet-alias-playbook-hide-source` at 7.08%, but it is only 852x2532 with root delta -9256.125px, so it is over-hidden and not promotable.
+- Root-height closest moved toward source/text-input candidates: `sandbox-text-input-280-source` is -185.5px, `normal-source-state` is -195.063px, and `sandbox-source-state` is -189.5px. This shows the previous first-13/9168px clue was affected by the older cutoff capture.
+- Claim boundary: diagnostic evidence only; renderer remains HOLD and `rendererReady=NO`.
 # 35. Agent Progress Log
 
 Date: 2026-06-14

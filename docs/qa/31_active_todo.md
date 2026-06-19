@@ -14,6 +14,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 AW2E scroll-metrics candidate comparison:
+Added `diagnose:roll20-scroll-metrics-candidates` as a separate diagnostic path so the new 852x11788 AW2E scroll-metrics stitch can be compared without replacing the trusted/full-root gate output. Latest AW2E diagnostic comparison: actual 852x11788, pixel best `sandbox-sheet-alias-playbook-hide-source` at 7.08% but local root 852x2532 and rootDelta -9256.125px, so it is structurally wrong and must not be promoted. Height/root closest moved back toward source/text-input candidates: `sandbox-text-input-280-source` is -185.5px, while `normal-source-state` is -195.063px and `sandbox-source-state` is -189.5px. This means the older first-13/default-state clue was partly tied to the 9168px cutoff capture. Renderer remains HOLD and `rendererReady=NO`.
 Current Roll20 renderer note, 2026-06-19 AW2E scroll-metrics stitch diagnostic:
 Using the read-only iframe metrics, Chrome/CDP captured 23 ignored local sheet-root segments and stitched diagnostic aw2e-root-scroll-metrics-stitch-20260619.png at 852x11788 from manifest aw2e-root-scroll-metrics-manifest-20260619.json. audit:roll20-root-stitch now surfaces this as DIAGNOSTIC_SCROLL_METRICS, duplicate segments 0, coverage issues 0, and plan:roll20-root-capture lists it as scroll-metrics. This is stronger recapture evidence but not promoted to trusted roll20-sandbox-root-full-dpr-corrected.png; renderer remains HOLD and rendererReady=NO until the diagnostic is compared/classified and intentionally promoted or recaptured.
 Current Roll20 renderer note, 2026-06-19 AW2E root container metrics sidecar:
