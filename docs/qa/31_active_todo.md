@@ -630,3 +630,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: Existing trusted DPR evidence for Les-Oublies and YSHY still passes `audit:roll20-root-stitch`; AW2E remains `SKIP` because it has only diagnostic overlap evidence.
 - CURRENT: `gate:roll20-renderer-action` still holds production CSS and preserves the AW2E duplicate-segment blocker detail.
 - STILL TODO: recapture AW2E with non-duplicate DPR-corrected sheet-root segments plus manifest-backed coverage before running it as trusted full-root evidence.
+
+## 2026-06-19 Actual Status Truthfulness TODO Note
+
+- DONE: `status:roll20-actual` now prints trusted full-root evidence and renderer readiness separately from generated screenshot/diff counts.
+- VERIFIED: latest `2026-06-18-state-map-v1` status prints generated `6/6`, trusted full-root `2/3`, renderer action `HOLD_PRODUCTION_RENDERER_PATCH`, rendererReady `NO`.
+- CURRENT: this prevents `generatedActualScreenshots=6/6` from being mistaken for Roll20 visual parity or production renderer approval.
+- STILL TODO: recapture AW2E as trusted DPR-corrected full-root evidence, rerun root-stitch audit, screenshot diff, full-root candidate smoke, and renderer action gate.

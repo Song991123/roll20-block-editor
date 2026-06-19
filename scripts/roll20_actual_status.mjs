@@ -61,6 +61,8 @@ async function main() {
   const preupload = await readPreupload(runDir);
   const diffReport = await readDiff(runDir);
   const blockerEvidence = await readBlockerEvidence(runDir);
+  const rootStitchAudit = await readRootStitchAudit(runDir);
+  const rendererAction = await readRendererAction(runDir);
   const fixtures = [];
   for (const fixtureId of await listFixtureIds(baselineDir)) {
     fixtures.push(await inspectFixture(runDir, fixtureId, diffReport));
@@ -85,6 +87,14 @@ async function main() {
     failedDiffCount === 0;
   const generatedEvidenceComplete =
     generatedPresentCount === generatedTargetCount && generatedDiffedCount === generatedTargetCount;
+  const trustedFullRootComplete =
+    rootStitchAudit.fixtureCount > 0 &&
+    rootStitchAudit.trustedFullRootCount === rootStitchAudit.fixtureCount;
+  const rendererReady =
+    trustedFullRootComplete &&
+    rendererAction.exists &&
+    rendererAction.action !== 'HOLD_PRODUCTION_RENDERER_PATCH' &&
+    rendererAction.action !== 'MISSING_RENDERER_ACTION_GATE';
   const roomObservationComplete =
     observationTargetCount === 0 ||
     (observationPresentCount === observationTargetCount && observationDiffedCount === observationTargetCount);
@@ -124,8 +134,17 @@ async function main() {
       observationMissingCount: observationTargetCount - observationPresentCount,
       observationDiffedCount,
       blockerEvidenceCount: blockerEvidence.length,
+      trustedFullRootCount: rootStitchAudit.trustedFullRootCount,
+      trustedFullRootTotal: rootStitchAudit.fixtureCount,
+      trustedFullRootMissing: rootStitchAudit.missingTrustedFixtures,
+      rendererAction: rendererAction.action,
+      rendererBlockerCount: rendererAction.blockerCount,
+      trustedFullRootComplete,
+      rendererReady,
     },
     blockerEvidence,
+    rootStitchAudit,
+    rendererAction,
     fixtures,
     nextAction: buildNextAction({
       preupload,
@@ -135,6 +154,8 @@ async function main() {
       observationPresentCount,
       observationTargetCount,
       blockerEvidence,
+      rootStitchAudit,
+      rendererAction,
     }),
   };
 
@@ -218,6 +239,59 @@ async function readBlockerEvidence(runDir) {
     }
   }
   return evidence;
+}
+
+async function readRootStitchAudit(runDir) {
+  const file = path.join(runDir, 'root-stitch-audit', 'root-stitch-audit-results.json');
+  if (!existsSync(file)) {
+    return {
+      exists: false,
+      file: rel(file),
+      fixtureCount: 0,
+      trustedFullRootCount: 0,
+      missingTrustedFixtures: [],
+      note: 'missing root stitch audit report',
+    };
+  }
+  const report = JSON.parse(await fs.readFile(file, 'utf8'));
+  const fixtures = Array.isArray(report.fixtures) ? report.fixtures : [];
+  const trustedFixtures = fixtures.filter((fixture) => Array.isArray(fixture.trustedEvidence) && fixture.trustedEvidence.length > 0);
+  return {
+    exists: true,
+    file: rel(file),
+    pass: Boolean(report.pass),
+    fixtureCount: fixtures.length,
+    trustedFullRootCount: trustedFixtures.length,
+    missingTrustedFixtures: fixtures
+      .filter((fixture) => !(Array.isArray(fixture.trustedEvidence) && fixture.trustedEvidence.length > 0))
+      .map((fixture) => ({
+        fixtureId: fixture.fixtureId,
+        status: fixture.status ?? 'MISSING',
+        primaryIssue: fixture.primaryIssue ?? '',
+      })),
+  };
+}
+
+async function readRendererAction(runDir) {
+  const file = path.join(runDir, 'renderer-action-gate', 'renderer-action-gate-results.json');
+  if (!existsSync(file)) {
+    return {
+      exists: false,
+      file: rel(file),
+      action: 'MISSING_RENDERER_ACTION_GATE',
+      blockerCount: 0,
+      blockers: [],
+    };
+  }
+  const report = JSON.parse(await fs.readFile(file, 'utf8'));
+  const recommendation = report.recommendation ?? {};
+  return {
+    exists: true,
+    file: rel(file),
+    action: recommendation.action ?? 'UNKNOWN',
+    blockerCount: Array.isArray(recommendation.blockers) ? recommendation.blockers.length : 0,
+    blockers: recommendation.blockers ?? [],
+  };
 }
 
 async function listFixtureIds(baselineDir) {
@@ -416,9 +490,15 @@ function buildNextAction({
   observationPresentCount,
   observationTargetCount,
   blockerEvidence,
+  rootStitchAudit,
+  rendererAction,
 }) {
   if (!preupload.pass) {
     return 'Run or fix the local pre-upload gate before attempting Roll20 Sandbox upload.';
+  }
+  if (rootStitchAudit.exists && rootStitchAudit.trustedFullRootCount < rootStitchAudit.fixtureCount) {
+    const missing = rootStitchAudit.missingTrustedFixtures.map((fixture) => fixture.fixtureId).join(', ');
+    return `Capture trusted DPR-corrected full-root Roll20 evidence for ${missing}, then rerun root stitch audit, screenshot diff, full-root candidate smoke, and renderer action gate.`;
   }
   if (generatedPresentCount < generatedTargetCount) {
     if (blockerEvidence.length > 0) {
@@ -431,6 +511,9 @@ function buildNextAction({
   }
   if (observationPresentCount < observationTargetCount) {
     return 'Generated-sheet actual evidence is diffed. Optionally add read-only solo-room observation screenshots, then classify differences before making any parity claim.';
+  }
+  if (rendererAction.exists && rendererAction.action === 'HOLD_PRODUCTION_RENDERER_PATCH') {
+    return 'Renderer action gate is still HOLD. Resolve its listed blockers before changing production renderer CSS.';
   }
   return 'Classify diff results by wrapper/context, base CSS, cascade, default state, translation, worker JS, rolltemplate/chat, asset loading, viewport/crop, or edit overlay before making any parity claim.';
 }
@@ -467,6 +550,9 @@ function renderMarkdown(report) {
     `- Generated-sheet diffs: ${report.summary.generatedDiffedCount}/${report.summary.generatedTargetCount}`,
     `- Solo-room observation screenshots: ${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
     `- Solo-room observation diffs: ${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
+    `- Trusted full-root evidence: ${report.summary.trustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
+    `- Renderer action: ${report.summary.rendererAction} (${report.summary.rendererBlockerCount} blockers)`,
+    `- Renderer ready for production CSS: ${report.summary.rendererReady ? 'yes' : 'NO'}`,
     `- All actual screenshots: ${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
     `- All screenshot diffs: ${report.summary.diffedCount}/${report.summary.actualTargetCount}`,
     `- Blocker evidence files: ${report.summary.blockerEvidenceCount}`,
@@ -499,6 +585,13 @@ function renderMarkdown(report) {
     }
   }
 
+  if (report.rootStitchAudit.missingTrustedFixtures.length > 0) {
+    lines.push('', '## Missing Trusted Full-Root Evidence', '', '| Fixture | Status | Issue |', '| --- | --- | --- |');
+    for (const fixture of report.rootStitchAudit.missingTrustedFixtures) {
+      lines.push(`| \`${fixture.fixtureId}\` | ${escapeCell(String(fixture.status ?? ''))} | ${escapeCell(String(fixture.primaryIssue ?? ''))} |`);
+    }
+  }
+
   lines.push(
     '',
     '## Evidence Rules',
@@ -522,6 +615,10 @@ function renderConsoleSummary(report, outDir) {
     `generatedDiffed=${report.summary.generatedDiffedCount}/${report.summary.generatedTargetCount}`,
     `roomObservationScreenshots=${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
     `roomObservationDiffed=${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
+    `trustedFullRoot=${report.summary.trustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
+    `rendererAction=${report.summary.rendererAction}`,
+    `rendererBlockers=${report.summary.rendererBlockerCount}`,
+    `rendererReady=${report.summary.rendererReady ? 'YES' : 'NO'}`,
     `commandGate=${report.commandPass ? 'PASS' : 'NEEDS_ACTION'}`,
     `out=${rel(outDir)}`,
   ].join('\n');
