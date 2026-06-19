@@ -26,12 +26,13 @@ async function main() {
   const status = await readJsonIfExists(path.join(runDir, 'actual-verification-status', 'actual-verification-status-results.json'));
   const fullRoot = await readJsonIfExists(path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json'));
   const rootStitchAudit = await readJsonIfExists(path.join(runDir, 'root-stitch-audit', 'root-stitch-audit-results.json'));
+  const rootCutoff = await readJsonIfExists(path.join(runDir, 'root-cutoff-diagnostics', 'root-cutoff-diagnostics-results.json'));
   const stateVisibility = await readJsonIfExists(path.join(runDir, 'state-visibility-diagnostics', 'state-visibility-diagnostics-results.json'));
   const attrClassVisibility = await readJsonIfExists(path.join(runDir, 'attr-class-visibility-diagnostics', 'attr-class-visibility-diagnostics-results.json'));
   const attrClassGeometry = await readJsonIfExists(path.join(runDir, 'attr-class-panel-geometry-diagnostics', 'attr-class-panel-geometry-diagnostics-results.json'));
   const geometry = await readJsonIfExists(path.join(runDir, 'geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json'));
 
-  const fixtures = mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
+  const fixtures = mergeFixtures({ status, fullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
   const recommendation = recommend(fixtures, status, runDir);
   const report = {
     generatedAt: new Date().toISOString(),
@@ -53,9 +54,9 @@ async function main() {
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
 
-function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, attrClassVisibility, attrClassGeometry, geometry }) {
+function mergeFixtures({ status, fullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry }) {
   const ids = new Set();
-  for (const source of [status, fullRoot, rootStitchAudit, attrClassVisibility, attrClassGeometry, stateVisibility, geometry]) {
+  for (const source of [status, fullRoot, rootStitchAudit, rootCutoff, attrClassVisibility, attrClassGeometry, stateVisibility, geometry]) {
     for (const fixture of source?.fixtures ?? []) ids.add(fixture.fixtureId);
   }
 
@@ -63,6 +64,7 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, att
     const statusFixture = findFixture(status, fixtureId);
     const fullRootFixture = findFixture(fullRoot, fixtureId);
     const rootStitchFixture = findFixture(rootStitchAudit, fixtureId);
+    const rootCutoffFixture = findFixture(rootCutoff, fixtureId);
     const stateFixture = findFixture(stateVisibility, fixtureId);
     const attrClassVisibilityFixture = findFixture(attrClassVisibility, fixtureId);
     const attrClassGeometryFixture = findFixture(attrClassGeometry, fixtureId);
@@ -82,6 +84,18 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, att
             primaryIssue: rootStitchFixture.primaryIssue ?? '',
             trustedEvidence: rootStitchFixture.trustedEvidence ?? [],
             overlapDiagnostics: rootStitchFixture.overlapDiagnostics ?? [],
+          }
+          : null,
+      rootCutoff: rootCutoffFixture
+        ? {
+            status: rootCutoffFixture.status,
+            stitchedHeight: rootCutoffFixture.stitchedRoot?.height ?? null,
+            sidecarHeight: rootCutoffFixture.sidecarRoot?.height ?? null,
+            heightDelta: rootCutoffFixture.cutoff?.heightDelta ?? null,
+            risk: rootCutoffFixture.cutoff?.risk ?? null,
+            visualOverlapPlacement: rootCutoffFixture.cutoff?.visualOverlapPlacement ?? false,
+            clippedValues: rootCutoffFixture.cutoff?.clippedValues ?? [],
+            belowValues: rootCutoffFixture.cutoff?.belowValues ?? [],
           }
         : null,
       bestCandidate: fullRootFixture?.bestCandidate
@@ -209,6 +223,11 @@ function recommend(fixtures, status, activeRunDir) {
     blockers.push(`best diagnostic patch is not uniform across fixtures: ${[...patchFamilies.entries()].map(([patch, ids]) => `${patch}=>${ids.join(',')}`).join('; ')}`);
   }
 
+  const highRootCutoffRisk = fixtures.filter((fixture) => fixture.rootCutoff?.risk === 'HIGH');
+  if (highRootCutoffRisk.length) {
+    blockers.push(`trusted stitched root height disagrees with live sidecar root for ${highRootCutoffRisk.map((fixture) => `${fixture.fixtureId} delta=${num(fixture.rootCutoff.heightDelta)}px`).join(', ')}`);
+  }
+
   for (const fixture of compared) {
     positiveFindings.push(`${fixture.fixtureId} best diagnostic candidate ${fixture.bestCandidate.id} at ${fixture.bestCandidate.mismatchPct}% with root delta ${num(fixture.bestCandidate.rootHeightDelta)}px`);
   }
@@ -227,6 +246,9 @@ function recommend(fixtures, status, activeRunDir) {
   const attrClassGeometryFindings = fixtures.filter((fixture) => fixture.attrClassGeometry?.intersectingCount != null);
   for (const fixture of attrClassGeometryFindings) {
     positiveFindings.push(`${fixture.fixtureId} attr_class panel geometry: actualH=${fixture.attrClassGeometry.actualRootHeight}, intersecting=${fixture.attrClassGeometry.intersectingCount}, fullyInside=${fixture.attrClassGeometry.fullyContainedCount}, closest=${fixture.attrClassGeometry.heightClosestCandidateId ?? 'unknown'}`);
+  }
+  for (const fixture of fixtures.filter((item) => item.rootCutoff)) {
+    positiveFindings.push(`${fixture.fixtureId} root cutoff diagnostic: stitched=${fixture.rootCutoff.stitchedHeight}, sidecar=${fixture.rootCutoff.sidecarHeight}, delta=${num(fixture.rootCutoff.heightDelta)}px, risk=${fixture.rootCutoff.risk}`);
   }
 
   const action = blockers.length
@@ -259,6 +281,9 @@ function recommend(fixtures, status, activeRunDir) {
   }
   if (patchFamilies.size > 1) {
     nextActions.push('Compare the differing diagnostic patch families before promoting CSS: current fixtures do not agree on one generic renderer fix.');
+  }
+  if (highRootCutoffRisk.length) {
+    nextActions.push(`Resolve root cutoff/capture-container disagreement before production CSS: ${highRootCutoffRisk.map((fixture) => `${fixture.fixtureId} stitched=${fixture.rootCutoff.stitchedHeight} sidecar=${fixture.rootCutoff.sidecarHeight}`).join('; ')}. Capture or derive authoritative Roll20 root/container height, then rerun full-root candidates.`);
   }
   const attrClassStateTargets = compared.filter((fixture) => {
     if (!fixture.attrClassValueCount) return false;
@@ -384,8 +409,8 @@ function renderMarkdown(report) {
   lines.push('');
 
   lines.push('## Fixture Evidence', '');
-  lines.push('| Fixture | Sandbox | Chat | Full-root best | Diagnostic best | Root stitch audit | Patch | State visibility | Attr class visibility | Attr class geometry | Top panel delta |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  lines.push('| Fixture | Sandbox | Chat | Full-root best | Diagnostic best | Root stitch audit | Root cutoff | Patch | State visibility | Attr class visibility | Attr class geometry | Top panel delta |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
     const topDelta = fixture.stateVisibility?.largestHeightDeltas?.[0];
     lines.push([
@@ -399,6 +424,7 @@ function renderMarkdown(report) {
           : fixture.fullRootReason || fixture.fullRootStatus,
       fixture.diagnosticBestCandidate ? `${fixture.diagnosticBestCandidate.mismatchPct}% / root ${num(fixture.diagnosticBestCandidate.rootHeightDelta)}px` : '',
       fmtRootStitchAudit(fixture.rootStitchAudit),
+      fmtRootCutoff(fixture.rootCutoff),
       fixture.bestCandidate?.patch || '',
       fixture.stateVisibility ? `${fixture.stateVisibility.matchedLocalExpected ? 'matched' : 'not matched'} ${fixture.stateVisibility.localVisibleCount ?? ''}/${fixture.stateVisibility.actualVisibleCount ?? ''}` : '',
       fmtAttrClassVisibility(fixture.attrClassVisibility),
@@ -427,6 +453,13 @@ function fmtRootStitchAudit(audit) {
   return audit.trustedEvidence?.length
     ? `${audit.status}: ${audit.trustedEvidence.join('<br>')}`
     : `${audit.status}${audit.primaryIssue ? `: ${audit.primaryIssue}` : ''}`;
+}
+
+function fmtRootCutoff(cutoff) {
+  if (!cutoff) return '';
+  const clipped = cutoff.clippedValues?.length ? ` clipped ${cutoff.clippedValues.join(',')}` : '';
+  const below = cutoff.belowValues?.length ? ` below ${cutoff.belowValues.join(',')}` : '';
+  return `${cutoff.risk}: stitched ${cutoff.stitchedHeight ?? ''} / sidecar ${cutoff.sidecarHeight ?? ''} / delta ${num(cutoff.heightDelta)}px${clipped}${below}`;
 }
 
 function fmtAttrClassVisibility(visibility) {

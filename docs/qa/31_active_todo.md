@@ -14,6 +14,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 AW2E root cutoff diagnostic:
+Added `scripts/roll20_root_cutoff_diagnostics.mjs` and `corepack pnpm run diagnose:roll20-root-cutoff -- reports\roll20-actual-compare\2026-06-18-state-map-v1 [fixture-id]`. Latest AW2E cutoff report compares trusted stitched root evidence against the live attr_class sidecar root: stitched height `9168px`, sidecar root height `11788.087890625px`, delta `2620.088px`, risk `HIGH`. The stitch manifest notes placement was derived from visual overlap because iframe scrollTop/root metadata was unavailable. `gate:roll20-renderer-action` now treats this as an additional blocker before production CSS. Renderer remains HOLD and `rendererReady=NO`.
 Current Roll20 renderer note, 2026-06-19 AW2E attr_class panel geometry:
 Added `scripts/roll20_attr_class_panel_geometry_diagnostics.mjs` and `corepack pnpm run diagnose:roll20-attr-class-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1 [fixture-id]`. Latest AW2E geometry report explains why actual-visible panel names did not reproduce full-root height: actual stitched root height is `9168px`, sidecar-visible panel rows intersecting that height are `14`, but only `13` are fully inside. The height-closest local candidate remains `sandbox-sheet-alias-attr-class-state-first-13-source` (`+208.5px`). `gate:roll20-renderer-action` now surfaces this as evidence. Renderer remains HOLD and `rendererReady=NO`; next P0 is DOM container/root cutoff analysis before production CSS.
 Current Roll20 renderer note, 2026-06-19 AW2E actual-visible candidate probe:

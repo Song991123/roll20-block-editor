@@ -1588,3 +1588,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - This explains why actual-visible panel names were too broad while `sandbox-sheet-alias-attr-class-state-first-13-source` remains the height-closest candidate at `+208.5px`.
 - `scripts/roll20_renderer_action_gate.mjs` now reads this diagnostic and reports it as root-cause evidence while keeping production renderer CSS on HOLD.
 - Claim boundary: this is geometry/source-order evidence only. It does not prove Roll20 visual parity and does not authorize production CSS.
+
+## 2026-06-19 AW2E Root Cutoff Diagnostic
+
+- Added `scripts/roll20_root_cutoff_diagnostics.mjs` and package alias `diagnose:roll20-root-cutoff`.
+- The diagnostic compares trusted stitched root metadata against live iframe sidecar root metrics and attr_class panel boundary data.
+- Latest AW2E result: stitched full-root height `9168px`, live sidecar root height `11788.087890625px`, delta `2620.088px`, risk `HIGH`.
+- The accepted AW2E DPR manifest notes placement was derived from visual overlap because iframe `scrollTop`/root metadata was not readable; this must be separated from renderer CSS conclusions.
+- `scripts/roll20_renderer_action_gate.mjs` now treats high root cutoff risk as an explicit blocker in addition to cross-fixture patch-family disagreement.
+- Claim boundary: trusted full-root evidence remains useful, but this cutoff disagreement means AW2E is not ready for production renderer CSS or visual parity claims.

@@ -33,6 +33,7 @@
     "diagnose:roll20-visible-crop": "node scripts/roll20_visible_crop_diagnostics.mjs",
     "diagnose:roll20-visible-context": "node scripts/roll20_visible_context_diagnostics.mjs",
     "diagnose:roll20-geometry": "node scripts/roll20_geometry_delta_diagnostics.mjs",
+    "diagnose:roll20-root-cutoff": "node scripts/roll20_root_cutoff_diagnostics.mjs",
     "diagnose:roll20-state-visibility": "node scripts/roll20_state_visibility_diagnostics.mjs",
     "gate:roll20-renderer-action": "node scripts/roll20_renderer_action_gate.mjs",
     "diagnose:roll20-renderer-blocker": "node scripts/roll20_renderer_blocker_matrix.mjs",
