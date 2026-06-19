@@ -24,6 +24,7 @@ if (!args[0]) {
 const outDir = path.join(runDir, 'state-visibility-diagnostics');
 const probeDir = path.join(runDir, 'live-iframe-probe');
 const localBaselineDir = path.join(runDir, 'local-baseline');
+const repoRoot = process.cwd();
 
 async function main() {
   const fixtureIds = await discoverFixtureIds();
@@ -94,6 +95,7 @@ async function analyzeFixture(fixtureId) {
   const actualStateRules = summarizeStateRules(stateProbe, ruleProbe);
   const payloadStateSelectors = summarizePayloadSelectors(payloadCss);
   const payloadClasses = summarizePayloadClasses(payloadHtml);
+  const localExpectedCssMode = await detectLocalExpectedCssMode();
   const prefixMismatch = diagnosePrefixMismatch({
     actualStateRules,
     payloadStateSelectors,
@@ -115,8 +117,30 @@ async function analyzeFixture(fixtureId) {
     payloadClasses,
     prefixMismatch,
     primaryFinding: prefixMismatch.kind,
-    interpretation: buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRules, payloadStateSelectors, payloadClasses, prefixMismatch }),
-    nextChecks: buildNextChecks(prefixMismatch),
+    localExpectedCssMode,
+    interpretation: buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRules, payloadStateSelectors, payloadClasses, prefixMismatch, localExpectedCssMode }),
+    nextChecks: buildNextChecks(prefixMismatch, localExpectedCssMode),
+  };
+}
+
+async function detectLocalExpectedCssMode() {
+  const files = [
+    path.join(repoRoot, 'lib', 'preview', 'buildDoc.ts'),
+    path.join(repoRoot, 'components', 'editor', 'ExportDialog.tsx'),
+    path.join(repoRoot, 'scripts', 'roll20_sandbox_sanitize_audit.mjs'),
+  ];
+  const evidence = [];
+  for (const file of files) {
+    const text = await readTextIfExists(file);
+    evidence.push({
+      file: path.relative(repoRoot, file),
+      prefixSelectorsFalse: /sanitizeRoll20SandboxCss\([^)]*prefixSelectors:\s*false/s.test(text),
+    });
+  }
+  const previewUsesUnprefixedCss = evidence.some((item) => item.file === path.join('lib', 'preview', 'buildDoc.ts') && item.prefixSelectorsFalse);
+  return {
+    previewUsesUnprefixedCss,
+    evidence,
   };
 }
 
@@ -284,7 +308,7 @@ function diagnosePrefixMismatch({ actualStateRules, payloadStateSelectors, paylo
   };
 }
 
-function buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRules, payloadStateSelectors, payloadClasses, prefixMismatch }) {
+function buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRules, payloadStateSelectors, payloadClasses, prefixMismatch, localExpectedCssMode }) {
   const notes = [];
   if (stateSummary.sheetTab || stateSummary.sheetTabForBtn) {
     notes.push(`actual hidden state inputs are sheetTab=${stateSummary.sheetTab ?? 'unknown'} / sheetTabForBtn=${stateSummary.sheetTabForBtn ?? 'unknown'}`);
@@ -306,19 +330,28 @@ function buildInterpretation({ stateSummary, actualVisiblePanels, actualStateRul
     notes.push(`payload CSS state rules are ${[...new Set(kinds)].join(', ')}`);
   }
   if (prefixMismatch.kind === 'ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML') {
-    notes.push('root cause hypothesis: Roll20 actual uploaded HTML is sheet-prefixed while the observed CSS state selectors remain unprefixed, so local auto-prefix/sandbox expected preview can hide/show panels differently than actual Roll20');
+    if (localExpectedCssMode.previewUsesUnprefixedCss) {
+      notes.push('local Roll20 Sandbox expected preview already keeps CSS selectors unprefixed, so this diagnostic is now an actual Roll20 state-behavior finding to reverify across fixtures rather than a request to re-add blanket CSS prefixing');
+    } else {
+      notes.push('root cause hypothesis: Roll20 actual uploaded HTML is sheet-prefixed while the observed CSS state selectors remain unprefixed, so local auto-prefix/sandbox expected preview can hide/show panels differently than actual Roll20');
+    }
   }
   return notes;
 }
 
-function buildNextChecks(prefixMismatch) {
+function buildNextChecks(prefixMismatch, localExpectedCssMode) {
   const checks = [
     'Do not claim Roll20 visual parity from this diagnostic.',
     'Rerun full-root candidate smoke after any preview/export sanitize change.',
     'Rerun local preview/edit visual smoke after any renderer change.',
   ];
   if (prefixMismatch.kind === 'ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML') {
-    checks.unshift('Patch the local Roll20 actual/sandbox expected path so CSS prefixing behavior is modeled from observed Roll20 evidence, not the older blanket-prefix assumption.');
+    if (localExpectedCssMode.previewUsesUnprefixedCss) {
+      checks.unshift('Local Sandbox expected preview already uses unprefixed CSS selector modeling; next reverify this actual Roll20 state behavior with another fixture before changing renderer CSS.');
+      checks.unshift('Compare local Sandbox expected preview visibility against the captured actual visible panels so intentional all-panel visibility is not mistaken for a renderer regression.');
+    } else {
+      checks.unshift('Patch the local Roll20 actual/sandbox expected path so CSS prefixing behavior is modeled from observed Roll20 evidence, not the older blanket-prefix assumption.');
+    }
     checks.unshift('Keep source-preserving preview and actual Roll20 expected preview as separate modes until the prefix contract is reverified with another fixture.');
   }
   return checks;
@@ -376,6 +409,13 @@ function renderMarkdown(report) {
     lines.push('');
     lines.push(`- State anchor classes: ${fixture.payloadClasses.stateAnchorClasses.map((token) => `\`${token}\``).join(', ') || 'none'}`);
     lines.push(`- Panel classes: ${fixture.payloadClasses.panelClasses.map((token) => `\`${token}\``).join(', ') || 'none'}`);
+    lines.push('');
+    lines.push('### Local Expected CSS Mode');
+    lines.push('');
+    lines.push(`- Preview keeps sandbox CSS selectors unprefixed: ${fixture.localExpectedCssMode.previewUsesUnprefixedCss ? 'yes' : 'no'}`);
+    for (const item of fixture.localExpectedCssMode.evidence) {
+      lines.push(`- \`${item.file}\`: ${item.prefixSelectorsFalse ? 'uses `prefixSelectors: false`' : 'no direct `prefixSelectors: false` evidence'}`);
+    }
     lines.push('');
     lines.push('### Next Checks');
     lines.push('');

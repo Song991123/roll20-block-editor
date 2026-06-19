@@ -172,6 +172,13 @@ tests, sandbox sanitize audit, sandbox preview smoke, preview/edit visual smoke,
 export dialog smokes, lint, build, and the Roll20 evidence guard passed. This
 removes one false local/actual state divergence source; it does not solve the
 remaining full-root geometry/height mismatch.
+Follow-up state-diagnostic report wording update: `scripts/roll20_state_visibility_diagnostics.mjs`
+now detects that `buildSheetDoc`, `ExportDialog`, and the sandbox sanitize audit
+already use `prefixSelectors: false` for Roll20 actual expected-render evidence.
+The report still classifies the captured Les-Oublies fixture as
+`ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`, but its next action is
+now cross-fixture re-verification and local Sandbox expected visibility
+comparison, not re-applying blanket CSS selector prefixing.
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |

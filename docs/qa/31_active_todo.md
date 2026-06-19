@@ -469,6 +469,8 @@ candidate smoke still leaves Les-Oublies at `8.52%` best direct mismatch with
 local root about `841px` taller than actual, so visual parity is still TODO.
 Next P0 remains row/table/control geometry and additional actual Roll20
 screenshots for AW2E/YSHY plus trustworthy chat evidence.
+Follow-up state-diagnostic report wording update: `scripts/roll20_state_visibility_diagnostics.mjs` now records that local Sandbox expected render paths already keep CSS selectors unprefixed (`prefixSelectors: false` in `buildSheetDoc`, ExportDialog diagnostics, and sandbox sanitize audit). The Les-Oublies finding remains `ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`, but the next action is cross-fixture re-verification and local Sandbox expected visibility comparison, not reintroducing blanket CSS selector prefixing.
+
 
 | Status | Scope | Evidence |
 | --- | --- | --- |

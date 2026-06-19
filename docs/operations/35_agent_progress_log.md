@@ -1288,3 +1288,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Les-Oublies currently has Roll20 chat DOM evidence plus `roll20-chat-page.png`, but no trustworthy `roll20-chat.png`; status reports `chat-dom-page-screenshot-only` and handoff reports `DOM_PAGE_ONLY`.
 - The handoff report now lists current existence for screenshot targets, including `chatPage`, so agents can see that a page screenshot exists without mistaking it for rolltemplate/chat visual evidence.
 - AW2E and YSHY still have missing chat screenshots. Actual Roll20 rolltemplate visual parity remains unverified.
+## 2026-06-19 State Visibility Diagnostic Uses Current Prefix Model
+
+- Updated `scripts/roll20_state_visibility_diagnostics.mjs` so its report detects that local Roll20 Sandbox expected-render paths already use `sanitizeRoll20SandboxCss(..., { prefixSelectors: false })`.
+- The diagnostic still reports Les-Oublies as `ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`, because actual Roll20 CSSOM state anchors are unprefixed while HTML anchors are `sheet-` prefixed and 9 sampled panels remain visible.
+- The report no longer tells agents to patch the local expected path for blanket selector-prefix behavior when that patch already exists. Next checks now point to cross-fixture re-verification and local Sandbox expected visibility comparison before renderer CSS changes.
+- Claim boundary: this is a report-truthfulness change, not Roll20 visual parity and not a production renderer CSS patch.
