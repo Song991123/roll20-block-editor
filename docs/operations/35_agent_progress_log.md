@@ -1,3 +1,8 @@
+## 2026-06-19 Scroll Metrics Geometry Candidate Selection
+
+- Adjusted `scripts/roll20_full_root_candidate_smoke.mjs` so target geometry reporting prefers `bestGeometryCandidate` before root-height-only candidates.
+- Root-height candidate ties now break on geometry score before pixel mismatch. This prevents a visually lower-mismatch but geometrically worse attr-class candidate from controlling panel-drift reporting.
+- Latest AW2E scroll-metrics gate warning now shows source rootDelta +8.188px, panelY +16.6px, panelH +0.2px, and chosen maxYDelta 16.6px. Renderer remains HOLD for the remaining pixel-best over-hide and stale trusted-stitch blockers.
 ## 2026-06-19 Roll20 Chrome Selector Scoping
 
 - Implemented Roll20 chrome selector protection in `sanitizeRoll20SandboxCss(..., { prefixSelectors:false })`: wrapper selectors such as `.largedialog textarea` are scoped away from the dialog chrome instead of overriding Roll20 base CSS.

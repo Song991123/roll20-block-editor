@@ -259,7 +259,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     candidates: candidatesWithGeometryFit,
     componentEffects: summarizeComponentEffects(candidatesWithGeometryFit),
     interpretation: interpret({ bestCandidate, bestGeometryCandidate, closestRootHeightCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }),
-    targetGeometry: compareTargetGeometry(actualTargetGeometry, (closestRootHeightCandidate ?? bestGeometryCandidate ?? bestCandidate)?.metrics?.targetGeometry),
+    targetGeometry: compareTargetGeometry(actualTargetGeometry, (bestGeometryCandidate ?? closestRootHeightCandidate ?? bestCandidate)?.metrics?.targetGeometry),
   };
 }
 
@@ -1435,7 +1435,13 @@ function pickCloserRootHeightCandidate(best, candidate) {
   const candidateAbsHeight = Math.abs(candidate.rootHeightDelta);
   const bestAbsHeight = Math.abs(best.rootHeightDelta);
   if (candidateAbsHeight < bestAbsHeight - 0.001) return candidate;
-  if (Math.abs(candidateAbsHeight - bestAbsHeight) <= 0.001 && candidate.mismatchRatio < best.mismatchRatio) return candidate;
+  if (Math.abs(candidateAbsHeight - bestAbsHeight) <= 0.001) {
+    const candidateGeometry = candidate.geometryFit?.score;
+    const bestGeometry = best.geometryFit?.score;
+    if (typeof candidateGeometry === 'number' && typeof bestGeometry === 'number' && candidateGeometry < bestGeometry - 0.001) return candidate;
+    if (typeof candidateGeometry === 'number' && typeof bestGeometry !== 'number') return candidate;
+    if ((candidateGeometry == null || bestGeometry == null || Math.abs(candidateGeometry - bestGeometry) <= 0.001) && candidate.mismatchRatio < best.mismatchRatio) return candidate;
+  }
   return best;
 }
 
