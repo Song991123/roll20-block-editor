@@ -1,3 +1,8 @@
+# 2026-06-19 Input/Inline-Flow Axis Diagnostic
+
+- Added `scripts/roll20_input_flow_axis_diagnostics.mjs` and package script `diagnose:roll20-input-flow-axis` to compare source-state vs inline/text-input-height candidates against actual Roll20 computed-style sidecars.
+- Latest command: `corepack pnpm run diagnose:roll20-input-flow-axis -- reports\roll20-actual-compare\2026-06-18-state-map-v1` => `SPLIT_RENDERER_AXIS_CONFIRMED`, inlineBest `2`, sourceGeometryBest `1`.
+- Evidence: Les-Oublies source rootDelta `+375.375px` improves to `-0.656px` with inline/text-input; YSHY source `-2.375px` improves to `-0.375px`; AW2E scroll-metrics source is already `+8.188px` and worsens to `+47.188px` with inline/text-input. Keep renderer HOLD until these axes are modeled separately.
 # 2026-06-19 Renderer Patch-Family Drilldown
 
 - Extended `scripts/roll20_renderer_blocker_matrix.mjs` to include scroll-metrics replacement evidence beside the default full-root candidate matrix.

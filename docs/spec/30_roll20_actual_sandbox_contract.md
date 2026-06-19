@@ -134,6 +134,14 @@ global CSS tweak: Les/YSHY need the Roll20 input/inline-flow baseline modeled,
 while AW2E stays on the selector/default-state/source-state path until the gate
 proves a shared fix.
 
+2026-06-19 input-flow update: `diagnose:roll20-input-flow-axis` now compares
+source-state against inline/text-input-height candidates with actual computed
+style sidecars. Latest result is `SPLIT_RENDERER_AXIS_CONFIRMED`: Les-Oublies
+and YSHY are inline/text-input-best, but AW2E's scroll-metrics source-state is
+already closer to the actual root (`+8.188px`) and worsens under the inline/text
+candidate (`+47.188px`). Do not ship a global input/inline-flow CSS patch until
+this split is represented in the renderer model and the action gate agrees.
+
 ## Implementation Implications
 
 - Add a dedicated local module for Roll20 sandbox sanitize/prefix behavior,

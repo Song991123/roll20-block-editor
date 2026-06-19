@@ -1,3 +1,8 @@
+# 2026-06-19 Input/Inline-Flow Axis TODO Update
+
+- DONE: added input/inline-flow axis diagnostic. Command: `corepack pnpm run diagnose:roll20-input-flow-axis -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Current result: `SPLIT_RENDERER_AXIS_CONFIRMED` with inlineBest `2` (Les-Oublies, YSHY) and sourceGeometryBest `1` (AW2E via scroll-metrics source-state).
+- TODO P0: model the Les/YSHY input/inline-flow baseline as a generic Roll20 wrapper/base behavior, then rerun full-root candidates, computed-style context, renderer blocker matrix, and renderer action gate. Do not apply it globally if AW2E remains source/state-dominant.
 # 2026-06-19 Renderer Patch-Family TODO Update
 
 - DONE: added scroll-metrics-aware renderer blocker matrix. Command: `corepack pnpm run diagnose:roll20-renderer-blocker -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
