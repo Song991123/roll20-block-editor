@@ -1597,3 +1597,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The accepted AW2E DPR manifest notes placement was derived from visual overlap because iframe `scrollTop`/root metadata was not readable; this must be separated from renderer CSS conclusions.
 - `scripts/roll20_renderer_action_gate.mjs` now treats high root cutoff risk as an explicit blocker in addition to cross-fixture patch-family disagreement.
 - Claim boundary: trusted full-root evidence remains useful, but this cutoff disagreement means AW2E is not ready for production renderer CSS or visual parity claims.
+## 2026-06-19 Root Capture Plan Cutoff Blocker
+
+- Updated `scripts/roll20_root_capture_plan.mjs` so high `root-cutoff` risk makes a fixture planned even if trusted DPR full-root evidence exists.
+- Latest AW2E plan: `NEEDS_CAPTURE`, `plannedFixtures=1`, root cutoff disagreement `stitched=9168px`, `sidecar=11788.087890625px`, `delta=2620.088px`.
+- The plan now requires manifest outputCss to cover or explain authoritative Roll20 `.charactersheet/form` root height and records whether placements came from readable scrollTop/root metrics or visual overlap.
+- Claim boundary: this is evidence-gate hardening only. It does not add new Roll20 screenshots, does not make the renderer ready, and does not prove Roll20 visual parity.

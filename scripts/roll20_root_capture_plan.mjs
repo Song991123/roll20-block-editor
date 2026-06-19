@@ -29,6 +29,7 @@ async function main() {
   if (!existsSync(baselineDir)) throw new Error(`missing local baseline folder: ${baselineDir}`);
 
   const rootAudit = await readJsonIfExists(path.join(runDir, 'root-stitch-audit', 'root-stitch-audit-results.json'));
+  const rootCutoff = await readJsonIfExists(path.join(runDir, 'root-cutoff-diagnostics', 'root-cutoff-diagnostics-results.json'));
   const rendererGate = await readJsonIfExists(path.join(runDir, 'renderer-action-gate', 'renderer-action-gate-results.json'));
   const actualStatus = await readJsonIfExists(path.join(runDir, 'actual-verification-status', 'actual-verification-status-results.json'));
   const allFixtures = rootAudit?.fixtures ?? [];
@@ -39,7 +40,12 @@ async function main() {
     .filter((fixture) => Array.isArray(fixture.trustedEvidence) && fixture.trustedEvidence.length > 0)
     .map((fixture) => readTrustedExample(runDir, fixture.fixtureId))
     .filter(Boolean);
-  const plannedFixtures = fixtures.filter((fixture) => !(Array.isArray(fixture.trustedEvidence) && fixture.trustedEvidence.length > 0));
+  const rootCutoffByFixture = new Map((rootCutoff?.fixtures ?? []).map((fixture) => [fixture.fixtureId, fixture]));
+  const plannedFixtures = fixtures.filter((fixture) => {
+    const hasTrustedEvidence = Array.isArray(fixture.trustedEvidence) && fixture.trustedEvidence.length > 0;
+    const cutoffRisk = rootCutoffByFixture.get(fixture.fixtureId)?.cutoff?.risk;
+    return !hasTrustedEvidence || cutoffRisk === 'HIGH';
+  });
 
   const report = {
     generatedAt: new Date().toISOString(),
@@ -57,7 +63,7 @@ async function main() {
       blockers: rendererGate?.recommendation?.blockers ?? [],
     },
     trustedExamples,
-    plannedFixtures: plannedFixtures.map((fixture) => buildFixturePlan(runDir, fixture, trustedExamples)),
+    plannedFixtures: plannedFixtures.map((fixture) => buildFixturePlan(runDir, fixture, trustedExamples, rootCutoffByFixture.get(fixture.fixtureId))),
   };
 
   await mkdir(outDir, { recursive: true });
@@ -94,7 +100,7 @@ function readTrustedExample(baseRunDir, fixtureId) {
   }
 }
 
-function buildFixturePlan(baseRunDir, fixture, trustedExamples) {
+function buildFixturePlan(baseRunDir, fixture, trustedExamples, rootCutoff = null) {
   const fixtureId = fixture.fixtureId;
   const shotsDir = path.join(baseRunDir, 'local-baseline', fixtureId, 'screenshots');
   const completeManifest = path.join(shotsDir, 'roll20-root-dpr-complete-manifest.json');
@@ -112,7 +118,20 @@ function buildFixturePlan(baseRunDir, fixture, trustedExamples) {
   return {
     fixtureId,
     status: fixture.status ?? 'MISSING',
-    primaryIssue: fixture.primaryIssue ?? 'missing trusted DPR-corrected full-root evidence',
+    primaryIssue: rootCutoff?.cutoff?.risk === 'HIGH'
+      ? `trusted root cutoff disagreement: stitched=${rootCutoff.cutoff.stitchedHeight}px sidecar=${rootCutoff.cutoff.sidecarHeight}px delta=${rootCutoff.cutoff.heightDelta}px`
+      : fixture.primaryIssue ?? 'missing trusted DPR-corrected full-root evidence',
+    rootCutoff: rootCutoff
+      ? {
+          risk: rootCutoff.cutoff?.risk ?? null,
+          stitchedHeight: rootCutoff.cutoff?.stitchedHeight ?? null,
+          sidecarHeight: rootCutoff.cutoff?.sidecarHeight ?? null,
+          heightDelta: rootCutoff.cutoff?.heightDelta ?? null,
+          visualOverlapPlacement: rootCutoff.cutoff?.visualOverlapPlacement ?? false,
+          clippedValues: rootCutoff.cutoff?.clippedValues ?? [],
+          belowValues: rootCutoff.cutoff?.belowValues ?? [],
+        }
+      : null,
     evidenceState: {
       completeManifest: fileStatus(completeManifest),
       outputPng: fileStatus(outputPng),
@@ -133,10 +152,12 @@ function buildFixturePlan(baseRunDir, fixture, trustedExamples) {
       minimumExpectedSegmentCount: inferSegmentCount(largestDiagnostic, trustedExamples),
       requiredProperties: [
         'segment screenshots must be sheet-root-only DPR-corrected clips',
-        'manifest outputCss must cover the full .charactersheet root width and height',
+        'manifest outputCss must cover the authoritative Roll20 .charactersheet/form root width and height',
+        'if live sidecar root height exists, manifest outputCss.h must explain or intentionally match that root height',
         'every segment should use cropImage: "full"',
         'coverage must start at y=0 and end at outputCss.h without gaps',
         'segment image hashes must not contain byte-identical duplicates',
+        'record whether placements came from readable scrollTop/root metrics or visual overlap',
       ],
       stitchCommand: `corepack pnpm run stitch:roll20-actual-root -- --manifest ${rel(completeManifest)} --out ${rel(outputPng)}`,
       auditCommand: `corepack pnpm run audit:roll20-root-stitch -- ${rel(baseRunDir)}`,
@@ -241,6 +262,13 @@ function renderMarkdown(report) {
     lines.push(`### ${fixture.fixtureId}`, '');
     lines.push(`- Current status: ${fixture.status}`);
     lines.push(`- Primary issue: ${fixture.primaryIssue}`);
+    if (fixture.rootCutoff) {
+      lines.push(`- Root cutoff: risk ${fixture.rootCutoff.risk}, stitched ${fixture.rootCutoff.stitchedHeight}px, sidecar ${fixture.rootCutoff.sidecarHeight}px, delta ${fixture.rootCutoff.heightDelta}px`);
+      if (fixture.rootCutoff.visualOverlapPlacement) lines.push('- Existing stitch placement source: visual-overlap-derived, not readable iframe/root scroll metrics.');
+      if (fixture.rootCutoff.clippedValues.length || fixture.rootCutoff.belowValues.length) {
+        lines.push(`- Boundary panels: clipped ${fixture.rootCutoff.clippedValues.join(', ') || 'none'}, below ${fixture.rootCutoff.belowValues.join(', ') || 'none'}`);
+      }
+    }
     lines.push(`- Minimum expected segment count: ${fixture.recommendedCapture.minimumExpectedSegmentCount ?? 'unknown until iframe/root metrics are readable'}`);
     lines.push('', '| Evidence file | Current |', '| --- | --- |');
     for (const [name, status] of Object.entries(fixture.evidenceState)) {
