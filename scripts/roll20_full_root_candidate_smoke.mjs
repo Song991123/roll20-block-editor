@@ -178,6 +178,8 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         { id: 'sandbox-text-input-270-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-height', rootWidth: actualRootWidth, textInputHeight: 27 } },
         { id: 'sandbox-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
         { id: 'sandbox-text-input-280-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-height', rootWidth: actualRootWidth, textInputHeight: 28 } },
+        { id: 'sandbox-textarea-150-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'textarea-height', rootWidth: actualRootWidth, textareaHeight: 150 } },
+        { id: 'sandbox-text-input-280-textarea-150-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-textarea-height', rootWidth: actualRootWidth, textInputHeight: 28, textareaHeight: 150 } },
         { id: 'sandbox-inline-block-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-text-input-height', rootWidth: actualRootWidth, wordSpacing: -0.75, textInputHeight: 27.6 } },
         { id: 'sandbox-nowrap-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-nowrap-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
         { id: 'sandbox-sheet-class-alias-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', rootWidth: actualRootWidth } },
@@ -660,6 +662,30 @@ async function applyRenderContextPatch(page, patch, payload = null) {
       style.setAttribute('data-r20-diagnostic-context-patch', `text-input-height-${textInputHeight}`);
       style.textContent = `
         .ui-dialog .charsheet input[type="text"] { min-height: ${textInputHeight}px; }
+      `;
+      document.head.append(style);
+    } else if (patch.mode === 'textarea-height') {
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+      const style = document.createElement('style');
+      const textareaHeight = Number.isFinite(patch.textareaHeight) ? patch.textareaHeight : 150;
+      style.setAttribute('data-r20-diagnostic-context-patch', `textarea-height-${textareaHeight}`);
+      style.textContent = `
+        .ui-dialog .charsheet textarea { height: ${textareaHeight}px; }
+      `;
+      document.head.append(style);
+    } else if (patch.mode === 'text-input-textarea-height') {
+      dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
+      dialog.style.paddingLeft = '0px';
+      dialog.style.paddingRight = '0px';
+      const style = document.createElement('style');
+      const textInputHeight = Number.isFinite(patch.textInputHeight) ? patch.textInputHeight : 28;
+      const textareaHeight = Number.isFinite(patch.textareaHeight) ? patch.textareaHeight : 150;
+      style.setAttribute('data-r20-diagnostic-context-patch', `text-input-${textInputHeight}-textarea-${textareaHeight}`);
+      style.textContent = `
+        .ui-dialog .charsheet input[type="text"] { min-height: ${textInputHeight}px; }
+        .ui-dialog .charsheet textarea { height: ${textareaHeight}px; }
       `;
       document.head.append(style);
     } else if (patch.mode === 'inline-block-text-input-height') {
@@ -1463,6 +1489,8 @@ function summarizeComponentEffects(candidates) {
     'sandbox-text-input-270-source',
     'sandbox-text-input-276-source',
     'sandbox-text-input-280-source',
+    'sandbox-textarea-150-source',
+    'sandbox-text-input-280-textarea-150-source',
     'sandbox-inline-block-text-input-276-source',
     'sandbox-nowrap-text-input-276-source',
     'sandbox-sheet-class-alias-source',
@@ -1506,6 +1534,8 @@ function formatRenderContextPatch(patch) {
   if (!patch) return null;
   if (patch.mode === 'inline-block-wordspace') return `${patch.mode}:${patch.wordSpacing}px`;
   if (patch.mode === 'text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
+  if (patch.mode === 'textarea-height') return `${patch.mode}:${patch.textareaHeight}px`;
+  if (patch.mode === 'text-input-textarea-height') return `${patch.mode}:${patch.textInputHeight}px:${patch.textareaHeight}px`;
   if (patch.mode === 'inline-block-text-input-height') return `${patch.mode}:${patch.wordSpacing}px:${patch.textInputHeight}px`;
   if (patch.mode === 'inline-block-nowrap-text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
   if (patch.mode === 'sheet-class-alias-text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;

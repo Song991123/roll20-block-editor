@@ -1,3 +1,9 @@
+## 2026-06-19 AW2E Textarea Cascade Diagnostic
+
+- Added diagnostic-only `textarea-height` and `text-input-textarea-height` candidates to `scripts/roll20_full_root_candidate_smoke.mjs`.
+- Latest scroll-metrics run: AW2E actual 852x11788; prior root-closest `sandbox-text-input-280-source` rootDelta -185.5px; `sandbox-textarea-150-source` rootDelta -34.313px; `sandbox-text-input-280-textarea-150-source` rootDelta +17.688px.
+- State panel evidence improved from right support panels being about -70.2px too short to +0.2px height delta, with 11/11 state panels compared and gate maxHeightDelta now 4px.
+- Claim boundary: this confirms the textarea/base cascade axis as a likely root cause, but it is not yet a production renderer fix. Next step is to convert the diagnostic into a generic Roll20 CSS scoping/base behavior model and recheck all fixtures.
 ## 2026-06-19 AW2E Scroll Metrics State Panel Geometry
 
 - Expanded full-root candidate diagnostics to normalize Roll20 root-container `visiblePanels` and collect local `statePanels` from candidate renders.
