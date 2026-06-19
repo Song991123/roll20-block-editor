@@ -1,3 +1,14 @@
+## 2026-06-20 00:27 +09:00 - Les-Oublies normalized Roll20 chat capture
+
+Status: PARTIAL. One evidence blocker was closed, but visual parity is still failing.
+
+- Used the already-open dedicated Codex Roll20 Verify Roll20 editor tab and did not modify existing real rooms.
+- Captured fresh local-only official-roll20-Les-Oublies roll20-chat.png plus roll20-chat-dom-evidence.json with clip metadata, rolltemplates[].rect, latestTemplate, and chatCssEvidence.
+- Validation: corepack pnpm run diagnose:roll20-chat-parity -- reports\roll20-actual-compare\2026-06-18-state-map-v1 now reports compared=3/3, normalizedCompared=3/3, needsNormalizedCapture=0.
+- Validation: corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1 now reports rendererBlockers=2, chatNormalizedCompared=3/3, chatNeedsNormalizedCapture=0, chatNormalizedHighMismatch=3.
+- Current mismatch values: AW2E 95.13%, Les-Oublies 71.96%, YSHY 38.25%. This is strong evidence that local ChatPane/rolltemplate rendering still differs from actual Roll20.
+- Claim boundary: Roll20 chat visual parity remains false; the next work should target chat shell/template sizing and Roll20 runtime styling differences rather than more normalized recapture.
+
 ## 2026-06-20 00:22 +09:00 - Rolltemplate crop diagnostic correction
 
 Status: PARTIAL. This improves truthfulness of Roll20 actual comparison, not parity itself.
