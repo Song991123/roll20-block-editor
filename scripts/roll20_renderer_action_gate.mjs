@@ -36,9 +36,10 @@ async function main() {
   const chatParity = await readJsonIfExists(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
   const chatStyle = await readJsonIfExists(path.join(runDir, 'chat-style-context-diagnostics', 'chat-style-context-diagnostics-results.json'));
   const chatCandidates = await readJsonIfExists(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
+  const chatCandidateStyleProof = await readJsonIfExists(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -48,6 +49,7 @@ async function main() {
     chatParity: summarizeChatParity(chatParity),
     chatStyle: summarizeChatStyle(chatStyle),
     chatCandidates: summarizeChatCandidates(chatCandidates),
+    chatCandidateStyleProof: summarizeChatCandidateStyleProof(chatCandidateStyleProof),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -219,7 +221,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -234,6 +236,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatParitySummary = summarizeChatParity(chatParity);
   const chatStyleSummary = summarizeChatStyle(chatStyle);
   const chatCandidateSummary = summarizeChatCandidates(chatCandidates);
+  const chatCandidateStyleProofSummary = summarizeChatCandidateStyleProof(chatCandidateStyleProof);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
 
   if (!generatedEvidenceComplete) {
@@ -285,6 +288,16 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     }
     if (chatCandidateSummary.styleProofCandidates.length) {
       blockers.push(`chat candidate comparison has numerically promising candidates without actual Roll20 style proof: ${chatCandidateSummary.styleProofCandidates.map(formatChatCandidate).join('; ')}`);
+    }
+  }
+  if (!chatCandidateStyleProofSummary) {
+    warnings.push('chat candidate style-proof diagnostic has not been run; run diagnose:roll20-chat-candidate-style before promoting any ChatPane renderer candidate');
+  } else {
+    if (chatCandidateStyleProofSummary.rejectedCandidates.length) {
+      blockers.push(`actual Roll20 computed styles contradict promising ChatPane candidates: ${chatCandidateStyleProofSummary.rejectedCandidates.map(formatChatStyleProofCandidate).join('; ')}`);
+    }
+    if (chatCandidateStyleProofSummary.needsNewSidecarCandidates.length) {
+      blockers.push(`promising ChatPane candidates need additional actual Roll20 sidecar fields before promotion: ${chatCandidateStyleProofSummary.needsNewSidecarCandidates.map(formatChatStyleProofCandidate).join('; ')}`);
     }
   }
 
@@ -415,6 +428,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
   } else if (chatCandidateSummary.styleProofCandidates.length) {
     nextActions.push(`For promising chat candidates (${chatCandidateSummary.styleProofCandidates.map((candidate) => candidate.name).join(', ')}), prove the same change from actual Roll20 computed styles before production CSS; otherwise keep them diagnostic-only.`);
+  }
+  if (!chatCandidateStyleProofSummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidate-style -- ${path.relative(process.cwd(), activeRunDir)} to classify promising candidates against actual Roll20 computed styles.`);
+  } else if (chatCandidateStyleProofSummary.rejectedCandidates.length || chatCandidateStyleProofSummary.needsNewSidecarCandidates.length) {
+    nextActions.push(`Remove rejected ChatPane candidates from production consideration (${chatCandidateStyleProofSummary.rejectedCandidates.map((candidate) => candidate.name).join(', ') || 'none'}) and capture extra sidecar fields for ${chatCandidateStyleProofSummary.needsNewSidecarCandidates.map((candidate) => candidate.name).join(', ') || 'none'} before further CSS experiments.`);
   }
   if (missingFullRootCandidates.length) {
     const ids = missingFullRootCandidates.map((fixture) => fixture.fixtureId);
@@ -564,6 +582,30 @@ function summarizeChatCandidates(report) {
     regressingCandidates,
     styleProofCandidates,
     bestNumericCandidates,
+  };
+}
+
+function summarizeChatCandidateStyleProof(report) {
+  if (!report?.candidates) return null;
+  const candidates = report.candidates.map((candidate) => ({
+    name: candidate.name,
+    styleProofStatus: candidate.styleProofStatus ?? 'UNKNOWN',
+    promotionRisk: candidate.promotionRisk ?? '',
+    meanAlignedDeltaPct: candidate.meanAlignedDeltaPct ?? null,
+    regressedFixtures: Number(candidate.regressedFixtures ?? 0),
+    fixtureStatuses: (candidate.fixtures ?? []).map((fixture) => ({
+      fixtureId: fixture.fixtureId,
+      status: fixture.status,
+      finding: fixture.finding ?? '',
+    })),
+  }));
+  return {
+    candidateCount: candidates.length,
+    generatedAt: report.generatedAt ?? null,
+    candidates,
+    rejectedCandidates: candidates.filter((candidate) => candidate.styleProofStatus === 'REJECT_STYLE_CONTRADICTION'),
+    needsNewSidecarCandidates: candidates.filter((candidate) => candidate.styleProofStatus === 'NEEDS_NEW_SIDECAR_FIELDS'),
+    styleCompatibleCandidates: candidates.filter((candidate) => candidate.styleProofStatus === 'STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW'),
   };
 }
 
@@ -828,6 +870,21 @@ function renderMarkdown(report) {
     }
     lines.push('');
   }
+  if (report.chatCandidateStyleProof) {
+    lines.push('### Chat Candidate Style-Proof Boundary', '');
+    lines.push(`- Candidates checked: ${report.chatCandidateStyleProof.candidateCount}`);
+    lines.push(`- Rejected by actual style: ${report.chatCandidateStyleProof.rejectedCandidates.length}`);
+    lines.push(`- Need new sidecar fields: ${report.chatCandidateStyleProof.needsNewSidecarCandidates.length}`);
+    if (report.chatCandidateStyleProof.candidates.length) {
+      lines.push('');
+      lines.push('| Candidate | Style proof | Mean delta | Key fixture findings |');
+      lines.push('| --- | --- | ---: | --- |');
+      for (const candidate of report.chatCandidateStyleProof.candidates) {
+        lines.push(`| \`${candidate.name}\` | ${candidate.styleProofStatus} | ${fmtPct(candidate.meanAlignedDeltaPct)} | ${candidate.fixtureStatuses.map((fixture) => `${fixture.fixtureId}:${fixture.status}`).join('<br>')} |`);
+      }
+    }
+    lines.push('');
+  }
   lines.push('### Next Actions', '');
   for (const action of report.recommendation.nextActions) lines.push(`- ${action}`);
   lines.push('');
@@ -1006,6 +1063,14 @@ function formatFixtureDeltas(deltas) {
 
 function formatChatCandidate(candidate) {
   return `${candidate.name} risk=${candidate.risk || 'unknown'} mean=${fmtPct(candidate.meanAlignedDeltaPct)} regressions=${candidate.regressedFixtures}`;
+}
+
+function formatChatStyleProofCandidate(candidate) {
+  const fixtures = candidate.fixtureStatuses
+    ?.filter((fixture) => fixture.status !== 'STYLE_COMPATIBLE')
+    .map((fixture) => `${fixture.fixtureId}:${fixture.status}`)
+    .join(',');
+  return `${candidate.name} status=${candidate.styleProofStatus}${fixtures ? ` (${fixtures})` : ''}`;
 }
 
 function patchFamily(patch) {

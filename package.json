@@ -41,6 +41,7 @@
     "diagnose:roll20-input-flow-axis": "node scripts/roll20_input_flow_axis_diagnostics.mjs",
     "diagnose:roll20-chat-parity": "node scripts/roll20_chat_parity_diagnostics.mjs",
     "diagnose:roll20-chat-candidates": "node scripts/roll20_chat_candidate_compare.mjs",
+    "diagnose:roll20-chat-candidate-style": "node scripts/roll20_chat_candidate_style_proof.mjs",
     "diagnose:roll20-chat-rows": "node scripts/roll20_chat_row_geometry_compare.mjs",
     "diagnose:roll20-chat-style": "node scripts/roll20_chat_style_context_diagnostics.mjs",
     "diagnose:roll20-chat-live-typography": "node scripts/roll20_chat_live_typography_compare.mjs",

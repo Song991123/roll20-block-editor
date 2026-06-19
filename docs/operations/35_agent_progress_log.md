@@ -1,3 +1,14 @@
+## 2026-06-20 Chat Candidate Actual-Style Proof
+
+- Added `scripts/roll20_chat_candidate_style_proof.mjs` and package alias `diagnose:roll20-chat-candidate-style`.
+- The diagnostic reads local candidate smoke sidecars plus actual Roll20 `roll20-chat-dom-evidence.json` files and checks whether pixel-improving candidates match actual computed styles.
+- Latest proof rejects `table-scale-x` for all 3 fixtures because actual Roll20 table `transform` does not match `scaleX(0.981)`.
+- Latest proof rejects blanket `no-shadow` because YSHY actual Roll20 cells still have strong `text-shadow`.
+- Latest proof rejects `roll20-break-word` as global CSS because it only matches YSHY; AW2E and Les-Oublies actual sidecars do not match that overflow-wrap candidate.
+- `text-auto-aa` remains unproven because current sidecars do not capture `text-rendering` / font smoothing. Capture richer sidecar fields before considering that candidate.
+- Updated the renderer gate so style-proof contradictions and missing sidecar fields are standard blockers.
+- Claim boundary: this removes unsafe candidates from production consideration. It does not change production CSS and does not solve Roll20 chat parity.
+
 ## 2026-06-20 Chat Candidate Gate Hardening
 
 - Updated `scripts/roll20_renderer_action_gate.mjs` to load the local-only chat candidate comparison report.

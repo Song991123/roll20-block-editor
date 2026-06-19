@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Chat candidate actual-style proof
+
+Status: PARTIAL. Three pixel-improving ChatPane candidates are now rejected by actual Roll20 computed style; renderer/chat parity is still blocked.
+
+- DONE: Added `diagnose:roll20-chat-candidate-style`, which compares `candidate-needs-style-proof` local ChatPane candidates against actual Roll20 chat DOM sidecars.
+- RESULT: `table-scale-x` is contradicted by actual Roll20 table `transform` for `3/3` fixtures. Actual Roll20 uses no matching `scaleX(0.981)` transform.
+- RESULT: `no-shadow` is contradicted by YSHY actual Roll20 cells: comparable nodes still keep strong `text-shadow`, so blanket no-shadow is not a valid generic renderer patch.
+- RESULT: `roll20-break-word` is compatible with YSHY but contradicted by AW2E and Les-Oublies, so it is not global-safe.
+- RESULT: `text-auto-aa` cannot be proven with current sidecar fields; it needs actual `text-rendering` / font smoothing evidence before any production consideration.
+- STILL TODO P0: Stop treating `no-shadow`, `table-scale-x`, and `roll20-break-word` as production candidates. Next useful work is either richer text rasterization sidecars for `text-auto-aa`, or a narrower per-template renderer model supported by actual Roll20 styles.
+
 ## 2026-06-20 Codex Update - Chat candidate gate hardening
 
 Status: PARTIAL. The renderer gate now blocks unsafe ChatPane candidate promotion directly; Roll20 renderer/chat parity is still not solved.
