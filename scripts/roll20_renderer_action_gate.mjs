@@ -259,8 +259,10 @@ function recommend(fixtures, status, activeRunDir) {
   }
 
   const highRootCutoffRisk = fixtures.filter((fixture) => fixture.rootCutoff?.risk === 'HIGH');
-  if (highRootCutoffRisk.length) {
-    blockers.push(`trusted stitched root height disagrees with live sidecar root for ${highRootCutoffRisk.map((fixture) => `${fixture.fixtureId} delta=${num(fixture.rootCutoff.heightDelta)}px`).join(', ')}`);
+  const supersededRootCutoffRisk = highRootCutoffRisk.filter((fixture) => reliableRendererCandidate(fixture)?.evidenceSource === 'scroll-metrics-source');
+  const unresolvedRootCutoffRisk = highRootCutoffRisk.filter((fixture) => reliableRendererCandidate(fixture)?.evidenceSource !== 'scroll-metrics-source');
+  if (unresolvedRootCutoffRisk.length) {
+    blockers.push(`trusted stitched root height disagrees with live sidecar root for ${unresolvedRootCutoffRisk.map((fixture) => `${fixture.fixtureId} delta=${num(fixture.rootCutoff.heightDelta)}px`).join(', ')}`);
   }
 
   for (const fixture of compared) {
@@ -268,6 +270,9 @@ function recommend(fixtures, status, activeRunDir) {
   }
   for (const fixture of compared.filter((item) => item.rootCutoff?.risk === 'HIGH')) {
     warnings.push(`${fixture.fixtureId} trusted full-root candidate result is excluded from reliable patch-family comparison because root-cutoff risk is HIGH.`);
+  }
+  for (const fixture of supersededRootCutoffRisk) {
+    warnings.push(`${fixture.fixtureId} root cutoff risk is superseded for renderer-candidate comparison by qualified scroll-metrics source evidence, but it still blocks any claim based on the older stitched full-root screenshot.`);
   }
   for (const { fixture, candidate } of reliableCompared.filter((item) => item.candidate?.evidenceSource === 'scroll-metrics-source')) {
     warnings.push(`${fixture.fixtureId} uses scroll-metrics source candidate for reliable patch-family comparison: root delta ${num(candidate.rootHeightDelta)}px, panelY=${num(candidate.statePanelYDelta)}px, panelH=${num(candidate.statePanelHeightDelta)}px.`);
@@ -330,8 +335,11 @@ function recommend(fixtures, status, activeRunDir) {
   if (patchFamilies.size > 1) {
     nextActions.push('Compare the differing diagnostic patch families before promoting CSS: current fixtures do not agree on one generic renderer fix.');
   }
-  if (highRootCutoffRisk.length) {
-    nextActions.push(`Resolve root cutoff/capture-container disagreement before production CSS: ${highRootCutoffRisk.map((fixture) => `${fixture.fixtureId} stitched=${fixture.rootCutoff.stitchedHeight} sidecar=${fixture.rootCutoff.sidecarHeight}`).join('; ')}. Capture or derive authoritative Roll20 root/container height, then rerun full-root candidates.`);
+  if (unresolvedRootCutoffRisk.length) {
+    nextActions.push(`Resolve root cutoff/capture-container disagreement before production CSS: ${unresolvedRootCutoffRisk.map((fixture) => `${fixture.fixtureId} stitched=${fixture.rootCutoff.stitchedHeight} sidecar=${fixture.rootCutoff.sidecarHeight}`).join('; ')}. Capture or derive authoritative Roll20 root/container height, then rerun full-root candidates.`);
+  }
+  if (supersededRootCutoffRisk.length) {
+    nextActions.push(`Keep old cutoff-prone stitched evidence excluded for ${supersededRootCutoffRisk.map((fixture) => fixture.fixtureId).join(', ')}; use scroll-metrics source evidence only as diagnostic renderer-candidate evidence until a fresh trusted full-root screenshot is captured.`);
   }
   const attrClassStateTargets = compared.filter((fixture) => {
     if (!fixture.attrClassValueCount) return false;

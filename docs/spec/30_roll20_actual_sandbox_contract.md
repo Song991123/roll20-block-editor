@@ -117,6 +117,15 @@ computed-style evidence found a `.charactersheet` root at `850px` width with
 computed-style diagnostic now compares `3/3` fixtures with
 `missingActualStyle=0`, but still reports `DO_NOT_PROMOTE_DIRECTLY`.
 
+2026-06-19 renderer-gate update: AW2E's older stitched full-root screenshot is
+still cutoff-prone (`9168px` stitched vs `11788.087px` live sidecar), but a
+scroll-metrics source candidate now qualifies for diagnostic renderer-candidate
+comparison (`rootDelta +8.188px`, `panelY +16.6px`, `panelH +0.2px`). Status may
+therefore report `reliableTrustedFullRoot=3/3` with
+`trustedFullRootCutoffUnresolved=0`. This is not visual parity and not renderer
+readiness: the renderer gate still holds production CSS because reliable patch
+families disagree across fixtures.
+
 ## Implementation Implications
 
 - Add a dedicated local module for Roll20 sandbox sanitize/prefix behavior,

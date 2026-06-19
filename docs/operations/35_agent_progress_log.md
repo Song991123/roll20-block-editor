@@ -1,3 +1,8 @@
+# 2026-06-19 Root Cutoff Superseded, Renderer Still HOLD
+
+- Updated `scripts/roll20_renderer_action_gate.mjs` so a root-cutoff HIGH fixture is a blocker only when no qualified scroll-metrics replacement exists. AW2E now has a qualified scroll-metrics source replacement for renderer-candidate comparison: rootDelta `+8.188px`, panelY `+16.6px`, panelH `+0.2px`.
+- Updated `scripts/roll20_actual_status.mjs` to report raw cutoff risk separately from unresolved cutoff risk. Latest status: `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, `trustedFullRootCutoffRisk=1`, `trustedFullRootCutoffUnresolved=0`, `scrollMetricsReplacement=1`.
+- Renderer still remains `HOLD_PRODUCTION_RENDERER_PATCH` and `rendererReady=NO`. The remaining blocker is real: reliable patch families still disagree across fixtures (`none` for AW2E, `inline-block+text-input-height` for Les-Oublies/YSHY). Do not promote renderer CSS until that cross-fixture mismatch is explained or resolved.
 ## 2026-06-19 Scroll Metrics Reliable Renderer Candidate
 
 - Updated `scripts/roll20_renderer_action_gate.mjs` to use a scroll-metrics source candidate for reliable patch-family comparison when a cutoff-HIGH fixture has tight root/panel alignment.

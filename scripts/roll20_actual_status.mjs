@@ -64,6 +64,7 @@ async function main() {
   const blockerEvidence = await readBlockerEvidence(runDir);
   const rootStitchAudit = await readRootStitchAudit(runDir);
   const rootCutoff = await readRootCutoff(runDir);
+  const scrollMetricsReplacement = await readScrollMetricsReplacement(runDir);
   const rendererAction = await readRendererAction(runDir);
   const fixtures = [];
   for (const fixtureId of await listFixtureIds(baselineDir)) {
@@ -93,7 +94,11 @@ async function main() {
     rootStitchAudit.fixtureCount > 0 &&
     rootStitchAudit.trustedFullRootCount === rootStitchAudit.fixtureCount;
   const cutoffRiskFixtureIds = new Set(rootCutoff.highRiskFixtures.map((fixture) => fixture.fixtureId));
-  const reliableTrustedFullRootCount = Math.max(0, rootStitchAudit.trustedFullRootCount - cutoffRiskFixtureIds.size);
+  const replacementFixtureIds = new Set(scrollMetricsReplacement.qualifiedFixtures.map((fixture) => fixture.fixtureId));
+  const unresolvedCutoffRiskFixtureIds = new Set(
+    [...cutoffRiskFixtureIds].filter((fixtureId) => !replacementFixtureIds.has(fixtureId)),
+  );
+  const reliableTrustedFullRootCount = Math.max(0, rootStitchAudit.trustedFullRootCount - unresolvedCutoffRiskFixtureIds.size);
   const reliableTrustedFullRootComplete =
     rootStitchAudit.fixtureCount > 0 &&
     reliableTrustedFullRootCount === rootStitchAudit.fixtureCount;
@@ -149,6 +154,8 @@ async function main() {
       trustedFullRootTotal: rootStitchAudit.fixtureCount,
       trustedFullRootMissing: rootStitchAudit.missingTrustedFixtures,
       trustedFullRootCutoffRiskCount: rootCutoff.highRiskFixtures.length,
+      trustedFullRootCutoffUnresolvedCount: unresolvedCutoffRiskFixtureIds.size,
+      trustedFullRootScrollMetricsReplacementCount: scrollMetricsReplacement.qualifiedFixtures.length,
       reliableTrustedFullRootCount,
       reliableTrustedFullRootComplete,
       rendererAction: rendererAction.action,
@@ -159,6 +166,7 @@ async function main() {
     blockerEvidence,
     rootStitchAudit,
     rootCutoff,
+    scrollMetricsReplacement,
     rendererAction,
     fixtures,
     nextAction: buildNextAction({
@@ -171,6 +179,7 @@ async function main() {
       blockerEvidence,
       rootStitchAudit,
       rootCutoff,
+      scrollMetricsReplacement,
       rendererAction,
     }),
   };
@@ -311,6 +320,42 @@ async function readRootCutoff(runDir) {
         sidecarHeight: fixture.sidecarRoot?.height ?? null,
         heightDelta: fixture.cutoff?.heightDelta ?? null,
       })),
+  };
+}
+
+async function readScrollMetricsReplacement(runDir) {
+  const file = path.join(runDir, 'full-root-candidate-smoke-scroll-metrics', 'full-root-candidate-smoke-results.json');
+  if (!existsSync(file)) {
+    return {
+      exists: false,
+      file: rel(file),
+      qualifiedFixtures: [],
+      note: 'missing scroll-metrics full-root candidate report',
+    };
+  }
+  const report = JSON.parse(await fs.readFile(file, 'utf8'));
+  const fixtures = Array.isArray(report.fixtures) ? report.fixtures : [];
+  return {
+    exists: true,
+    file: rel(file),
+    qualifiedFixtures: fixtures
+      .map((fixture) => {
+        const source = (fixture.candidates ?? []).find((candidate) => candidate.id === 'sandbox-source-state');
+        if (!source) return null;
+        const rootDelta = Math.abs(Number(source.rootHeightDelta ?? Number.POSITIVE_INFINITY));
+        const panelY = Math.abs(Number(source.geometryFit?.statePanelYDelta ?? Number.POSITIVE_INFINITY));
+        const panelH = Math.abs(Number(source.geometryFit?.statePanelHeightDelta ?? Number.POSITIVE_INFINITY));
+        if (rootDelta > 50 || panelY > 50 || panelH > 10) return null;
+        return {
+          fixtureId: fixture.fixtureId,
+          candidateId: source.id,
+          rootHeightDelta: source.rootHeightDelta ?? null,
+          statePanelYDelta: source.geometryFit?.statePanelYDelta ?? null,
+          statePanelHeightDelta: source.geometryFit?.statePanelHeightDelta ?? null,
+          actualSize: fixture.actual?.size ?? null,
+        };
+      })
+      .filter(Boolean),
   };
 }
 
@@ -534,6 +579,7 @@ function buildNextAction({
   blockerEvidence,
   rootStitchAudit,
   rootCutoff,
+  scrollMetricsReplacement,
   rendererAction,
 }) {
   if (!preupload.pass) {
@@ -545,8 +591,10 @@ function buildNextAction({
     const fixtureArg = missingIds.length === 1 ? ` ${missingIds[0]}` : '';
     return `Run corepack pnpm run plan:roll20-root-capture -- ${rel(path.resolve(runDirFromReport(rootStitchAudit.file)))}${fixtureArg}, then capture trusted DPR-corrected full-root Roll20 evidence for ${missing} and rerun root stitch audit, screenshot diff, full-root candidate smoke, and renderer action gate.`;
   }
-  if (rootCutoff.exists && rootCutoff.highRiskFixtures.length > 0) {
-    const fixtures = rootCutoff.highRiskFixtures
+  const replacementIds = new Set((scrollMetricsReplacement.qualifiedFixtures ?? []).map((fixture) => fixture.fixtureId));
+  const unresolvedRootCutoff = rootCutoff.highRiskFixtures.filter((fixture) => !replacementIds.has(fixture.fixtureId));
+  if (rootCutoff.exists && unresolvedRootCutoff.length > 0) {
+    const fixtures = unresolvedRootCutoff
       .map((fixture) => `${fixture.fixtureId} stitched=${fixture.stitchedHeight} sidecar=${fixture.sidecarHeight}`)
       .join('; ');
     return `Trusted full-root files exist, but root cutoff diagnostics mark them unreliable for ${fixtures}. Promote or recapture an authoritative full-root source before treating renderer output as ready.`;
@@ -609,7 +657,7 @@ function renderMarkdown(report) {
     `- Solo-room observation screenshots: ${report.summary.observationPresentCount}/${report.summary.observationTargetCount}`,
     `- Solo-room observation diffs: ${report.summary.observationDiffedCount}/${report.summary.observationTargetCount}`,
     `- Trusted full-root evidence: ${report.summary.trustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
-    `- Reliable trusted full-root evidence: ${report.summary.reliableTrustedFullRootCount}/${report.summary.trustedFullRootTotal} (cutoff risk: ${report.summary.trustedFullRootCutoffRiskCount})`,
+    `- Reliable trusted full-root evidence: ${report.summary.reliableTrustedFullRootCount}/${report.summary.trustedFullRootTotal} (cutoff risk: ${report.summary.trustedFullRootCutoffRiskCount}, unresolved: ${report.summary.trustedFullRootCutoffUnresolvedCount}, scroll-metrics replacement: ${report.summary.trustedFullRootScrollMetricsReplacementCount})`,
     `- Renderer action: ${report.summary.rendererAction} (${report.summary.rendererBlockerCount} blockers)`,
     `- Renderer ready for production CSS: ${report.summary.rendererReady ? 'yes' : 'NO'}`,
     `- All actual screenshots: ${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
@@ -677,6 +725,8 @@ function renderConsoleSummary(report, outDir) {
     `trustedFullRoot=${report.summary.trustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
     `reliableTrustedFullRoot=${report.summary.reliableTrustedFullRootCount}/${report.summary.trustedFullRootTotal}`,
     `trustedFullRootCutoffRisk=${report.summary.trustedFullRootCutoffRiskCount}`,
+    `trustedFullRootCutoffUnresolved=${report.summary.trustedFullRootCutoffUnresolvedCount}`,
+    `scrollMetricsReplacement=${report.summary.trustedFullRootScrollMetricsReplacementCount}`,
     `rendererAction=${report.summary.rendererAction}`,
     `rendererBlockers=${report.summary.rendererBlockerCount}`,
     `rendererReady=${report.summary.rendererReady ? 'YES' : 'NO'}`,

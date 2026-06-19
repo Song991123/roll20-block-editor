@@ -1,3 +1,8 @@
+# 2026-06-19 Current Renderer TODO Update
+
+- VERIFY: root-cutoff accounting was refined. Latest `status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, `trustedFullRootCutoffRisk=1`, `trustedFullRootCutoffUnresolved=0`, `scrollMetricsReplacement=1`, `rendererBlockers=1`, and `rendererReady=NO`.
+- TODO P0: resolve the remaining cross-fixture renderer patch-family disagreement. Current gate still HOLDs because AW2E compares as `none` while Les-Oublies/YSHY compare as `inline-block+text-input-height`.
+- TODO P0: keep AW2E's old cutoff-prone stitched screenshot excluded from parity claims. Scroll-metrics is acceptable for diagnostic renderer-candidate comparison, not for claiming final Roll20 visual parity.
 # 31. Active TODO Board
 
 Date: 2026-05-19
