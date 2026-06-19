@@ -11,6 +11,8 @@ Status: PARTIAL. This batch improves evidence truthfulness; Roll20 chat/template
 - Verification: `corepack pnpm run lint`, `corepack pnpm run build`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `guard:roll20-evidence` passed.
 - Next P0: recapture Les-Oublies chat from a visible text chat panel with matching screenshot surface coordinates, then rerun chat parity before any ChatPane/Roll20 chat shell CSS change.
 
+Follow-up: Les-Oublies foreground was recaptured locally after narrowing the Roll20 viewport and scrolling the text chat panel. The new local-only `roll20-chat.png` shows the `Initiative :` template text, so `chatActualTemplatePixelSuspect` is now `0`; however the sidecar is explicitly marked as manual coordinate calibration, so `chatActualCropGeometrySuspect=1` and the renderer gate still blocks CSS tuning. Suspect-including max aligned mismatch changed from `91.69%` to `65.02%`; authoritative max aligned mismatch remains `23.4%` across AW2E/YSHY.
+
 ## 2026-06-20 05:13 +09:00 - AW2E/Les actual Roll20 chat current-metric recapture
 
 Status: PARTIAL. Current Roll20 chat sidecar coverage is now complete; visual/chat parity remains blocked.
