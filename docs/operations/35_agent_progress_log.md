@@ -1,3 +1,13 @@
+## 2026-06-20 Chat Shell Geometry Probe
+
+- Added `scripts/roll20_chat_shell_geometry.mjs` and package alias `diagnose:roll20-chat-shell-geometry`.
+- The probe compares local ChatPane rolltemplate root/table/cell geometry against actual Roll20 chat DOM sidecars and writes local-only shell geometry reports.
+- Wired shell geometry into `gate:roll20-renderer-action`.
+- Current Les-Oublies result: `CELL_WIDTH_MODEL_MISMATCH`. Message width and template width match, actual crop margins are `2/2/2/2`, but actual first cell width is `+4.141px` wider and template height is `-1.2px` compared with local.
+- Current YSHY result: `WIDTH_MODEL_REQUIRED`, with table width delta `-24.309px`.
+- Current AW2E result: shell geometry is secondary for now because the aligned chat mismatch is below the high-mismatch threshold.
+- Claim boundary: this narrows the root cause. It does not prove Roll20 chat parity and does not authorize a production ChatPane font/width/paint patch.
+
 ## 2026-06-20 Chat Mask Strategy Gate
 
 - Added `scripts/roll20_chat_mask_strategy.mjs` and package alias `diagnose:roll20-chat-mask-strategy`.

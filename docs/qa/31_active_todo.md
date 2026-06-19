@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - Chat shell geometry narrows Les mismatch
+
+Status: PARTIAL. Roll20 chat/template parity is still blocked, but the Les-Oublies shell/crop hypothesis is now narrower.
+
+- DONE: Added `diagnose:roll20-chat-shell-geometry`, which compares local ChatPane root/table/cell geometry with actual Roll20 chat DOM sidecars.
+- DONE: Wired shell geometry into `gate:roll20-renderer-action`.
+- RESULT: Current shell status is `SHELL_MODEL_NEEDED`.
+- RESULT: `official-roll20-Les-Oublies` is now `CELL_WIDTH_MODEL_MISMATCH`: message width and template width match, actual crop margin is `2/2/2/2`, but actual first cell is `+4.141px` wider and template height is `-1.2px` compared with local.
+- RESULT: `yshy-commission-1bu` remains `WIDTH_MODEL_REQUIRED`; actual table width differs by `-24.309px`.
+- RESULT: `official-roll20-AW2E` remains shell-secondary for this axis because its aligned chat mismatch is below the current high-mismatch threshold.
+- VERIFIED: `diagnose:roll20-chat-shell-geometry`, `node --check scripts\roll20_chat_shell_geometry.mjs`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build a font/cell-width diagnostic model before any production ChatPane CSS. Prior broad typography and paint candidates are not sufficient evidence for a global patch.
+
 ## 2026-06-20 Codex Update - Chat mask strategy gate added
 
 Status: PARTIAL. Roll20 chat/template parity is still blocked, but the next renderer strategy is now less ambiguous.
