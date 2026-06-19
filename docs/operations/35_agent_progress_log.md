@@ -1500,3 +1500,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Generated ignored local `roll20-root-dpr-complete-manifest.json`, stitched `roll20-sandbox-root-full-dpr-corrected.png` at `850x9168`, and reran the evidence gates.
 - Verification: `audit:roll20-root-stitch` PASS for AW2E, Les-Oublies, and YSHY; `roll20_actual_screenshot_diff` reports AW2E sandbox mismatch `10.52%`; `smoke:roll20-full-root-candidates` reports AW2E best `normal-source-state` at `8.98%` with root delta `+2424.938px`; `status:roll20-actual` now reports `trustedFullRoot=3/3`.
 - Latest renderer gate still holds production CSS with one blocker: the best diagnostic patch is not uniform across fixtures (`none` for AW2E, `inline-block+text-input-height` for Les-Oublies, `text-input-height` for YSHY). This is actual evidence progress, not Roll20 visual parity.
+
+## 2026-06-19 Renderer Blocker Matrix
+
+- Added `scripts/roll20_renderer_blocker_matrix.mjs` and package alias `diagnose:roll20-renderer-blocker` to turn the renderer gate blocker into a cross-fixture patch-effect table.
+- Latest report on `2026-06-18-state-map-v1` concludes `HOLD_PRODUCTION_RENDERER_PATCH`: AW2E best patch family is `none`, Les-Oublies prefers `inline-block+text-input-height`, and YSHY prefers `text-input-height`.
+- The matrix shows no candidate patch family is uniform enough to promote. In particular, the Les-friendly inline-block/text-input combined patch helps Les by `-2.4%` but hurts YSHY by `+0.3%` and is neutral for AW2E.
+- Claim boundary: this is diagnostic guardrail work. It does not change renderer CSS, does not prove visual parity, and points the next P0 toward AW2E root-height drift/default-state/structure analysis.
