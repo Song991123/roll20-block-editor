@@ -22,6 +22,9 @@ if (!args[0]) {
 const candidateReportPath = path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json');
 const scrollMetricsCandidateReportPath = path.join(runDir, 'full-root-candidate-smoke-scroll-metrics', 'full-root-candidate-smoke-results.json');
 const actionGatePath = path.join(runDir, 'renderer-action-gate', 'renderer-action-gate-results.json');
+const chatParityPath = path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json');
+const chatStylePath = path.join(runDir, 'chat-style-context-diagnostics', 'chat-style-context-diagnostics-results.json');
+const chatCandidatePath = path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json');
 const outDir = path.join(runDir, 'renderer-blocker-matrix');
 
 async function main() {
@@ -35,10 +38,20 @@ async function main() {
   const actionGate = existsSync(actionGatePath)
     ? JSON.parse(await readFile(actionGatePath, 'utf8'))
     : null;
+  const chatParity = existsSync(chatParityPath)
+    ? JSON.parse(await readFile(chatParityPath, 'utf8'))
+    : null;
+  const chatStyle = existsSync(chatStylePath)
+    ? JSON.parse(await readFile(chatStylePath, 'utf8'))
+    : null;
+  const chatCandidates = existsSync(chatCandidatePath)
+    ? JSON.parse(await readFile(chatCandidatePath, 'utf8'))
+    : null;
   const fixtures = (candidateReport.fixtures ?? []).map(summarizeFixture);
   const scrollMetricsFixtures = (scrollMetricsCandidateReport?.fixtures ?? []).map(summarizeScrollMetricsFixture);
   const matrix = buildPatchMatrix(fixtures);
   const scrollMetricsMatrix = buildScrollMetricsMatrix(scrollMetricsFixtures);
+  const chatAxis = summarizeChatAxis(chatParity, chatStyle, chatCandidates);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -47,11 +60,12 @@ async function main() {
     blockers: actionGate?.recommendation?.blockers ?? [],
     fixtures,
     scrollMetricsFixtures,
+    chatAxis,
     matrix,
     scrollMetricsMatrix,
     promotionRisks: assessPromotionRisks(fixtures, matrix, actionGate),
     disagreementDiagnosis: diagnoseDisagreement(fixtures, scrollMetricsFixtures, actionGate),
-    conclusion: conclude(fixtures, matrix),
+    conclusion: conclude(fixtures, matrix, actionGate, chatAxis),
   };
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, 'renderer-blocker-matrix-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
@@ -205,6 +219,83 @@ function buildScrollMetricsMatrix(fixtures) {
     });
 }
 
+function summarizeChatAxis(chatParity, chatStyle, chatCandidates) {
+  const parityFixtures = chatParity?.fixtures ?? [];
+  const styleFixtures = chatStyle?.fixtures ?? [];
+  const candidateRows = (chatCandidates?.candidates ?? [])
+    .filter((candidate) => candidate.name !== 'default' && candidate.status === 'OK')
+    .map((candidate) => ({
+      name: candidate.name,
+      risk: candidate.promotionRisk ?? '',
+      meanAlignedDeltaPct: round(candidate.meanAlignedDeltaPct),
+      regressedFixtures: Number(candidate.regressedFixtures ?? 0),
+      improvedFixtures: Number(candidate.improvedFixtures ?? 0),
+      yshyAlignedDeltaPct: parsePct(candidate.yshyAlignedDeltaPct),
+    }))
+    .sort((a, b) => a.regressedFixtures - b.regressedFixtures || Number(a.meanAlignedDeltaPct ?? 0) - Number(b.meanAlignedDeltaPct ?? 0));
+  const styleByFixture = new Map(styleFixtures.map((fixture) => [fixture.id, fixture]));
+  const fixtures = parityFixtures.map((fixture) => {
+    const style = styleByFixture.get(fixture.fixtureId);
+    return {
+      fixtureId: fixture.fixtureId,
+      status: fixture.status,
+      mismatchPct: parsePct(fixture.mismatchPct),
+      bestAlignedMismatchPct: parsePct(fixture.bestAlignedMismatchPct),
+      authoritativeHighMismatch: fixture.status === 'DIFFED' &&
+        fixture.compareMode === 'rolltemplate-crop' &&
+        !fixture.actualCropGeometry?.suspect &&
+        !fixture.actualTemplatePixels?.suspect &&
+        Number(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio ?? 0) > 0.1,
+      localSize: sizeLabel(fixture.localSize),
+      actualSize: sizeLabel(fixture.actualSize),
+      tableWidthDelta: round(style?.tableDelta?.width),
+      rootWidthDelta: round(style?.rootDelta?.width),
+      findings: style?.findings ?? [],
+      topStyleDeltas: (style?.topStyleDeltas ?? []).slice(0, 6).map((delta) => ({
+        selector: delta.selector,
+        key: delta.key,
+        numericDelta: round(delta.numericDelta),
+      })),
+    };
+  });
+  const tableDeltas = fixtures
+    .filter((fixture) => Number.isFinite(Number(fixture.tableWidthDelta)))
+    .map((fixture) => fixture.tableWidthDelta);
+  const hasPositiveTableDelta = tableDeltas.some((delta) => delta >= 8);
+  const hasNegativeTableDelta = tableDeltas.some((delta) => delta <= -8);
+  const unsafeCandidates = candidateRows.filter((candidate) => candidate.risk === 'reject-regresses-fixtures' || candidate.regressedFixtures > 0);
+  return {
+    status: chatParity ? 'COMPARED' : 'MISSING_CHAT_PARITY',
+    summary: {
+      fixtures: Number(chatParity?.summary?.fixtures ?? 0),
+      normalizedCompared: Number(chatParity?.summary?.normalizedCompared ?? 0),
+      authoritativeHighMismatch: Number(chatParity?.summary?.authoritativeNormalizedHighMismatch ?? fixtures.filter((fixture) => fixture.authoritativeHighMismatch).length),
+      maxAlignedMismatchPct: round((chatParity?.summary?.maxAlignedMismatchRatio ?? 0) * 100),
+      tableWidthDirectionConflict: hasPositiveTableDelta && hasNegativeTableDelta,
+      unsafeCandidateCount: unsafeCandidates.length,
+    },
+    fixtures,
+    candidates: candidateRows,
+    unsafeCandidates,
+    diagnosis: diagnoseChatAxis({ fixtures, unsafeCandidates, hasPositiveTableDelta, hasNegativeTableDelta }),
+  };
+}
+
+function diagnoseChatAxis({ fixtures, unsafeCandidates, hasPositiveTableDelta, hasNegativeTableDelta }) {
+  const notes = [];
+  if (fixtures.some((fixture) => fixture.authoritativeHighMismatch)) {
+    notes.push('Actual Roll20 chat crops still differ from local ChatPane for authoritative fixtures; chat renderer parity is not solved.');
+  }
+  if (hasPositiveTableDelta && hasNegativeTableDelta) {
+    notes.push('Actual table width deltas point in opposite directions across fixtures, so one ChatPane width/padding/wrap patch is unsafe.');
+  }
+  if (unsafeCandidates.length) {
+    notes.push(`Current diagnostic chat candidates with regressions must remain local-only: ${unsafeCandidates.map((candidate) => candidate.name).join(', ')}.`);
+  }
+  if (!notes.length) notes.push('No chat-axis blocker was detected in the available local reports.');
+  return notes;
+}
+
 function diagnoseDisagreement(fixtures, scrollMetricsFixtures, actionGate) {
   const gateBlockers = actionGate?.recommendation?.blockers ?? [];
   const fullRootBestFamilies = new Map();
@@ -236,7 +327,19 @@ function diagnoseDisagreement(fixtures, scrollMetricsFixtures, actionGate) {
   };
 }
 
-function conclude(fixtures, matrix) {
+function conclude(fixtures, matrix, actionGate, chatAxis) {
+  if (actionGate?.recommendation?.action === 'HOLD_PRODUCTION_RENDERER_PATCH') {
+    return {
+      status: 'HOLD_PRODUCTION_RENDERER_PATCH',
+      reason: `Renderer gate still has ${actionGate.recommendation.blockers?.length ?? 0} blocker(s); matrix may guide diagnostics but must not authorize production renderer CSS.`,
+    };
+  }
+  if (chatAxis?.summary?.authoritativeHighMismatch > 0 || chatAxis?.summary?.tableWidthDirectionConflict) {
+    return {
+      status: 'HOLD_PRODUCTION_RENDERER_PATCH',
+      reason: 'Chat axis still has authoritative mismatches or conflicting table-width deltas.',
+    };
+  }
   const broadHelps = matrix.filter((row) => row.helps >= 2 && row.hurts === 0);
   const uniformBest = new Set(fixtures.map((fixture) => fixture.bestPatch || 'none')).size === 1;
   if (uniformBest) {
@@ -373,6 +476,32 @@ function renderMarkdown(report) {
     }
     lines.push('');
   }
+  if (report.chatAxis) {
+    lines.push('## Chat Rolltemplate Axis');
+    lines.push('');
+    lines.push(`Status: **${report.chatAxis.status}**`);
+    lines.push(`Summary: normalized ${report.chatAxis.summary.normalizedCompared}/${report.chatAxis.summary.fixtures}, authoritative high mismatch ${report.chatAxis.summary.authoritativeHighMismatch}, max aligned mismatch ${report.chatAxis.summary.maxAlignedMismatchPct}%, table-width conflict ${report.chatAxis.summary.tableWidthDirectionConflict ? 'yes' : 'no'}.`);
+    lines.push('');
+    for (const note of report.chatAxis.diagnosis) lines.push(`- ${note}`);
+    lines.push('');
+    lines.push('| Fixture | Mismatch | Aligned | Local/actual | Table width delta | Findings | Top style deltas |');
+    lines.push('| --- | ---: | ---: | --- | ---: | --- | --- |');
+    for (const fixture of report.chatAxis.fixtures) {
+      const styleSummary = fixture.topStyleDeltas
+        .map((delta) => `${delta.selector}.${delta.key}${Number.isFinite(delta.numericDelta) ? ` ${signed(delta.numericDelta)}px` : ''}`)
+        .join('<br>');
+      lines.push(`| \`${fixture.fixtureId}\` | ${fixture.mismatchPct ?? ''}% | ${fixture.bestAlignedMismatchPct ?? ''}% | ${fixture.localSize} / ${fixture.actualSize} | ${fixture.tableWidthDelta ?? ''}px | ${fixture.findings.join('<br>')} | ${styleSummary} |`);
+    }
+    lines.push('');
+    if (report.chatAxis.candidates.length) {
+      lines.push('| Chat candidate | Risk | Mean delta | Improved | Regressions | YSHY aligned delta |');
+      lines.push('| --- | --- | ---: | ---: | ---: | ---: |');
+      for (const candidate of report.chatAxis.candidates) {
+        lines.push(`| ${candidate.name} | ${candidate.risk} | ${candidate.meanAlignedDeltaPct ?? ''}% | ${candidate.improvedFixtures} | ${candidate.regressedFixtures} | ${candidate.yshyAlignedDeltaPct ?? ''}% |`);
+      }
+      lines.push('');
+    }
+  }
   lines.push('## Promotion Risk');
   lines.push('');
   lines.push(report.promotionRisks.summary);
@@ -386,6 +515,7 @@ function renderMarkdown(report) {
   lines.push('## Next Action');
   lines.push('');
   lines.push('- Keep production renderer CSS on HOLD when `Promotion Risk` says `DO_NOT_PROMOTE_DIRECTLY`, even if a candidate helps two fixtures.');
+  lines.push('- Treat the Chat Rolltemplate Axis as a separate blocker from full-root sheet rendering; fixing one does not prove the other.');
   lines.push('- Run `corepack pnpm run diagnose:roll20-computed-style-context -- <run>` after refreshing actual Roll20 computed-style sidecars for `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, `input[type="text"]`, and textarea.');
   lines.push('- Resolve AW2E root-cutoff/root-height disagreement before using AW2E pixel-best candidates as production evidence.');
   lines.push('- Use this report after each candidate-smoke rerun to avoid promoting a fixture-specific CSS tweak.');
@@ -431,6 +561,10 @@ function fmtPanelGeometry(geometry) {
 
 function sizeLabel(size) {
   if (!size) return '';
+  if (Array.isArray(size)) {
+    const [w, h] = size.map((value) => Math.round(Number(value ?? 0)));
+    return w && h ? `${w}x${h}` : '';
+  }
   const w = Math.round(Number(size.w ?? size.width ?? 0));
   const h = Math.round(Number(size.h ?? size.height ?? 0));
   return w && h ? `${w}x${h}` : '';
@@ -439,6 +573,13 @@ function sizeLabel(size) {
 function pct(ratio) {
   const value = Number(ratio);
   return Number.isFinite(value) ? round(value * 100) : null;
+}
+
+function parsePct(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return round(value);
+  if (typeof value !== 'string') return null;
+  const parsed = Number(value.replace(/%$/, ''));
+  return Number.isFinite(parsed) ? round(parsed) : null;
 }
 
 function round(value) {

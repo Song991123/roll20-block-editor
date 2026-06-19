@@ -1,3 +1,11 @@
+## 2026-06-20 Renderer Blocker Matrix Chat Axis
+
+- Updated `scripts/roll20_renderer_blocker_matrix.mjs` to read chat parity/style/candidate reports in addition to full-root candidate reports.
+- The blocker matrix now keeps its conclusion aligned with `gate:roll20-renderer-action`; when the gate is `HOLD_PRODUCTION_RENDERER_PATCH`, the matrix no longer presents a targeted experiment as if it were a production-ready path.
+- Added a `Chat Rolltemplate Axis` table showing fixture crop mismatch, local/actual crop sizes, table-width deltas, top style deltas, and candidate regression risk. Current evidence still blocks chat parity: authoritative high mismatch `2/3`, max aligned mismatch `21.452%`, and opposite table-width deltas across AW2E/YSHY.
+- Re-ran `diagnose:roll20-computed-style-context`; it still reports `DO_NOT_PROMOTE_DIRECTLY` for `3/3`, reinforcing that the next implementation should define a renderer-model boundary instead of shipping global CSS.
+- Verified: `diagnose:roll20-renderer-blocker`, `diagnose:roll20-computed-style-context`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+
 ## 2026-06-20 Chat Candidate Proof Gate Cleanup
 
 - Tested promoting the Roll20-compatible `overflow-wrap: break-word` behavior into default ChatPane CSS, then reverted it because regenerated parity numbers did not support a global production patch.

@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Renderer blocker matrix now includes chat axis
+
+Status: PARTIAL. Renderer parity is still blocked, but the diagnostic handoff is clearer and safer.
+
+- DONE: Extended `diagnose:roll20-renderer-blocker` so its conclusion follows the renderer action gate. If `gate:roll20-renderer-action` is `HOLD_PRODUCTION_RENDERER_PATCH`, the blocker matrix now also concludes `HOLD_PRODUCTION_RENDERER_PATCH`.
+- DONE: Added a `Chat Rolltemplate Axis` section to the blocker matrix. It now reports chat crop mismatch, local/actual crop sizes, table-width deltas, top style deltas, and chat candidate regression risks beside the full-root patch matrix.
+- RESULT: Latest matrix explicitly separates full-root sheet rendering from chat rolltemplate rendering. Current chat axis remains blocked: normalized `3/3`, authoritative high mismatch `2`, max aligned mismatch `21.452%`, table-width conflict `yes`.
+- RESULT: `diagnose:roll20-computed-style-context` still reports `DO_NOT_PROMOTE_DIRECTLY` for `3/3`. Les-Oublies favors an inline/text-input candidate slice, but AW2E and YSHY do not support a global renderer CSS promotion.
+- STILL TODO P0: Implement or prototype a renderer-model boundary that can represent input/inline-flow and chat-template differences per fixture/template without turning them into one global CSS patch.
+- VERIFIED: `diagnose:roll20-renderer-blocker`, `diagnose:roll20-computed-style-context`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+
 ## 2026-06-20 Codex Update - Chat candidate proof gate cleanup
 
 Status: PARTIAL. Roll20 chat/template parity still fails; no production ChatPane CSS was promoted.
