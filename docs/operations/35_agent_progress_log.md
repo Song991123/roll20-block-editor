@@ -1,3 +1,10 @@
+## 2026-06-19 - Roll20 status next-action correction
+
+- Investigated the current `status:roll20-actual` output after selector/export fixes.
+- Found the current `generatedActualScreenshots=4/6` gap is not missing sandbox root evidence; both missing generated targets are stale chat screenshot/DOM sidecar pairs for AW2E and YSHY.
+- Updated `scripts/roll20_actual_status.mjs` so console output lists `missingGenerated=<fixture>:<target>:<kind>` and `nextAction=...`.
+- The next P0 is fresh same-action Roll20 chat capture for AW2E and YSHY, not another generic upload attempt.
+- Chrome Roll20 tab claim timed out in this batch, so no new live Roll20 screenshot was captured.
 ## 2026-06-19 Actual Status Chat Gate Surface Update
 
 - Updated `scripts/roll20_actual_status.mjs` so the one-command actual status reads `chat-parity-diagnostics-results.json` and prints chat parity blockers beside renderer status.

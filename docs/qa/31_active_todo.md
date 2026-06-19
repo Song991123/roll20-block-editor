@@ -1,3 +1,10 @@
+## 2026-06-19 Status Next-Action Correction
+
+- DONE: `status:roll20-actual` now prints fixture-level missing generated targets and no longer collapses current `4/6` generated evidence into a generic file-upload blocker.
+- CURRENT: latest status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=4/6`, `generatedDiffed=4/6`, `rendererReady=NO`, `rendererBlockers=7`.
+- CURRENT MISSING GENERATED TARGETS: `official-roll20-AW2E:chat:chat-screenshot-dom-stale` and `yshy-commission-1bu:chat:chat-screenshot-dom-stale`.
+- NEXT P0: recapture `roll20-chat.png` and `roll20-chat-dom-evidence.json` from the same Roll20 roll action for AW2E and YSHY, then rerun `roll20_actual_screenshot_diff`, `diagnose:roll20-chat-parity`, `gate:roll20-renderer-action`, and `status:roll20-actual`.
+- CLAIM BOUNDARY: this is a truthfulness/operations fix only. It does not prove Roll20 visual parity and does not remove renderer HOLD.
 ## 2026-06-19 19:50 +09:00 - Roll20 upload attempt and live chat evidence
 
 Status: PARTIAL ACTUAL EVIDENCE, NOT VISUAL PARITY.

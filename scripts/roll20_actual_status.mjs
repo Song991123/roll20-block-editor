@@ -194,6 +194,7 @@ async function main() {
       scrollMetricsReplacement,
       rendererAction,
       chatParity,
+      fixtures,
     }),
   };
 
@@ -640,6 +641,7 @@ function buildNextAction({
   scrollMetricsReplacement,
   rendererAction,
   chatParity,
+  fixtures,
 }) {
   if (!preupload.pass) {
     return 'Run or fix the local pre-upload gate before attempting Roll20 Sandbox upload.';
@@ -659,6 +661,19 @@ function buildNextAction({
     return `Trusted full-root files exist, but root cutoff diagnostics mark them unreliable for ${fixtures}. Promote or recapture an authoritative full-root source before treating renderer output as ready.`;
   }
   if (generatedPresentCount < generatedTargetCount) {
+    const missingGenerated = generatedMissingTargets(fixtures);
+    const missingSandbox = missingGenerated.filter((target) => target.targetId === 'sandbox');
+    const missingChat = missingGenerated.filter((target) => target.targetId === 'chat');
+    if (missingGenerated.length > 0 && missingSandbox.length === 0 && missingChat.length > 0) {
+      return `Generated sheet roots are present, but trustworthy Roll20 chat visual evidence is missing or suspect for ${missingChat.map((target) => `${target.fixtureId} (${target.kind})`).join(', ')}. Recapture roll20-chat.png with a fresh roll20-chat-dom-evidence.json sidecar from the same roll action, then rerun screenshot diff, diagnose:roll20-chat-parity, gate:roll20-renderer-action, and this status command.`;
+    }
+    if (missingSandbox.length > 0) {
+      const missing = missingSandbox.map((target) => `${target.fixtureId} (${target.kind})`).join(', ');
+      if (blockerEvidence.length > 0) {
+        return `Chrome file upload is still blocked in the recorded evidence, and sandbox root evidence is missing or suspect for ${missing}. Enable Allow access to file URLs for the Codex extension or use the documented endpoint/settings fallback in the dedicated Sandbox, capture trustworthy root screenshots, then rerun screenshot diff and this status command.`;
+      }
+      return `Sandbox root evidence is missing or suspect for ${missing}. Upload payloads in Roll20 Custom Sheet Sandbox/test room, capture roll20-sandbox-root-full-dpr-corrected.png or roll20-sandbox-root.png with sidecar/manifest proof, then rerun screenshot diff and this status command.`;
+    }
     if (blockerEvidence.length > 0) {
       return 'Chrome file upload is still blocked in the recorded evidence. Enable Allow access to file URLs for the Codex extension, upload payloads in Roll20 Sandbox, capture screenshots, then rerun screenshot diff and this status command.';
     }
@@ -686,6 +701,19 @@ function buildNextAction({
     return 'Renderer action gate is still HOLD. Resolve its listed blockers before changing production renderer CSS.';
   }
   return 'Classify diff results by wrapper/context, base CSS, cascade, default state, translation, worker JS, rolltemplate/chat, asset loading, viewport/crop, or edit overlay before making any parity claim.';
+}
+
+function generatedMissingTargets(fixtures = []) {
+  return fixtures.flatMap((fixture) =>
+    fixture.actualTargets
+      .filter((target) => target.requiredForGeneratedSheetCheck && !target.exists)
+      .map((target) => ({
+        fixtureId: fixture.fixtureId,
+        targetId: target.id,
+        kind: target.validation?.kind ?? (target.rawExists ? 'suspect' : 'missing'),
+        note: target.note ?? target.validation?.note ?? '',
+      })),
+  );
 }
 
 function runDirFromReport(reportFile) {
@@ -807,7 +835,8 @@ function renderMarkdown(report) {
 }
 
 function renderConsoleSummary(report, outDir) {
-  return [
+  const missingGenerated = generatedMissingTargets(report.fixtures);
+  const lines = [
     `ROLL20 ACTUAL STATUS ${report.status}`,
     `run=${rel(report.runDir)}`,
     `preupload=${report.preupload.pass ? 'PASS' : 'MISSING/FAIL'}`,
@@ -831,7 +860,12 @@ function renderConsoleSummary(report, outDir) {
     `chatNormalizedHighMismatch=${report.summary.chatParityNormalizedHighMismatch}`,
     `commandGate=${report.commandPass ? 'PASS' : 'NEEDS_ACTION'}`,
     `out=${rel(outDir)}`,
-  ].join('\n');
+  ];
+  for (const target of missingGenerated) {
+    lines.push(`missingGenerated=${target.fixtureId}:${target.targetId}:${target.kind}`);
+  }
+  lines.push(`nextAction=${report.nextAction}`);
+  return lines.join('\n');
 }
 
 function escapeCell(value) {
