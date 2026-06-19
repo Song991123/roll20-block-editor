@@ -9,6 +9,9 @@ Status: PARTIAL. The YSHY/CoC width candidate was narrowed further: visual scali
 - DONE: Added diagnostic-only spacing candidates: `roll20-intrinsic-spacing`, `roll20-border-spacing`, and `roll20-letter-spacing`.
 - RESULT: `roll20-border-spacing` has no meaningful pixel gain; `roll20-letter-spacing` and combined `roll20-intrinsic-spacing` regress YSHY (`21.45% -> 24.45%` aligned).
 - RESULT: Intrinsic model now classifies AW2E/Les as `CSS_METRIC_CANDIDATES_REJECTED` and YSHY as `TRANSFORM_AND_SPACING_REJECTED_FONT_GLYPH_MODEL_REQUIRED`.
+- DONE: Added `diagnose:roll20-chat-font-glyph`, which compares font availability, computed font stacks, broad font candidate outcomes, and row text-width signals.
+- RESULT: YSHY is `FONT_AVAILABILITY_CHANGED_CANDIDATES_REJECTED`: actual Roll20 has different font availability and table font family, while broad font/typography candidates already regress or fail to help.
+- RESULT: AW2E/Les are `FONT_STYLE_CHANGED_CANDIDATES_REJECTED`: font/style signals remain relevant, but exact text measurement is needed rather than broad font CSS.
 - RESULT: `gate:roll20-renderer-action` now includes the intrinsic-width model in evidence and next actions.
 - DONE: `diagnose:roll20-chat-candidate-style` now checks both `candidate-needs-style-proof` and `single-fixture-only` candidates.
 - DONE: Added style-proof coverage for `coc-table-scale-x` using its local smoke sidecar.
@@ -17,7 +20,7 @@ Status: PARTIAL. The YSHY/CoC width candidate was narrowed further: visual scali
 - RESULT: Renderer policy moves YSHY from `CANDIDATE_ONLY_DO_NOT_EXPOSE` to `NEEDS_NARROW_TEMPLATE_MODEL`.
 - RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` and now explicitly blocks style-contradicted candidates.
 - VERIFIED: `node --check scripts\roll20_chat_candidate_style_proof.mjs`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-renderer-policy`, and `gate:roll20-renderer-action`.
-- STILL TODO P0: Replace the transform/spacing rejected path with a font glyph/text-measurement and Roll20 sanitize/CSS-activation diagnostic for YSHY/CoC.
+- STILL TODO P0: Capture actual/local per-font `measureText` widths and CSSOM font-face activation so YSHY/CoC can be modeled without broad font/typography CSS.
 
 ## 2026-06-20 Codex Update - CoC rolltemplate table-scale candidate isolated
 

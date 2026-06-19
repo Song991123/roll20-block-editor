@@ -8,7 +8,12 @@
 - Added diagnostic-only spacing candidates in `ChatPane`: `roll20-intrinsic-spacing`, `roll20-border-spacing`, and `roll20-letter-spacing`.
 - Current spacing candidate result: `roll20-border-spacing` is no meaningful gain, while `roll20-letter-spacing` and combined `roll20-intrinsic-spacing` regress YSHY from `21.45%` to `24.45%` aligned mismatch.
 - Updated the intrinsic-width model to read candidate comparison evidence. It now classifies AW2E/Les as `CSS_METRIC_CANDIDATES_REJECTED` and YSHY/CoC as `TRANSFORM_AND_SPACING_REJECTED_FONT_GLYPH_MODEL_REQUIRED`.
-- Next P0: build a font glyph/text-measurement and Roll20 sanitize/CSS-activation diagnostic rather than another scale, spacing, or global ChatPane width candidate.
+- Added `scripts/roll20_chat_font_glyph_model.mjs` and package alias `diagnose:roll20-chat-font-glyph`.
+- The font/glyph model compares local and actual Roll20 font availability, computed font stacks, rejected broad font candidates, and row/cell text-width signals.
+- Current result: `FONT_GLYPH_MODEL_REQUIRED`.
+- YSHY/CoC is `FONT_AVAILABILITY_CHANGED_CANDIDATES_REJECTED`: actual Roll20 differs in font availability and table font stack, but prior broad font/typography candidates regress or fail to help.
+- AW2E and Les-Oublies are `FONT_STYLE_CHANGED_CANDIDATES_REJECTED`: exact text measurement and CSSOM font-face activation need probing before another renderer candidate.
+- Next P0: capture actual/local per-font `measureText` widths and CSSOM font-face activation rather than another scale, spacing, or global ChatPane width candidate.
 - The renderer action gate now reads the intrinsic-width report and surfaces these next actions while keeping production renderer action on HOLD.
 - Claim boundary: this is still diagnostic evidence. It does not prove Roll20 chat/template parity and does not authorize production CSS.
 - Extended `scripts/roll20_chat_candidate_style_proof.mjs` so it checks `single-fixture-only` candidates, not only `candidate-needs-style-proof`.

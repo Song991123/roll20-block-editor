@@ -44,9 +44,10 @@ async function main() {
   const chatFontCell = await readJsonIfExists(path.join(runDir, 'chat-font-cell-model', 'chat-font-cell-model-results.json'));
   const chatWidthModel = await readJsonIfExists(path.join(runDir, 'chat-width-model', 'chat-width-model-results.json'));
   const chatIntrinsicWidthModel = await readJsonIfExists(path.join(runDir, 'chat-intrinsic-width-model', 'chat-intrinsic-width-model-results.json'));
+  const chatFontGlyphModel = await readJsonIfExists(path.join(runDir, 'chat-font-glyph-model', 'chat-font-glyph-model-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel, chatFontGlyphModel);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -64,6 +65,7 @@ async function main() {
     chatFontCell: summarizeChatFontCell(chatFontCell),
     chatWidthModel: summarizeChatWidthModel(chatWidthModel),
     chatIntrinsicWidthModel: summarizeChatIntrinsicWidthModel(chatIntrinsicWidthModel),
+    chatFontGlyphModel: summarizeChatFontGlyphModel(chatFontGlyphModel),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -235,7 +237,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel, chatFontGlyphModel) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -258,6 +260,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatFontCellSummary = summarizeChatFontCell(chatFontCell);
   const chatWidthModelSummary = summarizeChatWidthModel(chatWidthModel);
   const chatIntrinsicWidthModelSummary = summarizeChatIntrinsicWidthModel(chatIntrinsicWidthModel);
+  const chatFontGlyphModelSummary = summarizeChatFontGlyphModel(chatFontGlyphModel);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
   const styleProofStatusByName = new Map(
     (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
@@ -480,6 +483,14 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       positiveFindings.push(`${fixture.fixtureId} intrinsic decision=${fixture.intrinsicDecision}, tableDelta=${num(fixture.tableWidthDelta)}px, firstCellDelta=${num(fixture.firstCellWidthDelta)}px, fontDelta=${num(fixture.fontSizeDelta)}px, letterDelta=${num(fixture.letterSpacingDelta)}px, borderSpacingDelta=${num(fixture.borderSpacingXDelta)}px, transformContradicted=${fixture.transformContradicted ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
     }
   }
+  if (!chatFontGlyphModelSummary) {
+    warnings.push('chat font/glyph model has not been run; run diagnose:roll20-chat-font-glyph before trying another font, typography, or text-width candidate');
+  } else {
+    positiveFindings.push(`chat font/glyph model: status=${chatFontGlyphModelSummary.status}, actionable=${chatFontGlyphModelSummary.actionable}/${chatFontGlyphModelSummary.totalFixtures}, decisions=${formatFindingCounts(chatFontGlyphModelSummary.decisions)}`);
+    for (const fixture of chatFontGlyphModelSummary.actionableFixtures) {
+      positiveFindings.push(`${fixture.fixtureId} font/glyph decision=${fixture.glyphDecision}, tableDelta=${num(fixture.tableWidthDelta)}px, fontAvailabilityChanged=${fixture.fontAvailabilityChanged ? 'YES' : 'NO'}, tableFontChanged=${fixture.tableFontFamilyChanged ? 'YES' : 'NO'}, fontCandidatesRejected=${fixture.fontCandidatesRejected ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
+    }
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -553,6 +564,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-intrinsic-width -- ${path.relative(process.cwd(), activeRunDir)} before changing overflowed rolltemplate table sizing.`);
   } else if (chatIntrinsicWidthModelSummary.actionableFixtures.length) {
     nextActions.push(...chatIntrinsicWidthModelSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
+  }
+  if (!chatFontGlyphModelSummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-font-glyph -- ${path.relative(process.cwd(), activeRunDir)} before trying another font or text-width candidate.`);
+  } else if (chatFontGlyphModelSummary.actionableFixtures.length) {
+    nextActions.push(...chatFontGlyphModelSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   if (!chatCandidateSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
@@ -941,6 +957,33 @@ function summarizeChatIntrinsicWidthModel(report) {
     transformContradicted: report.summary.transformContradicted ?? [],
     productionSafe: Boolean(report.summary.productionSafe),
     actionableFixtures: fixtures.filter((fixture) => fixture.status === 'COMPARED' && fixture.intrinsicDecision !== 'INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE'),
+    fixtures,
+  };
+}
+
+function summarizeChatFontGlyphModel(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    status: fixture.status ?? 'UNKNOWN',
+    glyphDecision: fixture.glyphDecision ?? 'UNKNOWN',
+    tableWidthDelta: fixture.widthDeltas?.table ?? null,
+    firstCellWidthDelta: fixture.widthDeltas?.firstCell ?? null,
+    fontAvailabilityChanged: Boolean(fixture.fontSignals?.fontAvailabilityChanged),
+    tableFontFamilyChanged: Boolean(fixture.fontSignals?.tableFontFamilyChanged),
+    rootFontFamilyChanged: Boolean(fixture.fontSignals?.rootFontFamilyChanged),
+    fontCandidatesRejected: Boolean(fixture.candidateEvidence?.fontCandidatesRejected),
+    nextAction: fixture.nextAction ?? '',
+    evidence: fixture.evidence ?? [],
+  }));
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    compared: Number(report.summary.compared ?? fixtures.filter((fixture) => fixture.status === 'COMPARED').length),
+    actionable: Number(report.summary.actionable ?? fixtures.filter((fixture) => fixture.glyphDecision !== 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE').length),
+    decisions: report.summary.decisions ?? {},
+    productionSafe: Boolean(report.summary.productionSafe),
+    actionableFixtures: fixtures.filter((fixture) => fixture.status === 'COMPARED' && fixture.glyphDecision !== 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE'),
     fixtures,
   };
 }
@@ -1334,6 +1377,21 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |');
       for (const fixture of report.chatIntrinsicWidthModel.actionableFixtures) {
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.intrinsicDecision} | ${num(fixture.tableWidthDelta)}px | ${num(fixture.firstCellWidthDelta)}px | ${num(fixture.fontSizeDelta)}px | ${num(fixture.letterSpacingDelta)}px | ${num(fixture.borderSpacingXDelta)}px | ${fixture.transformContradicted ? 'rejected' : 'n/a'} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatFontGlyphModel) {
+    lines.push('### Chat Font Glyph Model', '');
+    lines.push(`- Status: ${report.chatFontGlyphModel.status}`);
+    lines.push(`- Actionable fixtures: ${report.chatFontGlyphModel.actionable}/${report.chatFontGlyphModel.totalFixtures}`);
+    lines.push(`- Decisions: ${formatFindingCounts(report.chatFontGlyphModel.decisions)}`);
+    if (report.chatFontGlyphModel.actionableFixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Decision | Table Δ | Font availability | Table font changed | Font candidates | Evidence | Next action |');
+      lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- |');
+      for (const fixture of report.chatFontGlyphModel.actionableFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.glyphDecision} | ${num(fixture.tableWidthDelta)}px | ${fixture.fontAvailabilityChanged ? 'changed' : 'same'} | ${fixture.tableFontFamilyChanged ? 'yes' : 'no'} | ${fixture.fontCandidatesRejected ? 'rejected/no-gain' : 'not rejected'} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');
