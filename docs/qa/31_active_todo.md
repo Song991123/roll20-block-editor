@@ -14,6 +14,8 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer blocker note, 2026-06-19 targeted experiment boundary:
+`diagnose:roll20-renderer-blocker` was rerun after the 27px candidate smoke. Latest matrix now says `NEEDS_TARGETED_LOCAL_EXPERIMENT`: `inline-block+text-input-height` and `nowrap+text-input-height` help 2 fixtures and are neutral for AW2E, but fixture-best families still differ and AW2E still has the trusted stitched root vs live sidecar root blocker. Do not promote the word-spacing/nowrap/input-height diagnostic CSS to production until a targeted local experiment proves it as a Roll20 baseline/context correction rather than a fixture-specific visual patch.
 Current Roll20 renderer gate note, 2026-06-19 unified input-flow candidate probe:
 `smoke:roll20-full-root-candidates` now includes diagnostic `inline-block+text-input-height` and `inline-block-nowrap+text-input-height` candidates at `27px`, and root-height ties now prefer the lower pixel mismatch. Latest full-root candidate smoke converges Les-Oublies and YSHY on `sandbox-inline-block-text-input-270-source`: Les-Oublies `3.76%` mismatch with rootDelta `-3.625px`, YSHY `4.23%` mismatch with rootDelta `-0.375px`. AW2E still does not share that best family in the trusted full-root table, and its reliable comparison still uses the scroll-metrics source candidate (`rootDelta +8.188px`, panelY `+16.6px`, panelH `+0.2px`). Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` and `rendererReady=NO`; this is stronger cross-fixture evidence for a Roll20 input/inline-block axis, not production visual parity.
 

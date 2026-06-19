@@ -67,6 +67,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 | Verification evidence | local ignored `reports/` outputs plus summarized TODO notes |
 | Repeatable scripts | `scripts/` |
 
+## 2026-06-19 Targeted Renderer Experiment Boundary
+
+- Reran `diagnose:roll20-renderer-blocker` after the 27px candidate smoke. The matrix now classifies the next action as `NEEDS_TARGETED_LOCAL_EXPERIMENT` rather than a direct production patch.
+- `inline-block+text-input-height` helps Les-Oublies and YSHY and is neutral for AW2E in the current fixture set; `nowrap+text-input-height` shows a similar pattern.
+- Production renderer CSS still stays on HOLD because AW2E has a live sidecar root disagreement and the actual best candidate families still differ.
+- Next renderer work should prove whether the inline-block/input-height behavior comes from Roll20 wrapper/base context. Do not ship a hardcoded `word-spacing`, `white-space: nowrap`, or `input min-height` patch from the diagnostic matrix alone.
 ## 2026-06-19 Unified Input-Flow Candidate Probe
 
 - Added diagnostic 27px input-flow candidates to `scripts/roll20_full_root_candidate_smoke.mjs`: `sandbox-inline-block-text-input-270-source` and `sandbox-nowrap-text-input-270-source`.
