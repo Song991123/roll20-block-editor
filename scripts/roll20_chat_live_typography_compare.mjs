@@ -3,11 +3,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
+const expectedFixture = valueAfterFlag(args, '--expect-fixture') ?? '';
+const positionalArgs = positionalOnly(args, new Set(['--expect-fixture']));
+const runDirArg = positionalArgs[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const defaultProbe = path.join(runDirArg, 'chat-row-geometry', 'live-typography-probe-current.json');
 const legacyProbe = path.join(runDirArg, 'chat-row-geometry', 'yshy-live-typography-probe.json');
-const probeArg = args[1] ?? (existsSync(defaultProbe) ? defaultProbe : legacyProbe);
-const localSmokeArg = args[2] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
+const probeArg = positionalArgs[1] ?? (existsSync(defaultProbe) ? defaultProbe : legacyProbe);
+const localSmokeArg = positionalArgs[2] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
 
 const runDir = path.resolve(runDirArg);
 const probeFile = path.resolve(probeArg);
@@ -39,6 +41,8 @@ const report = {
   probeFile: path.relative(process.cwd(), probeFile),
   localSmoke: localSmokeArg,
   status: fixtureGuess && localFixture ? 'COMPARED' : 'UNMATCHED',
+  expectedFixture: expectedFixture || null,
+  expectedFixtureMatched: expectedFixture ? fixtureGuess === expectedFixture : null,
   warning: buildWarning(probe, selectedClassName, fixtureGuess),
   selectedTemplate: {
     className: selectedClassName,
@@ -81,15 +85,39 @@ console.log(`probe=${path.relative(process.cwd(), probeFile)}`);
 console.log(`selectedClass=${selectedClassName || 'unknown'}`);
 console.log(`fixtureGuess=${fixtureGuess || 'unknown'}`);
 if (report.warning) console.log(`warning=${report.warning}`);
+if (report.expectedFixture) console.log(`expectedFixtureMatched=${report.expectedFixtureMatched ? 'YES' : 'NO'}`);
 if (report.metrics) {
   console.log(`templateWidthDelta=${report.metrics.template.widthDelta}`);
   console.log(`tableWidthDelta=${report.metrics.table.widthDelta}`);
   console.log(`actualDpr=${report.metrics.viewport.actualDevicePixelRatio ?? 'unknown'}`);
 }
 console.log(`out=${path.relative(process.cwd(), outDir)}`);
+if (expectedFixture && fixtureGuess !== expectedFixture) {
+  process.exitCode = 1;
+}
 
 async function readJson(file) {
   return JSON.parse((await readFile(file, 'utf8')).replace(/^\uFEFF/, ''));
+}
+
+function valueAfterFlag(values, flag) {
+  const index = values.indexOf(flag);
+  if (index < 0) return null;
+  return values[index + 1] && !values[index + 1].startsWith('--') ? values[index + 1] : '';
+}
+
+function positionalOnly(values, flagsWithValue) {
+  const positional = [];
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    if (flagsWithValue.has(value)) {
+      index += 1;
+      continue;
+    }
+    if (value.startsWith('--')) continue;
+    positional.push(value);
+  }
+  return positional;
 }
 
 function fixtureForTemplateClass(className) {
@@ -246,6 +274,9 @@ function renderMarkdown(report) {
     '',
   ];
   if (report.warning) lines.push(`Warning: ${report.warning}`, '');
+  if (report.expectedFixture) {
+    lines.push(`Expected fixture: \`${report.expectedFixture}\` (${report.expectedFixtureMatched ? 'matched' : 'mismatch'})`, '');
+  }
   lines.push(
     '## Selected Template',
     '',

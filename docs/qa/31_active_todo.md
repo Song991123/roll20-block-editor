@@ -3,9 +3,11 @@
 Status: PARTIAL. Roll20 chat/template parity is still NOT done; this batch prevents a live probe from being misread as the wrong fixture.
 
 - DONE: Added `diagnose:roll20-chat-live-typography`, which compares a read-only live Roll20 typography probe against the latest local `rolltemplate_chat_smoke` metrics and maps the selected rolltemplate class to a known fixture.
+- DONE: Added `--expect-fixture <fixture-id>` to the live typography diagnostic so an intended YSHY probe fails loudly if the selected live card is actually AW2E or another fixture.
 - RESULT: The current ignored live probe at `reports/.../chat-row-geometry/yshy-live-typography-probe.json` selected `sheet-rolltemplate-aw`, so it maps to `official-roll20-AW2E`, not YSHY. The filename is misleading local evidence and must not be used to explain the YSHY `sheet-rolltemplate-coc` mismatch.
 - RESULT: For that AW2E-like probe, template size matches local (`267x189`, delta `0x0`) but the table is wider in actual Roll20 by `33.134px` (`326.391px` local vs `359.525px` actual). Actual Roll20 DPR was `1.25`.
 - RESULT: Main style deltas in the AW2E-like probe are Roll20 shell typography: local template/table `font-size=12px`, `letter-spacing=-0.16px`; actual `font-size=13.65px`, `letter-spacing=normal`. This is live DOM/style evidence only, not pixel parity.
+- BROWSER OBSERVED: The current `Codex Roll20 Verify` editor tab contains 2 visible `sheet-rolltemplate-aw` cards and 0 `sheet-rolltemplate-coc` cards, so current Chrome state cannot recapture YSHY typography without loading/running YSHY again in the Sandbox/test room.
 - STILL TODO P0: Recapture or probe the actual YSHY `sheet-rolltemplate-coc` card with the current typography/row sidecar fields before changing production ChatPane CSS for YSHY.
 - STILL TODO P0: Production renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`; no Roll20 visual parity claim is allowed.
 
