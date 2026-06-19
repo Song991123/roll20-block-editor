@@ -40,6 +40,7 @@
     "diagnose:roll20-computed-style-context": "node scripts/roll20_computed_style_context_diagnostics.mjs",
     "diagnose:roll20-input-flow-axis": "node scripts/roll20_input_flow_axis_diagnostics.mjs",
     "diagnose:roll20-chat-parity": "node scripts/roll20_chat_parity_diagnostics.mjs",
+    "diagnose:roll20-chat-candidates": "node scripts/roll20_chat_candidate_compare.mjs",
     "plan:roll20-chat-capture": "node scripts/roll20_chat_capture_plan.mjs",
     "test:roll20-chat-capture-plan": "node scripts/roll20_chat_capture_plan.mjs --self-test",
     "diagnose:roll20-height-drift": "node scripts/roll20_height_drift_diagnostics.mjs",
