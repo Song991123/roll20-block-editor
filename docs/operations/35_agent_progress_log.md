@@ -1,3 +1,11 @@
+## 2026-06-19 Roll20 Chat Evidence Normalization Follow-up
+
+- Recaptured YSHY 1BU actual Roll20 chat evidence from the dedicated sandbox after opening the chat tab, scrolling the target message fully into view, and clicking the same iframe `[name="roll_str_check"]` roll button used by local smoke. Evidence is local-only under ignored `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/yshy-commission-1bu/screenshots/`.
+- Fixed a rolltemplate lookup bug: `sheet-rolltemplate-coc` was matching the earlier `sheet-rolltemplate-coc-dice-roll` prefix because the old regex used a word boundary before `-`. Lookup now matches exact class tokens.
+- Added Roll20-style chat card shell normalization, local template wrapper crop screenshots, and normalized chat parity diagnostics so local/actual comparisons use rolltemplate wrapper rects instead of full chat panes or overflow table screenshots.
+- Added ChatPane translation application for rolltemplate field text and simple `data-i18n` labels via the existing Roll20 translation normalizer. Local YSHY chat now renders Korean labels such as `근력`, `기준치`, and `굴림`.
+- Verification: `corepack pnpm run build` PASS, `corepack pnpm run lint` PASS, `node scripts\rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke` PASS.
+- Current blocker: renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`. Latest chat diagnostic is still `HIGH_MISMATCH`: normalized `2/3`, needs normalized capture `1/3`, YSHY mismatch `35%`, AW2E mismatch `93.26%` from an old suspect capture. This is not Roll20 chat visual parity.
 
 ## 2026-06-19 Roll20 Chat Parity Gate Update
 

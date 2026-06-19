@@ -243,8 +243,13 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
   }
   if (!chatParitySummary) {
     warnings.push('local ChatPane vs actual Roll20 chat parity diagnostic has not been run');
-  } else if (chatParitySummary.highMismatch > 0) {
-    blockers.push(`actual Roll20 chat differs from local ChatPane for ${chatParitySummary.highMismatch}/${chatParitySummary.compared} compared fixtures; max mismatch ${chatParitySummary.maxMismatchPct}%`);
+  } else {
+    if (chatParitySummary.needsNormalizedCapture > 0) {
+      blockers.push(`actual Roll20 chat parity needs normalized rolltemplate crop evidence for ${chatParitySummary.needsNormalizedCapture}/${chatParitySummary.fixtures} fixtures`);
+    }
+    if (chatParitySummary.normalizedHighMismatch > 0) {
+      blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${chatParitySummary.normalizedHighMismatch}/${chatParitySummary.normalizedCompared} normalized fixtures; max normalized mismatch ${chatParitySummary.maxNormalizedMismatchPct}%`);
+    }
   }
 
   const compared = fixtures.filter((fixture) => fixture.bestCandidate);
@@ -321,7 +326,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     positiveFindings.push(`input-flow axis diagnostic: status=${inputFlowSummary.status}, applyCandidate=${inputFlowSummary.applyCandidateFixtures.length}, blockGlobalModel=${inputFlowSummary.blockGlobalModelFixtures.length}, globalSafe=${inputFlowSummary.globalModelSafe ? 'YES' : 'NO'}`);
   }
   if (chatParitySummary) {
-    positiveFindings.push(`chat parity diagnostic: compared=${chatParitySummary.compared}/${chatParitySummary.fixtures}, highMismatch=${chatParitySummary.highMismatch}, maxMismatch=${chatParitySummary.maxMismatchPct}%`);
+    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, maxNormalizedMismatch=${chatParitySummary.maxNormalizedMismatchPct}%`);
   }
 
   const action = blockers.length
@@ -340,7 +345,10 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
   if (missingChat.length) {
     nextActions.push(`Capture roll20-chat.png screenshots with fresh DOM sidecars for ${missingChat.map((fixture) => fixture.fixtureId).join(', ')}.`);
   }
-  if (chatParitySummary?.highMismatch > 0) {
+  if (chatParitySummary?.needsNormalizedCapture > 0) {
+    nextActions.push('Recapture actual Roll20 chat DOM sidecars with rolltemplate rect/clip metadata for element-level chat parity comparison.');
+  }
+  if (chatParitySummary?.normalizedHighMismatch > 0) {
     nextActions.push('Fix local ChatPane rolltemplate shell sizing/content to match actual Roll20 chat, then rerun rolltemplate chat smoke and diagnose:roll20-chat-parity.');
   }
   if (missingFullRootCandidates.length) {
@@ -427,11 +435,16 @@ function summarizeChatParity(report) {
   return {
     fixtures: Number(report.summary.fixtures ?? 0),
     compared: Number(report.summary.compared ?? 0),
+    normalizedCompared: Number(report.summary.normalizedCompared ?? 0),
+    needsNormalizedCapture: Number(report.summary.needsNormalizedCapture ?? 0),
     highMismatch: Number(report.summary.highMismatch ?? 0),
+    normalizedHighMismatch: Number(report.summary.normalizedHighMismatch ?? 0),
     maxMismatchRatio: Number(report.summary.maxMismatchRatio ?? 0),
     maxMismatchPct: pctNumber(report.summary.maxMismatchRatio ?? 0),
+    maxNormalizedMismatchRatio: Number(report.summary.maxNormalizedMismatchRatio ?? 0),
+    maxNormalizedMismatchPct: pctNumber(report.summary.maxNormalizedMismatchRatio ?? 0),
     fixturesWithMismatch: (report.fixtures ?? [])
-      .filter((fixture) => fixture.status === 'DIFFED' && Number(fixture.mismatchRatio ?? 0) > 0.1)
+      .filter((fixture) => fixture.status === 'DIFFED' && fixture.compareMode === 'rolltemplate-crop' && Number(fixture.mismatchRatio ?? 0) > 0.1)
       .map((fixture) => ({
         fixtureId: fixture.fixtureId,
         mismatchPct: pctNumber(fixture.mismatchRatio),
@@ -544,8 +557,12 @@ function renderMarkdown(report) {
   if (report.chatParity) {
     lines.push('### Chat Parity Boundary', '');
     lines.push(`- Compared: ${report.chatParity.compared}/${report.chatParity.fixtures}`);
+    lines.push(`- Normalized compared: ${report.chatParity.normalizedCompared}/${report.chatParity.fixtures}`);
+    lines.push(`- Needs normalized capture: ${report.chatParity.needsNormalizedCapture}`);
     lines.push(`- High mismatch: ${report.chatParity.highMismatch}`);
+    lines.push(`- Normalized high mismatch: ${report.chatParity.normalizedHighMismatch}`);
     lines.push(`- Max mismatch: ${report.chatParity.maxMismatchPct}%`);
+    lines.push(`- Max normalized mismatch: ${report.chatParity.maxNormalizedMismatchPct}%`);
     if (report.chatParity.fixturesWithMismatch?.length) {
       lines.push('');
       lines.push('| Fixture | Mismatch | Local size | Actual size |');

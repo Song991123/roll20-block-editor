@@ -1,3 +1,10 @@
+## 2026-06-19 Active TODO Refresh - Normalized Chat Evidence
+
+- DONE: Recaptured YSHY 1BU actual Roll20 chat evidence from the dedicated sandbox after clicking the same iframe `[name="roll_str_check"]` button used by local smoke. The ignored sidecar now records a latest `sheet-rolltemplate-coc` rect and CDP physical clip with no visible `#textchat` dialog overlap.
+- DONE: Fixed local rolltemplate lookup so `sheet-rolltemplate-coc` no longer accidentally matches `sheet-rolltemplate-coc-dice-roll`; local ChatPane now also applies emitted translation JSON/comment data to rolltemplate field text and simple `data-i18n` labels.
+- VERIFY: `node scripts\rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke` PASS for AW2E, Les-Oublies, and YSHY 1BU after the fix.
+- STILL OPEN: Actual chat parity remains blocked. Latest normalized diagnostic: `normalizedCompared=2/3`, `needsNormalizedCapture=1` (Les-Oublies), `normalizedHighMismatch=2`, YSHY 1BU mismatch `35%`, AW2E still reports `93.26%` from old suspect capture.
+- NEXT P0: recapture AW2E and Les-Oublies chat with same-button fresh Roll20 messages and normalized sidecars, then fix remaining rolltemplate row/height parity before claiming Roll20 chat visual parity.
 
 ## 2026-06-19 Active TODO Refresh - Chat Parity
 

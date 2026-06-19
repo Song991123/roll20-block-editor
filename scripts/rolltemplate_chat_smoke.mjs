@@ -229,10 +229,28 @@ async function clickRollAndReadChat(page, fixtureId) {
   await card.waitFor({ state: 'visible', timeout: 30000 });
   const screenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat.png`);
   await page.locator('[data-testid="chat-list"]').screenshot({ path: screenshotPath });
+  const templateScreenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat-template.png`);
+  const templateLocator = page.locator('[data-testid="chat-list"] [data-r20-chat-card] [class*="sheet-rolltemplate-"]').first();
+  if (await templateLocator.count()) {
+    const templateBox = await templateLocator.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+    await page.screenshot({
+      path: templateScreenshotPath,
+      clip: {
+        x: Math.floor(templateBox.x),
+        y: Math.floor(templateBox.y),
+        width: Math.max(1, Math.ceil(templateBox.width)),
+        height: Math.max(1, Math.ceil(templateBox.height)),
+      },
+    });
+  }
   const cardCount = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').count();
   const cardInfo = await card.evaluate((el) => ({
     kind: el.getAttribute('data-r20-chat-kind') || '',
-    hasMessageClass: el.classList.contains('message'),
+    hasMessageClass: el.classList.contains('message') || Boolean(el.querySelector('.message')),
+    messageCount: el.classList.contains('message') ? 1 : el.querySelectorAll('.message').length,
     hasSpacer: Boolean(el.querySelector('.spacer')),
     hasSenderLine: Boolean(el.querySelector('.by')),
     hasTimestamp: Boolean(el.querySelector('.tstamp')),
@@ -245,7 +263,7 @@ async function clickRollAndReadChat(page, fixtureId) {
     hasDebugTemplateLabel: /rolltemplate\s*:/i.test(el.textContent || ''),
   }));
   cardInfo.cardCount = cardCount;
-  return { chosen, candidates: choice.candidates, clickMode, cardInfo, screenshotPath };
+  return { chosen, candidates: choice.candidates, clickMode, cardInfo, screenshotPath, templateScreenshotPath };
 }
 
 function renderMarkdown(report) {

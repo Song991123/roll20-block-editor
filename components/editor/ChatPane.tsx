@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { normalizeTranslationForRoll20 } from '@/lib/export/payload';
 import { useChatStore, type ChatRoll } from '@/lib/stores/chatStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import type {
@@ -34,6 +35,22 @@ function safeRolltemplateClass(name: string): string {
 function extractRolltemplateCss(css: string): string {
   const matches = css.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
   return matches ? matches.join('\n') : '';
+}
+
+function parseTranslations(raw: string): Record<string, string> {
+  const text = normalizeTranslationForRoll20(String(raw ?? '')).trim();
+  if (!text) return {};
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter(
+        (entry): entry is [string, string] => typeof entry[1] === 'string',
+      ),
+    );
+  } catch {
+    return {};
+  }
 }
 
 const roll20ChatShellCss = `
@@ -70,6 +87,21 @@ const roll20ChatShellCss = `
   position: relative;
   left: -5px;
 }
+.r20-chat-pane .textchatcontainer .avatar {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  width: 28px;
+  height: 28px;
+}
+.r20-chat-pane .textchatcontainer .avatar::before {
+  content: "";
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 2px;
+  background: #c8c8c8;
+}
 .r20-chat-pane .textchatcontainer .message {
   position: relative;
   margin: 0;
@@ -100,6 +132,28 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane .textchatcontainer.withoutavatars .message .spacer {
   margin-left: -15px;
+}
+.r20-chat-pane .textchatcontainer .message.you .spacer {
+  background: #b1d9fa;
+}
+.r20-chat-pane .r20-chat-card-group {
+  display: block;
+  width: 300px;
+  max-width: 100%;
+  min-width: 0;
+}
+.r20-chat-pane .r20-chat-card-group .message + .message {
+  margin-top: 0;
+}
+.r20-chat-pane .r20-chat-card-group .message {
+  box-sizing: border-box;
+  width: 300px;
+  max-width: 100%;
+  min-width: 0;
+}
+.r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] {
+  box-sizing: border-box;
+  max-width: 100%;
 }
 .r20-chat-pane .textchatcontainer .inlinerollresult {
   background-color: #fef68e;
@@ -222,9 +276,11 @@ function CardExpr({ detail, expression }: { detail: RollDetail; expression: stri
 function CardRolltemplate({
   result,
   emittedHtml,
+  translations,
 }: {
   result: RolltemplateResult;
   emittedHtml: string;
+  translations: Record<string, string>;
 }) {
   const customBody = useMemo(
     () => extractRolltemplateBody(emittedHtml, result.templateName),
@@ -234,7 +290,7 @@ function CardRolltemplate({
     ? renderTemplateBody(customBody, result.fields, {
         anyCrit: result.anyCrit,
         anyFumble: result.anyFumble,
-      })
+      }, translations)
     : defaultRolltemplateBody(result);
 
   return (
@@ -277,9 +333,37 @@ function CardChat({ chat }: { chat: ChatTextResult }) {
   return <div className="text-xs text-foreground">{chat.text}</div>;
 }
 
-function RollCard({ card, emittedHtml }: { card: ChatRoll; emittedHtml: string }) {
+function RollCard({
+  card,
+  emittedHtml,
+  translations,
+}: {
+  card: ChatRoll;
+  emittedHtml: string;
+  translations: Record<string, string>;
+}) {
   const r = card.result;
   const isRolltemplate = r.kind === 'rolltemplate';
+  if (isRolltemplate) {
+    return (
+      <div
+        data-r20-chat-card
+        data-r20-chat-kind={r.kind}
+        data-r20-chat-rolltemplate="1"
+        className="r20-chat-card-group"
+      >
+        <div className="message general you">
+          <div className="spacer" aria-hidden="true" />
+          <div className="avatar" aria-hidden="true" />
+          <time className="tstamp">{formatTime(card.ts)}</time>
+          <span className="by">{card.sender || 'Sheet'}:</span>
+        </div>
+        <div className="message general you">
+          <CardRolltemplate result={r} emittedHtml={emittedHtml} translations={translations} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       data-r20-chat-card
@@ -305,9 +389,6 @@ function RollCard({ card, emittedHtml }: { card: ChatRoll; emittedHtml: string }
       <div className="by">{card.sender || 'Sheet'}:</div>
       <div className="content">
         {r.kind === 'expr' && <CardExpr detail={r} expression={card.expression} />}
-        {r.kind === 'rolltemplate' && (
-          <CardRolltemplate result={r} emittedHtml={emittedHtml} />
-        )}
         {r.kind === 'error' && <CardError error={r} />}
         {r.kind === 'chat' && <CardChat chat={r} />}
       </div>
@@ -320,7 +401,9 @@ export default function ChatPane() {
   const clear = useChatStore((s) => s.clear);
   const emittedHtml = useWorkspaceStore((s) => s.emitCache.html);
   const emittedCss = useWorkspaceStore((s) => s.emitCache.css);
+  const emittedI18n = useWorkspaceStore((s) => s.emitCache.i18n);
   const rolltemplateCss = useMemo(() => extractRolltemplateCss(emittedCss), [emittedCss]);
+  const translations = useMemo(() => parseTranslations(emittedI18n), [emittedI18n]);
 
   return (
     <div className="r20-chat-pane flex h-full flex-col min-h-0">
@@ -363,7 +446,12 @@ export default function ChatPane() {
             </div>
           ) : (
             rolls.map((card) => (
-              <RollCard key={card.id} card={card} emittedHtml={emittedHtml} />
+              <RollCard
+                key={card.id}
+                card={card}
+                emittedHtml={emittedHtml}
+                translations={translations}
+              />
             ))
           )}
         </div>
