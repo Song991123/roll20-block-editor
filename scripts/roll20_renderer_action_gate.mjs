@@ -238,6 +238,15 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatCandidateSummary = summarizeChatCandidates(chatCandidates);
   const chatCandidateStyleProofSummary = summarizeChatCandidateStyleProof(chatCandidateStyleProof);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
+  const styleProofStatusByName = new Map(
+    (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
+      candidate.name,
+      candidate.styleProofStatus,
+    ]),
+  );
+  const unresolvedStyleProofCandidates = chatCandidateSummary?.styleProofCandidates
+    ?.filter((candidate) => !styleProofStatusByName.has(candidate.name))
+    ?? [];
 
   if (!generatedEvidenceComplete) {
     blockers.push(`generated-sheet actual evidence incomplete: status=${status?.status ?? 'unknown'}`);
@@ -286,8 +295,8 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     if (chatCandidateSummary.regressingCandidates.length) {
       blockers.push(`chat candidate comparison rejects fixture-regressing candidates: ${chatCandidateSummary.regressingCandidates.map(formatChatCandidate).join('; ')}`);
     }
-    if (chatCandidateSummary.styleProofCandidates.length) {
-      blockers.push(`chat candidate comparison has numerically promising candidates without actual Roll20 style proof: ${chatCandidateSummary.styleProofCandidates.map(formatChatCandidate).join('; ')}`);
+    if (unresolvedStyleProofCandidates.length) {
+      blockers.push(`chat candidate comparison has numerically promising candidates without actual Roll20 style proof: ${unresolvedStyleProofCandidates.map(formatChatCandidate).join('; ')}`);
     }
   }
   if (!chatCandidateStyleProofSummary) {
@@ -298,6 +307,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     }
     if (chatCandidateStyleProofSummary.needsNewSidecarCandidates.length) {
       blockers.push(`promising ChatPane candidates need additional actual Roll20 sidecar fields before promotion: ${chatCandidateStyleProofSummary.needsNewSidecarCandidates.map(formatChatStyleProofCandidate).join('; ')}`);
+    }
+    if (chatCandidateStyleProofSummary.styleCompatibleCandidates.length) {
+      positiveFindings.push(`actual Roll20 computed styles support these diagnostic ChatPane candidates, pending pixel parity review: ${chatCandidateStyleProofSummary.styleCompatibleCandidates.map(formatChatStyleProofCandidate).join('; ')}`);
     }
   }
 
@@ -426,8 +438,8 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   }
   if (!chatCandidateSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
-  } else if (chatCandidateSummary.styleProofCandidates.length) {
-    nextActions.push(`For promising chat candidates (${chatCandidateSummary.styleProofCandidates.map((candidate) => candidate.name).join(', ')}), prove the same change from actual Roll20 computed styles before production CSS; otherwise keep them diagnostic-only.`);
+  } else if (unresolvedStyleProofCandidates.length) {
+    nextActions.push(`For promising chat candidates (${unresolvedStyleProofCandidates.map((candidate) => candidate.name).join(', ')}), prove the same change from actual Roll20 computed styles before production CSS; otherwise keep them diagnostic-only.`);
   }
   if (!chatCandidateStyleProofSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidate-style -- ${path.relative(process.cwd(), activeRunDir)} to classify promising candidates against actual Roll20 computed styles.`);

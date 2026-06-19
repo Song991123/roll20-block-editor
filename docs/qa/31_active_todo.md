@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Chat candidate proof gate cleanup
+
+Status: PARTIAL. Roll20 chat/template parity still fails; no production ChatPane CSS was promoted.
+
+- DONE: Updated `gate:roll20-renderer-action` so a candidate already classified by `diagnose:roll20-chat-candidate-style` is no longer also reported as "without actual Roll20 style proof".
+- RESULT: A tentative default `overflow-wrap: break-word` ChatPane patch was tested and then reverted because it is not globally safe. It improved/changed some geometry but worsened the overall renderer target enough that it must stay diagnostic-only.
+- RESULT: Current regenerated chat parity still reports `HIGH_MISMATCH`: `2/3` authoritative normalized fixtures fail, authoritative max aligned mismatch is `21.45%`, and current metrics are present for `3/3`.
+- RESULT: Current candidate comparison rejects fixture-regressing candidates and leaves no `candidate-needs-style-proof` candidate after the latest baseline; `roll20-break-word` is now `no-meaningful-gain`, not a production patch.
+- STILL TODO P0: Build a narrower per-fixture/per-template renderer model. AW2E and YSHY still have opposite actual table-width deltas, so one global ChatPane width/padding/wrap patch is blocked.
+- VERIFIED: `node scripts/rolltemplate_chat_smoke.mjs`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-style`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `gate:roll20-renderer-action`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+
 ## 2026-06-20 Codex Update - Roll20 chat current metrics complete
 
 Status: PARTIAL. Actual Roll20 chat evidence is now current for the 3-fixture set, but renderer/chat parity still fails.

@@ -1,3 +1,10 @@
+## 2026-06-20 Chat Candidate Proof Gate Cleanup
+
+- Tested promoting the Roll20-compatible `overflow-wrap: break-word` behavior into default ChatPane CSS, then reverted it because regenerated parity numbers did not support a global production patch.
+- Updated `scripts/roll20_renderer_action_gate.mjs` so style-proof-classified candidates are not also counted as "without actual Roll20 style proof". Rejected and sidecar-missing candidates remain blockers; style-compatible candidates become evidence only.
+- Regenerated local-only chat smoke/diagnostic evidence. Current renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`: chat/template mismatch is still `2/3`, authoritative max aligned mismatch is `21.45%`, and actual table-width deltas still conflict across fixtures (`AW2E +33.134px`, `Les +0.8px`, `YSHY -24.309px`).
+- Verified: `node scripts/rolltemplate_chat_smoke.mjs`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-style`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `gate:roll20-renderer-action`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+
 ## 2026-06-20 Roll20 Chat Current-Metric Recapture Complete
 
 - Used the dedicated `Codex Roll20 Verify` Roll20 Sandbox/editor only. Existing campaign rooms remained observation-only and were not modified.
