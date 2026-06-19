@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - Chat candidate gate hardening
+
+Status: PARTIAL. The renderer gate now blocks unsafe ChatPane candidate promotion directly; Roll20 renderer/chat parity is still not solved.
+
+- DONE: `gate:roll20-renderer-action` now reads `chat-candidate-comparison-results.json` and surfaces candidate risk in the standard blocker/next-action output.
+- RESULT: Current gate adds explicit blockers for fixture-regressing candidates (`tight-cell-spacing`, `shell-typography`, `font-fallback*`, `soft-shadow-rejected`, `roll20-message-padding`) and for numerically promising but unproven candidates (`no-shadow`, `table-scale-x`, `roll20-break-word`, `text-auto-aa`).
+- RESULT: The gate markdown now includes a `Chat Candidate Boundary` table with per-fixture deltas, mean delta, regression counts, and style-proof requirements.
+- STILL TODO P0: Prove any promising candidate from actual Roll20 computed style before production CSS. If no actual style proof exists, keep it diagnostic-only.
+- STILL TODO P0: Roll20 chat/template mismatch remains real: authoritative max aligned mismatch is still `23.4%`, and renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+
 ## 2026-06-20 Codex Update - Chat candidate regression risk table
 
 Status: PARTIAL. Candidate diagnostics are clearer; Roll20 renderer/chat parity is still blocked.

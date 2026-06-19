@@ -83,7 +83,7 @@ for (const row of withDelta) {
     console.log(`SKIP ${row.name} ${row.status}`);
     continue;
   }
-  console.log(`CANDIDATE ${row.name} yshy=${row.yshy.rawPct}/${row.yshy.alignedPct} delta=${row.yshyAlignedDeltaPct ?? ''} highlightYChange=${row.yshyHighlightYDeltaChange ?? ''}`);
+  console.log(`CANDIDATE ${row.name} risk=${row.promotionRisk ?? ''} mean=${formatPctDelta(row.meanAlignedDeltaPct)} regressions=${row.regressedFixtures ?? ''} yshy=${row.yshy.rawPct}/${row.yshy.alignedPct} delta=${row.yshyAlignedDeltaPct ?? ''} highlightYChange=${row.yshyHighlightYDeltaChange ?? ''}`);
 }
 console.log(`out=${path.relative(process.cwd(), outDir)}`);
 

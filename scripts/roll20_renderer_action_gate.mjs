@@ -35,9 +35,10 @@ async function main() {
   const inputFlowAxis = await readJsonIfExists(path.join(runDir, 'input-flow-axis-diagnostics', 'input-flow-axis-diagnostics-results.json'));
   const chatParity = await readJsonIfExists(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
   const chatStyle = await readJsonIfExists(path.join(runDir, 'chat-style-context-diagnostics', 'chat-style-context-diagnostics-results.json'));
+  const chatCandidates = await readJsonIfExists(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -46,6 +47,7 @@ async function main() {
     inputFlowAxis: summarizeInputFlowAxis(inputFlowAxis),
     chatParity: summarizeChatParity(chatParity),
     chatStyle: summarizeChatStyle(chatStyle),
+    chatCandidates: summarizeChatCandidates(chatCandidates),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -217,7 +219,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -231,6 +233,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const inputFlowSummary = summarizeInputFlowAxis(inputFlowAxis);
   const chatParitySummary = summarizeChatParity(chatParity);
   const chatStyleSummary = summarizeChatStyle(chatStyle);
+  const chatCandidateSummary = summarizeChatCandidates(chatCandidates);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
 
   if (!generatedEvidenceComplete) {
@@ -273,6 +276,16 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   }
   if (chatCurrentMetrics.missing > 0) {
     blockers.push(`actual Roll20 chat sidecars lack current row/typography metrics for ${chatCurrentMetrics.missing}/${chatCurrentMetrics.total} fixtures (${chatCurrentMetrics.missingFixtures.join(', ')}); run plan:roll20-chat-capture with --require-current-metrics and recapture same-action chat screenshot+DOM sidecars before tuning ChatPane CSS`);
+  }
+  if (!chatCandidateSummary) {
+    warnings.push('chat candidate comparison has not been run; run diagnose:roll20-chat-candidates before promoting any ChatPane renderer candidate');
+  } else {
+    if (chatCandidateSummary.regressingCandidates.length) {
+      blockers.push(`chat candidate comparison rejects fixture-regressing candidates: ${chatCandidateSummary.regressingCandidates.map(formatChatCandidate).join('; ')}`);
+    }
+    if (chatCandidateSummary.styleProofCandidates.length) {
+      blockers.push(`chat candidate comparison has numerically promising candidates without actual Roll20 style proof: ${chatCandidateSummary.styleProofCandidates.map(formatChatCandidate).join('; ')}`);
+    }
   }
 
   const compared = fixtures.filter((fixture) => fixture.bestCandidate);
@@ -398,6 +411,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   } else if (chatStyleSummary.conflictingTableWidthDirection) {
     nextActions.push('Use chat-style context diagnostics to explain the opposite AW2E/YSHY table-width deltas before testing another global ChatPane width, padding, or wrap patch.');
   }
+  if (!chatCandidateSummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
+  } else if (chatCandidateSummary.styleProofCandidates.length) {
+    nextActions.push(`For promising chat candidates (${chatCandidateSummary.styleProofCandidates.map((candidate) => candidate.name).join(', ')}), prove the same change from actual Roll20 computed styles before production CSS; otherwise keep them diagnostic-only.`);
+  }
   if (missingFullRootCandidates.length) {
     const ids = missingFullRootCandidates.map((fixture) => fixture.fixtureId);
     const fixtureArg = ids.length === 1 ? ` ${ids[0]}` : '';
@@ -522,6 +540,49 @@ function summarizeChatStyle(report) {
       })),
     })),
   };
+}
+
+function summarizeChatCandidates(report) {
+  if (!report?.candidates) return null;
+  const okCandidates = report.candidates.filter((candidate) => candidate.status === 'OK' && candidate.name !== 'default');
+  const regressingCandidates = okCandidates
+    .filter((candidate) => candidate.promotionRisk === 'reject-regresses-fixtures' || Number(candidate.regressedFixtures ?? 0) > 0)
+    .map(summarizeChatCandidate)
+    .sort(chatCandidateSort);
+  const styleProofCandidates = okCandidates
+    .filter((candidate) => candidate.promotionRisk === 'candidate-needs-style-proof')
+    .map(summarizeChatCandidate)
+    .sort(chatCandidateSort);
+  const bestNumericCandidates = okCandidates
+    .map(summarizeChatCandidate)
+    .filter((candidate) => typeof candidate.meanAlignedDeltaPct === 'number')
+    .sort((a, b) => a.meanAlignedDeltaPct - b.meanAlignedDeltaPct)
+    .slice(0, 3);
+  return {
+    candidateCount: report.candidates.length,
+    generatedAt: report.generatedAt ?? null,
+    regressingCandidates,
+    styleProofCandidates,
+    bestNumericCandidates,
+  };
+}
+
+function summarizeChatCandidate(candidate) {
+  return {
+    name: candidate.name,
+    risk: candidate.promotionRisk ?? '',
+    meanAlignedDeltaPct: candidate.meanAlignedDeltaPct ?? null,
+    regressedFixtures: Number(candidate.regressedFixtures ?? 0),
+    improvedFixtures: Number(candidate.improvedFixtures ?? 0),
+    fixtureAlignedDeltaPct: candidate.fixtureAlignedDeltaPct ?? {},
+    yshyAlignedDeltaPct: parsePctValue(candidate.yshyAlignedDeltaPct),
+  };
+}
+
+function chatCandidateSort(a, b) {
+  return Number(a.regressedFixtures ?? 0) - Number(b.regressedFixtures ?? 0) ||
+    Number(a.meanAlignedDeltaPct ?? 0) - Number(b.meanAlignedDeltaPct ?? 0) ||
+    a.name.localeCompare(b.name);
 }
 
 function summarizeChatParity(report) {
@@ -748,6 +809,25 @@ function renderMarkdown(report) {
     }
     lines.push('');
   }
+  if (report.chatCandidates) {
+    lines.push('### Chat Candidate Boundary', '');
+    lines.push(`- Candidates: ${report.chatCandidates.candidateCount}`);
+    lines.push(`- Fixture-regressing candidates: ${report.chatCandidates.regressingCandidates.length}`);
+    lines.push(`- Need actual style proof: ${report.chatCandidates.styleProofCandidates.length}`);
+    lines.push(`- Best numeric candidates: ${report.chatCandidates.bestNumericCandidates.map(formatChatCandidate).join('; ') || 'none'}`);
+    if (report.chatCandidates.regressingCandidates.length || report.chatCandidates.styleProofCandidates.length) {
+      lines.push('');
+      lines.push('| Candidate | Risk | Mean delta | Regressions | AW2E delta | Les delta | YSHY delta |');
+      lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: |');
+      for (const candidate of [
+        ...report.chatCandidates.styleProofCandidates,
+        ...report.chatCandidates.regressingCandidates.slice(0, 6),
+      ]) {
+        lines.push(`| \`${candidate.name}\` | ${candidate.risk} | ${fmtPct(candidate.meanAlignedDeltaPct)} | ${candidate.regressedFixtures} | ${fmtPct(candidate.fixtureAlignedDeltaPct?.aw2e)} | ${fmtPct(candidate.fixtureAlignedDeltaPct?.lesOublies)} | ${fmtPct(candidate.fixtureAlignedDeltaPct?.yshy)} |`);
+      }
+    }
+    lines.push('');
+  }
   lines.push('### Next Actions', '');
   for (const action of report.recommendation.nextActions) lines.push(`- ${action}`);
   lines.push('');
@@ -924,6 +1004,10 @@ function formatFixtureDeltas(deltas) {
     : 'none';
 }
 
+function formatChatCandidate(candidate) {
+  return `${candidate.name} risk=${candidate.risk || 'unknown'} mean=${fmtPct(candidate.meanAlignedDeltaPct)} regressions=${candidate.regressedFixtures}`;
+}
+
 function patchFamily(patch) {
   if (!patch) return 'none';
   if (patch.startsWith('renderer-model:')) return patch;
@@ -947,6 +1031,17 @@ function candidatePatch(candidate) {
 
 function pctNumber(value) {
   return typeof value === 'number' && Number.isFinite(value) ? Number((value * 100).toFixed(2)) : null;
+}
+
+function parsePctValue(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value !== 'string') return null;
+  const parsed = Number(value.replace(/%$/, ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function fmtPct(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${num(value)}%` : '';
 }
 
 function num(value) {

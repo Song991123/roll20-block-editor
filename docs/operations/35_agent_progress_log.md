@@ -1,3 +1,11 @@
+## 2026-06-20 Chat Candidate Gate Hardening
+
+- Updated `scripts/roll20_renderer_action_gate.mjs` to load the local-only chat candidate comparison report.
+- The renderer gate now treats fixture-regressing chat candidates as blockers and also blocks numerically promising candidates until actual Roll20 computed-style evidence proves the same behavior.
+- Latest gate output now includes a `Chat Candidate Boundary` table and explicitly keeps `no-shadow`, `table-scale-x`, `roll20-break-word`, and `text-auto-aa` diagnostic-only.
+- Updated `scripts/roll20_chat_candidate_compare.mjs` console output to include risk, mean delta, and regression count so command output is harder to misread.
+- Claim boundary: no production ChatPane CSS changed. This is a guardrail against unsafe renderer patches, not Roll20 visual parity.
+
 ## 2026-06-20 07:10 +09:00 - Les authoritative chat recapture cleared
 
 Status: PARTIAL. The Roll20 evidence gate is now blocked by real renderer mismatch, not by a suspect Les-Oublies chat crop.
