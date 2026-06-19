@@ -28,9 +28,10 @@ async function main() {
   const rootStitchAudit = await readJsonIfExists(path.join(runDir, 'root-stitch-audit', 'root-stitch-audit-results.json'));
   const stateVisibility = await readJsonIfExists(path.join(runDir, 'state-visibility-diagnostics', 'state-visibility-diagnostics-results.json'));
   const attrClassVisibility = await readJsonIfExists(path.join(runDir, 'attr-class-visibility-diagnostics', 'attr-class-visibility-diagnostics-results.json'));
+  const attrClassGeometry = await readJsonIfExists(path.join(runDir, 'attr-class-panel-geometry-diagnostics', 'attr-class-panel-geometry-diagnostics-results.json'));
   const geometry = await readJsonIfExists(path.join(runDir, 'geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json'));
 
-  const fixtures = mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, attrClassVisibility, geometry });
+  const fixtures = mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
   const recommendation = recommend(fixtures, status, runDir);
   const report = {
     generatedAt: new Date().toISOString(),
@@ -52,9 +53,9 @@ async function main() {
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
 
-function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, attrClassVisibility, geometry }) {
+function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, attrClassVisibility, attrClassGeometry, geometry }) {
   const ids = new Set();
-  for (const source of [status, fullRoot, rootStitchAudit, attrClassVisibility, stateVisibility, geometry]) {
+  for (const source of [status, fullRoot, rootStitchAudit, attrClassVisibility, attrClassGeometry, stateVisibility, geometry]) {
     for (const fixture of source?.fixtures ?? []) ids.add(fixture.fixtureId);
   }
 
@@ -64,6 +65,7 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, att
     const rootStitchFixture = findFixture(rootStitchAudit, fixtureId);
     const stateFixture = findFixture(stateVisibility, fixtureId);
     const attrClassVisibilityFixture = findFixture(attrClassVisibility, fixtureId);
+    const attrClassGeometryFixture = findFixture(attrClassGeometry, fixtureId);
     const geometryFixture = findFixture(geometry, fixtureId);
     const targets = Object.fromEntries((statusFixture?.actualTargets ?? []).map((target) => [target.id, target.validation]));
     const attrClassSidecar = readAttrClassSidecarSync(runDir, fixtureId);
@@ -133,6 +135,19 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, att
             checkedVisibleContradiction: attrClassVisibilityFixture.actualSummary?.checkedVisibleContradiction ?? false,
             selectorMismatchCount: attrClassVisibilityFixture.selectorSummary?.selectorMismatchCount ?? 0,
             visibleDespiteUncheckedCount: attrClassVisibilityFixture.selectorSummary?.visibleDespiteUncheckedCount ?? 0,
+        }
+        : null,
+      attrClassGeometry: attrClassGeometryFixture
+        ? {
+            status: attrClassGeometryFixture.status,
+            actualRootHeight: attrClassGeometryFixture.boundary?.actualRootHeight ?? null,
+            intersectingCount: attrClassGeometryFixture.boundary?.intersectingValues?.length ?? null,
+            fullyContainedCount: attrClassGeometryFixture.boundary?.fullyContainedValues?.length ?? null,
+            clippedValues: attrClassGeometryFixture.boundary?.clippedValues ?? [],
+            belowValues: attrClassGeometryFixture.boundary?.belowValues ?? [],
+            heightClosestCandidateId: attrClassGeometryFixture.sourceOrderFit?.heightClosestCandidateId ?? null,
+            heightClosestRootDelta: attrClassGeometryFixture.sourceOrderFit?.heightClosestRootDelta ?? null,
+            firstRowsBottomDeltaVsActual: attrClassGeometryFixture.sourceOrderFit?.firstRowsBottomDeltaVsActual ?? null,
           }
         : null,
       geometry: geometryFixture
@@ -209,6 +224,10 @@ function recommend(fixtures, status, activeRunDir) {
   for (const fixture of attrClassVisibilityFindings) {
     positiveFindings.push(`${fixture.fixtureId} attr_class visibility diagnostic: checked=${fixture.attrClassVisibility.checkedValues.join(',') || 'none'}, visiblePanels=${fixture.attrClassVisibility.visiblePanelCount ?? 'unknown'}, selectorMismatch=${fixture.attrClassVisibility.selectorMismatchCount}`);
   }
+  const attrClassGeometryFindings = fixtures.filter((fixture) => fixture.attrClassGeometry?.intersectingCount != null);
+  for (const fixture of attrClassGeometryFindings) {
+    positiveFindings.push(`${fixture.fixtureId} attr_class panel geometry: actualH=${fixture.attrClassGeometry.actualRootHeight}, intersecting=${fixture.attrClassGeometry.intersectingCount}, fullyInside=${fixture.attrClassGeometry.fullyContainedCount}, closest=${fixture.attrClassGeometry.heightClosestCandidateId ?? 'unknown'}`);
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -262,6 +281,11 @@ function recommend(fixtures, status, activeRunDir) {
         nextActions.push(`Run corepack pnpm run diagnose:roll20-attr-class-visibility -- ${path.relative(process.cwd(), activeRunDir)}${fixtureArg} before CSS work. Captured checked state does not explain closest height, so selector prefix/state visibility must be compared.`);
       } else {
         nextActions.push(`Use attr_class visibility diagnostics before CSS work: ${capturedSidecar.map((fixture) => `${fixture.fixtureId} checked=${fixture.attrClassSidecar.checkedValues.join(',') || 'none'} visiblePanels=${fixture.attrClassVisibility?.visiblePanelCount ?? 'unknown'} selectorMismatch=${fixture.attrClassVisibility?.selectorMismatchCount ?? 0}`).join('; ')}. If checked state does not explain visible panels, model Roll20 selector prefix/default-state behavior rather than forcing more checked values.`);
+      }
+      const missingGeometryDiagnostic = capturedSidecar.filter((fixture) => fixture.attrClassVisibility && !fixture.attrClassGeometry);
+      if (missingGeometryDiagnostic.length) {
+        const fixtureArg = missingGeometryDiagnostic.length === 1 ? ` ${missingGeometryDiagnostic[0].fixtureId}` : '';
+        nextActions.push(`Run corepack pnpm run diagnose:roll20-attr-class-geometry -- ${path.relative(process.cwd(), activeRunDir)}${fixtureArg} after full-root candidates. Actual-visible panel names need root-boundary/source-order geometry before renderer CSS.`);
       }
     }
   }
@@ -360,8 +384,8 @@ function renderMarkdown(report) {
   lines.push('');
 
   lines.push('## Fixture Evidence', '');
-  lines.push('| Fixture | Sandbox | Chat | Full-root best | Diagnostic best | Root stitch audit | Patch | State visibility | Attr class visibility | Top panel delta |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  lines.push('| Fixture | Sandbox | Chat | Full-root best | Diagnostic best | Root stitch audit | Patch | State visibility | Attr class visibility | Attr class geometry | Top panel delta |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
     const topDelta = fixture.stateVisibility?.largestHeightDeltas?.[0];
     lines.push([
@@ -378,6 +402,7 @@ function renderMarkdown(report) {
       fixture.bestCandidate?.patch || '',
       fixture.stateVisibility ? `${fixture.stateVisibility.matchedLocalExpected ? 'matched' : 'not matched'} ${fixture.stateVisibility.localVisibleCount ?? ''}/${fixture.stateVisibility.actualVisibleCount ?? ''}` : '',
       fmtAttrClassVisibility(fixture.attrClassVisibility),
+      fmtAttrClassGeometry(fixture.attrClassGeometry),
       topDelta ? `${topDelta.selector} ${num(topDelta.heightDelta)}px` : '',
     ].join(' | ') + ' |');
   }
@@ -410,6 +435,13 @@ function fmtAttrClassVisibility(visibility) {
   const prefix = visibility.selectorMismatchCount ? `selector mismatch ${visibility.selectorMismatchCount}` : 'no selector mismatch';
   const panels = visibility.visiblePanelCount == null ? 'unknown panels' : `${visibility.visiblePanelCount} panels`;
   return `${visibility.status}: checked ${checked}, ${panels}, ${prefix}`;
+}
+
+function fmtAttrClassGeometry(geometry) {
+  if (!geometry) return '';
+  const clipped = geometry.clippedValues?.length ? ` clipped ${geometry.clippedValues.join(',')}` : '';
+  const below = geometry.belowValues?.length ? ` below ${geometry.belowValues.join(',')}` : '';
+  return `${geometry.status}: ${geometry.intersectingCount ?? '?'} intersect / ${geometry.fullyContainedCount ?? '?'} full, closest ${geometry.heightClosestCandidateId ?? ''}${clipped}${below}`;
 }
 
 function findFixture(source, fixtureId) {

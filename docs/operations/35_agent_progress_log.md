@@ -1579,3 +1579,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest AW2E full-root result: actual-visible explicit candidate is `9.04%` mismatch with root delta `+1310.5px`; actual-visible forced checked is `9.06%` / `+1310.5px`; actual-visible-plus-checked is `9.02%` / `+1861.5px`.
 - The height-closest candidate remains `sandbox-sheet-alias-attr-class-state-first-13-source` at root delta `+208.5px`; pixel-best remains over-hidden `sandbox-sheet-alias-playbook-hide-source` at `7.22%` and `-6636.125px`.
 - Claim boundary: actual display-visible panel names are not sufficient to model AW2E Roll20 default state. This is diagnostic evidence only and still keeps renderer action on HOLD.
+
+## 2026-06-19 AW2E Attr Class Panel Geometry
+
+- Added `scripts/roll20_attr_class_panel_geometry_diagnostics.mjs` and package alias `diagnose:roll20-attr-class-geometry`.
+- The diagnostic compares actual Roll20 attr_class panel rects against stitched full-root height and emitted `attr_class` source order.
+- Latest AW2E result: actual stitched root height `9168px`; sidecar-visible panel values intersecting that height `14`; fully inside `13`; clipped at the bottom `Quarantine, Waterbearer`; below actual root `Marine`.
+- This explains why actual-visible panel names were too broad while `sandbox-sheet-alias-attr-class-state-first-13-source` remains the height-closest candidate at `+208.5px`.
+- `scripts/roll20_renderer_action_gate.mjs` now reads this diagnostic and reports it as root-cause evidence while keeping production renderer CSS on HOLD.
+- Claim boundary: this is geometry/source-order evidence only. It does not prove Roll20 visual parity and does not authorize production CSS.
