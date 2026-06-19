@@ -33,15 +33,17 @@ async function main() {
   const attrClassGeometry = await readJsonIfExists(path.join(runDir, 'attr-class-panel-geometry-diagnostics', 'attr-class-panel-geometry-diagnostics-results.json'));
   const geometry = await readJsonIfExists(path.join(runDir, 'geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json'));
   const inputFlowAxis = await readJsonIfExists(path.join(runDir, 'input-flow-axis-diagnostics', 'input-flow-axis-diagnostics-results.json'));
+  const chatParity = await readJsonIfExists(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
     scope: 'Roll20 renderer action gate; diagnostic only, not visual parity',
     recommendation,
     inputFlowAxis: summarizeInputFlowAxis(inputFlowAxis),
+    chatParity: summarizeChatParity(chatParity),
     summary: summarize(fixtures),
     fixtures,
   };
@@ -212,7 +214,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -224,6 +226,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis) {
   const generatedStatusComplete = status?.status === 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED';
   const generatedEvidenceComplete = Boolean(generatedSummaryComplete || generatedStatusComplete);
   const inputFlowSummary = summarizeInputFlowAxis(inputFlowAxis);
+  const chatParitySummary = summarizeChatParity(chatParity);
 
   if (!generatedEvidenceComplete) {
     blockers.push(`generated-sheet actual evidence incomplete: status=${status?.status ?? 'unknown'}`);
@@ -237,6 +240,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis) {
   const missingChat = fixtures.filter((fixture) => !fixture.chatEvidence?.ok);
   if (missingChat.length) {
     blockers.push(`missing trustworthy Roll20 chat screenshots for ${missingChat.map((fixture) => fixture.fixtureId).join(', ')}`);
+  }
+  if (!chatParitySummary) {
+    warnings.push('local ChatPane vs actual Roll20 chat parity diagnostic has not been run');
+  } else if (chatParitySummary.highMismatch > 0) {
+    blockers.push(`actual Roll20 chat differs from local ChatPane for ${chatParitySummary.highMismatch}/${chatParitySummary.compared} compared fixtures; max mismatch ${chatParitySummary.maxMismatchPct}%`);
   }
 
   const compared = fixtures.filter((fixture) => fixture.bestCandidate);
@@ -312,6 +320,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis) {
   if (inputFlowSummary) {
     positiveFindings.push(`input-flow axis diagnostic: status=${inputFlowSummary.status}, applyCandidate=${inputFlowSummary.applyCandidateFixtures.length}, blockGlobalModel=${inputFlowSummary.blockGlobalModelFixtures.length}, globalSafe=${inputFlowSummary.globalModelSafe ? 'YES' : 'NO'}`);
   }
+  if (chatParitySummary) {
+    positiveFindings.push(`chat parity diagnostic: compared=${chatParitySummary.compared}/${chatParitySummary.fixtures}, highMismatch=${chatParitySummary.highMismatch}, maxMismatch=${chatParitySummary.maxMismatchPct}%`);
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -328,6 +339,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis) {
   }
   if (missingChat.length) {
     nextActions.push(`Capture roll20-chat.png screenshots with fresh DOM sidecars for ${missingChat.map((fixture) => fixture.fixtureId).join(', ')}.`);
+  }
+  if (chatParitySummary?.highMismatch > 0) {
+    nextActions.push('Fix local ChatPane rolltemplate shell sizing/content to match actual Roll20 chat, then rerun rolltemplate chat smoke and diagnose:roll20-chat-parity.');
   }
   if (missingFullRootCandidates.length) {
     const ids = missingFullRootCandidates.map((fixture) => fixture.fixtureId);
@@ -405,6 +419,25 @@ function summarizeInputFlowAxis(report) {
     applyCandidateFixtures: report.summary.applyCandidateFixtures ?? [],
     blockGlobalModelFixtures: report.summary.blockGlobalModelFixtures ?? [],
     globalModelSafe: Boolean(report.summary.globalModelSafe),
+  };
+}
+
+function summarizeChatParity(report) {
+  if (!report?.summary) return null;
+  return {
+    fixtures: Number(report.summary.fixtures ?? 0),
+    compared: Number(report.summary.compared ?? 0),
+    highMismatch: Number(report.summary.highMismatch ?? 0),
+    maxMismatchRatio: Number(report.summary.maxMismatchRatio ?? 0),
+    maxMismatchPct: pctNumber(report.summary.maxMismatchRatio ?? 0),
+    fixturesWithMismatch: (report.fixtures ?? [])
+      .filter((fixture) => fixture.status === 'DIFFED' && Number(fixture.mismatchRatio ?? 0) > 0.1)
+      .map((fixture) => ({
+        fixtureId: fixture.fixtureId,
+        mismatchPct: pctNumber(fixture.mismatchRatio),
+        localSize: fixture.localSize ?? null,
+        actualSize: fixture.actualSize ?? null,
+      })),
   };
 }
 
@@ -506,6 +539,21 @@ function renderMarkdown(report) {
     lines.push(`- Global model safe: ${report.inputFlowAxis.globalModelSafe ? 'YES' : 'NO'}`);
     lines.push(`- Apply candidates: ${report.inputFlowAxis.applyCandidateFixtures.join(', ') || 'none'}`);
     lines.push(`- Blocks global model: ${report.inputFlowAxis.blockGlobalModelFixtures.join(', ') || 'none'}`);
+    lines.push('');
+  }
+  if (report.chatParity) {
+    lines.push('### Chat Parity Boundary', '');
+    lines.push(`- Compared: ${report.chatParity.compared}/${report.chatParity.fixtures}`);
+    lines.push(`- High mismatch: ${report.chatParity.highMismatch}`);
+    lines.push(`- Max mismatch: ${report.chatParity.maxMismatchPct}%`);
+    if (report.chatParity.fixturesWithMismatch?.length) {
+      lines.push('');
+      lines.push('| Fixture | Mismatch | Local size | Actual size |');
+      lines.push('| --- | ---: | --- | --- |');
+      for (const fixture of report.chatParity.fixturesWithMismatch) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.mismatchPct}% | ${fmtSize(fixture.localSize)} | ${fmtSize(fixture.actualSize)} |`);
+      }
+    }
     lines.push('');
   }
   lines.push('### Next Actions', '');
@@ -700,6 +748,7 @@ function num(value) {
 
 function fmtSize(size) {
   if (!size) return 'unknown size';
+  if (Array.isArray(size)) return `${size[0]}x${size[1]}`;
   const width = size.w ?? size.width;
   const height = size.h ?? size.height;
   return width && height ? `${width}x${height}` : 'unknown size';

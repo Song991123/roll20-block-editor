@@ -1,4 +1,10 @@
 
+## 2026-06-19 Active TODO Refresh - Chat Parity
+
+- VERIFY: Actual Roll20 chat screenshots and fresh DOM sidecars exist for generated-sheet targets; status still reports `generatedActualScreenshots=6/6` and `generatedDiffed=6/6`.
+- BLOCKER: Local ChatPane vs actual Roll20 chat parity is not close enough: compared 3/3, highMismatch 3/3; AW2E 13.02%, Les-Oublies 27.95%, YSHY 12.74%.
+- NEXT P0: fix local ChatPane rolltemplate shell sizing/content to match actual Roll20 chat, rerun local rolltemplate smoke, then rerun `diagnose:roll20-chat-parity` and `gate:roll20-renderer-action`.
+
 ## 2026-06-19 Active TODO Refresh - Live Roll20 Iframe Probe
 
 - VERIFY: Dedicated Roll20 editor tab is reachable and iframe root can be read with CDP isolated world. Latest observed root: 852px x 11788.0879px.

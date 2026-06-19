@@ -1,4 +1,11 @@
 
+## 2026-06-19 Roll20 Chat Parity Gate Update
+
+- Refreshed actual Roll20 AW2E chat evidence in the dedicated sandbox: `roll20-chat.png` + `roll20-chat-dom-evidence.json` now capture a visible `sheet-rolltemplate-aw` with `rolltemplateCount=1` and `messageCount=8`.
+- Re-ran local `rolltemplate_chat_smoke.mjs`: AW2E, Les-Oublies, and YSHY 1BU all PASS locally.
+- Added `scripts/roll20_chat_parity_diagnostics.mjs` and `diagnose:roll20-chat-parity` to compare local ChatPane screenshots against actual Roll20 chat screenshots. Latest result: compared 3/3, highMismatch 3/3; AW2E 13.02%, Les-Oublies 27.95%, YSHY 12.74%.
+- `roll20_renderer_action_gate.mjs` now treats chat parity high mismatch as a blocker. Renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+
 ## 2026-06-19 Current Roll20 Iframe Probe Refresh
 
 - Captured fresh ignored Chrome evidence from the dedicated Roll20 editor tab under `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/`.
