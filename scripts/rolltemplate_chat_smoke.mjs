@@ -298,6 +298,43 @@ async function clickRollAndReadChat(page, fixtureId) {
         text: (node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 500),
       };
     };
+    const summarizeRows = (root) => Array.from(root?.querySelectorAll('tr') ?? []).slice(0, 20).map((row, index) => {
+      const rect = row.getBoundingClientRect();
+      return {
+        index,
+        className: row.className,
+        rect: {
+          x: rect.x,
+          y: rect.y,
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          right: rect.right,
+          bottom: rect.bottom,
+        },
+        text: (row.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 240),
+        cells: Array.from(row.children).slice(0, 6).map((cell, cellIndex) => {
+          const cellRect = cell.getBoundingClientRect();
+          return {
+            index: cellIndex,
+            tagName: cell.tagName,
+            className: cell.className,
+            rect: {
+              x: cellRect.x,
+              y: cellRect.y,
+              left: cellRect.left,
+              top: cellRect.top,
+              width: cellRect.width,
+              height: cellRect.height,
+              right: cellRect.right,
+              bottom: cellRect.bottom,
+            },
+            text: (cell.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120),
+          };
+        }),
+      };
+    });
     const checkFonts = () => {
       const specs = [
         '12px BookkMyungjo-Bd',
@@ -342,6 +379,7 @@ async function clickRollAndReadChat(page, fixtureId) {
               summarizeElement(template.querySelector('td.sheet-template_value, .sheet-template_value'), 'sheet-template_value:first'),
               summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
             ].filter(Boolean),
+            rowMetrics: summarizeRows(template),
           }
         : null,
       fontEvidence: checkFonts(),

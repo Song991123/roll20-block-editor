@@ -437,6 +437,19 @@ function renderDomProbeSnippet(entry) {
       text: (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 500),
     };
   };
+  const summarizeRows = (root) => Array.from(root?.querySelectorAll('tr') ?? []).slice(0, 20).map((row, index) => ({
+    index,
+    className: row.className,
+    rect: cloneRect(rectOf(row)),
+    text: (row.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 240),
+    cells: Array.from(row.children).slice(0, 6).map((cell, cellIndex) => ({
+      index: cellIndex,
+      tagName: cell.tagName,
+      className: cell.className,
+      rect: cloneRect(rectOf(cell)),
+      text: (cell.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 120),
+    })),
+  }));
   const checkFonts = () => {
     const specs = [
       '12px BookkMyungjo-Bd',
@@ -469,6 +482,7 @@ function renderDomProbeSnippet(entry) {
       summarizeElement(template.querySelector('td.sheet-template_value, .sheet-template_value'), 'sheet-template_value:first'),
       summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
     ].filter(Boolean),
+    rowMetrics: summarizeRows(template),
     htmlSnippet: template.outerHTML.slice(0, 4000),
     text: (template.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 1000),
   }));
