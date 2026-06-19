@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Les chat authoritative recapture cleared
+
+Status: PARTIAL. The Les-Oublies chat crop trust blocker is cleared; Roll20 renderer/chat parity is still blocked.
+
+- DONE: Reclaimed the dedicated `Codex Roll20 Verify` Roll20 editor/Sandbox tab and captured Les-Oublies `sheet-rolltemplate-initiative-roll` from the visible text chat panel with CDP `Page.captureScreenshot`.
+- DONE: Saved the corrected crop and sidecar only under ignored local `reports/roll20-actual-compare/2026-06-18-state-map-v1/`; no real room was modified and no private sheet/source evidence is to be committed.
+- RESULT: `plan:roll20-chat-capture -- --require-current-metrics` now reports `ALL_CHAT_EVIDENCE_TRUSTED` and `plannedFixtures=0/3`.
+- RESULT: `status:roll20-actual -- --require-actual` now passes with `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatActualCropGeometrySuspect=0`, and `chatActualTemplatePixelSuspect=0`.
+- RESULT: `diagnose:roll20-chat-parity` still reports real mismatch after the capture fix: AW2E `28.89%` raw, Les-Oublies `16.04%` raw, YSHY `26.98%` raw; aligned authoritative high mismatch remains `2/3` with max `23.4%`.
+- STILL TODO P0: Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`; next work is local ChatPane/Roll20 shell/template sizing and default-state renderer analysis, not more Les crop cleanup.
+- STILL TODO P0: `gate:roll20-renderer-ready` must keep failing until renderer/chat parity is proven. Do not claim Roll20 visual parity or all-sheet support.
+
 ## 2026-06-20 Codex Update - Roll20 chat crop foreground guard
 
 Status: PARTIAL. Evidence quality improved; renderer/chat parity remains blocked.

@@ -1,3 +1,16 @@
+## 2026-06-20 07:10 +09:00 - Les authoritative chat recapture cleared
+
+Status: PARTIAL. The Roll20 evidence gate is now blocked by real renderer mismatch, not by a suspect Les-Oublies chat crop.
+
+- Reclaimed the dedicated Roll20 verification editor/Sandbox tab only. No existing room or user campaign settings were modified.
+- Captured the visible Les-Oublies `sheet-rolltemplate-initiative-roll` card from Roll20 text chat with CDP `Page.captureScreenshot`, then recorded the DOM rect and the paint-aligned screenshot clip in the ignored local sidecar.
+- Updated ignored local evidence only under `reports/roll20-actual-compare/2026-06-18-state-map-v1/`; this evidence remains private/local and must not be committed.
+- Verification: `plan:roll20-chat-capture -- --require-current-metrics` now reports `ALL_CHAT_EVIDENCE_TRUSTED`, `plannedFixtures=0/3`.
+- Verification: `status:roll20-actual -- --require-actual` passes with `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatActualCropGeometrySuspect=0`, and `chatActualTemplatePixelSuspect=0`.
+- Verification: `diagnose:roll20-chat-parity` still reports `HIGH_MISMATCH`: AW2E `28.89%` raw, Les-Oublies `16.04%` raw, YSHY `26.98%` raw. The authoritative aligned high mismatch remains `2/3`, max `23.4%`.
+- Current gate: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; `gate:roll20-renderer-ready` is expected to fail with `rendererReady=NO`.
+- Next P0: work on the actual local ChatPane/Roll20 shell-template renderer mismatch and default-state model. Do not spend another cycle on Les crop trust unless the diagnostics regress.
+
 ## 2026-06-20 06:35 +09:00 - Roll20 chat crop foreground guard
 
 Status: PARTIAL. This batch improves evidence truthfulness; Roll20 chat/template parity is still not solved.
