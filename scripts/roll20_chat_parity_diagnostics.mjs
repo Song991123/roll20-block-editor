@@ -48,6 +48,7 @@ async function main() {
   const actualChatCssInactive = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
   const actualChatCssScopedMismatch = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH');
   const actualChatCssUnknown = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
+  const actualCaptureScaleSuspect = fixtures.filter((fixture) => fixture.status === 'DIFFED' && isActualCaptureScaleSuspect(fixture));
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -64,6 +65,7 @@ async function main() {
       actualChatCssInactive: actualChatCssInactive.length,
       actualChatCssScopedMismatch: actualChatCssScopedMismatch.length,
       actualChatCssUnknown: actualChatCssUnknown.length,
+      actualCaptureScaleSuspect: actualCaptureScaleSuspect.length,
       maxMismatchRatio: compared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
       maxNormalizedMismatchRatio: normalizedCompared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
     },
@@ -96,6 +98,12 @@ async function main() {
     }
   }
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
+}
+
+function isActualCaptureScaleSuspect(fixture) {
+  if (fixture.actualImageFormat && fixture.actualImageFormat !== 'png') return true;
+  const [scaleX, scaleY] = fixture.actualScreenshotScale ?? [];
+  return Math.abs(Number(scaleX ?? 1) - 1) > 0.01 || Math.abs(Number(scaleY ?? 1) - 1) > 0.01;
 }
 
 async function readFixtureIds(baselineDir) {
@@ -138,6 +146,8 @@ async function compareFixture(page, fixtureId) {
     };
   }
   const diff = await compareImages(page, { local, actual, actualCrop });
+  const localImageFormat = await sniffImageFormat(local);
+  const actualImageFormat = await sniffImageFormat(actual);
   return {
     fixtureId,
     status: 'DIFFED',
@@ -149,8 +159,16 @@ async function compareFixture(page, fixtureId) {
     compareMode: actualCrop ? 'rolltemplate-crop' : 'full-chat-fallback',
     actualCrop,
     localSize: diff.localSize,
+    localImageFormat,
     actualSize: diff.actualSize,
+    actualImageFormat,
     actualSource: diff.actualSource,
+    actualScreenshotScale: actualCrop?.clip
+      ? [
+          Number((diff.actualSize[0] / actualCrop.clip.width).toFixed(4)),
+          Number((diff.actualSize[1] / actualCrop.clip.height).toFixed(4)),
+        ]
+      : null,
     comparedSize: diff.comparedSize,
     mismatchRatio: diff.mismatchRatio,
     mismatchPct: pct(diff.mismatchRatio),
@@ -158,6 +176,14 @@ async function compareFixture(page, fixtureId) {
     bounds: diff.bounds,
     note: 'Diagnostic local ChatPane vs actual Roll20 chat comparison. Requires human classification before a parity claim.',
   };
+}
+
+async function sniffImageFormat(file) {
+  const bytes = await readFile(file);
+  if (bytes.length >= 8 && bytes.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'jpeg';
+  if (bytes.length >= 12 && bytes.slice(0, 4).toString('ascii') === 'RIFF' && bytes.slice(8, 12).toString('ascii') === 'WEBP') return 'webp';
+  return 'unknown';
 }
 
 function summarizeActualChatCss(sidecar) {
@@ -334,13 +360,14 @@ function renderMarkdown(report) {
   lines.push(`Actual chat CSS inactive: ${report.summary.actualChatCssInactive}`);
   lines.push(`Actual chat CSS scoped/prefix mismatch: ${report.summary.actualChatCssScopedMismatch}`);
   lines.push(`Actual chat CSS unknown: ${report.summary.actualChatCssUnknown}`);
+  lines.push(`Actual capture scale/format suspect: ${report.summary.actualCaptureScaleSuspect}`);
   lines.push(`Max mismatch: ${pct(report.summary.maxMismatchRatio)}`);
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
   lines.push('');
-  lines.push('| Fixture | Status | Mode | Actual CSS | Local | Actual | Rolltemplates | Local size | Actual PNG | Actual source | Compared | Mismatch | RMS | Note |');
-  lines.push('| --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | ---: | ---: | --- |');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Local | Actual | Rolltemplates | Local size | Actual image | Actual scale | Actual source | Compared | Mismatch | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | ---: | ---: | --- |');
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} | ${fixture.actualSize?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');

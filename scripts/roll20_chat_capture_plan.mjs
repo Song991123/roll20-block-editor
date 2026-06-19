@@ -150,7 +150,7 @@ function buildEntry(fixtureId, status, chatParity) {
       'Load this fixture in the dedicated Roll20 Custom Sheet Sandbox or approved test room.',
       'Clear or visually separate old chat messages if needed so the next rolltemplate is unambiguous.',
       `Click a real sheet roll button${rollButtons.length ? ` such as ${rollButtons.slice(0, 4).map((name) => `\`${name}\``).join(', ')}` : ''}.`,
-      'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area.',
+      'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
       'Keep screenshot and DOM sidecar timestamps within 5 minutes.',
       'Rerun screenshot diff, chat parity diagnostics, renderer action gate, and status.',
@@ -545,6 +545,7 @@ function renderMarkdown(report) {
   lines.push('## Claim Boundary', '');
   lines.push('- A DOM sidecar without `roll20-chat.png` is not visual evidence.');
   lines.push('- `roll20-chat.png` without a fresh DOM sidecar is suspect.');
+  lines.push('- Prefer true PNG bytes at CSS scale 1 for chat crops. If Chrome/browser tooling returns JPEG bytes or a non-1 screenshot scale, record that in the sidecar and treat pixel mismatch as lower-confidence diagnostic evidence.');
   lines.push('- The screenshot and sidecar must come from the same Roll20 roll action and stay within 5 minutes.');
   lines.push('- Generated reports and screenshots stay ignored/local-only.');
   return `${lines.join('\n')}\n`;

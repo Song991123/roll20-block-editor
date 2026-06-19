@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Chat capture scale gate added
+
+Status: PARTIAL. Evidence quality improved; Roll20 chat visual parity is still NOT done.
+
+- Found that AW2E and YSHY Roll20 chat evidence files are JPEG bytes saved with a .png filename and captured at about 0.8x CSS scale; Les-Oublies was recaptured as true PNG at 1x via CDP.
+- Updated chat parity diagnostics to report local/actual image format, actual screenshot scale, actual source crop, and compared size.
+- Updated renderer/status gates so non-PNG or non-1x actual chat captures are explicit blockers before using pixel mismatch as a production ChatPane/CSS target.
+- Current measured status: chatNormalizedCompared=3/3, chatNeedsNormalizedCapture=0, chatActualCaptureScaleSuspect=2, rendererAction=HOLD_PRODUCTION_RENDERER_PATCH, rendererBlockers=3, rendererReady=NO.
+- Current measured chat crop mismatches after Les 1x PNG recapture: AW2E=95.13% (JPEG 0.8x evidence), Les-Oublies=29.21% (PNG 1x evidence), YSHY=38.25% (JPEG 0.8x evidence).
+- Next P0: recapture AW2E and YSHY chat crops as true PNG with CDP Page.captureScreenshot format=png and clip.scale=1, then rerun diagnose/status/gate before changing local ChatPane rendering.
+
 ## 2026-06-20 Codex Update - Les-Oublies chat normalized evidence captured
 
 Status: PARTIAL. Missing normalized chat evidence is closed; Roll20 chat visual parity is still NOT done.

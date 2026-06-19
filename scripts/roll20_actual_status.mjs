@@ -170,6 +170,7 @@ async function main() {
       chatParityActualCssInactive: chatParity.actualChatCssInactive,
       chatParityActualCssScopedMismatch: chatParity.actualChatCssScopedMismatch,
       chatParityActualCssUnknown: chatParity.actualChatCssUnknown,
+      chatParityActualCaptureScaleSuspect: chatParity.actualCaptureScaleSuspect,
       chatParityMaxNormalizedMismatchPct: chatParity.maxNormalizedMismatchPct,
       trustedFullRootComplete,
       rendererReady,
@@ -427,6 +428,7 @@ async function readChatParity(runDir) {
     actualChatCssInactive: Number(summary.actualChatCssInactive ?? 0),
     actualChatCssScopedMismatch: Number(summary.actualChatCssScopedMismatch ?? 0),
     actualChatCssUnknown: Number(summary.actualChatCssUnknown ?? 0),
+    actualCaptureScaleSuspect: Number(summary.actualCaptureScaleSuspect ?? 0),
     maxNormalizedMismatchPct: pctNumber(summary.maxNormalizedMismatchRatio ?? 0),
     mismatchFixtures: (report.fixtures ?? [])
       .filter((fixture) => fixture.status === 'DIFFED' && Number(fixture.mismatchRatio ?? 0) > 0.1)
@@ -435,6 +437,8 @@ async function readChatParity(runDir) {
         mode: fixture.compareMode ?? '',
         mismatchPct: pctNumber(fixture.mismatchRatio ?? 0),
         actualCss: fixture.actualChatCss?.classification ?? '',
+        actualImageFormat: fixture.actualImageFormat ?? '',
+        actualScreenshotScale: Array.isArray(fixture.actualScreenshotScale) ? fixture.actualScreenshotScale.join('x') : '',
       })),
     note: 'diagnostic only; does not prove Roll20 chat visual parity',
   };
@@ -691,6 +695,9 @@ function buildNextAction({
   if (chatParity?.exists && chatParity.actualChatCssInactive > 0) {
     return 'Actual Roll20 chat CSS evidence is inactive for one or more fixtures. Prove a CSS-active Custom Sheet Sandbox/test-room chat state before treating local ChatPane mismatches as production renderer defects.';
   }
+  if (chatParity?.exists && chatParity.actualCaptureScaleSuspect > 0) {
+    return 'Roll20 chat screenshots are normalized but some captures are JPEG or non-1x scale. Recapture those chat crops as true PNG with clip.scale=1 before tuning local ChatPane CSS from pixel diffs.';
+  }
   if (chatParity?.exists && chatParity.normalizedHighMismatch > 0) {
     return 'Roll20 chat screenshots are normalized but still differ from local ChatPane. Fix chat shell/template sizing after confirming actual Roll20 user rolltemplate CSS is active.';
   }
@@ -811,11 +818,12 @@ function renderMarkdown(report) {
     lines.push(`- Actual chat CSS inactive: ${report.chatParity.actualChatCssInactive}`);
     lines.push(`- Actual chat CSS scoped/prefix mismatch: ${report.chatParity.actualChatCssScopedMismatch}`);
     lines.push(`- Actual chat CSS unknown: ${report.chatParity.actualChatCssUnknown}`);
+    lines.push(`- Actual capture scale/format suspect: ${report.chatParity.actualCaptureScaleSuspect}`);
     lines.push(`- Max normalized mismatch: ${report.chatParity.maxNormalizedMismatchPct}%`);
     if (report.chatParity.mismatchFixtures.length) {
-      lines.push('', '| Fixture | Mode | Mismatch | Actual CSS |', '| --- | --- | ---: | --- |');
+      lines.push('', '| Fixture | Mode | Mismatch | Actual CSS | Actual image | Actual scale |', '| --- | --- | ---: | --- | --- | --- |');
       for (const fixture of report.chatParity.mismatchFixtures) {
-        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.mode} | ${fixture.mismatchPct}% | ${fixture.actualCss} |`);
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.mode} | ${fixture.mismatchPct}% | ${fixture.actualCss} | ${fixture.actualImageFormat} | ${fixture.actualScreenshotScale} |`);
       }
     }
   }
@@ -857,6 +865,7 @@ function renderConsoleSummary(report, outDir) {
     `chatNeedsNormalizedCapture=${report.summary.chatParityNeedsNormalizedCapture}`,
     `chatActualCssInactive=${report.summary.chatParityActualCssInactive}`,
     `chatActualCssScopedMismatch=${report.summary.chatParityActualCssScopedMismatch}`,
+    `chatActualCaptureScaleSuspect=${report.summary.chatParityActualCaptureScaleSuspect}`,
     `chatNormalizedHighMismatch=${report.summary.chatParityNormalizedHighMismatch}`,
     `commandGate=${report.commandPass ? 'PASS' : 'NEEDS_ACTION'}`,
     `out=${rel(outDir)}`,

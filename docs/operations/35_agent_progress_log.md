@@ -1,3 +1,14 @@
+## 2026-06-20 00:40 +09:00 - Roll20 chat capture scale gate
+
+Status: PARTIAL. This prevents premature ChatPane CSS tuning from low-confidence pixel evidence.
+
+- Found actual Roll20 chat evidence quality mismatch: AW2E and YSHY roll20-chat.png files contain JPEG bytes and were captured at about 0.8x CSS scale despite the .png filename.
+- Recaptured Les-Oublies chat via CDP Page.captureScreenshot format=png with clip.scale=1 after scrolling the same roll_initiative / initiative-roll message into the text chat clip. Les mismatch moved from 33.16% to 29.21%.
+- Updated scripts/roll20_chat_parity_diagnostics.mjs to report image format, actual capture scale, source crop, and compared size in the JSON/Markdown report.
+- Updated scripts/roll20_renderer_action_gate.mjs and scripts/roll20_actual_status.mjs so non-PNG or non-1x chat captures are explicit blockers. Latest status reports chatActualCaptureScaleSuspect=2 and rendererBlockers=3.
+- Verification: node --check for changed scripts PASS; test:roll20-chat-capture-plan PASS; diagnose:roll20-chat-parity, gate:roll20-renderer-action, and status:roll20-actual reran successfully.
+- Claim boundary: Roll20 chat visual parity is false. Next P0 is AW2E/YSHY true PNG 1x recapture before using their pixel diffs to tune ChatPane CSS.
+
 ## 2026-06-20 00:27 +09:00 - Les-Oublies normalized Roll20 chat capture
 
 Status: PARTIAL. One evidence blocker was closed, but visual parity is still failing.
