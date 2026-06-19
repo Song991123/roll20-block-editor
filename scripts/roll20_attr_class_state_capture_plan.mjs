@@ -43,7 +43,8 @@ async function main() {
     fixtures,
     summary: {
       fixtures: fixtures.length,
-      needsLiveCapture: fixtures.filter((fixture) => fixture.priority === 'P0').length,
+      needsLiveCapture: fixtures.filter((fixture) => fixture.captureStatus === 'NEEDS_CAPTURE').length,
+      capturedNeedsAnalysis: fixtures.filter((fixture) => fixture.captureStatus === 'CAPTURED_NEEDS_ANALYSIS').length,
       sidecarsFound: fixtures.filter((fixture) => fixture.existingSidecar?.exists).length,
       withHeightBracket: fixtures.filter((fixture) => fixture.heightBracket?.lower || fixture.heightBracket?.upper).length,
     },
@@ -71,7 +72,9 @@ async function analyzeFixture(fixture) {
   const candidateSummary = summarizeCandidates(fixture.candidates ?? [], attrClassValues);
   const heightBracket = findHeightBracket(candidateSummary.attrClassCandidates);
   const existingSidecar = await readExistingSidecar(fixtureId);
-  const priority = shouldCapture({ attrClassValues, candidateSummary, heightBracket, existingSidecar }) ? 'P0' : 'P1';
+  const captureStatus = captureStatusFor({ attrClassValues, candidateSummary, heightBracket, existingSidecar });
+  const priority = captureStatus === 'NOT_APPLICABLE' ? 'P1' : 'P0';
+  const capturedStateAnalysis = analyzeCapturedState({ existingSidecar, candidateSummary, heightBracket });
   const browserSnippet = buildBrowserSnippet({
     fixtureId,
     attrClassValues,
@@ -94,8 +97,10 @@ async function analyzeFixture(fixture) {
     candidates: candidateSummary,
     heightBracket,
     existingSidecar,
+    captureStatus,
+    capturedStateAnalysis,
     browserSnippet,
-    interpretation: interpret({ attrClassValues, candidateSummary, heightBracket, existingSidecar }),
+    interpretation: interpret({ attrClassValues, candidateSummary, heightBracket, existingSidecar, captureStatus, capturedStateAnalysis }),
   };
 }
 
@@ -158,15 +163,36 @@ async function readExistingSidecar(fixtureId) {
   };
 }
 
-function shouldCapture({ attrClassValues, candidateSummary, heightBracket, existingSidecar }) {
-  if (!attrClassValues.length) return false;
-  if (!candidateSummary.attrClassCandidates.length) return false;
-  if (!existingSidecar.exists) return true;
-  if (!existingSidecar.checkedValues.length) return true;
-  return Boolean(heightBracket?.lower && heightBracket?.upper);
+function captureStatusFor({ attrClassValues, candidateSummary, heightBracket, existingSidecar }) {
+  if (!attrClassValues.length) return 'NOT_APPLICABLE';
+  if (!candidateSummary.attrClassCandidates.length) return 'NOT_APPLICABLE';
+  if (!existingSidecar.exists || !existingSidecar.checkedValues.length) return 'NEEDS_CAPTURE';
+  if (heightBracket?.lower || heightBracket?.upper) return 'CAPTURED_NEEDS_ANALYSIS';
+  return 'CAPTURED';
 }
 
-function interpret({ attrClassValues, candidateSummary, heightBracket, existingSidecar }) {
+function analyzeCapturedState({ existingSidecar, candidateSummary, heightBracket }) {
+  if (!existingSidecar.exists) return null;
+  const checked = existingSidecar.checkedValues ?? [];
+  const checkedSlug = checked.map((value) => slug(value));
+  const closestId = candidateSummary.closestHeight?.id ?? '';
+  const bestId = candidateSummary.bestPixel?.id ?? '';
+  const closestMatchesChecked = checkedSlug.some((value) => closestId.toLowerCase().includes(value));
+  const bestMatchesChecked = checkedSlug.some((value) => bestId.toLowerCase().includes(value));
+  return {
+    checkedValues: checked,
+    closestHeightCandidate: candidateSummary.closestHeight ?? null,
+    bestPixelCandidate: candidateSummary.bestPixel ?? null,
+    closestMatchesChecked,
+    bestMatchesChecked,
+    bracketed: Boolean(heightBracket?.lower || heightBracket?.upper),
+    finding: closestMatchesChecked
+      ? 'Captured checked attr_class aligns with the closest-height candidate.'
+      : 'Captured checked attr_class does not explain the closest-height candidate; inspect Roll20 selector matching, class prefixing, visibility rules, or worker/default state side effects.',
+  };
+}
+
+function interpret({ attrClassValues, candidateSummary, heightBracket, existingSidecar, captureStatus, capturedStateAnalysis }) {
   const notes = [];
   if (!attrClassValues.length) {
     notes.push('No emitted attr_class inputs found; this fixture is not an attr_class state target.');
@@ -184,6 +210,8 @@ function interpret({ attrClassValues, candidateSummary, heightBracket, existingS
   }
   if (existingSidecar.exists) {
     notes.push(`Existing sidecar found with checked values: ${existingSidecar.checkedValues.join(', ') || 'none recorded'}. Recapture if stale or if it was not taken from the generated sheet iframe.`);
+    if (capturedStateAnalysis?.finding) notes.push(capturedStateAnalysis.finding);
+    if (captureStatus === 'CAPTURED_NEEDS_ANALYSIS') notes.push('Next action: analyze selector/state visibility using the captured sidecar, then rerun full-root candidates; do not keep asking for the same capture unless the sidecar is stale.');
   } else {
     notes.push('No attr_class state sidecar exists yet. Run the generated browser snippet inside the dedicated Roll20 sandbox/editor context and save the JSON under the suggested ignored path.');
   }
@@ -360,10 +388,10 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: plan and browser snippets for capturing actual Roll20 attr_class/default state. This is not visual parity.');
   lines.push('');
-  lines.push('| Fixture | Priority | Status | attr_class values | Closest height | Bracket | Sidecar | Interpretation |');
-  lines.push('| --- | --- | --- | ---: | --- | --- | --- | --- |');
+  lines.push('| Fixture | Priority | Capture status | Status | attr_class values | Closest height | Bracket | Sidecar | Interpretation |');
+  lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.status} | ${fixture.attrClass.count} | ${candidateLabel(fixture.candidates.closestHeight)} | ${bracketLabel(fixture.heightBracket)} | ${fixture.existingSidecar.exists ? `found (${fixture.existingSidecar.checkedValues.join(', ') || 'no checked values'})` : `missing: \`${fixture.existingSidecar.path}\``} | ${fixture.interpretation.join('<br>')} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.captureStatus} | ${fixture.status} | ${fixture.attrClass.count} | ${candidateLabel(fixture.candidates.closestHeight)} | ${bracketLabel(fixture.heightBracket)} | ${fixture.existingSidecar.exists ? `found (${fixture.existingSidecar.checkedValues.join(', ') || 'no checked values'})` : `missing: \`${fixture.existingSidecar.path}\``} | ${fixture.interpretation.join('<br>')} |`);
   }
   for (const fixture of report.fixtures.filter((item) => item.priority === 'P0')) {
     lines.push('');
@@ -371,6 +399,10 @@ function renderMarkdown(report) {
     lines.push('');
     lines.push(`Suggested sidecar path: \`${fixture.existingSidecar.path}\``);
     lines.push(`Snippet file: \`${path.relative(report.runDir, path.join(outDir, `${fixture.fixtureId}-browser-snippet.js`))}\``);
+    if (fixture.capturedStateAnalysis) {
+      lines.push(`Captured checked values: \`${fixture.capturedStateAnalysis.checkedValues.join(', ') || 'none'}\``);
+      lines.push(`Captured-state finding: ${fixture.capturedStateAnalysis.finding}`);
+    }
     lines.push('');
     lines.push('| Candidate | Mismatch | Root delta | Forced values | Local size |');
     lines.push('| --- | ---: | ---: | --- | --- |');
@@ -411,6 +443,10 @@ function sizeLabel(size) {
 
 function dedupe(values) {
   return [...new Set(values.map((value) => String(value)))];
+}
+
+function slug(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 function pct(value) {

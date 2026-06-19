@@ -8,7 +8,7 @@
  * Roll20 visual parity.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -60,6 +60,7 @@ function analyzeFixture(fixture) {
   const pixelBest = summarizeCandidate(fixture.bestCandidate ?? fixture.diagnosticBestCandidate);
   const heightClosest = summarizeCandidate(fixture.closestRootHeightCandidate);
   const actualHeight = Number(fixture.actual?.size?.h ?? 0) || null;
+  const attrClassSidecar = readAttrClassSidecar(fixture.fixtureId);
   const playbookSignal = hasPlaybookSignal({ pixelBest, heightClosest, playbookCandidates });
   return {
     fixtureId: fixture.fixtureId,
@@ -68,11 +69,12 @@ function analyzeFixture(fixture) {
     actualState: fixture.actual?.state ?? null,
     localStateHint: fixture.localBaseline?.stateHint ?? null,
     derivedStateProbeValues: fixture.localBaseline?.derivedStateProbeValues ?? null,
+    attrClassSidecar,
     pixelBest,
     heightClosest,
     playbookSignal,
     playbookCandidates,
-    interpretation: interpret({ pixelBest, heightClosest, playbookCandidates, playbookSignal, actualHeight }),
+    interpretation: interpret({ pixelBest, heightClosest, playbookCandidates, playbookSignal, actualHeight, attrClassSidecar }),
   };
 }
 
@@ -95,7 +97,7 @@ function hasPlaybookSignal({ pixelBest, heightClosest, playbookCandidates }) {
   return overhidden && overvisible;
 }
 
-function interpret({ pixelBest, heightClosest, playbookCandidates, playbookSignal, actualHeight }) {
+function interpret({ pixelBest, heightClosest, playbookCandidates, playbookSignal, actualHeight, attrClassSidecar }) {
   const notes = [];
   if (!playbookCandidates.length) {
     notes.push('No playbook/default-state diagnostic candidates were found for this fixture.');
@@ -112,13 +114,44 @@ function interpret({ pixelBest, heightClosest, playbookCandidates, playbookSigna
   if (heightClosest?.rootHeightDelta != null && Math.abs(heightClosest.rootHeightDelta) <= 350) {
     notes.push(`Height-closest candidate is within ${Math.abs(heightClosest.rootHeightDelta)}px of actual root height ${actualHeight ?? 'unknown'}. Use it as a default-state probe target, not as visual parity proof.`);
   }
+  if (attrClassSidecar?.exists) {
+    notes.push(`Actual Roll20 attr_class sidecar checked values: ${attrClassSidecar.checkedValues.join(', ') || 'none'}.`);
+    const checkedSlugs = attrClassSidecar.checkedValues.map(slug);
+    const closestMatchesChecked = checkedSlugs.some((value) => String(heightClosest?.id ?? '').toLowerCase().includes(value));
+    if (!closestMatchesChecked && heightClosest?.id) {
+      notes.push(`Captured checked state does not explain height-closest candidate (${heightClosest.id}); inspect Roll20 selector prefixing/state visibility, not more forced checked values.`);
+    }
+  }
   const overhidden = playbookCandidates.filter((candidate) => typeof candidate.rootHeightDelta === 'number' && candidate.rootHeightDelta < -500);
   const overvisible = playbookCandidates.filter((candidate) => typeof candidate.rootHeightDelta === 'number' && candidate.rootHeightDelta > 500);
   if (overhidden.length && overvisible.length) {
     notes.push('Candidate set brackets the actual height from both sides, so the remaining problem is likely default/state selection rather than a single spacing rule.');
   }
-  notes.push('Next action: capture or reconstruct actual Roll20 checked/value state for the controlling playbook inputs, then rerun full-root candidate smoke.');
+  if (attrClassSidecar?.exists) {
+    notes.push('Next action: analyze selector prefix/state visibility with the captured sidecar, then rerun full-root candidate smoke.');
+  } else {
+    notes.push('Next action: capture or reconstruct actual Roll20 checked/value state for the controlling playbook inputs, then rerun full-root candidate smoke.');
+  }
   return notes;
+}
+
+function readAttrClassSidecar(fixtureId) {
+  const file = path.join(runDir, 'live-iframe-probe', `${fixtureId}-attr-class-state.json`);
+  if (!existsSync(file)) return { exists: false, checkedValues: [] };
+  try {
+    const json = JSON.parse(readFileSync(file, 'utf8'));
+    const docs = Array.isArray(json.documents) ? json.documents : [];
+    const inputs = docs.flatMap((doc) => doc.attrClassInputs ?? []);
+    return {
+      exists: true,
+      path: path.relative(runDir, file),
+      checkedValues: [...new Set(inputs.filter((input) => input.checked).map((input) => input.value).filter(Boolean))],
+      inputCount: inputs.length,
+      capturedAt: json.capturedAt ?? json.generatedAt ?? null,
+    };
+  } catch (error) {
+    return { exists: true, checkedValues: [], error: String(error?.message || error) };
+  }
 }
 
 function renderMarkdown(report) {
@@ -142,6 +175,9 @@ function renderMarkdown(report) {
     lines.push(`Actual state: \`${JSON.stringify(fixture.actualState ?? {})}\``);
     lines.push(`Local state hint: \`${JSON.stringify(fixture.localStateHint ?? {})}\``);
     lines.push(`Derived state probes: \`${JSON.stringify(fixture.derivedStateProbeValues ?? {})}\``);
+    if (fixture.attrClassSidecar?.exists) {
+      lines.push(`Actual attr_class sidecar: checked=\`${fixture.attrClassSidecar.checkedValues.join(', ') || 'none'}\`, inputs=${fixture.attrClassSidecar.inputCount ?? 0}, capturedAt=\`${fixture.attrClassSidecar.capturedAt ?? ''}\``);
+    }
     lines.push('');
     lines.push('| Candidate | Mismatch | Root delta | Local size | Patch |');
     lines.push('| --- | ---: | ---: | --- | --- |');
@@ -177,6 +213,10 @@ function pct(value) {
 
 function num(value) {
   return typeof value === 'number' && Number.isFinite(value) ? Number(value.toFixed(3)) : null;
+}
+
+function slug(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 main().catch((error) => {

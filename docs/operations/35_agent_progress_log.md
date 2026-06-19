@@ -1553,3 +1553,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - `scripts/roll20_renderer_action_gate.mjs` now links the attr_class capture plan as the next action when a fixture has `attr_class` values and pixel-best/height-closest state candidates disagree.
 - Verification: `node --check` for the new/changed scripts, `plan:roll20-attr-class-state`, `gate:roll20-renderer-action`, `status:roll20-actual`, `guard:roll20-evidence`, `lint`, and `build` passed. `gate:roll20-renderer-ready` still fails as expected with `rendererReady=NO`.
 - Claim boundary: this improves the next Roll20 state-capture step only. It does not capture the actual checked/value sidecar yet, does not change production renderer CSS, and does not prove Roll20 visual parity.
+
+## 2026-06-19 AW2E Actual Attr Class Sidecar
+
+- Claimed the existing dedicated Roll20 editor tab only; no existing room/settings were modified.
+- Chrome/CDP `Page.getFrameTree` found the generated character iframe, and `Page.createIsolatedWorld` allowed read-only iframe evaluation.
+- Saved ignored local sidecar `reports/roll20-actual-compare/2026-06-18-state-map-v1/live-iframe-probe/official-roll20-AW2E-attr-class-state.json` with 81 `attr_class`/`class` inputs and actual checked value `Hardholder`.
+- Updated `scripts/roll20_attr_class_state_capture_plan.mjs` so a found sidecar changes the fixture to `CAPTURED_NEEDS_ANALYSIS` instead of asking for the same capture again.
+- Updated `scripts/roll20_playbook_state_diagnostics.mjs` and `scripts/roll20_renderer_action_gate.mjs` to read the sidecar and report the key contradiction: actual checked `Hardholder` does not explain the height-closest `sandbox-sheet-alias-attr-class-state-first-13-source`; next work is selector prefix/state visibility analysis, not forcing more checked values.
+- Verification: `node --check` for changed scripts, `plan:roll20-attr-class-state`, `diagnose:roll20-playbook-state`, `gate:roll20-renderer-action`, `status:roll20-actual`, `guard:roll20-evidence`, `lint`, and `build` passed. `gate:roll20-renderer-ready` still fails as expected with `rendererReady=NO`.
+- Claim boundary: this is real Roll20 state evidence and diagnostic routing, not visual parity and not a production renderer CSS patch.

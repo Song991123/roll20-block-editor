@@ -8,7 +8,7 @@
  * still missing.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -64,6 +64,7 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, geo
     const stateFixture = findFixture(stateVisibility, fixtureId);
     const geometryFixture = findFixture(geometry, fixtureId);
     const targets = Object.fromEntries((statusFixture?.actualTargets ?? []).map((target) => [target.id, target.validation]));
+    const attrClassSidecar = readAttrClassSidecarSync(runDir, fixtureId);
 
     return {
       fixtureId,
@@ -100,6 +101,7 @@ function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, geo
           }
         : null,
       attrClassValueCount: Number(fullRootFixture?.localBaseline?.attrClassValues?.length ?? fullRootFixture?.localBaseline?.derivedStateProbeValues?.values?.length ?? 0),
+      attrClassSidecar,
       diagnosticBestCandidate: fullRootFixture?.diagnosticBestCandidate
         ? {
             id: fullRootFixture.diagnosticBestCandidate.id,
@@ -230,8 +232,15 @@ function recommend(fixtures, status, activeRunDir) {
     return /attr-class-state|playbook-state/.test(closest.id);
   });
   if (attrClassStateTargets.length) {
-    const fixtureArg = attrClassStateTargets.length === 1 ? ` ${attrClassStateTargets[0].fixtureId}` : '';
-    nextActions.push(`Run corepack pnpm run plan:roll20-attr-class-state -- ${path.relative(process.cwd(), activeRunDir)}${fixtureArg} and capture the generated browser-side checked/value state sidecar before renderer CSS work.`);
+    const missingSidecar = attrClassStateTargets.filter((fixture) => !fixture.attrClassSidecar?.exists);
+    const capturedSidecar = attrClassStateTargets.filter((fixture) => fixture.attrClassSidecar?.exists);
+    if (missingSidecar.length) {
+      const fixtureArg = missingSidecar.length === 1 ? ` ${missingSidecar[0].fixtureId}` : '';
+      nextActions.push(`Run corepack pnpm run plan:roll20-attr-class-state -- ${path.relative(process.cwd(), activeRunDir)}${fixtureArg} and capture the generated browser-side checked/value state sidecar before renderer CSS work.`);
+    }
+    if (capturedSidecar.length) {
+      nextActions.push(`Analyze captured attr_class sidecar before CSS work: ${capturedSidecar.map((fixture) => `${fixture.fixtureId} checked=${fixture.attrClassSidecar.checkedValues.join(',') || 'none'} closestHeight=${fixture.closestRootHeightCandidate?.id ?? 'unknown'}`).join('; ')}. If checked state does not explain closest height, inspect selector prefix/state visibility rather than forcing more checked values.`);
+    }
   }
   if (blockers.length) {
     nextActions.push('Keep diagnostic CSS candidates out of production until trusted full-root evidence and best-patch behavior repeat across fixtures.');
@@ -259,6 +268,30 @@ function formatMissingFullRoot(fixture) {
   }
   if (audit.primaryIssue) return `${fixture.fixtureId} (${audit.primaryIssue})`;
   return fixture.fixtureId;
+}
+
+function readAttrClassSidecarSync(activeRunDir, fixtureId) {
+  const file = path.join(activeRunDir, 'live-iframe-probe', `${fixtureId}-attr-class-state.json`);
+  if (!existsSync(file)) return { exists: false, path: path.relative(activeRunDir, file), checkedValues: [] };
+  try {
+    const json = JSON.parse(readFileSync(file, 'utf8'));
+    const docs = Array.isArray(json.documents) ? json.documents : [];
+    const inputs = docs.flatMap((doc) => doc.attrClassInputs ?? []);
+    return {
+      exists: true,
+      path: path.relative(activeRunDir, file),
+      checkedValues: [...new Set(inputs.filter((input) => input.checked).map((input) => input.value).filter(Boolean))],
+      inputCount: inputs.length,
+      capturedAt: json.capturedAt ?? json.generatedAt ?? null,
+    };
+  } catch (error) {
+    return {
+      exists: true,
+      path: path.relative(activeRunDir, file),
+      checkedValues: [],
+      error: String(error?.message || error),
+    };
+  }
 }
 
 function summarize(fixtures) {

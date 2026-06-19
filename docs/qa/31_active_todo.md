@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 AW2E actual attr_class sidecar:
+Chrome/CDP read the generated AW2E Roll20 character iframe in the dedicated sandbox without modifying existing rooms. Ignored local sidecar `live-iframe-probe/official-roll20-AW2E-attr-class-state.json` records 81 `attr_class`/`class` inputs and actual checked value `Hardholder`. The updated attr-class plan now marks AW2E `CAPTURED_NEEDS_ANALYSIS`: actual checked `Hardholder` does not explain the height-closest `first-13` candidate (`+208.5px`) while Hardholder-only is far too short. Updated playbook diagnostics and renderer gate now point to selector prefix/state visibility analysis instead of repeating the same capture. Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` and `rendererReady=NO`.
+
 Current Roll20 renderer note, 2026-06-19 attr_class state capture plan:
 Added `scripts/roll20_attr_class_state_capture_plan.mjs` and `corepack pnpm run plan:roll20-attr-class-state -- reports\roll20-actual-compare\2026-06-18-state-map-v1 [fixture-id]`. Latest run classifies AW2E as the only P0 attr_class capture target: 18 emitted `attr_class` values, actual height bracketed by `first-12` (`-324.5px`) and `first-13` (`+208.5px`). Les-Oublies/YSHY have 0 `attr_class` values for this specific probe. `gate:roll20-renderer-action` now points to the new plan command before renderer CSS work. This is planning/snippet automation only; the actual Roll20 checked/value sidecar is still TODO and `rendererReady=NO`.
 
