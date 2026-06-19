@@ -38,9 +38,10 @@ async function main() {
   const chatCandidates = await readJsonIfExists(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
   const chatCandidateStyleProof = await readJsonIfExists(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json'));
   const chatRendererPolicy = await readJsonIfExists(path.join(runDir, 'chat-renderer-policy', 'chat-renderer-policy-results.json'));
+  const chatResidual = await readJsonIfExists(path.join(runDir, 'chat-residual-diagnostics', 'chat-residual-diagnostics-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -52,6 +53,7 @@ async function main() {
     chatCandidates: summarizeChatCandidates(chatCandidates),
     chatCandidateStyleProof: summarizeChatCandidateStyleProof(chatCandidateStyleProof),
     chatRendererPolicy: summarizeChatRendererPolicy(chatRendererPolicy),
+    chatResidual: summarizeChatResidual(chatResidual),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -223,7 +225,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -240,6 +242,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatCandidateSummary = summarizeChatCandidates(chatCandidates);
   const chatCandidateStyleProofSummary = summarizeChatCandidateStyleProof(chatCandidateStyleProof);
   const chatRendererPolicySummary = summarizeChatRendererPolicy(chatRendererPolicy);
+  const chatResidualSummary = summarizeChatResidual(chatResidual);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
   const styleProofStatusByName = new Map(
     (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
@@ -414,6 +417,14 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       blockers.push(`chat renderer rollout policy holds global ChatPane patch: ${chatRendererPolicySummary.globalBlockers.join('; ') || chatRendererPolicySummary.globalDecision}`);
     }
   }
+  if (!chatResidualSummary) {
+    warnings.push('chat residual diagnostics have not been run; run diagnose:roll20-chat-residual before trying another chat CSS candidate');
+  } else {
+    positiveFindings.push(`chat residual diagnostics: status=${chatResidualSummary.status}, highMismatch=${chatResidualSummary.highMismatch}/${chatResidualSummary.totalFixtures}, axes=${formatFindingCounts(chatResidualSummary.primaryAxes)}`);
+    for (const fixture of chatResidualSummary.highMismatchFixtures) {
+      positiveFindings.push(`${fixture.fixtureId} chat residual axis=${fixture.primaryResidualAxis}, next=${fixture.nextDiagnostic}`);
+    }
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -457,6 +468,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-renderer-policy -- ${path.relative(process.cwd(), activeRunDir)} and keep the policy output local-only.`);
   } else if (chatRendererPolicySummary.globalDecision !== 'READY_FOR_REVIEW_NOT_AUTOMATIC') {
     nextActions.push(chatRendererPolicySummary.nextAction || 'Follow the chat renderer policy before any production ChatPane renderer change.');
+  }
+  if (!chatResidualSummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-residual -- ${path.relative(process.cwd(), activeRunDir)} before the next Les/YSHY chat renderer hypothesis.`);
+  } else if (chatResidualSummary.highMismatchFixtures.length) {
+    nextActions.push(...chatResidualSummary.highMismatchFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextDiagnostic}`));
   }
   if (!chatCandidateSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
@@ -681,6 +697,28 @@ function summarizeChatRendererPolicy(report) {
         styleProofStatus: candidate.styleProofStatus,
       })),
     })),
+  };
+}
+
+function summarizeChatResidual(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    highMismatch: Boolean(fixture.highMismatch),
+    policyDecision: fixture.policyDecision ?? '',
+    primaryResidualAxis: fixture.primaryResidualAxis ?? 'UNKNOWN',
+    bestAlignedMismatchPct: fixture.bestAlignedMismatchPct ?? '',
+    nextDiagnostic: fixture.nextDiagnostic ?? '',
+    residualSignals: fixture.residualSignals ?? [],
+  }));
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    highMismatch: Number(report.summary.highMismatch ?? fixtures.filter((fixture) => fixture.highMismatch).length),
+    primaryAxes: report.summary.primaryAxes ?? {},
+    nextDiagnostics: report.summary.nextDiagnostics ?? {},
+    highMismatchFixtures: fixtures.filter((fixture) => fixture.highMismatch),
+    fixtures,
   };
 }
 
@@ -982,6 +1020,21 @@ function renderMarkdown(report) {
           .map((candidate) => `${candidate.name} ${fmtPct(candidate.fixtureAlignedDeltaPct)} ${candidate.risk}/${candidate.styleProofStatus}`)
           .join('<br>');
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fixture.defaultAlignedMismatchPct} | ${num(fixture.tableWidthDeltaPx)}px | ${candidates || 'none'} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatResidual) {
+    lines.push('### Chat Residual Boundary', '');
+    lines.push(`- Status: ${report.chatResidual.status}`);
+    lines.push(`- High mismatch fixtures: ${report.chatResidual.highMismatch}/${report.chatResidual.totalFixtures}`);
+    lines.push(`- Residual axes: ${formatFindingCounts(report.chatResidual.primaryAxes)}`);
+    if (report.chatResidual.highMismatchFixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Policy | Residual axis | Aligned mismatch | Next diagnostic | Signals |');
+      lines.push('| --- | --- | --- | ---: | --- | --- |');
+      for (const fixture of report.chatResidual.highMismatchFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.policyDecision} | ${fixture.primaryResidualAxis} | ${fixture.bestAlignedMismatchPct} | ${fixture.nextDiagnostic} | ${fixture.residualSignals.join('<br>')} |`);
       }
     }
     lines.push('');

@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - Chat residual axes classified
+
+Status: PARTIAL. Roll20 chat/template parity is still blocked, but the next investigation target is now narrower.
+
+- DONE: Added `diagnose:roll20-chat-residual`, which reads the current chat parity/style/candidate/policy reports and classifies remaining mismatch by residual axis.
+- DONE: Wired the residual summary into `gate:roll20-renderer-action` so future renderer work sees the axis split in the standard gate output.
+- RESULT: Current residual status is `RESIDUALS_REMAIN`, high mismatch `2/3`.
+- RESULT: `official-roll20-Les-Oublies` is classified as `SHADOW_BORDER_RASTERIZATION`, not simple typography or width. Next diagnostic: test border/shadow/background negative controls against actual computed style and pixel masks.
+- RESULT: `yshy-commission-1bu` is classified as `GEOMETRY_WIDTH_CONFLICT`. Next diagnostic: compare Roll20 chat shell/message/template width model per template before any width or padding patch.
+- RESULT: `official-roll20-AW2E` remains `DEFAULT_ACCEPTABLE_FOR_NOW` for chat because default aligned mismatch is `7.35%`, below the current high-mismatch threshold.
+- VERIFIED: `corepack pnpm run diagnose:roll20-chat-residual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+- STILL TODO P0: Build and test a Les-only paint/raster diagnostic candidate; do not try more broad typography candidates.
+
 ## 2026-06-20 Codex Update - Template typography candidate rejected
 
 Status: PARTIAL. A plausible Les-Oublies chat hypothesis was tested and rejected; Roll20 chat/template parity is still blocked.

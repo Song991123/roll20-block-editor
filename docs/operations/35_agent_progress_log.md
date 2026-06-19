@@ -2219,6 +2219,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - `audit:roll20-root-stitch` now reports the file as `DIAGNOSTIC_SCROLL_METRICS` with duplicate segments `0` and coverage issues `0`; `plan:roll20-root-capture` lists it as a `scroll-metrics` diagnostic.
 - Claim boundary: this is a promising recapture diagnostic. It is not yet promoted to the preferred trusted Roll20 root screenshot and does not make renderer CSS ready.
 
+## 2026-06-20 Chat Residual Axes Classified
+
+- Added `scripts/roll20_chat_residual_diagnostics.mjs` and package alias `diagnose:roll20-chat-residual`.
+- The diagnostic reads existing chat parity/style/candidate/policy reports and classifies remaining mismatch by residual axis using row/column bands, luma buckets, highlight/shadow masks, style deltas, and candidate outcomes.
+- Wired the renderer action gate to read the residual report and surface high-mismatch fixture axes in standard `EVIDENCE` and next-action output.
+- Current residual classification for `2026-06-18-state-map-v1`: AW2E `DEFAULT_ACCEPTABLE_FOR_NOW`, Les-Oublies `SHADOW_BORDER_RASTERIZATION`, YSHY `GEOMETRY_WIDTH_CONFLICT`.
+- This narrows the next P0: Les should get border/shadow/background paint diagnostics, while YSHY should stay on a per-template width/shell model path.
+- Verification: `diagnose:roll20-chat-residual`, `gate:roll20-renderer-action`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+- Claim boundary: this is a diagnostic classifier. It does not change production ChatPane CSS and does not prove Roll20 chat parity.
+
 ## 2026-06-20 Template Typography Candidate Rejected
 
 - Tested the Les-Oublies hypothesis that the remaining chat mismatch was mainly template typography/color/letter-spacing/font-smoothing.
