@@ -28,7 +28,7 @@ import {
   type WorkspaceKey,
 } from '@/lib/stores/workspaceStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
-import { AUTOSAVE_KEY, saveWorkspace, type SaveError } from './indexeddb';
+import { AUTOSAVE_KEY, saveWorkspace, type SaveError, type SaveResult } from './indexeddb';
 
 /** 복합 XML 형태 — 3 워크스페이스 합본. spec 22 §3.2. */
 const COMBINED_XML_VERSION = 1;
@@ -165,7 +165,7 @@ function notifyError(kind: SaveError): void {
   }
 }
 
-async function runSave(): Promise<void> {
+export async function saveCurrentWorkspaceSnapshot(): Promise<SaveResult> {
   try {
     const xml = buildCombinedXml();
     const state = useWorkspaceStore.getState();
@@ -177,22 +177,32 @@ async function runSave(): Promise<void> {
     });
     if (!result.ok) {
       notifyError(result.error ?? 'unknown');
+      return result;
     }
+    for (const key of WORKSPACE_KEYS) {
+      useWorkspaceStore.getState().markSaved(key);
+    }
+    return result;
   } catch {
     notifyError('unknown');
+    return { ok: false, error: 'unknown' };
   }
+}
+
+async function runSave(): Promise<void> {
+  await saveCurrentWorkspaceSnapshot();
 }
 
 /**
  * Manual flush — test / 페이지 종료 hook 등에서 즉시 저장하고 싶을 때.
  * pending timer 가 있으면 즉시 실행.
  */
-export async function flushAutosave(): Promise<void> {
+export async function flushAutosave(): Promise<SaveResult | null> {
   if (timer) {
     clearTimeout(timer);
     timer = null;
   }
   const settings = useSettingsStore.getState();
-  if (!settings.autosave) return;
-  await runSave();
+  if (!settings.autosave) return null;
+  return saveCurrentWorkspaceSnapshot();
 }

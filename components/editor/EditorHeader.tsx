@@ -7,8 +7,6 @@ import {
   FilePlus,
   PanelLeft,
   PanelRight,
-  Settings,
-  HelpCircle,
   Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -37,6 +35,7 @@ import {
 import dynamic from 'next/dynamic';
 import { useCallback, useState } from 'react';
 import { deleteWorkspace, AUTOSAVE_KEY } from '@/lib/persist/indexeddb';
+import { saveCurrentWorkspaceSnapshot } from '@/lib/persist/autosave';
 
 const ImportDialog = dynamic(
   () => import('./ImportDialog').then((m) => ({ default: m.ImportDialog })),
@@ -78,6 +77,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
   const clearAll = useWorkspaceStore((s) => s.clearAll);
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const hasPublicExamples = EXAMPLES.length > 0;
 
   const handleNewSheet = useCallback(() => {
@@ -101,6 +101,21 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
     toast.success('빈 시트를 만들었어요.', { duration: 2200 });
   }, [clearAll, onNewSheet]);
 
+  const handleSave = useCallback(async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const result = await saveCurrentWorkspaceSnapshot();
+      if (result.ok) {
+        toast.success('현재 작업을 저장했어요.', { duration: 1800 });
+      } else {
+        toast.error('저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.', { duration: 2600 });
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [saving]);
+
   const handleLoadExample = (descriptor: ExampleDescriptor) => async () => {
     try {
       const counts = await loadExampleIntoWorkspaces(descriptor);
@@ -114,9 +129,6 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
       toast.error(`${descriptor.shortName} 샘플을 불러오지 못했어요: ${msg}`, { duration: 3000 });
     }
   };
-
-  const comingSoon = (label: string) => () =>
-    toast(`${label} 기능은 아직 준비 중이에요.`, { duration: 1800 });
 
   return (
     <TooltipProvider delayDuration={250}>
@@ -231,14 +243,16 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 variant={dirty ? 'default' : 'ghost'}
                 size="sm"
                 className="h-8 gap-1.5"
-                onClick={comingSoon('저장')}
+                onClick={handleSave}
+                disabled={saving}
                 aria-label="현재 시트 저장"
+                data-testid="header-save-button"
               >
                 <Save className="h-4 w-4" />
-                <span className="hidden sm:inline">저장</span>
+                <span className="hidden sm:inline">{saving ? '저장 중' : '저장'}</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>저장 (Ctrl+S)</TooltipContent>
+            <TooltipContent>현재 작업 저장</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -256,42 +270,10 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 <span className="hidden sm:inline">내보내기</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Roll20 등록용 zip 내보내기 (Ctrl+E)</TooltipContent>
+            <TooltipContent>Roll20 등록용 zip 내보내기</TooltipContent>
           </Tooltip>
 
           <div className="mx-1 h-5 w-px bg-border" />
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={comingSoon('설정')}
-                aria-label="설정"
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>설정</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={comingSoon('도움말')}
-                aria-label="도움말"
-              >
-                <HelpCircle className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>도움말</TooltipContent>
-          </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>

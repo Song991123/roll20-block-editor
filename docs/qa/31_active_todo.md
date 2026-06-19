@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Header manual save is real
+
+Status: PARTIAL. Header chrome is less misleading, but Roll20 visual parity is still not proven.
+
+- DONE: Removed the nonfunctional header `설정` and `도움말` buttons from the product surface.
+- DONE: Changed the header `저장` button from a placeholder toast into a real IndexedDB save action using the same workspace snapshot path as autosave.
+- DONE: Added an exported `saveCurrentWorkspaceSnapshot()` helper so manual save and autosave share the same XML serialization and save-state marking logic.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, browser smoke on `http://localhost:3000/` showing no visible `설정`/`도움말`/`준비 중` header copy, manual save success toast, `smoke:export-dialog`, `guard:roll20-evidence`, `guard:roll20-renderer-model`, `status:roll20-actual`, and `diagnose:roll20-renderer-blocker`.
+- NOTE: Browser console still shows a React hydration warning caused by an installed extension injecting `cz-shortcut-listen` into `<body>` during dev verification. This was not an app runtime error in the smoke run.
+- STILL TODO P0: Continue actual Roll20 renderer/chat parity work. Latest status remains `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, `rendererReady=NO`, normalized chat high mismatch `2/3`, max aligned mismatch `21.45%`.
+
 ## 2026-06-20 Codex Update - Preview diagnostic chrome hidden from product UI
 
 Status: PARTIAL. The preview surface is less confusing, but Roll20 visual parity is still not proven.

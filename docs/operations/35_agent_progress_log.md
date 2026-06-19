@@ -2218,3 +2218,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Stitched diagnostic `aw2e-root-scroll-metrics-stitch-20260619.png` is `852x11788`, matching the live root/form height rather than the older `9168px` trusted stitch.
 - `audit:roll20-root-stitch` now reports the file as `DIAGNOSTIC_SCROLL_METRICS` with duplicate segments `0` and coverage issues `0`; `plan:roll20-root-capture` lists it as a `scroll-metrics` diagnostic.
 - Claim boundary: this is a promising recapture diagnostic. It is not yet promoted to the preferred trusted Roll20 root screenshot and does not make renderer CSS ready.
+
+## 2026-06-20 Header Manual Save Cleanup
+
+- Removed the product-surface placeholder `설정` and `도움말` header buttons.
+- Replaced the placeholder `저장` action with a real manual save through the IndexedDB workspace snapshot path.
+- Added `saveCurrentWorkspaceSnapshot()` in `lib/persist/autosave.ts` so manual save and autosave use one serialization/save-state implementation.
+- Browser verification on `http://localhost:3000/`: header no longer exposes `설정`, `도움말`, `준비 중`, or the previous diagnostic preview controls; clicking `저장` shows the success toast and the button returns to the enabled state.
+- Verification: `corepack pnpm run lint`, `corepack pnpm run build`, `smoke:export-dialog`, `guard:roll20-evidence`, `guard:roll20-renderer-model`, `status:roll20-actual`, and `diagnose:roll20-renderer-blocker`.
+- Claim boundary: this improves product usability only. It does not change production Roll20 renderer CSS and does not prove Roll20 visual parity. Current renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.

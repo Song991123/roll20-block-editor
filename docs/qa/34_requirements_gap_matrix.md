@@ -4,6 +4,13 @@ Date: 2026-06-12
 
 This matrix breaks the operating requirements into actionable work. Use it with `docs/qa/31_active_todo.md`.
 
+Current product-surface note, 2026-06-20 header usability:
+the header no longer exposes placeholder `설정` / `도움말` controls, and `저장`
+now performs a real IndexedDB workspace snapshot save. Browser smoke verified
+the success toast on `http://localhost:3000/`. This improves basic usability
+only; it does not affect Roll20 renderer parity, which remains blocked by
+`HOLD_PRODUCTION_RENDERER_PATCH`.
+
 ## Server and Environment Hygiene
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
