@@ -9,7 +9,7 @@
  * exits non-zero.
  *
  * Usage:
- *   node scripts/roll20_actual_status.mjs [reports/roll20-actual-compare/<label>] [--require-actual]
+ *   node scripts/roll20_actual_status.mjs [reports/roll20-actual-compare/<label>] [--require-actual] [--require-renderer-ready]
  *
  * If the run folder is omitted, the newest PASS pre-upload run is selected.
  */
@@ -20,7 +20,8 @@ import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const REQUIRE_ACTUAL = args.includes('--require-actual');
-const RUN_DIR_ARG = args.find((arg) => arg !== '--require-actual') ?? '';
+const REQUIRE_RENDERER_READY = args.includes('--require-renderer-ready');
+const RUN_DIR_ARG = args.find((arg) => arg !== '--require-actual' && arg !== '--require-renderer-ready') ?? '';
 const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
 const MAX_CHAT_SIDECAR_AGE_MS = 5 * 60 * 1000;
 
@@ -99,7 +100,10 @@ async function main() {
     observationTargetCount === 0 ||
     (observationPresentCount === observationTargetCount && observationDiffedCount === observationTargetCount);
   const actualEvidenceComplete = generatedEvidenceComplete && roomObservationComplete;
-  const commandPass = localReady && (!REQUIRE_ACTUAL || generatedEvidenceComplete);
+  const commandPass =
+    localReady &&
+    (!REQUIRE_ACTUAL || generatedEvidenceComplete) &&
+    (!REQUIRE_RENDERER_READY || rendererReady);
   const status = statusOf({
     localReady,
     generatedEvidenceComplete,
@@ -112,6 +116,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir,
     requireActual: REQUIRE_ACTUAL,
+    requireRendererReady: REQUIRE_RENDERER_READY,
     scope: 'status of local Roll20 actual-screen evidence; not a Roll20 visual parity claim',
     status,
     commandPass,

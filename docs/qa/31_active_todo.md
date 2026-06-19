@@ -637,3 +637,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: latest `2026-06-18-state-map-v1` status prints generated `6/6`, trusted full-root `2/3`, renderer action `HOLD_PRODUCTION_RENDERER_PATCH`, rendererReady `NO`.
 - CURRENT: this prevents `generatedActualScreenshots=6/6` from being mistaken for Roll20 visual parity or production renderer approval.
 - STILL TODO: recapture AW2E as trusted DPR-corrected full-root evidence, rerun root-stitch audit, screenshot diff, full-root candidate smoke, and renderer action gate.
+
+## 2026-06-19 Renderer Ready Gate TODO Note
+
+- DONE: Added `--require-renderer-ready` to `status:roll20-actual` and exposed it as `corepack pnpm run gate:roll20-renderer-ready -- <run-dir>`.
+- VERIFIED: current `2026-06-18-state-map-v1` correctly fails this gate because generated screenshots/diffs are `6/6`, but trusted full-root is still `2/3`, renderer action is `HOLD_PRODUCTION_RENDERER_PATCH`, and rendererReady is `NO`.
+- CURRENT: this is the required precondition gate before production renderer CSS changes or visual-parity claims.
+- STILL TODO: recapture AW2E trusted DPR-corrected full-root evidence and rerun the renderer-ready gate until it passes for `3/3` trusted full-root fixtures.

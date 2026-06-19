@@ -1473,3 +1473,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_actual_status.mjs` so generated screenshot/diff completeness is reported separately from trusted full-root coverage and renderer readiness.
 - Latest status on `2026-06-18-state-map-v1`: generated actual screenshots `6/6`, generated diffs `6/6`, trusted full-root `2/3`, renderer action `HOLD_PRODUCTION_RENDERER_PATCH`, rendererReady `NO`.
 - Claim boundary: this is truthfulness/reporting hardening only. It does not add AW2E trusted root evidence and does not authorize production renderer CSS.
+
+## 2026-06-19 Renderer Ready Gate
+
+- Added `--require-renderer-ready` to `scripts/roll20_actual_status.mjs` and package alias `gate:roll20-renderer-ready`.
+- Verified the gate currently fails as expected on `2026-06-18-state-map-v1`: generated actual screenshots/diffs `6/6`, trusted full-root `2/3`, renderer action `HOLD_PRODUCTION_RENDERER_PATCH`, rendererReady `NO`.
+- Claim boundary: this prevents false production-readiness claims. It does not add AW2E trusted root evidence.
