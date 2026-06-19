@@ -13,6 +13,8 @@ Status: PARTIAL. The Roll20 evidence gate is now blocked by real renderer mismat
 
 Follow-up diagnostic: Added `roll20-message-padding` as a local-only ChatPane geometry candidate after the fresh Roll20 crops showed local rolltemplate captures about `12px` wider. The candidate smoke passed functionally, but candidate comparison rejected it: YSHY aligned mismatch worsened `22.68% -> 27.54%`. This is now a negative-control candidate only, not production CSS.
 
+Follow-up style context diagnostic: Added `diagnose:roll20-chat-style` to compare local ChatPane computed-style/row evidence directly against actual Roll20 chat sidecars. Latest run compares all 3 fixtures. It shows AW2E table width is actual `+33.134px` while YSHY table width is actual `-24.309px`, so a single message/card width patch cannot explain both. It also shows Les-Oublies is nearly geometry-aligned and mainly differs in shell typography. Tested the YSHY `overflow-wrap: break-word` clue as a local-only `roll20-break-word` candidate; it passed functional smoke but was rejected by pixel comparison (`22.68% -> 22.77%` aligned). Next P0 is table/font rasterization or shadow/scale diagnostics, not padding or break-word production CSS.
+
 ## 2026-06-20 06:35 +09:00 - Roll20 chat crop foreground guard
 
 Status: PARTIAL. This batch improves evidence truthfulness; Roll20 chat/template parity is still not solved.

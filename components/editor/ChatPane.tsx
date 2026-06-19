@@ -40,7 +40,8 @@ type ChatGeometryPolicy =
   | 'default'
   | 'tight-cell-spacing'
   | 'table-scale-x'
-  | 'roll20-message-padding';
+  | 'roll20-message-padding'
+  | 'roll20-break-word';
 type ChatTypographyPolicy = 'default' | 'roll20-shell-typography';
 
 function currentChatFontPolicy(): ChatFontPolicy {
@@ -70,7 +71,8 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
   if (
     value === 'tight-cell-spacing' ||
     value === 'table-scale-x' ||
-    value === 'roll20-message-padding'
+    value === 'roll20-message-padding' ||
+    value === 'roll20-break-word'
   ) return value;
   return 'default';
 }
@@ -156,6 +158,10 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-message-padding"] .r20-chat-card-group .message {
   padding-right: 28px;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-break-word"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-break-word"] .r20-chat-card-group [class*="sheet-rolltemplate-"] * {
+  overflow-wrap: break-word !important;
 }
 .r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
 .r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
