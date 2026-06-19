@@ -1,3 +1,8 @@
+# 2026-06-19 Renderer Patch-Family Drilldown
+
+- Extended `scripts/roll20_renderer_blocker_matrix.mjs` to include scroll-metrics replacement evidence beside the default full-root candidate matrix.
+- Latest `diagnose:roll20-renderer-blocker -- reports\roll20-actual-compare\2026-06-18-state-map-v1` explains the remaining HOLD: AW2E source-state already matches live scroll-metrics root/panel geometry tightly (`root +8.188px`, `11/11` panels, maxY `16.6px`, maxH `9.05px`), while Les-Oublies/YSHY still prefer `inline-block+text-input-height`.
+- Conclusion: the remaining blocker is not solved by blindly shipping the Les/YSHY inline-flow/input-height candidate. Investigate it as a generic Roll20 input/inline-flow baseline axis while keeping AW2E on its source-state/selector-state path.
 # 2026-06-19 Root Cutoff Superseded, Renderer Still HOLD
 
 - Updated `scripts/roll20_renderer_action_gate.mjs` so a root-cutoff HIGH fixture is a blocker only when no qualified scroll-metrics replacement exists. AW2E now has a qualified scroll-metrics source replacement for renderer-candidate comparison: rootDelta `+8.188px`, panelY `+16.6px`, panelH `+0.2px`.

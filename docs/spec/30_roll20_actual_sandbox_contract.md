@@ -126,6 +126,14 @@ therefore report `reliableTrustedFullRoot=3/3` with
 readiness: the renderer gate still holds production CSS because reliable patch
 families disagree across fixtures.
 
+2026-06-19 blocker-matrix update: the scroll-metrics-aware matrix shows that
+AW2E source-state already matches live root/panel geometry tightly (`11/11`
+panels, `maxY 16.6px`, `maxH 9.05px`), while Les-Oublies and YSHY remain best
+on `inline-block+text-input-height`. Treat this as two renderer axes, not one
+global CSS tweak: Les/YSHY need the Roll20 input/inline-flow baseline modeled,
+while AW2E stays on the selector/default-state/source-state path until the gate
+proves a shared fix.
+
 ## Implementation Implications
 
 - Add a dedicated local module for Roll20 sandbox sanitize/prefix behavior,

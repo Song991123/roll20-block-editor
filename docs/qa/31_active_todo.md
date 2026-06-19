@@ -1,3 +1,8 @@
+# 2026-06-19 Renderer Patch-Family TODO Update
+
+- DONE: added scroll-metrics-aware renderer blocker matrix. Command: `corepack pnpm run diagnose:roll20-renderer-blocker -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Current evidence: AW2E source-state is already a qualified scroll-metrics candidate (`root +8.188px`, panels `11/11`, maxY `16.6px`, maxH `9.05px`), but Les-Oublies/YSHY remain best on `inline-block+text-input-height`.
+- TODO P0: split the next renderer investigation into two axes: (1) Les/YSHY Roll20 input/inline-flow baseline, (2) AW2E selector/default-state/source-state behavior. Do not ship a one-size CSS patch until both axes agree under the gate.
 # 2026-06-19 Current Renderer TODO Update
 
 - VERIFY: root-cutoff accounting was refined. Latest `status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, `trustedFullRootCutoffRisk=1`, `trustedFullRootCutoffUnresolved=0`, `scrollMetricsReplacement=1`, `rendererBlockers=1`, and `rendererReady=NO`.

@@ -20,6 +20,7 @@ if (!args[0]) {
 }
 
 const candidateReportPath = path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json');
+const scrollMetricsCandidateReportPath = path.join(runDir, 'full-root-candidate-smoke-scroll-metrics', 'full-root-candidate-smoke-results.json');
 const actionGatePath = path.join(runDir, 'renderer-action-gate', 'renderer-action-gate-results.json');
 const outDir = path.join(runDir, 'renderer-blocker-matrix');
 
@@ -28,11 +29,16 @@ async function main() {
     throw new Error(`Missing full-root candidate report: ${candidateReportPath}`);
   }
   const candidateReport = JSON.parse(await readFile(candidateReportPath, 'utf8'));
+  const scrollMetricsCandidateReport = existsSync(scrollMetricsCandidateReportPath)
+    ? JSON.parse(await readFile(scrollMetricsCandidateReportPath, 'utf8'))
+    : null;
   const actionGate = existsSync(actionGatePath)
     ? JSON.parse(await readFile(actionGatePath, 'utf8'))
     : null;
   const fixtures = (candidateReport.fixtures ?? []).map(summarizeFixture);
+  const scrollMetricsFixtures = (scrollMetricsCandidateReport?.fixtures ?? []).map(summarizeScrollMetricsFixture);
   const matrix = buildPatchMatrix(fixtures);
+  const scrollMetricsMatrix = buildScrollMetricsMatrix(scrollMetricsFixtures);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -40,8 +46,11 @@ async function main() {
     rendererAction: actionGate?.recommendation?.action ?? null,
     blockers: actionGate?.recommendation?.blockers ?? [],
     fixtures,
+    scrollMetricsFixtures,
     matrix,
+    scrollMetricsMatrix,
     promotionRisks: assessPromotionRisks(fixtures, matrix, actionGate),
+    disagreementDiagnosis: diagnoseDisagreement(fixtures, scrollMetricsFixtures, actionGate),
     conclusion: conclude(fixtures, matrix),
   };
   await mkdir(outDir, { recursive: true });
@@ -110,6 +119,121 @@ function buildPatchMatrix(fixtures) {
       missing: cells.filter((cell) => cell.status === 'missing').length,
     };
   });
+}
+
+function summarizeScrollMetricsFixture(fixture) {
+  const candidates = Array.isArray(fixture.candidates) ? fixture.candidates : [];
+  const source = candidates.find((candidate) => candidate.id === 'sandbox-source-state') ?? null;
+  const rootClosest = candidates
+    .filter((candidate) => Number.isFinite(Number(candidate.rootHeightDelta)))
+    .slice()
+    .sort((a, b) => Math.abs(Number(a.rootHeightDelta)) - Math.abs(Number(b.rootHeightDelta)))[0] ?? null;
+  const pixelBest = fixture.diagnosticBestCandidate ?? null;
+  return {
+    fixtureId: fixture.fixtureId,
+    status: fixture.status,
+    actualSize: sizeLabel(fixture.actual?.size),
+    sourceCandidate: summarizeCandidate(source),
+    rootClosestCandidate: summarizeCandidate(rootClosest),
+    pixelBestCandidate: summarizeCandidate(pixelBest),
+    qualifiedSource: isQualifiedScrollMetricsSource(source),
+    statePanelGeometry: summarizePanelGeometry(fixture.targetGeometry),
+    candidates: candidates.map(summarizeCandidate).filter(Boolean),
+  };
+}
+
+function summarizeCandidate(candidate) {
+  if (!candidate) return null;
+  return {
+    id: candidate.id ?? '',
+    patch: patchFamily(candidate.contextPatch),
+    rawPatch: candidate.contextPatch ?? '',
+    mismatchPct: pct(candidate.mismatchRatio),
+    rootHeightDelta: round(candidate.rootHeightDelta),
+    localRoot: sizeLabel(candidate.localSize),
+    geometryScore: round(candidate.geometryFit?.score),
+    statePanelYDelta: round(candidate.geometryFit?.statePanelYDelta),
+    statePanelHeightDelta: round(candidate.geometryFit?.statePanelHeightDelta),
+    statePanelComparedCount: candidate.geometryFit?.statePanelComparedCount ?? null,
+  };
+}
+
+function isQualifiedScrollMetricsSource(candidate) {
+  if (!candidate) return false;
+  const rootDelta = Math.abs(Number(candidate.rootHeightDelta ?? Number.POSITIVE_INFINITY));
+  const panelY = Math.abs(Number(candidate.geometryFit?.statePanelYDelta ?? Number.POSITIVE_INFINITY));
+  const panelH = Math.abs(Number(candidate.geometryFit?.statePanelHeightDelta ?? Number.POSITIVE_INFINITY));
+  return rootDelta <= 50 && panelY <= 50 && panelH <= 10;
+}
+
+function summarizePanelGeometry(targetGeometry) {
+  if (targetGeometry?.status !== 'COMPARED') return null;
+  const findings = Array.isArray(targetGeometry.statePanelFindings) ? targetGeometry.statePanelFindings : [];
+  const compared = findings.filter((finding) => finding.status === 'COMPARED');
+  return {
+    compared: compared.length,
+    actualCount: targetGeometry.counts?.statePanels?.actual ?? findings.length,
+    localCount: targetGeometry.counts?.statePanels?.local ?? null,
+    maxAbsYDelta: compared.length ? round(Math.max(...compared.map((finding) => Math.abs(Number(finding.yDelta ?? 0))))) : null,
+    maxAbsHeightDelta: compared.length ? round(Math.max(...compared.map((finding) => Math.abs(Number(finding.heightDelta ?? 0))))) : null,
+  };
+}
+
+function buildScrollMetricsMatrix(fixtures) {
+  return fixtures
+    .filter((fixture) => fixture.status === 'DIAGNOSTIC_COMPARED')
+    .map((fixture) => {
+      const candidates = fixture.candidates ?? [];
+      const source = fixture.sourceCandidate;
+      const inlineText = candidates
+        .filter((candidate) => candidate.patch === 'inline-block+text-input-height')
+        .slice()
+        .sort((a, b) => Math.abs(Number(a.rootHeightDelta ?? Number.POSITIVE_INFINITY)) - Math.abs(Number(b.rootHeightDelta ?? Number.POSITIVE_INFINITY)))[0] ?? null;
+      const rows = [
+        { label: 'source', candidate: source },
+        { label: 'root-closest', candidate: fixture.rootClosestCandidate },
+        { label: 'pixel-best', candidate: fixture.pixelBestCandidate },
+        { label: 'inline-block+text-input-height', candidate: inlineText },
+      ].filter((row) => row.candidate);
+      return {
+        fixtureId: fixture.fixtureId,
+        actualSize: fixture.actualSize,
+        qualifiedSource: fixture.qualifiedSource,
+        statePanelGeometry: fixture.statePanelGeometry,
+        rows,
+      };
+    });
+}
+
+function diagnoseDisagreement(fixtures, scrollMetricsFixtures, actionGate) {
+  const gateBlockers = actionGate?.recommendation?.blockers ?? [];
+  const fullRootBestFamilies = new Map();
+  for (const fixture of fixtures) {
+    const family = fixture.bestPatch || 'none';
+    if (!fullRootBestFamilies.has(family)) fullRootBestFamilies.set(family, []);
+    fullRootBestFamilies.get(family).push(fixture.fixtureId);
+  }
+  const qualifiedScrollMetrics = scrollMetricsFixtures.filter((fixture) => fixture.qualifiedSource);
+  const aw2e = scrollMetricsFixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E');
+  const notes = [];
+  if (gateBlockers.some((blocker) => blocker.includes('best diagnostic patch is not uniform'))) {
+    notes.push('The remaining renderer gate blocker is cross-fixture patch-family disagreement.');
+  }
+  if (aw2e?.qualifiedSource) {
+    notes.push('AW2E source-state already matches live scroll-metrics root/panel geometry tightly; its mismatch is not primarily fixed by the Les/YSHY inline-block+text-input-height family.');
+  }
+  const inlineBestFixtures = fixtures
+    .filter((fixture) => fixture.bestPatch === 'inline-block+text-input-height')
+    .map((fixture) => fixture.fixtureId);
+  if (inlineBestFixtures.length) {
+    notes.push(`inline-block+text-input-height remains fixture-best for ${inlineBestFixtures.join(', ')} and should be investigated as a generic Roll20 input/inline-flow baseline axis, not blindly shipped.`);
+  }
+  return {
+    status: gateBlockers.length ? 'BLOCKER_EXPLAINED_NEEDS_RENDERER_MODEL' : 'NO_ACTIVE_GATE_BLOCKER',
+    fullRootBestFamilies: Object.fromEntries(fullRootBestFamilies),
+    qualifiedScrollMetricsFixtures: qualifiedScrollMetrics.map((fixture) => fixture.fixtureId),
+    notes,
+  };
 }
 
 function conclude(fixtures, matrix) {
@@ -207,6 +331,12 @@ function renderMarkdown(report) {
   lines.push(`Renderer action: **${report.rendererAction ?? 'unknown'}**`);
   lines.push(`Conclusion: **${report.conclusion.status}** - ${report.conclusion.reason}`);
   lines.push('');
+  lines.push('## Disagreement Diagnosis');
+  lines.push('');
+  lines.push(`Status: **${report.disagreementDiagnosis.status}**`);
+  lines.push('');
+  for (const note of report.disagreementDiagnosis.notes) lines.push(`- ${note}`);
+  lines.push('');
   if (report.blockers.length) {
     lines.push('## Current Gate Blockers');
     lines.push('');
@@ -232,6 +362,17 @@ function renderMarkdown(report) {
     lines.push(`| ${row.patch} | ${row.helps} | ${row.neutral} | ${row.hurts} | ${row.missing} | ${cells} |`);
   }
   lines.push('');
+  if (report.scrollMetricsMatrix.length) {
+    lines.push('## Scroll-Metrics Replacement Matrix');
+    lines.push('');
+    lines.push('| Fixture | Actual | Source qualified | Source | Root closest | Pixel best | Inline/text-input candidate | Panel geometry |');
+    lines.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
+    for (const fixture of report.scrollMetricsMatrix) {
+      const cells = Object.fromEntries(fixture.rows.map((row) => [row.label, row.candidate]));
+      lines.push(`| \`${fixture.fixtureId}\` | ${fixture.actualSize} | ${fixture.qualifiedSource ? 'yes' : 'no'} | ${fmtCandidate(cells.source)} | ${fmtCandidate(cells['root-closest'])} | ${fmtCandidate(cells['pixel-best'])} | ${fmtCandidate(cells['inline-block+text-input-height'])} | ${fmtPanelGeometry(fixture.statePanelGeometry)} |`);
+    }
+    lines.push('');
+  }
   lines.push('## Promotion Risk');
   lines.push('');
   lines.push(report.promotionRisks.summary);
@@ -267,6 +408,17 @@ function patchFamily(value) {
   if (text.startsWith('row-width-fudge')) return 'row-width-fudge';
   if (text.startsWith('actual-root-width')) return 'actual-root-width';
   return text;
+}
+
+function fmtCandidate(candidate) {
+  if (!candidate) return '';
+  const patch = candidate.patch || 'none';
+  return `${candidate.id}<br>${patch}<br>${candidate.mismatchPct ?? ''}% / root ${candidate.rootHeightDelta ?? ''}px`;
+}
+
+function fmtPanelGeometry(geometry) {
+  if (!geometry) return '';
+  return `${geometry.compared}/${geometry.actualCount}, maxY ${geometry.maxAbsYDelta ?? ''}px, maxH ${geometry.maxAbsHeightDelta ?? ''}px`;
 }
 
 function sizeLabel(size) {
