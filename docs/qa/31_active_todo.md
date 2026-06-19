@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - AW2E chat normalized, parity still failing
+
+Status: PARTIAL. The AW2E missing normalized Roll20 chat evidence blocker is closed, but Roll20 chat/renderer parity is still NOT done.
+
+- VERIFIED: The dedicated Roll20 Custom Sheet Sandbox/editor was used, not an existing real room. AW2E produced actual Roll20 `.sheet-rolltemplate-aw` chat DOM from a real sheet roll button/macro-option flow.
+- VERIFIED: `official-roll20-AW2E` now has local-only ignored `roll20-chat.png` plus `roll20-chat-dom-evidence.json` with normalized rolltemplate metadata. The capture sidecar explicitly marks the temporary `#rightsidebar` relocation used only to work around Chrome/Roll20 screenshot compositor behavior; this is style/parity evidence, not geometry proof.
+- VERIFIED: `corepack pnpm run diagnose:roll20-chat-parity -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `compared=3`, `normalizedCompared=3`, `normalizedHighMismatch=3`.
+- VERIFIED: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, `chatNormalizedCompared=3/3`, `chatNeedsNormalizedCapture=0`, `chatNormalizedHighMismatch=3`, and `rendererReady=NO`.
+- CURRENT: `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1` remains `HOLD_PRODUCTION_RENDERER_PATCH`. Remaining blockers are chat crop mismatch for 3/3 normalized fixtures and split renderer patch families (`AW2E=none`, Les/YSHY=`inline-block+text-input-height`).
+- CURRENT MISMATCHES: AW2E `63.95%`, Les-Oublies `27.61%`, YSHY `46.39%`. This proves Roll20 chat parity is still false.
+- NEXT P0: align local ChatPane/rolltemplate shell sizing and crop normalization against this complete actual evidence set. Do not claim Roll20 visual parity and do not promote production renderer CSS until the gate passes.
+
 ## 2026-06-20 Codex Update - Les/YSHY chat evidence normalized, AW2E still blocked
 
 Status: PARTIAL. Roll20 actual-screen evidence improved, but Roll20 chat/renderer parity is still NOT done.

@@ -1,3 +1,16 @@
+## 2026-06-20 04:05 +09:00 - AW2E chat evidence normalized, renderer still held
+
+Status: PARTIAL. The missing AW2E normalized Roll20 chat evidence blocker is closed, but Roll20 chat/renderer parity is still failing.
+
+- Reclaimed the dedicated `Codex Roll20 Verify` Roll20 Sandbox/editor tab through Chrome and confirmed the active AW2E sheet can produce `.sheet-rolltemplate-aw` chat DOM after a real roll button/macro-option flow.
+- Found a Chrome/Roll20 compositor mismatch: `#textchat` and `.sheet-rolltemplate-aw` were visible to DOM hit-testing and computed styles, but ordinary screenshots captured the map/grid surface instead of the right sidebar content. The final AW2E evidence therefore uses a documented temporary `#rightsidebar` relocation for capture, immediately restored afterward. Treat this as rolltemplate style/parity evidence only, not geometry evidence.
+- Replaced local-only ignored AW2E `roll20-chat.png` and `roll20-chat-dom-evidence.json` under `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/`.
+- Verification: `corepack pnpm run diagnose:roll20-chat-parity -- reports\roll20-actual-compare\2026-06-18-state-map-v1` now reports `compared=3`, `normalizedCompared=3`, `normalizedHighMismatch=3`.
+- Current measured status: `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, `chatNormalizedCompared=3/3`, `chatNeedsNormalizedCapture=0`, `chatNormalizedHighMismatch=3`, `rendererReady=NO`.
+- Current measured chat crop mismatches: AW2E `63.95%`, Les-Oublies `27.61%`, YSHY `46.39%`. These are failures, not parity claims.
+- Current renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH` with 2 real blockers: actual Roll20 rolltemplate crop differs from local ChatPane for 3/3 normalized fixtures, and best diagnostic renderer patch is not uniform across fixtures.
+- Next P0: fix/diagnose local ChatPane rolltemplate shell sizing and template crop normalization against the now-complete actual Roll20 evidence set before touching edit-mode UX or production renderer CSS.
+
 ## 2026-06-20 03:05 +09:00 - Current Roll20 chat evidence state corrected
 
 Status: PARTIAL. This narrows the remaining actual Roll20 evidence blocker to AW2E chat capture.
