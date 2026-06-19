@@ -156,7 +156,7 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane .r20-chat-card-group {
   display: block;
-  width: 340px;
+  width: 328px;
   min-width: 0;
 }
 .r20-chat-pane .r20-chat-card-group .message + .message {
@@ -164,7 +164,7 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane .r20-chat-card-group .message {
   box-sizing: border-box;
-  width: 340px;
+  width: 328px;
   min-width: 0;
 }
 .r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] {

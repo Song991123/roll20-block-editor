@@ -45,6 +45,8 @@ async function main() {
   const normalizedCompared = compared.filter((fixture) => fixture.compareMode === 'rolltemplate-crop');
   const highMismatch = compared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
   const normalizedHighMismatch = normalizedCompared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
+  const actualCropGeometrySuspect = normalizedCompared.filter((fixture) => fixture.actualCropGeometry?.suspect);
+  const authoritativeNormalizedHighMismatch = normalizedHighMismatch.filter((fixture) => !fixture.actualCropGeometry?.suspect);
   const actualChatCssInactive = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
   const actualChatCssScopedMismatch = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH');
   const actualChatCssUnknown = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
@@ -62,6 +64,8 @@ async function main() {
       needsNormalizedCapture: fixtures.filter((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE').length,
       highMismatch: highMismatch.length,
       normalizedHighMismatch: normalizedHighMismatch.length,
+      authoritativeNormalizedHighMismatch: authoritativeNormalizedHighMismatch.length,
+      actualCropGeometrySuspect: actualCropGeometrySuspect.length,
       actualChatCssInactive: actualChatCssInactive.length,
       actualChatCssScopedMismatch: actualChatCssScopedMismatch.length,
       actualChatCssUnknown: actualChatCssUnknown.length,
@@ -77,7 +81,9 @@ async function main() {
   await writeFile(path.join(outDir, 'chat-parity-diagnostics-results.md'), renderMarkdown(report), 'utf8');
 
   const needsNormalized = fixtures.some((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE');
-  const status = normalizedHighMismatch.length
+  const status = actualCropGeometrySuspect.length
+    ? 'NEEDS_AUTHORITATIVE_CAPTURE'
+    : normalizedHighMismatch.length
     ? 'HIGH_MISMATCH'
     : needsNormalized
       ? 'NEEDS_NORMALIZED_CAPTURE'
@@ -90,6 +96,8 @@ async function main() {
   console.log(`normalizedCompared=${normalizedCompared.length}`);
   console.log(`highMismatch=${highMismatch.length}`);
   console.log(`normalizedHighMismatch=${normalizedHighMismatch.length}`);
+  console.log(`authoritativeNormalizedHighMismatch=${authoritativeNormalizedHighMismatch.length}`);
+  console.log(`actualCropGeometrySuspect=${actualCropGeometrySuspect.length}`);
   for (const fixture of fixtures) {
     if (fixture.status === 'DIFFED') {
       console.log(`DIFFED ${fixture.fixtureId} mode=${fixture.compareMode} mismatch=${pct(fixture.mismatchRatio)} local=${fixture.localSize.join('x')} actual=${fixture.actualSize.join('x')}`);
@@ -161,6 +169,7 @@ async function compareFixture(page, fixtureId) {
     };
   }
   const diff = await compareImages(page, { local, actual, actualCrop });
+  const actualCropGeometry = classifyActualCropGeometry(sidecarJson, actualCrop);
   const localImageFormat = await sniffImageFormat(local);
   const actualImageFormat = await sniffImageFormat(actual);
   return {
@@ -173,6 +182,7 @@ async function compareFixture(page, fixtureId) {
     actualChatCss: summarizeActualChatCss(sidecarJson),
     compareMode: actualCrop ? 'rolltemplate-crop' : 'full-chat-fallback',
     actualCrop,
+    actualCropGeometry,
     localSize: diff.localSize,
     localImageFormat,
     actualSize: diff.actualSize,
@@ -185,12 +195,36 @@ async function compareFixture(page, fixtureId) {
         ]
       : null,
     comparedSize: diff.comparedSize,
+    widthDeltaPx: actualCrop ? Number((actualCrop.rect.width - diff.localSize[0]).toFixed(3)) : null,
+    heightDeltaPx: actualCrop ? Number((actualCrop.rect.height - diff.localSize[1]).toFixed(3)) : null,
     mismatchRatio: diff.mismatchRatio,
     mismatchPct: pct(diff.mismatchRatio),
     rmsRgb: diff.rmsRgb,
     bounds: diff.bounds,
     note: 'Diagnostic local ChatPane vs actual Roll20 chat comparison. Requires human classification before a parity claim.',
   };
+}
+
+function classifyActualCropGeometry(sidecar, actualCrop) {
+  if (!actualCrop) return { suspect: false, reason: '' };
+  const captureMethod = String(sidecar?.captureMethod ?? '');
+  const notes = [
+    captureMethod,
+    String(sidecar?.evidenceNote ?? ''),
+    ...(Array.isArray(sidecar?.notes) ? sidecar.notes.map(String) : []),
+  ].join(' ');
+  const relocation = sidecar?.relocation;
+  if (relocation?.applied || /geometry\s+is\s+not\s+authoritative/i.test(notes) || /coordinate\s+calibration/i.test(notes)) {
+    return {
+      suspect: true,
+      reason: relocation?.applied
+        ? 'actual Roll20 chat evidence used temporary sidebar relocation; style crop is useful, but geometry is not authoritative'
+        : /coordinate\s+calibration/i.test(notes)
+          ? 'actual Roll20 chat evidence used manual coordinate calibration; recapture with an element-bound template screenshot before treating this as normalized'
+        : 'actual Roll20 chat sidecar explicitly marks geometry as non-authoritative',
+    };
+  }
+  return { suspect: false, reason: 'actual Roll20 chat crop is treated as geometry-authoritative by this diagnostic' };
 }
 
 function validateChatForeground(sidecar) {
@@ -390,6 +424,8 @@ function renderMarkdown(report) {
   lines.push(`Needs normalized capture: ${report.summary.needsNormalizedCapture}`);
   lines.push(`High mismatch: ${report.summary.highMismatch}`);
   lines.push(`Normalized high mismatch: ${report.summary.normalizedHighMismatch}`);
+  lines.push(`Authoritative normalized high mismatch: ${report.summary.authoritativeNormalizedHighMismatch}`);
+  lines.push(`Actual crop geometry suspect: ${report.summary.actualCropGeometrySuspect}`);
   lines.push(`Actual chat CSS inactive: ${report.summary.actualChatCssInactive}`);
   lines.push(`Actual chat CSS scoped/prefix mismatch: ${report.summary.actualChatCssScopedMismatch}`);
   lines.push(`Actual chat CSS unknown: ${report.summary.actualChatCssUnknown}`);
@@ -397,10 +433,14 @@ function renderMarkdown(report) {
   lines.push(`Max mismatch: ${pct(report.summary.maxMismatchRatio)}`);
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
   lines.push('');
-  lines.push('| Fixture | Status | Mode | Actual CSS | Local | Actual | Rolltemplates | Local size | Actual image | Actual scale | Actual source | Compared | Mismatch | RMS | Note |');
-  lines.push('| --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | ---: | ---: | --- |');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- |');
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    const cropGeometry = fixture.actualCropGeometry?.suspect ? `SUSPECT: ${fixture.actualCropGeometry.reason}` : 'authoritative';
+    const sizeDelta = fixture.widthDeltaPx === null || fixture.widthDeltaPx === undefined
+      ? ''
+      : `${fixture.widthDeltaPx}x${fixture.heightDeltaPx}`;
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');

@@ -167,6 +167,8 @@ async function main() {
       chatParityNormalizedCompared: chatParity.normalizedCompared,
       chatParityNeedsNormalizedCapture: chatParity.needsNormalizedCapture,
       chatParityNormalizedHighMismatch: chatParity.normalizedHighMismatch,
+      chatParityAuthoritativeNormalizedHighMismatch: chatParity.authoritativeNormalizedHighMismatch,
+      chatParityActualCropGeometrySuspect: chatParity.actualCropGeometrySuspect,
       chatParityActualCssInactive: chatParity.actualChatCssInactive,
       chatParityActualCssScopedMismatch: chatParity.actualChatCssScopedMismatch,
       chatParityActualCssUnknown: chatParity.actualChatCssUnknown,
@@ -407,6 +409,8 @@ async function readChatParity(runDir) {
       normalizedCompared: 0,
       needsNormalizedCapture: 0,
       normalizedHighMismatch: 0,
+      authoritativeNormalizedHighMismatch: 0,
+      actualCropGeometrySuspect: 0,
       actualChatCssInactive: 0,
       actualChatCssScopedMismatch: 0,
       actualChatCssUnknown: 0,
@@ -425,13 +429,15 @@ async function readChatParity(runDir) {
     normalizedCompared: Number(summary.normalizedCompared ?? 0),
     needsNormalizedCapture: Number(summary.needsNormalizedCapture ?? 0),
     normalizedHighMismatch: Number(summary.normalizedHighMismatch ?? 0),
+    authoritativeNormalizedHighMismatch: Number(summary.authoritativeNormalizedHighMismatch ?? 0),
+    actualCropGeometrySuspect: Number(summary.actualCropGeometrySuspect ?? 0),
     actualChatCssInactive: Number(summary.actualChatCssInactive ?? 0),
     actualChatCssScopedMismatch: Number(summary.actualChatCssScopedMismatch ?? 0),
     actualChatCssUnknown: Number(summary.actualChatCssUnknown ?? 0),
     actualCaptureScaleSuspect: Number(summary.actualCaptureScaleSuspect ?? 0),
     maxNormalizedMismatchPct: pctNumber(summary.maxNormalizedMismatchRatio ?? 0),
     mismatchFixtures: (report.fixtures ?? [])
-      .filter((fixture) => fixture.status === 'DIFFED' && Number(fixture.mismatchRatio ?? 0) > 0.1)
+      .filter((fixture) => fixture.status === 'DIFFED' && !fixture.actualCropGeometry?.suspect && Number(fixture.mismatchRatio ?? 0) > 0.1)
       .map((fixture) => ({
         fixtureId: fixture.fixtureId,
         mode: fixture.compareMode ?? '',
@@ -715,6 +721,9 @@ function buildNextAction({
   if (chatParity?.exists && chatParity.needsNormalizedCapture > 0) {
     return 'Roll20 chat evidence exists but is not normalized for every fixture. Recapture roll20-chat.png with fresh DOM sidecars that include rolltemplate rect/clip metadata, then rerun diagnose:roll20-chat-parity.';
   }
+  if (chatParity?.exists && chatParity.actualCropGeometrySuspect > 0) {
+    return 'Roll20 chat evidence has element-crop geometry suspects. Recapture roll20-chat.png with element-bound template screenshots and fresh DOM sidecars before tuning local ChatPane CSS from pixel diffs.';
+  }
   if (chatParity?.exists && chatParity.actualChatCssScopedMismatch > 0) {
     return 'Actual Roll20 chat CSS appears scoped/prefix-mismatched. Inspect actual chat and character iframe style selectors before deciding whether local ChatPane should apply sheet-* rolltemplate CSS.';
   }
@@ -724,7 +733,7 @@ function buildNextAction({
   if (chatParity?.exists && chatParity.actualCaptureScaleSuspect > 0) {
     return 'Roll20 chat screenshots are normalized but some captures are JPEG or non-1x scale. Recapture those chat crops as true PNG with clip.scale=1 before tuning local ChatPane CSS from pixel diffs.';
   }
-  if (chatParity?.exists && chatParity.normalizedHighMismatch > 0) {
+  if (chatParity?.exists && chatParity.authoritativeNormalizedHighMismatch > 0) {
     return 'Roll20 chat screenshots are normalized but still differ from local ChatPane. Fix chat shell/template sizing after confirming actual Roll20 user rolltemplate CSS is active.';
   }
   if (observationPresentCount < observationTargetCount) {
@@ -793,7 +802,7 @@ function renderMarkdown(report) {
     `- Renderer action: ${report.summary.rendererAction} (${report.summary.rendererBlockerCount} blockers)`,
     `- Renderer ready for production CSS: ${report.summary.rendererReady ? 'yes' : 'NO'}`,
     `- Chat parity diagnostic: ${report.summary.chatParityExists ? 'present' : 'missing'} (${report.summary.chatParityCompared}/${report.summary.chatParityFixtures} compared, normalized ${report.summary.chatParityNormalizedCompared}/${report.summary.chatParityFixtures})`,
-    `- Chat blockers: needs normalized capture ${report.summary.chatParityNeedsNormalizedCapture}, normalized high mismatch ${report.summary.chatParityNormalizedHighMismatch}, actual CSS inactive ${report.summary.chatParityActualCssInactive}, scoped/prefix mismatch ${report.summary.chatParityActualCssScopedMismatch}, actual CSS unknown ${report.summary.chatParityActualCssUnknown}`,
+    `- Chat blockers: needs normalized capture ${report.summary.chatParityNeedsNormalizedCapture}, crop geometry suspect ${report.summary.chatParityActualCropGeometrySuspect}, authoritative normalized high mismatch ${report.summary.chatParityAuthoritativeNormalizedHighMismatch}, actual CSS inactive ${report.summary.chatParityActualCssInactive}, scoped/prefix mismatch ${report.summary.chatParityActualCssScopedMismatch}, actual CSS unknown ${report.summary.chatParityActualCssUnknown}`,
     `- Max normalized chat mismatch: ${report.summary.chatParityMaxNormalizedMismatchPct ?? 'n/a'}%`,
     `- All actual screenshots: ${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
     `- All screenshot diffs: ${report.summary.diffedCount}/${report.summary.actualTargetCount}`,
@@ -841,6 +850,8 @@ function renderMarkdown(report) {
     lines.push(`- Normalized compared: ${report.chatParity.normalizedCompared}/${report.chatParity.fixtures}`);
     lines.push(`- Needs normalized capture: ${report.chatParity.needsNormalizedCapture}`);
     lines.push(`- Normalized high mismatch: ${report.chatParity.normalizedHighMismatch}`);
+    lines.push(`- Authoritative normalized high mismatch: ${report.chatParity.authoritativeNormalizedHighMismatch}`);
+    lines.push(`- Actual crop geometry suspect: ${report.chatParity.actualCropGeometrySuspect}`);
     lines.push(`- Actual chat CSS inactive: ${report.chatParity.actualChatCssInactive}`);
     lines.push(`- Actual chat CSS scoped/prefix mismatch: ${report.chatParity.actualChatCssScopedMismatch}`);
     lines.push(`- Actual chat CSS unknown: ${report.chatParity.actualChatCssUnknown}`);
@@ -893,6 +904,8 @@ function renderConsoleSummary(report, outDir) {
     `chatActualCssScopedMismatch=${report.summary.chatParityActualCssScopedMismatch}`,
     `chatActualCaptureScaleSuspect=${report.summary.chatParityActualCaptureScaleSuspect}`,
     `chatNormalizedHighMismatch=${report.summary.chatParityNormalizedHighMismatch}`,
+    `chatAuthoritativeNormalizedHighMismatch=${report.summary.chatParityAuthoritativeNormalizedHighMismatch}`,
+    `chatActualCropGeometrySuspect=${report.summary.chatParityActualCropGeometrySuspect}`,
     `commandGate=${report.commandPass ? 'PASS' : 'NEEDS_ACTION'}`,
     `out=${rel(outDir)}`,
   ];

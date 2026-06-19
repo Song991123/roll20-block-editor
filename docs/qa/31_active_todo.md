@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Chat crop evidence tightened
+
+Status: PARTIAL. The comparison pipeline is stricter and less misleading, but Roll20 chat parity is still NOT done.
+
+- DONE: Local rolltemplate smoke screenshots now use element screenshots, not viewport clips. This fixes local template PNG truncation (`255px` stale captures vs `279px` DOM width).
+- DONE: Local ChatPane rolltemplate message width is now `328px`, producing `267px` template crops for Les-Oublies and YSHY, matching the current actual Roll20 crop width.
+- DONE: Chat parity diagnostics/gate/status now split `normalizedHighMismatch` from `authoritativeNormalizedHighMismatch` and track `actualCropGeometrySuspect`.
+- VERIFIED: `corepack pnpm run build`, `corepack pnpm run lint`, `node scripts\rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports\rolltemplate-chat-smoke --port 4452`, `corepack pnpm run diagnose:roll20-chat-parity -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- CURRENT: `diagnose:roll20-chat-parity` now reports `NEEDS_AUTHORITATIVE_CAPTURE`, `actualCropGeometrySuspect=3`, and `authoritativeNormalizedHighMismatch=0`. This means the current Roll20 chat PNGs are not safe to use for renderer tuning.
+- STILL TODO P0: recapture Roll20 chat evidence with element-bound template screenshots and fresh DOM sidecars. Do not claim Roll20 chat parity and do not tune production renderer CSS from the current coordinate-calibrated/relocated chat PNGs.
+
 ## 2026-06-20 Codex Update - ChatPane Roll20 shell/resource alignment
 
 Status: PARTIAL. This improves local Roll20 chat reproduction, but visual/chat parity is still NOT done.

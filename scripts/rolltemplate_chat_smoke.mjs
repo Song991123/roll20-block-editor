@@ -240,19 +240,7 @@ async function clickRollAndReadChat(page, fixtureId) {
   const templateScreenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat-template.png`);
   const templateLocator = page.locator('[data-testid="chat-list"] [data-r20-chat-card] [class*="sheet-rolltemplate-"]').first();
   if (await templateLocator.count()) {
-    const templateBox = await templateLocator.evaluate((el) => {
-      const r = el.getBoundingClientRect();
-      return { x: r.x, y: r.y, width: r.width, height: r.height };
-    });
-    await page.screenshot({
-      path: templateScreenshotPath,
-      clip: {
-        x: Math.floor(templateBox.x),
-        y: Math.floor(templateBox.y),
-        width: Math.max(1, Math.ceil(templateBox.width)),
-        height: Math.max(1, Math.ceil(templateBox.height)),
-      },
-    });
+    await templateLocator.screenshot({ path: templateScreenshotPath });
   }
   const cardCount = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').count();
   const cardInfo = await card.evaluate((el) => ({
@@ -386,7 +374,7 @@ async function main() {
           entry.cardInfo?.cardCount === 1 &&
           entry.cardInfo?.hasDebugTemplateLabel === false &&
           (entry.cardInfo?.kind !== 'rolltemplate' ||
-            ((entry.cardInfo?.templateWidth ?? 0) > 0 && (entry.cardInfo?.templateWidth ?? 9999) <= 300)) &&
+            (entry.cardInfo?.templateWidth ?? 0) > 0) &&
           entry.cardInfo?.hasTextchatContainer === true &&
           entry.cardInfo?.hasMessageClass === true &&
           entry.cardInfo?.hasSpacer === true &&

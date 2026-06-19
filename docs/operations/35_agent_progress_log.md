@@ -1,3 +1,14 @@
+## 2026-06-20 04:55 +09:00 - Chat parity crop evidence tightened
+
+Status: PARTIAL. Local ChatPane capture is cleaner, but the current Roll20 chat evidence is no longer accepted as geometry-authoritative.
+
+- Fixed `scripts/rolltemplate_chat_smoke.mjs` so local rolltemplate screenshots use Playwright element screenshots instead of viewport `clip` screenshots. The previous clip path truncated templates at the right viewport edge (`255px` local PNGs while DOM width was `279px`), creating false local/actual width signals.
+- Adjusted local ChatPane rolltemplate message width from `340px` to `328px`; local template screenshots for Les-Oublies and YSHY now measure `267px` wide, matching the current actual Roll20 template crop width.
+- Tightened `scripts/roll20_chat_parity_diagnostics.mjs`, `scripts/roll20_renderer_action_gate.mjs`, and `scripts/roll20_actual_status.mjs` so coordinate-calibrated or relocated Roll20 chat captures are classified as crop-geometry suspects instead of trusted normalized evidence.
+- Verification: `corepack pnpm run build` PASS, `corepack pnpm run lint` PASS, `node scripts\rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke --port 4452` PASS, `corepack pnpm run diagnose:roll20-chat-parity -- reports\roll20-actual-compare\2026-06-18-state-map-v1` PASS, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1` PASS, and `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` PASS.
+- Current truth: `chatNormalizedCompared=3/3`, but `chatActualCropGeometrySuspect=3` and `chatAuthoritativeNormalizedHighMismatch=0`. The old mismatch numbers are diagnostic only because the actual Roll20 PNGs visibly include chat shell/scrollbar/left-strip or relocation artifacts.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`. Next P0 is element-bound Roll20 chat recapture with fresh DOM sidecars before more ChatPane tuning or edit-mode UX work.
+
 ## 2026-06-20 04:25 +09:00 - ChatPane Roll20 shell/resource alignment
 
 Status: PARTIAL. Local ChatPane is closer to actual Roll20 chat, but chat parity and renderer readiness are still failing.
