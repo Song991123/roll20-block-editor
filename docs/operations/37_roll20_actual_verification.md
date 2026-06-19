@@ -222,6 +222,18 @@ When Chrome/CDP can read and scroll the character iframe or its Roll20
 `#dialog-window` scroller, capture multiple viewport segments and stitch them
 into the preferred full-height root evidence:
 
+Before recapturing a fixture that is currently missing trusted full-root
+evidence, generate a local-only capture handoff plan:
+
+```bash
+corepack pnpm run plan:roll20-root-capture -- reports/roll20-actual-compare/<run-label> [fixture-id]
+```
+
+The plan report stays under the ignored run folder. It lists missing required
+files, existing diagnostic-only captures, successful trusted manifests from the
+same run, follow-up commands, and a browser metrics snippet for collecting
+iframe/root geometry. This is planning evidence only; it is not visual parity.
+
 ```bash
 corepack pnpm run stitch:roll20-actual-root -- --manifest <roll20-root-stitch-manifest.json> --out <roll20-sandbox-root-full-dpr-corrected.png>
 ```

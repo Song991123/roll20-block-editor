@@ -25,6 +25,7 @@
     "status:roll20-actual": "node scripts/roll20_actual_status.mjs",
     "gate:roll20-renderer-ready": "node scripts/roll20_actual_status.mjs --require-renderer-ready",
     "crop:roll20-actual": "node scripts/roll20_actual_screenshot_crop.mjs",
+    "plan:roll20-root-capture": "node scripts/roll20_root_capture_plan.mjs",
     "stitch:roll20-actual-root": "node scripts/roll20_actual_stitch_root.mjs",
     "stitch:roll20-overlap-diagnostic": "node scripts/roll20_overlap_stitch_diagnostic.mjs",
     "audit:roll20-root-stitch": "node scripts/roll20_root_stitch_audit.mjs",

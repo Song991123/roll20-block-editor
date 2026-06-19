@@ -1479,3 +1479,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added `--require-renderer-ready` to `scripts/roll20_actual_status.mjs` and package alias `gate:roll20-renderer-ready`.
 - Verified the gate currently fails as expected on `2026-06-18-state-map-v1`: generated actual screenshots/diffs `6/6`, trusted full-root `2/3`, renderer action `HOLD_PRODUCTION_RENDERER_PATCH`, rendererReady `NO`.
 - Claim boundary: this prevents false production-readiness claims. It does not add AW2E trusted root evidence.
+
+## 2026-06-19 AW2E Root Capture Plan Tool
+
+- Added `scripts/roll20_root_capture_plan.mjs` and package alias `plan:roll20-root-capture`.
+- The ignored report for `2026-06-18-state-map-v1 official-roll20-AW2E` now states: generated screenshots/diffs `6/6`, trusted full-root `2/3`, renderer action `HOLD_PRODUCTION_RENDERER_PATCH`, rendererReady `NO`, trusted examples `2`, planned missing fixture `1`.
+- The AW2E plan lists the three required trusted-root outputs, the existing diagnostic-only segment captures, a browser metrics snippet, and the exact stitch/audit/diff/renderer-ready commands to run after recapture.
+- Claim boundary: this is recapture handoff automation only. It does not add trusted AW2E full-root evidence and does not prove Roll20 visual parity.
