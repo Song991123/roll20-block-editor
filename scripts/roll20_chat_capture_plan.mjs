@@ -176,7 +176,7 @@ function buildEntry(fixtureId, status, chatParity) {
       'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'If CDP captures the wrong region on a high-DPR Roll20 tab, verify the coordinate space with a debug crop: multiply the CSS template rect by devicePixelRatio, capture the physical PNG, then DPR-correct/downscale it back to the CSS clip size and record captureDprCorrection in the sidecar.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
-      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, text-rendering/font-smoothing fields, fontEvidence, and viewportEvidence.',
+      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, text-rendering/font-smoothing fields, fontEvidence, textMeasureEvidence, and viewportEvidence.',
       'Keep screenshot and DOM sidecar timestamps within 5 minutes.',
       'Rerun screenshot diff, chat parity diagnostics, renderer action gate, and status.',
     ],
@@ -213,6 +213,7 @@ function validateCurrentChatMetrics(screenshots) {
   if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');
   if (table?.computedStyle && !hasTextRasterizationFields(table.computedStyle)) missing.push('table.computedStyle.textRasterization');
   if (!domEvidence.fontEvidence?.checks) missing.push('fontEvidence.checks');
+  if (!hasTextMeasureEvidence(domEvidence, template)) missing.push('textMeasureEvidence.samples');
   if (!domEvidence.viewportEvidence?.devicePixelRatio) missing.push('viewportEvidence.devicePixelRatio');
   return {
     ok: missing.length === 0,
@@ -223,6 +224,11 @@ function validateCurrentChatMetrics(screenshots) {
       ? `Roll20 chat DOM sidecar predates current row/typography/text-rasterization probe fields: missing ${missing.join(', ')}`
       : 'Roll20 chat DOM sidecar includes current row/typography/text-rasterization metrics',
   };
+}
+
+function hasTextMeasureEvidence(domEvidence, template) {
+  return Array.isArray(domEvidence?.textMeasureEvidence?.samples) ||
+    Array.isArray(template?.textMeasureEvidence?.samples);
 }
 
 function hasTextRasterizationFields(style) {
@@ -566,6 +572,114 @@ function renderDomProbeSnippet(entry) {
       })),
     };
   };
+  const cssFontFor = (el) => {
+    if (!el) return '';
+    const style = window.getComputedStyle(el);
+    return [
+      style.fontStyle || 'normal',
+      style.fontVariant || 'normal',
+      style.fontWeight || '400',
+      style.fontSize || '13px',
+      style.fontFamily || 'sans-serif',
+    ].join(' ');
+  };
+  const createMeasureContext = () => {
+    try {
+      const canvas = document.createElement?.('canvas');
+      return canvas?.getContext?.('2d') ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const finiteMetric = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? Number(number.toFixed(3)) : null;
+  };
+  const measureTextSample = (context, font, text) => {
+    if (!context || !font) return null;
+    context.font = font;
+    const metrics = context.measureText(String(text ?? ''));
+    return {
+      width: finiteMetric(metrics.width),
+      actualBoundingBoxLeft: finiteMetric(metrics.actualBoundingBoxLeft),
+      actualBoundingBoxRight: finiteMetric(metrics.actualBoundingBoxRight),
+      actualBoundingBoxAscent: finiteMetric(metrics.actualBoundingBoxAscent),
+      actualBoundingBoxDescent: finiteMetric(metrics.actualBoundingBoxDescent),
+    };
+  };
+  const collectFontFaces = () => {
+    try {
+      return Array.from(document.fonts ?? []).slice(0, 80).map((font) => ({
+        family: font.family,
+        status: font.status,
+        weight: font.weight,
+        style: font.style,
+        stretch: font.stretch,
+      }));
+    } catch {
+      return [];
+    }
+  };
+  const sampleText = (el, fallback = '') => {
+    const text = (el?.textContent || fallback || '').replace(/\\s+/g, ' ').trim();
+    return text.slice(0, 160);
+  };
+  const measureTextEvidence = (root) => {
+    const context = createMeasureContext();
+    if (!root || !context) {
+      return {
+        status: root ? 'UNAVAILABLE' : 'NO_TEMPLATE',
+        reason: root ? 'canvas 2d context unavailable' : 'no rolltemplate root',
+        samples: [],
+        fontFaces: collectFontFaces(),
+      };
+    }
+    const sampleNodes = [
+      ['template', root],
+      ['table', root.querySelector('table')],
+      ['caption', root.querySelector('caption')],
+      ['td:first', root.querySelector('td')],
+      ['sheet-template_label:first', root.querySelector('td.sheet-template_label, .sheet-template_label')],
+      ['sheet-template_value:first', root.querySelector('td.sheet-template_value, .sheet-template_value')],
+      ['.inlinerollresult:first', root.querySelector('.inlinerollresult')],
+      ...Array.from(root.querySelectorAll('tr')).slice(0, 6).map((row, index) => ['tr:' + index, row]),
+    ];
+    const samples = [];
+    for (const [selector, el] of sampleNodes) {
+      if (!el) continue;
+      const text = sampleText(el);
+      if (!text) continue;
+      const rect = rectOf(el);
+      const font = cssFontFor(el);
+      samples.push({
+        selector,
+        source: 'element',
+        font,
+        text,
+        textLength: text.length,
+        elementWidth: finiteMetric(rect?.width),
+        metrics: measureTextSample(context, font, text),
+      });
+    }
+    const baseFont = cssFontFor(root.querySelector('table') || root);
+    for (const probe of ['기준치:', '굴림:', '대성공', '보통 성공', '어려운 성공', '극단적 성공', 'rolls', 'Succeeds']) {
+      samples.push({
+        selector: 'probe:' + probe,
+        source: 'probe',
+        font: baseFont,
+        text: probe,
+        textLength: probe.length,
+        elementWidth: null,
+        metrics: measureTextSample(context, baseFont, probe),
+      });
+    }
+    return {
+      status: 'MEASURED',
+      capturedAt: new Date().toISOString(),
+      samples,
+      fontFaces: collectFontFaces(),
+    };
+  };
   const clip = rectOf(textchat) || { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight, right: window.innerWidth, bottom: window.innerHeight };
   const templateInfos = templates.map((template, index) => ({
     index,
@@ -581,9 +695,13 @@ function renderDomProbeSnippet(entry) {
       summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
     ].filter(Boolean),
     rowMetrics: summarizeRows(template),
+    textMeasureEvidence: measureTextEvidence(template),
     htmlSnippet: template.outerHTML.slice(0, 4000),
     text: (template.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 1000),
   }));
+  const latestTextMeasureEvidence = templateInfos.length
+    ? templateInfos[templateInfos.length - 1].textMeasureEvidence
+    : measureTextEvidence(null);
   const styleText = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
     .map((node) => node.tagName === 'STYLE' ? node.textContent || '' : node.href || '')
     .join('\\n');
@@ -642,6 +760,7 @@ function renderDomProbeSnippet(entry) {
     templates: templateInfos.slice(-5),
     chatCssEvidence,
     fontEvidence: checkFonts(),
+    textMeasureEvidence: latestTextMeasureEvidence,
     viewportEvidence: {
       devicePixelRatio: window.devicePixelRatio,
       innerWidth: window.innerWidth,
@@ -706,6 +825,26 @@ function runSelfTest() {
     rect: { x: 0, y: 0, width: 1, height: 1, right: 1, bottom: 1 },
   });
   const fakeDocument = {
+    createElement(tagName) {
+      if (tagName !== 'canvas') return null;
+      return {
+        getContext(type) {
+          if (type !== '2d') return null;
+          return {
+            font: '',
+            measureText(text) {
+              return {
+                width: String(text ?? '').length * 6,
+                actualBoundingBoxLeft: 0,
+                actualBoundingBoxRight: String(text ?? '').length * 6,
+                actualBoundingBoxAscent: 9,
+                actualBoundingBoxDescent: 3,
+              };
+            },
+          };
+        },
+      };
+    },
     querySelector(selector) {
       if (selector.includes('#textchattab.active')) return activeTab;
       if (selector.includes('#textchat')) return textchat;
@@ -781,6 +920,7 @@ function runSelfTest() {
   if (!evidence.rolltemplates?.[0]?.rect?.width) failures.push('missing rolltemplate rect');
   if (evidence.chatCssEvidence?.classification !== 'EXPECTED_RULE_PRESENT') failures.push(`unexpected css classification ${evidence.chatCssEvidence?.classification}`);
   if (!evidence.textMarkers?.rolltemplate || !evidence.textMarkers?.sheetRolltemplate) failures.push('missing text markers');
+  if (!Array.isArray(evidence.textMeasureEvidence?.samples) || evidence.textMeasureEvidence.samples.length === 0) failures.push('missing text measure evidence');
   if (!capturedLogs.some((value) => String(value).includes('"rolltemplates"'))) failures.push('console JSON did not include rolltemplates');
   try {
     const json = JSON.stringify(evidence);
@@ -798,7 +938,7 @@ function runSelfTest() {
     return;
   }
   console.log('ROLL20 CHAT CAPTURE PLAN SELF_TEST PASS');
-  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence');
+  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence,textMeasureEvidence');
 }
 
 function fakeElement({ id = '', className = '', rect, textContent = '', outerHTML = '', contains = () => false }) {

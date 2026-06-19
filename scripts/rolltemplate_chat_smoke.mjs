@@ -376,7 +376,112 @@ async function clickRollAndReadChat(page, fixtureId) {
         })),
       };
     };
+    const cssFontFor = (node) => {
+      if (!node) return '';
+      const style = window.getComputedStyle(node);
+      return [
+        style.fontStyle || 'normal',
+        style.fontVariant || 'normal',
+        style.fontWeight || '400',
+        style.fontSize || '13px',
+        style.fontFamily || 'sans-serif',
+      ].join(' ');
+    };
+    const createMeasureContext = () => {
+      const canvas = document.createElement?.('canvas');
+      return canvas?.getContext?.('2d') ?? null;
+    };
+    const finiteMetric = (value) => {
+      const number = Number(value);
+      return Number.isFinite(number) ? Number(number.toFixed(3)) : null;
+    };
+    const measureTextSample = (context, font, text) => {
+      if (!context || !font) return null;
+      context.font = font;
+      const metrics = context.measureText(String(text ?? ''));
+      return {
+        width: finiteMetric(metrics.width),
+        actualBoundingBoxLeft: finiteMetric(metrics.actualBoundingBoxLeft),
+        actualBoundingBoxRight: finiteMetric(metrics.actualBoundingBoxRight),
+        actualBoundingBoxAscent: finiteMetric(metrics.actualBoundingBoxAscent),
+        actualBoundingBoxDescent: finiteMetric(metrics.actualBoundingBoxDescent),
+      };
+    };
+    const sampleText = (node, fallback = '') => {
+      const text = (node?.textContent || fallback || '').replace(/\s+/g, ' ').trim();
+      return text.slice(0, 160);
+    };
+    const collectFontFaces = () => {
+      try {
+        return Array.from(document.fonts ?? []).slice(0, 80).map((font) => ({
+          family: font.family,
+          status: font.status,
+          weight: font.weight,
+          style: font.style,
+          stretch: font.stretch,
+        }));
+      } catch {
+        return [];
+      }
+    };
+    const measureTextEvidence = (root) => {
+      const context = createMeasureContext();
+      if (!root || !context) {
+        return {
+          status: root ? 'UNAVAILABLE' : 'NO_TEMPLATE',
+          reason: root ? 'canvas 2d context unavailable' : 'no rolltemplate root',
+          samples: [],
+          fontFaces: collectFontFaces(),
+        };
+      }
+      const sampleNodes = [
+        ['template', root],
+        ['table', root.querySelector('table')],
+        ['caption', root.querySelector('caption')],
+        ['td:first', root.querySelector('td')],
+        ['sheet-template_label:first', root.querySelector('td.sheet-template_label, .sheet-template_label')],
+        ['sheet-template_value:first', root.querySelector('td.sheet-template_value, .sheet-template_value')],
+        ['.inlinerollresult:first', root.querySelector('.inlinerollresult')],
+        ...Array.from(root.querySelectorAll('tr')).slice(0, 6).map((row, index) => [`tr:${index}`, row]),
+      ];
+      const measured = [];
+      for (const [selector, node] of sampleNodes) {
+        if (!node) continue;
+        const text = sampleText(node);
+        if (!text) continue;
+        const rect = node.getBoundingClientRect();
+        const font = cssFontFor(node);
+        measured.push({
+          selector,
+          source: 'element',
+          font,
+          text,
+          textLength: text.length,
+          elementWidth: finiteMetric(rect.width),
+          metrics: measureTextSample(context, font, text),
+        });
+      }
+      const baseFont = cssFontFor(root.querySelector('table') || root);
+      for (const probe of ['기준치:', '굴림:', '대성공', '보통 성공', '어려운 성공', '극단적 성공', 'rolls', 'Succeeds']) {
+        measured.push({
+          selector: `probe:${probe}`,
+          source: 'probe',
+          font: baseFont,
+          text: probe,
+          textLength: probe.length,
+          elementWidth: null,
+          metrics: measureTextSample(context, baseFont, probe),
+        });
+      }
+      return {
+        status: 'MEASURED',
+        capturedAt: new Date().toISOString(),
+        samples: measured,
+        fontFaces: collectFontFaces(),
+      };
+    };
     const template = el.querySelector('[class*="sheet-rolltemplate-"]');
+    const textMeasureEvidence = measureTextEvidence(template);
     return {
       kind: el.getAttribute('data-r20-chat-kind') || '',
       hasMessageClass: el.classList.contains('message') || Boolean(el.querySelector('.message')),
@@ -403,9 +508,11 @@ async function clickRollAndReadChat(page, fixtureId) {
               summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
             ].filter(Boolean),
             rowMetrics: summarizeRows(template),
+            textMeasureEvidence,
           }
         : null,
       fontEvidence: checkFonts(),
+      textMeasureEvidence,
       viewportEvidence: {
         devicePixelRatio: window.devicePixelRatio,
         innerWidth: window.innerWidth,

@@ -30,6 +30,7 @@ async function main() {
   }
 
   const compared = fixtures.filter((fixture) => fixture.status === 'COMPARED');
+  const textMeasureMissing = fixtures.filter((fixture) => fixture.textMeasureSignals?.missing).length;
   const actionable = compared.filter((fixture) => fixture.glyphDecision !== 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE');
   const report = {
     generatedAt: new Date().toISOString(),
@@ -41,6 +42,7 @@ async function main() {
       fixtures: fixtures.length,
       compared: compared.length,
       actionable: actionable.length,
+      textMeasureMissing,
       decisions: countBy(compared.map((fixture) => fixture.glyphDecision)),
       productionSafe: false,
     },
@@ -53,7 +55,7 @@ async function main() {
 
   console.log(`ROLL20 CHAT FONT GLYPH MODEL ${report.summary.status}`);
   for (const fixture of fixtures) {
-    console.log(`FIXTURE ${fixture.fixtureId} status=${fixture.status} decision=${fixture.glyphDecision ?? ''} tableDelta=${fmtPx(fixture.widthDeltas?.table)} fontFamilyChanged=${fixture.fontSignals?.tableFontFamilyChanged ? 'YES' : 'NO'} fontAvailabilityChanged=${fixture.fontSignals?.fontAvailabilityChanged ? 'YES' : 'NO'} next=${fixture.nextAction ?? ''}`);
+    console.log(`FIXTURE ${fixture.fixtureId} status=${fixture.status} decision=${fixture.glyphDecision ?? ''} tableDelta=${fmtPx(fixture.widthDeltas?.table)} textMeasure=${fixture.textMeasureSignals?.status ?? ''} fontFamilyChanged=${fixture.fontSignals?.tableFontFamilyChanged ? 'YES' : 'NO'} fontAvailabilityChanged=${fixture.fontSignals?.fontAvailabilityChanged ? 'YES' : 'NO'} next=${fixture.nextAction ?? ''}`);
   }
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
@@ -86,6 +88,10 @@ async function compareFixture(localFixture, reports) {
     localFontEvidence: localFixture.cardInfo?.fontEvidence,
     actualFontEvidence: actualSidecar?.fontEvidence,
   });
+  const textMeasureSignals = compareTextMeasureEvidence({
+    local: localFixture.cardInfo?.textMeasureEvidence ?? localTemplate?.textMeasureEvidence,
+    actual: actualSidecar?.textMeasureEvidence ?? actualTemplate?.textMeasureEvidence,
+  });
   const rowGlyphMetrics = compareRowGlyphMetrics(localTemplate.rowMetrics, actualTemplate.rowMetrics);
   const widthDeltas = {
     root: delta(widthOf(localTemplate), widthOf(actualTemplate)),
@@ -95,6 +101,7 @@ async function compareFixture(localFixture, reports) {
   const glyphDecision = decideGlyphModel({
     widthDeltas,
     fontSignals,
+    textMeasureSignals,
     rowGlyphMetrics,
     candidateEvidence,
     intrinsicFixture,
@@ -109,9 +116,10 @@ async function compareFixture(localFixture, reports) {
     styleFindings: styleFixture?.findings ?? [],
     widthDeltas,
     fontSignals,
+    textMeasureSignals,
     rowGlyphMetrics,
     candidateEvidence,
-    evidence: evidenceNotes({ widthDeltas, fontSignals, rowGlyphMetrics, candidateEvidence }),
+    evidence: evidenceNotes({ widthDeltas, fontSignals, textMeasureSignals, rowGlyphMetrics, candidateEvidence }),
   };
 }
 
@@ -166,6 +174,85 @@ function compareFontSignals({ localTemplate, actualTemplate, localTable, actualT
       tableLineHeight: delta(px(cssValue(localTable, 'lineHeight')), px(cssValue(actualTable, 'lineHeight'))),
     },
   };
+}
+
+function compareTextMeasureEvidence({ local, actual }) {
+  const localSamples = Array.isArray(local?.samples) ? local.samples : [];
+  const actualSamples = Array.isArray(actual?.samples) ? actual.samples : [];
+  const fontFaces = compareFontFaces(local?.fontFaces, actual?.fontFaces);
+  const missing = !localSamples.length || !actualSamples.length;
+  if (missing) {
+    return {
+      status: 'MISSING',
+      missing: true,
+      localStatus: local?.status ?? 'MISSING',
+      actualStatus: actual?.status ?? 'MISSING',
+      localSampleCount: localSamples.length,
+      actualSampleCount: actualSamples.length,
+      comparedSamples: 0,
+      meanAbsWidthDelta: null,
+      probeMeanAbsWidthDelta: null,
+      changedFontFaceCount: fontFaces.changedCount,
+      fontFaceDeltas: fontFaces.deltas,
+      samples: [],
+    };
+  }
+  const actualByKey = new Map(actualSamples.map((sample) => [textMeasureKey(sample), sample]));
+  const compared = [];
+  for (const localSample of localSamples) {
+    const actualSample = actualByKey.get(textMeasureKey(localSample));
+    if (!actualSample) continue;
+    compared.push({
+      selector: localSample.selector,
+      source: localSample.source,
+      text: localSample.text,
+      localFont: localSample.font ?? '',
+      actualFont: actualSample.font ?? '',
+      fontChanged: (localSample.font ?? '') !== (actualSample.font ?? ''),
+      localWidth: numberOrNull(localSample.metrics?.width),
+      actualWidth: numberOrNull(actualSample.metrics?.width),
+      widthDelta: delta(localSample.metrics?.width, actualSample.metrics?.width),
+      localElementWidth: numberOrNull(localSample.elementWidth),
+      actualElementWidth: numberOrNull(actualSample.elementWidth),
+      elementWidthDelta: delta(localSample.elementWidth, actualSample.elementWidth),
+    });
+  }
+  const probeSamples = compared.filter((sample) => sample.source === 'probe');
+  return {
+    status: compared.length ? 'COMPARED' : 'NO_MATCHING_SAMPLES',
+    missing: false,
+    localStatus: local?.status ?? '',
+    actualStatus: actual?.status ?? '',
+    localSampleCount: localSamples.length,
+    actualSampleCount: actualSamples.length,
+    comparedSamples: compared.length,
+    meanAbsWidthDelta: meanAbs(compared.map((sample) => sample.widthDelta)),
+    probeMeanAbsWidthDelta: meanAbs(probeSamples.map((sample) => sample.widthDelta)),
+    fontChangedSamples: compared.filter((sample) => sample.fontChanged).length,
+    changedFontFaceCount: fontFaces.changedCount,
+    fontFaceDeltas: fontFaces.deltas,
+    samples: compared.slice(0, 16),
+  };
+}
+
+function compareFontFaces(localFaces = [], actualFaces = []) {
+  const summarize = (faces) => new Map((Array.isArray(faces) ? faces : []).map((font) => [
+    `${font.family}|${font.weight}|${font.style}|${font.stretch}`,
+    font.status ?? '',
+  ]));
+  const local = summarize(localFaces);
+  const actual = summarize(actualFaces);
+  const deltas = [];
+  for (const key of new Set([...local.keys(), ...actual.keys()])) {
+    const localStatus = local.get(key) ?? null;
+    const actualStatus = actual.get(key) ?? null;
+    if (localStatus !== actualStatus) deltas.push({ key, local: localStatus, actual: actualStatus });
+  }
+  return { changedCount: deltas.length, deltas: deltas.slice(0, 20) };
+}
+
+function textMeasureKey(sample) {
+  return `${sample?.selector ?? ''}|${sample?.source ?? ''}|${sample?.text ?? ''}`;
 }
 
 function compareRowGlyphMetrics(localRows = [], actualRows = []) {
@@ -238,10 +325,16 @@ function extractCandidateEvidence(candidateComparison, fixtureId) {
   };
 }
 
-function decideGlyphModel({ widthDeltas, fontSignals, rowGlyphMetrics, candidateEvidence, intrinsicFixture }) {
+function decideGlyphModel({ widthDeltas, fontSignals, textMeasureSignals, rowGlyphMetrics, candidateEvidence, intrinsicFixture }) {
   const intrinsicDecision = intrinsicFixture?.intrinsicDecision ?? '';
   if (!intrinsicDecision || intrinsicDecision === 'INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE') {
     return 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE';
+  }
+  if (textMeasureSignals?.missing || textMeasureSignals?.status === 'NO_MATCHING_SAMPLES') {
+    return 'TEXT_MEASURE_RECAPTURE_REQUIRED';
+  }
+  if (Math.abs(textMeasureSignals?.meanAbsWidthDelta ?? 0) >= 2 || Math.abs(textMeasureSignals?.probeMeanAbsWidthDelta ?? 0) >= 2) {
+    return 'TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED';
   }
   if (fontSignals.fontAvailabilityChanged && candidateEvidence.fontCandidatesRejected) {
     return 'FONT_AVAILABILITY_CHANGED_CANDIDATES_REJECTED';
@@ -264,6 +357,10 @@ function nextAction(decision) {
       return 'capture actual/local per-font measureText widths and CSSOM font-face activation; broad font fallback candidates already regress';
     case 'FONT_STYLE_CHANGED_CANDIDATES_REJECTED':
       return 'compare exact font stack activation and text measurement sidecars instead of applying broad Proxima/typography CSS';
+    case 'TEXT_MEASURE_RECAPTURE_REQUIRED':
+      return 'recapture actual Roll20 chat DOM sidecar with textMeasureEvidence and rerun font/glyph diagnosis';
+    case 'TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED':
+      return 'build a narrow text-width model from exact measureText deltas instead of broad font or spacing CSS';
     case 'TEXT_MEASUREMENT_MODEL_REQUIRED':
       return 'add per-row/per-cell text measurement probes for the actual computed font stack';
     case 'FONT_GLYPH_MODEL_REQUIRED':
@@ -273,8 +370,11 @@ function nextAction(decision) {
   }
 }
 
-function evidenceNotes({ widthDeltas, fontSignals, rowGlyphMetrics, candidateEvidence }) {
+function evidenceNotes({ widthDeltas, fontSignals, textMeasureSignals, rowGlyphMetrics, candidateEvidence }) {
   const notes = [];
+  if (textMeasureSignals?.missing) notes.push(`textMeasureEvidence missing: local=${textMeasureSignals.localSampleCount ?? 0} actual=${textMeasureSignals.actualSampleCount ?? 0}`);
+  if (!textMeasureSignals?.missing && textMeasureSignals?.comparedSamples != null) notes.push(`measureText samples compared ${textMeasureSignals.comparedSamples}, mean width delta ${fmtPx(textMeasureSignals.meanAbsWidthDelta)}`);
+  if (textMeasureSignals?.changedFontFaceCount) notes.push(`CSSOM font-face status deltas ${textMeasureSignals.changedFontFaceCount}`);
   if (fontSignals.fontAvailabilityChanged) notes.push(`font availability differs: ${fontSignals.changedFonts.map((font) => font.spec).join(', ')}`);
   if (fontSignals.tableFontFamilyChanged) notes.push('table font-family differs');
   if (fontSignals.rootFontFamilyChanged) notes.push('root font-family differs');
@@ -294,12 +394,13 @@ function renderMarkdown(report) {
     'Scope: diagnostic-only font/glyph width model. This report does not enable production ChatPane CSS.',
     '',
     `Status: ${report.summary.status}`,
+    `Text measure missing: ${report.summary.textMeasureMissing}`,
     '',
-    '| Fixture | Decision | Table Δ | Font availability | Table font changed | Font candidates | Evidence | Next |',
-    '| --- | --- | ---: | --- | --- | --- | --- | --- |',
+    '| Fixture | Decision | Table delta | Text measure | Font availability | Table font changed | Font candidates | Evidence | Next |',
+    '| --- | --- | ---: | --- | --- | --- | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.glyphDecision} | ${fmtPx(fixture.widthDeltas?.table)} | ${fixture.fontSignals?.fontAvailabilityChanged ? 'changed' : 'same'} | ${fixture.fontSignals?.tableFontFamilyChanged ? 'yes' : 'no'} | ${fixture.candidateEvidence?.fontCandidatesRejected ? 'rejected/no-gain' : 'not rejected'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.glyphDecision} | ${fmtPx(fixture.widthDeltas?.table)} | ${fixture.textMeasureSignals?.status ?? ''} (${fixture.textMeasureSignals?.comparedSamples ?? 0}) | ${fixture.fontSignals?.fontAvailabilityChanged ? 'changed' : 'same'} | ${fixture.fontSignals?.tableFontFamilyChanged ? 'yes' : 'no'} | ${fixture.candidateEvidence?.fontCandidatesRejected ? 'rejected/no-gain' : 'not rejected'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
   }
   lines.push('', '## Claim Boundary', '');
   lines.push('- Font availability/style differences are not production fixes by themselves; prior broad font candidates can still regress pixels.');

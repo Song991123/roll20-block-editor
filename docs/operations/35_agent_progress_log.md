@@ -1,3 +1,15 @@
+## 2026-06-20 Chat Text Measurement Evidence Gate
+
+- Added local `textMeasureEvidence` to `scripts/rolltemplate_chat_smoke.mjs`: canvas `measureText` widths, element widths, computed CSS font strings, probe strings, and CSSOM font-face status are now captured beside local ChatPane rolltemplate smoke evidence.
+- Added the same `textMeasureEvidence` shape to generated Roll20 chat DOM probe snippets in `scripts/roll20_chat_capture_plan.mjs`.
+- `--require-current-metrics` now treats actual Roll20 chat sidecars without `textMeasureEvidence.samples` as stale.
+- Updated `scripts/roll20_chat_font_glyph_model.mjs` so missing exact text measurement sidecars produce `TEXT_MEASURE_RECAPTURE_REQUIRED`, not a broad font/spacing CSS recommendation.
+- Latest local smoke still PASSes AW2E, Les-Oublies, and YSHY; local text samples are present (`12`, `12`, and `19` respectively).
+- Latest actual Roll20 run `2026-06-18-state-map-v1` needs recapture for all three chat sidecars because existing actual sidecars predate text measurement evidence.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH` and now explicitly blocks another ChatPane text-width candidate until actual Roll20 sidecars are recaptured.
+- Verification: `node --check` for changed scripts, `test:roll20-chat-capture-plan`, `corepack pnpm run build`, local `rolltemplate_chat_smoke`, `diagnose:roll20-chat-font-glyph`, `plan:roll20-chat-capture --all --require-current-metrics`, and `gate:roll20-renderer-action`.
+- Claim boundary: this is diagnostic infrastructure and recapture routing only. It does not prove Roll20 chat/template parity and does not authorize production renderer CSS.
+
 ## 2026-06-20 CoC Table-Scale Style Proof Rejected
 
 - Added `scripts/roll20_chat_intrinsic_width_model.mjs` and package alias `diagnose:roll20-chat-intrinsic-width`.

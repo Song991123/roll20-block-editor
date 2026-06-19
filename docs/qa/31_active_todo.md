@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - Chat text measurement evidence added
+
+Status: PARTIAL. Roll20 chat/template parity is still blocked, but the next font/glyph probe is now evidence-gated instead of guesswork.
+
+- DONE: `scripts/rolltemplate_chat_smoke.mjs` now records local `textMeasureEvidence` with canvas `measureText` widths, element widths, computed CSS font strings, probe strings, and CSSOM font-face status.
+- DONE: `scripts/roll20_chat_capture_plan.mjs` now emits Roll20 DOM probe snippets with the same `textMeasureEvidence` shape and treats old sidecars as stale when `--require-current-metrics` is used.
+- DONE: `scripts/roll20_chat_font_glyph_model.mjs` compares text-measure sidecars and now reports `TEXT_MEASURE_RECAPTURE_REQUIRED` instead of implying a broad font/spacing CSS fix.
+- RESULT: Local rolltemplate smoke still PASSes all 3 prepared fixtures and now has local samples: AW2E `12`, Les-Oublies `12`, YSHY `19`.
+- RESULT: Existing actual Roll20 chat sidecars are stale: 3/3 lack `textMeasureEvidence.samples`, so all three fixtures need actual Roll20 chat DOM recapture before another ChatPane text-width candidate.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` and now includes a blocker for missing actual text measurement evidence.
+- VERIFIED: `node --check` for changed scripts, `test:roll20-chat-capture-plan`, `corepack pnpm run build`, local `rolltemplate_chat_smoke`, `diagnose:roll20-chat-font-glyph`, `plan:roll20-chat-capture --all --require-current-metrics`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: In the actual Roll20 Custom Sheet Sandbox/test room, recapture `roll20-chat-dom-evidence.json` with the new snippet beside same-action `roll20-chat.png`, then rerun font/glyph diagnosis and renderer gate.
+
 ## 2026-06-20 Codex Update - CoC table-scale candidate style-proof rejected
 
 Status: PARTIAL. The YSHY/CoC width candidate was narrowed further: visual scaling helps pixels, but actual Roll20 computed styles reject transform-based promotion.

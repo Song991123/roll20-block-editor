@@ -486,9 +486,12 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   if (!chatFontGlyphModelSummary) {
     warnings.push('chat font/glyph model has not been run; run diagnose:roll20-chat-font-glyph before trying another font, typography, or text-width candidate');
   } else {
-    positiveFindings.push(`chat font/glyph model: status=${chatFontGlyphModelSummary.status}, actionable=${chatFontGlyphModelSummary.actionable}/${chatFontGlyphModelSummary.totalFixtures}, decisions=${formatFindingCounts(chatFontGlyphModelSummary.decisions)}`);
+    positiveFindings.push(`chat font/glyph model: status=${chatFontGlyphModelSummary.status}, actionable=${chatFontGlyphModelSummary.actionable}/${chatFontGlyphModelSummary.totalFixtures}, textMeasureMissing=${chatFontGlyphModelSummary.textMeasureMissing}, decisions=${formatFindingCounts(chatFontGlyphModelSummary.decisions)}`);
+    if (chatFontGlyphModelSummary.textMeasureMissing > 0) {
+      blockers.push(`chat font/glyph model needs textMeasureEvidence recapture for ${chatFontGlyphModelSummary.actionableFixtures.filter((fixture) => fixture.textMeasureMissing).map((fixture) => fixture.fixtureId).join(', ') || `${chatFontGlyphModelSummary.textMeasureMissing} fixture(s)`}; recapture actual Roll20 chat DOM sidecars before another ChatPane text-width candidate`);
+    }
     for (const fixture of chatFontGlyphModelSummary.actionableFixtures) {
-      positiveFindings.push(`${fixture.fixtureId} font/glyph decision=${fixture.glyphDecision}, tableDelta=${num(fixture.tableWidthDelta)}px, fontAvailabilityChanged=${fixture.fontAvailabilityChanged ? 'YES' : 'NO'}, tableFontChanged=${fixture.tableFontFamilyChanged ? 'YES' : 'NO'}, fontCandidatesRejected=${fixture.fontCandidatesRejected ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
+      positiveFindings.push(`${fixture.fixtureId} font/glyph decision=${fixture.glyphDecision}, tableDelta=${num(fixture.tableWidthDelta)}px, textMeasure=${fixture.textMeasureStatus || 'n/a'} samples=${fixture.textMeasureComparedSamples}, meanTextWidthDelta=${num(fixture.textMeasureMeanAbsWidthDelta)}px, fontAvailabilityChanged=${fixture.fontAvailabilityChanged ? 'YES' : 'NO'}, tableFontChanged=${fixture.tableFontFamilyChanged ? 'YES' : 'NO'}, fontCandidatesRejected=${fixture.fontCandidatesRejected ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
     }
   }
 
@@ -973,6 +976,10 @@ function summarizeChatFontGlyphModel(report) {
     tableFontFamilyChanged: Boolean(fixture.fontSignals?.tableFontFamilyChanged),
     rootFontFamilyChanged: Boolean(fixture.fontSignals?.rootFontFamilyChanged),
     fontCandidatesRejected: Boolean(fixture.candidateEvidence?.fontCandidatesRejected),
+    textMeasureStatus: fixture.textMeasureSignals?.status ?? '',
+    textMeasureMissing: Boolean(fixture.textMeasureSignals?.missing),
+    textMeasureComparedSamples: Number(fixture.textMeasureSignals?.comparedSamples ?? 0),
+    textMeasureMeanAbsWidthDelta: fixture.textMeasureSignals?.meanAbsWidthDelta ?? null,
     nextAction: fixture.nextAction ?? '',
     evidence: fixture.evidence ?? [],
   }));
@@ -981,6 +988,7 @@ function summarizeChatFontGlyphModel(report) {
     totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
     compared: Number(report.summary.compared ?? fixtures.filter((fixture) => fixture.status === 'COMPARED').length),
     actionable: Number(report.summary.actionable ?? fixtures.filter((fixture) => fixture.glyphDecision !== 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE').length),
+    textMeasureMissing: Number(report.summary.textMeasureMissing ?? fixtures.filter((fixture) => fixture.textMeasureMissing).length),
     decisions: report.summary.decisions ?? {},
     productionSafe: Boolean(report.summary.productionSafe),
     actionableFixtures: fixtures.filter((fixture) => fixture.status === 'COMPARED' && fixture.glyphDecision !== 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE'),
@@ -1385,13 +1393,14 @@ function renderMarkdown(report) {
     lines.push('### Chat Font Glyph Model', '');
     lines.push(`- Status: ${report.chatFontGlyphModel.status}`);
     lines.push(`- Actionable fixtures: ${report.chatFontGlyphModel.actionable}/${report.chatFontGlyphModel.totalFixtures}`);
+    lines.push(`- Text measure missing: ${report.chatFontGlyphModel.textMeasureMissing}`);
     lines.push(`- Decisions: ${formatFindingCounts(report.chatFontGlyphModel.decisions)}`);
     if (report.chatFontGlyphModel.actionableFixtures.length) {
       lines.push('');
-      lines.push('| Fixture | Decision | Table Δ | Font availability | Table font changed | Font candidates | Evidence | Next action |');
-      lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- |');
+      lines.push('| Fixture | Decision | Table delta | Text measure | Font availability | Table font changed | Font candidates | Evidence | Next action |');
+      lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- |');
       for (const fixture of report.chatFontGlyphModel.actionableFixtures) {
-        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.glyphDecision} | ${num(fixture.tableWidthDelta)}px | ${fixture.fontAvailabilityChanged ? 'changed' : 'same'} | ${fixture.tableFontFamilyChanged ? 'yes' : 'no'} | ${fixture.fontCandidatesRejected ? 'rejected/no-gain' : 'not rejected'} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.glyphDecision} | ${num(fixture.tableWidthDelta)}px | ${fixture.textMeasureStatus || 'n/a'} (${fixture.textMeasureComparedSamples}) | ${fixture.fontAvailabilityChanged ? 'changed' : 'same'} | ${fixture.tableFontFamilyChanged ? 'yes' : 'no'} | ${fixture.fontCandidatesRejected ? 'rejected/no-gain' : 'not rejected'} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');
