@@ -11,6 +11,8 @@ Status: PARTIAL. The Roll20 evidence gate is now blocked by real renderer mismat
 - Current gate: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; `gate:roll20-renderer-ready` is expected to fail with `rendererReady=NO`.
 - Next P0: work on the actual local ChatPane/Roll20 shell-template renderer mismatch and default-state model. Do not spend another cycle on Les crop trust unless the diagnostics regress.
 
+Follow-up diagnostic: Added `roll20-message-padding` as a local-only ChatPane geometry candidate after the fresh Roll20 crops showed local rolltemplate captures about `12px` wider. The candidate smoke passed functionally, but candidate comparison rejected it: YSHY aligned mismatch worsened `22.68% -> 27.54%`. This is now a negative-control candidate only, not production CSS.
+
 ## 2026-06-20 06:35 +09:00 - Roll20 chat crop foreground guard
 
 Status: PARTIAL. This batch improves evidence truthfulness; Roll20 chat/template parity is still not solved.

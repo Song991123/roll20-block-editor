@@ -10,6 +10,8 @@ Status: PARTIAL. The Les-Oublies chat crop trust blocker is cleared; Roll20 rend
 - STILL TODO P0: Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`; next work is local ChatPane/Roll20 shell/template sizing and default-state renderer analysis, not more Les crop cleanup.
 - STILL TODO P0: `gate:roll20-renderer-ready` must keep failing until renderer/chat parity is proven. Do not claim Roll20 visual parity or all-sheet support.
 
+Follow-up diagnostic: Added rejected local-only chat geometry candidate `roll20-message-padding` because current actual crops show local rolltemplate screenshots about `12px` wider than Roll20 crops. Functional smoke passed for AW2E, Les-Oublies, and YSHY, but `diagnose:roll20-chat-candidates` rejected it: YSHY aligned mismatch worsened from `22.68%` to `27.54%`. Keep it as a reproducible negative control; do not promote it to production ChatPane CSS.
+
 ## 2026-06-20 Codex Update - Roll20 chat crop foreground guard
 
 Status: PARTIAL. Evidence quality improved; renderer/chat parity remains blocked.

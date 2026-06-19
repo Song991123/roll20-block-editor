@@ -572,7 +572,11 @@ async function main() {
       }
     }, CHAT_SHADOW_POLICY);
     await page.evaluate((policy) => {
-      if (policy === 'tight-cell-spacing' || policy === 'table-scale-x') {
+      if (
+        policy === 'tight-cell-spacing' ||
+        policy === 'table-scale-x' ||
+        policy === 'roll20-message-padding'
+      ) {
         localStorage.setItem('__r20ChatGeometryPolicy', policy);
       } else {
         localStorage.removeItem('__r20ChatGeometryPolicy');

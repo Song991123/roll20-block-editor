@@ -36,7 +36,11 @@ function safeRolltemplateClass(name: string): string {
 type ChatFontPolicy = 'default' | 'roll20-chat-fallback';
 type ChatTextPolicy = 'default' | 'roll20-auto-aa';
 type ChatShadowPolicy = 'default' | 'no-template-shadow';
-type ChatGeometryPolicy = 'default' | 'tight-cell-spacing' | 'table-scale-x';
+type ChatGeometryPolicy =
+  | 'default'
+  | 'tight-cell-spacing'
+  | 'table-scale-x'
+  | 'roll20-message-padding';
 type ChatTypographyPolicy = 'default' | 'roll20-shell-typography';
 
 function currentChatFontPolicy(): ChatFontPolicy {
@@ -63,7 +67,11 @@ function currentChatShadowPolicy(): ChatShadowPolicy {
 function currentChatGeometryPolicy(): ChatGeometryPolicy {
   if (typeof window === 'undefined') return 'default';
   const value = window.localStorage.getItem('__r20ChatGeometryPolicy');
-  if (value === 'tight-cell-spacing' || value === 'table-scale-x') return value;
+  if (
+    value === 'tight-cell-spacing' ||
+    value === 'table-scale-x' ||
+    value === 'roll20-message-padding'
+  ) return value;
   return 'default';
 }
 
@@ -145,6 +153,9 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-geometry-policy="table-scale-x"] [class*="sheet-rolltemplate-"] table {
   transform: scaleX(0.981);
   transform-origin: left top;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-message-padding"] .r20-chat-card-group .message {
+  padding-right: 28px;
 }
 .r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
 .r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
