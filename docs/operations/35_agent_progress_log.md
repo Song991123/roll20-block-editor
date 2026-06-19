@@ -1522,3 +1522,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The renderer gate now reports the AW2E patch family as `sheet-class-alias-css:playbook-hide-only`, not a vague blanket alias.
 - Interpretation: AW2E mismatch is strongly tied to playbook/default-state visibility, but the naive alias candidates over-hide content. The next P0 is actual Roll20 DOM/state/selector probing or a targeted state model, not production CSS promotion.
 - Claim boundary: this improves root-cause isolation only. It does not prove Roll20 visual parity and does not make the app renderer ready.
+## 2026-06-19 AW2E Playbook State Height Probe
+
+- Added forced playbook-state diagnostic candidates to `scripts/roll20_full_root_candidate_smoke.mjs`, including Hardholder-only and front-of-list playbook sets through News, Quarantine, and SavvyHead.
+- Added `closestRootHeightCandidate` to the full-root candidate smoke JSON/Markdown so pixel-best and height-best candidates are not conflated.
+- Latest AW2E evidence: pixel best is still `sandbox-sheet-alias-playbook-hide-source` at `7.22%`, but it is far too short (`850x2532`, root delta `-6636.125px`). The closest-height candidate is `sandbox-sheet-alias-playbook-state-through-quarantine-source` at `850x9377`, root delta `+208.5px`; `through-news` is `850x8844`, root delta `-324.5px`.
+- Interpretation: AW2E actual Roll20 likely has roughly 12-13 playbook sections visible. This points to default/state modeling, not a generic renderer CSS patch.
+- Claim boundary: this is still local diagnostic evidence against trusted actual screenshots. It does not prove visual parity and renderer action remains HOLD.

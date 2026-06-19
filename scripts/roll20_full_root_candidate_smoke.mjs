@@ -23,6 +23,25 @@ const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const runDir = path.resolve(args[0] ?? '');
 const outDir = path.join(runDir, 'full-root-candidate-smoke');
 const threshold = Number(argOf('--threshold', '60'));
+const PLAYBOOK_CLASS_VALUES = [
+  'Angel',
+  'Battlebabe',
+  'Brainer',
+  'Child-Thing',
+  'Chopper',
+  'Driver',
+  'Faceless',
+  'GunLugger',
+  'Hardholder',
+  'Hocus',
+  'Maestro',
+  'News',
+  'Quarantine',
+  'SavvyHead',
+  'Skinner',
+  'Waterbearer',
+  'Marine',
+];
 
 if (!args[0]) {
   console.error('Usage: node scripts/roll20_full_root_candidate_smoke.mjs reports/roll20-actual-compare/<label>');
@@ -153,6 +172,11 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         { id: 'sandbox-sheet-alias-show-only-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'show-only', rootWidth: actualRootWidth } },
         { id: 'sandbox-sheet-alias-playbook-hide-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-hide-only', rootWidth: actualRootWidth } },
         { id: 'sandbox-sheet-alias-control-state-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'control-state-only', rootWidth: actualRootWidth } },
+        { id: 'sandbox-sheet-alias-playbook-state-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth } },
+        { id: 'sandbox-sheet-alias-playbook-state-hardholder-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth, forceAttrClass: 'Hardholder' } },
+        { id: 'sandbox-sheet-alias-playbook-state-through-news-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth, forceAttrClasses: PLAYBOOK_CLASS_VALUES.slice(0, 12) } },
+        { id: 'sandbox-sheet-alias-playbook-state-through-quarantine-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth, forceAttrClasses: PLAYBOOK_CLASS_VALUES.slice(0, 13) } },
+        { id: 'sandbox-sheet-alias-playbook-state-through-savvy-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', aliasMode: 'playbook-state-only', rootWidth: actualRootWidth, forceAttrClasses: PLAYBOOK_CLASS_VALUES.slice(0, 14) } },
       );
     }
     for (const input of candidateInputs) {
@@ -180,6 +204,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   }));
   const bestCandidate = candidatesWithGeometryFit.reduce((best, candidate) => pickBetterCandidate(best, candidate), null);
   const bestGeometryCandidate = candidatesWithGeometryFit.reduce((best, candidate) => pickBetterGeometryCandidate(best, candidate), null);
+  const closestRootHeightCandidate = candidatesWithGeometryFit.reduce((best, candidate) => pickCloserRootHeightCandidate(best, candidate), null);
   const sourceBest = candidates
     .filter((candidate) => !candidate.applyStateHint && !candidate.contextPatch)
     .reduce((best, candidate) => pickBetterCandidate(best, candidate), null);
@@ -208,9 +233,10 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     bestCandidate: actualEvidence.diagnosticOnly ? null : bestCandidate,
     diagnosticBestCandidate: actualEvidence.diagnosticOnly ? bestCandidate : null,
     bestGeometryCandidate,
+    closestRootHeightCandidate,
     candidates: candidatesWithGeometryFit,
     componentEffects: summarizeComponentEffects(candidatesWithGeometryFit),
-    interpretation: interpret({ bestCandidate, bestGeometryCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }),
+    interpretation: interpret({ bestCandidate, bestGeometryCandidate, closestRootHeightCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }),
     targetGeometry: compareTargetGeometry(actualTargetGeometry, bestCandidate?.metrics?.targetGeometry),
   };
 }
@@ -541,6 +567,7 @@ async function applyRenderContextPatch(page, patch, payload = null) {
       dialogWindow.style.width = `${Math.max(1, Math.round(patch.rootWidth))}px`;
       dialog.style.paddingLeft = '0px';
       dialog.style.paddingRight = '0px';
+      if (patch.forceAttrClass || patch.forceAttrClasses) forceAttrClass(patch.forceAttrClasses || patch.forceAttrClass);
       const style = document.createElement('style');
       style.setAttribute('data-r20-diagnostic-context-patch', 'sheet-class-alias-css');
       style.textContent = aliasCss;
@@ -560,6 +587,18 @@ async function applyRenderContextPatch(page, patch, payload = null) {
         .ui-dialog .charsheet input[type="text"] { min-height: ${textInputHeight}px; }
       `;
       document.head.append(style);
+    }
+    function forceAttrClass(value) {
+      const expected = new Set((Array.isArray(value) ? value : [value]).map((item) => String(item)));
+      document.querySelectorAll('[name="attr_class"]').forEach((node) => {
+        if (!(node instanceof HTMLInputElement)) return;
+        const checked = expected.has(String(node.value || ''));
+        if (node.type === 'checkbox' || node.type === 'radio') {
+          node.checked = checked;
+          if (checked) node.setAttribute('checked', 'checked');
+          else node.removeAttribute('checked');
+        }
+      });
     }
   }, { patch, aliasCss });
 }
@@ -592,6 +631,11 @@ function shouldAliasRule(rule, aliasMode) {
   if (aliasMode === 'show-only') return isShow;
   if (aliasMode === 'playbook-hide-only') {
     return isHide && /\.angel\b/.test(selectorText) && /\.marine\b/.test(selectorText);
+  }
+  if (aliasMode === 'playbook-state-only') {
+    const playbookSelector = /\.angel\b/.test(selectorText) && /\.marine\b/.test(selectorText);
+    const playbookStateSelector = /\.isAngel:checked\b/.test(selectorText) && /\.isMarine:checked\b/.test(selectorText);
+    return (isHide && playbookSelector) || (isShow && playbookStateSelector);
   }
   if (aliasMode === 'control-state-only') {
     return /:checked|\[value=|\[value\s*=/.test(selectorText);
@@ -891,13 +935,16 @@ function compareIndexed(actualItems, localItems) {
   return out.sort((a, b) => Math.abs(b.heightDelta ?? 0) - Math.abs(a.heightDelta ?? 0));
 }
 
-function interpret({ bestCandidate, bestGeometryCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }) {
+function interpret({ bestCandidate, bestGeometryCandidate, closestRootHeightCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }) {
   const notes = [];
   if (baselineReference && bestCandidate && baselineReference.mismatchRatio < bestCandidate.mismatchRatio - 0.005) {
     notes.push(`existing app local-preview is closer than direct candidates by ${pct(bestCandidate.mismatchRatio - baselineReference.mismatchRatio)}; inspect app preview sizing/runtime before renderer CSS changes`);
   }
   if (bestGeometryCandidate && bestCandidate && bestGeometryCandidate.id !== bestCandidate.id) {
     notes.push(`geometry-fit best is ${bestGeometryCandidate.id} (score ${num(bestGeometryCandidate.geometryFit?.score)}), but pixel best is ${bestCandidate.id}; do not patch from geometry alone`);
+  }
+  if (closestRootHeightCandidate && bestCandidate && closestRootHeightCandidate.id !== bestCandidate.id) {
+    notes.push(`root-height closest is ${closestRootHeightCandidate.id} (${num(closestRootHeightCandidate.rootHeightDelta)}px), but pixel best is ${bestCandidate.id}; investigate state/default visibility before renderer CSS`);
   }
   if (sourceBest && stateBest) {
     const gain = stateBest.mismatchRatio - sourceBest.mismatchRatio;
@@ -934,6 +981,16 @@ function pickBetterGeometryCandidate(best, candidate) {
   if (!best?.geometryFit || best.geometryFit.score === null) return candidate;
   if (candidate.geometryFit.score < best.geometryFit.score - 0.001) return candidate;
   if (Math.abs(candidate.geometryFit.score - best.geometryFit.score) <= 0.001 && candidate.mismatchRatio < best.mismatchRatio) return candidate;
+  return best;
+}
+
+function pickCloserRootHeightCandidate(best, candidate) {
+  if (typeof candidate?.rootHeightDelta !== 'number') return best;
+  if (!best || typeof best.rootHeightDelta !== 'number') return candidate;
+  const candidateAbsHeight = Math.abs(candidate.rootHeightDelta);
+  const bestAbsHeight = Math.abs(best.rootHeightDelta);
+  if (candidateAbsHeight < bestAbsHeight - 0.001) return candidate;
+  if (Math.abs(candidateAbsHeight - bestAbsHeight) <= 0.001 && candidate.mismatchRatio < best.mismatchRatio) return candidate;
   return best;
 }
 
@@ -984,6 +1041,11 @@ function summarizeComponentEffects(candidates) {
     'sandbox-sheet-alias-show-only-source',
     'sandbox-sheet-alias-playbook-hide-source',
     'sandbox-sheet-alias-control-state-source',
+    'sandbox-sheet-alias-playbook-state-source',
+    'sandbox-sheet-alias-playbook-state-hardholder-source',
+    'sandbox-sheet-alias-playbook-state-through-news-source',
+    'sandbox-sheet-alias-playbook-state-through-quarantine-source',
+    'sandbox-sheet-alias-playbook-state-through-savvy-source',
   ];
   return trackedIds
     .map((id) => byId.get(id))
@@ -1007,7 +1069,14 @@ function formatRenderContextPatch(patch) {
   if (patch.mode === 'inline-block-text-input-height') return `${patch.mode}:${patch.wordSpacing}px:${patch.textInputHeight}px`;
   if (patch.mode === 'inline-block-nowrap-text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
   if (patch.mode === 'sheet-class-alias-text-input-height') return `${patch.mode}:${patch.textInputHeight}px`;
-  if (patch.mode === 'sheet-class-alias-css' && patch.aliasMode) return `${patch.mode}:${patch.aliasMode}`;
+  if (patch.mode === 'sheet-class-alias-css' && patch.aliasMode) {
+    const forced = patch.forceAttrClasses
+      ? `:${patch.forceAttrClasses.length}-classes`
+      : patch.forceAttrClass
+        ? `:${patch.forceAttrClass}`
+        : '';
+    return `${patch.mode}:${patch.aliasMode}${forced}`;
+  }
   if (patch.mode === 'row-width-fudge') return `${patch.mode}:${patch.extraWidth}px`;
   if (patch.mode === 'actual-root-width' && typeof patch.rootWidth === 'number') return `${patch.mode}:${patch.rootWidth}px`;
   return patch.mode ?? null;
@@ -1071,12 +1140,12 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local full-root candidates compared against stitched Roll20 actual root. This is not Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Actual size | Pixel best | Pixel mismatch | Geometry best | Geometry score | Best local root | Notes |');
-  lines.push('| --- | --- | --- | --- | ---: | --- | ---: | --- | --- |');
+  lines.push('| Fixture | Status | Actual size | Pixel best | Pixel mismatch | Height closest | Height delta | Geometry best | Geometry score | Best local root | Notes |');
+  lines.push('| --- | --- | --- | --- | ---: | --- | ---: | --- | ---: | --- | --- |');
   for (const fixture of report.fixtures) {
     const displayBest = fixture.bestCandidate ?? fixture.diagnosticBestCandidate ?? null;
     const bestLabel = fixture.diagnosticBestCandidate ? `${fixture.diagnosticBestCandidate.id} (diagnostic only)` : displayBest?.id ?? '';
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fmtSize(fixture.actual?.size)} | ${bestLabel} | ${pct(displayBest?.mismatchRatio)} | ${fixture.bestGeometryCandidate?.id ?? ''} | ${num(fixture.bestGeometryCandidate?.geometryFit?.score)} | ${fmtSize(displayBest?.localSize)} | ${(fixture.interpretation ?? [fixture.reason ?? '']).join('<br>')} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fmtSize(fixture.actual?.size)} | ${bestLabel} | ${pct(displayBest?.mismatchRatio)} | ${fixture.closestRootHeightCandidate?.id ?? ''} | ${num(fixture.closestRootHeightCandidate?.rootHeightDelta)} | ${fixture.bestGeometryCandidate?.id ?? ''} | ${num(fixture.bestGeometryCandidate?.geometryFit?.score)} | ${fmtSize(displayBest?.localSize)} | ${(fixture.interpretation ?? [fixture.reason ?? '']).join('<br>')} |`);
   }
   for (const fixture of report.fixtures.filter((item) => item.status === 'COMPARED' || item.status === 'DIAGNOSTIC_COMPARED')) {
     lines.push('');

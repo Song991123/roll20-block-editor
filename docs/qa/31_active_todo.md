@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current Roll20 renderer note, 2026-06-19 AW2E playbook state height probe:
+`smoke:roll20-full-root-candidates` now records a separate `closestRootHeightCandidate`. AW2E pixel best remains `sandbox-sheet-alias-playbook-hide-source` at `7.22%`, but it is structurally wrong (`850x2532`, root delta `-6636.125px`). The closest height candidate is `sandbox-sheet-alias-playbook-state-through-quarantine-source`, with `850x9377` and root delta `+208.5px`; `through-news` is `850x8844` / `-324.5px`. This strongly suggests AW2E actual Roll20 state is around 12-13 playbook sections visible, not all visible and not only Hardholder. Next P0: capture/derive actual Roll20 playbook/default attr state before any renderer CSS promotion.
+
 Current Roll20 renderer note, 2026-06-19 AW2E grouped selector candidates:
 `smoke:roll20-full-root-candidates` now splits the diagnostic `sheet-` alias CSS into grouped candidates (`hide-only`, `show-only`, `playbook-hide-only`, `control-state-only`). Latest AW2E candidate table: `normal-source-state` is `8.98%` mismatch with root delta `+2424.938px` (`850x11593`); full alias is `7.89%` but root delta `-7393.125px` (`850x1775`); hide-only is `8.23%` / `-7427.688px`; show-only is `9.18%` / `+2430.5px`; playbook-hide-only is best by pixels at `7.22%` but still root delta `-6636.125px` (`850x2532`); control-state-only is `8.97%` / `+2430.5px`. Interpretation: playbook hide selectors are the strongest AW2E axis, but applying them as-is over-hides the sheet. Production renderer remains HOLD until actual Roll20 state/DOM explains which playbook sections should stay visible.
 
