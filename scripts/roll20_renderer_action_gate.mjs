@@ -34,9 +34,10 @@ async function main() {
   const geometry = await readJsonIfExists(path.join(runDir, 'geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json'));
   const inputFlowAxis = await readJsonIfExists(path.join(runDir, 'input-flow-axis-diagnostics', 'input-flow-axis-diagnostics-results.json'));
   const chatParity = await readJsonIfExists(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
+  const chatStyle = await readJsonIfExists(path.join(runDir, 'chat-style-context-diagnostics', 'chat-style-context-diagnostics-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -44,6 +45,7 @@ async function main() {
     recommendation,
     inputFlowAxis: summarizeInputFlowAxis(inputFlowAxis),
     chatParity: summarizeChatParity(chatParity),
+    chatStyle: summarizeChatStyle(chatStyle),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -215,7 +217,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -228,6 +230,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
   const generatedEvidenceComplete = Boolean(generatedSummaryComplete || generatedStatusComplete);
   const inputFlowSummary = summarizeInputFlowAxis(inputFlowAxis);
   const chatParitySummary = summarizeChatParity(chatParity);
+  const chatStyleSummary = summarizeChatStyle(chatStyle);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
 
   if (!generatedEvidenceComplete) {
@@ -348,6 +351,14 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
   if (chatParitySummary) {
     positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, alignedHighMismatch=${chatParitySummary.alignedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, actualTemplatePixelSuspect=${chatParitySummary.actualTemplatePixelSuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, currentMetricMissing=${chatCurrentMetrics.missing}/${chatCurrentMetrics.total}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, authoritativeMaxAlignedMismatch=${chatParitySummary.authoritativeMaxAlignedMismatchPct}%, maxAlignedMismatchIncludingSuspects=${chatParitySummary.maxAlignedMismatchPct}%`);
   }
+  if (!chatStyleSummary) {
+    warnings.push('chat style/context diagnostic has not been run; run diagnose:roll20-chat-style before promoting ChatPane shell/template CSS');
+  } else {
+    positiveFindings.push(`chat style context diagnostic: compared=${chatStyleSummary.compared}/${chatStyleSummary.fixtures}, findings=${formatFindingCounts(chatStyleSummary.findingCounts)}, tableWidthDeltas=${formatFixtureDeltas(chatStyleSummary.tableWidthDeltas)}, rootWidthDeltas=${formatFixtureDeltas(chatStyleSummary.rootWidthDeltas)}`);
+    if (chatStyleSummary.conflictingTableWidthDirection) {
+      blockers.push(`actual Roll20 chat table width deltas conflict across fixtures (${formatFixtureDeltas(chatStyleSummary.tableWidthDeltas)}); do not promote a single ChatPane width/padding patch without a narrower renderer model`);
+    }
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -381,6 +392,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     } else {
       nextActions.push('Fix local ChatPane rolltemplate shell sizing/content to match actual Roll20 chat, then rerun rolltemplate chat smoke and diagnose:roll20-chat-parity.');
     }
+  }
+  if (!chatStyleSummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-style -- ${path.relative(process.cwd(), activeRunDir)} before the next ChatPane CSS candidate.`);
+  } else if (chatStyleSummary.conflictingTableWidthDirection) {
+    nextActions.push('Use chat-style context diagnostics to explain the opposite AW2E/YSHY table-width deltas before testing another global ChatPane width, padding, or wrap patch.');
   }
   if (missingFullRootCandidates.length) {
     const ids = missingFullRootCandidates.map((fixture) => fixture.fixtureId);
@@ -458,6 +474,53 @@ function summarizeInputFlowAxis(report) {
     applyCandidateFixtures: report.summary.applyCandidateFixtures ?? [],
     blockGlobalModelFixtures: report.summary.blockGlobalModelFixtures ?? [],
     globalModelSafe: Boolean(report.summary.globalModelSafe),
+  };
+}
+
+function summarizeChatStyle(report) {
+  if (!report?.fixtures) return null;
+  const fixtures = report.fixtures ?? [];
+  const compared = fixtures.filter((fixture) => fixture.status === 'COMPARED');
+  const tableWidthDeltas = compared
+    .map((fixture) => ({
+      fixtureId: fixture.id,
+      value: fixture.tableDelta?.width ?? null,
+    }))
+    .filter((item) => typeof item.value === 'number' && Number.isFinite(item.value));
+  const rootWidthDeltas = compared
+    .map((fixture) => ({
+      fixtureId: fixture.id,
+      value: fixture.rootDelta?.width ?? null,
+    }))
+    .filter((item) => typeof item.value === 'number' && Number.isFinite(item.value));
+  const hasPositiveTableDelta = tableWidthDeltas.some((item) => item.value >= 8);
+  const hasNegativeTableDelta = tableWidthDeltas.some((item) => item.value <= -8);
+  return {
+    fixtures: fixtures.length,
+    compared: compared.length,
+    missingEvidence: Number(report.summary?.missingEvidence ?? fixtures.length - compared.length),
+    findingCounts: report.summary?.findingCounts ?? {},
+    tableWidthDeltas,
+    rootWidthDeltas,
+    conflictingTableWidthDirection: hasPositiveTableDelta && hasNegativeTableDelta,
+    fixturesWithFindings: compared.map((fixture) => ({
+      fixtureId: fixture.id,
+      findings: fixture.findings ?? [],
+      rootDelta: fixture.rootDelta ?? null,
+      tableDelta: fixture.tableDelta ?? null,
+      rows: fixture.rows
+        ? {
+            localCount: fixture.rows.localCount ?? 0,
+            actualCount: fixture.rows.actualCount ?? 0,
+            largestHeightDeltas: (fixture.rows.largestHeightDeltas ?? []).slice(0, 3),
+          }
+        : null,
+      topStyleDeltas: (fixture.topStyleDeltas ?? []).slice(0, 6).map((delta) => ({
+        selector: delta.selector,
+        key: delta.key,
+        numericDelta: delta.numericDelta ?? null,
+      })),
+    })),
   };
 }
 
@@ -662,6 +725,29 @@ function renderMarkdown(report) {
     }
     lines.push('');
   }
+  if (report.chatStyle) {
+    lines.push('### Chat Style Context Boundary', '');
+    lines.push(`- Compared: ${report.chatStyle.compared}/${report.chatStyle.fixtures}`);
+    lines.push(`- Missing style evidence: ${report.chatStyle.missingEvidence}`);
+    lines.push(`- Finding counts: ${formatFindingCounts(report.chatStyle.findingCounts)}`);
+    lines.push(`- Table width deltas: ${formatFixtureDeltas(report.chatStyle.tableWidthDeltas)}`);
+    lines.push(`- Root width deltas: ${formatFixtureDeltas(report.chatStyle.rootWidthDeltas)}`);
+    lines.push(`- Conflicting table-width direction: ${report.chatStyle.conflictingTableWidthDirection ? 'YES' : 'NO'}`);
+    if (report.chatStyle.fixturesWithFindings?.length) {
+      lines.push('');
+      lines.push('| Fixture | Findings | Root delta W/H | Table delta W/H | Rows L/A | Top style deltas |');
+      lines.push('| --- | --- | ---: | ---: | ---: | --- |');
+      for (const fixture of report.chatStyle.fixturesWithFindings) {
+        const topStyle = fixture.topStyleDeltas
+          .map((delta) => `${delta.selector}.${delta.key}${delta.numericDelta == null ? '' : ` ${num(delta.numericDelta)}`}`)
+          .join(', ');
+        lines.push(
+          `| \`${fixture.fixtureId}\` | ${(fixture.findings ?? []).join(', ')} | ${fixture.rootDelta?.width ?? ''}/${fixture.rootDelta?.height ?? ''} | ${fixture.tableDelta?.width ?? ''}/${fixture.tableDelta?.height ?? ''} | ${fixture.rows?.localCount ?? ''}/${fixture.rows?.actualCount ?? ''} | ${topStyle} |`,
+        );
+      }
+    }
+    lines.push('');
+  }
   lines.push('### Next Actions', '');
   for (const action of report.recommendation.nextActions) lines.push(`- ${action}`);
   lines.push('');
@@ -821,6 +907,21 @@ function sleep(ms) {
 function fmtValidation(validation) {
   if (!validation) return '';
   return validation.ok ? validation.kind : `MISSING:${validation.kind}`;
+}
+
+function formatFindingCounts(counts) {
+  const entries = Object.entries(counts ?? {})
+    .filter(([, value]) => Number(value) > 0)
+    .sort((a, b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0]));
+  return entries.length
+    ? entries.map(([key, value]) => `${key}:${value}`).join(', ')
+    : 'none';
+}
+
+function formatFixtureDeltas(deltas) {
+  return (deltas ?? []).length
+    ? deltas.map((item) => `${item.fixtureId}:${num(item.value)}px`).join(', ')
+    : 'none';
 }
 
 function patchFamily(patch) {

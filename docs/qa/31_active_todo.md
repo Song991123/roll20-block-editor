@@ -14,6 +14,8 @@ Follow-up diagnostic: Added rejected local-only chat geometry candidate `roll20-
 
 Follow-up style context diagnostic: Added `diagnose:roll20-chat-style`, which compares local ChatPane computed style/row sidecars against actual Roll20 chat sidecars. Latest report compares `3/3` fixtures and narrows the structured deltas: AW2E has actual table width `+33.134px` plus typography deltas, Les-Oublies is mostly typography-only with tiny geometry deltas, and YSHY has table width `-24.309px` plus clipped-overflow evidence. A new `roll20-break-word` candidate tested the YSHY `overflow-wrap: break-word` clue, but candidate comparison rejected it as neutral/slightly worse (`22.68% -> 22.77%` aligned). Keep both padding and break-word as negative controls; next P0 should compare table/font rasterization and the `table-scale-x`/shadow diagnostics against actual computed style before production CSS.
 
+Follow-up renderer gate integration: `gate:roll20-renderer-action` now reads `chat-style-context-diagnostics` and adds a blocker when actual Roll20 chat table-width deltas conflict across fixtures. Current gate explicitly blocks single ChatPane width/padding promotion because AW2E is `+33.134px`, Les-Oublies is `+0.8px`, and YSHY is `-24.309px`. This makes the next P0 table/font/shadow renderer investigation visible in the standard gate output instead of buried in local reports.
+
 ## 2026-06-20 Codex Update - Roll20 chat crop foreground guard
 
 Status: PARTIAL. Evidence quality improved; renderer/chat parity remains blocked.
