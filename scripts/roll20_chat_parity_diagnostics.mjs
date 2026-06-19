@@ -47,7 +47,10 @@ async function main() {
   const normalizedHighMismatch = normalizedCompared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
   const alignedHighMismatch = normalizedCompared.filter((fixture) => fixture.bestAlignedMismatchRatio !== null && fixture.bestAlignedMismatchRatio > 0.1);
   const actualCropGeometrySuspect = normalizedCompared.filter((fixture) => fixture.actualCropGeometry?.suspect);
-  const authoritativeNormalizedHighMismatch = alignedHighMismatch.filter((fixture) => !fixture.actualCropGeometry?.suspect);
+  const actualTemplatePixelSuspect = normalizedCompared.filter((fixture) => fixture.actualTemplatePixels?.suspect);
+  const authoritativeNormalizedHighMismatch = alignedHighMismatch.filter(
+    (fixture) => !fixture.actualCropGeometry?.suspect && !fixture.actualTemplatePixels?.suspect,
+  );
   const actualChatCssInactive = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
   const actualChatCssScopedMismatch = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH');
   const actualChatCssUnknown = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
@@ -68,6 +71,7 @@ async function main() {
       alignedHighMismatch: alignedHighMismatch.length,
       authoritativeNormalizedHighMismatch: authoritativeNormalizedHighMismatch.length,
       actualCropGeometrySuspect: actualCropGeometrySuspect.length,
+      actualTemplatePixelSuspect: actualTemplatePixelSuspect.length,
       actualChatCssInactive: actualChatCssInactive.length,
       actualChatCssScopedMismatch: actualChatCssScopedMismatch.length,
       actualChatCssUnknown: actualChatCssUnknown.length,
@@ -102,6 +106,7 @@ async function main() {
   console.log(`alignedHighMismatch=${alignedHighMismatch.length}`);
   console.log(`authoritativeNormalizedHighMismatch=${authoritativeNormalizedHighMismatch.length}`);
   console.log(`actualCropGeometrySuspect=${actualCropGeometrySuspect.length}`);
+  console.log(`actualTemplatePixelSuspect=${actualTemplatePixelSuspect.length}`);
   for (const fixture of fixtures) {
     if (fixture.status === 'DIFFED') {
       console.log(`DIFFED ${fixture.fixtureId} mode=${fixture.compareMode} mismatch=${pct(fixture.mismatchRatio)} local=${fixture.localSize.join('x')} actual=${fixture.actualSize.join('x')}`);
@@ -192,6 +197,7 @@ async function compareFixture(page, fixtureId) {
     actualSize: diff.actualSize,
     actualImageFormat,
     actualSource: diff.actualSource,
+    actualTemplatePixels: classifyActualTemplatePixels(sidecarJson, diff.actualTemplatePixelStats),
     actualScreenshotScale: actualCrop?.clip
       ? [
           Number((diff.actualSize[0] / actualCrop.clip.width).toFixed(4)),
@@ -212,6 +218,23 @@ async function compareFixture(page, fixtureId) {
     rmsRgb: diff.rmsRgb,
     bounds: diff.bounds,
     note: 'Diagnostic local ChatPane vs actual Roll20 chat comparison. Requires human classification before a parity claim.',
+  };
+}
+
+function classifyActualTemplatePixels(sidecar, stats) {
+  if (!stats) return { suspect: false, reason: '', stats: null };
+  const text = String(sidecar?.latestTemplate?.text ?? '').trim();
+  const hasExpectedText = text.length > 0;
+  const darkRatio = Number(stats.darkRatio ?? 0);
+  const edgeRatio = Number(stats.edgeRatio ?? 0);
+  const nonWhiteRatio = Number(stats.nonWhiteRatio ?? 0);
+  const suspect = hasExpectedText && darkRatio < 0.002 && edgeRatio < 0.005;
+  return {
+    suspect,
+    reason: suspect
+      ? `actual crop has expected template text in DOM but almost no dark/edge pixels (dark=${pct(darkRatio)}, edge=${pct(edgeRatio)}, nonWhite=${pct(nonWhiteRatio)}); likely captured map/grid/background instead of the rolltemplate`
+      : 'actual crop has enough foreground pixels for a rolltemplate screenshot sanity check',
+    stats,
   };
 }
 
@@ -542,6 +565,26 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
           },
         };
       }
+      function pixelStats(imageData) {
+        let dark = 0;
+        let nonWhite = 0;
+        let edge = 0;
+        const total = width * height;
+        for (let i = 0; i < imageData.data.length; i += 4) {
+          const r = imageData.data[i];
+          const g = imageData.data[i + 1];
+          const b = imageData.data[i + 2];
+          const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          if (luma < 100) dark += 1;
+          if (luma < 245) nonWhite += 1;
+          if (Math.max(r, g, b) - Math.min(r, g, b) > 20) edge += 1;
+        }
+        return {
+          darkRatio: total ? dark / total : 0,
+          nonWhiteRatio: total ? nonWhite / total : 0,
+          edgeRatio: total ? edge / total : 0,
+        };
+      }
       const raw = diffAt(0, 0);
       let best = raw;
       for (let dy = -8; dy <= 8; dy += 1) {
@@ -554,6 +597,7 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
         localSize: [localImage.naturalWidth, localImage.naturalHeight],
         actualSize: [actualImage.naturalWidth, actualImage.naturalHeight],
         actualSource: [actualSource.x, actualSource.y, actualSource.width, actualSource.height],
+        actualTemplatePixelStats: pixelStats(actualData),
         comparedSize: [width, height],
         mismatchRatio: raw?.mismatchRatio ?? 1,
         rmsRgb: raw?.rmsRgb ?? null,
@@ -599,6 +643,7 @@ function renderMarkdown(report) {
   lines.push(`Aligned high mismatch: ${report.summary.alignedHighMismatch}`);
   lines.push(`Authoritative normalized high mismatch: ${report.summary.authoritativeNormalizedHighMismatch}`);
   lines.push(`Actual crop geometry suspect: ${report.summary.actualCropGeometrySuspect}`);
+  lines.push(`Actual template pixel suspect: ${report.summary.actualTemplatePixelSuspect}`);
   lines.push(`Actual chat CSS inactive: ${report.summary.actualChatCssInactive}`);
   lines.push(`Actual chat CSS scoped/prefix mismatch: ${report.summary.actualChatCssScopedMismatch}`);
   lines.push(`Actual chat CSS unknown: ${report.summary.actualChatCssUnknown}`);
@@ -607,15 +652,16 @@ function renderMarkdown(report) {
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
   lines.push(`Max aligned mismatch: ${pct(report.summary.maxAlignedMismatchRatio)}`);
   lines.push('');
-  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | Highlight share | Highlight delta | Bright share | Dark share | Worst row | RMS | Note |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | --- | ---: | --- |');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Template pixels | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | Highlight share | Highlight delta | Bright share | Dark share | Worst row | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | --- | ---: | --- |');
   for (const fixture of report.fixtures) {
     const cropGeometry = fixture.actualCropGeometry?.suspect ? `SUSPECT: ${fixture.actualCropGeometry.reason}` : 'authoritative';
+    const pixelCheck = fixture.actualTemplatePixels?.suspect ? `SUSPECT: ${fixture.actualTemplatePixels.reason}` : 'foreground ok';
     const sizeDelta = fixture.widthDeltaPx === null || fixture.widthDeltaPx === undefined
       ? ''
       : `${fixture.widthDeltaPx}x${fixture.heightDeltaPx}`;
     const breakdown = summarizeBreakdown(fixture.bestAlignedDiffBreakdown ?? fixture.diffBreakdown);
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.highlightShare} | ${breakdown.highlightDelta} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | ${pixelCheck} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.highlightShare} | ${breakdown.highlightDelta} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');

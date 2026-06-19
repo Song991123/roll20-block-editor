@@ -175,6 +175,7 @@ async function main() {
       chatParityActualCssScopedMismatch: chatParity.actualChatCssScopedMismatch,
       chatParityActualCssUnknown: chatParity.actualChatCssUnknown,
       chatParityActualCaptureScaleSuspect: chatParity.actualCaptureScaleSuspect,
+      chatParityActualTemplatePixelSuspect: chatParity.actualTemplatePixelSuspect,
       chatParityMaxNormalizedMismatchPct: chatParity.maxNormalizedMismatchPct,
       chatParityMaxAlignedMismatchPct: chatParity.maxAlignedMismatchPct,
       chatCurrentMetricsPresent: chatCurrentMetrics.presentCount,
@@ -421,6 +422,7 @@ async function readChatParity(runDir) {
       alignedHighMismatch: 0,
       authoritativeNormalizedHighMismatch: 0,
       actualCropGeometrySuspect: 0,
+      actualTemplatePixelSuspect: 0,
       actualChatCssInactive: 0,
       actualChatCssScopedMismatch: 0,
       actualChatCssUnknown: 0,
@@ -443,6 +445,7 @@ async function readChatParity(runDir) {
     alignedHighMismatch: Number(summary.alignedHighMismatch ?? summary.normalizedHighMismatch ?? 0),
     authoritativeNormalizedHighMismatch: Number(summary.authoritativeNormalizedHighMismatch ?? 0),
     actualCropGeometrySuspect: Number(summary.actualCropGeometrySuspect ?? 0),
+    actualTemplatePixelSuspect: Number(summary.actualTemplatePixelSuspect ?? 0),
     actualChatCssInactive: Number(summary.actualChatCssInactive ?? 0),
     actualChatCssScopedMismatch: Number(summary.actualChatCssScopedMismatch ?? 0),
     actualChatCssUnknown: Number(summary.actualChatCssUnknown ?? 0),
@@ -805,6 +808,9 @@ function buildNextAction({
   if (chatParity?.exists && chatParity.actualCropGeometrySuspect > 0) {
     return 'Roll20 chat evidence has element-crop geometry suspects. Recapture roll20-chat.png with element-bound template screenshots and fresh DOM sidecars before tuning local ChatPane CSS from pixel diffs.';
   }
+  if (chatParity?.exists && chatParity.actualTemplatePixelSuspect > 0) {
+    return 'Roll20 chat evidence has template foreground-pixel suspects. Recapture roll20-chat.png from a visible text chat panel before tuning local ChatPane CSS from pixel diffs.';
+  }
   if (chatParity?.exists && chatParity.actualChatCssScopedMismatch > 0) {
     return 'Actual Roll20 chat CSS appears scoped/prefix-mismatched. Inspect actual chat and character iframe style selectors before deciding whether local ChatPane should apply sheet-* rolltemplate CSS.';
   }
@@ -883,7 +889,7 @@ function renderMarkdown(report) {
     `- Renderer action: ${report.summary.rendererAction} (${report.summary.rendererBlockerCount} blockers)`,
     `- Renderer ready for production CSS: ${report.summary.rendererReady ? 'yes' : 'NO'}`,
     `- Chat parity diagnostic: ${report.summary.chatParityExists ? 'present' : 'missing'} (${report.summary.chatParityCompared}/${report.summary.chatParityFixtures} compared, normalized ${report.summary.chatParityNormalizedCompared}/${report.summary.chatParityFixtures})`,
-    `- Chat blockers: needs normalized capture ${report.summary.chatParityNeedsNormalizedCapture}, crop geometry suspect ${report.summary.chatParityActualCropGeometrySuspect}, aligned high mismatch ${report.summary.chatParityAlignedHighMismatch}, authoritative normalized high mismatch ${report.summary.chatParityAuthoritativeNormalizedHighMismatch}, actual CSS inactive ${report.summary.chatParityActualCssInactive}, scoped/prefix mismatch ${report.summary.chatParityActualCssScopedMismatch}, actual CSS unknown ${report.summary.chatParityActualCssUnknown}`,
+    `- Chat blockers: needs normalized capture ${report.summary.chatParityNeedsNormalizedCapture}, crop geometry suspect ${report.summary.chatParityActualCropGeometrySuspect}, template pixel suspect ${report.summary.chatParityActualTemplatePixelSuspect}, aligned high mismatch ${report.summary.chatParityAlignedHighMismatch}, authoritative normalized high mismatch ${report.summary.chatParityAuthoritativeNormalizedHighMismatch}, actual CSS inactive ${report.summary.chatParityActualCssInactive}, scoped/prefix mismatch ${report.summary.chatParityActualCssScopedMismatch}, actual CSS unknown ${report.summary.chatParityActualCssUnknown}`,
     `- Chat current row/typography sidecars: ${report.summary.chatCurrentMetricsPresent}/${report.summary.chatCurrentMetricsTotal} current (${report.summary.chatCurrentMetricsMissing} missing)`,
     `- Max normalized chat mismatch: ${report.summary.chatParityMaxNormalizedMismatchPct ?? 'n/a'}%`,
     `- Max aligned chat mismatch: ${report.summary.chatParityMaxAlignedMismatchPct ?? 'n/a'}%`,
@@ -936,6 +942,7 @@ function renderMarkdown(report) {
     lines.push(`- Aligned high mismatch: ${report.chatParity.alignedHighMismatch}`);
     lines.push(`- Authoritative normalized high mismatch: ${report.chatParity.authoritativeNormalizedHighMismatch}`);
     lines.push(`- Actual crop geometry suspect: ${report.chatParity.actualCropGeometrySuspect}`);
+    lines.push(`- Actual template foreground-pixel suspect: ${report.chatParity.actualTemplatePixelSuspect}`);
     lines.push(`- Actual chat CSS inactive: ${report.chatParity.actualChatCssInactive}`);
     lines.push(`- Actual chat CSS scoped/prefix mismatch: ${report.chatParity.actualChatCssScopedMismatch}`);
     lines.push(`- Actual chat CSS unknown: ${report.chatParity.actualChatCssUnknown}`);
@@ -997,6 +1004,7 @@ function renderConsoleSummary(report, outDir) {
     `chatActualCssInactive=${report.summary.chatParityActualCssInactive}`,
     `chatActualCssScopedMismatch=${report.summary.chatParityActualCssScopedMismatch}`,
     `chatActualCaptureScaleSuspect=${report.summary.chatParityActualCaptureScaleSuspect}`,
+    `chatActualTemplatePixelSuspect=${report.summary.chatParityActualTemplatePixelSuspect}`,
     `chatNormalizedHighMismatch=${report.summary.chatParityNormalizedHighMismatch}`,
     `chatAlignedHighMismatch=${report.summary.chatParityAlignedHighMismatch}`,
     `chatAuthoritativeNormalizedHighMismatch=${report.summary.chatParityAuthoritativeNormalizedHighMismatch}`,

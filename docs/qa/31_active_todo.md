@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - Roll20 chat crop foreground guard
+
+Status: PARTIAL. Evidence quality improved; renderer/chat parity remains blocked.
+
+- DONE: Detected that the latest Les-Oublies actual `roll20-chat.png` is not a trustworthy rolltemplate crop. The PNG contains map/grid pixels while the DOM sidecar reports `sheet-rolltemplate-initiative-roll` text.
+- DONE: `diagnose:roll20-chat-parity` now computes foreground pixel sanity metrics and reports `actualTemplatePixelSuspect=1` for this bad crop.
+- DONE: `status:roll20-actual` and `gate:roll20-renderer-action` now expose `chatActualTemplatePixelSuspect` / foreground-pixel blockers so agents do not tune production ChatPane CSS from contaminated evidence.
+- DECISION: Reverted the tentative ChatPane `340px` production width change. The live Roll20 DOM supports investigating `340px`, but the screenshot evidence must be recaptured before any production CSS promotion.
+- RESULT: Current status remains `rendererReady=NO`. Authoritative normalized chat mismatch is now `2/3` after excluding the contaminated Les crop; authoritative max aligned mismatch is `23.4%`. The suspect-including max remains `91.69%` and must not be used as a CSS target.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, `diagnose:roll20-chat-parity`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `guard:roll20-evidence`.
+- STILL TODO P0: Recapture Les-Oublies actual chat from a visibly open text chat panel with verified screenshot surface coordinates. Then rerun the full chat parity/status/gate loop before changing ChatPane shell sizing.
+- STILL TODO P0: AW2E/YSHY still have authoritative Roll20 chat mismatch; do not claim Roll20 chat parity or all-sheet support.
+
 ## 2026-06-20 Codex Update - AW2E/Les Roll20 chat current-metric recapture
 
 Status: PARTIAL. Current row/typography evidence is now complete for all three real Roll20 chat fixtures, but Roll20 chat/template parity is still failing.

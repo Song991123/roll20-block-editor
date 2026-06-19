@@ -1,3 +1,16 @@
+## 2026-06-20 06:35 +09:00 - Roll20 chat crop foreground guard
+
+Status: PARTIAL. This batch improves evidence truthfulness; Roll20 chat/template parity is still not solved.
+
+- Found that the latest Les-Oublies `roll20-chat.png` was a bad crop of the VTT map/grid, even though the DOM sidecar still reported a visible `sheet-rolltemplate-initiative-roll`.
+- Reverted the tentative production ChatPane width change. Live Roll20 DOM suggests the default chat shell is `340px`, but the pixel evidence is currently contaminated and must not drive production CSS yet.
+- Added foreground-pixel sanity checks to `diagnose:roll20-chat-parity`: when the DOM sidecar has template text but the PNG has almost no dark/edge pixels, the fixture is marked `actualTemplatePixelSuspect`.
+- Updated `status:roll20-actual` and `gate:roll20-renderer-action` to surface that suspect state and block renderer CSS tuning until recapture.
+- Verification: `diagnose:roll20-chat-parity` now reports `actualTemplatePixelSuspect=1` and reduces authoritative normalized high mismatch from 3 fixtures to 2 fixtures.
+- Verification: `gate:roll20-renderer-action` now separates the contaminated Les capture from real remaining chat mismatches; authoritative max aligned mismatch is `23.4%`, while the old `91.69%` number is explicitly treated as suspect-including evidence.
+- Verification: `corepack pnpm run lint`, `corepack pnpm run build`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `guard:roll20-evidence` passed.
+- Next P0: recapture Les-Oublies chat from a visible text chat panel with matching screenshot surface coordinates, then rerun chat parity before any ChatPane/Roll20 chat shell CSS change.
+
 ## 2026-06-20 05:13 +09:00 - AW2E/Les actual Roll20 chat current-metric recapture
 
 Status: PARTIAL. Current Roll20 chat sidecar coverage is now complete; visual/chat parity remains blocked.

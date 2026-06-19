@@ -261,8 +261,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     if (chatParitySummary.actualCropGeometrySuspect > 0) {
       blockers.push(`actual Roll20 chat crop geometry is suspect for ${chatParitySummary.actualCropGeometrySuspect}/${chatParitySummary.normalizedCompared} normalized fixtures; recapture with element-bound template screenshots before using pixel mismatch as a production renderer target`);
     }
+    if (chatParitySummary.actualTemplatePixelSuspect > 0) {
+      blockers.push(`actual Roll20 chat crop foreground pixels are suspect for ${chatParitySummary.actualTemplatePixelSuspect}/${chatParitySummary.normalizedCompared} normalized fixtures; the DOM sidecar has rolltemplate text but the PNG likely captured map/grid/background, so recapture from a visible text chat panel before tuning ChatPane CSS`);
+    }
     if (chatParitySummary.authoritativeNormalizedHighMismatch > 0) {
-      blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${chatParitySummary.authoritativeNormalizedHighMismatch}/${chatParitySummary.normalizedCompared} geometry-authoritative normalized fixtures after small-offset alignment; max aligned mismatch ${chatParitySummary.maxAlignedMismatchPct}% (raw max ${chatParitySummary.maxNormalizedMismatchPct}%)`);
+      blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${chatParitySummary.authoritativeNormalizedHighMismatch}/${chatParitySummary.normalizedCompared} geometry-authoritative normalized fixtures after small-offset alignment; authoritative max aligned mismatch ${chatParitySummary.authoritativeMaxAlignedMismatchPct}% (raw ${chatParitySummary.authoritativeMaxMismatchPct}%)`);
     }
   }
   if (chatCurrentMetrics.missing > 0) {
@@ -343,7 +346,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     positiveFindings.push(`input-flow axis diagnostic: status=${inputFlowSummary.status}, applyCandidate=${inputFlowSummary.applyCandidateFixtures.length}, blockGlobalModel=${inputFlowSummary.blockGlobalModelFixtures.length}, globalSafe=${inputFlowSummary.globalModelSafe ? 'YES' : 'NO'}`);
   }
   if (chatParitySummary) {
-    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, alignedHighMismatch=${chatParitySummary.alignedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, currentMetricMissing=${chatCurrentMetrics.missing}/${chatCurrentMetrics.total}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, maxNormalizedMismatch=${chatParitySummary.maxNormalizedMismatchPct}%, maxAlignedMismatch=${chatParitySummary.maxAlignedMismatchPct}%`);
+    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, alignedHighMismatch=${chatParitySummary.alignedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, actualTemplatePixelSuspect=${chatParitySummary.actualTemplatePixelSuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, currentMetricMissing=${chatCurrentMetrics.missing}/${chatCurrentMetrics.total}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, authoritativeMaxAlignedMismatch=${chatParitySummary.authoritativeMaxAlignedMismatchPct}%, maxAlignedMismatchIncludingSuspects=${chatParitySummary.maxAlignedMismatchPct}%`);
   }
 
   const action = blockers.length
@@ -461,14 +464,17 @@ function summarizeInputFlowAxis(report) {
 function summarizeChatParity(report) {
   if (!report?.summary) return null;
   const fixtures = report.fixtures ?? [];
+  const authoritativeMismatchFixtures = fixtures.filter(
+    (fixture) =>
+      fixture.status === 'DIFFED' &&
+      fixture.compareMode === 'rolltemplate-crop' &&
+      !fixture.actualCropGeometry?.suspect &&
+      !fixture.actualTemplatePixels?.suspect &&
+      Number(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio ?? 0) > 0.1,
+  );
   const authoritativeNormalizedHighMismatch = Number(
     report.summary.authoritativeNormalizedHighMismatch ??
-      fixtures.filter((fixture) =>
-        fixture.status === 'DIFFED' &&
-        fixture.compareMode === 'rolltemplate-crop' &&
-        !fixture.actualCropGeometry?.suspect &&
-        Number(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio ?? 0) > 0.1,
-      ).length,
+      authoritativeMismatchFixtures.length,
   );
   return {
     fixtures: Number(report.summary.fixtures ?? 0),
@@ -483,6 +489,10 @@ function summarizeChatParity(report) {
       report.summary.actualCropGeometrySuspect ??
         fixtures.filter((fixture) => fixture.status === 'DIFFED' && fixture.compareMode === 'rolltemplate-crop' && fixture.actualCropGeometry?.suspect).length,
     ),
+    actualTemplatePixelSuspect: Number(
+      report.summary.actualTemplatePixelSuspect ??
+        fixtures.filter((fixture) => fixture.status === 'DIFFED' && fixture.compareMode === 'rolltemplate-crop' && fixture.actualTemplatePixels?.suspect).length,
+    ),
     actualChatCssInactive: Number(report.summary.actualChatCssInactive ?? 0),
     actualChatCssScopedMismatch: Number(report.summary.actualChatCssScopedMismatch ?? 0),
     actualChatCssUnknown: Number(report.summary.actualChatCssUnknown ?? 0),
@@ -493,8 +503,11 @@ function summarizeChatParity(report) {
     maxNormalizedMismatchPct: pctNumber(report.summary.maxNormalizedMismatchRatio ?? 0),
     maxAlignedMismatchRatio: Number(report.summary.maxAlignedMismatchRatio ?? report.summary.maxNormalizedMismatchRatio ?? 0),
     maxAlignedMismatchPct: pctNumber(report.summary.maxAlignedMismatchRatio ?? report.summary.maxNormalizedMismatchRatio ?? 0),
-    fixturesWithMismatch: fixtures
-      .filter((fixture) => fixture.status === 'DIFFED' && fixture.compareMode === 'rolltemplate-crop' && !fixture.actualCropGeometry?.suspect && Number(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio ?? 0) > 0.1)
+    authoritativeMaxMismatchRatio: authoritativeMismatchFixtures.reduce((max, fixture) => Math.max(max, Number(fixture.mismatchRatio ?? 0)), 0),
+    authoritativeMaxMismatchPct: pctNumber(authoritativeMismatchFixtures.reduce((max, fixture) => Math.max(max, Number(fixture.mismatchRatio ?? 0)), 0)),
+    authoritativeMaxAlignedMismatchRatio: authoritativeMismatchFixtures.reduce((max, fixture) => Math.max(max, Number(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio ?? 0)), 0),
+    authoritativeMaxAlignedMismatchPct: pctNumber(authoritativeMismatchFixtures.reduce((max, fixture) => Math.max(max, Number(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio ?? 0)), 0)),
+    fixturesWithMismatch: authoritativeMismatchFixtures
       .map((fixture) => ({
         fixtureId: fixture.fixtureId,
         mismatchPct: pctNumber(fixture.mismatchRatio),
