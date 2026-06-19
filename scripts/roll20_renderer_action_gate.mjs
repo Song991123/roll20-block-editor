@@ -43,9 +43,10 @@ async function main() {
   const chatShellGeometry = await readJsonIfExists(path.join(runDir, 'chat-shell-geometry', 'chat-shell-geometry-results.json'));
   const chatFontCell = await readJsonIfExists(path.join(runDir, 'chat-font-cell-model', 'chat-font-cell-model-results.json'));
   const chatWidthModel = await readJsonIfExists(path.join(runDir, 'chat-width-model', 'chat-width-model-results.json'));
+  const chatIntrinsicWidthModel = await readJsonIfExists(path.join(runDir, 'chat-intrinsic-width-model', 'chat-intrinsic-width-model-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -62,6 +63,7 @@ async function main() {
     chatShellGeometry: summarizeChatShellGeometry(chatShellGeometry),
     chatFontCell: summarizeChatFontCell(chatFontCell),
     chatWidthModel: summarizeChatWidthModel(chatWidthModel),
+    chatIntrinsicWidthModel: summarizeChatIntrinsicWidthModel(chatIntrinsicWidthModel),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -233,7 +235,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -255,6 +257,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatShellGeometrySummary = summarizeChatShellGeometry(chatShellGeometry);
   const chatFontCellSummary = summarizeChatFontCell(chatFontCell);
   const chatWidthModelSummary = summarizeChatWidthModel(chatWidthModel);
+  const chatIntrinsicWidthModelSummary = summarizeChatIntrinsicWidthModel(chatIntrinsicWidthModel);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
   const styleProofStatusByName = new Map(
     (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
@@ -469,6 +472,14 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       positiveFindings.push(`${fixture.fixtureId} width decision=${fixture.widthDecision}, actualTableCrop=${num(fixture.actualTableVsCropRatio)}x, tableDelta=${num(fixture.tableWidthDelta)}px, tableToCropDelta=${num(fixture.tableToCropDelta)}px, next=${fixture.nextAction}`);
     }
   }
+  if (!chatIntrinsicWidthModelSummary) {
+    warnings.push('chat intrinsic width model has not been run; run diagnose:roll20-chat-intrinsic-width before changing overflowed rolltemplate table sizing');
+  } else {
+    positiveFindings.push(`chat intrinsic width model: status=${chatIntrinsicWidthModelSummary.status}, actionable=${chatIntrinsicWidthModelSummary.actionable}/${chatIntrinsicWidthModelSummary.totalFixtures}, decisions=${formatFindingCounts(chatIntrinsicWidthModelSummary.decisions)}, transformContradicted=${chatIntrinsicWidthModelSummary.transformContradicted.join(', ') || 'none'}`);
+    for (const fixture of chatIntrinsicWidthModelSummary.actionableFixtures) {
+      positiveFindings.push(`${fixture.fixtureId} intrinsic decision=${fixture.intrinsicDecision}, tableDelta=${num(fixture.tableWidthDelta)}px, firstCellDelta=${num(fixture.firstCellWidthDelta)}px, fontDelta=${num(fixture.fontSizeDelta)}px, letterDelta=${num(fixture.letterSpacingDelta)}px, borderSpacingDelta=${num(fixture.borderSpacingXDelta)}px, transformContradicted=${fixture.transformContradicted ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
+    }
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -537,6 +548,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-width -- ${path.relative(process.cwd(), activeRunDir)} before changing ChatPane width, padding, or overflow behavior.`);
   } else if (chatWidthModelSummary.actionableFixtures.length) {
     nextActions.push(...chatWidthModelSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
+  }
+  if (!chatIntrinsicWidthModelSummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-intrinsic-width -- ${path.relative(process.cwd(), activeRunDir)} before changing overflowed rolltemplate table sizing.`);
+  } else if (chatIntrinsicWidthModelSummary.actionableFixtures.length) {
+    nextActions.push(...chatIntrinsicWidthModelSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   if (!chatCandidateSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
@@ -896,6 +912,35 @@ function summarizeChatWidthModel(report) {
     decisions: report.summary.decisions ?? {},
     productionSafe: Boolean(report.summary.productionSafe),
     actionableFixtures: fixtures.filter((fixture) => fixture.status === 'COMPARED' && fixture.widthDecision !== 'WIDTH_SECONDARY_OR_ACCEPTABLE'),
+    fixtures,
+  };
+}
+
+function summarizeChatIntrinsicWidthModel(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    status: fixture.status ?? 'UNKNOWN',
+    intrinsicDecision: fixture.intrinsicDecision ?? 'UNKNOWN',
+    bestAlignedMismatchPct: fixture.parity?.bestAlignedMismatchPct ?? '',
+    tableWidthDelta: fixture.deltas?.tableWidthDelta ?? null,
+    firstCellWidthDelta: fixture.rowCellDeltas?.firstCellWidthDelta ?? null,
+    fontSizeDelta: fixture.deltas?.fontSizeDelta ?? null,
+    letterSpacingDelta: fixture.deltas?.letterSpacingDelta ?? null,
+    borderSpacingXDelta: fixture.deltas?.borderSpacingXDelta ?? null,
+    transformContradicted: Boolean(fixture.styleProof?.transformContradicted),
+    nextAction: fixture.nextAction ?? '',
+    evidence: fixture.evidence ?? [],
+  }));
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    compared: Number(report.summary.compared ?? fixtures.filter((fixture) => fixture.status === 'COMPARED').length),
+    actionable: Number(report.summary.actionable ?? fixtures.filter((fixture) => fixture.intrinsicDecision !== 'INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE').length),
+    decisions: report.summary.decisions ?? {},
+    transformContradicted: report.summary.transformContradicted ?? [],
+    productionSafe: Boolean(report.summary.productionSafe),
+    actionableFixtures: fixtures.filter((fixture) => fixture.status === 'COMPARED' && fixture.intrinsicDecision !== 'INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE'),
     fixtures,
   };
 }
@@ -1273,6 +1318,22 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | ---: | ---: | ---: | ---: | --- | --- |');
       for (const fixture of report.chatWidthModel.actionableFixtures) {
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.widthDecision} | ${fixture.bestAlignedMismatchPct} | ${num(fixture.actualTableVsCropRatio)}x | ${num(fixture.tableWidthDelta)}px | ${num(fixture.tableToCropDelta)}px | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatIntrinsicWidthModel) {
+    lines.push('### Chat Intrinsic Width Model', '');
+    lines.push(`- Status: ${report.chatIntrinsicWidthModel.status}`);
+    lines.push(`- Actionable fixtures: ${report.chatIntrinsicWidthModel.actionable}/${report.chatIntrinsicWidthModel.totalFixtures}`);
+    lines.push(`- Decisions: ${formatFindingCounts(report.chatIntrinsicWidthModel.decisions)}`);
+    lines.push(`- Transform-contradicted fixtures: ${report.chatIntrinsicWidthModel.transformContradicted.join(', ') || 'none'}`);
+    if (report.chatIntrinsicWidthModel.actionableFixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Decision | Table Δ | First cell Δ | Font Δ | Letter Δ | Border spacing Δ | Transform proof | Evidence | Next action |');
+      lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |');
+      for (const fixture of report.chatIntrinsicWidthModel.actionableFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.intrinsicDecision} | ${num(fixture.tableWidthDelta)}px | ${num(fixture.firstCellWidthDelta)}px | ${num(fixture.fontSizeDelta)}px | ${num(fixture.letterSpacingDelta)}px | ${num(fixture.borderSpacingXDelta)}px | ${fixture.transformContradicted ? 'rejected' : 'n/a'} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');

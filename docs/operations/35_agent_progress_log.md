@@ -1,5 +1,12 @@
 ## 2026-06-20 CoC Table-Scale Style Proof Rejected
 
+- Added `scripts/roll20_chat_intrinsic_width_model.mjs` and package alias `diagnose:roll20-chat-intrinsic-width`.
+- The diagnostic compares local ChatPane rolltemplate table/row/cell metrics against actual Roll20 chat DOM sidecars and records transform style-proof status.
+- Latest result: `INTRINSIC_WIDTH_MODEL_REQUIRED`.
+- YSHY/CoC is now classified as `TRANSFORM_REJECTED_INTRINSIC_WIDTH_MODEL_REQUIRED`: table delta `-24.309px`, first-cell delta `-0.909px`, and actual Roll20 table transform is `none`.
+- AW2E and Les-Oublies are classified as `CSS_METRIC_DELTA_INTRINSIC_MODEL_REQUIRED`, which keeps broad/global ChatPane width or scale patches blocked.
+- The renderer action gate now reads the intrinsic-width report and surfaces these next actions while keeping production renderer action on HOLD.
+- Claim boundary: this is still diagnostic evidence. It does not prove Roll20 chat/template parity and does not authorize production CSS.
 - Extended `scripts/roll20_chat_candidate_style_proof.mjs` so it checks `single-fixture-only` candidates, not only `candidate-needs-style-proof`.
 - Added `coc-table-scale-x` to the candidate smoke lookup and routed it through the same table-transform proof as `table-scale-x`.
 - Result: style proof reports `contradicted=2/2`; both `no-shadow` and `coc-table-scale-x` are contradicted by actual Roll20 computed styles.

@@ -49,6 +49,7 @@
     "diagnose:roll20-chat-shell-geometry": "node scripts/roll20_chat_shell_geometry.mjs",
     "diagnose:roll20-chat-font-cell": "node scripts/roll20_chat_font_cell_model.mjs",
     "diagnose:roll20-chat-width": "node scripts/roll20_chat_width_model.mjs",
+    "diagnose:roll20-chat-intrinsic-width": "node scripts/roll20_chat_intrinsic_width_model.mjs",
     "diagnose:roll20-chat-rows": "node scripts/roll20_chat_row_geometry_compare.mjs",
     "diagnose:roll20-chat-style": "node scripts/roll20_chat_style_context_diagnostics.mjs",
     "diagnose:roll20-chat-live-typography": "node scripts/roll20_chat_live_typography_compare.mjs",
