@@ -106,7 +106,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
             mismatchRatio: fullRootFixture.bestCandidate.mismatchRatio,
             mismatchPct: pctNumber(fullRootFixture.bestCandidate.mismatchRatio),
             rootHeightDelta: fullRootFixture.bestCandidate.rootHeightDelta ?? null,
-            patch: fullRootFixture.bestCandidate.contextPatch ?? '',
+            patch: candidatePatch(fullRootFixture.bestCandidate),
             localSize: fullRootFixture.bestCandidate.localSize ?? null,
           }
         : null,
@@ -116,7 +116,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
             mismatchRatio: fullRootFixture.closestRootHeightCandidate.mismatchRatio,
             mismatchPct: pctNumber(fullRootFixture.closestRootHeightCandidate.mismatchRatio),
             rootHeightDelta: fullRootFixture.closestRootHeightCandidate.rootHeightDelta ?? null,
-            patch: fullRootFixture.closestRootHeightCandidate.contextPatch ?? '',
+            patch: candidatePatch(fullRootFixture.closestRootHeightCandidate),
             localSize: fullRootFixture.closestRootHeightCandidate.localSize ?? null,
           }
         : null,
@@ -128,7 +128,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
             mismatchRatio: fullRootFixture.diagnosticBestCandidate.mismatchRatio,
             mismatchPct: pctNumber(fullRootFixture.diagnosticBestCandidate.mismatchRatio),
             rootHeightDelta: fullRootFixture.diagnosticBestCandidate.rootHeightDelta ?? null,
-            patch: fullRootFixture.diagnosticBestCandidate.contextPatch ?? '',
+            patch: candidatePatch(fullRootFixture.diagnosticBestCandidate),
             localSize: fullRootFixture.diagnosticBestCandidate.localSize ?? null,
         }
         : null,
@@ -142,7 +142,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
                   mismatchRatio: scrollMetricsFullRootFixture.diagnosticBestCandidate.mismatchRatio,
                   mismatchPct: pctNumber(scrollMetricsFullRootFixture.diagnosticBestCandidate.mismatchRatio),
                   rootHeightDelta: scrollMetricsFullRootFixture.diagnosticBestCandidate.rootHeightDelta ?? null,
-                  patch: scrollMetricsFullRootFixture.diagnosticBestCandidate.contextPatch ?? '',
+                  patch: candidatePatch(scrollMetricsFullRootFixture.diagnosticBestCandidate),
                   localSize: scrollMetricsFullRootFixture.diagnosticBestCandidate.localSize ?? null,
                 }
               : null,
@@ -152,7 +152,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
                   mismatchRatio: scrollMetricsFullRootFixture.closestRootHeightCandidate.mismatchRatio,
                   mismatchPct: pctNumber(scrollMetricsFullRootFixture.closestRootHeightCandidate.mismatchRatio),
                   rootHeightDelta: scrollMetricsFullRootFixture.closestRootHeightCandidate.rootHeightDelta ?? null,
-                  patch: scrollMetricsFullRootFixture.closestRootHeightCandidate.contextPatch ?? '',
+                  patch: candidatePatch(scrollMetricsFullRootFixture.closestRootHeightCandidate),
                   localSize: scrollMetricsFullRootFixture.closestRootHeightCandidate.localSize ?? null,
                 }
               : null,
@@ -548,7 +548,7 @@ function summarizeScrollMetricsCandidate(candidate) {
     mismatchRatio: candidate.mismatchRatio,
     mismatchPct: pctNumber(candidate.mismatchRatio),
     rootHeightDelta: candidate.rootHeightDelta ?? null,
-    patch: candidate.contextPatch ?? '',
+    patch: candidatePatch(candidate),
     localSize: candidate.localSize ?? null,
     statePanelYDelta: candidate.geometryFit?.statePanelYDelta ?? null,
     statePanelHeightDelta: candidate.geometryFit?.statePanelHeightDelta ?? null,
@@ -638,6 +638,7 @@ function fmtValidation(validation) {
 
 function patchFamily(patch) {
   if (!patch) return 'none';
+  if (patch.startsWith('renderer-model:')) return patch;
   if (patch.startsWith('sheet-class-alias-css:')) return patch;
   if (patch.startsWith('sheet-class-alias-css')) return 'sheet-class-alias-css:all';
   if (patch.startsWith('sheet-class-alias-text-input-height')) return 'sheet-class-alias-css+text-input-height';
@@ -646,6 +647,14 @@ function patchFamily(patch) {
   if (patch.startsWith('inline-block')) return 'inline-block';
   if (patch.startsWith('text-input-height')) return 'text-input-height';
   return patch.split(':')[0] || patch;
+}
+
+function candidatePatch(candidate) {
+  if (!candidate) return '';
+  if (candidate.roll20RendererModel && candidate.roll20RendererModel !== 'default') {
+    return `renderer-model:${candidate.roll20RendererModel}`;
+  }
+  return candidate.contextPatch ?? '';
 }
 
 function pctNumber(value) {

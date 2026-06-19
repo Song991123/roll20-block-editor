@@ -1,3 +1,8 @@
+# 2026-06-19 Production-Path Input-Flow TODO Update
+
+- VERIFY: `roll20RendererModel` now exists in the real preview builder as a gated diagnostic option, with candidate coverage in `smoke:roll20-full-root-candidates`.
+- Current proof: production-path input-flow candidates reproduce the diagnostic injection numbers for Les-Oublies/YSHY, but AW2E still prefers source-state under scroll-metrics. Latest gate remains `HOLD_PRODUCTION_RENDERER_PATCH`, `rendererReady=NO`.
+- TODO P0: decide the generic model boundary for when input-flow applies. Do not expose or enable it globally until the renderer action gate no longer reports cross-fixture patch-family disagreement.
 # 2026-06-19 Input/Inline-Flow Axis TODO Update
 
 - DONE: added input/inline-flow axis diagnostic. Command: `corepack pnpm run diagnose:roll20-input-flow-axis -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.

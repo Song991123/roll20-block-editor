@@ -83,7 +83,7 @@ function summarizeFixture(fixture) {
     status: fixture.status,
     actualSize: sizeLabel(fixture.actual?.size ?? fixture.actual?.outputSize),
     bestCandidate: best?.id ?? null,
-    bestPatch: patchFamily(best?.contextPatch),
+    bestPatch: patchFamily(candidatePatch(best)),
     bestMismatchPct: pct(best?.mismatchRatio),
     bestRootHeightDelta: round(best?.rootHeightDelta),
     baselineCandidate: baseline?.id ?? null,
@@ -146,7 +146,7 @@ function summarizeCandidate(candidate) {
   if (!candidate) return null;
   return {
     id: candidate.id ?? '',
-    patch: patchFamily(candidate.contextPatch),
+    patch: patchFamily(candidatePatch(candidate)),
     rawPatch: candidate.contextPatch ?? '',
     mismatchPct: pct(candidate.mismatchRatio),
     rootHeightDelta: round(candidate.rootHeightDelta),
@@ -408,6 +408,14 @@ function patchFamily(value) {
   if (text.startsWith('row-width-fudge')) return 'row-width-fudge';
   if (text.startsWith('actual-root-width')) return 'actual-root-width';
   return text;
+}
+
+function candidatePatch(candidate) {
+  if (!candidate) return '';
+  if (candidate.roll20RendererModel && candidate.roll20RendererModel !== 'default') {
+    return `renderer-model:${candidate.roll20RendererModel}`;
+  }
+  return candidate.contextPatch ?? '';
 }
 
 function fmtCandidate(candidate) {

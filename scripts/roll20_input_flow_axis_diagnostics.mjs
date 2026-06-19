@@ -58,12 +58,17 @@ function analyzeFixture(fixture, scrollMetricsFixture) {
     .filter((candidate) => patchFamily(candidate.contextPatch) === 'inline-block+text-input-height')
     .sort(sortByRootThenMismatch);
   const inlineText = inlineTextCandidates[0] ?? null;
+  const rendererModelCandidates = candidates
+    .filter((candidate) => patchFamily(candidatePatch(candidate)) === 'renderer-model:input-flow-27' || patchFamily(candidatePatch(candidate)) === 'renderer-model:input-flow-276')
+    .sort(sortByRootThenMismatch);
+  const rendererModel = rendererModelCandidates[0] ?? null;
   const nowrapText = candidates
     .filter((candidate) => patchFamily(candidate.contextPatch) === 'nowrap+text-input-height')
     .sort(sortByRootThenMismatch)[0] ?? null;
   const best = fixture.bestCandidate ?? null;
   const sourceSummary = summarizeCandidate(source, actual);
   const inlineSummary = summarizeCandidate(inlineText, actual);
+  const rendererModelSummary = summarizeCandidate(rendererModel, actual);
   const nowrapSummary = summarizeCandidate(nowrapText, actual);
   const delta = compareCandidateSummaries(sourceSummary, inlineSummary);
   const diagnosis = diagnoseFixture({ fixture, sourceSummary, inlineSummary, nowrapSummary, best, delta });
@@ -75,6 +80,7 @@ function analyzeFixture(fixture, scrollMetricsFixture) {
     bestCandidate: best ? summarizeBasicCandidate(best) : null,
     source: sourceSummary,
     inlineText: inlineSummary,
+    rendererModel: rendererModelSummary,
     nowrapText: nowrapSummary,
     sourceToInlineDelta: delta,
     diagnosis,
@@ -106,7 +112,7 @@ function summarizeCandidate(candidate, actual) {
 function summarizeBasicCandidate(candidate) {
   return {
     id: candidate.id,
-    patch: patchFamily(candidate.contextPatch),
+    patch: patchFamily(candidatePatch(candidate)),
     rawPatch: candidate.contextPatch ?? '',
     mismatchPct: pct(candidate.mismatchRatio),
     rootHeightDelta: round(candidate.rootHeightDelta),
@@ -275,7 +281,7 @@ function renderMarkdown(report) {
     lines.push('');
     lines.push('| Candidate | Selector | Actual count | Local count | Actual median h | Local median h | Median delta | Actual first h | Local first h | First delta |');
     lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
-    for (const [label, candidate] of [['source', fixture.source], ['inline/text-input', fixture.inlineText], ['nowrap/text-input', fixture.nowrapText]]) {
+    for (const [label, candidate] of [['source', fixture.source], ['inline/text-input', fixture.inlineText], ['renderer-model', fixture.rendererModel], ['nowrap/text-input', fixture.nowrapText]]) {
       if (!candidate) continue;
       for (const selector of selectors) {
         const item = candidate.selectors?.[selector];
@@ -312,7 +318,16 @@ function patchFamily(value) {
   if (text.startsWith('sheet-class-alias-css:')) return text;
   if (text.startsWith('sheet-class-alias-css')) return 'sheet-class-alias-css:all';
   if (text.startsWith('actual-root-width')) return 'actual-root-width';
+  if (text.startsWith('renderer-model:')) return text;
   return text.split(':')[0] || text;
+}
+
+function candidatePatch(candidate) {
+  if (!candidate) return '';
+  if (candidate.roll20RendererModel && candidate.roll20RendererModel !== 'default') {
+    return `renderer-model:${candidate.roll20RendererModel}`;
+  }
+  return candidate.contextPatch ?? '';
 }
 
 function isVisibleNode(node) {

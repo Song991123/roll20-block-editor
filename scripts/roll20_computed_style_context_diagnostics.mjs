@@ -125,13 +125,21 @@ function compareCandidate(actual, candidate) {
   }, 0);
   return {
     candidateId: candidate.id,
-    patch: candidate.contextPatch ?? '',
+    patch: candidatePatch(candidate),
     mismatchPct: pct(candidate.mismatchRatio),
     rootHeightDelta: round(candidate.rootHeightDelta),
     localSize: candidate.localSize ?? null,
     styleScore,
     selectorDiffs,
   };
+}
+
+function candidatePatch(candidate) {
+  if (!candidate) return '';
+  if (candidate.roll20RendererModel && candidate.roll20RendererModel !== 'default') {
+    return `renderer-model:${candidate.roll20RendererModel}`;
+  }
+  return candidate.contextPatch ?? '';
 }
 
 function compareSelector(actual, candidate, selector) {

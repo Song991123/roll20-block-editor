@@ -182,6 +182,8 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
         { id: 'sandbox-text-input-280-textarea-150-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'text-input-textarea-height', rootWidth: actualRootWidth, textInputHeight: 28, textareaHeight: 150 } },
         { id: 'sandbox-inline-block-text-input-270-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-text-input-height', rootWidth: actualRootWidth, wordSpacing: -0.75, textInputHeight: 27 } },
         { id: 'sandbox-inline-block-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-text-input-height', rootWidth: actualRootWidth, wordSpacing: -0.75, textInputHeight: 27.6 } },
+        { id: 'sandbox-renderer-input-flow-270-source', roll20SandboxSanitize: true, applyStateHint: false, roll20RendererModel: 'input-flow-27', contextPatch: { mode: 'actual-root-width', rootWidth: actualRootWidth } },
+        { id: 'sandbox-renderer-input-flow-276-source', roll20SandboxSanitize: true, applyStateHint: false, roll20RendererModel: 'input-flow-276', contextPatch: { mode: 'actual-root-width', rootWidth: actualRootWidth } },
         { id: 'sandbox-nowrap-text-input-270-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-nowrap-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27 } },
         { id: 'sandbox-nowrap-text-input-276-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'inline-block-nowrap-text-input-height', rootWidth: actualRootWidth, textInputHeight: 27.6 } },
         { id: 'sandbox-sheet-class-alias-source', roll20SandboxSanitize: true, applyStateHint: false, contextPatch: { mode: 'sheet-class-alias-css', rootWidth: actualRootWidth } },
@@ -428,6 +430,7 @@ async function renderCandidate({
   stateCandidate,
   applyStateHint,
   roll20SandboxSanitize,
+  roll20RendererModel = 'default',
   contextPatch = null,
   actualFile,
   actualSize,
@@ -441,6 +444,7 @@ async function renderCandidate({
     darkMode: false,
     previewLayer: 'all',
     roll20SandboxSanitize,
+    roll20RendererModel,
   });
   const viewportWidth = Math.max(1, Math.round(contextPatch?.rootWidth ?? baselineRootWidth));
   await page.setViewportSize({ width: viewportWidth, height: 900 });
@@ -576,6 +580,7 @@ async function renderCandidate({
   return {
     id,
     roll20SandboxSanitize,
+    roll20RendererModel,
     applyStateHint,
     contextPatch: formatRenderContextPatch(contextPatch),
     screenshot,

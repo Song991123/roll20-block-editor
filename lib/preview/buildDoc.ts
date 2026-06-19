@@ -43,6 +43,8 @@ export interface BuildDocOptions {
   legacyCssSanitize?: boolean;
   /** 실제 Roll20 Custom Sheet Sandbox sanitize/prefix 근사치. 진단용 preview 옵션. */
   roll20SandboxSanitize?: boolean;
+  /** Diagnostic renderer model. Default must stay off until actual Roll20 gates prove it safe. */
+  roll20RendererModel?: 'default' | 'input-flow-27' | 'input-flow-276';
   /** 다크 모드 토큰 부착 — body[data-theme=dark]. */
   darkMode?: boolean;
   /** spec 17 §9 — 9 레이어 필터. 'all' 이면 dim 없음. */
@@ -594,6 +596,25 @@ function styleSourceChunk(source: string, css: string): string {
   return `\n/* r20-style-source:${source} */\n${css}\n`;
 }
 
+function roll20RendererModelCss(model: BuildDocOptions['roll20RendererModel']): string {
+  if (model !== 'input-flow-27' && model !== 'input-flow-276') return '';
+  const textInputHeight = model === 'input-flow-276' ? 27.6 : 27;
+  return `
+/* diagnostic Roll20 input/inline-flow renderer model; gated off by default */
+.ui-dialog .charsheet .sheet-2colrow,
+.ui-dialog .charsheet .sheet-3colrow {
+  word-spacing: -0.75px;
+}
+.ui-dialog .charsheet .sheet-2colrow > .sheet-col,
+.ui-dialog .charsheet .sheet-3colrow > .sheet-col {
+  word-spacing: normal;
+}
+.ui-dialog .charsheet input[type="text"] {
+  min-height: ${textInputHeight}px;
+}
+`;
+}
+
 function jsonScriptText(value: string | undefined): string {
   return JSON.stringify(value ?? '')
     .replace(/</g, '\\u003c')
@@ -742,6 +763,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
   const sanitize = opts.sanitize !== false; // default ON
   const legacyCssSanitize = opts.legacyCssSanitize === true;
   const roll20SandboxSanitize = opts.roll20SandboxSanitize === true;
+  const roll20RendererModel = opts.roll20RendererModel ?? 'default';
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
 
@@ -780,9 +802,10 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <style id="r20-runtime">${runtimeCss}</style>
 <style id="r20-layer-filter">${layerFilterCss()}</style>
 <style id="r20-user">${previewCss}</style>
+<style id="r20-renderer-model">${roll20RendererModelCss(roll20RendererModel)}</style>
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
-<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}" data-roll20-sandbox-sanitize="${roll20SandboxSanitize ? '1' : '0'}">
+<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}" data-roll20-sandbox-sanitize="${roll20SandboxSanitize ? '1' : '0'}" data-roll20-renderer-model="${roll20RendererModel}">
 <div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
@@ -812,6 +835,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   const sanitize = opts.sanitize !== false;
   const legacyCssSanitize = opts.legacyCssSanitize === true;
   const roll20SandboxSanitize = opts.roll20SandboxSanitize === true;
+  const roll20RendererModel = opts.roll20RendererModel ?? 'default';
   const userHtml = (opts.html ?? '').trim();
   const userCss = (opts.css ?? '').trim();
 
@@ -844,6 +868,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
     styleSourceChunk('app-preview-runtime', runtimeCss),
     styleSourceChunk('app-layer-filter', layerFilterCss('.charsheet')),
     styleSourceChunk('sheet-user-css', previewCss),
+    styleSourceChunk('roll20-renderer-model', roll20RendererModelCss(roll20RendererModel)),
     styleSourceChunk('preview-hidden-runtime', ROLL20_PREVIEW_HIDDEN_CSS),
   ].join('\n');
 

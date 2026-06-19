@@ -1,3 +1,8 @@
+# 2026-06-19 Production-Path Input-Flow Renderer Model Candidate
+
+- Added a gated `roll20RendererModel` option to `buildSheetDoc()` / `buildSheetParts()` with `input-flow-27` and `input-flow-276`. Default remains `default`; this is not exposed as a finished user feature and must stay off until gates pass.
+- Added production-path candidates `sandbox-renderer-input-flow-270-source` and `sandbox-renderer-input-flow-276-source` to `smoke:roll20-full-root-candidates`. They reproduce the previous diagnostic injection candidates through the real preview builder rather than post-load style injection.
+- Latest evidence: Les-Oublies production-path `input-flow-27` matches the diagnostic candidate at mismatch `3.757%`, rootDelta `-3.625px`; YSHY matches at `4.231%`, rootDelta `-0.375px`; AW2E scroll-metrics source remains safer (`+8.188px`) than input-flow (`+47.188px`). Renderer gate remains HOLD.
 # 2026-06-19 Input/Inline-Flow Axis Diagnostic
 
 - Added `scripts/roll20_input_flow_axis_diagnostics.mjs` and package script `diagnose:roll20-input-flow-axis` to compare source-state vs inline/text-input-height candidates against actual Roll20 computed-style sidecars.

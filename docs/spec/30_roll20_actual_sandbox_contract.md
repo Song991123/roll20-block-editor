@@ -142,6 +142,15 @@ already closer to the actual root (`+8.188px`) and worsens under the inline/text
 candidate (`+47.188px`). Do not ship a global input/inline-flow CSS patch until
 this split is represented in the renderer model and the action gate agrees.
 
+2026-06-19 production-path model update: `buildSheetDoc()` and
+`buildSheetParts()` now accept a gated `roll20RendererModel` diagnostic option.
+The new `input-flow-27` / `input-flow-276` models are off by default and are not
+a user-facing renderer fix. `smoke:roll20-full-root-candidates` includes
+production-path candidates that reproduce the previous post-load diagnostic
+patch numbers for Les-Oublies and YSHY while preserving the AW2E warning: AW2E
+still prefers source-state under scroll-metrics. Keep the action gate as the
+authority before enabling any model globally.
+
 ## Implementation Implications
 
 - Add a dedicated local module for Roll20 sandbox sanitize/prefix behavior,
