@@ -1,3 +1,16 @@
+## 2026-06-20 05:13 +09:00 - AW2E/Les actual Roll20 chat current-metric recapture
+
+Status: PARTIAL. Current Roll20 chat sidecar coverage is now complete; visual/chat parity remains blocked.
+
+- Used only the dedicated Roll20 verification editor/Sandbox tab. No existing real room was modified.
+- AW2E: captured the visible `sheet-rolltemplate-aw` card with current computed style, row metrics, table metrics, font checks, viewport DPR, and DPR-corrected screenshot notes. Browser screenshots returned JPEG bytes, so the local-only physical crop was converted to CSS-size PNG under ignored `reports/`.
+- Les-Oublies: ran the generated Sandbox Tools upload snippet. File input dispatch succeeded for HTML/CSS/translation, but the visible editor page did not expose the manifest settings target, so this is not treated as a fresh sheet-body activation proof. Existing visible `sheet-rolltemplate-initiative-roll` chat evidence was recaptured with current metrics.
+- Verification: `plan:roll20-chat-capture -- --require-current-metrics` now reports `ALL_CHAT_EVIDENCE_TRUSTED` and `plannedFixtures=0/3`.
+- Verification: `status:roll20-actual` now reports `chatCurrentMetrics=3/3`, `chatCurrentMetricsMissing=0`, `chatActualCaptureScaleSuspect=0`, and `chatActualCropGeometrySuspect=0`.
+- Verification: `diagnose:roll20-chat-parity` still reports `HIGH_MISMATCH`: AW2E `26.78%` raw / `21.49%` aligned, Les-Oublies `17.79%` raw / `17.79%` aligned, and YSHY `26.21%` raw / `22.77%` aligned.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`. The stale-sidecar blocker is gone, but the remaining blockers are real: all three chat crops still differ from local ChatPane, and full-root renderer patch families are split.
+- Next P0: use the new 3/3 current sidecars to re-normalize ChatPane/Roll20 chat shell geometry and table sizing. Do not promote production renderer CSS from these mismatched crops.
+
 ## 2026-06-20 06:10 +09:00 - YSHY actual Roll20 chat current-metric recapture
 
 Status: PARTIAL. This batch improves actual Roll20 evidence for YSHY only; it does not prove Roll20 chat parity.

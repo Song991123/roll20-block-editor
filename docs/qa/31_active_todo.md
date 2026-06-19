@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - AW2E/Les Roll20 chat current-metric recapture
+
+Status: PARTIAL. Current row/typography evidence is now complete for all three real Roll20 chat fixtures, but Roll20 chat/template parity is still failing.
+
+- DONE: Recaptured AW2E `sheet-rolltemplate-aw` current DOM evidence from the dedicated Roll20 verification Sandbox/editor tab. No existing real room was modified.
+- DONE: Recaptured Les-Oublies `sheet-rolltemplate-initiative-roll` current DOM evidence from the same dedicated verification tab. Les upload file-input dispatch ran in the Sandbox Tools, but the manifest target was missing on the visible editor page, so this is treated as chat evidence recapture, not a fresh proven sheet-body activation.
+- DONE: Both sidecars now include `latestTemplate.computedStyle`, `latestTemplate.rowMetrics`, `latestTemplate.computedChildren[selector="table"]` computed style/box metrics, `fontEvidence.checks`, and `viewportEvidence.devicePixelRatio`.
+- RESULT: `plan:roll20-chat-capture -- --require-current-metrics` reports `ALL_CHAT_EVIDENCE_TRUSTED` with `plannedFixtures=0/3`.
+- RESULT: `status:roll20-actual` reports `chatCurrentMetrics=3/3`, `chatCurrentMetricsMissing=0`, `chatActualCaptureScaleSuspect=0`, and `chatActualCropGeometrySuspect=0`.
+- RESULT: `diagnose:roll20-chat-parity` still reports `HIGH_MISMATCH`: AW2E `26.78%` raw / `21.49%` aligned, Les-Oublies `17.79%` raw / `17.79%` aligned, YSHY `26.21%` raw / `22.77%` aligned.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` with 2 blockers: chat rolltemplate crops differ for `3/3`, and full-root renderer patch families are still split across fixtures.
+- STILL TODO P0: Re-normalize local ChatPane vs actual Roll20 chat shell/template geometry using the new current sidecars. Do not promote production ChatPane CSS while all three chat crops are high mismatch.
+- STILL TODO P0: Resolve the split full-root renderer model before returning to edit-mode UX changes.
+
 ## 2026-06-20 Codex Update - YSHY Roll20 chat current-metric recapture
 
 Status: PARTIAL. One real Roll20 chat fixture now has current row/typography evidence; Roll20 chat/template parity is still NOT done.
