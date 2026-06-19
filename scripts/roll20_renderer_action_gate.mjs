@@ -41,9 +41,10 @@ async function main() {
   const chatResidual = await readJsonIfExists(path.join(runDir, 'chat-residual-diagnostics', 'chat-residual-diagnostics-results.json'));
   const chatMaskStrategy = await readJsonIfExists(path.join(runDir, 'chat-mask-strategy', 'chat-mask-strategy-results.json'));
   const chatShellGeometry = await readJsonIfExists(path.join(runDir, 'chat-shell-geometry', 'chat-shell-geometry-results.json'));
+  const chatFontCell = await readJsonIfExists(path.join(runDir, 'chat-font-cell-model', 'chat-font-cell-model-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -58,6 +59,7 @@ async function main() {
     chatResidual: summarizeChatResidual(chatResidual),
     chatMaskStrategy: summarizeChatMaskStrategy(chatMaskStrategy),
     chatShellGeometry: summarizeChatShellGeometry(chatShellGeometry),
+    chatFontCell: summarizeChatFontCell(chatFontCell),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -229,7 +231,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -249,6 +251,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatResidualSummary = summarizeChatResidual(chatResidual);
   const chatMaskStrategySummary = summarizeChatMaskStrategy(chatMaskStrategy);
   const chatShellGeometrySummary = summarizeChatShellGeometry(chatShellGeometry);
+  const chatFontCellSummary = summarizeChatFontCell(chatFontCell);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
   const styleProofStatusByName = new Map(
     (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
@@ -447,6 +450,14 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       positiveFindings.push(`${fixture.fixtureId} chat shell decision=${fixture.shellDecision}, templateDelta=${num(fixture.templateWidthDelta)}/${num(fixture.templateHeightDelta)}px, tableOffsetDelta=${num(fixture.tableOffsetDeltaX)}/${num(fixture.tableOffsetDeltaY)}px, firstCellDelta=${num(fixture.firstCellWidthDelta)}px, next=${fixture.nextAction}`);
     }
   }
+  if (!chatFontCellSummary) {
+    warnings.push('chat font/cell model has not been run; run diagnose:roll20-chat-font-cell before changing ChatPane typography or cell allocation');
+  } else {
+    positiveFindings.push(`chat font/cell model: status=${chatFontCellSummary.status}, actionable=${chatFontCellSummary.actionable}/${chatFontCellSummary.totalFixtures}, decisions=${formatFindingCounts(chatFontCellSummary.decisions)}`);
+    for (const fixture of chatFontCellSummary.actionableFixtures) {
+      positiveFindings.push(`${fixture.fixtureId} font/cell decision=${fixture.modelDecision}, cellDelta=${num(fixture.cellWidthDelta)}px, fontDelta=${num(fixture.fontSizeDelta)}px, templateTypography=${fixture.typographyCandidateDeltaLabel || 'n/a'} ${fixture.typographyCandidateRisk || ''}, next=${fixture.nextAction}`);
+    }
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -505,6 +516,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-shell-geometry -- ${path.relative(process.cwd(), activeRunDir)} before changing ChatPane shell/crop/width behavior.`);
   } else if (chatShellGeometrySummary.modelNeededFixtures.length) {
     nextActions.push(...chatShellGeometrySummary.modelNeededFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
+  }
+  if (!chatFontCellSummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-font-cell -- ${path.relative(process.cwd(), activeRunDir)} before changing ChatPane typography or cell allocation.`);
+  } else if (chatFontCellSummary.actionableFixtures.length) {
+    nextActions.push(...chatFontCellSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   if (!chatCandidateSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
@@ -807,6 +823,34 @@ function summarizeChatShellGeometry(report) {
     shellModelNeeded: Number(report.summary.shellModelNeeded ?? 0),
     decisions: report.summary.decisions ?? {},
     modelNeededFixtures: fixtures.filter((fixture) => fixture.status === 'COMPARED' && fixture.shellDecision !== 'SHELL_OK_OR_SECONDARY'),
+    fixtures,
+  };
+}
+
+function summarizeChatFontCell(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    modelDecision: fixture.modelDecision ?? 'UNKNOWN',
+    shellDecision: fixture.shellDecision ?? '',
+    bestAlignedMismatchPct: fixture.bestAlignedMismatchPct ?? '',
+    cellWidthDelta: fixture.cellWidthDelta ?? null,
+    tableWidthDelta: fixture.tableWidthDelta ?? null,
+    fontSizeDelta: fixture.fontSizeDelta ?? null,
+    letterSpacingChanged: Boolean(fixture.letterSpacingChanged),
+    fontFamilyChanged: Boolean(fixture.fontFamilyChanged),
+    typographyCandidateDeltaLabel: fixture.typographyCandidateDeltaLabel ?? '',
+    typographyCandidateRisk: fixture.typographyCandidateRisk ?? '',
+    nextAction: fixture.nextAction ?? '',
+    signals: fixture.signals ?? [],
+  }));
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    actionable: Number(report.summary.actionable ?? fixtures.filter((fixture) => fixture.modelDecision !== 'KEEP_DEFAULT_FOR_NOW').length),
+    decisions: report.summary.decisions ?? {},
+    productionSafe: Boolean(report.summary.productionSafe),
+    actionableFixtures: fixtures.filter((fixture) => fixture.modelDecision !== 'KEEP_DEFAULT_FOR_NOW'),
     fixtures,
   };
 }
@@ -1154,6 +1198,21 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | --- |');
       for (const fixture of report.chatShellGeometry.modelNeededFixtures) {
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.shellDecision} | ${fixture.bestAlignedMismatchPct} | ${num(fixture.templateWidthDelta)}/${num(fixture.templateHeightDelta)}px | ${num(fixture.tableWidthDelta)}/${num(fixture.tableHeightDelta)}px | ${num(fixture.tableOffsetDeltaX)}/${num(fixture.tableOffsetDeltaY)}px | ${num(fixture.firstCellWidthDelta)}px | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatFontCell) {
+    lines.push('### Chat Font/Cell Model', '');
+    lines.push(`- Status: ${report.chatFontCell.status}`);
+    lines.push(`- Actionable fixtures: ${report.chatFontCell.actionable}/${report.chatFontCell.totalFixtures}`);
+    lines.push(`- Decisions: ${formatFindingCounts(report.chatFontCell.decisions)}`);
+    if (report.chatFontCell.actionableFixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Decision | Shell | Aligned mismatch | Cell Δ | Font Δ | Template typography | Signals | Next action |');
+      lines.push('| --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |');
+      for (const fixture of report.chatFontCell.actionableFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.modelDecision} | ${fixture.shellDecision} | ${fixture.bestAlignedMismatchPct} | ${num(fixture.cellWidthDelta)}px | ${num(fixture.fontSizeDelta)}px | ${fixture.typographyCandidateDeltaLabel || 'n/a'} ${fixture.typographyCandidateRisk || ''} | ${fixture.signals.join('<br>')} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');

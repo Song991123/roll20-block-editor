@@ -1,3 +1,13 @@
+## 2026-06-20 Chat Font/Cell Model Boundary
+
+- Added `scripts/roll20_chat_font_cell_model.mjs` and package alias `diagnose:roll20-chat-font-cell`.
+- The diagnostic combines shell geometry, style context, candidate comparison, and renderer policy evidence to distinguish narrow cell allocation work from broad typography patches.
+- Wired the font/cell model summary into `gate:roll20-renderer-action`.
+- Current Les-Oublies result: `NARROW_CELL_ALLOCATION_MODEL_REQUIRED`. The first cell is `+4.141px` wider in actual Roll20 and font size differs by `+1.65px`, but the broad `template-typography` candidate only moved Les by `-0.01%`, so broad typography remains rejected.
+- Current YSHY result: `WIDTH_MODEL_BEFORE_FONT_CELL`; solve table width/overflow before font/cell tuning.
+- Current AW2E result: `KEEP_DEFAULT_FOR_NOW` because aligned mismatch is below the high-mismatch threshold.
+- Claim boundary: this is a model-boundary diagnostic. It does not prove Roll20 chat parity and does not authorize production ChatPane typography, width, padding, or paint CSS.
+
 ## 2026-06-20 Chat Shell Geometry Probe
 
 - Added `scripts/roll20_chat_shell_geometry.mjs` and package alias `diagnose:roll20-chat-shell-geometry`.

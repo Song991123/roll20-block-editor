@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Chat font/cell model boundary added
+
+Status: PARTIAL. Roll20 chat/template parity is still blocked, but broad typography patches are now explicitly separated from narrow cell allocation work.
+
+- DONE: Added `diagnose:roll20-chat-font-cell`, which combines shell geometry, style context, candidate comparison, and renderer policy reports.
+- DONE: Wired the font/cell model summary into `gate:roll20-renderer-action`.
+- RESULT: `official-roll20-Les-Oublies` is `NARROW_CELL_ALLOCATION_MODEL_REQUIRED`: first cell width is `+4.141px`, font size differs by `+1.65px`, but `template-typography` only changed Les by `-0.01%` and is not a valid broad fix.
+- RESULT: `yshy-commission-1bu` is `WIDTH_MODEL_BEFORE_FONT_CELL`; table width/overflow must be solved before font/cell tuning.
+- RESULT: `official-roll20-AW2E` stays `KEEP_DEFAULT_FOR_NOW` because its aligned chat mismatch is below the high-mismatch threshold.
+- VERIFIED: `diagnose:roll20-chat-font-cell`, `node --check scripts\roll20_chat_font_cell_model.mjs`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build a narrow, actual-style-proven cell allocation diagnostic for Les. Do not promote broad typography, font fallback, width, padding, or paint CSS globally.
+
 ## 2026-06-20 Codex Update - Chat shell geometry narrows Les mismatch
 
 Status: PARTIAL. Roll20 chat/template parity is still blocked, but the Les-Oublies shell/crop hypothesis is now narrower.
