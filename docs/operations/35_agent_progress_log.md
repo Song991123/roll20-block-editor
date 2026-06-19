@@ -1,3 +1,8 @@
+## 2026-06-19 - Roll20 chat capture snippet metadata fix
+
+- Inspected `roll20_chat_parity_diagnostics.mjs` and confirmed normalized comparison requires sidecar `rolltemplates[].rect` and top-level `clip`/`screenshotClipApplied` metadata.
+- Updated `scripts/roll20_chat_capture_plan.mjs` generated snippets to emit `rolltemplates`, `clip`, `screenshotClipApplied`, `screenshotCssClip`, and diagnostic `chatCssEvidence` so future captures can feed the existing parity diagnostic directly.
+- Added generated-snippet syntax checks to the plan report and console output.
 ## 2026-06-19 - Roll20 chat capture plan tooling
 
 - Added `scripts/roll20_chat_capture_plan.mjs` and package alias `plan:roll20-chat-capture`.

@@ -43,8 +43,11 @@ async function main() {
   const plannedEntries = INCLUDE_ALL ? entries : entries.filter((entry) => entry.needsCapture);
 
   await mkdir(path.join(outDir, 'snippets'), { recursive: true });
+  const snippetChecks = [];
   for (const entry of plannedEntries) {
-    await writeFile(path.join(outDir, 'snippets', `${entry.fixtureId}-chat-dom-probe-snippet.js`), renderDomProbeSnippet(entry), 'utf8');
+    const snippet = renderDomProbeSnippet(entry);
+    snippetChecks.push(validateSnippetSyntax(entry.fixtureId, snippet));
+    await writeFile(path.join(outDir, 'snippets', `${entry.fixtureId}-chat-dom-probe-snippet.js`), snippet, 'utf8');
   }
 
   const report = {
@@ -68,6 +71,7 @@ async function main() {
     },
     entries,
     plannedEntries,
+    snippetChecks,
     followUpCommands: [
       `node scripts/roll20_actual_screenshot_diff.mjs ${rel(runDir)}`,
       `corepack pnpm run diagnose:roll20-chat-parity -- ${rel(runDir)}`,
@@ -82,6 +86,7 @@ async function main() {
   console.log(`ROLL20 CHAT CAPTURE PLAN ${plannedEntries.length ? 'NEEDS_CAPTURE' : 'ALL_CHAT_EVIDENCE_TRUSTED'}`);
   console.log(`run=${rel(runDir)}`);
   console.log(`plannedFixtures=${plannedEntries.length}/${entries.length}`);
+  console.log(`snippetSyntax=${snippetChecks.every((check) => check.ok) ? 'PASS' : 'FAIL'}`);
   for (const entry of plannedEntries) {
     console.log(`CHAT_CAPTURE ${entry.fixtureId}: ${entry.chat.status} ${entry.captureReasons.join('; ')}`);
   }
@@ -253,13 +258,59 @@ function renderDomProbeSnippet(entry) {
     const r = el.getBoundingClientRect();
     return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
   };
+  const clip = rectOf(textchat) || { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight, right: window.innerWidth, bottom: window.innerHeight };
+  const templateInfos = templates.map((template, index) => ({
+    index,
+    className: template.className,
+    rect: rectOf(template),
+    htmlSnippet: template.outerHTML.slice(0, 4000),
+    text: (template.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 1000),
+  }));
+  const styleText = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+    .map((node) => node.tagName === 'STYLE' ? node.textContent || '' : node.href || '')
+    .join('\\n');
+  const expectedClasses = [...new Set(templateInfos
+    .flatMap((template) => String(template.className || '').split(/\\s+/))
+    .filter((className) => className.startsWith('sheet-rolltemplate-')))];
+  const expectedRules = Object.fromEntries(expectedClasses.map((className) => [className, styleText.includes('.' + className)]));
+  const unprefixedRules = expectedClasses
+    .map((className) => className.replace(/^sheet-/, ''))
+    .filter((className) => styleText.includes('.' + className));
+  const scopedUnprefixedRules = expectedClasses
+    .map((className) => className.replace(/^sheet-/, ''))
+    .filter((className) => styleText.includes('.charsheet .' + className) || styleText.includes('.charactersheet .' + className));
+  const anyExpectedRulePresent = Object.values(expectedRules).some(Boolean);
+  const hasScopedOrUnprefixedMismatch = unprefixedRules.length > 0 || scopedUnprefixedRules.length > 0;
+  const chatCssEvidence = {
+    capturedAt: new Date().toISOString(),
+    expectedRules,
+    anyExpectedRulePresent,
+    unprefixedRules,
+    scopedUnprefixedRules,
+    unprefixedRulePresent: unprefixedRules.length > 0,
+    scopedUnprefixedRulePresent: scopedUnprefixedRules.length > 0,
+    styleElementCount: document.querySelectorAll('style').length,
+    stylesheetLinkCount: document.querySelectorAll('link[rel="stylesheet"]').length,
+    styleTextLength: styleText.length,
+    templateCount: templates.length,
+    classification: anyExpectedRulePresent
+      ? 'EXPECTED_RULE_PRESENT'
+      : hasScopedOrUnprefixedMismatch
+        ? 'CSS_RULE_SCOPED_OR_UNPREFIXED'
+        : 'CSS_RULE_MISSING_IN_PAGE_STYLES',
+    note: 'Read-only DOM probe of Roll20 text chat. CSS evidence is diagnostic and must be interpreted with the matching screenshot.',
+  };
   const evidence = {
     fixtureId,
     capturedAt: new Date().toISOString(),
+    captureMethod: 'Browser DOM probe paired with a manually or automation-captured roll20-chat.png',
     pageUrl: '[redacted-url]',
     activeRightTab: document.querySelector('#textchattab.active, .textchattab.active') ? 'textchattab' : null,
     chatSelector: textchat ? (textchat.id ? '#' + textchat.id : textchat.className) : null,
-    chatRect: rectOf(textchat),
+    chatRect: clip,
+    clip,
+    screenshotClipApplied: clip,
+    screenshotCssClip: clip,
     messageCount: messages.length,
     rolltemplateCount: templates.length,
     latestMessage: latestMessage ? {
@@ -272,12 +323,9 @@ function renderDomProbeSnippet(entry) {
       rect: rectOf(latestTemplate),
       text: (latestTemplate.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 2000),
     } : null,
-    templates: templates.slice(-5).map((template, index) => ({
-      index,
-      className: template.className,
-      rect: rectOf(template),
-      text: (template.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 500),
-    })),
+    rolltemplates: templateInfos,
+    templates: templateInfos.slice(-5),
+    chatCssEvidence,
     textMarkers: {
       rolltemplate: templates.length > 0,
       sheetRolltemplate: templates.some((template) => String(template.className).includes('sheet-rolltemplate-')),
@@ -294,6 +342,16 @@ function renderDomProbeSnippet(entry) {
   console.log(JSON.stringify(evidence, null, 2));
   return evidence;
 })();\n`;
+}
+
+function validateSnippetSyntax(fixtureId, snippet) {
+  try {
+    // eslint-disable-next-line no-new-func
+    new Function(snippet);
+    return { fixtureId, ok: true };
+  } catch (error) {
+    return { fixtureId, ok: false, error: String(error?.message || error) };
+  }
 }
 
 function renderMarkdown(report) {
@@ -330,6 +388,16 @@ function renderMarkdown(report) {
     lines.push('| --- | --- | --- | --- | --- | --- |');
   for (const entry of report.plannedEntries) {
       lines.push(`| \`${entry.fixtureId}\` | ${entry.chat.status} | ${escapeCell(entry.captureReasons.join('; '))} | \`${entry.targets.chatPng.relativePath}\` | \`${entry.targets.chatDomEvidence.relativePath}\` | \`${entry.snippetPath}\` |`);
+    }
+    lines.push('');
+  }
+
+  if (report.snippetChecks.length) {
+    lines.push('## Snippet Syntax Checks', '');
+    lines.push('| Fixture | Syntax | Error |');
+    lines.push('| --- | --- | --- |');
+    for (const check of report.snippetChecks) {
+      lines.push(`| \`${check.fixtureId}\` | ${check.ok ? 'PASS' : 'FAIL'} | ${escapeCell(check.error ?? '')} |`);
     }
     lines.push('');
   }

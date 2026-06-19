@@ -175,9 +175,12 @@ The plan writes ignored local output under
 `reports/roll20-actual-compare/<label>/roll20-chat-capture-plan/`. It lists the
 exact `roll20-chat.png` and `roll20-chat-dom-evidence.json` destinations,
 suggested roll button names from the generated payload, follow-up commands, and
-a browser-side DOM probe snippet. This is planning/snippet output only. It does
-not replace the actual Roll20 screenshot, and it does not prove chat visual
-parity.
+a browser-side DOM probe snippet. The generated snippet must include
+`rolltemplates[].rect`, `clip`, `screenshotClipApplied`, and `chatCssEvidence`,
+because `diagnose:roll20-chat-parity` uses those fields for normalized
+rolltemplate crop comparison and CSS activation classification. This is
+planning/snippet output only. It does not replace the actual Roll20 screenshot,
+and it does not prove chat visual parity.
 
 Use `corepack pnpm run status:roll20-actual -- <run-dir> --require-actual` after
 the diff helper when a work batch claims actual-screen coverage. This command

@@ -1,3 +1,9 @@
+## 2026-06-19 Chat Capture Snippet Metadata Fix
+
+- DONE: strengthened `plan:roll20-chat-capture` snippets so future Roll20 chat sidecars include `rolltemplates[].rect`, top-level `clip`, `screenshotClipApplied`, `screenshotCssClip`, and `chatCssEvidence`.
+- DONE: added snippet syntax checks to the plan output; current run reports `snippetSyntax=PASS`.
+- WHY: `diagnose:roll20-chat-parity` requires `rolltemplates[].rect` plus `clip` for normalized rolltemplate crop comparison. Without these fields, recaptured chat evidence could still remain `NEEDS_NORMALIZED_CAPTURE`.
+- NEXT P0: use the generated snippets with fresh Roll20 chat screenshots for AW2E/YSHY and normalized crop metadata for Les-Oublies, then rerun the chat parity/status gates.
 ## 2026-06-19 Chat Capture Plan Tool
 
 - DONE: added `corepack pnpm run plan:roll20-chat-capture -- <run> [fixture-id] [--all]` to produce a focused local-only Roll20 chat recapture plan.
