@@ -1274,3 +1274,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - AW2E, Les-Oublies, and YSHY all PASS.
   - All three produced rolltemplate cards at 280px with `textchatcontainer`, `message`, `spacer`, `by`, and `tstamp` present.
 - Claim boundary: this improves local Roll20-chat comparison readiness. Actual Roll20 chat visual parity still requires trustworthy `roll20-chat.png` evidence.
+
+## 2026-06-19 Imported Edit Sync Smoke Hardening
+
+- Re-ran actual-status and upload-handoff summaries for `reports\roll20-actual-compare\2026-06-18-state-map-v1`; Roll20 actual evidence remains partial at `generatedActualScreenshots=2/6`, with no room screenshots and missing trustworthy chat screenshots.
+- Re-ran local edit flow smoke on port 4421; it PASSed and confirmed readable Korean edit UI copy, no mojibake in the edit panel text sample, inside/before/after canvas indicators, layer role/drop affordances, nested reorder, absolute-inside-frame movement, and free placement inside a frame.
+- Re-ran preview/edit visual smoke on port 4422; AW2E, Les-Oublies, and YSHY 1BU PASSed with diagnostic mismatches of 1.87%, 2.07%, and 1.02%. This is local preview/edit evidence only.
+- Hardened `scripts/imported_edit_sync_smoke.mjs`: non-leaf layer reorder candidates now require a true sibling target with the same parent/depth, preventing parent/child containers from masquerading as sibling reorder targets; free absolute-in-frame checks no longer rely on a naive first closing tag after DOM nesting is already proven.
+- Latest imported edit sync rerun on port 4424 PASSed all 3 prepared fixtures. AW2E/YSHY still have external-image resource WARNs, so visual parity remains unproven.

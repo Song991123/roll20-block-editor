@@ -14,6 +14,9 @@ This board is the live working list for Codex/Claude/other agents. Keep claims t
 
 ## Now
 
+Current edit-mode verification note, 2026-06-19 imported sync smoke hardening:
+`scripts/imported_edit_sync_smoke.mjs` now rejects non-leaf layer-reorder candidates unless the moving node and target are true siblings with the same parent/depth. This prevents a parent/child container from being treated as a Figma-like sibling reorder target. The free-placement check also no longer uses a naive first-closing-tag string bound after DOM already proves the new widget is nested under the active frame; that false-negative hid a valid absolute-in-frame drop in Les-Oublies. Latest local rerun: `corepack pnpm run smoke:imported-edit-sync -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync --port 4424` PASS for AW2E, Les-Oublies, and YSHY 1BU. AW2E/YSHY still report resource WARNs from external image loading, so this is edit interaction/sync evidence only, not visual parity.
+
 Current local chat-renderer note, 2026-06-19 Roll20 shell alignment:
 `components/editor/ChatPane.tsx` now uses readable Korean copy and wraps local
 chat cards with Roll20-like `textchatcontainer`, `message`, `spacer`, `by`, and

@@ -424,6 +424,8 @@ async function runImportedNonLeafLayerReorder(page) {
 
       for (const movingNode of graph) {
         if (movingNode.childCount <= 0 || isRuntime(movingNode)) continue;
+        const siblings = siblingsOf(movingNode);
+        if (siblings.length <= 1) continue;
         const childIds = directChildIds(graph, movingNode.id, movingNode.nextId);
         if (childIds.length === 0) continue;
         const row = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(movingNode.id)}"]`);
@@ -434,7 +436,13 @@ async function runImportedNonLeafLayerReorder(page) {
         const targetOptions = [
           { direction: 'after', targetNode: nextTarget },
           { direction: 'before', targetNode: previousTarget },
-        ].filter((item) => item.targetNode && !isRuntime(item.targetNode));
+        ].filter(
+          (item) =>
+            item.targetNode &&
+            !isRuntime(item.targetNode) &&
+            item.targetNode.parentId === movingNode.parentId &&
+            item.targetNode.depth === movingNode.depth,
+        );
 
         for (const option of targetOptions) {
           const targetRow = document.querySelector(
@@ -449,8 +457,8 @@ async function runImportedNonLeafLayerReorder(page) {
             parentBlockId: movingNode.parentId || 'workspace-root',
             moving,
             target,
-            siblingCount: siblingsOf(movingNode).length,
-            beforeOrder: siblingsOf(movingNode).map((node) => node.id),
+            siblingCount: siblings.length,
+            beforeOrder: siblings.map((node) => node.id),
           };
         }
       }
@@ -770,7 +778,6 @@ async function runImportedFreeCanvasInsert(page) {
         const emittedStyle = emittedTag.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] || '';
         const parentIndex = parentId ? emit.html.indexOf(`data-r20-block-id="${parentId}"`) : -1;
         const inputIndex = newId ? emit.html.indexOf(`data-r20-block-id="${newId}"`) : -1;
-        const parentCloseIndex = parentIndex >= 0 ? emit.html.indexOf('</', parentIndex) : -1;
         const emittedLeft = readPx(emittedStyle, 'left');
         const emittedTop = readPx(emittedStyle, 'top');
         const computedLeft = inputStyle ? Math.round(Number.parseFloat(inputStyle.left)) : null;
@@ -786,8 +793,7 @@ async function runImportedFreeCanvasInsert(page) {
           emittedLeft === computedLeft &&
           emittedTop === computedTop &&
           parentIndex >= 0 &&
-          inputIndex > parentIndex &&
-          (parentCloseIndex < 0 || inputIndex < parentCloseIndex);
+          inputIndex > parentIndex;
         const attempt = {
           pass,
           target: summarizeTarget(target),
