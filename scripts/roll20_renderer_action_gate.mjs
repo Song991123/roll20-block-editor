@@ -25,10 +25,11 @@ const outDir = path.join(runDir, 'renderer-action-gate');
 async function main() {
   const status = await readJsonIfExists(path.join(runDir, 'actual-verification-status', 'actual-verification-status-results.json'));
   const fullRoot = await readJsonIfExists(path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json'));
+  const rootStitchAudit = await readJsonIfExists(path.join(runDir, 'root-stitch-audit', 'root-stitch-audit-results.json'));
   const stateVisibility = await readJsonIfExists(path.join(runDir, 'state-visibility-diagnostics', 'state-visibility-diagnostics-results.json'));
   const geometry = await readJsonIfExists(path.join(runDir, 'geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json'));
 
-  const fixtures = mergeFixtures({ status, fullRoot, stateVisibility, geometry });
+  const fixtures = mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, geometry });
   const recommendation = recommend(fixtures, status);
   const report = {
     generatedAt: new Date().toISOString(),
@@ -49,15 +50,16 @@ async function main() {
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
 
-function mergeFixtures({ status, fullRoot, stateVisibility, geometry }) {
+function mergeFixtures({ status, fullRoot, rootStitchAudit, stateVisibility, geometry }) {
   const ids = new Set();
-  for (const source of [status, fullRoot, stateVisibility, geometry]) {
+  for (const source of [status, fullRoot, rootStitchAudit, stateVisibility, geometry]) {
     for (const fixture of source?.fixtures ?? []) ids.add(fixture.fixtureId);
   }
 
   return [...ids].sort().map((fixtureId) => {
     const statusFixture = findFixture(status, fixtureId);
     const fullRootFixture = findFixture(fullRoot, fixtureId);
+    const rootStitchFixture = findFixture(rootStitchAudit, fixtureId);
     const stateFixture = findFixture(stateVisibility, fixtureId);
     const geometryFixture = findFixture(geometry, fixtureId);
     const targets = Object.fromEntries((statusFixture?.actualTargets ?? []).map((target) => [target.id, target.validation]));
@@ -68,6 +70,14 @@ function mergeFixtures({ status, fullRoot, stateVisibility, geometry }) {
       chatEvidence: targets.chat ?? null,
       fullRootStatus: fullRootFixture?.status ?? 'MISSING',
       fullRootReason: fullRootFixture?.reason ?? '',
+      rootStitchAudit: rootStitchFixture
+        ? {
+            status: rootStitchFixture.status,
+            primaryIssue: rootStitchFixture.primaryIssue ?? '',
+            trustedEvidence: rootStitchFixture.trustedEvidence ?? [],
+            overlapDiagnostics: rootStitchFixture.overlapDiagnostics ?? [],
+          }
+        : null,
       bestCandidate: fullRootFixture?.bestCandidate
         ? {
             id: fullRootFixture.bestCandidate.id,
@@ -131,7 +141,7 @@ function recommend(fixtures, status) {
   const compared = fixtures.filter((fixture) => fixture.bestCandidate);
   const missingFullRootCandidates = fixtures.filter((fixture) => !fixture.bestCandidate);
   if (missingFullRootCandidates.length) {
-    blockers.push(`missing full-root candidate comparison for ${missingFullRootCandidates.map((fixture) => fixture.fixtureId).join(', ')}`);
+    blockers.push(`missing full-root candidate comparison for ${missingFullRootCandidates.map(formatMissingFullRoot).join('; ')}`);
   }
   if (compared.length < 3) {
     blockers.push(`cross-fixture renderer evidence too small: ${compared.length}/${fixtures.length} fixtures have full-root candidates`);
@@ -173,7 +183,7 @@ function recommend(fixtures, status) {
     nextActions.push(`Capture roll20-chat.png screenshots with fresh DOM sidecars for ${missingChat.map((fixture) => fixture.fixtureId).join(', ')}.`);
   }
   if (missingFullRootCandidates.length) {
-    nextActions.push(`Capture or stitch DPR-corrected full-root evidence, then rerun full-root candidate smoke for ${missingFullRootCandidates.map((fixture) => fixture.fixtureId).join(', ')}.`);
+    nextActions.push(`Capture or stitch DPR-corrected full-root evidence, then rerun root-stitch audit and full-root candidate smoke for ${missingFullRootCandidates.map((fixture) => fixture.fixtureId).join(', ')}.`);
   }
   if (patchFamilies.size > 1) {
     nextActions.push('Compare the differing diagnostic patch families before promoting CSS: current fixtures do not agree on one generic renderer fix.');
@@ -189,6 +199,20 @@ function recommend(fixtures, status) {
     positiveFindings,
     nextActions,
   };
+}
+
+function formatMissingFullRoot(fixture) {
+  const audit = fixture.rootStitchAudit;
+  if (!audit) return fixture.fixtureId;
+  const diagnostics = audit.overlapDiagnostics ?? [];
+  if (diagnostics.length) {
+    const best = diagnostics
+      .slice()
+      .sort((a, b) => Number(b.segmentCount ?? 0) - Number(a.segmentCount ?? 0))[0];
+    return `${fixture.fixtureId} (${audit.primaryIssue}; best diagnostic ${best.source}, ${best.segmentCount} segments, max score ${best.maxOverlapScore ?? 'n/a'})`;
+  }
+  if (audit.primaryIssue) return `${fixture.fixtureId} (${audit.primaryIssue})`;
+  return fixture.fixtureId;
 }
 
 function summarize(fixtures) {
@@ -229,8 +253,8 @@ function renderMarkdown(report) {
   lines.push('');
 
   lines.push('## Fixture Evidence', '');
-  lines.push('| Fixture | Sandbox | Chat | Full-root best | Patch | State visibility | Top panel delta |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- |');
+  lines.push('| Fixture | Sandbox | Chat | Full-root best | Root stitch audit | Patch | State visibility | Top panel delta |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
     const topDelta = fixture.stateVisibility?.largestHeightDeltas?.[0];
     lines.push([
@@ -238,6 +262,7 @@ function renderMarkdown(report) {
       fmtValidation(fixture.sandboxEvidence),
       fmtValidation(fixture.chatEvidence),
       fixture.bestCandidate ? `${fixture.bestCandidate.mismatchPct}% / root ${num(fixture.bestCandidate.rootHeightDelta)}px` : fixture.fullRootReason || fixture.fullRootStatus,
+      fmtRootStitchAudit(fixture.rootStitchAudit),
       fixture.bestCandidate?.patch || '',
       fixture.stateVisibility ? `${fixture.stateVisibility.matchedLocalExpected ? 'matched' : 'not matched'} ${fixture.stateVisibility.localVisibleCount ?? ''}/${fixture.stateVisibility.actualVisibleCount ?? ''}` : '',
       topDelta ? `${topDelta.selector} ${num(topDelta.heightDelta)}px` : '',
@@ -249,6 +274,20 @@ function renderMarkdown(report) {
   lines.push('- Any missing actual screenshots, chat screenshots, full-root comparisons, or cross-fixture agreement must stay visible in TODO.');
   lines.push('- Generated reports remain local-only and ignored by Git.');
   return `${lines.join('\n')}\n`;
+}
+
+function fmtRootStitchAudit(audit) {
+  if (!audit) return '';
+  const diagnostics = audit.overlapDiagnostics ?? [];
+  if (diagnostics.length && !(audit.trustedEvidence ?? []).length) {
+    const best = diagnostics
+      .slice()
+      .sort((a, b) => Number(b.segmentCount ?? 0) - Number(a.segmentCount ?? 0))[0];
+    return `${audit.status}: diagnostic only (${best.segmentCount} seg, max ${best.maxOverlapScore ?? 'n/a'})`;
+  }
+  return audit.trustedEvidence?.length
+    ? `${audit.status}: ${audit.trustedEvidence.join('<br>')}`
+    : `${audit.status}${audit.primaryIssue ? `: ${audit.primaryIssue}` : ''}`;
 }
 
 function findFixture(source, fixtureId) {

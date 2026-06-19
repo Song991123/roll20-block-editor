@@ -49,13 +49,23 @@ async function auditFixture(fixtureId) {
   const dprCorrectedMeta = await readJsonIfExists(path.join(shotsDir, 'roll20-sandbox-root-full-dpr-corrected.json'));
   const dprManifest = await readJsonIfExists(path.join(shotsDir, 'roll20-root-dpr-corrected-manifest.json'));
   const dprCompleteManifest = await readJsonIfExists(path.join(shotsDir, 'roll20-root-dpr-complete-manifest.json'));
+  const overlapDiagnostics = await readOverlapDiagnostics(shotsDir);
   const checks = [];
   if (stitchedMeta) checks.push(auditStitchedMeta(stitchedMeta, 'roll20-sandbox-root-full.json'));
   if (dprCorrectedMeta) checks.push(auditStitchedMeta(dprCorrectedMeta, 'roll20-sandbox-root-full-dpr-corrected.json'));
   if (dprManifest) checks.push(auditCaptureManifest(dprManifest, 'roll20-root-dpr-corrected-manifest.json'));
   if (dprCompleteManifest) checks.push(auditCaptureManifest(dprCompleteManifest, 'roll20-root-dpr-complete-manifest.json'));
   if (!checks.length) {
-    return { fixtureId, status: 'SKIP', primaryIssue: 'missing stitched root metadata', checks: [] };
+    const hasDiagnostics = overlapDiagnostics.length > 0;
+    return {
+      fixtureId,
+      status: 'SKIP',
+      primaryIssue: hasDiagnostics
+        ? 'only overlap stitch diagnostic evidence is present; capture trusted DPR-corrected full-root evidence'
+        : 'missing stitched root metadata',
+      checks: [],
+      overlapDiagnostics,
+    };
   }
   const failing = checks.flatMap((check) => check.issues.map((issue) => ({ source: check.source, ...issue })));
   const preferredSources = new Set([
@@ -70,11 +80,42 @@ async function auditFixture(fixtureId) {
     status: hasTrustedPreferred || failing.length === 0 ? 'PASS' : 'FAIL',
     primaryIssue: hasTrustedPreferred ? null : failing[0]?.message ?? null,
     trustedEvidence: hasTrustedPreferred ? preferredChecks.map((check) => check.source) : [],
+    overlapDiagnostics,
     supersededIssues: hasTrustedPreferred
       ? failing.filter((issue) => !preferredSources.has(issue.source))
       : [],
     checks,
   };
+}
+
+async function readOverlapDiagnostics(shotsDir) {
+  if (!existsSync(shotsDir)) return [];
+  const entries = await readdir(shotsDir, { withFileTypes: true });
+  const files = entries
+    .filter((entry) => entry.isFile() && /overlap-stitch-diagnostic\.json$/i.test(entry.name))
+    .map((entry) => entry.name)
+    .sort();
+  const diagnostics = [];
+  for (const file of files) {
+    const meta = await readJsonIfExists(path.join(shotsDir, file));
+    if (!meta) continue;
+    const placements = Array.isArray(meta.placements) ? meta.placements : [];
+    const scores = placements
+      .map((placement) => Number(placement.score))
+      .filter((score) => Number.isFinite(score));
+    diagnostics.push({
+      source: file,
+      status: 'DIAGNOSTIC_ONLY',
+      segmentCount: Number(meta.segments?.length ?? placements.length ?? 0),
+      outputSize: meta.outputSize ?? null,
+      maxOverlapScore: scores.length ? round(Math.max(...scores)) : null,
+      averageOverlapScore: scores.length
+        ? round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+        : null,
+      scope: meta.scope ?? 'visual-overlap diagnostic only; not trusted Roll20 full-root evidence',
+    });
+  }
+  return diagnostics;
 }
 
 function auditStitchedMeta(meta, source) {
@@ -156,7 +197,14 @@ function renderMarkdown(report) {
   lines.push('| Fixture | Status | Trusted evidence | Primary issue | Checks |');
   lines.push('| --- | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
-    lines.push(`| ${fixture.fixtureId} | ${fixture.status} | ${(fixture.trustedEvidence ?? []).join('<br>')} | ${fixture.primaryIssue ?? ''} | ${fixture.checks.map((check) => `${check.source}: ${check.status}`).join('<br>')} |`);
+    const diagnostics = (fixture.overlapDiagnostics ?? [])
+      .map((diag) => `${diag.source}: ${diag.status} (${diag.segmentCount} seg, max score ${diag.maxOverlapScore ?? 'n/a'})`)
+      .join('<br>');
+    const checks = [
+      ...fixture.checks.map((check) => `${check.source}: ${check.status}`),
+      diagnostics,
+    ].filter(Boolean).join('<br>');
+    lines.push(`| ${fixture.fixtureId} | ${fixture.status} | ${(fixture.trustedEvidence ?? []).join('<br>')} | ${fixture.primaryIssue ?? ''} | ${checks} |`);
   }
   lines.push('');
   lines.push('## Issues');
