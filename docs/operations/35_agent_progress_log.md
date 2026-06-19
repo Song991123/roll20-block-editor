@@ -1,3 +1,9 @@
+## 2026-06-19 AW2E Scroll Metrics State Panel Geometry
+
+- Expanded full-root candidate diagnostics to normalize Roll20 root-container `visiblePanels` and collect local `statePanels` from candidate renders.
+- Latest AW2E scroll-metrics diagnostic compares 11/11 actual state panels against the root-closest `sandbox-text-input-280-source` candidate. Left playbook panels are height-aligned within +0.2px, but local y is already about -119px to -126px early.
+- Right-side support panels are materially too short: Stock/Custom Weapons are about -68px to -69px, and later Quarantine/Waterbearer boxes are about -276px. The cumulative local y drift reaches -2297px at the Marine/Food support panel.
+- Claim boundary: diagnostic evidence only. The next renderer investigation should target right-column box/support-panel flow and sizing before any production CSS promotion.
 ## 2026-06-19 AW2E Scroll Metrics Candidate Comparison
 
 - Added separate scroll-metrics candidate comparison mode through `diagnose:roll20-scroll-metrics-candidates`, writing to ignored `full-root-candidate-smoke-scroll-metrics` output so the default trusted renderer gate output is not overwritten.

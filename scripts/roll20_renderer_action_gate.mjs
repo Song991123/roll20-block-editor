@@ -156,6 +156,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
                   localSize: scrollMetricsFullRootFixture.closestRootHeightCandidate.localSize ?? null,
                 }
               : null,
+            statePanelGeometry: summarizeScrollMetricsPanelGeometry(scrollMetricsFullRootFixture.targetGeometry),
           }
         : null,
       stateVisibility: stateFixture
@@ -265,7 +266,8 @@ function recommend(fixtures, status, activeRunDir) {
   for (const fixture of fixtures.filter((item) => item.scrollMetricsComparison?.diagnosticBestCandidate)) {
     const best = fixture.scrollMetricsComparison.diagnosticBestCandidate;
     const closest = fixture.scrollMetricsComparison.closestRootHeightCandidate;
-    warnings.push(`${fixture.fixtureId} scroll-metrics diagnostic uses actual ${fmtSize(fixture.scrollMetricsComparison.actualSize)}; pixel best ${best.id} at ${best.mismatchPct}% has root delta ${num(best.rootHeightDelta)}px${closest ? `, while height closest ${closest.id} has root delta ${num(closest.rootHeightDelta)}px` : ''}. This supersedes cutoff-prone 9168px-only conclusions but is still diagnostic-only.`);
+    const panels = fixture.scrollMetricsComparison.statePanelGeometry;
+    warnings.push(`${fixture.fixtureId} scroll-metrics diagnostic uses actual ${fmtSize(fixture.scrollMetricsComparison.actualSize)}; pixel best ${best.id} at ${best.mismatchPct}% has root delta ${num(best.rootHeightDelta)}px${closest ? `, while height closest ${closest.id} has root delta ${num(closest.rootHeightDelta)}px` : ''}${panels ? `; state panels compared ${panels.compared}/${panels.actualCount}, maxYDelta=${num(panels.maxAbsYDelta)}px, maxHeightDelta=${num(panels.maxAbsHeightDelta)}px` : ''}. This supersedes cutoff-prone 9168px-only conclusions but is still diagnostic-only.`);
   }
 
   const matchedState = fixtures.filter((fixture) => fixture.stateVisibility?.matchedLocalExpected === true);
@@ -494,9 +496,41 @@ function fmtScrollMetricsComparison(comparison) {
   if (comparison.status !== 'DIAGNOSTIC_COMPARED') return comparison.status || '';
   const best = comparison.diagnosticBestCandidate;
   const closest = comparison.closestRootHeightCandidate;
+  const panels = comparison.statePanelGeometry;
   const bestText = best ? `best ${best.mismatchPct}% / root ${num(best.rootHeightDelta)}px` : 'no pixel best';
   const closestText = closest ? `closest ${closest.id} root ${num(closest.rootHeightDelta)}px` : 'no height closest';
-  return `${fmtSize(comparison.actualSize)} ${bestText}; ${closestText}`;
+  const panelText = panels ? `; panels ${panels.compared}/${panels.actualCount}, maxY ${num(panels.maxAbsYDelta)}px, maxH ${num(panels.maxAbsHeightDelta)}px` : '';
+  return `${fmtSize(comparison.actualSize)} ${bestText}; ${closestText}${panelText}`;
+}
+
+function summarizeScrollMetricsPanelGeometry(targetGeometry) {
+  if (targetGeometry?.status !== 'COMPARED') return null;
+  const findings = targetGeometry.statePanelFindings ?? [];
+  const compared = findings.filter((finding) => finding.status === 'COMPARED');
+  if (!compared.length) {
+    return {
+      compared: 0,
+      missing: findings.filter((finding) => finding.status === 'MISSING').length,
+      actualCount: targetGeometry.counts?.statePanels?.actual ?? findings.length,
+      localCount: targetGeometry.counts?.statePanels?.local ?? null,
+      maxAbsYDelta: null,
+      maxAbsHeightDelta: null,
+      topFindings: [],
+    };
+  }
+  return {
+    compared: compared.length,
+    missing: findings.filter((finding) => finding.status === 'MISSING').length,
+    actualCount: targetGeometry.counts?.statePanels?.actual ?? findings.length,
+    localCount: targetGeometry.counts?.statePanels?.local ?? null,
+    maxAbsYDelta: Math.max(...compared.map((finding) => Math.abs(finding.yDelta ?? 0))),
+    maxAbsHeightDelta: Math.max(...compared.map((finding) => Math.abs(finding.heightDelta ?? 0))),
+    topFindings: compared.slice(0, 5).map((finding) => ({
+      selector: finding.selector,
+      yDelta: finding.yDelta ?? null,
+      heightDelta: finding.heightDelta ?? null,
+    })),
+  };
 }
 
 function fmtRootCutoff(cutoff) {

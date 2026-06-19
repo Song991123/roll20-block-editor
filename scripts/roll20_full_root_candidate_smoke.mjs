@@ -133,7 +133,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
   const stateCandidate = baselineFixture?.previewDom?.stateCandidate ?? baselineFixture?.previewStateCandidate ?? null;
   const actualMeta = await readJsonIfExists(actualMetaFile);
   const actualStyleProbe = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixtureId}-computed-styles.json`));
-  const actualTargetGeometry = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixtureId}-target-geometry.json`));
+  const actualTargetGeometry = await readActualTargetGeometry(fixtureId);
   const actualSize = actualMeta?.outputSize ?? await imageSize(comparePage, actualFile);
   const baselineReference = existsSync(localPreviewFile)
     ? await compareExistingReference({ comparePage, localPreviewFile, actualFile, actualSize })
@@ -257,7 +257,7 @@ async function processFixture({ fixtureId, baseline, buildSheetDoc, browser, com
     candidates: candidatesWithGeometryFit,
     componentEffects: summarizeComponentEffects(candidatesWithGeometryFit),
     interpretation: interpret({ bestCandidate, bestGeometryCandidate, closestRootHeightCandidate, sourceBest, stateBest, baselineReference, actualTargetGeometry }),
-    targetGeometry: compareTargetGeometry(actualTargetGeometry, bestCandidate?.metrics?.targetGeometry),
+    targetGeometry: compareTargetGeometry(actualTargetGeometry, (closestRootHeightCandidate ?? bestGeometryCandidate ?? bestCandidate)?.metrics?.targetGeometry),
   };
 }
 
@@ -321,6 +321,76 @@ async function selectScrollMetricsFullRootEvidence(shotsDir) {
     });
   }
   return diagnostics.sort((a, b) => (b.outputHeight - a.outputHeight) || (b.segmentCount - a.segmentCount))[0] ?? null;
+}
+
+async function readActualTargetGeometry(fixtureId) {
+  const direct = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixtureId}-target-geometry.json`));
+  if (direct) return direct;
+  const deep = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixtureId}-target-geometry-deep.json`));
+  if (deep) return deep;
+  const rootMetrics = await readJsonIfExists(path.join(runDir, 'live-iframe-probe', `${fixtureId}-root-container-metrics.json`));
+  if (!rootMetrics?.visiblePanels?.length) return null;
+  return normalizeRootMetricsTargetGeometry(rootMetrics);
+}
+
+function normalizeRootMetricsTargetGeometry(rootMetrics) {
+  const rootRect = rootMetrics.root?.rect ?? rootMetrics.form?.rect ?? null;
+  const rootX = Number(rootRect?.x ?? 0);
+  const rootY = Number(rootRect?.y ?? 0);
+  return {
+    state: {
+      source: 'root-container-metrics visiblePanels',
+      checked: rootMetrics.checked ?? [],
+    },
+    root: {
+      rect: normalizeRect(rootRect, rootX, rootY),
+      scrollHeight: rootMetrics.root?.scrollHeight ?? rootMetrics.form?.scrollHeight ?? null,
+      clientHeight: rootMetrics.root?.clientHeight ?? rootMetrics.form?.clientHeight ?? null,
+    },
+    rows: [],
+    tables: [],
+    images: [],
+    inputs: [],
+    statePanels: (rootMetrics.visiblePanels ?? []).map((panel, index) => ({
+      index,
+      tag: panel.tag ?? '',
+      className: panel.className ?? '',
+      name: '',
+      type: '',
+      text: String(panel.text ?? '').trim().replace(/\s+/g, ' ').slice(0, 80),
+      rect: normalizeRect(panel.rect, rootX, rootY),
+      scroll: { width: 0, height: 0 },
+      natural: null,
+      style: {
+        display: panel.display ?? panel.style?.display ?? '',
+        position: panel.style?.position ?? '',
+        boxSizing: panel.style?.boxSizing ?? '',
+        width: panel.style?.width ?? '',
+        height: panel.style?.height ?? '',
+        margin: panel.style?.margin ?? '',
+        padding: panel.style?.padding ?? '',
+        overflow: panel.style?.overflow ?? '',
+        fontSize: panel.style?.fontSize ?? '',
+        lineHeight: panel.style?.lineHeight ?? '',
+        backgroundColor: panel.style?.backgroundColor ?? '',
+      },
+      children: [],
+    })),
+  };
+}
+
+function normalizeRect(rect, rootX = 0, rootY = 0) {
+  if (!rect) return null;
+  return {
+    x: numOrNull(Number(rect.x) - rootX),
+    y: numOrNull(Number(rect.y) - rootY),
+    width: numOrNull(rect.width),
+    height: numOrNull(rect.height),
+  };
+}
+
+function numOrNull(value) {
+  return Number.isFinite(value) ? Number(value.toFixed(3)) : null;
 }
 
 async function compareExistingReference({ comparePage, localPreviewFile, actualFile, actualSize }) {
@@ -449,6 +519,7 @@ async function renderCandidate({
         cols: document.querySelectorAll('.sheet-col').length,
         tables: document.querySelectorAll('table').length,
         inputs: document.querySelectorAll('input').length,
+        statePanels: document.querySelectorAll('[class*="sheet-"]').length,
         rollButtons: document.querySelectorAll('button[type="roll"]').length,
         actionButtons: document.querySelectorAll('button[type="action"]').length,
       },
@@ -456,9 +527,24 @@ async function renderCandidate({
         rows: Array.from(document.querySelectorAll('.sheet-2colrow')).map((row, index) => ({ index, ...target(row) })),
         tables: Array.from(document.querySelectorAll('table')).slice(0, 12).map((table, index) => ({ index, ...target(table) })),
         images: Array.from(document.querySelectorAll('img')).map((image, index) => ({ index, ...target(image) })),
-        inputs: Array.from(document.querySelectorAll('input')).slice(0, 20).map((input, index) => ({ index, ...target(input) })),
+        inputs: Array.from(document.querySelectorAll('input')).slice(0, 80).map((input, index) => ({ index, ...target(input) })),
+        statePanels: collectStatePanels().map((panel, index) => ({ index, ...target(panel) })),
       },
     };
+    function collectStatePanels() {
+      return Array.from(document.querySelectorAll('[class*="sheet-"]'))
+        .filter((node) => node instanceof HTMLElement)
+        .filter((node) => {
+          const className = typeof node.className === 'string' ? node.className : String(node.className || '');
+          if (!/\bsheet-[A-Za-z0-9_-]+/.test(className)) return false;
+          if (['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA', 'TABLE', 'IMG'].includes(node.tagName)) return false;
+          const r = node.getBoundingClientRect();
+          if (r.width <= 0 || r.height <= 0) return false;
+          const text = (node.textContent || '').trim();
+          return text.length > 0 || node.children.length > 0;
+        })
+        .slice(0, 600);
+    }
   });
 
   const rootBox = await page.locator('#charsheet-root').boundingBox();
@@ -1180,11 +1266,65 @@ function compareTargetGeometry(actual, local) {
       rows: { actual: actual.rows?.length ?? 0, local: local.rows?.length ?? 0 },
       tables: { actual: actual.tables?.length ?? 0, local: local.tables?.length ?? 0 },
       images: { actual: actual.images?.length ?? 0, local: local.images?.length ?? 0 },
+      statePanels: { actual: actual.statePanels?.length ?? 0, local: local.statePanels?.length ?? 0 },
     },
     rowFindings: compareIndexed(actual.rows ?? [], local.rows ?? []).slice(0, 8),
     tableFindings: compareIndexed(actual.tables ?? [], local.tables ?? []).slice(0, 8),
     imageFindings: compareIndexed(actual.images ?? [], local.images ?? []).slice(0, 8),
+    statePanelFindings: compareByClassAndText(actual.statePanels ?? [], local.statePanels ?? []).slice(0, 12),
   };
+}
+
+function compareByClassAndText(actualItems, localItems) {
+  const localBuckets = new Map();
+  for (const local of localItems) {
+    const key = comparablePanelKey(local);
+    if (!localBuckets.has(key)) localBuckets.set(key, []);
+    localBuckets.get(key).push(local);
+  }
+  const out = [];
+  const used = new Set();
+  for (const actual of actualItems) {
+    const key = comparablePanelKey(actual);
+    const bucket = localBuckets.get(key) ?? [];
+    const local = bucket.find((item) => !used.has(item.index)) ?? null;
+    const selector = `${key}:${String(actual?.text ?? '').trim().replace(/\s+/g, ' ').slice(0, 24)}`;
+    if (!local) {
+      out.push({ index: actual.index, status: 'MISSING', selector, actualPresent: true, localPresent: false, actualRect: actual.rect ?? null });
+      continue;
+    }
+    used.add(local.index);
+    out.push({
+      index: actual.index,
+      status: 'COMPARED',
+      selector,
+      actualRect: actual.rect ?? null,
+      localRect: local.rect ?? null,
+      heightDelta: delta(local.rect?.height, actual.rect?.height),
+      yDelta: delta(local.rect?.y, actual.rect?.y),
+      widthDelta: delta(local.rect?.width, actual.rect?.width),
+      actualStyle: summarizeStyle(actual.style),
+      localStyle: summarizeStyle(local.style),
+      childCount: { actual: actual.children?.length ?? 0, local: local.children?.length ?? 0 },
+    });
+  }
+  return out.sort((a, b) => {
+    const ay = Math.abs(a.yDelta ?? 0);
+    const by = Math.abs(b.yDelta ?? 0);
+    if (by !== ay) return by - ay;
+    return Math.abs(b.heightDelta ?? 0) - Math.abs(a.heightDelta ?? 0);
+  });
+}
+
+function comparablePanelKey(item) {
+  const className = String(item?.className ?? '');
+  const classes = className
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((name) => /^sheet-/.test(name))
+    .filter((name) => !['sheet-row', 'sheet-col', 'sheet-box', 'sheet-holder'].includes(name));
+  const classKey = classes[0] || className || item?.tag || 'unknown';
+  return classKey;
 }
 
 function compareIndexed(actualItems, localItems) {
@@ -1276,13 +1416,20 @@ function pickCloserRootHeightCandidate(best, candidate) {
 function summarizeGeometryFit({ actualSize, actualTargetGeometry, candidate }) {
   const localRows = candidate.metrics?.targetGeometry?.rows ?? [];
   const actualRows = actualTargetGeometry?.rows ?? [];
-  if (!candidate.metrics?.rootRect || !actualSize || actualRows.length === 0 || localRows.length === 0) {
+  const localPanels = candidate.metrics?.targetGeometry?.statePanels ?? [];
+  const actualPanels = actualTargetGeometry?.statePanels ?? [];
+  if (!candidate.metrics?.rootRect || !actualSize || ((actualRows.length === 0 || localRows.length === 0) && (actualPanels.length === 0 || localPanels.length === 0))) {
     return { score: null, reason: 'missing actual/local geometry' };
   }
   const row0Delta = delta(localRows[0]?.rect?.height, actualRows[0]?.rect?.height);
   const row3Delta = delta(localRows[3]?.rect?.height, actualRows[3]?.rect?.height);
+  const panelFindings = compareByClassAndText(actualPanels, localPanels);
+  const statePanelYDelta = panelFindings.find((finding) => typeof finding.yDelta === 'number')?.yDelta ?? null;
+  const statePanelHeightDelta = panelFindings.find((finding) => typeof finding.heightDelta === 'number')?.heightDelta ?? null;
+  const statePanelComparedCount = panelFindings.filter((finding) => finding.status === 'COMPARED').length;
+  const statePanelMissingCount = panelFindings.filter((finding) => finding.status === 'MISSING').length;
   const rootHeightDelta = delta(candidate.metrics.rootRect.height, actualSize.h);
-  const scoreParts = [rootHeightDelta, row0Delta, row3Delta]
+  const scoreParts = [rootHeightDelta, row0Delta, row3Delta, statePanelYDelta, statePanelHeightDelta]
     .filter((value) => typeof value === 'number')
     .map((value, index) => Math.abs(value) * (index === 0 ? 1 : 2));
   return {
@@ -1290,6 +1437,10 @@ function summarizeGeometryFit({ actualSize, actualTargetGeometry, candidate }) {
     rootHeightDelta,
     row0Delta,
     row3Delta,
+    statePanelYDelta,
+    statePanelHeightDelta,
+    statePanelComparedCount,
+    statePanelMissingCount,
     row0Height: localRows[0]?.rect?.height ?? null,
     row3Height: localRows[3]?.rect?.height ?? null,
   };
@@ -1476,7 +1627,7 @@ function renderMarkdown(report) {
       lines.push('');
       lines.push('### Geometry Findings');
       lines.push('');
-      lines.push(`Counts: rows ${fixture.targetGeometry.counts.rows.actual}/${fixture.targetGeometry.counts.rows.local}, tables ${fixture.targetGeometry.counts.tables.actual}/${fixture.targetGeometry.counts.tables.local}, images ${fixture.targetGeometry.counts.images.actual}/${fixture.targetGeometry.counts.images.local}`);
+      lines.push(`Counts: rows ${fixture.targetGeometry.counts.rows.actual}/${fixture.targetGeometry.counts.rows.local}, tables ${fixture.targetGeometry.counts.tables.actual}/${fixture.targetGeometry.counts.tables.local}, images ${fixture.targetGeometry.counts.images.actual}/${fixture.targetGeometry.counts.images.local}, statePanels ${fixture.targetGeometry.counts.statePanels.actual}/${fixture.targetGeometry.counts.statePanels.local}`);
       lines.push('');
       lines.push('| Kind | Index | Selector | Actual h | Local h | Delta | Actual style | Local style |');
       lines.push('| --- | ---: | --- | ---: | ---: | ---: | --- | --- |');
@@ -1488,6 +1639,9 @@ function renderMarkdown(report) {
       }
       for (const finding of fixture.targetGeometry.imageFindings.slice(0, 3)) {
         lines.push(findingLine('image', finding));
+      }
+      for (const finding of (fixture.targetGeometry.statePanelFindings ?? []).slice(0, 8)) {
+        lines.push(findingLine('statePanel', finding));
       }
     }
   }
