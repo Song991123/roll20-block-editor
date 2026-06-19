@@ -20,7 +20,7 @@
  * A missing Roll20 screenshot is reported as SKIP, not PASS.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
@@ -31,6 +31,7 @@ const BASELINE_DIR = path.join(RUN_DIR, 'local-baseline');
 const OUT_DIR = path.join(RUN_DIR, 'actual-screenshot-diff');
 const THRESHOLD = Number(argOf('--threshold', '60'));
 const SEARCH_STEP = Number(argOf('--search-step', '16'));
+const MAX_CHAT_SIDECAR_AGE_MS = 5 * 60 * 1000;
 
 function argOf(name, fallback) {
   const i = args.indexOf(name);
@@ -90,6 +91,7 @@ function actualTargets(fixtureDir) {
       name: 'chat',
       local: path.join(shots, 'local-preview.png'),
       actual: path.join(shots, 'roll20-chat.png'),
+      validation: validateChatEvidence(shots),
       purpose: 'Roll20 chat/rolltemplate screenshot presence marker; visual diff is diagnostic only.',
     },
   ];
@@ -140,6 +142,51 @@ function hasPositiveDomEvidence(evidence) {
   if (Array.isArray(evidence.rootSamples) && evidence.rootSamples.some((sample) => String(sample ?? '').trim().length > 0)) return true;
   if (evidence.textMarkers && Object.values(evidence.textMarkers).some(Boolean)) return true;
   return false;
+}
+
+function validateChatEvidence(shots) {
+  const screenshot = path.join(shots, 'roll20-chat.png');
+  const sidecar = path.join(shots, 'roll20-chat-dom-evidence.json');
+  if (!existsSync(screenshot)) {
+    return { ok: false, status: 'SKIP', note: 'missing Roll20 chat screenshot' };
+  }
+  const domEvidence = readJsonIfExistsSync(sidecar);
+  if (!hasPositiveChatDomEvidence(domEvidence)) {
+    return {
+      ok: false,
+      status: domEvidence ? 'SUSPECT' : 'SKIP',
+      note: domEvidence
+        ? 'Roll20 chat screenshot exists, but DOM sidecar does not show rendered rolltemplate markers'
+        : 'Roll20 chat screenshot exists, but no DOM sidecar proves which rolltemplate rendered',
+    };
+  }
+  const freshness = validateSidecarFreshness(screenshot, sidecar);
+  if (!freshness.ok) return { ok: false, status: 'SUSPECT', note: freshness.note };
+  return { ok: true, status: 'OK', note: 'Roll20 chat screenshot exists with fresh rolltemplate DOM sidecar' };
+}
+
+function hasPositiveChatDomEvidence(evidence) {
+  if (!evidence) return false;
+  if (Number(evidence.rolltemplateCount ?? 0) > 0) return true;
+  if (Array.isArray(evidence.rolltemplates) && evidence.rolltemplates.length > 0) return true;
+  if (evidence.textMarkers?.rolltemplate) return true;
+  return false;
+}
+
+function validateSidecarFreshness(screenshot, sidecar) {
+  if (!existsSync(screenshot) || !existsSync(sidecar)) {
+    return { ok: false, note: 'Roll20 chat screenshot or DOM sidecar is missing' };
+  }
+  const screenshotStat = statSync(screenshot);
+  const sidecarStat = statSync(sidecar);
+  const deltaMs = Math.abs(screenshotStat.mtimeMs - sidecarStat.mtimeMs);
+  if (deltaMs > MAX_CHAT_SIDECAR_AGE_MS) {
+    return {
+      ok: false,
+      note: `Roll20 chat screenshot and DOM sidecar are stale relative to each other (${Math.round(deltaMs / 1000)}s apart)`,
+    };
+  }
+  return { ok: true, note: 'Roll20 chat screenshot and DOM sidecar timestamps are close enough' };
 }
 
 async function comparePair(page, pair) {

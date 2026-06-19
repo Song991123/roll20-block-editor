@@ -1323,3 +1323,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - A DPR-corrected chat-pane screenshot captured the real Roll20 chat panel, but the current panel showed only default chat tips and invite text, not a rolltemplate card.
 - Refreshed `roll20-chat-dom-evidence.json` for Les-Oublies from the current DOM; it now records 5 messages and 0 rolltemplates. Latest status is back to `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`.
 - Claim boundary: there is still no trustworthy Roll20 chat visual evidence, and AW2E still lacks trusted generated root evidence.
+
+## 2026-06-19 Chat Evidence Gate Requires Fresh Rolltemplate Sidecar
+
+- Hardened `scripts/roll20_actual_status.mjs`, `scripts/roll20_actual_screenshot_diff.mjs`, and `scripts/roll20_upload_handoff.mjs` so `roll20-chat.png` is not trusted by itself.
+- Chat evidence now requires a `roll20-chat-dom-evidence.json` sidecar with rendered rolltemplate markers.
+- The chat PNG and DOM sidecar must be fresh relative to each other; stale pairs are reported as suspect instead of proof.
+- Temporary regression check copied a local PNG into the Les-Oublies chat target while the current sidecar had 0 rolltemplates. Status stayed `generatedActualScreenshots=2/6`, and screenshot diff reported Les-Oublies chat `SUSPECT`. The temporary PNG was removed.
+- Current actual status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`; no Roll20 chat visual parity claim is allowed.

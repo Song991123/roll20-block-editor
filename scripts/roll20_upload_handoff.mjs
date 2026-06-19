@@ -15,6 +15,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
+import { statSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
@@ -23,6 +24,7 @@ const positionalArgs = args.filter((arg) => !arg.startsWith('--'));
 const [RUN_DIR_ARG, ONLY] = parseArgs(positionalArgs);
 const MISSING_ONLY = args.includes('--missing-only');
 const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
+const MAX_CHAT_SIDECAR_AGE_MS = 5 * 60 * 1000;
 
 function parseArgs(rawArgs) {
   const first = rawArgs[0] ?? '';
@@ -190,7 +192,8 @@ function validateSandboxEvidence(screenshots) {
 function validateChatEvidence(screenshots) {
   const screenshot = path.join(screenshots, 'roll20-chat.png');
   const pageScreenshot = path.join(screenshots, 'roll20-chat-page.png');
-  const domEvidence = readJsonIfExists(path.join(screenshots, 'roll20-chat-dom-evidence.json'));
+  const domEvidenceFile = path.join(screenshots, 'roll20-chat-dom-evidence.json');
+  const domEvidence = readJsonIfExists(domEvidenceFile);
   const hasPageScreenshot = existsSync(pageScreenshot);
   const hasDomEvidence = Boolean(domEvidence);
   const hasRenderedChatDom = hasPositiveChatDomEvidence(domEvidence);
@@ -214,20 +217,40 @@ function validateChatEvidence(screenshots) {
     return { ok: false, status: hasDomEvidence ? 'DOM_EMPTY' : 'MISSING', note: 'missing Roll20 chat screenshot' };
   }
   if (hasRenderedChatDom) {
+    const freshness = validateSidecarFreshness(screenshot, domEvidenceFile);
+    if (!freshness.ok) {
+      return { ok: false, status: 'STALE_DOM', note: freshness.note };
+    }
     return { ok: true, status: 'PRESENT', note: 'Roll20 chat screenshot exists with supporting DOM evidence' };
   }
   if (hasDomEvidence) {
     return {
-      ok: true,
+      ok: false,
       status: 'PRESENT_NO_DOM_MARKERS',
-      note: 'Roll20 chat screenshot exists, but DOM evidence did not show rendered rolltemplate/message markers',
+      note: 'Roll20 chat screenshot exists, but DOM evidence did not show rendered rolltemplate markers',
     };
   }
   return {
-    ok: true,
+    ok: false,
     status: 'PRESENT_SCREENSHOT_ONLY',
     note: 'Roll20 chat screenshot exists, but no DOM sidecar proves which rolltemplate/message rendered',
   };
+}
+
+function validateSidecarFreshness(screenshot, sidecar) {
+  if (!existsSync(screenshot) || !existsSync(sidecar)) {
+    return { ok: false, note: 'Roll20 chat screenshot or DOM sidecar is missing' };
+  }
+  const screenshotStat = statSync(screenshot);
+  const sidecarStat = statSync(sidecar);
+  const deltaMs = Math.abs(screenshotStat.mtimeMs - sidecarStat.mtimeMs);
+  if (deltaMs > MAX_CHAT_SIDECAR_AGE_MS) {
+    return {
+      ok: false,
+      note: `Roll20 chat screenshot and DOM sidecar are stale relative to each other (${Math.round(deltaMs / 1000)}s apart)`,
+    };
+  }
+  return { ok: true, note: 'Roll20 chat screenshot and DOM sidecar timestamps are close enough' };
 }
 
 function readJsonIfExists(file) {
@@ -249,11 +272,9 @@ function hasPositiveDomEvidence(evidence) {
 
 function hasPositiveChatDomEvidence(evidence) {
   if (!evidence) return false;
-  if (Number(evidence.messageCount ?? 0) > 0) return true;
   if (Number(evidence.rolltemplateCount ?? 0) > 0) return true;
-  if (Array.isArray(evidence.messages) && evidence.messages.some((message) => String(message?.text ?? message ?? '').trim().length > 0)) return true;
   if (Array.isArray(evidence.rolltemplates) && evidence.rolltemplates.length > 0) return true;
-  if (evidence.textMarkers && Object.values(evidence.textMarkers).some(Boolean)) return true;
+  if (evidence.textMarkers?.rolltemplate) return true;
   return false;
 }
 

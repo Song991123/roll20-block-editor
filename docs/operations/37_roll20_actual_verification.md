@@ -158,6 +158,12 @@ visual parity can be investigated. The strongest evidence is both files: the
 PNG for visual comparison and the DOM sidecar tying that screenshot to a real
 Roll20 message/rolltemplate.
 
+The chat PNG and DOM sidecar must describe the same capture moment. Status,
+handoff, and screenshot-diff helpers reject `roll20-chat.png` when the sidecar is
+missing, lacks rendered rolltemplate markers, or is stale relative to the PNG.
+Default Roll20 chat tips, invite text, or page-level screenshots are not accepted
+as rolltemplate visual evidence.
+
 Use `corepack pnpm run status:roll20-actual -- <run-dir> --require-actual` after
 the diff helper when a work batch claims actual-screen coverage. This command
 does not prove visual parity by itself; it proves whether the generated-sheet
