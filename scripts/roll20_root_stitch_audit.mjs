@@ -7,6 +7,7 @@
 
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
@@ -113,10 +114,44 @@ async function readOverlapDiagnostics(shotsDir) {
         ? round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
         : null,
       transitionSummary: summarizeOverlapTransitions(meta, placements),
+      segmentHashSummary: await summarizeSegmentHashes(meta),
       scope: meta.scope ?? 'visual-overlap diagnostic only; not trusted Roll20 full-root evidence',
     });
   }
   return diagnostics;
+}
+
+async function summarizeSegmentHashes(meta) {
+  if (meta.segmentHashSummary) return meta.segmentHashSummary;
+  const segments = Array.isArray(meta.segments) ? meta.segments : [];
+  const items = [];
+  for (const segment of segments) {
+    if (!segment.file || !existsSync(segment.file)) continue;
+    const bytes = await readFile(segment.file);
+    items.push({
+      index: segment.index,
+      file: segment.file,
+      hash: createHash('sha256').update(bytes).digest('hex'),
+    });
+  }
+  const groups = new Map();
+  for (const item of items) {
+    if (!groups.has(item.hash)) groups.set(item.hash, []);
+    groups.get(item.hash).push(item);
+  }
+  const duplicateGroups = [...groups.values()]
+    .filter((group) => group.length > 1)
+    .map((group) => ({
+      hash: group[0].hash,
+      indexes: group.map((item) => item.index),
+      files: group.map((item) => path.relative(process.cwd(), item.file)),
+    }));
+  return {
+    hashedSegmentCount: items.length,
+    uniqueHashCount: groups.size,
+    duplicateSegmentCount: duplicateGroups.reduce((sum, group) => sum + group.indexes.length, 0),
+    duplicateGroups,
+  };
 }
 
 function summarizeOverlapTransitions(meta, placements) {
@@ -238,7 +273,8 @@ function renderMarkdown(report) {
       .map((diag) => {
         const lowAdvance = diag.transitionSummary?.lowAdvanceTransitions?.length ?? 0;
         const highScore = diag.transitionSummary?.highScoreTransitions?.length ?? 0;
-        return `${diag.source}: ${diag.status} (${diag.segmentCount} seg, max score ${diag.maxOverlapScore ?? 'n/a'}, low advance ${lowAdvance}, high score ${highScore})`;
+        const duplicateSegments = diag.segmentHashSummary?.duplicateSegmentCount ?? 0;
+        return `${diag.source}: ${diag.status} (${diag.segmentCount} seg, max score ${diag.maxOverlapScore ?? 'n/a'}, low advance ${lowAdvance}, high score ${highScore}, duplicate seg ${duplicateSegments})`;
       })
       .join('<br>');
     const checks = [

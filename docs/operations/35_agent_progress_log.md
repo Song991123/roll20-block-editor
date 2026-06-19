@@ -1452,3 +1452,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest regenerated AW2E long diagnostic metadata reports 37 transitions, median advance `321px`, one low-advance transition at the bottom (`35 -> 36`, advance `23px`), and zero high-score transitions.
 - Latest `audit:roll20-root-stitch` still leaves AW2E as `SKIP` / diagnostic-only, while Les-Oublies and YSHY remain PASS on trusted DPR-corrected root evidence.
 - Claim boundary: this narrows the AW2E blocker toward capture coverage/default-state/root-height drift. It does not validate the overlap stitch as trusted full-root evidence and does not authorize production renderer CSS.
+
+## 2026-06-19 AW2E Duplicate Segment Capture Audit
+
+- Chrome could still claim the dedicated Roll20 Sandbox editor tab and confirm AW2E controls in the visible snapshot. The ordinary page DOM still cannot read the character iframe internals, and CDP `Target.setAutoAttach` / `Target.getTargets` remain unsupported in the extension surface.
+- A small screenshot-clip probe confirmed the visible iframe clip is capturable and returns `720x502` JPEG bytes; after focusing the iframe, scroll changes the captured image. This confirms visual scrolling is possible, but it still does not expose trustworthy `scrollTop` or root-height metadata.
+- Added duplicate segment hashing to the overlap diagnostic and root-stitch audit path. The latest AW2E long diagnostic has 38 segments with one duplicate group: segments 36 and 37 are byte-identical.
+- Latest renderer gate still holds production CSS and now exposes the duplicate-segment clue in the blocker: AW2E best diagnostic `aw2e-long-overlap-stitch-diagnostic.json`, 38 segments, max score `6.605`, duplicate segments `2`.
+- Claim boundary: the blocker is now more precise. AW2E needs a true DPR-corrected manifest/root capture or another verified scroll metadata source; the current overlap stitch remains diagnostic-only.

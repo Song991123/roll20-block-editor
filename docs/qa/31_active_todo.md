@@ -614,3 +614,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: The latest long AW2E diagnostic stitch is `720x12062` from 38 ignored local segments. Transition summary: median advance `321px`, `lowAdvanceTransitions=1`, `highScoreTransitions=0`.
 - CURRENT: `audit:roll20-root-stitch` still classifies AW2E as `SKIP` because only overlap diagnostic evidence exists; Les-Oublies and YSHY remain PASS on trusted DPR-corrected full-root evidence.
 - STILL TODO: AW2E needs trusted DPR-corrected full-root capture or a validated manifest-backed stitch path before renderer CSS can be promoted. The remaining diagnostic root-height delta is not enough to justify production CSS.
+
+## 2026-06-19 AW2E Duplicate Segment Capture Audit TODO Note
+
+- DONE: `scripts/roll20_overlap_stitch_diagnostic.mjs` now hashes input segments and records duplicate segment groups in the diagnostic JSON.
+- DONE: `scripts/roll20_root_stitch_audit.mjs` and `scripts/roll20_renderer_action_gate.mjs` now surface duplicate segment counts in AW2E diagnostic-only evidence.
+- VERIFIED: Regenerating `aw2e-long-overlap-stitch-diagnostic.png` from 38 ignored local segments reports `duplicateSegments=2`, `duplicateGroups=1`; segments 36 and 37 are byte-identical.
+- CURRENT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH` and now names AW2E's best diagnostic as 38 segments, max score `6.605`, duplicate segments `2`.
+- STILL TODO: recapture AW2E with real DPR-corrected sheet-root segment metadata or a manifest-backed scroll source. Do not promote the current overlap stitch to trusted full-root evidence.

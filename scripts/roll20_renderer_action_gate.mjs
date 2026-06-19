@@ -230,7 +230,8 @@ function formatMissingFullRoot(fixture) {
     const best = diagnostics
       .slice()
       .sort((a, b) => Number(b.segmentCount ?? 0) - Number(a.segmentCount ?? 0))[0];
-    return `${fixture.fixtureId} (${audit.primaryIssue}; best diagnostic ${best.source}, ${best.segmentCount} segments, max score ${best.maxOverlapScore ?? 'n/a'})`;
+    const duplicateSegments = best.segmentHashSummary?.duplicateSegmentCount ?? 0;
+    return `${fixture.fixtureId} (${audit.primaryIssue}; best diagnostic ${best.source}, ${best.segmentCount} segments, max score ${best.maxOverlapScore ?? 'n/a'}, duplicate segments ${duplicateSegments})`;
   }
   if (audit.primaryIssue) return `${fixture.fixtureId} (${audit.primaryIssue})`;
   return fixture.fixtureId;
@@ -314,7 +315,8 @@ function fmtRootStitchAudit(audit) {
     const best = diagnostics
       .slice()
       .sort((a, b) => Number(b.segmentCount ?? 0) - Number(a.segmentCount ?? 0))[0];
-    return `${audit.status}: diagnostic only (${best.segmentCount} seg, max ${best.maxOverlapScore ?? 'n/a'})`;
+    const duplicateSegments = best.segmentHashSummary?.duplicateSegmentCount ?? 0;
+    return `${audit.status}: diagnostic only (${best.segmentCount} seg, max ${best.maxOverlapScore ?? 'n/a'}, dup ${duplicateSegments})`;
   }
   return audit.trustedEvidence?.length
     ? `${audit.status}: ${audit.trustedEvidence.join('<br>')}`

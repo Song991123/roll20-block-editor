@@ -11,6 +11,7 @@
 
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 
@@ -138,6 +139,7 @@ async function main() {
     await writeFile(outPath, Buffer.from(result.dataUrl.replace(/^data:image\/png;base64,/, ''), 'base64'));
     const metaPath = outPath.replace(/\.png$/i, '.json');
     const transitionSummary = summarizeTransitions(result);
+    const segmentHashSummary = await summarizeSegmentHashes(result.segments);
     const meta = {
       generatedAt: new Date().toISOString(),
       output: path.relative(process.cwd(), outPath),
@@ -147,6 +149,7 @@ async function main() {
       step,
       outputSize: result.outputSize,
       transitionSummary,
+      segmentHashSummary,
       placements: result.placements,
       segments: result.segments,
     };
@@ -155,10 +158,42 @@ async function main() {
     console.log(`size=${result.outputSize.w}x${result.outputSize.h}`);
     console.log(`segments=${result.segments.length}`);
     console.log(`advanceMedian=${transitionSummary.advanceMedian ?? 'n/a'} lowAdvance=${transitionSummary.lowAdvanceTransitions.length} highScore=${transitionSummary.highScoreTransitions.length}`);
+    console.log(`duplicateSegments=${segmentHashSummary.duplicateSegmentCount} duplicateGroups=${segmentHashSummary.duplicateGroups.length}`);
     console.log(`meta=${path.relative(process.cwd(), metaPath)}`);
   } finally {
     await browser.close();
   }
+}
+
+async function summarizeSegmentHashes(segments) {
+  const items = [];
+  for (const segment of segments ?? []) {
+    if (!segment.file || !existsSync(segment.file)) continue;
+    const bytes = await readFile(segment.file);
+    items.push({
+      index: segment.index,
+      file: segment.file,
+      hash: createHash('sha256').update(bytes).digest('hex'),
+    });
+  }
+  const groups = new Map();
+  for (const item of items) {
+    if (!groups.has(item.hash)) groups.set(item.hash, []);
+    groups.get(item.hash).push(item);
+  }
+  const duplicateGroups = [...groups.values()]
+    .filter((group) => group.length > 1)
+    .map((group) => ({
+      hash: group[0].hash,
+      indexes: group.map((item) => item.index),
+      files: group.map((item) => path.relative(process.cwd(), item.file)),
+    }));
+  return {
+    hashedSegmentCount: items.length,
+    uniqueHashCount: groups.size,
+    duplicateSegmentCount: duplicateGroups.reduce((sum, group) => sum + group.indexes.length, 0),
+    duplicateGroups,
+  };
 }
 
 function summarizeTransitions(result) {
