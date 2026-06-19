@@ -192,13 +192,37 @@ function summarizeActualChatCss(sidecar) {
 }
 
 function buildActualTemplateCrop(sidecar) {
-  const template = (sidecar?.rolltemplates ?? []).find((item) => item?.rect?.width && item?.rect?.height);
   const clip = sidecar?.clip ?? sidecar?.screenshotClipApplied ?? null;
+  const templates = Array.isArray(sidecar?.rolltemplates) ? sidecar.rolltemplates : [];
+  const latest = sidecar?.latestTemplate?.rect?.width && sidecar?.latestTemplate?.rect?.height
+    ? sidecar.latestTemplate
+    : null;
+  const template =
+    (latest && rectIntersectsClip(latest.rect, clip) ? latest : null) ??
+    [...templates].reverse().find((item) => item?.rect?.width && item?.rect?.height && rectIntersectsClip(item.rect, clip)) ??
+    [...templates].reverse().find((item) => item?.rect?.width && item?.rect?.height);
   if (!template?.rect || !clip?.width || !clip?.height) return null;
   return {
     rect: template.rect,
     clip,
+    templateIndex: template.index ?? null,
+    templateClassName: template.className ?? '',
+    templateSelection: latest === template ? 'latestTemplate' : 'rolltemplates-reverse',
+    intersectsClip: rectIntersectsClip(template.rect, clip),
   };
+}
+
+function rectIntersectsClip(rect, clip) {
+  if (!rect?.width || !rect?.height || !clip?.width || !clip?.height) return false;
+  const rectLeft = Number(rect.left ?? rect.x ?? 0);
+  const rectTop = Number(rect.top ?? rect.y ?? 0);
+  const rectRight = Number(rect.right ?? rectLeft + rect.width);
+  const rectBottom = Number(rect.bottom ?? rectTop + rect.height);
+  const clipLeft = Number(clip.left ?? clip.x ?? 0);
+  const clipTop = Number(clip.top ?? clip.y ?? 0);
+  const clipRight = Number(clip.right ?? clipLeft + clip.width);
+  const clipBottom = Number(clip.bottom ?? clipTop + clip.height);
+  return rectRight > clipLeft && rectLeft < clipRight && rectBottom > clipTop && rectTop < clipBottom;
 }
 
 async function compareImages(page, { local, actual, actualCrop = null }) {
