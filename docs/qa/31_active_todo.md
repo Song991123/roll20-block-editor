@@ -1,3 +1,22 @@
+## 2026-06-19 19:29 +09:00 - Rolltemplate CSS selector export fix
+
+Status: IMPLEMENTED + LOCAL PREUPLOAD VERIFIED, ACTUAL ROLL20 RECAPTURE STILL REQUIRED.
+
+What changed:
+- Fixed CSS block export so `r20_selector_class` restores Roll20 .sheet- class selectors instead of emitting unprefixed .rolltemplate-* selectors after import.
+- Added block-level regression coverage for .rolltemplate-aw -> .sheet-rolltemplate-aw and no double-prefix for .sheet-header.
+- Updated Roll20 status/gate/chat diagnostics to keep actual chat CSS scoped/prefix mismatch as a separate blocker instead of hiding it inside generic CSS inactive/missing buckets.
+
+Evidence:
+- corepack pnpm run lint: PASS.
+- corepack pnpm run build: PASS.
+- corepack pnpm run verify:roll20-preupload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json: PASS.
+- Regenerated ignored AW2E payload now contains .sheet-rolltemplate-aw table, .sheet-rolltemplate-aw th, .sheet-rolltemplate-aw td, and prefixed inner template classes.
+- corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1: rendererReady=NO, rendererBlockers=7, generatedActualScreenshots=4/6, generatedDiffed=4/6, chatActualCssInactive=1, chatActualCssScopedMismatch=1.
+
+Not done / next:
+- Re-upload the regenerated payload to Roll20 Custom Sheet Sandbox and recapture actual chat screenshots; current actual evidence still reflects old or incomplete Roll20 state.
+- Do not claim Roll20 visual parity until missing 2/6 generated actual screenshots and chat normalized crop evidence are recaptured and diffed.
 ## 2026-06-19 Actual Status Chat Gate Final Rerun
 
 - VERIFY: after rerunning `gate:roll20-renderer-action` and then `status:roll20-actual`, the current status reads `rendererBlockers=6`.

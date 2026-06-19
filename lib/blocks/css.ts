@@ -130,6 +130,21 @@ function sanitizeIdent(raw: string): string {
   return s.replace(/[^A-Za-z0-9_-]/g, '');
 }
 
+const ROLL20_RESERVED_CLASS_PATTERNS: RegExp[] = [
+  /^sheet-/,
+  /^charsheet$/,
+  /^repeating_/,
+];
+
+function emitRoll20ClassSelector(name: string): string {
+  const clean = sanitizeIdent(name);
+  if (!clean) return '';
+  if (ROLL20_RESERVED_CLASS_PATTERNS.some((re) => re.test(clean))) {
+    return `.${clean}`;
+  }
+  return `.sheet-${clean}`;
+}
+
 /** dropdown 값 화이트리스트 검증 — 미허용 시 fallback. */
 function pickAllowed(raw: string, opts: Array<[string, string]>, fallback: string): string {
   const allowed = new Set(opts.map(([, v]) => v));
@@ -197,8 +212,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
-      const name = sanitizeIdent(String(b.getFieldValue('NAME') ?? ''));
-      return [name ? `.${name}` : '', ORDER.ATOMIC];
+      return [emitRoll20ClassSelector(String(b.getFieldValue('NAME') ?? '')), ORDER.ATOMIC];
     },
   },
 

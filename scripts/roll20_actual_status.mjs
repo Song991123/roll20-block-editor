@@ -168,6 +168,7 @@ async function main() {
       chatParityNeedsNormalizedCapture: chatParity.needsNormalizedCapture,
       chatParityNormalizedHighMismatch: chatParity.normalizedHighMismatch,
       chatParityActualCssInactive: chatParity.actualChatCssInactive,
+      chatParityActualCssScopedMismatch: chatParity.actualChatCssScopedMismatch,
       chatParityActualCssUnknown: chatParity.actualChatCssUnknown,
       chatParityMaxNormalizedMismatchPct: chatParity.maxNormalizedMismatchPct,
       trustedFullRootComplete,
@@ -405,6 +406,7 @@ async function readChatParity(runDir) {
       needsNormalizedCapture: 0,
       normalizedHighMismatch: 0,
       actualChatCssInactive: 0,
+      actualChatCssScopedMismatch: 0,
       actualChatCssUnknown: 0,
       maxNormalizedMismatchPct: null,
       note: 'missing chat parity diagnostic',
@@ -422,6 +424,7 @@ async function readChatParity(runDir) {
     needsNormalizedCapture: Number(summary.needsNormalizedCapture ?? 0),
     normalizedHighMismatch: Number(summary.normalizedHighMismatch ?? 0),
     actualChatCssInactive: Number(summary.actualChatCssInactive ?? 0),
+    actualChatCssScopedMismatch: Number(summary.actualChatCssScopedMismatch ?? 0),
     actualChatCssUnknown: Number(summary.actualChatCssUnknown ?? 0),
     maxNormalizedMismatchPct: pctNumber(summary.maxNormalizedMismatchRatio ?? 0),
     mismatchFixtures: (report.fixtures ?? [])
@@ -667,6 +670,9 @@ function buildNextAction({
   if (chatParity?.exists && chatParity.needsNormalizedCapture > 0) {
     return 'Roll20 chat evidence exists but is not normalized for every fixture. Recapture roll20-chat.png with fresh DOM sidecars that include rolltemplate rect/clip metadata, then rerun diagnose:roll20-chat-parity.';
   }
+  if (chatParity?.exists && chatParity.actualChatCssScopedMismatch > 0) {
+    return 'Actual Roll20 chat CSS appears scoped/prefix-mismatched. Inspect actual chat and character iframe style selectors before deciding whether local ChatPane should apply sheet-* rolltemplate CSS.';
+  }
   if (chatParity?.exists && chatParity.actualChatCssInactive > 0) {
     return 'Actual Roll20 chat CSS evidence is inactive for one or more fixtures. Prove a CSS-active Custom Sheet Sandbox/test-room chat state before treating local ChatPane mismatches as production renderer defects.';
   }
@@ -726,7 +732,7 @@ function renderMarkdown(report) {
     `- Renderer action: ${report.summary.rendererAction} (${report.summary.rendererBlockerCount} blockers)`,
     `- Renderer ready for production CSS: ${report.summary.rendererReady ? 'yes' : 'NO'}`,
     `- Chat parity diagnostic: ${report.summary.chatParityExists ? 'present' : 'missing'} (${report.summary.chatParityCompared}/${report.summary.chatParityFixtures} compared, normalized ${report.summary.chatParityNormalizedCompared}/${report.summary.chatParityFixtures})`,
-    `- Chat blockers: needs normalized capture ${report.summary.chatParityNeedsNormalizedCapture}, normalized high mismatch ${report.summary.chatParityNormalizedHighMismatch}, actual CSS inactive ${report.summary.chatParityActualCssInactive}, actual CSS unknown ${report.summary.chatParityActualCssUnknown}`,
+    `- Chat blockers: needs normalized capture ${report.summary.chatParityNeedsNormalizedCapture}, normalized high mismatch ${report.summary.chatParityNormalizedHighMismatch}, actual CSS inactive ${report.summary.chatParityActualCssInactive}, scoped/prefix mismatch ${report.summary.chatParityActualCssScopedMismatch}, actual CSS unknown ${report.summary.chatParityActualCssUnknown}`,
     `- Max normalized chat mismatch: ${report.summary.chatParityMaxNormalizedMismatchPct ?? 'n/a'}%`,
     `- All actual screenshots: ${report.summary.actualPresentCount}/${report.summary.actualTargetCount}`,
     `- All screenshot diffs: ${report.summary.diffedCount}/${report.summary.actualTargetCount}`,
@@ -775,6 +781,7 @@ function renderMarkdown(report) {
     lines.push(`- Needs normalized capture: ${report.chatParity.needsNormalizedCapture}`);
     lines.push(`- Normalized high mismatch: ${report.chatParity.normalizedHighMismatch}`);
     lines.push(`- Actual chat CSS inactive: ${report.chatParity.actualChatCssInactive}`);
+    lines.push(`- Actual chat CSS scoped/prefix mismatch: ${report.chatParity.actualChatCssScopedMismatch}`);
     lines.push(`- Actual chat CSS unknown: ${report.chatParity.actualChatCssUnknown}`);
     lines.push(`- Max normalized mismatch: ${report.chatParity.maxNormalizedMismatchPct}%`);
     if (report.chatParity.mismatchFixtures.length) {
@@ -820,6 +827,7 @@ function renderConsoleSummary(report, outDir) {
     `chatNormalizedCompared=${report.summary.chatParityNormalizedCompared}/${report.summary.chatParityFixtures}`,
     `chatNeedsNormalizedCapture=${report.summary.chatParityNeedsNormalizedCapture}`,
     `chatActualCssInactive=${report.summary.chatParityActualCssInactive}`,
+    `chatActualCssScopedMismatch=${report.summary.chatParityActualCssScopedMismatch}`,
     `chatNormalizedHighMismatch=${report.summary.chatParityNormalizedHighMismatch}`,
     `commandGate=${report.commandPass ? 'PASS' : 'NEEDS_ACTION'}`,
     `out=${rel(outDir)}`,

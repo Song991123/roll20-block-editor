@@ -46,6 +46,7 @@ async function main() {
   const highMismatch = compared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
   const normalizedHighMismatch = normalizedCompared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
   const actualChatCssInactive = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
+  const actualChatCssScopedMismatch = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH');
   const actualChatCssUnknown = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
   const report = {
     generatedAt: new Date().toISOString(),
@@ -61,6 +62,7 @@ async function main() {
       highMismatch: highMismatch.length,
       normalizedHighMismatch: normalizedHighMismatch.length,
       actualChatCssInactive: actualChatCssInactive.length,
+      actualChatCssScopedMismatch: actualChatCssScopedMismatch.length,
       actualChatCssUnknown: actualChatCssUnknown.length,
       maxMismatchRatio: compared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
       maxNormalizedMismatchRatio: normalizedCompared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
@@ -165,10 +167,23 @@ function summarizeActualChatCss(sidecar) {
       note: 'actual Roll20 chat sidecar has no chatCssEvidence field',
     };
   }
+  const scopedUnprefixedRules = evidence.scopedUnprefixedRules ?? evidence.scopedUnprefixedRolltemplateRules ?? [];
+  const unprefixedRules = evidence.unprefixedRules ?? evidence.unprefixedRolltemplateRules ?? [];
+  const hasScopedOrUnprefixedMismatch =
+    Boolean(evidence.scopedUnprefixedRulePresent) ||
+    Boolean(evidence.unprefixedRulePresent) ||
+    (Array.isArray(scopedUnprefixedRules) && scopedUnprefixedRules.length > 0) ||
+    (Array.isArray(unprefixedRules) && unprefixedRules.length > 0);
+  const classification =
+    evidence.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES' && hasScopedOrUnprefixedMismatch
+      ? 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH'
+      : evidence.classification ?? 'UNKNOWN';
   return {
-    classification: evidence.classification ?? 'UNKNOWN',
+    classification,
     anyExpectedRulePresent: Boolean(evidence.anyExpectedRulePresent),
     expectedRules: evidence.expectedRules ?? {},
+    scopedUnprefixedRules,
+    unprefixedRules,
     styleTextLength: Number(evidence.styleTextLength ?? 0),
     templateCount: Number(evidence.templateCount ?? 0),
     capturedAt: evidence.capturedAt ?? null,
@@ -292,6 +307,7 @@ function renderMarkdown(report) {
   lines.push(`High mismatch: ${report.summary.highMismatch}`);
   lines.push(`Normalized high mismatch: ${report.summary.normalizedHighMismatch}`);
   lines.push(`Actual chat CSS inactive: ${report.summary.actualChatCssInactive}`);
+  lines.push(`Actual chat CSS scoped/prefix mismatch: ${report.summary.actualChatCssScopedMismatch}`);
   lines.push(`Actual chat CSS unknown: ${report.summary.actualChatCssUnknown}`);
   lines.push(`Max mismatch: ${pct(report.summary.maxMismatchRatio)}`);
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
