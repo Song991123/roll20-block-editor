@@ -31,6 +31,7 @@ const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/rolltemplate-chat-smoke'));
 const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4196'));
+const CHAT_FONT_POLICY = argOf('--chat-font-policy', 'default');
 const VIEWPORT = { width: 2200, height: 1200 };
 
 const MIME = {
@@ -391,6 +392,7 @@ function renderMarkdown(report) {
   lines.push('# Rolltemplate Chat Smoke');
   lines.push('');
   lines.push(`Generated: ${report.startedAt}`);
+  lines.push(`Chat font policy: \`${report.chatFontPolicy ?? 'default'}\``);
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
@@ -455,6 +457,7 @@ async function main() {
   const report = {
     startedAt: new Date().toISOString(),
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
+    chatFontPolicy: CHAT_FONT_POLICY,
     fixtures: [],
   };
 
@@ -464,6 +467,15 @@ async function main() {
     });
     await page.goto(report.baseUrl, { waitUntil: 'networkidle' });
     await page.evaluate(() => localStorage.setItem('__perfOn', '1'));
+    await page.evaluate((policy) => {
+      if (policy === 'roll20-chat-fallback') {
+        localStorage.setItem('__r20ChatFontPolicy', 'roll20-chat-fallback');
+        localStorage.setItem('__r20SuppressUserDocumentFonts', '1');
+      } else {
+        localStorage.removeItem('__r20ChatFontPolicy');
+        localStorage.removeItem('__r20SuppressUserDocumentFonts');
+      }
+    }, CHAT_FONT_POLICY);
     await page.reload({ waitUntil: 'networkidle' });
     await warmPerfHook(page);
 

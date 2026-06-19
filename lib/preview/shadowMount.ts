@@ -174,9 +174,11 @@ function extractDocumentFontCssFromUserCss(css: string): string {
 
 function ensureRoll20DocumentFonts(css: string): void {
   if (typeof document === 'undefined') return;
+  const suppressUserDocumentFonts =
+    window.localStorage.getItem('__r20SuppressUserDocumentFonts') === '1';
   const documentFontCss = [
     roll20ShadowDocumentFontFaceCss,
-    extractDocumentFontCssFromUserCss(css),
+    suppressUserDocumentFonts ? '' : extractDocumentFontCssFromUserCss(css),
   ].filter((chunk) => chunk.trim()).join('\n');
   if (!documentFontCss.trim()) return;
   const styleEl = document.getElementById(ROLL20_FONT_STYLE_ID) ?? document.createElement('style');

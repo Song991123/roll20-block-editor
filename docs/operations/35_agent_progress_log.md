@@ -1,3 +1,15 @@
+## 2026-06-20 03:03 +09:00 - Roll20 chat font fallback candidate rejected
+
+Status: PARTIAL. The YSHY font hypothesis was tested, but the candidate is not production-safe.
+
+- Added diagnostic-only `__r20ChatFontPolicy=roll20-chat-fallback` support in ChatPane and `rolltemplate_chat_smoke --chat-font-policy roll20-chat-fallback`.
+- Added diagnostic-only `__r20SuppressUserDocumentFonts=1` in the preview Shadow DOM font registration path so the candidate can suppress user `@font-face` at document scope, not only in ChatPane CSS.
+- Rebuilt and ran default and fallback local chat smoke against AW2E, Les-Oublies, and YSHY.
+- Default remains the better current baseline: YSHY raw/aligned `28.36%/22.46%`.
+- Fallback made one metric more Roll20-like, first YSHY label cell width `15.8594px -> 14.8281px` vs actual `14.95px`, but worsened visual mismatch to raw/aligned `31.85%/27.93%`.
+- Decision: keep the switch for diagnostics only and do not promote it to production ChatPane behavior.
+- Latest restored baseline after rerun: `chatNormalizedCompared=3/3`, `chatAlignedHighMismatch=1`, `chatAuthoritativeNormalizedHighMismatch=1`, `rendererReady=NO`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`.
+
 ## 2026-06-20 03:03 +09:00 - YSHY chat font/root-cause probe
 
 Status: PARTIAL. YSHY chat mismatch has a concrete suspect, but no production renderer change is promoted yet.

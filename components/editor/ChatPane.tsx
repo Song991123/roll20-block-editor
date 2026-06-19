@@ -33,9 +33,20 @@ function safeRolltemplateClass(name: string): string {
   return `sheet-rolltemplate-${safe || 'default'}`;
 }
 
-function extractRolltemplateCss(css: string): string {
+type ChatFontPolicy = 'default' | 'roll20-chat-fallback';
+
+function currentChatFontPolicy(): ChatFontPolicy {
+  if (typeof window === 'undefined') return 'default';
+  return window.localStorage.getItem('__r20ChatFontPolicy') === 'roll20-chat-fallback'
+    ? 'roll20-chat-fallback'
+    : 'default';
+}
+
+function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'default'): string {
   const prefixedCss = autoPrefixCssClasses(css);
-  const fontFaces = prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
+  const fontFaces = fontPolicy === 'roll20-chat-fallback'
+    ? []
+    : prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
   const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
   const rolltemplateCss = rewriteRoll20AssetUrls([...fontFaces, ...(matches ?? [])].join('\n'));
   return rolltemplateCss.trim() ? rolltemplateCss : '';
@@ -426,7 +437,11 @@ export default function ChatPane() {
   const emittedHtml = useWorkspaceStore((s) => s.emitCache.html);
   const emittedCss = useWorkspaceStore((s) => s.emitCache.css);
   const emittedI18n = useWorkspaceStore((s) => s.emitCache.i18n);
-  const rolltemplateCss = useMemo(() => extractRolltemplateCss(emittedCss), [emittedCss]);
+  const chatFontPolicy = currentChatFontPolicy();
+  const rolltemplateCss = useMemo(
+    () => extractRolltemplateCss(emittedCss, chatFontPolicy),
+    [emittedCss, chatFontPolicy],
+  );
   const translations = useMemo(() => parseTranslations(emittedI18n), [emittedI18n]);
 
   return (
