@@ -37,6 +37,7 @@ async function main() {
     fixtures,
     summary: summarize(fixtures),
   };
+  report.modelRollout = buildModelRollout(report.summary, fixtures);
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, 'input-flow-axis-diagnostics-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   await writeFile(path.join(outDir, 'input-flow-axis-diagnostics-results.md'), renderMarkdown(report), 'utf8');
@@ -315,6 +316,65 @@ function summarize(fixtures) {
   };
 }
 
+function buildModelRollout(summary, fixtures) {
+  const decisions = fixtures.map((fixture) => {
+    const status = fixture.modelBoundary?.status ?? 'INSUFFICIENT_EVIDENCE';
+    const recommendedModel = status === 'APPLY_CANDIDATE_FOR_THIS_AXIS'
+      ? fixture.modelBoundary.model
+      : 'default';
+    const productDecision = status === 'APPLY_CANDIDATE_FOR_THIS_AXIS'
+      ? 'CANDIDATE_ONLY_DO_NOT_EXPOSE'
+      : status === 'BLOCK_GLOBAL_MODEL'
+        ? 'KEEP_DEFAULT_BLOCKS_GLOBAL'
+        : 'KEEP_DEFAULT_NEEDS_EVIDENCE';
+    const requiredEvidence = [];
+    if (status === 'APPLY_CANDIDATE_FOR_THIS_AXIS') {
+      requiredEvidence.push('prove the model on additional non-fixture sheets before exposing it as an automatic boundary');
+      requiredEvidence.push('rerun full-root, chat, preview/edit, and actual Roll20 gates after any production-path toggle');
+    } else if (status === 'BLOCK_GLOBAL_MODEL') {
+      requiredEvidence.push('identify the separate source/default-state/selector axis before applying input-flow to this sheet shape');
+    } else {
+      requiredEvidence.push('refresh actual computed-style sidecars and production-path candidates');
+    }
+    return {
+      fixtureId: fixture.fixtureId,
+      productDecision,
+      diagnosticStatus: status,
+      recommendedModel,
+      evidenceSource: fixture.candidateEvidence,
+      sourceRootHeightDelta: fixture.source?.rootHeightDelta ?? null,
+      candidateRootHeightDelta: fixture.inlineText?.rootHeightDelta ?? null,
+      sourceMismatchPct: fixture.source?.mismatchPct ?? null,
+      candidateMismatchPct: fixture.inlineText?.mismatchPct ?? null,
+      reasons: fixture.modelBoundary?.reasons ?? [],
+      requiredEvidence,
+    };
+  });
+  const blockers = decisions
+    .filter((decision) => decision.productDecision !== 'CANDIDATE_ONLY_DO_NOT_EXPOSE')
+    .map((decision) => `${decision.fixtureId}:${decision.productDecision}`);
+  return {
+    globalDecision: summary.globalModelSafe
+      ? 'READY_FOR_REVIEWED_GLOBAL_EXPERIMENT'
+      : 'DO_NOT_ENABLE_GLOBALLY',
+    publicUiDecision: 'DO_NOT_EXPOSE',
+    defaultModel: 'default',
+    candidateModels: [...new Set(decisions.map((decision) => decision.recommendedModel).filter((model) => model && model !== 'default'))],
+    blockers,
+    decisions,
+    nextEvidence: summary.globalModelSafe
+      ? [
+          'run full renderer gate after enabling the model in a controlled branch',
+          'capture actual Roll20 evidence for a broader corpus before user-facing exposure',
+        ]
+      : [
+          'keep roll20RendererModel off in product UI',
+          'collect broader fixture evidence for source/default-state-dominant sheets',
+          'separate input-flow from chat rolltemplate renderer work',
+        ],
+  };
+}
+
 function renderMarkdown(report) {
   const lines = [];
   lines.push('# Roll20 Input/Inline-Flow Axis Diagnostics');
@@ -347,6 +407,22 @@ function renderMarkdown(report) {
     for (const reason of fixture.modelBoundary.reasons) lines.push(`- ${reason}`);
     lines.push('');
   }
+  lines.push('## Rollout Policy');
+  lines.push('');
+  lines.push(`Global decision: **${report.modelRollout.globalDecision}**`);
+  lines.push(`Public UI decision: **${report.modelRollout.publicUiDecision}**`);
+  lines.push(`Default model: \`${report.modelRollout.defaultModel}\``);
+  lines.push(`Candidate models: ${report.modelRollout.candidateModels.map((model) => `\`${model}\``).join(', ') || 'none'}`);
+  lines.push('');
+  lines.push('| Fixture | Product decision | Recommended model | Evidence | Source -> candidate | Required evidence |');
+  lines.push('| --- | --- | --- | --- | --- | --- |');
+  for (const decision of report.modelRollout.decisions) {
+    lines.push(`| \`${decision.fixtureId}\` | ${decision.productDecision} | \`${decision.recommendedModel}\` | ${decision.evidenceSource} | ${decision.sourceMismatchPct ?? ''}%/${decision.sourceRootHeightDelta ?? ''}px -> ${decision.candidateMismatchPct ?? ''}%/${decision.candidateRootHeightDelta ?? ''}px | ${decision.requiredEvidence.join('<br>')} |`);
+  }
+  lines.push('');
+  lines.push('Next evidence:');
+  for (const item of report.modelRollout.nextEvidence) lines.push(`- ${item}`);
+  lines.push('');
   lines.push('');
   lines.push('## Selector Height Snapshot');
   lines.push('');

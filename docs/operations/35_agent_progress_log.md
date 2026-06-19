@@ -1,3 +1,11 @@
+## 2026-06-20 Input-Flow Rollout Policy
+
+- Extended `scripts/roll20_input_flow_axis_diagnostics.mjs` with a machine-readable `modelRollout` section.
+- The rollout policy now records `globalDecision`, `publicUiDecision`, candidate models, blockers, and per-fixture product decisions. Current policy is `DO_NOT_ENABLE_GLOBALLY` and `DO_NOT_EXPOSE`.
+- Per-fixture current evidence: AW2E remains `KEEP_DEFAULT_BLOCKS_GLOBAL`; Les-Oublies and YSHY are `CANDIDATE_ONLY_DO_NOT_EXPOSE`.
+- Updated `scripts/roll20_renderer_action_gate.mjs` to surface the rollout policy as standard warning/evidence so agents do not have to infer it from prose.
+- Verified: `diagnose:roll20-input-flow-axis`, `gate:roll20-renderer-action`, and `diagnose:roll20-renderer-blocker`.
+
 ## 2026-06-20 Renderer Model Rollout Guard
 
 - Added `scripts/roll20_renderer_model_guard.mjs` and package script `guard:roll20-renderer-model`.

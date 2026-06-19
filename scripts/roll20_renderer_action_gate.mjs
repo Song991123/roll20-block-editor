@@ -337,6 +337,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   if (inputFlowSummary?.globalModelSafe === false && inputFlowSummary.blockGlobalModelFixtures.length) {
     warnings.push(`input-flow renderer model is not global-safe: apply candidates ${inputFlowSummary.applyCandidateFixtures.join(', ') || 'none'}; blocked by ${inputFlowSummary.blockGlobalModelFixtures.join(', ')}`);
   }
+  if (inputFlowSummary?.modelRollout?.publicUiDecision === 'DO_NOT_EXPOSE') {
+    warnings.push(`input-flow renderer model rollout policy is ${inputFlowSummary.modelRollout.globalDecision}; public UI decision is ${inputFlowSummary.modelRollout.publicUiDecision}`);
+  }
 
   const highRootCutoffRisk = fixtures.filter((fixture) => fixture.rootCutoff?.risk === 'HIGH');
   const supersededRootCutoffRisk = highRootCutoffRisk.filter((fixture) => reliableRendererCandidate(fixture)?.evidenceSource === 'scroll-metrics-source');
@@ -385,6 +388,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   }
   if (inputFlowSummary) {
     positiveFindings.push(`input-flow axis diagnostic: status=${inputFlowSummary.status}, applyCandidate=${inputFlowSummary.applyCandidateFixtures.length}, blockGlobalModel=${inputFlowSummary.blockGlobalModelFixtures.length}, globalSafe=${inputFlowSummary.globalModelSafe ? 'YES' : 'NO'}`);
+    if (inputFlowSummary.modelRollout) {
+      positiveFindings.push(`input-flow rollout policy: global=${inputFlowSummary.modelRollout.globalDecision}, publicUi=${inputFlowSummary.modelRollout.publicUiDecision}, candidates=${inputFlowSummary.modelRollout.candidateModels.join(', ') || 'none'}, blockers=${inputFlowSummary.modelRollout.blockers.join(', ') || 'none'}`);
+    }
   }
   if (chatParitySummary) {
     positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, alignedHighMismatch=${chatParitySummary.alignedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, actualTemplatePixelSuspect=${chatParitySummary.actualTemplatePixelSuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, currentMetricMissing=${chatCurrentMetrics.missing}/${chatCurrentMetrics.total}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, authoritativeMaxAlignedMismatch=${chatParitySummary.authoritativeMaxAlignedMismatchPct}%, maxAlignedMismatchIncludingSuspects=${chatParitySummary.maxAlignedMismatchPct}%`);
@@ -464,6 +470,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   if (inputFlowSummary?.globalModelSafe === false) {
     nextActions.push(`Do not enable the input-flow renderer model globally. It is candidate-only for ${inputFlowSummary.applyCandidateFixtures.join(', ') || 'none'} and blocked by ${inputFlowSummary.blockGlobalModelFixtures.join(', ') || 'unknown fixtures'}.`);
   }
+  if (inputFlowSummary?.modelRollout?.publicUiDecision === 'DO_NOT_EXPOSE') {
+    nextActions.push('Keep roll20RendererModel out of public UI and automatic product defaults until modelRollout no longer says DO_NOT_EXPOSE.');
+  }
   if (unresolvedRootCutoffRisk.length) {
     nextActions.push(`Resolve root cutoff/capture-container disagreement before production CSS: ${unresolvedRootCutoffRisk.map((fixture) => `${fixture.fixtureId} stitched=${fixture.rootCutoff.stitchedHeight} sidecar=${fixture.rootCutoff.sidecarHeight}`).join('; ')}. Capture or derive authoritative Roll20 root/container height, then rerun full-root candidates.`);
   }
@@ -522,6 +531,15 @@ function summarizeInputFlowAxis(report) {
     applyCandidateFixtures: report.summary.applyCandidateFixtures ?? [],
     blockGlobalModelFixtures: report.summary.blockGlobalModelFixtures ?? [],
     globalModelSafe: Boolean(report.summary.globalModelSafe),
+    modelRollout: report.modelRollout
+      ? {
+          globalDecision: report.modelRollout.globalDecision ?? 'UNKNOWN',
+          publicUiDecision: report.modelRollout.publicUiDecision ?? 'UNKNOWN',
+          defaultModel: report.modelRollout.defaultModel ?? 'default',
+          candidateModels: report.modelRollout.candidateModels ?? [],
+          blockers: report.modelRollout.blockers ?? [],
+        }
+      : null,
   };
 }
 

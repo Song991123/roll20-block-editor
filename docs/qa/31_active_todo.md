@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Input-flow rollout policy is machine-readable
+
+Status: PARTIAL. The input-flow renderer model still must not be exposed, but the boundary is now machine-readable.
+
+- DONE: `diagnose:roll20-input-flow-axis` now writes `modelRollout` with `globalDecision`, `publicUiDecision`, per-fixture `productDecision`, recommended diagnostic model, blockers, and required evidence.
+- DONE: `gate:roll20-renderer-action` now reads the rollout policy and reports it as standard warning/evidence.
+- RESULT: Latest rollout policy is `globalDecision=DO_NOT_ENABLE_GLOBALLY`, `publicUiDecision=DO_NOT_EXPOSE`, candidate models `renderer-model:input-flow-276` and `renderer-model:input-flow-27`, blocker `official-roll20-AW2E:KEEP_DEFAULT_BLOCKS_GLOBAL`.
+- RESULT: Per-fixture policy is now explicit: AW2E keeps `default`; Les-Oublies and YSHY are `CANDIDATE_ONLY_DO_NOT_EXPOSE`.
+- STILL TODO P0: Broaden the fixture set and separate source/default-state-dominant sheets from input-flow-friendly sheets before any automatic renderer model selection.
+- VERIFIED: `diagnose:roll20-input-flow-axis`, `gate:roll20-renderer-action`, and `diagnose:roll20-renderer-blocker`.
+
 ## 2026-06-20 Codex Update - Renderer model rollout guard
 
 Status: PARTIAL. The input-flow renderer model is still diagnostic-only, and accidental production enablement is now guarded.
