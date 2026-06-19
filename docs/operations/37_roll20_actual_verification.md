@@ -146,6 +146,11 @@ DOM/root evidence proves the sheet rendered, such as
 preferred root capture/manifest. This prevents endpoint-storage or blank-iframe
 screenshots from being reported as visual comparisons.
 
+The upload handoff helper follows the same rule. `--missing-only` must keep a
+fixture visible when its only generated-sheet screenshot is a fallback viewport
+without positive DOM/root evidence, because that fixture still lacks proven
+Roll20 render evidence.
+
 Use `corepack pnpm run status:roll20-actual -- <run-dir> --require-actual` after
 the diff helper when a work batch claims actual-screen coverage. This command
 does not prove visual parity by itself; it proves whether the generated-sheet

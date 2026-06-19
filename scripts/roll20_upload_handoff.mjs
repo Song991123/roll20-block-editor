@@ -14,7 +14,7 @@
  * report is selected. This avoids accidentally handing off stale payloads.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
@@ -113,19 +113,26 @@ async function buildEntry(runDir, fixtureId) {
   };
   const screenshotTargets = {
     sandbox: withRelative(path.join(screenshots, 'roll20-sandbox.png')),
+    sandboxDomEvidence: withRelative(path.join(screenshots, 'roll20-sandbox-dom-evidence.json')),
     sandboxRoot: withRelative(path.join(screenshots, 'roll20-sandbox-root.png')),
     sandboxFullRootDpr: withRelative(path.join(screenshots, 'roll20-sandbox-root-full-dpr-corrected.png')),
     sandboxFullRootDprMeta: withRelative(path.join(screenshots, 'roll20-sandbox-root-full-dpr-corrected.json')),
     chat: withRelative(path.join(screenshots, 'roll20-chat.png')),
+    chatDomEvidence: withRelative(path.join(screenshots, 'roll20-chat-dom-evidence.json')),
     room: withRelative(path.join(screenshots, 'roll20-room.png')),
   };
   const stitchManifest = withRelative(path.join(screenshots, 'roll20-root-dpr-complete-manifest.json'));
+  const sandboxValidation = validateSandboxEvidence(screenshots);
   const evidence = {
     hasSandboxViewport: existsSync(screenshotTargets.sandbox.path),
     hasSandboxRoot: existsSync(screenshotTargets.sandboxRoot.path),
     hasSandboxFullRootDpr: existsSync(screenshotTargets.sandboxFullRootDpr.path),
+    hasSandboxDomEvidence: existsSync(screenshotTargets.sandboxDomEvidence.path),
     hasChat: existsSync(screenshotTargets.chat.path),
-    needsGeneratedActual: !existsSync(screenshotTargets.sandboxFullRootDpr.path) && !existsSync(screenshotTargets.sandboxRoot.path) && !existsSync(screenshotTargets.sandbox.path),
+    hasChatDomEvidence: existsSync(screenshotTargets.chatDomEvidence.path),
+    generatedActualStatus: sandboxValidation.status,
+    generatedActualNote: sandboxValidation.note,
+    needsGeneratedActual: !sandboxValidation.ok,
     needsChat: !existsSync(screenshotTargets.chat.path),
   };
   return {
@@ -139,6 +146,58 @@ async function buildEntry(runDir, fixtureId) {
     nextDiffCommand: `node scripts/roll20_actual_screenshot_diff.mjs ${path.relative(process.cwd(), runDir)}`,
     nextStatusCommand: `corepack pnpm run status:roll20-actual -- ${path.relative(process.cwd(), runDir)} --require-actual`,
   };
+}
+
+function validateSandboxEvidence(screenshots) {
+  const rootFullDpr = path.join(screenshots, 'roll20-sandbox-root-full-dpr-corrected.png');
+  const rootFull = path.join(screenshots, 'roll20-sandbox-root-full.png');
+  const root = path.join(screenshots, 'roll20-sandbox-root.png');
+  const fallback = path.join(screenshots, 'roll20-sandbox.png');
+  const candidates = [rootFullDpr, rootFull, root, fallback];
+  const selected = candidates.find((file) => existsSync(file));
+  if (!selected) {
+    return { ok: false, status: 'MISSING', note: 'no Roll20 sandbox screenshot exists yet' };
+  }
+  if (selected !== fallback) {
+    const sidecar = selected.replace(/\.(png|jpg|jpeg)$/i, '.json');
+    const completeManifest = path.join(screenshots, 'roll20-root-dpr-complete-manifest.json');
+    const correctedManifest = path.join(screenshots, 'roll20-root-dpr-corrected-manifest.json');
+    if (existsSync(sidecar) || existsSync(completeManifest) || existsSync(correctedManifest)) {
+      return { ok: true, status: 'PRESENT', note: `root evidence present for ${path.basename(selected)}` };
+    }
+    return {
+      ok: false,
+      status: 'SUSPECT',
+      note: `${path.basename(selected)} exists, but no root sidecar/manifest proves the iframe root was active`,
+    };
+  }
+
+  const domEvidence = readJsonIfExists(path.join(screenshots, 'roll20-sandbox-dom-evidence.json'));
+  if (domEvidence && hasPositiveDomEvidence(domEvidence)) {
+    return { ok: true, status: 'PRESENT', note: 'fallback viewport screenshot has positive iframe DOM evidence' };
+  }
+  return {
+    ok: false,
+    status: 'SUSPECT',
+    note: 'fallback roll20-sandbox.png exists, but no positive iframe DOM/root evidence proves the sheet rendered',
+  };
+}
+
+function readJsonIfExists(file) {
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function hasPositiveDomEvidence(evidence) {
+  if (Number(evidence.bodyLen ?? 0) > 0) return true;
+  if (Number(evidence.roots ?? evidence.rootCount ?? 0) > 0) return true;
+  if (Array.isArray(evidence.rootSamples) && evidence.rootSamples.some((sample) => String(sample ?? '').trim().length > 0)) return true;
+  if (evidence.textMarkers && Object.values(evidence.textMarkers).some(Boolean)) return true;
+  return false;
 }
 
 function rel(file) {
@@ -187,7 +246,8 @@ function renderMarkdown(report) {
   for (const entry of visibleEntries) {
     lines.push(`### ${entry.fixtureId}`, '');
     lines.push('| Evidence | Current |', '| --- | --- |');
-    lines.push(`| generated actual screenshot | ${entry.evidence.needsGeneratedActual ? 'MISSING' : 'present'} |`);
+    lines.push(`| generated actual evidence | ${entry.evidence.needsGeneratedActual ? entry.evidence.generatedActualStatus : 'present'} |`);
+    lines.push(`| generated actual note | ${entry.evidence.generatedActualNote} |`);
     lines.push(`| chat screenshot | ${entry.evidence.needsChat ? 'MISSING' : 'present'} |`);
     lines.push('');
     lines.push('| Artifact | Exists | Path |', '| --- | --- | --- |');

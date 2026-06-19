@@ -1233,3 +1233,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - All room/chat targets: `SKIP`.
 - Verification passed: `node --check scripts\roll20_actual_screenshot_diff.mjs`, `git diff --check`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build`.
 - Claim boundary: this is stricter evidence handling, not Roll20 visual parity. Next P0 remains AW2E file-input/full activation with positive DOM/root evidence and trustworthy Roll20 chat screenshots before renderer CSS promotion.
+
+## 2026-06-19 Upload Handoff Uses Same Evidence Gate
+
+- Reclaimed the dedicated Roll20 editor Chrome tab for read-only observation. Existing rooms were not modified.
+- Ordinary page DOM reads could not access the Roll20 character iframe; the relevant iframes returned no `contentDocument`.
+- The current Chrome runtime also blocks CDP `Target.getTargets` and `Target.setAutoAttach`, so this batch did not capture a new actual Roll20 iframe DOM/root screenshot.
+- Updated `scripts/roll20_upload_handoff.mjs` so handoff/missing-only mode uses the same generated-sheet evidence rule as `roll20_actual_status` and `roll20_actual_screenshot_diff`.
+  - Root screenshots require a sidecar/manifest.
+  - Fallback `roll20-sandbox.png` requires positive `roll20-sandbox-dom-evidence.json`.
+  - Otherwise the handoff marks the fixture `SUSPECT` and still needing generated actual evidence.
+- Latest command: `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only`.
+  - AW2E: `SUSPECT`, still needs generated actual evidence and chat.
+  - Les-Oublies: generated actual evidence present, still needs chat.
+  - YSHY: generated actual evidence present, still needs chat.
+- Verification passed: `node --check scripts\roll20_upload_handoff.mjs`, `corepack pnpm run handoff:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --missing-only`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+- Claim boundary: this removes another stale/false-success path from agent handoff. It does not solve Roll20 upload activation or prove visual parity.
