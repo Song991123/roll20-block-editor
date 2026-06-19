@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Les/YSHY chat evidence normalized, AW2E still blocked
+
+Status: PARTIAL. Roll20 actual-screen evidence improved, but Roll20 chat/renderer parity is still NOT done.
+
+- Normalized local-only Roll20 chat evidence now exists for `official-roll20-Les-Oublies` and `yshy-commission-1bu`; `official-roll20-AW2E` remains `FOREGROUND_SUSPECT`.
+- Current measured status: `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=5/6`, `generatedDiffed=5/6`, `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, `chatNormalizedCompared=2/3`, `chatNeedsNormalizedCapture=1`, `chatNormalizedHighMismatch=2`, `rendererReady=NO`.
+- Current measured chat crop mismatches: `official-roll20-Les-Oublies=27.61%`, `yshy-commission-1bu=46.39%`; these are failures, not parity claims.
+- Tried to inspect/capture the open AW2E Roll20 editor tab through Chrome, but the Roll20 tab calls repeatedly timed out. Existing AW2E `roll20-chat.png` was visually inspected and shows overlapping sheet/dialog content rather than a trustworthy foreground chat crop, so it must not be promoted.
+- Hardened Roll20 evidence readers against UTF-8 BOM in `roll20-chat-dom-evidence.json` and related report JSON files. This prevents PowerShell-authored local sidecars from being silently treated as missing/old evidence by Node scripts.
+- Verification: `node --check` for changed Roll20 scripts PASS, `plan:roll20-chat-capture` reports `plannedFixtures=1/3`, `diagnose:roll20-chat-parity` reports `normalizedCompared=2/3`, `status:roll20-actual` reports `generatedActualScreenshots=5/6`, `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`, and `guard:roll20-evidence` PASS.
+- NEXT P0: recapture `official-roll20-AW2E` foreground chat/rolltemplate evidence from a responsive Roll20 Sandbox/test-room state, then rerun screenshot diff, chat parity diagnostics, status, and renderer gate. Do not tune production ChatPane/renderer CSS until that evidence exists.
+
 ## 2026-06-20 Codex Update - Roll20 chat evidence foreground correction
 
 Status: PARTIAL. This corrects a false-positive evidence claim; Roll20 chat parity is still NOT done.

@@ -743,7 +743,7 @@ async function readJsonIfExists(file) {
   let lastError = null;
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      return JSON.parse(await readFile(file, 'utf8'));
+      return JSON.parse((await readFile(file, 'utf8')).replace(/^\uFEFF/, ''));
     } catch (error) {
       lastError = error;
       await sleep(100);

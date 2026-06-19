@@ -371,7 +371,7 @@ async function imageDataUrl(file) {
 async function readJsonIfExists(file) {
   if (!existsSync(file)) return null;
   try {
-    return JSON.parse(await readFile(file, 'utf8'));
+    return JSON.parse((await readFile(file, 'utf8')).replace(/^\uFEFF/, ''));
   } catch {
     return null;
   }

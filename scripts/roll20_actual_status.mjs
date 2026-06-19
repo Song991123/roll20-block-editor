@@ -636,7 +636,7 @@ async function validateSidecarFreshness(screenshot, sidecar) {
 async function readJsonIfExists(file) {
   if (!existsSync(file)) return null;
   try {
-    return JSON.parse(await fs.readFile(file, 'utf8'));
+    return JSON.parse((await fs.readFile(file, 'utf8')).replace(/^\uFEFF/, ''));
   } catch {
     return null;
   }

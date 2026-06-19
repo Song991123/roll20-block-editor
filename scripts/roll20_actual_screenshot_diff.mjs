@@ -135,7 +135,7 @@ function validateSandboxEvidence(shots, selected, fallbackFile) {
 function readJsonIfExistsSync(file) {
   if (!existsSync(file)) return null;
   try {
-    return JSON.parse(readFileSync(file, 'utf8'));
+    return JSON.parse(readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
   } catch {
     return null;
   }

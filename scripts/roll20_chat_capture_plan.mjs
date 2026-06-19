@@ -695,7 +695,7 @@ function hasPositiveChatDomEvidence(evidence) {
 function readJsonIfExists(file) {
   if (!existsSync(file)) return null;
   try {
-    return JSON.parse(readFileSync(file, 'utf8'));
+    return JSON.parse(readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
   } catch {
     return null;
   }

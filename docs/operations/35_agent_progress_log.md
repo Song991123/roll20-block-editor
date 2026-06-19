@@ -1,3 +1,15 @@
+## 2026-06-20 03:05 +09:00 - Current Roll20 chat evidence state corrected
+
+Status: PARTIAL. This narrows the remaining actual Roll20 evidence blocker to AW2E chat capture.
+
+- Promoted only visually checked local-only evidence: Les-Oublies and YSHY now have normalized rolltemplate crop metadata accepted by `diagnose:roll20-chat-parity`.
+- Current status command reports `generatedActualScreenshots=5/6`, `generatedDiffed=5/6`, `chatNormalizedCompared=2/3`, `chatNeedsNormalizedCapture=1`, and `rendererReady=NO`.
+- Current chat mismatch is still high for the normalized fixtures: Les-Oublies `27.61%`, YSHY `46.39%`.
+- AW2E remains blocked because the existing PNG visibly captures overlapping sheet/dialog content, and the open Roll20 tab repeatedly timed out during Chrome inspection/screenshot attempts.
+- Fixed Roll20 evidence JSON readers to strip a leading UTF-8 BOM before `JSON.parse`; this matters because local PowerShell-created sidecars can otherwise be misread as missing/stale evidence.
+- Verification: `node --check` for the changed Roll20 scripts PASS, `plan:roll20-chat-capture` now plans only AW2E, `diagnose:roll20-chat-parity` compares 2/3 normalized fixtures, `status:roll20-actual` and `gate:roll20-renderer-action` reran, and `guard:roll20-evidence` PASS.
+- Next P0: recapture AW2E foreground chat from a responsive dedicated Sandbox/test-room state before using chat pixel diffs to tune local ChatPane or renderer CSS.
+
 ## 2026-06-20 02:20 +09:00 - Roll20 chat foreground evidence correction
 
 Status: PARTIAL. This prevents tuning local ChatPane against the wrong actual screenshot crop.
