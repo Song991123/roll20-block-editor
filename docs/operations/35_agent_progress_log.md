@@ -1220,3 +1220,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_actual_status.mjs` so fallback `roll20-sandbox.png` counts only when a positive DOM/root sidecar proves the iframe rendered. DPR/full-root evidence with sidecars still counts; unproven fallback viewport images are reported as `SUSPECT` and excluded from generated evidence counts.
 - Latest status command: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` now reports `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`, `roomObservationScreenshots=0/3`, and `roomObservationDiffed=0/3`. Fixture table: AW2E `SUSPECT`, Les-Oublies `DIFFED`, YSHY `DIFFED`.
 - Claim boundary: this is a truthfulness fix to prevent endpoint-storage screenshots from masquerading as actual Roll20 render proof. It does not unblock file upload or prove visual parity.
+
+## 2026-06-19 Actual Screenshot Diff Demotes Suspect Viewports
+
+- Extended the same truthfulness rule into `scripts/roll20_actual_screenshot_diff.mjs`, not only the status summarizer.
+- The screenshot diff now refuses to compare a fallback `roll20-sandbox.png` unless positive iframe DOM/root evidence proves the Roll20 sheet rendered.
+- Preferred DPR/root captures still diff normally; fallback endpoint viewport PNGs without DOM evidence become `SUSPECT`.
+- Latest rerun: `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+  - AW2E sandbox: `SUSPECT`.
+  - Les-Oublies sandbox: `DIFFED`, mismatch `6.57%`.
+  - YSHY sandbox: `DIFFED`, mismatch `22.93%`.
+  - All room/chat targets: `SKIP`.
+- Verification passed: `node --check scripts\roll20_actual_screenshot_diff.mjs`, `git diff --check`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+- Claim boundary: this is stricter evidence handling, not Roll20 visual parity. Next P0 remains AW2E file-input/full activation with positive DOM/root evidence and trustworthy Roll20 chat screenshots before renderer CSS promotion.

@@ -20,7 +20,7 @@
  * A missing Roll20 screenshot is reported as SKIP, not PASS.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
@@ -76,6 +76,7 @@ function actualTargets(fixtureDir) {
       local: path.join(shots, 'local-preview.png'),
       actual: sandboxActual,
       actualMeta: sandboxActualMeta,
+      validation: validateSandboxEvidence(shots, sandboxSelected, sandboxFallback),
       expected: [sandboxRootFullDprCorrected, sandboxRootFull, sandboxRoot, sandboxFallback],
       purpose: 'Local preview vs Roll20 Custom Sheet Sandbox/test-room initial sheet.',
     },
@@ -92,6 +93,53 @@ function actualTargets(fixtureDir) {
       purpose: 'Roll20 chat/rolltemplate screenshot presence marker; visual diff is diagnostic only.',
     },
   ];
+}
+
+function validateSandboxEvidence(shots, selected, fallbackFile) {
+  if (!existsSync(selected.screenshot)) {
+    return { ok: false, status: 'SKIP', note: 'missing actual Roll20 screenshot' };
+  }
+  if (path.basename(selected.screenshot) !== path.basename(fallbackFile)) {
+    const sidecar = selected.screenshot.replace(/\.(png|jpg|jpeg)$/i, '.json');
+    const completeManifest = path.join(shots, 'roll20-root-dpr-complete-manifest.json');
+    const correctedManifest = path.join(shots, 'roll20-root-dpr-corrected-manifest.json');
+    if (existsSync(sidecar) || existsSync(completeManifest) || existsSync(correctedManifest)) {
+      return { ok: true, status: 'OK', note: `root evidence present for ${path.basename(selected.screenshot)}` };
+    }
+    return {
+      ok: false,
+      status: 'SUSPECT',
+      note: `${path.basename(selected.screenshot)} exists, but no root capture sidecar/manifest proves the iframe root was active`,
+    };
+  }
+
+  const domEvidenceFile = path.join(shots, 'roll20-sandbox-dom-evidence.json');
+  const domEvidence = readJsonIfExistsSync(domEvidenceFile);
+  if (domEvidence && hasPositiveDomEvidence(domEvidence)) {
+    return { ok: true, status: 'OK', note: 'fallback viewport screenshot has positive iframe DOM evidence' };
+  }
+  return {
+    ok: false,
+    status: 'SUSPECT',
+    note: 'fallback roll20-sandbox.png exists, but no positive iframe DOM/root evidence proves the sheet rendered',
+  };
+}
+
+function readJsonIfExistsSync(file) {
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function hasPositiveDomEvidence(evidence) {
+  if (Number(evidence.bodyLen ?? 0) > 0) return true;
+  if (Number(evidence.roots ?? evidence.rootCount ?? 0) > 0) return true;
+  if (Array.isArray(evidence.rootSamples) && evidence.rootSamples.some((sample) => String(sample ?? '').trim().length > 0)) return true;
+  if (evidence.textMarkers && Object.values(evidence.textMarkers).some(Boolean)) return true;
+  return false;
 }
 
 async function comparePair(page, pair) {
@@ -259,6 +307,7 @@ function renderMarkdown(report) {
   lines.push('- `local-baseline/<fixture>/screenshots/roll20-chat.png`');
   lines.push('');
   lines.push('Then rerun this script. Missing actual screenshots remain SKIP and must not be reported as verified.');
+  lines.push('Fallback `roll20-sandbox.png` screenshots without positive iframe DOM/root evidence are SUSPECT and are not diffed.');
   lines.push('');
   lines.push('## Scope');
   lines.push('');
@@ -309,10 +358,13 @@ async function main() {
           item.note = pair.expected
             ? `missing ${pair.expected.map((file) => path.basename(file)).join(' or ')}`
             : `missing ${path.basename(pair.actual)}`;
+        } else if (pair.validation && !pair.validation.ok) {
+          item.status = pair.validation.status;
+          item.note = pair.validation.note;
         } else {
           item.result = await comparePair(page, pair);
           item.status = 'DIFFED';
-          item.note = item.result.note;
+          item.note = pair.validation?.note ? `${pair.validation.note}; ${item.result.note}` : item.result.note;
         }
         report.items.push(item);
         console.log(`${item.status} ${fixtureId} ${pair.name}${item.result?.best ? ` mismatch=${pct(item.result.best.mismatchRatio)}` : ''}`);
@@ -324,6 +376,7 @@ async function main() {
 
   report.summary = {
     diffed: report.items.filter((item) => item.status === 'DIFFED').length,
+    suspect: report.items.filter((item) => item.status === 'SUSPECT').length,
     skipped: report.items.filter((item) => item.status === 'SKIP').length,
     failed: report.items.filter((item) => item.status === 'FAIL').length,
   };

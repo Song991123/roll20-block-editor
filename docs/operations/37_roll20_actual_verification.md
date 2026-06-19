@@ -139,6 +139,13 @@ screenshots with a diagnostic crop search. The result is evidence for
 classification, not an automatic visual parity claim. If a Roll20 screenshot is
 missing, the target stays SKIP and must remain unverified.
 
+A fallback `roll20-sandbox.png` viewport screenshot is not enough to enter the
+diff. The diff helper must mark it `SUSPECT` unless adjacent positive iframe
+DOM/root evidence proves the sheet rendered, such as
+`roll20-sandbox-dom-evidence.json` with non-empty iframe/root markers or a
+preferred root capture/manifest. This prevents endpoint-storage or blank-iframe
+screenshots from being reported as visual comparisons.
+
 Use `corepack pnpm run status:roll20-actual -- <run-dir> --require-actual` after
 the diff helper when a work batch claims actual-screen coverage. This command
 does not prove visual parity by itself; it proves whether the generated-sheet
