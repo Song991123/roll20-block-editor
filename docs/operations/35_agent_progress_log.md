@@ -1,3 +1,11 @@
+## 2026-06-20 Preview Diagnostic Chrome Cleanup
+
+- Removed the default product-surface `Sandbox 예상` control from `MainAreaToolbar`. Sandbox expected rendering remains a verification/export diagnostic path, not a normal preview toggle.
+- Removed the preview toolbar render-mode switch and layer-filter dropdown. Preview mode now presents the iframe Roll20-style render path without exposing edit/shadow or layer-filter concepts; edit mode remains the place for overlays and layer manipulation.
+- Updated `scripts/roll20_sandbox_preview_smoke.mjs` so the Roll20 Sandbox expected-render smoke uses `window.__perfHook.setRoll20SandboxSanitize(true)` directly instead of requiring a user-visible toolbar button.
+- Verification: `corepack pnpm run lint`, `corepack pnpm run build`, focused `smoke:roll20-sandbox-preview` for Les-Oublies, and `guard:roll20-renderer-model` passed.
+- Claim boundary: this is product UI cleanup and smoke preservation only. It does not change production renderer CSS, does not expose `roll20RendererModel`, and does not prove Roll20 visual parity.
+
 ## 2026-06-20 Input-Flow Rollout Policy
 
 - Extended `scripts/roll20_input_flow_axis_diagnostics.mjs` with a machine-readable `modelRollout` section.

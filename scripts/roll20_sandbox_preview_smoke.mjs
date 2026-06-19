@@ -188,9 +188,11 @@ async function validateFixture(page, fixture) {
     return { fixture: fixture.id, status: 'FAIL', checks, failures };
   }
 
-  await page.waitForSelector('[data-testid="preview-roll20-sandbox-sanitize-toggle"]', {
-    timeout: 15000,
-  });
+  await page.waitForFunction(
+    () => Boolean(window.__perfHook?.setRoll20SandboxSanitize),
+    null,
+    { timeout: 15000 },
+  );
 
   checks.normalPreview = await summarizePreview(page);
 

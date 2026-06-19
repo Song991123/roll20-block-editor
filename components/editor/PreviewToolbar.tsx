@@ -1,17 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Maximize2, Minus, Plus, RefreshCw, Moon, Sun, Layers, Check, Frame, ShieldAlert } from 'lucide-react';
-import type { PreviewLayer } from '@/lib/stores/uiStore';
+import { Maximize2, Minus, Plus, RefreshCw, Moon, Sun, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Tooltip,
   TooltipContent,
@@ -20,22 +11,8 @@ import {
 } from '@/components/ui/tooltip';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { usePreviewStore } from '@/lib/stores/previewStore';
-import { cn } from '@/lib/utils/cn';
 
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2];
-
-// spec 17 §9.1 — 9 레이어. 라벨은 자연어, desc 는 보조 설명.
-const LAYERS: Array<{ id: PreviewLayer; label: string; desc: string }> = [
-  { id: 'all', label: '전체', desc: '모든 요소 표시' },
-  { id: 'structure', label: '구조', desc: 'fieldset / section 윤곽선' },
-  { id: 'input', label: '입력', desc: '입력칸 / 선택 메뉴 / 체크박스 / 라디오' },
-  { id: 'roll', label: '굴림 버튼', desc: 'button[type=roll]' },
-  { id: 'text', label: '텍스트', desc: '라벨 / 제목 / 고정 텍스트' },
-  { id: 'image', label: '이미지', desc: '이미지 / 아이콘 / 배경 이미지' },
-  { id: 'table', label: '표', desc: 'table / thead / tbody / tr / td' },
-  { id: 'repeating', label: '반복 영역', desc: 'fieldset.repeating_*' },
-  { id: 'custom', label: '사용자 정의', desc: '직접 만든 클래스' },
-];
 
 /**
  * 미리보기 줌 / 옵션 컨트롤.
@@ -52,13 +29,9 @@ export default function PreviewToolbar() {
   const setDarkMode = usePreviewStore((s) => s.setDarkMode);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const setLegacyCssSanitize = usePreviewStore((s) => s.setLegacyCssSanitize);
-  const renderMode = usePreviewStore((s) => s.renderMode);
-  const setRenderMode = usePreviewStore((s) => s.setRenderMode);
 
   const numericZoom = typeof zoom === 'number' ? zoom : 1;
 
-  const previewLayer = useUiStore((s) => s.previewLayer);
-  const setPreviewLayer = useUiStore((s) => s.setPreviewLayer);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
   const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
   const [widthDraft, setWidthDraft] = useState<string | null>(null);
@@ -219,96 +192,6 @@ export default function PreviewToolbar() {
               : '신버전/원본 CSS 기준 미리보기'}
           </TooltipContent>
         </Tooltip>
-
-        <span className="mx-1.5 h-5 w-px bg-border" />
-
-        {/* spec 21 Phase A — Roll20 환경 시뮬 토글 (ON = iframe sandbox, OFF = Shadow DOM) */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant={renderMode === 'iframe' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-8 gap-1.5 px-2.5 text-[11px]"
-              onClick={() => setRenderMode(renderMode === 'iframe' ? 'shadow' : 'iframe')}
-              aria-label="Roll20 보기 방식"
-              aria-pressed={renderMode === 'iframe'}
-              data-testid="preview-rendermode-toggle"
-            >
-              <Frame className="h-3.5 w-3.5" />
-              <span>{renderMode === 'iframe' ? 'Roll20 보기' : '편집 보기'}</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            {renderMode === 'iframe'
-              ? 'Roll20에 가까운 iframe 미리보기'
-              : '클릭과 드래그가 가능한 편집용 보기'}
-          </TooltipContent>
-        </Tooltip>
-
-        <span className="mx-1.5 h-5 w-px bg-border" />
-
-        {/* 레이어 토글 — Radix Portal 기반 DropdownMenu 사용 (viewport 안 자동 배치) */}
-        <DropdownMenu>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant={previewLayer !== 'all' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="h-8 gap-1.5 px-2.5 text-[11px]"
-                  aria-label="레이어"
-                  data-testid="preview-layer-button"
-                >
-                  <Layers className="h-3.5 w-3.5" />
-                  <span>
-                    {LAYERS.find((l) => l.id === previewLayer)?.label ?? '레이어'}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="top">표시할 요소 고르기</TooltipContent>
-          </Tooltip>
-          <DropdownMenuContent
-            side="top"
-            align="end"
-            sideOffset={6}
-            className="w-64"
-            data-testid="preview-layer-menu"
-          >
-            <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              레이어 (9)
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {LAYERS.map((l) => {
-              const active = previewLayer === l.id;
-              return (
-                <DropdownMenuItem
-                  key={l.id}
-                  onSelect={() => setPreviewLayer(l.id)}
-                  data-testid={`preview-layer-${l.id}`}
-                  className={cn(
-                    'flex items-start gap-2 py-1.5',
-                    active && 'bg-[var(--bg-active)] text-foreground',
-                  )}
-                >
-                  <span className="mt-0.5 inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center">
-                    {active ? <Check className="h-3.5 w-3.5" /> : null}
-                  </span>
-                  <span className="flex min-w-0 flex-col">
-                    <span className="text-[12px] leading-tight">{l.label}</span>
-                    <span className="text-[10px] leading-tight text-muted-foreground">
-                      {l.desc}
-                    </span>
-                  </span>
-                </DropdownMenuItem>
-              );
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <span className="mx-1.5 h-5 w-px bg-border" />
 
         {/* 새로고침 */}
         <Tooltip>

@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Preview diagnostic chrome hidden from product UI
+
+Status: PARTIAL. The preview surface is less confusing, but Roll20 visual parity is still not proven.
+
+- DONE: Removed the user-facing `Sandbox 예상` toggle from the main toolbar. The Roll20 Sandbox expected-render path remains available to verification scripts and export diagnostics, not as a normal preview-mode control.
+- DONE: Removed the preview toolbar render-mode toggle (`Roll20 보기` / `편집 보기`) so preview mode stays on the iframe Roll20-style path. Edit mode remains the separate real-preview-plus-overlay surface.
+- DONE: Removed the preview layer-filter dropdown from the preview toolbar. Layer/object manipulation belongs in edit mode, not in the plain preview surface.
+- DONE: Updated `scripts/roll20_sandbox_preview_smoke.mjs` to enable Sandbox expected rendering through `window.__perfHook.setRoll20SandboxSanitize(true)` instead of waiting for a hidden product UI button.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:roll20-sandbox-preview -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --fixture official-roll20-Les-Oublies --report-dir reports/roll20-sandbox-preview-smoke --port 4331`, and `corepack pnpm run guard:roll20-renderer-model`.
+- STILL TODO P0: Continue actual Roll20 renderer/chat parity work. This UI cleanup does not change the current `HOLD_PRODUCTION_RENDERER_PATCH` boundary and does not prove visual parity.
+
 ## 2026-06-20 Codex Update - Input-flow rollout policy is machine-readable
 
 Status: PARTIAL. The input-flow renderer model still must not be exposed, but the boundary is now machine-readable.
