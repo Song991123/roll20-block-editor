@@ -137,6 +137,7 @@ async function main() {
     await mkdir(path.dirname(outPath), { recursive: true });
     await writeFile(outPath, Buffer.from(result.dataUrl.replace(/^data:image\/png;base64,/, ''), 'base64'));
     const metaPath = outPath.replace(/\.png$/i, '.json');
+    const transitionSummary = summarizeTransitions(result);
     const meta = {
       generatedAt: new Date().toISOString(),
       output: path.relative(process.cwd(), outPath),
@@ -144,16 +145,69 @@ async function main() {
       minOverlap,
       maxOverlap: maxOverlapArg,
       step,
-      ...result,
+      outputSize: result.outputSize,
+      transitionSummary,
+      placements: result.placements,
+      segments: result.segments,
     };
     await writeFile(metaPath, `${JSON.stringify(meta, null, 2)}\n`, 'utf8');
     console.log(`ROLL20 OVERLAP STITCH DIAGNOSTIC OK ${path.relative(process.cwd(), outPath)}`);
     console.log(`size=${result.outputSize.w}x${result.outputSize.h}`);
     console.log(`segments=${result.segments.length}`);
+    console.log(`advanceMedian=${transitionSummary.advanceMedian ?? 'n/a'} lowAdvance=${transitionSummary.lowAdvanceTransitions.length} highScore=${transitionSummary.highScoreTransitions.length}`);
     console.log(`meta=${path.relative(process.cwd(), metaPath)}`);
   } finally {
     await browser.close();
   }
+}
+
+function summarizeTransitions(result) {
+  const placements = Array.isArray(result.placements) ? result.placements : [];
+  const segments = Array.isArray(result.segments) ? result.segments : [];
+  const transitions = [];
+  for (let i = 1; i < placements.length; i += 1) {
+    const previous = placements[i - 1];
+    const current = placements[i];
+    const advance = Number(current.y) - Number(previous.y);
+    transitions.push({
+      from: i - 1,
+      to: i,
+      advance,
+      overlap: current.overlapFromPrevious,
+      score: current.score,
+    });
+  }
+  const advances = transitions.map((item) => item.advance).filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  const scores = transitions.map((item) => Number(item.score)).filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  const advanceMedian = median(advances);
+  const scoreMedian = median(scores);
+  const lowAdvanceLimit = advanceMedian == null ? 80 : Math.max(40, advanceMedian * 0.35);
+  const highScoreLimit = scoreMedian == null ? 8 : Math.max(6, scoreMedian * 1.75);
+  const segmentHeights = segments
+    .map((segment) => Number(segment.size?.h ?? segment.size?.height))
+    .filter((height) => Number.isFinite(height) && height > 0);
+  return {
+    transitionCount: transitions.length,
+    advanceMin: advances[0] ?? null,
+    advanceMax: advances[advances.length - 1] ?? null,
+    advanceMedian,
+    scoreMin: scores[0] ?? null,
+    scoreMax: scores[scores.length - 1] ?? null,
+    scoreMedian,
+    segmentHeightMedian: median(segmentHeights.sort((a, b) => a - b)),
+    lowAdvanceLimit,
+    highScoreLimit,
+    lowAdvanceTransitions: transitions.filter((item) => Number.isFinite(item.advance) && item.advance < lowAdvanceLimit),
+    highScoreTransitions: transitions.filter((item) => Number.isFinite(item.score) && item.score > highScoreLimit),
+  };
+}
+
+function median(values) {
+  if (!values.length) return null;
+  const mid = Math.floor(values.length / 2);
+  return values.length % 2
+    ? Number(values[mid].toFixed(3))
+    : Number(((values[mid - 1] + values[mid]) / 2).toFixed(3));
 }
 
 main().catch((error) => {

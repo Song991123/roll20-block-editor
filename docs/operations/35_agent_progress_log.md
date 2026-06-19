@@ -1444,3 +1444,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Interpretation: the earlier 10-segment diagnostic was too short. The remaining 1726px height gap is still too large for renderer CSS work and likely needs trusted DPR-corrected capture, better coverage validation, or default/hidden-state investigation.
 - Updated `scripts/roll20_renderer_action_gate.mjs` so large diagnostic root-height deltas create an explicit next action. Latest gate remains `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: this is stronger actual Roll20 diagnostic evidence, not visual parity and not trusted full-root evidence.
+
+## 2026-06-19 AW2E Overlap Transition Quality Audit
+
+- Added transition summary output to `scripts/roll20_overlap_stitch_diagnostic.mjs`: median/min/max scroll advance, median/min/max overlap score, low-advance transitions, high-score transitions, and median segment height.
+- Updated `scripts/roll20_root_stitch_audit.mjs` so overlap diagnostics are easier to triage from the markdown table instead of opening each JSON sidecar.
+- Latest regenerated AW2E long diagnostic metadata reports 37 transitions, median advance `321px`, one low-advance transition at the bottom (`35 -> 36`, advance `23px`), and zero high-score transitions.
+- Latest `audit:roll20-root-stitch` still leaves AW2E as `SKIP` / diagnostic-only, while Les-Oublies and YSHY remain PASS on trusted DPR-corrected root evidence.
+- Claim boundary: this narrows the AW2E blocker toward capture coverage/default-state/root-height drift. It does not validate the overlap stitch as trusted full-root evidence and does not authorize production renderer CSS.

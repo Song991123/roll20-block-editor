@@ -606,3 +606,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - DONE: Roll20 actual screenshot/diff/stitch scripts now detect PNG vs JPEG from file bytes instead of trusting the filename extension. This matters because the Chrome screenshot surface can return JPEG bytes even when agents save a `.png` filename.
 - VERIFIED: `node --check` passed for the changed scripts, and reruns of `roll20_actual_screenshot_diff`, `smoke:roll20-same-context-visible`, `smoke:roll20-full-root-candidates`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `guard:roll20-evidence` all completed successfully on `2026-06-18-state-map-v1`.
 - CURRENT: AW2E visible Roll20 sheet capture was possible in the dedicated sandbox editor, but browser control became unstable before a trustworthy DPR-corrected full-root stitch could be completed. The renderer gate remains HOLD with the same real blocker: AW2E lacks full-root candidate comparison.
+
+## 2026-06-19 AW2E Overlap Transition Audit TODO Note
+
+- DONE: `scripts/roll20_overlap_stitch_diagnostic.mjs` now writes transition quality metadata without embedding the giant image data URL in the JSON sidecar.
+- DONE: `scripts/roll20_root_stitch_audit.mjs` now surfaces overlap transition warnings in the root-stitch audit table as `low advance` and `high score` counts.
+- VERIFIED: The latest long AW2E diagnostic stitch is `720x12062` from 38 ignored local segments. Transition summary: median advance `321px`, `lowAdvanceTransitions=1`, `highScoreTransitions=0`.
+- CURRENT: `audit:roll20-root-stitch` still classifies AW2E as `SKIP` because only overlap diagnostic evidence exists; Les-Oublies and YSHY remain PASS on trusted DPR-corrected full-root evidence.
+- STILL TODO: AW2E needs trusted DPR-corrected full-root capture or a validated manifest-backed stitch path before renderer CSS can be promoted. The remaining diagnostic root-height delta is not enough to justify production CSS.

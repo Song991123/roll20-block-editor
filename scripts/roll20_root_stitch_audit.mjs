@@ -112,10 +112,47 @@ async function readOverlapDiagnostics(shotsDir) {
       averageOverlapScore: scores.length
         ? round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
         : null,
+      transitionSummary: summarizeOverlapTransitions(meta, placements),
       scope: meta.scope ?? 'visual-overlap diagnostic only; not trusted Roll20 full-root evidence',
     });
   }
   return diagnostics;
+}
+
+function summarizeOverlapTransitions(meta, placements) {
+  if (meta.transitionSummary) return meta.transitionSummary;
+  const transitions = [];
+  for (let i = 1; i < placements.length; i += 1) {
+    const previous = placements[i - 1];
+    const current = placements[i];
+    const advance = Number(current.y) - Number(previous.y);
+    transitions.push({
+      from: i - 1,
+      to: i,
+      advance,
+      overlap: current.overlapFromPrevious,
+      score: current.score,
+    });
+  }
+  const advances = transitions.map((item) => item.advance).filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  const scores = transitions.map((item) => Number(item.score)).filter((value) => Number.isFinite(value)).sort((a, b) => a - b);
+  const advanceMedian = median(advances);
+  const scoreMedian = median(scores);
+  const lowAdvanceLimit = advanceMedian == null ? 80 : Math.max(40, advanceMedian * 0.35);
+  const highScoreLimit = scoreMedian == null ? 8 : Math.max(6, scoreMedian * 1.75);
+  return {
+    transitionCount: transitions.length,
+    advanceMin: advances[0] ?? null,
+    advanceMax: advances[advances.length - 1] ?? null,
+    advanceMedian,
+    scoreMin: scores[0] ?? null,
+    scoreMax: scores[scores.length - 1] ?? null,
+    scoreMedian,
+    lowAdvanceLimit,
+    highScoreLimit,
+    lowAdvanceTransitions: transitions.filter((item) => Number.isFinite(item.advance) && item.advance < lowAdvanceLimit),
+    highScoreTransitions: transitions.filter((item) => Number.isFinite(item.score) && item.score > highScoreLimit),
+  };
 }
 
 function auditStitchedMeta(meta, source) {
@@ -198,7 +235,11 @@ function renderMarkdown(report) {
   lines.push('| --- | --- | --- | --- | --- |');
   for (const fixture of report.fixtures) {
     const diagnostics = (fixture.overlapDiagnostics ?? [])
-      .map((diag) => `${diag.source}: ${diag.status} (${diag.segmentCount} seg, max score ${diag.maxOverlapScore ?? 'n/a'})`)
+      .map((diag) => {
+        const lowAdvance = diag.transitionSummary?.lowAdvanceTransitions?.length ?? 0;
+        const highScore = diag.transitionSummary?.highScoreTransitions?.length ?? 0;
+        return `${diag.source}: ${diag.status} (${diag.segmentCount} seg, max score ${diag.maxOverlapScore ?? 'n/a'}, low advance ${lowAdvance}, high score ${highScore})`;
+      })
       .join('<br>');
     const checks = [
       ...fixture.checks.map((check) => `${check.source}: ${check.status}`),
@@ -241,6 +282,14 @@ async function readJsonIfExists(file) {
 
 function round(value) {
   return Math.round(value * 1000) / 1000;
+}
+
+function median(values) {
+  if (!values.length) return null;
+  const mid = Math.floor(values.length / 2);
+  return values.length % 2
+    ? round(values[mid])
+    : round((values[mid - 1] + values[mid]) / 2);
 }
 
 main().catch((error) => {
