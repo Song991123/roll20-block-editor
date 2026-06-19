@@ -41,6 +41,7 @@ function testCssCanPreserveActualIframeSelectors(): void {
   const r = sanitizeRoll20SandboxCss(`
     .tabstoggle[value="combat"] ~ div.sheet-combat { display: block; }
     .character, .skills { display: none; }
+    .largedialog textarea { height: 80px; }
   `, { prefixSelectors: false });
 
   expectContains(
@@ -48,11 +49,16 @@ function testCssCanPreserveActualIframeSelectors(): void {
     '.tabstoggle[value="combat"] ~ div.sheet-combat',
     'preserves actual iframe state selector shape',
   );
-  expectContains(r.css, '.character, .skills', 'preserves unprefixed hide selectors');
+  expectContains(r.css, '.character,.skills', 'preserves unprefixed hide selectors');
+  expectContains(r.css, '.charsheet .largedialog textarea', 'scopes Roll20 chrome selector away from dialog');
   expectNotContains(r.css, '.charsheet .tabstoggle', 'does not blanket-prefix selectors');
   assert(
     !r.warnings.some((w) => w.code === 'css-selector-prefixed'),
     'no selector prefix warning when prefixSelectors=false',
+  );
+  assert(
+    r.warnings.some((w) => w.code === 'css-chrome-selector-scoped'),
+    'chrome selector scope warning present',
   );
 }
 

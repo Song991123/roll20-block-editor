@@ -811,17 +811,24 @@ ${bodyInner}
 export function buildSheetParts(opts: BuildDocOptions): { html: string; css: string } {
   const sanitize = opts.sanitize !== false;
   const legacyCssSanitize = opts.legacyCssSanitize === true;
+  const roll20SandboxSanitize = opts.roll20SandboxSanitize === true;
   const userHtml = (opts.html ?? '').trim();
   const userCss = (opts.css ?? '').trim();
 
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
-  const previewCss = legacyCssSanitize
-    ? sanitizeForRoll20Legacy(prefixedCss).sanitized
+  const sandboxHtml = roll20SandboxSanitize
+    ? sanitizeRoll20SandboxHtml(userHtml).html
+    : prefixedHtml;
+  const sandboxCss = roll20SandboxSanitize
+    ? sanitizeRoll20SandboxCss(userCss, { prefixSelectors: false }).css
     : prefixedCss;
+  const previewCss = legacyCssSanitize
+    ? sanitizeForRoll20Legacy(sandboxCss).sanitized
+    : sandboxCss;
 
-  const bodyInner = prefixedHtml
-    ? addRoll20RepeatingRuntimeHtml(applyTranslationsToHtml(prefixedHtml, opts.i18n))
+  const bodyInner = sandboxHtml
+    ? addRoll20RepeatingRuntimeHtml(applyTranslationsToHtml(sandboxHtml, opts.i18n))
     : EMPTY_PLACEHOLDER;
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘

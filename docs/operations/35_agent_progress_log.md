@@ -1,3 +1,9 @@
+## 2026-06-19 Roll20 Chrome Selector Scoping
+
+- Implemented Roll20 chrome selector protection in `sanitizeRoll20SandboxCss(..., { prefixSelectors:false })`: wrapper selectors such as `.largedialog textarea` are scoped away from the dialog chrome instead of overriding Roll20 base CSS.
+- `buildSheetParts()` now applies `roll20SandboxSanitize` the same way `buildSheetDoc()` does, and both PreviewMain Shadow parts and EditCanvas pass the toggle. This narrows preview/edit render-path drift.
+- Latest AW2E scroll-metrics after the production sanitizer change: `sandbox-source-state` rootDelta +8.188px, statePanelYDelta +16.6px, statePanelHeightDelta +0.2px. Before the change, the comparable source path was rootDelta -189.5px with panelY -2349px and panelH -70.2px.
+- Claim boundary: renderer gate remains HOLD and `rendererReady=NO`; the old 9168px trusted stitch vs 11788px sidecar blocker still exists, and pixel-best remains an over-hidden candidate. This is a verified cascade/scoping improvement, not Roll20 visual parity.
 ## 2026-06-19 AW2E Textarea Cascade Diagnostic
 
 - Added diagnostic-only `textarea-height` and `text-input-textarea-height` candidates to `scripts/roll20_full_root_candidate_smoke.mjs`.

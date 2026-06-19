@@ -104,6 +104,7 @@ export default function EditCanvas() {
   const setEditPlacementMode = useUiStore((s) => s.setEditPlacementMode);
   const sanitize = usePreviewStore((s) => s.sanitize);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
+  const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
   const darkMode = usePreviewStore((s) => s.darkMode);
   const [lastMove, setLastMove] = useState<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
@@ -131,11 +132,12 @@ export default function EditCanvas() {
         i18n: emitI18n,
         sanitize,
         legacyCssSanitize,
+        roll20SandboxSanitize,
         darkMode,
         previewLayer: effectiveLayer,
         includeEditorOverlays: false,
       }),
-    [optimisticHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, darkMode, effectiveLayer],
+    [optimisticHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, effectiveLayer],
   );
 
   const snap = useCallback(

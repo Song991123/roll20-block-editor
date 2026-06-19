@@ -156,6 +156,9 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
                   localSize: scrollMetricsFullRootFixture.closestRootHeightCandidate.localSize ?? null,
                 }
               : null,
+            sourceCandidate: summarizeScrollMetricsCandidate(
+              scrollMetricsFullRootFixture.candidates?.find((candidate) => candidate.id === 'sandbox-source-state'),
+            ),
             statePanelGeometry: summarizeScrollMetricsPanelGeometry(scrollMetricsFullRootFixture.targetGeometry),
           }
         : null,
@@ -266,8 +269,9 @@ function recommend(fixtures, status, activeRunDir) {
   for (const fixture of fixtures.filter((item) => item.scrollMetricsComparison?.diagnosticBestCandidate)) {
     const best = fixture.scrollMetricsComparison.diagnosticBestCandidate;
     const closest = fixture.scrollMetricsComparison.closestRootHeightCandidate;
+    const source = fixture.scrollMetricsComparison.sourceCandidate;
     const panels = fixture.scrollMetricsComparison.statePanelGeometry;
-    warnings.push(`${fixture.fixtureId} scroll-metrics diagnostic uses actual ${fmtSize(fixture.scrollMetricsComparison.actualSize)}; pixel best ${best.id} at ${best.mismatchPct}% has root delta ${num(best.rootHeightDelta)}px${closest ? `, while height closest ${closest.id} has root delta ${num(closest.rootHeightDelta)}px` : ''}${panels ? `; state panels compared ${panels.compared}/${panels.actualCount}, maxYDelta=${num(panels.maxAbsYDelta)}px, maxHeightDelta=${num(panels.maxAbsHeightDelta)}px` : ''}. This supersedes cutoff-prone 9168px-only conclusions but is still diagnostic-only.`);
+    warnings.push(`${fixture.fixtureId} scroll-metrics diagnostic uses actual ${fmtSize(fixture.scrollMetricsComparison.actualSize)}; pixel best ${best.id} at ${best.mismatchPct}% has root delta ${num(best.rootHeightDelta)}px${closest ? `, while height closest ${closest.id} has root delta ${num(closest.rootHeightDelta)}px` : ''}${source ? `; sandbox source root delta ${num(source.rootHeightDelta)}px, panelY=${num(source.statePanelYDelta)}px, panelH=${num(source.statePanelHeightDelta)}px` : ''}${panels ? `; chosen state panels compared ${panels.compared}/${panels.actualCount}, maxYDelta=${num(panels.maxAbsYDelta)}px, maxHeightDelta=${num(panels.maxAbsHeightDelta)}px` : ''}. This supersedes cutoff-prone 9168px-only conclusions but is still diagnostic-only.`);
   }
 
   const matchedState = fixtures.filter((fixture) => fixture.stateVisibility?.matchedLocalExpected === true);
@@ -496,11 +500,29 @@ function fmtScrollMetricsComparison(comparison) {
   if (comparison.status !== 'DIAGNOSTIC_COMPARED') return comparison.status || '';
   const best = comparison.diagnosticBestCandidate;
   const closest = comparison.closestRootHeightCandidate;
+  const source = comparison.sourceCandidate;
   const panels = comparison.statePanelGeometry;
   const bestText = best ? `best ${best.mismatchPct}% / root ${num(best.rootHeightDelta)}px` : 'no pixel best';
   const closestText = closest ? `closest ${closest.id} root ${num(closest.rootHeightDelta)}px` : 'no height closest';
+  const sourceText = source ? `; source root ${num(source.rootHeightDelta)}px, panelY ${num(source.statePanelYDelta)}px, panelH ${num(source.statePanelHeightDelta)}px` : '';
   const panelText = panels ? `; panels ${panels.compared}/${panels.actualCount}, maxY ${num(panels.maxAbsYDelta)}px, maxH ${num(panels.maxAbsHeightDelta)}px` : '';
-  return `${fmtSize(comparison.actualSize)} ${bestText}; ${closestText}${panelText}`;
+  return `${fmtSize(comparison.actualSize)} ${bestText}; ${closestText}${sourceText}${panelText}`;
+}
+
+function summarizeScrollMetricsCandidate(candidate) {
+  if (!candidate) return null;
+  return {
+    id: candidate.id,
+    mismatchRatio: candidate.mismatchRatio,
+    mismatchPct: pctNumber(candidate.mismatchRatio),
+    rootHeightDelta: candidate.rootHeightDelta ?? null,
+    patch: candidate.contextPatch ?? '',
+    localSize: candidate.localSize ?? null,
+    statePanelYDelta: candidate.geometryFit?.statePanelYDelta ?? null,
+    statePanelHeightDelta: candidate.geometryFit?.statePanelHeightDelta ?? null,
+    statePanelComparedCount: candidate.geometryFit?.statePanelComparedCount ?? null,
+    geometryScore: candidate.geometryFit?.score ?? null,
+  };
 }
 
 function summarizeScrollMetricsPanelGeometry(targetGeometry) {

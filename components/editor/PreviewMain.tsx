@@ -155,11 +155,12 @@ export default function PreviewMain() {
         i18n: emitI18n,
         sanitize,
         legacyCssSanitize,
+        roll20SandboxSanitize,
         darkMode,
         previewLayer,
         includeEditorOverlays: true,
       }),
-    [emitHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, darkMode, previewLayer],
+    [emitHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, previewLayer],
   );
   useEffect(() => {
     if (renderMode !== 'shadow') return;

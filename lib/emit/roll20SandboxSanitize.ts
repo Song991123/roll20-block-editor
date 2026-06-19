@@ -11,6 +11,7 @@
 export type Roll20SandboxWarningCode =
   | 'css-mobile-stripped'
   | 'css-selector-prefixed'
+  | 'css-chrome-selector-scoped'
   | 'css-url-proxied'
   | 'css-url-dropped'
   | 'css-rejected'
@@ -117,17 +118,19 @@ export function sanitizeRoll20SandboxCss(
     return rewritten ? `url("${rewritten}")` : '';
   });
 
-  if (prefixSelectors) {
-    out = out.replace(/([^{]+){([^}]*)}/g, (full, selectorText: string, body: string) => {
-      const selectors = selectorText.trim();
-      if (!selectors) return full;
-      const prefixed = selectors
-        .split(',')
-        .map((selector) => prefixRoll20Selector(selector.trim(), warnings))
-        .join(',');
-      return full.replace(selectorText, prefixed).replace(body, body);
-    });
-  }
+  out = out.replace(/([^{]+){([^}]*)}/g, (full, selectorText: string, body: string) => {
+    const selectors = selectorText.trim();
+    if (!selectors) return full;
+    const transformed = selectors
+      .split(',')
+      .map((selector) => (
+        prefixSelectors
+          ? prefixRoll20Selector(selector.trim(), warnings)
+          : protectRoll20ChromeSelector(selector.trim(), warnings)
+      ))
+      .join(',');
+    return full.replace(selectorText, transformed).replace(body, body);
+  });
 
   return { css: out, warnings };
 }
@@ -225,6 +228,41 @@ function prefixRoll20Selector(selector: string, warnings: Roll20SandboxWarning[]
     source: selector,
   });
   return `.charsheet ${s}`;
+}
+
+function protectRoll20ChromeSelector(selector: string, warnings: Roll20SandboxWarning[]): string {
+  if (
+    !selector ||
+    selector.startsWith('@') ||
+    selector === '.charsheet' ||
+    selector.startsWith('.charsheet ') ||
+    selector.startsWith('.sheet-rolltemplate-')
+  ) {
+    return selector;
+  }
+  if (!targetsRoll20Chrome(selector)) return selector;
+  warnings.push({
+    code: 'css-chrome-selector-scoped',
+    message: `Selector "${selector}" was scoped away from Roll20 dialog chrome.`,
+    source: selector,
+  });
+  return `.charsheet ${selector}`;
+}
+
+function targetsRoll20Chrome(selector: string): boolean {
+  return [
+    /(^|[\s>+~])\.ui-dialog(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])\.ui-widget(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])\.ui-widget-content(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])\.ui-corner-all(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])\.dialog(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])\.largedialog(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])\.characterviewer(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])\.tab-content(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])\.sheetform(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])#dialog-window(?=$|[\s.#:[>+~])/,
+    /(^|[\s>+~])#tab-content(?=$|[\s.#:[>+~])/,
+  ].some((re) => re.test(selector));
 }
 
 function prefixRoll20ClassList(classValue: string, warnings: Roll20SandboxWarning[]): string {
