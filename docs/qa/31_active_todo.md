@@ -1,3 +1,21 @@
+## 2026-06-19 19:45 +09:00 - Rolltemplate runtime selector preservation
+
+Status: IMPLEMENTED + LOCAL PREUPLOAD VERIFIED, ACTUAL ROLL20 RECAPTURE STILL REQUIRED.
+
+What changed:
+- Preserved Roll20 inline-roll runtime CSS classes (`.inlinerollresult`, `.fullcrit`, `.fullfail`, `.importantroll`) as unprefixed selectors while still restoring user sheet selectors such as `.sheet-rolltemplate-*`.
+- Added payload audit errors for unprefixed `.rolltemplate-*` selectors and incorrectly prefixed `.sheet-inlinerollresult` / `.sheet-fullcrit` / `.sheet-fullfail` / `.sheet-importantroll`.
+
+Evidence:
+- `corepack pnpm run lint`: PASS.
+- `corepack pnpm run build`: PASS.
+- `corepack pnpm run verify:roll20-preupload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json`: PASS.
+- `corepack pnpm run audit:payload -- reports\roll20-actual-compare\2026-06-18-state-map-v1`: PASS for AW2E, Les-Oublies, and YSHY 1BU.
+- Regenerated ignored AW2E/YSHY payload CSS now contains `.sheet-rolltemplate-* .inlinerollresult.fullcrit` style selectors rather than `.sheet-inlinerollresult`.
+
+Not done / next:
+- Upload the regenerated payload to Roll20 Custom Sheet Sandbox/test room and recapture actual chat/preview evidence.
+- Current status still says `rendererReady=NO`, `rendererBlockers=7`, generated actual screenshots `4/6`.
 ## 2026-06-19 19:29 +09:00 - Rolltemplate CSS selector export fix
 
 Status: IMPLEMENTED + LOCAL PREUPLOAD VERIFIED, ACTUAL ROLL20 RECAPTURE STILL REQUIRED.

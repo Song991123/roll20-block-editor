@@ -35,6 +35,19 @@ const FORBIDDEN = [
 
 const REQUIRED_ZIP_FILES = ['README.txt', 'sheet.css', 'sheet.html', 'sheet.json', 'translation.json'];
 
+const CSS_SELECTOR_RULES = [
+  {
+    code: 'css.rolltemplate_selector_missing_sheet_prefix',
+    re: /(^|[^A-Za-z0-9_-])\.rolltemplate-[A-Za-z0-9_-]+/g,
+    message: 'Roll20 chat DOM uses .sheet-rolltemplate-*; exported payload CSS must not lose the sheet- prefix.',
+  },
+  {
+    code: 'css.rolltemplate_runtime_class_prefixed',
+    re: /\.sheet-(?:inlinerollresult|fullcrit|fullfail|importantroll)\b/g,
+    message: 'Roll20 inline roll runtime classes are unprefixed in chat DOM and must stay unprefixed in rolltemplate CSS.',
+  },
+];
+
 async function exists(file) {
   try {
     await fs.access(file);
@@ -107,6 +120,18 @@ async function auditFixture(fixture) {
 
   if (files.html.trim().length === 0) entry.issues.push({ severity: 'error', code: 'payload.empty_html', file: 'html', count: 1 });
   if (files.css.trim().length === 0) entry.issues.push({ severity: 'warning', code: 'payload.empty_css', file: 'css', count: 1 });
+  for (const rule of CSS_SELECTOR_RULES) {
+    const count = countMatches(files.css, rule.re);
+    if (count > 0) {
+      entry.issues.push({
+        severity: 'error',
+        code: rule.code,
+        file: 'css',
+        count,
+        message: rule.message,
+      });
+    }
+  }
 
   try {
     JSON.parse(files.translation.trim() || '{}');
