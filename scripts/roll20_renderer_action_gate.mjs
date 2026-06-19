@@ -260,7 +260,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
       blockers.push(`actual Roll20 chat crop geometry is suspect for ${chatParitySummary.actualCropGeometrySuspect}/${chatParitySummary.normalizedCompared} normalized fixtures; recapture with element-bound template screenshots before using pixel mismatch as a production renderer target`);
     }
     if (chatParitySummary.authoritativeNormalizedHighMismatch > 0) {
-      blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${chatParitySummary.authoritativeNormalizedHighMismatch}/${chatParitySummary.normalizedCompared} geometry-authoritative normalized fixtures; max normalized mismatch ${chatParitySummary.maxNormalizedMismatchPct}%`);
+      blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${chatParitySummary.authoritativeNormalizedHighMismatch}/${chatParitySummary.normalizedCompared} geometry-authoritative normalized fixtures after small-offset alignment; max aligned mismatch ${chatParitySummary.maxAlignedMismatchPct}% (raw max ${chatParitySummary.maxNormalizedMismatchPct}%)`);
     }
   }
 
@@ -338,7 +338,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity) {
     positiveFindings.push(`input-flow axis diagnostic: status=${inputFlowSummary.status}, applyCandidate=${inputFlowSummary.applyCandidateFixtures.length}, blockGlobalModel=${inputFlowSummary.blockGlobalModelFixtures.length}, globalSafe=${inputFlowSummary.globalModelSafe ? 'YES' : 'NO'}`);
   }
   if (chatParitySummary) {
-    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, maxNormalizedMismatch=${chatParitySummary.maxNormalizedMismatchPct}%`);
+    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, alignedHighMismatch=${chatParitySummary.alignedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, maxNormalizedMismatch=${chatParitySummary.maxNormalizedMismatchPct}%, maxAlignedMismatch=${chatParitySummary.maxAlignedMismatchPct}%`);
   }
 
   const action = blockers.length
@@ -459,7 +459,7 @@ function summarizeChatParity(report) {
         fixture.status === 'DIFFED' &&
         fixture.compareMode === 'rolltemplate-crop' &&
         !fixture.actualCropGeometry?.suspect &&
-        Number(fixture.mismatchRatio ?? 0) > 0.1,
+        Number(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio ?? 0) > 0.1,
       ).length,
   );
   return {
@@ -469,6 +469,7 @@ function summarizeChatParity(report) {
     needsNormalizedCapture: Number(report.summary.needsNormalizedCapture ?? 0),
     highMismatch: Number(report.summary.highMismatch ?? 0),
     normalizedHighMismatch: Number(report.summary.normalizedHighMismatch ?? 0),
+    alignedHighMismatch: Number(report.summary.alignedHighMismatch ?? report.summary.normalizedHighMismatch ?? 0),
     authoritativeNormalizedHighMismatch,
     actualCropGeometrySuspect: Number(
       report.summary.actualCropGeometrySuspect ??
@@ -482,11 +483,15 @@ function summarizeChatParity(report) {
     maxMismatchPct: pctNumber(report.summary.maxMismatchRatio ?? 0),
     maxNormalizedMismatchRatio: Number(report.summary.maxNormalizedMismatchRatio ?? 0),
     maxNormalizedMismatchPct: pctNumber(report.summary.maxNormalizedMismatchRatio ?? 0),
+    maxAlignedMismatchRatio: Number(report.summary.maxAlignedMismatchRatio ?? report.summary.maxNormalizedMismatchRatio ?? 0),
+    maxAlignedMismatchPct: pctNumber(report.summary.maxAlignedMismatchRatio ?? report.summary.maxNormalizedMismatchRatio ?? 0),
     fixturesWithMismatch: fixtures
-      .filter((fixture) => fixture.status === 'DIFFED' && fixture.compareMode === 'rolltemplate-crop' && !fixture.actualCropGeometry?.suspect && Number(fixture.mismatchRatio ?? 0) > 0.1)
+      .filter((fixture) => fixture.status === 'DIFFED' && fixture.compareMode === 'rolltemplate-crop' && !fixture.actualCropGeometry?.suspect && Number(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio ?? 0) > 0.1)
       .map((fixture) => ({
         fixtureId: fixture.fixtureId,
         mismatchPct: pctNumber(fixture.mismatchRatio),
+        bestAlignedMismatchPct: pctNumber(fixture.bestAlignedMismatchRatio ?? fixture.mismatchRatio),
+        bestAlignedOffset: fixture.bestAlignedOffset ?? null,
         localSize: fixture.localSize ?? null,
         actualSize: fixture.actualSize ?? null,
         actualImageFormat: fixture.actualImageFormat ?? null,

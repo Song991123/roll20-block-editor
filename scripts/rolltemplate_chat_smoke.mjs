@@ -235,6 +235,7 @@ async function clickRollAndReadChat(page, fixtureId) {
 
   const card = page.locator('[data-testid="chat-list"] [data-r20-chat-card]').first();
   await card.waitFor({ state: 'visible', timeout: 30000 });
+  await waitForRolltemplateAssets(page);
   const screenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat.png`);
   await page.locator('[data-testid="chat-list"]').screenshot({ path: screenshotPath });
   const templateScreenshotPath = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-chat-template.png`);
@@ -267,6 +268,36 @@ async function clickRollAndReadChat(page, fixtureId) {
     screenshotPath: rel(screenshotPath),
     templateScreenshotPath: rel(templateScreenshotPath),
   };
+}
+
+async function waitForRolltemplateAssets(page) {
+  await page.evaluate(async () => {
+    const urls = new Set();
+    const roots = Array.from(document.querySelectorAll('[data-testid="chat-list"] [class*="sheet-rolltemplate-"]'));
+    for (const root of roots) {
+      const elements = [root, ...Array.from(root.querySelectorAll('*'))];
+      for (const el of elements) {
+        const bg = getComputedStyle(el).backgroundImage;
+        for (const match of bg.matchAll(/url\(["']?(.*?)["']?\)/g)) {
+          const url = match[1];
+          if (url) urls.add(url);
+        }
+      }
+    }
+    await Promise.all(
+      Array.from(urls).map(
+        (url) =>
+          new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            img.src = url;
+            if (img.complete) resolve(true);
+          }),
+      ),
+    );
+    if (document.fonts?.ready) await document.fonts.ready.catch(() => {});
+  });
 }
 
 function renderMarkdown(report) {

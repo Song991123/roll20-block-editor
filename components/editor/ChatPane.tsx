@@ -35,14 +35,19 @@ function safeRolltemplateClass(name: string): string {
 
 function extractRolltemplateCss(css: string): string {
   const prefixedCss = autoPrefixCssClasses(css);
+  const fontFaces = prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
   const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
-  return matches ? rewriteRoll20AssetUrls(matches.join('\n')) : '';
+  const rolltemplateCss = rewriteRoll20AssetUrls([...fontFaces, ...(matches ?? [])].join('\n'));
+  return rolltemplateCss.trim() ? rolltemplateCss : '';
 }
 
 function rewriteRoll20AssetUrls(css: string): string {
   return css.replace(/url\s*\(([^)]+)\)/gi, (_full, rawUrl: string) => {
     const normalized = String(rawUrl).trim().replace(/^["']|["']$/g, '');
     if (!/^https?:\/\//i.test(normalized)) return '';
+    if (/\.(?:woff2?|ttf|otf|eot)(?:[?#].*)?$/i.test(normalized)) {
+      return `url("${normalized}")`;
+    }
     if (
       normalized.startsWith('https://imgsrv.roll20.net/') ||
       normalized.startsWith('https://s3.amazonaws.com/files.d20.io') ||
@@ -168,7 +173,11 @@ const roll20ChatShellCss = `
   min-width: 0;
 }
 .r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] {
-  box-sizing: border-box;
+  box-sizing: content-box;
+  line-height: 17.0625px;
+}
+.r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] * {
+  box-sizing: content-box;
 }
 .r20-chat-pane .textchatcontainer .inlinerollresult {
   background-color: #fef68e;

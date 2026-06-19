@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - Chat parity aligned diagnostic stabilized
+
+Status: PARTIAL. Roll20 chat/template parity is closer and the reports now agree, but renderer readiness is still NOT done.
+
+- DONE: Local ChatPane now waits for rolltemplate background images and fonts before smoke screenshots. This fixed the false mostly-blue AW2E local capture caused by screenshotting before the remote background decoded.
+- DONE: ChatPane rolltemplate extraction now preserves simple `@font-face` blocks and keeps font asset URLs direct instead of proxying them through Roll20 image proxy URLs. `@import` is intentionally still excluded because an inline import attempt broke Les-Oublies rolltemplate application.
+- DONE: ChatPane rolltemplate box model moved closer to actual Roll20 chat evidence (`content-box`, `line-height:17.0625px`). YSHY local template height moved from the earlier `554px` drift to `586px`, matching the actual `585px` height within 1px.
+- DONE: `diagnose:roll20-chat-parity` now reports both raw mismatch and small-offset aligned mismatch. `status:roll20-actual` and `gate:roll20-renderer-action` now use the same aligned high-mismatch boundary so status, gate, and diagnostic no longer contradict each other.
+- CURRENT: `chatNormalizedCompared=3/3`, `chatActualCropGeometrySuspect=0`, `chatNormalizedHighMismatch=3`, `chatAlignedHighMismatch=1`, `chatAuthoritativeNormalizedHighMismatch=1`, `rendererReady=NO`.
+- CURRENT RAW/ALIGNED: AW2E `12.78% -> 7.49%` at offset `1,0`; Les-Oublies `10.09% -> 9.14%` at offset `-5,0`; YSHY `28.36% -> 22.46%` at offset `4,-2`.
+- CLASSIFICATION: AW2E and Les-Oublies are now mostly crop/anti-alias/small-offset level, not proven parity. YSHY remains the real chat/template mismatch target. Renderer action is still `HOLD_PRODUCTION_RENDERER_PATCH` because the sheet-root renderer patch family is also split across fixtures.
+- VERIFIED THIS BATCH: `diagnose:roll20-chat-parity`, `status:roll20-actual`, and `gate:roll20-renderer-action` reran successfully on `reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- STILL TODO P0: reduce YSHY rolltemplate aligned mismatch, then resolve the split production renderer model (`AW2E=none`, Les/YSHY=`inline-block+text-input-height`) before returning to edit-mode UX.
+
 ## 2026-06-20 Codex Update - Roll20 chat element-bound recapture
 
 Status: PARTIAL. The chat evidence is finally geometry-authoritative, but parity is still NOT done.

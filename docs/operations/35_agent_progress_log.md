@@ -1,3 +1,17 @@
+## 2026-06-20 03:03 +09:00 - Chat parity aligned diagnostic and ChatPane asset stabilization
+
+Status: PARTIAL. Roll20 chat evidence is normalized and the biggest mismatch count is down, but visual parity is still not achieved.
+
+- Added a local ChatPane smoke wait for rolltemplate background images and `document.fonts.ready` before screenshot capture. This addresses the AW2E false local screenshot where the template was captured before the remote background image decoded.
+- Preserved simple rolltemplate `@font-face` blocks in `components/editor/ChatPane.tsx` and kept font asset URLs direct. An attempted `@import` path was rejected because it caused Les-Oublies rolltemplate rules to collapse, so imported fonts remain a later targeted task.
+- Adjusted local ChatPane rolltemplate box model toward actual Roll20 evidence: `content-box` and `line-height:17.0625px`. This moved YSHY local rolltemplate height to `586px` against actual `585px`.
+- Added small-offset aligned pixel comparison to `scripts/roll20_chat_parity_diagnostics.mjs` and propagated the same aligned boundary through `status:roll20-actual` and `gate:roll20-renderer-action`.
+- Current verified diagnostic numbers: raw high mismatch `3/3`, aligned high mismatch `1/3`, authoritative normalized high mismatch `1/3`, actual crop geometry suspect `0`.
+- Current fixture numbers: AW2E raw/aligned `12.78%/7.49%`, Les-Oublies `10.09%/9.14%`, YSHY `28.36%/22.46%`.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH` with two blockers: YSHY chat/template crop still differs after alignment, and the full sheet renderer patch family is still split across AW2E vs Les/YSHY.
+- Verification so far: `diagnose:roll20-chat-parity`, `status:roll20-actual`, and `gate:roll20-renderer-action` passed sequentially against `reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Next P0: finish verification (`rolltemplate_chat_smoke`, lint, build, evidence guard), then continue reducing YSHY rolltemplate mismatch before edit-mode UX work.
+
 ## 2026-06-20 05:25 +09:00 - Roll20 chat element-bound recapture
 
 Status: PARTIAL. Chat evidence is now geometry-authoritative, but Roll20 chat parity is still failing for AW2E and YSHY.

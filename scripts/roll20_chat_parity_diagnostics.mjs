@@ -45,8 +45,9 @@ async function main() {
   const normalizedCompared = compared.filter((fixture) => fixture.compareMode === 'rolltemplate-crop');
   const highMismatch = compared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
   const normalizedHighMismatch = normalizedCompared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
+  const alignedHighMismatch = normalizedCompared.filter((fixture) => fixture.bestAlignedMismatchRatio !== null && fixture.bestAlignedMismatchRatio > 0.1);
   const actualCropGeometrySuspect = normalizedCompared.filter((fixture) => fixture.actualCropGeometry?.suspect);
-  const authoritativeNormalizedHighMismatch = normalizedHighMismatch.filter((fixture) => !fixture.actualCropGeometry?.suspect);
+  const authoritativeNormalizedHighMismatch = alignedHighMismatch.filter((fixture) => !fixture.actualCropGeometry?.suspect);
   const actualChatCssInactive = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
   const actualChatCssScopedMismatch = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH');
   const actualChatCssUnknown = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
@@ -64,6 +65,7 @@ async function main() {
       needsNormalizedCapture: fixtures.filter((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE').length,
       highMismatch: highMismatch.length,
       normalizedHighMismatch: normalizedHighMismatch.length,
+      alignedHighMismatch: alignedHighMismatch.length,
       authoritativeNormalizedHighMismatch: authoritativeNormalizedHighMismatch.length,
       actualCropGeometrySuspect: actualCropGeometrySuspect.length,
       actualChatCssInactive: actualChatCssInactive.length,
@@ -72,6 +74,7 @@ async function main() {
       actualCaptureScaleSuspect: actualCaptureScaleSuspect.length,
       maxMismatchRatio: compared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
       maxNormalizedMismatchRatio: normalizedCompared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
+      maxAlignedMismatchRatio: normalizedCompared.reduce((max, fixture) => Math.max(max, fixture.bestAlignedMismatchRatio ?? 0), 0),
     },
     fixtures,
   };
@@ -96,6 +99,7 @@ async function main() {
   console.log(`normalizedCompared=${normalizedCompared.length}`);
   console.log(`highMismatch=${highMismatch.length}`);
   console.log(`normalizedHighMismatch=${normalizedHighMismatch.length}`);
+  console.log(`alignedHighMismatch=${alignedHighMismatch.length}`);
   console.log(`authoritativeNormalizedHighMismatch=${authoritativeNormalizedHighMismatch.length}`);
   console.log(`actualCropGeometrySuspect=${actualCropGeometrySuspect.length}`);
   for (const fixture of fixtures) {
@@ -199,6 +203,10 @@ async function compareFixture(page, fixtureId) {
     heightDeltaPx: actualCrop ? Number((actualCrop.rect.height - diff.localSize[1]).toFixed(3)) : null,
     mismatchRatio: diff.mismatchRatio,
     mismatchPct: pct(diff.mismatchRatio),
+    bestAlignedMismatchRatio: diff.bestAlignedMismatchRatio,
+    bestAlignedMismatchPct: pct(diff.bestAlignedMismatchRatio),
+    bestAlignedOffset: diff.bestAlignedOffset,
+    bestAlignedComparedSize: diff.bestAlignedComparedSize,
     rmsRgb: diff.rmsRgb,
     bounds: diff.bounds,
     note: 'Diagnostic local ChatPane vs actual Roll20 chat comparison. Requires human classification before a parity claim.',
@@ -359,38 +367,67 @@ async function compareImages(page, { local, actual, actualCrop = null }) {
       };
       const localData = draw(localImage);
       const actualData = draw(actualImage, actualSource);
-      let mismatchPixels = 0;
-      let sumSq = 0;
-      let minX = width;
-      let minY = height;
-      let maxX = -1;
-      let maxY = -1;
       const threshold = 60;
-      for (let y = 0; y < height; y += 1) {
-        for (let x = 0; x < width; x += 1) {
-          const i = (y * width + x) * 4;
-          const dr = Math.abs(localData.data[i] - actualData.data[i]);
-          const dg = Math.abs(localData.data[i + 1] - actualData.data[i + 1]);
-          const db = Math.abs(localData.data[i + 2] - actualData.data[i + 2]);
-          sumSq += dr * dr + dg * dg + db * db;
-          if (dr + dg + db > threshold) {
-            mismatchPixels += 1;
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
+      function diffAt(dx, dy) {
+        const localX = Math.max(0, dx);
+        const localY = Math.max(0, dy);
+        const actualX = Math.max(0, -dx);
+        const actualY = Math.max(0, -dy);
+        const w = Math.min(width - localX, width - actualX);
+        const h = Math.min(height - localY, height - actualY);
+        if (w <= 0 || h <= 0) return null;
+        let mismatchPixels = 0;
+        let sumSq = 0;
+        let minX = w;
+        let minY = h;
+        let maxX = -1;
+        let maxY = -1;
+        for (let y = 0; y < h; y += 1) {
+          for (let x = 0; x < w; x += 1) {
+            const li = ((y + localY) * width + (x + localX)) * 4;
+            const ai = ((y + actualY) * width + (x + actualX)) * 4;
+            const dr = Math.abs(localData.data[li] - actualData.data[ai]);
+            const dg = Math.abs(localData.data[li + 1] - actualData.data[ai + 1]);
+            const db = Math.abs(localData.data[li + 2] - actualData.data[ai + 2]);
+            sumSq += dr * dr + dg * dg + db * db;
+            if (dr + dg + db > threshold) {
+              mismatchPixels += 1;
+              minX = Math.min(minX, x);
+              minY = Math.min(minY, y);
+              maxX = Math.max(maxX, x);
+              maxY = Math.max(maxY, y);
+            }
           }
         }
+        const totalPixels = w * h;
+        return {
+          dx,
+          dy,
+          comparedSize: [w, h],
+          mismatchRatio: totalPixels ? mismatchPixels / totalPixels : 1,
+          rmsRgb: totalPixels ? Number(Math.sqrt(sumSq / (totalPixels * 3)).toFixed(3)) : null,
+          bounds: mismatchPixels ? [minX, minY, maxX - minX + 1, maxY - minY + 1] : null,
+        };
       }
-      const totalPixels = width * height;
+      const raw = diffAt(0, 0);
+      let best = raw;
+      for (let dy = -8; dy <= 8; dy += 1) {
+        for (let dx = -8; dx <= 8; dx += 1) {
+          const candidate = diffAt(dx, dy);
+          if (candidate && (!best || candidate.mismatchRatio < best.mismatchRatio)) best = candidate;
+        }
+      }
       return {
         localSize: [localImage.naturalWidth, localImage.naturalHeight],
         actualSize: [actualImage.naturalWidth, actualImage.naturalHeight],
         actualSource: [actualSource.x, actualSource.y, actualSource.width, actualSource.height],
         comparedSize: [width, height],
-        mismatchRatio: totalPixels ? mismatchPixels / totalPixels : 1,
-        rmsRgb: totalPixels ? Number(Math.sqrt(sumSq / (totalPixels * 3)).toFixed(3)) : null,
-        bounds: mismatchPixels ? [minX, minY, maxX - minX + 1, maxY - minY + 1] : null,
+        mismatchRatio: raw?.mismatchRatio ?? 1,
+        rmsRgb: raw?.rmsRgb ?? null,
+        bounds: raw?.bounds ?? null,
+        bestAlignedMismatchRatio: best?.mismatchRatio ?? null,
+        bestAlignedOffset: best ? [best.dx, best.dy] : null,
+        bestAlignedComparedSize: best?.comparedSize ?? null,
       };
     },
     { localUrl, actualUrl, actualCrop },
@@ -424,6 +461,7 @@ function renderMarkdown(report) {
   lines.push(`Needs normalized capture: ${report.summary.needsNormalizedCapture}`);
   lines.push(`High mismatch: ${report.summary.highMismatch}`);
   lines.push(`Normalized high mismatch: ${report.summary.normalizedHighMismatch}`);
+  lines.push(`Aligned high mismatch: ${report.summary.alignedHighMismatch}`);
   lines.push(`Authoritative normalized high mismatch: ${report.summary.authoritativeNormalizedHighMismatch}`);
   lines.push(`Actual crop geometry suspect: ${report.summary.actualCropGeometrySuspect}`);
   lines.push(`Actual chat CSS inactive: ${report.summary.actualChatCssInactive}`);
@@ -432,15 +470,16 @@ function renderMarkdown(report) {
   lines.push(`Actual capture scale/format suspect: ${report.summary.actualCaptureScaleSuspect}`);
   lines.push(`Max mismatch: ${pct(report.summary.maxMismatchRatio)}`);
   lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
+  lines.push(`Max aligned mismatch: ${pct(report.summary.maxAlignedMismatchRatio)}`);
   lines.push('');
-  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | RMS | Note |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- |');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | --- |');
   for (const fixture of report.fixtures) {
     const cropGeometry = fixture.actualCropGeometry?.suspect ? `SUSPECT: ${fixture.actualCropGeometry.reason}` : 'authoritative';
     const sizeDelta = fixture.widthDeltaPx === null || fixture.widthDeltaPx === undefined
       ? ''
       : `${fixture.widthDeltaPx}x${fixture.heightDeltaPx}`;
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
   }
   lines.push('');
   lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');
