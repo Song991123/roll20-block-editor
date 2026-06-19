@@ -1,4 +1,14 @@
 
+## 2026-06-19 Codex Update - YSHY upload snippet validation
+
+Status: PARTIAL. This improves the next Roll20 upload attempt, but does not complete YSHY actual recapture.
+
+- Enhanced `roll20_upload_snippet.mjs` so generated Sandbox upload snippets include local validation for `translation.json`, `sheet.json`, and the settings-page manifest wrapper.
+- Generated the YSHY upload snippet locally. Validation result: translation JSON `PASS` (`object`, 399 keys), sheet manifest `PASS`, settings manifest wrapper `PASS`.
+- The previous Roll20-visible translation parse warning is therefore not explained by invalid local exported JSON. Next investigation should focus on Sandbox upload/application behavior or stale uploaded state.
+- The snippet runtime now logs visible Roll20 Sandbox warning text after dispatching file changes, so the next manual/allowed upload can preserve whether Roll20 still reports a translation parse error.
+- Next P0 remains: load YSHY HTML/CSS/translation into the dedicated Roll20 Sandbox, capture fresh `roll20-chat.png` + `roll20-chat-dom-evidence.json`, then rerun screenshot diff, chat parity diagnostics, renderer gate, and status.
+
 ## 2026-06-19 Codex Update - Chat probe JSON serialization hardening
 
 Status: DONE for capture-tool hardening, NOT DONE for Roll20 parity.

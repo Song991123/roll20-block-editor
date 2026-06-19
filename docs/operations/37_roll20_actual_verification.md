@@ -462,4 +462,6 @@ the preferred evidence.
 - The generated snippet embeds source-derived payload bytes and must not be committed.
 - Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. It creates browser `File` objects and dispatches `change` events on `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`, then fills `customcharsheet_json` when that field exists.
 - When filling `customcharsheet_json`, the generated snippet wraps the plain export `sheet.json` into the settings-page `{ sheet, userOptions, jsoninfo }` shape described above. This keeps exported zip payloads plain while matching the observed settings fallback structure.
+- The snippet report validates `translation.json`, `sheet.json`, and the generated settings-page manifest before embedding them. If Roll20 still displays a translation JSON parse warning after a PASS report, treat it as an upload/settings application problem until a fresh Roll20-side sidecar proves otherwise.
+- The snippet runtime logs visible Roll20 Sandbox warning text after dispatching the file changes. Preserve that console result in the local ignored report notes when diagnosing translation/i18n failures.
 - This is a fallback for Chrome file chooser blocking. It is not Roll20 visual parity and still requires fresh sandbox root/chat screenshots plus status/diff gates afterward.

@@ -112,8 +112,13 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir) {
       base64: bytes.toString('base64'),
     };
   }
+  const validation = {
+    translation: validateJsonPayload(await fs.readFile(files.translation, 'utf8'), 'translation.json'),
+    manifest: validateJsonPayload(await fs.readFile(files.manifest, 'utf8'), 'sheet.json'),
+  };
+  validation.settingsManifest = validateSettingsManifest(await fs.readFile(files.manifest, 'utf8'));
 
-  const snippet = renderSnippet({ fixtureId, payload });
+  const snippet = renderSnippet({ fixtureId, payload, validation });
   const snippetFile = path.join(outDir, `${safeName(fixtureId)}-upload-snippet.js`);
   await fs.writeFile(snippetFile, snippet, 'utf8');
 
@@ -123,11 +128,69 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir) {
     snippetRelativePath: path.relative(process.cwd(), snippetFile),
     payloadBytes: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.bytes])),
     payloadSha256: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.sha256])),
+    validation,
   };
 }
 
-function renderSnippet({ fixtureId, payload }) {
-  const literal = JSON.stringify({ fixtureId, payload }, null, 2);
+function validateJsonPayload(text, label) {
+  try {
+    const parsed = JSON.parse(text);
+    return {
+      ok: true,
+      label,
+      topLevelType: Array.isArray(parsed) ? 'array' : typeof parsed,
+      keyCount: parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? Object.keys(parsed).length : 0,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      label,
+      error: String(error?.message || error),
+    };
+  }
+}
+
+function validateSettingsManifest(manifestText) {
+  try {
+    const text = buildSettingsManifestText(manifestText);
+    const parsed = JSON.parse(text);
+    return {
+      ok: true,
+      longName: parsed?.sheet?.long_name ?? '',
+      shortName: parsed?.sheet?.short_name ?? '',
+      hasJsonInfo: Boolean(parsed?.jsoninfo),
+      userOptionsType: Array.isArray(parsed?.userOptions) ? 'array' : typeof parsed?.userOptions,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: String(error?.message || error),
+    };
+  }
+}
+
+function buildSettingsManifestText(manifestText) {
+  const parsed = JSON.parse(manifestText);
+  if (parsed && typeof parsed === 'object' && parsed.jsoninfo) {
+    return JSON.stringify(parsed, null, 2);
+  }
+  const userOptions = parsed.useroptions || parsed.userOptions || [];
+  const settingsManifest = {
+    sheet: {
+      short_name: parsed.short_name || 'custom',
+      long_name: parsed.long_name || parsed.name || 'Custom Sheet',
+      instructions: parsed.instructions || '',
+      preview_image: parsed.preview_image || 'https://via.placeholder.com/500x650.png?text=Placeholder+Image',
+      authors: parsed.authors || 'Local verification',
+    },
+    userOptions,
+    jsoninfo: parsed,
+  };
+  return JSON.stringify(settingsManifest, null, 2);
+}
+
+function renderSnippet({ fixtureId, payload, validation }) {
+  const literal = JSON.stringify({ fixtureId, payload, validation }, null, 2);
   return `// Roll20 Custom Sheet Sandbox upload helper for ${fixtureId}
 // Local-only generated snippet. Do not paste this into existing real rooms.
 // Run on https://app.roll20.net/editor with Sheet Sandbox Tools open, or on the
@@ -197,6 +260,13 @@ function renderSnippet({ fixtureId, payload }) {
     }
     return { status: targets.length ? 'manifest-set' : 'manifest-target-missing', targets: targets.length };
   };
+  const inspectSandboxMessages = () => {
+    const text = (document.querySelector('#sheetsandbox')?.innerText || document.body?.innerText || '').replace(/\\s+/g, ' ').trim();
+    return {
+      translationJsonParseError: /번역 JSON|Translation JSON|JSON을 파싱|JSON parse/i.test(text),
+      sandboxTextSnippet: text.slice(0, 800),
+    };
+  };
   const buildSettingsManifest = (manifestText) => {
     const parsed = JSON.parse(manifestText);
     if (parsed && typeof parsed === 'object' && parsed.jsoninfo) {
@@ -217,6 +287,11 @@ function renderSnippet({ fixtureId, payload }) {
     return JSON.stringify(settingsManifest, null, 2);
   };
   assertSandboxPage();
+  if (!DATA.validation.translation.ok || !DATA.validation.manifest.ok || !DATA.validation.settingsManifest.ok) {
+    console.warn('Local payload validation failed before upload:', DATA.validation);
+  } else {
+    console.log('Local payload validation:', DATA.validation);
+  }
   const results = [];
   results.push(await setFileInput('#sheetHtml', DATA.payload.html, 'text/html'));
   results.push(await setFileInput('#sheetCss', DATA.payload.css, 'text/css'));
@@ -227,11 +302,13 @@ function renderSnippet({ fixtureId, payload }) {
     if (!button) throw new Error('SUBMIT_SETTINGS_FORM is true, but no save button was found.');
     button.click();
   }
+  const sandboxMessages = inspectSandboxMessages();
   console.table(results);
   console.log('Manifest:', manifest);
+  console.log('Sandbox messages:', sandboxMessages);
   console.log('Fixture:', DATA.fixtureId);
   console.log('Next: reopen/refresh the sandbox character, capture roll20-sandbox root evidence and roll20-chat.png, then run status/diff gates.');
-  return { fixtureId: DATA.fixtureId, fileInputs: results, manifest };
+  return { fixtureId: DATA.fixtureId, validation: DATA.validation, fileInputs: results, manifest, sandboxMessages };
 })();
 `;
 }
@@ -246,15 +323,15 @@ function renderReadme(report) {
     '',
     'Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
     '',
-    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It is a fallback for Chrome extension file chooser failures, not proof that Roll20 rendered the sheet.',
+    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also logs local JSON validation and detects visible Roll20 translation-parse warning text after upload. It is a fallback for Chrome extension file chooser failures, not proof that Roll20 rendered the sheet.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
-    '| Fixture | Snippet | HTML bytes | CSS bytes | Translation bytes |',
-    '| --- | --- | ---: | ---: | ---: |',
+    '| Fixture | Snippet | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings manifest |',
+    '| --- | --- | ---: | ---: | ---: | --- | --- |',
   ];
   for (const entry of report.entries) {
-    lines.push(`| ${entry.fixtureId} | \`${entry.snippetRelativePath}\` | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} |`);
+    lines.push(`| ${entry.fixtureId} | \`${entry.snippetRelativePath}\` | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsManifest.ok ? 'PASS' : 'FAIL'} |`);
   }
   lines.push('');
   return `${lines.join('\n')}\n`;
