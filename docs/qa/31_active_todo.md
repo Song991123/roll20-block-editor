@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Roll20 chat element-bound recapture
+
+Status: PARTIAL. The chat evidence is finally geometry-authoritative, but parity is still NOT done.
+
+- DONE: Recaptured AW2E, Les-Oublies, and YSHY Roll20 chat screenshots from live Roll20 Sandbox/editor tabs using element-bound CDP clips. Evidence stays local-only and ignored under `reports/roll20-actual-compare/...`.
+- DONE: `diagnose:roll20-chat-parity` now reports `actualCropGeometrySuspect=0`, replacing the previous suspect coordinate-calibrated state.
+- CURRENT: `chatNormalizedCompared=3/3`, `chatAuthoritativeNormalizedHighMismatch=2`, `rendererReady=NO`.
+- CURRENT MISMATCHES: AW2E `64.49%`, Les-Oublies `8.41%`, YSHY `33.53%`.
+- CLASSIFICATION: Les-Oublies is now below high-mismatch threshold after proper crop. AW2E still fails because local ChatPane background/table rendering differs badly. YSHY still fails because actual Roll20 template height is `585px` while local is `554px`.
+- NEXT P0: fix AW2E rolltemplate background/table rendering, then investigate YSHY line-height/table/body height drift. Edit-mode UX remains blocked behind real Roll20 preview/chat parity work.
+
 ## 2026-06-20 Codex Update - Chat crop evidence tightened
 
 Status: PARTIAL. The comparison pipeline is stricter and less misleading, but Roll20 chat parity is still NOT done.

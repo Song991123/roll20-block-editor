@@ -1,3 +1,15 @@
+## 2026-06-20 05:25 +09:00 - Roll20 chat element-bound recapture
+
+Status: PARTIAL. Chat evidence is now geometry-authoritative, but Roll20 chat parity is still failing for AW2E and YSHY.
+
+- Used logged-in Chrome Roll20 Sandbox/editor tabs to recapture local-only ignored `roll20-chat.png` and `roll20-chat-dom-evidence.json` for AW2E, Les-Oublies, and YSHY with live rolltemplate element-bound CDP screenshots. These files remain under ignored `reports/roll20-actual-compare/...` evidence folders and are not committed.
+- Confirmed previous coordinate-calibrated chat captures were misleading: Les/YSHY visible PNGs included chat shell/scrollbar/left-strip areas even though sidecars claimed full template crops.
+- Current verified status after recapture: `chatNormalizedCompared=3/3`, `chatActualCropGeometrySuspect=0`, `chatAuthoritativeNormalizedHighMismatch=2`, `rendererReady=NO`.
+- Current chat mismatches: AW2E `64.49%`, Les-Oublies `8.41%`, YSHY `33.53%`. Les-Oublies is below the high-mismatch threshold; AW2E and YSHY remain failures.
+- Visual classification: AW2E local ChatPane is missing/offsetting the 189x189 rolltemplate background/table rendering, leaving the local card mostly blue. YSHY width/background match better, but actual Roll20 template height is `585px` while local is `554px`, so font/line-height/table/body rendering still drifts.
+- Verification: `corepack pnpm run diagnose:roll20-chat-parity -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` all ran successfully.
+- Next P0: fix AW2E rolltemplate background/table rendering and investigate YSHY height drift before returning to edit-mode UX.
+
 ## 2026-06-20 04:55 +09:00 - Chat parity crop evidence tightened
 
 Status: PARTIAL. Local ChatPane capture is cleaner, but the current Roll20 chat evidence is no longer accepted as geometry-authoritative.
