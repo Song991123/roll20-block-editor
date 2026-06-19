@@ -36,7 +36,23 @@ function safeRolltemplateClass(name: string): string {
 function extractRolltemplateCss(css: string): string {
   const prefixedCss = autoPrefixCssClasses(css);
   const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
-  return matches ? matches.join('\n') : '';
+  return matches ? rewriteRoll20AssetUrls(matches.join('\n')) : '';
+}
+
+function rewriteRoll20AssetUrls(css: string): string {
+  return css.replace(/url\s*\(([^)]+)\)/gi, (_full, rawUrl: string) => {
+    const normalized = String(rawUrl).trim().replace(/^["']|["']$/g, '');
+    if (!/^https?:\/\//i.test(normalized)) return '';
+    if (
+      normalized.startsWith('https://imgsrv.roll20.net/') ||
+      normalized.startsWith('https://s3.amazonaws.com/files.d20.io') ||
+      normalized.startsWith('https://files.d20.io') ||
+      normalized.startsWith('https://app.roll20.net/images/')
+    ) {
+      return `url("${normalized}")`;
+    }
+    return `url("https://imgsrv.roll20.net/?src=${encodeURIComponent(normalized)}")`;
+  });
 }
 
 function parseTranslations(raw: string): Record<string, string> {
@@ -140,8 +156,7 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane .r20-chat-card-group {
   display: block;
-  width: 300px;
-  max-width: 100%;
+  width: 340px;
   min-width: 0;
 }
 .r20-chat-pane .r20-chat-card-group .message + .message {
@@ -149,13 +164,11 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane .r20-chat-card-group .message {
   box-sizing: border-box;
-  width: 300px;
-  max-width: 100%;
+  width: 340px;
   min-width: 0;
 }
 .r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] {
   box-sizing: border-box;
-  max-width: 100%;
 }
 .r20-chat-pane .textchatcontainer .inlinerollresult {
   background-color: #fef68e;
@@ -435,7 +448,7 @@ export default function ChatPane() {
       </div>
       <ScrollArea className="flex-1 min-h-0">
         <div
-          className="textchatcontainer withoutavatars flex flex-col"
+          className="textchatcontainer flex flex-col"
           data-testid="chat-list"
         >
           {rolls.length === 0 ? (

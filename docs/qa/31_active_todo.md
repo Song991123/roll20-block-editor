@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - ChatPane Roll20 shell/resource alignment
+
+Status: PARTIAL. This improves local Roll20 chat reproduction, but visual/chat parity is still NOT done.
+
+- DONE: `components/editor/ChatPane.tsx` now rewrites rolltemplate CSS external `url(...)` assets through the Roll20 image proxy shape and preserves Roll20-hosted/direct-safe URLs. This fixed local rolltemplate smoke resource failures; latest resource issues are `0/3`.
+- DONE: Local ChatPane no longer forces `withoutavatars`; it uses the avatar-on Roll20 chat shell seen in actual Roll20 evidence.
+- DONE: Local rolltemplate card/message shell now uses the observed Roll20 chat width baseline of `340px` and no longer clamps rolltemplate wrappers with `max-width:100%` inside the padded message body.
+- VERIFIED: `corepack pnpm run build`, `node scripts\rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke --port 4452`, `corepack pnpm run diagnose:roll20-chat-parity -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run lint` ran successfully.
+- CURRENT: Chat parity remains failing, but improved. Max normalized mismatch is now `48.73%` instead of `63.95%`; AW2E improved to `37.95%`, Les-Oublies is `26.92%`, and YSHY is `48.73%`.
+- STILL TODO: compare local/actual using the same crop scope. Current local smoke captures template-only regions while several actual Roll20 evidence images include chat shell/left strip or vertical crop drift. Do not claim parity until crop normalization and renderer gate pass.
+
 ## 2026-06-20 Codex Update - AW2E chat normalized, parity still failing
 
 Status: PARTIAL. The AW2E missing normalized Roll20 chat evidence blocker is closed, but Roll20 chat/renderer parity is still NOT done.

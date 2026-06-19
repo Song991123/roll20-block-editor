@@ -1,3 +1,15 @@
+## 2026-06-20 04:25 +09:00 - ChatPane Roll20 shell/resource alignment
+
+Status: PARTIAL. Local ChatPane is closer to actual Roll20 chat, but chat parity and renderer readiness are still failing.
+
+- Updated `components/editor/ChatPane.tsx` so rolltemplate CSS external `url(...)` assets are rewritten through Roll20's image proxy shape (`https://imgsrv.roll20.net/?src=...`) while already-Roll20-hosted assets remain untouched.
+- Changed the local chat shell from forced `withoutavatars` to the normal Roll20 avatar-on chat structure, matching the actual Roll20 evidence where the left avatar/sender strip is present.
+- Changed local rolltemplate chat card/message width from `300px` to Roll20's observed default `340px`, and stopped clamping rolltemplate wrappers with `max-width:100%` inside the padded message body.
+- Verification: `corepack pnpm run build` PASS, `node scripts\rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/rolltemplate-chat-smoke --port 4452` PASS for AW2E, Les-Oublies, and YSHY, and `corepack pnpm run lint` PASS.
+- Resource result improved: latest rolltemplate chat smoke reports `resourceIssues=0` for AW2E, Les-Oublies, and YSHY after the URL proxy rewrite. YSHY local rolltemplate background now renders.
+- Chat parity result improved but still fails: max normalized mismatch moved from `63.95%` to `48.73%`; AW2E improved from `63.95%` to `37.95%`, Les-Oublies is `26.92%`, and YSHY remains high at `48.73%`.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH` with `rendererReady=NO`; remaining work is crop normalization/message-shell comparison and the split renderer patch-family issue.
+
 ## 2026-06-20 04:05 +09:00 - AW2E chat evidence normalized, renderer still held
 
 Status: PARTIAL. The missing AW2E normalized Roll20 chat evidence blocker is closed, but Roll20 chat/renderer parity is still failing.
