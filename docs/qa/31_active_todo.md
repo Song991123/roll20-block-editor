@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Les-Oublies actual recapture still blocked
+
+Status: PARTIAL. Tooling improved; Roll20 visual/chat parity is still NOT done.
+
+- Current measured status after rerun: `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `chatNormalizedCompared=2/3`, `chatNeedsNormalizedCapture=1`, `rendererReady=NO`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, `rendererBlockers=3`.
+- Tried to close the remaining Les-Oublies normalized chat gap in the dedicated Roll20 Sandbox only. Existing rooms were not modified.
+- Editor file-input snippet dispatch succeeded for HTML/CSS/translation and removed the visible translation parse warning, but reopening the sandbox character still produced a blank character iframe.
+- Endpoint fallback POSTs to `/sheetsandbox/savesheetsettings` returned `200` for Les HTML/CSS/translation, and the settings page saved wrapped `customcharsheet_json` with Roll20 success text. This is storage/application evidence only.
+- Current session could not reproduce a rendered Les `.charactersheet` root, so no fresh `rolltemplates[].rect` / clip sidecar was captured. Do not count Les chat parity as normalized.
+- Updated `scripts/roll20_upload_snippet.mjs` so future generated snippets can explicitly log endpoint fallback attempts with `USE_ENDPOINT_FALLBACK` and `ENDPOINT_CAMPAIGN_ID` while warning that endpoint/file-input success is not render proof.
+- Next P0: find a reliable Roll20 activation path for Les in the dedicated sandbox or another verified test sandbox state, then recapture the same-action `roll20-chat.png` + `roll20-chat-dom-evidence.json` with `rolltemplates[].rect`, `clip`, `screenshotClipApplied`, and `chatCssEvidence`.
+- Next P0 after that: address the actual chat crop mismatch for AW2E/YSHY (`95.13%` and `98.31%`) and the split renderer model (`AW2E=none`, Les/YSHY=`inline-block+text-input-height`) before touching production renderer CSS.
 
 ## 2026-06-19 Codex Update - YSHY actual Roll20 chat recapture completed
 

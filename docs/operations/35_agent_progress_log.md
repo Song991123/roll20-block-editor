@@ -1,3 +1,14 @@
+## 2026-06-20 - Les-Oublies Roll20 recapture attempt and upload snippet hardening
+
+- Reused only the dedicated `Codex Roll20 Verify` Custom Sheet Sandbox, not an existing real room.
+- Re-ran current actual gates before live work: `status:roll20-actual` stayed `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `chatNormalizedCompared=2/3`, `chatNeedsNormalizedCapture=1`, and `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`.
+- Applied the generated Les-Oublies payload through the editor file-input snippet path; all three inputs reported `dispatched`, local payload validation passed, and the visible Roll20 translation parse warning disappeared.
+- Because the character iframe stayed blank, posted the same Les-Oublies HTML/CSS/translation to the observed dedicated endpoint `/sheetsandbox/savesheetsettings`; all three requests returned `200`.
+- Saved the wrapped Les-Oublies `customcharsheet_json` through the settings page; Roll20 showed `Your changes were saved successfully`.
+- Reopening the sandbox character still produced no rendered `.charactersheet` root in the current session. A local-only blocker evidence file was written under the ignored report folder: `roll20-les-current-blank-after-endpoint-save.json`.
+- Do not overwrite the earlier trusted Les-Oublies root/chat evidence from 2026-06-19. Current work did not produce the missing normalized Les rolltemplate rect/clip sidecar, so chat parity remains `2/3`.
+- Hardened `scripts/roll20_upload_snippet.mjs`: generated snippets now include an explicit, off-by-default `USE_ENDPOINT_FALLBACK`, optional `ENDPOINT_CAMPAIGN_ID`, endpoint result logging, and README warnings that endpoint/file-input success is only storage/application evidence until a fresh iframe DOM/root proves rendering.
+- Verification: `node --check scripts\roll20_upload_snippet.mjs` PASS; regenerated the ignored Les upload snippet; `plan:roll20-chat-capture` still reports Les needs normalized rolltemplate crop metadata; `gate:roll20-renderer-action` still HOLDs with 3 blockers.
 ## 2026-06-19 - Roll20 chat capture snippet metadata fix
 
 - Inspected `roll20_chat_parity_diagnostics.mjs` and confirmed normalized comparison requires sidecar `rolltemplates[].rect` and top-level `clip`/`screenshotClipApplied` metadata.

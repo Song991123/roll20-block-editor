@@ -199,6 +199,8 @@ function renderSnippet({ fixtureId, payload, validation }) {
 (async () => {
   const DATA = ${literal};
   const SUBMIT_SETTINGS_FORM = false;
+  const USE_ENDPOINT_FALLBACK = false;
+  const ENDPOINT_CAMPAIGN_ID = '';
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const bytesFromBase64 = (base64) => {
     const bin = atob(base64);
@@ -213,6 +215,42 @@ function renderSnippet({ fixtureId, payload, validation }) {
     if (!okHost || (!hasSandboxInputs && !hasManifestTextarea)) {
       throw new Error('Open the Roll20 Custom Sheet Sandbox editor/tools or settings page before running this snippet.');
     }
+  };
+  const inferCampaignId = () => {
+    if (ENDPOINT_CAMPAIGN_ID) return ENDPOINT_CAMPAIGN_ID;
+    const fromPath = location.pathname.match(/\\/(?:editor|settings|sheetsandbox\\/settings)\\/(\\d+)/)?.[1];
+    if (fromPath) return fromPath;
+    const namedInput = document.querySelector('[name="campaignid"], [name="campaign_id"]');
+    if (namedInput && 'value' in namedInput && namedInput.value) return namedInput.value;
+    const formAction = document.querySelector('#settingsform')?.getAttribute('action') || '';
+    return formAction.match(/\\/campaigns\\/savesettings\\/(\\d+)/)?.[1] || '';
+  };
+  const postEndpointFallback = async () => {
+    const campaignid = inferCampaignId();
+    if (!campaignid) return { status: 'missing-campaign-id' };
+    const postOne = async (key, item) => {
+      const response = await fetch('/sheetsandbox/savesheetsettings', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ campaignid, [key]: item.base64 }),
+      });
+      return {
+        key,
+        ok: response.ok,
+        status: response.status,
+        text: (await response.text()).slice(0, 500),
+      };
+    };
+    return {
+      status: 'posted',
+      campaignid,
+      results: [
+        await postOne('html', DATA.payload.html),
+        await postOne('css', DATA.payload.css),
+        await postOne('translation', DATA.payload.translation),
+      ],
+    };
   };
   const setFileInput = async (selector, item, type) => {
     const input = document.querySelector(selector);
@@ -316,6 +354,7 @@ function renderSnippet({ fixtureId, payload, validation }) {
   results.push(await setFileInput('#sheetHtml', DATA.payload.html, 'text/html'));
   results.push(await setFileInput('#sheetCss', DATA.payload.css, 'text/css'));
   results.push(await setFileInput('#sheetTranslation', DATA.payload.translation, 'application/json'));
+  const endpointFallback = USE_ENDPOINT_FALLBACK ? await postEndpointFallback() : { status: 'disabled' };
   const manifest = setManifest();
   if (SUBMIT_SETTINGS_FORM) {
     const button = document.querySelector('#save-changes-button, button[type="submit"], input[type="submit"]');
@@ -325,10 +364,11 @@ function renderSnippet({ fixtureId, payload, validation }) {
   const sandboxMessages = inspectSandboxMessages();
   console.table(results);
   console.log('Manifest:', manifest);
+  console.log('Endpoint fallback:', endpointFallback);
   console.log('Sandbox messages:', sandboxMessages);
   console.log('Fixture:', DATA.fixtureId);
   console.log('Next: reopen/refresh the sandbox character, capture roll20-sandbox root evidence and roll20-chat.png, then run status/diff gates.');
-  return { fixtureId: DATA.fixtureId, validation: DATA.validation, fileInputs: results, manifest, sandboxMessages };
+  return { fixtureId: DATA.fixtureId, validation: DATA.validation, fileInputs: results, endpointFallback, manifest, sandboxMessages };
 })();
 `;
 }
@@ -343,7 +383,7 @@ function renderReadme(report) {
     '',
     'Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
     '',
-    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also logs local JSON validation and detects visible Roll20 translation-parse warning text after upload. It is a fallback for Chrome extension file chooser failures, not proof that Roll20 rendered the sheet.',
+    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also logs local JSON validation and detects visible Roll20 translation-parse warning text after upload. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
