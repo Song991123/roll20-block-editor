@@ -455,7 +455,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   } else {
     positiveFindings.push(`chat font/cell model: status=${chatFontCellSummary.status}, actionable=${chatFontCellSummary.actionable}/${chatFontCellSummary.totalFixtures}, decisions=${formatFindingCounts(chatFontCellSummary.decisions)}`);
     for (const fixture of chatFontCellSummary.actionableFixtures) {
-      positiveFindings.push(`${fixture.fixtureId} font/cell decision=${fixture.modelDecision}, cellDelta=${num(fixture.cellWidthDelta)}px, fontDelta=${num(fixture.fontSizeDelta)}px, templateTypography=${fixture.typographyCandidateDeltaLabel || 'n/a'} ${fixture.typographyCandidateRisk || ''}, next=${fixture.nextAction}`);
+      positiveFindings.push(`${fixture.fixtureId} font/cell decision=${fixture.modelDecision}, cellDelta=${num(fixture.cellWidthDelta)}px, fontDelta=${num(fixture.fontSizeDelta)}px, templateTypography=${fixture.typographyCandidateDeltaLabel || 'n/a'} ${fixture.typographyCandidateRisk || ''}, cellMetrics=${fixture.cellMetricsCandidateDeltaLabel || 'n/a'} ${fixture.cellMetricsCandidateRisk || ''}, next=${fixture.nextAction}`);
     }
   }
 
@@ -841,6 +841,8 @@ function summarizeChatFontCell(report) {
     fontFamilyChanged: Boolean(fixture.fontFamilyChanged),
     typographyCandidateDeltaLabel: fixture.typographyCandidateDeltaLabel ?? '',
     typographyCandidateRisk: fixture.typographyCandidateRisk ?? '',
+    cellMetricsCandidateDeltaLabel: fixture.cellMetricsCandidateDeltaLabel ?? '',
+    cellMetricsCandidateRisk: fixture.cellMetricsCandidateRisk ?? '',
     nextAction: fixture.nextAction ?? '',
     signals: fixture.signals ?? [],
   }));
@@ -1209,10 +1211,10 @@ function renderMarkdown(report) {
     lines.push(`- Decisions: ${formatFindingCounts(report.chatFontCell.decisions)}`);
     if (report.chatFontCell.actionableFixtures.length) {
       lines.push('');
-      lines.push('| Fixture | Decision | Shell | Aligned mismatch | Cell Δ | Font Δ | Template typography | Signals | Next action |');
-      lines.push('| --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |');
+      lines.push('| Fixture | Decision | Shell | Aligned mismatch | Cell Δ | Font Δ | Template typography | Cell metrics | Signals | Next action |');
+      lines.push('| --- | --- | --- | ---: | ---: | ---: | --- | --- | --- | --- |');
       for (const fixture of report.chatFontCell.actionableFixtures) {
-        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.modelDecision} | ${fixture.shellDecision} | ${fixture.bestAlignedMismatchPct} | ${num(fixture.cellWidthDelta)}px | ${num(fixture.fontSizeDelta)}px | ${fixture.typographyCandidateDeltaLabel || 'n/a'} ${fixture.typographyCandidateRisk || ''} | ${fixture.signals.join('<br>')} | ${fixture.nextAction} |`);
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.modelDecision} | ${fixture.shellDecision} | ${fixture.bestAlignedMismatchPct} | ${num(fixture.cellWidthDelta)}px | ${num(fixture.fontSizeDelta)}px | ${fixture.typographyCandidateDeltaLabel || 'n/a'} ${fixture.typographyCandidateRisk || ''} | ${fixture.cellMetricsCandidateDeltaLabel || 'n/a'} ${fixture.cellMetricsCandidateRisk || ''} | ${fixture.signals.join('<br>')} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');

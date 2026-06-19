@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Cell metrics candidate rejected
+
+Status: PARTIAL. Roll20 chat/template parity is still blocked; a narrow cell metrics hypothesis was tested and rejected.
+
+- DONE: Added hidden diagnostic-only `roll20-cell-metrics` ChatPane typography policy and smoke path.
+- DONE: Added `cell-metrics` to chat candidate comparison and surfaced its result in `diagnose:roll20-chat-font-cell` / `gate:roll20-renderer-action`.
+- RESULT: Functional smoke passed for all 3 fixtures.
+- RESULT: Pixel comparison rejects `cell-metrics`: Les-Oublies worsened `12.90% -> 13.30%`, YSHY worsened `21.45% -> 34.93%`, while AW2E improved `7.35% -> 6.59%`.
+- RESULT: Font size / letter-spacing / cell metric adjustment alone is not the Les fix. The font/cell model now classifies Les as `CELL_METRIC_CANDIDATES_REJECTED`.
+- VERIFIED: `rolltemplate_chat_smoke` for `roll20-cell-metrics`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-font-cell`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Inspect CSS cascade/order and intrinsic table allocation for Les before another ChatPane typography/cell candidate.
+
 ## 2026-06-20 Codex Update - Chat font/cell model boundary added
 
 Status: PARTIAL. Roll20 chat/template parity is still blocked, but broad typography patches are now explicitly separated from narrow cell allocation work.

@@ -42,7 +42,11 @@ type ChatGeometryPolicy =
   | 'table-scale-x'
   | 'roll20-message-padding'
   | 'roll20-break-word';
-type ChatTypographyPolicy = 'default' | 'roll20-shell-typography' | 'roll20-template-typography';
+type ChatTypographyPolicy =
+  | 'default'
+  | 'roll20-shell-typography'
+  | 'roll20-template-typography'
+  | 'roll20-cell-metrics';
 type ChatPaintPolicy = 'default' | 'roll20-dim-background' | 'roll20-edge-shadow';
 
 function currentChatFontPolicy(): ChatFontPolicy {
@@ -81,7 +85,11 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
 function currentChatTypographyPolicy(): ChatTypographyPolicy {
   if (typeof window === 'undefined') return 'default';
   const value = window.localStorage.getItem('__r20ChatTypographyPolicy');
-  if (value === 'roll20-shell-typography' || value === 'roll20-template-typography') return value;
+  if (
+    value === 'roll20-shell-typography' ||
+    value === 'roll20-template-typography' ||
+    value === 'roll20-cell-metrics'
+  ) return value;
   return 'default';
 }
 
@@ -183,6 +191,19 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-typography-policy="roll20-template-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
   color: rgb(64, 64, 64);
   font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-cell-metrics"] .r20-chat-card-group [class*="sheet-rolltemplate-"] {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-cell-metrics"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-cell-metrics"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-cell-metrics"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
   font-size: 13.65px;
   letter-spacing: normal;
   -webkit-font-smoothing: auto;

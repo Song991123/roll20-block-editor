@@ -1,3 +1,13 @@
+## 2026-06-20 Cell Metrics Candidate Rejected
+
+- Added hidden diagnostic-only ChatPane typography policy `roll20-cell-metrics`.
+- The candidate keeps user template font-family intact while applying Roll20-like rolltemplate font-size/letter-spacing/cell metrics.
+- Added the candidate to `rolltemplate_chat_smoke`, `roll20_chat_candidate_compare`, and `roll20_chat_font_cell_model`.
+- Functional smoke passed for AW2E, Les-Oublies, and YSHY.
+- Pixel comparison rejected it: AW2E improved `7.35% -> 6.59%`, but Les-Oublies worsened `12.90% -> 13.30%` and YSHY worsened `21.45% -> 34.93%`.
+- The font/cell model now classifies Les-Oublies as `CELL_METRIC_CANDIDATES_REJECTED`.
+- Next P0: inspect CSS cascade/order and intrinsic table allocation for Les. Font-size/letter-spacing/cell metric candidates are not enough.
+
 ## 2026-06-20 Chat Font/Cell Model Boundary
 
 - Added `scripts/roll20_chat_font_cell_model.mjs` and package alias `diagnose:roll20-chat-font-cell`.

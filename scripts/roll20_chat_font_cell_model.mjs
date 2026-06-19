@@ -53,6 +53,7 @@ function analyzeFixture(shellFixture, styleReport, candidatesReport, policyRepor
   const fixtureKey = fixtureKeyForId(fixtureId);
   const candidateRows = candidatesReport?.candidates ?? [];
   const templateTypography = summarizeCandidate(candidateRows, 'template-typography', fixtureKey);
+  const cellMetrics = summarizeCandidate(candidateRows, 'cell-metrics', fixtureKey);
   const shellDecision = shellFixture.shellDecision ?? '';
   const cellWidthDelta = numberOrNull(shellFixture.geometryDeltas?.firstCellWidthDelta);
   const tableWidthDelta = numberOrNull(shellFixture.geometryDeltas?.tableWidthDelta);
@@ -65,6 +66,9 @@ function analyzeFixture(shellFixture, styleReport, candidatesReport, policyRepor
   const typographyCandidateRejected =
     templateTypography.risk === 'reject-regresses-fixtures' ||
     (typeof templateTypography.fixtureAlignedDeltaPct === 'number' && templateTypography.fixtureAlignedDeltaPct > -0.5);
+  const cellMetricsCandidateRejected =
+    cellMetrics.risk === 'reject-regresses-fixtures' ||
+    (typeof cellMetrics.fixtureAlignedDeltaPct === 'number' && cellMetrics.fixtureAlignedDeltaPct > 0);
 
   let modelDecision = 'KEEP_DEFAULT_FOR_NOW';
   let nextAction = 'keep default chat font/cell behavior while higher mismatch fixtures are investigated';
@@ -74,6 +78,7 @@ function analyzeFixture(shellFixture, styleReport, candidatesReport, policyRepor
   if (letterSpacingChanged) signals.push('letter-spacing differs');
   if (fontFamilyChanged) signals.push('font-family differs');
   if (templateTypography.name) signals.push(`template-typography candidate ${templateTypography.fixtureAlignedDeltaLabel || 'n/a'} risk=${templateTypography.risk || 'unknown'}`);
+  if (cellMetrics.name) signals.push(`cell-metrics candidate ${cellMetrics.fixtureAlignedDeltaLabel || 'n/a'} risk=${cellMetrics.risk || 'unknown'}`);
 
   if (shellDecision === 'SHELL_OK_OR_SECONDARY') {
     modelDecision = 'KEEP_DEFAULT_FOR_NOW';
@@ -81,6 +86,14 @@ function analyzeFixture(shellFixture, styleReport, candidatesReport, policyRepor
   } else if (shellDecision === 'WIDTH_MODEL_REQUIRED') {
     modelDecision = 'WIDTH_MODEL_BEFORE_FONT_CELL';
     nextAction = 'solve per-template table width/overflow first; font/cell tweaks would be confounded';
+  } else if (
+    Math.abs(cellWidthDelta ?? 0) >= 2 &&
+    Math.abs(fontSizeDelta ?? 0) >= 1 &&
+    typographyCandidateRejected &&
+    cellMetricsCandidateRejected
+  ) {
+    modelDecision = 'CELL_METRIC_CANDIDATES_REJECTED';
+    nextAction = 'inspect CSS cascade/order and intrinsic table allocation; font-size and letter-spacing candidates worsen or fail this fixture';
   } else if (Math.abs(cellWidthDelta ?? 0) >= 2 && Math.abs(fontSizeDelta ?? 0) >= 1 && typographyCandidateRejected) {
     modelDecision = 'NARROW_CELL_ALLOCATION_MODEL_REQUIRED';
     nextAction = 'build a narrow cell allocation diagnostic using actual Roll20 computed font metrics; do not promote broad template typography';
@@ -107,6 +120,9 @@ function analyzeFixture(shellFixture, styleReport, candidatesReport, policyRepor
     typographyCandidateDeltaPct: templateTypography.fixtureAlignedDeltaPct,
     typographyCandidateDeltaLabel: templateTypography.fixtureAlignedDeltaLabel ?? '',
     typographyCandidateRisk: templateTypography.risk ?? '',
+    cellMetricsCandidateDeltaPct: cellMetrics.fixtureAlignedDeltaPct,
+    cellMetricsCandidateDeltaLabel: cellMetrics.fixtureAlignedDeltaLabel ?? '',
+    cellMetricsCandidateRisk: cellMetrics.risk ?? '',
     signals,
     styleEvidence: {
       topStyleDeltas: (styleFixture?.topStyleDeltas ?? []).slice(0, 8).map((delta) => ({
@@ -154,11 +170,11 @@ function renderMarkdown(report) {
     '',
     `Status: ${report.summary.status}`,
     '',
-    '| Fixture | Decision | Shell | Aligned mismatch | Cell Δ | Font Δ | Template typography candidate | Signals | Next |',
-    '| --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |',
+    '| Fixture | Decision | Shell | Aligned mismatch | Cell Δ | Font Δ | Template typography | Cell metrics | Signals | Next |',
+    '| --- | --- | --- | ---: | ---: | ---: | --- | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.modelDecision} | ${fixture.shellDecision} | ${fixture.bestAlignedMismatchPct} | ${fmtDelta(fixture.cellWidthDelta)} | ${fmtDelta(fixture.fontSizeDelta)} | ${fixture.typographyCandidateDeltaLabel || 'n/a'} ${fixture.typographyCandidateRisk || ''} | ${fixture.signals.join('<br>') || 'none'} | ${fixture.nextAction} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.modelDecision} | ${fixture.shellDecision} | ${fixture.bestAlignedMismatchPct} | ${fmtDelta(fixture.cellWidthDelta)} | ${fmtDelta(fixture.fontSizeDelta)} | ${fixture.typographyCandidateDeltaLabel || 'n/a'} ${fixture.typographyCandidateRisk || ''} | ${fixture.cellMetricsCandidateDeltaLabel || 'n/a'} ${fixture.cellMetricsCandidateRisk || ''} | ${fixture.signals.join('<br>') || 'none'} | ${fixture.nextAction} |`);
   }
   return `${lines.join('\n')}\n`;
 }
