@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - Chat paint residual candidates tested
+
+Status: PARTIAL. Roll20 chat/template parity is still blocked; two paint/raster hypotheses were tested as diagnostic-only candidates and must not be promoted.
+
+- DONE: Added hidden localStorage-only `chatPaintPolicy` diagnostics in `ChatPane`: `roll20-dim-background` and `roll20-edge-shadow`.
+- DONE: Added smoke support for `--chat-paint-policy` and included both paint candidates in `diagnose:roll20-chat-candidates`.
+- RESULT: Both candidates functionally rendered all 3 fixtures in local ChatPane smoke.
+- RESULT: `paint-dim-background` improved YSHY from `21.45%` to `19.65%`, but Les-Oublies only changed `12.90% -> 12.85%`; this is not a Les fix and remains `single-fixture-only`.
+- RESULT: `paint-edge-shadow` did not help; Les-Oublies worsened `12.90% -> 13.15%`.
+- RESULT: `gate:roll20-renderer-action` still correctly reports `HOLD_PRODUCTION_RENDERER_PATCH`.
+- VERIFIED: `corepack pnpm run build`, two `rolltemplate_chat_smoke` paint-policy runs, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-renderer-policy`, `diagnose:roll20-chat-residual`, `gate:roll20-renderer-action`, `corepack pnpm run lint`, and `guard:roll20-evidence`.
+- STILL TODO P0: Les-Oublies residual is not solved by simple dimming or edge shadow. Next diagnostic should compare actual/local chat crop shell, row-band masks, and Roll20 canvas/browser rasterization around the rolltemplate boundary.
+- STILL TODO P0: YSHY still needs a per-template chat width model; `paint-dim-background` is only a diagnostic clue and not a production renderer patch.
+
 ## 2026-06-20 Codex Update - Chat residual axes classified
 
 Status: PARTIAL. Roll20 chat/template parity is still blocked, but the next investigation target is now narrower.

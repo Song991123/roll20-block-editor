@@ -22,6 +22,8 @@ const candidates = [
   ['roll20-break-word', 'reports/rolltemplate-chat-smoke-roll20-break-word/screenshots'],
   ['shell-typography', 'reports/rolltemplate-chat-smoke-shell-typography/screenshots'],
   ['template-typography', 'reports/rolltemplate-chat-smoke-template-typography/screenshots'],
+  ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
+  ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],
 ];
 
 const rows = [];

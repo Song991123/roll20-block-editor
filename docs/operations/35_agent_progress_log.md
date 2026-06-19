@@ -1,3 +1,13 @@
+## 2026-06-20 Chat Paint Residual Candidates
+
+- Added hidden diagnostic-only ChatPane paint policies: `roll20-dim-background` and `roll20-edge-shadow`.
+- Extended `rolltemplate_chat_smoke` with `--chat-paint-policy` and added both candidate screenshot sets to `roll20_chat_candidate_compare`.
+- Local smoke result: both paint candidates passed all 3 rolltemplate fixtures mechanically.
+- Candidate comparison result: `paint-dim-background` improves YSHY (`21.45% -> 19.65%`) but barely moves Les-Oublies (`12.90% -> 12.85%`), so it is not a Les fix and remains diagnostic-only.
+- Candidate comparison result: `paint-edge-shadow` worsens Les-Oublies (`12.90% -> 13.15%`) and provides no meaningful gain.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`; no production ChatPane renderer CSS was promoted.
+- Next P0: inspect Les-Oublies chat crop shell/row-band masks/raster boundary instead of trying broader paint or typography patches.
+
 ## 2026-06-20 Preview Diagnostic Chrome Cleanup
 
 - Removed the default product-surface `Sandbox 예상` control from `MainAreaToolbar`. Sandbox expected rendering remains a verification/export diagnostic path, not a normal preview toggle.

@@ -43,6 +43,7 @@ type ChatGeometryPolicy =
   | 'roll20-message-padding'
   | 'roll20-break-word';
 type ChatTypographyPolicy = 'default' | 'roll20-shell-typography' | 'roll20-template-typography';
+type ChatPaintPolicy = 'default' | 'roll20-dim-background' | 'roll20-edge-shadow';
 
 function currentChatFontPolicy(): ChatFontPolicy {
   if (typeof window === 'undefined') return 'default';
@@ -81,6 +82,13 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
   if (typeof window === 'undefined') return 'default';
   const value = window.localStorage.getItem('__r20ChatTypographyPolicy');
   if (value === 'roll20-shell-typography' || value === 'roll20-template-typography') return value;
+  return 'default';
+}
+
+function currentChatPaintPolicy(): ChatPaintPolicy {
+  if (typeof window === 'undefined') return 'default';
+  const value = window.localStorage.getItem('__r20ChatPaintPolicy');
+  if (value === 'roll20-dim-background' || value === 'roll20-edge-shadow') return value;
   return 'default';
 }
 
@@ -178,6 +186,21 @@ const roll20ChatShellCss = `
   font-size: 13.65px;
   letter-spacing: normal;
   -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  filter: brightness(0.965) saturate(0.985);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
+  box-shadow:
+    inset 1px 0 0 rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(0, 0, 0, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.08);
 }
 .r20-chat-pane .textchatcontainer .content {
   line-height: 1.25em;
@@ -524,6 +547,7 @@ export default function ChatPane() {
   const chatShadowPolicy = currentChatShadowPolicy();
   const chatGeometryPolicy = currentChatGeometryPolicy();
   const chatTypographyPolicy = currentChatTypographyPolicy();
+  const chatPaintPolicy = currentChatPaintPolicy();
   const rolltemplateCss = useMemo(
     () => extractRolltemplateCss(emittedCss, chatFontPolicy),
     [emittedCss, chatFontPolicy],
@@ -537,6 +561,7 @@ export default function ChatPane() {
       data-r20-chat-shadow-policy={chatShadowPolicy}
       data-r20-chat-geometry-policy={chatGeometryPolicy}
       data-r20-chat-typography-policy={chatTypographyPolicy}
+      data-r20-chat-paint-policy={chatPaintPolicy}
     >
       <style data-r20-chat-shell-css dangerouslySetInnerHTML={{ __html: roll20ChatShellCss }} />
       {rolltemplateCss.trim() && (

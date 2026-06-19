@@ -36,6 +36,7 @@ const CHAT_TEXT_POLICY = argOf('--chat-text-policy', 'default');
 const CHAT_SHADOW_POLICY = argOf('--chat-shadow-policy', 'default');
 const CHAT_GEOMETRY_POLICY = argOf('--chat-geometry-policy', 'default');
 const CHAT_TYPOGRAPHY_POLICY = argOf('--chat-typography-policy', 'default');
+const CHAT_PAINT_POLICY = argOf('--chat-paint-policy', 'default');
 const VIEWPORT = { width: 2200, height: 1200 };
 
 const MIME = {
@@ -473,6 +474,7 @@ function renderMarkdown(report) {
   lines.push(`Chat shadow policy: \`${report.chatShadowPolicy ?? 'default'}\``);
   lines.push(`Chat geometry policy: \`${report.chatGeometryPolicy ?? 'default'}\``);
   lines.push(`Chat typography policy: \`${report.chatTypographyPolicy ?? 'default'}\``);
+  lines.push(`Chat paint policy: \`${report.chatPaintPolicy ?? 'default'}\``);
   lines.push('');
   lines.push('Scope: local static app preview iframe -> ChatPane only. This is not actual Roll20 chat parity.');
   lines.push('');
@@ -542,6 +544,7 @@ async function main() {
     chatShadowPolicy: CHAT_SHADOW_POLICY,
     chatGeometryPolicy: CHAT_GEOMETRY_POLICY,
     chatTypographyPolicy: CHAT_TYPOGRAPHY_POLICY,
+    chatPaintPolicy: CHAT_PAINT_POLICY,
     fixtures: [],
   };
 
@@ -593,6 +596,13 @@ async function main() {
         localStorage.removeItem('__r20ChatTypographyPolicy');
       }
     }, CHAT_TYPOGRAPHY_POLICY);
+    await page.evaluate((policy) => {
+      if (policy === 'roll20-dim-background' || policy === 'roll20-edge-shadow') {
+        localStorage.setItem('__r20ChatPaintPolicy', policy);
+      } else {
+        localStorage.removeItem('__r20ChatPaintPolicy');
+      }
+    }, CHAT_PAINT_POLICY);
     await page.reload({ waitUntil: 'networkidle' });
     await warmPerfHook(page);
 
