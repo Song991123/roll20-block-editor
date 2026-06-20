@@ -1,3 +1,14 @@
+## 2026-06-21 Codex Update - chat sidecar foreground evidence gate
+
+Status: DONE/VERIFY. This batch makes `templateForegroundEvidence` mandatory for trusting Roll20 chat sidecars; it does not add fresh Roll20 screenshots.
+
+- DONE: `validateChatForeground` in `roll20_chat_capture_plan`, `roll20_actual_status`, `roll20_chat_parity_diagnostics`, and `roll20_upload_handoff` now rejects sidecars captured before `templateForegroundEvidence` existed.
+- DONE: Existing sidecars without `templateForegroundEvidence` are classified as foreground-suspect / needs-normalized-capture instead of being treated as normalized chat visual evidence.
+- VERIFIED: `diagnose:roll20-chat-parity` now reports `NEEDS_NORMALIZED_CAPTURE` for all 3 chat fixtures because AW2E, Les-Oublies, and YSHY sidecars predate the foreground proof field.
+- VERIFIED: `status:roll20-actual` now reports `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=3/6`, `generatedDiffed=3/6`, `chatCaptureSuspects=3`, `chatNeedsNormalizedCapture=3`, and missing generated chat evidence for all 3 fixtures.
+- VERIFIED: `plan:roll20-chat-capture --require-current-metrics` now plans 3/3 recaptures and says each one needs `templateForegroundEvidence`.
+- NEXT P0: Recapture AW2E, Les-Oublies, and YSHY chat evidence through a trusted Roll20 path. Each sidecar must include `templateForegroundEvidence=FOREGROUND_TEMPLATE_HIT`, current typography/table metrics, and a fresh true-PNG `roll20-chat.png`.
+
 ## 2026-06-21 Codex Update - chat capture foreground probe hardening
 
 Status: DONE/VERIFY. This batch hardens the Roll20 chat recapture path; it does not add a new trusted Roll20 screenshot and does not change product rendering.

@@ -1,3 +1,11 @@
+## 2026-06-21 Chat Sidecar Foreground Evidence Gate
+
+- Made `templateForegroundEvidence` mandatory across the Roll20 chat sidecar trust path, not only during CDP capture.
+- Updated `validateChatForeground` in status, capture-plan, parity diagnostics, and upload handoff so sidecars captured before the foreground proof field are rejected as foreground-suspect.
+- Verification: `diagnose:roll20-chat-parity` now reports `NEEDS_NORMALIZED_CAPTURE` for all 3 chat fixtures; `status:roll20-actual` now reports `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=3/6`, `generatedDiffed=3/6`, `chatCaptureSuspects=3`, and `chatNeedsNormalizedCapture=3`.
+- `plan:roll20-chat-capture --require-current-metrics` now plans all 3 chat recaptures because the existing sidecars predate `templateForegroundEvidence`.
+- Boundary: this intentionally downgrades older chat evidence. It is a truthfulness gate, not a renderer regression or product UI change.
+
 ## 2026-06-21 Chat Capture Foreground Probe Hardening
 
 - Updated generated Roll20 chat DOM probe snippets so they include `templateForegroundEvidence`.

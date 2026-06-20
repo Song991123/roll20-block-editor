@@ -780,6 +780,7 @@ async function validateChatEvidence(screenshots, file) {
 function validateChatForeground(domEvidence) {
   const chatSelector = String(domEvidence?.chatSelector ?? '');
   const chatElementSelector = String(domEvidence?.chatElementSelector ?? '');
+  const foreground = domEvidence?.templateForegroundEvidence;
   if (!chatElementSelector) {
     return {
       ok: false,
@@ -792,7 +793,19 @@ function validateChatForeground(domEvidence) {
       note: 'Roll20 chat sidecar selected broad #rightsidebar without an active text chat tab marker; recapture #textchat or .textchatcontainer foreground with the current probe',
     };
   }
-  return { ok: true, note: `Roll20 chat sidecar selected ${chatSelector || chatElementSelector}` };
+  if (!foreground) {
+    return {
+      ok: false,
+      note: 'Roll20 chat sidecar was captured before templateForegroundEvidence was added; recapture so elementFromPoint proves the selected rolltemplate is foreground',
+    };
+  }
+  if (foreground.status !== 'FOREGROUND_TEMPLATE_HIT') {
+    return {
+      ok: false,
+      note: `Roll20 chat sidecar foreground proof failed (${foreground.status || 'UNKNOWN'}): ${foreground.note || 'selected rolltemplate is not proven foreground'}`,
+    };
+  }
+  return { ok: true, note: `Roll20 chat sidecar selected ${chatSelector || chatElementSelector} and proved foreground rolltemplate hit` };
 }
 
 async function validateSidecarFreshness(screenshot, sidecar) {
