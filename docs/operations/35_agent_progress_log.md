@@ -1,3 +1,10 @@
+## 2026-06-20 Roll20 CDP Preflight For Chat Recapture
+
+- Added `scripts/roll20_cdp_preflight.mjs` and the `preflight:roll20-cdp` package script so the remaining AW2E/Les-Oublies Roll20 chat recapture can fail early with actionable browser setup instructions instead of a raw CDP connection stack.
+- Verification run: `corepack pnpm run preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Current result: `CDP_CLOSED`; no endpoint is listening at `http://127.0.0.1:9222`. The preflight still found the active capture plan and printed capture commands for `official-roll20-AW2E` and `official-roll20-Les-Oublies`.
+- Boundary: no new Roll20 screenshot or sidecar was captured in this batch. The next real-world step is opening a CDP-enabled Roll20 Sandbox/test-room browser, rerunning preflight until a Roll20 target appears, then running `capture:roll20-chat-cdp` for the two planned fixtures.
+
 ## 2026-06-20 Roll20 Chat Current-Metrics Handoff
 
 - Added `scripts/roll20_chat_current_handoff.mjs` and the `handoff:roll20-chat-current` package script so the next Roll20 chat recapture step is one repeatable command instead of three separate commands.

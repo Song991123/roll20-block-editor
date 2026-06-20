@@ -201,6 +201,17 @@ chat recapture plan, self-tests the probe shape, and writes an ignored local
 handoff report. It is a recapture checklist only; it does not replace the
 actual Roll20 `roll20-chat.png` and `roll20-chat-dom-evidence.json` evidence.
 
+Before attempting CDP capture, run the CDP preflight:
+
+```bash
+corepack pnpm run preflight:roll20-cdp -- --run-dir reports/roll20-actual-compare/<label>
+```
+
+The preflight writes an ignored report, lists Roll20 tabs if the CDP endpoint is
+reachable, and prints the exact Chrome/Edge launch command plus per-fixture
+capture commands when the endpoint is closed. It does not launch a browser
+unless `--launch` is passed, and it does not capture or upload evidence.
+
 The plan writes ignored local output under
 `reports/roll20-actual-compare/<label>/roll20-chat-capture-plan/`. It lists the
 exact `roll20-chat.png` and `roll20-chat-dom-evidence.json` destinations,

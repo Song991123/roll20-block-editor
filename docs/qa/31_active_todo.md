@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - Roll20 CDP preflight for chat recapture
+
+Status: VERIFY/BLOCKED_CDP. This batch adds a repeatable CDP readiness check for the remaining Roll20 chat current-metrics recapture; it does not capture new Roll20 evidence.
+
+- DONE: Added `scripts/roll20_cdp_preflight.mjs` and `corepack pnpm run preflight:roll20-cdp -- --run-dir <run-dir>`.
+- DONE: The preflight checks `http://127.0.0.1:9222/json/list`, lists matching Roll20 targets when available, writes ignored local output under `<run-dir>/roll20-cdp-preflight/`, and prints exact per-fixture capture commands from the current chat capture plan.
+- VERIFIED: `corepack pnpm run preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `CDP_CLOSED`, `plannedFixtures=2`, and capture commands for `official-roll20-AW2E` and `official-roll20-Les-Oublies`.
+- CURRENT BLOCKER: No CDP endpoint is listening on `127.0.0.1:9222`, so automated Roll20 chat recapture cannot run in the current browser state.
+- STILL TODO P0: Start or attach a CDP-enabled Roll20 Sandbox/test-room browser, rerun preflight until it reports a Roll20 target, then run `capture:roll20-chat-cdp` for AW2E and Les-Oublies.
+
 ## 2026-06-20 Codex Update - Roll20 chat current-metrics handoff
 
 Status: VERIFY. This batch makes the next Roll20 chat recapture step repeatable; it does not claim chat or full renderer parity.
