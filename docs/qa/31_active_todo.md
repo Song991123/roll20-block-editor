@@ -2,6 +2,7 @@
 
 Status: VERIFY/BLOCKED_CDP. This batch improves the actual Roll20 chat evidence capture tooling; it does not change product rendering and does not prove Roll20 visual parity.
 
+- DONE FOLLOW-UP: `capture:roll20-chat-cdp` now decodes the captured PNG in browser canvas before writing `roll20-chat.png`. If Roll20 DOM evidence contains rolltemplate text but the PNG has almost no dark/edge foreground pixels, it fails with `BLOCKED_FOREGROUND_PIXEL_SUSPECT` and does not overwrite existing evidence.
 - DONE: `scripts/roll20_chat_capture_plan.mjs` now selects a visible/text-rich rolltemplate for recapture instead of blindly using the latest template. This avoids Les-Oublies choosing the sparse `Initiative` card when richer `classic-roll` templates are visible.
 - DONE: `scripts/roll20_chat_cdp_capture.mjs` now probes Roll20 frames for usable rolltemplate evidence and records both `screenshotCssClip` (DOM/frame-local clip) and `screenshotClipApplied` (top-level screenshot clip after frame offset). The sidecar also records `captureFrame`.
 - OBSERVED: Chrome extension read-only evidence shows the current Roll20 page can report chat DOM coordinates around `x=50` while the visible full-page screenshot shows the chat panel on the far right. This confirms the old crop path could capture Sandbox Tools/VTT UI instead of the rolltemplate.

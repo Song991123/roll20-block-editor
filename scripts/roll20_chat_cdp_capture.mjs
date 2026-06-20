@@ -122,6 +122,8 @@ async function main() {
       clip: { x: pageClip.x, y: pageClip.y, width: pageClip.width, height: pageClip.height, scale: 1 },
     });
     const png = Buffer.from(shot.data, 'base64');
+    const pixelStats = await analyzeScreenshotPixels(page, png);
+    assertCapturedTemplateForeground(evidence, pixelStats);
     const enriched = {
       ...evidence,
       captureAutomation: {
@@ -136,10 +138,12 @@ async function main() {
         screenshotClipApplied: pageClip,
         screenshotCssClip: clip,
         captureFrame: frameInfo,
+        screenshotPixelStats: pixelStats,
       },
       screenshotClipApplied: pageClip,
       screenshotCssClip: clip,
       captureFrame: frameInfo,
+      screenshotPixelStats: pixelStats,
     };
 
     await writeFile(chatPngPath, png);
@@ -219,6 +223,89 @@ function applyFrameOffset(clip, frameInfo) {
   };
 }
 
+async function analyzeScreenshotPixels(page, png) {
+  const dataUrl = `data:image/png;base64,${png.toString('base64')}`;
+  return page.evaluate(async (url) => {
+    const image = new Image();
+    image.decoding = 'async';
+    const loaded = new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error('could not decode captured chat PNG for foreground sanity check'));
+    });
+    image.src = url;
+    await loaded;
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) throw new Error('canvas 2d context unavailable for captured chat PNG sanity check');
+    context.drawImage(image, 0, 0);
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    let dark = 0;
+    let edge = 0;
+    let nonWhite = 0;
+    const total = canvas.width * canvas.height;
+    for (let index = 0; index < data.length; index += 4) {
+      const red = data[index];
+      const green = data[index + 1];
+      const blue = data[index + 2];
+      const luma = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+      if (luma < 80) dark += 1;
+      if (luma < 245) nonWhite += 1;
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      if (max - min > 40 || luma < 160) edge += 1;
+    }
+    return {
+      width: canvas.width,
+      height: canvas.height,
+      total,
+      darkRatio: total ? dark / total : 0,
+      edgeRatio: total ? edge / total : 0,
+      nonWhiteRatio: total ? nonWhite / total : 0,
+    };
+  }, dataUrl);
+}
+
+function assertCapturedTemplateForeground(evidence, stats) {
+  const text = String(evidence?.latestTemplate?.text ?? evidence?.selectedTemplate?.text ?? '').trim();
+  if (!text) return;
+  const darkRatio = Number(stats?.darkRatio ?? 0);
+  const edgeRatio = Number(stats?.edgeRatio ?? 0);
+  const nonWhiteRatio = Number(stats?.nonWhiteRatio ?? 0);
+  if (darkRatio >= 0.002 || edgeRatio >= 0.005) return;
+  throw new Error([
+    'ROLL20 CHAT CDP CAPTURE BLOCKED_FOREGROUND_PIXEL_SUSPECT',
+    `Captured PNG has expected rolltemplate DOM text but almost no foreground pixels (dark=${pct(darkRatio)}, edge=${pct(edgeRatio)}, nonWhite=${pct(nonWhiteRatio)}).`,
+    'This usually means the screenshot clip hit VTT grid, Sandbox Tools, toast UI, or another wrong surface instead of the visible rolltemplate.',
+    'Do not overwrite roll20-chat.png from this capture. Recheck frame/target coordinate mapping or use a verified full-page crop path.',
+  ].join('\n'));
+}
+
+function selfTestForegroundGuard() {
+  const failures = [];
+  const evidence = { latestTemplate: { text: 'Roll Result: 12' } };
+  try {
+    assertCapturedTemplateForeground(evidence, { darkRatio: 0.0001, edgeRatio: 0.0002, nonWhiteRatio: 0.03 });
+    failures.push('foreground guard did not reject an empty-looking rolltemplate crop');
+  } catch (error) {
+    if (!String(error?.message ?? error).includes('BLOCKED_FOREGROUND_PIXEL_SUSPECT')) {
+      failures.push('foreground guard rejected with an unexpected error');
+    }
+  }
+  try {
+    assertCapturedTemplateForeground(evidence, { darkRatio: 0.01, edgeRatio: 0.02, nonWhiteRatio: 0.25 });
+  } catch {
+    failures.push('foreground guard rejected a foreground-rich rolltemplate crop');
+  }
+  try {
+    assertCapturedTemplateForeground({ latestTemplate: { text: '' } }, { darkRatio: 0, edgeRatio: 0, nonWhiteRatio: 0 });
+  } catch {
+    failures.push('foreground guard rejected an evidence object without expected template text');
+  }
+  return failures;
+}
+
 async function connectOverCdp(chromium) {
   try {
     return await chromium.connectOverCDP(CDP_URL);
@@ -275,7 +362,10 @@ function assertCaptureReadyPage(readiness) {
 }
 
 function runReadinessSelfTest() {
-  const failures = selfTestRoll20Readiness();
+  const failures = [
+    ...selfTestRoll20Readiness(),
+    ...selfTestForegroundGuard(),
+  ];
   if (failures.length) {
     console.error(`ROLL20 CHAT CDP CAPTURE READINESS_SELF_TEST FAIL ${JSON.stringify(failures, null, 2)}`);
     process.exit(1);
@@ -386,6 +476,11 @@ function redactUrl(url) {
 function finiteNumber(value) {
   const number = Number(value);
   return Number.isFinite(number) ? Number(number.toFixed(3)) : null;
+}
+
+function pct(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? `${(number * 100).toFixed(2)}%` : 'n/a';
 }
 
 function rel(filePath) {
