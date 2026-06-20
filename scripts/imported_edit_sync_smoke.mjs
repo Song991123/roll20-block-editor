@@ -312,23 +312,62 @@ async function diffPngs(page, previewPath, editPath) {
       let sumAbs = 0;
       const total = width * height;
       const bounds = { left: width, top: height, right: -1, bottom: -1 };
+      const gridCols = 4;
+      const gridRows = 4;
+      const grid = Array.from({ length: gridCols * gridRows }, (_, index) => ({
+        index,
+        col: index % gridCols,
+        row: Math.floor(index / gridCols),
+        mismatchPixels: 0,
+        sumAbs: 0,
+        totalPixels: 0,
+      }));
       for (let i = 0; i < aData.length; i += 4) {
+        const pixel = i / 4;
+        const x = pixel % width;
+        const y = Math.floor(pixel / width);
+        const col = Math.min(gridCols - 1, Math.floor((x / Math.max(1, width)) * gridCols));
+        const row = Math.min(gridRows - 1, Math.floor((y / Math.max(1, height)) * gridRows));
+        const cell = grid[row * gridCols + col];
         const delta =
           Math.abs(aData[i] - bData[i]) +
           Math.abs(aData[i + 1] - bData[i + 1]) +
           Math.abs(aData[i + 2] - bData[i + 2]) +
           Math.abs(aData[i + 3] - bData[i + 3]);
         sumAbs += delta;
+        cell.totalPixels += 1;
+        cell.sumAbs += delta;
         if (delta > 24) {
           mismatch += 1;
-          const x = (i / 4) % width;
-          const y = Math.floor(i / 4 / width);
+          cell.mismatchPixels += 1;
           bounds.left = Math.min(bounds.left, x);
           bounds.top = Math.min(bounds.top, y);
           bounds.right = Math.max(bounds.right, x);
           bounds.bottom = Math.max(bounds.bottom, y);
         }
       }
+      const mismatchBounds =
+        mismatch > 0
+          ? {
+              left: bounds.left,
+              top: bounds.top,
+              width: bounds.right - bounds.left + 1,
+              height: bounds.bottom - bounds.top + 1,
+            }
+          : null;
+      const hotCells = grid
+        .map((cell) => ({
+          row: cell.row,
+          col: cell.col,
+          mismatchPixels: cell.mismatchPixels,
+          mismatchPct:
+            cell.totalPixels > 0 ? Math.round((cell.mismatchPixels / cell.totalPixels) * 10000) / 100 : 0,
+          meanAbsChannelDelta:
+            cell.totalPixels > 0 ? Math.round((cell.sumAbs / (cell.totalPixels * 4)) * 100) / 100 : 0,
+        }))
+        .filter((cell) => cell.mismatchPixels > 0)
+        .sort((aCell, bCell) => bCell.mismatchPixels - aCell.mismatchPixels)
+        .slice(0, 6);
       return {
         previewSize: { width: a.naturalWidth, height: a.naturalHeight },
         editSize: { width: b.naturalWidth, height: b.naturalHeight },
@@ -336,15 +375,16 @@ async function diffPngs(page, previewPath, editPath) {
         mismatchPixels: mismatch,
         mismatchPct: total > 0 ? Math.round((mismatch / total) * 10000) / 100 : null,
         meanAbsChannelDelta: total > 0 ? Math.round((sumAbs / (total * 4)) * 100) / 100 : null,
-        mismatchBounds:
-          mismatch > 0
+        mismatchBounds,
+        mismatchCoverage:
+          mismatchBounds && width > 0 && height > 0
             ? {
-                left: bounds.left,
-                top: bounds.top,
-                width: bounds.right - bounds.left + 1,
-                height: bounds.bottom - bounds.top + 1,
+                widthPct: Math.round((mismatchBounds.width / width) * 10000) / 100,
+                heightPct: Math.round((mismatchBounds.height / height) * 10000) / 100,
+                areaPct: Math.round(((mismatchBounds.width * mismatchBounds.height) / total) * 10000) / 100,
               }
             : null,
+        hotCells,
       };
     },
     {
@@ -502,12 +542,120 @@ async function compareEditPreviewFormState(page) {
   };
 }
 
-function classifySheetVisualSync(sheetVisualSync, formStateDiff) {
+async function compareEditPreviewRootGeometry(page) {
+  const edit = await collectEditRootGeometry(page);
+  const preview = await collectPreviewRootGeometry(page);
+  const rootDelta =
+    edit?.root && preview?.root
+      ? {
+          width: Math.round((edit.root.width - preview.root.width) * 100) / 100,
+          height: Math.round((edit.root.height - preview.root.height) * 100) / 100,
+          scrollWidth: edit.root.scrollWidth - preview.root.scrollWidth,
+          clientWidth: edit.root.clientWidth - preview.root.clientWidth,
+        }
+      : null;
+  return {
+    pass:
+      rootDelta != null &&
+      Math.abs(rootDelta.width) <= 2 &&
+      Math.abs(rootDelta.height) <= 2 &&
+      Math.abs(rootDelta.scrollWidth) <= 2 &&
+      Math.abs(rootDelta.clientWidth) <= 2,
+    rootDelta,
+    edit,
+    preview,
+  };
+}
+
+async function collectEditRootGeometry(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
+  return page.evaluate(() => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    return root ? collectRootGeometry(root) : null;
+    function collectRootGeometry(rootEl) {
+      const rootRect = rootEl.getBoundingClientRect();
+      return {
+        root: rectInfo(rootEl, rootRect),
+        children: Array.from(rootEl.children).slice(0, 24).map((el) => rectInfo(el, rootRect)),
+      };
+    }
+    function rectInfo(el, rootRect) {
+      const rect = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return {
+        tag: el.tagName.toLowerCase(),
+        blockId: el.getAttribute('data-r20-block-id') || '',
+        className: String(el.getAttribute('class') || '').slice(0, 180),
+        relativeLeft: Math.round((rect.left - rootRect.left) * 100) / 100,
+        relativeTop: Math.round((rect.top - rootRect.top) * 100) / 100,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+        display: cs.display,
+        position: cs.position,
+        overflowX: cs.overflowX,
+        overflowY: cs.overflowY,
+      };
+    }
+  });
+}
+
+async function collectPreviewRootGeometry(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setPreviewRenderMode('iframe');
+    window.__perfHook.setMainMode('preview');
+  });
+  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  const root = frame.locator('#charsheet-root').first();
+  await root.waitFor({ state: 'visible', timeout: 30000 });
+  return root.evaluate((rootEl) => {
+    const rootRect = rootEl.getBoundingClientRect();
+    return {
+      root: rectInfo(rootEl, rootRect),
+      children: Array.from(rootEl.children).slice(0, 24).map((el) => rectInfo(el, rootRect)),
+    };
+    function rectInfo(el, rootRect) {
+      const rect = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return {
+        tag: el.tagName.toLowerCase(),
+        blockId: el.getAttribute('data-r20-block-id') || '',
+        className: String(el.getAttribute('class') || '').slice(0, 180),
+        relativeLeft: Math.round((rect.left - rootRect.left) * 100) / 100,
+        relativeTop: Math.round((rect.top - rootRect.top) * 100) / 100,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+        display: cs.display,
+        position: cs.position,
+        overflowX: cs.overflowX,
+        overflowY: cs.overflowY,
+      };
+    }
+  });
+}
+
+function classifySheetVisualSync(sheetVisualSync, formStateDiff, rootGeometry) {
   if (!sheetVisualSync) return 'missing-sheet-visual';
   if (sheetVisualSync.pass) {
     return formStateDiff?.pass === false ? 'visual-pass-with-form-state-diff' : 'visual-pass';
   }
   if (formStateDiff?.diffCount > 0) return 'likely-form-control-state-divergence';
+  if (rootGeometry?.rootDelta && Math.abs(rootGeometry.rootDelta.width) > 2) {
+    return 'likely-root-width-geometry-delta';
+  }
+  const coverage = sheetVisualSync.diff?.mismatchCoverage;
+  const hotCells = sheetVisualSync.diff?.hotCells || [];
+  if (coverage?.widthPct >= 75 && coverage?.heightPct >= 75) return 'broad-sheet-root-visual-delta';
+  if (hotCells.length > 0) return 'localized-sheet-root-visual-delta';
   return 'unclassified-sheet-root-visual-delta';
 }
 
@@ -1887,10 +2035,10 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Interaction | Resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Sheet visual | Form state | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
-  lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
+  lines.push('| Fixture | Status | Interaction | Resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Sheet visual | Form state | Root geometry | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
+  lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${fmtVisualSync(item.sheetVisualSync)} | ${fmtFormStateDiff(item.formStateDiff)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${fmtVisualSync(item.sheetVisualSync)} | ${fmtFormStateDiff(item.formStateDiff)} | ${fmtRootGeometry(item.rootGeometryDiff)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
@@ -1978,9 +2126,18 @@ function fmtNonLeafLayerReorder(item) {
 
 function fmtVisualSync(item) {
   if (!item) return 'missing';
-  if (item.pass) return `${item.diff?.mismatchPct ?? ''}%`;
+  if (item.pass) return `${item.diff?.mismatchPct ?? ''}%${fmtVisualHotspot(item)}`;
   const reason = item.classification ? ` ${item.classification}` : '';
-  return `WARN: ${item.diff?.mismatchPct ?? item.reason ?? 'visual mismatch'}%${reason}`;
+  return `WARN: ${item.diff?.mismatchPct ?? item.reason ?? 'visual mismatch'}%${reason}${fmtVisualHotspot(item)}`;
+}
+
+function fmtVisualHotspot(item) {
+  const coverage = item?.diff?.mismatchCoverage;
+  const hot = item?.diff?.hotCells?.[0];
+  if (!coverage && !hot) return '';
+  const coverageText = coverage ? ` cov ${coverage.widthPct}x${coverage.heightPct}%` : '';
+  const hotText = hot ? ` hot r${hot.row}c${hot.col}:${hot.mismatchPct}%` : '';
+  return `${coverageText}${hotText}`;
 }
 
 function fmtFormStateDiff(item) {
@@ -1991,6 +2148,12 @@ function fmtFormStateDiff(item) {
     .map(([type, count]) => `${type}:${count}`)
     .join(', ');
   return `DIFF ${item.diffCount}${typeSummary ? ` (${typeSummary})` : ''}`;
+}
+
+function fmtRootGeometry(item) {
+  if (!item?.rootDelta) return 'missing';
+  if (item.pass) return 'match';
+  return `delta w ${item.rootDelta.width}px h ${item.rootDelta.height}px scroll ${item.rootDelta.scrollWidth}px`;
 }
 
 function fmtCanvasInsert(item) {
@@ -2118,7 +2281,12 @@ async function main() {
         entry.reimport = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
         entry.sheetVisualSync = await captureSheetRootVisualSync(page, fixture.id);
         entry.formStateDiff = await compareEditPreviewFormState(page);
-        entry.sheetVisualSync.classification = classifySheetVisualSync(entry.sheetVisualSync, entry.formStateDiff);
+        entry.rootGeometryDiff = await compareEditPreviewRootGeometry(page);
+        entry.sheetVisualSync.classification = classifySheetVisualSync(
+          entry.sheetVisualSync,
+          entry.formStateDiff,
+          entry.rootGeometryDiff,
+        );
         entry.interactionPass =
           entry.pass &&
           entry.canvasInsert?.pass === true &&

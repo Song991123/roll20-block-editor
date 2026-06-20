@@ -1,3 +1,12 @@
+## 2026-06-20 Edit Canvas Auto-Width Parity
+
+- Root cause: AW2E's remaining local full-root edit/preview mismatch was largely caused by stale edit canvas width. The smoke captured edit first at a narrower root (`876px`) before the preview iframe auto-sized the shared canvas to `902px`, producing a broad `11.93%` screenshot diff.
+- Changed `EditCanvas` so Shadow edit mode measures rendered sheet content width as well as height and raises `sheetCanvasWidth` when imported content needs a wider Roll20-style fixed sheet canvas.
+- Extended `scripts/imported_edit_sync_smoke.mjs` with visual hot-cell diagnostics, mismatch coverage, and root geometry deltas. This gives future broad screenshot diffs a concrete routing signal instead of a vague `unclassified` label.
+- Verification: `node --check scripts\imported_edit_sync_smoke.mjs`, `lint`, `build`, AW2E-only `smoke:imported-edit-sync -- --only official-roll20-AW2E --port 4198`, full `smoke:imported-edit-sync -- --port 4196`, `smoke:edit-flow -- --port 4210`, and `guard:roll20-evidence`.
+- Local result: AW2E sheet-root mismatch dropped from `11.93%` to `1.84%`; root geometry and form-state deltas are now `0`. Full imported smoke reports `AW2E 1.84%`, `Les-Oublies 1.98%`, synthetic `0%`, and YSHY `1.04%`, all within the current local `2%` edit/preview budget.
+- Boundary: this proves local edit/preview parity for the current fixture set only. It does not prove actual Roll20 sandbox parity, and resource warnings remain for Les-Oublies/YSHY.
+
 ## 2026-06-20 Shadow Edit Worker State Mirror
 
 - Added a minimal Roll20 sheet-worker runtime to `mountSheetShadow()` so Shadow/edit rendering runs `sheet:opened` and supports `on`, `getAttrs`, `setAttrs`, `getSectionIDs`, row id stubs, and translation helpers against the Shadow DOM.

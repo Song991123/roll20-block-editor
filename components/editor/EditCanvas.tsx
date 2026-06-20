@@ -104,6 +104,7 @@ export default function EditCanvas() {
   const previewLayer = useUiStore((s) => s.previewLayer);
   const zoom = useUiStore((s) => s.previewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
+  const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
   const snapEnabled = useUiStore((s) => s.snapEnabled);
   const toggleSnap = useUiStore((s) => s.toggleSnapEnabled);
   const editPlacementMode = useUiStore((s) => s.editPlacementMode);
@@ -390,14 +391,19 @@ export default function EditCanvas() {
     setShadowSelectedRef.current = mounted.setSelected;
     const shadowBody = mounted.shadow.querySelector<HTMLElement>('body[data-r20-shadow-body], body.charsheet');
     const shadowRootEl = mounted.shadow.querySelector<HTMLElement>('#charsheet-root');
-    const updateCanvasHeight = () => {
-      const nextHeight = measureShadowSheetHeight(mounted.shadow);
+    const updateCanvasMetrics = () => {
+      const nextBox = measureShadowSheetBox(mounted.shadow);
+      const nextHeight = nextBox.height;
       setEditCanvasHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
+      const currentWidth = useUiStore.getState().sheetCanvasWidth;
+      if (nextBox.width > currentWidth + 8) {
+        setSheetCanvasWidth(nextBox.width);
+      }
     };
-    updateCanvasHeight();
-    const resizeObserver = new ResizeObserver(updateCanvasHeight);
+    updateCanvasMetrics();
+    const resizeObserver = new ResizeObserver(updateCanvasMetrics);
     if (shadowRootEl) resizeObserver.observe(shadowRootEl);
-    const mutationObserver = new MutationObserver(updateCanvasHeight);
+    const mutationObserver = new MutationObserver(updateCanvasMetrics);
     if (shadowRootEl) {
       mutationObserver.observe(shadowRootEl, {
         attributes: true,
@@ -446,6 +452,7 @@ export default function EditCanvas() {
     cleanupDragVisual,
     lockVisualAtDrop,
     commitMoveLater,
+    setSheetCanvasWidth,
   ]);
 
   useEffect(() => {
@@ -1295,23 +1302,28 @@ function getHostScale(host: HTMLElement): number {
   return host.offsetWidth > 0 ? rect.width / host.offsetWidth : 1;
 }
 
-function measureShadowSheetHeight(shadow: ShadowRoot): number {
+function measureShadowSheetBox(shadow: ShadowRoot): { width: number; height: number } {
   const root =
     shadow.querySelector<HTMLElement>('#charsheet-root') ??
     shadow.querySelector<HTMLElement>('body.charsheet') ??
     shadow.querySelector<HTMLElement>('.charsheet');
-  if (!root) return 900;
+  if (!root) return { width: 850, height: 900 };
 
   const rootRect = root.getBoundingClientRect();
+  let maxRight = Math.max(root.scrollWidth, root.offsetWidth, Math.ceil(rootRect.width));
   let maxBottom = Math.max(root.scrollHeight, root.offsetHeight, Math.ceil(rootRect.height));
   root.querySelectorAll<HTMLElement>('*').forEach((el) => {
     const cs = getComputedStyle(el);
     if (cs.display === 'none' || cs.visibility === 'hidden') return;
     const rect = el.getBoundingClientRect();
     if (rect.width <= 0 && rect.height <= 0) return;
+    maxRight = Math.max(maxRight, Math.ceil(rect.right - rootRect.left + root.scrollLeft));
     maxBottom = Math.max(maxBottom, Math.ceil(rect.bottom - rootRect.top + root.scrollTop));
   });
-  return Math.max(120, Math.min(60000, maxBottom));
+  return {
+    width: Math.max(850, Math.min(2400, maxRight)),
+    height: Math.max(120, Math.min(60000, maxBottom)),
+  };
 }
 
 function measureBlockPosition(

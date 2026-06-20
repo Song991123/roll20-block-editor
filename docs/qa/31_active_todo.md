@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - edit canvas auto-width parity
+
+Status: VERIFY. This fixes the local AW2E edit/preview full-root visual regression caused by edit mode rendering before preview auto-width settled.
+
+- ROOT CAUSE: `EditCanvas` measured Shadow sheet height but did not update `sheetCanvasWidth`; the imported smoke captured edit first at a stale/narrower canvas width, then preview iframe auto-sized wider. AW2E therefore compared `876px` edit root screenshots against `902px` preview root screenshots and produced a broad `11.93%` sheet-root mismatch.
+- DONE: `EditCanvas` now measures Shadow sheet content width and height, raises `sheetCanvasWidth` when the rendered sheet needs more width, and keeps height behavior unchanged.
+- DONE: `smoke:imported-edit-sync` now records sheet-root visual hot cells, mismatch coverage, and edit/preview root geometry deltas so future broad visual diffs can be routed to width/geometry/paint/state instead of guessed.
+- VERIFIED: `node --check scripts\imported_edit_sync_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, AW2E-only `corepack pnpm run smoke:imported-edit-sync -- --only official-roll20-AW2E --port 4198`, full `corepack pnpm run smoke:imported-edit-sync -- --port 4196`, `corepack pnpm run smoke:edit-flow -- --port 4210`, and `corepack pnpm run guard:roll20-evidence` passed.
+- LOCAL RESULT: AW2E sheet-root visual mismatch improved from `11.93%` to `1.84%`; root geometry delta is now `0px` width/height/scroll/client, and form-state diff remains `0`.
+- LOCAL RESULT: Full imported smoke sheet-root mismatch is `AW2E 1.84%`, `Les-Oublies 1.98%`, `synthetic-nonleaf-flow 0%`, and `yshy-commission-1bu 1.04%`, all classified as `visual-pass` under the current local `2%` budget.
+- CURRENT LIMITATION: This proves local edit/preview parity for the current fixture set, not actual Roll20 sandbox parity. `Les-Oublies` and `yshy-commission-1bu` still have resource warnings, so real visual parity still needs asset/state/crop normalization and Roll20 evidence.
+- STILL TODO P0: Promote strict sheet-root sync only after deciding how resource warnings and actual Roll20 sandbox/test-room evidence gate production claims.
+
 ## 2026-06-20 Codex Update - Shadow edit worker state mirror
 
 Status: VERIFY. This fixes the local edit/preview form-state drift found in the previous batch; it does not solve the remaining AW2E sheet-root visual delta.
