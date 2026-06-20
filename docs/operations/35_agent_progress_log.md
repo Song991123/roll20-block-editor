@@ -1,3 +1,11 @@
+## 2026-06-21 Roll20 Chat Recapture Handoff Ordering
+
+- Updated `scripts/roll20_chat_capture_plan.mjs` so each planned chat recapture includes `sheetFrameEvidence`, `sheetFrameProbeCommand`, and `chatCaptureCommand`.
+- The generated chat capture Markdown now shows the required `roll20-sandbox-dom-evidence.json` target and explicitly tells agents to run `probe:roll20-sheet-frame` before `capture:roll20-chat-cdp`.
+- Updated `scripts/roll20_chat_current_handoff.mjs` so the current-metrics handoff table includes the sheet-frame probe and gated chat capture commands for stale fixtures.
+- Updated `scripts/roll20_upload_handoff.mjs` so the upload order inserts sheet-frame probing before root/chat evidence capture.
+- Verification: `node --check` for the three changed handoff/plan scripts, `test:roll20-chat-capture-plan`, `handoff:roll20-chat-current`, and `handoff:roll20-upload -- ... official-roll20-AW2E --missing-only` passed.
+
 ## 2026-06-21 Roll20 Chat Capture Sheet-Frame Gate
 
 - Hardened `scripts/roll20_chat_cdp_capture.mjs` so actual chat capture now requires positive `roll20-sandbox-dom-evidence.json` from `probe:roll20-sheet-frame` before clicking a roll button or saving `roll20-chat.png`.

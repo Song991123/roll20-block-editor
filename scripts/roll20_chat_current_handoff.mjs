@@ -176,10 +176,10 @@ function renderMarkdown(report) {
     lines.push(`- Planned fixtures: ${report.capturePlan.plannedFixtures.length}`);
     if (report.capturePlan.plannedFixtures.length) {
       lines.push('');
-      lines.push('| Fixture | Reasons | Snippet |');
-      lines.push('| --- | --- | --- |');
+      lines.push('| Fixture | Reasons | Sheet-frame probe | Chat capture | Snippet |');
+      lines.push('| --- | --- | --- | --- | --- |');
       for (const fixture of report.capturePlan.plannedFixtures) {
-        lines.push(`| \`${fixture.fixtureId}\` | ${escapeCell(fixture.captureReasons.join('; '))} | \`${fixture.snippetPath}\` |`);
+        lines.push(`| \`${fixture.fixtureId}\` | ${escapeCell(fixture.captureReasons.join('; '))} | \`${fixture.sheetFrameProbeCommand ?? 'run probe:roll20-sheet-frame first'}\` | \`${fixture.chatCaptureCommand ?? 'run capture:roll20-chat-cdp after probe'}\` | \`${fixture.snippetPath}\` |`);
       }
     }
     lines.push('');

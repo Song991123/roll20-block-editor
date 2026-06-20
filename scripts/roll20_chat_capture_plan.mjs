@@ -138,7 +138,9 @@ function buildEntry(fixtureId, status, chatParity) {
     chatPng: fileTarget(path.join(screenshots, 'roll20-chat.png')),
     chatDomEvidence: fileTarget(path.join(screenshots, 'roll20-chat-dom-evidence.json')),
     chatPagePng: fileTarget(path.join(screenshots, 'roll20-chat-page.png')),
+    sheetFrameEvidence: fileTarget(path.join(screenshots, 'roll20-sandbox-dom-evidence.json')),
   };
+  const sheetFrameProbeCommand = `corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(runDir)} --fixture ${fixtureId}`;
   return {
     fixtureId,
     needsCapture,
@@ -169,10 +171,14 @@ function buildEntry(fixtureId, status, chatParity) {
     rollButtons,
     targets,
     snippetPath: rel(path.join(outDir, 'snippets', `${fixtureId}-chat-dom-probe-snippet.js`)),
+    sheetFrameProbeCommand,
+    chatCaptureCommand: `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}`,
     captureChecklist: [
       'Load this fixture in the dedicated Roll20 Custom Sheet Sandbox or approved test room.',
+      `Run sheet-frame probe first: \`${sheetFrameProbeCommand}\`. Chat capture now requires positive \`roll20-sandbox-dom-evidence.json\` for the same fixture.`,
       'Clear or visually separate old chat messages if needed so the next rolltemplate is unambiguous.',
       `Click a real sheet roll button${rollButtons.length ? ` such as ${rollButtons.slice(0, 4).map((name) => `\`${name}\``).join(', ')}` : ''}.`,
+      `Capture chat with the gated CDP helper: \`${`corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}`}\`. It will refuse to proceed if the sheet-frame evidence is missing or generic.`,
       'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'If CDP captures the wrong region on a high-DPR Roll20 tab, verify the coordinate space with a debug crop: multiply the CSS template rect by devicePixelRatio, capture the physical PNG, then DPR-correct/downscale it back to the CSS clip size and record captureDprCorrection in the sidecar.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
@@ -1229,10 +1235,10 @@ function renderMarkdown(report) {
   if (!report.plannedEntries.length) {
     lines.push('No chat recapture needed by the current local evidence rules.', '');
   } else {
-    lines.push('| Fixture | Chat status | Reason | Screenshot | DOM sidecar | Snippet |');
-    lines.push('| --- | --- | --- | --- | --- | --- |');
+    lines.push('| Fixture | Chat status | Reason | Sheet-frame evidence | Screenshot | DOM sidecar | Snippet |');
+    lines.push('| --- | --- | --- | --- | --- | --- | --- |');
   for (const entry of report.plannedEntries) {
-      lines.push(`| \`${entry.fixtureId}\` | ${entry.chat.status} | ${escapeCell(entry.captureReasons.join('; '))} | \`${entry.targets.chatPng.relativePath}\` | \`${entry.targets.chatDomEvidence.relativePath}\` | \`${entry.snippetPath}\` |`);
+      lines.push(`| \`${entry.fixtureId}\` | ${entry.chat.status} | ${escapeCell(entry.captureReasons.join('; '))} | \`${entry.targets.sheetFrameEvidence.relativePath}\` | \`${entry.targets.chatPng.relativePath}\` | \`${entry.targets.chatDomEvidence.relativePath}\` | \`${entry.snippetPath}\` |`);
     }
     lines.push('');
   }
@@ -1262,6 +1268,8 @@ function renderMarkdown(report) {
       lines.push(`- Chat parity diagnostic: ${entry.parity.status || 'unknown'}, mode=${entry.parity.compareMode || 'n/a'}, mismatch=${entry.parity.mismatchPct ?? 'n/a'}%, aligned=${entry.parity.bestAlignedMismatchPct ?? 'n/a'}%, cropSuspect=${entry.parity.actualCropGeometrySuspect ? 'YES' : 'no'}, pixelSuspect=${entry.parity.actualTemplatePixelSuspect ? 'YES' : 'no'}, scaleSuspect=${entry.parity.actualCaptureScaleSuspect ? 'YES' : 'no'}, actualCss=${entry.parity.actualCss || 'n/a'}`);
     }
     lines.push(`- Suggested roll buttons: ${entry.rollButtons.length ? entry.rollButtons.map((name) => `\`${name}\``).join(', ') : 'none detected in payload'}`);
+    lines.push(`- Sheet-frame probe: \`${entry.sheetFrameProbeCommand}\``);
+    lines.push(`- Gated chat capture: \`${entry.chatCaptureCommand}\``);
     lines.push('- Checklist:');
     for (const item of entry.captureChecklist) lines.push(`  - ${item}`);
     lines.push('');

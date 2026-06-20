@@ -1,3 +1,14 @@
+## 2026-06-21 Codex Update - Roll20 chat recapture handoff ordering
+
+Status: DONE/VERIFY_HANDOFF_ORDER. This batch updated the Roll20 recapture plans so every chat recapture handoff now tells agents to prove the character-sheet iframe before capturing chat.
+
+- DONE: `plan:roll20-chat-capture` now includes `sheetFrameEvidence`, `sheetFrameProbeCommand`, and `chatCaptureCommand` per fixture.
+- DONE: The generated chat recapture Markdown table now shows the required `roll20-sandbox-dom-evidence.json` path, and each checklist tells agents to run `probe:roll20-sheet-frame` before `capture:roll20-chat-cdp`.
+- DONE: `handoff:roll20-chat-current` now surfaces the sheet-frame probe command and gated chat capture command for each stale fixture.
+- DONE: `handoff:roll20-upload` upload order now includes sheet-frame probing before root/chat evidence capture.
+- VERIFIED: `node --check` passed for `roll20_chat_capture_plan`, `roll20_chat_current_handoff`, and `roll20_upload_handoff`. `test:roll20-chat-capture-plan`, `handoff:roll20-chat-current`, and `handoff:roll20-upload -- ... official-roll20-AW2E --missing-only` passed.
+- CURRENT STATUS: AW2E and YSHY still need trusted foreground chat recapture; this batch improves the handoff/order and does not add new screenshots.
+
 ## 2026-06-21 Codex Update - Roll20 chat capture requires sheet-frame evidence
 
 Status: DONE/VERIFY_CHAT_CAPTURE_GATE. This batch hardened the actual Roll20 chat capture path so rolltemplate screenshots cannot be captured for an unproven or wrong character-sheet iframe.

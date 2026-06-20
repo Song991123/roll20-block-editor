@@ -347,10 +347,11 @@ function renderMarkdown(report) {
     '2. Upload `sheet.html` with the `HTML` button.',
     '3. Upload `sheet.css` with the `CSS` button.',
     '4. Upload `translation.json` with the `Translation` button, when present.',
-    '5. Capture the loaded sheet viewport as `roll20-sandbox.png` beside the local baseline screenshots.',
-    '6. Prefer a DPR-corrected full sheet-root segment capture and stitch it to `roll20-sandbox-root-full-dpr-corrected.png`.',
-    '7. Click a roll button if available and capture chat as `roll20-chat.png`.',
-    '8. Run the stitch audit, screenshot diff, and status commands listed below.',
+    '5. Run `probe:roll20-sheet-frame` for the fixture and save positive `roll20-sandbox-dom-evidence.json` before trusting root/chat capture.',
+    '6. Capture the loaded sheet viewport as `roll20-sandbox.png` beside the local baseline screenshots.',
+    '7. Prefer a DPR-corrected full sheet-root segment capture and stitch it to `roll20-sandbox-root-full-dpr-corrected.png`.',
+    '8. Click a roll button if available and capture chat as `roll20-chat.png` using `capture:roll20-chat-cdp`; it now requires sheet-frame evidence first.',
+    '9. Run the stitch audit, screenshot diff, and status commands listed below.',
     '',
     '## Payloads',
     '',
@@ -382,6 +383,7 @@ function renderMarkdown(report) {
     lines.push('');
     lines.push(`Stitch manifest: \`${entry.stitchManifest.relativePath}\``);
     lines.push(`Root capture plan: \`${entry.nextRootCapturePlanCommand}\``);
+    lines.push(`Sheet-frame probe: \`corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${path.relative(process.cwd(), report.runDir)} --fixture ${entry.fixtureId}\``);
     lines.push(`Stitch command: \`${entry.nextStitchCommand}\``);
     lines.push(`Audit command: \`${entry.nextAuditCommand}\``);
     lines.push(`Diff command: \`${entry.nextDiffCommand}\``);
