@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Roll20 sandbox settings chat recapture
+
+Status: VERIFY/HOLD_RENDERER. This batch used the dedicated Roll20 Sandbox settings page, not existing real rooms, to refresh actual Roll20 chat evidence.
+
+- DONE/OBSERVED: Opened `https://app.roll20.net/sheetsandbox/settings/21639681`; the page exposes `#settingsform`, `#save-changes-button`, `textarea[name="customcharsheet_json"]`, and Ace `editors.json`.
+- DONE/OBSERVED: The normal Chrome file chooser route is still blocked by extension file access (`fileChooser.setFiles failed: Not allowed`), but the dedicated settings fallback can set plain exported `sheet.json`, update `editors.json`, POST HTML/CSS/translation to `/sheetsandbox/savesheetsettings`, and save the sandbox form.
+- DONE: Reapplied `official-roll20-Les-Oublies` and `official-roll20-AW2E` in the dedicated sandbox only. Editor reload showed matching Roll20 chat templates (`sheet-rolltemplate-classic-roll` / `sheet-rolltemplate-initiative-roll` for Les, `sheet-rolltemplate-aw` for AW2E).
+- DONE: Recaptured AW2E and Les Roll20 chat PNG/DOM sidecars under ignored local reports. `corepack pnpm run diagnose:roll20-chat-current-metrics -- reports\roll20-actual-compare\2026-06-18-state-map-v1` now reports `PASS`, `fixtures=3/3 current`, `missingFields=0`.
+- CURRENT STATUS: `status:roll20-actual` now reports `chatCurrentMetrics=3/3` and `chatCurrentMetricsMissing=0`; this removes the previous AW2E/Les missing-filter-field blocker.
+- STILL BLOCKED: Renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`. Current status is `GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT`, `generatedAuthoritative=NO`, `chatCaptureSuspects=2`, `chatActualCaptureScaleSuspect=1`, `chatActualTemplatePixelSuspect=1`, and `rendererReady=NO`.
+- NEXT P0: Fix the remaining Les chat foreground/crop capture suspicion and then continue chat renderer model work from measured differences, not from broad CSS guesses. Do not claim visual parity.
+
 ## 2026-06-20 Codex Update - Roll20 sandbox snippet recheck
 
 Status: VERIFY/BLOCKED_UPLOAD_APPLICATION. This batch rechecked the live Roll20 dedicated sandbox tab and corrected stale script documentation.

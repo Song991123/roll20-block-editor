@@ -1,3 +1,15 @@
+## 2026-06-20 Roll20 Sandbox Settings Chat Recapture
+
+- Used the logged-in Chrome Roll20 session and opened the dedicated Sandbox settings page at `https://app.roll20.net/sheetsandbox/settings/21639681`.
+- Confirmed the correct settings surface exposes `#settingsform`, `#save-changes-button`, `textarea[name="customcharsheet_json"]`, and Ace `editors.json`. The earlier `/campaigns/settings/21639681` URL is not the right settings path.
+- Retried the normal visible Sandbox Tools file chooser route. It still fails before upload with `fileChooser.setFiles failed: Not allowed`, so file chooser upload remains blocked until Chrome extension file URL access is enabled.
+- Applied `official-roll20-Les-Oublies` and `official-roll20-AW2E` only to the dedicated Sandbox through the settings fallback: POST HTML/CSS/translation to `/sheetsandbox/savesheetsettings`, set the plain exported `sheet.json` in `customcharsheet_json`, update `editors.json`, and click the real save button.
+- After editor reload, Roll20 chat showed matching generated templates: Les produced `sheet-rolltemplate-classic-roll` / `sheet-rolltemplate-initiative-roll`, and AW2E produced `sheet-rolltemplate-aw`.
+- Recaptured ignored local Roll20 chat evidence for AW2E and Les under `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/<fixture>/screenshots/`.
+- Verification: `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run diagnose:roll20-chat-parity -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run diagnose:roll20-chat-current-metrics -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Result: chat current metrics improved to `3/3` with `missingFields=0`. Overall status is still `GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT`, renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`, and `rendererReady=NO`.
+- Boundary: this removes the stale AW2E/Les current-metrics blocker, but it does not prove Roll20 visual parity. Les still has chat foreground/crop suspicion, and broad ChatPane/renderer CSS patches remain blocked.
+
 ## 2026-06-20 Roll20 Sandbox Snippet Recheck
 
 - Rechecked the dedicated `Codex Roll20 Verify | Roll20` tab through the Chrome extension path. The tab is still the Roll20 editor with visible `Sheet Sandbox Tools`, including `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`; no project dev server was running on the usual app/CDP ports.
