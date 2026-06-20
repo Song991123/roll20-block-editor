@@ -1,3 +1,11 @@
+## 2026-06-20 Edit Drag Drift Smoke Coverage
+
+- Extended `scripts/edit_flow_browser_smoke.mjs` so the real pointer-drag slice records moved element position at pointer-up, after one animation frame, after 50ms, and after 250ms.
+- Current synthetic edit-flow result: `leftDrift: 0`, `topDrift: 0`; the small synthetic drag path stays visually stable after drop.
+- Interpretation: the user-visible rollback/lag is likely tied to larger imported sheets, heavier emit/remount cost, or specific fixture structure rather than the basic synthetic drag path.
+- Verification: `corepack pnpm run smoke:edit-flow`.
+- Claim boundary: regression coverage only. No production edit behavior changed in this batch.
+
 ## 2026-06-20 Edit Surface Copy Cleanup
 
 - Cleaned visible wording in the edit surface: placement mode labels, layer panel empty/search text, container/drop badges, preview width/fit controls, and widget-gallery add feedback.

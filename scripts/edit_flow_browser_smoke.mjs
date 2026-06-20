@@ -246,7 +246,36 @@ async function main() {
   await page.mouse.move(sectionInfo.cx + 20, sectionInfo.cy + 10, { steps: 2 });
   await page.mouse.move(sectionInfo.cx + dragDelta.x, sectionInfo.cy + dragDelta.y, { steps: 8 });
   await page.mouse.up();
-  await page.waitForTimeout(250);
+  const sectionMoveTimeline = await page.evaluate(async (blockId) => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const escaped = CSS.escape(blockId);
+    const samples = [];
+    const sample = (label) => {
+      const el = host?.shadowRoot?.querySelector(`div[data-r20-block-id="${escaped}"]`);
+      const computed = el ? getComputedStyle(el) : null;
+      samples.push({
+        label,
+        left: computed ? Math.round(Number.parseFloat(computed.left)) : null,
+        top: computed ? Math.round(Number.parseFloat(computed.top)) : null,
+        transform: el?.style.transform ?? null,
+      });
+    };
+    sample('after-pointerup');
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    sample('after-1raf');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    sample('after-50ms');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    sample('after-250ms');
+    const numeric = samples.filter((s) => typeof s.left === 'number' && typeof s.top === 'number');
+    const lefts = numeric.map((s) => s.left);
+    const tops = numeric.map((s) => s.top);
+    return {
+      samples,
+      leftDrift: lefts.length ? Math.max(...lefts) - Math.min(...lefts) : null,
+      topDrift: tops.length ? Math.max(...tops) - Math.min(...tops) : null,
+    };
+  }, sectionInfo.blockId);
 
   const movedSectionInfo = await page.evaluate((blockId) => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
@@ -788,6 +817,7 @@ async function main() {
   results.tests.realDrag = {
     c1,
     sectionInfo,
+    sectionMoveTimeline,
     movedSectionInfo,
     c2Indicator,
     c2,
@@ -820,6 +850,8 @@ async function main() {
     movedSectionInfo.emittedLeft === movedSectionInfo.computedLeft &&
     movedSectionInfo.emittedTop === movedSectionInfo.computedTop &&
     movedSectionInfo.emittedHasAbsolute === true &&
+    sectionMoveTimeline.leftDrift <= 2 &&
+    sectionMoveTimeline.topDrift <= 2 &&
     c2Indicator.dispatched === true &&
     c2Indicator.hostDragging === '1' &&
     c2Indicator.hostDropMode === 'inside' &&

@@ -1,3 +1,12 @@
+## 2026-06-20 Codex Update - edit drag drift smoke coverage
+
+Status: VERIFY. This adds a regression guard for drag rollback; it does not prove large imported sheets are fast enough yet.
+
+- DONE: Extended `smoke:edit-flow` to sample moved element position immediately after pointer-up, after one animation frame, after 50ms, and after 250ms.
+- RESULT: Current synthetic edit-flow drag has `0px` left/top drift across those samples, so the small synthetic path does not reproduce the user-visible rollback.
+- VERIFIED: `corepack pnpm run smoke:edit-flow` passed with the new timeline guard.
+- STILL TODO P0: Run the same timing-style probe against large imported private fixtures in ignored local reports, because the likely remaining issue is heavy DOM/emit/remount cost rather than the basic synthetic drag path.
+
 ## 2026-06-20 Codex Update - edit surface copy cleanup
 
 Status: VERIFY. This cleans visible edit/preview UI wording; it does not change renderer parity, Roll20 upload evidence, or the Figma-like editing model.
