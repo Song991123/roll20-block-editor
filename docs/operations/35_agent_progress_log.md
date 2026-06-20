@@ -1,3 +1,13 @@
+## 2026-06-21 Roll20 Chrome Observation Capture Boundary
+
+- Used the logged-in Chrome Roll20 tab `Codex Roll20 Verify | Roll20` at `https://app.roll20.net/editor`; no existing campaign room settings were modified.
+- The page initially had a visible `Your session needs to be refreshed` state and a tiny `267x82` CSS viewport. Clicking the page's own `Reload` control restored the normal editor viewport to about `1843x968` CSS px.
+- Read-only DOM/hit-test checks confirmed Les-Oublies chat template structure is present in the Roll20 page: two `.sheet-rolltemplate-classic-roll` cards and one `.sheet-rolltemplate-initiative-roll`, with `elementFromPoint` hitting actual `sheet-template-*` nodes at measured coordinates.
+- Attempted Chrome extension screenshots as ignored local observations only. Raw CSS-coordinate crop captured Sandbox Tools/VTT UI instead of the rolltemplate, and a browser-zoom corrected crop still missed the template. These images are not parity proof.
+- Attempted the tab-scoped CDP capability for `Page.captureScreenshot`, but it was unavailable while Browser Use was resolving a paused document response. This leaves the trusted capture path as the normal CDP endpoint workflow or a future verified extension screenshot adapter.
+- Local ignored evidence path: `reports/roll20-actual-compare/2026-06-18-state-map-v1/chrome-extension-roll20-observation/official-roll20-Les-Oublies/`.
+- Boundary: this is useful live Roll20 diagnosis, but it does not clear `chatActualTemplatePixelSuspect` and does not unlock production ChatPane renderer tuning.
+
 ## 2026-06-20 Roll20 Sandbox Settings Chat Recapture
 
 - Used the logged-in Chrome Roll20 session and opened the dedicated Sandbox settings page at `https://app.roll20.net/sheetsandbox/settings/21639681`.

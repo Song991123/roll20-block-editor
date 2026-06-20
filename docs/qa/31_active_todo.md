@@ -1,3 +1,14 @@
+## 2026-06-21 Codex Update - Roll20 Chrome observation capture boundary
+
+Status: VERIFY/BLOCKED_CAPTURE_PATH. This batch observed the logged-in Roll20 Sandbox/editor tab through the Chrome extension path; it does not prove Roll20 visual parity and does not change product rendering.
+
+- OBSERVED: The open Chrome Roll20 tab is `Codex Roll20 Verify | Roll20` at `https://app.roll20.net/editor`. After clicking the visible Roll20 `Reload` session-refresh control, the tab returned to a normal `1843x968` CSS viewport with the dedicated Sandbox editor visible.
+- OBSERVED: Read-only DOM/hit-test evidence found visible Les-Oublies chat templates in Roll20: two `.sheet-rolltemplate-classic-roll` cards and one `.sheet-rolltemplate-initiative-roll`; `elementFromPoint` over the measured card coordinates hit `.sheet-template-header` / `.sheet-template-first-col`.
+- BLOCKED: Chrome extension `tab.screenshot({ clip })` did not produce trustworthy template pixels. Raw DOM coordinates captured `Sheet Sandbox Tools` / VTT UI instead of the rolltemplate, and a browser-zoom-corrected clip still missed the template. These PNGs remain ignored local evidence only and must not be promoted as Roll20 parity proof.
+- BLOCKED: The tab-scoped CDP capability could not run `Page.captureScreenshot`; it reported that raw CDP is unavailable while Browser Use is resolving a paused document response. The normal `127.0.0.1:9222` CDP endpoint still remains the required trusted capture path unless a dedicated extension screenshot adapter is added and verified.
+- LOCAL EVIDENCE: Ignored observations were written under `reports/roll20-actual-compare/2026-06-18-state-map-v1/chrome-extension-roll20-observation/official-roll20-Les-Oublies/`.
+- NEXT P0: Keep `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH` until Les-Oublies has a same-action trusted foreground chat capture. Prefer a CDP-enabled logged-in Roll20 Sandbox/test-room tab; alternatively implement and verify a Chrome-extension full-screenshot crop adapter that accounts for Roll20 zoom/coordinate transforms and overlapping Sandbox Tools.
+
 ## 2026-06-20 Codex Update - product UI copy regression guard
 
 Status: DONE/VERIFY. This batch adds a guard against broken Korean/mojibake product UI copy; it does not claim Roll20 visual parity.
