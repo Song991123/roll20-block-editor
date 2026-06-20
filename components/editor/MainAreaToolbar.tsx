@@ -1,5 +1,6 @@
 'use client';
 
+import { Blocks, Eye, PanelsLeftRight, PencilRuler, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useUiStore, type EditSubmode, type MainMode } from '@/lib/stores/uiStore';
 import {
@@ -12,13 +13,13 @@ import {
 const MODES: Array<{
   key: MainMode;
   label: string;
-  symbol: string;
+  Icon: LucideIcon;
   tooltip: string;
 }> = [
-  { key: 'edit', label: '편집', symbol: '✥', tooltip: '시트 위에서 요소를 직접 선택하고 배치합니다.' },
-  { key: 'split', label: '분할', symbol: '▥', tooltip: '블록 작업공간과 로컬 미리보기를 함께 봅니다.' },
-  { key: 'assemble', label: '블록', symbol: '▤', tooltip: '블록 작업공간만 넓게 봅니다.' },
-  { key: 'preview', label: '미리보기', symbol: '◉', tooltip: 'Roll20 형식 로컬 미리보기만 봅니다.' },
+  { key: 'edit', label: '편집', Icon: PencilRuler, tooltip: '시트 위에서 요소를 직접 선택하고 배치합니다.' },
+  { key: 'split', label: '분할', Icon: PanelsLeftRight, tooltip: '블록 작업공간과 로컬 미리보기를 함께 봅니다.' },
+  { key: 'assemble', label: '블록', Icon: Blocks, tooltip: '블록 작업공간만 넓게 봅니다.' },
+  { key: 'preview', label: '미리보기', Icon: Eye, tooltip: 'Roll20 형식 로컬 미리보기만 봅니다.' },
 ];
 
 const SUBMODES: Array<{ key: EditSubmode; label: string; tooltip: string }> = [
@@ -43,6 +44,7 @@ export default function MainAreaToolbar() {
         >
           {MODES.map((mode) => {
             const isActive = mainMode === mode.key;
+            const Icon = mode.Icon;
             return (
               <Tooltip key={mode.key}>
                 <TooltipTrigger asChild>
@@ -59,9 +61,7 @@ export default function MainAreaToolbar() {
                     )}
                     data-testid={`main-mode-${mode.key}`}
                   >
-                    <span aria-hidden="true" className="text-[13px] leading-none">
-                      {mode.symbol}
-                    </span>
+                    <Icon aria-hidden="true" className="h-3.5 w-3.5" />
                     {mode.label}
                   </button>
                 </TooltipTrigger>
