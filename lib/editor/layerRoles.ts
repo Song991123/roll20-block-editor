@@ -60,7 +60,7 @@ const ROLE_STYLES: Record<LayerRoleKind, Omit<LayerRole, 'kind'>> = {
     defaultDropMode: 'absolute',
   },
   runtime: {
-    label: '런타임',
+    label: '스크립트',
     icon: 'JS',
     className: 'border-zinc-500/60 bg-zinc-500/10 text-zinc-300',
     canReceiveChildren: false,

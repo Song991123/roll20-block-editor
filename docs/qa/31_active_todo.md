@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - edit surface copy cleanup
+
+Status: VERIFY. This cleans visible edit/preview UI wording; it does not change renderer parity, Roll20 upload evidence, or the Figma-like editing model.
+
+- DONE: Normalized `EditCanvas` toolbar/layer-panel copy so flow/free placement, layer search, container badges, and empty states use readable wording.
+- DONE: Adjusted `PreviewToolbar` width/fit labels and `WidgetGallery` add/toast copy so the editor surface is less translation-like.
+- DONE: Kept the existing layer-role taxonomy (`frame`, `flow`, `table`, `control`, `action`, `text`, `media`, `runtime`, `other`) intact while clarifying the runtime label as script.
+- VERIFIED: `corepack pnpm run lint` passed after the copy cleanup.
+- STILL TODO P0: Continue Roll20 actual upload/recapture work for AW2E and Les-Oublies; this UI cleanup does not reduce `HOLD_PRODUCTION_RENDERER_PATCH`.
+- STILL TODO P0: Continue edit-mode semantics work: same rendered preview/edit surface, overlay-only editing, flow-aware before/after/inside drop zones, and faster HTML/CSS sync.
+
 ## 2026-06-20 Codex Update - sandbox upload activation guard
 
 Status: VERIFY. This hardens the Roll20 Sandbox upload handoff; it does not recapture AW2E/Les-Oublies chat evidence and does not prove visual parity.

@@ -1,3 +1,10 @@
+## 2026-06-20 Edit Surface Copy Cleanup
+
+- Cleaned visible wording in the edit surface: placement mode labels, layer panel empty/search text, container/drop badges, preview width/fit controls, and widget-gallery add feedback.
+- Kept this batch intentionally UI-copy-only. It does not change renderer CSS, Roll20 actual evidence, upload flow, or edit synchronization semantics.
+- Verification: `corepack pnpm run lint`.
+- Claim boundary: readable editor UI only. Roll20 visual parity and the Figma-like editing model remain active P0 work.
+
 ## 2026-06-20 Sandbox Upload Activation Guard
 
 - Added generic activation-hint extraction to `scripts/roll20_upload_snippet.mjs` for Roll20 Sandbox upload snippets: expected rolltemplate classes, roll button names, attr names, and visible text tokens are derived from local payloads.

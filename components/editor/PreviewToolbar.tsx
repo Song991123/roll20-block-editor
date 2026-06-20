@@ -56,7 +56,7 @@ export default function PreviewToolbar() {
         data-testid="preview-toolbar"
       >
         <label className="inline-flex h-8 items-center gap-1.5 rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-[11px] text-muted-foreground">
-          <span>폭</span>
+          <span>가로</span>
           <input
             type="text"
             inputMode="numeric"
@@ -107,14 +107,14 @@ export default function PreviewToolbar() {
               size="sm"
               className="h-8 gap-1.5 px-2.5 text-[11px]"
               onClick={() => setZoom('fit')}
-              aria-label="화면에 맞춤"
+              aria-label="화면에 맞추기"
               aria-pressed={zoom === 'fit'}
             >
               <Maximize2 className="h-3.5 w-3.5" />
               <span>맞춤</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top">현재 창에 맞춰 보기</TooltipContent>
+          <TooltipContent side="top">현재 창 안에 시트 전체를 맞춰 보기</TooltipContent>
         </Tooltip>
 
         <span className="min-w-[52px] text-center font-mono tabular-nums text-muted-foreground">

@@ -30,9 +30,9 @@ type CanvasDropTarget = {
 };
 
 function formatDropModeLabel(mode: LayerDropMode): string {
-  if (mode === 'inside') return '안에 넣음';
-  if (mode === 'before') return '앞에 넣음';
-  return '뒤에 넣음';
+  if (mode === 'inside') return '안에 넣기';
+  if (mode === 'before') return '앞에 넣기';
+  return '뒤에 넣기';
 }
 
 type DragOrigin = {
@@ -476,7 +476,7 @@ export default function EditCanvas() {
               ? 'border-[var(--color-primary,#2563eb)] bg-[var(--color-primary,#2563eb)] text-white'
               : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
           )}
-          title="8px 단위로 맞추기"
+          title="8px 격자에 맞추기"
           data-testid="edit-canvas-snap-toggle"
         >
           snap {snapEnabled ? '8px' : 'off'}
@@ -512,7 +512,7 @@ export default function EditCanvas() {
           </button>
         </div>
         <div className="ml-auto text-[10px] text-muted-foreground tabular-nums">
-          {lastMove ?? '요소를 끌어 놓으면 HTML/CSS 위치 값에 반영돼요.'}
+          {lastMove ?? '요소를 끌어 놓으면 HTML/CSS 위치 값에 반영됩니다.'}
         </div>
       </div>
 
@@ -533,7 +533,7 @@ export default function EditCanvas() {
               className="flex min-h-[420px] items-center justify-center rounded border border-dashed border-border bg-[var(--bg-elevated)] text-sm text-muted-foreground"
               data-testid="edit-canvas-empty"
             >
-              HTML/CSS를 불러오거나 요소를 놓으면 여기에서 바로 편집할 수 있어요.
+              HTML/CSS를 불러오거나 요소를 놓으면 여기에서 바로 편집할 수 있습니다.
             </div>
           ) : (
             <div
