@@ -1,3 +1,15 @@
+## 2026-06-21 Codex Update - Roll20 chat capture requires sheet-frame evidence
+
+Status: DONE/VERIFY_CHAT_CAPTURE_GATE. This batch hardened the actual Roll20 chat capture path so rolltemplate screenshots cannot be captured for an unproven or wrong character-sheet iframe.
+
+- DONE: `capture:roll20-chat-cdp` now requires positive `roll20-sandbox-dom-evidence.json` from `probe:roll20-sheet-frame` before it clicks a roll button or captures `roll20-chat.png`.
+- DONE: The gate rejects missing, malformed, wrong-fixture, non-`VISIBLE_MATCH`, or generic-root-only sheet evidence. It requires expected fixture markers such as generated `attr_`, `roll_`, or visible sheet text tokens.
+- DONE: Successful chat sidecars now include a summary of the sheet-frame evidence used for that capture.
+- VERIFIED: `node --check scripts\roll20_chat_cdp_capture.mjs`, `corepack pnpm run test:roll20-chat-cdp-readiness`, `corepack pnpm run capture:roll20-chat-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixture official-roll20-AW2E --plan-only`, `corepack pnpm run test:roll20-sheet-frame-probe`, `corepack pnpm run test:roll20-upload-snippet`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed.
+- OBSERVED: `capture:roll20-chat-cdp --dry-run` still reports `BLOCKED_CDP_ENDPOINT` because `127.0.0.1:9222` is not listening in the current desktop state.
+- VERIFY NEXT: Start/attach a CDP-enabled Roll20 tab, run `probe:roll20-sheet-frame`, then rerun `capture:roll20-chat-cdp` for AW2E and YSHY.
+- CLAIM BOUNDARY: This prevents false chat capture. It does not add new trusted `roll20-chat.png` evidence and does not change renderer readiness.
+
 ## 2026-06-21 Codex Update - Roll20 sheet frame DOM evidence tool
 
 Status: VERIFY/CHAT_RECAPTURE_STILL_NEEDED. This batch added a reusable frame-aware CDP probe for the Roll20 character-sheet iframe. It does not add visual parity or trusted chat screenshots.

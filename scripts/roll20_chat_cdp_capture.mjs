@@ -43,6 +43,7 @@ const screenshotsDir = path.join(RUN_DIR, 'local-baseline', FIXTURE_ID, 'screens
 const snippetPath = path.join(RUN_DIR, 'roll20-chat-capture-plan', 'snippets', `${FIXTURE_ID}-chat-dom-probe-snippet.js`);
 const chatPngPath = path.join(screenshotsDir, 'roll20-chat.png');
 const sidecarPath = path.join(screenshotsDir, 'roll20-chat-dom-evidence.json');
+const sheetFrameEvidencePath = path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json');
 
 main().catch((error) => {
   const message = String(error?.message ?? error);
@@ -95,11 +96,14 @@ async function main() {
       console.log(`frames=${summary.frames.length}`);
       console.log(`rollButton=${ROLL_BUTTON || '(none)'}`);
       console.log(`snippet=${rel(snippetPath)}`);
+      console.log(`sheetFrameEvidence=${rel(sheetFrameEvidencePath)}`);
       console.log(`targets=${rel(chatPngPath)}, ${rel(sidecarPath)}`);
       if (!readiness.ready) console.log(`next=${readiness.nextAction}`);
       return;
     }
     assertCaptureReadyPage(readiness);
+    const sheetFrameEvidence = await readSheetFrameEvidence();
+    validateSheetFrameEvidence(sheetFrameEvidence);
 
     if (!SKIP_CLICK) {
       const clicked = await clickRollButton(page, ROLL_BUTTON);
@@ -138,6 +142,7 @@ async function main() {
         screenshotClipApplied: pageClip,
         screenshotCssClip: clip,
         captureFrame: frameInfo,
+        sheetFrameEvidence: summarizeSheetFrameEvidence(sheetFrameEvidence),
         screenshotPixelStats: pixelStats,
       },
       screenshotClipApplied: pageClip,
@@ -365,12 +370,108 @@ function runReadinessSelfTest() {
   const failures = [
     ...selfTestRoll20Readiness(),
     ...selfTestForegroundGuard(),
+    ...selfTestSheetFrameEvidenceGuard(),
   ];
   if (failures.length) {
     console.error(`ROLL20 CHAT CDP CAPTURE READINESS_SELF_TEST FAIL ${JSON.stringify(failures, null, 2)}`);
     process.exit(1);
   }
   console.log('ROLL20 CHAT CDP CAPTURE READINESS_SELF_TEST PASS');
+}
+
+async function readSheetFrameEvidence() {
+  try {
+    return JSON.parse(await readFile(sheetFrameEvidencePath, 'utf8'));
+  } catch (error) {
+    const message = String(error?.message ?? error);
+    const missing = /ENOENT|no such file/i.test(message);
+    throw new Error([
+      'ROLL20 CHAT CDP CAPTURE BLOCKED_SHEET_FRAME_EVIDENCE',
+      missing
+        ? `Missing sheet-frame DOM evidence: ${rel(sheetFrameEvidencePath)}`
+        : `Could not read sheet-frame DOM evidence: ${rel(sheetFrameEvidencePath)} (${message})`,
+      `Run: corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}`,
+      'Then open the same loaded Roll20 character sheet and rerun this chat capture.',
+    ].join('\n'));
+  }
+}
+
+function validateSheetFrameEvidence(evidence) {
+  const result = classifySheetFrameEvidence(evidence, FIXTURE_ID);
+  if (result.ok) return;
+  throw new Error([
+    'ROLL20 CHAT CDP CAPTURE BLOCKED_SHEET_FRAME_EVIDENCE',
+    result.note,
+    `Evidence file: ${rel(sheetFrameEvidencePath)}`,
+    `Run: corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}`,
+  ].join('\n'));
+}
+
+function classifySheetFrameEvidence(evidence, expectedFixture = FIXTURE_ID) {
+  if (!evidence || typeof evidence !== 'object') return { ok: false, note: 'sheet-frame evidence is empty or malformed' };
+  if (expectedFixture && evidence.fixtureId && evidence.fixtureId !== expectedFixture) {
+    return { ok: false, note: `sheet-frame evidence fixture mismatch: expected ${expectedFixture}, got ${evidence.fixtureId}` };
+  }
+  if (evidence.status && evidence.status !== 'VISIBLE_MATCH') {
+    return { ok: false, note: `sheet-frame evidence status is ${evidence.status}, not VISIBLE_MATCH` };
+  }
+  const sheetHitCount = Number(evidence.sheetHitCount ?? 0);
+  const expectedMarkers = evidence.textMarkers
+    ? Boolean(evidence.textMarkers.expectedSheetText || evidence.textMarkers.expectedAttr || evidence.textMarkers.expectedRollButton)
+    : false;
+  const expectedHits = (evidence.hits?.rollButtonNames?.length || 0)
+    + (evidence.hits?.attrNames?.length || 0)
+    + (evidence.hits?.textTokens?.length || 0);
+  if (sheetHitCount <= 0 && expectedHits <= 0 && !expectedMarkers) {
+    return {
+      ok: false,
+      note: 'sheet-frame evidence does not contain expected fixture markers; generic root/body evidence is not enough before chat capture',
+    };
+  }
+  return {
+    ok: true,
+    note: `sheet-frame evidence matches ${FIXTURE_ID} with ${Math.max(sheetHitCount, expectedHits)} expected marker hits`,
+  };
+}
+
+function summarizeSheetFrameEvidence(evidence) {
+  return {
+    file: rel(sheetFrameEvidencePath),
+    fixtureId: evidence?.fixtureId ?? null,
+    status: evidence?.status ?? null,
+    generatedAt: evidence?.generatedAt ?? null,
+    frame: evidence?.frame ?? null,
+    sheetHitCount: evidence?.sheetHitCount ?? null,
+    rootCount: evidence?.rootCount ?? evidence?.roots ?? null,
+    attrCount: evidence?.counts?.attrCount ?? null,
+    rollButtonCount: evidence?.counts?.rollButtonCount ?? null,
+  };
+}
+
+function selfTestSheetFrameEvidenceGuard() {
+  const failures = [];
+  const valid = classifySheetFrameEvidence({
+    fixtureId: FIXTURE_ID || 'fixture',
+    status: 'VISIBLE_MATCH',
+    sheetHitCount: 2,
+    hits: { rollButtonNames: ['roll_a'], attrNames: ['attr_a'], textTokens: [] },
+  }, FIXTURE_ID || 'fixture');
+  if (!valid.ok) failures.push(`valid sheet-frame evidence rejected: ${valid.note}`);
+  const generic = classifySheetFrameEvidence({
+    fixtureId: FIXTURE_ID || 'fixture',
+    status: 'VISIBLE_MATCH',
+    rootCount: 4,
+    bodyLen: 1000,
+    hits: { rollButtonNames: [], attrNames: [], textTokens: [] },
+  }, FIXTURE_ID || 'fixture');
+  if (generic.ok) failures.push('generic root/body evidence was accepted as sheet-frame proof');
+  const wrongFixture = classifySheetFrameEvidence({
+    fixtureId: 'other-fixture',
+    status: 'VISIBLE_MATCH',
+    sheetHitCount: 2,
+  }, FIXTURE_ID || 'fixture');
+  if (wrongFixture.ok) failures.push('wrong fixture sheet-frame evidence was accepted');
+  return failures;
 }
 
 async function clickRollButton(page, requestedName) {

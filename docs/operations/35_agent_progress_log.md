@@ -1,3 +1,11 @@
+## 2026-06-21 Roll20 Chat Capture Sheet-Frame Gate
+
+- Hardened `scripts/roll20_chat_cdp_capture.mjs` so actual chat capture now requires positive `roll20-sandbox-dom-evidence.json` from `probe:roll20-sheet-frame` before clicking a roll button or saving `roll20-chat.png`.
+- The gate rejects missing evidence, wrong fixture ids, non-`VISIBLE_MATCH` statuses, and generic root/body-only evidence that does not contain expected generated sheet markers.
+- Successful chat sidecars now record a summary of the sheet-frame evidence used for that capture, tying future `roll20-chat.png` evidence back to the loaded character-sheet iframe.
+- Verification: `node --check scripts\roll20_chat_cdp_capture.mjs`, `test:roll20-chat-cdp-readiness`, and `capture:roll20-chat-cdp --plan-only` for AW2E passed.
+- Current environment still has no CDP endpoint at `127.0.0.1:9222`; dry-run correctly reports `BLOCKED_CDP_ENDPOINT`.
+
 ## 2026-06-21 Roll20 Sheet Frame DOM Evidence Tool
 
 - Added `scripts/roll20_sheet_frame_probe.mjs` and package aliases `probe:roll20-sheet-frame` / `test:roll20-sheet-frame-probe`.
