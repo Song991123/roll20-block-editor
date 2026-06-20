@@ -158,7 +158,7 @@ function extractTemplate(template, options = {}) {
     },
     table: extractElement(table),
     caption: caption ? extractElement(caption) : null,
-    tableStructure: extractTableStructure(template.tableStructure),
+    tableStructure: extractTableStructure(template.tableStructure, table, template),
     rows: (template.rowMetrics ?? []).map((row) => ({
       index: row.index,
       text: row.text ?? '',
@@ -211,18 +211,23 @@ function extractElement(element) {
   };
 }
 
-function extractTableStructure(structure) {
-  if (!structure) return null;
+function extractTableStructure(structure, fallbackTable = null, fallbackTemplate = null) {
+  const resolved = structure?.table?.boxMetrics
+    ? structure
+    : synthesizeTableStructureFromLegacyEvidence(structure, fallbackTable, fallbackTemplate);
+  if (!resolved) return null;
   return {
+    source: resolved.source ?? 'tableStructure',
+    table: resolved.table ? extractElement(resolved.table) : null,
     textProfile: {
-      textLength: numberOrNull(structure.textProfile?.textLength) ?? 0,
-      tokenCount: numberOrNull(structure.textProfile?.tokenCount) ?? 0,
-      longestToken: structure.textProfile?.longestToken ?? '',
-      longestTokenLength: numberOrNull(structure.textProfile?.longestTokenLength) ?? 0,
+      textLength: numberOrNull(resolved.textProfile?.textLength) ?? 0,
+      tokenCount: numberOrNull(resolved.textProfile?.tokenCount) ?? 0,
+      longestToken: resolved.textProfile?.longestToken ?? '',
+      longestTokenLength: numberOrNull(resolved.textProfile?.longestTokenLength) ?? 0,
     },
-    columnGroupCount: Array.isArray(structure.columnGroups) ? structure.columnGroups.length : 0,
-    columnCount: Array.isArray(structure.columns) ? structure.columns.length : 0,
-    columns: (structure.columns ?? []).map((column) => ({
+    columnGroupCount: Array.isArray(resolved.columnGroups) ? resolved.columnGroups.length : 0,
+    columnCount: Array.isArray(resolved.columns) ? resolved.columns.length : 0,
+    columns: (resolved.columns ?? []).map((column) => ({
       index: column.index,
       span: column.span ?? '',
       widthAttr: column.widthAttr ?? '',
@@ -231,6 +236,25 @@ function extractTableStructure(structure) {
       computedWidth: px(column.element?.computedStyle?.width),
       display: normalizeCssValue(column.element?.computedStyle?.display),
     })),
+  };
+}
+
+function synthesizeTableStructureFromLegacyEvidence(structure, fallbackTable, fallbackTemplate) {
+  if (!fallbackTable?.boxMetrics) return null;
+  const text = String(fallbackTable.text ?? fallbackTemplate?.text ?? '').replace(/\s+/g, ' ').trim();
+  const tokens = text.split(/\s+/).filter(Boolean);
+  const longestToken = tokens.reduce((best, token) => (token.length > best.length ? token : best), '');
+  return {
+    source: structure ? 'tableStructure-with-legacy-table' : 'legacy-computedChildren',
+    table: fallbackTable,
+    textProfile: structure?.textProfile ?? {
+      textLength: text.length,
+      tokenCount: tokens.length,
+      longestToken: longestToken.slice(0, 120),
+      longestTokenLength: longestToken.length,
+    },
+    columnGroups: structure?.columnGroups ?? [],
+    columns: structure?.columns ?? [],
   };
 }
 
@@ -347,6 +371,8 @@ function compareTableStructure(localStructure, actualStructure) {
     (localStructure?.textProfile?.textLength ?? 0) === (actualStructure?.textProfile?.textLength ?? 0);
   return {
     status: 'COMPARED_TABLE_STRUCTURE',
+    localSource: localStructure?.source ?? '',
+    actualSource: actualStructure?.source ?? '',
     localColumnGroups: localStructure?.columnGroupCount ?? 0,
     actualColumnGroups: actualStructure?.columnGroupCount ?? 0,
     localColumns: localStructure?.columnCount ?? 0,

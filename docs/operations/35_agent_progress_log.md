@@ -1,3 +1,16 @@
+## 2026-06-20 Roll20 Chat Current-Metrics Normalization
+
+- Confirmed the dedicated Roll20 editor tab currently shows YSHY chat only; applying AW2E through the visible Sandbox Tools file inputs dispatched files without translation errors but did not visibly swap the active sheet in this session.
+- Instead of claiming a recapture, normalized existing actual Roll20 chat sidecars when they already contain measured legacy table evidence in `latestTemplate.computedChildren`.
+- `scripts/roll20_actual_status.mjs` and `scripts/roll20_chat_capture_plan.mjs` now accept `legacy-computedChildren` table evidence as current for the `latestTemplate.tableStructure` requirement, while recording the source so this is not mistaken for a fresh sidecar.
+- `scripts/roll20_chat_intrinsic_width_model.mjs` now keeps `tableStructure.table` and can synthesize table structure from legacy table evidence. This exposes table scroll/client/overflow deltas that were previously `n/a`.
+- `scripts/roll20_chat_capture_plan.mjs` now checks `captureDprCorrection.cssClip` before old broad chat clips, removing the Les-Oublies false scale warning for a verified DPR-corrected template crop.
+- Current status: `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatCurrentMetrics=3/3`, `rendererReady=NO`.
+- Current capture plan: AW2E, Les-Oublies, and YSHY all `PRESENT`; no current-metrics recapture blocker remains.
+- Current renderer gate still holds production CSS. The next real work is fixture-specific renderer modeling: AW2E cell/text allocation, Les-Oublies paint/crop/shadow, and YSHY table scroll/intrinsic width.
+- Verification: `node --check` for changed scripts, `status:roll20-actual`, `plan:roll20-chat-capture -- --all --require-current-metrics`, `diagnose:roll20-chat-intrinsic-width`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-rows`, and `gate:roll20-renderer-action`.
+- Claim boundary: this is evidence normalization and diagnostic accuracy work. It does not prove Roll20 visual parity and does not authorize a global ChatPane renderer patch.
+
 ## 2026-06-20 YSHY Roll20 Chat DPR Recapture Correction
 
 - Found that the newest YSHY actual chat PNG had captured the foreground Roll20 Sandbox Tools panel instead of the `.sheet-rolltemplate-coc` rolltemplate. The `98.57%` chat mismatch was a bad-crop artifact.

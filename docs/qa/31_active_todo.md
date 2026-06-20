@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - Roll20 chat current-metrics normalization
+
+Status: PARTIAL. This removes stale-evidence false blockers and exposes the real renderer work; it does not solve chat visual parity.
+
+- DONE: `status:roll20-actual` and `plan:roll20-chat-capture` can now treat legacy actual Roll20 sidecars as current when `latestTemplate.computedChildren` already contains measured table `boxMetrics` and style evidence. The normalized field is marked as `legacy-computedChildren`, not as a fresh recapture.
+- DONE: `diagnose:roll20-chat-intrinsic-width` now preserves `tableStructure.table` instead of dropping it, so table `scrollWidth/clientWidth/overflow` deltas are available.
+- DONE: `plan:roll20-chat-capture` now uses `captureDprCorrection.cssClip` when judging screenshot scale. This removes the Les-Oublies false `SCALE_OR_FORMAT_SUSPECT` warning for its DPR-corrected template crop.
+- RESULT: `chatCurrentMetrics` moved from `1/3` to `3/3`; `chatCurrentMetricsMissing=0`; `chatCaptureSuspects=0`; capture plan reports AW2E, Les-Oublies, and YSHY as `PRESENT`.
+- RESULT: Renderer action still correctly stays `HOLD_PRODUCTION_RENDERER_PATCH`; current blockers are now true renderer/model blockers, not stale evidence blockers.
+- RESULT: Intrinsic model is sharper: AW2E table `scrollDelta=+16px`, Les intrinsic width remains secondary, and YSHY is now `TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED` with `scrollDelta=-24px`.
+- VERIFIED: `node --check` for changed scripts, `status:roll20-actual`, `plan:roll20-chat-capture -- --all --require-current-metrics`, `diagnose:roll20-chat-intrinsic-width`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-rows`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build narrow renderer diagnostics/patch candidates from the now-current evidence: AW2E exact cell/text allocation, Les-Oublies shadow/border/crop paint, and YSHY table scroll/intrinsic width. Do not ship a global ChatPane CSS patch.
+
 ## 2026-06-20 Codex Update - YSHY Roll20 chat DPR recapture corrected
 
 Status: PARTIAL. This fixes a bad evidence capture and keeps renderer CSS blocked; it does not solve Roll20 visual parity.

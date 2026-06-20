@@ -513,10 +513,12 @@ function validateCurrentChatMetrics(fixtureId, domEvidence, file) {
     ?? [...(domEvidence.rolltemplates ?? [])].reverse().find((item) => item?.rect?.width)
     ?? null;
   const table = findTemplateChild(template, 'table');
+  const hasTableStructure = Boolean(template?.tableStructure?.table?.boxMetrics) ||
+    Boolean(synthesizeTableStructure(template, table)?.table?.boxMetrics);
   const missing = [];
   if (!template?.computedStyle) missing.push('latestTemplate.computedStyle');
   if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) missing.push('latestTemplate.rowMetrics');
-  if (!template?.tableStructure?.table?.boxMetrics) missing.push('latestTemplate.tableStructure');
+  if (!hasTableStructure) missing.push('latestTemplate.tableStructure');
   if (!table?.computedStyle) missing.push('table.computedStyle');
   if (!table?.boxMetrics) missing.push('table.boxMetrics');
   if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');
@@ -530,9 +532,12 @@ function validateCurrentChatMetrics(fixtureId, domEvidence, file) {
     file: rel(file),
     missing,
     templateClass: template?.className ?? '',
+    tableStructureSource: template?.tableStructure?.table?.boxMetrics ? 'latestTemplate.tableStructure' : (hasTableStructure ? 'legacy-computedChildren' : ''),
     note: missing.length
       ? `Roll20 chat DOM sidecar predates current row/typography probe fields: missing ${missing.join(', ')}`
-      : 'Roll20 chat DOM sidecar includes current row/typography metrics',
+      : hasTableStructure && !template?.tableStructure?.table?.boxMetrics
+        ? 'Roll20 chat DOM sidecar includes current row/typography metrics; tableStructure is synthesized from legacy computedChildren table evidence'
+        : 'Roll20 chat DOM sidecar includes current row/typography metrics',
   };
 }
 
@@ -545,6 +550,26 @@ function hasTextRasterizationFields(style) {
 function findTemplateChild(template, selector) {
   const children = template?.computedChildren ?? template?.elements ?? [];
   return children.find((child) => child?.selector === selector) ?? null;
+}
+
+function synthesizeTableStructure(template, table = findTemplateChild(template, 'table')) {
+  if (template?.tableStructure?.table?.boxMetrics) return template.tableStructure;
+  if (!table?.boxMetrics) return null;
+  const text = String(table.text ?? template?.text ?? '').replace(/\s+/g, ' ').trim();
+  const tokens = text.split(/\s+/).filter(Boolean);
+  const longestToken = tokens.reduce((best, token) => token.length > best.length ? token : best, '');
+  return {
+    source: 'legacy-computedChildren',
+    table,
+    textProfile: {
+      textLength: text.length,
+      tokenCount: tokens.length,
+      longestToken: longestToken.slice(0, 120),
+      longestTokenLength: longestToken.length,
+    },
+    columnGroups: [],
+    columns: [],
+  };
 }
 
 async function listFixtureIds(baselineDir) {
