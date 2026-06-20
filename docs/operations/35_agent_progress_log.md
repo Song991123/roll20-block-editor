@@ -1,3 +1,17 @@
+## 2026-06-20 YSHY Row/Paint/Source Probe
+
+- Added `scripts/roll20_chat_row_paint_source_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-row-paint-source`.
+- The probe fuses row geometry, mask bands, candidate pixel gains, actual computed styles, and Roll20 chat CSS activation/source evidence.
+- Wired the probe into `gate:roll20-renderer-action`.
+- Fixed `roll20_chat_width_reconciliation.mjs` so row geometry decisions are read from `rowModel.decision`.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: keeps its current axis. Still needs message/content width work, not YSHY row-paint work.
+  - Les-Oublies: keeps default axis for now. Its current Roll20 sidecar still lacks the newest row/typography/filter evidence.
+  - YSHY 1BU: `ROW_BAND_RASTER_CONTEXT_REQUIRED`, aligned mismatch `22.33%`.
+- Interpretation: `paint-dim-background` remains a useful diagnostic clue (`-2.48%` for YSHY), but it is contradicted by actual Roll20 `filter: none`; `yshy-sanitize-typography` regresses YSHY by `+14.13%`. The next useful work is a CoC/YSHY row-band background/text rasterization plus source-order/capture-context probe, not production CSS.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 YSHY Font Availability Candidates Rejected
 
 - Added diagnostic-only ChatPane font policy `yshy-bookk-unavailable`.

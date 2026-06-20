@@ -1,3 +1,20 @@
+## 2026-06-20 Codex Update - YSHY row/paint/source probe
+
+Status: PARTIAL. This adds a renderer-routing diagnostic; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
+
+- DONE: Added `scripts/roll20_chat_row_paint_source_probe.mjs` and package command `diagnose:roll20-chat-row-paint-source`.
+- DONE: Wired the row/paint/source probe into `gate:roll20-renderer-action`.
+- DONE: Fixed `roll20_chat_width_reconciliation.mjs` so it reads `chat-row-geometry` decisions from `rowModel.decision`.
+- RESULT: New probe classifies YSHY 1BU as `ROW_BAND_RASTER_CONTEXT_REQUIRED`.
+- RESULT: YSHY remains high mismatch: aligned mismatch `22.33%`; this work does not improve pixels by itself.
+- RESULT: `paint-dim-background` is still numerically useful for YSHY (`-2.48%`) but blocked because actual Roll20 computed style reports `filter: none`.
+- RESULT: `yshy-sanitize-typography` is rejected for YSHY (`+14.13%` aligned delta), so simply replaying observed Roll20 typography/sanitize values is not the fix.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- INTERPRETATION: The next YSHY/CoC P0 is a real row-band background/text rasterization plus source-order/capture-context probe around the CoC rolltemplate table. Do not promote filter, broad typography, or direct width CSS.
+- VERIFIED: `node --check` for changed scripts, `diagnose:roll20-chat-row-paint-source`, `diagnose:roll20-chat-width-reconciliation`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the next YSHY/CoC capture/probe that compares actual row-band background/text rasterization and source-order around the CoC table without using CSS filters.
+- STILL TODO P0: Recapture AW2E and Les-Oublies Roll20 chat sidecars with current row/typography/filter fields before making cross-fixture renderer decisions.
+
 ## 2026-06-20 Codex Update - YSHY font availability candidates rejected
 
 Status: PARTIAL. This tested narrow YSHY/CoC font-context diagnostics; it does not change production ChatPane defaults and does not prove visual parity.

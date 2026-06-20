@@ -75,7 +75,7 @@ function reconcileFixture(fixtureId, reports) {
     widthDecision: width?.widthDecision ?? '',
     intrinsicDecision: intrinsic?.intrinsicDecision ?? '',
     glyphDecision: fontGlyph?.glyphDecision ?? '',
-    rowDecision: rows?.rowGeometryDecision ?? rows?.decision ?? '',
+    rowDecision: rows?.rowModel?.decision ?? rows?.rowGeometryDecision ?? rows?.decision ?? '',
     residualAxis: residual?.residualAxis ?? residual?.axis ?? '',
     tableWidthDelta: numberOrNull(width?.deltas?.tableWidthDelta ?? intrinsic?.deltas?.tableWidthDelta ?? fontGlyph?.widthDeltas?.table),
     tableToCropDelta: numberOrNull(width?.deltas?.tableToCropDelta),
