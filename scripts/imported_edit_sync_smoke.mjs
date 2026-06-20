@@ -392,6 +392,125 @@ async function captureSheetRootVisualSync(page, fixtureId) {
   };
 }
 
+async function collectEditFormState(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
+  return page.evaluate(() => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    if (!root) return [];
+    return collectControlState(root);
+    function collectControlState(scope) {
+      return Array.from(scope.querySelectorAll('input, select, textarea'))
+        .map((el, index) => controlState(el, index))
+        .filter(Boolean);
+    }
+    function controlState(el, index) {
+      const tag = el.tagName.toLowerCase();
+      const type = tag === 'input' ? String(el.getAttribute('type') || el.type || 'text').toLowerCase() : tag;
+      const name = el.getAttribute('name') || '';
+      const value = 'value' in el ? String(el.value ?? '') : String(el.getAttribute('value') || '');
+      const attrValue = String(el.getAttribute('value') || '');
+      return {
+        key: controlKey(tag, type, name, attrValue, index),
+        tag,
+        type,
+        name,
+        attrValue,
+        value,
+        checked: 'checked' in el ? Boolean(el.checked) : null,
+        selectedIndex: 'selectedIndex' in el ? el.selectedIndex : null,
+        blockId: el.getAttribute('data-r20-block-id') || '',
+      };
+    }
+    function controlKey(tag, type, name, attrValue, index) {
+      const valueDisambiguates = type === 'radio' || type === 'checkbox' || tag === 'option';
+      return [tag, type, name, valueDisambiguates ? attrValue : '', String(index)].join('|');
+    }
+  });
+}
+
+async function collectPreviewFormState(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setPreviewRenderMode('iframe');
+    window.__perfHook.setMainMode('preview');
+  });
+  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  const root = frame.locator('#charsheet-root').first();
+  await root.waitFor({ state: 'visible', timeout: 30000 });
+  return root.evaluate((rootEl) => {
+    return Array.from(rootEl.querySelectorAll('input, select, textarea'))
+      .map((el, index) => {
+        const tag = el.tagName.toLowerCase();
+        const type = tag === 'input' ? String(el.getAttribute('type') || el.type || 'text').toLowerCase() : tag;
+        const name = el.getAttribute('name') || '';
+        const value = 'value' in el ? String(el.value ?? '') : String(el.getAttribute('value') || '');
+        const attrValue = String(el.getAttribute('value') || '');
+        const valueDisambiguates = type === 'radio' || type === 'checkbox' || tag === 'option';
+        return {
+          key: [tag, type, name, valueDisambiguates ? attrValue : '', String(index)].join('|'),
+          tag,
+          type,
+          name,
+          attrValue,
+          value,
+          checked: 'checked' in el ? Boolean(el.checked) : null,
+          selectedIndex: 'selectedIndex' in el ? el.selectedIndex : null,
+          blockId: el.getAttribute('data-r20-block-id') || '',
+        };
+      })
+      .filter(Boolean);
+  });
+}
+
+async function compareEditPreviewFormState(page) {
+  const edit = await collectEditFormState(page);
+  const preview = await collectPreviewFormState(page);
+  const previewByKey = new Map(preview.map((item) => [item.key, item]));
+  const editByKey = new Map(edit.map((item) => [item.key, item]));
+  const diffs = [];
+  for (const item of edit) {
+    const other = previewByKey.get(item.key);
+    if (!other) {
+      diffs.push({ kind: 'missing-preview', edit: item, preview: null });
+      continue;
+    }
+    if (item.checked !== other.checked || item.value !== other.value || item.selectedIndex !== other.selectedIndex) {
+      diffs.push({ kind: 'state', edit: item, preview: other });
+    }
+  }
+  for (const item of preview) {
+    if (!editByKey.has(item.key)) diffs.push({ kind: 'missing-edit', edit: null, preview: item });
+  }
+  const byType = {};
+  for (const diff of diffs) {
+    const item = diff.edit || diff.preview || {};
+    const key = `${item.tag || 'unknown'}:${item.type || 'unknown'}`;
+    byType[key] = (byType[key] || 0) + 1;
+  }
+  return {
+    pass: diffs.length === 0,
+    editCount: edit.length,
+    previewCount: preview.length,
+    diffCount: diffs.length,
+    byType,
+    examples: diffs.slice(0, 12),
+  };
+}
+
+function classifySheetVisualSync(sheetVisualSync, formStateDiff) {
+  if (!sheetVisualSync) return 'missing-sheet-visual';
+  if (sheetVisualSync.pass) {
+    return formStateDiff?.pass === false ? 'visual-pass-with-form-state-diff' : 'visual-pass';
+  }
+  if (formStateDiff?.diffCount > 0) return 'likely-form-control-state-divergence';
+  return 'unclassified-sheet-root-visual-delta';
+}
+
 async function chooseEditTarget(page, excludedIds = []) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
@@ -1768,10 +1887,10 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-    lines.push('| Fixture | Status | Interaction | Resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Sheet visual | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
-  lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
+  lines.push('| Fixture | Status | Interaction | Resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Sheet visual | Form state | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
+  lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${fmtVisualSync(item.sheetVisualSync)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${fmtVisualSync(item.sheetVisualSync)} | ${fmtFormStateDiff(item.formStateDiff)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
@@ -1860,7 +1979,18 @@ function fmtNonLeafLayerReorder(item) {
 function fmtVisualSync(item) {
   if (!item) return 'missing';
   if (item.pass) return `${item.diff?.mismatchPct ?? ''}%`;
-  return `WARN: ${item.diff?.mismatchPct ?? item.reason ?? 'visual mismatch'}%`;
+  const reason = item.classification ? ` ${item.classification}` : '';
+  return `WARN: ${item.diff?.mismatchPct ?? item.reason ?? 'visual mismatch'}%${reason}`;
+}
+
+function fmtFormStateDiff(item) {
+  if (!item) return 'missing';
+  if (item.pass) return 'match';
+  const typeSummary = Object.entries(item.byType || {})
+    .slice(0, 3)
+    .map(([type, count]) => `${type}:${count}`)
+    .join(', ');
+  return `DIFF ${item.diffCount}${typeSummary ? ` (${typeSummary})` : ''}`;
 }
 
 function fmtCanvasInsert(item) {
@@ -1987,6 +2117,8 @@ async function main() {
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-preview.png`) });
         entry.reimport = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
         entry.sheetVisualSync = await captureSheetRootVisualSync(page, fixture.id);
+        entry.formStateDiff = await compareEditPreviewFormState(page);
+        entry.sheetVisualSync.classification = classifySheetVisualSync(entry.sheetVisualSync, entry.formStateDiff);
         entry.interactionPass =
           entry.pass &&
           entry.canvasInsert?.pass === true &&

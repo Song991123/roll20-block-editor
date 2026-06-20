@@ -1,3 +1,13 @@
+## 2026-06-20 Form-State Divergence Classification
+
+- Extended `scripts/imported_edit_sync_smoke.mjs` so imported edit smoke now compares form-control runtime state between edit Shadow DOM and preview iframe after the same edit operation.
+- Added `formStateDiff` to the ignored local report and classified sheet-root visual diffs against that state evidence.
+- Verification: `node --check scripts\imported_edit_sync_smoke.mjs`, `lint`, AW2E-only `smoke:imported-edit-sync -- --only official-roll20-AW2E --port 4198`, full `smoke:imported-edit-sync -- --port 4196`, `build`, `guard:roll20-evidence`, and `smoke:edit-flow -- --port 4210`.
+- Local result: AW2E remains the hard local edit/preview outlier at `11.93%` sheet-root mismatch, now classified as `likely-form-control-state-divergence`. The concrete differences are `attr_SHEETVERSION` edit `1.0` vs preview `1.1` and `attr_harm` radio value `0` unchecked in edit vs checked in preview.
+- Local result: Les-Oublies and YSHY remain visually within the current `2%` local sheet-root budget but still report form-state differences, mostly hidden/default/translation-derived controls. The synthetic fixture is clean.
+- Interpretation: next P0 is not another generic CSS patch. Edit mode needs to mirror preview runtime/default attribute state while still blocking native input interaction and exposing objects/layers for Figma-style editing.
+- Boundary: this is local app evidence only. Actual Roll20 visual parity and sandbox/upload verification remain gated separately.
+
 ## 2026-06-20 Sheet-Root Edit/Preview Visual Diagnostic
 
 - Added full `#charsheet-root` screenshot comparison to `scripts/imported_edit_sync_smoke.mjs` after imported edit operations. It captures edit Shadow DOM and preview iframe roots and compares them with the existing browser-canvas PNG diff helper.

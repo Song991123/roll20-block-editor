@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - form-state divergence classification
+
+Status: VERIFY. This turns the latest sheet-root edit/preview visual mismatch into a more concrete diagnosis; it does not fix the underlying state divergence yet.
+
+- DONE: `smoke:imported-edit-sync` now collects `input`, `select`, and `textarea` runtime state from both the edit Shadow DOM and preview iframe after imported edit operations.
+- DONE: The smoke compares edit/preview form control values, checked state, selected index, and control counts, then writes `formStateDiff` into the ignored local JSON/markdown report.
+- DONE: Sheet-root visual mismatch now records a classification: `visual-pass`, `visual-pass-with-form-state-diff`, `likely-form-control-state-divergence`, or `unclassified-sheet-root-visual-delta`.
+- VERIFIED: `node --check scripts\imported_edit_sync_smoke.mjs`, `corepack pnpm run lint`, AW2E-only `corepack pnpm run smoke:imported-edit-sync -- --only official-roll20-AW2E --port 4198`, full `corepack pnpm run smoke:imported-edit-sync -- --port 4196`, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence`, and `corepack pnpm run smoke:edit-flow -- --port 4210` passed.
+- LOCAL RESULT: `official-roll20-AW2E` still has sheet-root visual mismatch `11.93%`, now classified as `likely-form-control-state-divergence`; form state diffs are `2` controls (`input:hidden:1`, `input:radio:1`), including `attr_SHEETVERSION` edit `1.0` vs preview `1.1` and `attr_harm` radio value `0` unchecked in edit vs checked in preview.
+- LOCAL RESULT: `official-roll20-Les-Oublies` has sheet-root visual mismatch `1.98%`, classified as `visual-pass-with-form-state-diff`; form state diffs are `9` controls, mostly hidden/default attributes. `yshy-commission-1bu` has mismatch about `1.04%`, classified as `visual-pass-with-form-state-diff`; form state diffs are `51` hidden/i18n-default controls. `synthetic-nonleaf-flow` has `0%` mismatch and form state match.
+- INTERPRETATION: The worst current local edit/preview full-sheet mismatch is not proven to be a broad CSS cascade/layout collapse. It is now routed toward preview runtime/default attribute and sheet-worker state being applied in preview but not mirrored in edit mode.
+- STILL TODO P0: Design and implement an edit-mode runtime state layer so edit mode renders the same post-worker/default state as preview while native inputs remain object-like/non-interactive for Figma-style editing.
+- STILL TODO P0: Keep actual Roll20 renderer parity separate; this is local app edit/preview evidence only.
+
 ## 2026-06-20 Codex Update - sheet-root edit/preview visual diagnostic
 
 Status: VERIFY. This adds a wider local visual diagnostic after imported edit operations; it is not yet a default hard gate because it exposed known/full-root state and resource differences that need triage.
