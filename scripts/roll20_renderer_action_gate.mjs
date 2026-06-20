@@ -59,9 +59,10 @@ async function main() {
   const chatBackgroundAssetProbe = await readJsonIfExists(path.join(runDir, 'chat-background-asset-probe', 'chat-background-asset-probe-results.json'));
   const chatRowGeometry = await readJsonIfExists(path.join(runDir, 'chat-row-geometry', 'chat-row-geometry-results.json'));
   const chatWidthReconciliation = await readJsonIfExists(path.join(runDir, 'chat-width-reconciliation', 'chat-width-reconciliation-results.json'));
+  const chatCurrentMetricsAudit = await readJsonIfExists(path.join(runDir, 'chat-current-metrics-audit', 'chat-current-metrics-audit-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatRowGeometry, chatWidthReconciliation);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatRowGeometry, chatWidthReconciliation, chatCurrentMetricsAudit);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -94,7 +95,7 @@ async function main() {
     chatBackgroundAssetProbe: summarizeChatBackgroundAssetProbe(chatBackgroundAssetProbe),
     chatRowGeometry: summarizeChatRowGeometry(chatRowGeometry),
     chatWidthReconciliation: summarizeChatWidthReconciliation(chatWidthReconciliation),
-    chatCurrentMetrics: summarizeChatCurrentMetrics(status),
+    chatCurrentMetrics: summarizeChatCurrentMetrics(status, chatCurrentMetricsAudit),
     summary: summarize(fixtures),
     fixtures,
   };
@@ -265,7 +266,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatRowGeometry, chatWidthReconciliation) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatRowGeometry, chatWidthReconciliation, chatCurrentMetricsAudit) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -303,7 +304,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatBackgroundAssetProbeSummary = summarizeChatBackgroundAssetProbe(chatBackgroundAssetProbe);
   const chatRowGeometrySummary = summarizeChatRowGeometry(chatRowGeometry);
   const chatWidthReconciliationSummary = summarizeChatWidthReconciliation(chatWidthReconciliation);
-  const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
+  const chatCurrentMetrics = summarizeChatCurrentMetrics(status, chatCurrentMetricsAudit);
   const styleProofStatusByName = new Map(
     (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
       candidate.name,
@@ -353,7 +354,10 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     }
   }
   if (chatCurrentMetrics.missing > 0) {
-    blockers.push(`actual Roll20 chat sidecars lack current row/typography metrics for ${chatCurrentMetrics.missing}/${chatCurrentMetrics.total} fixtures (${chatCurrentMetrics.missingFixtures.join(', ')}); run plan:roll20-chat-capture with --require-current-metrics and recapture same-action chat screenshot+DOM sidecars before tuning ChatPane CSS`);
+    const missingFields = chatCurrentMetrics.missingFieldsByFixture
+      ?.map((item) => `${item.fixtureId}: ${item.missing.join(', ')}`)
+      .join('; ');
+    blockers.push(`actual Roll20 chat sidecars lack current row/typography metrics for ${chatCurrentMetrics.missing}/${chatCurrentMetrics.total} fixtures (${chatCurrentMetrics.missingFixtures.join(', ')}); ${missingFields ? `missing fields: ${missingFields}; ` : ''}run diagnose:roll20-chat-current-metrics and plan:roll20-chat-capture with --require-current-metrics before tuning ChatPane CSS`);
   }
   if (!chatCandidateSummary) {
     warnings.push('chat candidate comparison has not been run; run diagnose:roll20-chat-candidates before promoting any ChatPane renderer candidate');
@@ -655,7 +659,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push('Recapture actual Roll20 chat DOM sidecars with rolltemplate rect/clip metadata for element-level chat parity comparison.');
   }
   if (chatCurrentMetrics.missing > 0) {
-    nextActions.push(`Run corepack pnpm run plan:roll20-chat-capture -- ${path.relative(process.cwd(), activeRunDir)} --require-current-metrics, then recapture current row/typography chat evidence for ${chatCurrentMetrics.missingFixtures.join(', ')}.`);
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-current-metrics -- ${path.relative(process.cwd(), activeRunDir)} and corepack pnpm run plan:roll20-chat-capture -- ${path.relative(process.cwd(), activeRunDir)} --require-current-metrics, then recapture current row/typography chat evidence for ${chatCurrentMetrics.missingFixtures.join(', ')}.`);
   }
   if (chatParitySummary?.authoritativeNormalizedHighMismatch > 0) {
     if (chatParitySummary.actualChatCssScopedMismatch > 0) {
@@ -1736,15 +1740,31 @@ function summarizeChatParity(report) {
   };
 }
 
-function summarizeChatCurrentMetrics(status) {
-  const missingFixtures = Array.isArray(status?.summary?.chatCurrentMetricsMissingFixtures)
+function summarizeChatCurrentMetrics(status, audit = null) {
+  const auditFixtures = Array.isArray(audit?.fixtures) ? audit.fixtures : [];
+  const auditMissingFixtures = auditFixtures.filter((fixture) => fixture.status !== 'PASS');
+  const statusMissingFixtures = Array.isArray(status?.summary?.chatCurrentMetricsMissingFixtures)
     ? status.summary.chatCurrentMetricsMissingFixtures
     : [];
+  const missingFixtures = auditMissingFixtures.length
+    ? auditMissingFixtures.map((fixture) => fixture.fixtureId)
+    : statusMissingFixtures;
   return {
-    present: Number(status?.summary?.chatCurrentMetricsPresent ?? 0),
-    total: Number(status?.summary?.chatCurrentMetricsTotal ?? 0),
-    missing: Number(status?.summary?.chatCurrentMetricsMissing ?? 0),
+    present: audit?.summary
+      ? Number(audit.summary.pass ?? 0)
+      : Number(status?.summary?.chatCurrentMetricsPresent ?? 0),
+    total: audit?.summary
+      ? Number(audit.summary.fixtures ?? 0)
+      : Number(status?.summary?.chatCurrentMetricsTotal ?? 0),
+    missing: audit?.summary
+      ? Number(audit.summary.needsRecapture ?? 0)
+      : Number(status?.summary?.chatCurrentMetricsMissing ?? 0),
     missingFixtures,
+    missingFieldsByFixture: auditMissingFixtures.map((fixture) => ({
+      fixtureId: fixture.fixtureId,
+      missing: fixture.missing ?? [],
+    })),
+    source: audit ? 'chat-current-metrics-audit' : 'actual-status',
   };
 }
 

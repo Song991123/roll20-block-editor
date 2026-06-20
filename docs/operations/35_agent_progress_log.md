@@ -1,3 +1,13 @@
+## 2026-06-20 Chat Current-Metrics Audit Gate
+
+- Added `scripts/roll20_chat_current_metrics_audit.mjs` and `corepack pnpm run diagnose:roll20-chat-current-metrics`.
+- The audit checks actual Roll20 chat DOM sidecars for current renderer-diagnostic fields: row metrics, table structure, computed style, text rasterization, paint `filter`, font evidence, text measure samples, and viewport DPR.
+- Wired `scripts/roll20_renderer_action_gate.mjs` to consume the audit report when present and print fixture-level missing fields in the HOLD blocker.
+- Current `2026-06-18-state-map-v1` result: `NEEDS_RECAPTURE`, `1/3` current, AW2E and Les-Oublies missing `latestTemplate.computedStyle.filter` and `table.computedStyle.filter`.
+- Browser check: the live Roll20 tab currently shows YSHY `.sheet-rolltemplate-coc`, which already has current metrics. Normal Sandbox file input upload for AW2E timed out waiting for the file chooser, matching the existing upload blocker.
+- Verification: `node --check` for the new audit and renderer gate, `diagnose:roll20-chat-current-metrics`, and `gate:roll20-renderer-action`.
+- Claim boundary: evidence-gating only. No Roll20 screenshot was replaced, no existing room was modified, no production renderer CSS changed, and `HOLD_PRODUCTION_RENDERER_PATCH` remains.
+
 ## 2026-06-20 Export Asset Preflight UI
 
 - Added export-dialog asset preflight for emitted HTML/CSS asset references.

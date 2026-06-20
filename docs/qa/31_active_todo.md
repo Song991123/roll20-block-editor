@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - chat current-metrics audit gate
+
+Status: PARTIAL. This tightens actual Roll20 chat evidence gating; it does not recapture AW2E/Les-Oublies and does not make renderer parity pass.
+
+- DONE: Added `scripts/roll20_chat_current_metrics_audit.mjs` and package command `diagnose:roll20-chat-current-metrics`.
+- DONE: The audit reports whether each actual Roll20 `roll20-chat-dom-evidence.json` sidecar contains current row metrics, table structure, computed styles, text rasterization fields, paint `filter`, font evidence, text measure samples, and viewport DPR.
+- DONE: Wired the renderer action gate to read the audit when present and print fixture-level missing fields in the blocker text.
+- RESULT: Current `2026-06-18-state-map-v1` audit is `NEEDS_RECAPTURE`: `1/3` fixtures are current, with AW2E and Les-Oublies missing `latestTemplate.computedStyle.filter` and `table.computedStyle.filter`.
+- RESULT: A read-only Chrome check found the current Roll20 tab showing YSHY `.sheet-rolltemplate-coc`, which is already the current-metrics fixture. Attempting normal Sandbox file-input upload for AW2E again failed because the browser file chooser did not open.
+- VERIFIED: `node --check` for the new audit and renderer gate, `diagnose:roll20-chat-current-metrics`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Recapture AW2E and Les-Oublies chat screenshot+DOM sidecar in the dedicated Roll20 Sandbox or approved test room. If file chooser remains blocked, use the generated Roll20 upload snippet path or browser settings file access fix before retrying.
+
 ## 2026-06-20 Codex Update - export asset preflight UI
 
 Status: VERIFY. This improves export-time truthfulness and user guidance; it does not prove Roll20 visual parity or fix the remaining renderer gate.
