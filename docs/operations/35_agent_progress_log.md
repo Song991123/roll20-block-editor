@@ -1,3 +1,16 @@
+## 2026-06-20 Chat Background Raster Model Probe
+
+- Added `scripts/roll20_chat_background_raster_model_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-background-raster`.
+- The probe routes whether the current chat background mismatch is explained by already-tested raster-only models: background-size/scale, row luma correction, or table width/crop context.
+- Wired the probe into `gate:roll20-renderer-action`.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `COLOR_ASSET_RASTER_MODEL_REQUIRED`, row `13.43%`, luma gain `+0.22%`, width axis `CHAT_MESSAGE_CONTENT_WIDTH`.
+  - Les-Oublies: `DECLARATION_DIFF_BEFORE_RASTER_MODEL`, row `5.15%`, luma gain `+0.01%`, width axis `KEEP_DEFAULT`.
+  - YSHY 1BU: `SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED`, row `23.15%`, luma gain `-0.58%`, `coc-background-size-actual` risk `reject-row-raster-regression`, width axis `TABLE_SCROLL_INTRINSIC`.
+- Interpretation: for YSHY/CoC, the CSS declarations already match while flat pixels differ, and simple raster models are weak or rejected. The next P0 is image/proxy decode/browser paint comparison, not background-size, luma/filter, broad typography, or direct table-scale CSS.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 Chat Background/Source Probe
 
 - Added `scripts/roll20_chat_background_source_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-background-source`.

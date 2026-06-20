@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - chat background raster model probe routes next paint work
+
+Status: PARTIAL. This adds another diagnostic gate; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
+
+- DONE: Added `scripts/roll20_chat_background_raster_model_probe.mjs` and package command `diagnose:roll20-chat-background-raster`.
+- DONE: Wired the raster-model probe into `gate:roll20-renderer-action`.
+- RESULT: AW2E stays on `COLOR_ASSET_RASTER_MODEL_REQUIRED`; do not reuse YSHY/CoC background candidates there.
+- RESULT: Les-Oublies is `DECLARATION_DIFF_BEFORE_RASTER_MODEL`; exact background declaration/cascade must be resolved before pixel-tuned paint work.
+- RESULT: YSHY 1BU is now `SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED`: background declarations match, row-weighted mismatch is `23.15%`, luma correction only gains `-0.58%p`, and `coc-background-size-actual` remains rejected by row-raster regression.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` and now reports the raster-model routing as evidence.
+- VERIFIED: `node --check` for the new script and renderer gate, `diagnose:roll20-chat-background-raster`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: For YSHY/CoC, compare fetched background image bytes, Roll20 proxy decode behavior, and browser paint output before trying any more production ChatPane CSS.
+- STILL TODO P0: Recapture AW2E and Les-Oublies Roll20 chat sidecars with current row/typography/filter fields before cross-fixture renderer decisions.
+
 ## 2026-06-20 Codex Update - chat background/source probe routes YSHY raster mismatch
 
 Status: PARTIAL. This adds another diagnostic routing layer; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
