@@ -1,3 +1,18 @@
+## 2026-06-20 Codex Update - CoC overflow/crop candidate rejected
+
+Status: PARTIAL. This tested the first YSHY/CoC overflow-crop candidate; it does not change production ChatPane defaults and does not prove visual parity.
+
+- DONE: Added diagnostic-only ChatPane geometry policy `coc-overflow-crop-model`.
+- DONE: Inserted the diagnostic override CSS after user rolltemplate CSS so this candidate tests the post-user cascade path instead of losing to the uploaded sheet CSS.
+- DONE: Added the candidate to `rolltemplate_chat_smoke`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, and script docs.
+- RESULT: Candidate smoke PASSed all three prepared fixtures.
+- RESULT: The candidate did not change YSHY used table width: local table stayed `1272.859px` even with post-user `width: 1248.55px !important`, `max-width: 1248.55px !important`, `border-spacing: 0`, and `overflow-wrap: break-word`.
+- RESULT: Candidate comparison classifies `coc-overflow-crop-model` as `no-meaningful-gain`: YSHY remains raw `26.45%`, aligned `22.33%`, delta `0%`.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- INTERPRETATION: The remaining YSHY width/crop mismatch is not fixed by width/overflow declarations alone. The next P0 should inspect Roll20 table intrinsic/min-content calculation and font-face availability/order for the CoC template, especially why actual Roll20 computes a narrower used table despite matching root width.
+- VERIFIED: `build`, `rolltemplate_chat_smoke --chat-geometry-policy coc-overflow-crop-model`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-overflow-crop`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the next YSHY/CoC diagnostic around font-face availability/order plus table min-content/intrinsic sizing. Do not promote `coc-overflow-crop-model`.
+
 ## 2026-06-20 Codex Update - YSHY overflow/crop probe
 
 Status: PARTIAL. This adds another diagnostic layer for Roll20 chat parity; it does not change production ChatPane CSS and does not prove visual parity.

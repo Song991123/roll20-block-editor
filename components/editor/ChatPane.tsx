@@ -47,6 +47,7 @@ type ChatGeometryPolicy =
   | 'coc-table-intrinsic-clamp'
   | 'coc-table-actual-width'
   | 'coc-crop-origin-y20'
+  | 'coc-overflow-crop-model'
   | 'roll20-message-padding'
   | 'roll20-break-word'
   | 'roll20-intrinsic-spacing'
@@ -101,6 +102,7 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
     value === 'coc-table-intrinsic-clamp' ||
     value === 'coc-table-actual-width' ||
     value === 'coc-crop-origin-y20' ||
+    value === 'coc-overflow-crop-model' ||
     value === 'roll20-message-padding' ||
     value === 'roll20-break-word' ||
     value === 'roll20-intrinsic-spacing' ||
@@ -475,6 +477,18 @@ const roll20ChatShellCss = `
 }
 `;
 
+const roll20ChatDiagnosticOverrideCss = `
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-model"] .r20-chat-card-group .message:has(.sheet-rolltemplate-coc) {
+  overflow: hidden;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-model"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0 !important;
+  max-width: 1248.55px !important;
+  overflow-wrap: break-word !important;
+  width: 1248.55px !important;
+}
+`;
+
 function DiceBreakdown({ detail }: { detail: RollDetail }) {
   if (!detail.dice.length) {
     return (
@@ -710,6 +724,7 @@ export default function ChatPane() {
           dangerouslySetInnerHTML={{ __html: rolltemplateCss }}
         />
       )}
+      <style data-r20-chat-diagnostic-css dangerouslySetInnerHTML={{ __html: roll20ChatDiagnosticOverrideCss }} />
       <div className="h-9 shrink-0 border-b border-border px-3 flex items-center justify-between">
         <div className="text-[11px] font-medium text-[var(--fg-muted)]">
           채팅 ({rolls.length})

@@ -21,6 +21,7 @@ const CANDIDATE_SMOKE = {
   'aw2e-root-width-actual': 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/rolltemplate-chat-smoke-results.json',
   'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
   'coc-table-actual-width': 'reports/rolltemplate-chat-smoke-coc-table-actual-width/rolltemplate-chat-smoke-results.json',
+  'coc-overflow-crop-model': 'reports/rolltemplate-chat-smoke-coc-overflow-crop-model/rolltemplate-chat-smoke-results.json',
   'roll20-break-word': 'reports/rolltemplate-chat-smoke-roll20-break-word/rolltemplate-chat-smoke-results.json',
   'roll20-intrinsic-spacing': 'reports/rolltemplate-chat-smoke-intrinsic-spacing/rolltemplate-chat-smoke-results.json',
   'roll20-border-spacing': 'reports/rolltemplate-chat-smoke-border-spacing/rolltemplate-chat-smoke-results.json',
@@ -119,7 +120,7 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   if (candidate.name === 'aw2e-root-width-actual') {
     return summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'root', 1.5);
   }
-  if (candidate.name === 'coc-table-actual-width') {
+  if (candidate.name === 'coc-table-actual-width' || candidate.name === 'coc-overflow-crop-model') {
     return summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 1.5);
   }
   if (candidate.name === 'roll20-break-word') {

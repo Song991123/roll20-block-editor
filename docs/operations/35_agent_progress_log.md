@@ -1,3 +1,15 @@
+## 2026-06-20 CoC Overflow/Crop Candidate Rejected
+
+- Added diagnostic-only ChatPane geometry policy `coc-overflow-crop-model`.
+- Unlike older geometry probes, this candidate writes a post-user diagnostic style block after uploaded rolltemplate CSS. That verifies the candidate under the cascade order it needs instead of silently losing to the sheet CSS.
+- The candidate attempts the current YSHY measured values: message overflow clipping, CoC table `border-spacing: 0`, `overflow-wrap: break-word`, `width: 1248.55px !important`, and `max-width: 1248.55px !important`.
+- Browser smoke PASSed AW2E, Les-Oublies, and YSHY.
+- The candidate still failed to move YSHY used table width. The smoke sidecar reports the YSHY table at `1272.859px`, not the actual Roll20 `1248.55px`.
+- Candidate comparison result: `coc-overflow-crop-model` is `no-meaningful-gain`; YSHY remains raw `26.45%`, aligned `22.33%`, delta `0%`.
+- Interpretation: the YSHY/CoC mismatch is not a simple cascade/width/overflow declaration problem. The next diagnostic should target table intrinsic/min-content calculation and font-face availability/order, because actual Roll20 computes a narrower used table while keeping the same `267px` rolltemplate root.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production ChatPane default changed, no Roll20 visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 YSHY Overflow/Crop Probe
 
 - Added `scripts/roll20_chat_overflow_crop_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-overflow-crop`.

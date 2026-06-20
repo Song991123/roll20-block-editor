@@ -24,6 +24,7 @@ const candidates = [
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
   ['coc-table-actual-width', 'reports/rolltemplate-chat-smoke-coc-table-actual-width/screenshots'],
   ['coc-crop-origin-y20', 'reports/rolltemplate-chat-smoke-coc-crop-origin-y20/screenshots'],
+  ['coc-overflow-crop-model', 'reports/rolltemplate-chat-smoke-coc-overflow-crop-model/screenshots'],
   ['roll20-message-padding', 'reports/rolltemplate-chat-smoke-roll20-message-padding/screenshots'],
   ['roll20-break-word', 'reports/rolltemplate-chat-smoke-roll20-break-word/screenshots'],
   ['roll20-intrinsic-spacing', 'reports/rolltemplate-chat-smoke-intrinsic-spacing/screenshots'],
