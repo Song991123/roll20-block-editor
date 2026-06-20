@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - imported layer relation smoke
+
+Status: VERIFY. This strengthens imported-sheet edit verification; it does not prove every imported sheet layer operation is solved.
+
+- DONE: `smoke:imported-edit-sync` now uses `window.__perfHook.getLayerSnapshot()` when selecting imported layer reorder candidates.
+- DONE: Imported leaf sibling reorder now requires the moving row to be an explicit `sibling` with `layerPreviousId` pointing at the target before it is accepted as a safe test candidate.
+- DONE: Imported non-leaf subtree reorder candidates now require matching layer parent/depth semantics and record `layerRelationMatches`, `layerSameParent`, and `layerSameDepth` in the local report.
+- VERIFIED: `node --check scripts\imported_edit_sync_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence`, `corepack pnpm run smoke:imported-edit-sync -- --port 4196`, and `corepack pnpm run smoke:edit-flow -- --port 4210` passed.
+- LOCAL FIXTURE RESULT: `official-roll20-AW2E`, `official-roll20-Les-Oublies`, and `yshy-commission-1bu` all passed imported edit/preview sync with resource checks clean. The strengthened imported leaf layer relation check executed and passed on `official-roll20-Les-Oublies`; `AW2E` and `yshy-commission-1bu` skipped it because no safe imported leaf sibling pair was found.
+- STILL TODO P0: Imported non-leaf subtree relation coverage is still missing in current fixtures because no safe visible non-leaf sibling subtree was found. Add or synthesize a copyright-safe fixture that exercises this path before claiming broad Figma-like layer editing.
+- STILL TODO P0: Actual Roll20 renderer parity remains gated; this is local app edit-sync evidence only.
+
 ## 2026-06-20 Codex Update - layer relation badges and smoke
 
 Status: VERIFY. This improves the edit layer panel's structural honesty; it does not complete the Figma-like editor or prove Roll20 renderer parity.

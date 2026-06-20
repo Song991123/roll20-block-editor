@@ -1,3 +1,12 @@
+## 2026-06-20 Imported Layer Relation Smoke
+
+- Strengthened `scripts/imported_edit_sync_smoke.mjs` so imported layer reorder candidates are selected against `getLayerSnapshot()` semantics instead of only Blockly graph metadata.
+- Imported leaf sibling reorder now requires the moving row to be an explicit flow sibling whose `layerPreviousId` points at the target row.
+- Imported non-leaf subtree reorder now requires matching layer parent/depth semantics and records relation proof fields in the ignored local report.
+- Verification: `node --check scripts\imported_edit_sync_smoke.mjs`, `lint`, `build`, `guard:roll20-evidence`, `smoke:imported-edit-sync -- --port 4196`, and `smoke:edit-flow -- --port 4210`.
+- Local fixture result: AW2E, Les-Oublies, and YSHY all passed imported edit/preview sync. The strengthened imported leaf layer relation path executed and passed on Les-Oublies; AW2E/YSHY skipped due no safe leaf sibling pair. Non-leaf imported subtree coverage still needs a fixture with a safe visible sibling subtree.
+- Current boundary: this improves local edit-sync verification. It does not prove actual Roll20 renderer parity or complete Figma-like layer editing for every sheet.
+
 ## 2026-06-20 Layer Relation Badges and Smoke
 
 - Added explicit edit-layer semantics to `BlockSnapshot`: root, DOM child, and flow sibling are now represented separately from Blockly's internal parent metadata.

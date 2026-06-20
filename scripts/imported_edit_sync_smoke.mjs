@@ -275,13 +275,19 @@ async function runImportedLayerReorder(page) {
       if (!root) return null;
 
       const graph = window.__perfHook.getBlockGraph?.('html') || [];
+      const layer = window.__perfHook.getLayerSnapshot?.('html') || [];
       const byId = new Map(graph.map((node) => [node.id, node]));
+      const layerById = new Map(layer.map((node) => [node.id, node]));
       const describe = (node) => {
         const el = root.querySelector(`[data-r20-block-id="${CSS.escape(node.id)}"]`);
         const rect = el?.getBoundingClientRect();
+        const layerNode = layerById.get(node.id) || null;
         return {
           blockId: node.id,
           type: node.type,
+          layerParentId: layerNode?.layerParentId ?? null,
+          layerPreviousId: layerNode?.layerPreviousId ?? null,
+          layerRelation: layerNode?.layerRelation ?? null,
           tag: el?.tagName.toLowerCase() || node.type,
           role: el?.getAttribute('data-r20-layer-role') || '',
           nestedCount: el?.querySelectorAll('[data-r20-block-id]').length ?? node.childCount,
@@ -309,13 +315,14 @@ async function runImportedLayerReorder(page) {
         const target = describe(targetNode);
         const moving = describe(movingNode);
         if (!target.visible || !moving.visible) continue;
+        if (moving.layerRelation !== 'sibling' || moving.layerPreviousId !== target.blockId) continue;
         return {
-          parentBlockId: movingNode.parentId || 'workspace-root',
+          parentBlockId: moving.layerParentId || movingNode.parentId || 'workspace-root',
           target,
           moving,
-          siblingCount: graph.filter((node) => node.parentId === movingNode.parentId && node.depth === movingNode.depth).length,
-          beforeOrder: graph
-            .filter((node) => node.parentId === movingNode.parentId && node.depth === movingNode.depth)
+          siblingCount: layer.filter((node) => node.layerParentId === moving.layerParentId && node.depth === movingNode.depth).length,
+          beforeOrder: layer
+            .filter((node) => node.layerParentId === moving.layerParentId && node.depth === movingNode.depth)
             .map((node) => node.id),
         };
       }
@@ -332,6 +339,12 @@ async function runImportedLayerReorder(page) {
     const before = {
       movingIndex: emittedIndex(pair.moving.blockId),
       targetIndex: emittedIndex(pair.target.blockId),
+      targetLayer: {
+        relation: targetRow.getAttribute('data-r20-layer-relation') || '',
+        parentId: targetRow.getAttribute('data-r20-layer-parent-id') || null,
+        previousId: targetRow.getAttribute('data-r20-layer-previous-id') || null,
+        text: targetRow.textContent || '',
+      },
     };
     const rect = targetRow.getBoundingClientRect();
     const dt = new DataTransfer();
@@ -356,6 +369,8 @@ async function runImportedLayerReorder(page) {
       targetIndex: emittedIndex(pair.target.blockId),
     };
     const pass =
+      pair.moving.layerRelation === 'sibling' &&
+      pair.moving.layerPreviousId === pair.target.blockId &&
       before.movingIndex > before.targetIndex &&
       after.movingIndex >= 0 &&
       after.targetIndex >= 0 &&
@@ -391,12 +406,16 @@ async function runImportedNonLeafLayerReorder(page) {
         .map((node) => node.id);
     }
 
-    function describe(root, node, childIds) {
+    function describe(root, node, childIds, layerById) {
       const el = root.querySelector(`[data-r20-block-id="${CSS.escape(node.id)}"]`);
       const rect = el?.getBoundingClientRect();
+      const layerNode = layerById.get(node.id) || null;
       return {
         blockId: node.id,
         type: node.type,
+        layerParentId: layerNode?.layerParentId ?? null,
+        layerPreviousId: layerNode?.layerPreviousId ?? null,
+        layerRelation: layerNode?.layerRelation ?? null,
         tag: el?.tagName.toLowerCase() || node.type,
         role: el?.getAttribute('data-r20-layer-role') || '',
         childIds,
@@ -420,7 +439,9 @@ async function runImportedNonLeafLayerReorder(page) {
       if (!root) return null;
 
       const graph = window.__perfHook.getBlockGraph?.('html') || [];
+      const layer = window.__perfHook.getLayerSnapshot?.('html') || [];
       const byId = new Map(graph.map((node) => [node.id, node]));
+      const layerById = new Map(layer.map((node) => [node.id, node]));
       const siblingsOf = (node) => graph.filter((candidate) => candidate.parentId === node.parentId && candidate.depth === node.depth);
 
       for (const movingNode of graph) {
@@ -450,12 +471,17 @@ async function runImportedNonLeafLayerReorder(page) {
             `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(option.targetNode.id)}"]`,
           );
           if (!targetRow) continue;
-          const moving = describe(root, movingNode, childIds);
-          const target = describe(root, option.targetNode, directChildIds(graph, option.targetNode.id, option.targetNode.nextId));
+          const moving = describe(root, movingNode, childIds, layerById);
+          const target = describe(root, option.targetNode, directChildIds(graph, option.targetNode.id, option.targetNode.nextId), layerById);
           if (!moving.visible || !target.visible) continue;
+          const relationMatches =
+            option.direction === 'after'
+              ? target.layerRelation === 'sibling' && target.layerPreviousId === moving.blockId
+              : moving.layerRelation === 'sibling' && moving.layerPreviousId === target.blockId;
+          if (!relationMatches || moving.layerParentId !== target.layerParentId) continue;
           return {
             direction: option.direction,
-            parentBlockId: movingNode.parentId || 'workspace-root',
+            parentBlockId: moving.layerParentId || movingNode.parentId || 'workspace-root',
             moving,
             target,
             siblingCount: siblings.length,
@@ -484,6 +510,12 @@ async function runImportedNonLeafLayerReorder(page) {
     const before = {
       movingIndex: emittedIndex(candidate.moving.blockId),
       targetIndex: emittedIndex(candidate.target.blockId),
+      targetLayer: {
+        relation: targetRow.getAttribute('data-r20-layer-relation') || '',
+        parentId: targetRow.getAttribute('data-r20-layer-parent-id') || null,
+        previousId: targetRow.getAttribute('data-r20-layer-previous-id') || null,
+        text: targetRow.textContent || '',
+      },
       childParentIds: Object.fromEntries(
         candidate.moving.childIds.map((id) => [id, beforeGraph.find((node) => node.id === id)?.parentId ?? null]),
       ),
@@ -520,12 +552,21 @@ async function runImportedNonLeafLayerReorder(page) {
       targetAfter,
     };
     const childParentsPreserved = candidate.moving.childIds.every((id) => after.childParentIds[id] === candidate.moving.blockId);
+    const layerRelationMatches =
+      candidate.direction === 'after'
+        ? candidate.target.layerRelation === 'sibling' && candidate.target.layerPreviousId === candidate.moving.blockId
+        : candidate.moving.layerRelation === 'sibling' && candidate.moving.layerPreviousId === candidate.target.blockId;
+    const layerSameParent = candidate.moving.layerParentId === candidate.target.layerParentId;
+    const layerSameDepth = candidate.moving.layerParentId !== null && movingAfter?.depth === targetAfter?.depth;
     const movedAcrossTarget =
       candidate.direction === 'after'
         ? before.movingIndex < before.targetIndex && after.movingIndex > after.targetIndex
         : before.movingIndex > before.targetIndex && after.movingIndex < after.targetIndex;
     const pass =
       drop.defaultPrevented &&
+      layerRelationMatches &&
+      layerSameParent &&
+      layerSameDepth &&
       after.movingIndex >= 0 &&
       after.targetIndex >= 0 &&
       childParentsPreserved &&
@@ -538,6 +579,9 @@ async function runImportedNonLeafLayerReorder(page) {
       before,
       after,
       childParentsPreserved,
+      layerRelationMatches,
+      layerSameParent,
+      layerSameDepth,
       movedAcrossTarget,
       dropPrevented: drop.defaultPrevented,
     };
@@ -1478,7 +1522,7 @@ function renderMarkdown(report) {
   lines.push('Notes:');
   lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, a second widget dropped in user-facing free mode as nested absolute content, and the edited emit survived a re-import/emit cycle.');
   lines.push('- Interaction and resource status are separated. Use `--fail-on-resource-issues true` for visual-parity work where external images/fonts must load.');
-  lines.push('- Layer reorder is recorded when the imported Blockly graph exposes a safe adjacent leaf sibling pair. Non-leaf layer reorder records the stronger group/subtree case when a visible imported container with direct children has a safe adjacent sibling. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
+  lines.push('- Layer reorder is recorded when the imported Blockly graph and layer snapshot expose a safe adjacent leaf sibling pair. Non-leaf layer reorder records the stronger group/subtree case when a visible imported container with direct children has a safe adjacent sibling with matching layer parent/depth semantics. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
   lines.push('');
