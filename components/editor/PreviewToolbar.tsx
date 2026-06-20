@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Maximize2, Minus, Moon, Plus, RefreshCw, ShieldAlert, Sun } from 'lucide-react';
+import { Maximize2, Minus, Moon, Plus, ShieldAlert, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -114,7 +114,7 @@ export default function PreviewToolbar() {
               <span>맞춤</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top">현재 창 안에 시트 전체를 맞춰 보기</TooltipContent>
+          <TooltipContent side="top">현재 창 안에 시트 전체를 맞춰 봅니다.</TooltipContent>
         </Tooltip>
 
         <span className="min-w-[52px] text-center font-mono tabular-nums text-muted-foreground">
@@ -176,24 +176,9 @@ export default function PreviewToolbar() {
           </TooltipTrigger>
           <TooltipContent side="top">
             {legacyCssSanitize
-              ? '구버전 Roll20 CSS 무해화 적용 중'
-              : '신버전 Roll20 기준으로 보기'}
+              ? '구버전 Roll20 CSS 무해화를 적용 중입니다.'
+              : '신버전 Roll20 기준으로 봅니다.'}
           </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={iconButton}
-              aria-label="다시 그리기"
-            >
-              <RefreshCw className={iconSize} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="top">다시 그리기</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

@@ -4,6 +4,7 @@ Status: VERIFY/BLOCKED_ACTIVATION. This batch rechecked the live Roll20 Custom S
 
 - DONE FOLLOW-UP: Cleaned product-facing Korean copy in `MainAreaToolbar` and `PreviewEmptyState`, replacing mojibake mode labels/tooltips and empty-preview guidance with clear local-preview wording.
 - DONE FOLLOW-UP: Replaced temporary text-symbol mode markers in `MainAreaToolbar` with lucide icons (`PencilRuler`, `PanelsLeftRight`, `Blocks`, `Eye`) while keeping text labels visible.
+- DONE FOLLOW-UP: Cleaned `PreviewToolbar` Korean labels/tooltips/aria text and removed the dead refresh button that had no action handler. The legacy Roll20 CSS toggle remains available.
 - VERIFIED FOLLOW-UP: `guard:ui-copy`, `lint`, `build`, and `smoke:edit-flow -- --port 4210` passed. The smoke reported `editUiCopy.hasMojibakeHan=false`.
 - DONE FOLLOW-UP: Added `corepack pnpm run test:roll20-upload-snippet`, a self-test that fails if the settings-page manifest builder regresses from `{ sheet, userOptions, jsoninfo }` back to plain exported `sheet.json`.
 - VERIFIED FOLLOW-UP: `test:roll20-upload-snippet` passed and regenerated AW2E upload snippet reports `shape=wrapped-jsoninfo`.
