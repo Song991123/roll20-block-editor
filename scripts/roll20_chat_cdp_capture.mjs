@@ -21,9 +21,15 @@ const SKIP_CLICK = hasFlag('--skip-click');
 const WAIT_MS = Number(readOption('--wait-ms', '1500'));
 const DRY_RUN = hasFlag('--dry-run');
 const PLAN_ONLY = hasFlag('--plan-only') || hasFlag('--print-plan');
+const SELF_TEST_READINESS = hasFlag('--self-test-readiness');
+
+if (SELF_TEST_READINESS) {
+  runReadinessSelfTest();
+  process.exit(0);
+}
 
 if (!RUN_DIR || !FIXTURE_ID) {
-  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--skip-click] [--dry-run] [--plan-only]');
+  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--skip-click] [--dry-run] [--plan-only] [--self-test-readiness]');
   process.exit(2);
 }
 
@@ -72,17 +78,22 @@ async function main() {
       const urls = browser.contexts().flatMap((context) => context.pages()).map((candidate) => candidate.url());
       throw new Error(`no Roll20 page matching "${PAGE_MATCH}" found via ${CDP_URL}\nOpen pages:\n${urls.map((url) => `- ${url}`).join('\n')}`);
     }
+    const readiness = await getRoll20PageReadiness(page);
 
     if (DRY_RUN) {
       const summary = await pageSummary(page);
-      console.log(`ROLL20 CHAT CDP CAPTURE DRY_RUN`);
+      console.log(`ROLL20 CHAT CDP CAPTURE ${readiness.ready ? 'DRY_RUN_READY' : 'DRY_RUN_NOT_READY'}`);
       console.log(`page=${summary.url}`);
+      console.log(`readiness=${readiness.status}`);
+      console.log(`title=${summary.title}`);
       console.log(`frames=${summary.frames.length}`);
       console.log(`rollButton=${ROLL_BUTTON || '(none)'}`);
       console.log(`snippet=${rel(snippetPath)}`);
       console.log(`targets=${rel(chatPngPath)}, ${rel(sidecarPath)}`);
+      if (!readiness.ready) console.log(`next=${readiness.nextAction}`);
       return;
     }
+    assertCaptureReadyPage(readiness);
 
     if (!SKIP_CLICK) {
       const clicked = await clickRollButton(page, ROLL_BUTTON);
@@ -166,6 +177,95 @@ async function findRoll20Page(browser) {
   return null;
 }
 
+async function getRoll20PageReadiness(page) {
+  const url = page.url();
+  const title = await page.title().catch(() => '');
+  const status = classifyRoll20Target({ url, title });
+  return {
+    ready: status === 'CAPTURE_READY',
+    status,
+    url,
+    title,
+    nextAction: nextActionForReadiness(status),
+  };
+}
+
+function assertCaptureReadyPage(readiness) {
+  if (readiness.ready) return;
+  throw new Error([
+    'ROLL20 CHAT CDP CAPTURE BLOCKED_PAGE_NOT_READY',
+    `status=${readiness.status}`,
+    `page=${readiness.url}`,
+    `title=${readiness.title}`,
+    `next=${readiness.nextAction}`,
+  ].join('\n'));
+}
+
+function classifyRoll20Target(target) {
+  const url = String(target.url ?? '');
+  const title = String(target.title ?? '');
+  if (/\/login(?:$|[?#/])/.test(url)) return 'LOGIN_REQUIRED';
+  if (/__cf_chl_|Just a moment|잠시|기다/i.test(url) || /Just a moment|잠시|기다/i.test(title)) {
+    return 'CHALLENGE_OR_WAITING';
+  }
+  if (/\/editor(?:$|[?#/])/.test(url) || /\/campaigns\/details\//.test(url)) return 'CAPTURE_READY';
+  return 'UNKNOWN_ROLL20_PAGE';
+}
+
+function nextActionForReadiness(status) {
+  if (status === 'LOGIN_REQUIRED') {
+    return 'Log in to Roll20 inside the CDP-enabled browser, open the dedicated Sandbox/test room, then rerun capture.';
+  }
+  if (status === 'CHALLENGE_OR_WAITING') {
+    return 'Wait for the Roll20/Cloudflare challenge to finish in the CDP-enabled browser, then rerun capture.';
+  }
+  if (status === 'UNKNOWN_ROLL20_PAGE') {
+    return 'Navigate the CDP-enabled browser to the dedicated Roll20 Sandbox/test room, then rerun capture.';
+  }
+  return 'Open the dedicated Roll20 Sandbox/test room in the CDP-enabled browser, then rerun capture.';
+}
+
+function runReadinessSelfTest() {
+  const cases = [
+    {
+      name: 'login',
+      target: { url: 'https://app.roll20.net/login', title: 'Login' },
+      expected: 'LOGIN_REQUIRED',
+    },
+    {
+      name: 'cloudflare',
+      target: { url: 'https://app.roll20.net/editor?__cf_chl_rt_tk=abc', title: 'Just a moment...' },
+      expected: 'CHALLENGE_OR_WAITING',
+    },
+    {
+      name: 'editor',
+      target: { url: 'https://app.roll20.net/editor', title: 'Codex Roll20 Verify | Roll20' },
+      expected: 'CAPTURE_READY',
+    },
+    {
+      name: 'campaign',
+      target: { url: 'https://app.roll20.net/campaigns/details/123/test', title: 'Test Campaign' },
+      expected: 'CAPTURE_READY',
+    },
+    {
+      name: 'unknown',
+      target: { url: 'https://app.roll20.net/account', title: 'Account' },
+      expected: 'UNKNOWN_ROLL20_PAGE',
+    },
+  ];
+  const failures = cases
+    .map((testCase) => ({
+      ...testCase,
+      actual: classifyRoll20Target(testCase.target),
+    }))
+    .filter((testCase) => testCase.actual !== testCase.expected);
+  if (failures.length) {
+    console.error(`ROLL20 CHAT CDP CAPTURE READINESS_SELF_TEST FAIL ${JSON.stringify(failures, null, 2)}`);
+    process.exit(1);
+  }
+  console.log('ROLL20 CHAT CDP CAPTURE READINESS_SELF_TEST PASS');
+}
+
 async function clickRollButton(page, requestedName) {
   const names = requestedName ? [requestedName] : await suggestedRollButtons();
   if (!names.length) return { ok: false, reason: 'no --roll-button provided and no suggested roll buttons found in capture plan' };
@@ -230,6 +330,7 @@ function normalizeClip(raw) {
 async function pageSummary(page) {
   return {
     url: page.url(),
+    title: await page.title().catch(() => ''),
     frames: page.frames().map((frame) => ({ url: frame.url(), name: frame.name() })),
   };
 }

@@ -1,3 +1,10 @@
+## 2026-06-20 Roll20 Chat CDP Capture Readiness Guard
+
+- Tightened `scripts/roll20_chat_cdp_capture.mjs` so it checks the matched Roll20 page readiness before clicking roll buttons or evaluating the chat DOM probe. Login, challenge, and unknown Roll20 pages now block with structured `ROLL20 CHAT CDP CAPTURE BLOCKED_PAGE_NOT_READY`.
+- Added `test:roll20-chat-cdp-readiness` to exercise login/challenge/editor/campaign/unknown classification without a live CDP endpoint.
+- Verification: readiness self-test passed; closed-CDP dry-run still fails with the expected `BLOCKED_CDP_ENDPOINT`; `lint`, `build`, and `guard:roll20-evidence` passed.
+- Boundary: no Roll20 chat evidence was recaptured. This is a guardrail against false or stale evidence while waiting for a logged-in CDP Sandbox/test-room tab.
+
 ## 2026-06-20 Roll20 CDP Readiness Classification
 
 - Launched a dedicated CDP Chrome profile and navigated it to Roll20 during the session. That proved the endpoint path can become reachable, but the tab resolved to Roll20 login/challenge flow rather than the Sandbox/test room; later non-launched verification can return `CDP_CLOSED` if that browser is closed.

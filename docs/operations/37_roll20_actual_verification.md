@@ -214,6 +214,9 @@ unless `--launch` is passed, and it does not capture or upload evidence.
 `READY` means a matching Roll20 editor/campaign target is present; login and
 challenge pages are reported separately as `LOGIN_REQUIRED` or
 `CHALLENGE_OR_WAITING` and must not be used for capture.
+The CDP chat capture helper applies the same readiness guard before clicking or
+probing the page. Use `corepack pnpm run test:roll20-chat-cdp-readiness` after
+changing that classifier.
 
 The plan writes ignored local output under
 `reports/roll20-actual-compare/<label>/roll20-chat-capture-plan/`. It lists the

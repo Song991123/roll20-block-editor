@@ -1,3 +1,12 @@
+## 2026-06-20 Codex Update - Roll20 chat CDP capture readiness guard
+
+Status: VERIFY/BLOCKED_CDP. This batch prevents `capture:roll20-chat-cdp` from attempting evidence capture on Roll20 login/challenge/non-room pages.
+
+- DONE: `scripts/roll20_chat_cdp_capture.mjs` now classifies the matched Roll20 page before clicking or evaluating the chat probe. Non-ready pages throw structured `ROLL20 CHAT CDP CAPTURE BLOCKED_PAGE_NOT_READY`.
+- DONE: Dry-run output now includes page readiness and next action. Added `corepack pnpm run test:roll20-chat-cdp-readiness` for local readiness classification self-test.
+- VERIFIED: `test:roll20-chat-cdp-readiness` passed. Closed-CDP dry-run still fails with the expected structured `BLOCKED_CDP_ENDPOINT`. `lint`, `build`, and `guard:roll20-evidence` passed.
+- STILL TODO P0: Open a CDP-enabled, logged-in Roll20 Sandbox/test-room tab, rerun preflight until `READY`, then run actual AW2E/Les-Oublies chat captures.
+
 ## 2026-06-20 Codex Update - Roll20 CDP preflight readiness classification
 
 Status: VERIFY/BLOCKED_LOGIN. This batch prevents the CDP preflight from treating Roll20 login/challenge pages as capture-ready.
