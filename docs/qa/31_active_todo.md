@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - imported root-subtree shape metrics
+
+Status: VERIFY. This adds sanitized root-subtree diagnostics to imported edit smoke/budget reports; it does not reduce injection time yet.
+
+- DONE: `smoke:imported-edit-sync` now records `htmlWorkspaceShape` with root-subtree block counts, max depth, and top block types without persisting block IDs/text/source snippets.
+- DONE: `budget:imported-edit` now reports `Max root subtree`, largest-root percentage, and max depth in redacted summaries.
+- LOCAL PRIVATE RESULT: A 6530 HTML-block private fixture had `7` HTML roots; the largest root subtree contained `4158` blocks (`63.7%`) with max depth `47`.
+- LOCAL PRIVATE RESULT: Top types in the largest root were mostly table/control-derived blocks (`r20_td`, `r20_literal_string`, `r20_roll_button`, `r20_tr`, `r20_i18n_text`), pointing toward composite reduction or lazy subtree materialization rather than more top-level chunking.
+- LOCAL PRIVATE RESULT: The latest shape run passed edit/preview/reimport sync, resource checks, console/page checks, and drag drift stayed `0px`; import was about `4939.1ms`, inject about `4801ms`, emit about `58.9ms`.
+- STILL TODO P0: Implement structural import optimization against the largest root-subtree path: composite table/control row reduction, lazy Blockly materialization, or subtree-level hydration.
+
 ## 2026-06-20 Codex Update - imported workspace shape metrics
 
 Status: VERIFY. This adds workspace shape metrics to imported edit smoke/budget reports; it does not reduce injection time yet.

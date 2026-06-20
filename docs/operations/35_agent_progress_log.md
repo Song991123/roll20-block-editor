@@ -1,3 +1,13 @@
+## 2026-06-20 Imported Root-Subtree Shape Metrics
+
+- Added sanitized root-subtree diagnostics to `scripts/imported_edit_sync_smoke.mjs`.
+- `htmlWorkspaceShape` records HTML root count, largest root-subtree block count/percentage, max depth, and top block types while omitting block IDs, DOM text, HTML snippets, CSS snippets, and private paths.
+- Extended `scripts/imported_edit_perf_budget.mjs` so redacted budget summaries include max root subtree, largest-root percentage, and max root depth.
+- Local private result: 6530 HTML blocks, 7 HTML roots, largest root subtree 4158 blocks (`63.7%`), max depth 47, total workspace blocks 8627.
+- Timing from the same run: import about `4939.1ms`, Blockly inject about `4801ms`, emit about `58.9ms`, drag drift `0px`, edit/preview/reimport sync PASS, console/page/resource checks PASS.
+- Interpretation: the next import performance work should target the largest root subtree. More top-level chunking is unlikely to be enough; likely paths are table/control composite reduction, lazy Blockly materialization, or subtree-level hydration.
+- Claim boundary: diagnostics only. No production performance optimization or Roll20 visual parity was shipped in this batch.
+
 ## 2026-06-20 Imported Workspace Shape Metrics
 
 - Added `workspaceAfterImport` to `scripts/imported_edit_sync_smoke.mjs`.

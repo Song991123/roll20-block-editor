@@ -68,6 +68,8 @@ function summarizeFixture(fixture, index) {
   const importTotalMs = round(fixture.import?.totalMs);
   const injectMs = round(fixture.import?.injectMs);
   const emitMs = round(fixture.import?.emitMs);
+  const htmlShape = fixture.htmlWorkspaceShape ?? {};
+  const largestRoot = htmlShape.roots?.[0] ?? null;
   const statuses = {
     interaction: fixture.interactionPass ? 'PASS' : 'FAIL',
     importTotalMs: statusFor(importTotalMs, BUDGETS.importTotalMs),
@@ -88,6 +90,12 @@ function summarizeFixture(fixture, index) {
       workerBlockCount: fixture.import?.workerBlockCount ?? null,
       rootHtmlBlocks: fixture.workspaceAfterImport?.rootBlocks?.html ?? null,
       totalWorkspaceBlocks: fixture.workspaceAfterImport?.totalBlocks ?? null,
+      htmlRootBlocks: htmlShape.rootBlocks ?? fixture.workspaceAfterImport?.rootBlocks?.html ?? null,
+      largestRootSubtreeBlocks: htmlShape.largestRootSubtreeBlocks ?? null,
+      largestRootSubtreePct: htmlShape.largestRootSubtreePct ?? null,
+      largestRootType: largestRoot?.rootType ?? null,
+      largestRootMaxDepth: largestRoot?.maxDepth ?? null,
+      largestRootTopTypes: Array.isArray(largestRoot?.topTypes) ? largestRoot.topTypes : [],
       importTotalMs,
       parseMs: round(fixture.import?.parseMs),
       injectMs,
@@ -115,8 +123,8 @@ function renderMarkdown(summary) {
   lines.push(`Source: \`${summary.source}\``);
   lines.push(`Overall: **${summary.status}**`);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Root HTML | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
-  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
+  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
+  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
   for (const item of summary.fixtures) {
     const m = item.metrics;
     lines.push([
@@ -124,6 +132,9 @@ function renderMarkdown(summary) {
       item.status,
       m.blockCount ?? '',
       m.rootHtmlBlocks ?? '',
+      m.largestRootSubtreeBlocks ?? '',
+      m.largestRootSubtreePct ?? '',
+      m.largestRootMaxDepth ?? '',
       m.importTotalMs ?? '',
       m.injectMs ?? '',
       m.emitMs ?? '',
@@ -141,6 +152,7 @@ function renderMarkdown(summary) {
   lines.push(`- Blockly inject: WARN >= ${BUDGETS.injectMs.warn}ms, FAIL >= ${BUDGETS.injectMs.fail}ms`);
   lines.push(`- Emit: WARN >= ${BUDGETS.emitMs.warn}ms, FAIL >= ${BUDGETS.emitMs.fail}ms`);
   lines.push(`- Drag drift: WARN >= ${BUDGETS.dragDriftPx.warn}px, FAIL >= ${BUDGETS.dragDriftPx.fail}px`);
+  lines.push('- Shape metrics are sanitized structural counts only. They omit block IDs, DOM text, HTML snippets, CSS snippets, and private fixture paths.');
   lines.push('');
   lines.push('Claim boundary: this report measures local imported edit performance only. It does not prove Roll20 visual parity.');
   lines.push('');

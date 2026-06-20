@@ -1320,6 +1320,84 @@ function cssPx(value) {
   return Number.isFinite(n) ? Math.round(n) : null;
 }
 
+function summarizeHtmlWorkspaceShape(graph) {
+  if (!Array.isArray(graph) || graph.length === 0) {
+    return {
+      totalBlocks: 0,
+      rootBlocks: 0,
+      largestRootSubtreeBlocks: 0,
+      largestRootSubtreePct: 0,
+      maxDepth: 0,
+      roots: [],
+    };
+  }
+
+  const byId = new Map(graph.map((node) => [node.id, node]));
+  const rootOf = new Map();
+
+  function findRootId(node) {
+    if (!node?.id) return null;
+    if (rootOf.has(node.id)) return rootOf.get(node.id);
+    const seen = new Set();
+    let current = node;
+    while (current?.id && !seen.has(current.id)) {
+      seen.add(current.id);
+      const parent = current.parentId ? byId.get(current.parentId) : null;
+      const previous = current.previousId ? byId.get(current.previousId) : null;
+      const nextAncestor = parent || previous;
+      if (!nextAncestor) break;
+      current = nextAncestor;
+    }
+    const rootId = current?.id ?? node.id;
+    for (const id of seen) rootOf.set(id, rootId);
+    return rootId;
+  }
+
+  const buckets = new Map();
+  for (const node of graph) {
+    const rootId = findRootId(node);
+    if (!rootId) continue;
+    const bucket = buckets.get(rootId) || {
+      rootType: byId.get(rootId)?.type || '',
+      blockCount: 0,
+      maxDepth: 0,
+      directChildren: 0,
+      nextChainBlocks: 0,
+      types: new Map(),
+    };
+    bucket.blockCount += 1;
+    bucket.maxDepth = Math.max(bucket.maxDepth, Number(node.depth) || 0);
+    if (node.parentId === rootId) bucket.directChildren += 1;
+    if (node.previousId) bucket.nextChainBlocks += 1;
+    bucket.types.set(node.type, (bucket.types.get(node.type) || 0) + 1);
+    buckets.set(rootId, bucket);
+  }
+
+  const roots = Array.from(buckets.values())
+    .map((bucket) => ({
+      rootType: bucket.rootType,
+      blockCount: bucket.blockCount,
+      maxDepth: bucket.maxDepth,
+      directChildren: bucket.directChildren,
+      nextChainBlocks: bucket.nextChainBlocks,
+      topTypes: Array.from(bucket.types.entries())
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, 5)
+        .map(([type, count]) => ({ type, count })),
+    }))
+    .sort((a, b) => b.blockCount - a.blockCount || a.rootType.localeCompare(b.rootType));
+
+  const largest = roots[0]?.blockCount || 0;
+  return {
+    totalBlocks: graph.length,
+    rootBlocks: roots.length,
+    largestRootSubtreeBlocks: largest,
+    largestRootSubtreePct: graph.length ? Math.round((largest / graph.length) * 1000) / 10 : 0,
+    maxDepth: roots.reduce((max, root) => Math.max(max, root.maxDepth), 0),
+    roots: roots.slice(0, 8),
+  };
+}
+
 function renderMarkdown(report) {
   const lines = [];
   lines.push('# Imported Edit Sync Smoke');
@@ -1341,6 +1419,18 @@ function renderMarkdown(report) {
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
   lines.push('- Screenshots and reports are local-only and ignored by Git.');
   lines.push('');
+  lines.push('## HTML Workspace Shape');
+  lines.push('');
+  lines.push('| Fixture | HTML blocks | Root blocks | Largest root subtree | Largest % | Max depth | Largest root type | Largest root top types |');
+  lines.push('| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |');
+  for (const item of report.fixtures) {
+    const shape = item.htmlWorkspaceShape;
+    const largest = shape?.roots?.[0];
+    lines.push(`| \`${item.id}\` | ${shape?.totalBlocks ?? ''} | ${shape?.rootBlocks ?? ''} | ${shape?.largestRootSubtreeBlocks ?? ''} | ${shape?.largestRootSubtreePct ?? ''} | ${shape?.maxDepth ?? ''} | ${largest?.rootType ?? ''} | ${fmtTopTypes(largest?.topTypes)} |`);
+  }
+  lines.push('');
+  lines.push('Shape note: this is structural only and omits block IDs, text, HTML snippets, and CSS snippets. A few very large root subtrees means top-level chunking will not be enough for imported-sheet performance.');
+  lines.push('');
   lines.push('## Resource Diagnostics');
   lines.push('');
   lines.push('| Fixture | Resource issues | Top failures |');
@@ -1349,6 +1439,11 @@ function renderMarkdown(report) {
     lines.push(`| \`${item.id}\` | ${sumResourceIssues(item.resourceIssues)} | ${fmtResourceIssues(item.resourceIssues)} |`);
   }
   return `${lines.join('\n')}\n`;
+}
+
+function fmtTopTypes(items) {
+  if (!Array.isArray(items) || items.length === 0) return '';
+  return items.map((item) => `${item.type}:${item.count}`).join('<br>');
 }
 
 function fmtRel(item) {
@@ -1468,6 +1563,9 @@ async function main() {
         await warmPerfHook(page);
         entry.import = await importFixture(page, fixture);
         entry.workspaceAfterImport = await page.evaluate(() => window.__perfHook.getWorkspace());
+        entry.htmlWorkspaceShape = summarizeHtmlWorkspaceShape(
+          await page.evaluate(() => window.__perfHook.getBlockGraph?.('html') || []),
+        );
         await page.waitForTimeout(1300);
         entry.layerReorder = await runImportedLayerReorder(page);
         entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page);
