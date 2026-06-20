@@ -6,6 +6,7 @@ Status: PARTIAL. This adds a diagnostic decomposition report; it does not change
 - DONE: Wired row-compositing evidence into `gate:roll20-renderer-action`.
 - RESULT: The probe splits row mismatch into text/edge, flat background, local darker/brighter, and chroma/color buckets.
 - RESULT: YSHY 1BU is classified as `BACKGROUND_COMPOSITING_MODEL_REQUIRED`: row-weighted mismatch `23.15%`, edge mismatch share `0%`, flat paint mismatch share `100%`, local-darker share `63.32%`.
+- RESULT: Virtual row luma correction is a weak explanation for YSHY: row-weighted mismatch only moves `23.15% -> 22.57%` (`-0.58%p`). Do not try a simple brightness/filter/luma CSS patch.
 - RESULT: This supports the current P0 direction: the next YSHY/CoC candidate should model row background compositing/source context, not text antialiasing, CSS filters, table scale, background-size, or broad typography.
 - RESULT: Les-Oublies is `LOCAL_BACKGROUND_TOO_DARK` in this diagnostic, but it remains lower priority and still needs current same-action sidecar recapture before cross-fixture rollout.
 - RESULT: AW2E is `COLOR_ASSET_RASTER_MODEL_REQUIRED`, confirming again that chat renderer work is split by template and cannot become a global ChatPane CSS patch.

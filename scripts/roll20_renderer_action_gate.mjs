@@ -578,7 +578,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   if (chatRowCompositingProbeSummary) {
     positiveFindings.push(`chat row compositing probe: status=${chatRowCompositingProbeSummary.status}, actionable=${chatRowCompositingProbeSummary.actionable}/${chatRowCompositingProbeSummary.totalFixtures}, decisions=${formatFindingCounts(chatRowCompositingProbeSummary.decisions)}`);
     for (const fixture of chatRowCompositingProbeSummary.actionableFixtures) {
-      positiveFindings.push(`${fixture.fixtureId} compositing=${fixture.decision}, weighted=${fixture.rowWeightedMismatchPct || 'n/a'}, edge=${fixture.edgeMismatchSharePct || 'n/a'}, flat=${fixture.flatPaintMismatchSharePct || 'n/a'}, darker=${fixture.localDarkerMismatchSharePct || 'n/a'}, next=${fixture.nextAction}`);
+      positiveFindings.push(`${fixture.fixtureId} compositing=${fixture.decision}, weighted=${fixture.rowWeightedMismatchPct || 'n/a'}, lumaCorrected=${fixture.lumaCorrectedMismatchPct || 'n/a'}, gain=${fmtSigned(fixture.lumaCorrectionGainPct)}, edge=${fixture.edgeMismatchSharePct || 'n/a'}, flat=${fixture.flatPaintMismatchSharePct || 'n/a'}, darker=${fixture.localDarkerMismatchSharePct || 'n/a'}, next=${fixture.nextAction}`);
     }
   }
   if (!chatRowGeometrySummary) {
@@ -1436,6 +1436,8 @@ function summarizeChatRowCompositingProbe(report) {
     alignedMismatchPct: fixture.alignedMismatchPct ?? '',
     comparedRows: Number(fixture.comparedRows ?? 0),
     rowWeightedMismatchPct: fixture.summary?.rowWeightedMismatchPct ?? '',
+    lumaCorrectedMismatchPct: fixture.summary?.lumaCorrectedMismatchPct ?? '',
+    lumaCorrectionGainPct: fixture.summary?.lumaCorrectionGainPct ?? null,
     edgeMismatchSharePct: fixture.summary?.edgeMismatchSharePct ?? '',
     flatPaintMismatchSharePct: fixture.summary?.flatPaintMismatchSharePct ?? '',
     localDarkerMismatchSharePct: fixture.summary?.localDarkerMismatchSharePct ?? '',
@@ -1444,6 +1446,8 @@ function summarizeChatRowCompositingProbe(report) {
     worstRowIndex: fixture.worstRows?.[0]?.index ?? null,
     worstRowDecision: fixture.worstRows?.[0]?.decision ?? '',
     worstRowMismatchPct: fixture.worstRows?.[0]?.mismatchPct ?? '',
+    worstRowLumaCorrectedMismatchPct: fixture.worstRows?.[0]?.lumaCorrectedMismatchPct ?? '',
+    worstRowLumaCorrectionGainPct: fixture.worstRows?.[0]?.lumaCorrectionGainPct ?? null,
     worstRowEdgeMismatchSharePct: fixture.worstRows?.[0]?.edgeMismatchSharePct ?? '',
     worstRowFlatPaintMismatchSharePct: fixture.worstRows?.[0]?.flatPaintMismatchSharePct ?? '',
     worstRowLocalDarkerMismatchSharePct: fixture.worstRows?.[0]?.localDarkerMismatchSharePct ?? '',
@@ -2058,10 +2062,10 @@ function renderMarkdown(report) {
     lines.push(`- Decisions: ${formatFindingCounts(report.chatRowCompositingProbe.decisions)}`);
     if (report.chatRowCompositingProbe.actionableFixtures.length) {
       lines.push('');
-      lines.push('| Fixture | Decision | Rows | Weighted | Edge | Flat paint | Local darker | Local brighter | Chroma | Worst row | Worst row type | Next action |');
-      lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |');
+      lines.push('| Fixture | Decision | Rows | Weighted | Luma-corrected | Gain | Edge | Flat paint | Local darker | Chroma | Worst row | Worst row type | Next action |');
+      lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |');
       for (const fixture of report.chatRowCompositingProbe.actionableFixtures) {
-        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fixture.comparedRows} | ${fixture.rowWeightedMismatchPct || 'n/a'} | ${fixture.edgeMismatchSharePct || 'n/a'} | ${fixture.flatPaintMismatchSharePct || 'n/a'} | ${fixture.localDarkerMismatchSharePct || 'n/a'} | ${fixture.localBrighterMismatchSharePct || 'n/a'} | ${fixture.chromaMismatchSharePct || 'n/a'} | ${fixture.worstRowIndex ?? 'n/a'} | ${fixture.worstRowDecision || 'n/a'} | ${fixture.nextAction} |`);
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fixture.comparedRows} | ${fixture.rowWeightedMismatchPct || 'n/a'} | ${fixture.lumaCorrectedMismatchPct || 'n/a'} | ${fmtSigned(fixture.lumaCorrectionGainPct)} | ${fixture.edgeMismatchSharePct || 'n/a'} | ${fixture.flatPaintMismatchSharePct || 'n/a'} | ${fixture.localDarkerMismatchSharePct || 'n/a'} | ${fixture.chromaMismatchSharePct || 'n/a'} | ${fixture.worstRowIndex ?? 'n/a'} | ${fixture.worstRowDecision || 'n/a'} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');

@@ -66,7 +66,7 @@ async function main() {
   console.log(`ROLL20 CHAT ROW COMPOSITING PROBE ${report.summary.status}`);
   for (const fixture of fixtures) {
     const worst = fixture.worstRows?.[0];
-    console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} decision=${fixture.decision} mismatch=${fixture.alignedMismatchPct} worst=${worst?.index ?? 'n/a'} edge=${worst?.edgeMismatchSharePct ?? 'n/a'} flat=${worst?.flatPaintMismatchSharePct ?? 'n/a'} localDarker=${worst?.localDarkerMismatchSharePct ?? 'n/a'} next=${fixture.nextAction}`);
+    console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} decision=${fixture.decision} mismatch=${fixture.alignedMismatchPct} weighted=${fixture.summary?.rowWeightedMismatchPct ?? 'n/a'} lumaCorrected=${fixture.summary?.lumaCorrectedMismatchPct ?? 'n/a'} gain=${signedPct(fixture.summary?.lumaCorrectionGainPct)} worst=${worst?.index ?? 'n/a'} edge=${worst?.edgeMismatchSharePct ?? 'n/a'} flat=${worst?.flatPaintMismatchSharePct ?? 'n/a'} localDarker=${worst?.localDarkerMismatchSharePct ?? 'n/a'} next=${fixture.nextAction}`);
   }
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
@@ -180,8 +180,10 @@ async function decomposeRows(page, payload) {
       const y0 = Math.max(0, rowRect.y);
       const x1 = Math.min(width, rowRect.x + rowRect.width);
       const y1 = Math.min(height, rowRect.y + rowRect.height);
+      const samples = [];
       const buckets = {
         mismatchPixels: 0,
+        lumaCorrectedMismatchPixels: 0,
         edgeMismatchPixels: 0,
         flatPaintMismatchPixels: 0,
         localDarkerMismatchPixels: 0,
@@ -208,10 +210,37 @@ async function decomposeRows(page, payload) {
           const dr = Math.abs(localData.data[li] - actualData.data[ai]);
           const dg = Math.abs(localData.data[li + 1] - actualData.data[ai + 1]);
           const db = Math.abs(localData.data[li + 2] - actualData.data[ai + 2]);
-          const chromaDelta = Math.max(dr, dg, db) - Math.min(dr, dg, db);
           pixels += 1;
           localLumaSum += localLuma;
           actualLumaSum += actualLuma;
+          samples.push({
+            li,
+            ai,
+            lx,
+            ly,
+            ax,
+            ay,
+            localLuma,
+            actualLuma,
+            dr,
+            dg,
+            db,
+          });
+        }
+      }
+      const lumaShift = pixels ? (actualLumaSum - localLumaSum) / pixels : 0;
+      for (const sample of samples) {
+        const { li, ai, lx, ly, ax, ay, localLuma, actualLuma, dr, dg, db } = sample;
+        const corrected = [
+          Math.max(0, Math.min(255, localData.data[li] + lumaShift)),
+          Math.max(0, Math.min(255, localData.data[li + 1] + lumaShift)),
+          Math.max(0, Math.min(255, localData.data[li + 2] + lumaShift)),
+        ];
+        const cdr = Math.abs(corrected[0] - actualData.data[ai]);
+        const cdg = Math.abs(corrected[1] - actualData.data[ai + 1]);
+        const cdb = Math.abs(corrected[2] - actualData.data[ai + 2]);
+        if (cdr + cdg + cdb > 60) buckets.lumaCorrectedMismatchPixels += 1;
+        const chromaDelta = Math.max(dr, dg, db) - Math.min(dr, dg, db);
           if (dr + dg + db <= 60) continue;
           buckets.mismatchPixels += 1;
           signedLumaDeltaOnMismatch += localLuma - actualLuma;
@@ -225,14 +254,19 @@ async function decomposeRows(page, payload) {
           if (chromaDelta > 18) buckets.chromaMismatchPixels += 1;
           if (localLuma < 90 || actualLuma < 90) buckets.darkPairMismatchPixels += 1;
           if (localLuma > 175 || actualLuma > 175) buckets.brightPairMismatchPixels += 1;
-        }
       }
       const mismatch = buckets.mismatchPixels || 1;
+      const mismatchRatio = pixels ? buckets.mismatchPixels / pixels : 0;
+      const lumaCorrectedMismatchRatio = pixels ? buckets.lumaCorrectedMismatchPixels / pixels : 0;
       return {
         pixels,
         ...buckets,
-        mismatchRatio: pixels ? buckets.mismatchPixels / pixels : 0,
-        mismatchPct: pixels ? pct(buckets.mismatchPixels / pixels) : '',
+        mismatchRatio,
+        mismatchPct: pixels ? pct(mismatchRatio) : '',
+        lumaShift: Number(lumaShift.toFixed(3)),
+        lumaCorrectedMismatchRatio,
+        lumaCorrectedMismatchPct: pixels ? pct(lumaCorrectedMismatchRatio) : '',
+        lumaCorrectionGainPct: pixels ? Number(((lumaCorrectedMismatchRatio - mismatchRatio) * 100).toFixed(2)) : null,
         avgLocalLuma: pixels ? Number((localLumaSum / pixels).toFixed(3)) : null,
         avgActualLuma: pixels ? Number((actualLumaSum / pixels).toFixed(3)) : null,
         avgSignedLumaDelta: buckets.mismatchPixels ? Number((signedLumaDeltaOnMismatch / buckets.mismatchPixels).toFixed(3)) : 0,
@@ -246,6 +280,7 @@ async function decomposeRows(page, payload) {
       };
     }
     function rowDecision(row) {
+      if (row.lumaCorrectionGainPct <= -5 && row.flatPaintMismatchShare >= 0.45) return 'LUMA_BACKGROUND_COMPOSITING';
       if (row.edgeMismatchShare >= 0.45 && row.flatPaintMismatchShare < 0.45) return 'TEXT_EDGE_OR_ANTIALIASING';
       if (row.flatPaintMismatchShare >= 0.45 && row.localDarkerMismatchShare >= 0.45) return 'LOCAL_BACKGROUND_TOO_DARK';
       if (row.flatPaintMismatchShare >= 0.45 && row.localBrighterMismatchShare >= 0.45) return 'LOCAL_BACKGROUND_TOO_BRIGHT';
@@ -311,6 +346,7 @@ async function decomposeRows(page, payload) {
       });
     }
     const mismatchPixels = rows.reduce((sum, row) => sum + row.mismatchPixels, 0);
+    const lumaCorrectedMismatchPixels = rows.reduce((sum, row) => sum + row.lumaCorrectedMismatchPixels, 0);
     const pixels = rows.reduce((sum, row) => sum + row.pixels, 0);
     const share = (key) => mismatchPixels ? rows.reduce((sum, row) => sum + row[key], 0) / mismatchPixels : 0;
     const decisions = rows.reduce((acc, row) => {
@@ -329,6 +365,9 @@ async function decomposeRows(page, payload) {
         rows: rows.length,
         rowWeightedMismatchRatio: pixels ? mismatchPixels / pixels : 0,
         rowWeightedMismatchPct: pixels ? pct(mismatchPixels / pixels) : '',
+        lumaCorrectedMismatchRatio: pixels ? lumaCorrectedMismatchPixels / pixels : 0,
+        lumaCorrectedMismatchPct: pixels ? pct(lumaCorrectedMismatchPixels / pixels) : '',
+        lumaCorrectionGainPct: pixels ? Number((((lumaCorrectedMismatchPixels - mismatchPixels) / pixels) * 100).toFixed(2)) : null,
         edgeMismatchShare: share('edgeMismatchPixels'),
         flatPaintMismatchShare: share('flatPaintMismatchPixels'),
         localDarkerMismatchShare: share('localDarkerMismatchPixels'),
@@ -360,6 +399,9 @@ function decide({ priority, decomposition, rowPaintSource, raster }) {
   if (!decomposition?.rows?.length) return 'MISSING_EVIDENCE';
   const summary = decomposition.summary;
   const worst = decomposition.rows.slice().sort((a, b) => b.mismatchRatio - a.mismatchRatio)[0];
+  if (summary.lumaCorrectionGainPct <= -5 && summary.flatPaintMismatchShare >= 0.45) {
+    return 'LUMA_BACKGROUND_COMPOSITING_MODEL_REQUIRED';
+  }
   if (rowPaintSource?.decision === 'ROW_BAND_RASTER_CONTEXT_REQUIRED' && summary.flatPaintMismatchShare >= 0.42) {
     return 'BACKGROUND_COMPOSITING_MODEL_REQUIRED';
   }
@@ -376,6 +418,8 @@ function nextAction(decision) {
   switch (decision) {
     case 'BACKGROUND_COMPOSITING_MODEL_REQUIRED':
       return 'build the next YSHY/CoC candidate around row background compositing/source context; do not use CSS filter';
+    case 'LUMA_BACKGROUND_COMPOSITING_MODEL_REQUIRED':
+      return 'model the Roll20 row background/luma compositing path before writing CSS; virtual luma correction explains a meaningful slice of the mismatch';
     case 'LOCAL_BACKGROUND_TOO_DARK':
       return 'inspect why local row background raster is darker than actual Roll20, focusing on background layer/source/capture context rather than table width';
     case 'TEXT_EDGE_RASTER_MODEL_REQUIRED':
@@ -396,6 +440,7 @@ function evidenceNotes({ decomposition, rowPaintSource, raster }) {
   if (rowPaintSource?.decision) notes.push(`row/paint/source decision ${rowPaintSource.decision}`);
   if (raster?.decision) notes.push(`row raster decision ${raster.decision}`);
   notes.push(`row-weighted mismatch ${decomposition.summary.rowWeightedMismatchPct}`);
+  notes.push(`virtual luma-corrected mismatch ${decomposition.summary.lumaCorrectedMismatchPct} (${signedPct(decomposition.summary.lumaCorrectionGainPct)})`);
   notes.push(`edge mismatch share ${decomposition.summary.edgeMismatchSharePct}`);
   notes.push(`flat paint mismatch share ${decomposition.summary.flatPaintMismatchSharePct}`);
   notes.push(`local darker share ${decomposition.summary.localDarkerMismatchSharePct}`);
@@ -403,7 +448,7 @@ function evidenceNotes({ decomposition, rowPaintSource, raster }) {
   notes.push(`chroma mismatch share ${decomposition.summary.chromaMismatchSharePct}`);
   const worst = decomposition.rows.slice().sort((a, b) => b.mismatchRatio - a.mismatchRatio)[0];
   if (worst) {
-    notes.push(`worst row ${worst.index}: ${worst.decision}, mismatch ${worst.mismatchPct}, edge ${worst.edgeMismatchSharePct}, flat ${worst.flatPaintMismatchSharePct}, darker ${worst.localDarkerMismatchSharePct}`);
+    notes.push(`worst row ${worst.index}: ${worst.decision}, mismatch ${worst.mismatchPct}, luma-corrected ${worst.lumaCorrectedMismatchPct} (${signedPct(worst.lumaCorrectionGainPct)}), edge ${worst.edgeMismatchSharePct}, flat ${worst.flatPaintMismatchSharePct}, darker ${worst.localDarkerMismatchSharePct}`);
   }
   return notes;
 }
@@ -448,18 +493,18 @@ function renderMarkdown(report) {
     '',
     'Scope: diagnostic-only row mismatch decomposition. This routes the next renderer experiment and does not enable production CSS.',
     '',
-    '| Fixture | Priority | Decision | Mismatch | Rows | Weighted | Edge | Flat paint | Local darker | Local brighter | Chroma | Next |',
-    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| Fixture | Priority | Decision | Mismatch | Rows | Weighted | Luma-corrected | Gain | Edge | Flat paint | Local darker | Chroma | Next |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.decision} | ${fixture.alignedMismatchPct ?? ''} | ${fixture.comparedRows ?? ''} | ${fixture.summary?.rowWeightedMismatchPct ?? ''} | ${fixture.summary?.edgeMismatchSharePct ?? ''} | ${fixture.summary?.flatPaintMismatchSharePct ?? ''} | ${fixture.summary?.localDarkerMismatchSharePct ?? ''} | ${fixture.summary?.localBrighterMismatchSharePct ?? ''} | ${fixture.summary?.chromaMismatchSharePct ?? ''} | ${fixture.nextAction} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.decision} | ${fixture.alignedMismatchPct ?? ''} | ${fixture.comparedRows ?? ''} | ${fixture.summary?.rowWeightedMismatchPct ?? ''} | ${fixture.summary?.lumaCorrectedMismatchPct ?? ''} | ${signedPct(fixture.summary?.lumaCorrectionGainPct)} | ${fixture.summary?.edgeMismatchSharePct ?? ''} | ${fixture.summary?.flatPaintMismatchSharePct ?? ''} | ${fixture.summary?.localDarkerMismatchSharePct ?? ''} | ${fixture.summary?.chromaMismatchSharePct ?? ''} | ${fixture.nextAction} |`);
   }
   lines.push('', '## Worst Rows', '');
   for (const fixture of report.fixtures) {
     if (!fixture.worstRows?.length) continue;
     lines.push(`### ${fixture.fixtureId}`);
     for (const row of fixture.worstRows) {
-      lines.push(`- row ${row.index}: ${row.decision}, mismatch ${row.mismatchPct}, edge ${row.edgeMismatchSharePct}, flat ${row.flatPaintMismatchSharePct}, local darker ${row.localDarkerMismatchSharePct}, local brighter ${row.localBrighterMismatchSharePct}, chroma ${row.chromaMismatchSharePct}`);
+      lines.push(`- row ${row.index}: ${row.decision}, mismatch ${row.mismatchPct}, luma-corrected ${row.lumaCorrectedMismatchPct} (${signedPct(row.lumaCorrectionGainPct)}), luma shift ${row.lumaShift}, edge ${row.edgeMismatchSharePct}, flat ${row.flatPaintMismatchSharePct}, local darker ${row.localDarkerMismatchSharePct}, local brighter ${row.localBrighterMismatchSharePct}, chroma ${row.chromaMismatchSharePct}`);
     }
     lines.push('');
   }
@@ -527,6 +572,12 @@ function countBy(values) {
 
 function rel(file) {
   return path.relative(process.cwd(), file);
+}
+
+function signedPct(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+  const rounded = Number(value.toFixed(2));
+  return `${rounded > 0 ? '+' : ''}${rounded}%`;
 }
 
 await main();

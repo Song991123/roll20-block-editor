@@ -4,10 +4,10 @@
 - The probe decomposes row-level screenshot mismatch into edge/text, flat background, local-darker/local-brighter, and chroma buckets.
 - Wired the probe into `gate:roll20-renderer-action`.
 - Current result on `2026-06-18-state-map-v1`:
-  - AW2E: `COLOR_ASSET_RASTER_MODEL_REQUIRED`, weighted `13.43%`, edge `0%`, flat `100%`, local darker `37.25%`.
-  - Les-Oublies: `LOCAL_BACKGROUND_TOO_DARK`, weighted `5.15%`, edge `0%`, flat `100%`, local darker `62.22%`.
-  - YSHY 1BU: `BACKGROUND_COMPOSITING_MODEL_REQUIRED`, weighted `23.15%`, edge `0%`, flat `100%`, local darker `63.32%`.
-- Interpretation: YSHY/CoC should move to a row background compositing/source-context candidate. The evidence argues against another text antialiasing, table scale, background-size, broad typography, or filter CSS attempt.
+  - AW2E: `COLOR_ASSET_RASTER_MODEL_REQUIRED`, weighted `13.43%`, luma-corrected `13.65%`, edge `0%`, flat `100%`, local darker `37.25%`.
+  - Les-Oublies: `LOCAL_BACKGROUND_TOO_DARK`, weighted `5.15%`, luma-corrected `5.16%`, edge `0%`, flat `100%`, local darker `62.22%`.
+  - YSHY 1BU: `BACKGROUND_COMPOSITING_MODEL_REQUIRED`, weighted `23.15%`, luma-corrected `22.57%`, edge `0%`, flat `100%`, local darker `63.32%`.
+- Interpretation: YSHY/CoC should move to a row background compositing/source-context candidate, but not a simple luma/brightness/filter patch; virtual luma correction only improves YSHY by `-0.58%p`. The evidence argues against another text antialiasing, table scale, background-size, broad typography, or filter CSS attempt.
 - `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
 
