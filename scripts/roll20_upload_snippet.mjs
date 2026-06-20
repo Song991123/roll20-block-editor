@@ -72,6 +72,7 @@ async function main() {
     runDir,
     entries: entries.length,
     snippets: entries.map((entry) => entry.snippetRelativePath),
+    activationCheckSnippets: entries.map((entry) => entry.activationCheckSnippetRelativePath),
   }, null, 2));
 }
 
@@ -138,11 +139,16 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir) {
   const snippet = renderSnippet({ fixtureId, payload, validation, activationHints });
   const snippetFile = path.join(outDir, `${safeName(fixtureId)}-upload-snippet.js`);
   await fs.writeFile(snippetFile, snippet, 'utf8');
+  const activationCheckSnippet = renderActivationCheckSnippet({ fixtureId, activationHints });
+  const activationCheckFile = path.join(outDir, `${safeName(fixtureId)}-activation-check-snippet.js`);
+  await fs.writeFile(activationCheckFile, activationCheckSnippet, 'utf8');
 
   return {
     fixtureId,
     snippetPath: snippetFile,
     snippetRelativePath: path.relative(process.cwd(), snippetFile),
+    activationCheckSnippetPath: activationCheckFile,
+    activationCheckSnippetRelativePath: path.relative(process.cwd(), activationCheckFile),
     payloadBytes: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.bytes])),
     payloadSha256: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.sha256])),
     activationHints,
@@ -286,6 +292,63 @@ function safeTranslationValues(text) {
   } catch {
     return [];
   }
+}
+
+function renderActivationCheckSnippet({ fixtureId, activationHints }) {
+  const literal = JSON.stringify({ fixtureId, activationHints }, null, 2);
+  return `// Roll20 Custom Sheet Sandbox editor activation checker for ${fixtureId}
+// Local-only generated snippet. Run on https://app.roll20.net/editor after
+// upload/settings save and reload. It does not prove visual parity; it only
+// proves whether expected fixture markers are visible enough to proceed.
+(() => {
+  const DATA = ${literal};
+  const bodyText = (document.body?.innerText || document.body?.textContent || '').replace(/\\s+/g, ' ').trim();
+  const bodyHtml = document.body?.outerHTML || '';
+  const rolltemplateClasses = DATA.activationHints.rolltemplateClasses || [];
+  const rollButtonNames = DATA.activationHints.rollButtonNames || [];
+  const attrNames = DATA.activationHints.attrNames || [];
+  const textTokens = DATA.activationHints.textTokens || [];
+  const parseError = /"status"\\s*:\\s*"error"|unexpected token at|customcharsheet_json|sheet\\.html/i.test(bodyText)
+    && /unexpected token|parse error|JSON/i.test(bodyText);
+  const hits = {
+    rolltemplateClasses: rolltemplateClasses.filter((className) => bodyHtml.includes(className)),
+    rollButtonNames: rollButtonNames.filter((name) => bodyHtml.includes(name)),
+    attrNames: attrNames.filter((name) => bodyHtml.includes(name)),
+    textTokens: textTokens.filter((token) => bodyText.includes(token)),
+  };
+  const hitCount = Object.values(hits).reduce((sum, values) => sum + values.length, 0);
+  const domRolltemplateClasses = [...new Set(Array.from(document.querySelectorAll('[class*="rolltemplate-"]'))
+    .flatMap((el) => String(el.className || '').split(/\\s+/))
+    .filter((className) => className.includes('rolltemplate-')))];
+  const status = parseError
+    ? 'ROLL20_EDITOR_PARSE_ERROR'
+    : hitCount > 0
+      ? 'VISIBLE_MATCH'
+      : 'NOT_PROVEN';
+  const result = {
+    fixtureId: DATA.fixtureId,
+    status,
+    href: location.href,
+    title: document.title,
+    hitCount,
+    hits,
+    visible: {
+      charsheetCount: document.querySelectorAll('.charsheet,.charactersheet').length,
+      rollButtonCount: document.querySelectorAll('button[type="roll"], button[name^="roll_"], [name^="roll_"]').length,
+      domRolltemplateClasses: domRolltemplateClasses.slice(-20),
+      textchatCount: document.querySelectorAll('#textchat,.textchatcontainer').length,
+      sheetSandboxInputCount: document.querySelectorAll('#sheetHtml,#sheetCss,#sheetTranslation').length,
+      bodyTextSnippet: bodyText.slice(0, 800),
+    },
+    nextAction: status === 'VISIBLE_MATCH'
+      ? 'Expected fixture markers are visible. Capture Roll20 root/chat evidence only if the visible sheet/chat belongs to this fixture.'
+      : status === 'ROLL20_EDITOR_PARSE_ERROR'
+        ? 'Do not capture evidence. Restore the sandbox and fix the upload manifest/settings shape.'
+        : 'Do not capture evidence yet. The editor is reachable, but expected fixture markers are not visible.',
+  };
+  console.log('Roll20 activation check:', result);
+  return result;
+})();`;
 }
 
 function renderSnippet({ fixtureId, payload, validation, activationHints }) {
@@ -560,17 +623,19 @@ function renderReadme(report) {
     '',
     'These snippets are local-only and ignored by Git. They embed source-derived payloads, so do not commit them.',
     '',
-    'Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
+    'Use upload snippets only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
     '',
     'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills `customcharsheet_json` with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. Live Roll20 verification on 2026-06-21 showed that writing the plain exported `sheet.json` text directly can make `/editor` return a JSON parse error. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH` and screenshots are captured afterward.',
     '',
+    'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. Capture Roll20 root/chat evidence only after `VISIBLE_MATCH` and a visual check that the visible sheet/chat belongs to the intended fixture.',
+    '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
-    '| Fixture | Snippet | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings field manifest |',
-    '| --- | --- | ---: | ---: | ---: | --- | --- |',
+    '| Fixture | Upload snippet | Activation check | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings field manifest |',
+    '| --- | --- | --- | ---: | ---: | ---: | --- | --- |',
   ];
   for (const entry of report.entries) {
-    lines.push(`| ${entry.fixtureId} | \`${entry.snippetRelativePath}\` | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsFieldManifest.ok ? 'PASS' : 'FAIL'} |`);
+    lines.push(`| ${entry.fixtureId} | \`${entry.snippetRelativePath}\` | \`${entry.activationCheckSnippetRelativePath}\` | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsFieldManifest.ok ? 'PASS' : 'FAIL'} |`);
   }
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -614,11 +679,21 @@ function runSelfTest() {
       textTokens: ['Self'],
     },
   });
+  const activationCheckSnippet = renderActivationCheckSnippet({
+    fixtureId: 'self-test',
+    activationHints: {
+      rolltemplateClasses: ['sheet-rolltemplate-self'],
+      rollButtonNames: ['roll_self'],
+      attrNames: ['attr_self'],
+      textTokens: ['Self'],
+    },
+  });
   const readme = renderReadme({
     generatedAt: new Date(0).toISOString(),
     entries: [{
       fixtureId: 'self-test',
       snippetRelativePath: 'reports/self-test.js',
+      activationCheckSnippetRelativePath: 'reports/self-test-activation-check-snippet.js',
       payloadBytes: { html: 0, css: 0, translation: 2 },
       validation: {
         translation: { ok: true },
@@ -633,7 +708,13 @@ function runSelfTest() {
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
   if (!snippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated snippet missing editor parse-error activation status');
   if (!snippet.includes('roll20EditorParseError')) failures.push('generated snippet missing editor parse-error detector');
+  if (!activationCheckSnippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated activation check missing parse-error status');
+  if (!activationCheckSnippet.includes('VISIBLE_MATCH')) failures.push('generated activation check missing visible-match status');
+  if (!activationCheckSnippet.includes('NOT_PROVEN')) failures.push('generated activation check missing not-proven status');
+  if (!activationCheckSnippet.includes('rollButtonCount')) failures.push('generated activation check missing roll button count');
   if (!readme.includes('settings-page `{ sheet, userOptions, jsoninfo }` wrapper')) failures.push('generated README text does not describe wrapper');
+  if (!readme.includes('Activation check')) failures.push('generated README missing activation check column');
+  if (!readme.includes('*-activation-check-snippet.js')) failures.push('generated README missing activation check instruction');
   if (failures.length) throw new Error(`roll20_upload_snippet self-test failed: ${failures.join(', ')}`);
   console.log('ROLL20 UPLOAD SNIPPET SELF-TEST PASS');
 }
