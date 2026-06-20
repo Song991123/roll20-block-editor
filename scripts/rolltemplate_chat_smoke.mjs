@@ -739,7 +739,10 @@ async function main() {
       if (
         policy === 'tight-cell-spacing' ||
         policy === 'table-scale-x' ||
+        policy === 'aw2e-root-width-actual' ||
         policy === 'coc-table-scale-x' ||
+        policy === 'coc-table-intrinsic-clamp' ||
+        policy === 'coc-table-actual-width' ||
         policy === 'roll20-message-padding' ||
         policy === 'roll20-break-word' ||
         policy === 'roll20-intrinsic-spacing' ||
@@ -756,6 +759,7 @@ async function main() {
         policy === 'roll20-shell-typography' ||
         policy === 'roll20-template-typography' ||
         policy === 'roll20-cell-metrics' ||
+        policy === 'aw2e-font-size-only' ||
         policy === 'aw2e-text-metrics' ||
         policy === 'yshy-sanitize-typography'
       ) {

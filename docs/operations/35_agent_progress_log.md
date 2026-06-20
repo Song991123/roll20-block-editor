@@ -1,3 +1,21 @@
+## 2026-06-20 AW2E Root Width Renderer Candidate
+
+- Added diagnostic-only ChatPane policies for the current split renderer axes:
+  - `aw2e-root-width-actual`
+  - `aw2e-font-size-only`
+  - `coc-table-actual-width`
+  - `coc-table-intrinsic-clamp`
+- Regenerated local browser chat smoke evidence for those candidates. These report outputs are ignored local evidence and were not committed.
+- Candidate comparison result:
+  - `aw2e-root-width-actual`: AW2E aligned mismatch `13.5% -> 5.87%` (`-7.63%`), no fixture regressions, mean delta `-2.54%`.
+  - `aw2e-font-size-only`: only `-0.47%` AW2E gain, so font-size alone is not the primary fix.
+  - `coc-table-actual-width`: no YSHY gain.
+  - `coc-table-intrinsic-clamp`: no YSHY gain.
+- Style proof result: `aw2e-root-width-actual` is `STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW`; actual Roll20 root width and local candidate root width are both `279px`, with `transform:none`.
+- `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`. The new evidence does not authorize a product default CSS patch; it routes the next AW2E work toward a generic rolltemplate root intrinsic-width model instead of hardcoded `279px`.
+- Verification: `node --check` for changed `.mjs`, `build`, candidate browser smokes, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-width-reconciliation`, and `gate:roll20-renderer-action`.
+- Claim boundary: diagnostic-only policies, no visual parity claim, no UI exposure, no private report commit.
+
 ## 2026-06-20 Chat Width Reconciliation Gate
 
 - Added `scripts/roll20_chat_width_reconciliation.mjs` and `corepack pnpm run diagnose:roll20-chat-width-reconciliation`.

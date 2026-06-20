@@ -16,11 +16,15 @@ const CANDIDATE_SMOKE = {
   default: 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json',
   'no-shadow': 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json',
   'table-scale-x': 'reports/rolltemplate-chat-smoke-table-scale-x/rolltemplate-chat-smoke-results.json',
+  'aw2e-root-width-actual': 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/rolltemplate-chat-smoke-results.json',
   'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
+  'coc-table-actual-width': 'reports/rolltemplate-chat-smoke-coc-table-actual-width/rolltemplate-chat-smoke-results.json',
   'roll20-break-word': 'reports/rolltemplate-chat-smoke-roll20-break-word/rolltemplate-chat-smoke-results.json',
   'roll20-intrinsic-spacing': 'reports/rolltemplate-chat-smoke-intrinsic-spacing/rolltemplate-chat-smoke-results.json',
   'roll20-border-spacing': 'reports/rolltemplate-chat-smoke-border-spacing/rolltemplate-chat-smoke-results.json',
   'roll20-letter-spacing': 'reports/rolltemplate-chat-smoke-letter-spacing/rolltemplate-chat-smoke-results.json',
+  'aw2e-font-size-only': 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/rolltemplate-chat-smoke-results.json',
+  'coc-table-intrinsic-clamp': 'reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp/rolltemplate-chat-smoke-results.json',
   'text-auto-aa': 'reports/rolltemplate-chat-smoke-text-auto-aa/rolltemplate-chat-smoke-results.json',
 };
 
@@ -104,15 +108,25 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   if (candidate.name === 'table-scale-x' || candidate.name === 'coc-table-scale-x') {
     return summarizeTableScale(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
+  if (candidate.name === 'aw2e-root-width-actual') {
+    return summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'root', 1.5);
+  }
+  if (candidate.name === 'coc-table-actual-width') {
+    return summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 1.5);
+  }
   if (candidate.name === 'roll20-break-word') {
     return summarizeOverflowWrap(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   if (
     candidate.name === 'roll20-intrinsic-spacing' ||
     candidate.name === 'roll20-border-spacing' ||
-    candidate.name === 'roll20-letter-spacing'
+    candidate.name === 'roll20-letter-spacing' ||
+    candidate.name === 'coc-table-intrinsic-clamp'
   ) {
     return summarizeIntrinsicSpacing(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (candidate.name === 'aw2e-font-size-only') {
+    return summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   if (candidate.name === 'text-auto-aa') {
     return summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate);
@@ -122,6 +136,66 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
     status: 'UNKNOWN_CANDIDATE',
     finding: `no style-proof rule for ${candidate.name}`,
     evidence: [],
+  };
+}
+
+function summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, selector, tolerancePx) {
+  const localWidth = widthOf(candidateTemplate, selector);
+  const actualWidth = widthOf(actualTemplate, selector);
+  const transform = styleValue(candidateTemplate, selector, 'transform');
+  const actualTransform = styleValue(actualTemplate, selector, 'transform');
+  const delta = Number.isFinite(localWidth) && Number.isFinite(actualWidth)
+    ? Number((localWidth - actualWidth).toFixed(3))
+    : null;
+  const transformContradicted = !sameValue(transform, actualTransform);
+  const widthMatches = typeof delta === 'number' && Math.abs(delta) <= tolerancePx;
+  return {
+    fixtureId,
+    status: widthMatches && !transformContradicted ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: widthMatches
+      ? `${selector} width is within ${tolerancePx}px of actual Roll20`
+      : `${selector} width differs from actual Roll20 by ${fmtPx(delta)}`,
+    evidence: [
+      { selector, key: 'rect.width', localCandidate: localWidth, actual: actualWidth },
+      { selector, key: 'transform', localCandidate: transform, actual: actualTransform },
+    ],
+  };
+}
+
+function widthOf(template, selector) {
+  if (!template) return null;
+  const node = selector === 'root' ? template : childMap(template).get(selector);
+  const width = node?.rect?.width ?? node?.boxMetrics?.offsetWidth ?? null;
+  const number = Number(width);
+  return Number.isFinite(number) ? number : null;
+}
+
+function summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const evidence = [
+    ['table', 'fontSize'],
+    ['table', 'letterSpacing'],
+    ['td:first', 'fontSize'],
+    ['td:first', 'letterSpacing'],
+  ].map(([selector, key]) => ({
+    selector,
+    key,
+    localCandidate: styleValue(candidateTemplate, selector, key),
+    actual: styleValue(actualTemplate, selector, key),
+  }));
+  const comparable = evidence.filter((item) => item.localCandidate != null && item.actual != null);
+  const fontSizeMatches = comparable
+    .filter((item) => item.key === 'fontSize')
+    .every((item) => sameValue(item.localCandidate, item.actual));
+  const letterSpacingContradicted = comparable
+    .filter((item) => item.key === 'letterSpacing')
+    .some((item) => !sameValue(item.localCandidate, item.actual));
+  return {
+    fixtureId,
+    status: fontSizeMatches && !letterSpacingContradicted ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: fontSizeMatches
+      ? 'AW2E table font-size matches actual Roll20; letter-spacing decides whether this narrower candidate is enough'
+      : 'AW2E table font-size does not match actual Roll20',
+    evidence,
   };
 }
 
@@ -295,6 +369,10 @@ function quote(value) {
 
 function fmtPct(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `${Number(value.toFixed(2))}%` : '';
+}
+
+function fmtPx(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${Number(value.toFixed(3))}px` : 'n/a';
 }
 
 async function main() {

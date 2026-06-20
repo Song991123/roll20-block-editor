@@ -1,3 +1,20 @@
+## 2026-06-20 Codex Update - AW2E root-width renderer candidate
+
+Status: PARTIAL. This adds and validates diagnostic-only renderer candidates; it does not change the default product ChatPane renderer.
+
+- DONE: Added diagnostic ChatPane policies `aw2e-root-width-actual`, `aw2e-font-size-only`, `coc-table-actual-width`, and `coc-table-intrinsic-clamp`. They are only enabled through smoke-script localStorage policies and are not exposed in the UI.
+- DONE: Regenerated browser smoke evidence for the new candidates:
+  - `rolltemplate-chat-smoke-aw2e-root-width-actual`
+  - `rolltemplate-chat-smoke-aw2e-font-size-only`
+  - `rolltemplate-chat-smoke-coc-table-actual-width`
+  - `rolltemplate-chat-smoke-coc-table-intrinsic-clamp`
+- RESULT: `aw2e-root-width-actual` is the first current chat candidate with both meaningful AW2E pixel gain and style proof: AW2E aligned mismatch improved from `13.5%` to `5.87%` (`-7.63%`), with no fixture regressions, and actual/style proof reports root width `279px` vs local candidate `279px`, transform `none`.
+- RESULT: `aw2e-font-size-only` is not enough by itself (`-0.47%` AW2E only). The useful axis is root/template width, not just font size.
+- RESULT: `coc-table-actual-width` and `coc-table-intrinsic-clamp` produced no YSHY gain. YSHY remains blocked by table/crop/paint/intrinsic context rather than a direct width CSS clamp.
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`; the surviving AW2E candidate is fixture-scoped and must be generalized into a Roll20-like rolltemplate root intrinsic-width model before any product default change.
+- VERIFIED: `build`, candidate browser smokes, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-width-reconciliation`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Replace the hardcoded AW2E `279px` diagnostic with a generic rolltemplate root intrinsic-width model, then re-run candidate comparison/style proof/gate. Continue YSHY with crop/paint/overflow context; direct table width probes failed.
+
 ## 2026-06-20 Codex Update - chat width reconciliation gate
 
 Status: PARTIAL. This chooses the next renderer experiment axis from current evidence; it does not change production ChatPane rendering yet.
