@@ -1,3 +1,18 @@
+## 2026-06-20 Codex Update - YSHY live filter sidecar recapture
+
+Status: PARTIAL. This updates local-only Roll20 chat evidence for YSHY; it does not change production ChatPane CSS and does not prove visual parity.
+
+- DONE: Claimed the existing Chrome Roll20 verification editor tab in read-only mode and confirmed the live YSHY `.sheet-rolltemplate-coc` chat DOM exposes computed `filter` values.
+- DONE: Added `latestTemplate.computedStyle.filter`, `table.computedStyle.filter`, and sampled child `filter` fields to the ignored local YSHY Roll20 chat sidecar from live Roll20 DOM evidence.
+- DONE: Restored `roll20-chat.png` from the matching prior DPR-corrected YSHY recapture candidate after a browser screenshot-scale probe produced a mismatched temporary capture. The final PNG is back to `267x586`.
+- RESULT: `status:roll20-actual` moved `chatCurrentMetrics` from `0/3` to `1/3`; remaining missing current filter fields are `official-roll20-AW2E` and `official-roll20-Les-Oublies`.
+- RESULT: YSHY chat parity returned to the prior authoritative baseline: raw mismatch `26.45%`, aligned mismatch `22.33%`, crop/scale/pixel suspects `0`.
+- RESULT: `paint-dim-background` is no longer blocked by missing YSHY sidecar fields; it is now contradicted by actual Roll20 style for YSHY because actual Roll20 reports `filter: none`.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; no paint/rasterization CSS should be promoted.
+- VERIFIED: `roll20_actual_screenshot_diff`, `diagnose:roll20-chat-parity`, `status:roll20-actual`, `diagnose:roll20-chat-candidate-style`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Recapture AW2E and Les-Oublies Roll20 chat sidecars with computed `filter` fields from their own live Roll20 roll actions.
+- STILL TODO P0: Build the next YSHY/CoC model around table intrinsic/width/overflow behavior, not a CSS paint filter.
+
 ## 2026-06-20 Codex Update - YSHY paint filter proof gate
 
 Status: PARTIAL. This improves the renderer gate for YSHY paint/rasterization candidates; it does not change production ChatPane CSS.

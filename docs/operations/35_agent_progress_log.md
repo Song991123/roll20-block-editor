@@ -1,3 +1,16 @@
+## 2026-06-20 YSHY Live Filter Sidecar Recapture
+
+- Used the existing Chrome Roll20 verification editor tab in read-only mode. No existing room/settings/source was modified.
+- Confirmed the visible live YSHY `.sheet-rolltemplate-coc` chat DOM reports `filter: none` for the template/table/sampled rolltemplate children.
+- Updated only ignored local evidence under `reports/roll20-actual-compare/2026-06-18-state-map-v1/`:
+  - YSHY `roll20-chat-dom-evidence.json` now has `latestTemplate.computedStyle.filter`, `table.computedStyle.filter`, and sampled child `filter` fields.
+  - YSHY `roll20-chat.png` was restored from the matching DPR-corrected recapture candidate after a temporary browser screenshot-scale mismatch was detected.
+- Verification recovered the authoritative YSHY chat baseline: raw mismatch `26.45%`, aligned mismatch `22.33%`, no crop/scale/template-pixel suspect.
+- `status:roll20-actual` now reports `chatCurrentMetrics=1/3`; AW2E and Les-Oublies still need live Roll20 recapture with filter fields.
+- `paint-dim-background` moved from "needs new sidecar fields" to actual style contradiction for YSHY, because the real Roll20 DOM does not apply a CSS filter. Keep the paint-filter candidate out of production.
+- `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: this is local-only evidence refinement. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 YSHY Paint Filter Proof Gate
 
 - Split the current YSHY paint candidate into diagnostic sub-candidates:
