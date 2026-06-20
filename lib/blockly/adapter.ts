@@ -62,6 +62,9 @@ export interface BlockSnapshot {
   type: string;
   /** 자식 / 다음 블록 chain 의 들여쓰기 깊이. */
   depth: number;
+  layerParentId: string | null;
+  layerPreviousId: string | null;
+  layerRelation: 'root' | 'child' | 'sibling';
   /** 사용자 표시용 한국어 라벨 (블록 정의 label). */
   label: string;
   /** 핵심 필드 미리보기 (예: text_input 의 name 필드 값). */
@@ -177,12 +180,20 @@ class DefaultAdapter implements BlocklyAdapter {
     const out: BlockSnapshot[] = [];
     const seen = new Set<string>();
     for (const block of ws.getTopBlocks(true)) {
-      this.walk(block, 0, out, seen);
+      this.walk(block, 0, out, seen, null, null, 'root');
     }
     return out;
   }
 
-  private walk(block: Blockly.Block, depth: number, out: BlockSnapshot[], seen: Set<string>): void {
+  private walk(
+    block: Blockly.Block,
+    depth: number,
+    out: BlockSnapshot[],
+    seen: Set<string>,
+    layerParentId: string | null,
+    layerPreviousId: string | null,
+    layerRelation: BlockSnapshot['layerRelation'],
+  ): void {
     if (seen.has(block.id)) return;
     seen.add(block.id);
     const def = getBlockDef(block.type);
@@ -190,6 +201,9 @@ class DefaultAdapter implements BlocklyAdapter {
       id: block.id,
       type: block.type,
       depth,
+      layerParentId,
+      layerPreviousId,
+      layerRelation,
       label: def?.label ?? block.type,
       preview: this.previewFor(block),
       category: def?.category ?? null,
@@ -202,11 +216,11 @@ class DefaultAdapter implements BlocklyAdapter {
     for (const input of block.inputList ?? []) {
       const child = input.connection?.targetBlock();
       if (child && child.id !== nextBlock?.id) {
-        this.walk(child, depth + 1, out, seen);
+        this.walk(child, depth + 1, out, seen, block.id, null, 'child');
       }
     }
     if (nextBlock) {
-      this.walk(nextBlock, depth, out, seen);
+      this.walk(nextBlock, depth, out, seen, layerParentId, block.id, 'sibling');
     }
   }
 
@@ -229,6 +243,9 @@ class DefaultAdapter implements BlocklyAdapter {
       id: b.id,
       type: b.type,
       depth: 0,
+      layerParentId: null,
+      layerPreviousId: null,
+      layerRelation: 'root',
       label: def?.label ?? b.type,
       preview: this.previewFor(b),
       category: def?.category ?? null,

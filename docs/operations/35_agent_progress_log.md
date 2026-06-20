@@ -1,3 +1,12 @@
+## 2026-06-20 Layer Relation Badges and Smoke
+
+- Added explicit edit-layer semantics to `BlockSnapshot`: root, DOM child, and flow sibling are now represented separately from Blockly's internal parent metadata.
+- The edit layer panel now shows those semantics as visible badges (`루트`, `하위`, `흐름 형제`) and exposes them as row data attributes for smoke tests and future UX work.
+- Added `window.__perfHook.getLayerSnapshot()` so browser validation can inspect the same layer snapshot without dumping private fixture source.
+- Strengthened `smoke:edit-flow` to validate a non-leaf sibling reorder: the target row must be a flow sibling before drop, both groups must share a layer parent/depth, the moved group reorders after the target, and both nested inputs stay inside their original group containers.
+- Verification: `lint`, `node --check scripts\edit_flow_browser_smoke.mjs`, `build`, `smoke:edit-flow -- --port 4210`, and `guard:roll20-evidence`.
+- Current boundary: this is one structural edit UX improvement. Imported real-sheet layer semantics, broader visual layer previews, and actual Roll20 renderer parity remain active P0 work.
+
 ## 2026-06-20 Layer Traversal Depth Cleanup
 
 - Updated `DefaultAdapter.listAllBlocks()` to walk explicit Blockly `next` chains with a shared `seen` set instead of broad `getChildren(true)` recursion.

@@ -570,12 +570,21 @@ async function main() {
     }
 
     const beforeGraph = window.__perfHook.getBlockGraph('html');
+    const beforeLayer = window.__perfHook.getLayerSnapshot?.('html') || [];
     const movingBefore = beforeGraph.find((node) => node.id === groupAId);
     const targetBefore = beforeGraph.find((node) => node.id === groupBId);
+    const layerA = beforeLayer.find((node) => node.id === groupAId) || null;
+    const layerB = beforeLayer.find((node) => node.id === groupBId) || null;
     const row = document.querySelector(
       `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(groupBId)}"]`,
     );
     if (!row) return { moved: false, reason: 'missing target layer row', groupAId, groupBId };
+    const targetLayerBefore = {
+      relation: row.getAttribute('data-r20-layer-relation') || '',
+      parentId: row.getAttribute('data-r20-layer-parent-id') || null,
+      previousId: row.getAttribute('data-r20-layer-previous-id') || null,
+      text: row.textContent || '',
+    };
     const rect = row.getBoundingClientRect();
     const dt = new DataTransfer();
     dt.setData('application/x-r20-layer-block', groupAId);
@@ -614,6 +623,15 @@ async function main() {
       inputBId,
       movingBefore,
       targetBefore,
+      layerA,
+      layerB,
+      layerSameParent: Boolean(layerA && layerB && layerA.layerParentId === layerB.layerParentId),
+      layerSameDepth: Boolean(layerA && layerB && layerA.depth === layerB.depth),
+      targetLayerBefore,
+      targetLayerRelation: row.getAttribute('data-r20-layer-relation') || '',
+      targetLayerParentId: row.getAttribute('data-r20-layer-parent-id') || null,
+      targetLayerPreviousId: row.getAttribute('data-r20-layer-previous-id') || null,
+      targetLayerText: row.textContent || '',
       movingAfter,
       targetAfter,
       indexes: { groupAIndex, groupBIndex, inputAIndex, inputBIndex, groupAEndIndex, groupBEndIndex },
@@ -884,6 +902,12 @@ async function main() {
     layerDropModes.attrs?.text?.includes('담기 가능') &&
     layerDropModes.attrs?.text?.includes('흐름') &&
     nonLeafLayerReorder.mode === 'after' &&
+    nonLeafLayerReorder.layerSameParent === true &&
+    nonLeafLayerReorder.layerSameDepth === true &&
+    nonLeafLayerReorder.layerB?.layerRelation === 'sibling' &&
+    nonLeafLayerReorder.layerB?.layerPreviousId === nonLeafLayerReorder.groupAId &&
+    nonLeafLayerReorder.targetLayerBefore?.relation === 'sibling' &&
+    nonLeafLayerReorder.targetLayerBefore?.text?.includes('흐름 형제') &&
     nonLeafLayerReorder.movingBefore?.childCount >= 1 &&
     nonLeafLayerReorder.movingBefore?.hasNextTarget === true &&
     nonLeafLayerReorder.groupAAfterGroupB === true &&

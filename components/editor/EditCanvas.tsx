@@ -35,6 +35,12 @@ function formatDropModeLabel(mode: LayerDropMode): string {
   return '뒤에 넣기';
 }
 
+function formatLayerRelationLabel(relation: BlockSnapshot['layerRelation']): string {
+  if (relation === 'child') return '하위';
+  if (relation === 'sibling') return '흐름 형제';
+  return '루트';
+}
+
 type DragOrigin = {
   blockId: string;
   ws: WorkspaceKey;
@@ -726,6 +732,9 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-can-drop={role.canReceiveChildren ? '1' : '0'}
       data-r20-default-drop-mode={role.defaultDropMode}
       data-r20-layer-drop-mode={dropMode ?? ''}
+      data-r20-layer-parent-id={node.layerParentId ?? ''}
+      data-r20-layer-previous-id={node.layerPreviousId ?? ''}
+      data-r20-layer-relation={node.layerRelation}
       aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
       onClick={onSelect}
       onDragStart={(e) => {
@@ -779,6 +788,9 @@ const EditLayerRow = memo(function EditLayerRow({
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-1.5">
           <span className="truncate font-mono text-[10.5px]">{node.type}</span>
+          <span className="shrink-0 rounded border border-border/80 bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
+            {formatLayerRelationLabel(node.layerRelation)}
+          </span>
           <span className="shrink-0 rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
             {role.label}
           </span>

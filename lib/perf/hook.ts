@@ -17,7 +17,7 @@
 
 'use client';
 
-import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { getBlocklyAdapter, type BlockSnapshot } from '@/lib/blockly/adapter';
 import {
   moveImportedWorkerBlocksToWorkspace,
   replaceWorkerWorkspaceFromSourceHtml,
@@ -100,6 +100,7 @@ export interface PerfEditFlowDropResult {
 export interface PerfHook {
   /** Workspace 인스턴스별 + 누적 블록 수 + root (top-level) 블록 수. */
   getWorkspace: () => PerfWorkspaceSnap;
+  getLayerSnapshot: (key?: WorkspaceKey) => BlockSnapshot[];
   getBlockGraph: (key?: WorkspaceKey) => PerfBlockGraphNode[];
   /** emit 결과 (lazy emit). 길이만 — 본문 dump X (사용자 시트 식별자 leak 방지). */
   getEmitCache: () => PerfEmitSnap;
@@ -278,6 +279,8 @@ function buildHook(): PerfHook {
         rootBlocks: { html: html.root, css: css.root, i18n: i18n.root, worker: worker.root },
       };
     },
+
+    getLayerSnapshot: (key = 'html') => getBlocklyAdapter().listAllBlocks(key),
 
     getBlockGraph: (key = 'html') => {
       const adapter = getBlocklyAdapter();

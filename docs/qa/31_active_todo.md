@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - layer relation badges and smoke
+
+Status: VERIFY. This improves the edit layer panel's structural honesty; it does not complete the Figma-like editor or prove Roll20 renderer parity.
+
+- DONE: `BlockSnapshot` now carries explicit layer semantics: `layerParentId`, `layerPreviousId`, and `layerRelation` (`root`, `child`, `sibling`).
+- DONE: Edit layer rows now expose those semantics through data attributes and visible badges: `루트`, `하위`, and `흐름 형제`.
+- DONE: `window.__perfHook.getLayerSnapshot()` exposes the same snapshot for browser smokes without leaking source fixture content.
+- DONE: `smoke:edit-flow` now verifies that non-leaf sibling reorder keeps both child inputs inside their original containers and that the layer row identifies the target as a flow sibling before the drop.
+- VERIFIED: `corepack pnpm run lint`, `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4210`, and `corepack pnpm run guard:roll20-evidence` passed.
+- STILL TODO P0: Imported-sheet layer semantics need broader fixture coverage. This patch only proves the synthetic non-leaf reorder case, not every real Roll20 sheet layout.
+- STILL TODO P0: Actual Roll20 renderer parity remains gated by current evidence; renderer action is still not ready for production promotion.
+
 ## 2026-06-20 Codex Update - layer traversal depth cleanup
 
 Status: VERIFY. This is a small edit-layer structure improvement; it does not complete the Figma-like editing model.
