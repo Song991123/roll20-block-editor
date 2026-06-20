@@ -116,7 +116,7 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir) {
     translation: validateJsonPayload(await fs.readFile(files.translation, 'utf8'), 'translation.json'),
     manifest: validateJsonPayload(await fs.readFile(files.manifest, 'utf8'), 'sheet.json'),
   };
-  validation.settingsManifest = validateSettingsManifest(await fs.readFile(files.manifest, 'utf8'));
+  validation.settingsFieldManifest = validateSettingsFieldManifest(await fs.readFile(files.manifest, 'utf8'));
 
   const snippet = renderSnippet({ fixtureId, payload, validation });
   const snippetFile = path.join(outDir, `${safeName(fixtureId)}-upload-snippet.js`);
@@ -150,16 +150,21 @@ function validateJsonPayload(text, label) {
   }
 }
 
-function validateSettingsManifest(manifestText) {
+function validateSettingsFieldManifest(manifestText) {
   try {
     const text = buildSettingsManifestText(manifestText);
     const parsed = JSON.parse(text);
     return {
       ok: true,
-      longName: parsed?.sheet?.long_name ?? '',
-      shortName: parsed?.sheet?.short_name ?? '',
+      longName: parsed?.long_name ?? parsed?.name ?? '',
+      shortName: parsed?.short_name ?? '',
       hasJsonInfo: Boolean(parsed?.jsoninfo),
-      userOptionsType: Array.isArray(parsed?.userOptions) ? 'array' : typeof parsed?.userOptions,
+      shape: parsed?.jsoninfo ? 'wrapped-jsoninfo' : 'plain-sheet-json',
+      userOptionsType: Array.isArray(parsed?.useroptions)
+        ? 'array'
+        : Array.isArray(parsed?.userOptions)
+          ? 'array'
+          : typeof (parsed?.useroptions ?? parsed?.userOptions),
     };
   } catch (error) {
     return {
@@ -171,22 +176,7 @@ function validateSettingsManifest(manifestText) {
 
 function buildSettingsManifestText(manifestText) {
   const parsed = JSON.parse(manifestText);
-  if (parsed && typeof parsed === 'object' && parsed.jsoninfo) {
-    return JSON.stringify(parsed, null, 2);
-  }
-  const userOptions = parsed.useroptions || parsed.userOptions || [];
-  const settingsManifest = {
-    sheet: {
-      short_name: parsed.short_name || 'custom',
-      long_name: parsed.long_name || parsed.name || 'Custom Sheet',
-      instructions: parsed.instructions || '',
-      preview_image: parsed.preview_image || 'https://via.placeholder.com/500x650.png?text=Placeholder+Image',
-      authors: parsed.authors || 'Local verification',
-    },
-    userOptions,
-    jsoninfo: parsed,
-  };
-  return JSON.stringify(settingsManifest, null, 2);
+  return JSON.stringify(parsed, null, 2);
 }
 
 function renderSnippet({ fixtureId, payload, validation }) {
@@ -340,25 +330,10 @@ function renderSnippet({ fixtureId, payload, validation }) {
   };
   const buildSettingsManifest = (manifestText) => {
     const parsed = JSON.parse(manifestText);
-    if (parsed && typeof parsed === 'object' && parsed.jsoninfo) {
-      return JSON.stringify(parsed, null, 2);
-    }
-    const userOptions = parsed.useroptions || parsed.userOptions || [];
-    const settingsManifest = {
-      sheet: {
-        short_name: parsed.short_name || 'custom',
-        long_name: parsed.long_name || parsed.name || 'Custom Sheet',
-        instructions: parsed.instructions || '',
-        preview_image: parsed.preview_image || 'https://via.placeholder.com/500x650.png?text=Placeholder+Image',
-        authors: parsed.authors || 'Local verification',
-      },
-      userOptions,
-      jsoninfo: parsed,
-    };
-    return JSON.stringify(settingsManifest, null, 2);
+    return JSON.stringify(parsed, null, 2);
   };
   assertSandboxPage();
-  if (!DATA.validation.translation.ok || !DATA.validation.manifest.ok || !DATA.validation.settingsManifest.ok) {
+  if (!DATA.validation.translation.ok || !DATA.validation.manifest.ok || !DATA.validation.settingsFieldManifest.ok) {
     console.warn('Local payload validation failed before upload:', DATA.validation);
   } else {
     console.log('Local payload validation:', DATA.validation);
@@ -370,8 +345,8 @@ function renderSnippet({ fixtureId, payload, validation }) {
   const endpointFallback = USE_ENDPOINT_FALLBACK ? await postEndpointFallback() : { status: 'disabled' };
   const manifest = setManifest();
   if (SUBMIT_SETTINGS_FORM) {
-    const button = document.querySelector('#save-changes-button, button[type="submit"], input[type="submit"]');
-    if (!button) throw new Error('SUBMIT_SETTINGS_FORM is true, but no save button was found.');
+    const button = document.querySelector('#save-changes-button');
+    if (!button) throw new Error('SUBMIT_SETTINGS_FORM is true, but #save-changes-button was not found.');
     button.click();
   }
   const sandboxMessages = inspectSandboxMessages();
@@ -396,15 +371,15 @@ function renderReadme(report) {
     '',
     'Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
     '',
-    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also logs local JSON validation and detects visible Roll20 translation-parse warning text after upload. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet.',
+    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills `customcharsheet_json` with the plain exported `sheet.json` text when the settings page is open. It logs local JSON validation and detects visible Roll20 translation-parse warning text after upload. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
-    '| Fixture | Snippet | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings manifest |',
+    '| Fixture | Snippet | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings field manifest |',
     '| --- | --- | ---: | ---: | ---: | --- | --- |',
   ];
   for (const entry of report.entries) {
-    lines.push(`| ${entry.fixtureId} | \`${entry.snippetRelativePath}\` | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsManifest.ok ? 'PASS' : 'FAIL'} |`);
+    lines.push(`| ${entry.fixtureId} | \`${entry.snippetRelativePath}\` | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsFieldManifest.ok ? 'PASS' : 'FAIL'} |`);
   }
   lines.push('');
   return `${lines.join('\n')}\n`;

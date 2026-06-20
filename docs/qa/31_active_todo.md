@@ -1,3 +1,21 @@
+## 2026-06-20 Codex Update - Les/YSHY actual chat text measurement recaptured
+
+Status: PARTIAL. Actual Roll20 chat text-measure evidence now exists for all 3 prepared fixtures, but chat/template visual parity and production renderer CSS remain blocked.
+
+- DONE: Used only the dedicated `Codex Roll20 Verify` Custom Sheet Sandbox/test campaign; no existing real room was modified.
+- DONE: Recovered the Roll20 editor after the settings-page manifest wrapper caused an `unexpected token` editor parse failure.
+- DONE: Confirmed the current Roll20 settings page must receive plain exported `sheet.json` text in `customcharsheet_json`; the generated upload snippet no longer wraps it as `{ sheet, userOptions, jsoninfo }`.
+- DONE: Recaptured `official-roll20-Les-Oublies` actual Roll20 chat DOM sidecar and DPR-corrected template-only `roll20-chat.png`.
+- DONE: Recaptured `yshy-commission-1bu` actual Roll20 chat DOM sidecar and DPR-corrected template-only `roll20-chat.png`.
+- RESULT: Les-Oublies now has `textMeasureEvidence.status=MEASURED`, `samples=12`, latest template `sheet-rolltemplate-initiative-roll`, and normalized crop mismatch `2.92%` (`local=267x84`, `actual=267x82`).
+- RESULT: YSHY now has `textMeasureEvidence.status=MEASURED`, `samples=19`, latest template `sheet-rolltemplate-coc`, and normalized crop mismatch `35.23%` (`local=267x586`, `actual=267x586`).
+- RESULT: `diagnose:roll20-chat-font-glyph` no longer reports `TEXT_MEASURE_RECAPTURE_REQUIRED`; all 3 fixtures are now `TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED`.
+- RESULT: `status:roll20-actual` is still `GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT`, `rendererReady=NO`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`.
+- RESULT: The latest gate still reports chat screenshot scale/foreground suspects and high aligned mismatch; do not tune production ChatPane CSS from these PNGs yet.
+- VERIFIED: `node --check scripts\roll20_upload_snippet.mjs`, `snippet:roll20-upload`, `plan:roll20-chat-capture`, `roll20_actual_screenshot_diff`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-font-glyph`, `status:roll20-actual`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Fix the Roll20 chat capture pipeline so DPR-corrected PNGs are not reported as non-1x/foreground suspects, then recapture or normalize before production renderer modeling.
+- STILL TODO P0: Investigate the settings save path. Direct `FormData(settingsform)` POST corrupts Roll20 advanced JSON, and programmatic Ace value changes plus real save can still be fragile; prefer real UI/file inputs or a verified settings serializer.
+
 ## 2026-06-20 Codex Update - AW2E actual chat text measurement recaptured
 
 Status: PARTIAL. One actual Roll20 chat fixture advanced from stale sidecar to measured text-width evidence; Roll20 chat/template parity still fails and production renderer CSS remains blocked.

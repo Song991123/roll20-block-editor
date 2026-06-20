@@ -2175,6 +2175,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_renderer_action_gate.mjs` so large diagnostic root-height deltas create an explicit next action. Latest gate remains `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: this is stronger actual Roll20 diagnostic evidence, not visual parity and not trusted full-root evidence.
 
+## 2026-06-20 Les/YSHY Actual Roll20 Chat Recapture
+
+- Claimed only the dedicated `Codex Roll20 Verify` Roll20 Sandbox editor/settings pages. Existing real rooms were not modified.
+- Found a real Roll20 settings fallback hazard: putting a `{ sheet, userOptions, jsoninfo }` wrapper into `customcharsheet_json` made `/editor` fail with an `unexpected token` JSON parse error. The sandbox was recovered through the settings page using the real `#save-changes-button`.
+- Updated `scripts/roll20_upload_snippet.mjs` so generated settings-page snippets fill `customcharsheet_json` with the plain exported `sheet.json` text and no longer wrap it. The snippet also avoids falling back to arbitrary `button[type=submit]` when `SUBMIT_SETTINGS_FORM` is enabled.
+- Recaptured ignored local actual Roll20 chat evidence for `official-roll20-Les-Oublies`: `roll20-chat-dom-evidence.json` now has `textMeasureEvidence.status=MEASURED`, `samples=12`, and latest template `sheet-rolltemplate-initiative-roll`; DPR-corrected `roll20-chat.png` is `267x82`.
+- Recaptured ignored local actual Roll20 chat evidence for `yshy-commission-1bu`: `roll20-chat-dom-evidence.json` now has `textMeasureEvidence.status=MEASURED`, `samples=19`, and latest template `sheet-rolltemplate-coc`; DPR-corrected `roll20-chat.png` is `267x586`.
+- Latest diagnostics: `diagnose:roll20-chat-font-glyph` now compares all 3 fixtures and reports `TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED` for AW2E, Les-Oublies, and YSHY. The prior YSHY `TEXT_MEASURE_RECAPTURE_REQUIRED` blocker is cleared.
+- Latest renderer gate still returns `HOLD_PRODUCTION_RENDERER_PATCH`: chat PNG scale/foreground suspects remain, YSHY normalized mismatch is still high, and no global-safe ChatPane renderer patch is proven.
+- Claim boundary: this is stronger actual Roll20 measurement evidence and a fixed upload helper contract. It is not Roll20 visual parity, not renderer readiness, and not approval for production ChatPane CSS.
+
 ## 2026-06-19 AW2E Overlap Transition Quality Audit
 
 - Added transition summary output to `scripts/roll20_overlap_stitch_diagnostic.mjs`: median/min/max scroll advance, median/min/max overlap score, low-advance transitions, high-score transitions, and median segment height.
