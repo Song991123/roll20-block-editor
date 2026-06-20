@@ -1,3 +1,10 @@
+## 2026-06-20 Edit Layer Copy Smoke Cleanup
+
+- Cleaned small but visible edit/layer UI copy issues in `EditCanvas`: unavailable-move status, free-placement tooltip, and layer preview secondary marker.
+- Reverified the Figma-style edit smoke after the cleanup. `editUiCopy.hasExpectedLabels=true`, `editUiCopy.hasMojibakeHan=false`, no browser console/page errors, and drag drift stayed at `0px`.
+- Verification: `lint`, `build`, `smoke:edit-flow -- --port 4210`, and `guard:roll20-evidence`.
+- Boundary: this batch improves local edit UX/readability only. Actual Roll20 sandbox/test-room visual parity is still gated by the upload/capture blocker and must not be claimed from this evidence.
+
 ## 2026-06-20 Roll20 Sandbox Recheck And CDP Chat Capture Handoff
 
 - Checked local listening ports before continuing. No app/dev/CDP server was listening on `3000`, `3001`, `3002`, or `9222`; visible node processes were Codex/browser/Figma/agent-bridge related, so no project server was stopped.

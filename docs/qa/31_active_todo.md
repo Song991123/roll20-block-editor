@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - edit layer copy smoke cleanup
+
+Status: DONE/VERIFY. This batch cleaned the local edit/layer UI copy and rechecked the edit-flow smoke; it does not claim new actual Roll20 sandbox parity.
+
+- DONE: Tightened edit-canvas status/tooltip copy so the Figma-style edit controls read consistently in Korean (`이동할 수 없습니다`, `틀 안에 놓되 해당 틀 기준으로 자유 배치합니다`).
+- DONE: Normalized the layer preview secondary marker from a middle dot to ASCII `-` so the smoke remains stable across console/font/codepage paths.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4210`, and `corepack pnpm run guard:roll20-evidence` passed.
+- LOCAL RESULT: `smoke:edit-flow` reports `editUiCopy.hasExpectedLabels=true`, `editUiCopy.hasMojibakeHan=false`, `consoleErrors=[]`, `pageErrors=[]`, and drag position drift `0px`.
+- CLAIM BOUNDARY: This is local edit UX/copy verification only. It does not prove generated sheets match actual Roll20 sandbox/test-room rendering.
+- STILL TODO P0: Resume actual Roll20 sandbox/test-room upload or manual-assisted capture, then compare local preview/edit against real Roll20 evidence before making visual parity claims.
+
 ## 2026-06-20 Codex Update - Roll20 sandbox tab recheck and CDP capture handoff
 
 Status: VERIFY/BLOCKED. This batch rechecked the live Roll20 verification tab and improved the capture handoff; it did not produce new generated-sheet parity evidence.

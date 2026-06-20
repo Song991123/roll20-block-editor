@@ -325,7 +325,7 @@ export default function EditCanvas() {
         dragOriginRef.current = origin;
         pendingMoveRef.current = null;
         if (!origin) {
-          setLastMove('이 블록은 위치 값을 저장할 필드가 없어 움직일 수 없어요.');
+          setLastMove('이 블록은 위치 값을 저장할 필드가 없어 이동할 수 없습니다.');
           return;
         }
         origin.el.style.transition = 'none';
@@ -520,7 +520,7 @@ export default function EditCanvas() {
                 ? 'bg-[var(--color-primary,#2563eb)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
-            title="틀 안에 넣되 해당 틀 기준으로 자유 배치합니다."
+            title="틀 안에 놓되 해당 틀 기준으로 자유 배치합니다."
             data-testid="edit-placement-free"
           >
             자유
@@ -815,7 +815,7 @@ const EditLayerRow = memo(function EditLayerRow({
           )}
         </span>
         {node.preview && (
-          <span className="block truncate text-[10px] opacity-70">· {node.preview}</span>
+          <span className="block truncate text-[10px] opacity-70">- {node.preview}</span>
         )}
       </span>
     </button>
