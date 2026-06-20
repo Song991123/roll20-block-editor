@@ -88,6 +88,7 @@
     "smoke:export-dialog": "node scripts/export_dialog_browser_smoke.mjs",
     "smoke:imported-edit-sync": "node scripts/imported_edit_sync_smoke.mjs",
     "smoke:imported-edit-sync:strict": "node scripts/imported_edit_sync_smoke.mjs --fail-on-resource-issues true",
+    "budget:imported-edit": "node scripts/imported_edit_perf_budget.mjs",
     "smoke:worker-state": "node scripts/sheet_worker_state_smoke.mjs",
     "smoke:visual-state-candidates": "node scripts/visual_state_candidate_smoke.mjs",
     "capture:visual-fixtures": "node scripts/capture_visual_fixture_previews.mjs",

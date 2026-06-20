@@ -1,3 +1,11 @@
+## 2026-06-20 Imported Edit Performance Budget
+
+- Added `scripts/imported_edit_perf_budget.mjs` and `corepack pnpm run budget:imported-edit`.
+- The command converts local `smoke:imported-edit-sync` JSON into a sanitized performance budget summary: block count, parse/inject/emit/import timings, drag drift, edit/preview sync, reimport stability, resource warnings, and page errors.
+- Added `--redact-ids true` for private fixtures. In that mode the report hides fixture names and source paths but keeps numeric metrics.
+- Local private baseline: one 6530-block fixture reports `WARN` due resource warnings; import total/inject/emit/drift/page-error budgets pass. This creates the baseline for the next import/hydration optimization work.
+- Claim boundary: budget/reporting only. No production performance optimization was shipped in this batch.
+
 ## 2026-06-20 Imported Edit Drag Timing Evidence
 
 - Extended `scripts/imported_edit_sync_smoke.mjs` to record drag position timeline samples for imported fixtures at pointer-up, after one animation frame, after 50ms, and after 350ms.

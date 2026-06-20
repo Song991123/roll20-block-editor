@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - imported edit performance budget
+
+Status: VERIFY. This adds a reusable local performance budget summary for imported edit smoke results; it does not optimize Blockly injection yet.
+
+- DONE: Added `scripts/imported_edit_perf_budget.mjs` and package command `budget:imported-edit`.
+- DONE: The budget command reads `smoke:imported-edit-sync` JSON and emits sanitized timing/status summaries: block count, import total, parse, Blockly inject, emit, drag drift, edit/preview sync, reimport stability, resource warnings, and page errors.
+- DONE: Added `--redact-ids true` so local private reports can hide fixture names and source paths while keeping useful metrics.
+- LOCAL PRIVATE RESULT: Redacted budget for a 6530-block private fixture reports `WARN` only because resources warn; import total, inject, emit, drag drift, page errors, edit/preview sync, and reimport stability are all under current budget.
+- VERIFIED: `corepack pnpm run budget:imported-edit -- --results <ignored-report> --redact-ids true`, `node --check scripts\imported_edit_perf_budget.mjs`.
+- STILL TODO P0: Use this budget as the baseline before optimizing import/hydration/Blockly injection.
+
 ## 2026-06-20 Codex Update - imported edit drag timing evidence
 
 Status: VERIFY. This extends imported-fixture edit smoke timing; private fixture evidence stays ignored and is not committed.
