@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - imported edit drag timing evidence
+
+Status: VERIFY. This extends imported-fixture edit smoke timing; private fixture evidence stays ignored and is not committed.
+
+- DONE: Extended `smoke:imported-edit-sync` so each real imported pointer-drag attempt records position samples after pointer-up, after one animation frame, after 50ms, and after 350ms.
+- LOCAL PRIVATE RESULT: A 6530-block private sheet fixture passed import/edit/preview/reimport sync with `0px` left/top drag drift in the recorded attempt.
+- OBSERVED BOTTLENECK: The same private fixture spent roughly 4.6-4.7s importing, with about 4.5s in Blockly injection and about 50ms in emit. That points the next optimization target toward import/hydration/injection, not the post-drop visual lock path.
+- RESOURCE NOTE: The private run still has resource warnings from blocked external/local assets, so this is edit-sync evidence only, not visual parity evidence.
+- VERIFIED: `corepack pnpm run smoke:imported-edit-sync -- --fixtures reports\local-private-fixtures --only <private-fixture> ...` passed locally; generated reports/screenshots remain ignored.
+- STILL TODO P0: Add a reusable large-fixture performance budget/report command that summarizes import parse/inject/emit/render separately without committing private sheet content.
+
 ## 2026-06-20 Codex Update - edit drag drift smoke coverage
 
 Status: VERIFY. This adds a regression guard for drag rollback; it does not prove large imported sheets are fast enough yet.

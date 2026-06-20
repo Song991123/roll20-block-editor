@@ -1120,7 +1120,37 @@ async function dragTarget(page, target) {
   await page.mouse.move(target.center.x + 12, target.center.y + 8, { steps: 2 });
   await page.mouse.move(target.center.x + DRAG_DELTA.x, target.center.y + DRAG_DELTA.y, { steps: 8 });
   await page.mouse.up();
-  await page.waitForTimeout(350);
+  return page.evaluate(async (blockId) => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const escaped = CSS.escape(blockId);
+    const samples = [];
+    const sample = (label) => {
+      const el = host?.shadowRoot?.querySelector(`[data-r20-block-id="${escaped}"]`);
+      const computed = el ? getComputedStyle(el) : null;
+      samples.push({
+        label,
+        position: computed?.position ?? null,
+        left: computed ? Math.round(Number.parseFloat(computed.left)) : null,
+        top: computed ? Math.round(Number.parseFloat(computed.top)) : null,
+        transform: el?.style.transform ?? null,
+      });
+    };
+    sample('after-pointerup');
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    sample('after-1raf');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    sample('after-50ms');
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    sample('after-350ms');
+    const numeric = samples.filter((s) => typeof s.left === 'number' && typeof s.top === 'number');
+    const lefts = numeric.map((s) => s.left);
+    const tops = numeric.map((s) => s.top);
+    return {
+      samples,
+      leftDrift: lefts.length ? Math.max(...lefts) - Math.min(...lefts) : null,
+      topDrift: tops.length ? Math.max(...tops) - Math.min(...tops) : null,
+    };
+  }, target.blockId);
 }
 
 async function emittedPositionState(page, blockId) {
@@ -1453,7 +1483,7 @@ async function main() {
           if (attemptIndex === 0) {
             await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-before-edit.png`) });
           }
-          await dragTarget(page, target);
+          attempt.dragTimeline = await dragTarget(page, target);
           attempt.emitted = await emittedPositionState(page, target.blockId);
           await page.waitForTimeout(1200);
           attempt.editAfter = await waitForEditEmitSync(page, target.blockId, attempt.emitted);

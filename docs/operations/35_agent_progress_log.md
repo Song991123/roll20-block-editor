@@ -1,3 +1,11 @@
+## 2026-06-20 Imported Edit Drag Timing Evidence
+
+- Extended `scripts/imported_edit_sync_smoke.mjs` to record drag position timeline samples for imported fixtures at pointer-up, after one animation frame, after 50ms, and after 350ms.
+- Ran the smoke locally against an ignored private 6530-block fixture. It passed import/edit/preview/reimport sync and recorded `0px` left/top post-drop drift.
+- The same private run showed the likely performance bottleneck: total import about 4.6-4.7s, Blockly injection about 4.5s, emit about 50ms.
+- Resource warnings remain due blocked external/local assets, so this is edit-sync/performance-routing evidence only, not Roll20 visual parity evidence.
+- Claim boundary: private fixture files, screenshots, and generated reports remain ignored and uncommitted.
+
 ## 2026-06-20 Edit Drag Drift Smoke Coverage
 
 - Extended `scripts/edit_flow_browser_smoke.mjs` so the real pointer-drag slice records moved element position at pointer-up, after one animation frame, after 50ms, and after 250ms.
