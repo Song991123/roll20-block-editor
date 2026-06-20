@@ -4,6 +4,7 @@
 - Replaced temporary text-symbol mode markers with lucide icons (`PencilRuler`, `PanelsLeftRight`, `Blocks`, `Eye`) so the mode switcher follows the editor UI icon rule while keeping readable text labels.
 - Replaced mojibake labels/tooltips/ARIA text in `components/editor/PreviewToolbar.tsx` and removed its dead refresh button. The explicit legacy Roll20 CSS toggle remains available for old-sheet verification.
 - Replaced the empty preview state copy in `components/editor/PreviewEmptyState.tsx` so it accurately says this is a local Roll20-format preview and actual Roll20 results still require Sandbox/test-room verification.
+- Replaced product-facing mojibake in `components/editor/Statusbar.tsx` and `components/editor/SidebarLeft.tsx`, including block count, save state, autosave state, workspace label, and collapsed sidebar ARIA labels.
 - Verification: `guard:ui-copy`, `smoke:legacy-preview`, `lint`, `build`, and `smoke:edit-flow -- --port 4210` passed. The edit smoke reported `editUiCopy.hasMojibakeHan=false`.
 - Claim boundary: this improves product usability and truthfulness only. It does not prove Roll20 visual parity and does not change renderer readiness.
 
