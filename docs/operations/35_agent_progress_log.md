@@ -3,6 +3,8 @@
 - Added matching `*-activation-check-snippet.js` generation to `scripts/roll20_upload_snippet.mjs`.
 - The activation checker is intended for `https://app.roll20.net/editor` after Sandbox settings save/reload and reports `VISIBLE_MATCH`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN` before any root/chat evidence capture.
 - Extended `test:roll20-upload-snippet` so it now guards both the settings manifest wrapper and activation checker status surface.
+- Added explicit apply-mode generation: `--apply-settings --endpoint-campaign-id <id>` keeps default snippets non-submitting but creates a dedicated Sandbox/test-room snippet that enables endpoint fallback and settings save when intentionally requested.
+- Live browser check: the current Roll20 editor tab returned `NOT_PROVEN` for AW2E and YSHY activation, with Les-Oublies rolltemplate classes still visible. Automated apply execution was blocked because tab CDP was paused and the read-only page execution surface disables `eval`/`Function`.
 - Claim boundary: this is upload/capture gating only. It does not prove AW2E/YSHY loaded in Roll20, does not add new screenshots, and does not make the renderer ready.
 
 ## 2026-06-21 Roll20 Settings Manifest Shape Recheck

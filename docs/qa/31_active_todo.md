@@ -6,14 +6,17 @@ Status: VERIFY/BLOCKED_ACTIVATION. This batch rechecked the live Roll20 Custom S
 - VERIFIED FOLLOW-UP: `test:roll20-upload-snippet` passed and regenerated AW2E upload snippet reports `shape=wrapped-jsoninfo`.
 - DONE FOLLOW-UP: Upload snippets now classify a Roll20 `/editor` JSON parse failure as `ROLL20_EDITOR_PARSE_ERROR`, separate from ordinary `NOT_PROVEN` activation.
 - DONE FOLLOW-UP: `snippet:roll20-upload` now also generates matching `/editor` `*-activation-check-snippet.js` files, and the self-test verifies the activation statuses `VISIBLE_MATCH`, `ROLL20_EDITOR_PARSE_ERROR`, and `NOT_PROVEN`.
+- DONE FOLLOW-UP: `snippet:roll20-upload` now supports explicit `--apply-settings --endpoint-campaign-id <id>` generation. Default snippets remain non-submitting; apply snippets enable endpoint fallback and settings save only when the dedicated Sandbox/test campaign id is provided.
 - DONE FOLLOW-UP: Corrected `docs/operations/37_roll20_actual_verification.md`; it now matches the 2026-06-21 live finding that plain `sheet.json` is the known-bad settings fallback shape and `{ sheet, userOptions, jsoninfo }` is the current guarded path.
 - OBSERVED: The original Roll20 editor tab was still logged in and showed Les-Oublies chat templates with `devicePixelRatio=1.25`.
 - OBSERVED: The claimed original tab's CDP capability was blocked by `paused document response`, but a fresh temporary Chrome tab opened to `https://app.roll20.net/sheetsandbox/settings/21639681` had working tab-scoped CDP.
 - OBSERVED: Applying AW2E with the generated snippet's current plain `customcharsheet_json` value posted HTML/CSS/translation with `200`, but `/editor` returned a Roll20 JSON parse error: `unexpected token at '{ "html": "sheet.html", ... }'`.
 - RECOVERED: Reapplied Les-Oublies using the settings-page wrapper shape `{ sheet, userOptions, jsoninfo }`; `/editor` loaded again and visible chat had `sheet-rolltemplate-classic-roll` entries. This recovered the dedicated verification sandbox from the plain-manifest error state.
 - PARTIAL: Applying AW2E with the wrapper shape no longer crashed `/editor`, but no AW2E sheet/roll button activation was visible in the checked editor DOM. AW2E trusted chat recapture is still blocked until visible activation is proven.
+- OBSERVED: The live Roll20 editor tab activation checker returned `NOT_PROVEN` for both `official-roll20-AW2E` and `yshy-commission-1bu`; the visible tab still showed Les-Oublies rolltemplate classes and no sheet/roll-button markers for those fixtures.
+- BLOCKED: The current Chrome tab could not execute the apply snippet automatically: tab CDP was blocked by a paused document response, and the read-only page execution surface disables `eval`/`Function`.
 - DONE: Updated `scripts/roll20_upload_snippet.mjs` and `scripts/README.md` so settings-page snippets write the wrapper shape again and warn that the plain exported `sheet.json` text caused a live `/editor` parse error on 2026-06-21.
-- NEXT P0: Run the generated activation checker after Sandbox save/reload for AW2E/YSHY and only recapture `roll20-chat.png` when it returns `VISIBLE_MATCH` and the visible sheet/chat belongs to the intended fixture.
+- NEXT P0: Run the generated apply snippet in the dedicated Sandbox settings page with a CDP-capable/manual console path, then run the activation checker after save/reload for AW2E/YSHY and only recapture `roll20-chat.png` when it returns `VISIBLE_MATCH` and the visible sheet/chat belongs to the intended fixture.
 
 ## 2026-06-21 Codex Update - Les-Oublies trusted chat recapture
 

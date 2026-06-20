@@ -19,6 +19,8 @@ const positionalArgs = args.filter((arg) => !arg.startsWith('--'));
 const [RUN_DIR_ARG, ONLY] = parseArgs(positionalArgs);
 const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
 const SELF_TEST = args.includes('--self-test');
+const APPLY_SETTINGS = args.includes('--apply-settings');
+const ENDPOINT_CAMPAIGN_ID = readOptionValue(args, '--endpoint-campaign-id') || '';
 
 if (SELF_TEST) {
   runSelfTest();
@@ -38,6 +40,14 @@ function parseArgs(rawArgs) {
   return ['', first];
 }
 
+function readOptionValue(rawArgs, name) {
+  const exact = rawArgs.indexOf(name);
+  if (exact >= 0) return rawArgs[exact + 1] || '';
+  const prefix = `${name}=`;
+  const match = rawArgs.find((arg) => arg.startsWith(prefix));
+  return match ? match.slice(prefix.length) : '';
+}
+
 async function main() {
   const runDir = RUN_DIR_ARG ? path.resolve(RUN_DIR_ARG) : await findLatestPreuploadRun();
   const baselineDir = path.join(runDir, 'local-baseline');
@@ -55,7 +65,10 @@ async function main() {
 
   const entries = [];
   for (const fixtureId of fixtureIds) {
-    entries.push(await writeFixtureSnippet(runDir, fixtureId, outDir));
+    entries.push(await writeFixtureSnippet(runDir, fixtureId, outDir, {
+      applySettings: APPLY_SETTINGS,
+      endpointCampaignId: ENDPOINT_CAMPAIGN_ID,
+    }));
   }
 
   const report = {
@@ -71,6 +84,8 @@ async function main() {
     outDir,
     runDir,
     entries: entries.length,
+    applySettings: APPLY_SETTINGS,
+    endpointCampaignId: ENDPOINT_CAMPAIGN_ID || null,
     snippets: entries.map((entry) => entry.snippetRelativePath),
     activationCheckSnippets: entries.map((entry) => entry.activationCheckSnippetRelativePath),
   }, null, 2));
@@ -101,7 +116,7 @@ async function findLatestPreuploadRun() {
   return candidates[0].runDir;
 }
 
-async function writeFixtureSnippet(runDir, fixtureId, outDir) {
+async function writeFixtureSnippet(runDir, fixtureId, outDir, options = {}) {
   const payloadDir = path.join(runDir, 'local-baseline', fixtureId, 'payload');
   const files = {
     html: path.join(payloadDir, 'sheet.html'),
@@ -136,7 +151,7 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir) {
   validation.settingsFieldManifest = validateSettingsFieldManifest(sourceTexts.manifest);
   const activationHints = extractActivationHints(sourceTexts);
 
-  const snippet = renderSnippet({ fixtureId, payload, validation, activationHints });
+  const snippet = renderSnippet({ fixtureId, payload, validation, activationHints, options });
   const snippetFile = path.join(outDir, `${safeName(fixtureId)}-upload-snippet.js`);
   await fs.writeFile(snippetFile, snippet, 'utf8');
   const activationCheckSnippet = renderActivationCheckSnippet({ fixtureId, activationHints });
@@ -149,6 +164,10 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir) {
     snippetRelativePath: path.relative(process.cwd(), snippetFile),
     activationCheckSnippetPath: activationCheckFile,
     activationCheckSnippetRelativePath: path.relative(process.cwd(), activationCheckFile),
+    options: {
+      applySettings: Boolean(options.applySettings),
+      endpointCampaignId: options.endpointCampaignId || '',
+    },
     payloadBytes: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.bytes])),
     payloadSha256: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.sha256])),
     activationHints,
@@ -351,8 +370,10 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
 })();`;
 }
 
-function renderSnippet({ fixtureId, payload, validation, activationHints }) {
+function renderSnippet({ fixtureId, payload, validation, activationHints, options = {} }) {
   const literal = JSON.stringify({ fixtureId, payload, validation, activationHints }, null, 2);
+  const applySettings = Boolean(options.applySettings);
+  const endpointCampaignId = options.endpointCampaignId || '';
   return `// Roll20 Custom Sheet Sandbox upload helper for ${fixtureId}
 // Local-only generated snippet. Do not paste this into existing real rooms.
 // Run on https://app.roll20.net/editor with Sheet Sandbox Tools open, or on the
@@ -360,9 +381,9 @@ function renderSnippet({ fixtureId, payload, validation, activationHints }) {
 // capture screenshots and run the repo status/diff commands afterward.
 (async () => {
   const DATA = ${literal};
-  const SUBMIT_SETTINGS_FORM = false;
-  const USE_ENDPOINT_FALLBACK = false;
-  const ENDPOINT_CAMPAIGN_ID = '';
+  const SUBMIT_SETTINGS_FORM = ${applySettings ? 'true' : 'false'};
+  const USE_ENDPOINT_FALLBACK = ${applySettings ? 'true' : 'false'};
+  const ENDPOINT_CAMPAIGN_ID = ${JSON.stringify(endpointCampaignId)};
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const bytesFromBase64 = (base64) => {
     const bin = atob(base64);
@@ -625,17 +646,19 @@ function renderReadme(report) {
     '',
     'Use upload snippets only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
     '',
+    'Default snippets are non-submitting helpers. Pass `--apply-settings --endpoint-campaign-id <sandboxCampaignId>` only for the dedicated Sandbox/test room when you intentionally want the generated snippet to POST the payload endpoint fallback and click the settings save button.',
+    '',
     'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills `customcharsheet_json` with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. Live Roll20 verification on 2026-06-21 showed that writing the plain exported `sheet.json` text directly can make `/editor` return a JSON parse error. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH` and screenshots are captured afterward.',
     '',
     'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. Capture Roll20 root/chat evidence only after `VISIBLE_MATCH` and a visual check that the visible sheet/chat belongs to the intended fixture.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
-    '| Fixture | Upload snippet | Activation check | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings field manifest |',
-    '| --- | --- | --- | ---: | ---: | ---: | --- | --- |',
+    '| Fixture | Upload snippet | Activation check | Apply settings | Campaign id | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings field manifest |',
+    '| --- | --- | --- | --- | --- | ---: | ---: | ---: | --- | --- |',
   ];
   for (const entry of report.entries) {
-    lines.push(`| ${entry.fixtureId} | \`${entry.snippetRelativePath}\` | \`${entry.activationCheckSnippetRelativePath}\` | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsFieldManifest.ok ? 'PASS' : 'FAIL'} |`);
+    lines.push(`| ${entry.fixtureId} | \`${entry.snippetRelativePath}\` | \`${entry.activationCheckSnippetRelativePath}\` | ${entry.options?.applySettings ? 'YES' : 'NO'} | ${entry.options?.endpointCampaignId || '-'} | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsFieldManifest.ok ? 'PASS' : 'FAIL'} |`);
   }
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -679,6 +702,25 @@ function runSelfTest() {
       textTokens: ['Self'],
     },
   });
+  const applySnippet = renderSnippet({
+    fixtureId: 'self-test',
+    payload,
+    validation: {
+      translation: { ok: true },
+      manifest: { ok: true },
+      settingsFieldManifest: validation,
+    },
+    activationHints: {
+      rolltemplateClasses: ['sheet-rolltemplate-self'],
+      rollButtonNames: ['roll_self'],
+      attrNames: ['attr_self'],
+      textTokens: ['Self'],
+    },
+    options: {
+      applySettings: true,
+      endpointCampaignId: '12345',
+    },
+  });
   const activationCheckSnippet = renderActivationCheckSnippet({
     fixtureId: 'self-test',
     activationHints: {
@@ -694,6 +736,7 @@ function runSelfTest() {
       fixtureId: 'self-test',
       snippetRelativePath: 'reports/self-test.js',
       activationCheckSnippetRelativePath: 'reports/self-test-activation-check-snippet.js',
+      options: { applySettings: true, endpointCampaignId: '12345' },
       payloadBytes: { html: 0, css: 0, translation: 2 },
       validation: {
         translation: { ok: true },
@@ -705,6 +748,11 @@ function runSelfTest() {
   if (!settings?.jsoninfo) failures.push('settings manifest missing jsoninfo wrapper');
   if (!settings?.sheet?.long_name) failures.push('settings manifest missing sheet.long_name');
   if (validation.shape !== 'wrapped-jsoninfo') failures.push(`validation shape was ${validation.shape}`);
+  if (!snippet.includes('const SUBMIT_SETTINGS_FORM = false;')) failures.push('default snippet should not submit settings');
+  if (!snippet.includes('const USE_ENDPOINT_FALLBACK = false;')) failures.push('default snippet should not post endpoint fallback');
+  if (!applySnippet.includes('const SUBMIT_SETTINGS_FORM = true;')) failures.push('apply snippet missing submit settings flag');
+  if (!applySnippet.includes('const USE_ENDPOINT_FALLBACK = true;')) failures.push('apply snippet missing endpoint fallback flag');
+  if (!applySnippet.includes('const ENDPOINT_CAMPAIGN_ID = "12345";')) failures.push('apply snippet missing explicit campaign id');
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
   if (!snippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated snippet missing editor parse-error activation status');
   if (!snippet.includes('roll20EditorParseError')) failures.push('generated snippet missing editor parse-error detector');
@@ -715,6 +763,7 @@ function runSelfTest() {
   if (!readme.includes('settings-page `{ sheet, userOptions, jsoninfo }` wrapper')) failures.push('generated README text does not describe wrapper');
   if (!readme.includes('Activation check')) failures.push('generated README missing activation check column');
   if (!readme.includes('*-activation-check-snippet.js')) failures.push('generated README missing activation check instruction');
+  if (!readme.includes('Apply settings')) failures.push('generated README missing apply settings column');
   if (failures.length) throw new Error(`roll20_upload_snippet self-test failed: ${failures.join(', ')}`);
   console.log('ROLL20 UPLOAD SNIPPET SELF-TEST PASS');
 }
