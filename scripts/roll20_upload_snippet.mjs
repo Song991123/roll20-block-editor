@@ -434,6 +434,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints }) {
     const text = (document.querySelector('#sheetsandbox')?.innerText || document.body?.innerText || '').replace(/\\s+/g, ' ').trim();
     return {
       translationJsonParseError: /번역 JSON|Translation JSON|JSON을 파싱|JSON parse/i.test(text),
+      roll20EditorParseError: /"status"\\s*:\\s*"error"|unexpected token at|customcharsheet_json|sheet\\.html/i.test(text)
+        && /unexpected token|parse error|JSON/i.test(text),
       sandboxTextSnippet: text.slice(0, 800),
     };
   };
@@ -468,7 +470,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints }) {
       },
     };
   };
-  const classifyActivation = (before, after, fileInputs) => {
+  const classifyActivation = (before, after, fileInputs, sandboxMessages) => {
     const hitCount = (probe) => Object.values(probe?.hits || {}).reduce((sum, values) => sum + (Array.isArray(values) ? values.length : 0), 0);
     const beforeHits = hitCount(before);
     const afterHits = hitCount(after);
@@ -478,7 +480,9 @@ function renderSnippet({ fixtureId, payload, validation, activationHints }) {
     }));
     const addedHitCount = Object.values(addedHits).reduce((sum, values) => sum + values.length, 0);
     const allFileInputsDispatched = fileInputs.every((item) => item.status === 'dispatched');
-    const status = afterHits > 0 && (addedHitCount > 0 || beforeHits === 0)
+    const status = sandboxMessages?.roll20EditorParseError
+      ? 'ROLL20_EDITOR_PARSE_ERROR'
+      : afterHits > 0 && (addedHitCount > 0 || beforeHits === 0)
       ? 'VISIBLE_MATCH'
       : allFileInputsDispatched
         ? 'FILE_INPUTS_DISPATCHED_BUT_VISIBLE_MATCH_NOT_PROVEN'
@@ -491,6 +495,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints }) {
       addedHitCount,
       note: status === 'VISIBLE_MATCH'
         ? 'Expected sheet markers are visible after upload; still capture screenshots before claiming parity.'
+        : status === 'ROLL20_EDITOR_PARSE_ERROR'
+          ? 'Roll20 editor returned a parse error after upload/settings save. Do not capture evidence; restore the sandbox and fix the upload manifest/settings shape first.'
         : 'File-input dispatch alone is not proof that Roll20 applied the uploaded sheet. Use the real file chooser/settings save path or recapture only after visible expected markers appear.',
     };
   };
@@ -531,7 +537,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints }) {
   await sleep(1500);
   const sandboxMessages = inspectSandboxMessages();
   const activationAfter = collectActivationProbe('after-upload');
-  const activation = classifyActivation(activationBefore, activationAfter, results);
+  const activation = classifyActivation(activationBefore, activationAfter, results, sandboxMessages);
   console.table(results);
   console.log('Manifest:', manifest);
   console.log('Endpoint fallback:', endpointFallback);
@@ -625,6 +631,8 @@ function runSelfTest() {
   if (!settings?.sheet?.long_name) failures.push('settings manifest missing sheet.long_name');
   if (validation.shape !== 'wrapped-jsoninfo') failures.push(`validation shape was ${validation.shape}`);
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
+  if (!snippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated snippet missing editor parse-error activation status');
+  if (!snippet.includes('roll20EditorParseError')) failures.push('generated snippet missing editor parse-error detector');
   if (!readme.includes('settings-page `{ sheet, userOptions, jsoninfo }` wrapper')) failures.push('generated README text does not describe wrapper');
   if (failures.length) throw new Error(`roll20_upload_snippet self-test failed: ${failures.join(', ')}`);
   console.log('ROLL20 UPLOAD SNIPPET SELF-TEST PASS');

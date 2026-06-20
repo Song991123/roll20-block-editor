@@ -437,14 +437,15 @@ manifest through `textarea[name=customcharsheet_json]`; otherwise Roll20 can
 store the source but the character iframe may not load the custom sheet.
 
 When writing `customcharsheet_json` through the settings-page fallback, fill it
-with the export payload's plain `sheet.json` text. A 2026-06-20 live recheck
-proved that wrapping the manifest as `{ sheet, userOptions, jsoninfo }` can make
-the Roll20 editor fail on reload with an `unexpected token` JSON parse error.
-If the settings page normalizes formatting after the real save button is used,
-that is acceptable; do not invent an extra wrapper. Endpoint/file-input success
-and a settings-page success message remain storage/configuration evidence only
-until a fresh character iframe DOM/root screenshot proves the custom sheet
-actually rendered.
+with the settings-page wrapper shape `{ sheet, userOptions, jsoninfo }` derived
+from the export payload's `sheet.json`. A 2026-06-21 live recheck showed that
+writing the plain exported `sheet.json` text directly can make `/editor` return
+an `unexpected token` JSON parse error around `{ "html": "sheet.html", ... }`.
+If Roll20 later changes this contract, update this document only after a live
+settings-save -> editor-reload check proves the new shape. Endpoint/file-input
+success and a settings-page success message remain storage/configuration
+evidence only until a fresh character iframe DOM/root screenshot proves the
+custom sheet actually rendered.
 
 2026-06-20 recheck: the settings page may keep the real JSON source in an Ace
 editor registry named `editors.json`. Updating only
@@ -520,8 +521,9 @@ the preferred evidence.
 - The helper writes ignored, local-only snippets under `reports/roll20-actual-compare/<label>/roll20-upload-handoff/snippets/`.
 - The generated snippet embeds source-derived payload bytes and must not be committed.
 - Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. It creates browser `File` objects and dispatches `change` events on `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`, then fills `customcharsheet_json` when that field exists.
-- When filling `customcharsheet_json`, the generated snippet uses the plain exported `sheet.json` text. A wrapper object is a known-bad path for the current verified Sandbox settings page.
+- When filling `customcharsheet_json`, the generated snippet uses the settings-page `{ sheet, userOptions, jsoninfo }` wrapper. The plain exported `sheet.json` text is a known-bad path for the current verified Sandbox settings page because it caused a live `/editor` parse error on 2026-06-21.
 - On settings pages with an Ace editor, the generated snippet must also update `editors.json`; the logged `aceJsonSet` field is evidence that the real settings editor was touched.
+- Run `corepack pnpm run test:roll20-upload-snippet` after changing upload snippet generation. It fails if the settings-page manifest builder regresses back to the plain exported `sheet.json` shape.
 - The snippet report validates `translation.json`, `sheet.json`, and the generated settings-page manifest before embedding them. If Roll20 still displays a translation JSON parse warning after a PASS report, treat it as an upload/settings application problem until a fresh Roll20-side sidecar proves otherwise.
 - The snippet runtime logs visible Roll20 Sandbox warning text after dispatching the file changes. Preserve that console result in the local ignored report notes when diagnosing translation/i18n failures.
 - This is a fallback for Chrome file chooser blocking. It is not Roll20 visual parity and still requires fresh sandbox root/chat screenshots plus status/diff gates afterward.

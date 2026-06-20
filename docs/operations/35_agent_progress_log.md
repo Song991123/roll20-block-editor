@@ -2,7 +2,9 @@
 
 - Rechecked the live dedicated Roll20 Custom Sheet Sandbox while continuing the AW2E/YSHY trusted chat recapture task.
 - Added `corepack pnpm run test:roll20-upload-snippet`, a self-test for the Roll20 upload snippet settings manifest builder. It verifies that generated settings-page snippets use the `{ sheet, userOptions, jsoninfo }` wrapper and that README text documents the plain-manifest parse-error hazard.
-- Verification: `node --check scripts\roll20_upload_snippet.mjs`, `corepack pnpm run test:roll20-upload-snippet`, and AW2E snippet regeneration passed; the regenerated ignored AW2E snippet reports `shape=wrapped-jsoninfo`.
+- Upload snippets now classify Roll20 editor JSON parse failures as `ROLL20_EDITOR_PARSE_ERROR`, so a broken `/editor` reload is not lumped together with ordinary missing activation markers.
+- Corrected `docs/operations/37_roll20_actual_verification.md`; it now matches the 2026-06-21 live finding that plain `sheet.json` is the known-bad settings fallback shape and `{ sheet, userOptions, jsoninfo }` is the current guarded path.
+- Verification: `node --check scripts\roll20_upload_snippet.mjs`, `corepack pnpm run test:roll20-upload-snippet`, and AW2E snippet regeneration passed; the regenerated ignored AW2E snippet reports `shape=wrapped-jsoninfo` and contains `ROLL20_EDITOR_PARSE_ERROR`.
 - The original claimed editor tab still showed Les-Oublies chat templates and `devicePixelRatio=1.25`, but its CDP capability was blocked by a paused document response. A fresh temporary Chrome tab opened to `https://app.roll20.net/sheetsandbox/settings/21639681` had working tab-scoped CDP.
 - Applying AW2E with the current generated snippet's plain `customcharsheet_json` text posted HTML/CSS/translation to `/sheetsandbox/savesheetsettings` with `200`, but `/editor` returned a Roll20 JSON parse error around the plain `{ "html": "sheet.html", ... }` manifest.
 - Recovered the dedicated verification sandbox by applying Les-Oublies through the settings-page wrapper shape `{ sheet, userOptions, jsoninfo }`; `/editor` loaded again and visible chat contained `sheet-rolltemplate-classic-roll`.
