@@ -10,6 +10,12 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import {
+  classifyRoll20Target,
+  isRoll20CaptureReady,
+  nextActionForReadiness,
+  selfTestRoll20Readiness,
+} from './lib/roll20Readiness.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const RUN_DIR = path.resolve(readOption('--run-dir', args[0] ?? ''));
@@ -182,11 +188,11 @@ async function getRoll20PageReadiness(page) {
   const title = await page.title().catch(() => '');
   const status = classifyRoll20Target({ url, title });
   return {
-    ready: status === 'CAPTURE_READY',
+    ready: isRoll20CaptureReady(status),
     status,
     url,
     title,
-    nextAction: nextActionForReadiness(status),
+    nextAction: nextActionForReadiness(status, { pageMatch: PAGE_MATCH, captureVerb: 'capture' }),
   };
 }
 
@@ -201,64 +207,8 @@ function assertCaptureReadyPage(readiness) {
   ].join('\n'));
 }
 
-function classifyRoll20Target(target) {
-  const url = String(target.url ?? '');
-  const title = String(target.title ?? '');
-  if (/\/login(?:$|[?#/])/.test(url)) return 'LOGIN_REQUIRED';
-  if (/__cf_chl_|Just a moment|잠시|기다/i.test(url) || /Just a moment|잠시|기다/i.test(title)) {
-    return 'CHALLENGE_OR_WAITING';
-  }
-  if (/\/editor(?:$|[?#/])/.test(url) || /\/campaigns\/details\//.test(url)) return 'CAPTURE_READY';
-  return 'UNKNOWN_ROLL20_PAGE';
-}
-
-function nextActionForReadiness(status) {
-  if (status === 'LOGIN_REQUIRED') {
-    return 'Log in to Roll20 inside the CDP-enabled browser, open the dedicated Sandbox/test room, then rerun capture.';
-  }
-  if (status === 'CHALLENGE_OR_WAITING') {
-    return 'Wait for the Roll20/Cloudflare challenge to finish in the CDP-enabled browser, then rerun capture.';
-  }
-  if (status === 'UNKNOWN_ROLL20_PAGE') {
-    return 'Navigate the CDP-enabled browser to the dedicated Roll20 Sandbox/test room, then rerun capture.';
-  }
-  return 'Open the dedicated Roll20 Sandbox/test room in the CDP-enabled browser, then rerun capture.';
-}
-
 function runReadinessSelfTest() {
-  const cases = [
-    {
-      name: 'login',
-      target: { url: 'https://app.roll20.net/login', title: 'Login' },
-      expected: 'LOGIN_REQUIRED',
-    },
-    {
-      name: 'cloudflare',
-      target: { url: 'https://app.roll20.net/editor?__cf_chl_rt_tk=abc', title: 'Just a moment...' },
-      expected: 'CHALLENGE_OR_WAITING',
-    },
-    {
-      name: 'editor',
-      target: { url: 'https://app.roll20.net/editor', title: 'Codex Roll20 Verify | Roll20' },
-      expected: 'CAPTURE_READY',
-    },
-    {
-      name: 'campaign',
-      target: { url: 'https://app.roll20.net/campaigns/details/123/test', title: 'Test Campaign' },
-      expected: 'CAPTURE_READY',
-    },
-    {
-      name: 'unknown',
-      target: { url: 'https://app.roll20.net/account', title: 'Account' },
-      expected: 'UNKNOWN_ROLL20_PAGE',
-    },
-  ];
-  const failures = cases
-    .map((testCase) => ({
-      ...testCase,
-      actual: classifyRoll20Target(testCase.target),
-    }))
-    .filter((testCase) => testCase.actual !== testCase.expected);
+  const failures = selfTestRoll20Readiness();
   if (failures.length) {
     console.error(`ROLL20 CHAT CDP CAPTURE READINESS_SELF_TEST FAIL ${JSON.stringify(failures, null, 2)}`);
     process.exit(1);

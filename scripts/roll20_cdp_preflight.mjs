@@ -11,6 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import { ROLL20_READINESS, classifyRoll20Target, nextActionForReadiness } from './lib/roll20Readiness.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const RUN_DIR = path.resolve(readOption('--run-dir', args[0] ?? ''));
@@ -131,21 +132,10 @@ async function inspectEndpoint(cdpUrl) {
 function classifyStatus(endpoint) {
   if (!endpoint.ok) return 'CDP_CLOSED';
   if (!endpoint.roll20Targets.length) return 'NO_MATCHING_ROLL20_PAGE';
-  if (endpoint.roll20Targets.some((target) => target.readiness === 'CAPTURE_READY')) return 'READY';
-  if (endpoint.roll20Targets.some((target) => target.readiness === 'LOGIN_REQUIRED')) return 'LOGIN_REQUIRED';
-  if (endpoint.roll20Targets.some((target) => target.readiness === 'CHALLENGE_OR_WAITING')) return 'CHALLENGE_OR_WAITING';
+  if (endpoint.roll20Targets.some((target) => target.readiness === ROLL20_READINESS.CAPTURE_READY)) return 'READY';
+  if (endpoint.roll20Targets.some((target) => target.readiness === ROLL20_READINESS.LOGIN_REQUIRED)) return 'LOGIN_REQUIRED';
+  if (endpoint.roll20Targets.some((target) => target.readiness === ROLL20_READINESS.CHALLENGE_OR_WAITING)) return 'CHALLENGE_OR_WAITING';
   return 'ROLL20_PAGE_NOT_READY';
-}
-
-function classifyRoll20Target(target) {
-  const url = String(target.url ?? '');
-  const title = String(target.title ?? '');
-  if (/\/login(?:$|[?#/])/.test(url)) return 'LOGIN_REQUIRED';
-  if (/__cf_chl_|Just a moment|잠시|기다/i.test(url) || /Just a moment|잠시|기다/i.test(title)) {
-    return 'CHALLENGE_OR_WAITING';
-  }
-  if (/\/editor(?:$|[?#/])/.test(url) || /\/campaigns\/details\//.test(url)) return 'CAPTURE_READY';
-  return 'UNKNOWN_ROLL20_PAGE';
 }
 
 function nextActionForEndpoint(endpoint) {
@@ -157,10 +147,10 @@ function nextActionForEndpoint(endpoint) {
     return `Open a Roll20 Sandbox/test-room page matching ${PAGE_MATCH} in this CDP-enabled browser.`;
   }
   if (status === 'LOGIN_REQUIRED') {
-    return 'Log in to Roll20 inside the CDP-enabled browser, open the dedicated Sandbox/test room, then rerun this preflight.';
+    return nextActionForReadiness(ROLL20_READINESS.LOGIN_REQUIRED, { pageMatch: PAGE_MATCH, captureVerb: 'this preflight' });
   }
   if (status === 'CHALLENGE_OR_WAITING') {
-    return 'Wait for the Roll20/Cloudflare challenge to finish in the CDP-enabled browser, then rerun this preflight.';
+    return nextActionForReadiness(ROLL20_READINESS.CHALLENGE_OR_WAITING, { pageMatch: PAGE_MATCH, captureVerb: 'this preflight' });
   }
   if (status === 'READY') {
     return 'Load the intended fixture in the dedicated Roll20 Sandbox/test room, then run the capture command for each planned fixture.';

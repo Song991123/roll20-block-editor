@@ -1,3 +1,12 @@
+## 2026-06-20 Codex Update - shared Roll20 CDP readiness helper
+
+Status: DONE/VERIFY. This batch removes duplicated Roll20 page-readiness logic from CDP preflight and chat capture tooling.
+
+- DONE: Added `scripts/lib/roll20Readiness.mjs` as the single source of truth for Roll20 page readiness classification and next-action text.
+- DONE: `preflight:roll20-cdp` and `capture:roll20-chat-cdp` now use the shared helper, so login/challenge/unknown-page handling cannot drift independently.
+- VERIFIED: `test:roll20-chat-cdp-readiness` passed, `preflight:roll20-cdp` still reports current `CDP_CLOSED`, closed-CDP dry-run still fails with expected `BLOCKED_CDP_ENDPOINT`, and `lint`, `build`, `guard:roll20-evidence` passed.
+- STILL TODO P0: Use the shared guard with a logged-in CDP Roll20 Sandbox/test-room tab and recapture AW2E/Les-Oublies chat evidence.
+
 ## 2026-06-20 Codex Update - Roll20 chat CDP capture readiness guard
 
 Status: VERIFY/BLOCKED_CDP. This batch prevents `capture:roll20-chat-cdp` from attempting evidence capture on Roll20 login/challenge/non-room pages.

@@ -1,3 +1,10 @@
+## 2026-06-20 Shared Roll20 CDP Readiness Helper
+
+- Added `scripts/lib/roll20Readiness.mjs` and moved Roll20 login/challenge/editor/campaign/unknown page classification into it.
+- Updated both `scripts/roll20_cdp_preflight.mjs` and `scripts/roll20_chat_cdp_capture.mjs` to use the shared helper, reducing the chance that preflight says one thing while capture enforces another.
+- Verification: readiness self-test passed, `preflight:roll20-cdp` still reports the current closed-CDP state, the closed-CDP capture dry-run still fails with expected `BLOCKED_CDP_ENDPOINT`, and `lint`, `build`, `guard:roll20-evidence` passed.
+- Boundary: this is tooling reliability work. No new Roll20 screenshot or chat sidecar was captured.
+
 ## 2026-06-20 Roll20 Chat CDP Capture Readiness Guard
 
 - Tightened `scripts/roll20_chat_cdp_capture.mjs` so it checks the matched Roll20 page readiness before clicking roll buttons or evaluating the chat DOM probe. Login, challenge, and unknown Roll20 pages now block with structured `ROLL20 CHAT CDP CAPTURE BLOCKED_PAGE_NOT_READY`.
