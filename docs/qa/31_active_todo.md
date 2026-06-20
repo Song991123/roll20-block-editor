@@ -1,3 +1,20 @@
+## 2026-06-20 Codex Update - row raster candidate comparison gate
+
+Status: PARTIAL. This adds a diagnostic comparison gate; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
+
+- DONE: Added `--report-dir` to `diagnose:roll20-chat-row-raster` so candidate probes no longer overwrite the default row-raster evidence used by `gate:roll20-renderer-action`.
+- DONE: Added `scripts/roll20_chat_row_raster_candidate_compare.mjs` and package command `diagnose:roll20-chat-row-raster-candidates`.
+- DONE: Wired row-raster candidate comparison into `gate:roll20-renderer-action`.
+- RESULT: Default baseline restored: YSHY aligned mismatch `22.33%`, row-weighted mismatch `23.15%`, worst row `5` mismatch `30.89%`.
+- RESULT: `paint-dim-background` improves row raster numerically (`23.15% -> 20.51%`, worst row `30.89% -> 27.98%`) but remains blocked because actual Roll20 computed style contradicts it (`filter: none`).
+- RESULT: `coc-background-size-actual` is rejected by row raster regression: row-weighted `23.15% -> 24.53%`, worst row `30.89% -> 39.25%` (`+8.36%p`).
+- RESULT: `yshy-sanitize-typography` is rejected by row raster regression: row-weighted `23.15% -> 39.03%`, worst row `30.89% -> 55.37%` (`+24.48%p`).
+- RESULT: `gate:roll20-renderer-action` reports `chat row raster candidate comparison: compared=7/7, rejected=2, noMeaningfulGain=3` and remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- INTERPRETATION: The next YSHY/CoC P0 should not retry background-size, broad typography, or filter CSS. Build the next candidate around actual row text/background compositing, source/capture context, or a Roll20-specific raster model that also has style proof.
+- VERIFIED: `node --check` for changed scripts, `diagnose:roll20-chat-row-raster`, `diagnose:roll20-chat-row-raster-candidates`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the next YSHY/CoC row-level renderer candidate from text/background compositing or source/capture context, then run smoke, candidate comparison, style proof, row-raster candidate comparison, renderer gate, lint, build, and evidence guard.
+- STILL TODO P0: Recapture AW2E and Les-Oublies Roll20 chat sidecars with current row/typography/filter fields before any cross-fixture renderer rollout.
+
 ## 2026-06-20 Codex Update - CoC background-size raster candidate rejected
 
 Status: PARTIAL. This tested a narrow diagnostic candidate; it does not change production ChatPane defaults and does not prove Roll20 visual parity.

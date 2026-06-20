@@ -12,14 +12,19 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+function argOf(name, fallback) {
+  const index = rawArgs.indexOf(name);
+  return index >= 0 && rawArgs[index + 1] ? rawArgs[index + 1] : fallback;
+}
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !rawArgs[index - 1]?.startsWith('--'));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const localSmokeArg = args[1] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
 const localChatDirArg = args[2] ?? 'reports/rolltemplate-chat-smoke/screenshots';
 const runDir = path.resolve(runDirArg);
 const localSmokeFile = path.resolve(localSmokeArg);
 const localChatDir = path.resolve(localChatDirArg);
-const outDir = path.join(runDir, 'chat-row-raster-probe');
+const outDir = path.resolve(argOf('--report-dir', path.join(runDir, 'chat-row-raster-probe')));
 
 async function main() {
   const parity = await readOptionalJson(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));

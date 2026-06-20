@@ -52,11 +52,12 @@ async function main() {
   const chatFontIntrinsicProbe = await readJsonIfExists(path.join(runDir, 'chat-font-intrinsic-probe', 'chat-font-intrinsic-probe-results.json'));
   const chatRowPaintSourceProbe = await readJsonIfExists(path.join(runDir, 'chat-row-paint-source-probe', 'chat-row-paint-source-probe-results.json'));
   const chatRowRasterProbe = await readJsonIfExists(path.join(runDir, 'chat-row-raster-probe', 'chat-row-raster-probe-results.json'));
+  const chatRowRasterCandidates = await readJsonIfExists(path.join(runDir, 'chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json'));
   const chatRowGeometry = await readJsonIfExists(path.join(runDir, 'chat-row-geometry', 'chat-row-geometry-results.json'));
   const chatWidthReconciliation = await readJsonIfExists(path.join(runDir, 'chat-width-reconciliation', 'chat-width-reconciliation-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowGeometry, chatWidthReconciliation);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowGeometry, chatWidthReconciliation);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -82,6 +83,7 @@ async function main() {
     chatFontIntrinsicProbe: summarizeChatFontIntrinsicProbe(chatFontIntrinsicProbe),
     chatRowPaintSourceProbe: summarizeChatRowPaintSourceProbe(chatRowPaintSourceProbe),
     chatRowRasterProbe: summarizeChatRowRasterProbe(chatRowRasterProbe),
+    chatRowRasterCandidates: summarizeChatRowRasterCandidates(chatRowRasterCandidates),
     chatRowGeometry: summarizeChatRowGeometry(chatRowGeometry),
     chatWidthReconciliation: summarizeChatWidthReconciliation(chatWidthReconciliation),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
@@ -255,7 +257,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowGeometry, chatWidthReconciliation) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowGeometry, chatWidthReconciliation) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -286,6 +288,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatFontIntrinsicProbeSummary = summarizeChatFontIntrinsicProbe(chatFontIntrinsicProbe);
   const chatRowPaintSourceProbeSummary = summarizeChatRowPaintSourceProbe(chatRowPaintSourceProbe);
   const chatRowRasterProbeSummary = summarizeChatRowRasterProbe(chatRowRasterProbe);
+  const chatRowRasterCandidatesSummary = summarizeChatRowRasterCandidates(chatRowRasterCandidates);
   const chatRowGeometrySummary = summarizeChatRowGeometry(chatRowGeometry);
   const chatWidthReconciliationSummary = summarizeChatWidthReconciliation(chatWidthReconciliation);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
@@ -563,6 +566,12 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       positiveFindings.push(`${fixture.fixtureId} row raster=${fixture.decision}, rowWeighted=${fixture.rowWeightedMismatchPct || 'n/a'}, worstRow=${fixture.worstRowIndex ?? 'n/a'} ${fixture.worstRowMismatchPct || 'n/a'}, lumaDelta=${num(fixture.worstRowSignedLumaDelta)}, next=${fixture.nextAction}`);
     }
   }
+  if (chatRowRasterCandidatesSummary) {
+    positiveFindings.push(`chat row raster candidate comparison: compared=${chatRowRasterCandidatesSummary.compared}/${chatRowRasterCandidatesSummary.totalCandidates}, rejected=${chatRowRasterCandidatesSummary.rejected}, noMeaningfulGain=${chatRowRasterCandidatesSummary.noMeaningfulGain}`);
+    for (const candidate of chatRowRasterCandidatesSummary.rejectedCandidates) {
+      positiveFindings.push(`${candidate.name} row raster rejected: risk=${candidate.rowRasterRisk}, yshyWeightedDelta=${num(candidate.yshyRowWeightedDeltaPct)}, yshyWorstDelta=${num(candidate.yshyWorstRowDeltaPct)}`);
+    }
+  }
   if (!chatRowGeometrySummary) {
     warnings.push('chat row geometry model has not been run; run diagnose:roll20-chat-rows to separate row offset, cell allocation, and table-wide width axes before another chat renderer candidate');
   } else {
@@ -710,6 +719,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-row-raster -- ${path.relative(process.cwd(), activeRunDir)} before building the next YSHY/CoC row-band renderer experiment.`);
   } else if (chatRowRasterProbeSummary?.actionableFixtures.length) {
     nextActions.push(...chatRowRasterProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
+  }
+  if (chatRowRasterProbeSummary && !chatRowRasterCandidatesSummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-row-raster-candidates -- ${path.relative(process.cwd(), activeRunDir)} to compare row-raster effects without overwriting default gate evidence.`);
+  } else if (chatRowRasterCandidatesSummary?.rejectedCandidates.length) {
+    nextActions.push(`Keep row-raster-regressing candidates out of production consideration: ${chatRowRasterCandidatesSummary.rejectedCandidates.map((candidate) => candidate.name).join(', ')}.`);
   }
   if (!chatCandidateSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-candidates -- ${path.relative(process.cwd(), activeRunDir)} and keep the generated candidate report local-only.`);
@@ -1375,6 +1389,30 @@ function summarizeChatRowRasterProbe(report) {
   };
 }
 
+function summarizeChatRowRasterCandidates(report) {
+  if (!report?.summary) return null;
+  const candidates = (report.candidates ?? []).map((candidate) => ({
+    name: candidate.name,
+    status: candidate.status ?? 'UNKNOWN',
+    rowRasterRisk: candidate.rowRasterRisk ?? '',
+    yshyRowWeightedDeltaPct: candidate.yshyRowWeightedDeltaPct ?? null,
+    yshyWorstRowDeltaPct: candidate.yshyWorstRowDeltaPct ?? null,
+    yshyWorstRowLumaDeltaChange: candidate.yshyWorstRowLumaDeltaChange ?? null,
+    yshyRowWeightedMismatchPct: candidate.yshy?.rowWeightedMismatchPct ?? '',
+    yshyWorstRowMismatchPct: candidate.yshy?.worstRowMismatchPct ?? '',
+    yshyWorstRowIndex: candidate.yshy?.worstRowIndex ?? null,
+  }));
+  return {
+    totalCandidates: Number(report.summary.candidates ?? candidates.length),
+    compared: Number(report.summary.compared ?? candidates.filter((candidate) => candidate.status === 'OK').length),
+    rejected: Number(report.summary.rejected ?? candidates.filter((candidate) => candidate.rowRasterRisk === 'reject-row-raster-regression').length),
+    noMeaningfulGain: Number(report.summary.noMeaningfulGain ?? candidates.filter((candidate) => candidate.rowRasterRisk === 'no-meaningful-row-raster-gain').length),
+    productionSafe: Boolean(report.summary.productionSafe),
+    rejectedCandidates: candidates.filter((candidate) => candidate.status === 'OK' && candidate.rowRasterRisk === 'reject-row-raster-regression'),
+    candidates,
+  };
+}
+
 function summarizeChatRowGeometry(report) {
   if (!report?.summary) return null;
   const fixtures = (report.fixtures ?? []).map((fixture) => ({
@@ -1949,6 +1987,22 @@ function renderMarkdown(report) {
     }
     lines.push('');
   }
+  if (report.chatRowRasterCandidates) {
+    lines.push('### Chat Row Raster Candidate Comparison', '');
+    lines.push(`- Compared: ${report.chatRowRasterCandidates.compared}/${report.chatRowRasterCandidates.totalCandidates}`);
+    lines.push(`- Rejected row-raster regressions: ${report.chatRowRasterCandidates.rejected}`);
+    lines.push(`- No meaningful row-raster gain: ${report.chatRowRasterCandidates.noMeaningfulGain}`);
+    lines.push(`- Production safe: ${report.chatRowRasterCandidates.productionSafe ? 'yes' : 'no'}`);
+    if (report.chatRowRasterCandidates.candidates.length) {
+      lines.push('');
+      lines.push('| Candidate | Status | Risk | YSHY weighted | Weighted delta | Worst row | Worst mismatch | Worst delta | Luma delta change |');
+      lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |');
+      for (const candidate of report.chatRowRasterCandidates.candidates) {
+        lines.push(`| \`${candidate.name}\` | ${candidate.status} | ${candidate.rowRasterRisk || 'n/a'} | ${candidate.yshyRowWeightedMismatchPct || 'n/a'} | ${fmtSigned(candidate.yshyRowWeightedDeltaPct)} | ${candidate.yshyWorstRowIndex ?? 'n/a'} | ${candidate.yshyWorstRowMismatchPct || 'n/a'} | ${fmtSigned(candidate.yshyWorstRowDeltaPct)} | ${fmtSigned(candidate.yshyWorstRowLumaDeltaChange)} |`);
+      }
+    }
+    lines.push('');
+  }
   if (report.chatRowGeometry) {
     lines.push('### Chat Row Geometry', '');
     lines.push(`- Status: ${report.chatRowGeometry.status}`);
@@ -2186,6 +2240,12 @@ function parsePctValue(value) {
 
 function fmtPct(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `${num(value)}%` : '';
+}
+
+function fmtSigned(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+  const rounded = num(value);
+  return `${rounded > 0 ? '+' : ''}${rounded}`;
 }
 
 function fmtPx(value) {

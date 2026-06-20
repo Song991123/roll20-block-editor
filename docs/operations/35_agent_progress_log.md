@@ -1,3 +1,19 @@
+## 2026-06-20 Row Raster Candidate Comparison Gate
+
+- Added `--report-dir` to `scripts/roll20_chat_row_raster_probe.mjs` so candidate probes write isolated evidence instead of replacing the default row-raster report.
+- Added `scripts/roll20_chat_row_raster_candidate_compare.mjs` and `corepack pnpm run diagnose:roll20-chat-row-raster-candidates`.
+- Wired the comparison report into `gate:roll20-renderer-action`.
+- Current baseline on `2026-06-18-state-map-v1`:
+  - YSHY aligned mismatch `22.33%`.
+  - YSHY row-weighted mismatch `23.15%`.
+  - YSHY worst row `5` mismatch `30.89%`.
+- Candidate comparison result:
+  - `paint-dim-background`: row raster improves (`20.51%`, worst `27.98%`) but is still style-proof blocked by actual Roll20 `filter: none`.
+  - `coc-background-size-actual`: rejected; YSHY row-weighted worsens to `24.53%`, worst row to `39.25%`.
+  - `yshy-sanitize-typography`: rejected; YSHY row-weighted worsens to `39.03%`, worst row to `55.37%`.
+- `gate:roll20-renderer-action` now reports row-raster candidate comparison `compared=7/7`, `rejected=2`, `noMeaningfulGain=3`, and remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 CoC Background-Size Raster Candidate Rejected
 
 - Added diagnostic-only ChatPane paint policy `coc-background-size-actual`.
