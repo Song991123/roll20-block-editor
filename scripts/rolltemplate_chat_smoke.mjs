@@ -281,6 +281,7 @@ async function clickRollAndReadChat(page, fixtureId) {
         webkitFontSmoothing: style.webkitFontSmoothing || '',
         mozOsxFontSmoothing: style.MozOsxFontSmoothing || '',
         textShadow: style.textShadow,
+        filter: style.filter,
         whiteSpace: style.whiteSpace,
         wordBreak: style.wordBreak,
         overflowWrap: style.overflowWrap,
@@ -793,7 +794,12 @@ async function main() {
       }
     }, CHAT_TYPOGRAPHY_POLICY);
     await page.evaluate((policy) => {
-      if (policy === 'roll20-dim-background' || policy === 'roll20-edge-shadow') {
+      if (
+        policy === 'roll20-dim-background' ||
+        policy === 'roll20-dim-brightness' ||
+        policy === 'roll20-dim-saturate' ||
+        policy === 'roll20-edge-shadow'
+      ) {
         localStorage.setItem('__r20ChatPaintPolicy', policy);
       } else {
         localStorage.removeItem('__r20ChatPaintPolicy');

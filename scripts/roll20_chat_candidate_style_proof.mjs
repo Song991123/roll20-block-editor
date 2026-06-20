@@ -27,6 +27,9 @@ const CANDIDATE_SMOKE = {
   'roll20-letter-spacing': 'reports/rolltemplate-chat-smoke-letter-spacing/rolltemplate-chat-smoke-results.json',
   'aw2e-font-size-only': 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/rolltemplate-chat-smoke-results.json',
   'coc-table-intrinsic-clamp': 'reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp/rolltemplate-chat-smoke-results.json',
+  'paint-dim-background': 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json',
+  'paint-dim-brightness': 'reports/rolltemplate-chat-smoke-paint-dim-brightness/rolltemplate-chat-smoke-results.json',
+  'paint-dim-saturate': 'reports/rolltemplate-chat-smoke-paint-dim-saturate/rolltemplate-chat-smoke-results.json',
   'text-auto-aa': 'reports/rolltemplate-chat-smoke-text-auto-aa/rolltemplate-chat-smoke-results.json',
 };
 
@@ -135,6 +138,13 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   }
   if (candidate.name === 'text-auto-aa') {
     return summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (
+    candidate.name === 'paint-dim-background' ||
+    candidate.name === 'paint-dim-brightness' ||
+    candidate.name === 'paint-dim-saturate'
+  ) {
+    return summarizePaintFilter(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   return {
     fixtureId,
@@ -263,6 +273,41 @@ function summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemp
     fixtureId,
     status: matches === evidence.length ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
     finding: `${matches}/${evidence.length} text-rasterization fields match actual Roll20`,
+    evidence,
+  };
+}
+
+function summarizePaintFilter(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const evidence = ['table', 'caption', 'td:first', 'sheet-template_label:first', 'sheet-template_value:first']
+    .map((selector) => ({
+      selector,
+      key: 'filter',
+      localCandidate: styleValue(candidateTemplate, selector, 'filter'),
+      actual: styleValue(actualTemplate, selector, 'filter'),
+    }));
+  const comparable = evidence.filter((item) => item.localCandidate != null && item.actual != null);
+  const matches = comparable.filter((item) => sameValue(item.localCandidate, item.actual)).length;
+  if (!comparable.length) {
+    return {
+      fixtureId,
+      status: 'NO_COMPUTED_STYLE_PROOF',
+      finding: 'filter fields are missing from local or actual computed-style sidecars; recapture before treating paint candidates as style-compatible',
+      evidence,
+    };
+  }
+  const actualHasNoFilter = comparable.every((item) => isNone(item.actual));
+  const candidateUsesFilter = comparable.some((item) => !isNone(item.localCandidate));
+  const status = candidateUsesFilter && actualHasNoFilter
+    ? 'CONTRADICTED_BY_ACTUAL_STYLE'
+    : matches === comparable.length
+      ? 'STYLE_COMPATIBLE'
+      : 'CONTRADICTED_BY_ACTUAL_STYLE';
+  return {
+    fixtureId,
+    status,
+    finding: candidateUsesFilter && actualHasNoFilter
+      ? 'pixel gain comes from a local CSS filter that actual Roll20 does not apply'
+      : `${matches}/${comparable.length} comparable filter fields match actual Roll20`,
     evidence,
   };
 }

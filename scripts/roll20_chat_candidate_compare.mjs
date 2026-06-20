@@ -37,6 +37,8 @@ const candidates = [
   ['coc-table-intrinsic-clamp', 'reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp/screenshots'],
   ['yshy-sanitize-typography', 'reports/rolltemplate-chat-smoke-yshy-sanitize-typography/screenshots'],
   ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
+  ['paint-dim-brightness', 'reports/rolltemplate-chat-smoke-paint-dim-brightness/screenshots'],
+  ['paint-dim-saturate', 'reports/rolltemplate-chat-smoke-paint-dim-saturate/screenshots'],
   ['coc-table-actual-width-dim-background', 'reports/rolltemplate-chat-smoke-coc-table-actual-width-dim-background/screenshots'],
   ['coc-crop-origin-y20-dim-background', 'reports/rolltemplate-chat-smoke-coc-crop-origin-y20-dim-background/screenshots'],
   ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],

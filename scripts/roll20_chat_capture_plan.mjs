@@ -176,7 +176,7 @@ function buildEntry(fixtureId, status, chatParity) {
       'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'If CDP captures the wrong region on a high-DPR Roll20 tab, verify the coordinate space with a debug crop: multiply the CSS template rect by devicePixelRatio, capture the physical PNG, then DPR-correct/downscale it back to the CSS clip size and record captureDprCorrection in the sidecar.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
-      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, latestTemplate.tableStructure, text-rendering/font-smoothing fields, fontEvidence, textMeasureEvidence, and viewportEvidence.',
+      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, latestTemplate.tableStructure, text-rendering/font-smoothing/filter fields, fontEvidence, textMeasureEvidence, and viewportEvidence.',
       'Keep screenshot and DOM sidecar timestamps within 5 minutes.',
       'Rerun screenshot diff, chat parity diagnostics, renderer action gate, and status.',
     ],
@@ -215,6 +215,8 @@ function validateCurrentChatMetrics(screenshots) {
   if (!table?.boxMetrics) missing.push('table.boxMetrics');
   if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');
   if (table?.computedStyle && !hasTextRasterizationFields(table.computedStyle)) missing.push('table.computedStyle.textRasterization');
+  if (template?.computedStyle && !hasPaintFilterField(template.computedStyle)) missing.push('latestTemplate.computedStyle.filter');
+  if (table?.computedStyle && !hasPaintFilterField(table.computedStyle)) missing.push('table.computedStyle.filter');
   if (!domEvidence.fontEvidence?.checks) missing.push('fontEvidence.checks');
   if (!hasTextMeasureEvidence(domEvidence, template)) missing.push('textMeasureEvidence.samples');
   if (!domEvidence.viewportEvidence?.devicePixelRatio) missing.push('viewportEvidence.devicePixelRatio');
@@ -225,10 +227,10 @@ function validateCurrentChatMetrics(screenshots) {
     templateClass: template?.className ?? '',
     tableStructureSource: template?.tableStructure?.table?.boxMetrics ? 'latestTemplate.tableStructure' : (hasTableStructure ? 'legacy-computedChildren' : ''),
     note: missing.length
-      ? `Roll20 chat DOM sidecar predates current row/typography/text-rasterization probe fields: missing ${missing.join(', ')}`
+      ? `Roll20 chat DOM sidecar predates current row/typography/text-rasterization/paint-filter probe fields: missing ${missing.join(', ')}`
       : hasTableStructure && !template?.tableStructure?.table?.boxMetrics
-        ? 'Roll20 chat DOM sidecar includes current row/typography/text-rasterization metrics; tableStructure is synthesized from legacy computedChildren table evidence'
-        : 'Roll20 chat DOM sidecar includes current row/typography/text-rasterization metrics',
+        ? 'Roll20 chat DOM sidecar includes current row/typography/text-rasterization/paint-filter metrics; tableStructure is synthesized from legacy computedChildren table evidence'
+        : 'Roll20 chat DOM sidecar includes current row/typography/text-rasterization/paint-filter metrics',
   };
 }
 
@@ -241,6 +243,10 @@ function hasTextRasterizationFields(style) {
   return Object.prototype.hasOwnProperty.call(style, 'textRendering') &&
     Object.prototype.hasOwnProperty.call(style, 'webkitFontSmoothing') &&
     Object.prototype.hasOwnProperty.call(style, 'mozOsxFontSmoothing');
+}
+
+function hasPaintFilterField(style) {
+  return Object.prototype.hasOwnProperty.call(style, 'filter');
 }
 
 function findTemplateChild(template, selector) {
@@ -539,6 +545,7 @@ function renderDomProbeSnippet(entry) {
       webkitFontSmoothing: style.webkitFontSmoothing || '',
       mozOsxFontSmoothing: style.MozOsxFontSmoothing || '',
       textShadow: style.textShadow,
+      filter: style.filter,
       whiteSpace: style.whiteSpace,
       wordBreak: style.wordBreak,
       overflowWrap: style.overflowWrap,
@@ -956,6 +963,7 @@ function runSelfTest() {
         backgroundPosition: '0% 0%',
         textAlign: 'start',
         textShadow: 'none',
+        filter: 'none',
         whiteSpace: 'normal',
         wordBreak: 'normal',
         overflowWrap: 'normal',

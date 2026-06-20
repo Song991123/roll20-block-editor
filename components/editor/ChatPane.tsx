@@ -60,7 +60,12 @@ type ChatTypographyPolicy =
   | 'aw2e-font-size-only'
   | 'aw2e-text-metrics'
   | 'yshy-sanitize-typography';
-type ChatPaintPolicy = 'default' | 'roll20-dim-background' | 'roll20-edge-shadow';
+type ChatPaintPolicy =
+  | 'default'
+  | 'roll20-dim-background'
+  | 'roll20-dim-brightness'
+  | 'roll20-dim-saturate'
+  | 'roll20-edge-shadow';
 
 function currentChatFontPolicy(): ChatFontPolicy {
   if (typeof window === 'undefined') return 'default';
@@ -122,7 +127,12 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
 function currentChatPaintPolicy(): ChatPaintPolicy {
   if (typeof window === 'undefined') return 'default';
   const value = window.localStorage.getItem('__r20ChatPaintPolicy');
-  if (value === 'roll20-dim-background' || value === 'roll20-edge-shadow') return value;
+  if (
+    value === 'roll20-dim-background' ||
+    value === 'roll20-dim-brightness' ||
+    value === 'roll20-dim-saturate' ||
+    value === 'roll20-edge-shadow'
+  ) return value;
   return 'default';
 }
 
@@ -308,6 +318,16 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
   filter: brightness(0.965) saturate(0.985);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-brightness"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-brightness"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-brightness"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  filter: brightness(0.965);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-saturate"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-saturate"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-saturate"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  filter: saturate(0.985);
 }
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
   box-shadow:

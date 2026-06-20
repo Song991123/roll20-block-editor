@@ -1,3 +1,19 @@
+## 2026-06-20 Codex Update - YSHY paint filter proof gate
+
+Status: PARTIAL. This improves the renderer gate for YSHY paint/rasterization candidates; it does not change production ChatPane CSS.
+
+- DONE: Split `paint-dim-background` into diagnostic sub-candidates `paint-dim-brightness` and `paint-dim-saturate`.
+- DONE: Added computed `filter` capture to local ChatPane smoke and Roll20 chat capture snippets.
+- DONE: Added paint/filter style proof for `paint-dim-background`, `paint-dim-brightness`, and `paint-dim-saturate`.
+- DONE: Updated `plan:roll20-chat-capture` and `status:roll20-actual` so current chat DOM sidecars must include `latestTemplate.computedStyle.filter` and `table.computedStyle.filter`.
+- RESULT: `paint-dim-brightness` and `paint-dim-saturate` are `no-meaningful-gain`; YSHY remains `22.33%`.
+- RESULT: `paint-dim-background` remains the only current YSHY pixel-improving paint candidate: YSHY `22.33% -> 19.85%`, delta `-2.48%`, no fixture regressions.
+- RESULT: `paint-dim-background` is now blocked by style proof as `NEEDS_NEW_SIDECAR_FIELDS` because existing actual Roll20 sidecars do not contain computed `filter` fields. This prevents a false production promotion.
+- RESULT: `status:roll20-actual` now reports `chatCurrentMetrics=0/3`, missing `latestTemplate.computedStyle.filter` and `table.computedStyle.filter` for all three fixtures.
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH` and now includes the missing paint-filter sidecar blocker.
+- VERIFIED: paint candidate smokes, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `plan:roll20-chat-capture -- --all --require-current-metrics`, `status:roll20-actual`, `gate:roll20-renderer-action`, `lint`, `build`, and evidence guard.
+- STILL TODO P0: Recapture actual Roll20 chat DOM sidecars with computed `filter` fields before any paint/rasterization candidate can be considered for production renderer behavior.
+
 ## 2026-06-20 Codex Update - YSHY crop-origin candidate rejected
 
 Status: PARTIAL. This tested the next YSHY/CoC crop/table interaction hypothesis; it does not change production ChatPane CSS.

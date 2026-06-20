@@ -1,3 +1,21 @@
+## 2026-06-20 YSHY Paint Filter Proof Gate
+
+- Split the current YSHY paint candidate into diagnostic sub-candidates:
+  - `paint-dim-background`
+  - `paint-dim-brightness`
+  - `paint-dim-saturate`
+- Added computed `filter` capture to local ChatPane smoke and Roll20 chat capture snippets.
+- Added paint/filter style proof for the paint candidates.
+- Updated Roll20 chat capture planning and actual status so current chat DOM sidecars require `latestTemplate.computedStyle.filter` and `table.computedStyle.filter`.
+- Candidate comparison result:
+  - `paint-dim-brightness`: no gain, YSHY remains `22.33%`.
+  - `paint-dim-saturate`: no gain, YSHY remains `22.33%`.
+  - `paint-dim-background`: still the only current paint candidate with YSHY gain, `22.33% -> 19.85%` (`-2.48%`), no fixture regressions.
+- Style proof result: `paint-dim-background` is now `NEEDS_NEW_SIDECAR_FIELDS`, not style-compatible, because existing actual Roll20 sidecars lack computed `filter` fields.
+- Status result: `chatCurrentMetrics=0/3`; all three fixtures need same-action Roll20 chat DOM sidecar recapture with filter fields before paint/rasterization conclusions.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH` and now includes the paint-filter sidecar blocker.
+- Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 YSHY Crop-Origin Candidate Rejected
 
 - Added diagnostic-only ChatPane geometry policy `coc-crop-origin-y20`.

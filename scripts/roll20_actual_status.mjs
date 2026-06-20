@@ -523,6 +523,8 @@ function validateCurrentChatMetrics(fixtureId, domEvidence, file) {
   if (!table?.boxMetrics) missing.push('table.boxMetrics');
   if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');
   if (table?.computedStyle && !hasTextRasterizationFields(table.computedStyle)) missing.push('table.computedStyle.textRasterization');
+  if (template?.computedStyle && !hasPaintFilterField(template.computedStyle)) missing.push('latestTemplate.computedStyle.filter');
+  if (table?.computedStyle && !hasPaintFilterField(table.computedStyle)) missing.push('table.computedStyle.filter');
   if (!domEvidence.fontEvidence?.checks) missing.push('fontEvidence.checks');
   if (!domEvidence.viewportEvidence?.devicePixelRatio) missing.push('viewportEvidence.devicePixelRatio');
   return {
@@ -534,10 +536,10 @@ function validateCurrentChatMetrics(fixtureId, domEvidence, file) {
     templateClass: template?.className ?? '',
     tableStructureSource: template?.tableStructure?.table?.boxMetrics ? 'latestTemplate.tableStructure' : (hasTableStructure ? 'legacy-computedChildren' : ''),
     note: missing.length
-      ? `Roll20 chat DOM sidecar predates current row/typography probe fields: missing ${missing.join(', ')}`
+      ? `Roll20 chat DOM sidecar predates current row/typography/paint-filter probe fields: missing ${missing.join(', ')}`
       : hasTableStructure && !template?.tableStructure?.table?.boxMetrics
-        ? 'Roll20 chat DOM sidecar includes current row/typography metrics; tableStructure is synthesized from legacy computedChildren table evidence'
-        : 'Roll20 chat DOM sidecar includes current row/typography metrics',
+        ? 'Roll20 chat DOM sidecar includes current row/typography/paint-filter metrics; tableStructure is synthesized from legacy computedChildren table evidence'
+        : 'Roll20 chat DOM sidecar includes current row/typography/paint-filter metrics',
   };
 }
 
@@ -545,6 +547,10 @@ function hasTextRasterizationFields(style) {
   return Object.prototype.hasOwnProperty.call(style, 'textRendering') &&
     Object.prototype.hasOwnProperty.call(style, 'webkitFontSmoothing') &&
     Object.prototype.hasOwnProperty.call(style, 'mozOsxFontSmoothing');
+}
+
+function hasPaintFilterField(style) {
+  return Object.prototype.hasOwnProperty.call(style, 'filter');
 }
 
 function findTemplateChild(template, selector) {
