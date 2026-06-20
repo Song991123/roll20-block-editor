@@ -54,17 +54,13 @@ async function main() {
     runDir: RUN_DIR,
     cdpUrl: CDP_URL,
     pageMatch: PAGE_MATCH,
-    status: endpoint.ok ? (endpoint.roll20Targets.length ? 'READY' : 'NO_MATCHING_ROLL20_PAGE') : 'CDP_CLOSED',
+    status: classifyStatus(endpoint),
     endpoint,
     plannedFixtures,
     captureCommands,
     launchCommand,
     launchResult,
-    nextAction: endpoint.ok
-      ? endpoint.roll20Targets.length
-        ? 'Load the intended fixture in the dedicated Roll20 Sandbox/test room, then run the capture command for each planned fixture.'
-        : `Open a Roll20 Sandbox/test-room page matching ${PAGE_MATCH} in this CDP-enabled browser.`
-      : 'Start a CDP-enabled browser with the launch command, log in to Roll20 there if needed, load the dedicated Sandbox/test room, then rerun this preflight.',
+    nextAction: nextActionForEndpoint(endpoint),
   };
 
   const outDir = path.join(RUN_DIR, 'roll20-cdp-preflight');
@@ -108,6 +104,7 @@ async function inspectEndpoint(cdpUrl) {
         type: target.type ?? '',
         title: target.title ?? '',
         url: target.url ?? '',
+        readiness: classifyRoll20Target(target),
         webSocketDebuggerUrl: target.webSocketDebuggerUrl ? '[present]' : '',
       }));
     return {
@@ -129,6 +126,46 @@ async function inspectEndpoint(cdpUrl) {
       roll20Targets: [],
     };
   }
+}
+
+function classifyStatus(endpoint) {
+  if (!endpoint.ok) return 'CDP_CLOSED';
+  if (!endpoint.roll20Targets.length) return 'NO_MATCHING_ROLL20_PAGE';
+  if (endpoint.roll20Targets.some((target) => target.readiness === 'CAPTURE_READY')) return 'READY';
+  if (endpoint.roll20Targets.some((target) => target.readiness === 'LOGIN_REQUIRED')) return 'LOGIN_REQUIRED';
+  if (endpoint.roll20Targets.some((target) => target.readiness === 'CHALLENGE_OR_WAITING')) return 'CHALLENGE_OR_WAITING';
+  return 'ROLL20_PAGE_NOT_READY';
+}
+
+function classifyRoll20Target(target) {
+  const url = String(target.url ?? '');
+  const title = String(target.title ?? '');
+  if (/\/login(?:$|[?#/])/.test(url)) return 'LOGIN_REQUIRED';
+  if (/__cf_chl_|Just a moment|잠시|기다/i.test(url) || /Just a moment|잠시|기다/i.test(title)) {
+    return 'CHALLENGE_OR_WAITING';
+  }
+  if (/\/editor(?:$|[?#/])/.test(url) || /\/campaigns\/details\//.test(url)) return 'CAPTURE_READY';
+  return 'UNKNOWN_ROLL20_PAGE';
+}
+
+function nextActionForEndpoint(endpoint) {
+  const status = classifyStatus(endpoint);
+  if (status === 'CDP_CLOSED') {
+    return 'Start a CDP-enabled browser with the launch command, log in to Roll20 there if needed, load the dedicated Sandbox/test room, then rerun this preflight.';
+  }
+  if (status === 'NO_MATCHING_ROLL20_PAGE') {
+    return `Open a Roll20 Sandbox/test-room page matching ${PAGE_MATCH} in this CDP-enabled browser.`;
+  }
+  if (status === 'LOGIN_REQUIRED') {
+    return 'Log in to Roll20 inside the CDP-enabled browser, open the dedicated Sandbox/test room, then rerun this preflight.';
+  }
+  if (status === 'CHALLENGE_OR_WAITING') {
+    return 'Wait for the Roll20/Cloudflare challenge to finish in the CDP-enabled browser, then rerun this preflight.';
+  }
+  if (status === 'READY') {
+    return 'Load the intended fixture in the dedicated Roll20 Sandbox/test room, then run the capture command for each planned fixture.';
+  }
+  return 'Navigate the CDP-enabled browser to the dedicated Roll20 Sandbox/test room, then rerun this preflight.';
 }
 
 function readPlannedFixtures(runDir, fixtureFilter) {
@@ -214,10 +251,10 @@ function renderMarkdown(report) {
   ];
   if (report.endpoint.roll20Targets.length) {
     lines.push('## Roll20 Targets', '');
-    lines.push('| Type | Title | URL |');
-    lines.push('| --- | --- | --- |');
+    lines.push('| Type | Readiness | Title | URL |');
+    lines.push('| --- | --- | --- | --- |');
     for (const target of report.endpoint.roll20Targets) {
-      lines.push(`| ${escapeCell(target.type)} | ${escapeCell(target.title)} | ${escapeCell(target.url)} |`);
+      lines.push(`| ${escapeCell(target.type)} | ${escapeCell(target.readiness)} | ${escapeCell(target.title)} | ${escapeCell(target.url)} |`);
     }
     lines.push('');
   }

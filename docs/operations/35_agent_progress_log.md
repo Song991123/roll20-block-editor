@@ -1,3 +1,10 @@
+## 2026-06-20 Roll20 CDP Readiness Classification
+
+- Launched a dedicated CDP Chrome profile and navigated it to Roll20 during the session. That proved the endpoint path can become reachable, but the tab resolved to Roll20 login/challenge flow rather than the Sandbox/test room; later non-launched verification can return `CDP_CLOSED` if that browser is closed.
+- Tightened `scripts/roll20_cdp_preflight.mjs` so a Roll20 domain tab is no longer automatically `READY`. It now classifies targets as `CAPTURE_READY`, `LOGIN_REQUIRED`, `CHALLENGE_OR_WAITING`, or `UNKNOWN_ROLL20_PAGE`.
+- Verification: a launched CDP check reported `LOGIN_REQUIRED`, `roll20Targets=1`, and planned capture commands for AW2E/Les-Oublies; the final full verification also confirmed `CDP_CLOSED` is still handled as a non-capturable state.
+- Boundary: no Roll20 chat evidence was recaptured. The next real-world step is logging in inside the CDP-enabled Chrome and opening the dedicated Sandbox/test room before running capture.
+
 ## 2026-06-20 Roll20 CDP Preflight For Chat Recapture
 
 - Added `scripts/roll20_cdp_preflight.mjs` and the `preflight:roll20-cdp` package script so the remaining AW2E/Les-Oublies Roll20 chat recapture can fail early with actionable browser setup instructions instead of a raw CDP connection stack.

@@ -1,3 +1,12 @@
+## 2026-06-20 Codex Update - Roll20 CDP preflight readiness classification
+
+Status: VERIFY/BLOCKED_LOGIN. This batch prevents the CDP preflight from treating Roll20 login/challenge pages as capture-ready.
+
+- DONE: `preflight:roll20-cdp` now classifies matching Roll20 targets as `CAPTURE_READY`, `LOGIN_REQUIRED`, `CHALLENGE_OR_WAITING`, or `UNKNOWN_ROLL20_PAGE` instead of reporting `READY` for any `app.roll20.net` tab.
+- VERIFIED: During a launched CDP Chrome check, `preflight:roll20-cdp` classified the Roll20 login/challenge page as not capture-ready instead of `READY`. A later non-launched verification returned `CDP_CLOSED`, which is also correctly non-capturable.
+- CURRENT BLOCKER: Automated chat recapture still needs a CDP-enabled Chrome tab that is both logged in to Roll20 and opened to the approved Sandbox/test room.
+- STILL TODO P0: Start or keep open the CDP-enabled Chrome, log in to Roll20 there, open the approved Sandbox/test room with the intended fixture loaded, rerun preflight until it reports `READY`, then capture AW2E and Les-Oublies chat evidence.
+
 ## 2026-06-20 Codex Update - Roll20 CDP preflight for chat recapture
 
 Status: VERIFY/BLOCKED_CDP. This batch adds a repeatable CDP readiness check for the remaining Roll20 chat current-metrics recapture; it does not capture new Roll20 evidence.
