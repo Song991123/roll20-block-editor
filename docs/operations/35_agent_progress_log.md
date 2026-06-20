@@ -1,3 +1,16 @@
+## 2026-06-20 Row Raster Probe for YSHY/CoC Chat
+
+- Added `scripts/roll20_chat_row_raster_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-row-raster`.
+- The probe compares local and actual rolltemplate PNGs by DOM row using existing local-only screenshots and sidecars. It reports row-weighted mismatch, worst row, signed luma delta, and bright/dark mismatch shares.
+- Wired the probe into `gate:roll20-renderer-action`.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `ROW_LUMA_RASTER_MODEL_REQUIRED`, row-weighted mismatch `13.43%`, worst row `1` mismatch `19.87%`, luma delta `+23.413`.
+  - Les-Oublies: `RASTER_SECONDARY`.
+  - YSHY 1BU: `COC_ROW_RASTER_MODEL_REQUIRED`, row-weighted mismatch `23.15%`, worst row `5` mismatch `30.89%`, luma delta `-27.232`.
+- Interpretation: YSHY's current mismatch is not ready for product CSS. The next experiment should use row-level background/text raster evidence and still avoid filter-based fixes because actual Roll20 reports `filter: none`.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 YSHY Row/Paint/Source Probe
 
 - Added `scripts/roll20_chat_row_paint_source_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-row-paint-source`.

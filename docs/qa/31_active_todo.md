@@ -1,3 +1,20 @@
+## 2026-06-20 Codex Update - row raster probe for YSHY/CoC chat
+
+Status: PARTIAL. This adds row-level PNG raster diagnostics; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
+
+- DONE: Added `scripts/roll20_chat_row_raster_probe.mjs` and package command `diagnose:roll20-chat-row-raster`.
+- DONE: Wired row raster evidence into `gate:roll20-renderer-action`.
+- RESULT: YSHY 1BU is classified as `COC_ROW_RASTER_MODEL_REQUIRED`.
+- RESULT: YSHY row-weighted mismatch is `23.15%`; worst row is row `5` with `30.89%` mismatch.
+- RESULT: YSHY worst-row signed luma delta is `-27.232`, so the current local row raster is darker than actual Roll20 on the dominant mismatching row.
+- RESULT: AW2E is separately classified as `ROW_LUMA_RASTER_MODEL_REQUIRED`, row-weighted mismatch `13.43%`; this confirms the chat renderer still needs split per-template models rather than a global patch.
+- RESULT: Les-Oublies remains `RASTER_SECONDARY` in this probe.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- INTERPRETATION: The next YSHY/CoC P0 is a row-level background/text raster experiment using this evidence. Do not promote `paint-dim-background`; it gives a numeric clue but is still contradicted by actual Roll20 `filter: none`.
+- VERIFIED: `node --check` for changed scripts, `diagnose:roll20-chat-row-raster`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build a YSHY/CoC row-level renderer candidate from actual row raster evidence, then run local smoke, candidate comparison, style proof, row raster probe, renderer gate, lint, build, and evidence guard.
+- STILL TODO P0: Recapture AW2E and Les-Oublies Roll20 chat sidecars with current row/typography/filter fields before any cross-fixture renderer rollout.
+
 ## 2026-06-20 Codex Update - YSHY row/paint/source probe
 
 Status: PARTIAL. This adds a renderer-routing diagnostic; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
