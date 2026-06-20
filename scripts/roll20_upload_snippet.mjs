@@ -335,14 +335,18 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
     attrNames: attrNames.filter((name) => bodyHtml.includes(name)),
     textTokens: textTokens.filter((token) => bodyText.includes(token)),
   };
-  const hitCount = Object.values(hits).reduce((sum, values) => sum + values.length, 0);
+  const sheetHitCount = hits.rollButtonNames.length + hits.attrNames.length + hits.textTokens.length;
+  const chatTemplateHitCount = hits.rolltemplateClasses.length;
+  const hitCount = sheetHitCount + chatTemplateHitCount;
   const domRolltemplateClasses = [...new Set(Array.from(document.querySelectorAll('[class*="rolltemplate-"]'))
     .flatMap((el) => String(el.className || '').split(/\\s+/))
     .filter((className) => className.includes('rolltemplate-')))];
   const status = parseError
     ? 'ROLL20_EDITOR_PARSE_ERROR'
-    : hitCount > 0
+    : sheetHitCount > 0
       ? 'VISIBLE_MATCH'
+      : chatTemplateHitCount > 0
+        ? 'CHAT_TEMPLATE_ONLY'
       : 'NOT_PROVEN';
   const result = {
     fixtureId: DATA.fixtureId,
@@ -350,6 +354,8 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
     href: location.href,
     title: document.title,
     hitCount,
+    sheetHitCount,
+    chatTemplateHitCount,
     hits,
     visible: {
       charsheetCount: document.querySelectorAll('.charsheet,.charactersheet').length,
@@ -360,7 +366,9 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
       bodyTextSnippet: bodyText.slice(0, 800),
     },
     nextAction: status === 'VISIBLE_MATCH'
-      ? 'Expected fixture markers are visible. Capture Roll20 root/chat evidence only if the visible sheet/chat belongs to this fixture.'
+      ? 'Expected sheet markers are visible. Capture Roll20 root/chat evidence only if the visible sheet/chat belongs to this fixture.'
+      : status === 'CHAT_TEMPLATE_ONLY'
+        ? 'Only the chat rolltemplate marker is visible. Do not capture sheet-root parity evidence until sheet body markers such as roll buttons, attrs, or expected text are visible.'
       : status === 'ROLL20_EDITOR_PARSE_ERROR'
         ? 'Do not capture evidence. Restore the sandbox and fix the upload manifest/settings shape.'
         : 'Do not capture evidence yet. The editor is reachable, but expected fixture markers are not visible.',
@@ -485,7 +493,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   const setManifest = () => {
     const rawText = new TextDecoder().decode(bytesFromBase64(DATA.payload.manifest.base64));
     const text = buildSettingsManifest(rawText);
-    const targets = Array.from(document.querySelectorAll('textarea[name="customcharsheet_json"], [name="customcharsheet_json"]'));
+    const targets = Array.from(document.querySelectorAll('textarea[name="customcharsheet_json"], input[name="customcharsheet_json"]'))
+      .filter((el) => !el.classList.contains('ace_text-input'));
     const editorKeys = typeof editors === 'object' && editors ? Object.keys(editors) : [];
     let aceJsonSet = false;
     for (const el of targets) {
@@ -499,12 +508,6 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       editors.json.setValue(text, -1);
       if (typeof editors.json.clearSelection === 'function') editors.json.clearSelection();
       aceJsonSet = true;
-    }
-    const ace = document.querySelector('[data-target="customcharsheet_json"] .ace_text-input, .ace_text-input[name="customcharsheet_json"]');
-    if (ace && 'value' in ace) {
-      ace.value = text;
-      ace.dispatchEvent(new Event('input', { bubbles: true }));
-      ace.dispatchEvent(new Event('change', { bubbles: true }));
     }
     return {
       status: targets.length || aceJsonSet ? 'manifest-set' : 'manifest-target-missing',
@@ -556,8 +559,14 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   };
   const classifyActivation = (before, after, fileInputs, sandboxMessages) => {
     const hitCount = (probe) => Object.values(probe?.hits || {}).reduce((sum, values) => sum + (Array.isArray(values) ? values.length : 0), 0);
+    const sheetHitCount = (probe) => (probe?.hits?.rollButtonNames?.length || 0)
+      + (probe?.hits?.attrNames?.length || 0)
+      + (probe?.hits?.textTokens?.length || 0);
+    const chatTemplateHitCount = (probe) => probe?.hits?.rolltemplateClasses?.length || 0;
     const beforeHits = hitCount(before);
     const afterHits = hitCount(after);
+    const afterSheetHits = sheetHitCount(after);
+    const afterChatTemplateHits = chatTemplateHitCount(after);
     const addedHits = Object.fromEntries(Object.entries(after?.hits || {}).map(([key, values]) => {
       const previous = new Set(before?.hits?.[key] || []);
       return [key, values.filter((value) => !previous.has(value))];
@@ -566,8 +575,10 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const allFileInputsDispatched = fileInputs.every((item) => item.status === 'dispatched');
     const status = sandboxMessages?.roll20EditorParseError
       ? 'ROLL20_EDITOR_PARSE_ERROR'
-      : afterHits > 0 && (addedHitCount > 0 || beforeHits === 0)
+      : afterSheetHits > 0 && (addedHitCount > 0 || beforeHits === 0)
       ? 'VISIBLE_MATCH'
+      : afterChatTemplateHits > 0
+        ? 'CHAT_TEMPLATE_ONLY'
       : allFileInputsDispatched
         ? 'FILE_INPUTS_DISPATCHED_BUT_VISIBLE_MATCH_NOT_PROVEN'
         : 'NOT_PROVEN';
@@ -575,10 +586,14 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       status,
       beforeHits,
       afterHits,
+      afterSheetHits,
+      afterChatTemplateHits,
       addedHits,
       addedHitCount,
       note: status === 'VISIBLE_MATCH'
         ? 'Expected sheet markers are visible after upload; still capture screenshots before claiming parity.'
+        : status === 'CHAT_TEMPLATE_ONLY'
+          ? 'Only rolltemplate/chat markers are visible. Do not capture sheet-root parity evidence until the sheet body exposes expected attrs, roll buttons, or text.'
         : status === 'ROLL20_EDITOR_PARSE_ERROR'
           ? 'Roll20 editor returned a parse error after upload/settings save. Do not capture evidence; restore the sandbox and fix the upload manifest/settings shape first.'
         : 'File-input dispatch alone is not proof that Roll20 applied the uploaded sheet. Use the real file chooser/settings save path or recapture only after visible expected markers appear.',
@@ -613,10 +628,15 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   results.push(await setFileInput('#sheetTranslation', DATA.payload.translation, 'application/json'));
   const endpointFallback = USE_ENDPOINT_FALLBACK ? await postEndpointFallback() : { status: 'disabled' };
   const manifest = setManifest();
+  let settingsSave = { status: 'disabled' };
   if (SUBMIT_SETTINGS_FORM) {
     const button = document.querySelector('#save-changes-button');
-    if (!button) throw new Error('SUBMIT_SETTINGS_FORM is true, but #save-changes-button was not found.');
-    button.click();
+    if (button) {
+      button.click();
+      settingsSave = { status: 'clicked' };
+    } else {
+      settingsSave = { status: 'save-button-missing' };
+    }
   }
   await sleep(1500);
   const sandboxMessages = inspectSandboxMessages();
@@ -624,6 +644,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   const activation = classifyActivation(activationBefore, activationAfter, results, sandboxMessages);
   console.table(results);
   console.log('Manifest:', manifest);
+  console.log('Settings save:', settingsSave);
   console.log('Endpoint fallback:', endpointFallback);
   console.log('Sandbox messages:', sandboxMessages);
   console.log('Activation probe:', activation);
@@ -631,7 +652,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   console.log(activation.status === 'VISIBLE_MATCH'
     ? 'Next: capture roll20-sandbox root evidence and roll20-chat.png, then run status/diff gates.'
     : 'Next: do not capture parity evidence yet; load the sheet through the real file chooser/settings save path or rerun only after visible expected markers appear.');
-  return { fixtureId: DATA.fixtureId, validation: DATA.validation, fileInputs: results, endpointFallback, manifest, sandboxMessages, activationBefore, activationAfter, activation };
+  return { fixtureId: DATA.fixtureId, validation: DATA.validation, fileInputs: results, endpointFallback, manifest, settingsSave, sandboxMessages, activationBefore, activationAfter, activation };
 })();
 `;
 }
@@ -648,9 +669,9 @@ function renderReadme(report) {
     '',
     'Default snippets are non-submitting helpers. Pass `--apply-settings --endpoint-campaign-id <sandboxCampaignId>` only for the dedicated Sandbox/test room when you intentionally want the generated snippet to POST the payload endpoint fallback and click the settings save button.',
     '',
-    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills `customcharsheet_json` with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. Live Roll20 verification on 2026-06-21 showed that writing the plain exported `sheet.json` text directly can make `/editor` return a JSON parse error. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH` and screenshots are captured afterward.',
+    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. Live Roll20 verification on 2026-06-21 showed that a broad manifest selector could save duplicate JSON objects into `customcharsheet_json` and make `/editor` return a JSON parse error, so generated snippets now avoid writing Ace text-input mirrors as submitted manifest fields. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
     '',
-    'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. Capture Roll20 root/chat evidence only after `VISIBLE_MATCH` and a visual check that the visible sheet/chat belongs to the intended fixture.',
+    'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH` and a visual check that the visible sheet belongs to the intended fixture.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
@@ -754,11 +775,15 @@ function runSelfTest() {
   if (!applySnippet.includes('const USE_ENDPOINT_FALLBACK = true;')) failures.push('apply snippet missing endpoint fallback flag');
   if (!applySnippet.includes('const ENDPOINT_CAMPAIGN_ID = "12345";')) failures.push('apply snippet missing explicit campaign id');
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
+  if (!snippet.includes('input[name="customcharsheet_json"]')) failures.push('generated snippet missing narrow manifest input selector');
+  if (snippet.includes('.ace_text-input[name="customcharsheet_json"]')) failures.push('generated snippet still writes Ace text input as a manifest field');
   if (!snippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated snippet missing editor parse-error activation status');
   if (!snippet.includes('roll20EditorParseError')) failures.push('generated snippet missing editor parse-error detector');
   if (!activationCheckSnippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated activation check missing parse-error status');
   if (!activationCheckSnippet.includes('VISIBLE_MATCH')) failures.push('generated activation check missing visible-match status');
+  if (!activationCheckSnippet.includes('CHAT_TEMPLATE_ONLY')) failures.push('generated activation check missing chat-template-only status');
   if (!activationCheckSnippet.includes('NOT_PROVEN')) failures.push('generated activation check missing not-proven status');
+  if (!applySnippet.includes("save-button-missing")) failures.push('apply snippet should tolerate missing settings save button on editor pages');
   if (!activationCheckSnippet.includes('rollButtonCount')) failures.push('generated activation check missing roll button count');
   if (!readme.includes('settings-page `{ sheet, userOptions, jsoninfo }` wrapper')) failures.push('generated README text does not describe wrapper');
   if (!readme.includes('Activation check')) failures.push('generated README missing activation check column');

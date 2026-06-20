@@ -14,6 +14,10 @@
 - The activation checker is intended for `https://app.roll20.net/editor` after Sandbox settings save/reload and reports `VISIBLE_MATCH`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN` before any root/chat evidence capture.
 - Extended `test:roll20-upload-snippet` so it now guards both the settings manifest wrapper and activation checker status surface.
 - Added explicit apply-mode generation: `--apply-settings --endpoint-campaign-id <id>` keeps default snippets non-submitting but creates a dedicated Sandbox/test-room snippet that enables endpoint fallback and settings save when intentionally requested.
+- Live AW2E recheck found a concrete upload-snippet bug: `customcharsheet_json` was saved with two JSON objects concatenated as `}{` after the snippet wrote both the submitted manifest control and an Ace text-input mirror. `/editor` returned a Roll20 JSON parse error instead of loading the sheet.
+- Fixed the generated setter so it only writes submitted `textarea/input[name="customcharsheet_json"]` controls and no longer assigns `.ace_text-input[name="customcharsheet_json"]`. The self-test now guards that selector boundary.
+- Regenerated and applied AW2E in the dedicated Sandbox after the selector fix. The saved manifest stayed parseable (`concatIndex=-1`) and `/editor` no longer showed the Roll20 parse error, but only `sheet-rolltemplate-aw` appeared in chat; sheet body markers remained absent (`charsheetCount=0`, `rollButtonCount=0`, attrs/text hits 0).
+- Tightened activation classification so chat rolltemplate-only evidence reports `CHAT_TEMPLATE_ONLY`, not `VISIBLE_MATCH`. Sheet-root capture remains blocked until roll buttons, attrs, or expected sheet text are visible.
 - Live browser check: the current Roll20 editor tab returned `NOT_PROVEN` for AW2E and YSHY activation, with Les-Oublies rolltemplate classes still visible. Automated apply execution was blocked because tab CDP was paused and the read-only page execution surface disables `eval`/`Function`.
 - Claim boundary: this is upload/capture gating only. It does not prove AW2E/YSHY loaded in Roll20, does not add new screenshots, and does not make the renderer ready.
 
