@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - layer role label cleanup
+
+Status: VERIFY. This fixes a visible edit-mode usability issue only; it does not change Roll20 renderer parity.
+
+- DONE: Replaced mojibake layer role labels in `lib/editor/layerRoles.ts` with readable Korean labels: `프레임`, `흐름`, `표`, `입력`, `버튼`, `텍스트`, `이미지`, `스크립트`, and `노드`.
+- VERIFIED: `node` UTF-8 inspection confirmed the actual source labels are correct even when the PowerShell terminal font/encoding renders Korean incorrectly.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:edit-flow -- --port 4210` passed.
+- LOCAL SMOKE RESULT: `smoke:edit-flow` reported `editUiCopy.hasExpectedLabels=true`, `editUiCopy.hasMojibakeHan=false`, and the layer row text included `r20_div프레임담기 가능흐름`.
+- STILL TODO P0: Continue edit-mode semantics work beyond copy: imported-sheet non-leaf subtree reorder coverage, broader fixture coverage, and eventually editable lazy/ungroup support for compacted large rows.
+- STILL TODO P0: Roll20 renderer parity remains blocked by the existing `HOLD_PRODUCTION_RENDERER_PATCH` evidence.
+
 ## 2026-06-20 Codex Update - optional wide row compact import
 
 Status: VERIFY. This adds an explicit opt-in speed path for very large imported sheets. It is not enabled by default because bundled rows preserve rendered HTML but limit direct block editing inside those rows until an ungroup/lazy-materialization path exists.

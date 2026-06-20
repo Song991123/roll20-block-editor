@@ -1,4 +1,13 @@
-export type LayerRoleKind = 'frame' | 'flow' | 'table' | 'control' | 'action' | 'text' | 'media' | 'runtime' | 'other';
+export type LayerRoleKind =
+  | 'frame'
+  | 'flow'
+  | 'table'
+  | 'control'
+  | 'action'
+  | 'text'
+  | 'media'
+  | 'runtime'
+  | 'other';
 
 export type LayerRole = {
   kind: LayerRoleKind;
@@ -87,11 +96,27 @@ export function canReceiveChildren(type: string): boolean {
 export function classifyLayerRole(type: string): LayerRoleKind {
   const t = type.toLowerCase();
   if (t.includes('script') || t.includes('worker') || t.includes('rolltemplate')) return 'runtime';
-  if (t.includes('table') || t.includes('tbody') || t.includes('thead') || t.includes('tr') || t.includes('td') || t.includes('th')) {
+  if (
+    t.includes('table') ||
+    t.includes('tbody') ||
+    t.includes('thead') ||
+    t.includes('tr') ||
+    t.includes('td') ||
+    t.includes('th')
+  ) {
     return 'table';
   }
   if (t.includes('row') || t.includes('col') || t.includes('grid') || t.includes('flex')) return 'flow';
-  if (t.includes('div') || t.includes('span') || t.includes('section') || t.includes('fieldset') || t.includes('form') || t.includes('group')) return 'frame';
+  if (
+    t.includes('div') ||
+    t.includes('span') ||
+    t.includes('section') ||
+    t.includes('fieldset') ||
+    t.includes('form') ||
+    t.includes('group')
+  ) {
+    return 'frame';
+  }
   if (t.includes('input') || t.includes('select') || t.includes('checkbox') || t.includes('textarea')) return 'control';
   if (t.includes('button') || t.includes('roll')) return 'action';
   if (t.includes('image') || t.includes('img') || t.includes('media')) return 'media';

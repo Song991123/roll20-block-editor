@@ -2827,6 +2827,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Negative controls are now easier to reject: `soft-shadow-rejected`, `roll20-message-padding`, `font-fallback`, `tight-cell-spacing`, and `shell-typography` all regress at least one fixture.
 - Claim boundary: this is diagnostic/reporting work only. It does not change production ChatPane rendering, does not make `rendererReady` pass, and does not prove Roll20 visual parity.
 
+## 2026-06-20 Layer Role Label Cleanup
+
+- Fixed visible edit-layer role labels in `lib/editor/layerRoles.ts`: `프레임`, `흐름`, `표`, `입력`, `버튼`, `텍스트`, `이미지`, `스크립트`, and `노드`.
+- Node UTF-8 inspection confirmed the file contains correct Korean labels; PowerShell may still display Korean as mojibake in raw `Get-Content` output depending on terminal encoding.
+- Verification: `lint`, `build`, and `smoke:edit-flow -- --port 4210` passed. The smoke reported `editUiCopy.hasExpectedLabels=true`, `editUiCopy.hasMojibakeHan=false`, and layer row text containing `프레임`, `담기 가능`, and `흐름`.
+- Claim boundary: this improves edit-mode usability and trust in the layer panel only. It does not change production Roll20 renderer CSS or prove Roll20 visual parity.
+
 ## 2026-06-20 Optional Wide Row Compact Import
 
 - Added an opt-in import speed path for very large sheets: `compactWideRows` compacts repeated large table-row subtrees into raw row bundles after the normal generic composite pass.
