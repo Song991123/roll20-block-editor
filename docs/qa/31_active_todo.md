@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - header and public example copy cleanup
+
+Status: VERIFY. This removes visible mojibake and clarifies public-example rules; it does not change Roll20 renderer parity.
+
+- DONE: Rewrote `components/editor/EditorHeader.tsx` user-facing Korean copy for header title, tooltips, button labels, confirm dialog, and save/new-sheet toasts.
+- DONE: Cleaned `lib/examples/index.ts` and `lib/stores/examplesStore.ts` comments so the public example catalog clearly states that real/community/user sheets stay in ignored local fixtures only.
+- RESULT: Public sample UI remains hidden while `EXAMPLES` is empty.
+- VERIFIED: mojibake scan over `components`, `lib`, and `app` excluding generated Roll20 base CSS found no remaining matches; `lint`, `build`, empty-workspace `smoke:export-dialog` on port `4501`, and `guard:roll20-evidence` passed.
+- STILL TODO P0: Continue actual Roll20 AW2E/Les-Oublies chat recapture and renderer gate work; this UI cleanup does not reduce `HOLD_PRODUCTION_RENDERER_PATCH`.
+
 ## 2026-06-20 Codex Update - chat current-metrics audit gate
 
 Status: PARTIAL. This tightens actual Roll20 chat evidence gating; it does not recapture AW2E/Les-Oublies and does not make renderer parity pass.

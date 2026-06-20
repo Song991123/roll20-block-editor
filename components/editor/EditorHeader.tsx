@@ -1,13 +1,15 @@
 'use client';
 
+import { useCallback, useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Download,
-  Save,
-  FolderOpen,
   FilePlus,
+  FolderOpen,
+  Layers,
   PanelLeft,
   PanelRight,
-  Layers,
+  Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -32,8 +34,6 @@ import {
   loadExampleIntoWorkspaces,
   type ExampleDescriptor,
 } from '@/lib/examples';
-import dynamic from 'next/dynamic';
-import { useCallback, useState } from 'react';
 import { deleteWorkspace, AUTOSAVE_KEY } from '@/lib/persist/indexeddb';
 import { saveCurrentWorkspaceSnapshot } from '@/lib/persist/autosave';
 

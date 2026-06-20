@@ -1,3 +1,11 @@
+## 2026-06-20 Header and Public Example Copy Cleanup
+
+- Rewrote visible `EditorHeader` copy: title, subtitle, panel tooltips, new/import/save/export labels, confirm dialog, and toasts now use readable Korean.
+- Cleaned public example registry/store comments so copyright policy is explicit: public examples must be synthetic; real/user/community sheets stay in ignored local fixtures/reports.
+- Verified public sample UI remains hidden with the empty `EXAMPLES` catalog through export-dialog browser smoke.
+- Verification: mojibake scan over `components`, `lib`, and `app` excluding generated Roll20 base CSS; `corepack pnpm run lint`; `corepack pnpm run build`; `smoke:export-dialog` on port `4501`; `guard:roll20-evidence`.
+- Claim boundary: product-surface cleanup only. No renderer CSS changed and Roll20 visual parity remains gated.
+
 ## 2026-06-20 Chat Current-Metrics Audit Gate
 
 - Added `scripts/roll20_chat_current_metrics_audit.mjs` and `corepack pnpm run diagnose:roll20-chat-current-metrics`.
