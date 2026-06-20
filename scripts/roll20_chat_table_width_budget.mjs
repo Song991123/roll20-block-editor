@@ -237,10 +237,17 @@ function bestCandidateForFixture(candidateReport, styleProofReport, fixtureId) {
       regressedFixtures: Number(candidate.regressedFixtures ?? 0),
       meanDeltaPct: numberOrNull(candidate.meanAlignedDeltaPct),
       styleProofStatus: proofByName.get(candidate.name)?.styleProofStatus ?? 'NOT_STYLE_PROVEN',
+      complexity: candidateComplexity(candidate.name),
     }))
     .filter((candidate) => candidate.fixtureDeltaPct != null)
-    .sort((a, b) => a.fixtureDeltaPct - b.fixtureDeltaPct || a.name.localeCompare(b.name));
+    .sort((a, b) => a.fixtureDeltaPct - b.fixtureDeltaPct || a.complexity - b.complexity || a.name.localeCompare(b.name));
   return rows[0] ?? null;
+}
+
+function candidateComplexity(name) {
+  return String(name ?? '')
+    .split('-')
+    .filter((part) => ['actual', 'width', 'dim', 'background', 'crop', 'origin', 'scale', 'typography', 'metrics', 'shadow'].includes(part)).length;
 }
 
 function collectFixtureIds(...reports) {

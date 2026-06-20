@@ -766,6 +766,7 @@ async function main() {
         policy === 'coc-table-scale-x' ||
         policy === 'coc-table-intrinsic-clamp' ||
         policy === 'coc-table-actual-width' ||
+        policy === 'coc-crop-origin-y20' ||
         policy === 'roll20-message-padding' ||
         policy === 'roll20-break-word' ||
         policy === 'roll20-intrinsic-spacing' ||

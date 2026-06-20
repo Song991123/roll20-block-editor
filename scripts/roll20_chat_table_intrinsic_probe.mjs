@@ -198,14 +198,21 @@ function candidateSignalsFor(candidateReport, fixtureId) {
       risk: candidate.promotionRisk ?? '',
       deltaPct: numberOrNull(candidate.fixtureAlignedDeltaPct?.[key]),
       regressedFixtures: Number(candidate.regressedFixtures ?? 0),
+      complexity: candidateComplexity(candidate.name),
     }))
     .filter((candidate) => candidate.deltaPct != null)
-    .sort((a, b) => a.deltaPct - b.deltaPct || a.name.localeCompare(b.name));
+    .sort((a, b) => a.deltaPct - b.deltaPct || a.complexity - b.complexity || a.name.localeCompare(b.name));
   return {
     best: candidates[0] ?? null,
     rejectedOrNoGain: candidates.filter((candidate) => candidate.risk === 'reject-regresses-fixtures' || candidate.risk === 'no-meaningful-gain').map((candidate) => candidate.name),
     candidates,
   };
+}
+
+function candidateComplexity(name) {
+  return String(name ?? '')
+    .split('-')
+    .filter((part) => ['actual', 'width', 'dim', 'background', 'crop', 'origin', 'scale', 'typography', 'metrics', 'shadow'].includes(part)).length;
 }
 
 function decideProbe(signals) {

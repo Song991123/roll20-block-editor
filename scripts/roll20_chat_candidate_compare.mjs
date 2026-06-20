@@ -23,6 +23,7 @@ const candidates = [
   ['aw2e-root-width-actual', 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
   ['coc-table-actual-width', 'reports/rolltemplate-chat-smoke-coc-table-actual-width/screenshots'],
+  ['coc-crop-origin-y20', 'reports/rolltemplate-chat-smoke-coc-crop-origin-y20/screenshots'],
   ['roll20-message-padding', 'reports/rolltemplate-chat-smoke-roll20-message-padding/screenshots'],
   ['roll20-break-word', 'reports/rolltemplate-chat-smoke-roll20-break-word/screenshots'],
   ['roll20-intrinsic-spacing', 'reports/rolltemplate-chat-smoke-intrinsic-spacing/screenshots'],
@@ -36,6 +37,8 @@ const candidates = [
   ['coc-table-intrinsic-clamp', 'reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp/screenshots'],
   ['yshy-sanitize-typography', 'reports/rolltemplate-chat-smoke-yshy-sanitize-typography/screenshots'],
   ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
+  ['coc-table-actual-width-dim-background', 'reports/rolltemplate-chat-smoke-coc-table-actual-width-dim-background/screenshots'],
+  ['coc-crop-origin-y20-dim-background', 'reports/rolltemplate-chat-smoke-coc-crop-origin-y20-dim-background/screenshots'],
   ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],
 ];
 

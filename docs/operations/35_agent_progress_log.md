@@ -1,3 +1,20 @@
+## 2026-06-20 YSHY Crop-Origin Candidate Rejected
+
+- Added diagnostic-only ChatPane geometry policy `coc-crop-origin-y20`.
+- Added candidate comparison entries for:
+  - `coc-crop-origin-y20`
+  - `coc-table-actual-width-dim-background`
+  - `coc-crop-origin-y20-dim-background`
+- Generated local smoke evidence for the new candidates. All three prepared fixtures rendered rolltemplate cards successfully.
+- Candidate comparison result:
+  - `coc-crop-origin-y20`: no gain. YSHY stays at `22.33%` aligned mismatch.
+  - `coc-table-actual-width-dim-background`: same as `paint-dim-background`, YSHY `19.85%`, delta `-2.48%`.
+  - `coc-crop-origin-y20-dim-background`: same as `paint-dim-background`, YSHY `19.85%`, delta `-2.48%`.
+- Updated best-candidate tie-breaking in the table-width budget, width reconciliation, and table-intrinsic probe so equally scoring composite candidates do not hide the simpler candidate.
+- Interpretation: forcing actual table width and a simple `+20px` CoC y-origin shift do not explain the remaining YSHY mismatch. The next YSHY probe should focus on paint/background/rasterization and actual Roll20 user CSS activation around the CoC template, not table-width or y-offset hacks.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 YSHY Table Intrinsic Probe
 
 - Added `scripts/roll20_chat_table_intrinsic_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe`.

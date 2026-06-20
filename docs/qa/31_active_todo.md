@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - YSHY crop-origin candidate rejected
+
+Status: PARTIAL. This tested the next YSHY/CoC crop/table interaction hypothesis; it does not change production ChatPane CSS.
+
+- DONE: Added diagnostic-only ChatPane geometry policy `coc-crop-origin-y20`.
+- DONE: Added candidate comparison rows for `coc-crop-origin-y20`, `coc-table-actual-width-dim-background`, and `coc-crop-origin-y20-dim-background`.
+- DONE: Updated candidate selection tie-breakers in width reconciliation, table-width budget, and table-intrinsic probe so equally scoring composite candidates do not displace the simpler candidate.
+- RESULT: `coc-crop-origin-y20` is `no-meaningful-gain`: YSHY remains `22.33%` aligned mismatch, delta `0%`.
+- RESULT: `coc-table-actual-width-dim-background` and `coc-crop-origin-y20-dim-background` match `paint-dim-background` exactly: YSHY `19.85%`, delta `-2.48%`, no added gain from table-width or y-origin changes.
+- RESULT: The current best YSHY diagnostic candidate remains `paint-dim-background`; table actual-width and simple y-origin crop offset are not the missing model.
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- VERIFIED: chat smoke for the new candidates, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-table-width-budget`, `diagnose:roll20-chat-width-reconciliation`, `diagnose:roll20-chat-table-intrinsic-probe`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Move the next YSHY/CoC probe away from table-width/y-offset hacks. Investigate paint/background/rasterization and actual Roll20 user CSS activation around the CoC template before any production CSS.
+
 ## 2026-06-20 Codex Update - YSHY table intrinsic probe
 
 Status: PARTIAL. This adds the next YSHY/CoC routing diagnostic; it does not change production ChatPane CSS.
