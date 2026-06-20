@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - chat background asset/proxy bytes probe
+
+Status: PARTIAL. This adds byte-level asset evidence; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
+
+- DONE: Added `scripts/roll20_chat_background_asset_probe.mjs` and package command `diagnose:roll20-chat-background-assets`.
+- DONE: Wired the asset/proxy probe into `gate:roll20-renderer-action`.
+- RESULT: AW2E and YSHY 1BU local/actual background fetches match byte-for-byte, so the current local-vs-actual chat mismatch is not caused by different background image bytes.
+- RESULT: Both AW2E and YSHY 1BU background sources currently resolve to tiny removed-placeholder images: `200 image/png`, `503b`, `161x81`, final/source path includes `removed.png`.
+- RESULT: Les-Oublies has no table background image in current evidence and stays on non-image declaration/cascade diagnostics.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` and now reports the asset/proxy probe as evidence.
+- VERIFIED: `node --check` for the new script and renderer gate, `diagnose:roll20-chat-background-assets`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Preserve/rehost missing source assets before judging original-sheet visual parity for affected fixtures; for local-vs-actual parity, continue with browser paint/context and table/crop diagnostics because the bytes match.
+- STILL TODO P0: Recapture AW2E and Les-Oublies Roll20 chat sidecars with current row/typography/filter fields before cross-fixture renderer decisions.
+
 ## 2026-06-20 Codex Update - chat background raster model probe routes next paint work
 
 Status: PARTIAL. This adds another diagnostic gate; it does not change production ChatPane defaults and does not prove Roll20 visual parity.

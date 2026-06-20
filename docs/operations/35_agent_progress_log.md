@@ -1,3 +1,16 @@
+## 2026-06-20 Chat Background Asset/Proxy Probe
+
+- Added `scripts/roll20_chat_background_asset_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-background-assets`.
+- The probe reads current background/source evidence, fetches referenced background URLs, records hash/format/dimensions, and flags removed-placeholder assets.
+- Wired the probe into `gate:roll20-renderer-action`.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER`, local/actual/source all return `200 image/png`, `503b`, `161x81`, same hash, source final path includes `removed.png`.
+  - Les-Oublies: `NO_BACKGROUND_IMAGE` for current table evidence.
+  - YSHY 1BU: `ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER`, local/actual/source all return `200 image/png`, `503b`, `161x81`, same hash, source final path includes `removed.png`.
+- Interpretation: the current local-vs-actual chat mismatch is not explained by local and Roll20 receiving different background image bytes. For original-sheet parity, affected missing assets must be preserved or rehosted; for local-vs-actual parity, the next work remains browser paint/context plus table/crop diagnostics.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 Chat Background Raster Model Probe
 
 - Added `scripts/roll20_chat_background_raster_model_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-background-raster`.
