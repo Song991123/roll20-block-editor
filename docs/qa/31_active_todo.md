@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - sandbox upload activation guard
+
+Status: VERIFY. This hardens the Roll20 Sandbox upload handoff; it does not recapture AW2E/Les-Oublies chat evidence and does not prove visual parity.
+
+- DONE: `scripts/roll20_upload_snippet.mjs` now embeds generic activation hints extracted from payload HTML/CSS/translation/manifest: rolltemplate classes, roll button names, attr names, and visible text tokens.
+- DONE: Generated upload snippets now compare before/after Roll20 DOM markers and return `activation.status`.
+- RESULT: `FILE_INPUTS_DISPATCHED_BUT_VISIBLE_MATCH_NOT_PROVEN` is now distinct from `VISIBLE_MATCH`, so a synthetic file-input dispatch cannot be treated as proof that Roll20 actually loaded the uploaded sheet.
+- VERIFIED: `node --check scripts\roll20_upload_snippet.mjs`, snippet generation for `official-roll20-AW2E`, generated snippet syntax check, and `plan:roll20-chat-capture --require-current-metrics` passed.
+- BLOCKED/OBSERVED: The current Chrome/Roll20 session still shows YSHY/CoC chat after an AW2E synthetic upload dispatch. Normal file chooser remains blocked/timed out in the Chrome extension path, and one attempted patched snippet execution timed out before returning evidence. No existing rooms were modified.
+- STILL TODO P0: Enable/repair real browser file upload (`Allow access to file URLs` for the Codex Chrome extension) or use the approved Roll20 settings save/Sandbox route, then recapture AW2E and Les-Oublies same-action `roll20-chat.png` plus `roll20-chat-dom-evidence.json` with current metrics.
+
 ## 2026-06-20 Codex Update - header and public example copy cleanup
 
 Status: VERIFY. This removes visible mojibake and clarifies public-example rules; it does not change Roll20 renderer parity.

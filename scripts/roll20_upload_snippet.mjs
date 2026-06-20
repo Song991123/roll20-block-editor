@@ -112,13 +112,20 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir) {
       base64: bytes.toString('base64'),
     };
   }
-  const validation = {
-    translation: validateJsonPayload(await fs.readFile(files.translation, 'utf8'), 'translation.json'),
-    manifest: validateJsonPayload(await fs.readFile(files.manifest, 'utf8'), 'sheet.json'),
+  const sourceTexts = {
+    html: await fs.readFile(files.html, 'utf8'),
+    css: await fs.readFile(files.css, 'utf8'),
+    translation: await fs.readFile(files.translation, 'utf8'),
+    manifest: await fs.readFile(files.manifest, 'utf8'),
   };
-  validation.settingsFieldManifest = validateSettingsFieldManifest(await fs.readFile(files.manifest, 'utf8'));
+  const validation = {
+    translation: validateJsonPayload(sourceTexts.translation, 'translation.json'),
+    manifest: validateJsonPayload(sourceTexts.manifest, 'sheet.json'),
+  };
+  validation.settingsFieldManifest = validateSettingsFieldManifest(sourceTexts.manifest);
+  const activationHints = extractActivationHints(sourceTexts);
 
-  const snippet = renderSnippet({ fixtureId, payload, validation });
+  const snippet = renderSnippet({ fixtureId, payload, validation, activationHints });
   const snippetFile = path.join(outDir, `${safeName(fixtureId)}-upload-snippet.js`);
   await fs.writeFile(snippetFile, snippet, 'utf8');
 
@@ -128,6 +135,7 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir) {
     snippetRelativePath: path.relative(process.cwd(), snippetFile),
     payloadBytes: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.bytes])),
     payloadSha256: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.sha256])),
+    activationHints,
     validation,
   };
 }
@@ -179,8 +187,85 @@ function buildSettingsManifestText(manifestText) {
   return JSON.stringify(parsed, null, 2);
 }
 
-function renderSnippet({ fixtureId, payload, validation }) {
-  const literal = JSON.stringify({ fixtureId, payload, validation }, null, 2);
+function extractActivationHints(sourceTexts) {
+  const combined = `${sourceTexts.html}\n${sourceTexts.css}\n${sourceTexts.translation}\n${sourceTexts.manifest}`;
+  const html = sourceTexts.html;
+  return {
+    rolltemplateClasses: uniqueMatches(combined, /\b(?:sheet-)?rolltemplate-[a-z0-9_-]+\b/gi, 24),
+    rollButtonNames: uniqueMatches(html, /\bname\s*=\s*["'](roll_[^"']+)["']/gi, 32, 1),
+    attrNames: uniqueMatches(html, /\bname\s*=\s*["'](attr_[^"']+)["']/gi, 32, 1),
+    textTokens: extractVisibleTextTokens(html, sourceTexts.translation, 48),
+  };
+}
+
+function uniqueMatches(text, regex, limit, group = 0) {
+  const seen = new Set();
+  const values = [];
+  for (const match of text.matchAll(regex)) {
+    const value = String(match[group] ?? '').trim();
+    if (!value || seen.has(value.toLowerCase())) continue;
+    seen.add(value.toLowerCase());
+    values.push(value);
+    if (values.length >= limit) break;
+  }
+  return values;
+}
+
+function extractVisibleTextTokens(html, translation, limit) {
+  const withoutScripts = html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ');
+  const visibleText = withoutScripts
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&(?:nbsp|amp|lt|gt|quot|#39);/g, ' ');
+  const translationText = safeTranslationValues(translation).join(' ');
+  const stop = new Set([
+    'class',
+    'sheet',
+    'type',
+    'value',
+    'name',
+    'input',
+    'button',
+    'hidden',
+    'roll',
+    'text',
+    'label',
+    'span',
+    'div',
+    'attr',
+  ]);
+  const seen = new Set();
+  const tokens = [];
+  for (const token of `${visibleText} ${translationText}`.split(/[^\p{L}\p{N}_-]+/u)) {
+    const clean = token.trim();
+    if (clean.length < 4 || clean.length > 40) continue;
+    if (/^(attr_|roll_|sheet_|repeating_)/i.test(clean)) continue;
+    if (/^[0-9_-]+$/.test(clean)) continue;
+    if (stop.has(clean.toLowerCase())) continue;
+    const key = clean.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    tokens.push(clean);
+    if (tokens.length >= limit) break;
+  }
+  return tokens;
+}
+
+function safeTranslationValues(text) {
+  try {
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return [];
+    return Object.values(parsed)
+      .filter((value) => typeof value === 'string')
+      .slice(0, 120);
+  } catch {
+    return [];
+  }
+}
+
+function renderSnippet({ fixtureId, payload, validation, activationHints }) {
+  const literal = JSON.stringify({ fixtureId, payload, validation, activationHints }, null, 2);
   return `// Roll20 Custom Sheet Sandbox upload helper for ${fixtureId}
 // Local-only generated snippet. Do not paste this into existing real rooms.
 // Run on https://app.roll20.net/editor with Sheet Sandbox Tools open, or on the
@@ -328,6 +413,63 @@ function renderSnippet({ fixtureId, payload, validation }) {
       sandboxTextSnippet: text.slice(0, 800),
     };
   };
+  const collectActivationProbe = (phase) => {
+    const bodyText = (document.body?.innerText || '').replace(/\\s+/g, ' ');
+    const bodyHtml = document.body?.outerHTML || '';
+    const rolltemplateClasses = DATA.activationHints.rolltemplateClasses || [];
+    const rollButtonNames = DATA.activationHints.rollButtonNames || [];
+    const attrNames = DATA.activationHints.attrNames || [];
+    const textTokens = DATA.activationHints.textTokens || [];
+    const domRolltemplateClasses = [...new Set(Array.from(document.querySelectorAll('[class*="rolltemplate-"]'))
+      .flatMap((el) => String(el.className || '').split(/\\s+/))
+      .filter((className) => className.includes('rolltemplate-')))];
+    return {
+      phase,
+      expected: {
+        rolltemplateClasses: rolltemplateClasses.slice(0, 16),
+        rollButtonNames: rollButtonNames.slice(0, 16),
+        attrNames: attrNames.slice(0, 16),
+        textTokens: textTokens.slice(0, 16),
+      },
+      hits: {
+        rolltemplateClasses: rolltemplateClasses.filter((className) => bodyHtml.includes(className)),
+        rollButtonNames: rollButtonNames.filter((name) => bodyHtml.includes(name)),
+        attrNames: attrNames.filter((name) => bodyHtml.includes(name)),
+        textTokens: textTokens.filter((token) => bodyText.includes(token)),
+      },
+      visible: {
+        domRolltemplateClasses: domRolltemplateClasses.slice(-12),
+        rollButtonCount: document.querySelectorAll('button[type="roll"], button[name^="roll_"], [name^="roll_"]').length,
+        bodyTextSnippet: bodyText.slice(0, 600),
+      },
+    };
+  };
+  const classifyActivation = (before, after, fileInputs) => {
+    const hitCount = (probe) => Object.values(probe?.hits || {}).reduce((sum, values) => sum + (Array.isArray(values) ? values.length : 0), 0);
+    const beforeHits = hitCount(before);
+    const afterHits = hitCount(after);
+    const addedHits = Object.fromEntries(Object.entries(after?.hits || {}).map(([key, values]) => {
+      const previous = new Set(before?.hits?.[key] || []);
+      return [key, values.filter((value) => !previous.has(value))];
+    }));
+    const addedHitCount = Object.values(addedHits).reduce((sum, values) => sum + values.length, 0);
+    const allFileInputsDispatched = fileInputs.every((item) => item.status === 'dispatched');
+    const status = afterHits > 0 && (addedHitCount > 0 || beforeHits === 0)
+      ? 'VISIBLE_MATCH'
+      : allFileInputsDispatched
+        ? 'FILE_INPUTS_DISPATCHED_BUT_VISIBLE_MATCH_NOT_PROVEN'
+        : 'NOT_PROVEN';
+    return {
+      status,
+      beforeHits,
+      afterHits,
+      addedHits,
+      addedHitCount,
+      note: status === 'VISIBLE_MATCH'
+        ? 'Expected sheet markers are visible after upload; still capture screenshots before claiming parity.'
+        : 'File-input dispatch alone is not proof that Roll20 applied the uploaded sheet. Use the real file chooser/settings save path or recapture only after visible expected markers appear.',
+    };
+  };
   const buildSettingsManifest = (manifestText) => {
     const parsed = JSON.parse(manifestText);
     return JSON.stringify(parsed, null, 2);
@@ -338,6 +480,7 @@ function renderSnippet({ fixtureId, payload, validation }) {
   } else {
     console.log('Local payload validation:', DATA.validation);
   }
+  const activationBefore = collectActivationProbe('before-upload');
   const results = [];
   results.push(await setFileInput('#sheetHtml', DATA.payload.html, 'text/html'));
   results.push(await setFileInput('#sheetCss', DATA.payload.css, 'text/css'));
@@ -349,14 +492,20 @@ function renderSnippet({ fixtureId, payload, validation }) {
     if (!button) throw new Error('SUBMIT_SETTINGS_FORM is true, but #save-changes-button was not found.');
     button.click();
   }
+  await sleep(1500);
   const sandboxMessages = inspectSandboxMessages();
+  const activationAfter = collectActivationProbe('after-upload');
+  const activation = classifyActivation(activationBefore, activationAfter, results);
   console.table(results);
   console.log('Manifest:', manifest);
   console.log('Endpoint fallback:', endpointFallback);
   console.log('Sandbox messages:', sandboxMessages);
+  console.log('Activation probe:', activation);
   console.log('Fixture:', DATA.fixtureId);
-  console.log('Next: reopen/refresh the sandbox character, capture roll20-sandbox root evidence and roll20-chat.png, then run status/diff gates.');
-  return { fixtureId: DATA.fixtureId, validation: DATA.validation, fileInputs: results, endpointFallback, manifest, sandboxMessages };
+  console.log(activation.status === 'VISIBLE_MATCH'
+    ? 'Next: capture roll20-sandbox root evidence and roll20-chat.png, then run status/diff gates.'
+    : 'Next: do not capture parity evidence yet; load the sheet through the real file chooser/settings save path or rerun only after visible expected markers appear.');
+  return { fixtureId: DATA.fixtureId, validation: DATA.validation, fileInputs: results, endpointFallback, manifest, sandboxMessages, activationBefore, activationAfter, activation };
 })();
 `;
 }
@@ -371,7 +520,7 @@ function renderReadme(report) {
     '',
     'Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
     '',
-    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills `customcharsheet_json` with the plain exported `sheet.json` text when the settings page is open. It logs local JSON validation and detects visible Roll20 translation-parse warning text after upload. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet.',
+    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills `customcharsheet_json` with the plain exported `sheet.json` text when the settings page is open. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH` and screenshots are captured afterward.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',

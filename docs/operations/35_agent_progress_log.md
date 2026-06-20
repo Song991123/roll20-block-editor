@@ -1,3 +1,12 @@
+## 2026-06-20 Sandbox Upload Activation Guard
+
+- Added generic activation-hint extraction to `scripts/roll20_upload_snippet.mjs` for Roll20 Sandbox upload snippets: expected rolltemplate classes, roll button names, attr names, and visible text tokens are derived from local payloads.
+- Generated snippets now capture before/after DOM activation probes and return `activation.status`, separating `VISIBLE_MATCH` from `FILE_INPUTS_DISPATCHED_BUT_VISIBLE_MATCH_NOT_PROVEN`.
+- Browser observation: the dedicated Roll20 verification tab remained on YSHY/CoC chat after a synthetic AW2E file-input dispatch. That means file-input dispatch/handler consumption is not enough to trust a recapture.
+- Browser limitation: the normal file chooser path still timed out in the Chrome extension upload flow, and a patched snippet execution attempt timed out before returning trustworthy activation evidence.
+- Verification: `node --check scripts\roll20_upload_snippet.mjs`, generated AW2E upload snippet syntax, and `plan:roll20-chat-capture --require-current-metrics`.
+- Claim boundary: this is evidence-gate hardening only. AW2E and Les-Oublies current-metrics chat sidecars are still stale, and Roll20 visual parity remains unclaimed.
+
 ## 2026-06-20 Header and Public Example Copy Cleanup
 
 - Rewrote visible `EditorHeader` copy: title, subtitle, panel tooltips, new/import/save/export labels, confirm dialog, and toasts now use readable Korean.
