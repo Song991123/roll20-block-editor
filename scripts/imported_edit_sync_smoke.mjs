@@ -1329,11 +1329,13 @@ function summarizeHtmlWorkspaceShape(graph) {
       largestRootSubtreePct: 0,
       maxDepth: 0,
       roots: [],
+      remainingTrSignatures: [],
     };
   }
 
   const byId = new Map(graph.map((node) => [node.id, node]));
   const rootOf = new Map();
+  const descendantsByTr = new Map();
 
   function findRootId(node) {
     if (!node?.id) return null;
@@ -1371,6 +1373,14 @@ function summarizeHtmlWorkspaceShape(graph) {
     if (node.previousId) bucket.nextChainBlocks += 1;
     bucket.types.set(node.type, (bucket.types.get(node.type) || 0) + 1);
     buckets.set(rootId, bucket);
+
+    for (const ancestorId of ancestorIds(node)) {
+      const ancestor = byId.get(ancestorId);
+      if (ancestor?.type !== 'r20_tr') continue;
+      const list = descendantsByTr.get(ancestorId) || [];
+      list.push(node);
+      descendantsByTr.set(ancestorId, list);
+    }
   }
 
   const roots = Array.from(buckets.values())
@@ -1395,7 +1405,58 @@ function summarizeHtmlWorkspaceShape(graph) {
     largestRootSubtreePct: graph.length ? Math.round((largest / graph.length) * 1000) / 10 : 0,
     maxDepth: roots.reduce((max, root) => Math.max(max, root.maxDepth), 0),
     roots: roots.slice(0, 8),
+    remainingTrSignatures: summarizeTrSignatures(descendantsByTr),
   };
+
+  function ancestorIds(node) {
+    const ids = [];
+    const seen = new Set([node.id]);
+    let current = node;
+    while (current?.id) {
+      const parent = current.parentId ? byId.get(current.parentId) : null;
+      const previous = current.previousId ? byId.get(current.previousId) : null;
+      const nextAncestor = parent || previous;
+      if (!nextAncestor || seen.has(nextAncestor.id)) break;
+      ids.push(nextAncestor.id);
+      seen.add(nextAncestor.id);
+      current = nextAncestor;
+    }
+    return ids;
+  }
+}
+
+function summarizeTrSignatures(descendantsByTr) {
+  const groups = new Map();
+  for (const descendants of descendantsByTr.values()) {
+    if (!descendants.length) continue;
+    const typeCounts = new Map();
+    for (const node of descendants) {
+      typeCounts.set(node.type, (typeCounts.get(node.type) || 0) + 1);
+    }
+    const topTypes = Array.from(typeCounts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 6)
+      .map(([type, count]) => ({ type, count }));
+    const signature = topTypes.map((item) => `${item.type}:${item.count}`).join('|');
+    const group = groups.get(signature) || {
+      signature,
+      rowCount: 0,
+      totalDescendantBlocks: 0,
+      maxDescendantBlocks: 0,
+      topTypes,
+    };
+    group.rowCount += 1;
+    group.totalDescendantBlocks += descendants.length;
+    group.maxDescendantBlocks = Math.max(group.maxDescendantBlocks, descendants.length);
+    groups.set(signature, group);
+  }
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      avgDescendantBlocks: Math.round((group.totalDescendantBlocks / group.rowCount) * 10) / 10,
+    }))
+    .sort((a, b) => b.totalDescendantBlocks - a.totalDescendantBlocks || b.rowCount - a.rowCount)
+    .slice(0, 12);
 }
 
 function renderMarkdown(report) {
@@ -1430,6 +1491,18 @@ function renderMarkdown(report) {
   }
   lines.push('');
   lines.push('Shape note: this is structural only and omits block IDs, text, HTML snippets, and CSS snippets. A few very large root subtrees means top-level chunking will not be enough for imported-sheet performance.');
+  lines.push('');
+  lines.push('## Remaining Table Row Signatures');
+  lines.push('');
+  lines.push('| Fixture | Row count | Total descendant blocks | Avg blocks/row | Max blocks/row | Top structural signature |');
+  lines.push('| --- | ---: | ---: | ---: | ---: | --- |');
+  for (const item of report.fixtures) {
+    const signatures = item.htmlWorkspaceShape?.remainingTrSignatures ?? [];
+    const first = signatures[0];
+    lines.push(`| \`${item.id}\` | ${first?.rowCount ?? ''} | ${first?.totalDescendantBlocks ?? ''} | ${first?.avgDescendantBlocks ?? ''} | ${first?.maxDescendantBlocks ?? ''} | ${fmtTopTypes(first?.topTypes)} |`);
+  }
+  lines.push('');
+  lines.push('Row signature note: these are remaining `r20_tr` structures after current composite packing. They are candidates for the next generic composite or lazy-materialization path, not proof that a new matcher is safe.');
   lines.push('');
   lines.push('## Resource Diagnostics');
   lines.push('');

@@ -1,3 +1,12 @@
+## 2026-06-20 Remaining Row Signature Diagnostics
+
+- Added sanitized remaining `r20_tr` structural signatures to `scripts/imported_edit_sync_smoke.mjs`.
+- `scripts/imported_edit_perf_budget.mjs` now surfaces the top remaining row signature row count and descendant-block total in redacted summaries.
+- Local private result: after current composites, the strongest remaining table-row signature appears 13 times and accounts for 1235 descendant blocks, averaging 95 descendant blocks per row.
+- The top signature is table/control heavy: repeated `r20_td`, `r20_literal_string`, `r20_roll_button`, `r20_checkbox`, `r20_i18n_text`, and `r20_text_input`.
+- Interpretation: this is now the best concrete P0 target for structural import performance. A generic wide row/control-row composite or lazy subtree path can be designed from this signature without hardcoding private sheet content.
+- Claim boundary: diagnostic only. No matcher behavior, emitted HTML, or renderer output changed.
+
 ## 2026-06-20 Composite Packing Diagnostics Exposed
 
 - Added composite packing diagnostics to `ImportStats`: original atomic total, after-pack total, collapsed count, and packed-by-type counts.

@@ -70,6 +70,7 @@ function summarizeFixture(fixture, index) {
   const emitMs = round(fixture.import?.emitMs);
   const htmlShape = fixture.htmlWorkspaceShape ?? {};
   const largestRoot = htmlShape.roots?.[0] ?? null;
+  const topRemainingTrSignature = htmlShape.remainingTrSignatures?.[0] ?? null;
   const statuses = {
     interaction: fixture.interactionPass ? 'PASS' : 'FAIL',
     importTotalMs: statusFor(importTotalMs, BUDGETS.importTotalMs),
@@ -98,6 +99,11 @@ function summarizeFixture(fixture, index) {
       largestRootTopTypes: Array.isArray(largestRoot?.topTypes) ? largestRoot.topTypes : [],
       compositeCollapsed: fixture.import?.compositeCollapsed ?? null,
       compositePackedByType: fixture.import?.compositePackedByType ?? {},
+      topRemainingTrRows: topRemainingTrSignature?.rowCount ?? null,
+      topRemainingTrDescendantBlocks: topRemainingTrSignature?.totalDescendantBlocks ?? null,
+      topRemainingTrAvgBlocks: topRemainingTrSignature?.avgDescendantBlocks ?? null,
+      topRemainingTrMaxBlocks: topRemainingTrSignature?.maxDescendantBlocks ?? null,
+      topRemainingTrTypes: Array.isArray(topRemainingTrSignature?.topTypes) ? topRemainingTrSignature.topTypes : [],
       importTotalMs,
       parseMs: round(fixture.import?.parseMs),
       injectMs,
@@ -133,8 +139,8 @@ function renderMarkdown(summary) {
   lines.push(`Source: \`${summary.source}\``);
   lines.push(`Overall: **${summary.status}**`);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Composite collapsed | Composite types | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
-  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---|---|---|---:|');
+  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Composite collapsed | Composite types | Top row sig rows | Top row sig blocks | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
+  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
   for (const item of summary.fixtures) {
     const m = item.metrics;
     lines.push([
@@ -147,6 +153,8 @@ function renderMarkdown(summary) {
       m.largestRootMaxDepth ?? '',
       m.compositeCollapsed ?? '',
       fmtTypeCounts(m.compositePackedByType),
+      m.topRemainingTrRows ?? '',
+      m.topRemainingTrDescendantBlocks ?? '',
       m.importTotalMs ?? '',
       m.injectMs ?? '',
       m.emitMs ?? '',

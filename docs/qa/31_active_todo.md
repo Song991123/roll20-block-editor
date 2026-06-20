@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - remaining row signature diagnostics
+
+Status: VERIFY. This adds a diagnostic for repeated remaining `r20_tr` structures after current composite packing; it does not add a new matcher yet.
+
+- DONE: `smoke:imported-edit-sync` now records top remaining table-row structural signatures from sanitized block-type counts.
+- DONE: `budget:imported-edit` now reports the top remaining row signature row count and descendant-block total.
+- LOCAL PRIVATE RESULT: After current composites, the strongest remaining row signature appears `13` times and accounts for `1235` descendant blocks, averaging `95` descendant blocks per row.
+- LOCAL PRIVATE RESULT: The top row signature contains repeated `r20_td`, `r20_literal_string`, `r20_roll_button`, `r20_checkbox`, `r20_i18n_text`, and `r20_text_input` patterns.
+- INTERPRETATION: This is the first concrete target for the next optimization: a generic wide table/control-row composite or lazy subtree materialization could attack a four-digit block cluster without hardcoding the private sheet.
+- STILL TODO P0: Design the next matcher/lazy path against this repeated row signature and verify emitted HTML/CSS stays token-equivalent.
+
 ## 2026-06-20 Codex Update - composite packing diagnostics exposed
 
 Status: VERIFY. This exposes composite packing stats in import/performance reports; it does not add new composites yet.
