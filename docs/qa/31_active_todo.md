@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - Font/intrinsic probe split
+
+Status: PARTIAL. This adds a renderer-routing diagnostic; it does not change production ChatPane defaults and does not prove visual parity.
+
+- DONE: Added `scripts/roll20_chat_font_intrinsic_probe.mjs` and package command `diagnose:roll20-chat-font-intrinsic`.
+- DONE: Wired the font/intrinsic probe into `gate:roll20-renderer-action` so the gate now reports combined font availability, table font-family, text-width residual, intrinsic-width, overflow/crop, and width-override evidence.
+- RESULT: AW2E is now explicitly routed to `TEXT_METRIC_WIDTH_MODEL`: table delta `+15.744px`, measured text delta `+15.602px`, residual `+0.142px`, font availability unchanged.
+- RESULT: Les-Oublies remains `WIDTH_SECONDARY`: table delta `+0.8px`.
+- RESULT: YSHY is now explicitly routed to `FONT_FACE_INTRINSIC_MODEL_REQUIRED`: table delta `-24.309px`, measured text delta `-54.946px`, residual `+30.637px`, font availability changed, table font-family changed, direct width override candidates have `NO_GAIN`.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- INTERPRETATION: The next YSHY/CoC P0 is not another width/overflow CSS candidate. It should mirror Roll20 font-face availability/order first, then measure table min-content/intrinsic sizing under that font context.
+- VERIFIED: `node --check` for the new script and renderer gate, `diagnose:roll20-chat-font-intrinsic`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build a YSHY/CoC diagnostic candidate that suppresses or reorders the relevant local `BookkMyungjo-Bd` font-face availability to match actual Roll20, then rerun rolltemplate chat smoke, candidate comparison, font/intrinsic probe, renderer gate, lint, build, and evidence guard.
+
 ## 2026-06-20 Codex Update - CoC overflow/crop candidate rejected
 
 Status: PARTIAL. This tested the first YSHY/CoC overflow-crop candidate; it does not change production ChatPane defaults and does not prove visual parity.

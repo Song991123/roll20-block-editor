@@ -1,3 +1,16 @@
+## 2026-06-20 Font/Intrinsic Probe Split
+
+- Added `scripts/roll20_chat_font_intrinsic_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-font-intrinsic`.
+- The probe fuses existing font/glyph, intrinsic-width, overflow/crop, candidate comparison, and chat parity evidence into one fixture-level next-action decision.
+- Wired the probe into `gate:roll20-renderer-action`.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `TEXT_METRIC_WIDTH_MODEL`, table delta `+15.744px`, measured text delta `+15.602px`, residual `+0.142px`, font availability unchanged. Continue AW2E on exact text metric/message width work.
+  - Les-Oublies: `WIDTH_SECONDARY`, table delta `+0.8px`.
+  - YSHY 1BU: `FONT_FACE_INTRINSIC_MODEL_REQUIRED`, table delta `-24.309px`, measured text delta `-54.946px`, residual `+30.637px`, font availability changed, table font-family changed, width override candidates `NO_GAIN`.
+- Interpretation: YSHY/CoC should not get another direct width/overflow CSS candidate first. The next useful diagnostic is to mirror Roll20 font-face availability/order and then measure table min-content/intrinsic sizing under that font context.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 CoC Overflow/Crop Candidate Rejected
 
 - Added diagnostic-only ChatPane geometry policy `coc-overflow-crop-model`.
