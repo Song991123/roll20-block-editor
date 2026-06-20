@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - chat text-width model split added
+
+Status: PARTIAL. The next renderer blocker is now split by text-width cause instead of one vague font/glyph bucket.
+
+- DONE: Enhanced `scripts/roll20_chat_font_glyph_model.mjs` with a narrow text-width model that compares exact `measureText` deltas against actual table-width deltas.
+- DONE: Updated `scripts/roll20_renderer_action_gate.mjs` so the gate prints each fixture's `textWidthModel` and table text residual.
+- RESULT: AW2E is now `TEXT_WIDTH_SCALE_MODEL_REQUIRED` / `TEXT_WIDTH_EXPLAINS_TABLE_WIDTH`; table text residual is only `+0.142px`, so the table width is almost fully explained by measured text width.
+- RESULT: Les-Oublies is `TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED` / `TEXT_WIDTH_SECONDARY_TO_PAINT_OR_CELL_ALLOCATION`; table delta is only `+0.8px`, so width is not the main blocker.
+- RESULT: YSHY is `TEXT_WIDTH_LAYOUT_CONSTRAINT_MODEL_REQUIRED` / `TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT`; table text residual is `+30.637px`, so font/width CSS alone would be unsafe.
+- RESULT: `gate:roll20-renderer-action` still correctly returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- VERIFIED: `node --check scripts\roll20_chat_font_glyph_model.mjs`, `node --check scripts\roll20_renderer_action_gate.mjs`, `diagnose:roll20-chat-font-glyph`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build fixture/template-specific candidate probes from these split decisions: AW2E exact text metrics, Les row/cell paint or allocation masks, YSHY table-layout/wrapping/intrinsic constraints.
+
 ## 2026-06-20 Codex Update - DPR-corrected chat crop gate fixed
 
 Status: PARTIAL. Roll20 chat evidence is now authoritative again, but renderer parity is still blocked by real local-vs-Roll20 template differences.

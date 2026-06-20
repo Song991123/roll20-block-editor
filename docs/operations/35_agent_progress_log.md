@@ -1,3 +1,11 @@
+## 2026-06-20 Chat Text-Width Model Split
+
+- Enhanced `scripts/roll20_chat_font_glyph_model.mjs` so exact `textMeasureEvidence` is no longer summarized only as a mean delta. The report now compares table `measureText` deltas against actual table-width deltas and classifies a narrow `textWidthModel`.
+- Updated `scripts/roll20_renderer_action_gate.mjs` to surface `textWidthModel` and table text residual in gate evidence.
+- Latest split on `2026-06-18-state-map-v1`: AW2E is `TEXT_WIDTH_EXPLAINS_TABLE_WIDTH` with table text residual `+0.142px`; Les-Oublies is `TEXT_WIDTH_SECONDARY_TO_PAINT_OR_CELL_ALLOCATION` with table delta only `+0.8px`; YSHY is `TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT` with table text residual `+30.637px`.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`. This is a sharper diagnostic split, not a production CSS patch.
+- Next P0: test fixture/template-specific probes from the split model instead of another broad ChatPane typography/width change.
+
 ## 2026-06-20 AW2E Actual Chat Text Measurement Recapture
 
 - Claimed the existing dedicated Roll20 verification editor tab only; no existing room/settings were modified.

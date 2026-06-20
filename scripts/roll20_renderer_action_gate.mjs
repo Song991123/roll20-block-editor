@@ -491,7 +491,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       blockers.push(`chat font/glyph model needs textMeasureEvidence recapture for ${chatFontGlyphModelSummary.actionableFixtures.filter((fixture) => fixture.textMeasureMissing).map((fixture) => fixture.fixtureId).join(', ') || `${chatFontGlyphModelSummary.textMeasureMissing} fixture(s)`}; recapture actual Roll20 chat DOM sidecars before another ChatPane text-width candidate`);
     }
     for (const fixture of chatFontGlyphModelSummary.actionableFixtures) {
-      positiveFindings.push(`${fixture.fixtureId} font/glyph decision=${fixture.glyphDecision}, tableDelta=${num(fixture.tableWidthDelta)}px, textMeasure=${fixture.textMeasureStatus || 'n/a'} samples=${fixture.textMeasureComparedSamples}, meanTextWidthDelta=${num(fixture.textMeasureMeanAbsWidthDelta)}px, fontAvailabilityChanged=${fixture.fontAvailabilityChanged ? 'YES' : 'NO'}, tableFontChanged=${fixture.tableFontFamilyChanged ? 'YES' : 'NO'}, fontCandidatesRejected=${fixture.fontCandidatesRejected ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
+      positiveFindings.push(`${fixture.fixtureId} font/glyph decision=${fixture.glyphDecision}, textWidthModel=${fixture.textWidthDecision || 'n/a'}, tableDelta=${num(fixture.tableWidthDelta)}px, tableTextResidual=${num(fixture.tableTextResidual)}px, textMeasure=${fixture.textMeasureStatus || 'n/a'} samples=${fixture.textMeasureComparedSamples}, meanTextWidthDelta=${num(fixture.textMeasureMeanAbsWidthDelta)}px, fontAvailabilityChanged=${fixture.fontAvailabilityChanged ? 'YES' : 'NO'}, tableFontChanged=${fixture.tableFontFamilyChanged ? 'YES' : 'NO'}, fontCandidatesRejected=${fixture.fontCandidatesRejected ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
     }
   }
 
@@ -980,6 +980,10 @@ function summarizeChatFontGlyphModel(report) {
     textMeasureMissing: Boolean(fixture.textMeasureSignals?.missing),
     textMeasureComparedSamples: Number(fixture.textMeasureSignals?.comparedSamples ?? 0),
     textMeasureMeanAbsWidthDelta: fixture.textMeasureSignals?.meanAbsWidthDelta ?? null,
+    textWidthDecision: fixture.textWidthModel?.decision ?? '',
+    tableTextResidual: fixture.textWidthModel?.tableTextResidual ?? null,
+    tableTextDelta: fixture.textWidthModel?.tableTextDelta ?? null,
+    textWidthRatioMean: fixture.textWidthModel?.widthRatioMean ?? null,
     nextAction: fixture.nextAction ?? '',
     evidence: fixture.evidence ?? [],
   }));

@@ -98,10 +98,12 @@ async function compareFixture(localFixture, reports) {
     table: delta(widthOf(localTable), widthOf(actualTable)),
     firstCell: delta(rowGlyphMetrics.localFirstCellWidth, rowGlyphMetrics.actualFirstCellWidth),
   };
+  const textWidthModel = buildTextWidthModel({ textMeasureSignals, widthDeltas });
   const glyphDecision = decideGlyphModel({
     widthDeltas,
     fontSignals,
     textMeasureSignals,
+    textWidthModel,
     rowGlyphMetrics,
     candidateEvidence,
     intrinsicFixture,
@@ -111,15 +113,16 @@ async function compareFixture(localFixture, reports) {
     fixtureId,
     status: 'COMPARED',
     glyphDecision,
-    nextAction: nextAction(glyphDecision),
+    nextAction: nextAction(glyphDecision, textWidthModel),
     intrinsicDecision: intrinsicFixture?.intrinsicDecision ?? '',
     styleFindings: styleFixture?.findings ?? [],
     widthDeltas,
     fontSignals,
     textMeasureSignals,
+    textWidthModel,
     rowGlyphMetrics,
     candidateEvidence,
-    evidence: evidenceNotes({ widthDeltas, fontSignals, textMeasureSignals, rowGlyphMetrics, candidateEvidence }),
+    evidence: evidenceNotes({ widthDeltas, fontSignals, textMeasureSignals, textWidthModel, rowGlyphMetrics, candidateEvidence }),
   };
 }
 
@@ -218,6 +221,9 @@ function compareTextMeasureEvidence({ local, actual }) {
     });
   }
   const probeSamples = compared.filter((sample) => sample.source === 'probe');
+  const ratios = compared
+    .map((sample) => ratio(sample.actualWidth, sample.localWidth))
+    .filter(Number.isFinite);
   return {
     status: compared.length ? 'COMPARED' : 'NO_MATCHING_SAMPLES',
     missing: false,
@@ -228,6 +234,11 @@ function compareTextMeasureEvidence({ local, actual }) {
     comparedSamples: compared.length,
     meanAbsWidthDelta: meanAbs(compared.map((sample) => sample.widthDelta)),
     probeMeanAbsWidthDelta: meanAbs(probeSamples.map((sample) => sample.widthDelta)),
+    widthRatioMean: mean(ratios),
+    widthRatioStdDev: stdDev(ratios),
+    widthRatioMin: minOrNull(ratios),
+    widthRatioMax: maxOrNull(ratios),
+    maxAbsWidthDelta: maxAbs(compared.map((sample) => sample.widthDelta)),
     fontChangedSamples: compared.filter((sample) => sample.fontChanged).length,
     changedFontFaceCount: fontFaces.changedCount,
     fontFaceDeltas: fontFaces.deltas,
@@ -249,6 +260,73 @@ function compareFontFaces(localFaces = [], actualFaces = []) {
     if (localStatus !== actualStatus) deltas.push({ key, local: localStatus, actual: actualStatus });
   }
   return { changedCount: deltas.length, deltas: deltas.slice(0, 20) };
+}
+
+function buildTextWidthModel({ textMeasureSignals, widthDeltas }) {
+  const samples = Array.isArray(textMeasureSignals?.samples) ? textMeasureSignals.samples : [];
+  if (textMeasureSignals?.missing || textMeasureSignals?.status !== 'COMPARED' || !samples.length) {
+    return {
+      decision: 'TEXT_WIDTH_MODEL_MISSING',
+      confidence: 'low',
+      nextAction: 'recapture exact local/actual measureText samples before modeling text width',
+    };
+  }
+  const elementSamples = samples.filter((sample) => sample.source === 'element');
+  const probeSamples = samples.filter((sample) => sample.source === 'probe');
+  const tableSample = elementSamples.find((sample) => sample.selector === 'table') ?? null;
+  const largestDelta = [...samples].sort((a, b) => Math.abs(b.widthDelta ?? 0) - Math.abs(a.widthDelta ?? 0))[0] ?? null;
+  const tableTextDelta = numberOrNull(tableSample?.widthDelta);
+  const tableElementDelta = numberOrNull(tableSample?.elementWidthDelta);
+  const tableDelta = numberOrNull(widthDeltas?.table);
+  const tableTextResidual = delta(tableTextDelta, tableDelta);
+  const sameDirection = sameSign(tableTextDelta, tableDelta);
+  const tableExplainedByText = sameDirection && Math.abs(tableTextResidual ?? 999) <= 3;
+  const textOverconstrained = sameDirection &&
+    Math.abs(tableTextResidual ?? 0) >= 8 &&
+    Math.abs(tableTextDelta ?? 0) >= Math.abs(tableDelta ?? 0) * 1.75;
+  const tableSecondary = Math.abs(tableDelta ?? 0) < 2 && Math.abs(tableTextDelta ?? 0) >= 2;
+  let decision = 'TEXT_WIDTH_MODEL_REQUIRED';
+  let confidence = 'medium';
+  let nextAction = 'build a narrow per-template text-width candidate and prove it against actual Roll20 pixels';
+  if (tableSecondary) {
+    decision = 'TEXT_WIDTH_SECONDARY_TO_PAINT_OR_CELL_ALLOCATION';
+    confidence = 'medium';
+    nextAction = 'treat table width as secondary; inspect row/cell paint, shadow, and allocation masks';
+  } else if (tableExplainedByText) {
+    decision = 'TEXT_WIDTH_EXPLAINS_TABLE_WIDTH';
+    confidence = 'high';
+    nextAction = 'model exact text metrics for this template; table width appears driven by measured text width';
+  } else if (textOverconstrained) {
+    decision = 'TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT';
+    confidence = 'medium';
+    nextAction = 'compare table-layout, wrapping, and intrinsic constraints before a font or width CSS patch';
+  }
+  return {
+    decision,
+    confidence,
+    nextAction,
+    tableTextDelta,
+    tableElementDelta,
+    tableWidthDelta: tableDelta,
+    tableTextResidual,
+    widthRatioMean: textMeasureSignals.widthRatioMean ?? null,
+    widthRatioStdDev: textMeasureSignals.widthRatioStdDev ?? null,
+    widthRatioMin: textMeasureSignals.widthRatioMin ?? null,
+    widthRatioMax: textMeasureSignals.widthRatioMax ?? null,
+    elementMeanAbsWidthDelta: meanAbs(elementSamples.map((sample) => sample.widthDelta)),
+    probeMeanAbsWidthDelta: meanAbs(probeSamples.map((sample) => sample.widthDelta)),
+    maxAbsWidthDelta: textMeasureSignals.maxAbsWidthDelta ?? null,
+    dominantSample: largestDelta
+      ? {
+          selector: largestDelta.selector,
+          source: largestDelta.source,
+          textLength: String(largestDelta.text ?? '').length,
+          widthDelta: largestDelta.widthDelta,
+          elementWidthDelta: largestDelta.elementWidthDelta,
+          fontChanged: largestDelta.fontChanged,
+        }
+      : null,
+  };
 }
 
 function textMeasureKey(sample) {
@@ -325,13 +403,19 @@ function extractCandidateEvidence(candidateComparison, fixtureId) {
   };
 }
 
-function decideGlyphModel({ widthDeltas, fontSignals, textMeasureSignals, rowGlyphMetrics, candidateEvidence, intrinsicFixture }) {
+function decideGlyphModel({ widthDeltas, fontSignals, textMeasureSignals, textWidthModel, rowGlyphMetrics, candidateEvidence, intrinsicFixture }) {
   const intrinsicDecision = intrinsicFixture?.intrinsicDecision ?? '';
   if (!intrinsicDecision || intrinsicDecision === 'INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE') {
     return 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE';
   }
   if (textMeasureSignals?.missing || textMeasureSignals?.status === 'NO_MATCHING_SAMPLES') {
     return 'TEXT_MEASURE_RECAPTURE_REQUIRED';
+  }
+  if (textWidthModel?.decision === 'TEXT_WIDTH_EXPLAINS_TABLE_WIDTH') {
+    return 'TEXT_WIDTH_SCALE_MODEL_REQUIRED';
+  }
+  if (textWidthModel?.decision === 'TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT') {
+    return 'TEXT_WIDTH_LAYOUT_CONSTRAINT_MODEL_REQUIRED';
   }
   if (Math.abs(textMeasureSignals?.meanAbsWidthDelta ?? 0) >= 2 || Math.abs(textMeasureSignals?.probeMeanAbsWidthDelta ?? 0) >= 2) {
     return 'TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED';
@@ -351,7 +435,7 @@ function decideGlyphModel({ widthDeltas, fontSignals, textMeasureSignals, rowGly
   return 'GLYPH_MODEL_SECONDARY_OR_ACCEPTABLE';
 }
 
-function nextAction(decision) {
+function nextAction(decision, textWidthModel = null) {
   switch (decision) {
     case 'FONT_AVAILABILITY_CHANGED_CANDIDATES_REJECTED':
       return 'capture actual/local per-font measureText widths and CSSOM font-face activation; broad font fallback candidates already regress';
@@ -359,6 +443,10 @@ function nextAction(decision) {
       return 'compare exact font stack activation and text measurement sidecars instead of applying broad Proxima/typography CSS';
     case 'TEXT_MEASURE_RECAPTURE_REQUIRED':
       return 'recapture actual Roll20 chat DOM sidecar with textMeasureEvidence and rerun font/glyph diagnosis';
+    case 'TEXT_WIDTH_SCALE_MODEL_REQUIRED':
+      return textWidthModel?.nextAction ?? 'model exact text-width scaling before any production ChatPane CSS';
+    case 'TEXT_WIDTH_LAYOUT_CONSTRAINT_MODEL_REQUIRED':
+      return textWidthModel?.nextAction ?? 'compare intrinsic table layout constraints before any production ChatPane CSS';
     case 'TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED':
       return 'build a narrow text-width model from exact measureText deltas instead of broad font or spacing CSS';
     case 'TEXT_MEASUREMENT_MODEL_REQUIRED':
@@ -370,10 +458,13 @@ function nextAction(decision) {
   }
 }
 
-function evidenceNotes({ widthDeltas, fontSignals, textMeasureSignals, rowGlyphMetrics, candidateEvidence }) {
+function evidenceNotes({ widthDeltas, fontSignals, textMeasureSignals, textWidthModel, rowGlyphMetrics, candidateEvidence }) {
   const notes = [];
   if (textMeasureSignals?.missing) notes.push(`textMeasureEvidence missing: local=${textMeasureSignals.localSampleCount ?? 0} actual=${textMeasureSignals.actualSampleCount ?? 0}`);
   if (!textMeasureSignals?.missing && textMeasureSignals?.comparedSamples != null) notes.push(`measureText samples compared ${textMeasureSignals.comparedSamples}, mean width delta ${fmtPx(textMeasureSignals.meanAbsWidthDelta)}`);
+  if (textWidthModel?.decision) {
+    notes.push(`text width model ${textWidthModel.decision}, table text residual ${fmtPx(textWidthModel.tableTextResidual)}`);
+  }
   if (textMeasureSignals?.changedFontFaceCount) notes.push(`CSSOM font-face status deltas ${textMeasureSignals.changedFontFaceCount}`);
   if (fontSignals.fontAvailabilityChanged) notes.push(`font availability differs: ${fontSignals.changedFonts.map((font) => font.spec).join(', ')}`);
   if (fontSignals.tableFontFamilyChanged) notes.push('table font-family differs');
@@ -396,11 +487,11 @@ function renderMarkdown(report) {
     `Status: ${report.summary.status}`,
     `Text measure missing: ${report.summary.textMeasureMissing}`,
     '',
-    '| Fixture | Decision | Table delta | Text measure | Font availability | Table font changed | Font candidates | Evidence | Next |',
-    '| --- | --- | ---: | --- | --- | --- | --- | --- | --- |',
+    '| Fixture | Decision | Text width model | Table delta | Table text residual | Text measure | Font availability | Table font changed | Font candidates | Evidence | Next |',
+    '| --- | --- | --- | ---: | ---: | --- | --- | --- | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.glyphDecision} | ${fmtPx(fixture.widthDeltas?.table)} | ${fixture.textMeasureSignals?.status ?? ''} (${fixture.textMeasureSignals?.comparedSamples ?? 0}) | ${fixture.fontSignals?.fontAvailabilityChanged ? 'changed' : 'same'} | ${fixture.fontSignals?.tableFontFamilyChanged ? 'yes' : 'no'} | ${fixture.candidateEvidence?.fontCandidatesRejected ? 'rejected/no-gain' : 'not rejected'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.glyphDecision} | ${fixture.textWidthModel?.decision ?? ''} | ${fmtPx(fixture.widthDeltas?.table)} | ${fmtPx(fixture.textWidthModel?.tableTextResidual)} | ${fixture.textMeasureSignals?.status ?? ''} (${fixture.textMeasureSignals?.comparedSamples ?? 0}) | ${fixture.fontSignals?.fontAvailabilityChanged ? 'changed' : 'same'} | ${fixture.fontSignals?.tableFontFamilyChanged ? 'yes' : 'no'} | ${fixture.candidateEvidence?.fontCandidatesRejected ? 'rejected/no-gain' : 'not rejected'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
   }
   lines.push('', '## Claim Boundary', '');
   lines.push('- Font availability/style differences are not production fixes by themselves; prior broad font candidates can still regress pixels.');
@@ -475,6 +566,22 @@ function delta(localValue, actualValue) {
     : null;
 }
 
+function ratio(value, divisor) {
+  const number = Number(value);
+  const base = Number(divisor);
+  return Number.isFinite(number) && Number.isFinite(base) && base !== 0
+    ? Number((number / base).toFixed(4))
+    : null;
+}
+
+function sameSign(a, b) {
+  const left = Number(a);
+  const right = Number(b);
+  if (!Number.isFinite(left) || !Number.isFinite(right)) return false;
+  if (left === 0 || right === 0) return Math.abs(left - right) <= 0.5;
+  return Math.sign(left) === Math.sign(right);
+}
+
 function perChar(width, length) {
   const numeric = Number(width);
   const count = Number(length);
@@ -487,6 +594,35 @@ function meanAbs(values) {
   const numbers = values.map(Number).filter(Number.isFinite);
   if (!numbers.length) return null;
   return Number((numbers.reduce((sum, value) => sum + Math.abs(value), 0) / numbers.length).toFixed(3));
+}
+
+function mean(values) {
+  const numbers = values.map(Number).filter(Number.isFinite);
+  if (!numbers.length) return null;
+  return Number((numbers.reduce((sum, value) => sum + value, 0) / numbers.length).toFixed(4));
+}
+
+function stdDev(values) {
+  const numbers = values.map(Number).filter(Number.isFinite);
+  if (numbers.length < 2) return null;
+  const average = numbers.reduce((sum, value) => sum + value, 0) / numbers.length;
+  const variance = numbers.reduce((sum, value) => sum + (value - average) ** 2, 0) / numbers.length;
+  return Number(Math.sqrt(variance).toFixed(4));
+}
+
+function minOrNull(values) {
+  const numbers = values.map(Number).filter(Number.isFinite);
+  return numbers.length ? Number(Math.min(...numbers).toFixed(4)) : null;
+}
+
+function maxOrNull(values) {
+  const numbers = values.map(Number).filter(Number.isFinite);
+  return numbers.length ? Number(Math.max(...numbers).toFixed(4)) : null;
+}
+
+function maxAbs(values) {
+  const numbers = values.map(Number).filter(Number.isFinite);
+  return numbers.length ? Number(Math.max(...numbers.map(Math.abs)).toFixed(3)) : null;
 }
 
 function countBy(values) {
