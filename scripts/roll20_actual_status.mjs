@@ -475,8 +475,51 @@ async function readChatParity(runDir) {
         actualImageFormat: fixture.actualImageFormat ?? '',
         actualScreenshotScale: Array.isArray(fixture.actualScreenshotScale) ? fixture.actualScreenshotScale.join('x') : '',
       })),
+    suspectFixtures: summarizeChatParitySuspectFixtures(report.fixtures ?? []),
     note: 'diagnostic only; does not prove Roll20 chat visual parity',
   };
+}
+
+function summarizeChatParitySuspectFixtures(fixtures) {
+  return fixtures
+    .filter((fixture) =>
+      fixture.status === 'DIFFED' &&
+      fixture.compareMode === 'rolltemplate-crop' &&
+      (
+        fixture.actualCropGeometry?.suspect ||
+        fixture.actualTemplatePixels?.suspect ||
+        isActualCaptureScaleSuspect(fixture)
+      )
+    )
+    .map((fixture) => {
+      const reasons = [];
+      if (fixture.actualCropGeometry?.suspect) {
+        reasons.push(`crop geometry: ${fixture.actualCropGeometry.reason ?? 'recapture element-bound template screenshot'}`);
+      }
+      if (fixture.actualTemplatePixels?.suspect) {
+        reasons.push(`foreground pixels: ${fixture.actualTemplatePixels.reason ?? 'recapture visible rolltemplate foreground'}`);
+      }
+      if (isActualCaptureScaleSuspect(fixture)) {
+        reasons.push(`capture scale/format: ${fixture.actualImageFormat ?? 'unknown format'} ${Array.isArray(fixture.actualScreenshotScale) ? fixture.actualScreenshotScale.join('x') : 'unknown scale'}`);
+      }
+      return {
+        fixtureId: fixture.fixtureId,
+        reasons,
+        actualImageFormat: fixture.actualImageFormat ?? '',
+        actualScreenshotScale: Array.isArray(fixture.actualScreenshotScale) ? fixture.actualScreenshotScale.join('x') : '',
+        darkRatio: fixture.actualTemplatePixels?.stats?.darkRatio ?? null,
+        nonWhiteRatio: fixture.actualTemplatePixels?.stats?.nonWhiteRatio ?? null,
+        edgeRatio: fixture.actualTemplatePixels?.stats?.edgeRatio ?? null,
+      };
+    });
+}
+
+function isActualCaptureScaleSuspect(fixture) {
+  if (!fixture || fixture.status !== 'DIFFED') return false;
+  if (fixture.actualImageFormat && fixture.actualImageFormat !== 'png') return true;
+  const [scaleX, scaleY] = fixture.actualScreenshotScale ?? [];
+  if (scaleX == null || scaleY == null) return false;
+  return Math.abs(Number(scaleX) - 1) > 0.01 || Math.abs(Number(scaleY) - 1) > 0.01;
 }
 
 async function readChatCurrentMetrics(runDir, fixtureIds) {
@@ -857,10 +900,12 @@ function buildNextAction({
     return `Roll20 chat screenshots are normalized, but current row/typography sidecar fields are missing for ${missing}. Run corepack pnpm run plan:roll20-chat-capture -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))} --require-current-metrics, recapture same-action roll20-chat.png plus roll20-chat-dom-evidence.json, then rerun screenshot diff, diagnose:roll20-chat-parity, gate:roll20-renderer-action, and this status command.`;
   }
   if (chatParity?.exists && chatParity.actualCropGeometrySuspect > 0) {
-    return 'Roll20 chat evidence has element-crop geometry suspects. Recapture roll20-chat.png with element-bound template screenshots and fresh DOM sidecars before tuning local ChatPane CSS from pixel diffs.';
+    const suspectFixtures = formatChatSuspectFixtures(chatParity, 'crop geometry');
+    return `Roll20 chat evidence has element-crop geometry suspects${suspectFixtures ? ` for ${suspectFixtures}` : ''}. Run corepack pnpm run plan:roll20-chat-capture -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))} to create the focused recapture checklist, then recapture roll20-chat.png with element-bound template screenshots and fresh DOM sidecars before tuning local ChatPane CSS from pixel diffs.`;
   }
   if (chatParity?.exists && chatParity.actualTemplatePixelSuspect > 0) {
-    return 'Roll20 chat evidence has template foreground-pixel suspects. Recapture roll20-chat.png from a visible text chat panel before tuning local ChatPane CSS from pixel diffs.';
+    const suspectFixtures = formatChatSuspectFixtures(chatParity, 'foreground pixels');
+    return `Roll20 chat evidence has template foreground-pixel suspects${suspectFixtures ? ` for ${suspectFixtures}` : ''}. Run corepack pnpm run plan:roll20-chat-capture -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))} to create the focused recapture checklist, then recapture roll20-chat.png from a visible text chat panel before tuning local ChatPane CSS from pixel diffs.`;
   }
   if (chatParity?.exists && chatParity.actualChatCssScopedMismatch > 0) {
     return 'Actual Roll20 chat CSS appears scoped/prefix-mismatched. Inspect actual chat and character iframe style selectors before deciding whether local ChatPane should apply sheet-* rolltemplate CSS.';
@@ -869,7 +914,8 @@ function buildNextAction({
     return 'Actual Roll20 chat CSS evidence is inactive for one or more fixtures. Prove a CSS-active Custom Sheet Sandbox/test-room chat state before treating local ChatPane mismatches as production renderer defects.';
   }
   if (chatParity?.exists && chatParity.actualCaptureScaleSuspect > 0) {
-    return 'Roll20 chat screenshots are normalized but some captures are JPEG or non-1x scale. Recapture those chat crops as true PNG with clip.scale=1 before tuning local ChatPane CSS from pixel diffs.';
+    const suspectFixtures = formatChatSuspectFixtures(chatParity, 'capture scale/format');
+    return `Roll20 chat screenshots are normalized but some captures are JPEG or non-1x scale${suspectFixtures ? ` for ${suspectFixtures}` : ''}. Run corepack pnpm run plan:roll20-chat-capture -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))} to create the focused recapture checklist, then recapture those chat crops as true PNG with clip.scale=1 before tuning local ChatPane CSS from pixel diffs.`;
   }
   if (chatParity?.exists && chatParity.authoritativeNormalizedHighMismatch > 0) {
     return 'Roll20 chat screenshots are normalized but still differ from local ChatPane. Fix chat shell/template sizing after confirming actual Roll20 user rolltemplate CSS is active.';
@@ -881,6 +927,13 @@ function buildNextAction({
     return 'Renderer action gate is still HOLD. Resolve its listed blockers before changing production renderer CSS.';
   }
   return 'Classify diff results by wrapper/context, base CSS, cascade, default state, translation, worker JS, rolltemplate/chat, asset loading, viewport/crop, or edit overlay before making any parity claim.';
+}
+
+function formatChatSuspectFixtures(chatParity, reasonPrefix) {
+  return (chatParity.suspectFixtures ?? [])
+    .filter((fixture) => fixture.reasons.some((reason) => reason.startsWith(reasonPrefix)))
+    .map((fixture) => fixture.fixtureId)
+    .join(', ');
 }
 
 function generatedMissingTargets(fixtures = []) {
@@ -1003,6 +1056,17 @@ function renderMarkdown(report) {
     lines.push(`- Actual capture scale/format suspect: ${report.chatParity.actualCaptureScaleSuspect}`);
     lines.push(`- Max normalized mismatch: ${report.chatParity.maxNormalizedMismatchPct}%`);
     lines.push(`- Max aligned mismatch: ${report.chatParity.maxAlignedMismatchPct}%`);
+    if (report.chatParity.suspectFixtures.length) {
+      lines.push('', '| Suspect fixture | Reasons | Pixel sanity | Capture |', '| --- | --- | --- | --- |');
+      for (const fixture of report.chatParity.suspectFixtures) {
+        const pixelStats = [
+          `dark=${ratioPct(fixture.darkRatio)}`,
+          `nonWhite=${ratioPct(fixture.nonWhiteRatio)}`,
+          `edge=${ratioPct(fixture.edgeRatio)}`,
+        ].join(', ');
+        lines.push(`| \`${fixture.fixtureId}\` | ${escapeCell(fixture.reasons.join('; '))} | ${pixelStats} | ${fixture.actualImageFormat || 'unknown'} ${fixture.actualScreenshotScale || ''} |`);
+      }
+    }
     if (report.chatParity.mismatchFixtures.length) {
       lines.push('', '| Fixture | Mode | Raw mismatch | Best aligned | Offset | Actual CSS | Actual image | Actual scale |', '| --- | --- | ---: | ---: | --- | --- | --- | --- |');
       for (const fixture of report.chatParity.mismatchFixtures) {
@@ -1084,6 +1148,11 @@ function pctNumber(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return null;
   return Number((number * 100).toFixed(2));
+}
+
+function ratioPct(value) {
+  const number = pctNumber(value);
+  return number == null ? 'n/a' : `${number}%`;
 }
 
 function rel(file) {

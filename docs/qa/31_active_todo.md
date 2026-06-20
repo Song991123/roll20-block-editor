@@ -2551,3 +2551,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - DONE: Preview mode tooltip now uses the same local-preview wording instead of implying actual Roll20 verification.
 - VERIFIED: `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke --port 4326` passes after rebuild with `hasLocalPreviewBoundaryCopy=true`, `hasActualRoll20PreviewClaim=false`, `hasMojibake=false`, and console/page errors 0.
 - CLAIM BOUNDARY: This is product truthfulness/UI cleanup only. It does not change renderer CSS and does not prove Roll20 visual parity.
+
+## 2026-06-21 Chat Foreground Suspect Handoff Precision TODO Note
+
+- DONE: `status:roll20-actual` now preserves fixture-level chat parity suspect details instead of only reporting aggregate `chatActualTemplatePixelSuspect=1`.
+- DONE: `gate:roll20-renderer-action` now names the affected fixture in the foreground-pixel blocker and next action.
+- VERIFIED: Current run reports `official-roll20-Les-Oublies` as the only foreground-pixel suspect: dark `0%`, edge `0%`, non-white `5.15%`, PNG `1x1`. The next action now points directly to `corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- CLAIM BOUNDARY: This improves evidence handoff and prevents CSS tuning from contaminated chat pixels. It does not recapture Roll20 and does not prove chat visual parity.

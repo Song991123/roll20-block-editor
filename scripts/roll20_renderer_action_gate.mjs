@@ -341,13 +341,13 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       blockers.push(`actual Roll20 chat CSS appears scoped/prefix-mismatched for ${chatParitySummary.actualChatCssScopedMismatch}/${chatParitySummary.fixtures} fixtures; verify whether Roll20 stores rolltemplate CSS under .charsheet or without sheet-* chat selectors before changing local ChatPane CSS`);
     }
     if (chatParitySummary.actualCaptureScaleSuspect > 0) {
-      blockers.push(`actual Roll20 chat screenshots have non-PNG or non-1x capture scale for ${chatParitySummary.actualCaptureScaleSuspect}/${chatParitySummary.fixtures} fixtures; recapture with PNG bytes and clip.scale=1 before using pixel mismatch as a production renderer target`);
+      blockers.push(`actual Roll20 chat screenshots have non-PNG or non-1x capture scale for ${chatParitySummary.actualCaptureScaleSuspect}/${chatParitySummary.fixtures} fixtures${formatChatSuspectSuffix(chatParitySummary, 'capture scale/format')}; recapture with PNG bytes and clip.scale=1 before using pixel mismatch as a production renderer target`);
     }
     if (chatParitySummary.actualCropGeometrySuspect > 0) {
-      blockers.push(`actual Roll20 chat crop geometry is suspect for ${chatParitySummary.actualCropGeometrySuspect}/${chatParitySummary.normalizedCompared} normalized fixtures; recapture with element-bound template screenshots before using pixel mismatch as a production renderer target`);
+      blockers.push(`actual Roll20 chat crop geometry is suspect for ${chatParitySummary.actualCropGeometrySuspect}/${chatParitySummary.normalizedCompared} normalized fixtures${formatChatSuspectSuffix(chatParitySummary, 'crop geometry')}; recapture with element-bound template screenshots before using pixel mismatch as a production renderer target`);
     }
     if (chatParitySummary.actualTemplatePixelSuspect > 0) {
-      blockers.push(`actual Roll20 chat crop foreground pixels are suspect for ${chatParitySummary.actualTemplatePixelSuspect}/${chatParitySummary.normalizedCompared} normalized fixtures; the DOM sidecar has rolltemplate text but the PNG likely captured map/grid/background, so recapture from a visible text chat panel before tuning ChatPane CSS`);
+      blockers.push(`actual Roll20 chat crop foreground pixels are suspect for ${chatParitySummary.actualTemplatePixelSuspect}/${chatParitySummary.normalizedCompared} normalized fixtures${formatChatSuspectSuffix(chatParitySummary, 'foreground pixels')}; the DOM sidecar has rolltemplate text but the PNG likely captured map/grid/background, so recapture from a visible text chat panel before tuning ChatPane CSS`);
     }
     if (chatParitySummary.authoritativeNormalizedHighMismatch > 0) {
       blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${chatParitySummary.authoritativeNormalizedHighMismatch}/${chatParitySummary.normalizedCompared} geometry-authoritative normalized fixtures after small-offset alignment; authoritative max aligned mismatch ${chatParitySummary.authoritativeMaxAlignedMismatchPct}% (raw ${chatParitySummary.authoritativeMaxMismatchPct}%)`);
@@ -667,7 +667,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     } else if (chatParitySummary.actualChatCssInactive > 0) {
       nextActions.push('First recapture or prove a Roll20 chat state where user rolltemplate CSS is active. Current actual chat CSS-inactive evidence can explain large CSS-active local/actual mismatches.');
     } else if (chatParitySummary.actualCaptureScaleSuspect > 0) {
-      nextActions.push('Recapture actual Roll20 chat screenshots as true PNG at clip.scale=1 for every normalized fixture before tuning local ChatPane CSS from pixel diffs.');
+      nextActions.push(`Run corepack pnpm run plan:roll20-chat-capture -- ${path.relative(process.cwd(), activeRunDir)} to generate the focused chat recapture checklist, then recapture true PNG at clip.scale=1 for ${formatChatSuspectList(chatParitySummary, 'capture scale/format') || 'the affected normalized fixtures'} before tuning local ChatPane CSS from pixel diffs.`);
+    } else if (chatParitySummary.actualCropGeometrySuspect > 0) {
+      nextActions.push(`Run corepack pnpm run plan:roll20-chat-capture -- ${path.relative(process.cwd(), activeRunDir)} to generate the focused chat recapture checklist, then recapture element-bound Roll20 chat crops for ${formatChatSuspectList(chatParitySummary, 'crop geometry') || 'the affected normalized fixtures'} before tuning local ChatPane CSS from pixel diffs.`);
+    } else if (chatParitySummary.actualTemplatePixelSuspect > 0) {
+      nextActions.push(`Run corepack pnpm run plan:roll20-chat-capture -- ${path.relative(process.cwd(), activeRunDir)} to generate the focused chat recapture checklist, then recapture visible text-chat rolltemplate foreground for ${formatChatSuspectList(chatParitySummary, 'foreground pixels') || 'the affected normalized fixtures'} before tuning local ChatPane CSS from pixel diffs.`);
     } else {
       nextActions.push('Fix local ChatPane rolltemplate shell sizing/content to match actual Roll20 chat, then rerun rolltemplate chat smoke and diagnose:roll20-chat-parity.');
     }
@@ -1737,7 +1741,56 @@ function summarizeChatParity(report) {
         actualScreenshotScale: fixture.actualScreenshotScale ?? null,
         actualChatCss: fixture.actualChatCss ?? null,
       })),
+    suspectFixtures: summarizeChatParitySuspectFixtures(fixtures),
   };
+}
+
+function summarizeChatParitySuspectFixtures(fixtures) {
+  return fixtures
+    .filter((fixture) =>
+      fixture.status === 'DIFFED' &&
+      fixture.compareMode === 'rolltemplate-crop' &&
+      (
+        fixture.actualCropGeometry?.suspect ||
+        fixture.actualTemplatePixels?.suspect ||
+        isActualCaptureScaleSuspect(fixture)
+      )
+    )
+    .map((fixture) => {
+      const reasons = [];
+      if (fixture.actualCropGeometry?.suspect) {
+        reasons.push(`crop geometry: ${fixture.actualCropGeometry.reason ?? 'recapture element-bound template screenshot'}`);
+      }
+      if (fixture.actualTemplatePixels?.suspect) {
+        reasons.push(`foreground pixels: ${fixture.actualTemplatePixels.reason ?? 'recapture visible rolltemplate foreground'}`);
+      }
+      if (isActualCaptureScaleSuspect(fixture)) {
+        reasons.push(`capture scale/format: ${fixture.actualImageFormat ?? 'unknown format'} ${Array.isArray(fixture.actualScreenshotScale) ? fixture.actualScreenshotScale.join('x') : 'unknown scale'}`);
+      }
+      return { fixtureId: fixture.fixtureId, reasons };
+    });
+}
+
+function isActualCaptureScaleSuspect(fixture) {
+  if (!fixture || fixture.status !== 'DIFFED') return false;
+  if (fixture.actualImageFormat && fixture.actualImageFormat !== 'png') return true;
+  const [scaleX, scaleY] = fixture.actualScreenshotScale ?? [];
+  if (scaleX == null || scaleY == null) return false;
+  return Math.abs(Number(scaleX) - 1) > 0.01 || Math.abs(Number(scaleY) - 1) > 0.01;
+}
+
+function formatChatSuspectSuffix(chatParitySummary, reasonPrefix) {
+  const ids = (chatParitySummary?.suspectFixtures ?? [])
+    .filter((fixture) => fixture.reasons.some((reason) => reason.startsWith(reasonPrefix)))
+    .map((fixture) => fixture.fixtureId);
+  return ids.length ? ` (${ids.join(', ')})` : '';
+}
+
+function formatChatSuspectList(chatParitySummary, reasonPrefix) {
+  return (chatParitySummary?.suspectFixtures ?? [])
+    .filter((fixture) => fixture.reasons.some((reason) => reason.startsWith(reasonPrefix)))
+    .map((fixture) => fixture.fixtureId)
+    .join(', ');
 }
 
 function summarizeChatCurrentMetrics(status, audit = null) {

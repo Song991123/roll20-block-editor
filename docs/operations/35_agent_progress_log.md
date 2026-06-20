@@ -3191,3 +3191,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The preview-mode tooltip uses the same local-preview boundary.
 - `scripts/export_dialog_browser_smoke.mjs` now guards against the old misleading actual-Roll20 preview claim returning.
 - Claim boundary: copy/truthfulness only. No Roll20 renderer CSS or parity claim changed.
+
+## 2026-06-21 Chat Foreground Suspect Handoff Precision
+
+- Root cause: the aggregate `chatActualTemplatePixelSuspect=1` status made the next action too generic even though `chat-parity-diagnostics` already knew the exact fixture and pixel sanity reason.
+- `scripts/roll20_actual_status.mjs` now stores `chatParity.suspectFixtures` with per-fixture reasons and pixel sanity stats.
+- `scripts/roll20_renderer_action_gate.mjs` now carries the same fixture-level suspect list into blocker and next-action text.
+- Current verification points to `official-roll20-Les-Oublies` only: foreground pixel sanity dark `0%`, edge `0%`, non-white `5.15%`; the recapture command is `corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Claim boundary: this is evidence-handoff precision. It does not change local ChatPane CSS, does not recapture Roll20, and does not prove chat parity.
