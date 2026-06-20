@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - YSHY table-wide constraint model added
+
+Status: PARTIAL. YSHY chat/template mismatch is now narrowed to a table-wide intrinsic constraint, not cell allocation or transform.
+
+- DONE: Enhanced `scripts/roll20_chat_intrinsic_width_model.mjs` with a `constraintModel` that checks row-width uniformity, max cell delta, row/cell content parity, CSS metric candidate rejection, and transform contradiction.
+- DONE: Updated `scripts/roll20_renderer_action_gate.mjs` so intrinsic evidence prints `constraint`, `rowSpread`, and `maxCellDelta`.
+- RESULT: YSHY now reports `TABLE_WIDE_CONSTRAINT_MODEL_REQUIRED` / `TABLE_WIDE_CONSTRAINT_NOT_TRANSFORM`.
+- RESULT: YSHY table width delta is `-24.309px`, row width delta spread is `0px`, and max cell delta is only `0.909px`; row/cell content matches. This means the mismatch is table-wide intrinsic/max-content sizing or sanitize/font activation, not per-cell allocation.
+- RESULT: Transform/scale remains blocked by actual Roll20 style proof (`transform:none`) and spacing candidates remain rejected/no-gain.
+- RESULT: Les-Oublies is now `INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE`; current P0 should focus on YSHY table-wide constraint and AW2E cell/text metrics.
+- VERIFIED: `node --check scripts\roll20_chat_intrinsic_width_model.mjs`, `node --check scripts\roll20_renderer_action_gate.mjs`, `diagnose:roll20-chat-intrinsic-width`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build a diagnostic probe for Roll20 table intrinsic/max-content sizing and sanitize/font activation, without using transform, global spacing, or broad typography patches.
+
 ## 2026-06-20 Codex Update - chat shell geometry center-assumption fixed
 
 Status: PARTIAL. A false YSHY shell-offset diagnosis was removed; renderer parity is still not solved.

@@ -1,3 +1,11 @@
+## 2026-06-20 YSHY Table-Wide Constraint Model
+
+- Enhanced `scripts/roll20_chat_intrinsic_width_model.mjs` with a `constraintModel` that distinguishes table-wide intrinsic constraint deltas from row content mismatch and cell allocation mismatch.
+- Updated `scripts/roll20_renderer_action_gate.mjs` to surface `constraint`, `rowSpread`, and `maxCellDelta` in intrinsic evidence.
+- Latest YSHY result: `TABLE_WIDE_CONSTRAINT_MODEL_REQUIRED` / `TABLE_WIDE_CONSTRAINT_NOT_TRANSFORM`, table delta `-24.309px`, row width delta spread `0px`, max cell delta `0.909px`, transform contradicted by actual Roll20 style proof.
+- This rules out the previous broad transform/spacing direction and points the next P0 at table intrinsic/max-content sizing plus sanitize/font activation.
+- Claim boundary: this is a sharper renderer diagnosis. It does not prove chat visual parity or authorize production ChatPane CSS.
+
 ## 2026-06-20 Chat Shell Geometry Center-Assumption Fix
 
 - Found and fixed a diagnostic bug in `scripts/roll20_chat_shell_geometry.mjs`: local table offset was computed as `(rootWidth - tableWidth) / 2`, which created a false YSHY `+502.93px` shell offset.

@@ -109,7 +109,8 @@ async function compareFixture(localFixture, reports) {
     localTableVsCrop: ratio(local.table.width, local.crop.width),
     actualTableVsCrop: ratio(actual.table.width, actual.crop.width),
   };
-  const intrinsicDecision = decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, local, actual });
+  const constraintModel = buildConstraintModel({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, local, actual });
+  const intrinsicDecision = decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, constraintModel, local, actual });
 
   return {
     fixtureId,
@@ -128,7 +129,8 @@ async function compareFixture(localFixture, reports) {
     deltas,
     rowCellDeltas,
     ratios,
-    evidence: evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, local, actual }),
+    constraintModel,
+    evidence: evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, constraintModel, local, actual }),
   };
 }
 
@@ -240,6 +242,7 @@ function compareRows(localRows, actualRows) {
     });
   }
   const comparableCells = rows.flatMap((row) => row.cells).filter((cell) => cell.widthDelta != null);
+  const comparableRows = rows.filter((row) => row.widthDelta != null);
   const firstCell = rows[0]?.cells?.[0] ?? null;
   return {
     localRowCount: localRows?.length ?? 0,
@@ -247,6 +250,9 @@ function compareRows(localRows, actualRows) {
     rowCountDelta: (actualRows?.length ?? 0) - (localRows?.length ?? 0),
     textMismatchRows: rows.filter((row) => !row.textMatches).map((row) => row.index),
     cellCountMismatchRows: rows.filter((row) => row.localCellCount !== row.actualCellCount).map((row) => row.index),
+    maxAbsRowWidthDelta: maxAbs(comparableRows.map((row) => row.widthDelta)),
+    meanAbsRowWidthDelta: meanAbs(comparableRows.map((row) => row.widthDelta)),
+    rowWidthDeltaSpread: spread(comparableRows.map((row) => row.widthDelta)),
     maxAbsCellWidthDelta: maxAbs(comparableCells.map((cell) => cell.widthDelta)),
     meanAbsCellWidthDelta: meanAbs(comparableCells.map((cell) => cell.widthDelta)),
     firstCellWidthDelta: firstCell?.widthDelta ?? null,
@@ -316,6 +322,60 @@ function extractCandidateEvidence(candidateComparison, fixtureId) {
   };
 }
 
+function buildConstraintModel({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, local, actual }) {
+  const tableDelta = Number(deltas.tableWidthDelta);
+  const hasTableDelta = Number.isFinite(tableDelta) && Math.abs(tableDelta) >= 8;
+  const rowsMatch = rowCellDeltas.textMismatchRows.length === 0 && rowCellDeltas.cellCountMismatchRows.length === 0;
+  const rowDeltaUniform = Number(rowCellDeltas.rowWidthDeltaSpread ?? Infinity) <= 0.25;
+  const cellsSmall = Number(rowCellDeltas.maxAbsCellWidthDelta ?? Infinity) < 2;
+  const tableWideOnly = hasTableDelta && rowsMatch && rowDeltaUniform && cellsSmall;
+  const cssMetricCandidatesRejected = Boolean(candidateEvidence.spacingRejectedOrNoGain);
+  const fontOrSanitizeChanged =
+    local.table.fontFamily !== actual.table.fontFamily ||
+    Math.abs(deltas.fontSizeDelta ?? 0) >= 0.5 ||
+    local.table.overflowWrap !== actual.table.overflowWrap ||
+    Math.abs(deltas.letterSpacingDelta ?? 0) >= 0.1;
+
+  let decision = 'CONSTRAINT_SECONDARY';
+  let nextAction = 'keep constraint modeling secondary';
+  if (tableWideOnly && styleProof.transformContradicted && cssMetricCandidatesRejected) {
+    decision = 'TABLE_WIDE_CONSTRAINT_NOT_TRANSFORM';
+    nextAction = 'model Roll20 table intrinsic/max-content sizing and sanitize/font activation; do not use transform or global spacing CSS';
+  } else if (tableWideOnly && fontOrSanitizeChanged) {
+    decision = 'TABLE_WIDE_FONT_OR_SANITIZE_CONSTRAINT';
+    nextAction = 'compare font activation, overflow-wrap, and sanitize/order effects that change full-table intrinsic width';
+  } else if (hasTableDelta && !rowsMatch) {
+    decision = 'ROW_CONTENT_CONSTRAINT_MISMATCH';
+    nextAction = 'fix row/content parity before testing table-width candidates';
+  } else if (hasTableDelta && !cellsSmall) {
+    decision = 'CELL_ALLOCATION_CONSTRAINT';
+    nextAction = 'compare column/cell allocation before table-level width candidates';
+  }
+
+  return {
+    decision,
+    nextAction,
+    tableWideOnly,
+    rowsMatch,
+    rowDeltaUniform,
+    cellsSmall,
+    cssMetricCandidatesRejected,
+    fontOrSanitizeChanged,
+    rowWidthDeltaSpread: rowCellDeltas.rowWidthDeltaSpread ?? null,
+    meanAbsRowWidthDelta: rowCellDeltas.meanAbsRowWidthDelta ?? null,
+    maxAbsCellWidthDelta: rowCellDeltas.maxAbsCellWidthDelta ?? null,
+    actualVsLocalTableWidth: ratios.actualVsLocalTableWidth ?? null,
+    styleDifferences: {
+      tableFontFamilyChanged: local.table.fontFamily !== actual.table.fontFamily,
+      overflowWrapChanged: local.table.overflowWrap !== actual.table.overflowWrap,
+      fontSizeDelta: deltas.fontSizeDelta ?? null,
+      letterSpacingDelta: deltas.letterSpacingDelta ?? null,
+      borderSpacingXDelta: deltas.borderSpacingXDelta ?? null,
+      transformContradicted: Boolean(styleProof.transformContradicted),
+    },
+  };
+}
+
 function fixtureCandidateKey(fixtureId) {
   if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
   if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
@@ -323,9 +383,15 @@ function fixtureCandidateKey(fixtureId) {
   return fixtureId;
 }
 
-function decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, local, actual }) {
+function decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, constraintModel, local, actual }) {
   const highMismatch = Number(parityFixture?.bestAlignedMismatchRatio ?? 0) > 0.1;
   if (!highMismatch && Math.abs(deltas.tableWidthDelta ?? 0) < 8) return 'INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE';
+  if (constraintModel?.decision === 'TABLE_WIDE_CONSTRAINT_NOT_TRANSFORM') {
+    return 'TABLE_WIDE_CONSTRAINT_MODEL_REQUIRED';
+  }
+  if (constraintModel?.decision === 'TABLE_WIDE_FONT_OR_SANITIZE_CONSTRAINT') {
+    return 'FONT_SANITIZE_TABLE_CONSTRAINT_MODEL_REQUIRED';
+  }
   if (styleProof.transformContradicted && candidateEvidence.spacingRejectedOrNoGain && Math.abs(deltas.tableWidthDelta ?? 0) >= 8) {
     return 'TRANSFORM_AND_SPACING_REJECTED_FONT_GLYPH_MODEL_REQUIRED';
   }
@@ -358,6 +424,10 @@ function nextAction(decision) {
   switch (decision) {
     case 'TRANSFORM_AND_SPACING_REJECTED_FONT_GLYPH_MODEL_REQUIRED':
       return 'do not promote scale or spacing CSS; compare loaded font glyph metrics and Roll20 sanitize/CSS activation that changes intrinsic text width';
+    case 'TABLE_WIDE_CONSTRAINT_MODEL_REQUIRED':
+      return 'model Roll20 table intrinsic/max-content sizing and sanitize/font activation; do not use transform or global spacing CSS';
+    case 'FONT_SANITIZE_TABLE_CONSTRAINT_MODEL_REQUIRED':
+      return 'compare font activation, overflow-wrap, and sanitize/order effects that change full-table intrinsic width';
     case 'TRANSFORM_REJECTED_INTRINSIC_WIDTH_MODEL_REQUIRED':
       return 'do not promote scaleX; compare Roll20 sanitize/CSS activation, border-spacing, letter-spacing, and font glyph metrics for the table';
     case 'CSS_METRIC_CANDIDATES_REJECTED':
@@ -377,8 +447,11 @@ function nextAction(decision) {
   }
 }
 
-function evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, local, actual }) {
+function evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, constraintModel, local, actual }) {
   const notes = [];
+  if (constraintModel?.decision && constraintModel.decision !== 'CONSTRAINT_SECONDARY') {
+    notes.push(`constraint model ${constraintModel.decision}`);
+  }
   if (styleProof.transformContradicted) notes.push('actual Roll20 table transform is none; scaleX candidate rejected');
   if (candidateEvidence.spacingRejectedOrNoGain) notes.push('spacing/letter candidates rejected or no-gain in pixel comparison');
   if (Math.abs(deltas.tableWidthDelta ?? 0) >= 8) notes.push(`table width delta ${fmtPx(deltas.tableWidthDelta)}`);
@@ -386,6 +459,7 @@ function evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, candidateEvi
   if (Math.abs(deltas.letterSpacingDelta ?? 0) >= 0.1) notes.push(`letter-spacing delta ${fmtPx(deltas.letterSpacingDelta)}`);
   if (Math.abs(deltas.borderSpacingXDelta ?? 0) >= 0.5) notes.push(`border-spacing-x delta ${fmtPx(deltas.borderSpacingXDelta)}`);
   if (rowCellDeltas.firstCellWidthDelta != null) notes.push(`first cell width delta ${fmtPx(rowCellDeltas.firstCellWidthDelta)}`);
+  if (rowCellDeltas.rowWidthDeltaSpread != null) notes.push(`row width delta spread ${fmtPx(rowCellDeltas.rowWidthDeltaSpread)}`);
   if (rowCellDeltas.textMismatchRows.length) notes.push(`row text mismatch rows ${rowCellDeltas.textMismatchRows.join(',')}`);
   if (local.table.fontFamily !== actual.table.fontFamily) notes.push('table font-family differs');
   if (ratios.actualVsLocalTableWidth != null) notes.push(`actual/local table width ${fmtRatio(ratios.actualVsLocalTableWidth)}`);
@@ -403,11 +477,11 @@ function renderMarkdown(report) {
     '',
     `Status: ${report.summary.status}`,
     '',
-    '| Fixture | Decision | Mismatch | Table Δ | First cell Δ | Font Δ | Letter Δ | Border spacing Δ | Transform proof | Evidence | Next |',
-    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
+    '| Fixture | Decision | Constraint | Mismatch | Table Δ | Row spread | Cell max Δ | Font Δ | Letter Δ | Border spacing Δ | Transform proof | Evidence | Next |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.intrinsicDecision} | ${fixture.parity?.bestAlignedMismatchPct ?? ''} | ${fmtPx(fixture.deltas?.tableWidthDelta)} | ${fmtPx(fixture.rowCellDeltas?.firstCellWidthDelta)} | ${fmtPx(fixture.deltas?.fontSizeDelta)} | ${fmtPx(fixture.deltas?.letterSpacingDelta)} | ${fmtPx(fixture.deltas?.borderSpacingXDelta)} | ${fixture.styleProof?.transformContradicted ? 'rejected' : 'n/a'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.intrinsicDecision} | ${fixture.constraintModel?.decision ?? ''} | ${fixture.parity?.bestAlignedMismatchPct ?? ''} | ${fmtPx(fixture.deltas?.tableWidthDelta)} | ${fmtPx(fixture.rowCellDeltas?.rowWidthDeltaSpread)} | ${fmtPx(fixture.rowCellDeltas?.maxAbsCellWidthDelta)} | ${fmtPx(fixture.deltas?.fontSizeDelta)} | ${fmtPx(fixture.deltas?.letterSpacingDelta)} | ${fmtPx(fixture.deltas?.borderSpacingXDelta)} | ${fixture.styleProof?.transformContradicted ? 'rejected' : 'n/a'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
   }
   lines.push('', '## Claim Boundary', '');
   lines.push('- Pixel-improving transform/scale candidates are rejected when actual Roll20 computed styles show no transform.');
@@ -498,6 +572,12 @@ function meanAbs(values) {
   const numbers = values.map(Number).filter(Number.isFinite);
   if (!numbers.length) return null;
   return Number((numbers.reduce((sum, value) => sum + Math.abs(value), 0) / numbers.length).toFixed(3));
+}
+
+function spread(values) {
+  const numbers = values.map(Number).filter(Number.isFinite);
+  if (!numbers.length) return null;
+  return Number((Math.max(...numbers) - Math.min(...numbers)).toFixed(3));
 }
 
 function fmtPx(value) {

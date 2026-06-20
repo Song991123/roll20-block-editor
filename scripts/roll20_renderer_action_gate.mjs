@@ -480,7 +480,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   } else {
     positiveFindings.push(`chat intrinsic width model: status=${chatIntrinsicWidthModelSummary.status}, actionable=${chatIntrinsicWidthModelSummary.actionable}/${chatIntrinsicWidthModelSummary.totalFixtures}, decisions=${formatFindingCounts(chatIntrinsicWidthModelSummary.decisions)}, transformContradicted=${chatIntrinsicWidthModelSummary.transformContradicted.join(', ') || 'none'}`);
     for (const fixture of chatIntrinsicWidthModelSummary.actionableFixtures) {
-      positiveFindings.push(`${fixture.fixtureId} intrinsic decision=${fixture.intrinsicDecision}, tableDelta=${num(fixture.tableWidthDelta)}px, firstCellDelta=${num(fixture.firstCellWidthDelta)}px, fontDelta=${num(fixture.fontSizeDelta)}px, letterDelta=${num(fixture.letterSpacingDelta)}px, borderSpacingDelta=${num(fixture.borderSpacingXDelta)}px, transformContradicted=${fixture.transformContradicted ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
+      positiveFindings.push(`${fixture.fixtureId} intrinsic decision=${fixture.intrinsicDecision}, constraint=${fixture.constraintDecision || 'n/a'}, tableDelta=${num(fixture.tableWidthDelta)}px, rowSpread=${num(fixture.rowWidthDeltaSpread)}px, maxCellDelta=${num(fixture.maxAbsCellWidthDelta)}px, firstCellDelta=${num(fixture.firstCellWidthDelta)}px, fontDelta=${num(fixture.fontSizeDelta)}px, letterDelta=${num(fixture.letterSpacingDelta)}px, borderSpacingDelta=${num(fixture.borderSpacingXDelta)}px, transformContradicted=${fixture.transformContradicted ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
     }
   }
   if (!chatFontGlyphModelSummary) {
@@ -947,6 +947,9 @@ function summarizeChatIntrinsicWidthModel(report) {
     fontSizeDelta: fixture.deltas?.fontSizeDelta ?? null,
     letterSpacingDelta: fixture.deltas?.letterSpacingDelta ?? null,
     borderSpacingXDelta: fixture.deltas?.borderSpacingXDelta ?? null,
+    constraintDecision: fixture.constraintModel?.decision ?? '',
+    rowWidthDeltaSpread: fixture.rowCellDeltas?.rowWidthDeltaSpread ?? null,
+    maxAbsCellWidthDelta: fixture.rowCellDeltas?.maxAbsCellWidthDelta ?? null,
     transformContradicted: Boolean(fixture.styleProof?.transformContradicted),
     nextAction: fixture.nextAction ?? '',
     evidence: fixture.evidence ?? [],
