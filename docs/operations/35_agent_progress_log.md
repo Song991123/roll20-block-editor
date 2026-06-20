@@ -1,3 +1,16 @@
+## 2026-06-20 Row Compositing Probe
+
+- Added `scripts/roll20_chat_row_compositing_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-row-compositing`.
+- The probe decomposes row-level screenshot mismatch into edge/text, flat background, local-darker/local-brighter, and chroma buckets.
+- Wired the probe into `gate:roll20-renderer-action`.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `COLOR_ASSET_RASTER_MODEL_REQUIRED`, weighted `13.43%`, edge `0%`, flat `100%`, local darker `37.25%`.
+  - Les-Oublies: `LOCAL_BACKGROUND_TOO_DARK`, weighted `5.15%`, edge `0%`, flat `100%`, local darker `62.22%`.
+  - YSHY 1BU: `BACKGROUND_COMPOSITING_MODEL_REQUIRED`, weighted `23.15%`, edge `0%`, flat `100%`, local darker `63.32%`.
+- Interpretation: YSHY/CoC should move to a row background compositing/source-context candidate. The evidence argues against another text antialiasing, table scale, background-size, broad typography, or filter CSS attempt.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 Row Raster Candidate Comparison Gate
 
 - Added `--report-dir` to `scripts/roll20_chat_row_raster_probe.mjs` so candidate probes write isolated evidence instead of replacing the default row-raster report.

@@ -1,3 +1,19 @@
+## 2026-06-20 Codex Update - row compositing probe narrows YSHY/CoC axis
+
+Status: PARTIAL. This adds a diagnostic decomposition report; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
+
+- DONE: Added `scripts/roll20_chat_row_compositing_probe.mjs` and package command `diagnose:roll20-chat-row-compositing`.
+- DONE: Wired row-compositing evidence into `gate:roll20-renderer-action`.
+- RESULT: The probe splits row mismatch into text/edge, flat background, local darker/brighter, and chroma/color buckets.
+- RESULT: YSHY 1BU is classified as `BACKGROUND_COMPOSITING_MODEL_REQUIRED`: row-weighted mismatch `23.15%`, edge mismatch share `0%`, flat paint mismatch share `100%`, local-darker share `63.32%`.
+- RESULT: This supports the current P0 direction: the next YSHY/CoC candidate should model row background compositing/source context, not text antialiasing, CSS filters, table scale, background-size, or broad typography.
+- RESULT: Les-Oublies is `LOCAL_BACKGROUND_TOO_DARK` in this diagnostic, but it remains lower priority and still needs current same-action sidecar recapture before cross-fixture rollout.
+- RESULT: AW2E is `COLOR_ASSET_RASTER_MODEL_REQUIRED`, confirming again that chat renderer work is split by template and cannot become a global ChatPane CSS patch.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` and now reports compositing decisions for all three fixtures.
+- VERIFIED: `node --check` for the new script and renderer gate, `diagnose:roll20-chat-row-compositing`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the next YSHY/CoC row-background/source-context diagnostic candidate and compare it with smoke, candidate comparison, style proof, row raster, row-raster candidate comparison, row compositing, renderer gate, lint, build, and evidence guard.
+- STILL TODO P0: Recapture AW2E and Les-Oublies Roll20 chat sidecars with current row/typography/filter fields before making cross-fixture renderer decisions.
+
 ## 2026-06-20 Codex Update - row raster candidate comparison gate
 
 Status: PARTIAL. This adds a diagnostic comparison gate; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
