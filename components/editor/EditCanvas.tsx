@@ -643,7 +643,10 @@ function EditLayerPanel({
     <aside className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]">
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3 text-xs font-medium text-foreground">
         <Layers className="h-3.5 w-3.5" />
-        레이어
+        <span>레이어</span>
+        <span className="ml-auto rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
+          {filtered.length}/{nodes.length}
+        </span>
       </div>
       <div className="grid grid-cols-3 gap-1 border-b border-border p-2">
         {(['html', 'css', 'i18n'] as const).map((key) => (
@@ -672,6 +675,20 @@ function EditLayerPanel({
             className="h-7 w-full rounded border border-border bg-[var(--bg-elevated-2)] pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-sm bg-sky-400/80" />
+            담기 가능
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-sm bg-emerald-400/80" />
+            하위 요소
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-sm bg-zinc-500/70" />
+            단일 요소
+          </span>
+        </div>
       </div>
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
         {filtered.length === 0 ? (
@@ -694,6 +711,7 @@ function EditLayerPanel({
                 >
                   <EditLayerRow
                     node={node}
+                    workspace={tab}
                     selected={node.id === selectedId}
                     onSelect={() => setSelected(node.id, 'tree')}
                     onMove={moveLayer}
@@ -710,17 +728,26 @@ function EditLayerPanel({
 
 const EditLayerRow = memo(function EditLayerRow({
   node,
+  workspace,
   selected,
   onSelect,
   onMove,
 }: {
   node: BlockSnapshot;
+  workspace: WorkspaceKey;
   selected: boolean;
   onSelect: () => void;
   onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
 }) {
   const [dropMode, setDropMode] = useState<LayerDropMode | null>(null);
-  const role = getLayerRole(node.type);
+  const role = useMemo(() => {
+    const base = getLayerRole(node.type);
+    return {
+      ...base,
+      canReceiveChildren:
+        base.canReceiveChildren && getBlocklyAdapter().canNestInContainer(workspace, node.id),
+    };
+  }, [node.id, node.type, workspace]);
   const pickMode = useCallback(
     (e: ReactDragEvent<HTMLElement>): LayerDropMode => {
       const rect = e.currentTarget.getBoundingClientRect();

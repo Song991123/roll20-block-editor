@@ -16,6 +16,18 @@ This is a compact status snapshot for handoff and planning. It must not be used 
 | Edit-mode UX | VERIFY/PARTIAL | Edit smoke and imported-edit sync evidence cover flow/free drops, before/inside/after layer modes, and imported fixture movement. | Usable pieces exist, but it still needs more direct-manipulation polish, clearer layer visualization, and broader fixture coverage. |
 | Public copyright safety | VERIFY/ONGOING | Evidence guard passes and real fixtures/reports remain ignored. | Current workflow is respecting the rule that real sheets and screenshots must not be committed. |
 
+## Progress Compared With Goal Start
+
+These percentages are coarse planning estimates based on current gates, not completion claims.
+
+| Area | Goal-start Estimate | Current Estimate | Why |
+| --- | ---: | ---: | --- |
+| Local edit/drop UX | 20% | 55-65% | Flow drop, absolute drop, before/inside/after layer modes, frame-relative free placement, and layer structure visibility now pass smoke checks. |
+| Local preview/edit visual sync | 20-30% | ~70% | Current fixture smoke is `1.02-2.07%` mismatch, enough for continued UX work but not actual Roll20 parity. |
+| Actual Roll20 sheet-root reproduction | 0-10% | 55-65% | Trusted/reliable full-root evidence is `3/3`, but AW2E root evidence still has diagnostic/cutoff caveats. |
+| Actual Roll20 chat/rolltemplate reproduction | 0-5% | 25-35% | Some evidence and diagnostics exist, but trustworthy generated chat capture is still `4/6` with `2` normalized captures needed. |
+| Whole user-ready product goal | 10-15% | 35-45% | The foundation is real now, but renderer promotion, broader sheet coverage, legacy mode proof, and Figma-like polish are still incomplete. |
+
 ## Latest Measured Commands
 
 ```text
@@ -76,4 +88,3 @@ These are planning estimates, not promises. They assume focused work and no new 
    - less delayed-feeling drag commits,
    - stronger imported-sheet direct manipulation smoke,
    - better frame/container affordances for users who do not understand DOM trees.
-

@@ -2711,3 +2711,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CURRENT: local preview/edit is good enough for continued edit UX work on the active fixtures, but actual Roll20 chat/rolltemplate capture remains blocked/incomplete (`generatedActualScreenshots=4/6`, `chatNeedsNormalizedCapture=2`, `rendererReady=NO`).
 - STILL TODO: finish trustworthy AW2E/YSHY Roll20 chat captures or a verified foreground chat capture adapter before any production renderer promotion.
 - ETA: evidence-safe MVP checkpoint is estimated at 2-4 focused working days; a private-alpha level for the current prepared fixture set is estimated at 5-9 working days; broader mixed-sheet beta is estimated at 2-4 weeks.
+
+## 2026-06-21 Edit Layer Drop Truthfulness TODO Note
+
+- DONE: Edit layer rows now compute `canReceiveChildren` from both the visual layer role and the Blockly adapter's actual `canNestInContainer()` result. The layer panel no longer marks a node as droppable just because its type name looks like a frame.
+- DONE: The edit layer panel now shows a compact visible count and legend for droppable containers, child nodes, and single elements.
+- VERIFIED: `corepack pnpm run smoke:edit-flow -- --port 4341` passes after the change. Evidence still covers flow drop, absolute drop, before/inside/after layer modes, non-leaf reorder, free placement inside a frame, no mojibake in sampled edit UI copy, and zero console/page errors.
+- CURRENT PROGRESS ESTIMATE: compared with the starting goal state, local edit/drop UX is roughly `55-65%`, local preview/edit visual sync is roughly `70%`, actual Roll20 root reproduction is roughly `55-65%`, actual Roll20 chat/rolltemplate reproduction is roughly `25-35%`, and the whole product goal remains roughly `35-45%`.
+- CLAIM BOUNDARY: This improves edit-mode trust and usability only. It does not create new actual Roll20 evidence and does not make the production renderer ready.

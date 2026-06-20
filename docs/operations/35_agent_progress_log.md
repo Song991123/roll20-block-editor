@@ -3335,3 +3335,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Latest renderer gate: `HOLD_PRODUCTION_RENDERER_PATCH` with `9` blockers, so no production renderer CSS/chat model promotion is currently justified.
 - ETA recorded in the status doc: 2-4 working days for an evidence-safe MVP checkpoint, 5-9 working days for a private alpha around the current prepared fixtures, and 2-4 weeks for broader mixed official/custom sheet beta.
 - Claim boundary: this is reporting and handoff documentation only. It does not create new Roll20 evidence and does not change runtime behavior.
+
+## 2026-06-21 Edit Layer Drop Truthfulness
+
+- Changed `components/editor/EditCanvas.tsx` so layer rows only show `담기 가능` when both the role classifier and the Blockly adapter agree that the block can receive children.
+- Added a compact count and legend to the layer panel so users can distinguish droppable frames, child nodes, and single elements without reading DOM terms.
+- Verification: `corepack pnpm run smoke:edit-flow -- --port 4341` passed with flow/absolute drop, before/inside/after layer modes, non-leaf reorder, absolute placement inside a frame, and edit UI copy sanity.
+- Current measured gates remain unchanged for actual Roll20: `status:roll20-actual` is still `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, and `gate:roll20-renderer-action` still holds production renderer patches.
+- Progress estimate reported to user: starting goal state was roughly `10-15%`; current total product goal is roughly `35-45%`, with local edit/drop UX `55-65%`, local preview/edit sync around `70%`, actual Roll20 root `55-65%`, and actual Roll20 chat/rolltemplate `25-35%`.
+- Claim boundary: this is edit UX truthfulness and user guidance. It does not prove Roll20 visual parity.
