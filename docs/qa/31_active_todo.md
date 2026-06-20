@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - Roll20 chat row geometry gate evidence
+
+Status: PARTIAL. This improves the Roll20 renderer gate and next-action routing, but does not prove actual Roll20 visual parity.
+
+- DONE: Fixed `scripts/roll20_chat_row_geometry_compare.mjs` so actual Roll20 table evidence is read from `computedChildren` when the sidecar does not expose the older `elements` array.
+- DONE: Added row-geometry classification for chat rolltemplate evidence and wired it into `scripts/roll20_renderer_action_gate.mjs`.
+- RESULT: Current row geometry split on `reports\roll20-actual-compare\2026-06-18-state-map-v1` is fixture-specific, not a single global CSS fix:
+  - `official-roll20-AW2E`: `CELL_ALLOCATION_WITH_UNIFORM_OFFSET`
+  - `official-roll20-Les-Oublies`: `UNIFORM_OFFSET_PAINT_OR_CROP`
+  - `yshy-commission-1bu`: `TABLE_WIDE_WIDTH_WITH_UNIFORM_OFFSET`
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`, now with row-geometry evidence included in the blocker report and next actions.
+- VERIFIED: `node --check scripts\roll20_chat_row_geometry_compare.mjs`, `node --check scripts\roll20_renderer_action_gate.mjs`, `corepack pnpm run diagnose:roll20-chat-rows -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run lint`, and `corepack pnpm run build`.
+- STILL TODO P0: Do not ship a global ChatPane width/padding/font patch. Follow the split next actions: AW2E needs cell allocation/exact text metrics, Les needs crop/shell/paint context, and YSHY needs table-wide intrinsic width or source rolltemplate structure modeling.
+
 ## 2026-06-20 Codex Update - edit/preview UI labels and design CSS roundtrip fixed
 
 Status: PARTIAL. This improves edit-mode usability and export/re-import stability, but does not prove actual Roll20 visual parity.

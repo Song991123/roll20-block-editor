@@ -1,3 +1,12 @@
+## 2026-06-20 Roll20 Chat Row Geometry Gate Evidence
+
+- Fixed row-geometry comparison so actual Roll20 table style and cell evidence comes from `computedChildren` when current sidecars do not have the old `elements` array.
+- Added fixture-level row geometry models and surfaced them inside `gate:roll20-renderer-action`.
+- Latest split for `2026-06-18-state-map-v1`: AW2E is `CELL_ALLOCATION_WITH_UNIFORM_OFFSET`, Les-Oublies is `UNIFORM_OFFSET_PAINT_OR_CROP`, and YSHY 1BU is `TABLE_WIDE_WIDTH_WITH_UNIFORM_OFFSET`.
+- The renderer gate still returns `HOLD_PRODUCTION_RENDERER_PATCH`. The important progress is that future work now has concrete, fixture-specific next actions instead of another unsafe global ChatPane CSS guess.
+- Verification: `node --check` for both changed scripts, `diagnose:roll20-chat-rows`, `gate:roll20-renderer-action`, `lint`, and `build` all passed.
+- Claim boundary: this is diagnostic/gate progress only. It does not make actual Roll20 chat visual parity pass and does not authorize production renderer CSS.
+
 ## 2026-06-20 Edit/Preview UI Labels and Design CSS Roundtrip
 
 - Cleaned the user-facing mode/preview/layer role labels so the edit surface no longer exposes unclear translated wording for the main mode toolbar, preview toolbar, and layer role badges.

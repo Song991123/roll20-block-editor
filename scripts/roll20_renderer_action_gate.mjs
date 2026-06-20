@@ -45,9 +45,10 @@ async function main() {
   const chatWidthModel = await readJsonIfExists(path.join(runDir, 'chat-width-model', 'chat-width-model-results.json'));
   const chatIntrinsicWidthModel = await readJsonIfExists(path.join(runDir, 'chat-intrinsic-width-model', 'chat-intrinsic-width-model-results.json'));
   const chatFontGlyphModel = await readJsonIfExists(path.join(runDir, 'chat-font-glyph-model', 'chat-font-glyph-model-results.json'));
+  const chatRowGeometry = await readJsonIfExists(path.join(runDir, 'chat-row-geometry', 'chat-row-geometry-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel, chatFontGlyphModel);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel, chatFontGlyphModel, chatRowGeometry);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -66,6 +67,7 @@ async function main() {
     chatWidthModel: summarizeChatWidthModel(chatWidthModel),
     chatIntrinsicWidthModel: summarizeChatIntrinsicWidthModel(chatIntrinsicWidthModel),
     chatFontGlyphModel: summarizeChatFontGlyphModel(chatFontGlyphModel),
+    chatRowGeometry: summarizeChatRowGeometry(chatRowGeometry),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status),
     summary: summarize(fixtures),
     fixtures,
@@ -237,7 +239,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel, chatFontGlyphModel) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatIntrinsicWidthModel, chatFontGlyphModel, chatRowGeometry) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -261,6 +263,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatWidthModelSummary = summarizeChatWidthModel(chatWidthModel);
   const chatIntrinsicWidthModelSummary = summarizeChatIntrinsicWidthModel(chatIntrinsicWidthModel);
   const chatFontGlyphModelSummary = summarizeChatFontGlyphModel(chatFontGlyphModel);
+  const chatRowGeometrySummary = summarizeChatRowGeometry(chatRowGeometry);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status);
   const styleProofStatusByName = new Map(
     (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
@@ -494,6 +497,14 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       positiveFindings.push(`${fixture.fixtureId} font/glyph decision=${fixture.glyphDecision}, textWidthModel=${fixture.textWidthDecision || 'n/a'}, tableDelta=${num(fixture.tableWidthDelta)}px, tableTextResidual=${num(fixture.tableTextResidual)}px, textMeasure=${fixture.textMeasureStatus || 'n/a'} samples=${fixture.textMeasureComparedSamples}, meanTextWidthDelta=${num(fixture.textMeasureMeanAbsWidthDelta)}px, fontAvailabilityChanged=${fixture.fontAvailabilityChanged ? 'YES' : 'NO'}, tableFontChanged=${fixture.tableFontFamilyChanged ? 'YES' : 'NO'}, fontCandidatesRejected=${fixture.fontCandidatesRejected ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
     }
   }
+  if (!chatRowGeometrySummary) {
+    warnings.push('chat row geometry model has not been run; run diagnose:roll20-chat-rows to separate row offset, cell allocation, and table-wide width axes before another chat renderer candidate');
+  } else {
+    positiveFindings.push(`chat row geometry: status=${chatRowGeometrySummary.status}, compared=${chatRowGeometrySummary.compared}/${chatRowGeometrySummary.totalFixtures}, decisions=${formatFindingCounts(chatRowGeometrySummary.decisions)}`);
+    for (const fixture of chatRowGeometrySummary.actionableFixtures) {
+      positiveFindings.push(`${fixture.fixtureId} row geometry=${fixture.rowDecision}, topDelta=${num(fixture.maxAbsTopDelta)}px, widthDelta=${num(fixture.maxAbsWidthDelta)}px, cellDelta=${num(fixture.maxAbsCellDelta)}px, next=${fixture.nextAction}`);
+    }
+  }
 
   const action = blockers.length
     ? 'HOLD_PRODUCTION_RENDERER_PATCH'
@@ -510,6 +521,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   }
   if (missingChat.length) {
     nextActions.push(`Capture roll20-chat.png screenshots with fresh DOM sidecars for ${missingChat.map((fixture) => fixture.fixtureId).join(', ')}.`);
+  }
+  if (!chatRowGeometrySummary) {
+    nextActions.push('Run corepack pnpm run diagnose:roll20-chat-rows to classify row geometry before another chat renderer candidate.');
+  } else if (chatRowGeometrySummary.actionableFixtures.length) {
+    nextActions.push(...chatRowGeometrySummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   if (chatParitySummary?.needsNormalizedCapture > 0) {
     nextActions.push('Recapture actual Roll20 chat DOM sidecars with rolltemplate rect/clip metadata for element-level chat parity comparison.');
@@ -1003,6 +1019,34 @@ function summarizeChatFontGlyphModel(report) {
   };
 }
 
+function summarizeChatRowGeometry(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    status: fixture.status ?? 'UNKNOWN',
+    rowDecision: fixture.rowModel?.decision ?? 'UNKNOWN',
+    comparedRows: Number(fixture.comparedRows ?? 0),
+    maxAbsTopDelta: fixture.rowModel?.maxAbsTopDelta ?? fixture.maxAbsTopDelta ?? null,
+    maxAbsHeightDelta: fixture.rowModel?.maxAbsHeightDelta ?? fixture.maxAbsHeightDelta ?? null,
+    maxAbsWidthDelta: fixture.rowModel?.maxAbsWidthDelta ?? fixture.maxAbsWidthDelta ?? null,
+    maxAbsCellDelta: fixture.rowModel?.maxAbsCellDelta ?? null,
+    topSpread: fixture.rowModel?.topSpread ?? null,
+    widthSpread: fixture.rowModel?.widthSpread ?? null,
+    tableWidthDelta: fixture.templateMetrics?.tableRectWidthDelta ?? null,
+    nextAction: fixture.rowModel?.nextAction ?? fixture.reason ?? '',
+    styleDeltas: fixture.templateMetrics?.styleDeltas ?? {},
+  }));
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    compared: Number(report.summary.compared ?? fixtures.filter((fixture) => fixture.status === 'COMPARED').length),
+    decisions: report.summary.decisions ?? {},
+    productionSafe: Boolean(report.summary.productionSafe),
+    actionableFixtures: fixtures.filter((fixture) => fixture.status === 'COMPARED' && fixture.rowDecision !== 'ROW_GEOMETRY_SECONDARY'),
+    fixtures,
+  };
+}
+
 function summarizeChatCandidate(candidate) {
   return {
     name: candidate.name,
@@ -1408,6 +1452,21 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | ---: | --- | --- | --- | --- | --- | --- |');
       for (const fixture of report.chatFontGlyphModel.actionableFixtures) {
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.glyphDecision} | ${num(fixture.tableWidthDelta)}px | ${fixture.textMeasureStatus || 'n/a'} (${fixture.textMeasureComparedSamples}) | ${fixture.fontAvailabilityChanged ? 'changed' : 'same'} | ${fixture.tableFontFamilyChanged ? 'yes' : 'no'} | ${fixture.fontCandidatesRejected ? 'rejected/no-gain' : 'not rejected'} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatRowGeometry) {
+    lines.push('### Chat Row Geometry', '');
+    lines.push(`- Status: ${report.chatRowGeometry.status}`);
+    lines.push(`- Compared fixtures: ${report.chatRowGeometry.compared}/${report.chatRowGeometry.totalFixtures}`);
+    lines.push(`- Decisions: ${formatFindingCounts(report.chatRowGeometry.decisions)}`);
+    if (report.chatRowGeometry.actionableFixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Decision | Rows | Top delta | Width delta | Cell delta | Top spread | Width spread | Next action |');
+      lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |');
+      for (const fixture of report.chatRowGeometry.actionableFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.rowDecision} | ${fixture.comparedRows} | ${num(fixture.maxAbsTopDelta)}px | ${num(fixture.maxAbsWidthDelta)}px | ${num(fixture.maxAbsCellDelta)}px | ${num(fixture.topSpread)}px | ${num(fixture.widthSpread)}px | ${fixture.nextAction} |`);
       }
     }
     lines.push('');
