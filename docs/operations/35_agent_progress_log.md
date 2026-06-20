@@ -1,3 +1,11 @@
+## 2026-06-20 Hydrate Resize Suppression
+
+- Changed `DefaultAdapter.hydrateFromXml` to call `workspace.setResizesEnabled(false)` during XML clear/import and restore resize handling afterward.
+- This mirrors the existing chunked hydrate behavior and avoids unnecessary workspace resize work during synchronous hydrate.
+- Local private measurement on a 6530-block fixture: about `4799ms total / 4666ms inject` before versus about `4761ms total / 4619ms inject` after, with drag drift still `0px`.
+- Interpretation: the change is safe and directionally right, but the improvement is small/noisy. The real P0 remains structural import/hydration reduction or lazy/virtual Blockly materialization.
+- Verification: private `smoke:imported-edit-sync`, redacted `budget:imported-edit`, and `smoke:edit-flow`.
+
 ## 2026-06-20 Imported Edit Performance Budget
 
 - Added `scripts/imported_edit_perf_budget.mjs` and `corepack pnpm run budget:imported-edit`.

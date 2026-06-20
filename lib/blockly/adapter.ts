@@ -371,11 +371,13 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     if (!ws || !xml) return;
     Blockly.Events.disable();
+    ws.setResizesEnabled(false);
     try {
       ws.clear();
       const dom = Blockly.utils.xml.textToDom(xml);
       Blockly.Xml.domToWorkspace(dom, ws);
     } finally {
+      ws.setResizesEnabled(true);
       Blockly.Events.enable();
     }
   }

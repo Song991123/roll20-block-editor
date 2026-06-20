@@ -1,3 +1,12 @@
+## 2026-06-20 Codex Update - hydrate resize suppression
+
+Status: VERIFY. This applies a small Blockly hydrate safety/performance improvement; it is not the full import optimization.
+
+- DONE: Updated `DefaultAdapter.hydrateFromXml` so Blockly workspace resize handling is disabled during XML clear/import and re-enabled afterward, matching the existing chunked hydrate pattern.
+- LOCAL PRIVATE RESULT: On a 6530-block private fixture, redacted budget changed from about `4799ms total / 4666ms inject` to about `4761ms total / 4619ms inject`, with drag drift still `0px`. This is a small/noisy improvement, not a solved performance issue.
+- VERIFIED: private `smoke:imported-edit-sync` passed after the change, and `smoke:edit-flow` passed.
+- STILL TODO P0: Real import performance work must reduce Blockly injection/hydration cost structurally; this patch only avoids resize work during synchronous hydrate.
+
 ## 2026-06-20 Codex Update - imported edit performance budget
 
 Status: VERIFY. This adds a reusable local performance budget summary for imported edit smoke results; it does not optimize Blockly injection yet.
