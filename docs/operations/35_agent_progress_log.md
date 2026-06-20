@@ -1,3 +1,16 @@
+## 2026-06-20 YSHY Overflow/Crop Probe
+
+- Added `scripts/roll20_chat_overflow_crop_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-overflow-crop`.
+- The probe compares local ChatPane rolltemplate geometry with actual Roll20 chat DOM sidecars for root width, table width, table scroll/client width, table overflow, table-to-crop ratio, scroll-to-crop ratio, row uniformity, and crop/top-offset signals.
+- Wired the probe into `gate:roll20-renderer-action` so the renderer gate now reports overflow/crop evidence and next actions.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `MESSAGE_WIDTH_MODEL`, table delta `+15.744px`, overflow delta `0px`, table-to-crop delta `+0.00105`, top offset `+184.178px`. This stays on message/content width.
+  - Les-Oublies: `WIDTH_SECONDARY`, table delta `+0.8px`, overflow delta `0px`, table-to-crop delta `+0.003`.
+  - YSHY 1BU: `TABLE_OVERFLOW_CROP_MODEL_REQUIRED`, table delta `-24.309px`, overflow delta `0px`, table-to-crop delta `-0.09104`, top offset `+125.884px`.
+- Interpretation: YSHY is not explained by paint filters, broad typography, transform, or raw overflow pixels. The next diagnostic candidate should model CoC/YSHY table scroll/client width and rolltemplate crop origin together, while AW2E remains a separate message-width track.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 YSHY Live Filter Sidecar Recapture
 
 - Used the existing Chrome Roll20 verification editor tab in read-only mode. No existing room/settings/source was modified.

@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - YSHY overflow/crop probe
+
+Status: PARTIAL. This adds another diagnostic layer for Roll20 chat parity; it does not change production ChatPane CSS and does not prove visual parity.
+
+- DONE: Added `scripts/roll20_chat_overflow_crop_probe.mjs` and package command `diagnose:roll20-chat-overflow-crop`.
+- DONE: Wired the overflow/crop probe into `gate:roll20-renderer-action` so renderer decisions now include table overflow, table-to-crop ratio, scroll/client width, crop/top-offset, and best current candidate evidence.
+- RESULT: AW2E is still `MESSAGE_WIDTH_MODEL`: table delta `+15.744px`, overflow delta `0px`, table-to-crop delta `+0.00105`, top offset `+184.178px`. Do not route AW2E through YSHY-style table overflow work.
+- RESULT: Les-Oublies remains `WIDTH_SECONDARY`: table delta `+0.8px`, overflow delta `0px`, table-to-crop delta `+0.003`.
+- RESULT: YSHY is now classified as `TABLE_OVERFLOW_CROP_MODEL_REQUIRED`: table delta `-24.309px`, overflow delta `0px`, table-to-crop delta `-0.09104`, top offset `+125.884px`.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; next YSHY work must be a CoC/YSHY-scoped overflow/crop candidate from actual table scroll/client width and rolltemplate crop origin, not paint filters or broad typography.
+- VERIFIED: `node --check` for the new script and renderer gate, `diagnose:roll20-chat-overflow-crop`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the narrow CoC/YSHY overflow/crop diagnostic candidate, then run chat smoke, candidate comparison, style proof, renderer gate, lint, build, and evidence guard before any production renderer change.
+
 ## 2026-06-20 Codex Update - YSHY live filter sidecar recapture
 
 Status: PARTIAL. This updates local-only Roll20 chat evidence for YSHY; it does not change production ChatPane CSS and does not prove visual parity.

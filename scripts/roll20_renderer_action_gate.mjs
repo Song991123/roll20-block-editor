@@ -46,13 +46,14 @@ async function main() {
   const chatMessageShellModel = await readJsonIfExists(path.join(runDir, 'chat-message-shell-model', 'chat-message-shell-model-results.json'));
   const chatTableWidthBudget = await readJsonIfExists(path.join(runDir, 'chat-table-width-budget', 'chat-table-width-budget-results.json'));
   const chatTableIntrinsicProbe = await readJsonIfExists(path.join(runDir, 'chat-table-intrinsic-probe', 'chat-table-intrinsic-probe-results.json'));
+  const chatOverflowCropProbe = await readJsonIfExists(path.join(runDir, 'chat-overflow-crop-probe', 'chat-overflow-crop-probe-results.json'));
   const chatIntrinsicWidthModel = await readJsonIfExists(path.join(runDir, 'chat-intrinsic-width-model', 'chat-intrinsic-width-model-results.json'));
   const chatFontGlyphModel = await readJsonIfExists(path.join(runDir, 'chat-font-glyph-model', 'chat-font-glyph-model-results.json'));
   const chatRowGeometry = await readJsonIfExists(path.join(runDir, 'chat-row-geometry', 'chat-row-geometry-results.json'));
   const chatWidthReconciliation = await readJsonIfExists(path.join(runDir, 'chat-width-reconciliation', 'chat-width-reconciliation-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatRowGeometry, chatWidthReconciliation);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatRowGeometry, chatWidthReconciliation);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -72,6 +73,7 @@ async function main() {
     chatMessageShellModel: summarizeChatMessageShellModel(chatMessageShellModel),
     chatTableWidthBudget: summarizeChatTableWidthBudget(chatTableWidthBudget),
     chatTableIntrinsicProbe: summarizeChatTableIntrinsicProbe(chatTableIntrinsicProbe),
+    chatOverflowCropProbe: summarizeChatOverflowCropProbe(chatOverflowCropProbe),
     chatIntrinsicWidthModel: summarizeChatIntrinsicWidthModel(chatIntrinsicWidthModel),
     chatFontGlyphModel: summarizeChatFontGlyphModel(chatFontGlyphModel),
     chatRowGeometry: summarizeChatRowGeometry(chatRowGeometry),
@@ -247,7 +249,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatRowGeometry, chatWidthReconciliation) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatRowGeometry, chatWidthReconciliation) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -272,6 +274,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatMessageShellModelSummary = summarizeChatMessageShellModel(chatMessageShellModel);
   const chatTableWidthBudgetSummary = summarizeChatTableWidthBudget(chatTableWidthBudget);
   const chatTableIntrinsicProbeSummary = summarizeChatTableIntrinsicProbe(chatTableIntrinsicProbe);
+  const chatOverflowCropProbeSummary = summarizeChatOverflowCropProbe(chatOverflowCropProbe);
   const chatIntrinsicWidthModelSummary = summarizeChatIntrinsicWidthModel(chatIntrinsicWidthModel);
   const chatFontGlyphModelSummary = summarizeChatFontGlyphModel(chatFontGlyphModel);
   const chatRowGeometrySummary = summarizeChatRowGeometry(chatRowGeometry);
@@ -508,6 +511,12 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       positiveFindings.push(`${fixture.fixtureId} intrinsic probe=${fixture.probeDecision}, rootDelta=${fmtPx(fixture.rootWidthDelta)}, tableDelta=${fmtPx(fixture.tableWidthDelta)}, scrollDelta=${fmtPx(fixture.tableScrollWidthDelta)}, rowSpread=${fmtPx(fixture.rowWidthDeltaSpread)}, topOffset=${fmtPx(fixture.maxAbsTopDelta)}, next=${fixture.nextAction}`);
     }
   }
+  if (chatOverflowCropProbeSummary) {
+    positiveFindings.push(`chat overflow/crop probe: status=${chatOverflowCropProbeSummary.status}, actionable=${chatOverflowCropProbeSummary.actionable}/${chatOverflowCropProbeSummary.totalFixtures}, decisions=${formatFindingCounts(chatOverflowCropProbeSummary.decisions)}`);
+    for (const fixture of chatOverflowCropProbeSummary.actionableFixtures) {
+      positiveFindings.push(`${fixture.fixtureId} overflow/crop=${fixture.decision}, rootDelta=${fmtPx(fixture.rootWidthDelta)}, tableDelta=${fmtPx(fixture.tableWidthDelta)}, overflowDelta=${fmtPx(fixture.tableOverflowDelta)}, tableToCropDelta=${num(fixture.tableToCropRatioDelta)}, topOffset=${fmtPx(fixture.maxAbsTopDelta)}, next=${fixture.nextAction}`);
+    }
+  }
   if (!chatIntrinsicWidthModelSummary) {
     warnings.push('chat intrinsic width model has not been run; run diagnose:roll20-chat-intrinsic-width before changing overflowed rolltemplate table sizing');
   } else {
@@ -637,6 +646,12 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe -- ${path.relative(process.cwd(), activeRunDir)} before testing the next CoC/YSHY table intrinsic candidate.`);
   } else if (chatTableIntrinsicProbeSummary?.actionableFixtures.length) {
     nextActions.push(...chatTableIntrinsicProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
+  }
+  const needsOverflowCropProbe = chatTableIntrinsicProbeSummary?.actionableFixtures?.some((fixture) => /CROP|INTRINSIC/i.test(fixture.probeDecision));
+  if (!chatOverflowCropProbeSummary && needsOverflowCropProbe) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-overflow-crop -- ${path.relative(process.cwd(), activeRunDir)} before testing the next CoC/YSHY overflow/crop renderer candidate.`);
+  } else if (chatOverflowCropProbeSummary?.actionableFixtures.length) {
+    nextActions.push(...chatOverflowCropProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   if (!chatIntrinsicWidthModelSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-intrinsic-width -- ${path.relative(process.cwd(), activeRunDir)} before changing overflowed rolltemplate table sizing.`);
@@ -1099,6 +1114,38 @@ function summarizeChatTableIntrinsicProbe(report) {
     decisions: report.summary.decisions ?? {},
     productionSafe: Boolean(report.summary.productionSafe),
     actionableFixtures: fixtures.filter((fixture) => fixture.priority !== 'P2' && fixture.probeDecision !== 'WIDTH_SECONDARY'),
+    fixtures,
+  };
+}
+
+function summarizeChatOverflowCropProbe(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    priority: fixture.priority ?? '',
+    decision: fixture.decision ?? 'UNKNOWN',
+    alignedMismatchPct: fixture.alignedMismatchPct ?? '',
+    rootWidthDelta: fixture.deltas?.rootWidth ?? null,
+    tableWidthDelta: fixture.deltas?.tableWidth ?? null,
+    tableScrollWidthDelta: fixture.deltas?.tableScrollWidth ?? null,
+    tableClientWidthDelta: fixture.deltas?.tableClientWidth ?? null,
+    tableOverflowDelta: fixture.deltas?.tableOverflow ?? null,
+    tableToCropRatioDelta: fixture.deltas?.tableToCropRatio ?? null,
+    scrollToCropRatioDelta: fixture.deltas?.scrollToCropRatio ?? null,
+    maxAbsTopDelta: fixture.rowModel?.maxAbsTopDelta ?? null,
+    rowWidthDeltaSpread: fixture.rowModel?.rowWidthDeltaSpread ?? null,
+    maxAbsCellDelta: fixture.rowModel?.maxAbsCellDelta ?? null,
+    bestCandidateName: fixture.candidateSignals?.best?.name ?? '',
+    nextAction: fixture.nextAction ?? '',
+    evidence: fixture.evidence ?? [],
+  }));
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    actionable: Number(report.summary.actionable ?? fixtures.filter((fixture) => fixture.priority !== 'P2' && !['WIDTH_SECONDARY', 'MISSING_DOM_EVIDENCE'].includes(fixture.decision)).length),
+    decisions: report.summary.decisions ?? {},
+    productionSafe: Boolean(report.summary.productionSafe),
+    actionableFixtures: fixtures.filter((fixture) => fixture.priority !== 'P2' && !['WIDTH_SECONDARY', 'MISSING_DOM_EVIDENCE'].includes(fixture.decision)),
     fixtures,
   };
 }
@@ -1656,6 +1703,21 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |');
       for (const fixture of report.chatTableIntrinsicProbe.actionableFixtures) {
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.probeDecision} | ${fmtPx(fixture.rootWidthDelta)} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fmtPx(fixture.captionWidthDelta)} | ${fmtPx(fixture.firstCellWidthDelta)} | ${fmtPx(fixture.rowWidthDeltaSpread)} | ${fmtPx(fixture.maxAbsCellDelta)} | ${fmtPx(fixture.maxAbsTopDelta)} | ${fixture.bestCandidateName || 'none'} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatOverflowCropProbe) {
+    lines.push('### Chat Overflow/Crop Probe', '');
+    lines.push(`- Status: ${report.chatOverflowCropProbe.status}`);
+    lines.push(`- Actionable fixtures: ${report.chatOverflowCropProbe.actionable}/${report.chatOverflowCropProbe.totalFixtures}`);
+    lines.push(`- Decisions: ${formatFindingCounts(report.chatOverflowCropProbe.decisions)}`);
+    if (report.chatOverflowCropProbe.actionableFixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Decision | Root ? | Table ? | Scroll ? | Overflow ? | Table/crop ? | Top offset | Best candidate | Evidence | Next action |');
+      lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |');
+      for (const fixture of report.chatOverflowCropProbe.actionableFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fmtPx(fixture.rootWidthDelta)} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fmtPx(fixture.tableOverflowDelta)} | ${num(fixture.tableToCropRatioDelta)} | ${fmtPx(fixture.maxAbsTopDelta)} | ${fixture.bestCandidateName || 'none'} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');
