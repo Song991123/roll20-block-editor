@@ -1,3 +1,11 @@
+## 2026-06-20 Wide Row Bundle Dry-Run Estimate
+
+- Extended `scripts/imported_edit_perf_budget.mjs` with a dry-run estimate for replacing the top remaining `r20_tr` structural signature with one lazy/bundle unit per row.
+- Local private result: the strongest remaining row signature appears 13 times with 1235 descendant blocks, so a bundle/lazy representation would reduce about 1222 blocks.
+- Projection for the current private fixture: 6530 HTML blocks would become about 5308 HTML blocks for that one signature only.
+- Interpretation: this is a meaningful but incomplete optimization target. It should not be implemented as a blind raw-HTML pack unless the UX tradeoff is explicit; the safer path is either editable wide-row composite fields or lazy materialization with an ungroup/edit escape hatch.
+- Claim boundary: estimate only. Import behavior, emitted HTML/CSS, and renderer output did not change.
+
 ## 2026-06-20 Remaining Row Signature Diagnostics
 
 - Added sanitized remaining `r20_tr` structural signatures to `scripts/imported_edit_sync_smoke.mjs`.

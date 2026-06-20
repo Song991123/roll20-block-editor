@@ -71,6 +71,15 @@ function summarizeFixture(fixture, index) {
   const htmlShape = fixture.htmlWorkspaceShape ?? {};
   const largestRoot = htmlShape.roots?.[0] ?? null;
   const topRemainingTrSignature = htmlShape.remainingTrSignatures?.[0] ?? null;
+  const estimatedWideRowReduction =
+    typeof topRemainingTrSignature?.totalDescendantBlocks === 'number' &&
+    typeof topRemainingTrSignature?.rowCount === 'number'
+      ? Math.max(0, topRemainingTrSignature.totalDescendantBlocks - topRemainingTrSignature.rowCount)
+      : null;
+  const projectedHtmlBlocksWithTopRowBundle =
+    typeof fixture.import?.blockCount === 'number' && typeof estimatedWideRowReduction === 'number'
+      ? Math.max(0, fixture.import.blockCount - estimatedWideRowReduction)
+      : null;
   const statuses = {
     interaction: fixture.interactionPass ? 'PASS' : 'FAIL',
     importTotalMs: statusFor(importTotalMs, BUDGETS.importTotalMs),
@@ -104,6 +113,8 @@ function summarizeFixture(fixture, index) {
       topRemainingTrAvgBlocks: topRemainingTrSignature?.avgDescendantBlocks ?? null,
       topRemainingTrMaxBlocks: topRemainingTrSignature?.maxDescendantBlocks ?? null,
       topRemainingTrTypes: Array.isArray(topRemainingTrSignature?.topTypes) ? topRemainingTrSignature.topTypes : [],
+      estimatedWideRowReduction,
+      projectedHtmlBlocksWithTopRowBundle,
       importTotalMs,
       parseMs: round(fixture.import?.parseMs),
       injectMs,
@@ -139,8 +150,8 @@ function renderMarkdown(summary) {
   lines.push(`Source: \`${summary.source}\``);
   lines.push(`Overall: **${summary.status}**`);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Composite collapsed | Composite types | Top row sig rows | Top row sig blocks | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
-  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
+  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Composite collapsed | Composite types | Top row sig rows | Top row sig blocks | Est. row reduction | Projected HTML blocks | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
+  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
   for (const item of summary.fixtures) {
     const m = item.metrics;
     lines.push([
@@ -155,6 +166,8 @@ function renderMarkdown(summary) {
       fmtTypeCounts(m.compositePackedByType),
       m.topRemainingTrRows ?? '',
       m.topRemainingTrDescendantBlocks ?? '',
+      m.estimatedWideRowReduction ?? '',
+      m.projectedHtmlBlocksWithTopRowBundle ?? '',
       m.importTotalMs ?? '',
       m.injectMs ?? '',
       m.emitMs ?? '',
@@ -173,6 +186,7 @@ function renderMarkdown(summary) {
   lines.push(`- Emit: WARN >= ${BUDGETS.emitMs.warn}ms, FAIL >= ${BUDGETS.emitMs.fail}ms`);
   lines.push(`- Drag drift: WARN >= ${BUDGETS.dragDriftPx.warn}px, FAIL >= ${BUDGETS.dragDriftPx.fail}px`);
   lines.push('- Shape metrics are sanitized structural counts only. They omit block IDs, DOM text, HTML snippets, CSS snippets, and private fixture paths.');
+  lines.push('- Estimated row reduction is a dry-run: it assumes the top remaining `r20_tr` signature is represented as one lazy/bundle unit per row. It does not mean the importer currently applies that optimization.');
   lines.push('');
   lines.push('Claim boundary: this report measures local imported edit performance only. It does not prove Roll20 visual parity.');
   lines.push('');

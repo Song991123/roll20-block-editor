@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - wide row bundle dry-run estimate
+
+Status: VERIFY. This adds an estimate for the likely gain from bundling/lazy-materializing the strongest remaining table-row signature; it does not change import behavior yet.
+
+- DONE: `budget:imported-edit` now reports `estimatedWideRowReduction` and `projectedHtmlBlocksWithTopRowBundle`.
+- LOCAL PRIVATE RESULT: For the current 6530 HTML-block private fixture, the top remaining row signature could reduce about `1222` blocks if represented as one lazy/bundle unit per row.
+- LOCAL PRIVATE RESULT: The dry-run projection is `6530 -> 5308` HTML blocks for that one signature only.
+- INTERPRETATION: A row-bundle/lazy strategy has a meaningful but not complete payoff. It should be combined with either more signatures, a safer editable composite, or lazy Blockly materialization rather than pretending one matcher solves the whole performance problem.
+- STILL TODO P0: Implement the first safe optimization slice and prove emitted HTML/CSS token equivalence before enabling it by default.
+
 ## 2026-06-20 Codex Update - remaining row signature diagnostics
 
 Status: VERIFY. This adds a diagnostic for repeated remaining `r20_tr` structures after current composite packing; it does not add a new matcher yet.
