@@ -120,6 +120,15 @@ function decideNextExperiment({ alignedMismatch, signals, bestCandidate }) {
   if (bestCandidate?.styleProofStatus === 'REJECT_STYLE_CONTRADICTION') {
     blockers.push(`${bestCandidate.name} contradicted by actual style proof`);
   }
+  if (signals.widthDecision === 'CHAT_MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED') {
+    evidence.push('template width follows Roll20 chat message/content shell width');
+    return {
+      nextExperiment: 'CHAT_MESSAGE_CONTENT_WIDTH',
+      nextAction: 'Build a per-template Roll20 chat message/content width model; do not widen the global ChatPane shell because it regresses other fixtures.',
+      blockers,
+      evidence,
+    };
+  }
   if (Math.abs(signals.tableTextResidual ?? 0) <= 3 && Math.abs(signals.tableWidthDelta ?? 0) >= 8) {
     evidence.push(`table width is explained by exact text metrics: residual ${fmtPx(signals.tableTextResidual)}`);
     return {

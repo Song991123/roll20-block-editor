@@ -17,6 +17,7 @@ const candidates = [
   ['text-auto-aa', 'reports/rolltemplate-chat-smoke-text-auto-aa/screenshots'],
   ['soft-shadow-rejected', 'reports/rolltemplate-chat-smoke-soft-template-shadow/screenshots'],
   ['tight-cell-spacing', 'reports/rolltemplate-chat-smoke-tight-cell-spacing/screenshots'],
+  ['roll20-chat-shell-width-340', 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/screenshots'],
   ['table-scale-x', 'reports/rolltemplate-chat-smoke-table-scale-x/screenshots'],
   ['aw2e-root-width-actual', 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],

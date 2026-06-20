@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - chat message/content width split
+
+Status: PARTIAL. This sharpens the next renderer model; it does not enable production ChatPane CSS.
+
+- DONE: Added diagnostic `roll20-chat-shell-width-340` policy and regenerated local browser chat smoke for it.
+- DONE: `rolltemplate_chat_smoke` now records local message rect/style evidence so candidate style proof can compare local message width against actual Roll20 sidecars.
+- DONE: `diagnose:roll20-chat-width` now distinguishes `CHAT_MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED` before table-width work when message width and template width move together.
+- RESULT: AW2E is now classified as `CHAT_MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED`; actual message width/template content explains the root-width mismatch better than a table-only model.
+- RESULT: The broad `roll20-chat-shell-width-340` candidate is rejected: mean delta `-2.07%` but `2` fixture regressions, so do not widen the global ChatPane shell.
+- RESULT: `diagnose:roll20-chat-width-reconciliation` now routes AW2E to `CHAT_MESSAGE_CONTENT_WIDTH`, Les-Oublies to `KEEP_DEFAULT`, and YSHY 1BU to `TABLE_SCROLL_INTRINSIC`.
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`, now with the clearer blocker that global shell width regresses other fixtures.
+- VERIFIED: `rolltemplate-chat-smoke-roll20-chat-shell-width-340`, `diagnose:roll20-chat-width`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-width-reconciliation`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build a per-template/message-context width model that can reproduce AW2E's Roll20 content width without changing Les/YSHY shells globally. Continue YSHY on table intrinsic/crop/paint context.
+
 ## 2026-06-20 Codex Update - AW2E root-width renderer candidate
 
 Status: PARTIAL. This adds and validates diagnostic-only renderer candidates; it does not change the default product ChatPane renderer.

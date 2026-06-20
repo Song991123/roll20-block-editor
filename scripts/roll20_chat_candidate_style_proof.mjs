@@ -15,6 +15,7 @@ const OUT_DIR = path.join(RUN_DIR, 'chat-candidate-style-proof');
 const CANDIDATE_SMOKE = {
   default: 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json',
   'no-shadow': 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json',
+  'roll20-chat-shell-width-340': 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/rolltemplate-chat-smoke-results.json',
   'table-scale-x': 'reports/rolltemplate-chat-smoke-table-scale-x/rolltemplate-chat-smoke-results.json',
   'aw2e-root-width-actual': 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/rolltemplate-chat-smoke-results.json',
   'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
@@ -93,7 +94,7 @@ function sameValue(a, b) {
   return String(a ?? '') === String(b ?? '');
 }
 
-function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate, actualTemplate) {
+function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
   if (!candidateTemplate || !actualTemplate) {
     return {
       fixtureId,
@@ -104,6 +105,9 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   }
   if (candidate.name === 'no-shadow') {
     return summarizeNoShadow(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (candidate.name === 'roll20-chat-shell-width-340') {
+    return summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar);
   }
   if (candidate.name === 'table-scale-x' || candidate.name === 'coc-table-scale-x') {
     return summarizeTableScale(candidate, fixtureId, candidateTemplate, actualTemplate);
@@ -136,6 +140,28 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
     status: 'UNKNOWN_CANDIDATE',
     finding: `no style-proof rule for ${candidate.name}`,
     evidence: [],
+  };
+}
+
+function summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar) {
+  const localMessageWidth = numberOrNull(candidateFixture?.cardInfo?.latestMessage?.rect?.width ?? candidateFixture?.cardInfo?.width);
+  const actualMessageWidth = numberOrNull(actualSidecar?.latestMessage?.rect?.width);
+  const localChatGroupWidth = numberOrNull(candidateFixture?.cardInfo?.width);
+  const actualChatWidth = numberOrNull(actualSidecar?.chatRect?.width);
+  const messageDelta = delta(localMessageWidth, actualMessageWidth);
+  const chatDelta = delta(localChatGroupWidth, actualChatWidth);
+  const messageMatches = typeof messageDelta === 'number' && Math.abs(messageDelta) <= 1.5;
+  const chatMatches = typeof chatDelta === 'number' && Math.abs(chatDelta) <= 1.5;
+  return {
+    fixtureId,
+    status: messageMatches && chatMatches ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: messageMatches && chatMatches
+      ? 'local ChatPane shell/message width matches actual Roll20 chat evidence'
+      : `local ChatPane shell/message width differs from actual Roll20 (message ${fmtPx(messageDelta)}, chat ${fmtPx(chatDelta)})`,
+    evidence: [
+      { selector: 'chat', key: 'rect.width', localCandidate: localChatGroupWidth, actual: actualChatWidth },
+      { selector: 'message', key: 'rect.width', localCandidate: localMessageWidth, actual: actualMessageWidth },
+    ],
   };
 }
 
@@ -375,6 +401,19 @@ function fmtPx(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `${Number(value.toFixed(3))}px` : 'n/a';
 }
 
+function numberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function delta(localValue, actualValue) {
+  const local = Number(localValue);
+  const actual = Number(actualValue);
+  return Number.isFinite(local) && Number.isFinite(actual)
+    ? Number((local - actual).toFixed(3))
+    : null;
+}
+
 async function main() {
   const comparison = await readJson(path.join(RUN_DIR, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
   if (!comparison?.candidates) throw new Error(`Missing chat candidate comparison under ${RUN_DIR}`);
@@ -397,6 +436,8 @@ async function main() {
         templateOf(defaultFixture),
         templateOf(candidateFixture),
         actualSidecar?.latestTemplate ?? null,
+        candidateFixture,
+        actualSidecar,
       ));
     }
     candidates.push({

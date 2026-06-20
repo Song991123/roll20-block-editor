@@ -162,6 +162,13 @@ function extractActual(sidecar) {
 function decideWidthModel({ deltas, overflow, parityFixture, shellFixture }) {
   const highMismatch = Number(parityFixture?.bestAlignedMismatchRatio ?? 0) > 0.1;
   if (!highMismatch) return 'WIDTH_SECONDARY_OR_ACCEPTABLE';
+  if (
+    Math.abs(deltas.messageWidthDelta ?? 0) >= 8 &&
+    Math.abs(deltas.templateWidthDelta ?? 0) >= 8 &&
+    Math.abs((deltas.messageWidthDelta ?? 0) - (deltas.templateWidthDelta ?? 0)) <= 2
+  ) {
+    return 'CHAT_MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED';
+  }
   if (Number(overflow.actualTableVsCropRatio ?? 0) >= 2 && Math.abs(deltas.tableToCropDelta ?? 0) >= 100) {
     return 'OVERFLOW_TABLE_CROP_MODEL_REQUIRED';
   }
@@ -181,6 +188,8 @@ function nextAction(decision) {
       return 'compare table intrinsic width and user CSS activation before a ChatPane width patch';
     case 'CHAT_SHELL_WIDTH_MODEL_REQUIRED':
       return 'match Roll20 chat shell/message width first, then rerun parity';
+    case 'CHAT_MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED':
+      return 'model Roll20 chat message/content width before table intrinsic CSS; template width follows the message shell';
     case 'WIDTH_MODEL_REQUIRED':
       return 'build a fixture/template-specific width candidate and prove it with actual style evidence';
     default:

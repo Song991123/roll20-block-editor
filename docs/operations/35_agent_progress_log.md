@@ -1,3 +1,20 @@
+## 2026-06-20 Chat Message/Content Width Split
+
+- Added diagnostic-only ChatPane geometry policy `roll20-chat-shell-width-340`.
+- `scripts/rolltemplate_chat_smoke.mjs` now records local `.message` rect/style evidence as `cardInfo.latestMessage` and `cardInfo.messages`, matching the actual Roll20 sidecar shape closely enough for shell-width style proof.
+- `scripts/roll20_chat_width_model.mjs` now classifies a fixture as `CHAT_MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED` when message width and template width deltas move together. This prevents AW2E from being mislabeled as only a table-intrinsic problem.
+- Current evidence:
+  - AW2E width model: `CHAT_MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED`.
+  - Les-Oublies width model: `WIDTH_SECONDARY_OR_ACCEPTABLE`.
+  - YSHY 1BU width model: `TABLE_WIDTH_MODEL_REQUIRED` / still routed to table intrinsic/crop context.
+- Candidate evidence:
+  - `roll20-chat-shell-width-340` smoke PASSed all fixtures but candidate comparison rejected it: mean delta `-2.07%`, regressions `2`, YSHY aligned mismatch worsened by `+0.88%`.
+  - This confirms that global shell widening is not safe, even though AW2E's root-width issue is a message/content shell issue.
+- Reconciliation now routes AW2E to `CHAT_MESSAGE_CONTENT_WIDTH`, Les-Oublies to `KEEP_DEFAULT`, and YSHY to `TABLE_SCROLL_INTRINSIC`.
+- `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Verification: `node --check`, `build`, `rolltemplate-chat-smoke-roll20-chat-shell-width-340`, `diagnose:roll20-chat-width`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-width-reconciliation`, and `gate:roll20-renderer-action`.
+- Claim boundary: no product default renderer CSS, no visual parity claim, no generated/private evidence committed.
+
 ## 2026-06-20 AW2E Root Width Renderer Candidate
 
 - Added diagnostic-only ChatPane policies for the current split renderer axes:

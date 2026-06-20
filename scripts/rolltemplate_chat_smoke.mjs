@@ -519,10 +519,31 @@ async function clickRollAndReadChat(page, fixtureId) {
     };
     const template = el.querySelector('[class*="sheet-rolltemplate-"]');
     const textMeasureEvidence = measureTextEvidence(template);
+    const messages = Array.from(el.querySelectorAll('.message')).map((message, index) => {
+      const rect = message.getBoundingClientRect();
+      return {
+        index,
+        className: message.className,
+        rect: {
+          x: rect.x,
+          y: rect.y,
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          height: rect.height,
+          right: rect.right,
+          bottom: rect.bottom,
+        },
+        computedStyle: readStyle(message),
+        text: (message.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 240),
+      };
+    });
     return {
       kind: el.getAttribute('data-r20-chat-kind') || '',
       hasMessageClass: el.classList.contains('message') || Boolean(el.querySelector('.message')),
       messageCount: el.classList.contains('message') ? 1 : el.querySelectorAll('.message').length,
+      latestMessage: messages.at(-1) ?? null,
+      messages,
       hasSpacer: Boolean(el.querySelector('.spacer')),
       hasSenderLine: Boolean(el.querySelector('.by')),
       hasTimestamp: Boolean(el.querySelector('.tstamp')),
@@ -738,6 +759,7 @@ async function main() {
     await page.evaluate((policy) => {
       if (
         policy === 'tight-cell-spacing' ||
+        policy === 'roll20-chat-shell-width-340' ||
         policy === 'table-scale-x' ||
         policy === 'aw2e-root-width-actual' ||
         policy === 'coc-table-scale-x' ||
