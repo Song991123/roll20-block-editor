@@ -110,15 +110,16 @@ async function main() {
     }
 
     const snippet = await readFile(snippetPath, 'utf8');
-    const evidence = await page.evaluate(snippet);
+    const { evidence, frameInfo } = await evaluateChatProbe(page, snippet);
     validateEvidence(evidence);
 
     const clip = normalizeClip(evidence.screenshotClipApplied ?? evidence.clip ?? evidence.chatRect);
+    const pageClip = applyFrameOffset(clip, frameInfo);
     const cdp = await page.context().newCDPSession(page);
     const shot = await cdp.send('Page.captureScreenshot', {
       format: 'png',
       fromSurface: true,
-      clip: { x: clip.x, y: clip.y, width: clip.width, height: clip.height, scale: 1 },
+      clip: { x: pageClip.x, y: pageClip.y, width: pageClip.width, height: pageClip.height, scale: 1 },
     });
     const png = Buffer.from(shot.data, 'base64');
     const enriched = {
@@ -132,10 +133,13 @@ async function main() {
         screenshotPath: rel(chatPngPath),
         sidecarPath: rel(sidecarPath),
         screenshotBytes: png.length,
-        screenshotClipApplied: clip,
+        screenshotClipApplied: pageClip,
+        screenshotCssClip: clip,
+        captureFrame: frameInfo,
       },
-      screenshotClipApplied: clip,
+      screenshotClipApplied: pageClip,
       screenshotCssClip: clip,
+      captureFrame: frameInfo,
     };
 
     await writeFile(chatPngPath, png);
@@ -150,6 +154,69 @@ async function main() {
   } finally {
     await browser.close();
   }
+}
+
+async function evaluateChatProbe(page, snippet) {
+  const frames = [page.mainFrame(), ...page.frames().filter((frame) => frame !== page.mainFrame())];
+  const failures = [];
+  for (const frame of frames) {
+    try {
+      const evidence = await frame.evaluate(snippet);
+      if (!evidence?.textMarkers?.rolltemplate) {
+        failures.push(`${shortFrameName(frame)}: no rolltemplate marker`);
+        continue;
+      }
+      const frameInfo = await readFrameInfo(page, frame);
+      return { evidence, frameInfo };
+    } catch (error) {
+      failures.push(`${shortFrameName(frame)}: ${String(error?.message ?? error).split('\n')[0]}`);
+    }
+  }
+  throw new Error(`chat probe did not find usable Roll20 rolltemplate evidence in any frame:\n${failures.map((line) => `- ${line}`).join('\n')}`);
+}
+
+async function readFrameInfo(page, frame) {
+  const isMainFrame = frame === page.mainFrame();
+  if (isMainFrame) {
+    return {
+      isMainFrame: true,
+      url: redactUrl(frame.url()),
+      name: frame.name() || '',
+      frameElementBox: null,
+      offset: { x: 0, y: 0 },
+    };
+  }
+  const handle = await frame.frameElement();
+  const box = await handle.boundingBox();
+  await handle.dispose();
+  const offset = {
+    x: Number(box?.x ?? 0),
+    y: Number(box?.y ?? 0),
+  };
+  return {
+    isMainFrame: false,
+    url: redactUrl(frame.url()),
+    name: frame.name() || '',
+    frameElementBox: box
+      ? {
+          x: finiteNumber(box.x),
+          y: finiteNumber(box.y),
+          width: finiteNumber(box.width),
+          height: finiteNumber(box.height),
+        }
+      : null,
+    offset,
+  };
+}
+
+function applyFrameOffset(clip, frameInfo) {
+  const offset = frameInfo?.offset ?? { x: 0, y: 0 };
+  return {
+    x: Number((clip.x + Number(offset.x ?? 0)).toFixed(3)),
+    y: Number((clip.y + Number(offset.y ?? 0)).toFixed(3)),
+    width: clip.width,
+    height: clip.height,
+  };
 }
 
 async function connectOverCdp(chromium) {
@@ -297,6 +364,28 @@ function hasFlag(name) {
 
 function cssEscape(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function shortFrameName(frame) {
+  const name = frame.name() || '(unnamed)';
+  const url = redactUrl(frame.url());
+  return `${name} ${url}`.trim();
+}
+
+function redactUrl(url) {
+  try {
+    const parsed = new URL(url);
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed.toString();
+  } catch {
+    return String(url || '').slice(0, 160);
+  }
+}
+
+function finiteNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Number(number.toFixed(3)) : null;
 }
 
 function rel(filePath) {

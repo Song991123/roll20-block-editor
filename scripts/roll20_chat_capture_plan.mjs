@@ -772,9 +772,27 @@ function renderDomProbeSnippet(entry) {
     htmlSnippet: template.outerHTML.slice(0, 4000),
     text: (template.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 1000),
   }));
-  const latestTextMeasureEvidence = templateInfos.length
-    ? templateInfos[templateInfos.length - 1].textMeasureEvidence
-    : measureTextEvidence(null);
+  const visibleTemplateArea = (template) => {
+    const rect = template?.rect;
+    if (!rect) return 0;
+    const left = Math.max(0, rect.left ?? rect.x ?? 0);
+    const top = Math.max(0, rect.top ?? rect.y ?? 0);
+    const right = Math.min(window.innerWidth, rect.right ?? (rect.x ?? 0) + (rect.width ?? 0));
+    const bottom = Math.min(window.innerHeight, rect.bottom ?? (rect.y ?? 0) + (rect.height ?? 0));
+    return Math.max(0, right - left) * Math.max(0, bottom - top);
+  };
+  const selectedTemplate = [...templateInfos]
+    .map((template) => {
+      const textLength = String(template.text || '').trim().length;
+      const area = visibleTemplateArea(template);
+      return {
+        template,
+        score: area + Math.min(textLength, 240) * 24 + Math.min(template.rowMetrics?.length ?? 0, 12) * 120,
+      };
+    })
+    .sort((a, b) => b.score - a.score || b.template.index - a.template.index)[0]?.template ?? null;
+  const selectedTextMeasureEvidence = selectedTemplate?.textMeasureEvidence ?? measureTextEvidence(null);
+  const selectedClip = selectedTemplate?.rect ?? rectOf(textchat) ?? { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight, right: window.innerWidth, bottom: window.innerHeight };
   const styleText = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
     .map((node) => node.tagName === 'STYLE' ? node.textContent || '' : node.href || '')
     .join('\\n');
@@ -818,9 +836,9 @@ function renderDomProbeSnippet(entry) {
     chatSelector: chatRootCandidate ? chatRootCandidate.selector : null,
     chatElementSelector: textchat ? (textchat.id ? '#' + textchat.id : textchat.className) : null,
     chatRect: cloneRect(clip),
-    clip: cloneRect(clip),
-    screenshotClipApplied: cloneRect(clip),
-    screenshotCssClip: cloneRect(clip),
+    clip: cloneRect(selectedClip),
+    screenshotClipApplied: cloneRect(selectedClip),
+    screenshotCssClip: cloneRect(selectedClip),
     messageCount: messages.length,
     rolltemplateCount: templates.length,
     latestMessage: latestMessage ? {
@@ -828,12 +846,16 @@ function renderDomProbeSnippet(entry) {
       rect: rectOf(latestMessage),
       text: (latestMessage.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 2000),
     } : null,
-    latestTemplate: templateInfos.length ? { ...templateInfos[templateInfos.length - 1] } : null,
+    latestTemplate: selectedTemplate ? { ...selectedTemplate } : (templateInfos.length ? { ...templateInfos[templateInfos.length - 1] } : null),
+    selectedTemplate: selectedTemplate ? { ...selectedTemplate } : null,
+    selectedTemplateStrategy: selectedTemplate
+      ? 'largest visible/text-rich rolltemplate; avoids sparse latest-message crops when multiple Roll20 chat templates are visible'
+      : 'none',
     rolltemplates: templateInfos,
     templates: templateInfos.slice(-5),
     chatCssEvidence,
     fontEvidence: checkFonts(),
-    textMeasureEvidence: latestTextMeasureEvidence,
+    textMeasureEvidence: selectedTextMeasureEvidence,
     viewportEvidence: {
       devicePixelRatio: window.devicePixelRatio,
       innerWidth: window.innerWidth,

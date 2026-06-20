@@ -3001,6 +3001,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The renderer gate now reports the AW2E patch family as `sheet-class-alias-css:playbook-hide-only`, not a vague blanket alias.
 - Interpretation: AW2E mismatch is strongly tied to playbook/default-state visibility, but the naive alias candidates over-hide content. The next P0 is actual Roll20 DOM/state/selector probing or a targeted state model, not production CSS promotion.
 - Claim boundary: this improves root-cause isolation only. It does not prove Roll20 visual parity and does not make the app renderer ready.
+## 2026-06-20 Roll20 Chat Capture Frame Offset Hardening
+
+- Hardened the Roll20 chat recapture path rather than changing the product renderer. The capture-plan snippet now prefers a visible/text-rich rolltemplate, so Les-Oublies does not default to the sparse latest `Initiative` card when richer `classic-roll` cards are visible.
+- Updated `capture:roll20-chat-cdp` to evaluate the chat probe in the frame that actually contains Roll20 rolltemplate evidence, then translate the DOM/frame-local clip into a top-level `Page.captureScreenshot` clip. New sidecars distinguish `screenshotCssClip`, `screenshotClipApplied`, and `captureFrame`.
+- Chrome extension read-only check confirmed the root bug shape: Roll20 DOM reported chat/template rects around `x=50` inside the chat target, while the full visible screenshot placed the chat panel on the far right. Existing suspect Les PNGs can therefore be wrong-region captures and must not drive ChatPane CSS.
+- Verification passed for syntax, capture-plan self-test, CDP readiness self-test, and Les recapture plan generation. Actual recapture is still blocked because no CDP endpoint is listening at `127.0.0.1:9222`; current `status:roll20-actual` remains `GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, and `rendererReady=NO`.
+- Claim boundary: this is verification-tool hardening only. It does not prove Roll20 visual parity, does not reduce the current Les `chatActualTemplatePixelSuspect=1`, and does not authorize production ChatPane renderer changes.
+
 ## 2026-06-19 AW2E Playbook State Height Probe
 
 - Added forced playbook-state diagnostic candidates to `scripts/roll20_full_root_candidate_smoke.mjs`, including Hardholder-only and front-of-list playbook sets through News, Quarantine, and SavvyHead.

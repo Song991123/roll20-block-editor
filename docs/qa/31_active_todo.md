@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Roll20 chat capture frame-offset hardening
+
+Status: VERIFY/BLOCKED_CDP. This batch improves the actual Roll20 chat evidence capture tooling; it does not change product rendering and does not prove Roll20 visual parity.
+
+- DONE: `scripts/roll20_chat_capture_plan.mjs` now selects a visible/text-rich rolltemplate for recapture instead of blindly using the latest template. This avoids Les-Oublies choosing the sparse `Initiative` card when richer `classic-roll` templates are visible.
+- DONE: `scripts/roll20_chat_cdp_capture.mjs` now probes Roll20 frames for usable rolltemplate evidence and records both `screenshotCssClip` (DOM/frame-local clip) and `screenshotClipApplied` (top-level screenshot clip after frame offset). The sidecar also records `captureFrame`.
+- OBSERVED: Chrome extension read-only evidence shows the current Roll20 page can report chat DOM coordinates around `x=50` while the visible full-page screenshot shows the chat panel on the far right. This confirms the old crop path could capture Sandbox Tools/VTT UI instead of the rolltemplate.
+- VERIFIED: `node --check scripts\roll20_chat_capture_plan.mjs`, `node --check scripts\roll20_chat_cdp_capture.mjs`, `corepack pnpm run test:roll20-chat-capture-plan`, `corepack pnpm run test:roll20-chat-cdp-readiness`, and `corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\2026-06-18-state-map-v1 official-roll20-Les-Oublies --require-current-metrics` passed.
+- CURRENT STATUS: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` still reports `GENERATED_ACTUAL_SCREENSHOTS_DIFFED_WITH_SUSPECT_CHAT`, `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `chatCurrentMetrics=3/3`, `chatActualTemplatePixelSuspect=1`, `generatedAuthoritative=NO`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, and `rendererReady=NO`.
+- BLOCKED: `corepack pnpm run capture:roll20-chat-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixture official-roll20-Les-Oublies --skip-click --dry-run` still reports `BLOCKED_CDP_ENDPOINT` because `127.0.0.1:9222` is not listening. No new trusted Roll20 `roll20-chat.png` was captured in this batch.
+- NEXT P0: Open a CDP-enabled logged-in Roll20 Sandbox/test-room tab or add a separate Chrome-extension full-screenshot crop path, then recapture Les-Oublies chat so `chatActualTemplatePixelSuspect` drops to `0` before any ChatPane renderer tuning.
+
 ## 2026-06-20 Codex Update - Roll20 sandbox settings chat recapture
 
 Status: VERIFY/HOLD_RENDERER. This batch used the dedicated Roll20 Sandbox settings page, not existing real rooms, to refresh actual Roll20 chat evidence.
