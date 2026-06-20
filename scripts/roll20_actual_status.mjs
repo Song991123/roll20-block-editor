@@ -516,6 +516,7 @@ function validateCurrentChatMetrics(fixtureId, domEvidence, file) {
   const missing = [];
   if (!template?.computedStyle) missing.push('latestTemplate.computedStyle');
   if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) missing.push('latestTemplate.rowMetrics');
+  if (!template?.tableStructure?.table?.boxMetrics) missing.push('latestTemplate.tableStructure');
   if (!table?.computedStyle) missing.push('table.computedStyle');
   if (!table?.boxMetrics) missing.push('table.boxMetrics');
   if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');

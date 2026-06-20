@@ -176,7 +176,7 @@ function buildEntry(fixtureId, status, chatParity) {
       'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'If CDP captures the wrong region on a high-DPR Roll20 tab, verify the coordinate space with a debug crop: multiply the CSS template rect by devicePixelRatio, capture the physical PNG, then DPR-correct/downscale it back to the CSS clip size and record captureDprCorrection in the sidecar.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
-      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, text-rendering/font-smoothing fields, fontEvidence, textMeasureEvidence, and viewportEvidence.',
+      'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, latestTemplate.tableStructure, text-rendering/font-smoothing fields, fontEvidence, textMeasureEvidence, and viewportEvidence.',
       'Keep screenshot and DOM sidecar timestamps within 5 minutes.',
       'Rerun screenshot diff, chat parity diagnostics, renderer action gate, and status.',
     ],
@@ -208,6 +208,7 @@ function validateCurrentChatMetrics(screenshots) {
   const missing = [];
   if (!template?.computedStyle) missing.push('latestTemplate.computedStyle');
   if (!Array.isArray(template?.rowMetrics) || template.rowMetrics.length === 0) missing.push('latestTemplate.rowMetrics');
+  if (!template?.tableStructure?.table?.boxMetrics) missing.push('latestTemplate.tableStructure');
   if (!table?.computedStyle) missing.push('table.computedStyle');
   if (!table?.boxMetrics) missing.push('table.boxMetrics');
   if (template?.computedStyle && !hasTextRasterizationFields(template.computedStyle)) missing.push('latestTemplate.computedStyle.textRasterization');
@@ -541,6 +542,43 @@ function renderDomProbeSnippet(entry) {
       text: (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 500),
     };
   };
+  const summarizeTextProfile = (el) => {
+    const text = (el?.textContent || '').replace(/\\s+/g, ' ').trim();
+    const tokens = text.split(/\\s+/).filter(Boolean);
+    const longestToken = tokens.reduce((best, token) => token.length > best.length ? token : best, '');
+    return {
+      textLength: text.length,
+      tokenCount: tokens.length,
+      longestToken: longestToken.slice(0, 120),
+      longestTokenLength: longestToken.length,
+    };
+  };
+  const summarizeTableStructure = (root) => {
+    const table = root?.querySelector('table');
+    if (!table) return null;
+    return {
+      table: summarizeElement(table, 'table'),
+      textProfile: summarizeTextProfile(table),
+      columnGroups: Array.from(table.querySelectorAll('colgroup')).slice(0, 8).map((colgroup, index) => ({
+        index,
+        element: summarizeElement(colgroup, 'colgroup:' + index),
+        columns: Array.from(colgroup.querySelectorAll('col')).slice(0, 16).map((col, colIndex) => ({
+          index: colIndex,
+          element: summarizeElement(col, 'colgroup:' + index + '>col:' + colIndex),
+          span: col.getAttribute('span') || '',
+          widthAttr: col.getAttribute('width') || '',
+          styleAttr: col.getAttribute('style') || '',
+        })),
+      })),
+      columns: Array.from(table.querySelectorAll(':scope > col, :scope > colgroup > col')).slice(0, 24).map((col, index) => ({
+        index,
+        element: summarizeElement(col, 'col:' + index),
+        span: col.getAttribute('span') || '',
+        widthAttr: col.getAttribute('width') || '',
+        styleAttr: col.getAttribute('style') || '',
+      })),
+    };
+  };
   const summarizeRows = (root) => Array.from(root?.querySelectorAll('tr') ?? []).slice(0, 20).map((row, index) => ({
     index,
     className: row.className,
@@ -695,6 +733,7 @@ function renderDomProbeSnippet(entry) {
       summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
     ].filter(Boolean),
     rowMetrics: summarizeRows(template),
+    tableStructure: summarizeTableStructure(template),
     textMeasureEvidence: measureTextEvidence(template),
     htmlSnippet: template.outerHTML.slice(0, 4000),
     text: (template.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 1000),
@@ -801,11 +840,18 @@ function runSelfTest() {
     process.exitCode = 1;
     return;
   }
+  const table = fakeElement({
+    tagName: 'TABLE',
+    className: '',
+    rect: { x: 120, y: 180, width: 260, height: 90, right: 380, bottom: 270 },
+    textContent: 'rolls Succeeds',
+  });
   const template = fakeElement({
     className: 'sheet-rolltemplate-aw',
     rect: { x: 120, y: 180, width: 260, height: 90, right: 380, bottom: 270 },
     textContent: 'rolls Succeeds',
     outerHTML: '<div class="sheet-rolltemplate-aw"><table><tbody><tr><td>rolls</td></tr></tbody></table></div>',
+    queryMap: { table },
   });
   const message = fakeElement({
     className: 'message general you',
@@ -921,6 +967,7 @@ function runSelfTest() {
   if (evidence.chatCssEvidence?.classification !== 'EXPECTED_RULE_PRESENT') failures.push(`unexpected css classification ${evidence.chatCssEvidence?.classification}`);
   if (!evidence.textMarkers?.rolltemplate || !evidence.textMarkers?.sheetRolltemplate) failures.push('missing text markers');
   if (!Array.isArray(evidence.textMeasureEvidence?.samples) || evidence.textMeasureEvidence.samples.length === 0) failures.push('missing text measure evidence');
+  if (!evidence.latestTemplate?.tableStructure) failures.push('missing tableStructure evidence');
   if (!capturedLogs.some((value) => String(value).includes('"rolltemplates"'))) failures.push('console JSON did not include rolltemplates');
   try {
     const json = JSON.stringify(evidence);
@@ -938,22 +985,31 @@ function runSelfTest() {
     return;
   }
   console.log('ROLL20 CHAT CAPTURE PLAN SELF_TEST PASS');
-  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence,textMeasureEvidence');
+  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence,textMeasureEvidence,tableStructure');
 }
 
-function fakeElement({ id = '', className = '', rect, textContent = '', outerHTML = '', contains = () => false }) {
+function fakeElement({ id = '', tagName = 'DIV', className = '', rect, textContent = '', outerHTML = '', contains = () => false, queryMap = {}, queryAllMap = {} }) {
   return {
     id,
     className,
     textContent,
     outerHTML,
-    tagName: 'DIV',
+    tagName,
+    offsetWidth: Math.round(rect?.width ?? 0),
+    offsetHeight: Math.round(rect?.height ?? 0),
+    clientWidth: Math.round(rect?.width ?? 0),
+    clientHeight: Math.round(rect?.height ?? 0),
+    scrollWidth: Math.round(rect?.width ?? 0),
+    scrollHeight: Math.round(rect?.height ?? 0),
     contains,
-    querySelector() {
-      return null;
+    getAttribute() {
+      return '';
     },
-    querySelectorAll() {
-      return [];
+    querySelector(selector) {
+      return queryMap[selector] ?? null;
+    },
+    querySelectorAll(selector) {
+      return queryAllMap[selector] ?? [];
     },
     getBoundingClientRect() {
       return rect;

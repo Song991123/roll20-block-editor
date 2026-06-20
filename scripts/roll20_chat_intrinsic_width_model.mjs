@@ -103,14 +103,15 @@ async function compareFixture(localFixture, reports) {
     cropWidthDelta: delta(local.crop.width, actual.crop.width),
   };
   const rowCellDeltas = compareRows(local.rows, actual.rows);
+  const structureDeltas = compareTableStructure(local.tableStructure, actual.tableStructure);
   const ratios = {
     actualVsLocalTableWidth: ratio(actual.table.width, local.table.width),
     actualVsLocalFirstCellWidth: ratio(rowCellDeltas.actualFirstCellWidth, rowCellDeltas.localFirstCellWidth),
     localTableVsCrop: ratio(local.table.width, local.crop.width),
     actualTableVsCrop: ratio(actual.table.width, actual.crop.width),
   };
-  const constraintModel = buildConstraintModel({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, local, actual });
-  const intrinsicDecision = decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, constraintModel, local, actual });
+  const constraintModel = buildConstraintModel({ deltas, rowCellDeltas, structureDeltas, ratios, styleProof, candidateEvidence, local, actual });
+  const intrinsicDecision = decideIntrinsic({ deltas, rowCellDeltas, structureDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, constraintModel, local, actual });
 
   return {
     fixtureId,
@@ -128,9 +129,10 @@ async function compareFixture(localFixture, reports) {
     actual,
     deltas,
     rowCellDeltas,
+    structureDeltas,
     ratios,
     constraintModel,
-    evidence: evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, constraintModel, local, actual }),
+    evidence: evidenceNotes({ deltas, rowCellDeltas, structureDeltas, ratios, styleProof, candidateEvidence, constraintModel, local, actual }),
   };
 }
 
@@ -156,6 +158,7 @@ function extractTemplate(template, options = {}) {
     },
     table: extractElement(table),
     caption: caption ? extractElement(caption) : null,
+    tableStructure: extractTableStructure(template.tableStructure),
     rows: (template.rowMetrics ?? []).map((row) => ({
       index: row.index,
       text: row.text ?? '',
@@ -190,12 +193,44 @@ function extractElement(element) {
     borderSpacingX: firstCssLength(element.computedStyle?.borderSpacing),
     borderSpacing: normalizeCssValue(element.computedStyle?.borderSpacing),
     tableLayout: normalizeCssValue(element.computedStyle?.tableLayout),
+    whiteSpace: normalizeCssValue(element.computedStyle?.whiteSpace),
     transform: normalizeCssValue(element.computedStyle?.transform),
     overflowWrap: normalizeCssValue(element.computedStyle?.overflowWrap),
     wordBreak: normalizeCssValue(element.computedStyle?.wordBreak),
     textRendering: normalizeCssValue(element.computedStyle?.textRendering),
     webkitFontSmoothing: normalizeCssValue(element.computedStyle?.webkitFontSmoothing),
     textShadow: normalizeCssValue(element.computedStyle?.textShadow),
+    boxMetrics: {
+      offsetWidth: numberOrNull(element.boxMetrics?.offsetWidth),
+      clientWidth: numberOrNull(element.boxMetrics?.clientWidth),
+      scrollWidth: numberOrNull(element.boxMetrics?.scrollWidth),
+      offsetHeight: numberOrNull(element.boxMetrics?.offsetHeight),
+      clientHeight: numberOrNull(element.boxMetrics?.clientHeight),
+      scrollHeight: numberOrNull(element.boxMetrics?.scrollHeight),
+    },
+  };
+}
+
+function extractTableStructure(structure) {
+  if (!structure) return null;
+  return {
+    textProfile: {
+      textLength: numberOrNull(structure.textProfile?.textLength) ?? 0,
+      tokenCount: numberOrNull(structure.textProfile?.tokenCount) ?? 0,
+      longestToken: structure.textProfile?.longestToken ?? '',
+      longestTokenLength: numberOrNull(structure.textProfile?.longestTokenLength) ?? 0,
+    },
+    columnGroupCount: Array.isArray(structure.columnGroups) ? structure.columnGroups.length : 0,
+    columnCount: Array.isArray(structure.columns) ? structure.columns.length : 0,
+    columns: (structure.columns ?? []).map((column) => ({
+      index: column.index,
+      span: column.span ?? '',
+      widthAttr: column.widthAttr ?? '',
+      styleAttr: column.styleAttr ?? '',
+      width: numberOrNull(column.element?.rect?.width),
+      computedWidth: px(column.element?.computedStyle?.width),
+      display: normalizeCssValue(column.element?.computedStyle?.display),
+    })),
   };
 }
 
@@ -262,6 +297,78 @@ function compareRows(localRows, actualRows) {
   };
 }
 
+function compareTableStructure(localStructure, actualStructure) {
+  if (!localStructure || !actualStructure) {
+    return {
+      status: 'MISSING_TABLE_STRUCTURE',
+      localAvailable: Boolean(localStructure),
+      actualAvailable: Boolean(actualStructure),
+      columnCountDelta: null,
+      longestTokenLengthDelta: null,
+      tableScrollWidthDelta: null,
+      tableClientWidthDelta: null,
+      overflowDelta: null,
+      columnWidthDeltas: [],
+      structureMatches: null,
+      nextAction: 'regenerate local smoke and actual Roll20 chat DOM sidecars with tableStructure evidence',
+    };
+  }
+  const localColumns = localStructure?.columns ?? [];
+  const actualColumns = actualStructure?.columns ?? [];
+  const max = Math.max(localColumns.length, actualColumns.length);
+  const columnWidthDeltas = [];
+  for (let index = 0; index < max; index += 1) {
+    const local = localColumns[index] ?? null;
+    const actual = actualColumns[index] ?? null;
+    columnWidthDeltas.push({
+      index,
+      localWidth: local?.width ?? local?.computedWidth ?? null,
+      actualWidth: actual?.width ?? actual?.computedWidth ?? null,
+      widthDelta: delta(local?.width ?? local?.computedWidth, actual?.width ?? actual?.computedWidth),
+      localWidthAttr: local?.widthAttr ?? '',
+      actualWidthAttr: actual?.widthAttr ?? '',
+      localStyleAttr: local?.styleAttr ?? '',
+      actualStyleAttr: actual?.styleAttr ?? '',
+    });
+  }
+  const localTable = localStructure?.table ?? null;
+  const actualTable = actualStructure?.table ?? null;
+  const tableScrollWidthDelta = delta(localTable?.boxMetrics?.scrollWidth, actualTable?.boxMetrics?.scrollWidth);
+  const tableClientWidthDelta = delta(localTable?.boxMetrics?.clientWidth, actualTable?.boxMetrics?.clientWidth);
+  const overflowDelta = delta(
+    Number(localTable?.boxMetrics?.scrollWidth) - Number(localTable?.boxMetrics?.clientWidth),
+    Number(actualTable?.boxMetrics?.scrollWidth) - Number(actualTable?.boxMetrics?.clientWidth),
+  );
+  const columnCountDelta = (actualStructure?.columnCount ?? 0) - (localStructure?.columnCount ?? 0);
+  const longestTokenLengthDelta = (actualStructure?.textProfile?.longestTokenLength ?? 0) - (localStructure?.textProfile?.longestTokenLength ?? 0);
+  const structureMatches =
+    columnCountDelta === 0 &&
+    longestTokenLengthDelta === 0 &&
+    (localStructure?.textProfile?.textLength ?? 0) === (actualStructure?.textProfile?.textLength ?? 0);
+  return {
+    status: 'COMPARED_TABLE_STRUCTURE',
+    localColumnGroups: localStructure?.columnGroupCount ?? 0,
+    actualColumnGroups: actualStructure?.columnGroupCount ?? 0,
+    localColumns: localStructure?.columnCount ?? 0,
+    actualColumns: actualStructure?.columnCount ?? 0,
+    columnCountDelta,
+    longestTokenLengthDelta,
+    localLongestTokenLength: localStructure?.textProfile?.longestTokenLength ?? 0,
+    actualLongestTokenLength: actualStructure?.textProfile?.longestTokenLength ?? 0,
+    localTextLength: localStructure?.textProfile?.textLength ?? 0,
+    actualTextLength: actualStructure?.textProfile?.textLength ?? 0,
+    tableScrollWidthDelta,
+    tableClientWidthDelta,
+    overflowDelta,
+    maxAbsColumnWidthDelta: maxAbs(columnWidthDeltas.map((column) => column.widthDelta)),
+    columnWidthDeltas: columnWidthDeltas.slice(0, 12),
+    structureMatches,
+    nextAction: structureMatches
+      ? 'structure tokens/columns match; focus on CSS intrinsic sizing and font activation'
+      : 'fix rolltemplate table structure/text preservation before comparing CSS intrinsic sizing',
+  };
+}
+
 function extractStyleProof(styleProof, fixtureId) {
   const candidates = [];
   for (const candidate of styleProof?.candidates ?? []) {
@@ -322,23 +429,35 @@ function extractCandidateEvidence(candidateComparison, fixtureId) {
   };
 }
 
-function buildConstraintModel({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, local, actual }) {
+function buildConstraintModel({ deltas, rowCellDeltas, structureDeltas, ratios, styleProof, candidateEvidence, local, actual }) {
   const tableDelta = Number(deltas.tableWidthDelta);
   const hasTableDelta = Number.isFinite(tableDelta) && Math.abs(tableDelta) >= 8;
   const rowsMatch = rowCellDeltas.textMismatchRows.length === 0 && rowCellDeltas.cellCountMismatchRows.length === 0;
+  const structureMatches = structureDeltas?.structureMatches !== false;
   const rowDeltaUniform = Number(rowCellDeltas.rowWidthDeltaSpread ?? Infinity) <= 0.25;
   const cellsSmall = Number(rowCellDeltas.maxAbsCellWidthDelta ?? Infinity) < 2;
-  const tableWideOnly = hasTableDelta && rowsMatch && rowDeltaUniform && cellsSmall;
+  const tableWideOnly = hasTableDelta && rowsMatch && structureMatches && rowDeltaUniform && cellsSmall;
+  const tableScrollTracksWidth = sameMagnitude(structureDeltas?.tableScrollWidthDelta, tableDelta, 3);
+  const clientTracksWidth = sameMagnitude(structureDeltas?.tableClientWidthDelta, tableDelta, 3);
+  const overflowTracksWidth = sameMagnitude(structureDeltas?.overflowDelta, tableDelta, 3);
   const cssMetricCandidatesRejected = Boolean(candidateEvidence.spacingRejectedOrNoGain);
   const fontOrSanitizeChanged =
     local.table.fontFamily !== actual.table.fontFamily ||
     Math.abs(deltas.fontSizeDelta ?? 0) >= 0.5 ||
     local.table.overflowWrap !== actual.table.overflowWrap ||
+    local.table.whiteSpace !== actual.table.whiteSpace ||
+    local.table.wordBreak !== actual.table.wordBreak ||
     Math.abs(deltas.letterSpacingDelta ?? 0) >= 0.1;
 
   let decision = 'CONSTRAINT_SECONDARY';
   let nextAction = 'keep constraint modeling secondary';
-  if (tableWideOnly && styleProof.transformContradicted && cssMetricCandidatesRejected) {
+  if (!structureMatches) {
+    decision = 'TABLE_STRUCTURE_OR_TEXT_MISMATCH';
+    nextAction = 'fix rolltemplate table structure/text preservation before table-width CSS';
+  } else if (tableWideOnly && tableScrollTracksWidth && styleProof.transformContradicted && cssMetricCandidatesRejected) {
+    decision = 'TABLE_SCROLL_INTRINSIC_CONSTRAINT_NOT_TRANSFORM';
+    nextAction = 'model Roll20 table scroll/intrinsic width calculation; table structure matches and transform/spacing are rejected';
+  } else if (tableWideOnly && styleProof.transformContradicted && cssMetricCandidatesRejected) {
     decision = 'TABLE_WIDE_CONSTRAINT_NOT_TRANSFORM';
     nextAction = 'model Roll20 table intrinsic/max-content sizing and sanitize/font activation; do not use transform or global spacing CSS';
   } else if (tableWideOnly && fontOrSanitizeChanged) {
@@ -359,15 +478,26 @@ function buildConstraintModel({ deltas, rowCellDeltas, ratios, styleProof, candi
     rowsMatch,
     rowDeltaUniform,
     cellsSmall,
+    structureMatches,
+    tableScrollTracksWidth,
+    clientTracksWidth,
+    overflowTracksWidth,
     cssMetricCandidatesRejected,
     fontOrSanitizeChanged,
     rowWidthDeltaSpread: rowCellDeltas.rowWidthDeltaSpread ?? null,
     meanAbsRowWidthDelta: rowCellDeltas.meanAbsRowWidthDelta ?? null,
     maxAbsCellWidthDelta: rowCellDeltas.maxAbsCellWidthDelta ?? null,
+    tableScrollWidthDelta: structureDeltas?.tableScrollWidthDelta ?? null,
+    tableClientWidthDelta: structureDeltas?.tableClientWidthDelta ?? null,
+    overflowDelta: structureDeltas?.overflowDelta ?? null,
+    columnCountDelta: structureDeltas?.columnCountDelta ?? null,
+    longestTokenLengthDelta: structureDeltas?.longestTokenLengthDelta ?? null,
     actualVsLocalTableWidth: ratios.actualVsLocalTableWidth ?? null,
     styleDifferences: {
       tableFontFamilyChanged: local.table.fontFamily !== actual.table.fontFamily,
       overflowWrapChanged: local.table.overflowWrap !== actual.table.overflowWrap,
+      whiteSpaceChanged: local.table.whiteSpace !== actual.table.whiteSpace,
+      wordBreakChanged: local.table.wordBreak !== actual.table.wordBreak,
       fontSizeDelta: deltas.fontSizeDelta ?? null,
       letterSpacingDelta: deltas.letterSpacingDelta ?? null,
       borderSpacingXDelta: deltas.borderSpacingXDelta ?? null,
@@ -383,9 +513,15 @@ function fixtureCandidateKey(fixtureId) {
   return fixtureId;
 }
 
-function decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, constraintModel, local, actual }) {
+function decideIntrinsic({ deltas, rowCellDeltas, structureDeltas, styleProof, parityFixture, widthFixture, candidateEvidence, constraintModel, local, actual }) {
   const highMismatch = Number(parityFixture?.bestAlignedMismatchRatio ?? 0) > 0.1;
   if (!highMismatch && Math.abs(deltas.tableWidthDelta ?? 0) < 8) return 'INTRINSIC_WIDTH_SECONDARY_OR_ACCEPTABLE';
+  if (constraintModel?.decision === 'TABLE_STRUCTURE_OR_TEXT_MISMATCH') {
+    return 'TABLE_STRUCTURE_MODEL_REQUIRED';
+  }
+  if (constraintModel?.decision === 'TABLE_SCROLL_INTRINSIC_CONSTRAINT_NOT_TRANSFORM') {
+    return 'TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED';
+  }
   if (constraintModel?.decision === 'TABLE_WIDE_CONSTRAINT_NOT_TRANSFORM') {
     return 'TABLE_WIDE_CONSTRAINT_MODEL_REQUIRED';
   }
@@ -411,6 +547,9 @@ function decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, wid
     return 'ROW_CONTENT_OR_CELL_COUNT_MODEL_REQUIRED';
   }
   if (Math.abs(rowCellDeltas.meanAbsCellWidthDelta ?? 0) >= 1) return 'CELL_ALLOCATION_INTRINSIC_MODEL_REQUIRED';
+  if (Math.abs(structureDeltas?.tableScrollWidthDelta ?? 0) >= 8) {
+    return 'TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED';
+  }
   if (Math.abs(deltas.tableWidthDelta ?? 0) >= 8 || widthFixture?.widthDecision === 'TABLE_WIDTH_MODEL_REQUIRED') {
     if (local.table.fontFamily !== actual.table.fontFamily || Math.abs(deltas.fontSizeDelta ?? 0) >= 0.5) {
       return 'FONT_GLYPH_INTRINSIC_MODEL_REQUIRED';
@@ -422,6 +561,10 @@ function decideIntrinsic({ deltas, rowCellDeltas, styleProof, parityFixture, wid
 
 function nextAction(decision) {
   switch (decision) {
+    case 'TABLE_STRUCTURE_MODEL_REQUIRED':
+      return 'compare rolltemplate table/col/text structure before CSS; local and actual are not the same intrinsic input';
+    case 'TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED':
+      return 'model Roll20 table scroll/intrinsic width calculation; do not use transform or broad font CSS';
     case 'TRANSFORM_AND_SPACING_REJECTED_FONT_GLYPH_MODEL_REQUIRED':
       return 'do not promote scale or spacing CSS; compare loaded font glyph metrics and Roll20 sanitize/CSS activation that changes intrinsic text width';
     case 'TABLE_WIDE_CONSTRAINT_MODEL_REQUIRED':
@@ -447,17 +590,24 @@ function nextAction(decision) {
   }
 }
 
-function evidenceNotes({ deltas, rowCellDeltas, ratios, styleProof, candidateEvidence, constraintModel, local, actual }) {
+function evidenceNotes({ deltas, rowCellDeltas, structureDeltas, ratios, styleProof, candidateEvidence, constraintModel, local, actual }) {
   const notes = [];
   if (constraintModel?.decision && constraintModel.decision !== 'CONSTRAINT_SECONDARY') {
     notes.push(`constraint model ${constraintModel.decision}`);
   }
+  if (structureDeltas?.status === 'MISSING_TABLE_STRUCTURE') notes.push('tableStructure evidence missing; regenerate current sidecars');
+  if (structureDeltas?.structureMatches === false) notes.push(`table structure/text differs: column delta ${structureDeltas.columnCountDelta}, longest token delta ${structureDeltas.longestTokenLengthDelta}`);
+  if (Math.abs(structureDeltas?.tableScrollWidthDelta ?? 0) >= 1) notes.push(`table scrollWidth delta ${fmtPx(structureDeltas.tableScrollWidthDelta)}`);
+  if (Math.abs(structureDeltas?.overflowDelta ?? 0) >= 1) notes.push(`table overflow delta ${fmtPx(structureDeltas.overflowDelta)}`);
   if (styleProof.transformContradicted) notes.push('actual Roll20 table transform is none; scaleX candidate rejected');
   if (candidateEvidence.spacingRejectedOrNoGain) notes.push('spacing/letter candidates rejected or no-gain in pixel comparison');
   if (Math.abs(deltas.tableWidthDelta ?? 0) >= 8) notes.push(`table width delta ${fmtPx(deltas.tableWidthDelta)}`);
   if (Math.abs(deltas.fontSizeDelta ?? 0) >= 0.5) notes.push(`table font-size delta ${fmtPx(deltas.fontSizeDelta)}`);
   if (Math.abs(deltas.letterSpacingDelta ?? 0) >= 0.1) notes.push(`letter-spacing delta ${fmtPx(deltas.letterSpacingDelta)}`);
   if (Math.abs(deltas.borderSpacingXDelta ?? 0) >= 0.5) notes.push(`border-spacing-x delta ${fmtPx(deltas.borderSpacingXDelta)}`);
+  if (local.table.whiteSpace !== actual.table.whiteSpace) notes.push(`white-space differs: local=${local.table.whiteSpace || '(empty)'} actual=${actual.table.whiteSpace || '(empty)'}`);
+  if (local.table.wordBreak !== actual.table.wordBreak) notes.push(`word-break differs: local=${local.table.wordBreak || '(empty)'} actual=${actual.table.wordBreak || '(empty)'}`);
+  if (local.table.overflowWrap !== actual.table.overflowWrap) notes.push(`overflow-wrap differs: local=${local.table.overflowWrap || '(empty)'} actual=${actual.table.overflowWrap || '(empty)'}`);
   if (rowCellDeltas.firstCellWidthDelta != null) notes.push(`first cell width delta ${fmtPx(rowCellDeltas.firstCellWidthDelta)}`);
   if (rowCellDeltas.rowWidthDeltaSpread != null) notes.push(`row width delta spread ${fmtPx(rowCellDeltas.rowWidthDeltaSpread)}`);
   if (rowCellDeltas.textMismatchRows.length) notes.push(`row text mismatch rows ${rowCellDeltas.textMismatchRows.join(',')}`);
@@ -477,11 +627,11 @@ function renderMarkdown(report) {
     '',
     `Status: ${report.summary.status}`,
     '',
-    '| Fixture | Decision | Constraint | Mismatch | Table Δ | Row spread | Cell max Δ | Font Δ | Letter Δ | Border spacing Δ | Transform proof | Evidence | Next |',
-    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
+    '| Fixture | Decision | Constraint | Mismatch | Table delta | Scroll delta | Overflow delta | Col delta | Long-token delta | Row spread | Cell max delta | Font delta | Letter delta | Transform proof | Evidence | Next |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.intrinsicDecision} | ${fixture.constraintModel?.decision ?? ''} | ${fixture.parity?.bestAlignedMismatchPct ?? ''} | ${fmtPx(fixture.deltas?.tableWidthDelta)} | ${fmtPx(fixture.rowCellDeltas?.rowWidthDeltaSpread)} | ${fmtPx(fixture.rowCellDeltas?.maxAbsCellWidthDelta)} | ${fmtPx(fixture.deltas?.fontSizeDelta)} | ${fmtPx(fixture.deltas?.letterSpacingDelta)} | ${fmtPx(fixture.deltas?.borderSpacingXDelta)} | ${fixture.styleProof?.transformContradicted ? 'rejected' : 'n/a'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.intrinsicDecision} | ${fixture.constraintModel?.decision ?? ''} | ${fixture.parity?.bestAlignedMismatchPct ?? ''} | ${fmtPx(fixture.deltas?.tableWidthDelta)} | ${fmtPx(fixture.structureDeltas?.tableScrollWidthDelta)} | ${fmtPx(fixture.structureDeltas?.overflowDelta)} | ${fixture.structureDeltas?.columnCountDelta ?? ''} | ${fixture.structureDeltas?.longestTokenLengthDelta ?? ''} | ${fmtPx(fixture.rowCellDeltas?.rowWidthDeltaSpread)} | ${fmtPx(fixture.rowCellDeltas?.maxAbsCellWidthDelta)} | ${fmtPx(fixture.deltas?.fontSizeDelta)} | ${fmtPx(fixture.deltas?.letterSpacingDelta)} | ${fixture.styleProof?.transformContradicted ? 'rejected' : 'n/a'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
   }
   lines.push('', '## Claim Boundary', '');
   lines.push('- Pixel-improving transform/scale candidates are rejected when actual Roll20 computed styles show no transform.');
@@ -530,6 +680,13 @@ function ratio(value, divisor) {
   return Number.isFinite(number) && Number.isFinite(base) && base !== 0
     ? Number((number / base).toFixed(4))
     : null;
+}
+
+function sameMagnitude(a, b, tolerance = 1) {
+  const left = Number(a);
+  const right = Number(b);
+  if (!Number.isFinite(left) || !Number.isFinite(right)) return false;
+  return Math.abs(Math.abs(left) - Math.abs(right)) <= tolerance;
 }
 
 function px(value) {

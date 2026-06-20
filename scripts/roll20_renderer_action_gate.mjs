@@ -483,7 +483,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   } else {
     positiveFindings.push(`chat intrinsic width model: status=${chatIntrinsicWidthModelSummary.status}, actionable=${chatIntrinsicWidthModelSummary.actionable}/${chatIntrinsicWidthModelSummary.totalFixtures}, decisions=${formatFindingCounts(chatIntrinsicWidthModelSummary.decisions)}, transformContradicted=${chatIntrinsicWidthModelSummary.transformContradicted.join(', ') || 'none'}`);
     for (const fixture of chatIntrinsicWidthModelSummary.actionableFixtures) {
-      positiveFindings.push(`${fixture.fixtureId} intrinsic decision=${fixture.intrinsicDecision}, constraint=${fixture.constraintDecision || 'n/a'}, tableDelta=${num(fixture.tableWidthDelta)}px, rowSpread=${num(fixture.rowWidthDeltaSpread)}px, maxCellDelta=${num(fixture.maxAbsCellWidthDelta)}px, firstCellDelta=${num(fixture.firstCellWidthDelta)}px, fontDelta=${num(fixture.fontSizeDelta)}px, letterDelta=${num(fixture.letterSpacingDelta)}px, borderSpacingDelta=${num(fixture.borderSpacingXDelta)}px, transformContradicted=${fixture.transformContradicted ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
+      positiveFindings.push(`${fixture.fixtureId} intrinsic decision=${fixture.intrinsicDecision}, constraint=${fixture.constraintDecision || 'n/a'}, tableDelta=${fmtPx(fixture.tableWidthDelta)}, scrollDelta=${fmtPx(fixture.tableScrollWidthDelta)}, overflowDelta=${fmtPx(fixture.overflowDelta)}, colDelta=${num(fixture.columnCountDelta)}, longTokenDelta=${num(fixture.longestTokenLengthDelta)}, rowSpread=${fmtPx(fixture.rowWidthDeltaSpread)}, maxCellDelta=${fmtPx(fixture.maxAbsCellWidthDelta)}, firstCellDelta=${fmtPx(fixture.firstCellWidthDelta)}, fontDelta=${fmtPx(fixture.fontSizeDelta)}, letterDelta=${fmtPx(fixture.letterSpacingDelta)}, borderSpacingDelta=${fmtPx(fixture.borderSpacingXDelta)}, transformContradicted=${fixture.transformContradicted ? 'YES' : 'NO'}, next=${fixture.nextAction}`);
     }
   }
   if (!chatFontGlyphModelSummary) {
@@ -963,6 +963,13 @@ function summarizeChatIntrinsicWidthModel(report) {
     fontSizeDelta: fixture.deltas?.fontSizeDelta ?? null,
     letterSpacingDelta: fixture.deltas?.letterSpacingDelta ?? null,
     borderSpacingXDelta: fixture.deltas?.borderSpacingXDelta ?? null,
+    tableStructureStatus: fixture.structureDeltas?.status ?? '',
+    tableScrollWidthDelta: fixture.structureDeltas?.tableScrollWidthDelta ?? null,
+    tableClientWidthDelta: fixture.structureDeltas?.tableClientWidthDelta ?? null,
+    overflowDelta: fixture.structureDeltas?.overflowDelta ?? null,
+    columnCountDelta: fixture.structureDeltas?.columnCountDelta ?? null,
+    longestTokenLengthDelta: fixture.structureDeltas?.longestTokenLengthDelta ?? null,
+    tableStructureMatches: fixture.structureDeltas?.structureMatches ?? null,
     constraintDecision: fixture.constraintModel?.decision ?? '',
     rowWidthDeltaSpread: fixture.rowCellDeltas?.rowWidthDeltaSpread ?? null,
     maxAbsCellWidthDelta: fixture.rowCellDeltas?.maxAbsCellWidthDelta ?? null,
@@ -1693,6 +1700,10 @@ function parsePctValue(value) {
 
 function fmtPct(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `${num(value)}%` : '';
+}
+
+function fmtPx(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${num(value)}px` : 'n/a';
 }
 
 function num(value) {

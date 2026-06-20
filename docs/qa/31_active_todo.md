@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Roll20 chat tableStructure evidence gate
+
+Status: PARTIAL. This makes Roll20 chat/table intrinsic-width evidence stricter; it does not solve visual parity yet.
+
+- DONE: Local ChatPane rolltemplate smoke now records `templateComputed.tableStructure`, including table box metrics, colgroup/col summaries, and longest-token text profile.
+- DONE: Roll20 chat capture plan snippets now record the same `latestTemplate.tableStructure` shape for future actual Roll20 sidecars.
+- DONE: `status:roll20-actual` and `gate:roll20-renderer-action` now treat missing `latestTemplate.tableStructure` as stale current metrics.
+- RESULT: Current actual Roll20 chat sidecars are no longer considered current for table intrinsic-width work: `chatCurrentMetrics=0/3`, missing `latestTemplate.tableStructure` for AW2E, Les-Oublies, and YSHY 1BU.
+- RESULT: Renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`, now with an explicit blocker requiring same-action Roll20 chat screenshot + DOM sidecar recapture before tuning ChatPane CSS.
+- VERIFIED: `node --check` for changed scripts, `test:roll20-chat-capture-plan`, local `rolltemplate_chat_smoke` 3/3 PASS, `plan:roll20-chat-capture -- --all --require-current-metrics`, `diagnose:roll20-chat-intrinsic-width`, `diagnose:roll20-chat-font-glyph`, `diagnose:roll20-chat-rows`, `status:roll20-actual`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Recapture actual Roll20 chat sidecars with the new tableStructure probe, then rerun screenshot diff and renderer gate before any production renderer CSS change.
+
 ## 2026-06-20 Codex Update - Roll20 chat row geometry gate evidence
 
 Status: PARTIAL. This improves the Roll20 renderer gate and next-action routing, but does not prove actual Roll20 visual parity.

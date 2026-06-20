@@ -1,3 +1,13 @@
+## 2026-06-20 Roll20 Chat TableStructure Evidence Gate
+
+- Added `tableStructure` capture to the local ChatPane rolltemplate smoke evidence: table box metrics, colgroup/col summaries, and longest-token text profile.
+- Added the same `latestTemplate.tableStructure` field to generated Roll20 chat DOM probe snippets and self-test coverage.
+- Updated `status:roll20-actual` so current chat metrics now require `latestTemplate.tableStructure`, not only row metrics/text measurement.
+- Updated `gate:roll20-renderer-action` so intrinsic-width evidence exposes scroll/overflow/column/token deltas and blocks renderer tuning when current sidecars are stale.
+- Latest status on `2026-06-18-state-map-v1`: `chatCurrentMetrics=0/3`, because AW2E, Les-Oublies, and YSHY actual sidecars predate `tableStructure`.
+- Verification: `build`, `test:roll20-chat-capture-plan`, local `rolltemplate_chat_smoke` 3/3 PASS, `plan:roll20-chat-capture -- --all --require-current-metrics`, intrinsic/font/row diagnostics, `status:roll20-actual`, and `gate:roll20-renderer-action`.
+- Claim boundary: this is stricter evidence gating. It does not fix Roll20 chat pixels and does not authorize production ChatPane CSS.
+
 ## 2026-06-20 Roll20 Chat Row Geometry Gate Evidence
 
 - Fixed row-geometry comparison so actual Roll20 table style and cell evidence comes from `computedChildren` when current sidecars do not have the old `elements` array.

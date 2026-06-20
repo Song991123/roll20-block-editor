@@ -321,6 +321,43 @@ async function clickRollAndReadChat(page, fixtureId) {
         text: (node.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 500),
       };
     };
+    const summarizeTextProfile = (node) => {
+      const text = (node?.textContent || '').replace(/\s+/g, ' ').trim();
+      const tokens = text.split(/\s+/).filter(Boolean);
+      const longestToken = tokens.reduce((best, token) => (token.length > best.length ? token : best), '');
+      return {
+        textLength: text.length,
+        tokenCount: tokens.length,
+        longestToken: longestToken.slice(0, 120),
+        longestTokenLength: longestToken.length,
+      };
+    };
+    const summarizeTableStructure = (root) => {
+      const table = root?.querySelector('table');
+      if (!table) return null;
+      return {
+        table: summarizeElement(table, 'table'),
+        textProfile: summarizeTextProfile(table),
+        columnGroups: Array.from(table.querySelectorAll('colgroup')).slice(0, 8).map((colgroup, index) => ({
+          index,
+          element: summarizeElement(colgroup, `colgroup:${index}`),
+          columns: Array.from(colgroup.querySelectorAll('col')).slice(0, 16).map((col, colIndex) => ({
+            index: colIndex,
+            element: summarizeElement(col, `colgroup:${index}>col:${colIndex}`),
+            span: col.getAttribute('span') || '',
+            widthAttr: col.getAttribute('width') || '',
+            styleAttr: col.getAttribute('style') || '',
+          })),
+        })),
+        columns: Array.from(table.querySelectorAll(':scope > col, :scope > colgroup > col')).slice(0, 24).map((col, index) => ({
+          index,
+          element: summarizeElement(col, `col:${index}`),
+          span: col.getAttribute('span') || '',
+          widthAttr: col.getAttribute('width') || '',
+          styleAttr: col.getAttribute('style') || '',
+        })),
+      };
+    };
     const summarizeRows = (root) => Array.from(root?.querySelectorAll('tr') ?? []).slice(0, 20).map((row, index) => {
       const rect = row.getBoundingClientRect();
       return {
@@ -521,6 +558,7 @@ async function clickRollAndReadChat(page, fixtureId) {
               summarizeElement(template.querySelector('.inlinerollresult'), '.inlinerollresult:first'),
             ].filter(Boolean),
             rowMetrics: summarizeRows(template),
+            tableStructure: summarizeTableStructure(template),
             textMeasureEvidence,
           }
         : null,
