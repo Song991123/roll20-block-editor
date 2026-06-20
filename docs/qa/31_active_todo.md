@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - sheet-root edit/preview visual diagnostic
+
+Status: VERIFY. This adds a wider local visual diagnostic after imported edit operations; it is not yet a default hard gate because it exposed known/full-root state and resource differences that need triage.
+
+- DONE: `smoke:imported-edit-sync` now captures the full `#charsheet-root` from both edit Shadow DOM and preview iframe after imported edit operations.
+- DONE: The smoke compares those root PNGs with the same browser-canvas diff path used for non-leaf subtree crops and records `sheetVisualSync` in the local JSON/markdown report.
+- DONE: Added `--sheet-visual-limit-pct` (default `2`) and `--require-sheet-visual-sync true`. By default the sheet-root result is reported as PASS/WARN; with the require flag it becomes a hard gate.
+- VERIFIED: `node --check scripts\imported_edit_sync_smoke.mjs`, `corepack pnpm run lint`, full `corepack pnpm run smoke:imported-edit-sync -- --port 4196`, strict `corepack pnpm run smoke:imported-edit-sync -- --only official-roll20-AW2E --require-sheet-visual-sync true --port 4198` failed as expected, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence`, and `corepack pnpm run smoke:edit-flow -- --port 4210`.
+- LOCAL RESULT: Latest default full run passed imported edit sync. Sheet-root visual mismatch was `AW2E 11.93%` (WARN, over 2%), `Les-Oublies 1.98%`, `synthetic-nonleaf-flow 0%`, and `yshy-commission-1bu 0.98%`.
+- CURRENT LIMITATION: AW2E root mismatch appears concentrated around form control state/paint rather than the moved subtree; strict sheet-root visual sync correctly catches it but is not enabled by default until state/resource causes are triaged.
+- STILL TODO P0: Diagnose AW2E edit/preview form-control state divergence, then consider promoting sheet-root visual sync to a default gate. Actual Roll20 renderer parity remains separate.
+
 ## 2026-06-20 Codex Update - non-leaf edit/preview screenshot diff
 
 Status: VERIFY. This adds screenshot-level local evidence after imported non-leaf subtree layer moves; it still is not actual Roll20 parity.

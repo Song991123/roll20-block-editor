@@ -1,3 +1,12 @@
+## 2026-06-20 Sheet-Root Edit/Preview Visual Diagnostic
+
+- Added full `#charsheet-root` screenshot comparison to `scripts/imported_edit_sync_smoke.mjs` after imported edit operations. It captures edit Shadow DOM and preview iframe roots and compares them with the existing browser-canvas PNG diff helper.
+- Added `sheetVisualSync` report fields plus `--sheet-visual-limit-pct` and `--require-sheet-visual-sync true`. The default run records PASS/WARN; the require flag turns it into a hard gate.
+- Verification: `node --check`, `lint`, full `smoke:imported-edit-sync -- --port 4196`, strict AW2E `smoke:imported-edit-sync -- --only official-roll20-AW2E --require-sheet-visual-sync true --port 4198` failed as expected, `build`, `guard:roll20-evidence`, and `smoke:edit-flow -- --port 4210`.
+- Local result: default imported edit sync still passes. Sheet-root visual mismatch is AW2E `11.93%` (WARN over 2%), Les-Oublies `1.98%`, synthetic `0%`, and YSHY `0.98%`. Latest Les/YSHY runs still had resource warnings in the default report.
+- Interpretation: subtree edit/preview sync is strong, but full-root edit/preview parity is not fully clean. AW2E likely needs form-control state/paint triage before sheet-root visual sync can become a default gate.
+- Boundary: this is local edit/preview evidence only; actual Roll20 renderer parity remains gated separately.
+
 ## 2026-06-20 Non-Leaf Edit/Preview Screenshot Diff
 
 - Added subtree-level screenshot capture to `scripts/imported_edit_sync_smoke.mjs`: after imported non-leaf layer reorder, the moved subtree is captured from both edit Shadow DOM and preview iframe.

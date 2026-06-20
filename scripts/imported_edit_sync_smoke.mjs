@@ -41,6 +41,8 @@ const DRAG_DELTA = { x: Number(argOf('--dx', '80')), y: Number(argOf('--dy', '48
 const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 'true';
 const COMPACT_WIDE_ROWS = argOf('--compact-wide-rows', 'false') === 'true';
 const NONLEAF_VISUAL_MISMATCH_LIMIT_PCT = Number(argOf('--nonleaf-visual-limit-pct', '2'));
+const SHEET_VISUAL_MISMATCH_LIMIT_PCT = Number(argOf('--sheet-visual-limit-pct', '2'));
+const REQUIRE_SHEET_VISUAL_SYNC = argOf('--require-sheet-visual-sync', 'false') === 'true';
 
 const BUILTIN_FIXTURES = [
   {
@@ -229,6 +231,27 @@ async function screenshotEditBlock(page, blockId, screenshotPath) {
   return { path: screenshotPath, box };
 }
 
+async function screenshotEditSheetRoot(page, screenshotPath) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
+  const handle = await page.evaluateHandle(() => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    return host?.shadowRoot?.querySelector('#charsheet-root') || null;
+  });
+  const element = handle.asElement();
+  if (!element) {
+    await handle.dispose();
+    return null;
+  }
+  const box = await element.boundingBox();
+  await element.screenshot({ path: screenshotPath });
+  await handle.dispose();
+  return { path: screenshotPath, box };
+}
+
 async function screenshotPreviewBlock(page, blockId, screenshotPath) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
@@ -241,6 +264,20 @@ async function screenshotPreviewBlock(page, blockId, screenshotPath) {
   await locator.waitFor({ state: 'visible', timeout: 30000 });
   const box = await locator.boundingBox();
   await locator.screenshot({ path: screenshotPath });
+  return { path: screenshotPath, box };
+}
+
+async function screenshotPreviewSheetRoot(page, screenshotPath) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setPreviewRenderMode('iframe');
+    window.__perfHook.setMainMode('preview');
+  });
+  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  const root = frame.locator('#charsheet-root').first();
+  await root.waitFor({ state: 'visible', timeout: 30000 });
+  const box = await root.boundingBox();
+  await root.screenshot({ path: screenshotPath });
   return { path: screenshotPath, box };
 }
 
@@ -330,6 +367,25 @@ async function captureNonLeafVisualSync(page, fixtureId, blockId) {
   return {
     pass: typeof diff.mismatchPct === 'number' && diff.mismatchPct <= NONLEAF_VISUAL_MISMATCH_LIMIT_PCT,
     limitPct: NONLEAF_VISUAL_MISMATCH_LIMIT_PCT,
+    edit,
+    preview,
+    diff,
+  };
+}
+
+async function captureSheetRootVisualSync(page, fixtureId) {
+  const base = `${safeFilePart(fixtureId)}-sheet-root`;
+  const editPath = path.join(REPORT_DIR, 'screenshots', `${base}-edit.png`);
+  const previewPath = path.join(REPORT_DIR, 'screenshots', `${base}-preview.png`);
+  const edit = await screenshotEditSheetRoot(page, editPath);
+  const preview = await screenshotPreviewSheetRoot(page, previewPath);
+  if (!edit || !preview) {
+    return { pass: false, reason: 'missing edit or preview sheet-root screenshot', edit, preview };
+  }
+  const diff = await diffPngs(page, preview.path, edit.path);
+  return {
+    pass: typeof diff.mismatchPct === 'number' && diff.mismatchPct <= SHEET_VISUAL_MISMATCH_LIMIT_PCT,
+    limitPct: SHEET_VISUAL_MISMATCH_LIMIT_PCT,
     edit,
     preview,
     diff,
@@ -1712,14 +1768,14 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Interaction | Resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
+    lines.push('| Fixture | Status | Interaction | Resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Sheet visual | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
   lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${fmtVisualSync(item.sheetVisualSync)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
-  lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, a second widget dropped in user-facing free mode as nested absolute content, and the edited emit survived a re-import/emit cycle.');
+  lines.push('- PASS means an imported visible node moved by the real edit pointer path, the same block id appeared at the same sheet-relative position in preview, emitted HTML/CSS contained absolute position data, a friendly widget dropped into a visible imported frame/flow container as non-absolute flow content, a second widget dropped in user-facing free mode as nested absolute content, post-edit sheet-root visual mismatch stayed within the configured budget, and the edited emit survived a re-import/emit cycle.');
   lines.push('- Interaction and resource status are separated. Use `--fail-on-resource-issues true` for visual-parity work where external images/fonts must load.');
   lines.push('- Layer reorder is recorded when the imported Blockly graph and layer snapshot expose a safe adjacent leaf sibling pair. Non-leaf layer reorder records the stronger group/subtree case when a visible imported container with direct children has a safe adjacent sibling with matching layer parent/depth semantics. SKIP means no safe pair was found in that fixture; it is not a Roll20 parity claim.');
   lines.push('- This intentionally does not claim every object/reparenting mode works; it guards the imported-sheet move/sync path that users were feeling as rollback/desync.');
@@ -1801,6 +1857,11 @@ function fmtNonLeafLayerReorder(item) {
   return `FAIL: ${item.reason || item.mode || 'subtree not moved'}`;
 }
 
+function fmtVisualSync(item) {
+  if (!item) return 'missing';
+  if (item.pass) return `${item.diff?.mismatchPct ?? ''}%`;
+  return `WARN: ${item.diff?.mismatchPct ?? item.reason ?? 'visual mismatch'}%`;
+}
 
 function fmtCanvasInsert(item) {
   if (!item) return 'missing';
@@ -1845,6 +1906,8 @@ async function main() {
     dragDelta: DRAG_DELTA,
     failOnResourceIssues: FAIL_ON_RESOURCE_ISSUES,
     compactWideRows: COMPACT_WIDE_ROWS,
+    requireSheetVisualSync: REQUIRE_SHEET_VISUAL_SYNC,
+    sheetVisualMismatchLimitPct: SHEET_VISUAL_MISMATCH_LIMIT_PCT,
     scopeNote:
       'interaction pass means edit/preview sync worked; resource pass is separate because visual parity needs assets to load',
     fixtures: [],
@@ -1923,12 +1986,14 @@ async function main() {
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-edit.png`) });
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-preview.png`) });
         entry.reimport = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
+        entry.sheetVisualSync = await captureSheetRootVisualSync(page, fixture.id);
         entry.interactionPass =
           entry.pass &&
           entry.canvasInsert?.pass === true &&
           entry.freeInsert?.pass === true &&
           (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true) &&
           (entry.nonLeafLayerReorder?.pass === true || entry.nonLeafLayerReorder?.skipped === true) &&
+          (!REQUIRE_SHEET_VISUAL_SYNC || entry.sheetVisualSync?.pass === true) &&
           isStableReimport(entry.reimport);
         entry.pass = entry.interactionPass;
       } catch (err) {
