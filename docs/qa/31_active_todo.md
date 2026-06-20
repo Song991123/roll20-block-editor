@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - YSHY Roll20 chat DPR recapture corrected
+
+Status: PARTIAL. This fixes a bad evidence capture and keeps renderer CSS blocked; it does not solve Roll20 visual parity.
+
+- DONE: Confirmed the latest YSHY `roll20-chat.png` had captured the Roll20 Sandbox Tools panel, not the `.sheet-rolltemplate-coc` card. The earlier `98.57%` chat mismatch was therefore bad evidence, not a renderer conclusion.
+- DONE: Hardened `scripts/roll20_chat_parity_diagnostics.mjs` so a sidecar that records an uncorrected CSS clip with CDP `scale=1` is marked as crop-geometry suspect.
+- DONE: Recaptured YSHY in the dedicated Roll20 verification editor with a DPR-multiplied CDP clip, downscaled it to the CSS template size, and updated the ignored local sidecar with `captureDprCorrection.applied=true`.
+- RESULT: `diagnose:roll20-chat-parity` now returns `HIGH_MISMATCH` with `actualCropGeometrySuspect=0`; YSHY aligned mismatch is now authoritative at `22.33%` (`26.45%` raw), not the false `98.57%`.
+- RESULT: `status:roll20-actual` is back to `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `rendererReady=NO`.
+- RESULT: Current row/tableStructure sidecars are `1/3` current. YSHY is current; AW2E and Les-Oublies still need same-action Roll20 chat recapture because they are missing `latestTemplate.tableStructure`.
+- VERIFIED: `node --check scripts\roll20_chat_parity_diagnostics.mjs`, `roll20_actual_screenshot_diff`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-intrinsic-width`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `plan:roll20-chat-capture -- --all --require-current-metrics`.
+- STILL TODO P0: Recapture AW2E and Les-Oublies actual Roll20 chat PNG + DOM sidecars with the current tableStructure probe before tuning ChatPane renderer CSS.
+- STILL TODO P0: Keep `HOLD_PRODUCTION_RENDERER_PATCH`; current authoritative chat high mismatch is still `2/3` and candidate families remain split.
+
 ## 2026-06-20 Codex Update - Roll20 chat tableStructure evidence gate
 
 Status: PARTIAL. This makes Roll20 chat/table intrinsic-width evidence stricter; it does not solve visual parity yet.

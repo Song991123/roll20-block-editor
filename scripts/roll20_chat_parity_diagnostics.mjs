@@ -257,6 +257,19 @@ function classifyActualCropGeometry(sidecar, actualCrop) {
         : 'actual Roll20 chat sidecar explicitly marks geometry as non-authoritative',
     };
   }
+  const dprCorrection = sidecar?.captureDprCorrection;
+  const dprReason = String(dprCorrection?.reason ?? '');
+  const usedCssClipWithoutDprCorrection =
+    dprCorrection &&
+    dprCorrection.applied === false &&
+    /css\s+clip/i.test(dprReason) &&
+    /scale\s*=\s*1/i.test(dprReason);
+  if (usedCssClipWithoutDprCorrection) {
+    return {
+      suspect: true,
+      reason: 'actual Roll20 chat evidence used an uncorrected CSS clip with CDP scale=1; this can capture the Sandbox Tools/VTT area instead of the rolltemplate on high-DPR tabs',
+    };
+  }
   return { suspect: false, reason: 'actual Roll20 chat crop is treated as geometry-authoritative by this diagnostic' };
 }
 

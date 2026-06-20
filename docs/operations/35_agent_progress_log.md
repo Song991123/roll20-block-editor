@@ -1,3 +1,14 @@
+## 2026-06-20 YSHY Roll20 Chat DPR Recapture Correction
+
+- Found that the newest YSHY actual chat PNG had captured the foreground Roll20 Sandbox Tools panel instead of the `.sheet-rolltemplate-coc` rolltemplate. The `98.57%` chat mismatch was a bad-crop artifact.
+- Added a crop-geometry guard in `scripts/roll20_chat_parity_diagnostics.mjs`: sidecars that explicitly record an uncorrected CSS clip with CDP `scale=1` are marked suspect, because that path can capture the wrong Roll20 screen region on high-DPR tabs.
+- Used the dedicated Roll20 verification editor tab only, recaptured the visible YSHY rolltemplate with a DPR-multiplied CDP clip, downscaled it back to CSS template size, and updated only ignored local evidence under `reports/roll20-actual-compare/2026-06-18-state-map-v1/`.
+- Current status after recapture: `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatCurrentMetrics=1/3`, `rendererReady=NO`.
+- Current chat parity after recapture: AW2E `15.07%` raw, Les-Oublies `7.38%` raw, YSHY `26.45%` raw / `22.33%` aligned. The YSHY mismatch is now trusted evidence again, but visual parity still fails.
+- Renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`; AW2E and Les-Oublies still need same-action chat recapture with `latestTemplate.tableStructure`.
+- Verification: `node --check scripts\roll20_chat_parity_diagnostics.mjs`, `roll20_actual_screenshot_diff`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-intrinsic-width`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `plan:roll20-chat-capture -- --all --require-current-metrics`.
+- Claim boundary: no real sheet assets/screenshots are committed; this is evidence-gate hardening plus ignored local Roll20 recapture, not Roll20 visual parity.
+
 ## 2026-06-20 Roll20 Chat TableStructure Evidence Gate
 
 - Added `tableStructure` capture to the local ChatPane rolltemplate smoke evidence: table box metrics, colgroup/col summaries, and longest-token text profile.
