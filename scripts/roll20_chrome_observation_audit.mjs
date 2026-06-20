@@ -21,7 +21,7 @@ const outDirArg = readOption('--out-dir', '');
 if (SELF_TEST) {
   runSelfTest();
 } else if (!observationDir) {
-  console.error('Usage: node scripts/roll20_chrome_observation_audit.mjs reports/.../chrome-extension-roll20-observation/<fixture>[/after-refresh] [--out-dir <dir>] [--self-test]');
+  console.error('Usage: node scripts/roll20_chrome_observation_audit.mjs reports/.../chrome-extension-roll20-observation/<fixture>[/after-refresh] | reports/.../local-baseline/<fixture>/screenshots [--out-dir <dir>] [--self-test]');
   process.exit(2);
 } else {
   main().catch((error) => {
@@ -54,7 +54,12 @@ async function main() {
 
 async function auditObservationDir(dir) {
   const domPath = path.join(dir, 'roll20-dom-observation.json');
-  const dom = existsSync(domPath) ? JSON.parse(readFileSync(domPath, 'utf8')) : null;
+  const chatSidecarPath = path.join(dir, 'roll20-chat-dom-evidence.json');
+  const dom = existsSync(domPath)
+    ? JSON.parse(readFileSync(domPath, 'utf8'))
+    : existsSync(chatSidecarPath)
+      ? normalizeChatSidecarObservation(JSON.parse(readFileSync(chatSidecarPath, 'utf8')))
+      : null;
   const files = await readdir(dir, { withFileTypes: true });
   const images = files
     .filter((entry) => entry.isFile())
@@ -82,6 +87,14 @@ async function auditObservationDir(dir) {
   if (!images.length) reasons.push('no screenshot files found beside the DOM observation');
   const nonPng = images.filter((image) => image.format !== 'png');
   if (nonPng.length) reasons.push(`screenshot files are not true PNG bytes: ${nonPng.map((image) => `${image.file}=${image.format}`).join(', ')}`);
+  const canonicalChat = images.find((image) => image.file === 'roll20-chat.png');
+  const pageOnly = images.find((image) => image.file === 'roll20-chat-page.png');
+  if (!canonicalChat && pageOnly) {
+    reasons.push('roll20-chat-page screenshot exists without a trusted roll20-chat.png template crop; page screenshots remain observation-only');
+  }
+  if (canonicalChat && canonicalChat.format !== 'png') {
+    reasons.push(`canonical roll20-chat.png is not true PNG bytes (${canonicalChat.format}); do not use it for chat visual parity`);
+  }
   const directClip = images.filter((image) => /template-observed/i.test(image.file));
   if (directClip.some((image) => image.format !== 'png')) {
     reasons.push('direct template clip came from the Chrome extension JPEG screenshot path, so it cannot satisfy the Roll20 chat PNG evidence gate');
@@ -127,6 +140,32 @@ async function auditObservationDir(dir) {
     nextAction: trustedCapture
       ? 'Run the normal Roll20 chat parity diagnostics before using this as renderer evidence.'
       : 'Use a CDP-enabled Roll20 Sandbox/test-room capture or build a verified full-screenshot crop adapter that outputs true PNG bytes tied to the foreground text chat panel.',
+  };
+}
+
+function normalizeChatSidecarObservation(sidecar) {
+  const templates = Array.isArray(sidecar?.rolltemplates)
+    ? sidecar.rolltemplates
+    : sidecar?.latestTemplate
+      ? [sidecar.latestTemplate]
+      : [];
+  return {
+    source: 'roll20-chat-dom-evidence.json',
+    title: sidecar?.fixtureId ?? '',
+    url: sidecar?.captureAutomation?.page ?? '',
+    selectedClip: sidecar?.captureDprCorrection?.cssClip ?? sidecar?.clip ?? sidecar?.screenshotClipApplied ?? sidecar?.screenshotCssClip ?? null,
+    probe: {
+      templates,
+      rolltemplates: templates,
+      chatRoot: {
+        rect: sidecar?.chatRect ?? null,
+      },
+      sessionRefreshCount: sidecar?.sessionRefreshCount ?? 0,
+      innerWidth: sidecar?.viewportEvidence?.innerWidth ?? sidecar?.viewport?.width,
+      innerHeight: sidecar?.viewportEvidence?.innerHeight ?? sidecar?.viewport?.height,
+      visualViewport: sidecar?.viewportEvidence?.visualViewport ?? sidecar?.viewport ?? null,
+      devicePixelRatio: sidecar?.viewportEvidence?.devicePixelRatio,
+    },
   };
 }
 

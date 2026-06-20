@@ -1,3 +1,13 @@
+## 2026-06-21 Codex Update - AW2E live Roll20 chat observation, extension screenshot blocked
+
+Status: VERIFY/BLOCKED_CAPTURE_PATH. This batch used the logged-in Roll20 editor tab and did not edit existing room/settings/source. It observed live AW2E sheet/chat behavior, but did not add trusted Roll20 chat visual evidence.
+
+- OBSERVED: The dedicated Roll20 editor tab opened the `Yadunka Esowhaz` character sheet iframe. The iframe contained AW2E sheet markers: `sheetCount=3`, `attrCount=486`, `rollCount=13`, and Playbook/Hardholder text.
+- OBSERVED: Clicking `roll_dsuf`, submitting the Roll20 `Macro Options` modal with default `0`, and switching to the chat tab produced a visible `.sheet-rolltemplate-aw` message. DOM foreground probing found `elementFromPoint` hits on the selected TABLE/TH/TD rolltemplate nodes.
+- BLOCKED: Chrome extension `tab.screenshot()` still returned JPEG bytes for `.png` filenames and did not capture the visible right-side text chat surface in the saved page screenshot. A trial crop caught Roll20 UI/Sandbox Tools instead of the rolltemplate and was removed immediately.
+- DONE: `scripts/roll20_chrome_observation_audit.mjs` now also accepts a `local-baseline/<fixture>/screenshots` folder with `roll20-chat-dom-evidence.json`, so page-only extension screenshots are explicitly classified as observation-only instead of trusted chat evidence.
+- CURRENT STATUS: AW2E remains missing trusted canonical `roll20-chat.png`; recapture still needs CDP or a verified screenshot adapter that visibly captures the foreground text chat panel.
+
 ## 2026-06-21 Codex Update - Roll20 chat recapture handoff ordering
 
 Status: DONE/VERIFY_HANDOFF_ORDER. This batch updated the Roll20 recapture plans so every chat recapture handoff now tells agents to prove the character-sheet iframe before capturing chat.

@@ -1,3 +1,12 @@
+## 2026-06-21 AW2E Live Roll20 Chat Observation
+
+- Used the logged-in `Codex Roll20 Verify | Roll20` editor tab only; no existing room settings, sheet source, character data, or campaign configuration were edited.
+- Opened the `Yadunka Esowhaz` character viewer and verified AW2E sheet iframe content through read-only browser access: `sheetCount=3`, `attrCount=486`, `rollCount=13`, and visible Playbook/Hardholder text.
+- Clicked the AW2E `roll_dsuf` roll button and submitted Roll20's `Macro Options` modal with the default value. The Roll20 chat DOM then contained a new `.sheet-rolltemplate-aw` card, and foreground hit-testing returned TABLE/TH/TD hits inside the selected template.
+- Capture boundary: the Chrome extension screenshot path still produced JPEG bytes and did not include the visible right-side text chat panel in the saved page screenshot. A trial crop captured Roll20 UI/Sandbox Tools instead of the rolltemplate, so it was removed and not promoted as `roll20-chat.png`.
+- Tooling hardening: `scripts/roll20_chrome_observation_audit.mjs` now accepts screenshot folders containing `roll20-chat-dom-evidence.json` and flags `roll20-chat-page`-only captures as observation-only.
+- Next P0: use a CDP-capable tab or a separately verified full-screenshot crop adapter before writing canonical `roll20-chat.png` for AW2E/YSHY.
+
 ## 2026-06-21 Roll20 Chat Recapture Handoff Ordering
 
 - Updated `scripts/roll20_chat_capture_plan.mjs` so each planned chat recapture includes `sheetFrameEvidence`, `sheetFrameProbeCommand`, and `chatCaptureCommand`.
