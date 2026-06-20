@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - YSHY table-width budget
+
+Status: PARTIAL. This sharpens the YSHY/CoC next renderer axis; it does not change production ChatPane CSS.
+
+- DONE: Added `scripts/roll20_chat_table_width_budget.mjs` and package command `diagnose:roll20-chat-table-width-budget`.
+- DONE: Wired the budget report into `gate:roll20-renderer-action` so the gate now reports table delta, measureText delta, residual, rejected axes, and the next table-width action.
+- RESULT: AW2E is classified as `MESSAGE_CONTENT_WIDTH_BUDGET`: table delta `+15.744px`, text delta `+15.602px`, residual `+0.142px`, best candidate `aw2e-message-full-width`.
+- RESULT: Les-Oublies is `WIDTH_SECONDARY`: table delta only `+0.8px`.
+- RESULT: YSHY is classified as `LAYOUT_CONSTRAINT_AFTER_REJECTED_CSS`: table delta `-24.309px`, measureText table delta `-54.946px`, residual `+30.637px`.
+- RESULT: For YSHY, broad font/typography, spacing/letter, and transform/scale axes are already rejected or contradicted. The next P0 is a table-layout/intrinsic constraint probe, not another font or global width CSS candidate.
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- VERIFIED: `diagnose:roll20-chat-table-width-budget` and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build a YSHY/CoC scoped table-layout/intrinsic constraint probe from actual table scroll/client/text residual evidence.
+
 ## 2026-06-20 Codex Update - AW2E message-shell candidate
 
 Status: PARTIAL. This replaces the best AW2E explanation candidate with a narrower diagnostic; it still does not enable production ChatPane CSS.

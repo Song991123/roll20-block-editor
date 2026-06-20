@@ -1,3 +1,16 @@
+## 2026-06-20 YSHY Table-Width Budget
+
+- Added `scripts/roll20_chat_table_width_budget.mjs` and `corepack pnpm run diagnose:roll20-chat-table-width-budget`.
+- The report consolidates width model, intrinsic width model, font/glyph model, message shell model, candidate comparison, style proof, and chat parity into a table-width delta budget.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `MESSAGE_CONTENT_WIDTH_BUDGET`, table delta `+15.744px`, measureText table delta `+15.602px`, residual `+0.142px`, best candidate `aw2e-message-full-width`.
+  - Les-Oublies: `WIDTH_SECONDARY`, table delta `+0.8px`.
+  - YSHY 1BU: `LAYOUT_CONSTRAINT_AFTER_REJECTED_CSS`, table delta `-24.309px`, measureText table delta `-54.946px`, residual `+30.637px`.
+- Interpretation: YSHY font/text metrics explain the direction but over-explain the width delta, so the remaining work is a table-layout/intrinsic constraint model. Broad font/typography candidates, spacing/letter candidates, and transform/scale candidates are already rejected or style-contradicted.
+- `gate:roll20-renderer-action` now surfaces this budget evidence while still returning `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Verification: `node --check`, `diagnose:roll20-chat-table-width-budget`, and `gate:roll20-renderer-action`.
+- Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 AW2E Message-Shell Candidate
 
 - Added diagnostic-only ChatPane geometry policy `aw2e-message-full-width`.
