@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - product UI copy regression guard
+
+Status: DONE/VERIFY. This batch adds a guard against broken Korean/mojibake product UI copy; it does not claim Roll20 visual parity.
+
+- DONE: Added `scripts/ui_copy_guard.mjs` and `corepack pnpm run guard:ui-copy`. The guard scans product-facing UI source folders (`components`, `lib/editor`, `lib/widgets`, related stores, and `shadowMount`) for replacement characters, CJK compatibility/unified ideographs, and common mojibake tokens.
+- SAFETY: The guard intentionally excludes Roll20 base CSS, fixtures, reports, generated evidence, and imported sheet corpora because user sheets may contain arbitrary languages and copyrighted source text.
+- VERIFIED: `node --check scripts\ui_copy_guard.mjs` passed. `corepack pnpm run guard:ui-copy` passed with `files=49`.
+- VERIFIED: `corepack pnpm run smoke:edit-flow -- --port 4210` passed. The smoke observed clean product copy in edit mode: `시트 편집`, `흐름`, `자유`, `레이어`, and `번역`; `hasMojibakeHan=false`, console/page errors `0`.
+- CLAIM BOUNDARY: This protects visible app copy and edit-layer terminology from regression. It does not prove imported sheets match actual Roll20, and it does not alter renderer CSS.
+
 ## 2026-06-20 Codex Update - Roll20 chat capture frame-offset hardening
 
 Status: VERIFY/BLOCKED_CDP. This batch improves the actual Roll20 chat evidence capture tooling; it does not change product rendering and does not prove Roll20 visual parity.

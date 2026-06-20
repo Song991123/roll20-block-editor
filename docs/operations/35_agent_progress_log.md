@@ -3001,6 +3001,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The renderer gate now reports the AW2E patch family as `sheet-class-alias-css:playbook-hide-only`, not a vague blanket alias.
 - Interpretation: AW2E mismatch is strongly tied to playbook/default-state visibility, but the naive alias candidates over-hide content. The next P0 is actual Roll20 DOM/state/selector probing or a targeted state model, not production CSS promotion.
 - Claim boundary: this improves root-cause isolation only. It does not prove Roll20 visual parity and does not make the app renderer ready.
+## 2026-06-20 Product UI Copy Regression Guard
+
+- Added `scripts/ui_copy_guard.mjs` plus `corepack pnpm run guard:ui-copy` so product-facing UI source fails fast on mojibake-looking Korean copy regressions.
+- The guard scope is intentionally narrow: app/editor/widget UI source only. It excludes Roll20 base CSS, fixtures, reports, generated evidence, and imported sheet corpora because user sheets can legitimately contain arbitrary languages.
+- Verification: `node --check scripts\ui_copy_guard.mjs`, `corepack pnpm run guard:ui-copy`, and `corepack pnpm run smoke:edit-flow -- --port 4210` passed. The edit smoke observed clean Korean edit UI copy (`시트 편집`, `흐름`, `자유`, `레이어`, `번역`) with `hasMojibakeHan=false` and no console/page errors.
+- Claim boundary: this improves product trust and prevents a recurring UI-copy regression class. It does not change Roll20 renderer CSS and does not prove actual Roll20 visual parity.
+
 ## 2026-06-20 Roll20 Chat Capture Frame Offset Hardening
 
 - Hardened the Roll20 chat recapture path rather than changing the product renderer. The capture-plan snippet now prefers a visible/text-rich rolltemplate, so Les-Oublies does not default to the sparse latest `Initiative` card when richer `classic-roll` cards are visible.
