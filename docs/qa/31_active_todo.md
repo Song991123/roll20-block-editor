@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - imported workspace shape metrics
+
+Status: VERIFY. This adds workspace shape metrics to imported edit smoke/budget reports; it does not reduce injection time yet.
+
+- DONE: `smoke:imported-edit-sync` now records `workspaceAfterImport` with total/root block counts per workspace.
+- DONE: `budget:imported-edit` now reports `Root HTML` and total workspace blocks in sanitized summaries.
+- LOCAL PRIVATE RESULT: A 6530 HTML-block private fixture had only `7` root HTML blocks and `8627` total workspace blocks across HTML/CSS/i18n/worker. This explains why top-level chunking alone does not split the largest imported subtrees enough.
+- LOCAL PRIVATE RESULT: The shape run still passed edit/preview/reimport sync with `0px` drag drift, but inject time remained high/noisy around `5.8s`.
+- STILL TODO P0: Investigate structural import optimization: composite reduction, lazy Blockly materialization, or subtree-level hydration rather than only top-level chunking.
+
 ## 2026-06-20 Codex Update - hydrate resize suppression
 
 Status: VERIFY. This applies a small Blockly hydrate safety/performance improvement; it is not the full import optimization.

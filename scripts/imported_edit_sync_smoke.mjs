@@ -1467,6 +1467,7 @@ async function main() {
         await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
         await warmPerfHook(page);
         entry.import = await importFixture(page, fixture);
+        entry.workspaceAfterImport = await page.evaluate(() => window.__perfHook.getWorkspace());
         await page.waitForTimeout(1300);
         entry.layerReorder = await runImportedLayerReorder(page);
         entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page);

@@ -1,3 +1,11 @@
+## 2026-06-20 Imported Workspace Shape Metrics
+
+- Added `workspaceAfterImport` to `scripts/imported_edit_sync_smoke.mjs`.
+- Added root HTML and total workspace block counts to `scripts/imported_edit_perf_budget.mjs`.
+- Local private shape result: 6530 HTML blocks, only 7 root HTML blocks, 8627 total workspace blocks across HTML/CSS/i18n/worker.
+- Interpretation: large sheets can be dominated by a few huge root subtrees. Top-level chunking is not enough; the next performance step should be composite reduction, lazy Blockly materialization, or subtree-level hydration.
+- The same local run still passed edit/preview/reimport sync with `0px` drag drift, while inject remained high/noisy at about `5.8s`.
+
 ## 2026-06-20 Hydrate Resize Suppression
 
 - Changed `DefaultAdapter.hydrateFromXml` to call `workspace.setResizesEnabled(false)` during XML clear/import and restore resize handling afterward.

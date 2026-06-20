@@ -86,6 +86,8 @@ function summarizeFixture(fixture, index) {
     metrics: {
       blockCount: fixture.import?.blockCount ?? null,
       workerBlockCount: fixture.import?.workerBlockCount ?? null,
+      rootHtmlBlocks: fixture.workspaceAfterImport?.rootBlocks?.html ?? null,
+      totalWorkspaceBlocks: fixture.workspaceAfterImport?.totalBlocks ?? null,
       importTotalMs,
       parseMs: round(fixture.import?.parseMs),
       injectMs,
@@ -113,14 +115,15 @@ function renderMarkdown(summary) {
   lines.push(`Source: \`${summary.source}\``);
   lines.push(`Overall: **${summary.status}**`);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
-  lines.push('|---|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
+  lines.push('| Fixture | Status | Blocks | Root HTML | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
+  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
   for (const item of summary.fixtures) {
     const m = item.metrics;
     lines.push([
       `\`${item.id}\``,
       item.status,
       m.blockCount ?? '',
+      m.rootHtmlBlocks ?? '',
       m.importTotalMs ?? '',
       m.injectMs ?? '',
       m.emitMs ?? '',
