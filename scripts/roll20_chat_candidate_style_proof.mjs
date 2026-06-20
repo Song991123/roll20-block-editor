@@ -36,6 +36,7 @@ const CANDIDATE_SMOKE = {
   'paint-dim-background': 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json',
   'paint-dim-brightness': 'reports/rolltemplate-chat-smoke-paint-dim-brightness/rolltemplate-chat-smoke-results.json',
   'paint-dim-saturate': 'reports/rolltemplate-chat-smoke-paint-dim-saturate/rolltemplate-chat-smoke-results.json',
+  'coc-background-size-actual': 'reports/rolltemplate-chat-smoke-coc-background-size-actual/rolltemplate-chat-smoke-results.json',
   'text-auto-aa': 'reports/rolltemplate-chat-smoke-text-auto-aa/rolltemplate-chat-smoke-results.json',
 };
 
@@ -160,6 +161,9 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
     candidate.name === 'paint-dim-saturate'
   ) {
     return summarizePaintFilter(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (candidate.name === 'coc-background-size-actual') {
+    return summarizeCocBackgroundSize(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   return {
     fixtureId,
@@ -375,6 +379,64 @@ function summarizePaintFilter(candidate, fixtureId, candidateTemplate, actualTem
     finding: candidateUsesFilter && actualHasNoFilter
       ? 'pixel gain comes from a local CSS filter that actual Roll20 does not apply'
       : `${matches}/${comparable.length} comparable filter fields match actual Roll20`,
+    evidence,
+  };
+}
+
+function summarizeCocBackgroundSize(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  if (fixtureId !== 'yshy-commission-1bu') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'CoC background-size diagnostic is scoped away from this fixture',
+      evidence: [],
+    };
+  }
+  const evidence = ['table'].flatMap((selector) => [
+    {
+      selector,
+      key: 'backgroundImage',
+      localCandidate: styleValue(candidateTemplate, selector, 'backgroundImage'),
+      actual: styleValue(actualTemplate, selector, 'backgroundImage'),
+    },
+    {
+      selector,
+      key: 'backgroundSize',
+      localCandidate: styleValue(candidateTemplate, selector, 'backgroundSize'),
+      actual: styleValue(actualTemplate, selector, 'backgroundSize'),
+    },
+    {
+      selector,
+      key: 'backgroundPosition',
+      localCandidate: styleValue(candidateTemplate, selector, 'backgroundPosition'),
+      actual: styleValue(actualTemplate, selector, 'backgroundPosition'),
+    },
+    {
+      selector,
+      key: 'filter',
+      localCandidate: styleValue(candidateTemplate, selector, 'filter'),
+      actual: styleValue(actualTemplate, selector, 'filter'),
+    },
+  ]);
+  const comparable = evidence.filter((item) => item.localCandidate != null && item.actual != null);
+  if (!comparable.length) {
+    return {
+      fixtureId,
+      status: 'NO_COMPUTED_STYLE_PROOF',
+      finding: 'background raster fields are missing from local or actual computed-style sidecars',
+      evidence,
+    };
+  }
+  const backgroundSize = comparable.find((item) => item.key === 'backgroundSize');
+  const filter = comparable.find((item) => item.key === 'filter');
+  const usesNoFilter = !filter || sameValue(filter.localCandidate, filter.actual) || (isNone(filter.localCandidate) && isNone(filter.actual));
+  const sizeMatches = backgroundSize ? sameValue(backgroundSize.localCandidate, backgroundSize.actual) : false;
+  return {
+    fixtureId,
+    status: sizeMatches && usesNoFilter ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: sizeMatches
+      ? 'CoC background-size candidate matches actual Roll20 computed background-size'
+      : 'CoC background-size candidate changes computed background-size away from actual Roll20; diagnostic only',
     evidence,
   };
 }

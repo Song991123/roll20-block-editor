@@ -1,3 +1,16 @@
+## 2026-06-20 CoC Background-Size Raster Candidate Rejected
+
+- Added diagnostic-only ChatPane paint policy `coc-background-size-actual`.
+- Added the candidate to rolltemplate chat smoke, candidate comparison, candidate style proof routing, and scripts docs.
+- Candidate smoke PASSed AW2E, Les-Oublies, and YSHY.
+- Candidate comparison result: `coc-background-size-actual` is `no-meaningful-gain`.
+  - YSHY aligned mismatch moved `22.33% -> 21.94%` (`-0.39%`).
+  - AW2E and Les-Oublies stayed neutral.
+- Row-raster check against the candidate showed the YSHY worst row got worse: default row `5` mismatch `30.89%`, candidate row `5` mismatch `39.25%`.
+- Interpretation: CoC background-size/table-width raster scale alone is not the missing Roll20 renderer model. Continue with row-level text/background compositing or capture/source-order context; do not promote this candidate.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 Row Raster Probe for YSHY/CoC Chat
 
 - Added `scripts/roll20_chat_row_raster_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-row-raster`.

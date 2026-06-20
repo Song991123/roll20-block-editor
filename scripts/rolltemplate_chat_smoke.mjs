@@ -806,7 +806,8 @@ async function main() {
         policy === 'roll20-dim-background' ||
         policy === 'roll20-dim-brightness' ||
         policy === 'roll20-dim-saturate' ||
-        policy === 'roll20-edge-shadow'
+        policy === 'roll20-edge-shadow' ||
+        policy === 'coc-background-size-actual'
       ) {
         localStorage.setItem('__r20ChatPaintPolicy', policy);
       } else {

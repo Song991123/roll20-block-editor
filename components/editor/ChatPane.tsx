@@ -69,7 +69,8 @@ type ChatPaintPolicy =
   | 'roll20-dim-background'
   | 'roll20-dim-brightness'
   | 'roll20-dim-saturate'
-  | 'roll20-edge-shadow';
+  | 'roll20-edge-shadow'
+  | 'coc-background-size-actual';
 
 function currentChatFontPolicy(): ChatFontPolicy {
   if (typeof window === 'undefined') return 'default';
@@ -139,7 +140,8 @@ function currentChatPaintPolicy(): ChatPaintPolicy {
     value === 'roll20-dim-background' ||
     value === 'roll20-dim-brightness' ||
     value === 'roll20-dim-saturate' ||
-    value === 'roll20-edge-shadow'
+    value === 'roll20-edge-shadow' ||
+    value === 'coc-background-size-actual'
   ) return value;
   return 'default';
 }
@@ -373,6 +375,9 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
   box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.08);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="coc-background-size-actual"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  background-size: 1248.55px auto !important;
 }
 .r20-chat-pane .textchatcontainer .content {
   line-height: 1.25em;

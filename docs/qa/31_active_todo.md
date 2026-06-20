@@ -1,3 +1,18 @@
+## 2026-06-20 Codex Update - CoC background-size raster candidate rejected
+
+Status: PARTIAL. This tested a narrow diagnostic candidate; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
+
+- DONE: Added diagnostic-only ChatPane paint policy `coc-background-size-actual`.
+- DONE: Added the candidate to `rolltemplate_chat_smoke`, `diagnose:roll20-chat-candidates`, and script docs.
+- DONE: Added style-proof handling for the candidate when it becomes relevant.
+- RESULT: Candidate smoke PASSed AW2E, Les-Oublies, and YSHY.
+- RESULT: Candidate comparison classifies `coc-background-size-actual` as `no-meaningful-gain`: YSHY aligned mismatch moves only `22.33% -> 21.94%` (`-0.39%`), below the `-0.5%` meaningful threshold.
+- RESULT: Candidate row-raster probe worsened YSHY's worst row mismatch from default `30.89%` to candidate `39.25%`, even though the overall aligned mismatch moved slightly.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- INTERPRETATION: CoC background-size/table-width raster scale alone does not explain YSHY. The next P0 should inspect row-level text/background compositing or actual capture/source-order context, not promote background-size, filter, or broad typography CSS.
+- VERIFIED: `build`, `rolltemplate_chat_smoke --chat-paint-policy coc-background-size-actual`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, candidate/default `diagnose:roll20-chat-row-raster`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the next YSHY/CoC row-level renderer candidate around text/background compositing or source/capture context. Keep `coc-background-size-actual` diagnostic-only and rejected for production.
+
 ## 2026-06-20 Codex Update - row raster probe for YSHY/CoC chat
 
 Status: PARTIAL. This adds row-level PNG raster diagnostics; it does not change production ChatPane defaults and does not prove Roll20 visual parity.

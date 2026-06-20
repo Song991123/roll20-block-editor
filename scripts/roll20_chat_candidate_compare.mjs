@@ -45,6 +45,7 @@ const candidates = [
   ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
   ['paint-dim-brightness', 'reports/rolltemplate-chat-smoke-paint-dim-brightness/screenshots'],
   ['paint-dim-saturate', 'reports/rolltemplate-chat-smoke-paint-dim-saturate/screenshots'],
+  ['coc-background-size-actual', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/screenshots'],
   ['coc-table-actual-width-dim-background', 'reports/rolltemplate-chat-smoke-coc-table-actual-width-dim-background/screenshots'],
   ['coc-crop-origin-y20-dim-background', 'reports/rolltemplate-chat-smoke-coc-crop-origin-y20-dim-background/screenshots'],
   ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],
