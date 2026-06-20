@@ -61,6 +61,7 @@
     "diagnose:roll20-chat-row-raster": "node scripts/roll20_chat_row_raster_probe.mjs",
     "diagnose:roll20-chat-row-raster-candidates": "node scripts/roll20_chat_row_raster_candidate_compare.mjs",
     "diagnose:roll20-chat-row-compositing": "node scripts/roll20_chat_row_compositing_probe.mjs",
+    "diagnose:roll20-chat-background-source": "node scripts/roll20_chat_background_source_probe.mjs",
     "diagnose:roll20-chat-rows": "node scripts/roll20_chat_row_geometry_compare.mjs",
     "diagnose:roll20-chat-style": "node scripts/roll20_chat_style_context_diagnostics.mjs",
     "diagnose:roll20-chat-live-typography": "node scripts/roll20_chat_live_typography_compare.mjs",

@@ -1,3 +1,16 @@
+## 2026-06-20 Chat Background/Source Probe
+
+- Added `scripts/roll20_chat_background_source_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-background-source`.
+- The probe fuses computed local/actual table background styles, row compositing buckets, table-width context, and rejected `coc-background-size-actual` evidence.
+- Wired the probe into `gate:roll20-renderer-action`.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `COLOR_ASSET_RASTER_CONTEXT_REQUIRED`, background image equivalent but style differs, width delta `15.744px`, luma gain `+0.22`.
+  - Les-Oublies: `BACKGROUND_DECLARATION_DIFFERS`, background image equivalent but style differs, width delta `0.8px`, luma gain `+0.01`.
+  - YSHY 1BU: `BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS`, background declarations match, width delta `-24.309px`, luma gain `-0.58`, `coc-background-size-actual` row-raster risk `reject-row-raster-regression`.
+- Interpretation: YSHY/CoC should not retry background-size, broad typography, filters, or simple luma correction. The next useful diagnostic is rendered background raster/source context where Roll20 and local CSS declarations already appear equivalent but flat pixels differ.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production renderer CSS, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 Row Compositing Probe
 
 - Added `scripts/roll20_chat_row_compositing_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-row-compositing`.

@@ -1,3 +1,19 @@
+## 2026-06-20 Codex Update - chat background/source probe routes YSHY raster mismatch
+
+Status: PARTIAL. This adds another diagnostic routing layer; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
+
+- DONE: Added `scripts/roll20_chat_background_source_probe.mjs` and package command `diagnose:roll20-chat-background-source`.
+- DONE: Wired the background/source probe into `gate:roll20-renderer-action`.
+- RESULT: The probe compares local vs actual computed table background declarations, row compositing output, table width context, and rejected background-size evidence.
+- RESULT: YSHY 1BU is now classified as `BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS`: background declarations match, row-weighted mismatch is `23.15%`, luma-corrected mismatch is `22.57%`, and simple luma correction only gains `-0.58%p`.
+- RESULT: `coc-background-size-actual` stays rejected for YSHY/CoC: background-size tuning worsens YSHY row raster (`+1.38%p` weighted, `+8.36%p` worst row), so do not retry background-size as the next fix.
+- RESULT: Les-Oublies is separated as `BACKGROUND_DECLARATION_DIFFERS`; it needs exact background declaration/cascade comparison before any pixel-tuned paint CSS.
+- RESULT: AW2E is separated as `COLOR_ASSET_RASTER_CONTEXT_REQUIRED`; it must not reuse YSHY/CoC background-size or row-background candidates.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` and now reports the background/source probe as evidence.
+- VERIFIED: `node --check` for the new script and renderer gate, `diagnose:roll20-chat-background-source`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the next YSHY/CoC diagnostic around rendered background raster/source context where CSS declarations match but flat pixels differ.
+- STILL TODO P0: Recapture AW2E and Les-Oublies Roll20 chat sidecars with current row/typography/filter fields before cross-fixture renderer decisions.
+
 ## 2026-06-20 Codex Update - row compositing probe narrows YSHY/CoC axis
 
 Status: PARTIAL. This adds a diagnostic decomposition report; it does not change production ChatPane defaults and does not prove Roll20 visual parity.
