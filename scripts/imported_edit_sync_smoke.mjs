@@ -41,6 +41,31 @@ const DRAG_DELTA = { x: Number(argOf('--dx', '80')), y: Number(argOf('--dy', '48
 const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 'true';
 const COMPACT_WIDE_ROWS = argOf('--compact-wide-rows', 'false') === 'true';
 
+const BUILTIN_FIXTURES = [
+  {
+    id: 'synthetic-nonleaf-flow',
+    html: [
+      '<div class="sheet-synthetic-root" style="width: 640px; min-height: 260px; padding: 16px; border: 1px solid #999">',
+      '  <div class="sheet-synthetic-group-a" style="display: inline-block; width: 260px; min-height: 96px; padding: 10px; border: 1px solid #69c; vertical-align: top">',
+      '    <label>Group A</label>',
+      '    <input type="text" name="attr_synthetic_a" value="A">',
+      '  </div>',
+      '  <div class="sheet-synthetic-group-b" style="display: inline-block; width: 260px; min-height: 96px; padding: 10px; border: 1px solid #c96; vertical-align: top">',
+      '    <label>Group B</label>',
+      '    <input type="text" name="attr_synthetic_b" value="B">',
+      '  </div>',
+      '</div>',
+    ].join('\n'),
+    css: [
+      '.sheet-synthetic-root { background: #fff; }',
+      '.sheet-synthetic-root input { width: 120px; }',
+      '.sheet-synthetic-root label { display: block; font-weight: bold; }',
+    ].join('\n'),
+    i18n: '{}',
+    synthetic: true,
+  },
+];
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -83,8 +108,13 @@ async function readMaybe(file) {
 }
 
 async function listFixtures() {
-  const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
-  const out = [];
+  const out = BUILTIN_FIXTURES.filter((fixture) => !ONLY || fixture.id === ONLY).map((fixture) => ({ ...fixture }));
+  let entries = [];
+  try {
+    entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
+  } catch {
+    entries = [];
+  }
   for (const ent of entries) {
     if (!ent.isDirectory()) continue;
     if (ONLY && ent.name !== ONLY) continue;
@@ -96,6 +126,7 @@ async function listFixtures() {
       html,
       css: await readMaybe(path.join(dir, 'source.css')),
       i18n: await readMaybe(path.join(dir, 'source.i18n')),
+      synthetic: false,
     });
   }
   return out.sort((a, b) => a.id.localeCompare(b.id));
@@ -442,7 +473,13 @@ async function runImportedNonLeafLayerReorder(page) {
       const layer = window.__perfHook.getLayerSnapshot?.('html') || [];
       const byId = new Map(graph.map((node) => [node.id, node]));
       const layerById = new Map(layer.map((node) => [node.id, node]));
-      const siblingsOf = (node) => graph.filter((candidate) => candidate.parentId === node.parentId && candidate.depth === node.depth);
+      const siblingsOf = (node) => {
+        const layerNode = layerById.get(node.id);
+        return layer
+          .filter((candidate) => candidate.layerParentId === layerNode?.layerParentId && candidate.depth === layerNode?.depth)
+          .map((candidate) => byId.get(candidate.id))
+          .filter(Boolean);
+      };
 
       for (const movingNode of graph) {
         if (movingNode.childCount <= 0 || isRuntime(movingNode)) continue;
@@ -459,11 +496,17 @@ async function runImportedNonLeafLayerReorder(page) {
           { direction: 'after', targetNode: nextTarget },
           { direction: 'before', targetNode: previousTarget },
         ].filter(
-          (item) =>
-            item.targetNode &&
-            !isRuntime(item.targetNode) &&
-            item.targetNode.parentId === movingNode.parentId &&
-            item.targetNode.depth === movingNode.depth,
+          (item) => {
+            if (!item.targetNode || isRuntime(item.targetNode)) return false;
+            const movingLayer = layerById.get(movingNode.id);
+            const targetLayer = layerById.get(item.targetNode.id);
+            return (
+              movingLayer &&
+              targetLayer &&
+              targetLayer.layerParentId === movingLayer.layerParentId &&
+              targetLayer.depth === movingLayer.depth
+            );
+          },
         );
 
         for (const option of targetOptions) {

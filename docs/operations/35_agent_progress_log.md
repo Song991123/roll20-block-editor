@@ -1,3 +1,12 @@
+## 2026-06-20 Synthetic Imported Non-Leaf Coverage
+
+- Added a built-in copyright-safe `synthetic-nonleaf-flow` fixture to `scripts/imported_edit_sync_smoke.mjs`, so the committed smoke can exercise imported non-leaf subtree editing even without private fixture folders.
+- Made `listFixtures()` tolerate a missing ignored fixture directory while still allowing `--only synthetic-nonleaf-flow`.
+- Fixed imported non-leaf candidate selection to use layer snapshot parent/depth semantics instead of Blockly `parentId` metadata, which can make flow siblings look nested internally.
+- Verification: `node --check`, `lint`, `build`, `guard:roll20-evidence`, `smoke:imported-edit-sync -- --only synthetic-nonleaf-flow --port 4197`, full `smoke:imported-edit-sync -- --port 4196`, and `smoke:edit-flow -- --port 4210`.
+- Local result: AW2E, Les-Oublies, synthetic-nonleaf-flow, and YSHY all passed imported edit/preview sync with clean resource checks. Non-leaf subtree relation reorder passed on all four; leaf sibling relation reorder passed on Les-Oublies and synthetic, and safely skipped on AW2E/YSHY.
+- Boundary: this is local edit-sync coverage, not actual Roll20 renderer parity. Next UX work should expose clearer visual layer previews and edit/preview screenshot comparison after subtree moves.
+
 ## 2026-06-20 Imported Layer Relation Smoke
 
 - Strengthened `scripts/imported_edit_sync_smoke.mjs` so imported layer reorder candidates are selected against `getLayerSnapshot()` semantics instead of only Blockly graph metadata.

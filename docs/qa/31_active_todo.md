@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - synthetic imported non-leaf coverage
+
+Status: VERIFY. This closes the previous local coverage gap for imported non-leaf subtree layer reorder, but it remains local-app evidence rather than actual Roll20 parity.
+
+- DONE: Added a copyright-safe built-in fixture, `synthetic-nonleaf-flow`, inside `smoke:imported-edit-sync` so non-leaf imported subtree editing can be exercised without committing real sheet assets.
+- DONE: `listFixtures()` now tolerates a missing ignored fixture directory and still runs built-in synthetic coverage; `--only synthetic-nonleaf-flow` can target the committed synthetic case directly.
+- DONE: Imported non-leaf candidate selection now uses layer snapshot parent/depth semantics instead of relying on misleading Blockly `parentId` metadata.
+- VERIFIED: `node --check scripts\imported_edit_sync_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence`, `corepack pnpm run smoke:imported-edit-sync -- --only synthetic-nonleaf-flow --port 4197`, `corepack pnpm run smoke:imported-edit-sync -- --port 4196`, and `corepack pnpm run smoke:edit-flow -- --port 4210` passed.
+- LOCAL FIXTURE RESULT: `official-roll20-AW2E`, `official-roll20-Les-Oublies`, `synthetic-nonleaf-flow`, and `yshy-commission-1bu` all passed imported edit/preview sync with resource checks clean. Non-leaf subtree relation reorder passed on all four. Leaf sibling relation reorder passed on `official-roll20-Les-Oublies` and `synthetic-nonleaf-flow`; it skipped on `AW2E` and `yshy-commission-1bu` because no safe imported leaf sibling pair was found.
+- STILL TODO P0: Broaden this from local reorder smoke to real user-facing layer UX checks: visible layer preview, before/after/inside affordance clarity, and edit=preview screenshot comparison after imported subtree moves.
+- STILL TODO P0: Actual Roll20 renderer parity remains gated; this change does not alter production renderer CSS.
+
 ## 2026-06-20 Codex Update - imported layer relation smoke
 
 Status: VERIFY. This strengthens imported-sheet edit verification; it does not prove every imported sheet layer operation is solved.
