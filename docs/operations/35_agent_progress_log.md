@@ -1,3 +1,12 @@
+## 2026-06-20 Non-Leaf Edit/Preview Screenshot Diff
+
+- Added subtree-level screenshot capture to `scripts/imported_edit_sync_smoke.mjs`: after imported non-leaf layer reorder, the moved subtree is captured from both edit Shadow DOM and preview iframe.
+- Added browser-canvas PNG comparison for those subtree screenshots, recording mismatch percent, mean absolute channel delta, compared size, and mismatch bounds in the ignored local report.
+- Non-leaf subtree reorder now requires the visual mismatch to stay under `--nonleaf-visual-limit-pct` (default `2%`) in addition to rect sync and structural/layer checks.
+- Verification: `node --check`, `lint`, `smoke:imported-edit-sync -- --only synthetic-nonleaf-flow --port 4197`, full `smoke:imported-edit-sync -- --port 4196`, `build`, `guard:roll20-evidence`, and `smoke:edit-flow -- --port 4210`.
+- Local result: AW2E, Les-Oublies, synthetic-nonleaf-flow, and YSHY all had `0%` non-leaf subtree edit/preview screenshot mismatch in the latest full imported smoke, with clean resource checks.
+- Boundary: this proves a local subtree-crop edit/preview sync path. It does not prove full-sheet visual parity, actual Roll20 parity, or chat/worker parity.
+
 ## 2026-06-20 Non-Leaf Edit/Preview Rect Sync
 
 - Strengthened imported non-leaf subtree reorder verification so it now reads the moved subtree from both edit Shadow DOM and preview iframe after the drop.

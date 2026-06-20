@@ -40,6 +40,7 @@ const VIEWPORT = { width: 2200, height: 1200 };
 const DRAG_DELTA = { x: Number(argOf('--dx', '80')), y: Number(argOf('--dy', '48')) };
 const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 'true';
 const COMPACT_WIDE_ROWS = argOf('--compact-wide-rows', 'false') === 'true';
+const NONLEAF_VISUAL_MISMATCH_LIMIT_PCT = Number(argOf('--nonleaf-visual-limit-pct', '2'));
 
 const BUILTIN_FIXTURES = [
   {
@@ -197,6 +198,142 @@ async function importFixture(page, fixture) {
     }
     return last;
   }, { ...fixture, compactWideRows: COMPACT_WIDE_ROWS });
+}
+
+function cssString(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function safeFilePart(value) {
+  return String(value).replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'fixture';
+}
+
+async function screenshotEditBlock(page, blockId, screenshotPath) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
+  const handle = await page.evaluateHandle((id) => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    return host?.shadowRoot?.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`) || null;
+  }, blockId);
+  const element = handle.asElement();
+  if (!element) {
+    await handle.dispose();
+    return null;
+  }
+  const box = await element.boundingBox();
+  await element.screenshot({ path: screenshotPath });
+  await handle.dispose();
+  return { path: screenshotPath, box };
+}
+
+async function screenshotPreviewBlock(page, blockId, screenshotPath) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setPreviewRenderMode('iframe');
+    window.__perfHook.setMainMode('preview');
+  });
+  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
+  const locator = frame.locator(`[data-r20-block-id="${cssString(blockId)}"]`).first();
+  await locator.waitFor({ state: 'visible', timeout: 30000 });
+  const box = await locator.boundingBox();
+  await locator.screenshot({ path: screenshotPath });
+  return { path: screenshotPath, box };
+}
+
+async function diffPngs(page, previewPath, editPath) {
+  const [previewBytes, editBytes] = await Promise.all([
+    fs.readFile(previewPath),
+    fs.readFile(editPath),
+  ]);
+  return page.evaluate(
+    async ({ previewDataUrl, editDataUrl }) => {
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        });
+      }
+      const [a, b] = await Promise.all([loadImage(previewDataUrl), loadImage(editDataUrl)]);
+      const width = Math.min(a.naturalWidth, b.naturalWidth);
+      const height = Math.min(a.naturalHeight, b.naturalHeight);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(a, 0, 0);
+      const aData = ctx.getImageData(0, 0, width, height).data;
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(b, 0, 0);
+      const bData = ctx.getImageData(0, 0, width, height).data;
+      let mismatch = 0;
+      let sumAbs = 0;
+      const total = width * height;
+      const bounds = { left: width, top: height, right: -1, bottom: -1 };
+      for (let i = 0; i < aData.length; i += 4) {
+        const delta =
+          Math.abs(aData[i] - bData[i]) +
+          Math.abs(aData[i + 1] - bData[i + 1]) +
+          Math.abs(aData[i + 2] - bData[i + 2]) +
+          Math.abs(aData[i + 3] - bData[i + 3]);
+        sumAbs += delta;
+        if (delta > 24) {
+          mismatch += 1;
+          const x = (i / 4) % width;
+          const y = Math.floor(i / 4 / width);
+          bounds.left = Math.min(bounds.left, x);
+          bounds.top = Math.min(bounds.top, y);
+          bounds.right = Math.max(bounds.right, x);
+          bounds.bottom = Math.max(bounds.bottom, y);
+        }
+      }
+      return {
+        previewSize: { width: a.naturalWidth, height: a.naturalHeight },
+        editSize: { width: b.naturalWidth, height: b.naturalHeight },
+        comparedSize: { width, height },
+        mismatchPixels: mismatch,
+        mismatchPct: total > 0 ? Math.round((mismatch / total) * 10000) / 100 : null,
+        meanAbsChannelDelta: total > 0 ? Math.round((sumAbs / (total * 4)) * 100) / 100 : null,
+        mismatchBounds:
+          mismatch > 0
+            ? {
+                left: bounds.left,
+                top: bounds.top,
+                width: bounds.right - bounds.left + 1,
+                height: bounds.bottom - bounds.top + 1,
+              }
+            : null,
+      };
+    },
+    {
+      previewDataUrl: `data:image/png;base64,${previewBytes.toString('base64')}`,
+      editDataUrl: `data:image/png;base64,${editBytes.toString('base64')}`,
+    },
+  );
+}
+
+async function captureNonLeafVisualSync(page, fixtureId, blockId) {
+  const base = `${safeFilePart(fixtureId)}-nonleaf`;
+  const editPath = path.join(REPORT_DIR, 'screenshots', `${base}-edit-subtree.png`);
+  const previewPath = path.join(REPORT_DIR, 'screenshots', `${base}-preview-subtree.png`);
+  const edit = await screenshotEditBlock(page, blockId, editPath);
+  const preview = await screenshotPreviewBlock(page, blockId, previewPath);
+  if (!edit || !preview) {
+    return { pass: false, reason: 'missing edit or preview subtree screenshot', edit, preview };
+  }
+  const diff = await diffPngs(page, preview.path, edit.path);
+  return {
+    pass: typeof diff.mismatchPct === 'number' && diff.mismatchPct <= NONLEAF_VISUAL_MISMATCH_LIMIT_PCT,
+    limitPct: NONLEAF_VISUAL_MISMATCH_LIMIT_PCT,
+    edit,
+    preview,
+    diff,
+  };
 }
 
 async function chooseEditTarget(page, excludedIds = []) {
@@ -411,7 +548,7 @@ async function runImportedLayerReorder(page) {
   return result;
 }
 
-async function runImportedNonLeafLayerReorder(page) {
+async function runImportedNonLeafLayerReorder(page, fixtureId) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
@@ -639,12 +776,14 @@ async function runImportedNonLeafLayerReorder(page) {
     closeEnough(previewAfter.relative.top, editAfter.relative.top, 2) &&
     closeEnough(previewAfter.relative.width, editAfter.relative.width, 2) &&
     closeEnough(previewAfter.relative.height, editAfter.relative.height, 2);
+  const visualSync = await captureNonLeafVisualSync(page, fixtureId, result.candidate.moving.blockId);
   return {
     ...result,
     editAfter,
     previewAfter,
     previewSync,
-    pass: result.pass && previewSync,
+    visualSync,
+    pass: result.pass && previewSync && visualSync.pass,
   };
 }
 
@@ -1656,7 +1795,8 @@ function fmtNonLeafLayerReorder(item) {
     const moving = item.candidate?.moving;
     const target = item.candidate?.target;
     const direction = item.candidate?.direction || item.mode || '';
-    return `${moving?.tag || ''} ${direction} ${target?.tag || ''} (${moving?.childCount ?? 0} children, preview ${item.previewSync ? 'sync' : 'unchecked'})`;
+    const mismatch = typeof item.visualSync?.diff?.mismatchPct === 'number' ? `, visual ${item.visualSync.diff.mismatchPct}%` : '';
+    return `${moving?.tag || ''} ${direction} ${target?.tag || ''} (${moving?.childCount ?? 0} children, preview ${item.previewSync ? 'sync' : 'unchecked'}${mismatch})`;
   }
   return `FAIL: ${item.reason || item.mode || 'subtree not moved'}`;
 }
@@ -1748,7 +1888,7 @@ async function main() {
         );
         await page.waitForTimeout(1300);
         entry.layerReorder = await runImportedLayerReorder(page);
-        entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page);
+        entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page, fixture.id);
         entry.canvasInsert = await runImportedCanvasInsert(page);
         entry.freeInsert = await runImportedFreeCanvasInsert(page);
         entry.attempts = [];

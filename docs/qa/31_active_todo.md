@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - non-leaf edit/preview screenshot diff
+
+Status: VERIFY. This adds screenshot-level local evidence after imported non-leaf subtree layer moves; it still is not actual Roll20 parity.
+
+- DONE: `smoke:imported-edit-sync` now captures the moved non-leaf subtree from both the edit Shadow DOM and preview iframe into ignored report screenshots.
+- DONE: The smoke compares those two PNGs in a browser canvas and records `mismatchPct`, `meanAbsChannelDelta`, compared size, and mismatch bounds in the local JSON report.
+- DONE: Non-leaf subtree reorder now requires visual mismatch to stay under `--nonleaf-visual-limit-pct` (default `2%`) in addition to rect sync, layer relation, child preservation, and emitted-order checks.
+- VERIFIED: `node --check scripts\imported_edit_sync_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run smoke:imported-edit-sync -- --only synthetic-nonleaf-flow --port 4197`, `corepack pnpm run smoke:imported-edit-sync -- --port 4196`, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence`, and `corepack pnpm run smoke:edit-flow -- --port 4210` passed.
+- LOCAL FIXTURE RESULT: Non-leaf subtree edit/preview screenshot mismatch was `0%` for `official-roll20-AW2E`, `official-roll20-Les-Oublies`, `synthetic-nonleaf-flow`, and `yshy-commission-1bu`; resource checks were clean in the latest full imported smoke.
+- STILL TODO P0: Extend screenshot comparison from the moved subtree crop to larger viewport/sheet crops after user operations. Actual Roll20 renderer parity remains gated by Roll20 evidence.
+
 ## 2026-06-20 Codex Update - non-leaf edit/preview rect sync
 
 Status: VERIFY. This adds stronger local proof that imported non-leaf subtree layer moves render the same in edit and preview after the drop.
