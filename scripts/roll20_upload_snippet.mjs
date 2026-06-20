@@ -321,30 +321,84 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
 // proves whether expected fixture markers are visible enough to proceed.
 (() => {
   const DATA = ${literal};
-  const bodyText = (document.body?.innerText || document.body?.textContent || '').replace(/\\s+/g, ' ').trim();
-  const bodyHtml = document.body?.outerHTML || '';
   const rolltemplateClasses = DATA.activationHints.rolltemplateClasses || [];
   const rollButtonNames = DATA.activationHints.rollButtonNames || [];
   const attrNames = DATA.activationHints.attrNames || [];
   const textTokens = DATA.activationHints.textTokens || [];
+  const normalize = (value) => String(value || '').replace(/\\s+/g, ' ').trim();
+  const isVisible = (el) => {
+    if (!el) return false;
+    const rect = el.getBoundingClientRect?.();
+    const style = getComputedStyle(el);
+    return Boolean(rect && rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0');
+  };
+  const collectDocumentProbe = (doc, label) => {
+    const bodyText = normalize(doc.body?.innerText || doc.body?.textContent || '');
+    const bodyHtml = doc.body?.outerHTML || '';
+    const hits = {
+      rolltemplateClasses: rolltemplateClasses.filter((className) => bodyHtml.includes(className)),
+      rollButtonNames: rollButtonNames.filter((name) => bodyHtml.includes(name)),
+      attrNames: attrNames.filter((name) => bodyHtml.includes(name)),
+      textTokens: textTokens.filter((token) => bodyText.includes(token)),
+    };
+    const domRolltemplateClasses = [...new Set(Array.from(doc.querySelectorAll('[class*="rolltemplate-"]'))
+      .flatMap((el) => String(el.className || '').split(/\\s+/))
+      .filter((className) => className.includes('rolltemplate-')))];
+    return {
+      label,
+      bodyText,
+      hits,
+      visible: {
+        charsheetCount: doc.querySelectorAll('.charsheet,.charactersheet').length,
+        sheetformCount: doc.querySelectorAll('.sheetform').length,
+        rollButtonCount: doc.querySelectorAll('button[type="roll"], button[name^="roll_"], [name^="roll_"]').length,
+        attrCount: doc.querySelectorAll('[name^="attr_"]').length,
+        domRolltemplateClasses: domRolltemplateClasses.slice(-20),
+        bodyTextSnippet: bodyText.slice(0, 800),
+      },
+    };
+  };
+  const inspectSheetIframes = () => Array.from(document.querySelectorAll('iframe')).map((frame, index) => {
+    const title = frame.getAttribute('title') || '';
+    const src = frame.getAttribute('src') || '';
+    const looksLikeSheet = /character sheet|charsheet|character/i.test(title) || /charsheet|character/i.test(src);
+    const info = { index, title, src, looksLikeSheet, visible: isVisible(frame), accessible: false, probe: null };
+    if (!looksLikeSheet) return info;
+    try {
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      if (!doc) return info;
+      info.accessible = true;
+      info.probe = collectDocumentProbe(doc, \`iframe:\${title || index}\`);
+    } catch (error) {
+      info.error = String(error?.message || error);
+    }
+    return info;
+  });
+  const topProbe = collectDocumentProbe(document, 'top-document');
+  const bodyText = topProbe.bodyText;
   const parseError = /"status"\\s*:\\s*"error"|unexpected token at|customcharsheet_json|sheet\\.html/i.test(bodyText)
     && /unexpected token|parse error|JSON/i.test(bodyText);
-  const hits = {
-    rolltemplateClasses: rolltemplateClasses.filter((className) => bodyHtml.includes(className)),
-    rollButtonNames: rollButtonNames.filter((name) => bodyHtml.includes(name)),
-    attrNames: attrNames.filter((name) => bodyHtml.includes(name)),
-    textTokens: textTokens.filter((token) => bodyText.includes(token)),
-  };
+  const sheetIframes = inspectSheetIframes();
+  const probes = [topProbe, ...sheetIframes.map((frame) => frame.probe).filter(Boolean)];
+  const hits = Object.fromEntries(Object.keys(topProbe.hits).map((key) => [
+    key,
+    [...new Set(probes.flatMap((probe) => probe.hits[key] || []))],
+  ]));
   const sheetHitCount = hits.rollButtonNames.length + hits.attrNames.length + hits.textTokens.length;
   const chatTemplateHitCount = hits.rolltemplateClasses.length;
   const hitCount = sheetHitCount + chatTemplateHitCount;
-  const domRolltemplateClasses = [...new Set(Array.from(document.querySelectorAll('[class*="rolltemplate-"]'))
-    .flatMap((el) => String(el.className || '').split(/\\s+/))
-    .filter((className) => className.includes('rolltemplate-')))];
+  const sheetIframeCount = sheetIframes.filter((frame) => frame.looksLikeSheet).length;
+  const inaccessibleSheetIframeCount = sheetIframes.filter((frame) => frame.looksLikeSheet && !frame.accessible).length;
+  const characterEditorCount = document.querySelectorAll('.charactereditor').length;
+  const characterDialogCount = document.querySelectorAll('.characterdialog,.characterviewer').length;
   const status = parseError
     ? 'ROLL20_EDITOR_PARSE_ERROR'
     : sheetHitCount > 0
       ? 'VISIBLE_MATCH'
+      : sheetIframeCount > 0
+        ? 'SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE'
+      : characterEditorCount > 0 || characterDialogCount > 0
+        ? 'CHARACTER_DIALOG_NO_SHEET_BODY'
       : chatTemplateHitCount > 0
         ? 'CHAT_TEMPLATE_ONLY'
       : 'NOT_PROVEN';
@@ -357,16 +411,28 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
     sheetHitCount,
     chatTemplateHitCount,
     hits,
+    probes,
+    sheetIframes,
     visible: {
-      charsheetCount: document.querySelectorAll('.charsheet,.charactersheet').length,
-      rollButtonCount: document.querySelectorAll('button[type="roll"], button[name^="roll_"], [name^="roll_"]').length,
-      domRolltemplateClasses: domRolltemplateClasses.slice(-20),
+      charsheetCount: topProbe.visible.charsheetCount,
+      sheetformCount: topProbe.visible.sheetformCount,
+      attrCount: topProbe.visible.attrCount,
+      rollButtonCount: topProbe.visible.rollButtonCount,
+      sheetIframeCount,
+      inaccessibleSheetIframeCount,
+      characterEditorCount,
+      characterDialogCount,
+      domRolltemplateClasses: topProbe.visible.domRolltemplateClasses,
       textchatCount: document.querySelectorAll('#textchat,.textchatcontainer').length,
       sheetSandboxInputCount: document.querySelectorAll('#sheetHtml,#sheetCss,#sheetTranslation').length,
-      bodyTextSnippet: bodyText.slice(0, 800),
+      bodyTextSnippet: topProbe.visible.bodyTextSnippet,
     },
     nextAction: status === 'VISIBLE_MATCH'
       ? 'Expected sheet markers are visible. Capture Roll20 root/chat evidence only if the visible sheet/chat belongs to this fixture.'
+      : status === 'SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE'
+        ? 'A character-sheet iframe is present, but this snippet could not prove expected markers from the top document. Use a frame-aware browser probe before deciding upload failed or before capturing evidence.'
+      : status === 'CHARACTER_DIALOG_NO_SHEET_BODY'
+        ? 'A character dialog is open, but expected sheet body markers are not visible. Open the character sheet iframe/tab before activation capture.'
       : status === 'CHAT_TEMPLATE_ONLY'
         ? 'Only the chat rolltemplate marker is visible. Do not capture sheet-root parity evidence until sheet body markers such as roll buttons, attrs, or expected text are visible.'
       : status === 'ROLL20_EDITOR_PARSE_ERROR'
@@ -526,24 +592,26 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       sandboxTextSnippet: text.slice(0, 800),
     };
   };
-  const collectActivationProbe = (phase) => {
-    const bodyText = (document.body?.innerText || '').replace(/\\s+/g, ' ');
-    const bodyHtml = document.body?.outerHTML || '';
+  const normalize = (value) => String(value || '').replace(/\\s+/g, ' ').trim();
+  const isVisible = (el) => {
+    if (!el) return false;
+    const rect = el.getBoundingClientRect?.();
+    const style = getComputedStyle(el);
+    return Boolean(rect && rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0');
+  };
+  const collectDocumentProbe = (doc, label) => {
+    const bodyText = normalize(doc.body?.innerText || doc.body?.textContent || '');
+    const bodyHtml = doc.body?.outerHTML || '';
     const rolltemplateClasses = DATA.activationHints.rolltemplateClasses || [];
     const rollButtonNames = DATA.activationHints.rollButtonNames || [];
     const attrNames = DATA.activationHints.attrNames || [];
     const textTokens = DATA.activationHints.textTokens || [];
-    const domRolltemplateClasses = [...new Set(Array.from(document.querySelectorAll('[class*="rolltemplate-"]'))
+    const domRolltemplateClasses = [...new Set(Array.from(doc.querySelectorAll('[class*="rolltemplate-"]'))
       .flatMap((el) => String(el.className || '').split(/\\s+/))
       .filter((className) => className.includes('rolltemplate-')))];
     return {
-      phase,
-      expected: {
-        rolltemplateClasses: rolltemplateClasses.slice(0, 16),
-        rollButtonNames: rollButtonNames.slice(0, 16),
-        attrNames: attrNames.slice(0, 16),
-        textTokens: textTokens.slice(0, 16),
-      },
+      label,
+      bodyText,
       hits: {
         rolltemplateClasses: rolltemplateClasses.filter((className) => bodyHtml.includes(className)),
         rollButtonNames: rollButtonNames.filter((name) => bodyHtml.includes(name)),
@@ -552,8 +620,66 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       },
       visible: {
         domRolltemplateClasses: domRolltemplateClasses.slice(-12),
-        rollButtonCount: document.querySelectorAll('button[type="roll"], button[name^="roll_"], [name^="roll_"]').length,
+        charsheetCount: doc.querySelectorAll('.charsheet,.charactersheet').length,
+        sheetformCount: doc.querySelectorAll('.sheetform').length,
+        attrCount: doc.querySelectorAll('[name^="attr_"]').length,
+        rollButtonCount: doc.querySelectorAll('button[type="roll"], button[name^="roll_"], [name^="roll_"]').length,
         bodyTextSnippet: bodyText.slice(0, 600),
+      },
+    };
+  };
+  const inspectSheetIframes = () => Array.from(document.querySelectorAll('iframe')).map((frame, index) => {
+    const title = frame.getAttribute('title') || '';
+    const src = frame.getAttribute('src') || '';
+    const looksLikeSheet = /character sheet|charsheet|character/i.test(title) || /charsheet|character/i.test(src);
+    const info = { index, title, src, looksLikeSheet, visible: isVisible(frame), accessible: false, probe: null };
+    if (!looksLikeSheet) return info;
+    try {
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      if (!doc) return info;
+      info.accessible = true;
+      info.probe = collectDocumentProbe(doc, \`iframe:\${title || index}\`);
+    } catch (error) {
+      info.error = String(error?.message || error);
+    }
+    return info;
+  });
+  const collectActivationProbe = (phase) => {
+    const rolltemplateClasses = DATA.activationHints.rolltemplateClasses || [];
+    const rollButtonNames = DATA.activationHints.rollButtonNames || [];
+    const attrNames = DATA.activationHints.attrNames || [];
+    const textTokens = DATA.activationHints.textTokens || [];
+    const topProbe = collectDocumentProbe(document, 'top-document');
+    const sheetIframes = inspectSheetIframes();
+    const probes = [topProbe, ...sheetIframes.map((frame) => frame.probe).filter(Boolean)];
+    const hits = Object.fromEntries(Object.keys(topProbe.hits).map((key) => [
+      key,
+      [...new Set(probes.flatMap((probe) => probe.hits[key] || []))],
+    ]));
+    const sheetIframeCount = sheetIframes.filter((frame) => frame.looksLikeSheet).length;
+    const inaccessibleSheetIframeCount = sheetIframes.filter((frame) => frame.looksLikeSheet && !frame.accessible).length;
+    return {
+      phase,
+      expected: {
+        rolltemplateClasses: rolltemplateClasses.slice(0, 16),
+        rollButtonNames: rollButtonNames.slice(0, 16),
+        attrNames: attrNames.slice(0, 16),
+        textTokens: textTokens.slice(0, 16),
+      },
+      hits,
+      probes,
+      sheetIframes,
+      visible: {
+        domRolltemplateClasses: topProbe.visible.domRolltemplateClasses,
+        charsheetCount: topProbe.visible.charsheetCount,
+        sheetformCount: topProbe.visible.sheetformCount,
+        attrCount: topProbe.visible.attrCount,
+        rollButtonCount: topProbe.visible.rollButtonCount,
+        sheetIframeCount,
+        inaccessibleSheetIframeCount,
+        characterEditorCount: document.querySelectorAll('.charactereditor').length,
+        characterDialogCount: document.querySelectorAll('.characterdialog,.characterviewer').length,
+        bodyTextSnippet: topProbe.visible.bodyTextSnippet,
       },
     };
   };
@@ -567,6 +693,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const afterHits = hitCount(after);
     const afterSheetHits = sheetHitCount(after);
     const afterChatTemplateHits = chatTemplateHitCount(after);
+    const afterSheetIframeCount = after?.visible?.sheetIframeCount || 0;
+    const afterCharacterDialogCount = (after?.visible?.characterEditorCount || 0) + (after?.visible?.characterDialogCount || 0);
     const addedHits = Object.fromEntries(Object.entries(after?.hits || {}).map(([key, values]) => {
       const previous = new Set(before?.hits?.[key] || []);
       return [key, values.filter((value) => !previous.has(value))];
@@ -577,6 +705,10 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       ? 'ROLL20_EDITOR_PARSE_ERROR'
       : afterSheetHits > 0 && (addedHitCount > 0 || beforeHits === 0)
       ? 'VISIBLE_MATCH'
+      : afterSheetIframeCount > 0
+        ? 'SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE'
+      : afterCharacterDialogCount > 0
+        ? 'CHARACTER_DIALOG_NO_SHEET_BODY'
       : afterChatTemplateHits > 0
         ? 'CHAT_TEMPLATE_ONLY'
       : allFileInputsDispatched
@@ -592,6 +724,10 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       addedHitCount,
       note: status === 'VISIBLE_MATCH'
         ? 'Expected sheet markers are visible after upload; still capture screenshots before claiming parity.'
+        : status === 'SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE'
+          ? 'A character-sheet iframe is present, but top-document JS did not prove expected markers. Use a frame-aware browser probe before deciding upload failed or before capturing parity evidence.'
+        : status === 'CHARACTER_DIALOG_NO_SHEET_BODY'
+          ? 'A character dialog is open, but the expected sheet body is not visible. Open the character sheet iframe/tab before activation capture.'
         : status === 'CHAT_TEMPLATE_ONLY'
           ? 'Only rolltemplate/chat markers are visible. Do not capture sheet-root parity evidence until the sheet body exposes expected attrs, roll buttons, or text.'
         : status === 'ROLL20_EDITOR_PARSE_ERROR'
@@ -669,9 +805,9 @@ function renderReadme(report) {
     '',
     'Default snippets are non-submitting helpers. Pass `--apply-settings --endpoint-campaign-id <sandboxCampaignId>` only for the dedicated Sandbox/test room when you intentionally want the generated snippet to POST the payload endpoint fallback and click the settings save button.',
     '',
-    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. Live Roll20 verification on 2026-06-21 showed that a broad manifest selector could save duplicate JSON objects into `customcharsheet_json` and make `/editor` return a JSON parse error, so generated snippets now avoid writing Ace text-input mirrors as submitted manifest fields. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
+    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. Live Roll20 verification on 2026-06-21 showed that a broad manifest selector could save duplicate JSON objects into `customcharsheet_json` and make `/editor` return a JSON parse error, so generated snippets now avoid writing Ace text-input mirrors as submitted manifest fields. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens across the top document and any same-context character-sheet iframe it can access. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` means a character-sheet iframe exists but top-document JS could not prove its markers, and `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
     '',
-    'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH` and a visual check that the visible sheet belongs to the intended fixture.',
+    'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH` and a visual check that the visible sheet belongs to the intended fixture. If an iframe-only state is reported, use a frame-aware browser probe before treating activation as failed.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
@@ -781,8 +917,12 @@ function runSelfTest() {
   if (!snippet.includes('roll20EditorParseError')) failures.push('generated snippet missing editor parse-error detector');
   if (!activationCheckSnippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated activation check missing parse-error status');
   if (!activationCheckSnippet.includes('VISIBLE_MATCH')) failures.push('generated activation check missing visible-match status');
+  if (!activationCheckSnippet.includes('SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE')) failures.push('generated activation check missing sheet iframe state');
+  if (!activationCheckSnippet.includes('CHARACTER_DIALOG_NO_SHEET_BODY')) failures.push('generated activation check missing character dialog state');
   if (!activationCheckSnippet.includes('CHAT_TEMPLATE_ONLY')) failures.push('generated activation check missing chat-template-only status');
   if (!activationCheckSnippet.includes('NOT_PROVEN')) failures.push('generated activation check missing not-proven status');
+  if (!snippet.includes('SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE')) failures.push('generated upload snippet missing sheet iframe state');
+  if (!snippet.includes('CHARACTER_DIALOG_NO_SHEET_BODY')) failures.push('generated upload snippet missing character dialog state');
   if (!applySnippet.includes("save-button-missing")) failures.push('apply snippet should tolerate missing settings save button on editor pages');
   if (!activationCheckSnippet.includes('rollButtonCount')) failures.push('generated activation check missing roll button count');
   if (!readme.includes('settings-page `{ sheet, userOptions, jsoninfo }` wrapper')) failures.push('generated README text does not describe wrapper');

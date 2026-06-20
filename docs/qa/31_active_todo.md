@@ -1,3 +1,18 @@
+## 2026-06-21 Codex Update - Roll20 sheet iframe activation routing
+
+Status: VERIFY/FRAME_AWARE_ACTIVATION_NEEDED. This batch rechecked the live Roll20 editor after the earlier AW2E `CHAT_TEMPLATE_ONLY`/`NOT_PROVEN` result and found that the sheet body can live inside the character-sheet iframe even when the top document has zero sheet markers.
+
+- OBSERVED: The visible Roll20 top document had `charsheet=0`, `sheetform=0`, `attr=0`, `roll=0`, `charactereditor=1`, and chat rolltemplate classes. This explains why top-document-only activation checks reported no sheet body.
+- OBSERVED: After closing the unsaved character edit dialog with `Cancel`, the character viewer dialog exposed an iframe titled `Character sheet for Yadunka Esowhaz`.
+- OBSERVED: A frame-aware browser probe of that iframe found AW2E sheet content: `attrCount=486`, `rollCount=13`, `charsheetCount=3`, and visible text beginning `Name: Playbook: Lock/Unlock Playbook Angel...`.
+- DONE: Updated `scripts/roll20_upload_snippet.mjs` so generated activation checks inspect same-context character-sheet iframes when possible and otherwise report `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` instead of collapsing the case into `CHAT_TEMPLATE_ONLY` or `NOT_PROVEN`.
+- DONE: Added `CHARACTER_DIALOG_NO_SHEET_BODY` for the case where a character dialog/edit shell is open but the sheet iframe/body is not visible yet.
+- DONE: Updated `scripts/README.md` and `test:roll20-upload-snippet` to document and guard the new activation statuses.
+- VERIFIED: `node --check scripts\roll20_upload_snippet.mjs`, `corepack pnpm run test:roll20-upload-snippet`, `corepack pnpm run snippet:roll20-upload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 official-roll20-AW2E`, `corepack pnpm run lint`, and `corepack pnpm run build` passed.
+- CURRENT STATUS: `status:roll20-actual` still reports `rendererReady=NO`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, `generatedActualScreenshots=4/6`, and missing/suspect chat evidence for `official-roll20-AW2E` and `yshy-commission-1bu`.
+- VERIFY NEXT: Add or use a frame-aware capture/probe path for actual root/chat evidence. Top-document browser snippets alone are not enough on current Roll20 because the character sheet body may be iframe-contained.
+- CLAIM BOUNDARY: This proves the current live Roll20 tab can expose AW2E controls in a character-sheet iframe. It does not prove visual parity, does not add a trusted screenshot, and does not unblock renderer production changes by itself.
+
 ## 2026-06-21 Codex Update - Roll20 settings manifest shape recheck
 
 Status: VERIFY/BLOCKED_ACTIVATION. This batch rechecked the live Roll20 Custom Sheet Sandbox settings path while trying to continue AW2E/YSHY trusted chat recapture; it does not add new trusted chat screenshots and does not change product rendering.

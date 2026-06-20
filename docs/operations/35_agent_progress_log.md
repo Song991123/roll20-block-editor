@@ -1,3 +1,14 @@
+## 2026-06-21 Roll20 Sheet Iframe Activation Routing
+
+- Rechecked the live Roll20 editor through the logged-in Chrome tab without modifying existing room settings.
+- Top-document Roll20 state still showed no sheet body markers (`charsheet=0`, `sheetform=0`, `attr=0`, `roll=0`) while chat rolltemplate classes were present, which explains the earlier top-document-only `CHAT_TEMPLATE_ONLY`/`NOT_PROVEN` results.
+- Closed the unsaved character edit dialog with `Cancel` and observed a character viewer dialog containing an iframe titled `Character sheet for Yadunka Esowhaz`.
+- Frame-aware browser probing of that iframe found AW2E body evidence: `attrCount=486`, `rollCount=13`, `charsheetCount=3`, and Playbook text beginning with `Name: Playbook: Lock/Unlock Playbook Angel...`.
+- Updated `scripts/roll20_upload_snippet.mjs` so generated upload and activation-check snippets inspect same-context sheet iframes when possible and otherwise report `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`; character dialog shells without sheet body now report `CHARACTER_DIALOG_NO_SHEET_BODY`.
+- Updated `scripts/README.md` and the upload-snippet self-test so future agents cannot treat chat-only evidence as sheet activation or treat iframe-contained sheets as ordinary upload failure.
+- Verification: `node --check scripts\roll20_upload_snippet.mjs`, `test:roll20-upload-snippet`, AW2E snippet regeneration, `lint`, and `build` passed. `status:roll20-actual` remains `rendererReady=NO` / `HOLD_PRODUCTION_RENDERER_PATCH` with AW2E and YSHY chat evidence still missing/suspect.
+- Boundary: this is activation routing and live DOM evidence only. It does not provide a trusted Roll20 screenshot, visual parity, or renderer readiness.
+
 ## 2026-06-21 Product UI Copy Cleanup
 
 - Replaced mojibake user-facing labels/tooltips in `components/editor/MainAreaToolbar.tsx` with clear Korean mode names: 편집, 분할, 블록, 미리보기.
