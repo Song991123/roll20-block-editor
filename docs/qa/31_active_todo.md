@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - edit/preview UI labels and design CSS roundtrip fixed
+
+Status: PARTIAL. This improves edit-mode usability and export/re-import stability, but does not prove actual Roll20 visual parity.
+
+- DONE: Cleaned main mode labels/tooltips so users see `편집`, `분할`, `블록`, and `미리보기` instead of awkward or unclear wording.
+- DONE: Cleaned preview toolbar labels/tooltips for sheet width, zoom, background mode, and legacy CSS toggle.
+- DONE: Cleaned shared layer role labels in `lib/editor/layerRoles.ts`; role badges now use `프레임`, `흐름`, `표`, `입력`, `버튼`, `텍스트`, `이미지`, `런타임`, and `노드`.
+- DONE: Changed editor-generated design classes from unprefixed `r20-node-*` to stable `sheet-r20-node-*` so moved-object CSS does not drift after export/re-import.
+- RESULT: `smoke:imported-edit-sync` now PASSes all prepared fixtures again: edit position, preview position, emitted position CSS, flow insert, free insert, layer reorder where available, and re-import stability.
+- RESULT: `smoke:preview-edit-visual` still PASSes all prepared fixtures: AW2E `1.87%`, Les-Oublies `2.07%`, YSHY 1BU `1.02%` local preview/edit mismatch.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --report-dir reports/preview-edit-visual`, and `corepack pnpm run smoke:imported-edit-sync -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync`.
+- NOTE: A raw `corepack pnpm exec tsc --noEmit --pretty false` still fails on pre-existing test/import configuration issues outside this batch; `next build` TypeScript check passes.
+- STILL TODO P0: Continue actual Roll20 renderer parity work; current production renderer gate remains blocked by prior `HOLD_PRODUCTION_RENDERER_PATCH` evidence.
+
 ## 2026-06-20 Codex Update - YSHY sanitize typography candidate rejected
 
 Status: PARTIAL. A plausible YSHY sanitize/font-activation candidate was tested and rejected; do not promote it.

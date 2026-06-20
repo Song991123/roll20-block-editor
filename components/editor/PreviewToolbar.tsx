@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Maximize2, Minus, Plus, RefreshCw, Moon, Sun, ShieldAlert } from 'lucide-react';
+import { Maximize2, Minus, Moon, Plus, RefreshCw, ShieldAlert, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -9,32 +9,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useUiStore } from '@/lib/stores/uiStore';
 import { usePreviewStore } from '@/lib/stores/previewStore';
+import { useUiStore } from '@/lib/stores/uiStore';
 
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
-/**
- * 미리보기 줌 / 옵션 컨트롤.
- *
- * Anchor: docs/spec/08_wireframes.md W2-C + D52 (fit-to-width default).
- * Polish: Phase A-9 — 통일된 버튼 크기 (h-8) + 통일된 lucide 아이콘 (h-4 w-4) +
- *         레이어 dropdown 은 Radix Portal 기반 (DropdownMenu) 사용해 viewport
- *         밖으로 잘리는 것 방지 (`side="top"` + `sideOffset=6`).
- */
 export default function PreviewToolbar() {
   const zoom = useUiStore((s) => s.previewZoom);
   const setZoom = useUiStore((s) => s.setPreviewZoom);
+  const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
+  const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
   const darkMode = usePreviewStore((s) => s.darkMode);
   const setDarkMode = usePreviewStore((s) => s.setDarkMode);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const setLegacyCssSanitize = usePreviewStore((s) => s.setLegacyCssSanitize);
+  const [widthDraft, setWidthDraft] = useState<string | null>(null);
 
   const numericZoom = typeof zoom === 'number' ? zoom : 1;
-
-  const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
-  const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
-  const [widthDraft, setWidthDraft] = useState<string | null>(null);
   const widthValue = widthDraft ?? String(sheetCanvasWidth);
 
   const stepZoom = (dir: 1 | -1) => {
@@ -55,9 +46,8 @@ export default function PreviewToolbar() {
     setWidthDraft(null);
   };
 
-  // 모든 아이콘 버튼: h-8 w-8, 아이콘 h-4 w-4 — 통일성.
-  const ICON_BTN = 'h-8 w-8';
-  const ICON_SIZE = 'h-4 w-4';
+  const iconButton = 'h-8 w-8';
+  const iconSize = 'h-4 w-4';
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -65,9 +55,8 @@ export default function PreviewToolbar() {
         className="flex h-11 shrink-0 items-center justify-center gap-1 border-t border-border bg-[var(--bg-elevated)] px-3 text-xs"
         data-testid="preview-toolbar"
       >
-        {/* 줌 컨트롤 그룹 */}
         <label className="inline-flex h-8 items-center gap-1.5 rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-[11px] text-muted-foreground">
-          <span>W</span>
+          <span>폭</span>
           <input
             type="text"
             inputMode="numeric"
@@ -100,11 +89,11 @@ export default function PreviewToolbar() {
               type="button"
               variant="ghost"
               size="icon"
-              className={ICON_BTN}
+              className={iconButton}
               onClick={() => stepZoom(-1)}
               aria-label="축소"
             >
-              <Minus className={ICON_SIZE} />
+              <Minus className={iconSize} />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top">축소</TooltipContent>
@@ -118,14 +107,14 @@ export default function PreviewToolbar() {
               size="sm"
               className="h-8 gap-1.5 px-2.5 text-[11px]"
               onClick={() => setZoom('fit')}
-              aria-label="화면 맞춤"
+              aria-label="화면에 맞춤"
               aria-pressed={zoom === 'fit'}
             >
               <Maximize2 className="h-3.5 w-3.5" />
               <span>맞춤</span>
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top">화면 폭에 맞춤</TooltipContent>
+          <TooltipContent side="top">현재 창에 맞춰 보기</TooltipContent>
         </Tooltip>
 
         <span className="min-w-[52px] text-center font-mono tabular-nums text-muted-foreground">
@@ -138,11 +127,11 @@ export default function PreviewToolbar() {
               type="button"
               variant="ghost"
               size="icon"
-              className={ICON_BTN}
+              className={iconButton}
               onClick={() => stepZoom(1)}
               aria-label="확대"
             >
-              <Plus className={ICON_SIZE} />
+              <Plus className={iconSize} />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top">확대</TooltipContent>
@@ -150,22 +139,21 @@ export default function PreviewToolbar() {
 
         <span className="mx-1.5 h-5 w-px bg-border" />
 
-        {/* 다크 모드 토글 */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               type="button"
               variant={darkMode ? 'secondary' : 'ghost'}
               size="icon"
-              className={ICON_BTN}
+              className={iconButton}
               onClick={() => setDarkMode(!darkMode)}
-              aria-label={darkMode ? '라이트 모드로' : '다크 모드로'}
+              aria-label={darkMode ? '밝은 배경으로 보기' : '어두운 배경으로 보기'}
               aria-pressed={darkMode}
             >
-              {darkMode ? <Sun className={ICON_SIZE} /> : <Moon className={ICON_SIZE} />}
+              {darkMode ? <Sun className={iconSize} /> : <Moon className={iconSize} />}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="top">{darkMode ? '라이트' : '다크'} 미리보기</TooltipContent>
+          <TooltipContent side="top">{darkMode ? '밝은 배경' : '어두운 배경'}으로 보기</TooltipContent>
         </Tooltip>
 
         <span className="mx-1.5 h-5 w-px bg-border" />
@@ -189,21 +177,20 @@ export default function PreviewToolbar() {
           <TooltipContent side="top">
             {legacyCssSanitize
               ? '구버전 Roll20 CSS 무해화 적용 중'
-              : '신버전/원본 CSS 기준 미리보기'}
+              : '신버전 Roll20 기준으로 보기'}
           </TooltipContent>
         </Tooltip>
 
-        {/* 새로고침 */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className={ICON_BTN}
+              className={iconButton}
               aria-label="다시 그리기"
             >
-              <RefreshCw className={ICON_SIZE} />
+              <RefreshCw className={iconSize} />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top">다시 그리기</TooltipContent>

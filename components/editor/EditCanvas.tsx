@@ -1025,10 +1025,10 @@ function htmlOrCssHasPosition(
   const style = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
   if (parseCssPx(style, 'left') === left && parseCssPx(style, 'top') === top) return true;
   const className = designClassForBlock(blockId);
-  if (!tagHasClass(tag.text, className) && !tagHasClass(tag.text, `sheet-${className}`)) return false;
+  const aliases = designClassAliases(className);
+  if (!aliases.some((alias) => tagHasClass(tag.text, alias))) return false;
   const declarations =
-    readCssRuleDeclarations(css, className) ||
-    readCssRuleDeclarations(css, `sheet-${className}`);
+    aliases.map((alias) => readCssRuleDeclarations(css, alias)).find(Boolean) ?? '';
   return parseCssPx(declarations, 'left') === left && parseCssPx(declarations, 'top') === top;
 }
 
@@ -1077,7 +1077,14 @@ function tagHasClass(tag: string, className: string): boolean {
 
 function designClassForBlock(blockId: string): string {
   const safe = blockId.replace(/[^a-zA-Z0-9_-]/g, (ch) => ch.charCodeAt(0).toString(36));
-  return `r20-node-${safe.slice(0, 32)}`;
+  return `sheet-r20-node-${safe.slice(0, 32)}`;
+}
+
+function designClassAliases(className: string): string[] {
+  const aliases = [className];
+  if (className.startsWith('sheet-')) aliases.push(className.slice('sheet-'.length));
+  else aliases.push(`sheet-${className}`);
+  return Array.from(new Set(aliases));
 }
 
 function readCssRuleDeclarations(css: string, className: string): string {

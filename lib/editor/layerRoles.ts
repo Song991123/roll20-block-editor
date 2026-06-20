@@ -11,7 +11,7 @@ export type LayerRole = {
 
 const ROLE_STYLES: Record<LayerRoleKind, Omit<LayerRole, 'kind'>> = {
   frame: {
-    label: '틀',
+    label: '프레임',
     icon: 'F',
     className: 'border-sky-500/60 bg-sky-500/15 text-sky-200',
     canReceiveChildren: true,
@@ -53,7 +53,7 @@ const ROLE_STYLES: Record<LayerRoleKind, Omit<LayerRole, 'kind'>> = {
     defaultDropMode: 'absolute',
   },
   media: {
-    label: '미디어',
+    label: '이미지',
     icon: 'M',
     className: 'border-rose-500/60 bg-rose-500/15 text-rose-200',
     canReceiveChildren: false,

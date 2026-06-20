@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils/cn';
-import { useUiStore, type MainMode, type EditSubmode } from '@/lib/stores/uiStore';
+import { useUiStore, type EditSubmode, type MainMode } from '@/lib/stores/uiStore';
 import {
   Tooltip,
   TooltipContent,
@@ -9,30 +9,21 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-/**
- * MainAreaToolbar — 메인 영역 상단 모드 토글.
- *
- * Anchor: D26 ②-재재 (분할 default + 한쪽만) + spec 17 §4 (편집 모드 추가).
- *
- * 좌측 모드: [✏ 편집] / [⬌ 분할] / [🟦 조립] / [📄 미리보기]
- * 우측: 편집 모드 시 sub-tab [시트] / [굴림틀]; 분할 모드 시 비율.
- */
-
 const MODES: Array<{
   key: MainMode;
   label: string;
   symbol: string;
   tooltip: string;
 }> = [
-  { key: 'edit', label: '편집', symbol: '✏', tooltip: '시트를 직접 보고 움직이며 편집' },
-  { key: 'split', label: '나란히', symbol: '⬌', tooltip: '블록과 미리보기를 함께 보기' },
-  { key: 'assemble', label: '블록', symbol: '🟦', tooltip: '블록 작업공간만 보기' },
-  { key: 'preview', label: '미리보기', symbol: '📄', tooltip: 'Roll20 화면만 보기' },
+  { key: 'edit', label: '편집', symbol: '✦', tooltip: '실제 시트 위에서 객체를 직접 옮기고 배치합니다.' },
+  { key: 'split', label: '분할', symbol: '▥', tooltip: '블록 작업공간과 미리보기를 함께 봅니다.' },
+  { key: 'assemble', label: '블록', symbol: '▦', tooltip: '블록 작업공간만 넓게 봅니다.' },
+  { key: 'preview', label: '미리보기', symbol: '◉', tooltip: 'Roll20 시트 렌더 결과만 봅니다.' },
 ];
 
 const SUBMODES: Array<{ key: EditSubmode; label: string; tooltip: string }> = [
-  { key: 'sheet', label: '시트', tooltip: '캐릭터 시트 편집' },
-  { key: 'rolltemplate', label: '굴림 결과', tooltip: '채팅에 표시되는 굴림 결과 편집' },
+  { key: 'sheet', label: '시트', tooltip: '캐릭터 시트 화면을 편집합니다.' },
+  { key: 'rolltemplate', label: '굴림 결과', tooltip: '채팅에 표시되는 rolltemplate 화면을 편집합니다.' },
 ];
 
 export default function MainAreaToolbar() {
@@ -99,7 +90,7 @@ export default function MainAreaToolbar() {
                         aria-selected={isActive}
                         onClick={() => setEditSubmode(sub.key)}
                         className={cn(
-                          'inline-flex items-center gap-1.5 rounded px-2.5 py-1 transition-colors text-xs',
+                          'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs transition-colors',
                           isActive
                             ? 'bg-[var(--bg-active)] text-foreground'
                             : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',

@@ -1,3 +1,11 @@
+## 2026-06-20 Edit/Preview UI Labels and Design CSS Roundtrip
+
+- Cleaned the user-facing mode/preview/layer role labels so the edit surface no longer exposes unclear translated wording for the main mode toolbar, preview toolbar, and layer role badges.
+- Changed editor-generated design CSS classes to `sheet-r20-node-*` instead of `r20-node-*`. This keeps moved-object position CSS stable across export/re-import instead of letting the importer prefix it later.
+- Verification: `lint`, `build`, `smoke:preview-edit-visual`, and `smoke:imported-edit-sync` all PASSed after rebuilding the static `out` bundle.
+- Current local preview/edit evidence: AW2E mismatch `1.87%`, Les-Oublies `2.07%`, YSHY 1BU `1.02%`; imported edit sync PASSes all three fixtures with re-import stability.
+- Claim boundary: this fixes a local edit-mode roundtrip/UX problem. It does not change the actual Roll20 renderer gate, which remains blocked by prior `HOLD_PRODUCTION_RENDERER_PATCH` evidence.
+
 ## 2026-06-20 YSHY Sanitize Typography Candidate Rejected
 
 - Added diagnostic-only ChatPane policy `yshy-sanitize-typography`, scoped to `.sheet-rolltemplate-coc`, to test whether observed Roll20 typography/wrapping/border-spacing values explain the YSHY table-wide constraint.
