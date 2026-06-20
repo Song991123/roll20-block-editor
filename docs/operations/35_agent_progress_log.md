@@ -1,3 +1,12 @@
+## 2026-06-20 Roll20 Sandbox Snippet Recheck
+
+- Rechecked the dedicated `Codex Roll20 Verify | Roll20` tab through the Chrome extension path. The tab is still the Roll20 editor with visible `Sheet Sandbox Tools`, including `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`; no project dev server was running on the usual app/CDP ports.
+- Reran the current Les-Oublies upload snippet in the dedicated sandbox tools only. The file inputs accepted generated `File` objects and fired `change` events, but the activation probe found `0` expected visible markers after upload (`rollButtonNames`, `attrNames`, `rolltemplateClasses`, and text tokens all stayed empty).
+- Saved ignored local evidence at `reports/roll20-actual-compare/2026-06-18-state-map-v1/roll20-upload-handoff/official-roll20-Les-Oublies-current-snippet-result.json`.
+- Conclusion: file-input dispatch alone still does not apply the generated sheet in this Roll20 state, so it must not be used for screenshot/chat parity evidence. The next valid path is the real file chooser/settings-save route, or a dedicated settings page where `customcharsheet_json`/Ace `editors.json` can be updated and Roll20 visibly reloads the expected sheet markers.
+- Docs fix: `scripts/README.md` no longer says the upload snippet wraps `sheet.json` as `{ sheet, userOptions, jsoninfo }`; current rules require the plain exported `sheet.json` text because the wrapper shape is known-bad for the verified Sandbox settings page.
+- Claim boundary: this is an upload-path blocker recheck and documentation correction only. It does not add AW2E/Les current chat metrics, does not change renderer CSS, and does not prove Roll20 visual parity.
+
 ## 2026-06-20 Final Rendered Resource Gate For Imported Edit Smoke
 
 - Added final rendered resource collection to `scripts/imported_edit_sync_smoke.mjs` after the edit/reimport path settles.

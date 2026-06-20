@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - Roll20 sandbox snippet recheck
+
+Status: VERIFY/BLOCKED_UPLOAD_APPLICATION. This batch rechecked the live Roll20 dedicated sandbox tab and corrected stale script documentation.
+
+- OBSERVED: No project dev server/CDP endpoint was listening on `3000`, `3001`, `3002`, or `9222`. Remaining listeners were Discord, Steam, OneDrive, Wacom, VS Code, system, or security-related processes and were not stopped.
+- OBSERVED: The only open Roll20 tab is `Codex Roll20 Verify | Roll20` at `https://app.roll20.net/editor`. `Sheet Sandbox Tools` is visible, and `#sheetHtml`, `#sheetCss`, and `#sheetTranslation` exist.
+- BLOCKED/OBSERVED: Running the latest Les-Oublies upload snippet in the dedicated sandbox tools dispatched all three generated files, but the activation probe found `0` expected visible markers after upload. Result status: `FILE_INPUTS_DISPATCHED_BUT_VISIBLE_MATCH_NOT_PROVEN`.
+- LOCAL EVIDENCE: Ignored report saved at `reports/roll20-actual-compare/2026-06-18-state-map-v1/roll20-upload-handoff/official-roll20-Les-Oublies-current-snippet-result.json`.
+- DONE: Fixed stale `scripts/README.md` wording. It now says the Roll20 upload snippet fills `customcharsheet_json` with the plain exported `sheet.json` text and explicitly warns not to wrap it as `{ sheet, userOptions, jsoninfo }`.
+- STILL TODO P0: Open the dedicated Sandbox settings/save path or use the real file chooser route so the generated fixture visibly reloads expected sheet markers, then recapture AW2E and Les-Oublies same-action `roll20-chat.png` plus current `roll20-chat-dom-evidence.json`.
+- CLAIM BOUNDARY: File-input dispatch is not Roll20 rendering proof. Do not use this snippet attempt for screenshot/chat parity or renderer CSS promotion.
+
 ## 2026-06-20 Codex Update - final rendered resource gate for imported edit smoke
 
 Status: DONE/VERIFY. This batch separates transient request aborts during edit/reimport from actual final missing images/backgrounds.
