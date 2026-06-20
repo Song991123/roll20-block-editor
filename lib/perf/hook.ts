@@ -78,6 +78,8 @@ export interface PerfImportResult {
   warnings: number;
   compositeCollapsed: number;
   compositePackedByType: Record<string, number>;
+  wideRowBundles: number;
+  wideRowCollapsed: number;
   heapBeforeMb: number | null;
   heapAfterMb: number | null;
 }
@@ -111,7 +113,12 @@ export interface PerfHook {
   /** sync / async 작업 timing + heap delta. */
   measure: <T>(label: string, fn: () => T | Promise<T>) => Promise<PerfMeasure & { value: T }>;
   /** 영시영 / 다른 시트 raw HTML/CSS/i18n 을 generic pipeline 으로 import 후 hydrate. */
-  importSheet: (input: { html: string; css?: string; i18n?: string }) => Promise<PerfImportResult>;
+  importSheet: (input: {
+    html: string;
+    css?: string;
+    i18n?: string;
+    compactWideRows?: boolean;
+  }) => Promise<PerfImportResult>;
   setMainMode: (mode: MainMode) => void;
   setPreviewZoom: (zoom: PreviewZoom) => void;
   setPreviewRenderMode: (mode: PreviewRenderMode) => void;
@@ -337,10 +344,13 @@ function buildHook(): PerfHook {
       return { label, ms, heapBeforeMb, heapAfterMb, heapDeltaMb, value };
     },
 
-    importSheet: async ({ html, css = '', i18n = '' }) => {
+    importSheet: async ({ html, css = '', i18n = '', compactWideRows = false }) => {
       const heapBeforeMb = getHeapMb();
       const t0 = nowMs();
-      const result = importPipeline({ html, css, i18n });
+      const result = importPipeline(
+        { html, css, i18n },
+        { html: { compactWideRows } },
+      );
       const parseEnd = nowMs();
       const adapter = getBlocklyAdapter();
 
@@ -402,6 +412,8 @@ function buildHook(): PerfHook {
         warnings: result.warnings.length,
         compositeCollapsed: result.stats.compositeCollapsed ?? 0,
         compositePackedByType: result.stats.compositePackedByType ?? {},
+        wideRowBundles: result.stats.wideRowBundles ?? 0,
+        wideRowCollapsed: result.stats.wideRowCollapsed ?? 0,
         heapBeforeMb,
         heapAfterMb,
       };

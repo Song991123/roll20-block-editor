@@ -108,6 +108,8 @@ function summarizeFixture(fixture, index) {
       largestRootTopTypes: Array.isArray(largestRoot?.topTypes) ? largestRoot.topTypes : [],
       compositeCollapsed: fixture.import?.compositeCollapsed ?? null,
       compositePackedByType: fixture.import?.compositePackedByType ?? {},
+      wideRowBundles: fixture.import?.wideRowBundles ?? null,
+      wideRowCollapsed: fixture.import?.wideRowCollapsed ?? null,
       topRemainingTrRows: topRemainingTrSignature?.rowCount ?? null,
       topRemainingTrDescendantBlocks: topRemainingTrSignature?.totalDescendantBlocks ?? null,
       topRemainingTrAvgBlocks: topRemainingTrSignature?.avgDescendantBlocks ?? null,
@@ -150,8 +152,8 @@ function renderMarkdown(summary) {
   lines.push(`Source: \`${summary.source}\``);
   lines.push(`Overall: **${summary.status}**`);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Composite collapsed | Composite types | Top row sig rows | Top row sig blocks | Est. row reduction | Projected HTML blocks | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
-  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
+  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Composite collapsed | Composite types | Wide row bundles | Wide row collapsed | Top row sig rows | Top row sig blocks | Est. row reduction | Projected HTML blocks | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
+  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
   for (const item of summary.fixtures) {
     const m = item.metrics;
     lines.push([
@@ -164,6 +166,8 @@ function renderMarkdown(summary) {
       m.largestRootMaxDepth ?? '',
       m.compositeCollapsed ?? '',
       fmtTypeCounts(m.compositePackedByType),
+      m.wideRowBundles ?? '',
+      m.wideRowCollapsed ?? '',
       m.topRemainingTrRows ?? '',
       m.topRemainingTrDescendantBlocks ?? '',
       m.estimatedWideRowReduction ?? '',
@@ -186,7 +190,8 @@ function renderMarkdown(summary) {
   lines.push(`- Emit: WARN >= ${BUDGETS.emitMs.warn}ms, FAIL >= ${BUDGETS.emitMs.fail}ms`);
   lines.push(`- Drag drift: WARN >= ${BUDGETS.dragDriftPx.warn}px, FAIL >= ${BUDGETS.dragDriftPx.fail}px`);
   lines.push('- Shape metrics are sanitized structural counts only. They omit block IDs, DOM text, HTML snippets, CSS snippets, and private fixture paths.');
-  lines.push('- Estimated row reduction is a dry-run: it assumes the top remaining `r20_tr` signature is represented as one lazy/bundle unit per row. It does not mean the importer currently applies that optimization.');
+  lines.push('- Estimated row reduction is a dry-run unless the fixture was imported with `--compact-wide-rows true`; wide row bundle metrics report actual optional compaction.');
+  lines.push('- Wide row compaction preserves rendered HTML rows as raw bundles, but direct block editing inside each bundled row is limited until a future ungroup/lazy-materialization path exists.');
   lines.push('');
   lines.push('Claim boundary: this report measures local imported edit performance only. It does not prove Roll20 visual parity.');
   lines.push('');

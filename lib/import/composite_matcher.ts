@@ -28,6 +28,19 @@ export interface CompositePackStats {
   collapsed: number;
   /** packing 으로 새로 생긴 composite 수 (type 별). */
   packedByType: Record<string, number>;
+  wideRowBundles: number;
+  wideRowCollapsed: number;
+}
+
+export interface CompositePackOptions {
+  compactWideRows?: boolean;
+  wideRowMinRepeats?: number;
+  wideRowMinDescendants?: number;
+}
+
+interface WideRowInfo {
+  signature: string;
+  descendantBlocks: number;
 }
 
 export function newPackStats(): CompositePackStats {
@@ -36,6 +49,8 @@ export function newPackStats(): CompositePackStats {
     afterPackTotal: 0,
     collapsed: 0,
     packedByType: {},
+    wideRowBundles: 0,
+    wideRowCollapsed: 0,
   };
 }
 
@@ -55,8 +70,12 @@ export function newPackStats(): CompositePackStats {
 export function packComposites(
   chain: MatchedBlock[],
   stats?: CompositePackStats,
+  options: CompositePackOptions = {},
 ): MatchedBlock[] {
   if (!chain || chain.length === 0) return chain;
+  const childOptions = options.compactWideRows
+    ? { ...options, compactWideRows: false }
+    : options;
 
   if (stats) {
     stats.atomicTotal += chain.length;
@@ -78,7 +97,7 @@ export function packComposites(
       const rw = tryMatchRepeatingSectionWrapper(b);
       if (rw) {
         const innerContent = rw.pack.children?.CONTENT ?? [];
-        const recursedInner = packComposites(innerContent, stats);
+        const recursedInner = packComposites(innerContent, stats, childOptions);
         return {
           ...rw.pack,
           children: { CONTENT: recursedInner },
@@ -86,14 +105,17 @@ export function packComposites(
       }
     }
     // 그 외 — 자식 recurse only.
-    return recursePack(b, stats);
+    return recursePack(b, stats, childOptions);
   });
 
   // window-based packing — chain-level (attribute_card 등).
+  const compacted = options.compactWideRows
+    ? compactRepeatedWideRowsDeep(preprocessed, stats, options)
+    : preprocessed;
   const out: MatchedBlock[] = [];
   let i = 0;
-  while (i < preprocessed.length) {
-    const cur = preprocessed[i];
+  while (i < compacted.length) {
+    const cur = compacted[i];
     // top-down 에서 이미 변환된 composite 는 건너뜀.
     if (
       cur.blockType === 'r20_skill_row' ||
@@ -120,7 +142,7 @@ export function packComposites(
       continue;
     }
     // attribute_card (td 시퀀스 chain-level matching).
-    const attrCard = tryMatchAttributeCard(preprocessed, i);
+    const attrCard = tryMatchAttributeCard(compacted, i);
     if (attrCard) {
       out.push(attrCard.pack);
       if (stats) {
@@ -141,12 +163,16 @@ export function packComposites(
   return out;
 }
 
-function recursePack(b: MatchedBlock, stats?: CompositePackStats): MatchedBlock {
+function recursePack(
+  b: MatchedBlock,
+  stats?: CompositePackStats,
+  options: CompositePackOptions = {},
+): MatchedBlock {
   let newChildren: Record<string, MatchedBlock[]> | undefined;
   if (b.children) {
     const entries: Array<[string, MatchedBlock[]]> = [];
     for (const [k, v] of Object.entries(b.children)) {
-      entries.push([k, packComposites(v, stats)]);
+      entries.push([k, packComposites(v, stats, options)]);
     }
     if (entries.length) newChildren = Object.fromEntries(entries);
   }
@@ -154,7 +180,7 @@ function recursePack(b: MatchedBlock, stats?: CompositePackStats): MatchedBlock 
   if (b.valueInputs) {
     const entries: Array<[string, MatchedBlock]> = [];
     for (const [k, v] of Object.entries(b.valueInputs)) {
-      entries.push([k, recursePack(v, stats)]);
+      entries.push([k, recursePack(v, stats, options)]);
     }
     if (entries.length) newValueInputs = Object.fromEntries(entries);
   }
@@ -181,6 +207,99 @@ function recursePack(b: MatchedBlock, stats?: CompositePackStats): MatchedBlock 
  *
  * 위 조건 모두 부합하면 r20_attribute_card 1 개로 packing. 아니면 atomic 유지.
  */
+function compactRepeatedWideRowsDeep(
+  chain: MatchedBlock[],
+  stats: CompositePackStats | undefined,
+  options: CompositePackOptions,
+): MatchedBlock[] {
+  const minRepeats = options.wideRowMinRepeats ?? 4;
+  const minDescendants = options.wideRowMinDescendants ?? 40;
+  const buckets = new Map<string, Array<{ block: MatchedBlock; info: WideRowInfo }>>();
+  const collect = (block: MatchedBlock) => {
+    const info = describeWideRow(block);
+    if (info && info.descendantBlocks >= minDescendants && block.sourceRaw) {
+      const bucket = buckets.get(info.signature) || [];
+      bucket.push({ block, info });
+      buckets.set(info.signature, bucket);
+    }
+    for (const child of Object.values(block.children ?? {}).flat()) collect(child);
+    for (const child of Object.values(block.valueInputs ?? {})) collect(child);
+  };
+  for (const block of chain) {
+    collect(block);
+  }
+  if (buckets.size === 0) return chain;
+
+  const eligible = new Set<string>();
+  for (const [signature, bucket] of buckets.entries()) {
+    if (bucket.length >= minRepeats) eligible.add(signature);
+  }
+  if (eligible.size === 0) return chain;
+
+  const replace = (block: MatchedBlock): MatchedBlock => {
+    const info = describeWideRow(block);
+    const raw = block.sourceRaw || block.raw || '';
+    if (info && raw && eligible.has(info.signature)) {
+      const collapsed = Math.max(0, info.descendantBlocks - 1);
+      if (stats) {
+        stats.packedByType.r20_wide_row_bundle = (stats.packedByType.r20_wide_row_bundle || 0) + 1;
+        stats.collapsed += collapsed;
+        stats.wideRowBundles += 1;
+        stats.wideRowCollapsed += collapsed;
+      }
+      return {
+        blockType: 'r20_raw_html',
+        fields: { HTML: raw },
+        children: {},
+        raw,
+        sourceRaw: raw,
+        hint: `composite:wide_row_bundle:${info.signature}`,
+      };
+    }
+
+    let children: Record<string, MatchedBlock[]> | undefined;
+    if (block.children) {
+      children = Object.fromEntries(
+        Object.entries(block.children).map(([key, value]) => [key, value.map(replace)]),
+      );
+    }
+    let valueInputs: Record<string, MatchedBlock> | undefined;
+    if (block.valueInputs) {
+      valueInputs = Object.fromEntries(
+        Object.entries(block.valueInputs).map(([key, value]) => [key, replace(value)]),
+      );
+    }
+    return {
+      ...block,
+      ...(children ? { children } : {}),
+      ...(valueInputs ? { valueInputs } : {}),
+    };
+  };
+
+  return chain.map(replace);
+}
+
+function describeWideRow(block: MatchedBlock): WideRowInfo | null {
+  if (block.blockType !== 'r20_tr') return null;
+  const typeCounts = new Map<string, number>();
+  let total = 0;
+  const visit = (node: MatchedBlock) => {
+    total += 1;
+    typeCounts.set(node.blockType, (typeCounts.get(node.blockType) || 0) + 1);
+    for (const child of Object.values(node.children ?? {}).flat()) visit(child);
+    for (const child of Object.values(node.valueInputs ?? {})) visit(child);
+  };
+  for (const child of Object.values(block.children ?? {}).flat()) visit(child);
+  for (const child of Object.values(block.valueInputs ?? {})) visit(child);
+  if (total === 0) return null;
+  const signature = Array.from(typeCounts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 8)
+    .map(([type, count]) => `${type}:${count}`)
+    .join('|');
+  return { signature, descendantBlocks: total };
+}
+
 function tryMatchAttributeCard(
   chain: MatchedBlock[],
   idx: number,

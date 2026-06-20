@@ -39,6 +39,7 @@ const PORT = Number(argOf('--port', '4196'));
 const VIEWPORT = { width: 2200, height: 1200 };
 const DRAG_DELTA = { x: Number(argOf('--dx', '80')), y: Number(argOf('--dy', '48')) };
 const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 'true';
+const COMPACT_WIDE_ROWS = argOf('--compact-wide-rows', 'false') === 'true';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -153,18 +154,18 @@ function summarizeResourceIssues(issues) {
 }
 
 async function importFixture(page, fixture) {
-  return page.evaluate(async ({ html, css, i18n }) => {
+  return page.evaluate(async ({ html, css, i18n, compactWideRows }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     window.__perfHook.clearAll();
     await sleep(700);
     let last = null;
     for (let i = 0; i < 40; i += 1) {
-      last = await window.__perfHook.importSheet({ html, css, i18n });
+      last = await window.__perfHook.importSheet({ html, css, i18n, compactWideRows });
       if (last.blockCount > 0) return last;
       await sleep(500);
     }
     return last;
-  }, fixture);
+  }, { ...fixture, compactWideRows: COMPACT_WIDE_ROWS });
 }
 
 async function chooseEditTarget(page, excludedIds = []) {
@@ -1207,14 +1208,15 @@ async function emittedPositionState(page, blockId) {
   }, blockId);
 }
 
-async function reimportCurrentEmit(page) {
-  return page.evaluate(async () => {
+async function reimportCurrentEmit(page, compactWideRows = false) {
+  return page.evaluate(async ({ compactWideRows }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     const e1 = window.__perfHook.getEmitContent();
     const r2 = await importLive({
       html: e1.html,
       css: e1.css,
       i18n: e1.i18n,
+      compactWideRows,
     });
     const e2 = window.__perfHook.getEmitContent();
     const n1 = stripBlockIds(e1.html);
@@ -1280,7 +1282,7 @@ async function reimportCurrentEmit(page) {
         after: b.slice(Math.max(0, i - 80), i + 80),
       };
     }
-  });
+  }, { compactWideRows });
 }
 
 function closeEnough(a, b, tolerance) {
@@ -1598,6 +1600,7 @@ async function main() {
     startedAt: new Date().toISOString(),
     dragDelta: DRAG_DELTA,
     failOnResourceIssues: FAIL_ON_RESOURCE_ISSUES,
+    compactWideRows: COMPACT_WIDE_ROWS,
     scopeNote:
       'interaction pass means edit/preview sync worked; resource pass is separate because visual parity needs assets to load',
     fixtures: [],
@@ -1675,7 +1678,7 @@ async function main() {
         if (!entry.target) throw new Error('No imported node produced a synced editable move');
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-edit.png`) });
         await page.screenshot({ path: path.join(REPORT_DIR, 'screenshots', `${fixture.id}-after-preview.png`) });
-        entry.reimport = await reimportCurrentEmit(page);
+        entry.reimport = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
         entry.interactionPass =
           entry.pass &&
           entry.canvasInsert?.pass === true &&

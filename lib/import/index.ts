@@ -18,12 +18,13 @@ import { newPackStats, packComposites } from './composite_matcher';
 import { parseCss, newCssCtx } from './css_parser';
 import { parseI18n, newI18nCtx, type I18nOptions } from './i18n_extractor';
 import { emitWorkspaceXml } from './xml_emitter';
-import type { ImportInput, ImportResult, ImportWarning } from './types';
+import type { ImportHtmlOptions, ImportInput, ImportResult, ImportWarning } from './types';
 
 export type { ImportInput, ImportResult, ImportWarning } from './types';
 
 export interface ImportOptions {
   i18n?: I18nOptions;
+  html?: ImportHtmlOptions;
 }
 
 export function importSheet(
@@ -42,7 +43,9 @@ export function importSheet(
     // composite block 1 개로 묶어 카탈로그 inflation 감소. 인식 실패 시
     // atomic 그대로 유지 (fail-safe).
     const packStats = newPackStats();
-    const composed = packComposites(tree, packStats);
+    const composed = packComposites(tree, packStats, {
+      compactWideRows: options.html?.compactWideRows ?? false,
+    });
     htmlXml = emitWorkspaceXml(composed);
     htmlCtx.compositePackStats = packStats;
     for (const w of htmlCtx.warnings) {
@@ -115,6 +118,8 @@ export function importSheet(
       compositeAfterPackTotal: htmlCtx.compositePackStats?.afterPackTotal ?? 0,
       compositeCollapsed: htmlCtx.compositePackStats?.collapsed ?? 0,
       compositePackedByType: htmlCtx.compositePackStats?.packedByType ?? {},
+      wideRowBundles: htmlCtx.compositePackStats?.wideRowBundles ?? 0,
+      wideRowCollapsed: htmlCtx.compositePackStats?.wideRowCollapsed ?? 0,
     },
   };
 }

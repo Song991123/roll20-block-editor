@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - optional wide row compact import
+
+Status: VERIFY. This adds an explicit opt-in speed path for very large imported sheets. It is not enabled by default because bundled rows preserve rendered HTML but limit direct block editing inside those rows until an ungroup/lazy-materialization path exists.
+
+- DONE: `importSheet(..., { html: { compactWideRows: true } })` can now compact repeated large `r20_tr` subtrees into raw row bundles after normal generic composite packing.
+- DONE: The import dialog exposes a clearly labeled option, `큰 표 행 빠르게 불러오기`, with the editing tradeoff explained to the user.
+- DONE: `window.__perfHook.importSheet`, `smoke:imported-edit-sync --compact-wide-rows true`, and `budget:imported-edit` now report actual `wideRowBundles` and `wideRowCollapsed` metrics.
+- LOCAL PRIVATE RESULT: On the current private YSHY 1BU fixture, optional compaction produced `4` wide row bundles and collapsed `432` blocks, changing HTML block count from the previous `6530` baseline to `6094`.
+- LOCAL PRIVATE RESULT: The compact run passed imported edit/preview sync, canvas insert, free insert, reimport stability, console/page errors, resource checks, and drag drift `0px`.
+- LOCAL PRIVATE RESULT: Import total was about `5434.3ms`, inject about `5086.3ms`, emit about `221.8ms`; this is better than the prior diagnostic baseline but still WARN-level.
+- STILL TODO P0: Add a true editable lazy-materialization/ungroup path so large repeated rows can be fast without hiding their internal controls from block editing.
+- STILL TODO P0: Continue optimizing the remaining largest root subtree; this first slice does not prove all large sheets are fast, and it does not prove Roll20 visual parity.
+
 ## 2026-06-20 Codex Update - wide row bundle dry-run estimate
 
 Status: VERIFY. This adds an estimate for the likely gain from bundling/lazy-materializing the strongest remaining table-row signature; it does not change import behavior yet.

@@ -31,6 +31,8 @@ export interface MatchedBlock {
   valueInputs?: Record<string, MatchedBlock>;
   /** raw fallback 일 때 — 원본 HTML 보존. */
   raw?: string;
+  /** Original sanitized element HTML for optional lossless compaction. */
+  sourceRaw?: string;
   /** 디버깅: 매칭에 사용된 token (어떤 hint 가 매칭 결정했는지). */
   hint?: string;
 }
@@ -128,7 +130,10 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
 
   if (result) {
     ctx.matchedCount++;
-    return result;
+    return {
+      ...result,
+      sourceRaw: serializeRawHtml(node),
+    };
   }
 
   // fallback — raw HTML.

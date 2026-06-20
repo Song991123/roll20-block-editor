@@ -2827,6 +2827,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Negative controls are now easier to reject: `soft-shadow-rejected`, `roll20-message-padding`, `font-fallback`, `tight-cell-spacing`, and `shell-typography` all regress at least one fixture.
 - Claim boundary: this is diagnostic/reporting work only. It does not change production ChatPane rendering, does not make `rendererReady` pass, and does not prove Roll20 visual parity.
 
+## 2026-06-20 Optional Wide Row Compact Import
+
+- Added an opt-in import speed path for very large sheets: `compactWideRows` compacts repeated large table-row subtrees into raw row bundles after the normal generic composite pass.
+- Added user-facing import dialog control `큰 표 행 빠르게 불러오기`; default remains off to preserve the normal “every HTML element is an editable block” expectation.
+- Added perf/smoke plumbing: `window.__perfHook.importSheet({ compactWideRows })`, `smoke:imported-edit-sync --compact-wide-rows true`, and budget columns for `wideRowBundles` / `wideRowCollapsed`.
+- Private YSHY 1BU fixture evidence, ignored locally: `4` wide row bundles, `432` blocks collapsed, HTML blocks `6530 -> 6094`, import total about `5434.3ms`, inject about `5086.3ms`, emit about `221.8ms`.
+- Verification: compact private imported-edit smoke passed interaction/resource checks, edit/preview sync, canvas/free insert, reimport stability, console/page errors, and `0px` drag drift; `lint`, `build`, `node --check`, and `guard:roll20-evidence` passed.
+- Claim boundary: this is a speed option, not Roll20 visual parity. It preserves rendered row HTML as raw bundles, but internal controls inside bundled rows are not directly block-editable until an ungroup/lazy-materialization feature exists.
+
 ## 2026-06-19 Generic Attr Class State Probes
 
 - Removed the AW2E-specific hardcoded playbook value array from `scripts/roll20_full_root_candidate_smoke.mjs`.

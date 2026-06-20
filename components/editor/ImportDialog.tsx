@@ -89,6 +89,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const [htmlText, setHtmlText] = useState('');
   const [cssText, setCssText] = useState('');
   const [i18nText, setI18nText] = useState('');
+  const [compactWideRows, setCompactWideRows] = useState(false);
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<null | {
     coverage: number;
@@ -101,6 +102,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     workerBlocks: number;
     warnings: number;
     sanitizeDropped: number;
+    wideRowBundles: number;
+    wideRowCollapsed: number;
   }>(null);
   const [progress, setProgress] = useState<null | { done: number; total: number; pct: number }>(null);
 
@@ -126,6 +129,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         html: htmlText,
         css: cssText,
         i18n: i18nText,
+      }, {
+        html: { compactWideRows },
       });
       const adapter = getBlocklyAdapter();
       const ws = useWorkspaceStore.getState();
@@ -189,6 +194,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         workerBlocks: workerSource.replaced ? workerSource.targetCount : workerMove.targetCount,
         warnings: result.warnings.length,
         sanitizeDropped: result.stats.sanitizeDropped,
+        wideRowBundles: result.stats.wideRowBundles ?? 0,
+        wideRowCollapsed: result.stats.wideRowCollapsed ?? 0,
       });
       if (result.stats.sanitizeDropped > 0) {
         toast.warning(
@@ -288,6 +295,22 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           </TabsContent>
         </Tabs>
 
+        <label className="flex gap-3 rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed">
+          <input
+            type="checkbox"
+            checked={compactWideRows}
+            onChange={(e) => setCompactWideRows(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
+          <span>
+            <span className="block font-medium">큰 표 행 빠르게 불러오기</span>
+            <span className="block text-muted-foreground">
+              반복되는 큰 표 행을 묶음으로 보존해 불러오기 속도를 줄입니다. Roll20 출력 HTML은 유지하지만,
+              묶인 행 내부 요소는 나중에 분해하기 전까지 개별 블록으로 편집하기 어렵습니다.
+            </span>
+          </span>
+        </label>
+
         {progress && progress.total > 0 && (
           <div
             className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed"
@@ -325,6 +348,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span>
               {' · '}번역 키 <span className="tabular-nums">{report.i18nKeys}</span>
             </div>
+            {report.wideRowBundles > 0 && (
+              <div className="mt-1 text-sky-500">
+                큰 표 행 묶음 {report.wideRowBundles}개로 약 {report.wideRowCollapsed}개 블록을 줄였습니다.
+              </div>
+            )}
             {report.sanitizeDropped > 0 && (
               <div className="mt-1 text-amber-500" data-testid="import-sanitize-warning">
                 보안을 위해 인라인 이벤트 핸들러(onclick 등) {report.sanitizeDropped}개를 제거했습니다.
