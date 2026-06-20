@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - chat width reconciliation gate
+
+Status: PARTIAL. This chooses the next renderer experiment axis from current evidence; it does not change production ChatPane rendering yet.
+
+- DONE: Added `scripts/roll20_chat_width_reconciliation.mjs` and package command `diagnose:roll20-chat-width-reconciliation`.
+- DONE: Wired the reconciliation report into `gate:roll20-renderer-action` so the gate now prints fixture-specific next experiments after chat width/intrinsic/font/row diagnostics.
+- RESULT: The next renderer work is now split by evidence instead of guesswork:
+  - `official-roll20-AW2E`: `TEXT_METRIC_ALLOCATION`, because table width delta `+15.744px` is explained by exact text metrics with residual `+0.142px`.
+  - `yshy-commission-1bu`: `TABLE_SCROLL_INTRINSIC`, because table delta is `-24.309px`, scroll delta is `-24px`, and text residual is overconstrained at `+30.637px`.
+  - `official-roll20-Les-Oublies`: `KEEP_DEFAULT` for now because aligned mismatch is `6.34%`, below the high-mismatch threshold.
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`; no global width/padding/font CSS is safe.
+- VERIFIED: `diagnose:roll20-chat-width-reconciliation`, `gate:roll20-renderer-action`, and `status:roll20-actual`.
+- STILL TODO P0: Build an AW2E-scoped exact text/cell allocation candidate and a YSHY/CoC-scoped table scroll/intrinsic probe, then run candidate comparison, style proof, renderer gate, lint, and build before any production renderer change.
+
 ## 2026-06-20 Codex Update - Roll20 chat current-metrics normalization
 
 Status: PARTIAL. This removes stale-evidence false blockers and exposes the real renderer work; it does not solve chat visual parity.

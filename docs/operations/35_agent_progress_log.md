@@ -1,3 +1,16 @@
+## 2026-06-20 Chat Width Reconciliation Gate
+
+- Added `scripts/roll20_chat_width_reconciliation.mjs` and `corepack pnpm run diagnose:roll20-chat-width-reconciliation`.
+- The new diagnostic consolidates chat parity, width model, intrinsic width, font/glyph, row geometry, residual, candidate comparison, and style-proof outputs into one fixture-level next experiment.
+- Wired the report into `gate:roll20-renderer-action`, so the renderer gate now lists the next chat renderer experiment axis directly.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `TEXT_METRIC_ALLOCATION`, P0. Table delta `+15.744px`, text residual `+0.142px`, scroll delta `+16px`. Next action is an AW2E-scoped exact text/cell allocation candidate.
+  - Les-Oublies: `KEEP_DEFAULT`, P1. Current aligned mismatch is `6.34%`; do not spend the next global renderer patch here.
+  - YSHY 1BU: `TABLE_SCROLL_INTRINSIC`, P0. Table delta `-24.309px`, text residual `+30.637px`, scroll delta `-24px`. Next action is a CoC/YSHY-scoped table intrinsic/scroll probe, not transform or broad font CSS.
+- `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; the useful progress is that the next patches are now evidence-routed and fixture-scoped.
+- Verification: `node --check`, `diagnose:roll20-chat-width-reconciliation`, `gate:roll20-renderer-action`, and `status:roll20-actual`.
+- Claim boundary: no visual parity claim, no public UI, and no production ChatPane CSS change in this batch.
+
 ## 2026-06-20 Roll20 Chat Current-Metrics Normalization
 
 - Confirmed the dedicated Roll20 editor tab currently shows YSHY chat only; applying AW2E through the visible Sandbox Tools file inputs dispatched files without translation errors but did not visibly swap the active sheet in this session.
