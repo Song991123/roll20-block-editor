@@ -1,3 +1,16 @@
+## 2026-06-20 YSHY Table Intrinsic Probe
+
+- Added `scripts/roll20_chat_table_intrinsic_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe`.
+- The probe compares local ChatPane DOM metrics with actual Roll20 chat sidecars for root/table/caption/first-cell width, table scrollWidth, style deltas, row uniformity, and crop/top-offset signals.
+- Wired the probe into `gate:roll20-renderer-action`.
+- Current result on `2026-06-18-state-map-v1`:
+  - AW2E: `ROOT_OR_MESSAGE_WIDTH_CONTEXT`, root delta `+12px`, table delta `+15.744px`, scroll delta `+16px`. This keeps AW2E on the message/content-width track.
+  - Les-Oublies: `WIDTH_SECONDARY`, table delta `+0.8px`.
+  - YSHY 1BU: `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET`, root delta `0px`, table delta `-24.309px`, scroll delta `-24px`, row spread `0px`, max cell delta `+0.909px`, uniform top offset `+125.884px`.
+- Interpretation: YSHY is not a per-cell allocation problem and should not be handled with transform, global font, or spacing bundles. The next diagnostic candidate must combine CoC/YSHY table intrinsic width with rolltemplate crop/top-origin context.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 YSHY Table-Width Budget
 
 - Added `scripts/roll20_chat_table_width_budget.mjs` and `corepack pnpm run diagnose:roll20-chat-table-width-budget`.

@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - YSHY table intrinsic probe
+
+Status: PARTIAL. This adds the next YSHY/CoC routing diagnostic; it does not change production ChatPane CSS.
+
+- DONE: Added `scripts/roll20_chat_table_intrinsic_probe.mjs` and package command `diagnose:roll20-chat-table-intrinsic-probe`.
+- DONE: Wired the probe report into `gate:roll20-renderer-action` so the gate now reports root/table/scroll/caption/first-cell deltas, row spread, max cell delta, uniform top offset, best current candidate, and next action.
+- RESULT: AW2E is classified as `ROOT_OR_MESSAGE_WIDTH_CONTEXT`: root delta `+12px`, table delta `+15.744px`, scroll delta `+16px`. Do not route AW2E through a table-intrinsic patch first.
+- RESULT: Les-Oublies is `WIDTH_SECONDARY`: table delta only `+0.8px`; keep it out of the next P0 width patch.
+- RESULT: YSHY is classified as `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET`: root delta `0px`, table delta `-24.309px`, scroll delta `-24px`, row spread `0px`, max cell delta `+0.909px`, uniform top offset `+125.884px`.
+- RESULT: For YSHY, the next P0 is a CoC/YSHY-scoped table intrinsic width plus rolltemplate crop/top-origin probe. Transform, global font, broad typography, and spacing bundles remain rejected or contradicted.
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- VERIFIED: `diagnose:roll20-chat-table-intrinsic-probe` and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the next diagnostic candidate around YSHY/CoC table intrinsic width plus crop/top-origin context, then run chat smoke, candidate comparison, style proof, renderer gate, lint, and build before any production renderer change.
+
 ## 2026-06-20 Codex Update - YSHY table-width budget
 
 Status: PARTIAL. This sharpens the YSHY/CoC next renderer axis; it does not change production ChatPane CSS.
