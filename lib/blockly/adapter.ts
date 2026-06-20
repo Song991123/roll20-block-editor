@@ -62,6 +62,7 @@ export interface BlockSnapshot {
   type: string;
   /** 자식 / 다음 블록 chain 의 들여쓰기 깊이. */
   depth: number;
+  childCount: number;
   layerParentId: string | null;
   layerPreviousId: string | null;
   layerRelation: 'root' | 'child' | 'sibling';
@@ -197,10 +198,14 @@ class DefaultAdapter implements BlocklyAdapter {
     if (seen.has(block.id)) return;
     seen.add(block.id);
     const def = getBlockDef(block.type);
+    const directChildren = (block.inputList ?? [])
+      .map((input) => input.connection?.targetBlock() ?? null)
+      .filter((child) => child !== null);
     out.push({
       id: block.id,
       type: block.type,
       depth,
+      childCount: directChildren.length,
       layerParentId,
       layerPreviousId,
       layerRelation,
@@ -213,8 +218,7 @@ class DefaultAdapter implements BlocklyAdapter {
       (block as { getNextBlock?: () => Blockly.Block | null }).getNextBlock?.() ??
       block.nextConnection?.targetBlock() ??
       null;
-    for (const input of block.inputList ?? []) {
-      const child = input.connection?.targetBlock();
+    for (const child of directChildren) {
       if (child && child.id !== nextBlock?.id) {
         this.walk(child, depth + 1, out, seen, block.id, null, 'child');
       }
@@ -243,6 +247,9 @@ class DefaultAdapter implements BlocklyAdapter {
       id: b.id,
       type: b.type,
       depth: 0,
+      childCount: (b.inputList ?? [])
+        .map((input) => input.connection?.targetBlock() ?? null)
+        .filter((child) => child !== null).length,
       layerParentId: null,
       layerPreviousId: null,
       layerRelation: 'root',

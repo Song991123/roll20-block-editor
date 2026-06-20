@@ -2537,3 +2537,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: current `2026-06-18-state-map-v1` reports the AW2E plan command in status next action, renderer gate next actions, and upload handoff markdown.
 - CURRENT: this reduces handoff ambiguity; `generatedActualScreenshots=6/6` still does not mean rendererReady because trusted full-root remains `2/3`.
 - STILL TODO: perform the actual AW2E DPR-corrected full-root capture and rerun the linked gates until rendererReady can pass.
+
+## 2026-06-20 Edit Layer Structure Visualization TODO Note
+
+- DONE: `BlockSnapshot` now includes `childCount`, so the edit layer panel can expose whether a frame/flow/table node actually contains children instead of only showing a flat label.
+- DONE: Layer rows now expose `data-r20-layer-child-count`, a role/relationship rail, and a compact child-count badge for non-leaf nodes.
+- VERIFIED: `corepack pnpm run smoke:edit-flow -- --port 4210` passes after rebuilding `out/`; nested frame evidence includes `childCount=1`, `roleRail=true`, `childBadge=1`, and before/inside/after layer drop modes.
+- CLAIM BOUNDARY: This improves edit-layer structure visibility only. It does not change Roll20 preview parity, renderer CSS, or actual Roll20 screenshot evidence.

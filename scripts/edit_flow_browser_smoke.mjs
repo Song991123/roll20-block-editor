@@ -517,6 +517,9 @@ async function main() {
         roleKind: row.getAttribute('data-r20-layer-role-kind') || '',
         canDrop: row.getAttribute('data-r20-can-drop') || '',
         defaultDropMode: row.getAttribute('data-r20-default-drop-mode') || '',
+        childCount: row.getAttribute('data-r20-layer-child-count') || '',
+        roleRail: Boolean(row.querySelector('[data-testid="edit-layer-role-rail"]')),
+        childBadge: row.querySelector('[data-testid="edit-layer-child-count"]')?.textContent?.trim() || '',
         text: row.textContent?.replace(/\s+/g, ' ').trim() || '',
       };
       for (const ratio of [0.2, 0.5, 0.8]) {
@@ -899,6 +902,9 @@ async function main() {
     layerDropModes.attrs?.roleKind === 'frame' &&
     layerDropModes.attrs?.canDrop === '1' &&
     layerDropModes.attrs?.defaultDropMode === 'flow' &&
+    layerDropModes.attrs?.roleRail === true &&
+    Number(layerDropModes.attrs?.childCount) >= 1 &&
+    Boolean(layerDropModes.attrs?.childBadge) &&
     layerDropModes.attrs?.text?.includes('담기 가능') &&
     layerDropModes.attrs?.text?.includes('흐름') &&
     nonLeafLayerReorder.mode === 'after' &&

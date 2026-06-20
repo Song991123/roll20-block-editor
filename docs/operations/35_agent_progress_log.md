@@ -3176,3 +3176,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Browser verification on `http://localhost:3000/`: header no longer exposes `설정`, `도움말`, `준비 중`, or the previous diagnostic preview controls; clicking `저장` shows the success toast and the button returns to the enabled state.
 - Verification: `corepack pnpm run lint`, `corepack pnpm run build`, `smoke:export-dialog`, `guard:roll20-evidence`, `guard:roll20-renderer-model`, `status:roll20-actual`, and `diagnose:roll20-renderer-blocker`.
 - Claim boundary: this improves product usability only. It does not change production Roll20 renderer CSS and does not prove Roll20 visual parity. Current renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+
+## 2026-06-20 Edit Layer Structure Visualization
+
+- Added direct `childCount` metadata to `BlockSnapshot` from Blockly input children.
+- Edit layer rows now expose `data-r20-layer-child-count`, render a role/relationship color rail, and show a compact child-count badge when a node has children.
+- Updated the edit-flow browser smoke to require the structure rail and child-count evidence on a frame after nested drop.
+- Claim boundary: this is an edit UX structure-visibility improvement. It does not alter production Roll20 renderer CSS or prove visual parity.

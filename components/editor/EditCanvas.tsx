@@ -744,6 +744,7 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-layer-parent-id={node.layerParentId ?? ''}
       data-r20-layer-previous-id={node.layerPreviousId ?? ''}
       data-r20-layer-relation={node.layerRelation}
+      data-r20-layer-child-count={node.childCount}
       aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
       onClick={onSelect}
       onDragStart={(e) => {
@@ -782,6 +783,16 @@ const EditLayerRow = memo(function EditLayerRow({
       }`}
       style={{ paddingLeft: `${8 + node.depth * 12}px` }}
     >
+      <span
+        aria-hidden
+        data-testid="edit-layer-role-rail"
+        className={cn(
+          'pointer-events-none absolute bottom-1 left-0 top-1 w-1 rounded-r',
+          role.canReceiveChildren ? 'bg-sky-400/70' : 'bg-zinc-500/45',
+          node.layerRelation === 'child' && 'bg-emerald-400/70',
+          selected && 'bg-orange-400',
+        )}
+      />
       {dropMode && (
         <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 rounded bg-sky-500 px-1.5 py-0.5 text-[9px] font-medium text-white">
           {formatDropModeLabel(dropMode)}
@@ -803,6 +814,15 @@ const EditLayerRow = memo(function EditLayerRow({
           <span className="shrink-0 rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
             {role.label}
           </span>
+          {node.childCount > 0 && (
+            <span
+              data-testid="edit-layer-child-count"
+              title={`하위 요소 ${node.childCount}개`}
+              className="shrink-0 rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] text-emerald-200"
+            >
+              {node.childCount}
+            </span>
+          )}
           {role.canReceiveChildren && (
             <span className="shrink-0 rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-200">
               담기 가능
