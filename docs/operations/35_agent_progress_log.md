@@ -1,3 +1,14 @@
+## 2026-06-20 Browser Asset Diagnostics For Imported Edit Resources
+
+- Added optional Chromium image-load probing to `scripts/roll20_asset_resource_audit.mjs` behind `--browser-probe true`, plus package alias `audit:assets:browser`.
+- The browser probe only targets image-like refs, using HTTP probe `content-type` and URL extensions to avoid false failures from font/CSS URLs.
+- Updated browser smoke resource summaries to keep `request.failure().errorText` in grouped resource reports.
+- Verification: `node --check` passed for `roll20_asset_resource_audit`, `imported_edit_sync_smoke`, `capture_visual_fixture_previews`, and `preview_edit_visual_smoke`.
+- Local diagnostic run: `audit:assets:browser` against `reports\roll20-actual-compare\2026-06-18-state-map-v1` reported 0 failed HTTP probes, 0 failed browser image probes, and 0 missing local refs for AW2E, Les-Oublies, and YSHY source/payload refs.
+- Follow-up strict imported-edit checks still fail resource status only: Les-Oublies is `1x failed image raw.githubusercontent.com (net::ERR_ABORTED)`, YSHY is `11x failed image imgur.com (net::ERR_ABORTED)`, while edit/preview interaction sync remains PASS.
+- Interpretation: the current evidence points away from dead image URLs and toward render-context/request-abort timing in the imported edit smoke. The next safe step is a final-settled image/background resource gate before ignoring or fixing these aborts.
+- Boundary: this is diagnostics and reporting accuracy only. It does not prove actual Roll20 visual parity and does not change production renderer behavior.
+
 ## 2026-06-20 Shared Roll20 CDP Readiness Helper
 
 - Added `scripts/lib/roll20Readiness.mjs` and moved Roll20 login/challenge/editor/campaign/unknown page classification into it.

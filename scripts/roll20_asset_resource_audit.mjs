@@ -18,6 +18,7 @@
 import { existsSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { chromium } from 'playwright-core';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 
@@ -33,19 +34,38 @@ const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/asset-resource-au
 const ONLY = argOf('--only', '');
 const PROBE = argOf('--probe', 'true') !== 'false';
 const MAX_PROBE = Number(argOf('--max-probe', '80'));
+const BROWSER_PROBE = argOf('--browser-probe', 'false') === 'true';
+const BROWSER_TIMEOUT_MS = Number(argOf('--browser-timeout-ms', '8000'));
+const BROWSER_REFERRER_POLICY = argOf('--browser-referrer-policy', 'strict-origin-when-cross-origin');
 
 async function main() {
   const fixtureIds = await listFixtureIds();
   const entries = [];
   const probeCache = new Map();
-  for (const fixtureId of fixtureIds) {
-    entries.push(await auditFixture(fixtureId, probeCache));
+  const browserProbeCache = new Map();
+  let browser = null;
+  let browserPage = null;
+  try {
+    if (BROWSER_PROBE) {
+      browser = await chromium.launch({ headless: true });
+      const context = await browser.newContext({ ignoreHTTPSErrors: true });
+      browserPage = await context.newPage();
+    }
+
+    for (const fixtureId of fixtureIds) {
+      entries.push(await auditFixture(fixtureId, probeCache, browserProbeCache, browserPage));
+    }
+  } finally {
+    await browser?.close();
   }
   const report = {
     generatedAt: new Date().toISOString(),
     fixtureRoot: FIXTURES_DIR,
     payloadRun: PAYLOAD_RUN_DIR || null,
     probe: PROBE,
+    browserProbe: BROWSER_PROBE,
+    browserProbeReferrerPolicy: BROWSER_PROBE ? BROWSER_REFERRER_POLICY : null,
+    browserProbeTimeoutMs: BROWSER_PROBE ? BROWSER_TIMEOUT_MS : null,
     scope: 'local-only asset/resource reachability audit; not Roll20 visual parity',
     pass: entries.every((entry) => entry.pass),
     entries,
@@ -71,7 +91,7 @@ async function listFixtureIds() {
     .sort((a, b) => a.localeCompare(b));
 }
 
-async function auditFixture(fixtureId, probeCache) {
+async function auditFixture(fixtureId, probeCache, browserProbeCache, browserPage) {
   const fixtureDir = path.join(FIXTURES_DIR, fixtureId);
   const manifest = JSON.parse(await fs.readFile(path.join(fixtureDir, 'manifest.json'), 'utf8'));
   const source = await auditDoc({
@@ -79,6 +99,8 @@ async function auditFixture(fixtureId, probeCache) {
     cssPath: path.join(fixtureDir, 'source.css'),
     label: 'source',
     probeCache,
+    browserProbeCache,
+    browserPage,
   });
 
   let payload = null;
@@ -89,6 +111,8 @@ async function auditFixture(fixtureId, probeCache) {
       cssPath: path.join(payloadDir, 'sheet.css'),
       label: 'payload',
       probeCache,
+      browserProbeCache,
+      browserPage,
     });
   }
 
@@ -105,7 +129,7 @@ async function auditFixture(fixtureId, probeCache) {
   };
 }
 
-async function auditDoc({ htmlPath, cssPath, label, probeCache }) {
+async function auditDoc({ htmlPath, cssPath, label, probeCache, browserProbeCache, browserPage }) {
   const html = await readMaybe(htmlPath);
   const css = await readMaybe(cssPath);
   const refs = dedupeRefs([
@@ -120,7 +144,16 @@ async function auditDoc({ htmlPath, cssPath, label, probeCache }) {
       probed.push(await probeUrl(ref, probeCache));
     }
   }
+  const probedByUrl = new Map(probed.map((ref) => [ref.url, ref]));
+  const browserImageRefs = httpRefs.filter((ref) => isBrowserImageCandidate(ref, probedByUrl.get(ref.url)));
+  const browserProbed = [];
+  if (BROWSER_PROBE && browserPage) {
+    for (const ref of browserImageRefs.slice(0, MAX_PROBE)) {
+      browserProbed.push(await probeBrowserImage(ref, browserPage, browserProbeCache));
+    }
+  }
   const failed = probed.filter((ref) => !ref.ok);
+  const browserFailed = browserProbed.filter((ref) => !ref.ok);
   const localMissing = classified.filter((ref) => ref.kind === 'relative' && ref.resolvedPath && !existsSync(ref.resolvedPath));
   return {
     label,
@@ -133,10 +166,14 @@ async function auditDoc({ htmlPath, cssPath, label, probeCache }) {
     unsupportedRefs: classified.filter((ref) => ref.kind === 'unsupported').length,
     probedRefs: probed.length,
     failedProbeCount: failed.length,
+    browserImageCandidateRefs: browserImageRefs.length,
+    browserProbedRefs: browserProbed.length,
+    browserFailedProbeCount: browserFailed.length,
     localMissingCount: localMissing.length,
     byHost: countBy(httpRefs.map((ref) => ref.host || 'unknown')),
     refs: classified.slice(0, 120),
     failedProbes: failed.slice(0, 50),
+    browserFailedProbes: browserFailed.slice(0, 50),
     localMissing: localMissing.slice(0, 50),
   };
 }
@@ -234,6 +271,75 @@ async function probeUrlOnce(url) {
   }
 }
 
+async function probeBrowserImage(ref, browserPage, browserProbeCache) {
+  if (browserProbeCache.has(ref.url)) return { ...ref, ...browserProbeCache.get(ref.url) };
+  const result = await probeBrowserImageOnce(browserPage, ref.url);
+  browserProbeCache.set(ref.url, result);
+  return { ...ref, ...result };
+}
+
+async function probeBrowserImageOnce(page, url) {
+  try {
+    return await page.evaluate(
+      ({ imageUrl, timeoutMs, referrerPolicy }) => new Promise((resolve) => {
+        const started = performance.now();
+        const img = new Image();
+        img.decoding = 'async';
+        img.referrerPolicy = referrerPolicy;
+        let done = false;
+        const finish = (event) => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          resolve({
+            ok: img.complete && img.naturalWidth > 0 && img.naturalHeight > 0,
+            event,
+            currentSrc: img.currentSrc || '',
+            naturalWidth: img.naturalWidth || 0,
+            naturalHeight: img.naturalHeight || 0,
+            complete: img.complete,
+            elapsedMs: Math.round(performance.now() - started),
+          });
+        };
+        const timer = setTimeout(() => finish('timeout'), timeoutMs);
+        img.onload = () => finish('load');
+        img.onerror = () => finish('error');
+        img.src = imageUrl;
+      }),
+      { imageUrl: url, timeoutMs: BROWSER_TIMEOUT_MS, referrerPolicy: BROWSER_REFERRER_POLICY },
+    );
+  } catch (error) {
+    return {
+      ok: false,
+      event: 'probe-error',
+      error: String(error?.message || error).slice(0, 300),
+      naturalWidth: 0,
+      naturalHeight: 0,
+      complete: false,
+      elapsedMs: 0,
+    };
+  }
+}
+
+function isBrowserImageCandidate(ref, probeResult = null) {
+  const contentType = String(probeResult?.contentType || '').toLowerCase();
+  if (contentType.startsWith('image/')) return true;
+  if (contentType && (contentType.includes('font') || contentType.includes('css') || contentType.includes('javascript') || contentType.includes('json'))) return false;
+
+  const pathname = safeUrlPathname(ref.url || ref.raw).toLowerCase();
+  if (/\.(?:png|jpe?g|gif|webp|avif|svg)(?:$|[?#])/.test(pathname)) return true;
+  if (/\.(?:woff2?|ttf|otf|eot|css|js|json)(?:$|[?#])/.test(pathname)) return false;
+  return false;
+}
+
+function safeUrlPathname(value) {
+  try {
+    return new URL(value).pathname;
+  } catch {
+    return String(value || '').split(/[?#]/)[0];
+  }
+}
+
 function findPayloadRegressions(source, payload) {
   const sourceFailed = new Set(source.failedProbes.map((ref) => ref.url));
   const sourceMissing = new Set(source.localMissing.map((ref) => ref.raw));
@@ -260,7 +366,8 @@ function countBy(values) {
 
 function summary(audit) {
   if (!audit) return 'n/a';
-  return `${audit.totalRefs} refs/${audit.failedProbeCount} failed-http/${audit.localMissingCount} missing-local`;
+  const browser = BROWSER_PROBE ? `/${audit.browserFailedProbeCount} failed-browser` : '';
+  return `${audit.totalRefs} refs/${audit.failedProbeCount} failed-http${browser}/${audit.localMissingCount} missing-local`;
 }
 
 function renderMarkdown(report) {
@@ -271,8 +378,8 @@ function renderMarkdown(report) {
     '',
     'Scope: local-only asset/resource reachability audit. This is not Roll20 visual parity.',
     '',
-    '| Fixture | Source refs | Source failed HTTP | Source missing local | Payload refs | Payload failed HTTP | Payload missing local | Payload regressions | Result |',
-    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| Fixture | Source refs | Source failed HTTP | Source failed browser | Source missing local | Payload refs | Payload failed HTTP | Payload failed browser | Payload missing local | Payload regressions | Result |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ];
 
   for (const entry of report.entries) {
@@ -280,9 +387,11 @@ function renderMarkdown(report) {
       entry.fixtureId,
       entry.source.totalRefs,
       entry.source.failedProbeCount,
+      report.browserProbe ? entry.source.browserFailedProbeCount : 'n/a',
       entry.source.localMissingCount,
       entry.payload?.totalRefs ?? 'n/a',
       entry.payload?.failedProbeCount ?? 'n/a',
+      report.browserProbe ? (entry.payload?.browserFailedProbeCount ?? 'n/a') : 'n/a',
       entry.payload?.localMissingCount ?? 'n/a',
       entry.payloadRegressionCount,
       entry.pass ? 'PASS' : 'WARN',
@@ -313,6 +422,9 @@ function renderDocAudit(audit) {
     `- Data refs: ${audit.dataRefs}`,
     `- Probed refs: ${audit.probedRefs}`,
     `- Failed HTTP probes: ${audit.failedProbeCount}`,
+    `- Browser image candidate refs: ${audit.browserImageCandidateRefs}`,
+    `- Browser-probed image refs: ${audit.browserProbedRefs}`,
+    `- Failed browser image probes: ${audit.browserFailedProbeCount}`,
     `- Missing local relative refs: ${audit.localMissingCount}`,
   ];
   if (Object.keys(audit.byHost).length > 0) {
@@ -322,6 +434,12 @@ function renderDocAudit(audit) {
     lines.push('', '| Failed URL | Status | Type/Error |', '| --- | ---: | --- |');
     for (const ref of audit.failedProbes.slice(0, 20)) {
       lines.push([ref.url, ref.status, ref.error || ref.statusText || ref.contentType].map(mdCell).join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
+    }
+  }
+  if (audit.browserFailedProbes.length > 0) {
+    lines.push('', '| Browser-failed URL | Event | Size | Detail |', '| --- | --- | --- | --- |');
+    for (const ref of audit.browserFailedProbes.slice(0, 20)) {
+      lines.push([ref.url, ref.event, `${ref.naturalWidth ?? 0}x${ref.naturalHeight ?? 0}`, ref.error || ref.currentSrc || ''].map(mdCell).join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
     }
   }
   if (audit.localMissing.length > 0) {

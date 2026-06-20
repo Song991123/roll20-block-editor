@@ -277,9 +277,11 @@ function summarizeResourceIssues(issues) {
       host: issue.host,
       count: 0,
       examples: [],
+      failures: [],
     };
     item.count += 1;
     if (item.examples.length < 3) item.examples.push(issue.url);
+    if (issue.failure && item.failures.length < 3 && !item.failures.includes(issue.failure)) item.failures.push(issue.failure);
     map.set(key, item);
   }
   return Array.from(map.values()).sort((a, b) => b.count - a.count || String(a.host).localeCompare(String(b.host)));
@@ -714,7 +716,7 @@ function fmtResourceIssues(items) {
   if (!Array.isArray(items) || items.length === 0) return '';
   return items
     .slice(0, 3)
-    .map((item) => `${item.count}x ${item.status ?? item.kind} ${item.resourceType} ${item.host || '(local)'}`)
+    .map((item) => `${item.count}x ${item.status ?? item.kind} ${item.resourceType} ${item.host || '(local)'}${item.failures?.length ? ` (${item.failures.join(', ')})` : ''}`)
     .join('<br>');
 }
 

@@ -14,6 +14,7 @@
     "audit:roll20-sandbox-sanitize": "node scripts/roll20_sandbox_sanitize_audit.mjs",
     "audit:state-selectors": "node scripts/roll20_state_selector_audit.mjs",
     "audit:assets": "node scripts/roll20_asset_resource_audit.mjs",
+    "audit:assets:browser": "node scripts/roll20_asset_resource_audit.mjs --browser-probe true",
     "audit:legacy-export": "node scripts/roll20_legacy_export_audit.mjs",
     "test:roll20-sandbox-sanitize": "node lib/emit/__tests__/roll20SandboxSanitize.test.ts",
     "smoke:legacy-preview": "node scripts/roll20_legacy_preview_smoke.mjs",

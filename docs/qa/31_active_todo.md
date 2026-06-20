@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - browser asset diagnostics for imported edit resources
+
+Status: VERIFY. This batch improves resource diagnostics only; it does not prove Roll20 visual parity or change production renderer behavior.
+
+- DONE: `scripts/roll20_asset_resource_audit.mjs` now supports `--browser-probe true`, which launches Chromium and checks image-like HTTP refs with actual browser image loading after the existing HTTP probe.
+- DONE: Added `corepack pnpm run audit:assets:browser` and documented it in `scripts/README.md`.
+- DONE: Browser smoke resource summaries now preserve Playwright `request.failure().errorText`, so reports show concrete causes such as `net::ERR_ABORTED` instead of only `failed image imgur.com`.
+- VERIFIED: `node --check` passed for the changed scripts. `audit:assets:browser` against `reports\roll20-actual-compare\2026-06-18-state-map-v1` reported 0 failed HTTP probes, 0 failed browser image probes, and 0 missing local refs for AW2E, Les-Oublies, and YSHY 1BU source/payload refs.
+- LOCAL RESULT: Strict imported-edit smoke still fails only on resource status for affected fixtures, while interaction remains PASS. Les-Oublies reports `1x failed image raw.githubusercontent.com (net::ERR_ABORTED)` and YSHY reports `11x failed image imgur.com (net::ERR_ABORTED)`.
+- INTERPRETATION: Current evidence does not show dead image URLs. The remaining resource WARN is more likely a render-context/request-abort or DOM replacement timing issue in the imported edit smoke. Do not count it as actual Roll20 visual parity failure until final rendered image/background state is checked.
+- STILL TODO P0: Add a final-render resource gate that verifies loaded/painted image/background state after edit/reimport settles, then decide whether transient `net::ERR_ABORTED` requests should be ignored, retried, or fixed.
+- STILL TODO P0: Actual Roll20 Sandbox/test-room upload and screenshot/chat recapture remain blocked by CDP/login/upload setup; no Roll20 parity claim is allowed.
+
 ## 2026-06-20 Codex Update - shared Roll20 CDP readiness helper
 
 Status: DONE/VERIFY. This batch removes duplicated Roll20 page-readiness logic from CDP preflight and chat capture tooling.
