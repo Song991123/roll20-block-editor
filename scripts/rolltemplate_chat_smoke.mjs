@@ -718,7 +718,8 @@ async function main() {
         policy === 'roll20-shell-typography' ||
         policy === 'roll20-template-typography' ||
         policy === 'roll20-cell-metrics' ||
-        policy === 'aw2e-text-metrics'
+        policy === 'aw2e-text-metrics' ||
+        policy === 'yshy-sanitize-typography'
       ) {
         localStorage.setItem('__r20ChatTypographyPolicy', policy);
       } else {

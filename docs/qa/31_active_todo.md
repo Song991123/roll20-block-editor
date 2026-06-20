@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - YSHY sanitize typography candidate rejected
+
+Status: PARTIAL. A plausible YSHY sanitize/font-activation candidate was tested and rejected; do not promote it.
+
+- DONE: Added diagnostic-only `yshy-sanitize-typography` ChatPane policy scoped to `.sheet-rolltemplate-coc`.
+- DONE: The candidate applies actual Roll20-observed typography/wrapping/border-spacing values: Proxima stack, `13.65px`, `letter-spacing: normal`, `overflow-wrap: break-word`, and `border-spacing: 0`.
+- DONE: Added the candidate to `scripts/roll20_chat_candidate_compare.mjs` and documented the smoke command in `scripts/README.md`.
+- RESULT: Candidate smoke PASSed all three fixtures, proving the probe renders.
+- RESULT: Candidate comparison rejected it hard: `risk=reject-regresses-fixtures`, mean delta `+4.71%`, YSHY aligned mismatch worsened from `21.02%` to `35.14%` (`+14.12%`).
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH` and now lists `yshy-sanitize-typography` among rejected candidates.
+- VERIFIED: `node --check` for changed scripts, `lint`, `build`, `rolltemplate_chat_smoke` for the new candidate, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-intrinsic-width`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Stop testing broad observed-style bundles for YSHY. Next probe should isolate table intrinsic/max-content calculation or source rolltemplate structure, because combined sanitize typography makes pixels worse.
+
 ## 2026-06-20 Codex Update - YSHY table-wide constraint model added
 
 Status: PARTIAL. YSHY chat/template mismatch is now narrowed to a table-wide intrinsic constraint, not cell allocation or transform.

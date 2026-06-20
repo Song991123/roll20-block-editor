@@ -51,7 +51,8 @@ type ChatTypographyPolicy =
   | 'roll20-shell-typography'
   | 'roll20-template-typography'
   | 'roll20-cell-metrics'
-  | 'aw2e-text-metrics';
+  | 'aw2e-text-metrics'
+  | 'yshy-sanitize-typography';
 type ChatPaintPolicy = 'default' | 'roll20-dim-background' | 'roll20-edge-shadow';
 
 function currentChatFontPolicy(): ChatFontPolicy {
@@ -98,7 +99,8 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
     value === 'roll20-shell-typography' ||
     value === 'roll20-template-typography' ||
     value === 'roll20-cell-metrics' ||
-    value === 'aw2e-text-metrics'
+    value === 'aw2e-text-metrics' ||
+    value === 'yshy-sanitize-typography'
   ) return value;
   return 'default';
 }
@@ -244,6 +246,19 @@ const roll20ChatShellCss = `
   font-size: 13.65px;
   letter-spacing: normal;
   -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc td {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0;
 }
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,

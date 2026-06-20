@@ -1,3 +1,10 @@
+## 2026-06-20 YSHY Sanitize Typography Candidate Rejected
+
+- Added diagnostic-only ChatPane policy `yshy-sanitize-typography`, scoped to `.sheet-rolltemplate-coc`, to test whether observed Roll20 typography/wrapping/border-spacing values explain the YSHY table-wide constraint.
+- Local smoke PASSed all fixtures, but candidate comparison rejected it: mean aligned delta `+4.71%`, YSHY aligned mismatch worsened by `+14.12%` (`21.02%` -> `35.14%`).
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH` and includes this candidate in rejected fixture-regressing evidence.
+- Claim boundary: this is useful negative evidence. Do not expose or promote `yshy-sanitize-typography`; next YSHY work should isolate table intrinsic/max-content calculation or source rolltemplate structure rather than bundling observed computed styles.
+
 ## 2026-06-20 YSHY Table-Wide Constraint Model
 
 - Enhanced `scripts/roll20_chat_intrinsic_width_model.mjs` with a `constraintModel` that distinguishes table-wide intrinsic constraint deltas from row content mismatch and cell allocation mismatch.
