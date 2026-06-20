@@ -704,7 +704,8 @@ async function main() {
       if (
         policy === 'roll20-shell-typography' ||
         policy === 'roll20-template-typography' ||
-        policy === 'roll20-cell-metrics'
+        policy === 'roll20-cell-metrics' ||
+        policy === 'aw2e-text-metrics'
       ) {
         localStorage.setItem('__r20ChatTypographyPolicy', policy);
       } else {

@@ -27,6 +27,7 @@ const candidates = [
   ['shell-typography', 'reports/rolltemplate-chat-smoke-shell-typography/screenshots'],
   ['template-typography', 'reports/rolltemplate-chat-smoke-template-typography/screenshots'],
   ['cell-metrics', 'reports/rolltemplate-chat-smoke-cell-metrics/screenshots'],
+  ['aw2e-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-text-metrics/screenshots'],
   ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
   ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],
 ];

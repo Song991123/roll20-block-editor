@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - AW2E text-metric candidate rejected as no-gain
+
+Status: PARTIAL. Added one safe diagnostic candidate, then rejected it as insufficient evidence for production.
+
+- DONE: Added diagnostic-only `aw2e-text-metrics` ChatPane typography policy. It applies actual Roll20-observed `13.65px` table/cell text metrics only to `.sheet-rolltemplate-aw`.
+- DONE: Added the candidate to `scripts/roll20_chat_candidate_compare.mjs` and documented the smoke command in `scripts/README.md`.
+- RESULT: `rolltemplate_chat_smoke` PASSed all three fixtures for `reports/rolltemplate-chat-smoke-aw2e-text-metrics`.
+- RESULT: Candidate comparison classified `aw2e-text-metrics` as `no-meaningful-gain`: mean aligned delta `-0.13%`, regressions `0`, YSHY delta `0%`.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; the AW2E text-width split is not enough for a production renderer change.
+- VERIFIED: `node --check` for changed scripts, `lint`, `build`, `rolltemplate_chat_smoke` for the new candidate, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-font-glyph`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: For AW2E, inspect sanitize/order/crop/paint evidence rather than only text metrics. For Les, test row/cell paint/allocation masks. For YSHY, model table-layout/wrapping/intrinsic constraints.
+
 ## 2026-06-20 Codex Update - chat text-width model split added
 
 Status: PARTIAL. The next renderer blocker is now split by text-width cause instead of one vague font/glyph bucket.

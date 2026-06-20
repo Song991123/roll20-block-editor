@@ -1,3 +1,11 @@
+## 2026-06-20 AW2E Text-Metric Candidate Probe
+
+- Added diagnostic-only ChatPane typography policy `aw2e-text-metrics`, scoped to `.sheet-rolltemplate-aw` table/caption/cells. It is activated only through the smoke script/localStorage diagnostic path and does not change default product behavior.
+- Added the candidate to `scripts/roll20_chat_candidate_compare.mjs` and documented the command in `scripts/README.md`.
+- Local smoke PASSed all fixtures, but candidate comparison classified it as `no-meaningful-gain`: mean aligned delta `-0.13%`, regressions `0`, YSHY delta `0%`.
+- Candidate style proof and renderer gate still keep production renderer action at `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: this disproves a simple AW2E text-metric-only fix. Continue with sanitize/order/crop/paint evidence before changing production ChatPane behavior.
+
 ## 2026-06-20 Chat Text-Width Model Split
 
 - Enhanced `scripts/roll20_chat_font_glyph_model.mjs` so exact `textMeasureEvidence` is no longer summarized only as a mean delta. The report now compares table `measureText` deltas against actual table-width deltas and classifies a narrow `textWidthModel`.
