@@ -1,3 +1,10 @@
+## 2026-06-20 Layer Traversal Depth Cleanup
+
+- Updated `DefaultAdapter.listAllBlocks()` to walk explicit Blockly `next` chains with a shared `seen` set instead of broad `getChildren(true)` recursion.
+- This is a groundwork fix for the edit layer panel: it makes traversal more deliberate and reduces the risk of duplicate/over-broad layer rows as the Figma-like structure panel grows.
+- Verification: `lint`, `smoke:edit-flow -- --port 4210`, `build`, and `guard:roll20-evidence`.
+- Current boundary: Blockly `parentId` metadata can still look like a nested parent for statement-chain siblings in diagnostics. The next UX step should display DOM child vs flow sibling semantics more explicitly instead of claiming the layer tree is fully solved.
+
 ## 2026-06-20 Roll20 Chat CDP Capture Runner
 
 - Added `scripts/roll20_chat_cdp_capture.mjs` plus `capture:roll20-chat-cdp` for actual Roll20 chat recapture when a Chrome/Edge CDP endpoint is available.

@@ -1,3 +1,12 @@
+## 2026-06-20 Codex Update - layer traversal depth cleanup
+
+Status: VERIFY. This is a small edit-layer structure improvement; it does not complete the Figma-like editing model.
+
+- DONE: Updated `DefaultAdapter.listAllBlocks()` traversal so explicit Blockly `next` chains are walked intentionally with a shared `seen` set instead of relying on broad `getChildren(true)` traversal.
+- RESULT: Layer listing is less prone to duplicate/over-broad traversal when blocks are connected through statement chains, which is groundwork for making the layer panel more trustworthy.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run smoke:edit-flow -- --port 4210`, `corepack pnpm run build`, and `corepack pnpm run guard:roll20-evidence` passed.
+- STILL TODO P0: The layer panel still needs clearer visual hierarchy semantics for imported sheets, including a user-facing distinction between DOM children and Blockly next-chain siblings where Blockly parent metadata can look misleading.
+
 ## 2026-06-20 Codex Update - Roll20 chat CDP capture runner
 
 Status: VERIFY. This adds a runner for the next actual Roll20 chat recapture, but no new Roll20 screenshot was captured in this batch.

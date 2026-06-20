@@ -175,13 +175,16 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     if (!ws) return [];
     const out: BlockSnapshot[] = [];
+    const seen = new Set<string>();
     for (const block of ws.getTopBlocks(true)) {
-      this.walk(block, 0, out);
+      this.walk(block, 0, out, seen);
     }
     return out;
   }
 
-  private walk(block: Blockly.Block, depth: number, out: BlockSnapshot[]): void {
+  private walk(block: Blockly.Block, depth: number, out: BlockSnapshot[], seen: Set<string>): void {
+    if (seen.has(block.id)) return;
+    seen.add(block.id);
     const def = getBlockDef(block.type);
     out.push({
       id: block.id,
@@ -191,8 +194,19 @@ class DefaultAdapter implements BlocklyAdapter {
       preview: this.previewFor(block),
       category: def?.category ?? null,
     });
-    for (const child of block.getChildren(true)) {
-      this.walk(child, depth + 1, out);
+
+    const nextBlock =
+      (block as { getNextBlock?: () => Blockly.Block | null }).getNextBlock?.() ??
+      block.nextConnection?.targetBlock() ??
+      null;
+    for (const input of block.inputList ?? []) {
+      const child = input.connection?.targetBlock();
+      if (child && child.id !== nextBlock?.id) {
+        this.walk(child, depth + 1, out, seen);
+      }
+    }
+    if (nextBlock) {
+      this.walk(nextBlock, depth, out, seen);
     }
   }
 
