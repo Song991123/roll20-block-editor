@@ -1,3 +1,12 @@
+## 2026-06-20 Roll20 Sandbox Recheck And CDP Chat Capture Handoff
+
+- Checked local listening ports before continuing. No app/dev/CDP server was listening on `3000`, `3001`, `3002`, or `9222`; visible node processes were Codex/browser/Figma/agent-bridge related, so no project server was stopped.
+- Reclaimed the existing Chrome tab `Codex Roll20 Verify | Roll20` at `https://app.roll20.net/editor`. The visible page is a VTT room with `Sheet Sandbox Tools` open. No existing real room settings or sheet source were modified.
+- Saved ignored read-only room observation evidence at `reports/roll20-actual-compare/2026-06-18-state-map-v1/room-observation/2026-06-20-current-vtt/`. The current viewport has `0` character-sheet roots and `4` `.sheet-rolltemplate-coc` chat templates, so it is useful for Roll20 wrapper/chat observation but not generated-sheet parity proof.
+- Rechecked Sandbox Tools upload controls. `#sheetHtml`, `#sheetCss`, and `#sheetTranslation` are present, but automatic upload is still blocked in the current Chrome extension route: visible label click detached browser control, hidden input file chooser timed out, CDP `DOM.setFileInputFiles` is unsupported, and CDP `Runtime.evaluate` became unstable.
+- Updated `scripts/roll20_chat_cdp_capture.mjs` with `--plan-only` / `--print-plan` and a structured `ROLL20 CHAT CDP CAPTURE BLOCKED_CDP_ENDPOINT` failure message for closed CDP endpoints.
+- Verified `node --check scripts\roll20_chat_cdp_capture.mjs` and AW2E `--plan-only`. The expected closed-CDP dry-run now fails cleanly with the blocker text. No Roll20 visual parity claim is allowed from this batch.
+
 ## 2026-06-20 Edit Canvas Auto-Width Parity
 
 - Root cause: AW2E's remaining local full-root edit/preview mismatch was largely caused by stale edit canvas width. The smoke captured edit first at a narrower root (`876px`) before the preview iframe auto-sized the shared canvas to `902px`, producing a broad `11.93%` screenshot diff.

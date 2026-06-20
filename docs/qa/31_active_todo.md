@@ -1,3 +1,18 @@
+## 2026-06-20 Codex Update - Roll20 sandbox tab recheck and CDP capture handoff
+
+Status: VERIFY/BLOCKED. This batch rechecked the live Roll20 verification tab and improved the capture handoff; it did not produce new generated-sheet parity evidence.
+
+- OBSERVED: No local app dev server was listening on ports `3000`, `3001`, `3002`, or `9222`; the remaining node processes were Codex/browser/Figma/agent-bridge runtimes, so no project server was killed.
+- OBSERVED: Chrome still had `Codex Roll20 Verify | Roll20` open at `https://app.roll20.net/editor`. The visible Roll20 page is a VTT room with `Sheet Sandbox Tools` open, not an open character-sheet dialog.
+- DONE: Saved read-only local evidence for the current Roll20 room under ignored `reports/roll20-actual-compare/2026-06-18-state-map-v1/room-observation/2026-06-20-current-vtt/`. It shows `0` character-sheet roots on screen and `4` visible `.sheet-rolltemplate-coc` chat templates. This is solo-room/wrapper/chat observation evidence only.
+- BLOCKED/OBSERVED: The Sandbox Tools file inputs are visible as `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`, but automated upload remains blocked in the current Chrome extension path. A visible label click detached browser control, hidden input `filechooser` timed out, CDP `DOM.setFileInputFiles` is unsupported, and CDP `Runtime.evaluate` became unstable. No existing room was modified.
+- DONE: `scripts/roll20_chat_cdp_capture.mjs` now supports `--plan-only`/`--print-plan`, which prints the fixture snippet, `roll20-chat.png`, sidecar targets, CDP endpoint, and suggested roll buttons without requiring a live CDP endpoint.
+- DONE: `scripts/roll20_chat_cdp_capture.mjs` now reports a structured `ROLL20 CHAT CDP CAPTURE BLOCKED_CDP_ENDPOINT` message when `127.0.0.1:9222` is not listening, instead of dumping an ambiguous Playwright stack as the only clue.
+- VERIFIED: `node --check scripts\roll20_chat_cdp_capture.mjs` passed. `corepack pnpm run capture:roll20-chat-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixture official-roll20-AW2E --plan-only` passed and listed AW2E roll buttons (`roll_dsuf`, `roll_gasbf`, `roll_som`, `roll_rasrap`, `roll_oyb`, `roll_move`).
+- EXPECTED BLOCKER CHECK: `corepack pnpm run capture:roll20-chat-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixture official-roll20-AW2E --skip-click --dry-run` fails cleanly because no CDP endpoint is listening at `http://127.0.0.1:9222`.
+- STILL TODO P0: Recapture AW2E and Les-Oublies same-action `roll20-chat.png` plus current `roll20-chat-dom-evidence.json` in a dedicated Roll20 Sandbox/test-room where the fixture is actually loaded, then rerun screenshot diff, chat parity diagnostics, renderer action gate, and `status:roll20-actual`.
+- CLAIM BOUNDARY: Current local edit/preview fixture parity is not actual Roll20 visual parity. The live Roll20 check above proves only that the verification tab and Sandbox Tools are reachable and that upload/capture automation remains gated.
+
 ## 2026-06-20 Codex Update - edit canvas auto-width parity
 
 Status: VERIFY. This fixes the local AW2E edit/preview full-root visual regression caused by edit mode rendering before preview auto-width settled.

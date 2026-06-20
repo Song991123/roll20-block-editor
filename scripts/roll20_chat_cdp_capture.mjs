@@ -20,9 +20,10 @@ const ROLL_BUTTON = readOption('--roll-button', '');
 const SKIP_CLICK = hasFlag('--skip-click');
 const WAIT_MS = Number(readOption('--wait-ms', '1500'));
 const DRY_RUN = hasFlag('--dry-run');
+const PLAN_ONLY = hasFlag('--plan-only') || hasFlag('--print-plan');
 
 if (!RUN_DIR || !FIXTURE_ID) {
-  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--skip-click] [--dry-run]');
+  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--skip-click] [--dry-run] [--plan-only]');
   process.exit(2);
 }
 
@@ -32,7 +33,12 @@ const chatPngPath = path.join(screenshotsDir, 'roll20-chat.png');
 const sidecarPath = path.join(screenshotsDir, 'roll20-chat-dom-evidence.json');
 
 main().catch((error) => {
-  console.error(error?.stack || error);
+  const message = String(error?.message ?? error);
+  if (message.startsWith('ROLL20 CHAT CDP CAPTURE BLOCKED_')) {
+    console.error(message);
+  } else {
+    console.error(error?.stack || error);
+  }
   process.exitCode = 1;
 });
 
@@ -43,8 +49,23 @@ async function main() {
   }
   await mkdir(screenshotsDir, { recursive: true });
 
+  if (PLAN_ONLY) {
+    const buttons = await suggestedRollButtons();
+    console.log('ROLL20 CHAT CDP CAPTURE PLAN_ONLY');
+    console.log(`fixture=${FIXTURE_ID}`);
+    console.log(`run=${rel(RUN_DIR)}`);
+    console.log(`snippet=${rel(snippetPath)}`);
+    console.log(`chatPng=${rel(chatPngPath)}`);
+    console.log(`sidecar=${rel(sidecarPath)}`);
+    console.log(`cdp=${CDP_URL}`);
+    console.log(`pageMatch=${PAGE_MATCH}`);
+    console.log(`rollButtons=${buttons.length ? buttons.join(', ') : '(none in plan; pass --roll-button)'}`);
+    console.log('next=Open the dedicated Roll20 Custom Sheet Sandbox/test-room page in a CDP-enabled Chrome, load this fixture, then rerun without --plan-only.');
+    return;
+  }
+
   const { chromium } = await import('playwright-core');
-  const browser = await chromium.connectOverCDP(CDP_URL);
+  const browser = await connectOverCdp(chromium);
   try {
     const page = await findRoll20Page(browser);
     if (!page) {
@@ -111,6 +132,28 @@ async function main() {
     console.log(`sidecar=${rel(sidecarPath)}`);
   } finally {
     await browser.close();
+  }
+}
+
+async function connectOverCdp(chromium) {
+  try {
+    return await chromium.connectOverCDP(CDP_URL);
+  } catch (error) {
+    const message = String(error?.message ?? error);
+    const endpointClosed = /ECONNREFUSED|ERR_CONNECTION_REFUSED|connect.*127\.0\.0\.1|connect.*localhost/i.test(message);
+    const hint = endpointClosed
+      ? [
+          `CDP endpoint is not listening at ${CDP_URL}.`,
+          'Open Chrome/Edge with remote debugging enabled, keep the dedicated Roll20 Sandbox/test-room tab visible, or pass --cdp with the active endpoint.',
+          `Use --plan-only to print the required fixture/snippet/output paths without connecting.`,
+        ].join('\n')
+      : [
+          `Could not connect to CDP endpoint ${CDP_URL}.`,
+          'Confirm the browser was launched with remote debugging and that the Roll20 tab belongs to that browser instance.',
+        ].join('\n');
+    const wrapped = new Error(`ROLL20 CHAT CDP CAPTURE BLOCKED_CDP_ENDPOINT\n${hint}\nOriginal: ${message}`);
+    wrapped.cause = error;
+    throw wrapped;
   }
 }
 
