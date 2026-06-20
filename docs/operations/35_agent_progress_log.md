@@ -1,3 +1,11 @@
+## 2026-06-21 Chrome Observation Audit Guard
+
+- Added `scripts/roll20_chrome_observation_audit.mjs` and package alias `audit:roll20-chrome-observation`.
+- The audit is intentionally local-only and diagnostic. It reads Chrome-extension Roll20 observation folders, checks DOM template presence, session-refresh markers, image magic bytes, true PNG/JPEG status, and selected clip overlap with the recorded chat root/template rects.
+- Verified with `node --check`, the script self-test, and the current Les-Oublies Chrome observation. The Les audit correctly reports `OBSERVATION_ONLY_BLOCKED_CAPTURE_PATH`, `domTemplates=3`, `trustedCapture=NO`, and flags that the extension wrote JPEG bytes to `.png` filenames.
+- The generated canvas crop from the full screenshot still shows Sandbox Tools, not the rolltemplate. This reinforces that the extension screenshot path cannot be promoted without a verified coordinate/foreground adapter.
+- Boundary: this improves false-proof prevention only. It does not clear `chatActualTemplatePixelSuspect` and does not unlock renderer tuning.
+
 ## 2026-06-21 Roll20 Chrome Observation Capture Boundary
 
 - Used the logged-in Chrome Roll20 tab `Codex Roll20 Verify | Roll20` at `https://app.roll20.net/editor`; no existing campaign room settings were modified.

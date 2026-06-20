@@ -1,3 +1,13 @@
+## 2026-06-21 Codex Update - Chrome observation audit guard
+
+Status: DONE/VERIFY. This batch adds a guard for Chrome-extension Roll20 observations; it does not prove Roll20 visual parity and does not change product rendering.
+
+- DONE: Added `scripts/roll20_chrome_observation_audit.mjs` and `corepack pnpm run audit:roll20-chrome-observation`.
+- DONE: The audit reads local-only `chrome-extension-roll20-observation` folders and classifies DOM-template-only evidence, session-refresh markers, `.png` filenames containing JPEG bytes, direct template clips from the untrusted extension screenshot path, and selected clip/chat-root/template coordinate consistency.
+- VERIFIED: The self-test passed. Running the audit on `official-roll20-Les-Oublies/after-refresh` returned `OBSERVATION_ONLY_BLOCKED_CAPTURE_PATH`, `domTemplates=3`, `trustedCapture=NO`, and named the false-proof reasons: session-refresh markers remain and the extension screenshot files are JPEG bytes despite `.png` filenames.
+- LOCAL EVIDENCE: Ignored audit output was written under `reports/roll20-actual-compare/2026-06-18-state-map-v1/chrome-extension-roll20-observation/official-roll20-Les-Oublies/after-refresh/chrome-observation-audit/`.
+- NEXT P0: Use this audit before considering any Chrome-extension Roll20 observation as evidence. Les-Oublies still needs trusted CDP capture or a separately verified full-screenshot crop adapter that emits true foreground PNG evidence tied to the visible text chat panel.
+
 ## 2026-06-21 Codex Update - Roll20 Chrome observation capture boundary
 
 Status: VERIFY/BLOCKED_CAPTURE_PATH. This batch observed the logged-in Roll20 Sandbox/editor tab through the Chrome extension path; it does not prove Roll20 visual parity and does not change product rendering.
