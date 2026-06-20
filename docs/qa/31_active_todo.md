@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - chat message shell model
+
+Status: PARTIAL. This adds a narrower diagnostic for AW2E chat width; it does not enable production ChatPane CSS.
+
+- DONE: Added `scripts/roll20_chat_message_shell_model.mjs` and package command `diagnose:roll20-chat-message-shell`.
+- DONE: Wired the message-shell report into `gate:roll20-renderer-action` so renderer decisions now include message width, content/template width, chat-right gutter, and actual message shell model evidence.
+- RESULT: AW2E is isolated as `MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED`: actual Roll20 uses `FULL_CHAT_WIDTH_MESSAGE`, with message width delta `+12px` and content/template width delta `+12px`.
+- RESULT: Les-Oublies and YSHY are now `MESSAGE_SHELL_SECONDARY`; their message width delta is `0px`, so their remaining mismatch should not be "fixed" by a global message width patch.
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`; the next AW2E task is a per-template message/content width model, while YSHY stays on table scroll/intrinsic sizing.
+- VERIFIED: default `rolltemplate_chat_smoke` 3/3 PASS, `diagnose:roll20-chat-width`, `diagnose:roll20-chat-message-shell`, `diagnose:roll20-chat-width-reconciliation`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build a generic Roll20 message/content-width rule or candidate that explains AW2E without changing Les/YSHY globally; do not expose diagnostic candidates in public UI.
+
 ## 2026-06-20 Codex Update - chat message/content width split
 
 Status: PARTIAL. This sharpens the next renderer model; it does not enable production ChatPane CSS.

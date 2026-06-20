@@ -1,3 +1,20 @@
+## 2026-06-20 Chat Message Shell Model
+
+- Added `scripts/roll20_chat_message_shell_model.mjs` and `corepack pnpm run diagnose:roll20-chat-message-shell`.
+- The report separates Roll20 chat message-box geometry from rolltemplate table/template geometry:
+  - message width delta
+  - content/template width delta
+  - chat-right gutter delta
+  - template left/right inset inside the message
+  - actual shell classification (`FULL_CHAT_WIDTH_MESSAGE` vs `INSET_CHAT_WIDTH_MESSAGE`)
+- Current evidence on `2026-06-18-state-map-v1`:
+  - AW2E: `MESSAGE_CONTENT_WIDTH_MODEL_REQUIRED`, actual shell `FULL_CHAT_WIDTH_MESSAGE`, message delta `+12px`, content delta `+12px`, gutter delta `0px`.
+  - Les-Oublies: `MESSAGE_SHELL_SECONDARY`, actual shell `INSET_CHAT_WIDTH_MESSAGE`, message delta `0px`.
+  - YSHY 1BU: `MESSAGE_SHELL_SECONDARY`, actual shell `INSET_CHAT_WIDTH_MESSAGE`, message delta `0px`; width work remains table/intrinsic, not message shell.
+- Wired this report into `gate:roll20-renderer-action`. The gate still returns `HOLD_PRODUCTION_RENDERER_PATCH`, but now names AW2E's next work as a per-template message/content-width model rather than a global chat shell width patch.
+- Verification: `node --check`, `build`, default `rolltemplate_chat_smoke`, `diagnose:roll20-chat-width`, `diagnose:roll20-chat-message-shell`, `diagnose:roll20-chat-width-reconciliation`, and `gate:roll20-renderer-action`.
+- Claim boundary: diagnostic-only. No product default ChatPane CSS changed, no visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 Chat Message/Content Width Split
 
 - Added diagnostic-only ChatPane geometry policy `roll20-chat-shell-width-340`.
