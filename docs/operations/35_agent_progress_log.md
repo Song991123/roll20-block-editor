@@ -1,3 +1,14 @@
+## 2026-06-21 Roll20 Sheet Frame DOM Evidence Tool
+
+- Added `scripts/roll20_sheet_frame_probe.mjs` and package aliases `probe:roll20-sheet-frame` / `test:roll20-sheet-frame-probe`.
+- The probe connects to a CDP-enabled Roll20 Sandbox/test-room page, searches all frames, and saves `roll20-sandbox-dom-evidence.json` only when the frame contains expected generated payload markers.
+- Self-test guards that expected fixture hits outrank generic Roll20 roots, so the tool should not create false-positive evidence for the wrong sheet iframe.
+- Current desktop state has no CDP endpoint at `127.0.0.1:9222`; the probe dry-run correctly reports `BLOCKED_CDP_ENDPOINT`.
+- Used the logged-in Chrome MCP path as an observation fallback, opened the dedicated Roll20 editor/test character, and rechecked AW2E iframe evidence: `rootCount=3`, `attrCount=486`, `rollButtonCount=13`, and Playbook markers.
+- Saved ignored local AW2E `roll20-sandbox-dom-evidence.json` from that observation. This file is local evidence only and is not committed.
+- Verification: `node --check scripts\roll20_sheet_frame_probe.mjs`, `test:roll20-sheet-frame-probe`, `test:roll20-upload-snippet`, `lint`, `build`, and `guard:roll20-evidence` passed.
+- `status:roll20-actual` remains `rendererReady=NO` / `HOLD_PRODUCTION_RENDERER_PATCH`; generated actual screenshots are `4/6`, generated diffs are `4/6`, and AW2E/YSHY still need trusted foreground chat recapture.
+
 ## 2026-06-21 Roll20 Sheet Iframe Activation Routing
 
 - Rechecked the live Roll20 editor through the logged-in Chrome tab without modifying existing room settings.

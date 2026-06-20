@@ -1,3 +1,18 @@
+## 2026-06-21 Codex Update - Roll20 sheet frame DOM evidence tool
+
+Status: VERIFY/CHAT_RECAPTURE_STILL_NEEDED. This batch added a reusable frame-aware CDP probe for the Roll20 character-sheet iframe. It does not add visual parity or trusted chat screenshots.
+
+- DONE: Added `scripts/roll20_sheet_frame_probe.mjs` and package scripts `probe:roll20-sheet-frame` / `test:roll20-sheet-frame-probe`.
+- DONE: The probe reads generated payload hints, inspects Roll20 top page plus child frames, and writes `roll20-sandbox-dom-evidence.json` only when expected fixture markers are found in the character-sheet iframe.
+- SAFETY: The probe refuses to save positive evidence for generic roots alone; expected payload hits (`attr_`, `roll_`, or visible text tokens) outrank generic root/attr counts.
+- OBSERVED: Current normal CDP endpoint `127.0.0.1:9222` is closed, so `probe:roll20-sheet-frame --dry-run` reports `BLOCKED_CDP_ENDPOINT` in this desktop state.
+- OBSERVED: Through the logged-in Chrome MCP path, opening the dedicated Roll20 editor and a test character again showed AW2E in the character iframe: `rootCount=3`, `attrCount=486`, `rollButtonCount=13`, and Playbook markers.
+- LOCAL EVIDENCE: Saved ignored local `roll20-sandbox-dom-evidence.json` for `official-roll20-AW2E` from that frame-aware observation. This is DOM evidence only and must not be committed.
+- VERIFIED: `node --check scripts\roll20_sheet_frame_probe.mjs`, `corepack pnpm run test:roll20-sheet-frame-probe`, `corepack pnpm run test:roll20-upload-snippet`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed.
+- CURRENT STATUS: `status:roll20-actual` still reports `rendererReady=NO`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, `generatedActualScreenshots=4/6`, `generatedDiffed=4/6`, and missing/suspect chat foreground evidence for `official-roll20-AW2E` and `yshy-commission-1bu`.
+- VERIFY NEXT: Use a CDP-enabled browser or a verified Chrome-extension foreground crop adapter to recapture AW2E/YSHY `roll20-chat.png` with fresh `roll20-chat-dom-evidence.json`.
+- CLAIM BOUNDARY: Sheet iframe DOM activation is proven for the observed AW2E tab, but no screenshot parity or chat parity is proven.
+
 ## 2026-06-21 Codex Update - Roll20 sheet iframe activation routing
 
 Status: VERIFY/FRAME_AWARE_ACTIVATION_NEEDED. This batch rechecked the live Roll20 editor after the earlier AW2E `CHAT_TEMPLATE_ONLY`/`NOT_PROVEN` result and found that the sheet body can live inside the character-sheet iframe even when the top document has zero sheet markers.
