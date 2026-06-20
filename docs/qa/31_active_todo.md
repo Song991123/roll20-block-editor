@@ -1,3 +1,19 @@
+## 2026-06-20 Codex Update - YSHY font availability candidates rejected
+
+Status: PARTIAL. This tested narrow YSHY/CoC font-context diagnostics; it does not change production ChatPane defaults and does not prove visual parity.
+
+- DONE: Added diagnostic-only ChatPane font policy `yshy-bookk-unavailable`.
+- DONE: Added diagnostic-only typography policies `yshy-table-font-context`, `yshy-bookk-missing-render`, and `yshy-missing-bookk-table-font-context`.
+- DONE: Added these candidates to `rolltemplate_chat_smoke`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, and script docs.
+- RESULT: All new candidates rendered rolltemplate chat cards successfully in smoke.
+- RESULT: Removing uploaded `BookkMyungjo-Bd` `@font-face` was not enough to mirror actual Roll20 missing-font evidence: local `document.fonts.check()` still returned true for Bookk specs, and the table widened to `1305.578px`.
+- RESULT: Forcing missing Bookk rendering also widened the table to `1305.578px`; combining missing Bookk with Proxima table context widened it to `1317.141px`.
+- RESULT: Candidate comparison rejects all new font-context candidates: `yshy-bookk-unavailable` `+5.39%` YSHY aligned delta, `yshy-table-font-context` `+2.57%`, `yshy-bookk-table-font-context` `+6.69%`, `yshy-bookk-missing-render` `+5.39%`, `yshy-missing-bookk-table-font-context` `+6.69%`.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- INTERPRETATION: Bookk missing-font simulation is not the YSHY fix. The next P0 should inspect Roll20 chat crop/row-band paint and table source/sanitized CSS ordering beyond font availability, while keeping `paint-dim-background` blocked because actual Roll20 reports `filter: none`.
+- VERIFIED: `build`, all new candidate smokes, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-font-intrinsic`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Build the next YSHY/CoC diagnostic around row-band/crop/background paint or sanitized source ordering, not Bookk font availability.
+
 ## 2026-06-20 Codex Update - Font/intrinsic probe split
 
 Status: PARTIAL. This adds a renderer-routing diagnostic; it does not change production ChatPane defaults and does not prove visual parity.

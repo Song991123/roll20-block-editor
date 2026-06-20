@@ -735,9 +735,13 @@ async function main() {
     await page.goto(report.baseUrl, { waitUntil: 'networkidle' });
     await page.evaluate(() => localStorage.setItem('__perfOn', '1'));
     await page.evaluate((policy) => {
-      if (policy === 'roll20-chat-fallback') {
-        localStorage.setItem('__r20ChatFontPolicy', 'roll20-chat-fallback');
-        localStorage.setItem('__r20SuppressUserDocumentFonts', '1');
+      if (policy === 'roll20-chat-fallback' || policy === 'yshy-bookk-unavailable') {
+        localStorage.setItem('__r20ChatFontPolicy', policy);
+        if (policy === 'roll20-chat-fallback') {
+          localStorage.setItem('__r20SuppressUserDocumentFonts', '1');
+        } else {
+          localStorage.removeItem('__r20SuppressUserDocumentFonts');
+        }
       } else {
         localStorage.removeItem('__r20ChatFontPolicy');
         localStorage.removeItem('__r20SuppressUserDocumentFonts');
@@ -787,6 +791,9 @@ async function main() {
         policy === 'roll20-cell-metrics' ||
         policy === 'aw2e-font-size-only' ||
         policy === 'aw2e-text-metrics' ||
+        policy === 'yshy-table-font-context' ||
+        policy === 'yshy-bookk-missing-render' ||
+        policy === 'yshy-missing-bookk-table-font-context' ||
         policy === 'yshy-sanitize-typography'
       ) {
         localStorage.setItem('__r20ChatTypographyPolicy', policy);

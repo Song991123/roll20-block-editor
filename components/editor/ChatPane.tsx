@@ -33,7 +33,7 @@ function safeRolltemplateClass(name: string): string {
   return `sheet-rolltemplate-${safe || 'default'}`;
 }
 
-type ChatFontPolicy = 'default' | 'roll20-chat-fallback';
+type ChatFontPolicy = 'default' | 'roll20-chat-fallback' | 'yshy-bookk-unavailable';
 type ChatTextPolicy = 'default' | 'roll20-auto-aa';
 type ChatShadowPolicy = 'default' | 'no-template-shadow';
 type ChatGeometryPolicy =
@@ -60,6 +60,9 @@ type ChatTypographyPolicy =
   | 'roll20-cell-metrics'
   | 'aw2e-font-size-only'
   | 'aw2e-text-metrics'
+  | 'yshy-table-font-context'
+  | 'yshy-bookk-missing-render'
+  | 'yshy-missing-bookk-table-font-context'
   | 'yshy-sanitize-typography';
 type ChatPaintPolicy =
   | 'default'
@@ -70,9 +73,9 @@ type ChatPaintPolicy =
 
 function currentChatFontPolicy(): ChatFontPolicy {
   if (typeof window === 'undefined') return 'default';
-  return window.localStorage.getItem('__r20ChatFontPolicy') === 'roll20-chat-fallback'
-    ? 'roll20-chat-fallback'
-    : 'default';
+  const value = window.localStorage.getItem('__r20ChatFontPolicy');
+  if (value === 'roll20-chat-fallback' || value === 'yshy-bookk-unavailable') return value;
+  return 'default';
 }
 
 function currentChatTextPolicy(): ChatTextPolicy {
@@ -121,6 +124,9 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
     value === 'roll20-cell-metrics' ||
     value === 'aw2e-font-size-only' ||
     value === 'aw2e-text-metrics' ||
+    value === 'yshy-table-font-context' ||
+    value === 'yshy-bookk-missing-render' ||
+    value === 'yshy-missing-bookk-table-font-context' ||
     value === 'yshy-sanitize-typography'
   ) return value;
   return 'default';
@@ -140,9 +146,12 @@ function currentChatPaintPolicy(): ChatPaintPolicy {
 
 function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'default'): string {
   const prefixedCss = autoPrefixCssClasses(css);
+  const rawFontFaces = prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
   const fontFaces = fontPolicy === 'roll20-chat-fallback'
     ? []
-    : prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
+    : fontPolicy === 'yshy-bookk-unavailable'
+      ? rawFontFaces.filter((fontFace) => !/font-family\s*:\s*["']?BookkMyungjo-Bd["']?/i.test(fontFace))
+      : rawFontFaces;
   const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
   const rolltemplateCss = rewriteRoll20AssetUrls([...fontFaces, ...(matches ?? [])].join('\n'));
   return rolltemplateCss.trim() ? rolltemplateCss : '';
@@ -302,6 +311,30 @@ const roll20ChatShellCss = `
   font-size: 13.65px;
   letter-spacing: normal;
   -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
+  font-family: "__r20_missing_BookkMyungjo_Bd__", sans-serif !important;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
 }
 .r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc,
 .r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table,

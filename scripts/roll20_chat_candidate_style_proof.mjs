@@ -27,6 +27,11 @@ const CANDIDATE_SMOKE = {
   'roll20-border-spacing': 'reports/rolltemplate-chat-smoke-border-spacing/rolltemplate-chat-smoke-results.json',
   'roll20-letter-spacing': 'reports/rolltemplate-chat-smoke-letter-spacing/rolltemplate-chat-smoke-results.json',
   'aw2e-font-size-only': 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/rolltemplate-chat-smoke-results.json',
+  'yshy-bookk-unavailable': 'reports/rolltemplate-chat-smoke-yshy-bookk-unavailable/rolltemplate-chat-smoke-results.json',
+  'yshy-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-table-font-context/rolltemplate-chat-smoke-results.json',
+  'yshy-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
+  'yshy-bookk-missing-render': 'reports/rolltemplate-chat-smoke-yshy-bookk-missing-render/rolltemplate-chat-smoke-results.json',
+  'yshy-missing-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-missing-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
   'coc-table-intrinsic-clamp': 'reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp/rolltemplate-chat-smoke-results.json',
   'paint-dim-background': 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json',
   'paint-dim-brightness': 'reports/rolltemplate-chat-smoke-paint-dim-brightness/rolltemplate-chat-smoke-results.json',
@@ -137,6 +142,15 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   if (candidate.name === 'aw2e-font-size-only') {
     return summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
+  if (
+    candidate.name === 'yshy-bookk-unavailable' ||
+    candidate.name === 'yshy-table-font-context' ||
+    candidate.name === 'yshy-bookk-table-font-context' ||
+    candidate.name === 'yshy-bookk-missing-render' ||
+    candidate.name === 'yshy-missing-bookk-table-font-context'
+  ) {
+    return summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+  }
   if (candidate.name === 'text-auto-aa') {
     return summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
@@ -245,6 +259,58 @@ function summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTe
       ? 'AW2E table font-size matches actual Roll20; letter-spacing decides whether this narrower candidate is enough'
       : 'AW2E table font-size does not match actual Roll20',
     evidence,
+  };
+}
+
+function summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'yshy-commission-1bu') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'YSHY/CoC font-context candidate is scoped away from this fixture',
+      evidence: [],
+    };
+  }
+  const tableTargets = [
+    ['root', 'fontFamily'],
+    ['root', 'fontSize'],
+    ['table', 'fontFamily'],
+    ['table', 'fontSize'],
+    ['caption', 'fontFamily'],
+    ['td:first', 'fontFamily'],
+  ];
+  const evidence = tableTargets.map(([selector, key]) => ({
+    selector,
+    key,
+    localCandidate: styleValue(candidateTemplate, selector, key),
+    actual: styleValue(actualTemplate, selector, key),
+  }));
+  const checks = ['12px BookkMyungjo-Bd', '700 12px BookkMyungjo-Bd', '13px "BookkMyungjo-Bd"', '700 13px "BookkMyungjo-Bd"'];
+  const localFontChecks = new Map((candidateFixture?.cardInfo?.fontEvidence?.checks ?? []).map((check) => [check.spec, Boolean(check.ok)]));
+  const actualFontChecks = new Map((actualSidecar?.fontEvidence?.checks ?? []).map((check) => [check.spec, Boolean(check.ok)]));
+  const fontEvidence = checks.map((spec) => ({
+    selector: 'font-check',
+    key: spec,
+    localCandidate: localFontChecks.get(spec) ?? null,
+    actual: actualFontChecks.get(spec) ?? null,
+  }));
+  const tableMatches = evidence
+    .filter((item) => ['root', 'table'].includes(item.selector))
+    .filter((item) => item.localCandidate != null && item.actual != null)
+    .every((item) => sameValue(item.localCandidate, item.actual));
+  const bookkMatches = fontEvidence
+    .filter((item) => item.localCandidate != null && item.actual != null)
+    .every((item) => sameValue(item.localCandidate, item.actual));
+  const expectsBookk = candidate.name === 'yshy-bookk-unavailable' || candidate.name === 'yshy-bookk-table-font-context';
+  const expectsTableFont = candidate.name === 'yshy-table-font-context' || candidate.name === 'yshy-bookk-table-font-context';
+  const compatible = (!expectsBookk || bookkMatches) && (!expectsTableFont || tableMatches);
+  return {
+    fixtureId,
+    status: compatible ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: compatible
+      ? 'YSHY font-context candidate matches the targeted actual Roll20 font checks/styles'
+      : `YSHY font-context candidate mismatch: table=${tableMatches ? 'match' : 'diff'}, Bookk availability=${bookkMatches ? 'match' : 'diff'}`,
+    evidence: [...evidence, ...fontEvidence],
   };
 }
 

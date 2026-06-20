@@ -1,3 +1,23 @@
+## 2026-06-20 YSHY Font Availability Candidates Rejected
+
+- Added diagnostic-only ChatPane font policy `yshy-bookk-unavailable`.
+- Added diagnostic-only typography policies `yshy-table-font-context`, `yshy-bookk-missing-render`, and `yshy-missing-bookk-table-font-context`.
+- Added the new candidates to rolltemplate chat smoke, candidate comparison, candidate style proof, and scripts docs.
+- All new smoke runs produced visible rolltemplate chat cards.
+- Result: `yshy-bookk-unavailable` did not make local Bookk checks false; local `document.fonts.check()` still returned true for Bookk specs, and YSHY table width widened to `1305.578px`.
+- Result: `yshy-table-font-context` widened YSHY table width to `1284.438px`.
+- Result: `yshy-bookk-missing-render` widened YSHY table width to `1305.578px`.
+- Result: `yshy-missing-bookk-table-font-context` widened YSHY table width to `1317.141px`.
+- Candidate comparison rejects the new family:
+  - `yshy-bookk-unavailable`: YSHY aligned delta `+5.39%`.
+  - `yshy-table-font-context`: YSHY aligned delta `+2.57%`.
+  - `yshy-bookk-table-font-context`: YSHY aligned delta `+6.69%`.
+  - `yshy-bookk-missing-render`: YSHY aligned delta `+5.39%`.
+  - `yshy-missing-bookk-table-font-context`: YSHY aligned delta `+6.69%`.
+- Interpretation: the remaining YSHY mismatch is not solved by Bookk missing-font simulation or Proxima table-context alone. Next YSHY work should move toward row-band/crop/background paint or sanitized source ordering, while keeping filter-based paint candidates blocked by actual Roll20 `filter: none`.
+- `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Claim boundary: diagnostic-only. No production ChatPane CSS, no Roll20 visual parity claim, no private/generated evidence committed.
+
 ## 2026-06-20 Font/Intrinsic Probe Split
 
 - Added `scripts/roll20_chat_font_intrinsic_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-font-intrinsic`.
