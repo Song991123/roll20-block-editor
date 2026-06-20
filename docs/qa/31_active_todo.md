@@ -1,3 +1,14 @@
+## 2026-06-21 Codex Update - Les-Oublies trusted chat recapture
+
+Status: VERIFY/HOLD_RENDERER. This batch captured one trusted Roll20 chat PNG/sidecar pair for Les-Oublies through the logged-in Chrome tab CDP capability; it does not prove chat parity and does not change product rendering.
+
+- DONE: Ran the generated Les-Oublies DOM probe through tab-scoped CDP `Runtime.evaluate`. It returned `templateForegroundEvidence=FOREGROUND_TEMPLATE_HIT`, `templateHitRatio=1`, `chatSelector=#textchat`, `chatElementSelector=#textchat`, and no overlay candidates.
+- DONE: `Page.captureScreenshot` with the raw CSS clip captured Sandbox Tools, proving again that this Roll20 tab needs DPR correction. Capturing the physical DPR clip, then downscaling to CSS size, produced a true PNG foreground rolltemplate crop.
+- DONE: Saved ignored local evidence to `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-Les-Oublies/screenshots/roll20-chat.png` and `roll20-chat-dom-evidence.json`. The sidecar records `captureDprCorrection.applied=true`.
+- VERIFIED: `roll20_actual_screenshot_diff` now diffs Les-Oublies chat. `diagnose:roll20-chat-parity` now compares 1/3 normalized chat fixtures and reports Les-Oublies high mismatch: actual `267x180` vs local `267x84`, aligned mismatch `54.1%`.
+- VERIFIED: `status:roll20-actual` improved to `generatedActualScreenshots=4/6`, `generatedDiffed=4/6`, `chatCaptureSuspects=2`, `chatNeedsNormalizedCapture=2`. Remaining chat recaptures: AW2E and YSHY.
+- NEXT P0: Recapture AW2E and YSHY with the same foreground+DPR-corrected path. Keep renderer action on HOLD; Les-Oublies now has real mismatch evidence, not parity.
+
 ## 2026-06-21 Codex Update - chat sidecar foreground evidence gate
 
 Status: DONE/VERIFY. This batch makes `templateForegroundEvidence` mandatory for trusting Roll20 chat sidecars; it does not add fresh Roll20 screenshots.

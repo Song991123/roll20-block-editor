@@ -1,3 +1,12 @@
+## 2026-06-21 Les-Oublies Trusted Chat Recapture
+
+- Used the existing logged-in Chrome Roll20 editor tab and its tab-scoped CDP capability; no real room settings were changed.
+- Ran the generated Les-Oublies chat DOM probe through `Runtime.evaluate`. It returned `templateForegroundEvidence=FOREGROUND_TEMPLATE_HIT`, `templateHitRatio=1`, `chatSelector=#textchat`, `chatElementSelector=#textchat`, and no overlay candidates.
+- Verified the coordinate-space issue directly: `Page.captureScreenshot` with the CSS clip captured Sandbox Tools, while DPR physical clip (`devicePixelRatio=1.25`) captured the intended rolltemplate. The physical PNG was downscaled back to the CSS clip size and the sidecar records `captureDprCorrection.applied=true`.
+- Saved ignored local evidence as Les-Oublies `roll20-chat.png` and `roll20-chat-dom-evidence.json` under the active actual-compare run.
+- Verification: screenshot diff now includes Les-Oublies chat; chat parity compares 1/3 normalized fixtures and reports Les-Oublies actual `267x180` vs local `267x84`, aligned mismatch `54.1%`.
+- Status now reports `generatedActualScreenshots=4/6`, `generatedDiffed=4/6`, `chatCaptureSuspects=2`, and `chatNeedsNormalizedCapture=2`. AW2E and YSHY still need recapture. Renderer action remains HOLD.
+
 ## 2026-06-21 Chat Sidecar Foreground Evidence Gate
 
 - Made `templateForegroundEvidence` mandatory across the Roll20 chat sidecar trust path, not only during CDP capture.
