@@ -1,3 +1,19 @@
+## 2026-06-20 Codex Update - AW2E actual chat text measurement recaptured
+
+Status: PARTIAL. One actual Roll20 chat fixture advanced from stale sidecar to measured text-width evidence; Roll20 chat/template parity still fails and production renderer CSS remains blocked.
+
+- DONE: Used the dedicated Roll20 verification editor tab only; no existing room was modified.
+- DONE: Recaptured `official-roll20-AW2E` actual Roll20 chat DOM evidence with the generated probe snippet.
+- DONE: Fixed probe schema stability so `textRendering`, `webkitFontSmoothing`, and `mozOsxFontSmoothing` are always present even when the browser returns an empty platform value.
+- DONE: Removed a bad full-panel/wrong-region chat screenshot and replaced it with a DPR-corrected, template-only `roll20-chat.png` crop saved under ignored local reports.
+- RESULT: AW2E actual chat sidecar now has `textMeasureEvidence.status=MEASURED`, `samples=12`, `latestTemplate=sheet-rolltemplate-aw`, and `captureDprCorrection.applied=true`.
+- RESULT: `diagnose:roll20-chat-font-glyph` now classifies AW2E as `TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED` with mean text-width delta `3.642px`, instead of stale recapture required.
+- RESULT: Les-Oublies and YSHY still require actual Roll20 chat sidecar recapture with `textMeasureEvidence.samples`.
+- RESULT: `status:roll20-actual` reports generated screenshots/diffs `6/6`, `chatCurrentMetrics=3/3`, `chatNormalizedHighMismatch=3`, `rendererReady=NO`.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; current blockers include Les/YSHY textMeasure recapture and non-uniform renderer candidates.
+- VERIFIED: `test:roll20-chat-capture-plan`, `plan:roll20-chat-capture --all --require-current-metrics`, `roll20_actual_screenshot_diff`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-font-glyph`, `status:roll20-actual`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Load/restore Les-Oublies and YSHY in the dedicated Roll20 Sandbox/test room, recapture template-only `roll20-chat.png` plus same-action DOM sidecars with text measurement, then rerun the same gates.
+
 ## 2026-06-20 Codex Update - Chat text measurement evidence added
 
 Status: PARTIAL. Roll20 chat/template parity is still blocked, but the next font/glyph probe is now evidence-gated instead of guesswork.

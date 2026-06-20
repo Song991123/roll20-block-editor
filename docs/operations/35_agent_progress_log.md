@@ -1,3 +1,18 @@
+## 2026-06-20 AW2E Actual Chat Text Measurement Recapture
+
+- Claimed the existing dedicated Roll20 verification editor tab only; no existing room/settings were modified.
+- The visible Roll20 chat tab already contained actual AW2E `.sheet-rolltemplate-aw` chat cards.
+- Ran the generated AW2E chat DOM probe through the actual Chrome/CDP page runtime because read-only Playwright evaluation cannot create a canvas 2D context.
+- Captured actual `textMeasureEvidence` successfully: `MEASURED`, `12` samples, CSSOM font-face data present.
+- Fixed the generated probe schema so text-rasterization fields remain present as empty strings when the platform-specific value is unavailable. This prevents `mozOsxFontSmoothing` from disappearing during JSON serialization.
+- A first screenshot attempt captured the foreground `Sheet Sandbox Tools` panel due to coordinate/DPR mismatch. That bad `roll20-chat.png` was removed.
+- Recaptured using a DPR-multiplied CDP clip, then saved a template-only, CSS-sized `roll20-chat.png` for the latest visible AW2E rolltemplate card. Physical DPR source images remain ignored local evidence beside the final PNG.
+- Latest AW2E chat parity now compares local `267x189` vs actual `279x189`, mismatch `15.07%`.
+- Latest font/glyph model moves AW2E to `TEXT_MEASUREMENT_DELTA_MODEL_REQUIRED` with mean text-width delta `3.642px`.
+- Les-Oublies and YSHY still lack actual `textMeasureEvidence.samples`, so the renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Verification: `roll20_actual_screenshot_diff`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-font-glyph`, `status:roll20-actual`, `gate:roll20-renderer-action`, and `plan:roll20-chat-capture --all --require-current-metrics`.
+- Claim boundary: this is one fixture's actual Roll20 chat measurement progress. It does not prove Roll20 visual parity and does not authorize production ChatPane CSS.
+
 ## 2026-06-20 Chat Text Measurement Evidence Gate
 
 - Added local `textMeasureEvidence` to `scripts/rolltemplate_chat_smoke.mjs`: canvas `measureText` widths, element widths, computed CSS font strings, probe strings, and CSSOM font-face status are now captured beside local ChatPane rolltemplate smoke evidence.
