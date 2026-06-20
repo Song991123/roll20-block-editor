@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - DPR-corrected chat crop gate fixed
+
+Status: PARTIAL. Roll20 chat evidence is now authoritative again, but renderer parity is still blocked by real local-vs-Roll20 template differences.
+
+- DONE: Fixed `scripts/roll20_chat_parity_diagnostics.mjs` so DPR-corrected template-only PNGs use `captureDprCorrection.cssClip` instead of stale broad `#textchat`/sidebar clip metadata.
+- RESULT: `diagnose:roll20-chat-parity` now reports `actualTemplatePixelSuspect=0` and `actualCaptureScaleSuspect=0`.
+- RESULT: `status:roll20-actual` returned to `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, with `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatNeedsNormalizedCapture=0`, `chatCurrentMetrics=3/3`, and `rendererReady=NO`.
+- RESULT: Current authoritative chat mismatch is still high for 2/3 fixtures: AW2E aligned `13.5%`, Les-Oublies aligned `6.34%`, YSHY aligned `21.02%`.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`, now for actual renderer-model reasons rather than suspect capture evidence.
+- RESULT: Current split: AW2E and YSHY need table/intrinsic/text-width modeling; Les-Oublies is now width-secondary and should be treated as residual/paint/cell-allocation evidence rather than the main width blocker.
+- VERIFIED: `node --check scripts\roll20_chat_parity_diagnostics.mjs`, `diagnose:roll20-chat-parity`, `status:roll20-actual`, `gate:roll20-renderer-action`, `diagnose:roll20-chat-font-glyph`, and `diagnose:roll20-chat-width`.
+- STILL TODO P0: Build a narrow text/table-width renderer model from actual `measureText` deltas and table intrinsic metrics. Do not promote a broad global width/padding/font patch.
+
 ## 2026-06-20 Codex Update - Les/YSHY actual chat text measurement recaptured
 
 Status: PARTIAL. Actual Roll20 chat text-measure evidence now exists for all 3 prepared fixtures, but chat/template visual parity and production renderer CSS remain blocked.

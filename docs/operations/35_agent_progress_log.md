@@ -2175,6 +2175,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_renderer_action_gate.mjs` so large diagnostic root-height deltas create an explicit next action. Latest gate remains `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: this is stronger actual Roll20 diagnostic evidence, not visual parity and not trusted full-root evidence.
 
+## 2026-06-20 DPR-Corrected Roll20 Chat Crop Gate Fix
+
+- Fixed `scripts/roll20_chat_parity_diagnostics.mjs` to prefer `captureDprCorrection.cssClip` when the saved `roll20-chat.png` is already a DPR-corrected template-only crop. The prior diagnostic compared the template-only PNG against stale broad chat-panel clip metadata, which falsely produced non-1x scale and foreground-pixel suspects.
+- Latest `diagnose:roll20-chat-parity` on `2026-06-18-state-map-v1`: `actualTemplatePixelSuspect=0`, `actualCaptureScaleSuspect=0`, normalized compared `3/3`.
+- Latest `status:roll20-actual`: `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatCurrentMetrics=3/3`, `rendererReady=NO`.
+- Current authoritative chat aligned mismatch remains real renderer work: AW2E `13.5%`, Les-Oublies `6.34%`, YSHY `21.02%`.
+- Latest `gate:roll20-renderer-action` still holds production renderer CSS, but the blocker is now actual model disagreement rather than bad evidence capture.
+- Claim boundary: this makes the chat evidence trustworthy enough for the next diagnostic model. It does not prove Roll20 chat parity and does not authorize broad ChatPane CSS.
+
 ## 2026-06-20 Les/YSHY Actual Roll20 Chat Recapture
 
 - Claimed only the dedicated `Codex Roll20 Verify` Roll20 Sandbox editor/settings pages. Existing real rooms were not modified.

@@ -319,7 +319,13 @@ function summarizeActualChatCss(sidecar) {
 }
 
 function buildActualTemplateCrop(sidecar) {
-  const clip = sidecar?.clip ?? sidecar?.screenshotClipApplied ?? null;
+  const dprCorrection = sidecar?.captureDprCorrection?.applied
+    ? sidecar.captureDprCorrection
+    : null;
+  const correctedClip = dprCorrection?.cssClip?.width && dprCorrection?.cssClip?.height
+    ? normalizeRect(dprCorrection.cssClip)
+    : null;
+  const clip = correctedClip ?? sidecar?.clip ?? sidecar?.screenshotClipApplied ?? null;
   const templates = Array.isArray(sidecar?.rolltemplates) ? sidecar.rolltemplates : [];
   const latest = sidecar?.latestTemplate?.rect?.width && sidecar?.latestTemplate?.rect?.height
     ? sidecar.latestTemplate
@@ -332,10 +338,37 @@ function buildActualTemplateCrop(sidecar) {
   return {
     rect: template.rect,
     clip,
+    clipSource: correctedClip ? 'captureDprCorrection.cssClip' : 'sidecar.clip',
+    captureDprCorrection: dprCorrection
+      ? {
+          applied: true,
+          dpr: Number(dprCorrection.dpr ?? dprCorrection.devicePixelRatio ?? 1),
+          physicalImage: dprCorrection.physicalImage ?? null,
+          cssImage: dprCorrection.cssImage ?? null,
+        }
+      : null,
     templateIndex: template.index ?? null,
     templateClassName: template.className ?? '',
     templateSelection: latest === template ? 'latestTemplate' : 'rolltemplates-reverse',
     intersectsClip: rectIntersectsClip(template.rect, clip),
+  };
+}
+
+function normalizeRect(rect) {
+  const x = Number(rect.x ?? rect.left ?? 0);
+  const y = Number(rect.y ?? rect.top ?? 0);
+  const width = Number(rect.width ?? 0);
+  const height = Number(rect.height ?? 0);
+  return {
+    ...rect,
+    x,
+    y,
+    left: Number(rect.left ?? x),
+    top: Number(rect.top ?? y),
+    width,
+    height,
+    right: Number(rect.right ?? x + width),
+    bottom: Number(rect.bottom ?? y + height),
   };
 }
 
