@@ -119,8 +119,16 @@ function extractLocalGeometry(fixture) {
   if (!width || !height || !table?.rect) return null;
   const tableWidth = Number(table.rect.width ?? px(table.computedStyle?.width));
   const tableHeight = Number(table.rect.height ?? px(table.computedStyle?.height));
-  const tableOffsetX = Number(((width - tableWidth) / 2).toFixed(3));
-  const tableOffsetY = Number(((height - tableHeight) / 2).toFixed(3));
+  const rootLeft = numberOrNull(template.rect?.left ?? template.rect?.x);
+  const rootTop = numberOrNull(template.rect?.top ?? template.rect?.y);
+  const tableLeft = numberOrNull(table.rect.left ?? table.rect.x);
+  const tableTop = numberOrNull(table.rect.top ?? table.rect.y);
+  const tableOffsetX = rootLeft != null && tableLeft != null
+    ? Number((tableLeft - rootLeft).toFixed(3))
+    : Number(((width - tableWidth) / 2).toFixed(3));
+  const tableOffsetY = rootTop != null && tableTop != null
+    ? Number((tableTop - rootTop).toFixed(3))
+    : Number(((height - tableHeight) / 2).toFixed(3));
   const first = firstCell?.rect
     ? {
         width: Number(firstCell.rect.width ?? 0),
@@ -292,6 +300,11 @@ function delta(localValue, actualValue) {
   return Number.isFinite(local) && Number.isFinite(actual)
     ? Number((actual - local).toFixed(3))
     : null;
+}
+
+function numberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 function countBy(values) {

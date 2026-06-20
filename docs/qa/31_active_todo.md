@@ -1,3 +1,17 @@
+## 2026-06-20 Codex Update - chat shell geometry center-assumption fixed
+
+Status: PARTIAL. A false YSHY shell-offset diagnosis was removed; renderer parity is still not solved.
+
+- DONE: `scripts/rolltemplate_chat_smoke.mjs` now records the rolltemplate root `getBoundingClientRect()` in local `templateComputed.rect`.
+- DONE: `scripts/roll20_chat_shell_geometry.mjs` now computes local table offset from actual root/table rects when available instead of assuming `(rootWidth - tableWidth) / 2`.
+- RESULT: Rebuilt default local chat smoke; all three fixtures still PASS.
+- RESULT: YSHY table offset changed from the previous false `+502.93px` model to `0px/0px`; the old offset was a diagnostic-script artifact, not Roll20 behavior.
+- RESULT: Les-Oublies is now `SHELL_OK_OR_SECONDARY`; its table offset is only `-0.4px/-0.4px`, so shell geometry is not the current primary blocker.
+- RESULT: YSHY remains `WIDTH_MODEL_REQUIRED`, but now because table width/intrinsic layout differs (`tableDelta=-24.309px`), not because the local table is anchored hundreds of pixels away.
+- RESULT: `gate:roll20-renderer-action` remains `HOLD_PRODUCTION_RENDERER_PATCH`; current actual status remains `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `rendererReady=NO`.
+- VERIFIED: default `rolltemplate_chat_smoke`, `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-shell-geometry`, `diagnose:roll20-chat-width`, `diagnose:roll20-chat-font-glyph`, `diagnose:roll20-chat-mask-strategy`, `gate:roll20-renderer-action`, and `status:roll20-actual --require-actual`.
+- STILL TODO P0: Build a YSHY intrinsic/table-width probe from the corrected zero-offset geometry, and avoid any candidate based on the old `502.93px` offset.
+
 ## 2026-06-20 Codex Update - AW2E text-metric candidate rejected as no-gain
 
 Status: PARTIAL. Added one safe diagnostic candidate, then rejected it as insufficient evidence for production.

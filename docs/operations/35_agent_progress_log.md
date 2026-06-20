@@ -1,3 +1,11 @@
+## 2026-06-20 Chat Shell Geometry Center-Assumption Fix
+
+- Found and fixed a diagnostic bug in `scripts/roll20_chat_shell_geometry.mjs`: local table offset was computed as `(rootWidth - tableWidth) / 2`, which created a false YSHY `+502.93px` shell offset.
+- `scripts/rolltemplate_chat_smoke.mjs` now stores local rolltemplate root rects, and shell geometry uses actual root/table rects when available.
+- After regenerating default local chat smoke, YSHY table offset is `0px/0px`, Les-Oublies is `-0.4px/-0.4px`, and shell geometry now classifies Les as `SHELL_OK_OR_SECONDARY`.
+- YSHY remains a real blocker, but the axis is now corrected to table width/intrinsic layout (`tableDelta=-24.309px`) rather than a huge table anchoring error.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH`. Claim boundary: this is evidence cleanup and better diagnosis, not Roll20 chat parity.
+
 ## 2026-06-20 AW2E Text-Metric Candidate Probe
 
 - Added diagnostic-only ChatPane typography policy `aw2e-text-metrics`, scoped to `.sheet-rolltemplate-aw` table/caption/cells. It is activated only through the smoke script/localStorage diagnostic path and does not change default product behavior.

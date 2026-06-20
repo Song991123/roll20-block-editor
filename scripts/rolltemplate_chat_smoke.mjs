@@ -498,6 +498,19 @@ async function clickRollAndReadChat(page, fixtureId) {
       templateComputed: template
         ? {
             className: template.className,
+            rect: (() => {
+              const rect = template.getBoundingClientRect();
+              return {
+                x: rect.x,
+                y: rect.y,
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+                right: rect.right,
+                bottom: rect.bottom,
+              };
+            })(),
             computedStyle: readStyle(template),
             computedChildren: [
               summarizeElement(template.querySelector('table'), 'table'),
