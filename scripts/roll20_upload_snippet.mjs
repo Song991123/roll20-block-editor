@@ -18,6 +18,16 @@ const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const positionalArgs = args.filter((arg) => !arg.startsWith('--'));
 const [RUN_DIR_ARG, ONLY] = parseArgs(positionalArgs);
 const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
+const SELF_TEST = args.includes('--self-test');
+
+if (SELF_TEST) {
+  runSelfTest();
+} else {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
 
 function parseArgs(rawArgs) {
   const first = rawArgs[0] ?? '';
@@ -171,7 +181,7 @@ function validateSettingsFieldManifest(manifestText) {
       userOptionsType: Array.isArray(parsed?.userOptions)
         ? 'array'
         : Array.isArray(parsed?.useroptions)
-        ? 'array'
+          ? 'array'
           : typeof (parsed?.userOptions ?? parsed?.useroptions),
     };
   } catch (error) {
@@ -564,7 +574,58 @@ function safeName(value) {
   return String(value).replace(/[^a-z0-9._-]+/gi, '_');
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+function runSelfTest() {
+  const manifestText = JSON.stringify({
+    html: 'sheet.html',
+    css: 'sheet.css',
+    translations: 'translation.json',
+    legacy: true,
+    useroptions: [],
+    name: 'Self Test Sheet',
+    authors: 'Local verification',
+  });
+  const settingsText = buildSettingsManifestText(manifestText);
+  const settings = JSON.parse(settingsText);
+  const validation = validateSettingsFieldManifest(manifestText);
+  const payload = {
+    html: { name: 'sheet.html', bytes: 0, sha256: 'self', base64: '' },
+    css: { name: 'sheet.css', bytes: 0, sha256: 'self', base64: '' },
+    translation: { name: 'translation.json', bytes: 2, sha256: 'self', base64: 'e30=' },
+    manifest: { name: 'sheet.json', bytes: manifestText.length, sha256: 'self', base64: Buffer.from(manifestText, 'utf8').toString('base64') },
+  };
+  const snippet = renderSnippet({
+    fixtureId: 'self-test',
+    payload,
+    validation: {
+      translation: { ok: true },
+      manifest: { ok: true },
+      settingsFieldManifest: validation,
+    },
+    activationHints: {
+      rolltemplateClasses: ['sheet-rolltemplate-self'],
+      rollButtonNames: ['roll_self'],
+      attrNames: ['attr_self'],
+      textTokens: ['Self'],
+    },
+  });
+  const readme = renderReadme({
+    generatedAt: new Date(0).toISOString(),
+    entries: [{
+      fixtureId: 'self-test',
+      snippetRelativePath: 'reports/self-test.js',
+      payloadBytes: { html: 0, css: 0, translation: 2 },
+      validation: {
+        translation: { ok: true },
+        settingsFieldManifest: validation,
+      },
+    }],
+  });
+  const failures = [];
+  if (!settings?.jsoninfo) failures.push('settings manifest missing jsoninfo wrapper');
+  if (!settings?.sheet?.long_name) failures.push('settings manifest missing sheet.long_name');
+  if (validation.shape !== 'wrapped-jsoninfo') failures.push(`validation shape was ${validation.shape}`);
+  if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
+  if (!readme.includes('settings-page `{ sheet, userOptions, jsoninfo }` wrapper')) failures.push('generated README text does not describe wrapper');
+  if (failures.length) throw new Error(`roll20_upload_snippet self-test failed: ${failures.join(', ')}`);
+  console.log('ROLL20 UPLOAD SNIPPET SELF-TEST PASS');
+}

@@ -25,6 +25,7 @@
     "guard:ui-copy": "node scripts/ui_copy_guard.mjs",
     "handoff:roll20-upload": "node scripts/roll20_upload_handoff.mjs",
     "snippet:roll20-upload": "node scripts/roll20_upload_snippet.mjs",
+    "test:roll20-upload-snippet": "node scripts/roll20_upload_snippet.mjs --self-test",
     "status:roll20-actual": "node scripts/roll20_actual_status.mjs",
     "gate:roll20-renderer-ready": "node scripts/roll20_actual_status.mjs --require-renderer-ready",
     "crop:roll20-actual": "node scripts/roll20_actual_screenshot_crop.mjs",

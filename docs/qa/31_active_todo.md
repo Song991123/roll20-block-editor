@@ -2,6 +2,8 @@
 
 Status: VERIFY/BLOCKED_ACTIVATION. This batch rechecked the live Roll20 Custom Sheet Sandbox settings path while trying to continue AW2E/YSHY trusted chat recapture; it does not add new trusted chat screenshots and does not change product rendering.
 
+- DONE FOLLOW-UP: Added `corepack pnpm run test:roll20-upload-snippet`, a self-test that fails if the settings-page manifest builder regresses from `{ sheet, userOptions, jsoninfo }` back to plain exported `sheet.json`.
+- VERIFIED FOLLOW-UP: `test:roll20-upload-snippet` passed and regenerated AW2E upload snippet reports `shape=wrapped-jsoninfo`.
 - OBSERVED: The original Roll20 editor tab was still logged in and showed Les-Oublies chat templates with `devicePixelRatio=1.25`.
 - OBSERVED: The claimed original tab's CDP capability was blocked by `paused document response`, but a fresh temporary Chrome tab opened to `https://app.roll20.net/sheetsandbox/settings/21639681` had working tab-scoped CDP.
 - OBSERVED: Applying AW2E with the generated snippet's current plain `customcharsheet_json` value posted HTML/CSS/translation with `200`, but `/editor` returned a Roll20 JSON parse error: `unexpected token at '{ "html": "sheet.html", ... }'`.
