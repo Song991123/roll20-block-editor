@@ -1,3 +1,12 @@
+## 2026-06-20 Non-Leaf Edit/Preview Rect Sync
+
+- Strengthened imported non-leaf subtree reorder verification so it now reads the moved subtree from both edit Shadow DOM and preview iframe after the drop.
+- The non-leaf pass condition now requires `left`, `top`, `width`, and `height` to match within `2px` between edit and preview, in addition to the existing layer relation, same parent/depth, child preservation, and emitted-order checks.
+- Report output now annotates passing non-leaf reorder as `preview sync`.
+- Verification: `node --check`, `lint`, `smoke:imported-edit-sync -- --only synthetic-nonleaf-flow --port 4197`, full `smoke:imported-edit-sync -- --port 4196`, `build`, `guard:roll20-evidence`, and `smoke:edit-flow -- --port 4210`.
+- Local result: AW2E, Les-Oublies, synthetic-nonleaf-flow, and YSHY all passed non-leaf subtree edit/preview rect sync. The latest YSHY run still had resource warnings, so this is geometry/edit-sync evidence only, not visual parity.
+- Boundary: next step should compare screenshots/crops after subtree moves and keep actual Roll20 renderer parity separate.
+
 ## 2026-06-20 Synthetic Imported Non-Leaf Coverage
 
 - Added a built-in copyright-safe `synthetic-nonleaf-flow` fixture to `scripts/imported_edit_sync_smoke.mjs`, so the committed smoke can exercise imported non-leaf subtree editing even without private fixture folders.

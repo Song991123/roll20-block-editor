@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - non-leaf edit/preview rect sync
+
+Status: VERIFY. This adds stronger local proof that imported non-leaf subtree layer moves render the same in edit and preview after the drop.
+
+- DONE: `runImportedNonLeafLayerReorder()` now re-reads the moved subtree after layer reorder in both the edit Shadow DOM and the preview iframe.
+- DONE: The imported non-leaf pass condition now requires edit/preview relative `left`, `top`, `width`, and `height` to match within `2px`, in addition to layer relation, same parent/depth, child preservation, and emitted-order checks.
+- DONE: The imported edit-sync markdown report now labels non-leaf reorder as `preview sync` when the subtree rect check passes.
+- VERIFIED: `node --check scripts\imported_edit_sync_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run smoke:imported-edit-sync -- --only synthetic-nonleaf-flow --port 4197`, `corepack pnpm run smoke:imported-edit-sync -- --port 4196`, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence`, and `corepack pnpm run smoke:edit-flow -- --port 4210` passed.
+- LOCAL FIXTURE RESULT: Non-leaf subtree edit/preview rect sync passed on `official-roll20-AW2E`, `official-roll20-Les-Oublies`, `synthetic-nonleaf-flow`, and `yshy-commission-1bu`.
+- CURRENT LIMITATION: The latest full imported smoke still recorded `7` resource warnings for `yshy-commission-1bu`; local edit/preview geometry sync passed, but resource warnings remain a visual-parity concern.
+- STILL TODO P0: Add screenshot-level edit/preview comparison after subtree moves, not only rect-level comparison. Actual Roll20 renderer parity remains gated.
+
 ## 2026-06-20 Codex Update - synthetic imported non-leaf coverage
 
 Status: VERIFY. This closes the previous local coverage gap for imported non-leaf subtree layer reorder, but it remains local-app evidence rather than actual Roll20 parity.

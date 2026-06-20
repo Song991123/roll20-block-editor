@@ -295,7 +295,7 @@ async function runImportedLayerReorder(page) {
     null,
     { timeout: 30000 },
   );
-  return page.evaluate(async () => {
+  const result = await page.evaluate(async () => {
     function emittedIndex(id) {
       return window.__perfHook.getEmitContent().html.indexOf(`data-r20-block-id="${id}"`);
     }
@@ -408,6 +408,7 @@ async function runImportedLayerReorder(page) {
       after.movingIndex < after.targetIndex;
     return { pass, skipped: false, pair, mode, before, after };
   });
+  return result;
 }
 
 async function runImportedNonLeafLayerReorder(page) {
@@ -421,7 +422,7 @@ async function runImportedNonLeafLayerReorder(page) {
     null,
     { timeout: 30000 },
   );
-  return page.evaluate(async () => {
+  const result = await page.evaluate(async () => {
     function emittedIndex(id) {
       return window.__perfHook.getEmitContent().html.indexOf(`data-r20-block-id="${id}"`);
     }
@@ -629,6 +630,22 @@ async function runImportedNonLeafLayerReorder(page) {
       dropPrevented: drop.defaultPrevented,
     };
   });
+  if (!result?.pass || result?.skipped || !result?.candidate?.moving?.blockId) return result;
+  const editAfter = await getEditBlockState(page, result.candidate.moving.blockId);
+  const previewAfter = await getPreviewBlockState(page, result.candidate.moving.blockId);
+  const previewSync =
+    Boolean(editAfter?.relative && previewAfter?.relative) &&
+    closeEnough(previewAfter.relative.left, editAfter.relative.left, 2) &&
+    closeEnough(previewAfter.relative.top, editAfter.relative.top, 2) &&
+    closeEnough(previewAfter.relative.width, editAfter.relative.width, 2) &&
+    closeEnough(previewAfter.relative.height, editAfter.relative.height, 2);
+  return {
+    ...result,
+    editAfter,
+    previewAfter,
+    previewSync,
+    pass: result.pass && previewSync,
+  };
 }
 
 async function runImportedCanvasInsert(page) {
@@ -1639,7 +1656,7 @@ function fmtNonLeafLayerReorder(item) {
     const moving = item.candidate?.moving;
     const target = item.candidate?.target;
     const direction = item.candidate?.direction || item.mode || '';
-    return `${moving?.tag || ''} ${direction} ${target?.tag || ''} (${moving?.childCount ?? 0} children)`;
+    return `${moving?.tag || ''} ${direction} ${target?.tag || ''} (${moving?.childCount ?? 0} children, preview ${item.previewSync ? 'sync' : 'unchecked'})`;
   }
   return `FAIL: ${item.reason || item.mode || 'subtree not moved'}`;
 }
