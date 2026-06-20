@@ -60,7 +60,7 @@ export default function PreviewEmptyState() {
         새 Roll20 시트를 만들어볼까요?
       </h2>
       <p className="mb-7 max-w-md text-[13px] leading-relaxed text-muted-foreground">
-        가운데 화면은 실제 Roll20 시트가 렌더되는 자리예요. 왼쪽에서 블록이나 요소를
+        가운데 화면은 Roll20 형식 시트를 로컬에서 미리 보는 자리예요. 왼쪽에서 블록이나 요소를
         끌어오면 바로 배치할 수 있어요.
         <br />
         오른쪽 속성 패널에서 이름, 값, 클래스, 위치를 조정할 수 있습니다.

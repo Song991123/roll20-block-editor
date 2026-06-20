@@ -181,6 +181,8 @@ async function main() {
         hasBlankCta: bodyText.includes('빈 시트로 시작'),
         hasSampleCta: bodyText.includes('샘플 시트 보기'),
         hasSampleMenu: bodyText.includes('샘플 시트'),
+        hasLocalPreviewBoundaryCopy: bodyText.includes('Roll20 형식 시트를 로컬에서 미리 보는 자리예요.'),
+        hasActualRoll20PreviewClaim: bodyText.includes('실제 Roll20 시트가 렌더되는 자리예요.'),
         bodyText,
       };
     });
@@ -245,6 +247,10 @@ async function main() {
     if (!result.checks.shell.hasHeaderTitle) failures.push('header title missing');
     if (!fixture && !result.checks.shell.hasEmptyTitle) failures.push('empty state title missing');
     if (!fixture && !result.checks.shell.hasBlankCta) failures.push('blank sheet CTA missing');
+    if (!fixture && !result.checks.shell.hasLocalPreviewBoundaryCopy) {
+      failures.push('local preview boundary copy missing');
+    }
+    if (result.checks.shell.hasActualRoll20PreviewClaim) failures.push('misleading actual Roll20 preview claim visible');
     if (result.checks.shell.hasSampleCta || result.checks.shell.hasSampleMenu) failures.push('sample UI visible with empty public catalog');
     if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');
     if (!result.checks.exportDialog.hasTitle) failures.push('export dialog title missing');

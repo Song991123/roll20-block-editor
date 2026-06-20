@@ -3183,3 +3183,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Edit layer rows now expose `data-r20-layer-child-count`, render a role/relationship color rail, and show a compact child-count badge when a node has children.
 - Updated the edit-flow browser smoke to require the structure rail and child-count evidence on a frame after nested drop.
 - Claim boundary: this is an edit UX structure-visibility improvement. It does not alter production Roll20 renderer CSS or prove visual parity.
+
+## 2026-06-21 Local Preview Claim Boundary
+
+- Current actual status is still renderer-ready `NO`, even though trusted full-root evidence has reached `3/3`; chat/rolltemplate foreground and split renderer-model blockers remain.
+- The empty preview state no longer claims the center canvas renders the "actual Roll20 sheet"; it now says it is a local Roll20-format preview.
+- The preview-mode tooltip uses the same local-preview boundary.
+- `scripts/export_dialog_browser_smoke.mjs` now guards against the old misleading actual-Roll20 preview claim returning.
+- Claim boundary: copy/truthfulness only. No Roll20 renderer CSS or parity claim changed.

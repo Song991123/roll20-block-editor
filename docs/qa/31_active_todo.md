@@ -2544,3 +2544,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - DONE: Layer rows now expose `data-r20-layer-child-count`, a role/relationship rail, and a compact child-count badge for non-leaf nodes.
 - VERIFIED: `corepack pnpm run smoke:edit-flow -- --port 4210` passes after rebuilding `out/`; nested frame evidence includes `childCount=1`, `roleRail=true`, `childBadge=1`, and before/inside/after layer drop modes.
 - CLAIM BOUNDARY: This improves edit-layer structure visibility only. It does not change Roll20 preview parity, renderer CSS, or actual Roll20 screenshot evidence.
+
+## 2026-06-21 Local Preview Claim Boundary TODO Note
+
+- DONE: Empty preview copy no longer says the center canvas is where an "actual Roll20 sheet" renders. It now describes the view as a local Roll20-format preview.
+- DONE: Preview mode tooltip now uses the same local-preview wording instead of implying actual Roll20 verification.
+- VERIFIED: `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir reports/export-dialog-smoke --port 4326` passes after rebuild with `hasLocalPreviewBoundaryCopy=true`, `hasActualRoll20PreviewClaim=false`, `hasMojibake=false`, and console/page errors 0.
+- CLAIM BOUNDARY: This is product truthfulness/UI cleanup only. It does not change renderer CSS and does not prove Roll20 visual parity.
