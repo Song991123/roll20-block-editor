@@ -2,6 +2,8 @@
 
 Status: VERIFY/BLOCKED_ACTIVATION. This batch rechecked the live Roll20 Custom Sheet Sandbox settings path while trying to continue AW2E/YSHY trusted chat recapture; it does not add new trusted chat screenshots and does not change product rendering.
 
+- DONE FOLLOW-UP: Cleaned product-facing Korean copy in `MainAreaToolbar` and `PreviewEmptyState`, replacing mojibake mode labels/tooltips and empty-preview guidance with clear local-preview wording.
+- VERIFIED FOLLOW-UP: `guard:ui-copy`, `lint`, `build`, and `smoke:edit-flow -- --port 4210` passed. The smoke reported `editUiCopy.hasMojibakeHan=false`.
 - DONE FOLLOW-UP: Added `corepack pnpm run test:roll20-upload-snippet`, a self-test that fails if the settings-page manifest builder regresses from `{ sheet, userOptions, jsoninfo }` back to plain exported `sheet.json`.
 - VERIFIED FOLLOW-UP: `test:roll20-upload-snippet` passed and regenerated AW2E upload snippet reports `shape=wrapped-jsoninfo`.
 - DONE FOLLOW-UP: Upload snippets now classify a Roll20 `/editor` JSON parse failure as `ROLL20_EDITOR_PARSE_ERROR`, separate from ordinary `NOT_PROVEN` activation.

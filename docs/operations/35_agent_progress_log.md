@@ -1,3 +1,10 @@
+## 2026-06-21 Product UI Copy Cleanup
+
+- Replaced mojibake user-facing labels/tooltips in `components/editor/MainAreaToolbar.tsx` with clear Korean mode names: 편집, 분할, 블록, 미리보기.
+- Replaced the empty preview state copy in `components/editor/PreviewEmptyState.tsx` so it accurately says this is a local Roll20-format preview and actual Roll20 results still require Sandbox/test-room verification.
+- Verification: `guard:ui-copy`, `lint`, `build`, and `smoke:edit-flow -- --port 4210` passed. The smoke reported `editUiCopy.hasMojibakeHan=false`.
+- Claim boundary: this improves product usability and truthfulness only. It does not prove Roll20 visual parity and does not change renderer readiness.
+
 ## 2026-06-21 Roll20 Upload Activation Check Snippets
 
 - Added matching `*-activation-check-snippet.js` generation to `scripts/roll20_upload_snippet.mjs`.
