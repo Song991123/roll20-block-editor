@@ -1,3 +1,10 @@
+## 2026-06-20 Chat Capture Filter Self-Test Hardening
+
+- Strengthened `scripts/roll20_chat_capture_plan.mjs` so the fake-DOM self-test requires both the latest rolltemplate and its table evidence to include `computedStyle.filter`.
+- This directly protects the current Roll20 renderer gate blocker: stale AW2E/Les-Oublies chat sidecars were missing filter fields needed for paint/shadow decisions.
+- Verification: `node --check`, `test:roll20-chat-capture-plan`, `plan:roll20-chat-capture --require-current-metrics`, `lint`, `build`, and `guard:roll20-evidence`.
+- Current evidence boundary: the run still needs fresh AW2E and Les-Oublies actual Roll20 chat recaptures. This batch improves the capture contract; it does not create visual parity evidence or authorize production ChatPane CSS.
+
 ## 2026-06-20 Wide Row Bundle Dry-Run Estimate
 
 - Extended `scripts/imported_edit_perf_budget.mjs` with a dry-run estimate for replacing the top remaining `r20_tr` structural signature with one lazy/bundle unit per row.

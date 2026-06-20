@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - chat capture filter self-test hardening
+
+Status: VERIFY. This hardens the Roll20 chat capture helper only; it does not add new Roll20 screenshots and does not change renderer parity.
+
+- DONE: `scripts/roll20_chat_capture_plan.mjs` self-test now fails if generated chat DOM evidence omits `latestTemplate.computedStyle.filter`.
+- DONE: The same self-test now also requires the captured rolltemplate table evidence to include `computedStyle.filter`.
+- VERIFIED: `node --check .\scripts\roll20_chat_capture_plan.mjs`, `corepack pnpm run test:roll20-chat-capture-plan`, `corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --require-current-metrics`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run guard:roll20-evidence` passed.
+- CURRENT RESULT: The capture plan still reports `NEEDS_CAPTURE` for `2/3` chat fixtures. AW2E and Les-Oublies still need fresh same-action Roll20 `roll20-chat.png` plus `roll20-chat-dom-evidence.json` with the current filter fields.
+- STILL TODO P0: Recapture AW2E and Les-Oublies inside the dedicated Roll20 Custom Sheet Sandbox or approved test room, then rerun chat parity/status/renderer gates. No Roll20 visual parity claim is allowed before that evidence exists.
+
 ## 2026-06-20 Codex Update - layer role label cleanup
 
 Status: VERIFY. This fixes a visible edit-mode usability issue only; it does not change Roll20 renderer parity.

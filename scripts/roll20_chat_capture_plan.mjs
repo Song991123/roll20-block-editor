@@ -1003,6 +1003,15 @@ function runSelfTest() {
   if (!evidence.textMarkers?.rolltemplate || !evidence.textMarkers?.sheetRolltemplate) failures.push('missing text markers');
   if (!Array.isArray(evidence.textMeasureEvidence?.samples) || evidence.textMeasureEvidence.samples.length === 0) failures.push('missing text measure evidence');
   if (!evidence.latestTemplate?.tableStructure) failures.push('missing tableStructure evidence');
+  if (!Object.prototype.hasOwnProperty.call(evidence.latestTemplate?.computedStyle ?? {}, 'filter')) {
+    failures.push('missing latestTemplate computedStyle.filter');
+  }
+  const tableEvidence = evidence.latestTemplate?.computedChildren?.find((child) => child?.selector === 'table')
+    ?? evidence.latestTemplate?.tableStructure?.table
+    ?? null;
+  if (!Object.prototype.hasOwnProperty.call(tableEvidence?.computedStyle ?? {}, 'filter')) {
+    failures.push('missing table computedStyle.filter');
+  }
   if (!capturedLogs.some((value) => String(value).includes('"rolltemplates"'))) failures.push('console JSON did not include rolltemplates');
   try {
     const json = JSON.stringify(evidence);
@@ -1020,7 +1029,7 @@ function runSelfTest() {
     return;
   }
   console.log('ROLL20 CHAT CAPTURE PLAN SELF_TEST PASS');
-  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence,textMeasureEvidence,tableStructure');
+  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence,textMeasureEvidence,tableStructure,computedStyle.filter');
 }
 
 function fakeElement({ id = '', tagName = 'DIV', className = '', rect, textContent = '', outerHTML = '', contains = () => false, queryMap = {}, queryAllMap = {} }) {
