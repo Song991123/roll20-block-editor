@@ -177,6 +177,7 @@ function buildEntry(fixtureId, status, chatParity) {
       'If CDP captures the wrong region on a high-DPR Roll20 tab, verify the coordinate space with a debug crop: multiply the CSS template rect by devicePixelRatio, capture the physical PNG, then DPR-correct/downscale it back to the CSS clip size and record captureDprCorrection in the sidecar.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
       'For current renderer diagnostics, the DOM sidecar must include latestTemplate.rowMetrics, computedStyle, table computedStyle, table boxMetrics, latestTemplate.tableStructure, text-rendering/font-smoothing/filter fields, fontEvidence, textMeasureEvidence, and viewportEvidence.',
+      'The DOM sidecar must include templateForegroundEvidence=FOREGROUND_TEMPLATE_HIT. If it reports overlay candidates or foreground suspect, do not save/promote the screenshot; close or move the overlapping Roll20 panel and recapture.',
       'Keep screenshot and DOM sidecar timestamps within 5 minutes.',
       'Rerun screenshot diff, chat parity diagnostics, renderer action gate, and status.',
     ],
@@ -791,8 +792,85 @@ function renderDomProbeSnippet(entry) {
       };
     })
     .sort((a, b) => b.score - a.score || b.template.index - a.template.index)[0]?.template ?? null;
+  const selectedTemplateElement = selectedTemplate ? templates[selectedTemplate.index] : null;
   const selectedTextMeasureEvidence = selectedTemplate?.textMeasureEvidence ?? measureTextEvidence(null);
   const selectedClip = selectedTemplate?.rect ?? rectOf(textchat) ?? { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight, right: window.innerWidth, bottom: window.innerHeight };
+  const rectIntersects = (a, b) => {
+    if (!a || !b) return false;
+    return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+  };
+  const summarizeTopElement = (el) => {
+    if (!el) return null;
+    return {
+      tagName: el.tagName,
+      id: el.id || '',
+      className: String(el.className || '').slice(0, 300),
+      text: (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 240),
+      rect: cloneRect(rectOf(el)),
+    };
+  };
+  const inspectTemplateForeground = (templateEl, clipRect) => {
+    if (!templateEl || !clipRect) {
+      return {
+        status: 'NO_TEMPLATE',
+        ok: false,
+        note: 'No selected template element was available for foreground probing',
+        samples: [],
+        overlayCandidates: [],
+      };
+    }
+    const left = Math.max(0, clipRect.x ?? clipRect.left ?? 0);
+    const top = Math.max(0, clipRect.y ?? clipRect.top ?? 0);
+    const right = Math.min(window.innerWidth, clipRect.right ?? left + (clipRect.width ?? 0));
+    const bottom = Math.min(window.innerHeight, clipRect.bottom ?? top + (clipRect.height ?? 0));
+    const width = Math.max(0, right - left);
+    const height = Math.max(0, bottom - top);
+    const points = [
+      { label: 'center', x: left + width / 2, y: top + height / 2 },
+      { label: 'top-left-inset', x: left + Math.min(16, width / 4), y: top + Math.min(16, height / 4) },
+      { label: 'top-right-inset', x: right - Math.min(16, width / 4), y: top + Math.min(16, height / 4) },
+      { label: 'bottom-left-inset', x: left + Math.min(16, width / 4), y: bottom - Math.min(16, height / 4) },
+      { label: 'bottom-right-inset', x: right - Math.min(16, width / 4), y: bottom - Math.min(16, height / 4) },
+    ].filter((point) => point.x >= 0 && point.y >= 0 && point.x < window.innerWidth && point.y < window.innerHeight);
+    const samples = points.map((point) => {
+      const el = document.elementFromPoint?.(point.x, point.y) ?? null;
+      return {
+        ...point,
+        x: Number(point.x.toFixed(3)),
+        y: Number(point.y.toFixed(3)),
+        element: summarizeTopElement(el),
+        withinTemplate: Boolean(el && (el === templateEl || templateEl.contains(el))),
+        withinChatRoot: Boolean(el && textchat && (el === textchat || textchat.contains(el))),
+      };
+    });
+    const overlayKeywords = ['Sheet Sandbox Tools', 'HTML', 'CSS', 'Translation', 'Reload', 'Your session needs to be refreshed'];
+    const overlayCandidates = Array.from(document.querySelectorAll('body *')).slice(0, 2500)
+      .filter((el) => {
+        if (el === templateEl || templateEl.contains(el)) return false;
+        const rect = rectOf(el);
+        if (!rectIntersects(clipRect, rect)) return false;
+        const text = (el.textContent || '').replace(/\\s+/g, ' ').trim();
+        if (!text) return false;
+        return overlayKeywords.some((keyword) => text.includes(keyword));
+      })
+      .slice(0, 12)
+      .map((el) => summarizeTopElement(el));
+    const templateHitRatio = samples.length
+      ? samples.filter((sample) => sample.withinTemplate).length / samples.length
+      : 0;
+    const ok = samples.length > 0 && templateHitRatio >= 0.6 && overlayCandidates.length === 0;
+    return {
+      status: ok ? 'FOREGROUND_TEMPLATE_HIT' : 'FOREGROUND_SUSPECT',
+      ok,
+      note: ok
+        ? 'elementFromPoint samples resolve to the selected rolltemplate with no known overlay candidates'
+        : 'selected rolltemplate DOM exists, but foreground sampling or overlay candidates make the screenshot crop suspect',
+      templateHitRatio,
+      samples,
+      overlayCandidates,
+    };
+  };
+  const templateForegroundEvidence = inspectTemplateForeground(selectedTemplateElement, selectedClip);
   const styleText = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
     .map((node) => node.tagName === 'STYLE' ? node.textContent || '' : node.href || '')
     .join('\\n');
@@ -851,6 +929,7 @@ function renderDomProbeSnippet(entry) {
     selectedTemplateStrategy: selectedTemplate
       ? 'largest visible/text-rich rolltemplate; avoids sparse latest-message crops when multiple Roll20 chat templates are visible'
       : 'none',
+    templateForegroundEvidence,
     rolltemplates: templateInfos,
     templates: templateInfos.slice(-5),
     chatCssEvidence,
@@ -907,6 +986,7 @@ function runSelfTest() {
     rect: { x: 120, y: 180, width: 260, height: 90, right: 380, bottom: 270 },
     textContent: 'rolls Succeeds',
     outerHTML: '<div class="sheet-rolltemplate-aw"><table><tbody><tr><td>rolls</td></tr></tbody></table></div>',
+    contains: (node) => node === table,
     queryMap: { table },
   });
   const message = fakeElement({
@@ -955,10 +1035,14 @@ function runSelfTest() {
     querySelectorAll(selector) {
       if (selector.includes('.message')) return [message];
       if (selector.includes('rolltemplate')) return [template];
+      if (selector === 'body *') return [textchat, message, template, table];
       if (selector === 'style, link[rel="stylesheet"]') return [style];
       if (selector === 'style') return [style];
       if (selector === 'link[rel="stylesheet"]') return [];
       return [];
+    },
+    elementFromPoint() {
+      return table;
     },
   };
   const fakeWindow = {
@@ -1025,6 +1109,9 @@ function runSelfTest() {
   if (!evidence.textMarkers?.rolltemplate || !evidence.textMarkers?.sheetRolltemplate) failures.push('missing text markers');
   if (!Array.isArray(evidence.textMeasureEvidence?.samples) || evidence.textMeasureEvidence.samples.length === 0) failures.push('missing text measure evidence');
   if (!evidence.latestTemplate?.tableStructure) failures.push('missing tableStructure evidence');
+  if (evidence.templateForegroundEvidence?.status !== 'FOREGROUND_TEMPLATE_HIT') {
+    failures.push(`unexpected foreground evidence ${evidence.templateForegroundEvidence?.status}`);
+  }
   if (!Object.prototype.hasOwnProperty.call(evidence.latestTemplate?.computedStyle ?? {}, 'filter')) {
     failures.push('missing latestTemplate computedStyle.filter');
   }
@@ -1051,7 +1138,7 @@ function runSelfTest() {
     return;
   }
   console.log('ROLL20 CHAT CAPTURE PLAN SELF_TEST PASS');
-  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence,textMeasureEvidence,tableStructure,computedStyle.filter');
+  console.log('fields=clip,screenshotClipApplied,screenshotCssClip,rolltemplates,chatCssEvidence,textMeasureEvidence,tableStructure,computedStyle.filter,templateForegroundEvidence');
 }
 
 function fakeElement({ id = '', tagName = 'DIV', className = '', rect, textContent = '', outerHTML = '', contains = () => false, queryMap = {}, queryAllMap = {} }) {

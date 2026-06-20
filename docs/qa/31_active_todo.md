@@ -1,3 +1,13 @@
+## 2026-06-21 Codex Update - chat capture foreground probe hardening
+
+Status: DONE/VERIFY. This batch hardens the Roll20 chat recapture path; it does not add a new trusted Roll20 screenshot and does not change product rendering.
+
+- DONE: `scripts/roll20_chat_capture_plan.mjs` now emits `templateForegroundEvidence` in generated browser DOM probe snippets. The probe samples `document.elementFromPoint` across the selected rolltemplate clip and records known overlay candidates such as Sandbox Tools, HTML/CSS/Translation controls, reload/session banners, and other intersecting page elements.
+- DONE: `scripts/roll20_chat_cdp_capture.mjs` now refuses to save `roll20-chat.png` when the DOM sidecar is missing `templateForegroundEvidence` or when its status is not `FOREGROUND_TEMPLATE_HIT`.
+- VERIFIED: `test:roll20-chat-capture-plan`, `test:roll20-chat-cdp-readiness`, and the Les-Oublies `plan:roll20-chat-capture --require-current-metrics` passed. The regenerated Les-Oublies snippet contains `templateForegroundEvidence`, `FOREGROUND_TEMPLATE_HIT`, and `overlayCandidates`.
+- VERIFIED: `capture:roll20-chat-cdp --plan-only` still prints the expected Les-Oublies target paths and suggested roll buttons.
+- NEXT P0: Open a CDP-enabled logged-in Roll20 Sandbox/test-room tab and rerun the real capture. The next capture must satisfy both foreground DOM evidence and foreground pixel sanity before renderer work can continue.
+
 ## 2026-06-21 Codex Update - Chrome observation audit guard
 
 Status: DONE/VERIFY. This batch adds a guard for Chrome-extension Roll20 observations; it does not prove Roll20 visual parity and does not change product rendering.

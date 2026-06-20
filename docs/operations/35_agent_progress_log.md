@@ -1,3 +1,11 @@
+## 2026-06-21 Chat Capture Foreground Probe Hardening
+
+- Updated generated Roll20 chat DOM probe snippets so they include `templateForegroundEvidence`.
+- The foreground probe samples `document.elementFromPoint` across the selected rolltemplate clip and records overlay candidates intersecting the clip, including Sandbox Tools, HTML/CSS/Translation controls, reload banners, and session-refresh banners.
+- Updated `scripts/roll20_chat_cdp_capture.mjs` so it refuses to save `roll20-chat.png` unless `templateForegroundEvidence.status` is `FOREGROUND_TEMPLATE_HIT`.
+- Verification: `node --check` for the changed scripts, `test:roll20-chat-capture-plan`, `test:roll20-chat-cdp-readiness`, Les-Oublies `plan:roll20-chat-capture --require-current-metrics`, `capture:roll20-chat-cdp --plan-only`, and the Chrome observation audit passed.
+- Boundary: this does not add trusted Roll20 chat pixels. It prevents the next actual capture from silently accepting an overlapped or background crop.
+
 ## 2026-06-21 Chrome Observation Audit Guard
 
 - Added `scripts/roll20_chrome_observation_audit.mjs` and package alias `audit:roll20-chrome-observation`.

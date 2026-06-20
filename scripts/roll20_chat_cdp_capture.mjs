@@ -411,6 +411,13 @@ async function suggestedRollButtons() {
 function validateEvidence(evidence) {
   if (!evidence || typeof evidence !== 'object') throw new Error('chat probe returned no evidence object');
   if (!evidence.textMarkers?.rolltemplate) throw new Error('chat probe did not find a rolltemplate marker');
+  if (!evidence.templateForegroundEvidence) {
+    throw new Error('chat evidence missing templateForegroundEvidence; regenerate the capture plan and retry');
+  }
+  if (evidence.templateForegroundEvidence.status !== 'FOREGROUND_TEMPLATE_HIT') {
+    const note = evidence.templateForegroundEvidence.note || 'selected rolltemplate is not proven foreground';
+    throw new Error(`chat evidence foreground check failed: ${evidence.templateForegroundEvidence.status || 'UNKNOWN'}; ${note}`);
+  }
   if (!evidence.latestTemplate?.computedStyle || !Object.prototype.hasOwnProperty.call(evidence.latestTemplate.computedStyle, 'filter')) {
     throw new Error('chat evidence missing latestTemplate.computedStyle.filter; regenerate the capture plan and retry');
   }
