@@ -1,3 +1,21 @@
+## 2026-06-20 AW2E Message-Shell Candidate
+
+- Added diagnostic-only ChatPane geometry policy `aw2e-message-full-width`.
+- The candidate uses `:has(.sheet-rolltemplate-aw)` to make only AW2E rolltemplate chat messages use the observed full Roll20 chat message width. It does not widen all chat cards.
+- Browser smoke: `rolltemplate-chat-smoke-aw2e-message-full-width` PASSed AW2E, Les-Oublies, and YSHY.
+- Candidate comparison:
+  - AW2E aligned delta `-7.63%`.
+  - Les-Oublies delta `0%`.
+  - YSHY delta `0%`.
+  - Mean delta `-2.54%`, regressions `0`.
+- Candidate style proof:
+  - `aw2e-message-full-width` is `STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW`.
+  - AW2E local/actual chat/message widths match at `340px`.
+  - Les-Oublies and YSHY are `STYLE_NEUTRAL`; their actual message width remains matched and the candidate does not modify them.
+- Width reconciliation now chooses `aw2e-message-full-width` as AW2E's best candidate instead of the more hardcoded `aw2e-root-width-actual`.
+- Renderer gate remains `HOLD_PRODUCTION_RENDERER_PATCH` because the overall renderer axes still disagree across fixtures, especially YSHY table intrinsic sizing.
+- Claim boundary: this is a better diagnostic candidate, not production CSS and not Roll20 visual parity.
+
 ## 2026-06-20 Chat Message Shell Model
 
 - Added `scripts/roll20_chat_message_shell_model.mjs` and `corepack pnpm run diagnose:roll20-chat-message-shell`.

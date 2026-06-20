@@ -16,6 +16,7 @@ const CANDIDATE_SMOKE = {
   default: 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json',
   'no-shadow': 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json',
   'roll20-chat-shell-width-340': 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-full-width': 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/rolltemplate-chat-smoke-results.json',
   'table-scale-x': 'reports/rolltemplate-chat-smoke-table-scale-x/rolltemplate-chat-smoke-results.json',
   'aw2e-root-width-actual': 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/rolltemplate-chat-smoke-results.json',
   'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
@@ -106,7 +107,7 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   if (candidate.name === 'no-shadow') {
     return summarizeNoShadow(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
-  if (candidate.name === 'roll20-chat-shell-width-340') {
+  if (candidate.name === 'roll20-chat-shell-width-340' || candidate.name === 'aw2e-message-full-width') {
     return summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar);
   }
   if (candidate.name === 'table-scale-x' || candidate.name === 'coc-table-scale-x') {
@@ -152,6 +153,17 @@ function summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actu
   const chatDelta = delta(localChatGroupWidth, actualChatWidth);
   const messageMatches = typeof messageDelta === 'number' && Math.abs(messageDelta) <= 1.5;
   const chatMatches = typeof chatDelta === 'number' && Math.abs(chatDelta) <= 1.5;
+  if (candidate.name === 'aw2e-message-full-width' && fixtureId !== 'official-roll20-AW2E' && messageMatches) {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'scoped message-shell candidate leaves this fixture message width matching actual Roll20',
+      evidence: [
+        { selector: 'chat', key: 'rect.width', localCandidate: localChatGroupWidth, actual: actualChatWidth },
+        { selector: 'message', key: 'rect.width', localCandidate: localMessageWidth, actual: actualMessageWidth },
+      ],
+    };
+  }
   return {
     fixtureId,
     status: messageMatches && chatMatches ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
@@ -352,7 +364,7 @@ function candidateStatus(fixtureProofs) {
   const statuses = fixtureProofs.map((proof) => proof.status);
   if (statuses.some((status) => status === 'CONTRADICTED_BY_ACTUAL_STYLE')) return 'REJECT_STYLE_CONTRADICTION';
   if (statuses.some((status) => status === 'NO_COMPUTED_STYLE_PROOF')) return 'NEEDS_NEW_SIDECAR_FIELDS';
-  if (statuses.every((status) => status === 'STYLE_COMPATIBLE')) return 'STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW';
+  if (statuses.some((status) => status === 'STYLE_COMPATIBLE') && statuses.every((status) => status === 'STYLE_COMPATIBLE' || status === 'STYLE_NEUTRAL')) return 'STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW';
   return 'INCOMPLETE_STYLE_PROOF';
 }
 

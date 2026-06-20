@@ -40,6 +40,7 @@ type ChatGeometryPolicy =
   | 'default'
   | 'tight-cell-spacing'
   | 'roll20-chat-shell-width-340'
+  | 'aw2e-message-full-width'
   | 'table-scale-x'
   | 'aw2e-root-width-actual'
   | 'coc-table-scale-x'
@@ -87,6 +88,7 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
   if (
     value === 'tight-cell-spacing' ||
     value === 'roll20-chat-shell-width-340' ||
+    value === 'aw2e-message-full-width' ||
     value === 'table-scale-x' ||
     value === 'aw2e-root-width-actual' ||
     value === 'coc-table-scale-x' ||
@@ -192,6 +194,10 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-chat-shell-width-340"] .r20-chat-card-group,
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-chat-shell-width-340"] .r20-chat-card-group .message {
+  width: 340px;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="aw2e-message-full-width"] .r20-chat-card-group:has(.sheet-rolltemplate-aw),
+.r20-chat-pane[data-r20-chat-geometry-policy="aw2e-message-full-width"] .r20-chat-card-group .message:has(.sheet-rolltemplate-aw) {
   width: 340px;
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="table-scale-x"] [class*="sheet-rolltemplate-"] table {

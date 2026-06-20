@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - AW2E message-shell candidate
+
+Status: PARTIAL. This replaces the best AW2E explanation candidate with a narrower diagnostic; it still does not enable production ChatPane CSS.
+
+- DONE: Added diagnostic-only ChatPane geometry policy `aw2e-message-full-width`, scoped to chat cards containing `.sheet-rolltemplate-aw` via `:has(...)`.
+- DONE: Added the candidate to local chat smoke, candidate comparison, candidate style proof, and script docs.
+- RESULT: `aw2e-message-full-width` matches the prior `aw2e-root-width-actual` pixel gain without touching Les/YSHY: AW2E aligned mismatch delta `-7.63%`, Les `0%`, YSHY `0%`, mean delta `-2.54%`, regressions `0`.
+- RESULT: Style proof now classifies it as `STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW`: AW2E local/actual chat and message width both match `340px`; Les/YSHY are `STYLE_NEUTRAL` because their message width remains matching actual Roll20.
+- RESULT: `diagnose:roll20-chat-width-reconciliation` now selects `aw2e-message-full-width` as AW2E's best candidate instead of the harder-coded `aw2e-root-width-actual`.
+- RESULT: `gate:roll20-renderer-action` still returns `HOLD_PRODUCTION_RENDERER_PATCH`; the candidate is not a public/product default because other fixtures still require different renderer axes.
+- VERIFIED: `rolltemplate-chat-smoke-aw2e-message-full-width`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-width-reconciliation`, and `gate:roll20-renderer-action`.
+- STILL TODO P0: Convert the diagnostic into a generic message/content-width rule only after proving the rule is not AW2E-specific and after YSHY table intrinsic work no longer conflicts.
+
 ## 2026-06-20 Codex Update - chat message shell model
 
 Status: PARTIAL. This adds a narrower diagnostic for AW2E chat width; it does not enable production ChatPane CSS.

@@ -760,6 +760,7 @@ async function main() {
       if (
         policy === 'tight-cell-spacing' ||
         policy === 'roll20-chat-shell-width-340' ||
+        policy === 'aw2e-message-full-width' ||
         policy === 'table-scale-x' ||
         policy === 'aw2e-root-width-actual' ||
         policy === 'coc-table-scale-x' ||
