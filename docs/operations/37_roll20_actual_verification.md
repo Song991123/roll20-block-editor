@@ -189,6 +189,18 @@ generate a focused chat recapture plan:
 corepack pnpm run plan:roll20-chat-capture -- reports/roll20-actual-compare/<label> [fixture-id]
 ```
 
+When chat screenshots already exist but `status:roll20-actual` reports stale
+current row/typography/paint-filter sidecars, run the combined handoff:
+
+```bash
+corepack pnpm run handoff:roll20-chat-current -- reports/roll20-actual-compare/<label>
+```
+
+This runs the current-metrics audit, regenerates a `--require-current-metrics`
+chat recapture plan, self-tests the probe shape, and writes an ignored local
+handoff report. It is a recapture checklist only; it does not replace the
+actual Roll20 `roll20-chat.png` and `roll20-chat-dom-evidence.json` evidence.
+
 The plan writes ignored local output under
 `reports/roll20-actual-compare/<label>/roll20-chat-capture-plan/`. It lists the
 exact `roll20-chat.png` and `roll20-chat-dom-evidence.json` destinations,

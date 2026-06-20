@@ -1,3 +1,11 @@
+## 2026-06-20 Roll20 Chat Current-Metrics Handoff
+
+- Added `scripts/roll20_chat_current_handoff.mjs` and the `handoff:roll20-chat-current` package script so the next Roll20 chat recapture step is one repeatable command instead of three separate commands.
+- The handoff wraps `diagnose:roll20-chat-current-metrics`, `plan:roll20-chat-capture --require-current-metrics`, and `test:roll20-chat-capture-plan`, then writes an ignored local summary under the selected run folder.
+- Verification run: `corepack pnpm run handoff:roll20-chat-current -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Current result: handoff status `NEEDS_RECAPTURE`, wrapped commands `3/3` passed, chat current metrics `1/3`, missing fields `4`, planned fixtures `2` (`official-roll20-AW2E`, `official-roll20-Les-Oublies`).
+- Boundary: generated Roll20 actual screenshots/diffs are present for generated targets, but production renderer CSS remains on hold. The next real-world step is recapturing same-action Roll20 chat PNG plus DOM sidecar for AW2E and Les-Oublies with current `filter` fields.
+
 ## 2026-06-20 Edit Layer Copy Smoke Cleanup
 
 - Cleaned small but visible edit/layer UI copy issues in `EditCanvas`: unavailable-move status, free-placement tooltip, and layer preview secondary marker.

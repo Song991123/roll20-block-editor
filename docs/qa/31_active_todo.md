@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - Roll20 chat current-metrics handoff
+
+Status: VERIFY. This batch makes the next Roll20 chat recapture step repeatable; it does not claim chat or full renderer parity.
+
+- DONE: Added `scripts/roll20_chat_current_handoff.mjs` and `corepack pnpm run handoff:roll20-chat-current -- <run-dir>`.
+- DONE: The handoff runs chat current-metrics audit, current-metrics recapture plan generation, and capture-plan self-test in one command, then writes an ignored local report under `<run-dir>/roll20-chat-current-handoff/`.
+- VERIFIED: `corepack pnpm run handoff:roll20-chat-current -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed all 3 wrapped commands and reports `NEEDS_RECAPTURE`.
+- CURRENT EVIDENCE: Generated-sheet actual screenshots/diffs are present for 6/6 generated targets, trusted full-root evidence is 3/3, but renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- CURRENT BLOCKER: Chat current row/typography/paint-filter sidecars are current for 1/3 fixtures. `official-roll20-AW2E` and `official-roll20-Les-Oublies` need recapture because `latestTemplate.computedStyle.filter` and `table.computedStyle.filter` are missing.
+- STILL TODO P0: In the dedicated Roll20 Sandbox/test room, recapture same-action `roll20-chat.png` plus `roll20-chat-dom-evidence.json` for AW2E and Les-Oublies using the generated snippets, then rerun screenshot diff, `diagnose:roll20-chat-parity`, `gate:roll20-renderer-action`, and `status:roll20-actual`.
+
 ## 2026-06-20 Codex Update - edit layer copy smoke cleanup
 
 Status: DONE/VERIFY. This batch cleaned the local edit/layer UI copy and rechecked the edit-flow smoke; it does not claim new actual Roll20 sandbox parity.
