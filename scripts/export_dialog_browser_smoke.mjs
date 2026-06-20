@@ -63,7 +63,10 @@ function startServer() {
 }
 
 function hasMojibake(text) {
-  return /[\u3400-\u9fff\uf900-\ufaff\ufffd]/u.test(text);
+  if (text.includes('\ufffd')) return true;
+  return ['鍮', '嫄', '援', '濡', '瑜', '以', '踰', '留', '硫', '媛', '寃', '?ㅼ', '?대', '?쒗', '?섑'].some(
+    (token) => text.includes(token),
+  );
 }
 
 async function readMaybe(file) {
@@ -194,6 +197,8 @@ async function main() {
         hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
         readinessItemCount: document.querySelectorAll('[data-testid="export-roll20-readiness-item"]').length,
         badgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
+        hasAssetPreflight: Boolean(document.querySelector('[data-testid="export-asset-preflight"]')),
+        assetPreflightStatus: document.querySelector('[data-testid="export-asset-preflight-status"]')?.textContent?.trim() ?? '',
         hasSandboxDiagnostics: Boolean(document.querySelector('[data-testid="export-roll20-sandbox-diagnostics"]')),
         sandboxDiagnosticItemCount: document.querySelectorAll('[data-testid="export-roll20-sandbox-diagnostic-item"]').length,
         sandboxStatus: document.querySelector('[data-testid="export-roll20-sandbox-status"]')?.textContent?.trim() ?? '',
@@ -202,9 +207,11 @@ async function main() {
           text: el.textContent?.trim() ?? '',
         })),
         hasLegacyToggle: dialogText.includes('구버전 Roll20 무해화'),
-        hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox 또는 테스트 방에 올린 뒤 캡처로 확인해야 합니다.'),
-        hasFileAccessCopy: dialogText.includes('Chrome 파일 선택이 막히면 Codex 확장의 파일 URL 접근 권한을 켠 뒤 다시 업로드하세요.'),
+        hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox 또는 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.'),
+        hasFileAccessCopy: dialogText.includes('Chrome 파일 선택이 막히면 Codex/브라우저 파일 접근 권한을 확인하고 다시 업로드하세요.'),
         hasZipIsNotProofCopy: dialogText.includes('zip 다운로드만으로는 Roll20 실제 표시가 검증된 것이 아닙니다.'),
+        hasAssetPreflightCopy: dialogText.includes('zip에는 HTML, CSS, translation만 들어갑니다.'),
+        hasAssetRiskCopy: dialogText.includes('외부 이미지/폰트는 zip에 포함되지 않습니다.'),
         downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
         dialogText,
       };
@@ -244,6 +251,10 @@ async function main() {
     if (!result.checks.exportDialog.hasReadiness) failures.push('export readiness panel missing');
     if (result.checks.exportDialog.readinessItemCount !== 6) failures.push('export readiness item count mismatch');
     if (result.checks.exportDialog.badgeText !== '실제 검증 필요') failures.push('export verification badge mismatch');
+    if (!result.checks.exportDialog.hasAssetPreflight) failures.push('export asset preflight panel missing');
+    if (!['외부 자산 없음', '확인 필요'].includes(result.checks.exportDialog.assetPreflightStatus)) {
+      failures.push('export asset preflight status mismatch');
+    }
     if (!result.checks.exportDialog.hasSandboxDiagnostics) failures.push('export sandbox diagnostics panel missing');
     if (result.checks.exportDialog.sandboxDiagnosticItemCount !== 4) failures.push('export sandbox diagnostics item count mismatch');
     if (!['치명 오류 없음', '수정 필요'].includes(result.checks.exportDialog.sandboxStatus)) {
@@ -259,6 +270,13 @@ async function main() {
     if (!result.checks.exportDialog.hasLocalVsActualCopy) failures.push('local-vs-actual verification copy missing');
     if (!result.checks.exportDialog.hasFileAccessCopy) failures.push('file-access blocker copy missing');
     if (!result.checks.exportDialog.hasZipIsNotProofCopy) failures.push('zip-is-not-proof copy missing');
+    if (!result.checks.exportDialog.hasAssetPreflightCopy) failures.push('asset preflight copy missing');
+    if (
+      result.checks.exportDialog.assetPreflightStatus === '확인 필요' &&
+      !result.checks.exportDialog.hasAssetRiskCopy
+    ) {
+      failures.push('asset risk copy missing');
+    }
     if (result.checks.exportDialog.hasMojibake) failures.push('mojibake detected in export dialog text');
     if (!result.checks.importDialog.hasTitle) failures.push('import dialog title missing');
     if (result.checks.importDialog.textareaCount < 1) failures.push('import dialog textarea missing');

@@ -1,3 +1,12 @@
+## 2026-06-20 Export Asset Preflight UI
+
+- Added export-dialog asset preflight for emitted HTML/CSS asset references.
+- The UI now separates local zip composition from external image/font availability: external URLs, relative paths, data URLs, and host names are surfaced before download.
+- Empty workspace export smoke reports `외부 자산 없음`; imported Les-Oublies export smoke reports `확인 필요` and shows the external-asset warning copy.
+- Updated `scripts/export_dialog_browser_smoke.mjs` so it asserts the asset-preflight panel, current Korean copy, and no mojibake in both empty and imported-fixture flows.
+- Verification: `corepack pnpm run lint`, `corepack pnpm run build`, `smoke:export-dialog` empty on port `4493`, `smoke:export-dialog` imported Les-Oublies on port `4494`, and `guard:roll20-evidence`.
+- Claim boundary: this is user-facing export safety only. It does not bundle third-party assets, does not fetch private URLs, does not make `HOLD_PRODUCTION_RENDERER_PATCH` pass, and does not prove Roll20 visual parity.
+
 ## 2026-06-20 Chat Background Asset/Proxy Probe
 
 - Added `scripts/roll20_chat_background_asset_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-background-assets`.

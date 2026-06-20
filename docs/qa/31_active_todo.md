@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - export asset preflight UI
+
+Status: VERIFY. This improves export-time truthfulness and user guidance; it does not prove Roll20 visual parity or fix the remaining renderer gate.
+
+- DONE: Export dialog now includes an `외부 자산 점검` panel that counts emitted HTML/CSS asset references as external URL, relative path, and data URL.
+- DONE: The dialog warns that images/fonts are not bundled into the zip and may render differently in Roll20 if the source URL, Roll20 proxy, or Imgur link resolves to a placeholder.
+- DONE: Export dialog Korean copy was normalized in the touched export flow, and export smoke now checks the new asset-preflight panel plus mojibake absence.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, empty-workspace `smoke:export-dialog` on port `4493`, imported Les-Oublies `smoke:export-dialog` on port `4494`, and `guard:roll20-evidence` passed.
+- RESULT: Empty workspace shows `외부 자산 없음`; imported fixture with external/proxied refs shows `확인 필요`.
+- STILL TODO P0: This is only static export preflight. Actual Roll20 asset loading and visual parity still require Sandbox/test-room screenshots, trusted full-root evidence, and chat sidecar/screenshot comparison.
+
 ## 2026-06-20 Codex Update - chat background asset/proxy bytes probe
 
 Status: PARTIAL. This adds byte-level asset evidence; it does not change production ChatPane defaults and does not prove Roll20 visual parity.

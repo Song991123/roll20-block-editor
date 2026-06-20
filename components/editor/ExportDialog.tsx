@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import {
   AlertTriangle,
@@ -24,10 +24,7 @@ import {
   hasBlockingError,
   type EmitWarning,
 } from '@/lib/stores/workspaceStore';
-import {
-  SHEET_LICENSES,
-  type SheetMetadata,
-} from '@/lib/export/types';
+import { SHEET_LICENSES, type SheetMetadata } from '@/lib/export/types';
 import { DEFAULT_METADATA } from '@/lib/export/manifest';
 import { analyzeEmit } from '@/lib/export/warnings';
 import { buildZip, triggerDownload } from '@/lib/export/zip_builder';
@@ -68,6 +65,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   }, [open, emitCache, emitWarnings]);
 
   const blocked = hasBlockingError(combinedWarnings);
+  const assetPreflight = useMemo(
+    () => analyzeAssetRefs(emitCache.html, emitCache.css),
+    [emitCache.html, emitCache.css],
+  );
 
   const counts = useMemo(() => {
     const c = { error: 0, warning: 0, info: 0 };
@@ -106,13 +107,13 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       },
       {
         label: '브라우저 업로드 권한',
-        detail: 'Chrome 파일 선택이 막히면 Codex 확장의 파일 URL 접근 권한을 켜야 합니다',
+        detail: 'Chrome 파일 선택이 막히면 Codex/브라우저 파일 접근 권한을 다시 확인해야 합니다',
         ok: false,
         pending: true,
       },
       {
         label: 'Roll20 실제 검증',
-        detail: 'Sandbox 또는 테스트 방에 실제 업로드한 뒤 캡처 비교가 필요합니다',
+        detail: 'Sandbox 또는 테스트 방에 실제 업로드한 뒤 스크린샷 비교가 필요합니다',
         ok: false,
         pending: true,
       },
@@ -192,10 +193,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       );
       triggerDownload(zip);
       const kb = (zip.size / 1024).toFixed(1);
-      toast.success(
-        `${zip.fileName} 내보내기 완료 (${kb} KB). README.txt에 Roll20 등록 순서를 적어뒀어요.`,
-        { duration: 4500 },
-      );
+      toast.success(`${zip.fileName} 내보내기 완료 (${kb} KB). README.txt에 등록 순서를 적어뒀어요.`, {
+        duration: 4500,
+      });
       onOpenChange(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -215,7 +215,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           </DialogTitle>
           <DialogDescription>
             Roll20 Custom Sheet Sandbox에 올릴 파일을 zip으로 묶습니다. sheet.html,
-            sheet.css, translation.json, sheet.json, README.txt가 포함돼요.
+            sheet.css, translation.json, sheet.json, README.txt가 포함됩니다.
           </DialogDescription>
         </DialogHeader>
 
@@ -333,6 +333,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             )}
           </section>
 
+          <AssetPreflightPanel result={assetPreflight} />
+
           <section
             className="rounded border border-border bg-[var(--bg-elevated)] p-3"
             data-testid="export-roll20-readiness"
@@ -341,9 +343,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <div>
                 <div className="text-sm font-medium">Roll20 업로드 준비 상태</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  이 항목은 zip 구성 파일의 로컬 준비 여부입니다. 실제 Roll20 화면 일치는
-                  Sandbox 또는 테스트 방에 올린 뒤 캡처로 확인해야 합니다. Chrome 파일
-                  선택이 막히면 Codex 확장의 파일 URL 접근 권한을 켠 뒤 다시 업로드하세요.
+                  이 항목은 zip 구성 파일의 로컬 준비 상태입니다. 실제 Roll20 화면 일치는
+                  Sandbox 또는 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다. Chrome
+                  파일 선택이 막히면 Codex/브라우저 파일 접근 권한을 확인하고 다시 업로드하세요.
                 </p>
               </div>
               <span
@@ -387,10 +389,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               ))}
             </ul>
             <div className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
-              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 각각 Sandbox에 올려
-              비교하세요. 기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은 Custom Sheet
-              Sandbox 또는 새 테스트 방에서 진행합니다. zip 다운로드만으로는 Roll20 실제
-              표시가 검증된 것이 아닙니다.
+              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 각각 Sandbox에 올려 비교하세요.
+              기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은 Custom Sheet Sandbox 또는 새 테스트
+              방에서 진행합니다. zip 다운로드만으로는 Roll20 실제 표시가 검증된 것이 아닙니다.
             </div>
           </section>
 
@@ -402,9 +403,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <div>
                 <div className="text-sm font-medium">Roll20 Sandbox 예상 변환</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  Roll20 Custom Sheet Sandbox가 업로드 순간에 적용하는 HTML/CSS 정리 규칙을
+                  Roll20 Custom Sheet Sandbox가 업로드 시 적용하는 HTML/CSS 정리 규칙을
                   로컬에서 미리 계산한 값입니다. 실제 동일성은 Sandbox나 테스트 방 스크린샷으로
-                  따로 확인해야 합니다.
+                  별도 확인해야 합니다.
                 </p>
               </div>
               <span
@@ -424,7 +425,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 state={sandboxDiagnostics.htmlChanged ? 'rewritten' : 'same'}
                 detail={`${formatBytes(sandboxDiagnostics.htmlBeforeBytes)} -> ${formatBytes(
                   sandboxDiagnostics.htmlAfterBytes,
-                )}, 런타임 숨김 ${sandboxDiagnostics.runtimeStripped}건`}
+                )}, 런타임 제거 ${sandboxDiagnostics.runtimeStripped}건`}
               />
               <DiagnosticRow
                 label="CSS 정리"
@@ -472,7 +473,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <span className="flex-1">
                 <span className="font-medium">구버전 Roll20 무해화</span>
                 <span className="ml-1 text-[11px] text-muted-foreground">
-                  끄면 원본 CSS를 그대로 내보냅니다. 켜면 구버전에서 막힐 수 있는 CSS를
+                  끄면 원본 CSS를 그대로 내보냅니다. 켜면 구버전 Roll20에서 막힐 수 있는 CSS를
                   변환하거나 제거하고 보고서를 zip에 넣습니다.
                 </span>
               </span>
@@ -482,8 +483,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 className="mt-2 text-[11px] text-muted-foreground"
                 data-testid="export-legacy-warnings"
               >
-                최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은
-                sanitize-warnings.json에 저장됩니다.
+                최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 sanitize-warnings.json에
+                저장됩니다.
               </div>
             )}
             {legacyMode && legacyWarnings.length === 0 && (
@@ -511,11 +512,73 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             data-testid="export-download-button"
           >
             <FileArchive className="mr-1.5 h-4 w-4" />
-            {busy ? '압축 중...' : '내보내기 (.zip)'}
+            {busy ? '묶는 중...' : '내보내기 (.zip)'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
+  const hasRisk = result.externalRefs > 0 || result.relativeRefs > 0 || result.proxyLikeRefs > 0;
+  return (
+    <section
+      className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+      data-testid="export-asset-preflight"
+    >
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">외부 자산 점검</div>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            zip에는 HTML, CSS, translation만 들어갑니다. 이미지와 폰트 URL은 Roll20에서 다시
+            불러오기 때문에 원본처럼 보이려면 링크가 살아 있어야 합니다.
+          </p>
+        </div>
+        <span
+          className={`shrink-0 rounded border px-2 py-1 text-[11px] font-medium ${
+            hasRisk
+              ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200'
+              : 'border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
+          }`}
+          data-testid="export-asset-preflight-status"
+        >
+          {hasRisk ? '확인 필요' : '외부 자산 없음'}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-[12px] sm:grid-cols-4">
+        <Metric label="전체 참조" value={result.totalRefs} />
+        <Metric label="외부 URL" value={result.externalRefs} />
+        <Metric label="상대경로" value={result.relativeRefs} />
+        <Metric label="data URL" value={result.dataRefs} />
+      </div>
+      {hasRisk ? (
+        <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-100">
+          외부 이미지/폰트는 zip에 포함되지 않습니다. Roll20 프록시, Imgur, 원본 서버가 이미지를
+          placeholder로 바꾸면 실제 화면도 달라질 수 있어요. 배포 전에 직접 보관한 URL로 교체하거나
+          Roll20 Sandbox에서 자산 로딩을 확인하세요.
+          {result.hosts.length > 0 ? (
+            <span className="mt-1 block text-muted-foreground">
+              감지된 호스트: {result.hosts.slice(0, 5).join(', ')}
+              {result.hosts.length > 5 ? ` 외 ${result.hosts.length - 5}개` : ''}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-2 text-[11px] text-muted-foreground">
+          현재 emit 기준으로 외부 이미지나 폰트 참조가 감지되지 않았습니다.
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2">
+      <div className="text-[10.5px] text-muted-foreground">{label}</div>
+      <div className="mt-0.5 font-mono text-[13px]">{value}</div>
+    </div>
   );
 }
 
@@ -575,7 +638,7 @@ function Field({
   label: string;
   hint?: string;
   full?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <label className={`flex flex-col gap-1 ${full ? 'sm:col-span-2' : ''}`}>
@@ -583,9 +646,7 @@ function Field({
         {label}
       </span>
       {children}
-      {hint ? (
-        <span className="text-[10.5px] text-muted-foreground/70">{hint}</span>
-      ) : null}
+      {hint ? <span className="text-[10.5px] text-muted-foreground/70">{hint}</span> : null}
     </label>
   );
 }
@@ -610,6 +671,84 @@ function severityLabelClass(s: EmitWarning['severity']): string {
   if (s === 'error') return 'font-semibold text-red-500';
   if (s === 'warning') return 'font-semibold text-amber-500';
   return 'font-semibold text-muted-foreground';
+}
+
+interface AssetPreflight {
+  totalRefs: number;
+  externalRefs: number;
+  relativeRefs: number;
+  dataRefs: number;
+  proxyLikeRefs: number;
+  hosts: string[];
+}
+
+function analyzeAssetRefs(html: string, css: string): AssetPreflight {
+  const refs = Array.from(new Set([...extractCssUrls(css), ...extractHtmlAssetUrls(html)]));
+  let externalRefs = 0;
+  let relativeRefs = 0;
+  let dataRefs = 0;
+  let proxyLikeRefs = 0;
+  const hosts = new Set<string>();
+
+  for (const ref of refs) {
+    const normalized = normalizeAssetRef(ref);
+    if (!normalized || normalized.startsWith('#')) continue;
+    if (normalized.startsWith('data:')) {
+      dataRefs += 1;
+      continue;
+    }
+    const url = parseExternalUrl(normalized);
+    if (url) {
+      externalRefs += 1;
+      hosts.add(url.hostname);
+      if (/(\.|^)roll20\.net$/i.test(url.hostname) || /(\.|^)imgur\.com$/i.test(url.hostname)) {
+        proxyLikeRefs += 1;
+      }
+      continue;
+    }
+    if (!/^(?:javascript|mailto|tel|blob):/i.test(normalized)) {
+      relativeRefs += 1;
+    }
+  }
+
+  return {
+    totalRefs: externalRefs + relativeRefs + dataRefs,
+    externalRefs,
+    relativeRefs,
+    dataRefs,
+    proxyLikeRefs,
+    hosts: Array.from(hosts).sort(),
+  };
+}
+
+function extractCssUrls(css: string): string[] {
+  const refs: string[] = [];
+  const re = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^'")]+))\s*\)/gi;
+  for (const match of css.matchAll(re)) {
+    refs.push(match[1] ?? match[2] ?? match[3] ?? '');
+  }
+  return refs;
+}
+
+function extractHtmlAssetUrls(html: string): string[] {
+  const refs: string[] = [];
+  const re = /\b(?:src|href|xlink:href)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
+  for (const match of html.matchAll(re)) {
+    refs.push(match[1] ?? match[2] ?? match[3] ?? '');
+  }
+  return refs;
+}
+
+function normalizeAssetRef(ref: string): string {
+  return ref.trim().replace(/^['"]|['"]$/g, '').replaceAll('&amp;', '&');
+}
+
+function parseExternalUrl(ref: string): URL | null {
+  try {
+    if (ref.startsWith('//')) return new URL(`https:${ref}`);
+    if (/^https?:\/\//i.test(ref)) return new URL(ref);
+  } catch {}
+  return null;
 }
 
 function byteSize(value: string): number {
