@@ -1,3 +1,10 @@
+## 2026-06-20 Roll20 Chat CDP Capture Runner
+
+- Added `scripts/roll20_chat_cdp_capture.mjs` plus `capture:roll20-chat-cdp` for actual Roll20 chat recapture when a Chrome/Edge CDP endpoint is available.
+- The runner uses the existing `plan:roll20-chat-capture` snippet for a fixture, optionally clicks a suggested or explicit roll button, validates current filter evidence fields, and saves the paired `roll20-chat.png` / `roll20-chat-dom-evidence.json` into the ignored run folder.
+- Verification: `node --check`, `lint`, `build`, and `guard:roll20-evidence`.
+- Current evidence boundary: checked common debug ports were not listening, so no live Roll20 AW2E/Les-Oublies recapture happened in this batch. Renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+
 ## 2026-06-20 Chat Capture Filter Self-Test Hardening
 
 - Strengthened `scripts/roll20_chat_capture_plan.mjs` so the fake-DOM self-test requires both the latest rolltemplate and its table evidence to include `computedStyle.filter`.

@@ -69,6 +69,7 @@
     "diagnose:roll20-chat-current-metrics": "node scripts/roll20_chat_current_metrics_audit.mjs",
     "diagnose:roll20-chat-live-typography": "node scripts/roll20_chat_live_typography_compare.mjs",
     "plan:roll20-chat-capture": "node scripts/roll20_chat_capture_plan.mjs",
+    "capture:roll20-chat-cdp": "node scripts/roll20_chat_cdp_capture.mjs",
     "test:roll20-chat-capture-plan": "node scripts/roll20_chat_capture_plan.mjs --self-test",
     "diagnose:roll20-height-drift": "node scripts/roll20_height_drift_diagnostics.mjs",
     "diagnose:roll20-visibility-selectors": "node scripts/roll20_visibility_selector_diagnostics.mjs",

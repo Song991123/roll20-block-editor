@@ -1,3 +1,13 @@
+## 2026-06-20 Codex Update - Roll20 chat CDP capture runner
+
+Status: VERIFY. This adds a runner for the next actual Roll20 chat recapture, but no new Roll20 screenshot was captured in this batch.
+
+- DONE: Added `scripts/roll20_chat_cdp_capture.mjs` and package command `corepack pnpm run capture:roll20-chat-cdp`.
+- DONE: The runner connects to an already-open Chrome/Edge CDP endpoint, optionally clicks a Roll20 sheet roll button, executes the generated chat DOM probe snippet, validates current `filter` fields, and writes `roll20-chat.png` plus `roll20-chat-dom-evidence.json` to the ignored fixture screenshot folder.
+- VERIFIED: `node --check scripts\roll20_chat_cdp_capture.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run guard:roll20-evidence` passed.
+- CURRENT LIMITATION: No local Chrome/Edge remote debugging endpoint was listening on the checked ports, so the actual AW2E/Les-Oublies Roll20 recapture was not performed.
+- STILL TODO P0: Open or attach a Roll20 Sandbox/test-room browser with CDP enabled, then run this runner for `official-roll20-AW2E` and `official-roll20-Les-Oublies`, followed by screenshot diff, chat parity, renderer action, and status gates.
+
 ## 2026-06-20 Codex Update - chat capture filter self-test hardening
 
 Status: VERIFY. This hardens the Roll20 chat capture helper only; it does not add new Roll20 screenshots and does not change renderer parity.
