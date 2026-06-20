@@ -186,6 +186,7 @@ export default function PreviewMain() {
     const { cleanup, setSelected: setShadowSelected } = mountSheetShadow(host, {
       html: parts.html,
       css: parts.css,
+      i18n: emitI18n,
       layer: previewLayer,
       darkMode,
       // Phase B — Shadow 안 element 클릭 → workspaceStore.selectedBlockId 갱신.
@@ -343,7 +344,7 @@ export default function PreviewMain() {
       }
       cleanup();
     };
-  }, [renderMode, parts, previewLayer, darkMode, setSelected]);
+  }, [renderMode, parts, emitI18n, previewLayer, darkMode, setSelected]);
 
   // Phase B — selectedBlockId 변경 → Shadow 안 outline 동기화.
   // iframe 모드 or 미마운트 시 ref.current === null → noop.

@@ -1,3 +1,12 @@
+## 2026-06-20 Shadow Edit Worker State Mirror
+
+- Added a minimal Roll20 sheet-worker runtime to `mountSheetShadow()` so Shadow/edit rendering runs `sheet:opened` and supports `on`, `getAttrs`, `setAttrs`, `getSectionIDs`, row id stubs, and translation helpers against the Shadow DOM.
+- Wired `PreviewMain` and `EditCanvas` to pass emitted translation JSON into the Shadow runtime. This keeps the implementation generic and avoids fixture-specific default-state patches.
+- Verification: `lint`, `build`, AW2E-only `smoke:imported-edit-sync -- --only official-roll20-AW2E --port 4198`, full `smoke:imported-edit-sync -- --port 4196`, `smoke:edit-flow -- --port 4210`, and `guard:roll20-evidence`.
+- Local result: edit/preview `formStateDiff.diffCount` is now `0` across AW2E, Les-Oublies, synthetic-nonleaf-flow, and YSHY. Previously AW2E had `2` concrete form-state diffs and Les/YSHY had hidden/default-state diffs.
+- Remaining delta: AW2E sheet-root visual mismatch remains `11.93%`, but is now classified as `unclassified-sheet-root-visual-delta` rather than form-control state divergence. Les-Oublies (`1.98%`), synthetic (`0%`), and YSHY (`1.04%`) are within the current local sheet-root budget.
+- Boundary: this improves local edit=preview state mirroring only. It does not prove actual Roll20 visual parity, does not authorize production renderer CSS changes, and does not resolve the remaining AW2E visual delta.
+
 ## 2026-06-20 Form-State Divergence Classification
 
 - Extended `scripts/imported_edit_sync_smoke.mjs` so imported edit smoke now compares form-control runtime state between edit Shadow DOM and preview iframe after the same edit operation.

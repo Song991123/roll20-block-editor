@@ -1,3 +1,16 @@
+## 2026-06-20 Codex Update - Shadow edit worker state mirror
+
+Status: VERIFY. This fixes the local edit/preview form-state drift found in the previous batch; it does not solve the remaining AW2E sheet-root visual delta.
+
+- DONE: `mountSheetShadow()` now installs a minimal Roll20 sheet-worker runtime inside the Shadow/edit DOM, including `on`, `getAttrs`, `setAttrs`, `getSectionIDs`, `generateRowID`, `getTranslationByKey`, `getTranslationByLang`, and `getTranslationLanguage`.
+- DONE: Shadow/edit runtime now triggers `sheet:opened`, writes hidden/text/radio/checkbox/select/textarea state into the actual Shadow DOM, and mirrors the same checked/value attributes that iframe preview uses for CSS selectors.
+- DONE: `PreviewMain` and `EditCanvas` pass emitted `translation.json` text into the Shadow runtime so worker translation helpers can resolve keys without hardcoding a sheet.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, AW2E-only `corepack pnpm run smoke:imported-edit-sync -- --only official-roll20-AW2E --port 4198`, full `corepack pnpm run smoke:imported-edit-sync -- --port 4196`, `corepack pnpm run smoke:edit-flow -- --port 4210`, and `corepack pnpm run guard:roll20-evidence` passed.
+- LOCAL RESULT: `formStateDiff.diffCount` is now `0` for `official-roll20-AW2E`, `official-roll20-Les-Oublies`, `synthetic-nonleaf-flow`, and `yshy-commission-1bu`.
+- LOCAL RESULT: Sheet-root visual mismatch is now `AW2E 11.93%` classified as `unclassified-sheet-root-visual-delta`, `Les-Oublies 1.98%` classified as `visual-pass`, `synthetic-nonleaf-flow 0%` classified as `visual-pass`, and `yshy-commission-1bu 1.04%` classified as `visual-pass`.
+- CURRENT LIMITATION: AW2E is no longer explained by form/default state drift. The next P0 is to classify the remaining full-root visual delta by CSS source/paint/geometry/resource/crop instead of applying another broad CSS patch.
+- STILL TODO P0: Actual Roll20 renderer parity remains separate and still requires Roll20 sandbox/test-room evidence before any parity claim.
+
 ## 2026-06-20 Codex Update - form-state divergence classification
 
 Status: VERIFY. This turns the latest sheet-root edit/preview visual mismatch into a more concrete diagnosis; it does not fix the underlying state divergence yet.

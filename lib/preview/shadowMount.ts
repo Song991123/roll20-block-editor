@@ -119,6 +119,8 @@ export interface ShadowMountOptions {
     kind: string;
     canReceiveChildren: boolean;
   } | null;
+  /** translation.json text for sheet worker helpers in Shadow/edit mode. */
+  i18n?: string;
 }
 
 export interface ShadowMountResult {
@@ -227,6 +229,182 @@ function emulateRoll20RepeatingSections(root: ParentNode): void {
     control.append(edit, add);
     fieldset.after(container, control);
   });
+}
+
+function parseTranslationMap(i18n: string | undefined): Record<string, string> {
+  if (!i18n?.trim()) return {};
+  try {
+    const parsed = JSON.parse(i18n);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (value == null) continue;
+      out[key] = String(value);
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function cssEscapeForSelector(value: string): string {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(value);
+  }
+  return String(value).replace(/[^\w-]/g, '\\$&');
+}
+
+function regexEscape(value: string): string {
+  return String(value).replace(/[.*+?^\x24{}()|[\]\\]/g, '\\$&');
+}
+
+function readSheetAttr(scope: ParentNode, name: string): string {
+  const selector = `[name="attr_${cssEscapeForSelector(name)}"]`;
+  const el = scope.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(selector);
+  if (!el) return '';
+  if (el instanceof HTMLInputElement && el.type === 'checkbox') return el.checked ? (el.value || '1') : '0';
+  if (el instanceof HTMLInputElement && el.type === 'radio') return el.checked ? (el.value || '') : '';
+  return el.value == null ? '' : String(el.value);
+}
+
+function writeSheetAttr(scope: ParentNode, name: string, value: unknown): void {
+  const selector = `[name="attr_${cssEscapeForSelector(name)}"]`;
+  const nodes = scope.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(selector);
+  nodes.forEach((el) => {
+    if (el instanceof HTMLInputElement && el.type === 'checkbox') {
+      el.checked = String(value) === String(el.value || '1') || value === true || value === 1 || value === '1';
+      if (el.checked) el.setAttribute('checked', 'checked');
+      else el.removeAttribute('checked');
+      return;
+    }
+    if (el instanceof HTMLInputElement && el.type === 'radio') {
+      el.checked = String(el.value) === String(value);
+      if (el.checked) el.setAttribute('checked', 'checked');
+      else el.removeAttribute('checked');
+      return;
+    }
+    const nextValue = value == null ? '' : String(value);
+    el.value = nextValue;
+    el.setAttribute('value', nextValue);
+  });
+}
+
+function installShadowSheetWorkerRuntime(scope: ParentNode, i18n?: string): void {
+  const handlers: Record<string, Array<(payload?: unknown) => void>> = {};
+  const translations = parseTranslationMap(i18n);
+  let settingAttrs = false;
+
+  const on = (events: string, fn: (payload?: unknown) => void) => {
+    if (typeof fn !== 'function') return;
+    String(events || '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .forEach((eventName) => {
+        handlers[eventName] = handlers[eventName] || [];
+        handlers[eventName].push(fn);
+      });
+  };
+  const trigger = (eventName: string, payload?: unknown) => {
+    const list = handlers[eventName] || [];
+    for (const fn of list) {
+      try {
+        fn(payload ?? { sourceAttribute: eventName.replace(/^change:/, '') });
+      } catch (err) {
+        console.error('[shadow sheet worker]', eventName, err);
+      }
+    }
+  };
+  const getAttrs = (names: string[], cb?: (values: Record<string, string>) => void) => {
+    const out: Record<string, string> = {};
+    (names || []).forEach((name) => {
+      out[name] = readSheetAttr(scope, name);
+    });
+    if (typeof cb === 'function') cb(out);
+  };
+  const setAttrs = (
+    values: Record<string, unknown>,
+    opts?: unknown,
+    cb?: () => void,
+  ) => {
+    if (typeof opts === 'function') {
+      cb = opts as () => void;
+    }
+    settingAttrs = true;
+    Object.keys(values || {}).forEach((name) => writeSheetAttr(scope, name, values[name]));
+    settingAttrs = false;
+    Object.keys(values || {}).forEach((name) => trigger(`change:${name}`, { sourceAttribute: name }));
+    if (typeof cb === 'function') cb();
+  };
+  const getSectionIDs = (section: string, cb?: (ids: string[]) => void) => {
+    const safe = String(section || '').replace(/^repeating_/, '');
+    const ids: Record<string, true> = {};
+    const re = new RegExp(`^repeating_${regexEscape(safe)}_([^_]+)_`);
+    scope
+      .querySelectorAll(`[name^="repeating_${cssEscapeForSelector(safe)}_"]`)
+      .forEach((el) => {
+        const match = re.exec(el.getAttribute('name') || '');
+        if (match?.[1]) ids[match[1]] = true;
+      });
+    if (typeof cb === 'function') cb(Object.keys(ids));
+  };
+  const getTranslationByKey = (key: string) => {
+    const value = translations[key];
+    return value == null ? String(key || '') : String(value);
+  };
+  const getTranslationByLang = (_lang: string, key: string) => getTranslationByKey(key);
+  const getTranslationLanguage = () => 'ko';
+
+  scope.querySelectorAll<HTMLScriptElement>('script[type="text/worker"]').forEach((script) => {
+    const code = script.textContent || '';
+    if (!code.trim()) return;
+    try {
+      const fn = new Function(
+        'on',
+        'getAttrs',
+        'setAttrs',
+        'getSectionIDs',
+        'generateRowID',
+        'removeRepeatingRow',
+        'setDefaultToken',
+        'getTranslationByKey',
+        'getTranslationByLang',
+        'getTranslationLanguage',
+        code,
+      );
+      fn(
+        on,
+        getAttrs,
+        setAttrs,
+        getSectionIDs,
+        () => `row_${Math.random().toString(36).slice(2, 18)}`,
+        () => {},
+        () => {},
+        getTranslationByKey,
+        getTranslationByLang,
+        getTranslationLanguage,
+      );
+    } catch (err) {
+      console.error('[shadow sheet worker install]', err);
+    }
+  });
+
+  const eventScope = scope as ParentNode & EventTarget;
+  eventScope.addEventListener('change', (event) => {
+    if (settingAttrs) return;
+    const target = event.target as Element | null;
+    if (!target?.matches?.('input[name^="attr_"], select[name^="attr_"], textarea[name^="attr_"]')) return;
+    const rawName = target.getAttribute('name') || '';
+    const attr = rawName.slice(5);
+    const sourceValue =
+      target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio')
+        ? target.checked ? (target.value || '1') : ''
+        : target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement
+          ? target.value
+          : '';
+    setAttrs({ [attr]: sourceValue });
+  }, true);
+
+  trigger('sheet:opened', {});
 }
 
 function appendSourceMarkedStyles(shadow: ShadowRoot, css: string): void {
@@ -371,6 +549,7 @@ export function mountSheetShadow(
   container.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
     if (!img.referrerPolicy) img.referrerPolicy = 'no-referrer';
   });
+  installShadowSheetWorkerRuntime(container, opts.i18n);
   shadow.appendChild(container);
   applyLayerRoleAttrs(container, opts.getLayerRoleForBlock);
 

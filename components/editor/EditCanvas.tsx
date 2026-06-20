@@ -302,6 +302,7 @@ export default function EditCanvas() {
     const mounted = mountSheetShadow(host, {
       html: parts.html,
       css: parts.css,
+      i18n: emitI18n,
       layer: effectiveLayer,
       darkMode,
       disableNativeControls: true,
@@ -435,6 +436,7 @@ export default function EditCanvas() {
     };
   }, [
     parts,
+    emitI18n,
     effectiveLayer,
     darkMode,
     snap,
