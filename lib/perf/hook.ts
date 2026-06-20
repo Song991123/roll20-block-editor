@@ -76,6 +76,8 @@ export interface PerfImportResult {
   blockCount: number;
   workerBlockCount: number;
   warnings: number;
+  compositeCollapsed: number;
+  compositePackedByType: Record<string, number>;
   heapBeforeMb: number | null;
   heapAfterMb: number | null;
 }
@@ -398,6 +400,8 @@ function buildHook(): PerfHook {
         blockCount,
         workerBlockCount: workerSource.replaced ? workerSource.targetCount : workerMove.targetCount,
         warnings: result.warnings.length,
+        compositeCollapsed: result.stats.compositeCollapsed ?? 0,
+        compositePackedByType: result.stats.compositePackedByType ?? {},
         heapBeforeMb,
         heapAfterMb,
       };

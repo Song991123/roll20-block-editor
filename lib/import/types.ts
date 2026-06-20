@@ -60,6 +60,11 @@ export interface ImportStats {
    */
   scriptBlocksMatched: number;
   scriptStatementsRaw: number;
+  /** Composite packing diagnostics. Structural counts only; no source text. */
+  compositeAtomicTotal?: number;
+  compositeAfterPackTotal?: number;
+  compositeCollapsed?: number;
+  compositePackedByType?: Record<string, number>;
 }
 
 export interface ImportInput {

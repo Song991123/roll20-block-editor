@@ -1,3 +1,12 @@
+## 2026-06-20 Composite Packing Diagnostics Exposed
+
+- Added composite packing diagnostics to `ImportStats`: original atomic total, after-pack total, collapsed count, and packed-by-type counts.
+- `window.__perfHook.importSheet()` now returns composite collapsed/type counts, and `budget:imported-edit` renders them in redacted summaries.
+- Local private result after rebuilding `out/`: 6530 HTML blocks, largest root subtree 4158 blocks (`63.7%`), composite collapsed 253 blocks, packed types `r20_attribute_card:8`, `r20_skill_row:49`, `r20_repeating_section_wrapper:12`.
+- Timing from the same run: import about `5670.5ms`, inject about `5551.4ms`, emit about `41.5ms`, drag drift `0px`, edit/preview/reimport sync PASS, console/page/resource checks PASS.
+- Interpretation: existing composites are active but not strong enough for the largest root subtree. The next useful diagnostic should inventory unmatched repeated row/table/control signatures before adding another generic composite or lazy subtree path.
+- Claim boundary: diagnostics only. No new composite matcher behavior, production performance improvement, or Roll20 visual parity was shipped in this batch.
+
 ## 2026-06-20 Imported Root-Subtree Shape Metrics
 
 - Added sanitized root-subtree diagnostics to `scripts/imported_edit_sync_smoke.mjs`.

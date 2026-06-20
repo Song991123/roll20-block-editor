@@ -96,6 +96,8 @@ function summarizeFixture(fixture, index) {
       largestRootType: largestRoot?.rootType ?? null,
       largestRootMaxDepth: largestRoot?.maxDepth ?? null,
       largestRootTopTypes: Array.isArray(largestRoot?.topTypes) ? largestRoot.topTypes : [],
+      compositeCollapsed: fixture.import?.compositeCollapsed ?? null,
+      compositePackedByType: fixture.import?.compositePackedByType ?? {},
       importTotalMs,
       parseMs: round(fixture.import?.parseMs),
       injectMs,
@@ -115,6 +117,14 @@ function round(value) {
   return typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 10) / 10 : null;
 }
 
+function fmtTypeCounts(counts) {
+  if (!counts || typeof counts !== 'object') return '';
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([type, count]) => `${type}:${count}`)
+    .join('<br>');
+}
+
 function renderMarkdown(summary) {
   const lines = [];
   lines.push('# Imported Edit Performance Budget');
@@ -123,8 +133,8 @@ function renderMarkdown(summary) {
   lines.push(`Source: \`${summary.source}\``);
   lines.push(`Overall: **${summary.status}**`);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
-  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|---:|');
+  lines.push('| Fixture | Status | Blocks | Root HTML | Max root subtree | Max root % | Max root depth | Composite collapsed | Composite types | Import ms | Inject ms | Emit ms | Drift px | Sync | Reimport | Resources | Page errors |');
+  lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---|---|---|---:|');
   for (const item of summary.fixtures) {
     const m = item.metrics;
     lines.push([
@@ -135,6 +145,8 @@ function renderMarkdown(summary) {
       m.largestRootSubtreeBlocks ?? '',
       m.largestRootSubtreePct ?? '',
       m.largestRootMaxDepth ?? '',
+      m.compositeCollapsed ?? '',
+      fmtTypeCounts(m.compositePackedByType),
       m.importTotalMs ?? '',
       m.injectMs ?? '',
       m.emitMs ?? '',

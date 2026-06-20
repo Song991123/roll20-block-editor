@@ -1,3 +1,14 @@
+## 2026-06-20 Codex Update - composite packing diagnostics exposed
+
+Status: VERIFY. This exposes composite packing stats in import/performance reports; it does not add new composites yet.
+
+- DONE: `importSheet` now carries composite packing diagnostics in `ImportStats`: atomic total, after-pack total, collapsed count, and packed-by-type counts.
+- DONE: `window.__perfHook.importSheet()` and `budget:imported-edit` now include sanitized composite counts, so large private fixtures can be analyzed without publishing source snippets or block IDs.
+- LOCAL PRIVATE RESULT: The 6530 HTML-block private fixture currently packs only `r20_attribute_card:8`, `r20_skill_row:49`, and `r20_repeating_section_wrapper:12`, collapsing `253` atomic blocks total.
+- LOCAL PRIVATE RESULT: The same run still has largest root subtree `4158` blocks (`63.7%`) and inject remains WARN-level at about `5551.4ms`.
+- INTERPRETATION: Existing Phase 2 composites are working but far too narrow for this sheet. Next P0 should either widen generic table/control-row composites or bypass full Blockly materialization for massive subtrees.
+- STILL TODO P0: Add a diagnostic that lists unmatched repeated row/table patterns by structural signature, then choose the highest-return generic composite/lazy path.
+
 ## 2026-06-20 Codex Update - imported root-subtree shape metrics
 
 Status: VERIFY. This adds sanitized root-subtree diagnostics to imported edit smoke/budget reports; it does not reduce injection time yet.

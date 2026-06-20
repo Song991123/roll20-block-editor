@@ -15,6 +15,7 @@
  */
 
 import type { DomNode } from './dom_walker';
+import type { CompositePackStats } from './composite_matcher';
 import { firstTextContent, allTextContent } from './dom_walker';
 import { parseAttrRefToken } from './expression_parser';
 import { parseSheetWorkerScript } from './script_parser';
@@ -52,9 +53,11 @@ export interface MatchContext {
    *   - scriptBlocksMatched: sheet_worker 25 카탈로그로 인식된 inner block 수.
    *   - scriptStatementsRaw: 패턴 매칭 실패해서 raw_worker statement fallback 으로 박은 inner statement 수.
    * htmlMatched / htmlTotal 은 element-level 그대로 유지 — 본 카운터는 별도 보고.
-   */
+  */
   scriptBlocksMatched: number;
   scriptStatementsRaw: number;
+  /** Composite packing diagnostics, filled after `matchTree` by import/index. */
+  compositePackStats?: CompositePackStats;
   warnings: Array<{ code: string; message: string; hint?: string }>;
 }
 
