@@ -569,6 +569,233 @@ async function compareEditPreviewRootGeometry(page) {
   };
 }
 
+async function collectFinalRenderedResources(page) {
+  const edit = await collectEditRenderedResources(page);
+  const preview = await collectPreviewRenderedResources(page);
+  return {
+    pass: edit.pass && preview.pass,
+    edit,
+    preview,
+  };
+}
+
+async function collectEditRenderedResources(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
+  await page.waitForTimeout(700);
+  return page.evaluate(async () => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    return root ? collectRenderedResourceState(root) : { pass: false, reason: 'missing edit root' };
+
+    async function collectRenderedResourceState(scope) {
+      const images = Array.from(scope.querySelectorAll('img[src]')).map((img, index) => ({
+        index,
+        src: img.currentSrc || img.src || '',
+        complete: img.complete,
+        naturalWidth: img.naturalWidth || 0,
+        naturalHeight: img.naturalHeight || 0,
+        visible: isVisible(img),
+      }));
+      const backgroundUrls = collectBackgroundUrls(scope).slice(0, 120);
+      const backgrounds = [];
+      for (const url of backgroundUrls) backgrounds.push(await probeImage(url));
+      const failedImages = images.filter((img) => img.visible && img.src && (!img.complete || img.naturalWidth <= 0 || img.naturalHeight <= 0));
+      const failedBackgrounds = backgrounds.filter((item) => !item.ok);
+      return {
+        pass: failedImages.length === 0 && failedBackgrounds.length === 0,
+        imageCount: images.length,
+        visibleImageCount: images.filter((img) => img.visible).length,
+        failedImageCount: failedImages.length,
+        backgroundUrlCount: backgroundUrls.length,
+        failedBackgroundCount: failedBackgrounds.length,
+        failedImages: failedImages.slice(0, 12),
+        failedBackgrounds: failedBackgrounds.slice(0, 12),
+      };
+    }
+
+    function collectBackgroundUrls(scope) {
+      const seen = new Set();
+      const urls = [];
+      for (const el of Array.from(scope.querySelectorAll('*'))) {
+        const value = getComputedStyle(el).backgroundImage || '';
+        for (const url of extractCssUrls(value)) {
+          if (seen.has(url)) continue;
+          seen.add(url);
+          urls.push(url);
+        }
+      }
+      return urls;
+    }
+
+    function extractCssUrls(value) {
+      const urls = [];
+      const re = /url\((?:"([^"]*)"|'([^']*)'|([^'")]+))\)/gi;
+      let match;
+      while ((match = re.exec(value))) {
+        const url = String(match[1] ?? match[2] ?? match[3] ?? '').trim();
+        if (url && !url.startsWith('data:')) urls.push(url);
+      }
+      return urls;
+    }
+
+    function isVisible(el) {
+      const rect = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    }
+
+    function probeImage(url) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const started = performance.now();
+        let done = false;
+        const finish = (event) => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          resolve({
+            url,
+            ok: img.complete && img.naturalWidth > 0 && img.naturalHeight > 0,
+            event,
+            naturalWidth: img.naturalWidth || 0,
+            naturalHeight: img.naturalHeight || 0,
+            elapsedMs: Math.round(performance.now() - started),
+          });
+        };
+        const timer = setTimeout(() => finish('timeout'), 5000);
+        img.onload = () => finish('load');
+        img.onerror = () => finish('error');
+        img.referrerPolicy = 'no-referrer';
+        img.src = url;
+      });
+    }
+  });
+}
+
+async function collectPreviewRenderedResources(page) {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setPreviewRenderMode('iframe');
+    window.__perfHook.setMainMode('preview');
+  });
+  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  const root = frame.locator('#charsheet-root').first();
+  await root.waitFor({ state: 'visible', timeout: 30000 });
+  await page.waitForTimeout(700);
+  return root.evaluate(async (rootEl) => {
+    return collectRenderedResourceState(rootEl);
+
+    async function collectRenderedResourceState(scope) {
+      const images = Array.from(scope.querySelectorAll('img[src]')).map((img, index) => ({
+        index,
+        src: img.currentSrc || img.src || '',
+        complete: img.complete,
+        naturalWidth: img.naturalWidth || 0,
+        naturalHeight: img.naturalHeight || 0,
+        visible: isVisible(img),
+      }));
+      const backgroundUrls = collectBackgroundUrls(scope).slice(0, 120);
+      const backgrounds = [];
+      for (const url of backgroundUrls) backgrounds.push(await probeImage(url));
+      const failedImages = images.filter((img) => img.visible && img.src && (!img.complete || img.naturalWidth <= 0 || img.naturalHeight <= 0));
+      const failedBackgrounds = backgrounds.filter((item) => !item.ok);
+      return {
+        pass: failedImages.length === 0 && failedBackgrounds.length === 0,
+        imageCount: images.length,
+        visibleImageCount: images.filter((img) => img.visible).length,
+        failedImageCount: failedImages.length,
+        backgroundUrlCount: backgroundUrls.length,
+        failedBackgroundCount: failedBackgrounds.length,
+        failedImages: failedImages.slice(0, 12),
+        failedBackgrounds: failedBackgrounds.slice(0, 12),
+      };
+    }
+
+    function collectBackgroundUrls(scope) {
+      const seen = new Set();
+      const urls = [];
+      for (const el of Array.from(scope.querySelectorAll('*'))) {
+        const value = getComputedStyle(el).backgroundImage || '';
+        for (const url of extractCssUrls(value)) {
+          if (seen.has(url)) continue;
+          seen.add(url);
+          urls.push(url);
+        }
+      }
+      return urls;
+    }
+
+    function extractCssUrls(value) {
+      const urls = [];
+      const re = /url\((?:"([^"]*)"|'([^']*)'|([^'")]+))\)/gi;
+      let match;
+      while ((match = re.exec(value))) {
+        const url = String(match[1] ?? match[2] ?? match[3] ?? '').trim();
+        if (url && !url.startsWith('data:')) urls.push(url);
+      }
+      return urls;
+    }
+
+    function isVisible(el) {
+      const rect = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+    }
+
+    function probeImage(url) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const started = performance.now();
+        let done = false;
+        const finish = (event) => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          resolve({
+            url,
+            ok: img.complete && img.naturalWidth > 0 && img.naturalHeight > 0,
+            event,
+            naturalWidth: img.naturalWidth || 0,
+            naturalHeight: img.naturalHeight || 0,
+            elapsedMs: Math.round(performance.now() - started),
+          });
+        };
+        const timer = setTimeout(() => finish('timeout'), 5000);
+        img.onload = () => finish('load');
+        img.onerror = () => finish('error');
+        img.referrerPolicy = 'no-referrer';
+        img.src = url;
+      });
+    }
+  });
+}
+
+function hasOnlyTransientAbortedImageIssues(items) {
+  if (!Array.isArray(items) || items.length === 0) return false;
+  return items.every((item) => {
+    const failures = Array.isArray(item.failures) ? item.failures : [];
+    return (
+      item.kind === 'failed' &&
+      item.resourceType === 'image' &&
+      failures.length > 0 &&
+      failures.every((failure) => failure === 'net::ERR_ABORTED')
+    );
+  });
+}
+
+function classifyResourceStatus(resourceIssues, finalRenderedResources) {
+  const issueCount = sumResourceIssues(resourceIssues);
+  if (issueCount === 0) return { pass: true, classification: 'clean' };
+  if (finalRenderedResources?.pass && hasOnlyTransientAbortedImageIssues(resourceIssues)) {
+    return { pass: true, classification: 'transient-aborted-images-final-rendered' };
+  }
+  return { pass: false, classification: finalRenderedResources?.pass ? 'request-issues-final-rendered' : 'final-rendered-resource-failure' };
+}
+
 async function collectEditRootGeometry(page) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
@@ -2037,10 +2264,10 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Scope: local static app, imported real fixtures, real edit pointer drag, preview iframe sync, and emitted HTML/CSS position check. This does not prove actual Roll20 visual parity.');
   lines.push('');
-  lines.push('| Fixture | Status | Interaction | Resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Sheet visual | Form state | Root geometry | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
-  lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
+  lines.push('| Fixture | Status | Interaction | Resources | Final resources | Blocks | Flow insert | Free insert | Layer reorder | Non-leaf layer | Sheet visual | Form state | Root geometry | Target | Role | Before | Edit after | Preview after | Emit/Re-import | Console errors | Page errors |');
+  lines.push('| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: |');
   for (const item of report.fixtures) {
-    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${fmtVisualSync(item.sheetVisualSync)} | ${fmtFormStateDiff(item.formStateDiff)} | ${fmtRootGeometry(item.rootGeometryDiff)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
+    lines.push(`| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.interactionPass ? 'PASS' : 'FAIL'} | ${item.resourcePass ? 'PASS' : 'WARN'} | ${fmtFinalResources(item.finalRenderedResources, item.resourceStatus)} | ${item.import?.blockCount ?? ''} | ${fmtCanvasInsert(item.canvasInsert)} | ${fmtFreeInsert(item.freeInsert)} | ${fmtLayerReorder(item.layerReorder)} | ${fmtNonLeafLayerReorder(item.nonLeafLayerReorder)} | ${fmtVisualSync(item.sheetVisualSync)} | ${fmtFormStateDiff(item.formStateDiff)} | ${fmtRootGeometry(item.rootGeometryDiff)} | ${item.target?.tag ?? ''} | ${item.target?.role ?? ''} | ${fmtRel(item.before)} | ${fmtRel(item.editAfter)} | ${fmtRel(item.previewAfter)} | ${fmtEmit(item.emitted)} / ${fmtReimport(item.reimport)} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`);
   }
   lines.push('');
   lines.push('Notes:');
@@ -2102,6 +2329,14 @@ function fmtEmit(item) {
 function fmtReimport(item) {
   if (!item) return 'reimport missing';
   return isStableReimport(item) ? 'reimport stable' : 'reimport drift';
+}
+
+function fmtFinalResources(item, status) {
+  if (!item) return 'missing';
+  const label = status?.classification || (item.pass ? 'final clean' : 'final failed');
+  const edit = item.edit ? `${item.edit.failedImageCount ?? 0} img/${item.edit.failedBackgroundCount ?? 0} bg` : 'edit missing';
+  const preview = item.preview ? `${item.preview.failedImageCount ?? 0} img/${item.preview.failedBackgroundCount ?? 0} bg` : 'preview missing';
+  return `${label}; edit ${edit}; preview ${preview}`;
 }
 
 function fmtLayerReorder(item) {
@@ -2284,6 +2519,7 @@ async function main() {
         entry.sheetVisualSync = await captureSheetRootVisualSync(page, fixture.id);
         entry.formStateDiff = await compareEditPreviewFormState(page);
         entry.rootGeometryDiff = await compareEditPreviewRootGeometry(page);
+        entry.finalRenderedResources = await collectFinalRenderedResources(page);
         entry.sheetVisualSync.classification = classifySheetVisualSync(
           entry.sheetVisualSync,
           entry.formStateDiff,
@@ -2305,7 +2541,8 @@ async function main() {
       entry.pageErrors = pageErrors;
       entry.resourceIssues = summarizeResourceIssues(resourceIssues);
       entry.resourceIssueCount = sumResourceIssues(entry.resourceIssues);
-      entry.resourcePass = entry.resourceIssueCount === 0;
+      entry.resourceStatus = classifyResourceStatus(entry.resourceIssues, entry.finalRenderedResources);
+      entry.resourcePass = entry.resourceStatus.pass;
       if (FAIL_ON_RESOURCE_ISSUES && !entry.resourcePass) entry.pass = false;
       report.fixtures.push(entry);
       console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} interaction=${entry.interactionPass ? 'PASS' : 'FAIL'} resources=${entry.resourcePass ? 'PASS' : 'WARN'} target=${entry.target?.tag ?? 'none'} edit=${fmtRel(entry.editAfter)} preview=${fmtRel(entry.previewAfter)}`);

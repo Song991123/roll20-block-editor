@@ -1,3 +1,13 @@
+## 2026-06-20 Final Rendered Resource Gate For Imported Edit Smoke
+
+- Added final rendered resource collection to `scripts/imported_edit_sync_smoke.mjs` after the edit/reimport path settles.
+- The smoke now checks visible `<img>` nodes and computed CSS background-image URLs in both edit Shadow DOM and preview iframe, then records final image/background failure counts.
+- Resource status now distinguishes raw request failures from final-render failures. Image requests that only fail as `net::ERR_ABORTED` can pass as `transient-aborted-images-final-rendered` only when final edit/preview resource state is clean.
+- Verification: full `smoke:imported-edit-sync:strict -- --port 4196` PASSed for AW2E, Les-Oublies, synthetic-nonleaf-flow, and YSHY 1BU.
+- Local result: AW2E and synthetic are `clean`; Les-Oublies and YSHY 1BU are `transient-aborted-images-final-rendered` with final edit/preview failures `0 img/0 bg`.
+- Budget result: `budget:imported-edit -- --port 4199` reports overall `PASS`; YSHY 1BU import total is about `4992.1ms`, below the current warn budget.
+- Boundary: this clears a local imported edit smoke false failure. It does not prove actual Roll20 visual parity or renderer readiness.
+
 ## 2026-06-20 Browser Asset Diagnostics For Imported Edit Resources
 
 - Added optional Chromium image-load probing to `scripts/roll20_asset_resource_audit.mjs` behind `--browser-probe true`, plus package alias `audit:assets:browser`.
@@ -6,7 +16,7 @@
 - Verification: `node --check` passed for `roll20_asset_resource_audit`, `imported_edit_sync_smoke`, `capture_visual_fixture_previews`, and `preview_edit_visual_smoke`.
 - Local diagnostic run: `audit:assets:browser` against `reports\roll20-actual-compare\2026-06-18-state-map-v1` reported 0 failed HTTP probes, 0 failed browser image probes, and 0 missing local refs for AW2E, Les-Oublies, and YSHY source/payload refs.
 - Follow-up strict imported-edit checks still fail resource status only: Les-Oublies is `1x failed image raw.githubusercontent.com (net::ERR_ABORTED)`, YSHY is `11x failed image imgur.com (net::ERR_ABORTED)`, while edit/preview interaction sync remains PASS.
-- Interpretation: the current evidence points away from dead image URLs and toward render-context/request-abort timing in the imported edit smoke. The next safe step is a final-settled image/background resource gate before ignoring or fixing these aborts.
+- Interpretation: the current evidence points away from dead image URLs and toward render-context/request-abort timing in the imported edit smoke. Follow-up gate work now verifies final-settled image/background state before classifying these aborts as transient.
 - Boundary: this is diagnostics and reporting accuracy only. It does not prove actual Roll20 visual parity and does not change production renderer behavior.
 
 ## 2026-06-20 Shared Roll20 CDP Readiness Helper

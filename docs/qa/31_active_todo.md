@@ -1,3 +1,15 @@
+## 2026-06-20 Codex Update - final rendered resource gate for imported edit smoke
+
+Status: DONE/VERIFY. This batch separates transient request aborts during edit/reimport from actual final missing images/backgrounds.
+
+- DONE: `smoke:imported-edit-sync` now collects final rendered resource state from both edit Shadow DOM and preview iframe after the edit/reimport path settles.
+- DONE: The final gate checks visible `<img>` nodes and computed CSS `background-image` URLs. It records failed image/background counts in the ignored smoke report.
+- DONE: Resource requests that only failed as `net::ERR_ABORTED` image requests are now classified as `transient-aborted-images-final-rendered` only when final edit and preview resources both pass.
+- VERIFIED: Full `corepack pnpm run smoke:imported-edit-sync:strict -- --port 4196` passed for AW2E, Les-Oublies, synthetic-nonleaf-flow, and YSHY 1BU.
+- LOCAL RESULT: AW2E and synthetic are `clean`; Les-Oublies and YSHY 1BU are `transient-aborted-images-final-rendered` with final edit/preview failures `0 img/0 bg`.
+- VERIFIED: `corepack pnpm run budget:imported-edit -- --port 4199` now reports overall `PASS`; YSHY 1BU import total was about `4992.1ms`, under the current warn budget.
+- STILL TODO P0: This is local app edit/preview evidence only. Actual Roll20 Sandbox/test-room screenshot/chat recapture remains required before visual parity or renderer-production claims.
+
 ## 2026-06-20 Codex Update - browser asset diagnostics for imported edit resources
 
 Status: VERIFY. This batch improves resource diagnostics only; it does not prove Roll20 visual parity or change production renderer behavior.
@@ -8,7 +20,7 @@ Status: VERIFY. This batch improves resource diagnostics only; it does not prove
 - VERIFIED: `node --check` passed for the changed scripts. `audit:assets:browser` against `reports\roll20-actual-compare\2026-06-18-state-map-v1` reported 0 failed HTTP probes, 0 failed browser image probes, and 0 missing local refs for AW2E, Les-Oublies, and YSHY 1BU source/payload refs.
 - LOCAL RESULT: Strict imported-edit smoke still fails only on resource status for affected fixtures, while interaction remains PASS. Les-Oublies reports `1x failed image raw.githubusercontent.com (net::ERR_ABORTED)` and YSHY reports `11x failed image imgur.com (net::ERR_ABORTED)`.
 - INTERPRETATION: Current evidence does not show dead image URLs. The remaining resource WARN is more likely a render-context/request-abort or DOM replacement timing issue in the imported edit smoke. Do not count it as actual Roll20 visual parity failure until final rendered image/background state is checked.
-- STILL TODO P0: Add a final-render resource gate that verifies loaded/painted image/background state after edit/reimport settles, then decide whether transient `net::ERR_ABORTED` requests should be ignored, retried, or fixed.
+- DONE FOLLOW-UP: The final-render resource gate now exists in `smoke:imported-edit-sync`; keep extending it if more resource classes appear.
 - STILL TODO P0: Actual Roll20 Sandbox/test-room upload and screenshot/chat recapture remain blocked by CDP/login/upload setup; no Roll20 parity claim is allowed.
 
 ## 2026-06-20 Codex Update - shared Roll20 CDP readiness helper
