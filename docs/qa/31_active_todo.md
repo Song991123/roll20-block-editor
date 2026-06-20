@@ -1,3 +1,15 @@
+## 2026-06-21 Codex Update - Roll20 settings manifest shape recheck
+
+Status: VERIFY/BLOCKED_ACTIVATION. This batch rechecked the live Roll20 Custom Sheet Sandbox settings path while trying to continue AW2E/YSHY trusted chat recapture; it does not add new trusted chat screenshots and does not change product rendering.
+
+- OBSERVED: The original Roll20 editor tab was still logged in and showed Les-Oublies chat templates with `devicePixelRatio=1.25`.
+- OBSERVED: The claimed original tab's CDP capability was blocked by `paused document response`, but a fresh temporary Chrome tab opened to `https://app.roll20.net/sheetsandbox/settings/21639681` had working tab-scoped CDP.
+- OBSERVED: Applying AW2E with the generated snippet's current plain `customcharsheet_json` value posted HTML/CSS/translation with `200`, but `/editor` returned a Roll20 JSON parse error: `unexpected token at '{ "html": "sheet.html", ... }'`.
+- RECOVERED: Reapplied Les-Oublies using the settings-page wrapper shape `{ sheet, userOptions, jsoninfo }`; `/editor` loaded again and visible chat had `sheet-rolltemplate-classic-roll` entries. This recovered the dedicated verification sandbox from the plain-manifest error state.
+- PARTIAL: Applying AW2E with the wrapper shape no longer crashed `/editor`, but no AW2E sheet/roll button activation was visible in the checked editor DOM. AW2E trusted chat recapture is still blocked until visible activation is proven.
+- DONE: Updated `scripts/roll20_upload_snippet.mjs` and `scripts/README.md` so settings-page snippets write the wrapper shape again and warn that the plain exported `sheet.json` text caused a live `/editor` parse error on 2026-06-21.
+- NEXT P0: Add/repair an activation path that proves the generated sheet is loaded in the editor before chat capture. Do not capture or promote AW2E/YSHY `roll20-chat.png` from a tab unless expected fixture markers are visible.
+
 ## 2026-06-21 Codex Update - Les-Oublies trusted chat recapture
 
 Status: VERIFY/HOLD_RENDERER. This batch captured one trusted Roll20 chat PNG/sidecar pair for Les-Oublies through the logged-in Chrome tab CDP capability; it does not prove chat parity and does not change product rendering.

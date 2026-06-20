@@ -1,3 +1,13 @@
+## 2026-06-21 Roll20 Settings Manifest Shape Recheck
+
+- Rechecked the live dedicated Roll20 Custom Sheet Sandbox while continuing the AW2E/YSHY trusted chat recapture task.
+- The original claimed editor tab still showed Les-Oublies chat templates and `devicePixelRatio=1.25`, but its CDP capability was blocked by a paused document response. A fresh temporary Chrome tab opened to `https://app.roll20.net/sheetsandbox/settings/21639681` had working tab-scoped CDP.
+- Applying AW2E with the current generated snippet's plain `customcharsheet_json` text posted HTML/CSS/translation to `/sheetsandbox/savesheetsettings` with `200`, but `/editor` returned a Roll20 JSON parse error around the plain `{ "html": "sheet.html", ... }` manifest.
+- Recovered the dedicated verification sandbox by applying Les-Oublies through the settings-page wrapper shape `{ sheet, userOptions, jsoninfo }`; `/editor` loaded again and visible chat contained `sheet-rolltemplate-classic-roll`.
+- Tried AW2E again with the wrapper shape. It did not crash `/editor`, but AW2E sheet/roll button activation was not visible in the checked editor DOM, so AW2E chat recapture remains blocked.
+- Updated `scripts/roll20_upload_snippet.mjs` and `scripts/README.md` so settings-page snippets write the wrapper shape and warn that plain exported `sheet.json` caused a live `/editor` parse error on 2026-06-21.
+- Boundary: no new trusted Roll20 chat screenshot was captured. Current actual status remains missing trusted AW2E/YSHY chat evidence until visible fixture activation is proven and foreground+DPR capture succeeds.
+
 ## 2026-06-21 Les-Oublies Trusted Chat Recapture
 
 - Used the existing logged-in Chrome Roll20 editor tab and its tab-scoped CDP capability; no real room settings were changed.

@@ -164,15 +164,15 @@ function validateSettingsFieldManifest(manifestText) {
     const parsed = JSON.parse(text);
     return {
       ok: true,
-      longName: parsed?.long_name ?? parsed?.name ?? '',
-      shortName: parsed?.short_name ?? '',
+      longName: parsed?.sheet?.long_name ?? parsed?.long_name ?? parsed?.name ?? '',
+      shortName: parsed?.sheet?.short_name ?? parsed?.short_name ?? '',
       hasJsonInfo: Boolean(parsed?.jsoninfo),
       shape: parsed?.jsoninfo ? 'wrapped-jsoninfo' : 'plain-sheet-json',
-      userOptionsType: Array.isArray(parsed?.useroptions)
+      userOptionsType: Array.isArray(parsed?.userOptions)
         ? 'array'
-        : Array.isArray(parsed?.userOptions)
-          ? 'array'
-          : typeof (parsed?.useroptions ?? parsed?.userOptions),
+        : Array.isArray(parsed?.useroptions)
+        ? 'array'
+          : typeof (parsed?.userOptions ?? parsed?.useroptions),
     };
   } catch (error) {
     return {
@@ -184,7 +184,21 @@ function validateSettingsFieldManifest(manifestText) {
 
 function buildSettingsManifestText(manifestText) {
   const parsed = JSON.parse(manifestText);
-  return JSON.stringify(parsed, null, 2);
+  if (parsed && typeof parsed === 'object' && parsed.jsoninfo) {
+    return JSON.stringify(parsed, null, 2);
+  }
+  const userOptions = parsed.useroptions || parsed.userOptions || [];
+  return JSON.stringify({
+    sheet: {
+      short_name: parsed.short_name || 'custom',
+      long_name: parsed.long_name || parsed.name || 'Custom Sheet',
+      instructions: parsed.instructions || '',
+      preview_image: parsed.preview_image || 'https://via.placeholder.com/500x650.png?text=Placeholder+Image',
+      authors: parsed.authors || 'Local verification',
+    },
+    userOptions,
+    jsoninfo: parsed,
+  }, null, 2);
 }
 
 function extractActivationHints(sourceTexts) {
@@ -472,7 +486,19 @@ function renderSnippet({ fixtureId, payload, validation, activationHints }) {
   };
   const buildSettingsManifest = (manifestText) => {
     const parsed = JSON.parse(manifestText);
-    return JSON.stringify(parsed, null, 2);
+    if (parsed && typeof parsed === 'object' && parsed.jsoninfo) return JSON.stringify(parsed, null, 2);
+    const userOptions = parsed.useroptions || parsed.userOptions || [];
+    return JSON.stringify({
+      sheet: {
+        short_name: parsed.short_name || 'custom',
+        long_name: parsed.long_name || parsed.name || 'Custom Sheet',
+        instructions: parsed.instructions || '',
+        preview_image: parsed.preview_image || 'https://via.placeholder.com/500x650.png?text=Placeholder+Image',
+        authors: parsed.authors || 'Local verification',
+      },
+      userOptions,
+      jsoninfo: parsed,
+    }, null, 2);
   };
   assertSandboxPage();
   if (!DATA.validation.translation.ok || !DATA.validation.manifest.ok || !DATA.validation.settingsFieldManifest.ok) {
@@ -520,7 +546,7 @@ function renderReadme(report) {
     '',
     'Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
     '',
-    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills `customcharsheet_json` with the plain exported `sheet.json` text when the settings page is open. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH` and screenshots are captured afterward.',
+    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills `customcharsheet_json` with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. Live Roll20 verification on 2026-06-21 showed that writing the plain exported `sheet.json` text directly can make `/editor` return a JSON parse error. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH` and screenshots are captured afterward.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
