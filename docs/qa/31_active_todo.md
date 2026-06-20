@@ -2703,3 +2703,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - DONE: `gate:roll20-renderer-action` now names the affected fixture in the foreground-pixel blocker and next action.
 - VERIFIED: Current run reports `official-roll20-Les-Oublies` as the only foreground-pixel suspect: dark `0%`, edge `0%`, non-white `5.15%`, PNG `1x1`. The next action now points directly to `corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - CLAIM BOUNDARY: This improves evidence handoff and prevents CSS tuning from contaminated chat pixels. It does not recapture Roll20 and does not prove chat visual parity.
+
+## 2026-06-21 Current Status and ETA TODO Note
+
+- DONE: Added `docs/qa/38_current_project_status.md` as the compact handoff snapshot for current evidence, claim boundaries, and realistic ETA.
+- VERIFIED: Current status snapshot is based on rerunning `status:roll20-actual`, `gate:roll20-renderer-action`, and `smoke:preview-edit-visual` against the active `2026-06-18-state-map-v1` run.
+- CURRENT: local preview/edit is good enough for continued edit UX work on the active fixtures, but actual Roll20 chat/rolltemplate capture remains blocked/incomplete (`generatedActualScreenshots=4/6`, `chatNeedsNormalizedCapture=2`, `rendererReady=NO`).
+- STILL TODO: finish trustworthy AW2E/YSHY Roll20 chat captures or a verified foreground chat capture adapter before any production renderer promotion.
+- ETA: evidence-safe MVP checkpoint is estimated at 2-4 focused working days; a private-alpha level for the current prepared fixture set is estimated at 5-9 working days; broader mixed-sheet beta is estimated at 2-4 weeks.

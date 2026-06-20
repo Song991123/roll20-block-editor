@@ -3326,3 +3326,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - `scripts/roll20_renderer_action_gate.mjs` now carries the same fixture-level suspect list into blocker and next-action text.
 - Current verification points to `official-roll20-Les-Oublies` only: foreground pixel sanity dark `0%`, edge `0%`, non-white `5.15%`; the recapture command is `corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - Claim boundary: this is evidence-handoff precision. It does not change local ChatPane CSS, does not recapture Roll20, and does not prove chat parity.
+
+## 2026-06-21 Current Status and ETA Snapshot
+
+- Added `docs/qa/38_current_project_status.md` so the next agent/user pass has one compact status source instead of reconstructing the project from scattered run logs.
+- Latest measured local preview/edit smoke: AW2E `1.86%`, Les-Oublies `2.07%`, YSHY `1.02%`.
+- Latest actual Roll20 status: `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, generated screenshots/diffs `4/6`, trusted full-root `3/3`, chat normalized capture still needed for `2` cases, rendererReady `NO`.
+- Latest renderer gate: `HOLD_PRODUCTION_RENDERER_PATCH` with `9` blockers, so no production renderer CSS/chat model promotion is currently justified.
+- ETA recorded in the status doc: 2-4 working days for an evidence-safe MVP checkpoint, 5-9 working days for a private alpha around the current prepared fixtures, and 2-4 weeks for broader mixed official/custom sheet beta.
+- Claim boundary: this is reporting and handoff documentation only. It does not create new Roll20 evidence and does not change runtime behavior.
