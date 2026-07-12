@@ -28,6 +28,14 @@
 - Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `lint`, `build`, and `smoke:export-dialog -- --port 4371`.
 - Claim boundary: this improves repeated relink verification UX. It does not supply replacement assets and does not make Roll20 visual parity pass.
 
+## 2026-07-13 Asset Relink Verification Gate
+
+- Added `plan:roll20-asset-relink` to check whether a local-only replacement-map text file covers the current asset-preservation blockers before agents proceed to Roll20 Sandbox re-comparison.
+- The gate separates `MISSING_RELINK`, `COVERED_LOCAL_ONLY`, and `COVERED_ROLL20_READY`, so data URL targets can prove local preview/edit plumbing without being mistaken for Roll20-upload-ready hosted assets.
+- Current run without a map reports `RELINK_MAP_REQUIRED` for AW2E and YSHY. A temporary ignored smoke map classified AW2E as Roll20-ready through an HTTP(S) target and YSHY as local-only through a data URL target.
+- Verification: `node --check scripts\roll20_asset_relink_verification_plan.mjs`, `test:roll20-asset-relink`, `plan:roll20-asset-relink -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and a temporary `.tmp` map smoke.
+- Claim boundary: this is a readiness gate for the next Sandbox comparison. It does not host assets, upload to Roll20, or prove visual parity.
+
 ## 2026-07-12 Targeted Chat Candidate Results
 
 - Ran the target-plan smoke candidates. All local smoke runs passed, but candidate comparison rejects them as renderer fixes: AW2E `aw2e-text-metrics` is `no-meaningful-gain` with AW2E aligned delta `+0.1%`; YSHY `yshy-sanitize-typography` regresses with YSHY aligned delta `+14.95%`; YSHY `coc-table-intrinsic-clamp` is `no-meaningful-gain` with delta `0%`.

@@ -18,6 +18,7 @@ Use:
 ```powershell
 corepack pnpm run diagnose:roll20-chat-background-assets -- reports\roll20-actual-compare\<label>
 corepack pnpm run plan:roll20-chat-assets -- reports\roll20-actual-compare\<label>
+corepack pnpm run plan:roll20-asset-relink -- reports\roll20-actual-compare\<label> --map-file <local-map.txt>
 ```
 
 ## Product Requirements
@@ -41,6 +42,7 @@ corepack pnpm run plan:roll20-chat-assets -- reports\roll20-actual-compare\<labe
 - The current replacement map is persisted in the IndexedDB autosave/manual-save XML under preview metadata and restored through the autosave recovery banner.
 - Browser smoke verifies the synthetic replacement map is saved into IndexedDB, survives reload, and is restored into `previewStore`.
 - The export dialog can save named local-only replacement-map profiles. Profiles store URL replacement text only, not image/font bytes, and are persisted in the autosave/manual-save XML so users can switch between sheet-specific relink sets during repeated verification.
+- `plan:roll20-asset-relink` can check an exported/copied replacement-map text file against current asset-preservation blockers. It reports whether each required fixture is missing a relink, uses a local-only data URL, or is ready for local preview/edit/export plus Roll20 Sandbox re-comparison.
 - Multi-project named asset libraries, replacement history, and Roll20-side rehost verification are still TODO.
 
 ## UI Behavior
