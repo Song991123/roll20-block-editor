@@ -3284,6 +3284,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The height-closest candidate remains `sandbox-sheet-alias-attr-class-state-first-13-source` at root delta `+208.5px`; pixel-best remains over-hidden `sandbox-sheet-alias-playbook-hide-source` at `7.22%` and `-6636.125px`.
 - Claim boundary: actual display-visible panel names are not sufficient to model AW2E Roll20 default state. This is diagnostic evidence only and still keeps renderer action on HOLD.
 
+## 2026-07-12 Les Same-Template Roll20 Chat Recapture
+
+- Added `scripts/roll20_upload_cdp_apply.mjs` and package alias `apply:roll20-upload-cdp` so generated Sandbox upload snippets can be executed through a CDP-enabled Roll20 session instead of manual console paste. The helper requires an explicit `--endpoint-campaign-id`, navigates to the dedicated Sandbox settings page by default, and saves only ignored local apply evidence.
+- Used the helper against the dedicated Roll20 Sandbox/test campaign `21639681` for `official-roll20-Les-Oublies`. The settings-page result was `APPLY_NOT_PROVEN` because settings pages cannot prove sheet-body activation, but endpoint fallback posted and settings save clicked. The following editor/character probe proved the loaded iframe: `sheetHitCount=100`, `rootCount=3`, `attrCount=141`, `rollButtonCount=40`.
+- Fixed `capture:roll20-chat-cdp` to skip zero-size duplicate roll buttons and click visible iframe roll buttons first, with a DOM click fallback. This unblocked `roll_initiative`, which previously failed after hitting a hidden `0x0` duplicate.
+- Updated `plan:roll20-chat-capture` and the generated chat DOM probe for same-template recapture. The capture command now includes `--expected-template-class sheet-rolltemplate-initiative-roll`, and the probe selects the target rolltemplate class before the previous largest-template heuristic.
+- Captured fresh Roll20 chat evidence for Les-Oublies using `roll_initiative` and the expected `sheet-rolltemplate-initiative-roll`. `diagnose:roll20-chat-structure` improved from `STRUCTURE_MISMATCH_FOUND` to `STRUCTURE_MATCHED`; `chatStructureMismatch` is now `0/3`.
+- Current measured status after recapture: `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatNeedsNormalizedCapture=0`, `chatCurrentMetrics=3/3`, `chatSameStructureHighMismatch=3/3`, `chatSameStructureMaxAlignedMismatch=50.1%`, `rendererReady=NO`.
+- Claim boundary: this removes a false/wrong-template evidence blocker. It does not prove Roll20 chat parity and does not authorize production ChatPane CSS. The next P0 is per-template message/content width and table/text layout modeling from same-structure evidence.
+
 ## 2026-06-19 AW2E Attr Class Panel Geometry
 
 - Added `scripts/roll20_attr_class_panel_geometry_diagnostics.mjs` and package alias `diagnose:roll20-attr-class-geometry`.

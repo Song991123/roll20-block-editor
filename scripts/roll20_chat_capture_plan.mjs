@@ -192,7 +192,7 @@ function buildEntry(fixtureId, status, chatParity, chatStructure) {
     targets,
     snippetPath: rel(path.join(outDir, 'snippets', `${fixtureId}-chat-dom-probe-snippet.js`)),
     sheetFrameProbeCommand,
-    chatCaptureCommand: `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}${sameTemplateTarget?.targetRollButton ? ` --roll-button ${sameTemplateTarget.targetRollButton}` : ''}`,
+    chatCaptureCommand: `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}${sameTemplateTarget?.targetRollButton ? ` --roll-button ${sameTemplateTarget.targetRollButton}` : ''}${sameTemplateTarget?.targetTemplate ? ` --expected-template-class ${sameTemplateTarget.targetTemplate}` : ''}`,
     captureChecklist: [
       'Load this fixture in the dedicated Roll20 Custom Sheet Sandbox or approved test room.',
       `Run sheet-frame probe first: \`${sheetFrameProbeCommand}\`. Chat capture now requires positive \`roll20-sandbox-dom-evidence.json\` for the same fixture.`,
@@ -200,7 +200,7 @@ function buildEntry(fixtureId, status, chatParity, chatStructure) {
       sameTemplateTarget?.targetRollButton
         ? `Click the same local smoke roll button \`${sameTemplateTarget.targetRollButton}\` so Roll20 renders \`${sameTemplateTarget.targetTemplate || 'the target template'}\`, not the previously captured \`${sameTemplateTarget.actualTemplate || 'different template'}\`.`
         : `Click a real sheet roll button${rollButtons.length ? ` such as ${rollButtons.slice(0, 4).map((name) => `\`${name}\``).join(', ')}` : ''}.`,
-      `Capture chat with the gated CDP helper: \`${`corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}${sameTemplateTarget?.targetRollButton ? ` --roll-button ${sameTemplateTarget.targetRollButton}` : ''}`}\`. It will refuse to proceed if the sheet-frame evidence is missing or generic.`,
+      `Capture chat with the gated CDP helper: \`${`corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}${sameTemplateTarget?.targetRollButton ? ` --roll-button ${sameTemplateTarget.targetRollButton}` : ''}${sameTemplateTarget?.targetTemplate ? ` --expected-template-class ${sameTemplateTarget.targetTemplate}` : ''}`}\`. It will refuse to proceed if the sheet-frame evidence is missing, generic, or the selected rolltemplate class differs from the target.`,
       'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'If CDP captures the wrong region on a high-DPR Roll20 tab, verify the coordinate space with a debug crop: multiply the CSS template rect by devicePixelRatio, capture the physical PNG, then DPR-correct/downscale it back to the CSS clip size and record captureDprCorrection in the sidecar.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
@@ -537,6 +537,7 @@ function prioritizeRollButtons(names, preferred) {
 function renderDomProbeSnippet(entry) {
   return `(() => {
   const fixtureId = ${JSON.stringify(entry.fixtureId)};
+  const targetTemplateClass = ${JSON.stringify(entry.sameTemplateTarget?.targetTemplate || '')};
   const isVisible = (el) => {
     if (!el) return false;
     const style = window.getComputedStyle(el);
@@ -829,7 +830,11 @@ function renderDomProbeSnippet(entry) {
     const bottom = Math.min(window.innerHeight, rect.bottom ?? (rect.y ?? 0) + (rect.height ?? 0));
     return Math.max(0, right - left) * Math.max(0, bottom - top);
   };
-  const selectedTemplate = [...templateInfos]
+  const targetTemplateInfos = targetTemplateClass
+    ? templateInfos.filter((template) => String(template.className || '').split(/\\s+/).includes(targetTemplateClass) && visibleTemplateArea(template) > 0)
+    : [];
+  const selectionPool = targetTemplateInfos.length ? targetTemplateInfos : templateInfos;
+  const selectedTemplate = [...selectionPool]
     .map((template) => {
       const textLength = String(template.text || '').trim().length;
       const area = visibleTemplateArea(template);
@@ -973,8 +978,11 @@ function renderDomProbeSnippet(entry) {
     } : null,
     latestTemplate: selectedTemplate ? { ...selectedTemplate } : (templateInfos.length ? { ...templateInfos[templateInfos.length - 1] } : null),
     selectedTemplate: selectedTemplate ? { ...selectedTemplate } : null,
+    targetTemplateClass,
     selectedTemplateStrategy: selectedTemplate
-      ? 'largest visible/text-rich rolltemplate; avoids sparse latest-message crops when multiple Roll20 chat templates are visible'
+      ? (targetTemplateInfos.length
+        ? 'target rolltemplate class first, then largest visible/text-rich match'
+        : 'largest visible/text-rich rolltemplate; avoids sparse latest-message crops when multiple Roll20 chat templates are visible')
       : 'none',
     templateForegroundEvidence,
     rolltemplates: templateInfos,

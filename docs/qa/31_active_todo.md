@@ -1,3 +1,13 @@
+## 2026-07-12 Les Same-Template Roll20 Chat Recapture Resolved
+
+- DONE: Added `apply:roll20-upload-cdp` as a guarded local-only CDP helper for executing generated Sandbox upload snippets against an explicit dedicated Sandbox/test campaign id. It writes ignored apply results under `reports/.../roll20-upload-handoff/cdp-apply/` and does not treat upload/storage as visual parity.
+- DONE: Applied the current `official-roll20-Les-Oublies` payload to the dedicated Roll20 Sandbox/test campaign `21639681` through the guarded settings-page path, then reopened the Sandbox editor and character dialog.
+- DONE: Fixed `capture:roll20-chat-cdp` roll-button clicking so hidden zero-size duplicate buttons do not block visible iframe roll buttons. The tool now tries visible nonzero buttons first and has a DOM click fallback.
+- DONE: Updated the chat capture plan/probe so same-template recapture carries `--expected-template-class` and the DOM probe selects the target rolltemplate class before falling back to the largest visible template.
+- VERIFIED: Fresh Les-Oublies targeted capture with `roll_initiative` and expected `sheet-rolltemplate-initiative-roll` passed. `diagnose:roll20-chat-structure` now reports `STRUCTURE_MATCHED`, `chatStructureMismatch=0/3`, and all three chat fixtures are same-structure.
+- VERIFIED: Current `status:roll20-actual` remains renderer-held, not done: `rendererReady=NO`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, `chatSameStructureHighMismatch=3/3`, and `chatSameStructureMaxAlignedMismatch=50.1%`.
+- STILL TODO: The blocker has moved from "wrong template captured" to real ChatPane/rolltemplate visual mismatch. Next P0 is per-template Roll20 chat message/content width and table/text layout modeling; do not promote a global ChatPane width/padding/font patch.
+
 ## 2026-07-12 Les Same-Template Capture Plan TODO Note
 
 - DONE: Updated `plan:roll20-chat-capture` so chat structure mismatches force a recapture plan even when `roll20-chat.png` and DOM sidecar already exist. Les-Oublies now plans `roll_initiative` -> `sheet-rolltemplate-initiative-roll` instead of allowing any visible rolltemplate.

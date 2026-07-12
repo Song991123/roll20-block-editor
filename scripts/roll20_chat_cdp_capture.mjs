@@ -24,6 +24,7 @@ const FIXTURE_ID = readOption('--fixture', '');
 const CDP_URL = readOption('--cdp', process.env.ROLL20_CDP_URL ?? 'http://127.0.0.1:9222');
 const PAGE_MATCH = readOption('--page-match', 'app.roll20.net');
 const ROLL_BUTTON = readOption('--roll-button', '');
+const EXPECTED_TEMPLATE_CLASS = readOption('--expected-template-class', '');
 const SKIP_CLICK = hasFlag('--skip-click');
 const WAIT_MS = Number(readOption('--wait-ms', '1500'));
 const DRY_RUN = hasFlag('--dry-run');
@@ -36,7 +37,7 @@ if (SELF_TEST_READINESS) {
 }
 
 if (!RUN_DIR || !FIXTURE_ID) {
-  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--skip-click] [--dry-run] [--plan-only] [--self-test-readiness]');
+  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--expected-template-class sheet-rolltemplate-name] [--skip-click] [--dry-run] [--plan-only] [--self-test-readiness]');
   process.exit(2);
 }
 
@@ -101,6 +102,7 @@ async function main() {
       console.log(`title=${summary.title}`);
       console.log(`frames=${summary.frames.length}`);
       console.log(`rollButton=${ROLL_BUTTON || '(none)'}`);
+      console.log(`expectedTemplateClass=${EXPECTED_TEMPLATE_CLASS || '(none)'}`);
       console.log(`snippet=${rel(snippetPath)}`);
       console.log(`sheetFrameEvidence=${rel(sheetFrameEvidencePath)}`);
       console.log(`targets=${rel(chatPngPath)}, ${rel(sidecarPath)}`);
@@ -144,6 +146,7 @@ async function main() {
         cdpUrl: CDP_URL.replace(/\/\/.*@/, '//[redacted]@'),
         pageMatch: PAGE_MATCH,
         rollButton: SKIP_CLICK ? null : ROLL_BUTTON || '(auto)',
+        expectedTemplateClass: EXPECTED_TEMPLATE_CLASS || null,
         screenshotPath: rel(chatPngPath),
         sidecarPath: rel(sidecarPath),
         screenshotBytes: png.length,
@@ -510,20 +513,47 @@ async function clickRollButton(page, requestedName) {
     `input[type="button"][name="${cssEscape(name)}"]`,
     `[name="${cssEscape(name)}"]`,
   ]);
+  const attempts = [];
   for (const frame of page.frames()) {
     for (const selector of selectors) {
-      const locator = frame.locator(selector).first();
       try {
-        if (await locator.count()) {
+        const locators = frame.locator(selector);
+        const count = await locators.count();
+        attempts.push(`${shortFrameName(frame)} ${selector} count=${count}`);
+        for (let index = 0; index < count; index += 1) {
+          const locator = locators.nth(index);
+          const box = await locator.boundingBox().catch(() => null);
+          if (!box || box.width <= 0 || box.height <= 0) continue;
           await locator.click({ timeout: 3000, force: true });
-          return { ok: true, frameUrl: frame.url(), selector };
+          return { ok: true, frameUrl: frame.url(), selector, index, method: 'locator-visible' };
         }
-      } catch {
-        // Try the next selector/frame. Roll20 iframes can be transient.
+      } catch (error) {
+        attempts.push(`${shortFrameName(frame)} ${selector} locator-error=${String(error?.message ?? error).split('\n')[0]}`);
+      }
+    }
+    for (const name of names) {
+      try {
+        const clicked = await frame.evaluate((rollName) => {
+          const candidates = Array.from(document.querySelectorAll(`[name="${CSS.escape(rollName)}"]`));
+          const visible = candidates.find((el) => {
+            const rect = el.getBoundingClientRect();
+            const style = getComputedStyle(el);
+            return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+          }) || candidates[0] || null;
+          if (!visible) return { ok: false, reason: 'not-found', count: candidates.length };
+          visible.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+          visible.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+          visible.click();
+          return { ok: true, count: candidates.length, className: String(visible.className || '') };
+        }, name);
+        attempts.push(`${shortFrameName(frame)} dom-click ${name} ok=${clicked.ok} count=${clicked.count ?? 0}`);
+        if (clicked.ok) return { ok: true, frameUrl: frame.url(), selector: `[name="${cssEscape(name)}"]`, method: 'dom-visible-click', detail: clicked };
+      } catch (error) {
+        attempts.push(`${shortFrameName(frame)} dom-click-error=${String(error?.message ?? error).split('\n')[0]}`);
       }
     }
   }
-  return { ok: false, reason: `tried ${selectors.length} selectors across ${page.frames().length} frames` };
+  return { ok: false, reason: `tried ${selectors.length} selectors across ${page.frames().length} frames; attempts=${attempts.slice(0, 18).join(' | ')}` };
 }
 
 async function suggestedRollButtons() {
@@ -540,6 +570,12 @@ async function suggestedRollButtons() {
 function validateEvidence(evidence) {
   if (!evidence || typeof evidence !== 'object') throw new Error('chat probe returned no evidence object');
   if (!evidence.textMarkers?.rolltemplate) throw new Error('chat probe did not find a rolltemplate marker');
+  if (EXPECTED_TEMPLATE_CLASS) {
+    const selectedClasses = String(evidence.latestTemplate?.className || evidence.selectedTemplate?.className || '').split(/\s+/);
+    if (!selectedClasses.includes(EXPECTED_TEMPLATE_CLASS)) {
+      throw new Error(`chat probe selected ${selectedClasses.join(' ') || '(none)'}, expected ${EXPECTED_TEMPLATE_CLASS}; regenerate the capture plan or clear old chat messages and recapture the target rolltemplate`);
+    }
+  }
   if (!evidence.templateForegroundEvidence) {
     throw new Error('chat evidence missing templateForegroundEvidence; regenerate the capture plan and retry');
   }
