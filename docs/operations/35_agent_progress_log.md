@@ -1,3 +1,11 @@
+## 2026-07-13 AW2E Width/Text Metrics Background-Raster Follow-Up
+
+- Fed the `aw2e-message-width-text-metrics` candidate evidence through the background-raster routing probe.
+- Live output: `..\_tmp_codex_smoke\background-raster-aw2e-width-text-metrics-20260713-r1`.
+- Evidence: AW2E routes to `COLOR_ASSET_RASTER_MODEL_REQUIRED` with row weighted mismatch `24.69%`, luma correction gain `-1.39%`, and width experiment `CHAT_MESSAGE_CONTENT_WIDTH`.
+- Interpretation: after the candidate matches AW2E width/text measurement, the remaining rejection is a color/asset/background raster context problem. Do not try another broad width/font/cell/wrap CSS patch for this axis.
+- Claim boundary: diagnostic routing only. No production renderer CSS changed, no Roll20 upload happened, and visual parity remains unproven.
+
 ## 2026-07-13 AW2E Width/Text Metrics Font-Glyph Follow-Up
 
 - Added `--out-dir` / `--report-dir` support to `scripts/roll20_chat_font_glyph_model.mjs` so candidate-specific font/glyph evidence can stay in ignored temp output instead of rewriting the canonical actual Roll20 report folder.

@@ -1,3 +1,10 @@
+## 2026-07-13 AW2E Width/Text Metrics Background-Raster Follow-Up TODO Note
+
+- VERIFIED: Candidate background-raster routing wrote `..\_tmp_codex_smoke\background-raster-aw2e-width-text-metrics-20260713-r1` using the `aw2e-message-width-text-metrics` smoke, candidate row-raster output, candidate row-compositing output, and candidate background-source output.
+- OBSERVED: For AW2E, the candidate path routes to `COLOR_ASSET_RASTER_MODEL_REQUIRED`: row weighted mismatch `24.69%`, luma correction gain `-1.39%`, and width experiment `CHAT_MESSAGE_CONTENT_WIDTH`.
+- OBSERVED: This confirms that once AW2E width/text measurement is matched, the remaining rejected-candidate axis is color/asset/background raster context, not another global width, font-size, table-cell, or wrapping CSS tweak.
+- CURRENT: Keep renderer CSS held. Next AW2E work should compare asset bytes/source placeholders, browser decode/color management, and Roll20 paint/capture context for the flat background rows before any ChatPane CSS promotion.
+
 ## 2026-07-13 AW2E Width/Text Metrics Font-Glyph Follow-Up TODO Note
 
 - DONE: `diagnose:roll20-chat-font-glyph` now accepts `--out-dir` / `--report-dir`, so default and candidate smoke evidence can be compared in ignored temp folders without rewriting canonical Roll20 reports.
