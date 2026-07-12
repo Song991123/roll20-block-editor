@@ -20,6 +20,13 @@ export interface AssetReplacementResult {
   warnings: AssetReplacementWarning[];
 }
 
+export interface AssetReplacementReadiness {
+  entries: number;
+  roll20ReadyTargets: number;
+  localOnlyTargets: number;
+  hasLocalOnlyTargets: boolean;
+}
+
 export function parseAssetReplacementMap(text: string): ParsedAssetReplacementMap {
   const entries: AssetReplacementEntry[] = [];
   const warnings: AssetReplacementWarning[] = [];
@@ -86,6 +93,28 @@ export function applyAssetReplacements(
   }
 
   return { html, css, replacements, warnings: parsed.warnings };
+}
+
+export function summarizeAssetReplacementReadiness(mapText: string): AssetReplacementReadiness {
+  const parsed = parseAssetReplacementMap(mapText);
+  let roll20ReadyTargets = 0;
+  let localOnlyTargets = 0;
+
+  for (const entry of parsed.entries) {
+    if (isRoll20ReadyReplacementTarget(entry.to)) roll20ReadyTargets += 1;
+    else localOnlyTargets += 1;
+  }
+
+  return {
+    entries: parsed.entries.length,
+    roll20ReadyTargets,
+    localOnlyTargets,
+    hasLocalOnlyTargets: localOnlyTargets > 0,
+  };
+}
+
+function isRoll20ReadyReplacementTarget(value: string): boolean {
+  return /^(?:https?:)?\/\//i.test(value);
 }
 
 function splitReplacementLine(line: string): [string, string] | null {

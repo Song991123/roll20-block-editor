@@ -35,7 +35,9 @@ import { buildZip, triggerDownload } from '@/lib/export/zip_builder';
 import { prepareRoll20Payload } from '@/lib/export/payload';
 import {
   applyAssetReplacements,
+  summarizeAssetReplacementReadiness,
   type AssetReplacementWarning,
+  type AssetReplacementReadiness,
 } from '@/lib/export/asset_replacements';
 import { analyzeAssetRefs, type AssetPreflight } from '@/lib/export/asset_refs';
 import {
@@ -76,6 +78,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       assetReplacementText,
     ),
     [emitCache.html, emitCache.css, assetReplacementText],
+  );
+  const assetReplacementReadiness = useMemo(
+    () => summarizeAssetReplacementReadiness(assetReplacementText),
+    [assetReplacementText],
   );
 
   const combinedWarnings = useMemo<EmitWarning[]>(() => {
@@ -375,6 +381,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             value={assetReplacementText}
             onChange={setAssetReplacementText}
             replacements={exportText.replacements}
+            readiness={assetReplacementReadiness}
             warnings={exportText.warnings}
             profiles={assetReplacementProfiles}
             activeProfileId={activeAssetReplacementProfileId}
@@ -646,6 +653,7 @@ function AssetReplacementPanel({
   value,
   onChange,
   replacements,
+  readiness,
   warnings,
   profiles,
   activeProfileId,
@@ -656,6 +664,7 @@ function AssetReplacementPanel({
   value: string;
   onChange: (value: string) => void;
   replacements: number;
+  readiness: AssetReplacementReadiness;
   warnings: AssetReplacementWarning[];
   profiles: { id: string; name: string; updatedAt: number }[];
   activeProfileId: string | null;
@@ -718,7 +727,7 @@ function AssetReplacementPanel({
           }`}
           data-testid="export-asset-replacement-status"
         >
-          {active ? `${replacements}건 교체` : '선택 사항'}
+          {active ? `${replacements}건 교체 · Roll20용 ${readiness.roll20ReadyTargets}건` : '선택 사항'}
         </span>
       </div>
       <textarea
@@ -826,6 +835,30 @@ function AssetReplacementPanel({
             저장한 txt는 `plan:roll20-asset-relink --map-file` 검증에 그대로 사용할 수 있습니다.
           </span>
         </div>
+        {active ? (
+          <div
+            className={`rounded border px-2 py-1.5 text-[10.5px] leading-relaxed sm:col-span-2 ${
+              readiness.hasLocalOnlyTargets
+                ? 'border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-100'
+                : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-100'
+            }`}
+            data-testid="export-asset-roll20-readiness"
+            data-local-only-targets={readiness.localOnlyTargets}
+            data-roll20-ready-targets={readiness.roll20ReadyTargets}
+          >
+            {readiness.hasLocalOnlyTargets ? (
+              <>
+                Roll20 Sandbox 재검증에는 http(s)로 직접 접근 가능한 사용자 소유 URL이 필요합니다.
+                현재 교체 목록에는 로컬 미리보기 전용 target {readiness.localOnlyTargets}건이 있어요.
+              </>
+            ) : (
+              <>
+                교체 target {readiness.roll20ReadyTargets}건이 Roll20 업로드 검증에 쓸 수 있는
+                http(s) URL 형식입니다.
+              </>
+            )}
+          </div>
+        ) : null}
         {profiles.length > 0 ? (
           <div className="text-[10.5px] leading-relaxed text-muted-foreground sm:col-span-2">
             {profiles.length}개 묶음이 이 브라우저 작업공간에 저장되어 있습니다. 실제 이미지 파일은 저장하지 않고 URL 치환 규칙만 보관합니다.

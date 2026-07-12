@@ -265,6 +265,9 @@ async function verifyAssetReplacementRender(page) {
     hasCopy: Boolean(document.querySelector('[data-testid="export-asset-map-copy"]')),
     hasDownload: Boolean(document.querySelector('[data-testid="export-asset-map-download"]')),
     hasCliHint: Boolean(document.querySelector('[data-testid="export-asset-map-cli-hint"]')?.textContent?.includes('plan:roll20-asset-relink --map-file')),
+    hasRoll20Readiness: Boolean(document.querySelector('[data-testid="export-asset-roll20-readiness"]')),
+    localOnlyTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-local-only-targets') ?? '',
+    roll20ReadyTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-roll20-ready-targets') ?? '',
     copyEnabled: !document.querySelector('[data-testid="export-asset-map-copy"]')?.disabled,
     downloadEnabled: !document.querySelector('[data-testid="export-asset-map-download"]')?.disabled,
   }));
@@ -503,6 +506,9 @@ async function main() {
     if (!result.checks.assetReplacementRender.exportMapUi.hasCopy) failures.push('restored asset map copy button missing');
     if (!result.checks.assetReplacementRender.exportMapUi.hasDownload) failures.push('restored asset map download button missing');
     if (!result.checks.assetReplacementRender.exportMapUi.hasCliHint) failures.push('restored asset map CLI hint missing');
+    if (!result.checks.assetReplacementRender.exportMapUi.hasRoll20Readiness) failures.push('asset replacement Roll20 readiness note missing');
+    if (result.checks.assetReplacementRender.exportMapUi.localOnlyTargets !== '1') failures.push('asset replacement local-only target count missing');
+    if (result.checks.assetReplacementRender.exportMapUi.roll20ReadyTargets !== '0') failures.push('asset replacement Roll20-ready target count should be 0 for data URL smoke');
     if (!result.checks.assetReplacementRender.exportMapUi.copyEnabled) failures.push('restored asset map copy button disabled');
     if (!result.checks.assetReplacementRender.exportMapUi.downloadEnabled) failures.push('restored asset map download button disabled');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');

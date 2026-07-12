@@ -2,6 +2,7 @@ import { strict as assert } from 'node:assert';
 import {
   applyAssetReplacements,
   parseAssetReplacementMap,
+  summarizeAssetReplacementReadiness,
 } from '../asset_replacements.ts';
 
 function testValidAndInvalidLines(): void {
@@ -35,7 +36,21 @@ function testUnsafeTargetWarning(): void {
   assert.equal(parsed.warnings.length, 1);
 }
 
+function testRoll20ReadinessSummary(): void {
+  const summary = summarizeAssetReplacementReadiness([
+    'https://old.example/a.png => https://assets.example.com/a.png',
+    'https://old.example/b.png => //assets.example.com/b.png',
+    'https://old.example/c.png => data:image/png;base64,aaa',
+    'https://old.example/d.png => local/d.png',
+  ].join('\n'));
+  assert.equal(summary.entries, 4);
+  assert.equal(summary.roll20ReadyTargets, 2);
+  assert.equal(summary.localOnlyTargets, 2);
+  assert.equal(summary.hasLocalOnlyTargets, true);
+}
+
 testValidAndInvalidLines();
 testHtmlAndCssReplacement();
 testUnsafeTargetWarning();
+testRoll20ReadinessSummary();
 console.log('asset_replacements.test PASS');

@@ -1,3 +1,11 @@
+## 2026-07-13 Asset Relink Roll20-Ready Target Split
+
+- Added `summarizeAssetReplacementReadiness()` so replacement maps report how many active target URLs are Roll20-ready `http(s)` versus local-only (`data:` or relative path).
+- Export asset replacement UI now displays the Roll20-ready target count and a warning when a map can prove local preview/edit plumbing but is not suitable for Roll20 Sandbox upload.
+- Browser smoke now verifies the synthetic data-URL relink map reports `localOnlyTargets=1` and `roll20ReadyTargets=0`.
+- Verification: `test:asset-replacements`, `test:asset-refs`, `guard:ui-copy`, `build`, and `smoke:export-dialog -- --port 4383` passed.
+- Claim boundary: this prevents confusing local-only relink checks with actual Roll20 upload readiness. It does not relink real assets or prove visual parity.
+
 ## 2026-07-13 Roll20 Proxy Source Relink Draft
 
 - Improved import asset preflight so each Roll20 proxy ref can carry its decoded `src` URL as `proxySourceRef` plus a `replacementRefs` candidate list.
