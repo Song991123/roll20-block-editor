@@ -1,3 +1,11 @@
+## 2026-07-13 Chat Asset Probe Fetch-Failure Preservation TODO Note
+
+- DONE: `diagnose:roll20-chat-background-assets` now preserves stronger previous byte/placeholder evidence when a rerun hits `ASSET_FETCH_INCOMPLETE` for unchanged background URLs. The report records `preservedFetchFailureCount` and keeps the fresh fetch-failure side evidence instead of downgrading the fixture decision.
+- WHY: Isolated full refresh copies the canonical run and then reruns every diagnostic. If the current network cannot fetch Roll20/Imgur URLs, the asset probe could previously replace known placeholder evidence with weaker `FETCH_FAIL` evidence, which then misrouted downstream asset-preservation and browser-paint plans.
+- VERIFIED: `node --check scripts\roll20_chat_background_asset_probe.mjs`, `node scripts\roll20_chat_background_asset_probe.mjs --self-test`, and live isolated `diagnose:roll20-chat-refresh -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --work-run-dir ...\_tmp_codex_smoke\chat-refresh-asset-preserve-20260713` passed.
+- OBSERVED: The isolated refresh asset probe reported `preservedFetchFailureCount=2` and kept AW2E/YSHY as `ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER`; the asset preservation plan returned `SOURCE_ASSET_LOST_RELINK_REQUIRED`; the template-scope gate stayed `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with `9` blockers.
+- CURRENT: Renderer remains held. This improves evidence stability only; it does not relink assets, change ChatPane rendering, or prove Roll20 visual parity.
+
 ## 2026-07-13 Chat Refresh Isolated Work Run TODO Note
 
 - DONE: `diagnose:roll20-chat-refresh` now accepts `--work-run-dir <empty-temp-run-dir>`. When supplied, it copies the selected Roll20 actual-run folder into that temp run and executes the entire downstream chat diagnostic chain against the copy, leaving the canonical evidence folder untouched.

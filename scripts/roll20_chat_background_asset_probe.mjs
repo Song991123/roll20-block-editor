@@ -23,13 +23,16 @@ const FETCH_TIMEOUT_MS = 15000;
 async function main() {
   const backgroundSource = await readOptionalJson(path.join(runDir, 'chat-background-source-probe', 'chat-background-source-probe-results.json'));
   const rasterModel = await readOptionalJson(path.join(runDir, 'chat-background-raster-model-probe', 'chat-background-raster-model-probe-results.json'));
+  const previousReport = await readOptionalJson(path.join(outDir, 'chat-background-asset-probe-results.json'));
   const fixtureIds = collectFixtureIds(backgroundSource, rasterModel);
   const fixtures = [];
   const cache = new Map();
   for (const fixtureId of fixtureIds) {
-    fixtures.push(await summarizeFixture(fixtureId, { backgroundSource, rasterModel }, cache));
+    const freshFixture = await summarizeFixture(fixtureId, { backgroundSource, rasterModel }, cache);
+    fixtures.push(preservePreviousEvidenceOnFetchFailure(freshFixture, findFixture(previousReport?.fixtures, fixtureId)));
   }
   const actionable = fixtures.filter((fixture) => fixture.priority !== 'P2' && fixture.decision !== 'NO_BACKGROUND_IMAGE');
+  const preservedFetchFailureCount = fixtures.filter((fixture) => fixture.preservedFromPreviousProbe).length;
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
@@ -39,6 +42,7 @@ async function main() {
       fixtures: fixtures.length,
       actionable: actionable.length,
       decisions: countBy(fixtures.map((fixture) => fixture.decision)),
+      preservedFetchFailureCount,
       productionSafe: false,
     },
     fixtures,
@@ -49,6 +53,7 @@ async function main() {
   await writeFile(path.join(outDir, 'chat-background-asset-probe-results.md'), renderMarkdown(report), 'utf8');
 
   console.log(`ROLL20 CHAT BACKGROUND ASSET PROBE ${report.summary.status}`);
+  if (preservedFetchFailureCount) console.log(`preservedFetchFailureEvidence=${preservedFetchFailureCount}`);
   for (const fixture of fixtures) {
     console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} decision=${fixture.decision} local=${fixture.localAsset?.summary || 'n/a'} actual=${fixture.actualAsset?.summary || 'n/a'} source=${fixture.sourceAsset?.summary || 'n/a'} next=${fixture.nextAction}`);
   }
@@ -105,6 +110,48 @@ function decide({ localCssUrl, actualCssUrl, localAsset, actualAsset, sourceAsse
   if (sourceAsset?.placeholder || localAsset.placeholder || actualAsset.placeholder) return 'ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER';
   if (isBrowserPaintRasterDecision(rasterDecision)) return 'ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT';
   return 'ASSET_BYTES_MATCH_SECONDARY';
+}
+
+function preservePreviousEvidenceOnFetchFailure(fresh, previous) {
+  if (!shouldPreservePreviousEvidence(fresh, previous)) return fresh;
+  return {
+    ...previous,
+    priority: fresh.priority,
+    backgroundSourceDecision: fresh.backgroundSourceDecision,
+    backgroundRasterDecision: fresh.backgroundRasterDecision,
+    backgroundStyleDecision: fresh.backgroundStyleDecision,
+    preservedFromPreviousProbe: true,
+    freshFetchDecision: fresh.decision,
+    freshFetchEvidence: {
+      localAsset: fresh.localAsset,
+      actualAsset: fresh.actualAsset,
+      sourceAsset: fresh.sourceAsset,
+    },
+    evidence: [
+      ...(previous.evidence ?? []),
+      `preserved previous asset byte evidence because current fetch returned ${fresh.decision} for unchanged URLs`,
+    ],
+  };
+}
+
+function shouldPreservePreviousEvidence(fresh, previous) {
+  if (!fresh || !previous) return false;
+  if (fresh.decision !== 'ASSET_FETCH_INCOMPLETE') return false;
+  if (previous.decision === 'ASSET_FETCH_INCOMPLETE' || previous.decision === 'NO_BACKGROUND_IMAGE') return false;
+  if (!sameNormalizedUrl(fresh.localCssUrl, previous.localCssUrl)) return false;
+  if (!sameNormalizedUrl(fresh.actualCssUrl, previous.actualCssUrl)) return false;
+  if (!sameNormalizedUrl(fresh.sourceUrl, previous.sourceUrl)) return false;
+  return hasStrongAssetEvidence(previous);
+}
+
+function hasStrongAssetEvidence(fixture) {
+  if (!fixture) return false;
+  if (fixture.localAsset?.ok && fixture.actualAsset?.ok) return true;
+  return ['ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER', 'ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT', 'LOCAL_ACTUAL_ASSET_BYTES_DIFFER', 'ASSET_BYTES_MATCH_SECONDARY'].includes(fixture.decision);
+}
+
+function sameNormalizedUrl(a, b) {
+  return normalizeUrl(a) === normalizeUrl(b);
 }
 
 function isBrowserPaintRasterDecision(decision) {
@@ -287,7 +334,8 @@ function renderMarkdown(report) {
     '| --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.decision} | ${fixture.localAsset?.summary || 'n/a'} | ${fixture.actualAsset?.summary || 'n/a'} | ${fixture.sourceAsset?.summary || 'n/a'} | local/actual=${fixture.hashesMatch ? 'same' : 'different'}, proxy/source=${fixture.sourceMatchesProxy ? 'same' : 'different'} | ${fixture.nextAction} |`);
+    const preserved = fixture.preservedFromPreviousProbe ? ' preserved-after-fetch-fail' : '';
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.decision}${preserved} | ${fixture.localAsset?.summary || 'n/a'} | ${fixture.actualAsset?.summary || 'n/a'} | ${fixture.sourceAsset?.summary || 'n/a'} | local/actual=${fixture.hashesMatch ? 'same' : 'different'}, proxy/source=${fixture.sourceMatchesProxy ? 'same' : 'different'} | ${fixture.nextAction} |`);
   }
   lines.push('', '## Evidence Notes', '');
   for (const fixture of report.fixtures) {
@@ -412,6 +460,42 @@ function selfTestProbe() {
     }),
     'ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER',
   );
+  const preserved = preservePreviousEvidenceOnFetchFailure(
+    {
+      fixtureId: 'fixture',
+      priority: 'P0',
+      decision: 'ASSET_FETCH_INCOMPLETE',
+      localCssUrl: 'https://imgsrv.roll20.net/?src=https://example.test/a.png',
+      actualCssUrl: 'https://imgsrv.roll20.net/?src=https://example.test/a.png',
+      sourceUrl: 'https://example.test/a.png',
+      localAsset: { ok: false, summary: 'FETCH_FAIL fetch failed' },
+      actualAsset: { ok: false, summary: 'FETCH_FAIL fetch failed' },
+      sourceAsset: { ok: false, summary: 'FETCH_FAIL fetch failed' },
+      backgroundSourceDecision: 'BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS',
+      backgroundRasterDecision: 'FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED',
+      backgroundStyleDecision: 'DECLARATIONS_MATCH',
+    },
+    {
+      fixtureId: 'fixture',
+      priority: 'P0',
+      decision: 'ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER',
+      localCssUrl: 'https://imgsrv.roll20.net/?src=https://example.test/a.png',
+      actualCssUrl: 'https://imgsrv.roll20.net/?src=https://example.test/a.png',
+      sourceUrl: 'https://example.test/a.png',
+      localAsset: { ok: true, summary: '200 image/png 503b png 161x81', placeholder: true },
+      actualAsset: { ok: true, summary: '200 image/png 503b png 161x81', placeholder: true },
+      sourceAsset: { ok: true, summary: '200 image/png 503b png 161x81 removed.png', placeholder: true },
+      evidence: ['previous strong evidence'],
+    },
+  );
+  assert.equal(preserved.decision, 'ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER');
+  assert.equal(preserved.preservedFromPreviousProbe, true);
+  assert.equal(preserved.freshFetchDecision, 'ASSET_FETCH_INCOMPLETE');
+  const notPreserved = preservePreviousEvidenceOnFetchFailure(
+    { ...preserved, decision: 'ASSET_FETCH_INCOMPLETE', sourceUrl: 'https://example.test/changed.png' },
+    preserved,
+  );
+  assert.equal(notPreserved.decision, 'ASSET_FETCH_INCOMPLETE');
   console.log('roll20_chat_background_asset_probe self-test PASS');
 }
 

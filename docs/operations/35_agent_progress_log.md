@@ -1,3 +1,12 @@
+## 2026-07-13 Chat Asset Probe Fetch-Failure Preservation
+
+- Root cause: after isolated refresh copied a canonical run, `diagnose:roll20-chat-background-assets` could still overwrite copied strong asset byte evidence with weaker `ASSET_FETCH_INCOMPLETE` if the current network/session could not fetch Roll20/Imgur background URLs.
+- Added unchanged-URL evidence preservation in `scripts/roll20_chat_background_asset_probe.mjs`. When a fresh probe only has `ASSET_FETCH_INCOMPLETE`, but the previous report in the same run has strong byte evidence for the same local/actual/source URLs, the fixture keeps the previous decision and records `preservedFromPreviousProbe`, `freshFetchDecision`, and `preservedFetchFailureCount`.
+- Self-test now covers three cases: normal browser-paint-ready asset bytes, placeholder detection, and preserving previous placeholder byte evidence only when URLs are unchanged.
+- Live isolated refresh against `reports\roll20-actual-compare\2026-06-18-state-map-v1` produced `preservedFetchFailureCount=2`. AW2E/YSHY stayed `ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER`, asset preservation stayed `SOURCE_ASSET_LOST_RELINK_REQUIRED`, and the template-scope gate stayed `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with 9 blockers.
+- Verification: `node --check scripts\roll20_chat_background_asset_probe.mjs`, `node scripts\roll20_chat_background_asset_probe.mjs --self-test`, and the live isolated full refresh passed.
+- Claim boundary: evidence stability only. No assets were relinked, no renderer CSS was promoted, and Roll20 visual parity remains unproven.
+
 ## 2026-07-13 Chat Refresh Isolated Work Run
 
 - Root cause: the full `diagnose:roll20-chat-refresh` chain cannot be made safe by passing only per-script `--out-dir`. Later diagnostics read earlier outputs from `runDir/<report>`, so isolated writes without an isolated read model can make downstream steps consume stale canonical reports.
