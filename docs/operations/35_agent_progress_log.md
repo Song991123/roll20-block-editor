@@ -1,3 +1,15 @@
+## 2026-07-13 Root Geometry Diagnostics Out-Dir
+
+- Root cause: several Roll20 root/height diagnostics still wrote only into the selected actual-run folder, and `smoke:roll20-full-root-candidates` also compiled `buildDoc.ts` into the old `.tmp/full-root-candidate-build` folder. On this machine that build folder is read-only/locked, so a fresh full-root candidate rerun failed before it could write the requested temp report.
+- Added `--out-dir <writable-report-dir>` to `scripts/roll20_geometry_delta_diagnostics.mjs`, `scripts/roll20_height_drift_diagnostics.mjs`, and `scripts/roll20_full_root_candidate_smoke.mjs`.
+- Added `--build-dir <writable-build-dir>` to `scripts/roll20_full_root_candidate_smoke.mjs`; when `--out-dir` is present and `--build-dir` is omitted, the temporary TypeScript compile now goes to `out-dir/.build` instead of the old `.tmp` folder.
+- Verification: `node --check` passed for all three scripts. Live temp-output runs passed:
+  - `diagnose:roll20-geometry -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\geometry-outdir-20260713`
+  - `diagnose:roll20-height-drift -- reports\roll20-actual-compare\2026-06-18-state-map-v1 official-roll20-Les-Oublies --out-dir ..\_tmp_codex_smoke\height-drift-outdir-20260713`
+  - `smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\full-root-candidates-outdir-20260713`
+- Current evidence: canonical-source geometry still says Les-Oublies root delta is close (`-3.625px`) and height drift classifies as `height-close`; fresh isolated full-root candidates still show non-parity mismatches (`7.77%` best for Les-Oublies, `8.23%` AW2E, `15.69%` YSHY).
+- Claim boundary: diagnostic rerun safety only. The canonical actual evidence was not rewritten, renderer gates were not changed, and Roll20 visual parity remains unproven.
+
 ## 2026-07-13 Layer Role Token Classification
 
 - Root cause: `classifyLayerRole()` used broad substring checks like `t.includes('tr')`, so non-table block types containing those letters, especially `r20_attr_ref`, `r20_attr_ref_max`, and `r20_attribute_card`, could be classified as table roles.

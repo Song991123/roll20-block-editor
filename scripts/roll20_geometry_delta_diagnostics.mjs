@@ -16,18 +16,32 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDir = path.resolve(args[0] ?? '');
+const runDirArg = firstPositionalArg() ?? '';
+const runDir = path.resolve(runDirArg);
+const rawOutDir = readOption('--out-dir', '');
 
-if (!args[0]) {
-  console.error('Usage: node scripts/roll20_geometry_delta_diagnostics.mjs reports/roll20-actual-compare/<label>');
+if (!runDirArg) {
+  console.error('Usage: node scripts/roll20_geometry_delta_diagnostics.mjs reports/roll20-actual-compare/<label> [--out-dir <writable-report-dir>]');
   process.exit(2);
 }
 
-const outDir = path.join(runDir, 'geometry-delta-diagnostics');
+const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'geometry-delta-diagnostics');
 const sameContextFile = path.join(runDir, 'same-context-visible-smoke', 'same-context-visible-smoke-results.json');
 const fullRootFile = path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json');
 const localBaselineFile = path.join(runDir, 'local-baseline-results.json');
 const payloadRoundtripFile = path.join(runDir, 'payload-roundtrip-visual', 'payload-roundtrip-visual-results.json');
+
+function readOption(name, fallback = '') {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--out-dir');
+}
 
 async function main() {
   const sameContext = await readJsonIfExists(sameContextFile);

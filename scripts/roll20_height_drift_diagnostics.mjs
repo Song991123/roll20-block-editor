@@ -13,16 +13,37 @@ import path from 'node:path';
 import { chromium } from 'playwright-core';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDir = path.resolve(args[0] ?? '');
-const fixtureFilter = args[1] && !args[1].startsWith('--') ? args[1] : null;
+const positionalArgs = positionalArguments(args);
+const runDirArg = positionalArgs[0] ?? '';
+const runDir = path.resolve(runDirArg);
+const fixtureFilter = positionalArgs[1] ?? null;
+const rawOutDir = readOption('--out-dir', '');
 
-if (!args[0]) {
-  console.error('Usage: node scripts/roll20_height_drift_diagnostics.mjs reports/roll20-actual-compare/<label> [fixture-id]');
+if (!runDirArg) {
+  console.error('Usage: node scripts/roll20_height_drift_diagnostics.mjs reports/roll20-actual-compare/<label> [fixture-id] [--out-dir <writable-report-dir>]');
   process.exit(2);
 }
 
 const fullRootFile = path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json');
-const outDir = path.join(runDir, 'height-drift-diagnostics');
+const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'height-drift-diagnostics');
+
+function readOption(name, fallback = '') {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+function positionalArguments(rawArgs) {
+  const optionValueIndexes = new Set();
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    if (rawArgs[index]?.startsWith('--') && rawArgs[index + 1] && !rawArgs[index + 1].startsWith('--')) {
+      optionValueIndexes.add(index + 1);
+    }
+  }
+  return rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionValueIndexes.has(index));
+}
 
 async function main() {
   if (!existsSync(fullRootFile)) throw new Error(`Missing full-root candidate report: ${fullRootFile}`);

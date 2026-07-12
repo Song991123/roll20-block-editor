@@ -1,3 +1,12 @@
+## 2026-07-13 Root Geometry Diagnostics Out-Dir TODO Note
+
+- DONE: `diagnose:roll20-geometry`, `diagnose:roll20-height-drift`, and `smoke:roll20-full-root-candidates` now accept `--out-dir <writable-report-dir>`, so agents can rerun Roll20 root/height diagnostics without rewriting canonical actual evidence folders.
+- DONE: `smoke:roll20-full-root-candidates` now uses `out-dir/.build` for its temporary `buildDoc.ts` compile when `--out-dir` is supplied. This avoids the older locked/read-only `.tmp/full-root-candidate-build` folder that blocked fresh runs.
+- VERIFIED: Syntax checks passed for all three scripts. Live temp-output runs passed for geometry, Les-Oublies height drift, and full-root candidates against `reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- OBSERVED: Temp geometry output from canonical sources reports Les-Oublies root delta `-3.625px` and top content finding `TABLE.sheet-center-content`; temp height drift for Les-Oublies reports `height-close`, root delta `-3px`, and `localTailInk=0%`.
+- OBSERVED: Fresh temp full-root candidate output reports AW2E best `normal-state-map` mismatch `8.23%` with root delta `-7268.063`, Les-Oublies best `normal-state-map` mismatch `7.77%` with root delta `-594.234`, and YSHY best `sandbox-inline-block-font-zero-source` mismatch `15.69%` with root delta `585.828`.
+- CURRENT: This is diagnostic repeatability and evidence isolation only. It does not promote renderer CSS, does not update canonical Roll20 evidence, and does not prove visual parity. The next P0 is to decide whether a temp-run copy or explicit source-report wiring is needed so renderer gates can consume fresh isolated full-root output without contaminating canonical reports.
+
 ## 2026-07-13 Layer Role Token Classification TODO Note
 
 - DONE: `lib/editor/layerRoles.ts` now classifies block roles by block-type tokens instead of arbitrary substring matches. Exact table tokens such as `r20_tr`, `r20_td`, and `r20_th` still map to table roles, but `r20_attr_ref`, `r20_attr_ref_max`, and `r20_attribute_card` no longer inherit a false table/container role from the `tr` letters inside `attr`.

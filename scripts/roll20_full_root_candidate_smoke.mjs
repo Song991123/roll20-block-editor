@@ -22,14 +22,23 @@ const require = createRequire(import.meta.url);
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const threshold = Number(argOf('--threshold', '60'));
 const actualEvidenceMode = argOf('--actual-evidence', 'trusted');
+const rawOutDir = argOf('--out-dir', '');
+const rawBuildDir = argOf('--build-dir', '');
 const positionalArgs = positionalArguments(args);
 const runDir = path.resolve(positionalArgs[0] ?? '');
-const outDir = path.join(runDir, actualEvidenceMode === 'scroll-metrics'
-  ? 'full-root-candidate-smoke-scroll-metrics'
-  : 'full-root-candidate-smoke');
+const outDir = rawOutDir
+  ? path.resolve(rawOutDir)
+  : path.join(runDir, actualEvidenceMode === 'scroll-metrics'
+    ? 'full-root-candidate-smoke-scroll-metrics'
+    : 'full-root-candidate-smoke');
+const buildOutRoot = rawBuildDir
+  ? path.resolve(rawBuildDir)
+  : rawOutDir
+    ? path.join(outDir, '.build')
+    : path.join(repoRoot, '.tmp/full-root-candidate-build');
 
 if (!positionalArgs[0]) {
-  console.error('Usage: node scripts/roll20_full_root_candidate_smoke.mjs reports/roll20-actual-compare/<label> [--actual-evidence trusted|scroll-metrics]');
+  console.error('Usage: node scripts/roll20_full_root_candidate_smoke.mjs reports/roll20-actual-compare/<label> [--actual-evidence trusted|scroll-metrics] [--out-dir <writable-report-dir>] [--build-dir <writable-build-dir>]');
   process.exit(2);
 }
 
@@ -1812,7 +1821,7 @@ async function writeDominantCropArtifacts({ artifactDir, candidateId, cropDataUr
 }
 
 function resolveBuildDocModule() {
-  const outRoot = path.join(repoRoot, '.tmp/full-root-candidate-build');
+  const outRoot = buildOutRoot;
   const compiled = path.join(outRoot, 'lib/preview/buildDoc.js');
   const tsPath = path.join(repoRoot, 'lib/preview/buildDoc.ts');
   const tscJs = path.join(repoRoot, 'node_modules/typescript/lib/tsc.js');

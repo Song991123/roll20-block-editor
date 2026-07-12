@@ -10,6 +10,25 @@ This document defines how agents verify that this editor's preview/edit output m
 - Separate observation of existing rooms from applying our generated sheet.
 - Keep all real room screenshots, uploaded sheet source, exports, and generated reports local-only.
 
+## Isolated Diagnostic Output
+
+When refreshing diagnostics from a canonical `reports/roll20-actual-compare/<run>`
+folder, prefer temp output folders so locked Windows files and canonical evidence
+are not rewritten during investigation:
+
+```powershell
+corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\<run> --out-dir ..\_tmp_codex_smoke\geometry-<label>
+corepack pnpm run diagnose:roll20-height-drift -- reports\roll20-actual-compare\<run> <fixture-id> --out-dir ..\_tmp_codex_smoke\height-drift-<label>
+corepack pnpm run smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\<run> --out-dir ..\_tmp_codex_smoke\full-root-candidates-<label>
+```
+
+`smoke:roll20-full-root-candidates` also sends its temporary `buildDoc.ts`
+compile to `out-dir/.build` when `--out-dir` is supplied. Use `--build-dir`
+only when a separate writable compile directory is needed.
+
+Isolated output proves the diagnostic can be rerun safely. It does not update
+canonical renderer gates by itself and must not be reported as visual parity.
+
 ## Verification Tracks
 
 | Track | Purpose | Allowed Actions | Forbidden Actions |
