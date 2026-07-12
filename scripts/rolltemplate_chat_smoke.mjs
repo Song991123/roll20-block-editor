@@ -391,6 +391,15 @@ async function clickRollAndReadChat(page, fixtureId) {
               right: cellRect.right,
               bottom: cellRect.bottom,
             },
+            computedStyle: readStyle(cell),
+            boxMetrics: {
+              offsetWidth: cell.offsetWidth,
+              offsetHeight: cell.offsetHeight,
+              clientWidth: cell.clientWidth,
+              clientHeight: cell.clientHeight,
+              scrollWidth: cell.scrollWidth,
+              scrollHeight: cell.scrollHeight,
+            },
             text: (cell.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120),
           };
         }),

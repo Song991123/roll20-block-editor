@@ -1,3 +1,12 @@
+## 2026-07-13 AW2E Cell Font Width-Guard TODO Note
+
+- DONE: `rolltemplate_chat_smoke` and the Roll20 chat capture probe snippet now record per-cell `computedStyle` plus box metrics (`offset/client/scroll` width and height). Future Roll20 chat sidecars can prove cell-level font/box context instead of only row/table summaries.
+- DONE: `diagnose:roll20-chat-candidate-style` now requires the AW2E `message width + cell font` proof path to match actual Roll20 `table` width as well as message-shell width and font context.
+- VERIFIED: `node --check` passed for `scripts\rolltemplate_chat_smoke.mjs`, `scripts\roll20_chat_capture_plan.mjs`, and `scripts\roll20_chat_candidate_style_proof.mjs`.
+- VERIFIED: Targeted style-proof rerun passed with temp output `..\_tmp_codex_smoke\chat-style-aw2e-cell-font-width-guard-20260713-r1`.
+- OBSERVED: `aw2e-message-cell-font-context` is now explicitly rejected by actual table-width evidence: local candidate `table.rect.width=547.921875px` vs actual Roll20 `359.53125px` while chat/message width and `td:first.fontSize` match. This confirms the earlier `+188.391px` table-width explosion is a real blocker, not just stale background-source routing.
+- CURRENT: Do not promote or retry broad AW2E cell-font copying. The next AW2E work should model the table/message width and crop context before any luma/background/text antialiasing candidate is considered production-ready. Roll20 visual parity remains unproven.
+
 ## 2026-07-13 Background Source/Raster Candidate Evidence Override TODO Note
 
 - DONE: `diagnose:roll20-chat-background-source` now accepts isolated evidence overrides: `--out-dir`, `--default-smoke`, `--parity-dir`, `--style-context-dir`, `--row-compositing-dir`, `--row-raster-candidates-dir`, and `--style-proof-dir`.

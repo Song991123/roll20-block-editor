@@ -672,6 +672,15 @@ function renderDomProbeSnippet(entry) {
       tagName: cell.tagName,
       className: cell.className,
       rect: cloneRect(rectOf(cell)),
+      computedStyle: readStyle(cell),
+      boxMetrics: {
+        offsetWidth: cell.offsetWidth,
+        offsetHeight: cell.offsetHeight,
+        clientWidth: cell.clientWidth,
+        clientHeight: cell.clientHeight,
+        scrollWidth: cell.scrollWidth,
+        scrollHeight: cell.scrollHeight,
+      },
       text: (cell.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 120),
     })),
   }));

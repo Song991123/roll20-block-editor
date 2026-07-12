@@ -285,15 +285,19 @@ function summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTempla
   }
   const shell = summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar);
   const font = summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate);
-  const compatible = shell.status === 'STYLE_COMPATIBLE' && font.status === 'STYLE_COMPATIBLE';
+  const tableWidth = summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 8);
+  const compatible = shell.status === 'STYLE_COMPATIBLE'
+    && font.status === 'STYLE_COMPATIBLE'
+    && tableWidth.status === 'STYLE_COMPATIBLE';
   return {
     fixtureId,
     status: compatible ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
     finding: compatible
-      ? 'AW2E message/content width and table font size both match actual Roll20 evidence'
-      : 'AW2E message/content width plus font-size candidate is not fully supported by actual Roll20 style evidence',
+      ? 'AW2E message/content width, table width, and cell font context match actual Roll20 evidence'
+      : 'AW2E message/content width plus cell font candidate is not fully supported by actual Roll20 table width/style evidence',
     evidence: [
       ...shell.evidence.map((item) => ({ ...item, group: 'message-shell' })),
+      ...tableWidth.evidence.map((item) => ({ ...item, group: 'table-width' })),
       ...font.evidence.map((item) => ({ ...item, group: 'font-size' })),
     ],
   };
