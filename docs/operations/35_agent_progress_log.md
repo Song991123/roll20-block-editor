@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Mode Flow + Imported Sync Recheck
+
+- Re-ran the current edit UX smoke after the browser-paint routing batch to prove the visual editor path still works.
+- `smoke:edit-flow -- --port 4384` passed. The smoke covered widget flow nesting, absolute placement, layer-panel drop modes, non-leaf group reorder, absolute placement inside frames, stable post-drop coordinates with zero drift, and sheet/rolltemplate canvas width controls.
+- `smoke:imported-edit-sync -- --port 4385` passed for AW2E, Les-Oublies, YSHY 1BU, and a synthetic non-leaf flow fixture. Each covered fixture reported edit/preview coordinate agreement for the moved imported block plus resource PASS.
+- `guard:ui-copy` passed; current edit-mode Korean copy is clean in the smoke sample.
+- Claim boundary: local edit/preview sync evidence only. Actual Roll20 visual parity and Sandbox upload parity remain held by the existing renderer/asset blockers.
+
 ## 2026-07-13 Browser Paint Plan Routing
 
 - Added `scripts/roll20_chat_browser_paint_plan.mjs`, a diagnostic-only planner for the next browser paint/decode investigation after chat asset and raster evidence is refreshed.

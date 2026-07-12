@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Mode Flow + Imported Sync Recheck TODO Note
+
+- DONE: Rechecked the Figma-like edit flow smoke against the current static app build.
+- VERIFIED: `smoke:edit-flow -- --port 4384` passed. Evidence covered flow widget nesting, absolute widget placement, canvas before/inside/after drop indicators, layer-panel before/inside/after modes, non-leaf group reorder, free absolute placement inside a frame, drift-free drag commit (`leftDrift=0`, `topDrift=0`), and editable sheet canvas width (`850 -> 930`, rolltemplate width `280`).
+- VERIFIED: `guard:ui-copy` passed and the edit-mode text sample showed clean Korean copy with `hasMojibakeHan=false`.
+- VERIFIED: `smoke:imported-edit-sync -- --port 4385` passed for `official-roll20-AW2E`, `official-roll20-Les-Oublies`, `synthetic-nonleaf-flow`, and `yshy-commission-1bu`. Each reported `interaction=PASS` and `resources=PASS`, with the moved imported block matching edit and preview coordinates.
+- CLAIM BOUNDARY: This proves local static-app edit/preview synchronization for the covered fixtures. It does not prove actual Roll20 visual parity, Roll20 Sandbox upload parity, worker JS block coding, or all-sheet support.
+
 ## 2026-07-13 Browser Paint Plan Routing TODO Note
 
 - DONE: Added `plan:roll20-chat-browser-paint`, a diagnostic-only router that reads current chat asset, asset-preservation, background-raster, background-source, and row-compositing evidence.
