@@ -1,3 +1,10 @@
+## 2026-07-13 Layer Search Context TODO Note
+
+- DONE: Edit-mode layer search now preserves ancestor/container context. Searching for a nested child no longer leaves the child floating without its parent frame/flow context.
+- DONE: Layer rows expose search-match/context-only attributes and show a compact `상위 맥락` badge for ancestor rows included only to explain where a matching child lives. Nested rows also expose a visible depth guide.
+- VERIFIED: `smoke:edit-flow -- --port 4401` passed. The smoke now searches for a nested input block id and confirms the parent section remains visible as `contextOnly=1`, the child remains `searchMatch=1`, and the child row has a depth guide.
+- CLAIM BOUNDARY: This improves Figma-like layer readability and search behavior only. It does not change actual Roll20 renderer parity, asset relink status, worker JS block coding scope, or all-sheet support.
+
 ## 2026-07-13 Layer Self-Drop Affordance TODO Note
 
 - DONE: Layer rows no longer show a before/inside/after drop target when the dragged layer is hovering over itself.

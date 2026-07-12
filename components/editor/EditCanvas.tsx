@@ -42,6 +42,50 @@ function formatLayerRelationLabel(relation: BlockSnapshot['layerRelation']): str
   return '루트';
 }
 
+function matchesLayerSearch(node: BlockSnapshot, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    node.id.toLowerCase().includes(q) ||
+    node.type.toLowerCase().includes(q) ||
+    node.label.toLowerCase().includes(q) ||
+    node.preview.toLowerCase().includes(q)
+  );
+}
+
+function filterLayersWithAncestors(
+  nodes: BlockSnapshot[],
+  query: string,
+): Array<{ node: BlockSnapshot; searchMatch: boolean; contextOnly: boolean }> {
+  const q = query.trim().toLowerCase();
+  if (!q) return nodes.map((node) => ({ node, searchMatch: true, contextOnly: false }));
+
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const matched = new Set<string>();
+  const visible = new Set<string>();
+
+  for (const node of nodes) {
+    if (!matchesLayerSearch(node, q)) continue;
+    matched.add(node.id);
+    visible.add(node.id);
+    let parentId = node.layerParentId;
+    const seen = new Set<string>([node.id]);
+    while (parentId && !seen.has(parentId)) {
+      seen.add(parentId);
+      visible.add(parentId);
+      parentId = byId.get(parentId)?.layerParentId ?? null;
+    }
+  }
+
+  return nodes
+    .filter((node) => visible.has(node.id))
+    .map((node) => ({
+      node,
+      searchMatch: matched.has(node.id),
+      contextOnly: !matched.has(node.id),
+    }));
+}
+
 type DragOrigin = {
   blockId: string;
   ws: WorkspaceKey;
@@ -667,16 +711,7 @@ function EditLayerPanel({
     return getBlocklyAdapter().listAllBlocks(tab);
   }, [tab, structureVersion]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return nodes;
-    return nodes.filter(
-      (node) =>
-        node.type.toLowerCase().includes(q) ||
-        node.label.toLowerCase().includes(q) ||
-        node.preview.toLowerCase().includes(q),
-    );
-  }, [nodes, search]);
+  const filtered = useMemo(() => filterLayersWithAncestors(nodes, search), [nodes, search]);
 
   const virtualizer = useVirtualizer({
     count: filtered.length,
@@ -708,7 +743,7 @@ function EditLayerPanel({
         <Layers className="h-3.5 w-3.5" />
         <span>레이어</span>
         <span className="ml-auto rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
-          {filtered.length}/{nodes.length}
+          {search.trim() ? `${filtered.filter((item) => item.searchMatch).length}+맥락 ${filtered.length}/${nodes.length}` : `${filtered.length}/${nodes.length}`}
         </span>
       </div>
       <div className="grid grid-cols-3 gap-1 border-b border-border p-2">
@@ -736,6 +771,7 @@ function EditLayerPanel({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="레이어 검색"
             className="h-7 w-full rounded border border-border bg-[var(--bg-elevated-2)] pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-ring"
+            data-testid="edit-layer-search"
           />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
@@ -764,8 +800,9 @@ function EditLayerPanel({
             style={{ height: `${virtualizer.getTotalSize() + 8}px` }}
           >
             {virtualizer.getVirtualItems().map((row) => {
-              const node = filtered[row.index];
-              if (!node) return null;
+              const item = filtered[row.index];
+              if (!item) return null;
+              const { node } = item;
               return (
                 <div
                   key={node.id}
@@ -776,6 +813,8 @@ function EditLayerPanel({
                     node={node}
                     workspace={tab}
                     selected={node.id === selectedId}
+                    searchMatch={item.searchMatch}
+                    contextOnly={item.contextOnly}
                     onSelect={() => setSelected(node.id, 'tree')}
                     onMove={moveLayer}
                   />
@@ -793,12 +832,16 @@ const EditLayerRow = memo(function EditLayerRow({
   node,
   workspace,
   selected,
+  searchMatch,
+  contextOnly,
   onSelect,
   onMove,
 }: {
   node: BlockSnapshot;
   workspace: WorkspaceKey;
   selected: boolean;
+  searchMatch: boolean;
+  contextOnly: boolean;
   onSelect: () => void;
   onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
 }) {
@@ -835,6 +878,8 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-layer-previous-id={node.layerPreviousId ?? ''}
       data-r20-layer-relation={node.layerRelation}
       data-r20-layer-child-count={node.childCount}
+      data-r20-layer-search-match={searchMatch ? '1' : '0'}
+      data-r20-layer-context-only={contextOnly ? '1' : '0'}
       aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
       onClick={onSelect}
       onDragStart={(e) => {
@@ -877,7 +922,9 @@ const EditLayerRow = memo(function EditLayerRow({
       className={`relative flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs ${
         selected
           ? 'bg-orange-500/20 text-foreground ring-1 ring-orange-500/60'
-          : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
+          : contextOnly
+            ? 'text-muted-foreground/70 hover:bg-[var(--bg-hover)] hover:text-muted-foreground'
+            : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
       } ${
         dropMode === 'inside'
           ? 'ring-1 ring-sky-400/80'
@@ -889,6 +936,14 @@ const EditLayerRow = memo(function EditLayerRow({
       }`}
       style={{ paddingLeft: `${8 + node.depth * 12}px` }}
     >
+      {node.depth > 0 && (
+        <span
+          aria-hidden
+          data-testid="edit-layer-depth-guide"
+          className="pointer-events-none absolute bottom-1 top-1 border-l border-border/70"
+          style={{ left: `${8 + (node.depth - 1) * 12}px` }}
+        />
+      )}
       <span
         aria-hidden
         data-testid="edit-layer-role-rail"
@@ -932,6 +987,14 @@ const EditLayerRow = memo(function EditLayerRow({
           {role.canReceiveChildren && (
             <span className="shrink-0 rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-200">
               담기 가능
+            </span>
+          )}
+          {contextOnly && (
+            <span
+              data-testid="edit-layer-context-badge"
+              className="shrink-0 rounded border border-border/80 bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground"
+            >
+              상위 맥락
             </span>
           )}
           {role.defaultDropMode !== 'none' && (

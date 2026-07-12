@@ -607,6 +607,45 @@ async function main() {
     { sectionId: sectionInfo.blockId, inputId: dragDropState.nestedInputBlockId },
   );
 
+  const layerSearchContext = await (async () => {
+    const inputId = dragDropState.nestedInputBlockId;
+    if (!inputId) return { checked: false, reason: 'missing nested input block id' };
+    await page.fill('[data-testid="edit-layer-search"]', inputId);
+    await page.waitForFunction(
+      (id) => {
+        const rows = Array.from(document.querySelectorAll('[data-testid="edit-layer-row"]'));
+        return rows.some((row) => row.getAttribute('data-r20-block-id') === id);
+      },
+      inputId,
+      { timeout: 10000 },
+    );
+    const state = await page.evaluate(({ sectionId, inputId }) => {
+      const rows = Array.from(document.querySelectorAll('[data-testid="edit-layer-row"]'));
+      const read = (id) => {
+        const row = rows.find((candidate) => candidate.getAttribute('data-r20-block-id') === id);
+        return row
+          ? {
+              id,
+              searchMatch: row.getAttribute('data-r20-layer-search-match'),
+              contextOnly: row.getAttribute('data-r20-layer-context-only'),
+              hasContextBadge: Boolean(row.querySelector('[data-testid="edit-layer-context-badge"]')),
+              hasDepthGuide: Boolean(row.querySelector('[data-testid="edit-layer-depth-guide"]')),
+              text: row.textContent?.replace(/\s+/g, ' ').trim() || '',
+            }
+          : null;
+      };
+      return {
+        checked: true,
+        rowCount: rows.length,
+        section: read(sectionId),
+        input: read(inputId),
+        summaryText: document.querySelector('[data-testid="edit-layer-search"]')?.value || '',
+      };
+    }, { sectionId: sectionInfo.blockId, inputId });
+    await page.fill('[data-testid="edit-layer-search"]', '');
+    return state;
+  })();
+
   const nonLeafLayerReorder = await page.evaluate(async () => {
     const html = [
       '<div class="outer" style="width:520px; min-height:180px; padding:12px">',
@@ -911,6 +950,7 @@ async function main() {
     nestedReorder,
     canvasSiblingInsert,
     layerDropModes,
+    layerSearchContext,
     nonLeafLayerReorder,
     absoluteInsideFrame,
     freePlacementWidgetDrop,
@@ -982,6 +1022,14 @@ async function main() {
     Boolean(layerDropModes.attrs?.childBadge) &&
     layerDropModes.attrs?.text?.includes('담기 가능') &&
     layerDropModes.attrs?.text?.includes('흐름') &&
+    layerSearchContext.checked === true &&
+    layerSearchContext.rowCount >= 2 &&
+    layerSearchContext.section?.searchMatch === '0' &&
+    layerSearchContext.section?.contextOnly === '1' &&
+    layerSearchContext.section?.hasContextBadge === true &&
+    layerSearchContext.input?.searchMatch === '1' &&
+    layerSearchContext.input?.contextOnly === '0' &&
+    layerSearchContext.input?.hasDepthGuide === true &&
     nonLeafLayerReorder.mode === 'after' &&
     nonLeafLayerReorder.layerSameParent === true &&
     nonLeafLayerReorder.layerSameDepth === true &&

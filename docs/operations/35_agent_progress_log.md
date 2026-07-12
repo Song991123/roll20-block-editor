@@ -1,3 +1,10 @@
+## 2026-07-13 Layer Search Context
+
+- Improved the edit layer panel so search keeps ancestor context. A nested input search now shows both the matching child and its parent container instead of hiding the frame that explains where the child lives.
+- Added row-level search/context attributes plus a visible `상위 맥락` badge and depth guide, then extended `scripts/edit_flow_browser_smoke.mjs` to verify the behavior through the browser.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `git diff --check`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4401`, and `corepack pnpm run guard:ui-copy` passed.
+- Claim boundary: edit-layer UX only. This does not change Roll20 actual-screen parity or renderer readiness.
+
 ## 2026-07-13 Layer Self-Drop Affordance
 
 - Tightened the edit layer panel so a row does not display a before/inside/after drop affordance when the dragged layer is hovering over itself.
