@@ -17,6 +17,7 @@ const steps = [
   ['status:roll20-actual', 'scripts/roll20_actual_status.mjs'],
   ['diagnose:roll20-chat-parity', 'scripts/roll20_chat_parity_diagnostics.mjs'],
   ['diagnose:roll20-chat-current-metrics', 'scripts/roll20_chat_current_metrics_audit.mjs'],
+  ['diagnose:roll20-chat-structure', 'scripts/roll20_chat_structure_compare.mjs'],
   ['diagnose:roll20-chat-style', 'scripts/roll20_chat_style_context_diagnostics.mjs'],
   ['diagnose:roll20-chat-candidates', 'scripts/roll20_chat_candidate_compare.mjs'],
   ['diagnose:roll20-chat-candidate-style', 'scripts/roll20_chat_candidate_style_proof.mjs'],

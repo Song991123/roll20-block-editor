@@ -1,3 +1,11 @@
+## 2026-07-12 Roll20 Chat Structure Gate TODO Note
+
+- DONE: Added `corepack pnpm run diagnose:roll20-chat-structure -- reports\roll20-actual-compare\2026-06-18-state-map-v1` to compare local ChatPane rolltemplate class/row/text structure against actual Roll20 chat sidecars before treating pixel diffs as renderer evidence.
+- DONE: Wired the structure report into `gate:roll20-renderer-action` and `diagnose:roll20-chat-refresh`, so renderer CSS stays held when actual Roll20 captured a different rolltemplate than the local smoke.
+- VERIFIED: Current structure result is `STRUCTURE_MISMATCH_FOUND`: AW2E `sheet-rolltemplate-aw` rows `2/2` matches, YSHY `sheet-rolltemplate-coc` rows `7/7` matches, but Les-Oublies local `sheet-rolltemplate-initiative-roll` rows `3` differs from actual `sheet-rolltemplate-classic-roll` rows `5`.
+- CURRENT: Les-Oublies `54.1%` aligned chat pixel mismatch must not be used as renderer CSS evidence until same-template Roll20 chat evidence is recaptured. The renderer gate now prints this as a blocker.
+- STILL TODO: Recapture Les-Oublies actual chat by targeting the same local smoke roll button/template (`roll_initiative` / `sheet-rolltemplate-initiative-roll`), then rerun `diagnose:roll20-chat-refresh` before continuing ChatPane CSS work.
+
 ## 2026-07-12 AW2E Chat Width Hypothesis TODO Note
 
 - DONE: Tested the AW2E root-cause hypothesis that local ChatPane needs both Roll20's full-width message/content box and the Roll20-observed `13.65px` AW2E table font size.

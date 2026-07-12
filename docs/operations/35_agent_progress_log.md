@@ -1,3 +1,11 @@
+## 2026-07-12 Roll20 Chat Structure Gate
+
+- Root cause found: the largest current Les-Oublies chat mismatch was comparing different rendered rolltemplates. Local smoke clicked `roll_initiative` and rendered `sheet-rolltemplate-initiative-roll`, while the actual Roll20 sidecar selected `sheet-rolltemplate-classic-roll`.
+- Added `scripts/roll20_chat_structure_compare.mjs` and package alias `diagnose:roll20-chat-structure` to compare local chosen roll/template, actual selected template, row signatures, and table text before CSS interpretation.
+- Integrated the structure report into `scripts/roll20_renderer_action_gate.mjs` and `scripts/roll20_chat_diagnostic_refresh.mjs`. The gate now blocks renderer CSS promotion with a same-template recapture instruction when structure mismatch exists.
+- Verification: `diagnose:roll20-chat-structure` reports AW2E and YSHY as `STRUCTURE_MATCH`; Les-Oublies is `TEMPLATE_CLASS_MISMATCH` (`initiative-roll` local vs `classic-roll` actual, rows `3/5`). `gate:roll20-renderer-action` now surfaces that mismatch as a blocker and keeps `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Boundary: this does not fix ChatPane rendering and does not prove Roll20 parity. It prevents a false renderer conclusion and makes the next Roll20 capture target concrete.
+
 ## 2026-07-12 AW2E Chat Width Hypothesis Check
 
 - Investigated the AW2E chat mismatch before changing production renderer CSS. Root-cause hypothesis: local ChatPane was 12px narrower than actual Roll20 (`328/267` local chat/template vs `340/279` actual) and AW2E table text metrics differed at `13px` local vs `13.65px` actual.
