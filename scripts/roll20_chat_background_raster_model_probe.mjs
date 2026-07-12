@@ -181,6 +181,7 @@ function decide({
   widthExperiment,
 }) {
   if (priority === 'P2') return 'RASTER_MODEL_SECONDARY';
+  if (backgroundSourceDecision === 'TABLE_WIDTH_CONTEXT_BEFORE_BACKGROUND_CSS') return 'TABLE_WIDTH_CONTEXT_BEFORE_LUMA_MODEL';
   if (
     backgroundSourceDecision === 'BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS' &&
     pctNumber(flatPaintMismatchSharePct) >= 80 &&
@@ -221,6 +222,8 @@ function nextAction(decision) {
       return 'inspect Roll20 paint/blend/source conditions before CSS; luma model helps enough to need style proof';
     case 'TABLE_WIDTH_CONTEXT_STILL_PRIMARY':
       return 'finish table width/crop intrinsic model before lower-level background raster work';
+    case 'TABLE_WIDTH_CONTEXT_BEFORE_LUMA_MODEL':
+      return 'resolve table width/crop context before treating luma correction as a renderer model';
     case 'SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED':
       return 'CSS declarations match and simple raster models are weak; compare image bytes, proxy decode, and browser paint behavior';
     case 'DECLARATION_DIFF_BEFORE_RASTER_MODEL':
@@ -373,6 +376,22 @@ async function runSelfTest() {
       widthExperiment: '',
     }),
     'SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED',
+  );
+  assert.equal(
+    decide({
+      priority: 'P0',
+      backgroundSourceDecision: 'TABLE_WIDTH_CONTEXT_BEFORE_BACKGROUND_CSS',
+      compositingDecision: 'LUMA_BACKGROUND_COMPOSITING_MODEL_REQUIRED',
+      rowRasterDecision: 'ROW_LUMA_RASTER_MODEL_REQUIRED',
+      lumaCorrectionGainPct: -47.9,
+      flatPaintMismatchSharePct: '100%',
+      edgeMismatchSharePct: '0%',
+      localDarkerMismatchSharePct: '81.48%',
+      chromaMismatchSharePct: '50%',
+      backgroundSizeRisk: '',
+      widthExperiment: 'CHAT_MESSAGE_CONTENT_WIDTH',
+    }),
+    'TABLE_WIDTH_CONTEXT_BEFORE_LUMA_MODEL',
   );
   const summary = summarizeCompositing({
     summary: {

@@ -103,13 +103,15 @@ async function summarizeFixture(fixtureId, reports) {
   const backgroundSizeStyleProof = candidateByName(reports.styleProof, 'coc-background-size-actual');
   const isYshyCoc = fixtureId === 'yshy-commission-1bu';
   const fixtureCandidate = candidateForFixture(cocBackgroundSize, fixtureId);
+  const observedTableWidthDelta = rectDelta(localTable?.rect, actualTable?.rect, 'width');
+  const contextTableWidthDelta = observedTableWidthDelta ?? style?.tableDelta?.width ?? null;
   const decision = decide({
     fixtureId,
     isYshyCoc,
     priority,
     backgroundStyle,
     compositing,
-    tableWidthDelta: style?.tableDelta?.width ?? null,
+    tableWidthDelta: contextTableWidthDelta,
     backgroundSizeCandidateRisk: isYshyCoc ? cocBackgroundSize?.rowRasterRisk ?? '' : '',
     yshyRowWeightedDeltaPct: isYshyCoc ? cocBackgroundSize?.yshyRowWeightedDeltaPct ?? null : null,
     lumaCorrectionGainPct: compositing?.summary?.lumaCorrectionGainPct ?? null,
@@ -120,7 +122,9 @@ async function summarizeFixture(fixtureId, reports) {
     decision,
     nextAction: nextAction(decision),
     alignedMismatchPct: parity?.bestAlignedMismatchPct ?? '',
-    tableWidthDelta: style?.tableDelta?.width ?? null,
+    tableWidthDelta: contextTableWidthDelta,
+    observedTableWidthDelta,
+    styleContextTableWidthDelta: style?.tableDelta?.width ?? null,
     compositingDecision: compositing?.decision ?? '',
     rowWeightedMismatchPct: compositing?.summary?.rowWeightedMismatchPct ?? '',
     lumaCorrectedMismatchPct: compositing?.summary?.lumaCorrectedMismatchPct ?? '',
@@ -216,6 +220,8 @@ function compareBackgroundStyle(localTable, actualTable) {
           ? 'IMAGE_MATCH_STYLE_DIFFERS'
           : 'IMAGE_DIFFERS',
     deltas,
+    localTableRect: localTable?.rect ?? null,
+    actualTableRect: actualTable?.rect ?? null,
   };
 }
 
@@ -223,6 +229,8 @@ function evidenceNotes({ fixtureId, isYshyCoc, backgroundStyle, compositing, sty
   const notes = [];
   notes.push(`background style ${backgroundStyle.decision}`);
   notes.push(`table width delta ${fmtPx(style?.tableDelta?.width)}`);
+  const observedDelta = rectDelta(backgroundStyle.localTableRect, backgroundStyle.actualTableRect, 'width');
+  if (observedDelta != null) notes.push(`observed local-vs-actual table rect width delta ${fmtPx(observedDelta)}`);
   if (compositing?.decision) {
     notes.push(`compositing ${compositing.decision}: weighted ${compositing.summary?.rowWeightedMismatchPct || 'n/a'}, luma-corrected ${compositing.summary?.lumaCorrectedMismatchPct || 'n/a'} (${fmtSigned(compositing.summary?.lumaCorrectionGainPct)})`);
     notes.push(`flat ${compositing.summary?.flatPaintMismatchSharePct || 'n/a'}, local darker ${compositing.summary?.localDarkerMismatchSharePct || 'n/a'}`);
@@ -335,6 +343,13 @@ function priorityFor(mismatch) {
 function numberOrNull(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
+}
+
+function rectDelta(localRect, actualRect, key) {
+  const localValue = numberOrNull(localRect?.[key]);
+  const actualValue = numberOrNull(actualRect?.[key]);
+  if (localValue == null || actualValue == null) return null;
+  return Number((localValue - actualValue).toFixed(3));
 }
 
 function countBy(values) {

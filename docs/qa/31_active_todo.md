@@ -2,12 +2,14 @@
 
 - DONE: `diagnose:roll20-chat-background-source` now accepts isolated evidence overrides: `--out-dir`, `--default-smoke`, `--parity-dir`, `--style-context-dir`, `--row-compositing-dir`, `--row-raster-candidates-dir`, and `--style-proof-dir`.
 - DONE: `diagnose:roll20-chat-background-raster` now accepts `--out-dir`, `--background-source-dir`, `--row-compositing-dir`, `--row-raster-dir`, `--row-raster-candidates-dir`, and `--width-reconciliation-dir`. Both reports record `reportOverrides`.
+- DONE: `diagnose:roll20-chat-background-source` now computes observed local-vs-actual table rect width deltas directly from the selected local smoke and Roll20 DOM sidecar, so candidate-specific width explosions are not hidden behind stale canonical style-context deltas.
+- DONE: `diagnose:roll20-chat-background-raster` now treats `TABLE_WIDTH_CONTEXT_BEFORE_BACKGROUND_CSS` as higher priority than a promising luma correction. This prevents a broken-width candidate from being misread as a luma renderer fix.
 - VERIFIED: `node --check` passed for both changed scripts, and `node scripts\roll20_chat_background_raster_model_probe.mjs --self-test` passed.
 - VERIFIED: Default temp-output background source and raster runs passed against `reports\roll20-actual-compare\2026-06-18-state-map-v1`, writing to `..\_tmp_codex_smoke\background-source-outdir-smoke-20260713-r1` and `..\_tmp_codex_smoke\background-raster-outdir-smoke-20260713-r1`.
 - VERIFIED: Candidate-specific runs consumed the rejected `aw2e-message-cell-font-context` smoke/compositing/row-raster evidence. Outputs: `..\_tmp_codex_smoke\background-source-aw2e-cell-font-20260713-r1` and `..\_tmp_codex_smoke\background-raster-aw2e-cell-font-20260713-r1`.
-- OBSERVED: With candidate-specific evidence, AW2E routes to `ROW_LUMA_MODEL_PROMISING` in background raster, but background source first routes it to `TABLE_WIDTH_CONTEXT_BEFORE_BACKGROUND_CSS`. This means the next AW2E probe should inspect Roll20 paint/blend/source and width/crop context before any CSS promotion.
+- OBSERVED: With direct observed width evidence, the rejected AW2E cell-font candidate shows table rect width delta `+188.391px` versus actual Roll20. Background raster now routes it to `TABLE_WIDTH_CONTEXT_BEFORE_LUMA_MODEL`, not `ROW_LUMA_MODEL_PROMISING`.
 - OBSERVED: YSHY routes to `BACKGROUND_SIZE_CANDIDATE_REJECTED` / `BACKGROUND_SIZE_SCALE_REJECTED` under the same candidate-specific evidence. Do not retry background-size/table-scale or filter hacks for YSHY.
-- CURRENT: The next implementation candidate should be diagnostic-only and template-scoped. For AW2E, prefer a paint/blend/source/width-context probe over a direct font or filter patch. For YSHY, compare fetched image/proxy bytes and browser paint output next. Roll20 visual parity remains unproven.
+- CURRENT: The next implementation candidate should be diagnostic-only and template-scoped. For AW2E, fix or model message/table width/crop context before treating luma correction as a renderer model. For YSHY, compare fetched image/proxy bytes and browser paint output next. Roll20 visual parity remains unproven.
 
 ## 2026-07-13 AW2E Cell Font Row Compositing Follow-Up TODO Note
 
