@@ -16,6 +16,7 @@ const SELF_TEST = args.includes('--self-test');
 const runDirArg = args.find((arg) => arg !== '--self-test') ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const outDir = path.join(runDir, 'chat-targeted-renderer-plan');
+const runDirForCommand = runDirArg;
 
 if (SELF_TEST) {
   selfTest();
@@ -149,12 +150,12 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...sourceAssetEvidence(signals),
       ],
       commands: [
-        'corepack pnpm run plan:roll20-asset-relink -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1 --map-file <local-map.txt>',
-        'corepack pnpm run diagnose:roll20-chat-message-shell -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-table-width-budget -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-font-glyph -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run plan:roll20-chat-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-background-raster -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        command('plan:roll20-asset-relink', '--map-file <local-map.txt>'),
+        command('diagnose:roll20-chat-message-shell'),
+        command('diagnose:roll20-chat-table-width-budget'),
+        command('diagnose:roll20-chat-font-glyph'),
+        command('plan:roll20-chat-assets'),
+        command('diagnose:roll20-chat-background-raster'),
       ],
       promotionRule: 'Only promote an AW2E-scoped rule after it beats default on AW2E without regressing Les/YSHY and style proof matches actual Roll20.',
     };
@@ -181,13 +182,13 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...sourceAssetEvidence(signals),
       ],
       commands: [
-        'corepack pnpm run plan:roll20-asset-relink -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1 --map-file <local-map.txt>',
-        'corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-overflow-crop -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-intrinsic-width -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-font-glyph -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-font-intrinsic -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run plan:roll20-chat-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        command('plan:roll20-asset-relink', '--map-file <local-map.txt>'),
+        command('diagnose:roll20-chat-table-intrinsic-probe'),
+        command('diagnose:roll20-chat-overflow-crop'),
+        command('diagnose:roll20-chat-intrinsic-width'),
+        command('diagnose:roll20-chat-font-glyph'),
+        command('diagnose:roll20-chat-font-intrinsic'),
+        command('plan:roll20-chat-assets'),
       ],
       promotionRule: 'Only promote a CoC/YSHY-scoped rule after scrollWidth/clientWidth, font availability, and style proof agree; do not use transform/scale as production behavior.',
     };
@@ -197,7 +198,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
     nextExperiment: 'new fixture/template-specific model',
     blockers: ['current diagnostics do not identify a production-safe renderer axis'],
     evidence: ['no safe current candidate explains same-template actual Roll20 pixels'],
-    commands: ['corepack pnpm run diagnose:roll20-chat-refresh -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1'],
+    commands: [command('diagnose:roll20-chat-refresh')],
     promotionRule: 'Keep production renderer held until a same-template candidate beats default with style proof.',
   };
 }
@@ -352,6 +353,14 @@ function fmtSignedPct(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `${value > 0 ? '+' : ''}${value}%` : 'n/a';
 }
 
+function command(scriptName, suffix = '') {
+  return `corepack pnpm run ${scriptName} -- ${quoteCommandArg(runDirForCommand)}${suffix ? ` ${suffix}` : ''}`;
+}
+
+function quoteCommandArg(value) {
+  return /\s/.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value;
+}
+
 function selfTest() {
   const aw2e = classifyFixture('official-roll20-AW2E', 0.18, {
     reconciliationDecision: 'CHAT_MESSAGE_CONTENT_WIDTH',
@@ -369,5 +378,9 @@ function selfTest() {
   assert.equal(yshy.strategy, 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL');
   const les = classifyFixture('official-roll20-Les-Oublies', 0.0634, {});
   assert.equal(les.strategy, 'KEEP_DEFAULT');
+  const fallback = classifyFixture('unknown-fixture', 0.5, {});
+  assert.equal(fallback.commands[0], command('diagnose:roll20-chat-refresh'));
+  assert.equal(quoteCommandArg('reports/run with space'), '"reports/run with space"');
+  assert.equal(quoteCommandArg('reports/plain-run'), 'reports/plain-run');
   console.log('roll20_chat_targeted_renderer_plan self-test PASS');
 }

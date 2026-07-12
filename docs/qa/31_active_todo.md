@@ -2943,3 +2943,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: Current AW2E dry-runs show `probeStatus=NOT_PROVEN` and `next=Open the intended character sheet iframe/tab or apply the generated fixture before saving DOM evidence.`
 - CURRENT: The next real action is still to open/load the intended generated custom sheet in the dedicated Sandbox/test room; URL readiness alone is not enough.
 - CLAIM BOUNDARY: This improves blocker visibility only. No Roll20 screenshot or chat evidence was captured.
+
+## 2026-07-13 Chat Renderer Target Plan Run-Dir Safety TODO Note
+
+- DONE: `plan:roll20-chat-renderer-targets` now builds every generated next-command from the run directory passed to the script instead of hardcoding the old `reports\roll20-actual-compare\2026-06-18-state-map-v1` path.
+- ROOT CAUSE: The targeted renderer plan correctly identified split chat renderer axes, but its Markdown handoff commands could send the next agent back to stale evidence when a newer actual Roll20 run directory is used.
+- VERIFIED: `node --check scripts\roll20_chat_targeted_renderer_plan.mjs`, `corepack pnpm run test:roll20-chat-renderer-targets`, `corepack pnpm run plan:roll20-chat-renderer-targets -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `git diff --check`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run guard:ui-copy` passed.
+- CURRENT: Actual Roll20 chat structure is matched, but renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`; AW2E and YSHY still need template-scoped width/text/intrinsic modeling plus asset relink before any CSS promotion.
+- CLAIM BOUNDARY: This is handoff/gate safety only. It does not prove Roll20 chat visual parity and does not change product renderer CSS.

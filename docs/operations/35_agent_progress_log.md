@@ -3586,3 +3586,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Extended `asset_refs` to return local UI-safe ref summaries and added an import dialog draft button. The button appends commented replacement-map lines for detected external/relative assets so users can fill user-owned hosted URLs before activating the map.
 - Verification for the import draft batch: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, `smoke:export-dialog -- --port 4369`, and `guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed. Smoke confirms a synthetic Imgur URL produces a commented draft entry and still verifies preview/edit render replacement separately.
 - Claim boundary: this is diagnostic/planning and safety policy. It does not make Roll20 chat visual parity pass and does not embed or commit any real sheet assets.
+
+## 2026-07-13 Chat Renderer Target Plan Run-Dir Safety
+
+- Rechecked current actual Roll20 status: generated actual screenshots and diffs are `6/6`, trusted full-root is `3/3`, chat structure is `STRUCTURE_MATCHED`, but renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Current blockers are now narrower: AW2E needs a `.sheet-rolltemplate-aw` scoped message/content width plus exact text-metric model; YSHY needs a CoC/YSHY-scoped table intrinsic/sanitize/font-context model; Les-Oublies stays on the default renderer for now.
+- Fixed `scripts/roll20_chat_targeted_renderer_plan.mjs` so generated next commands use the run directory supplied to the script. This prevents future actual Roll20 run directories from producing handoff Markdown that points back to stale `2026-06-18-state-map-v1` evidence.
+- Verification: `node --check scripts\roll20_chat_targeted_renderer_plan.mjs`, `corepack pnpm run test:roll20-chat-renderer-targets`, `corepack pnpm run plan:roll20-chat-renderer-targets -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `git diff --check`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run guard:ui-copy` passed.
+- Claim boundary: handoff/gate safety only. No renderer CSS was promoted and no new actual Roll20 screenshot evidence was captured.
