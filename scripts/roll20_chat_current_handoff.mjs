@@ -79,6 +79,8 @@ async function main() {
           plannedFixtures: plan.plannedEntries?.map((entry) => ({
             fixtureId: entry.fixtureId,
             captureReasons: entry.captureReasons,
+            sheetFrameProbeCommand: entry.sheetFrameProbeCommand,
+            chatCaptureCommand: entry.chatCaptureCommand,
             snippetPath: entry.snippetPath,
             targets: entry.targets,
           })) ?? [],

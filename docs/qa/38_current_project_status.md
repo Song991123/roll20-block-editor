@@ -81,6 +81,7 @@ These are planning estimates, not promises. They assume focused work and no new 
 
 1. Get trustworthy AW2E and YSHY `roll20-chat.png` evidence.
    - Preferred: CDP-enabled Roll20 tab with `probe:roll20-sheet-frame` followed by `capture:roll20-chat-cdp`.
+   - Current 2026-07-12 handoff improvement: `capture:roll20-chat-cdp --plan-only` now prints the exact sheet-frame probe command and gated capture command for each fixture.
    - Alternative: build and verify a full-screenshot crop adapter that proves the saved PNG visibly contains the foreground text chat panel.
 2. Keep renderer patches on hold until chat/root evidence supports them.
 3. Continue edit-mode UX polish in parallel:

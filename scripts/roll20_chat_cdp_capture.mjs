@@ -44,6 +44,8 @@ const snippetPath = path.join(RUN_DIR, 'roll20-chat-capture-plan', 'snippets', `
 const chatPngPath = path.join(screenshotsDir, 'roll20-chat.png');
 const sidecarPath = path.join(screenshotsDir, 'roll20-chat-dom-evidence.json');
 const sheetFrameEvidencePath = path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json');
+const sheetFrameProbeCommand = `corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}`;
+const chatCaptureCommand = `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}`;
 
 main().catch((error) => {
   const message = String(error?.message ?? error);
@@ -70,10 +72,13 @@ async function main() {
     console.log(`snippet=${rel(snippetPath)}`);
     console.log(`chatPng=${rel(chatPngPath)}`);
     console.log(`sidecar=${rel(sidecarPath)}`);
+    console.log(`sheetFrameEvidence=${rel(sheetFrameEvidencePath)}`);
+    console.log(`sheetFrameProbe=${sheetFrameProbeCommand}`);
     console.log(`cdp=${CDP_URL}`);
     console.log(`pageMatch=${PAGE_MATCH}`);
     console.log(`rollButtons=${buttons.length ? buttons.join(', ') : '(none in plan; pass --roll-button)'}`);
-    console.log('next=Open the dedicated Roll20 Custom Sheet Sandbox/test-room page in a CDP-enabled Chrome, load this fixture, then rerun without --plan-only.');
+    console.log(`capture=${chatCaptureCommand}`);
+    console.log('next=Open the dedicated Roll20 Custom Sheet Sandbox/test-room page in a CDP-enabled Chrome, load this fixture, run the sheet-frame probe until it writes VISIBLE_MATCH evidence, then rerun the capture command without --plan-only.');
     return;
   }
 
@@ -390,7 +395,7 @@ async function readSheetFrameEvidence() {
       missing
         ? `Missing sheet-frame DOM evidence: ${rel(sheetFrameEvidencePath)}`
         : `Could not read sheet-frame DOM evidence: ${rel(sheetFrameEvidencePath)} (${message})`,
-      `Run: corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}`,
+      `Run: ${sheetFrameProbeCommand}`,
       'Then open the same loaded Roll20 character sheet and rerun this chat capture.',
     ].join('\n'));
   }
@@ -403,7 +408,7 @@ function validateSheetFrameEvidence(evidence) {
     'ROLL20 CHAT CDP CAPTURE BLOCKED_SHEET_FRAME_EVIDENCE',
     result.note,
     `Evidence file: ${rel(sheetFrameEvidencePath)}`,
-    `Run: corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}`,
+    `Run: ${sheetFrameProbeCommand}`,
   ].join('\n'));
 }
 

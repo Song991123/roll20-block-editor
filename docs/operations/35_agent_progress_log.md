@@ -3344,3 +3344,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Current measured gates remain unchanged for actual Roll20: `status:roll20-actual` is still `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, and `gate:roll20-renderer-action` still holds production renderer patches.
 - Progress estimate reported to user: starting goal state was roughly `10-15%`; current total product goal is roughly `35-45%`, with local edit/drop UX `55-65%`, local preview/edit sync around `70%`, actual Roll20 root `55-65%`, and actual Roll20 chat/rolltemplate `25-35%`.
 - Claim boundary: this is edit UX truthfulness and user guidance. It does not prove Roll20 visual parity.
+
+## 2026-07-12 Chat Capture Plan-Only Handoff
+
+- Rechecked the active actual run: `status:roll20-actual` remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, generated screenshots/diffs `4/6`, missing trusted chat evidence for AW2E and YSHY, and `rendererReady=NO`.
+- Rechecked CDP readiness: `preflight:roll20-cdp` reports `CDP_CLOSED`, so this batch did not capture new Roll20 pixels.
+- Updated `scripts/roll20_chat_cdp_capture.mjs` so `--plan-only` prints the sheet-frame evidence path, exact `probe:roll20-sheet-frame` command, and exact gated chat capture command before telling agents to rerun without `--plan-only`.
+- Updated `scripts/roll20_chat_current_handoff.mjs` so the generated current-metrics handoff table preserves the exact sheet-frame probe and gated chat capture commands from `roll20_chat_capture_plan.mjs`.
+- Verification: `node --check scripts\roll20_chat_cdp_capture.mjs`, `node --check scripts\roll20_chat_current_handoff.mjs`, `test:roll20-chat-cdp-readiness`, `test:roll20-chat-capture-plan`, `handoff:roll20-chat-current`, and `capture:roll20-chat-cdp --plan-only` for `official-roll20-AW2E` and `yshy-commission-1bu`.
+- Claim boundary: this reduces handoff mistakes for the next actual Roll20 recapture. It does not add visual evidence, does not change ChatPane CSS, and does not prove parity.

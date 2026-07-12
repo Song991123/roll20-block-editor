@@ -2719,3 +2719,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `corepack pnpm run smoke:edit-flow -- --port 4341` passes after the change. Evidence still covers flow drop, absolute drop, before/inside/after layer modes, non-leaf reorder, free placement inside a frame, no mojibake in sampled edit UI copy, and zero console/page errors.
 - CURRENT PROGRESS ESTIMATE: compared with the starting goal state, local edit/drop UX is roughly `55-65%`, local preview/edit visual sync is roughly `70%`, actual Roll20 root reproduction is roughly `55-65%`, actual Roll20 chat/rolltemplate reproduction is roughly `25-35%`, and the whole product goal remains roughly `35-45%`.
 - CLAIM BOUNDARY: This improves edit-mode trust and usability only. It does not create new actual Roll20 evidence and does not make the production renderer ready.
+
+## 2026-07-12 Chat Capture Plan-Only Handoff TODO Note
+
+- DONE: `capture:roll20-chat-cdp --plan-only` now prints the required `roll20-sandbox-dom-evidence.json` path, the exact `probe:roll20-sheet-frame` command, and the gated capture command for the fixture.
+- DONE: `handoff:roll20-chat-current` now preserves the exact per-fixture sheet-frame probe and chat capture commands from the capture plan instead of falling back to generic handoff text.
+- VERIFIED: `node --check scripts\roll20_chat_cdp_capture.mjs`, `node --check scripts\roll20_chat_current_handoff.mjs`, `corepack pnpm run test:roll20-chat-cdp-readiness`, `corepack pnpm run test:roll20-chat-capture-plan`, plan-only runs for `official-roll20-AW2E` and `yshy-commission-1bu`, and `corepack pnpm run handoff:roll20-chat-current -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed.
+- CURRENT: `preflight:roll20-cdp` still reports `CDP_CLOSED`; no new Roll20 chat PNG or sidecar evidence was captured. Current actual status remains `generatedActualScreenshots=4/6`, `chatNeedsNormalizedCapture=2`, and `rendererReady=NO`.
+- STILL TODO: open a CDP-enabled Roll20 Sandbox/test-room tab, run the printed sheet-frame probe until it writes `VISIBLE_MATCH`, then run the printed capture command for AW2E and YSHY.
+- CLAIM BOUNDARY: This is capture-handoff tooling only. It does not prove Roll20 chat parity and does not justify production renderer CSS.
