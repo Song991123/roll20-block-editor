@@ -1,3 +1,14 @@
+export type AssetRefKind = 'external-url' | 'relative-url' | 'data-url';
+
+export interface AssetRefSummary {
+  ref: string;
+  kind: AssetRefKind;
+  host: string | null;
+  roll20Proxy: boolean;
+  imgurPage: boolean;
+  placeholderRisk: boolean;
+}
+
 export interface AssetPreflight {
   totalRefs: number;
   externalRefs: number;
@@ -8,6 +19,7 @@ export interface AssetPreflight {
   imgurPageRefs: number;
   placeholderRiskRefs: number;
   hosts: string[];
+  refs: AssetRefSummary[];
 }
 
 export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
@@ -20,12 +32,21 @@ export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
   let imgurPageRefs = 0;
   let placeholderRiskRefs = 0;
   const hosts = new Set<string>();
+  const refSummaries: AssetRefSummary[] = [];
 
   for (const ref of refs) {
     const normalized = normalizeAssetRef(ref);
     if (!normalized || normalized.startsWith('#')) continue;
     if (normalized.startsWith('data:')) {
       dataRefs += 1;
+      refSummaries.push({
+        ref: normalized,
+        kind: 'data-url',
+        host: null,
+        roll20Proxy: false,
+        imgurPage: false,
+        placeholderRisk: false,
+      });
       continue;
     }
     const url = parseExternalUrl(normalized);
@@ -41,10 +62,26 @@ export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
       if (roll20Proxy) roll20ProxyRefs += 1;
       if (imgurPage) imgurPageRefs += 1;
       if (roll20Proxy || imgurPage) placeholderRiskRefs += 1;
+      refSummaries.push({
+        ref: normalized,
+        kind: 'external-url',
+        host,
+        roll20Proxy,
+        imgurPage,
+        placeholderRisk: roll20Proxy || imgurPage,
+      });
       continue;
     }
     if (!/^(?:javascript|mailto|tel|blob):/i.test(normalized)) {
       relativeRefs += 1;
+      refSummaries.push({
+        ref: normalized,
+        kind: 'relative-url',
+        host: null,
+        roll20Proxy: false,
+        imgurPage: false,
+        placeholderRisk: false,
+      });
     }
   }
 
@@ -58,6 +95,7 @@ export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
     imgurPageRefs,
     placeholderRiskRefs,
     hosts: Array.from(hosts).sort(),
+    refs: refSummaries,
   };
 }
 

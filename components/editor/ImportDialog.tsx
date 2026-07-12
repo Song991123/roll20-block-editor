@@ -33,6 +33,7 @@ import {
   moveImportedWorkerBlocksToWorkspace,
   replaceWorkerWorkspaceFromSourceHtml,
 } from '@/lib/blockly/workerWorkspace';
+import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 
 export interface ImportDialogProps {
@@ -92,6 +93,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const [i18nText, setI18nText] = useState('');
   const [compactWideRows, setCompactWideRows] = useState(false);
   const [busy, setBusy] = useState(false);
+  const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
+  const setAssetReplacementMap = usePreviewStore((s) => s.setAssetReplacementMap);
   const [report, setReport] = useState<null | {
     coverage: number;
     matched: number;
@@ -229,6 +232,19 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     setReport(null);
   }
 
+  function handleCreateAssetReplacementDraft() {
+    const draft = buildAssetReplacementDraft(assetPreflight);
+    if (!draft) {
+      toast('교체할 외부 자산 URL이 없습니다.', { duration: 2200 });
+      return;
+    }
+    const next = [assetReplacementMap.trim(), draft].filter(Boolean).join('\n\n');
+    setAssetReplacementMap(next);
+    toast.success('자산 교체 목록 초안을 만들었습니다. 내보내기 창에서 새 URL을 채워 주세요.', {
+      duration: 3500,
+    });
+  }
+
   const anyInput = !!(htmlText.trim() || cssText.trim() || i18nText.trim());
 
   return (
@@ -300,7 +316,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           </TabsContent>
         </Tabs>
 
-        <ImportAssetPreflight result={assetPreflight} />
+        <ImportAssetPreflight
+          result={assetPreflight}
+          onCreateDraft={handleCreateAssetReplacementDraft}
+        />
 
         <label className="flex gap-3 rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed">
           <input
@@ -386,9 +405,16 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   );
 }
 
-function ImportAssetPreflight({ result }: { result: AssetPreflight }) {
+function ImportAssetPreflight({
+  result,
+  onCreateDraft,
+}: {
+  result: AssetPreflight;
+  onCreateDraft: () => void;
+}) {
   const hasRisk =
     result.externalRefs > 0 || result.relativeRefs > 0 || result.placeholderRiskRefs > 0;
+  const draftableRefs = result.refs.filter((ref) => ref.kind !== 'data-url').length;
   return (
     <section
       className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px]"
@@ -432,6 +458,18 @@ function ImportAssetPreflight({ result }: { result: AssetPreflight }) {
               {result.hosts.length > 5 ? ` 외 ${result.hosts.length - 5}개` : ''}
             </span>
           ) : null}
+          {draftableRefs > 0 ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2 h-7 px-2 text-[11px]"
+              onClick={onCreateDraft}
+              data-testid="import-asset-replacement-draft"
+            >
+              교체 목록 초안 만들기
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </section>
@@ -448,3 +486,24 @@ function ImportAssetMetric({ label, value }: { label: string; value: number }) {
 }
 
 export default ImportDialog;
+
+function buildAssetReplacementDraft(result: AssetPreflight): string {
+  const refs = result.refs.filter((ref) => ref.kind !== 'data-url');
+  if (refs.length === 0) return '';
+  const lines = [
+    '# Asset replacement draft from import preflight.',
+    '# Remove the leading "# " after replacing <paste-user-owned-url-here>.',
+  ];
+  for (const item of refs.slice(0, 50)) {
+    const reason = item.placeholderRisk
+      ? 'placeholder-risk'
+      : item.kind === 'relative-url'
+        ? 'relative-path'
+        : 'external-url';
+    lines.push(`# ${item.ref} => <paste-user-owned-url-here> # ${reason}`);
+  }
+  if (refs.length > 50) {
+    lines.push(`# ... ${refs.length - 50} more refs omitted from this draft.`);
+  }
+  return lines.join('\n');
+}

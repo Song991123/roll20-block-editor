@@ -37,7 +37,8 @@ corepack pnpm run plan:roll20-chat-assets -- reports\roll20-actual-compare\<labe
 - The app does not download, embed, publish, or commit the referenced assets.
 - The zip includes only a small `asset-replacements.json` summary with counts/warnings, not the original URL list.
 - Browser smoke verifies a synthetic replacement reaches both preview iframe `srcdoc` and edit Shadow DOM render without leaking the original URL.
-- Import-side detection exists; guided replacement suggestions and persistent per-project asset relink UX are still TODO.
+- Import-side detection can generate a commented replacement-map draft from detected external/relative asset refs. The draft is inert until the user replaces the placeholder target with a user-owned hosted URL and removes the comment marker.
+- Persistent per-project asset relink UX is still TODO.
 
 ## UI Behavior
 

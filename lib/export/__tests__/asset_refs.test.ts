@@ -20,4 +20,38 @@ assert.equal(result.roll20ProxyRefs, 1);
 assert.equal(result.imgurPageRefs, 1);
 assert.equal(result.placeholderRiskRefs, 2);
 assert.deepEqual(result.hosts, ['cdn.example.com', 'imgsrv.roll20.net', 'imgur.com']);
+assert.deepEqual(
+  result.refs.map((item) => ({
+    ref: item.ref,
+    kind: item.kind,
+    placeholderRisk: item.placeholderRisk,
+  })),
+  [
+    {
+      ref: 'https://imgsrv.roll20.net/?src=https://imgur.com/dead',
+      kind: 'external-url',
+      placeholderRisk: true,
+    },
+    {
+      ref: 'data:image/png;base64,aaa',
+      kind: 'data-url',
+      placeholderRisk: false,
+    },
+    {
+      ref: 'https://imgur.com/dead',
+      kind: 'external-url',
+      placeholderRisk: true,
+    },
+    {
+      ref: '//cdn.example.com/direct.png',
+      kind: 'external-url',
+      placeholderRisk: false,
+    },
+    {
+      ref: 'local/background.png',
+      kind: 'relative-url',
+      placeholderRisk: false,
+    },
+  ],
+);
 console.log('asset_refs.test PASS');

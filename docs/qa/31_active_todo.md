@@ -6,13 +6,15 @@
 - DONE: Added an export dialog local-only asset replacement map. Users can enter `old URL => new URL`; the final zip HTML/CSS and export diagnostics use the replaced URLs without mutating the workspace or source folders.
 - DONE: Added import dialog asset preflight using the same analyzer, so users see external URL, relative path, Roll20 proxy, Imgur page, and placeholder-risk counts before importing.
 - DONE: Shared the local-only asset replacement map through preview iframe, edit Shadow render, and export. The same relink text now rewrites rendered HTML/CSS for local preview/edit verification as well as zip payload generation.
+- DONE: Added import-side replacement-map draft generation. When asset preflight finds external or relative refs, the import dialog can append commented `old URL => <paste-user-owned-url-here>` lines to the shared replacement map without activating them prematurely.
 - VERIFIED: The current run plan reports `HOLD_RENDERER_FOR_ASSET_POLICY` with P0 `SOURCE_ASSET_LOST_RELINK_REQUIRED` for AW2E and YSHY chat background evidence. Local and actual proxy bytes match, but the source resolves to a placeholder, so CSS cannot recover the intended original image.
 - VERIFIED: `smoke:export-dialog -- --port 4363` passed and confirms the asset preflight panel exposes `Roll20 proxy` and `placeholder risk` metrics without console/page errors.
 - VERIFIED: `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --port 4365` passed for the replacement-map batch.
 - VERIFIED: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, `smoke:export-dialog -- --port 4367`, and `guard:roll20-evidence` passed for the import-side warning batch.
 - VERIFIED: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, `smoke:export-dialog -- --port 4368`, and `guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed for the shared preview/edit/export replacement batch. The browser smoke uses a copyright-safe synthetic asset URL and proves preview iframe plus edit Shadow DOM contain the replacement target and not the original URL.
+- VERIFIED: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, `smoke:export-dialog -- --port 4369`, and `guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed for the import draft batch. The browser smoke now fills a synthetic Imgur URL in the import dialog, confirms the draft button appears, and verifies the generated map entry stays commented until the user relinks.
 - CURRENT: Production ChatPane renderer remains held. Asset relink/rehost UX is now a P0 product requirement before claiming visual parity for fixtures whose source images are dead.
-- STILL TODO: Add guided import-side replacement suggestions/persistence and rerun actual Roll20 sandbox comparison after the user relinks/rehosts dead assets. Do not commit downloaded third-party assets, screenshots, or generated report evidence.
+- STILL TODO: Add persistent per-project asset relink storage and rerun actual Roll20 sandbox comparison after the user relinks/rehosts dead assets. Do not commit downloaded third-party assets, screenshots, or generated report evidence.
 
 ## 2026-07-12 Roll20 Chat Targeted Candidate Results TODO Note
 
