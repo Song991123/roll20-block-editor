@@ -732,6 +732,13 @@ function EditLayerPanel({
     overscan: 10,
   });
 
+  useEffect(() => {
+    if (!selectedId) return;
+    const index = filtered.findIndex((item) => item.node.id === selectedId);
+    if (index < 0) return;
+    virtualizer.scrollToIndex(index, { align: 'center' });
+  }, [filtered, selectedId, virtualizer]);
+
   const moveLayer = useCallback(
     (draggedId: string, targetId: string, mode: LayerDropMode) => {
       if (draggedId === targetId) return;
@@ -801,7 +808,7 @@ function EditLayerPanel({
           </span>
         </div>
       </div>
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto" data-testid="edit-layer-scroll">
         {filtered.length === 0 ? (
           <div className="px-3 py-8 text-center text-[11px] leading-relaxed text-muted-foreground">
             표시할 레이어가 없습니다.

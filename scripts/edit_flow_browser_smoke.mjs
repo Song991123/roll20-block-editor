@@ -684,6 +684,49 @@ async function main() {
     };
   }, sectionInfo.blockId);
 
+  const layerAutoScroll = await page.evaluate(async () => {
+    const html = Array.from({ length: 80 }, (_, index) =>
+      `<div class="scroll-item scroll-item-${index}" style="height:20px">row ${index}</div>`,
+    ).join('\n');
+    await window.__perfHook.importSheet({ html, css: '', i18n: '{}' });
+    window.__perfHook.setMainMode('edit');
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const layerScroll = document.querySelector('[data-testid="edit-layer-scroll"]');
+    const target = host?.shadowRoot?.querySelector('.sheet-scroll-item-79');
+    const targetId = target?.getAttribute('data-r20-block-id') ?? null;
+    if (!target || !targetId || !layerScroll) {
+      return {
+        selected: false,
+        reason: 'missing target or layer scroll',
+        targetId,
+        hasTarget: Boolean(target),
+        hasLayerScroll: Boolean(layerScroll),
+      };
+    }
+    const beforeScrollTop = layerScroll.scrollTop;
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const row = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`,
+    );
+    const rect = row?.getBoundingClientRect();
+    const scrollRect = layerScroll.getBoundingClientRect();
+    return {
+      selected: row?.getAttribute('data-r20-layer-selected') === '1',
+      targetId,
+      beforeScrollTop,
+      afterScrollTop: layerScroll.scrollTop,
+      rowRendered: Boolean(row),
+      rowVisible:
+        Boolean(rect) &&
+        rect.top >= scrollRect.top &&
+        rect.bottom <= scrollRect.bottom,
+    };
+  });
+
   const nonLeafLayerReorder = await page.evaluate(async () => {
     const html = [
       '<div class="outer" style="width:520px; min-height:180px; padding:12px">',
@@ -991,6 +1034,7 @@ async function main() {
     layerSearchContext,
     layerSelectionSync,
     canvasSelectionSync,
+    layerAutoScroll,
     nonLeafLayerReorder,
     absoluteInsideFrame,
     freePlacementWidgetDrop,
@@ -1072,6 +1116,10 @@ async function main() {
     layerSearchContext.input?.hasDepthGuide === true &&
     layerSelectionSync.selected === true &&
     canvasSelectionSync.selected === true &&
+    layerAutoScroll.selected === true &&
+    layerAutoScroll.rowRendered === true &&
+    layerAutoScroll.rowVisible === true &&
+    layerAutoScroll.afterScrollTop > layerAutoScroll.beforeScrollTop &&
     nonLeafLayerReorder.mode === 'after' &&
     nonLeafLayerReorder.layerSameParent === true &&
     nonLeafLayerReorder.layerSameDepth === true &&

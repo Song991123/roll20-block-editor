@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Layer Auto-Scroll TODO Note
+
+- DONE: The edit layer panel now scrolls the selected layer row into view when selection changes. Clicking a rendered object on the canvas can pull its layer row into the visible layer panel even in long sheets.
+- VERIFIED: `smoke:edit-flow -- --port 4405 --report-dir D:\훙냥냥\마렌상\영시영 시트 고치기\_tmp_codex_smoke\edit-flow-autoscroll` passed. The new `layerAutoScroll` check selected the 80th synthetic layer from the canvas and observed `beforeScrollTop=0`, `afterScrollTop=2715`, `rowRendered=true`, and `rowVisible=true`.
+- SERVER HYGIENE: Port `4405` had only `TIME_WAIT` connections after the smoke run; no listening smoke server remained.
+- VERIFY NOTE: The first smoke attempt hit a locked generated PNG under `reports/edit-flow-smoke`; the verified rerun used a workspace-local temp report directory. The sandboxed browser also logged two `ERR_NETWORK_ACCESS_DENIED` resource warnings, with `pageErrors=0` and smoke pass intact.
+- CLAIM BOUNDARY: This improves edit-layer navigation usability only. It does not change actual Roll20 parity, renderer readiness, or asset-relink blockers.
+
 ## 2026-07-13 Edit Canvas-to-Layer Selection TODO Note
 
 - DONE: Edit layer rows now expose a testable selected state, and clicking a rendered object in the edit canvas updates the corresponding layer row selection.

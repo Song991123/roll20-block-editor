@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Layer Auto-Scroll
+
+- Added selection-driven auto-scroll to the edit layer panel. When the selected block changes, the virtualized layer panel now scrolls the selected row into view.
+- Extended `scripts/edit_flow_browser_smoke.mjs` with `layerAutoScroll`: it imports 80 synthetic div layers, clicks the 80th rendered Shadow object, and verifies the matching layer row is rendered and visible after the layer panel scrolls.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4405 --report-dir D:\훙냥냥\마렌상\영시영 시트 고치기\_tmp_codex_smoke\edit-flow-autoscroll`, `corepack pnpm run guard:ui-copy`, and `git diff --check` passed.
+- Server hygiene: checked port `4405` after the smoke run; only `TIME_WAIT` entries remained, not a listening server.
+- Claim boundary: edit navigation UX only. No actual Roll20 renderer evidence changed.
+
 ## 2026-07-13 Edit Canvas-to-Layer Selection
 
 - Added a row-level selected data attribute to the edit layer panel and extended the browser smoke to click a rendered Shadow DOM section, then verify the matching layer row is selected.
