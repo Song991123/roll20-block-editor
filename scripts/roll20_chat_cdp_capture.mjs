@@ -414,6 +414,18 @@ async function readSheetFrameEvidence() {
 
 function validateSheetFrameEvidence(evidence) {
   const result = classifySheetFrameEvidence(evidence, FIXTURE_ID);
+  if (result.ok && ROLL_BUTTON) {
+    const rollButtonNames = evidence.hits?.rollButtonNames ?? [];
+    if (!rollButtonNames.includes(ROLL_BUTTON)) {
+      throw new Error([
+        'ROLL20 CHAT CDP CAPTURE BLOCKED_SHEET_FRAME_EVIDENCE',
+        `sheet-frame evidence does not contain requested roll button ${ROLL_BUTTON}; found ${rollButtonNames.join(', ') || 'none'}`,
+        'The currently open character sheet may be a different fixture or default state than the planned capture.',
+        `Evidence file: ${rel(sheetFrameEvidencePath)}`,
+        `Run: ${sheetFrameProbeCommand}`,
+      ].join('\n'));
+    }
+  }
   if (result.ok) return;
   throw new Error([
     'ROLL20 CHAT CDP CAPTURE BLOCKED_SHEET_FRAME_EVIDENCE',

@@ -48,7 +48,8 @@ async function main() {
 
   const status = await readJsonIfExists(path.join(runDir, 'actual-verification-status', 'actual-verification-status-results.json'));
   const chatParity = await readJsonIfExists(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
-  const entries = fixtureIds.map((fixtureId) => buildEntry(fixtureId, status, chatParity));
+  const chatStructure = await readJsonIfExists(path.join(runDir, 'chat-structure-compare', 'chat-structure-compare-results.json'));
+  const entries = fixtureIds.map((fixtureId) => buildEntry(fixtureId, status, chatParity, chatStructure));
   const plannedEntries = INCLUDE_ALL ? entries : entries.filter((entry) => entry.needsCapture);
 
   await mkdir(path.join(outDir, 'snippets'), { recursive: true });
@@ -80,6 +81,8 @@ async function main() {
       chatActualCaptureScaleSuspect: Number(status?.summary?.chatParityActualCaptureScaleSuspect ?? 0),
       chatActualTemplatePixelSuspect: Number(status?.summary?.chatParityActualTemplatePixelSuspect ?? 0),
       chatActualCropGeometrySuspect: Number(status?.summary?.chatParityActualCropGeometrySuspect ?? 0),
+      chatStructureStatus: status?.summary?.chatStructureStatus ?? chatStructure?.summary?.status ?? 'UNKNOWN',
+      chatStructureMismatch: ratio(status?.summary?.chatStructureMismatchCount ?? chatStructure?.summary?.mismatches, status?.summary?.chatStructureFixtures ?? chatStructure?.summary?.fixtures),
       chatCaptureSuspects: Number(status?.summary?.chatCaptureSuspectCount ?? 0),
       generatedAuthoritative: Boolean(status?.summary?.generatedEvidenceAuthoritative),
       chatNormalizedHighMismatch: Number(status?.summary?.chatParityNormalizedHighMismatch ?? 0),
@@ -108,7 +111,7 @@ async function main() {
   console.log(`out=${rel(outDir)}`);
 }
 
-function buildEntry(fixtureId, status, chatParity) {
+function buildEntry(fixtureId, status, chatParity, chatStructure) {
   const fixtureDir = path.join(runDir, 'local-baseline', fixtureId);
   const screenshots = path.join(fixtureDir, 'screenshots');
   const payloadHtml = path.join(fixtureDir, 'payload', 'sheet.html');
@@ -117,7 +120,20 @@ function buildEntry(fixtureId, status, chatParity) {
   const statusFixture = (status?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId);
   const statusChatTarget = statusFixture?.actualTargets?.find((target) => target.id === 'chat') ?? null;
   const parityFixture = (chatParity?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId) ?? null;
-  const rollButtons = extractRollButtonNames(payloadHtml);
+  const structureFixture = (chatStructure?.fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId) ?? null;
+  const sameTemplateTarget = structureFixture && structureFixture.status !== 'STRUCTURE_MATCH'
+    ? {
+        status: structureFixture.status ?? 'UNKNOWN',
+        decision: structureFixture.decision ?? '',
+        targetRollButton: structureFixture.local?.chosenRollButton ?? '',
+        targetTemplate: structureFixture.local?.templateClass ?? '',
+        actualTemplate: structureFixture.actual?.templateClass ?? '',
+        localRows: Number(structureFixture.local?.rowCount ?? 0),
+        actualRows: Number(structureFixture.actual?.rowCount ?? 0),
+        nextAction: structureFixture.nextAction ?? '',
+      }
+    : null;
+  const rollButtons = prioritizeRollButtons(extractRollButtonNames(payloadHtml), sameTemplateTarget?.targetRollButton);
   const captureReasons = [];
   if (!chat.ok) captureReasons.push(chat.note);
   if (REQUIRE_CURRENT_METRICS && !currentMetrics.ok) captureReasons.push(currentMetrics.note);
@@ -132,6 +148,9 @@ function buildEntry(fixtureId, status, chatParity) {
   }
   if (isCaptureScaleSuspect(parityFixture)) {
     captureReasons.push('chat parity diagnostic marks actual screenshot scale/format suspect; recapture true PNG at CSS scale 1');
+  }
+  if (sameTemplateTarget) {
+    captureReasons.push(`chat structure compare requires same-template recapture: local ${sameTemplateTarget.targetTemplate || 'n/a'} via ${sameTemplateTarget.targetRollButton || 'unknown roll button'} vs actual ${sameTemplateTarget.actualTemplate || 'n/a'} (${sameTemplateTarget.localRows}/${sameTemplateTarget.actualRows} rows)`);
   }
   const needsCapture = captureReasons.length > 0;
   const targets = {
@@ -166,19 +185,22 @@ function buildEntry(fixtureId, status, chatParity) {
           actualTemplatePixelSuspect: Boolean(parityFixture.actualTemplatePixels?.suspect),
           actualCaptureScaleSuspect: isCaptureScaleSuspect(parityFixture),
           actualCss: parityFixture.actualChatCss?.classification ?? '',
-        }
+      }
       : null,
+    sameTemplateTarget,
     rollButtons,
     targets,
     snippetPath: rel(path.join(outDir, 'snippets', `${fixtureId}-chat-dom-probe-snippet.js`)),
     sheetFrameProbeCommand,
-    chatCaptureCommand: `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}`,
+    chatCaptureCommand: `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}${sameTemplateTarget?.targetRollButton ? ` --roll-button ${sameTemplateTarget.targetRollButton}` : ''}`,
     captureChecklist: [
       'Load this fixture in the dedicated Roll20 Custom Sheet Sandbox or approved test room.',
       `Run sheet-frame probe first: \`${sheetFrameProbeCommand}\`. Chat capture now requires positive \`roll20-sandbox-dom-evidence.json\` for the same fixture.`,
       'Clear or visually separate old chat messages if needed so the next rolltemplate is unambiguous.',
-      `Click a real sheet roll button${rollButtons.length ? ` such as ${rollButtons.slice(0, 4).map((name) => `\`${name}\``).join(', ')}` : ''}.`,
-      `Capture chat with the gated CDP helper: \`${`corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}`}\`. It will refuse to proceed if the sheet-frame evidence is missing or generic.`,
+      sameTemplateTarget?.targetRollButton
+        ? `Click the same local smoke roll button \`${sameTemplateTarget.targetRollButton}\` so Roll20 renders \`${sameTemplateTarget.targetTemplate || 'the target template'}\`, not the previously captured \`${sameTemplateTarget.actualTemplate || 'different template'}\`.`
+        : `Click a real sheet roll button${rollButtons.length ? ` such as ${rollButtons.slice(0, 4).map((name) => `\`${name}\``).join(', ')}` : ''}.`,
+      `Capture chat with the gated CDP helper: \`${`corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(runDir)} --fixture ${fixtureId}${sameTemplateTarget?.targetRollButton ? ` --roll-button ${sameTemplateTarget.targetRollButton}` : ''}`}\`. It will refuse to proceed if the sheet-frame evidence is missing or generic.`,
       'Capture roll20-chat.png from the visible Roll20 chat/rolltemplate area. Prefer CDP Page.captureScreenshot with format=png and clip.scale=1; do not trust a .png filename if the screenshot bytes are JPEG or scaled.',
       'If CDP captures the wrong region on a high-DPR Roll20 tab, verify the coordinate space with a debug crop: multiply the CSS template rect by devicePixelRatio, capture the physical PNG, then DPR-correct/downscale it back to the CSS clip size and record captureDprCorrection in the sidecar.',
       'Immediately capture roll20-chat-dom-evidence.json from the same message/action using the generated DOM probe snippet or browser automation.',
@@ -504,6 +526,12 @@ function extractRollButtonNames(file) {
     names.add(match[1]);
   }
   return [...names];
+}
+
+function prioritizeRollButtons(names, preferred) {
+  const unique = [...new Set(names.filter(Boolean))];
+  if (!preferred) return unique;
+  return [preferred, ...unique.filter((name) => name !== preferred)];
 }
 
 function renderDomProbeSnippet(entry) {
@@ -1224,6 +1252,8 @@ function renderMarkdown(report) {
     `- Chat crop geometry suspect: ${report.currentStatus.chatActualCropGeometrySuspect}`,
     `- Chat template pixel suspect: ${report.currentStatus.chatActualTemplatePixelSuspect}`,
     `- Chat scale/format suspect: ${report.currentStatus.chatActualCaptureScaleSuspect}`,
+    `- Chat structure status: ${report.currentStatus.chatStructureStatus}`,
+    `- Chat structure mismatch: ${report.currentStatus.chatStructureMismatch}`,
     `- Generated authoritative evidence: ${report.currentStatus.generatedAuthoritative ? 'YES' : 'NO'}`,
     `- Chat normalized high mismatch: ${report.currentStatus.chatNormalizedHighMismatch}`,
     `- Require current row/typography metrics: ${report.requireCurrentMetrics ? 'YES' : 'no'}`,
@@ -1235,10 +1265,13 @@ function renderMarkdown(report) {
   if (!report.plannedEntries.length) {
     lines.push('No chat recapture needed by the current local evidence rules.', '');
   } else {
-    lines.push('| Fixture | Chat status | Reason | Sheet-frame evidence | Screenshot | DOM sidecar | Snippet |');
-    lines.push('| --- | --- | --- | --- | --- | --- | --- |');
+    lines.push('| Fixture | Chat status | Target roll/template | Reason | Sheet-frame evidence | Screenshot | DOM sidecar | Snippet |');
+    lines.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const entry of report.plannedEntries) {
-      lines.push(`| \`${entry.fixtureId}\` | ${entry.chat.status} | ${escapeCell(entry.captureReasons.join('; '))} | \`${entry.targets.sheetFrameEvidence.relativePath}\` | \`${entry.targets.chatPng.relativePath}\` | \`${entry.targets.chatDomEvidence.relativePath}\` | \`${entry.snippetPath}\` |`);
+      const target = entry.sameTemplateTarget
+        ? `\`${entry.sameTemplateTarget.targetRollButton || ''}\` -> \`${entry.sameTemplateTarget.targetTemplate || ''}\``
+        : 'any real roll button';
+      lines.push(`| \`${entry.fixtureId}\` | ${entry.chat.status} | ${target} | ${escapeCell(entry.captureReasons.join('; '))} | \`${entry.targets.sheetFrameEvidence.relativePath}\` | \`${entry.targets.chatPng.relativePath}\` | \`${entry.targets.chatDomEvidence.relativePath}\` | \`${entry.snippetPath}\` |`);
     }
     lines.push('');
   }
@@ -1266,6 +1299,9 @@ function renderMarkdown(report) {
     }
     if (entry.parity) {
       lines.push(`- Chat parity diagnostic: ${entry.parity.status || 'unknown'}, mode=${entry.parity.compareMode || 'n/a'}, mismatch=${entry.parity.mismatchPct ?? 'n/a'}%, aligned=${entry.parity.bestAlignedMismatchPct ?? 'n/a'}%, cropSuspect=${entry.parity.actualCropGeometrySuspect ? 'YES' : 'no'}, pixelSuspect=${entry.parity.actualTemplatePixelSuspect ? 'YES' : 'no'}, scaleSuspect=${entry.parity.actualCaptureScaleSuspect ? 'YES' : 'no'}, actualCss=${entry.parity.actualCss || 'n/a'}`);
+    }
+    if (entry.sameTemplateTarget) {
+      lines.push(`- Same-template target: \`${entry.sameTemplateTarget.targetRollButton || ''}\` -> \`${entry.sameTemplateTarget.targetTemplate || ''}\` (actual captured \`${entry.sameTemplateTarget.actualTemplate || ''}\`, rows ${entry.sameTemplateTarget.localRows}/${entry.sameTemplateTarget.actualRows})`);
     }
     lines.push(`- Suggested roll buttons: ${entry.rollButtons.length ? entry.rollButtons.map((name) => `\`${name}\``).join(', ') : 'none detected in payload'}`);
     lines.push(`- Sheet-frame probe: \`${entry.sheetFrameProbeCommand}\``);

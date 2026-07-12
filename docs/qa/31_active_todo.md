@@ -1,3 +1,12 @@
+## 2026-07-12 Les Same-Template Capture Plan TODO Note
+
+- DONE: Updated `plan:roll20-chat-capture` so chat structure mismatches force a recapture plan even when `roll20-chat.png` and DOM sidecar already exist. Les-Oublies now plans `roll_initiative` -> `sheet-rolltemplate-initiative-roll` instead of allowing any visible rolltemplate.
+- DONE: Updated `preflight:roll20-cdp` to reuse the capture plan's exact `chatCaptureCommand`, so it now prints `--roll-button roll_initiative` for Les-Oublies instead of a generic capture command.
+- DONE: Hardened `capture:roll20-chat-cdp` so a requested `--roll-button` must also appear in the current sheet-frame evidence before capture proceeds.
+- VERIFIED: `plan:roll20-chat-capture -- ... official-roll20-Les-Oublies` reports `NEEDS_CAPTURE` with reason `same-template recapture`. `preflight:roll20-cdp` is `READY` and prints the targeted capture command.
+- OBSERVED: Opening `Witrav Upijek` and probing the current Roll20 iframe produced sheet-frame evidence, but `capture:roll20-chat-cdp -- --roll-button roll_initiative` correctly blocked because that evidence did not contain `roll_initiative`. The current Roll20 character/sheet state is not the intended Les same-template state yet.
+- STILL TODO: Load/apply the Les-Oublies fixture state that actually exposes `roll_initiative`, rerun sheet-frame probe until it proves that roll button, then rerun targeted chat capture.
+
 ## 2026-07-12 Roll20 Chat Structure-Aware Status TODO Note
 
 - DONE: Updated `status:roll20-actual` so it reports chat structure state separately from raw chat pixel mismatch: `chatStructure=STRUCTURE_MISMATCH_FOUND`, `chatStructureMismatch=1/3`, `chatSameStructureHighMismatch=2/3`, and `chatSameStructureMaxAlignedMismatch=20.68%`.

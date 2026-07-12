@@ -38,17 +38,18 @@ async function main() {
 
   const initialEndpoint = await inspectEndpoint(CDP_URL);
   let endpoint = initialEndpoint;
-  const plannedFixtures = readPlannedFixtures(RUN_DIR, FIXTURE);
+  const plannedEntries = readPlannedEntries(RUN_DIR, FIXTURE);
+  const plannedFixtures = plannedEntries.map((entry) => entry.fixtureId);
   const launchCommand = buildLaunchCommand();
-  const sheetFrameProbeCommands = plannedFixtures.map((fixtureId) => [
+  const sheetFrameProbeCommands = plannedEntries.map((entry) => entry.sheetFrameProbeCommand || [
     'corepack pnpm run probe:roll20-sheet-frame --',
     `--run-dir ${quoteArg(rel(RUN_DIR))}`,
-    `--fixture ${quoteArg(fixtureId)}`,
+    `--fixture ${quoteArg(entry.fixtureId)}`,
   ].join(' '));
-  const captureCommands = plannedFixtures.map((fixtureId) => [
+  const captureCommands = plannedEntries.map((entry) => entry.chatCaptureCommand || [
     'corepack pnpm run capture:roll20-chat-cdp --',
     `--run-dir ${quoteArg(rel(RUN_DIR))}`,
-    `--fixture ${quoteArg(fixtureId)}`,
+    `--fixture ${quoteArg(entry.fixtureId)}`,
   ].join(' '));
 
   let launchResult = null;
@@ -185,16 +186,19 @@ function nextActionForEndpoint(endpoint) {
   return 'Navigate the CDP-enabled browser to the dedicated Roll20 Sandbox/test room, then rerun this preflight.';
 }
 
-function readPlannedFixtures(runDir, fixtureFilter) {
-  if (fixtureFilter) return [fixtureFilter];
+function readPlannedEntries(runDir, fixtureFilter) {
   const planPath = path.join(runDir, 'roll20-chat-capture-plan', 'roll20-chat-capture-plan-results.json');
-  if (!existsSync(planPath)) return [];
+  if (!existsSync(planPath)) return fixtureFilter ? [{ fixtureId: fixtureFilter }] : [];
   try {
     const plan = JSON.parse(readFileSync(planPath, 'utf8'));
     const planned = Array.isArray(plan.plannedEntries) ? plan.plannedEntries : [];
-    return planned.map((entry) => entry.fixtureId).filter(Boolean);
+    const entries = fixtureFilter
+      ? planned.filter((entry) => entry.fixtureId === fixtureFilter)
+      : planned;
+    if (entries.length) return entries.filter((entry) => entry.fixtureId);
+    return fixtureFilter ? [{ fixtureId: fixtureFilter }] : [];
   } catch {
-    return [];
+    return fixtureFilter ? [{ fixtureId: fixtureFilter }] : [];
   }
 }
 

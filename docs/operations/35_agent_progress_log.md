@@ -1,3 +1,10 @@
+## 2026-07-12 Les Same-Template Capture Handoff
+
+- `plan:roll20-chat-capture` now reads `chat-structure-compare` and treats structure mismatch as a recapture reason. For Les-Oublies, the target is explicit: `roll_initiative` should render `sheet-rolltemplate-initiative-roll`.
+- `preflight:roll20-cdp` now reuses the capture plan's exact command instead of reconstructing a generic capture command, so the preflight output preserves `--roll-button roll_initiative`.
+- `capture:roll20-chat-cdp` now checks requested `--roll-button` against the saved sheet-frame evidence before clicking. This caught the current live state: the open `Witrav Upijek` iframe did not contain `roll_initiative`, so the capture stopped before generating misleading chat evidence.
+- Boundary: this still has not recaptured Les-Oublies. It prevents another wrong-template capture and shows the next manual/browser step: load the intended Les fixture state, prove `roll_initiative` in the sheet iframe, then capture.
+
 ## 2026-07-12 Structure-Aware Roll20 Status/Gate
 
 - Refined the post-capture status layer so raw chat pixel mismatch and same-structure renderer evidence are no longer conflated.
