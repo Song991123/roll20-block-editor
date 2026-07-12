@@ -1,3 +1,10 @@
+## 2026-07-12 Targeted Chat Candidate Results
+
+- Ran the target-plan smoke candidates. All local smoke runs passed, but candidate comparison rejects them as renderer fixes: AW2E `aw2e-text-metrics` is `no-meaningful-gain` with AW2E aligned delta `+0.1%`; YSHY `yshy-sanitize-typography` regresses with YSHY aligned delta `+14.95%`; YSHY `coc-table-intrinsic-clamp` is `no-meaningful-gain` with delta `0%`.
+- Updated `scripts/roll20_chat_targeted_renderer_plan.mjs` so tried-and-rejected candidates are recorded as blockers and the next commands move toward row/background/source diagnostics instead of repeating the same smoke runs.
+- Additional diagnostics now point beyond simple CSS: background declarations match but raster differs for AW2E/YSHY, row raster remains high (`26.28%` AW2E worst row, `27.73%` YSHY worst row), and background asset probes report matching local/actual bytes against a Roll20 `removed.png` placeholder source.
+- Boundary: production renderer remains held. The next practical investigation is asset preservation/proxy/browser-paint behavior, not global ChatPane width/font/padding CSS.
+
 ## 2026-07-12 Targeted Chat Renderer Plan
 
 - Added `scripts/roll20_chat_targeted_renderer_plan.mjs` plus package aliases `plan:roll20-chat-renderer-targets` and `test:roll20-chat-renderer-targets`.

@@ -1,3 +1,16 @@
+## 2026-07-12 Roll20 Chat Targeted Candidate Results TODO Note
+
+- DONE: Ran the targeted local smoke candidates from the renderer target plan:
+  - `official-roll20-AW2E` with `aw2e-text-metrics`: smoke PASS, candidate comparison says `no-meaningful-gain`, AW2E aligned delta `+0.1%`.
+  - `yshy-commission-1bu` with `yshy-sanitize-typography`: smoke PASS, candidate comparison says `reject-regresses-fixtures`, YSHY aligned delta `+14.95%`.
+  - `yshy-commission-1bu` with `coc-table-intrinsic-clamp`: smoke PASS, candidate comparison says `no-meaningful-gain`, YSHY aligned delta `0%`.
+- VERIFIED: `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-candidate-style`, `diagnose:roll20-chat-font-intrinsic`, `diagnose:roll20-chat-row-paint-source`, `diagnose:roll20-chat-background-source`, `diagnose:roll20-chat-row-raster`, `diagnose:roll20-chat-background-assets`, and `diagnose:roll20-chat-background-raster` completed.
+- CURRENT: Production chat renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`. The plan now records 16 blockers, including tried-and-rejected candidates plus background/raster evidence.
+- CURRENT: New root-cause evidence says CSS declarations can match while rendered pixels still differ:
+  - AW2E: `COLOR_ASSET_RASTER_MODEL_REQUIRED`, row raster worst mismatch `26.28%`, background asset probe says local/actual bytes match but source resolves to a Roll20 `removed.png` placeholder.
+  - YSHY: `SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED`, row raster worst mismatch `27.73%`, background asset probe also sees the placeholder image path.
+- STILL TODO: Do not rerun the failed text/sanitize/clamp candidates. Next P0 is an asset-preservation/proxy/browser-paint investigation for chat/background images before any renderer CSS promotion.
+
 ## 2026-07-12 Roll20 Chat Targeted Renderer Plan TODO Note
 
 - DONE: Added `plan:roll20-chat-renderer-targets`, a diagnostic-only planner that reads the current Roll20 actual chat evidence reports and turns them into scoped next renderer experiments.

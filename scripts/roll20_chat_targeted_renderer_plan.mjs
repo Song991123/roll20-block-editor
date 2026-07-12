@@ -31,7 +31,12 @@ async function main() {
     tableBudget: await readOptionalJson(path.join(runDir, 'chat-table-width-budget', 'chat-table-width-budget-results.json')),
     intrinsic: await readOptionalJson(path.join(runDir, 'chat-intrinsic-width-model', 'chat-intrinsic-width-model-results.json')),
     fontGlyph: await readOptionalJson(path.join(runDir, 'chat-font-glyph-model', 'chat-font-glyph-model-results.json')),
+    rowPaintSource: await readOptionalJson(path.join(runDir, 'chat-row-paint-source-probe', 'chat-row-paint-source-probe-results.json')),
+    rowRaster: await readOptionalJson(path.join(runDir, 'chat-row-raster-probe', 'chat-row-raster-probe-results.json')),
+    backgroundSource: await readOptionalJson(path.join(runDir, 'chat-background-source-probe', 'chat-background-source-probe-results.json')),
+    backgroundAssets: await readOptionalJson(path.join(runDir, 'chat-background-asset-probe', 'chat-background-asset-probe-results.json')),
     policy: await readOptionalJson(path.join(runDir, 'chat-renderer-policy', 'chat-renderer-policy-results.json')),
+    candidates: await readOptionalJson(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json')),
     styleProof: await readOptionalJson(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json')),
   };
   const fixtureIds = collectFixtureIds(reports);
@@ -70,7 +75,12 @@ function buildFixturePlan(fixtureId, reports) {
   const tableBudget = findFixture(reports.tableBudget?.fixtures, fixtureId);
   const intrinsic = findFixture(reports.intrinsic?.fixtures, fixtureId);
   const fontGlyph = findFixture(reports.fontGlyph?.fixtures, fixtureId);
+  const rowPaintSource = findFixture(reports.rowPaintSource?.fixtures, fixtureId);
+  const rowRaster = findFixture(reports.rowRaster?.fixtures, fixtureId);
+  const backgroundSource = findFixture(reports.backgroundSource?.fixtures, fixtureId);
+  const backgroundAssets = findFixture(reports.backgroundAssets?.fixtures, fixtureId);
   const policy = findFixture(reports.policy?.fixtures, fixtureId);
+  const candidateByName = new Map((reports.candidates?.candidates ?? []).map((candidate) => [candidate.name, candidate]));
   const alignedMismatch = numberOrNull(parity?.bestAlignedMismatchRatio ?? reconciliation?.alignedMismatchRatio ?? parity?.mismatchRatio);
   const signals = {
     policyDecision: policy?.decision ?? '',
@@ -86,6 +96,13 @@ function buildFixturePlan(fixtureId, reports) {
     textWidthTableDelta: numberOrNull(fontGlyph?.textWidthModel?.tableTextDelta),
     tableElementDelta: numberOrNull(fontGlyph?.textWidthModel?.tableElementDelta),
     fontFamilyDiffers: evidenceIncludes(fontGlyph, 'font-family differs') || evidenceIncludes(tableBudget, 'font availability differs'),
+    triedCandidates: summarizeTriedCandidates(fixtureId, candidateByName),
+    rowPaintSourceDecision: rowPaintSource?.decision ?? '',
+    rowRasterDecision: rowRaster?.decision ?? '',
+    backgroundSourceDecision: backgroundSource?.decision ?? '',
+    backgroundAssetDecision: backgroundAssets?.decision ?? '',
+    worstRowMismatchPct: rowRaster?.worstRow?.mismatchPct ?? rowRaster?.worstRowMismatchPct ?? '',
+    backgroundAssetSummary: backgroundAssets?.sourceSummary ?? backgroundAssets?.source ?? '',
   };
   const classification = classifyFixture(fixtureId, alignedMismatch, signals);
   return {
@@ -121,16 +138,20 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
       blockers: [
         'same-template mismatch remains high after current AW2E candidates',
         'combined width/font candidate improved raw crop but did not beat default after alignment',
+        ...failedCandidateBlockers(signals.triedCandidates),
+        ...sourceAssetBlockers(signals),
       ],
       evidence: [
         `table width delta ${fmtPx(signals.tableWidthDelta)} with text residual ${fmtPx(signals.tableTextResidual)}`,
         `message/content shell delta ${fmtPx(signals.shellDeltas?.messageWidthDelta)} / ${fmtPx(signals.shellDeltas?.contentWidthDelta)}`,
         'text metrics explain AW2E table width, so broad typography and global shell CSS are too risky',
+        ...candidateEvidence(signals.triedCandidates),
+        ...sourceAssetEvidence(signals),
       ],
       commands: [
-        'node scripts/rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --only official-roll20-AW2E --report-dir reports/rolltemplate-chat-smoke-aw2e-text-metrics --chat-typography-policy aw2e-text-metrics',
+        'corepack pnpm run diagnose:roll20-chat-background-raster -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        'corepack pnpm run diagnose:roll20-chat-background-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-candidates -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-candidate-style -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
       ],
       promotionRule: 'Only promote an AW2E-scoped rule after it beats default on AW2E without regressing Les/YSHY and style proof matches actual Roll20.',
     };
@@ -146,15 +167,19 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
       blockers: [
         'YSHY table width delta conflicts with AW2E message-width direction',
         'current transform, broad font, and paint candidates are rejected or fixture-local',
+        ...failedCandidateBlockers(signals.triedCandidates),
+        ...sourceAssetBlockers(signals),
       ],
       evidence: [
         `table width delta ${fmtPx(signals.tableWidthDelta)} and scroll delta ${fmtPx(signals.tableScrollWidthDelta)}`,
         `text residual ${fmtPx(signals.tableTextResidual)} shows text metrics alone do not explain layout`,
         signals.fontFamilyDiffers ? 'font-family/font availability differs in actual Roll20 evidence' : 'font sidecar does not yet prove a clean font-family match',
+        ...candidateEvidence(signals.triedCandidates),
+        ...sourceAssetEvidence(signals),
       ],
       commands: [
-        'node scripts/rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --only yshy-commission-1bu --report-dir reports/rolltemplate-chat-smoke-yshy-sanitize-typography --chat-typography-policy yshy-sanitize-typography',
-        'node scripts/rolltemplate_chat_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --only yshy-commission-1bu --report-dir reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp --chat-geometry-policy coc-table-intrinsic-clamp',
+        'corepack pnpm run diagnose:roll20-chat-background-raster -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        'corepack pnpm run diagnose:roll20-chat-background-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-font-intrinsic -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
       ],
       promotionRule: 'Only promote a CoC/YSHY-scoped rule after scrollWidth/clientWidth, font availability, and style proof agree; do not use transform/scale as production behavior.',
@@ -168,6 +193,28 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
     commands: ['corepack pnpm run diagnose:roll20-chat-refresh -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1'],
     promotionRule: 'Keep production renderer held until a same-template candidate beats default with style proof.',
   };
+}
+
+function sourceAssetBlockers(signals) {
+  const blockers = [];
+  if (signals.backgroundSourceDecision === 'BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS') {
+    blockers.push('background declarations match but rendered raster differs from actual Roll20');
+  }
+  if (signals.backgroundAssetDecision === 'ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER') {
+    blockers.push('background asset bytes match a Roll20 placeholder/removed image, so original-sheet parity needs asset preservation before CSS promotion');
+  }
+  if (signals.rowRasterDecision === 'ROW_LUMA_RASTER_MODEL_REQUIRED') {
+    blockers.push(`row raster/luma mismatch remains (${signals.worstRowMismatchPct || 'unknown worst row'})`);
+  }
+  return blockers;
+}
+
+function sourceAssetEvidence(signals) {
+  const evidence = [];
+  if (signals.backgroundSourceDecision) evidence.push(`background source ${signals.backgroundSourceDecision}`);
+  if (signals.backgroundAssetDecision) evidence.push(`background asset ${signals.backgroundAssetDecision}`);
+  if (signals.rowRasterDecision) evidence.push(`row raster ${signals.rowRasterDecision}`);
+  return evidence;
 }
 
 function renderMarkdown(report) {
@@ -196,6 +243,12 @@ function renderMarkdown(report) {
     lines.push('', `## ${fixture.fixtureId}`, '');
     lines.push(`- Evidence: ${fixture.evidence.join('; ') || 'none'}`);
     lines.push(`- Blockers: ${fixture.blockers.join('; ') || 'none'}`);
+    if (fixture.signals.triedCandidates?.length) {
+      lines.push('- Tried candidate evidence:');
+      for (const candidate of fixture.signals.triedCandidates) {
+        lines.push(`  - \`${candidate.name}\`: ${candidate.risk}, ${candidate.fixtureKey} delta ${fmtSignedPct(candidate.deltaPct)}`);
+      }
+    }
     if (fixture.commands.length) {
       lines.push('- Next commands:');
       for (const command of fixture.commands) lines.push(`  - \`${command}\``);
@@ -247,6 +300,49 @@ function countBy(values) {
   const out = {};
   for (const value of values) out[value] = (out[value] ?? 0) + 1;
   return out;
+}
+
+function summarizeTriedCandidates(fixtureId, candidateByName) {
+  const fixtureKey = fixtureKeyForId(fixtureId);
+  const candidateNames = fixtureId === 'official-roll20-AW2E'
+    ? ['aw2e-text-metrics', 'aw2e-font-size-only', 'aw2e-message-width-font-size']
+    : fixtureId === 'yshy-commission-1bu'
+      ? ['yshy-sanitize-typography', 'coc-table-intrinsic-clamp', 'paint-dim-background']
+      : [];
+  return candidateNames
+    .map((name) => {
+      const candidate = candidateByName.get(name);
+      if (!candidate) return null;
+      return {
+        name,
+        fixtureKey,
+        risk: candidate.promotionRisk ?? candidate.status ?? 'unknown',
+        deltaPct: numberOrNull(candidate.fixtureAlignedDeltaPct?.[fixtureKey]),
+        regressedFixtures: numberOrNull(candidate.regressedFixtures) ?? 0,
+      };
+    })
+    .filter(Boolean);
+}
+
+function fixtureKeyForId(fixtureId) {
+  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
+  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
+  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  return fixtureId;
+}
+
+function failedCandidateBlockers(candidates) {
+  return (candidates ?? [])
+    .filter((candidate) => candidate.risk !== 'no-meaningful-gain' || Math.abs(candidate.deltaPct ?? 0) < 0.5)
+    .map((candidate) => `${candidate.name} is already tried and not promotable (${candidate.risk}, delta ${fmtSignedPct(candidate.deltaPct)})`);
+}
+
+function candidateEvidence(candidates) {
+  return (candidates ?? []).map((candidate) => `${candidate.name} ${candidate.risk} with ${candidate.fixtureKey} delta ${fmtSignedPct(candidate.deltaPct)}`);
+}
+
+function fmtSignedPct(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${value > 0 ? '+' : ''}${value}%` : 'n/a';
 }
 
 function selfTest() {
