@@ -86,6 +86,19 @@ corepack pnpm run diagnose:roll20-chat-candidate-style -- reports\roll20-actual-
   --out-dir ..\_tmp_codex_smoke\chat-style-<candidate>
 ```
 
+When a fresh local smoke needs to be compared against actual Roll20 intrinsic
+table/cell sizing, pass the smoke path and isolate the output:
+
+```powershell
+corepack pnpm run diagnose:roll20-chat-intrinsic-width -- reports\roll20-actual-compare\<run> `
+  ..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\rolltemplate-chat-smoke-results.json `
+  --out-dir ..\_tmp_codex_smoke\intrinsic-width-<candidate>
+```
+
+This is especially important for AW2E-style candidates: a policy can be
+`APPLIED` while still breaking intrinsic cell allocation. Treat the intrinsic
+report as a blocker/guidance report, not production CSS approval.
+
 ## Verification Tracks
 
 | Track | Purpose | Allowed Actions | Forbidden Actions |

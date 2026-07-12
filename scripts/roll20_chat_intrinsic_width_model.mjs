@@ -12,12 +12,14 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const optionNamesWithValues = new Set(['--out-dir']);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const localSmokeArg = args[1] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
 const localSmokePath = path.resolve(localSmokeArg);
-const outDir = path.join(runDir, 'chat-intrinsic-width-model');
+const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-intrinsic-width-model')));
 
 async function main() {
   const localSmoke = await readJson(localSmokePath);
@@ -37,6 +39,10 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
     localSmoke: localSmokeArg,
+    reportOverrides: {
+      outDir: rel(outDir),
+      localSmoke: rel(localSmokePath),
+    },
     scope: 'diagnostic-only intrinsic rolltemplate table width model',
     summary: {
       status: actionable.length ? 'INTRINSIC_WIDTH_MODEL_REQUIRED' : 'INTRINSIC_WIDTH_SECONDARY',
@@ -122,6 +128,7 @@ async function compareFixture(localFixture, reports) {
       bestAlignedMismatchPct: parityFixture?.bestAlignedMismatchPct ?? '',
       bestAlignedMismatchRatio: parityFixture?.bestAlignedMismatchRatio ?? null,
     },
+    localPolicyDiagnostics: localFixture?.cardInfo?.policyDiagnostics ?? null,
     widthDecision: widthFixture?.widthDecision ?? '',
     candidateEvidence,
     styleProof,
@@ -648,22 +655,32 @@ function renderMarkdown(report) {
     '',
     `Generated: ${report.generatedAt}`,
     `Run: \`${report.runDir}\``,
+    `Local smoke: \`${report.localSmoke}\``,
     '',
     'Scope: diagnostic-only intrinsic table-width model. This report does not enable production ChatPane CSS.',
     '',
     `Status: ${report.summary.status}`,
     '',
-    '| Fixture | Decision | Constraint | Mismatch | Table delta | Scroll delta | Overflow delta | Col delta | Long-token delta | Row spread | Cell max delta | Font delta | Letter delta | Transform proof | Evidence | Next |',
-    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
+    '| Fixture | Decision | Policy | Constraint | Mismatch | Table delta | Scroll delta | Overflow delta | Col delta | Long-token delta | Row spread | Cell max delta | Font delta | Letter delta | Transform proof | Evidence | Next |',
+    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.intrinsicDecision} | ${fixture.constraintModel?.decision ?? ''} | ${fixture.parity?.bestAlignedMismatchPct ?? ''} | ${fmtPx(fixture.deltas?.tableWidthDelta)} | ${fmtPx(fixture.structureDeltas?.tableScrollWidthDelta)} | ${fmtPx(fixture.structureDeltas?.overflowDelta)} | ${fixture.structureDeltas?.columnCountDelta ?? ''} | ${fixture.structureDeltas?.longestTokenLengthDelta ?? ''} | ${fmtPx(fixture.rowCellDeltas?.rowWidthDeltaSpread)} | ${fmtPx(fixture.rowCellDeltas?.maxAbsCellWidthDelta)} | ${fmtPx(fixture.deltas?.fontSizeDelta)} | ${fmtPx(fixture.deltas?.letterSpacingDelta)} | ${fixture.styleProof?.transformContradicted ? 'rejected' : 'n/a'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.intrinsicDecision} | ${policySummary(fixture.localPolicyDiagnostics)} | ${fixture.constraintModel?.decision ?? ''} | ${fixture.parity?.bestAlignedMismatchPct ?? ''} | ${fmtPx(fixture.deltas?.tableWidthDelta)} | ${fmtPx(fixture.structureDeltas?.tableScrollWidthDelta)} | ${fmtPx(fixture.structureDeltas?.overflowDelta)} | ${fixture.structureDeltas?.columnCountDelta ?? ''} | ${fixture.structureDeltas?.longestTokenLengthDelta ?? ''} | ${fmtPx(fixture.rowCellDeltas?.rowWidthDeltaSpread)} | ${fmtPx(fixture.rowCellDeltas?.maxAbsCellWidthDelta)} | ${fmtPx(fixture.deltas?.fontSizeDelta)} | ${fmtPx(fixture.deltas?.letterSpacingDelta)} | ${fixture.styleProof?.transformContradicted ? 'rejected' : 'n/a'} | ${(fixture.evidence ?? []).join('<br>')} | ${fixture.nextAction ?? ''} |`);
   }
   lines.push('', '## Claim Boundary', '');
   lines.push('- Pixel-improving transform/scale candidates are rejected when actual Roll20 computed styles show no transform.');
   lines.push('- This report narrows the next model; it does not prove Roll20 chat visual parity.');
   lines.push('- Do not commit generated report output; keep it local-only under `reports/`.');
   return `${lines.join('\n')}\n`;
+}
+
+function readOption(name, fallback) {
+  const index = rawArgs.indexOf(name);
+  return index >= 0 && rawArgs[index + 1] ? rawArgs[index + 1] : fallback;
+}
+
+function rel(file) {
+  return path.relative(process.cwd(), file);
 }
 
 async function readJson(file) {
@@ -686,6 +703,16 @@ async function readOptionalJson(file) {
 
 function findByFixtureId(fixtures, fixtureId) {
   return (fixtures ?? []).find((fixture) => fixture.fixtureId === fixtureId || fixture.id === fixtureId);
+}
+
+function policySummary(diagnostics) {
+  if (!diagnostics || diagnostics.status === 'NO_POLICY_CHECKS') return 'default';
+  const attrs = diagnostics.attrs ?? {};
+  const active = Object.entries(attrs)
+    .filter(([, value]) => value && value !== 'default')
+    .map(([key, value]) => `${key}=${value}`)
+    .join(', ');
+  return `${diagnostics.status}${active ? ` (${active})` : ''}`;
 }
 
 function findChild(template, selector) {
