@@ -13,14 +13,27 @@ import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = args.includes('--self-test');
-const runDirArg = args.find((arg) => arg !== '--self-test') ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
+const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'chat-template-scope-gate');
+const rawOutDir = readOption('--out-dir', '');
+const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-template-scope-gate');
 
 if (SELF_TEST) {
   selfTest();
 } else {
   await main();
+}
+
+function readOption(name, fallback = '') {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && arg !== '--self-test' && args[index - 1] !== '--out-dir');
 }
 
 async function main() {
@@ -30,6 +43,8 @@ async function main() {
     policy: await readOptionalJson(path.join(runDir, 'chat-renderer-policy', 'chat-renderer-policy-results.json')),
     candidates: await readOptionalJson(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json')),
     styleProof: await readOptionalJson(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json')),
+    assetPlan: await readOptionalJson(path.join(runDir, 'chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json')),
+    rowRasterCandidates: await readOptionalJson(path.join(runDir, 'chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json')),
   };
   const report = buildReport(runDirArg, reports);
 
@@ -50,11 +65,16 @@ function buildReport(runDirLabel, reports) {
   const fixtures = fixtureIds.map((fixtureId) => {
     const plan = findFixture(reports.plan?.fixtures, fixtureId);
     const reconciliation = findFixture(reports.reconciliation?.fixtures, fixtureId);
+    const assetPlan = findFixture(reports.assetPlan?.fixtures, fixtureId);
     const bestCandidate = candidatesByFixture.get(fixtureKeyForId(fixtureId)) ?? null;
+    const rowRasterCandidate = findCandidate(reports.rowRasterCandidates?.candidates, bestCandidate?.name);
+    const rowRasterSummary = summarizeRowRasterCandidate(rowRasterCandidate, fixtureId);
     const strategy = plan?.strategy ?? '';
     const nextExperiment = reconciliation?.nextExperiment ?? '';
     const requiredModel = requiredModelFor(strategy, nextExperiment);
     const alignedMismatch = numberOrNull(plan?.alignedMismatchRatio ?? reconciliation?.alignedMismatchRatio);
+    const assetBlocksPromotion = assetPlan?.rendererPolicy === 'DO_NOT_PROMOTE_CSS' || assetPlan?.decision === 'SOURCE_ASSET_LOST_RELINK_REQUIRED';
+    const rowRasterBlocksPromotion = rowRasterSummary.risk.includes('reject');
     return {
       fixtureId,
       priority: plan?.priority ?? reconciliation?.priority ?? priorityFor(alignedMismatch),
@@ -68,7 +88,13 @@ function buildReport(runDirLabel, reports) {
       tableTextResidual: numberOrNull(reconciliation?.signals?.tableTextResidual),
       tableScrollWidthDelta: numberOrNull(reconciliation?.signals?.tableScrollWidthDelta),
       bestCandidate,
-      promotionReady: isFixturePromotionReady(bestCandidate),
+      assetDecision: assetPlan?.decision ?? '',
+      assetRendererPolicy: assetPlan?.rendererPolicy ?? '',
+      assetBlockers: assetPlan?.blockers ?? [],
+      assetBlocksPromotion,
+      rowRaster: rowRasterSummary,
+      rowRasterBlocksPromotion,
+      promotionReady: isFixturePromotionReady(bestCandidate, { assetBlocksPromotion, rowRasterBlocksPromotion }),
       nextAction: nextActionFor(fixtureId, requiredModel),
     };
   });
@@ -77,11 +103,19 @@ function buildReport(runDirLabel, reports) {
   const highScopes = new Set(highMismatch.map((fixture) => fixture.requiredScope).filter(Boolean));
   const unsafeCandidates = fixtures
     .filter((fixture) => fixture.priority === 'P0' && !fixture.promotionReady)
-    .map((fixture) => `${fixture.fixtureId}: ${fixture.bestCandidate?.name ?? 'none'} is not promotion-ready (${fixture.bestCandidate?.risk ?? 'missing candidate'}, style=${fixture.bestCandidate?.styleProofStatus ?? 'n/a'})`);
+    .map((fixture) => `${fixture.fixtureId}: ${fixture.bestCandidate?.name ?? 'none'} is not promotion-ready (${promotionHoldReason(fixture)})`);
+  const assetBlockers = highMismatch
+    .filter((fixture) => fixture.assetBlocksPromotion)
+    .flatMap((fixture) => (fixture.assetBlockers.length ? fixture.assetBlockers : ['asset preservation policy holds renderer CSS']).map((blocker) => `${fixture.fixtureId}: ${blocker}`));
+  const rowRasterBlockers = highMismatch
+    .filter((fixture) => fixture.rowRasterBlocksPromotion)
+    .map((fixture) => `${fixture.fixtureId}: ${fixture.bestCandidate?.name ?? 'none'} row-raster risk=${fixture.rowRaster.risk}; weighted delta=${fmtSignedPct(fixture.rowRaster.weightedDeltaPct)}, worst-row delta=${fmtSignedPct(fixture.rowRaster.worstRowDeltaPct)}`);
   const blockers = [];
   if (highModels.size > 1) blockers.push(`high-mismatch fixtures require split renderer models: ${[...highModels].join(', ')}`);
   if (highScopes.size > 1) blockers.push(`high-mismatch fixtures require template-scoped rules: ${[...highScopes].join(', ')}`);
   blockers.push(...unsafeCandidates);
+  blockers.push(...assetBlockers);
+  blockers.push(...rowRasterBlockers);
   if (reports.policy?.summary?.globalSafeCandidates === 0 || reports.policy?.summary?.globalSafeCandidates === '0') {
     blockers.push('chat renderer policy reports no global-safe candidates');
   }
@@ -98,6 +132,8 @@ function buildReport(runDirLabel, reports) {
       highScopes: [...highScopes],
       blockers: blockers.length,
       promotionReadyFixtures: fixtures.filter((fixture) => fixture.promotionReady).length,
+      assetBlockedFixtures: fixtures.filter((fixture) => fixture.assetBlocksPromotion).length,
+      rowRasterBlockedFixtures: fixtures.filter((fixture) => fixture.rowRasterBlocksPromotion).length,
     },
     fixtures,
     blockers,
@@ -126,13 +162,15 @@ function requiredScopeFor(fixtureId, strategy, nextExperiment) {
   return 'template-specific';
 }
 
-function isFixturePromotionReady(candidate) {
+function isFixturePromotionReady(candidate, guards = {}) {
   return Boolean(
     candidate &&
       candidate.deltaPct <= -0.5 &&
       candidate.regressedFixtures === 0 &&
       !['REJECT_STYLE_CONTRADICTION', 'NOT_STYLE_PROVEN'].includes(candidate.styleProofStatus) &&
-      !String(candidate.risk ?? '').includes('reject')
+      !String(candidate.risk ?? '').includes('reject') &&
+      !guards.assetBlocksPromotion &&
+      !guards.rowRasterBlocksPromotion
   );
 }
 
@@ -174,6 +212,49 @@ function bestCandidatesByFixture(candidateReport, styleProofReport) {
   return byFixture;
 }
 
+function findCandidate(candidates, name) {
+  if (!name) return null;
+  return (candidates ?? []).find((candidate) => candidate.name === name) ?? null;
+}
+
+function summarizeRowRasterCandidate(candidate, fixtureId) {
+  if (!candidate) {
+    return {
+      risk: 'missing-row-raster-candidate',
+      weightedMismatchPct: '',
+      weightedDeltaPct: null,
+      worstRowMismatchPct: '',
+      worstRowDeltaPct: null,
+    };
+  }
+  const key = fixtureKeyForId(fixtureId);
+  const fixture = candidate[key] ?? {};
+  const prefix = rowRasterPrefixForFixture(fixtureId);
+  return {
+    risk: candidate.rowRasterRisk ?? '',
+    weightedMismatchPct: fixture.rowWeightedMismatchPct ?? '',
+    weightedDeltaPct: numberOrNull(candidate[`${prefix}RowWeightedDeltaPct`]),
+    worstRowMismatchPct: fixture.worstRowMismatchPct ?? '',
+    worstRowDeltaPct: numberOrNull(candidate[`${prefix}WorstRowDeltaPct`]),
+  };
+}
+
+function rowRasterPrefixForFixture(fixtureId) {
+  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
+  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  return fixtureKeyForId(fixtureId);
+}
+
+function promotionHoldReason(fixture) {
+  const reasons = [
+    `candidate=${fixture.bestCandidate?.risk ?? 'missing candidate'}`,
+    `style=${fixture.bestCandidate?.styleProofStatus ?? 'n/a'}`,
+  ];
+  if (fixture.assetBlocksPromotion) reasons.push(`asset=${fixture.assetDecision || fixture.assetRendererPolicy || 'held'}`);
+  if (fixture.rowRasterBlocksPromotion) reasons.push(`rowRaster=${fixture.rowRaster.risk}`);
+  return reasons.join(', ');
+}
+
 function renderMarkdown(report) {
   const lines = [
     '# Roll20 Chat Template Scope Gate',
@@ -184,11 +265,11 @@ function renderMarkdown(report) {
     '',
     'Scope: diagnostic-only. This gate prevents global ChatPane CSS promotion when fixtures require different template-scoped models.',
     '',
-    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Ready | Next action |',
-    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |',
+    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Asset gate | Row raster | Ready | Next action |',
+    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${fixture.assetDecision || 'n/a'} | ${fixture.rowRaster.risk || 'n/a'} ${fixture.rowRaster.weightedMismatchPct ? `(${fixture.rowRaster.weightedMismatchPct})` : ''} | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
   }
   lines.push('', '## Blockers', '');
   if (report.blockers.length) {
@@ -253,6 +334,12 @@ function fmtPx(value) {
   return `${number > 0 ? '+' : ''}${Number(number.toFixed(3))}px`;
 }
 
+function fmtSignedPct(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 'n/a';
+  return `${number > 0 ? '+' : ''}${Number(number.toFixed(2))}%`;
+}
+
 function selfTest() {
   const report = buildReport('reports/test', {
     plan: {
@@ -276,10 +363,34 @@ function selfTest() {
       ],
     },
     styleProof: { candidates: [] },
+    assetPlan: {
+      fixtures: [
+        {
+          fixtureId: 'official-roll20-AW2E',
+          decision: 'SOURCE_ASSET_LOST_RELINK_REQUIRED',
+          rendererPolicy: 'DO_NOT_PROMOTE_CSS',
+          blockers: ['external source/proxy currently resolves to a placeholder image'],
+        },
+      ],
+    },
+    rowRasterCandidates: {
+      candidates: [
+        {
+          name: 'aw2e-font-size-only',
+          rowRasterRisk: 'reject-row-raster-regression',
+          aw2eRowWeightedDeltaPct: 6.82,
+          aw2eWorstRowDeltaPct: 8.16,
+          aw2e: { rowWeightedMismatchPct: '24.75%', worstRowMismatchPct: '34.44%' },
+        },
+      ],
+    },
   });
   assert.equal(report.action, 'HOLD_GLOBAL_CHAT_RENDERER_PATCH');
   assert.ok(report.blockers.some((blocker) => blocker.includes('split renderer models')));
+  assert.ok(report.blockers.some((blocker) => blocker.includes('placeholder image')));
+  assert.ok(report.blockers.some((blocker) => blocker.includes('row-raster risk=reject-row-raster-regression')));
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredScope, '.sheet-rolltemplate-aw');
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').promotionReady, false);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredModel, 'TABLE_INTRINSIC_SANITIZE_FONT');
   console.log('roll20_chat_template_scope_gate self-test PASS');
 }

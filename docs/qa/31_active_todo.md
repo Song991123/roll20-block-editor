@@ -1,3 +1,11 @@
+## 2026-07-13 Template Scope Asset/Row-Raster Gate TODO Note
+
+- DONE: `gate:roll20-chat-template-scope` now accepts `--out-dir <writable-report-dir>` and reads asset-preservation plus row-raster candidate evidence in addition to targeted plan, width reconciliation, policy, candidate comparison, and style proof.
+- WHY: The previous template-scope gate correctly blocked global ChatPane CSS when AW2E/YSHY required different template models, but it did not show the asset placeholder blocker and row-raster regression in the same table. That made the next renderer action easier to misread as "try another broad CSS candidate."
+- VERIFIED: `node --check scripts\roll20_chat_template_scope_gate.mjs`, `test:roll20-chat-template-scope`, live runs against `reports\roll20-actual-compare\2026-06-18-state-map-v1` with `--out-dir` before and after the run dir, `lint`, `build`, and `git diff --check` passed. Current result remains `HOLD_GLOBAL_CHAT_RENDERER_PATCH`, now with `9` blockers; AW2E shows `SOURCE_ASSET_LOST_RELINK_REQUIRED` plus row-raster regression, and YSHY shows `SOURCE_ASSET_LOST_RELINK_REQUIRED`.
+- SERVER HYGIENE: No Next/smoke server was started for this batch. Only the existing Roll20 CDP listener on `9222` was present in the pre-check.
+- CLAIM BOUNDARY: This is renderer-safety and diagnostic precision only. It does not change product rendering, relink assets, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Renderer Diagnostics Out-Dir TODO Note
 
 - DONE: `gate:roll20-renderer-action` and `plan:roll20-chat-renderer-targets` now accept `--out-dir <writable-report-dir>`, matching the earlier `status:roll20-actual` / `preflight:roll20-cdp` temp-output behavior.

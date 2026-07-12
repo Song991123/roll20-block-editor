@@ -1,3 +1,13 @@
+## 2026-07-13 Template Scope Asset/Row-Raster Gate
+
+- Root cause: `gate:roll20-chat-template-scope` only combined targeted plan, width reconciliation, renderer policy, candidate comparison, and style proof. Asset-preservation blockers and row-raster candidate regressions were visible in the top renderer gate, but not in the template-scope report where agents choose the next scoped chat model.
+- Added `--out-dir <writable-report-dir>` to the template-scope gate so locked canonical report folders can still be read while refreshed JSON/Markdown output goes to ignored temp folders.
+- Added asset-preservation and row-raster candidate evidence to the fixture table and promotion readiness decision. P0 fixtures with `SOURCE_ASSET_LOST_RELINK_REQUIRED` or row-raster regression now stay non-ready in this gate too.
+- Live current result: `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with 9 blockers. AW2E remains `.sheet-rolltemplate-aw` / `MESSAGE_CONTENT_TEXT_METRICS`, but its best candidate `aw2e-message-width-text-metrics` is held by `NOT_STYLE_PROVEN`, asset relink, and row-raster regression. YSHY remains `.sheet-rolltemplate-coc` / `TABLE_INTRINSIC_SANITIZE_FONT`, with asset relink and non-ready candidate blockers.
+- Verification: `node --check scripts\roll20_chat_template_scope_gate.mjs`, `test:roll20-chat-template-scope`, two live `--out-dir` argument shapes, `lint`, `build`, and `git diff --check` passed.
+- Server hygiene: no project dev/smoke server was started. Port `9222` remains the existing Roll20 CDP listener.
+- Claim boundary: renderer diagnostic precision only. No production ChatPane CSS was promoted and no Roll20 visual parity claim changed.
+
 ## 2026-07-13 Renderer Diagnostics Out-Dir
 
 - Root cause: `gate:roll20-renderer-action` and `plan:roll20-chat-renderer-targets` still wrote only inside the canonical Roll20 actual-run folder. When Windows locked those generated report files, the source evidence was readable but the renderer diagnostic refresh failed with `EPERM`.
