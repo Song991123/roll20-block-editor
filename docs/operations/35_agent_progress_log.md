@@ -1,3 +1,13 @@
+## 2026-07-13 Layer Role Token Classification
+
+- Root cause: `classifyLayerRole()` used broad substring checks like `t.includes('tr')`, so non-table block types containing those letters, especially `r20_attr_ref`, `r20_attr_ref_max`, and `r20_attribute_card`, could be classified as table roles.
+- Product impact: the edit layer panel derives role badges, color rails, and droppable-container affordances from this classifier. A false table role can make an attribute/control block look like a container, which is wrong for the Figma-like layer model.
+- Changed the classifier to split block types into exact lowercase tokens and match table/flow/frame/control/action/media/text/runtime roles from those tokens. Exact Roll20 table blocks still classify as table; attr/attribute blocks classify as control and do not receive children by default.
+- Added `lib/editor/__tests__/layerRoles.test.ts` plus `test:layer-roles` to lock the regression.
+- Verification: `node --check lib\editor\layerRoles.ts`, `node --check lib\editor\__tests__\layerRoles.test.ts`, `corepack pnpm run test:layer-roles`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:edit-flow -- --port 4416 --report-dir D:\...\_tmp_codex_smoke\edit-flow-layer-role-token-20260713` passed.
+- Smoke evidence: edit UI copy stayed clean, the nested input layer path reported role `control`, the container section reported `frame`, and existing flow/absolute drop plus before/inside/after checks still passed. The sandboxed smoke logged the same external-resource `ERR_NETWORK_ACCESS_DENIED` warnings seen in prior runs, with `pageErrors=[]` and overall pass.
+- Claim boundary: layer-role truthfulness only. It does not change actual Roll20 renderer parity, asset relink state, or imported-sheet visual parity by itself.
+
 ## 2026-07-13 Asset Relink Plan Out-Dir
 
 - Root cause: `scripts/roll20_asset_relink_verification_plan.mjs` supported the current asset relink policy, but it still wrote `asset-relink-verification-plan-results.*` and `asset-relink-map-template.txt` only into the canonical actual-run folder. That broke the safe rerun workflow when the canonical generated files were locked.

@@ -1,3 +1,11 @@
+## 2026-07-13 Layer Role Token Classification TODO Note
+
+- DONE: `lib/editor/layerRoles.ts` now classifies block roles by block-type tokens instead of arbitrary substring matches. Exact table tokens such as `r20_tr`, `r20_td`, and `r20_th` still map to table roles, but `r20_attr_ref`, `r20_attr_ref_max`, and `r20_attribute_card` no longer inherit a false table/container role from the `tr` letters inside `attr`.
+- WHY: The edit layer panel uses these roles to decide labels, rails, and whether a node looks like it can receive children. Misclassifying attr/attribute blocks as table containers makes the Figma-like layer model lie to the user and can advertise impossible drop targets.
+- VERIFIED: `test:layer-roles` passes and asserts table, flow, frame, control, action, media, text, and runtime classifications, including the attr false-positive regression.
+- VERIFIED: `smoke:edit-flow -- --port 4416 --report-dir ...\_tmp_codex_smoke\edit-flow-layer-role-token-20260713` passed. The smoke still reports flow/absolute drops, before/inside/after layer modes, persistent container affordance, selection sync, free placement inside frame, canvas width controls, and clean edit UI copy. The nested input layer path now reports role `control`, while frame containers still report `frame`.
+- CURRENT: This fixes role truthfulness only. Broader imported-sheet edit UX and actual Roll20 visual parity still need the existing smoke and Roll20 gates before any DONE claim.
+
 ## 2026-07-13 Asset Relink Plan Out-Dir TODO Note
 
 - DONE: `plan:roll20-asset-relink` now accepts `--out-dir <writable-dir>`, matching the current Roll20 status/renderer diagnostic temp-output workflow.
