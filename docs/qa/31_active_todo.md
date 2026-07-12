@@ -1,3 +1,12 @@
+## 2026-07-13 Asset Relink Plan Out-Dir TODO Note
+
+- DONE: `plan:roll20-asset-relink` now accepts `--out-dir <writable-dir>`, matching the current Roll20 status/renderer diagnostic temp-output workflow.
+- WHY: The script was reading canonical Roll20 evidence but still wrote its JSON/Markdown/template into the selected actual-run folder. On the active run this failed with `EPERM` when Windows or another process locked the generated report files.
+- VERIFIED: `node --check scripts\roll20_asset_relink_verification_plan.mjs`, `test:roll20-asset-relink`, and both live `--out-dir` argument orders passed against `reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- CURRENT: The live plan still reports `RELINK_MAP_REQUIRED`: `official-roll20-AW2E` and `yshy-commission-1bu` remain `MISSING_RELINK` with no map entries. This is the correct blocker state, not a visual-parity pass.
+- SERVER HYGIENE: No project dev/smoke server was started for this check. Preserve the existing Roll20 CDP listener on port `9222`; do not stop user/system processes such as Discord, OneDrive, Wacom, or security modules without explicit user approval.
+- CLAIM BOUNDARY: This is verification resilience only. It does not relink assets, change product renderer CSS, upload to Roll20, or prove local-vs-Roll20 visual parity.
+
 ## 2026-07-13 Edit Canvas Before/After Drop Marker TODO Note
 
 - DONE: Canvas widget drag now creates an edit-only `data-r20-drop-position-marker="1"` overlay for before/after insertion targets. The marker is a fixed-position blue line computed from the target element rect, and it is removed on drop, dragleave, or target reset.

@@ -1,3 +1,13 @@
+## 2026-07-13 Asset Relink Plan Out-Dir
+
+- Root cause: `scripts/roll20_asset_relink_verification_plan.mjs` supported the current asset relink policy, but it still wrote `asset-relink-verification-plan-results.*` and `asset-relink-map-template.txt` only into the canonical actual-run folder. That broke the safe rerun workflow when the canonical generated files were locked.
+- Added `--out-dir <writable-report-dir>` to the script. The selected run directory remains the evidence source, while refreshed JSON/Markdown/template output can go to ignored temp folders.
+- Added self-test coverage for both option orders: `--out-dir <dir> <run-dir>` and `<run-dir> --out-dir <dir>`.
+- Live verification against `reports\roll20-actual-compare\2026-06-18-state-map-v1` now succeeds in both argument orders and reports the unchanged current blocker state: `RELINK_MAP_REQUIRED`, with `official-roll20-AW2E` and `yshy-commission-1bu` still `MISSING_RELINK`.
+- Verification: `node --check scripts\roll20_asset_relink_verification_plan.mjs`, `corepack pnpm run test:roll20-asset-relink`, and both live temp-output commands passed.
+- Server hygiene: no Next/smoke server was started. The only project-relevant listener is the existing Roll20 CDP Chrome on port `9222`, which was preserved.
+- Claim boundary: diagnostic output isolation only. No asset was copied, relinked, uploaded, embedded, or committed; production renderer and Roll20 parity remain gated by asset relink and chat renderer evidence.
+
 ## 2026-07-13 Edit Canvas Before/After Drop Marker
 
 - Root cause: canvas before/after dragover already set `data-r20-drop-mode`, but the visual cue lived on the target element itself. For small controls like inputs, that makes the intended insertion position harder to read than a Figma-like placement line.

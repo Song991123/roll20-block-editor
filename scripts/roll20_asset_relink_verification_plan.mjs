@@ -14,9 +14,10 @@ import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = args.includes('--self-test');
-const runDirArg = positionalArgs()[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
+const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'asset-relink-verification-plan');
+const rawOutDir = readOption('--out-dir', '');
+const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'asset-relink-verification-plan');
 
 if (SELF_TEST) {
   selfTest();
@@ -25,7 +26,7 @@ if (SELF_TEST) {
 }
 
 async function main() {
-  const mapFile = argValue('--map-file');
+  const mapFile = readOption('--map-file', '');
   const plan = await readOptionalJson(path.join(runDir, 'chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json'));
   const mapText = mapFile ? await readOptionalText(path.resolve(mapFile)) : '';
   const parsedMap = parseReplacementMap(mapText);
@@ -75,23 +76,25 @@ async function main() {
   console.log(`template=${report.templateFile}`);
 }
 
-function positionalArgs() {
-  const out = [];
-  for (let i = 0; i < args.length; i += 1) {
-    const arg = args[i];
-    if (arg === '--self-test') continue;
-    if (arg === '--map-file') {
-      i += 1;
-      continue;
-    }
-    if (!arg.startsWith('--')) out.push(arg);
-  }
-  return out;
+function readOption(name, fallback = '') {
+  const i = args.indexOf(name);
+  if (i === -1) return fallback;
+  const value = args[i + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
 }
 
-function argValue(name) {
-  const i = args.indexOf(name);
-  return i >= 0 && args[i + 1] ? args[i + 1] : '';
+function firstPositionalArg() {
+  return firstPositionalArgFrom(args);
+}
+
+function firstPositionalArgFrom(argv) {
+  const optionValueFlags = new Set(['--map-file', '--out-dir']);
+  return argv.find((arg, index) => (
+    !arg.startsWith('--') &&
+    arg !== '--self-test' &&
+    !optionValueFlags.has(argv[index - 1])
+  ));
 }
 
 function parseReplacementMap(text) {
@@ -299,6 +302,14 @@ async function readOptionalText(file) {
 }
 
 function selfTest() {
+  assert.equal(
+    firstPositionalArgFrom(['--out-dir', 'tmp/out', 'reports/roll20-actual-compare/sample']),
+    'reports/roll20-actual-compare/sample',
+  );
+  assert.equal(
+    firstPositionalArgFrom(['reports/roll20-actual-compare/sample', '--out-dir', 'tmp/out']),
+    'reports/roll20-actual-compare/sample',
+  );
   const fixture = {
     fixtureId: 'sample',
     priority: 'P0',
