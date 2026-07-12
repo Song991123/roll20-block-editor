@@ -1,3 +1,10 @@
+## 2026-07-13 Runtime Visibility Verification Bundle TODO Note
+
+- DONE: Added `verify:runtime-visibility`, a local verification bundle for the requirement that Roll20 worker scripts and rolltemplates stay out of the visible sheet canvas while worker state and rolltemplate chat simulation still run.
+- VERIFIED: The bundle runs worker workspace separation, worker state smoke, Roll20 Sandbox expected-preview runtime stripping, preview/edit visual runtime-node checks, and roll button -> ChatPane rolltemplate smoke in one command.
+- CURRENT VERIFIED SHAPE: Existing focused runs passed in this batch: `smoke:worker`, `smoke:worker-state`, `smoke:roll20-sandbox-preview:all`, `smoke:preview-edit-visual`, and `rolltemplate_chat_smoke.mjs`. Sandbox expected preview showed `rolltemplateCount=0` and `sourceWorkerScriptCount=0` for all three prepared fixtures; preview/edit visual smoke reported visible runtime nodes `0`; rolltemplate chat smoke passed all three prepared fixtures with `kind=rolltemplate`.
+- CLAIM BOUNDARY: This proves local preview/edit/runtime behavior for the prepared ignored fixtures only. It does not prove actual Roll20 Sandbox/test-room visual parity, all-sheet support, future JS block coding completion, or renderer readiness.
+
 ## 2026-07-13 Edit Mode Flow + Imported Sync Recheck TODO Note
 
 - DONE: Rechecked the Figma-like edit flow smoke against the current static app build.

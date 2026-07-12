@@ -11,6 +11,7 @@ Run scripts from the project root unless noted otherwise.
 | `corepack pnpm run lint` | Lint the app. |
 | `corepack pnpm run build` | Production build/type check. |
 | `corepack pnpm run guard:ui-copy` | Scan product-facing UI source for mojibake-looking Korean copy regressions. Excludes Roll20 base CSS, fixtures, reports, and imported sheet corpora because user sheets can contain arbitrary languages. |
+| `corepack pnpm run verify:runtime-visibility` | Run the local worker/rolltemplate visibility bundle: worker workspace separation, worker state smoke, Sandbox expected-preview runtime stripping, preview/edit visible-runtime-node checks, and local rolltemplate chat smoke. This is local evidence, not actual Roll20 visual parity. |
 | `node scripts/visual_reference_inventory.mjs` | Inventory visual reference candidates. |
 | `node scripts/prepare_visual_fixture.mjs <inventory_json> <out_root> <selector>` | Copy selected source sheets into workspace-owned visual fixtures. |
 | `node scripts/prepare_explicit_fixture.mjs <fixture_root> <fixture_id> --html <path> --css <path> [--i18n <path>]` | Copy an explicit sheet into a fixture. |

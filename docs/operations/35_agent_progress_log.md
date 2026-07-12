@@ -1,3 +1,11 @@
+## 2026-07-13 Runtime Visibility Verification Bundle
+
+- Added `scripts/roll20_runtime_visibility_verify.mjs` and package alias `verify:runtime-visibility`.
+- Purpose: make the user's "script/worker/rolltemplate must not show in preview/edit" requirement repeatable as one local gate instead of scattered manual commands.
+- The bundle runs worker workspace separation, worker state smoke, sandbox expected-preview runtime stripping, preview/edit visual runtime-node checks, and local rolltemplate chat smoke.
+- Focused verification immediately before adding the wrapper passed: `smoke:worker`, `smoke:worker-state`, `smoke:roll20-sandbox-preview:all`, `smoke:preview-edit-visual`, and direct `rolltemplate_chat_smoke.mjs`.
+- Evidence boundary: this is local app/runtime evidence. Actual Roll20 Sandbox/test-room root and chat screenshots are still required before any visual-parity or renderer-ready claim.
+
 ## 2026-07-13 Edit Mode Flow + Imported Sync Recheck
 
 - Re-ran the current edit UX smoke after the browser-paint routing batch to prove the visual editor path still works.

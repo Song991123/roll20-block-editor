@@ -99,6 +99,7 @@
     "test:roll20-chat-background-raster": "node scripts/roll20_chat_background_raster_model_probe.mjs --self-test",
     "test:roll20-chat-template-scope": "node scripts/roll20_chat_template_scope_gate.mjs --self-test",
     "test:roll20-sheet-frame-probe": "node scripts/roll20_sheet_frame_probe.mjs --self-test",
+    "verify:runtime-visibility": "node scripts/roll20_runtime_visibility_verify.mjs",
     "diagnose:roll20-height-drift": "node scripts/roll20_height_drift_diagnostics.mjs",
     "diagnose:roll20-visibility-selectors": "node scripts/roll20_visibility_selector_diagnostics.mjs",
     "diagnose:roll20-playbook-state": "node scripts/roll20_playbook_state_diagnostics.mjs",
