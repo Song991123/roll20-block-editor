@@ -1,3 +1,12 @@
+## 2026-07-13 Chat Renderer Target Plan TODO Note
+
+- DONE: Sharpened `plan:roll20-chat-renderer-targets` next commands so AW2E and YSHY no longer point primarily at broad/global candidate reruns.
+- CURRENT: AW2E remains P0 with `AW2E_TEMPLATE_SCOPED_TEXT_METRICS`; next diagnostics now focus on relink coverage, message shell, table-width budget, and font/glyph evidence.
+- CURRENT: YSHY remains P0 with `COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL`; next diagnostics now focus on relink coverage, table intrinsic, overflow/crop, intrinsic width, font/glyph, and font-intrinsic evidence.
+- VERIFIED: `node scripts\roll20_chat_targeted_renderer_plan.mjs --self-test` passed and `plan:roll20-chat-renderer-targets -- reports\roll20-actual-compare\2026-06-18-state-map-v1` regenerated the ignored plan.
+- STILL TODO: Use those focused diagnostics to build fixture/template-scoped renderer experiments. Do not promote global ChatPane width, padding, font, paint, or transform CSS while the renderer gate reports split fixture axes and asset relink blockers.
+- CLAIM BOUNDARY: This is planning/orchestration only. It does not fix ChatPane rendering or prove Roll20 visual parity.
+
 ## 2026-07-13 Asset Map Preupload Pipeline TODO Note
 
 - DONE: Added script-side `--asset-map-file` support to `roll20_actual_local_baseline.mjs` and `verify:roll20-preupload`, using the same `old URL => new URL` map format as the product export/import UI.

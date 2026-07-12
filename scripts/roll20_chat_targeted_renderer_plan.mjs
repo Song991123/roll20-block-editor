@@ -149,10 +149,12 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...sourceAssetEvidence(signals),
       ],
       commands: [
+        'corepack pnpm run plan:roll20-asset-relink -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1 --map-file <local-map.txt>',
+        'corepack pnpm run diagnose:roll20-chat-message-shell -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        'corepack pnpm run diagnose:roll20-chat-table-width-budget -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        'corepack pnpm run diagnose:roll20-chat-font-glyph -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run plan:roll20-chat-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-background-raster -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-background-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-candidates -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
       ],
       promotionRule: 'Only promote an AW2E-scoped rule after it beats default on AW2E without regressing Les/YSHY and style proof matches actual Roll20.',
     };
@@ -179,10 +181,13 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...sourceAssetEvidence(signals),
       ],
       commands: [
-        'corepack pnpm run plan:roll20-chat-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-background-raster -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
-        'corepack pnpm run diagnose:roll20-chat-background-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        'corepack pnpm run plan:roll20-asset-relink -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1 --map-file <local-map.txt>',
+        'corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        'corepack pnpm run diagnose:roll20-chat-overflow-crop -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        'corepack pnpm run diagnose:roll20-chat-intrinsic-width -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        'corepack pnpm run diagnose:roll20-chat-font-glyph -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-font-intrinsic -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
+        'corepack pnpm run plan:roll20-chat-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
       ],
       promotionRule: 'Only promote a CoC/YSHY-scoped rule after scrollWidth/clientWidth, font availability, and style proof agree; do not use transform/scale as production behavior.',
     };

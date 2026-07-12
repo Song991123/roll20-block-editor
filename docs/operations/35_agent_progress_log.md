@@ -1,3 +1,11 @@
+## 2026-07-13 Chat Renderer Target Plan Command Sharpening
+
+- Updated `plan:roll20-chat-renderer-targets` so its next commands follow the current split evidence instead of sending agents back through generic candidate runs.
+- AW2E now points first at asset relink coverage, message shell, table-width budget, and font/glyph diagnostics for the `.sheet-rolltemplate-aw` text-metric/message-width model.
+- YSHY now points first at asset relink coverage, table intrinsic, overflow/crop, intrinsic width, font/glyph, and font-intrinsic diagnostics for the CoC/YSHY table/sanitize model.
+- Verification: `node scripts\roll20_chat_targeted_renderer_plan.mjs --self-test` and `plan:roll20-chat-renderer-targets -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Claim boundary: this is orchestration only. Production renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`; no visual parity claim changed.
+
 ## 2026-07-13 Asset Map Preupload Pipeline
 
 - Added a shared script-side asset replacement helper for local verification tooling.
