@@ -1,3 +1,11 @@
+## 2026-07-13 Roll20 Chat Asset Preservation TODO Note
+
+- DONE: Added a diagnostic asset-preservation planner for Roll20 chat/background evidence: `corepack pnpm run plan:roll20-chat-assets -- reports\roll20-actual-compare\<label>`.
+- DONE: Added `docs/spec/31_asset_preservation_policy.md` and linked it from the agent startup rules so preview/parity work checks external asset and placeholder risk before renderer CSS work.
+- VERIFIED: The current run plan reports `HOLD_RENDERER_FOR_ASSET_POLICY` with P0 `SOURCE_ASSET_LOST_RELINK_REQUIRED` for AW2E and YSHY chat background evidence. Local and actual proxy bytes match, but the source resolves to a placeholder, so CSS cannot recover the intended original image.
+- CURRENT: Production ChatPane renderer remains held. Asset relink/rehost UX is now a P0 product requirement before claiming visual parity for fixtures whose source images are dead.
+- STILL TODO: Implement user-facing import/export asset warnings and a local-only replacement map. Do not commit downloaded third-party assets, screenshots, or generated report evidence.
+
 ## 2026-07-12 Roll20 Chat Targeted Candidate Results TODO Note
 
 - DONE: Ran the targeted local smoke candidates from the renderer target plan:

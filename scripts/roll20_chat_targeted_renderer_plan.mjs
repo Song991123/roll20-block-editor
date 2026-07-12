@@ -149,6 +149,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...sourceAssetEvidence(signals),
       ],
       commands: [
+        'corepack pnpm run plan:roll20-chat-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-background-raster -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-background-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-candidates -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
@@ -178,6 +179,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...sourceAssetEvidence(signals),
       ],
       commands: [
+        'corepack pnpm run plan:roll20-chat-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-background-raster -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-background-assets -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',
         'corepack pnpm run diagnose:roll20-chat-font-intrinsic -- reports\\roll20-actual-compare\\2026-06-18-state-map-v1',

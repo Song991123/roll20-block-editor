@@ -17,7 +17,7 @@ Every agent must do this before changing code or claiming status. `AGENTS.md` is
 7. Read `docs/operations/36_public_portfolio_and_copyright_rules.md`.
 8. Read `docs/operations/37_roll20_actual_verification.md` for Roll20 actual-screen checks.
 9. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
+10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/31_asset_preservation_policy.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
 11. For actual Roll20 sandbox sanitize/prefix behavior, read `docs/spec/30_roll20_actual_sandbox_contract.md` before changing preview/export sanitize, prefix, URL proxy, or allow-list behavior.
 11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
 12. Check `git status --short --branch`.
@@ -105,6 +105,9 @@ For preview/parity work, also run the relevant fixture/report script and record 
 - Distinguish asset images from reference preview images.
 - Treat decorative/background images as real sheet resources.
 - Treat preview/completion images as visual comparison references.
+- Detect external image/font URLs and Roll20 proxy URLs before making visual parity claims.
+- If diagnostics show the original source asset resolves to a placeholder, keep renderer CSS changes on hold until the user relinks/rehosts the asset or the mismatch is explicitly accepted as placeholder behavior.
+- Do not store, publish, or commit third-party sheet assets while implementing asset replacement or verification helpers.
 - Rendering without errors is not enough. Visual similarity must be measured and explained.
 
 ## 3. Roll20 Environment Reproduction

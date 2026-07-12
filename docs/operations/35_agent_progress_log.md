@@ -3497,3 +3497,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `capture:roll20-chat-cdp --dry-run` to warn when `/editor` is open but no character-sheet iframe is present, and to point back to the required sheet-frame probe command.
 - Verification: syntax checks plus live AW2E dry-runs for probe and capture. The dry-runs now distinguish URL readiness from loaded-fixture readiness.
 - Claim boundary: no actual Roll20 evidence was captured. The next step is loading/opening the intended generated sheet in the dedicated Sandbox/test room.
+## 2026-07-13 Roll20 Chat Asset Preservation Plan
+
+- Added `scripts/roll20_chat_asset_preservation_plan.mjs` plus `plan:roll20-chat-assets` and `test:roll20-chat-assets`.
+- The planner reads current chat background asset/proxy/raster evidence and separates renderer CSS work from asset-preservation failures.
+- Current evidence for `reports\roll20-actual-compare\2026-06-18-state-map-v1` keeps renderer work held: AW2E and YSHY background sources resolve to placeholder image bytes even though local/actual Roll20 proxy bytes match.
+- Added `docs/spec/31_asset_preservation_policy.md` and linked it from agent startup rules. New P0 product requirement: warn about external assets and require relink/rehost before claiming visual parity when source assets are dead.
+- Claim boundary: this is diagnostic/planning and safety policy. It does not make Roll20 chat visual parity pass and does not embed or commit any real sheet assets.
