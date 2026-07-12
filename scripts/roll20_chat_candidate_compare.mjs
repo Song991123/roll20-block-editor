@@ -19,6 +19,7 @@ const candidates = [
   ['tight-cell-spacing', 'reports/rolltemplate-chat-smoke-tight-cell-spacing/screenshots'],
   ['roll20-chat-shell-width-340', 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/screenshots'],
   ['aw2e-message-full-width', 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/screenshots'],
+  ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
   ['table-scale-x', 'reports/rolltemplate-chat-smoke-table-scale-x/screenshots'],
   ['aw2e-root-width-actual', 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
@@ -117,13 +118,18 @@ console.log(`out=${path.relative(process.cwd(), outDir)}`);
 
 function summarizeReport(name, screenshots, report) {
   const fixture = (id) => report.fixtures.find((item) => item.fixtureId === id);
+  const fixtureRows = {
+    aw2e: summarizeFixture(fixture('official-roll20-AW2E')),
+    lesOublies: summarizeFixture(fixture('official-roll20-Les-Oublies')),
+    yshy: summarizeFixture(fixture('yshy-commission-1bu')),
+  };
+  const comparedFixtures = Object.values(fixtureRows).filter((row) => row.status === 'DIFFED').length;
   return {
     name,
     status: 'OK',
     screenshots,
-    aw2e: summarizeFixture(fixture('official-roll20-AW2E')),
-    lesOublies: summarizeFixture(fixture('official-roll20-Les-Oublies')),
-    yshy: summarizeFixture(fixture('yshy-commission-1bu')),
+    comparedFixtures,
+    ...fixtureRows,
     summary: {
       normalizedHighMismatch: report.summary.normalizedHighMismatch,
       alignedHighMismatch: report.summary.alignedHighMismatch,
@@ -134,9 +140,25 @@ function summarizeReport(name, screenshots, report) {
 }
 
 function summarizeFixture(fixture) {
+  if (!fixture || fixture.status !== 'DIFFED') {
+    return {
+      status: fixture?.status ?? 'MISSING',
+      rawPct: '',
+      alignedPct: '',
+      offset: null,
+      highlightMismatchRatio: null,
+      highlightMismatchShare: null,
+      shadowMismatchShare: null,
+      highlightLocalCount: null,
+      highlightActualCount: null,
+      highlightCentroidDelta: null,
+      shadowCentroidDelta: null,
+    };
+  }
   const breakdown = fixture.bestAlignedDiffBreakdown ?? fixture.diffBreakdown ?? {};
   const geometry = breakdown.maskGeometry ?? {};
   return {
+    status: fixture.status,
     rawPct: fixture.mismatchPct,
     alignedPct: fixture.bestAlignedMismatchPct,
     offset: fixture.bestAlignedOffset,
@@ -202,6 +224,7 @@ function numberDelta(value, base) {
 
 function classifyPromotionRisk(row, summary) {
   if (row.name === 'default') return 'baseline';
+  if (Number(row.comparedFixtures ?? 0) < 3) return 'fixture-local-incomplete-coverage';
   if (summary.regressedFixtures > 0) return 'reject-regresses-fixtures';
   if (summary.improvedFixtures >= 2 && (summary.maxRegressionPct ?? 0) < 0.5) return 'candidate-needs-style-proof';
   if (summary.improvedFixtures === 1) return 'single-fixture-only';

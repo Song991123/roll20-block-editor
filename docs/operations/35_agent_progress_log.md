@@ -1,3 +1,11 @@
+## 2026-07-12 AW2E Chat Width Hypothesis Check
+
+- Investigated the AW2E chat mismatch before changing production renderer CSS. Root-cause hypothesis: local ChatPane was 12px narrower than actual Roll20 (`328/267` local chat/template vs `340/279` actual) and AW2E table text metrics differed at `13px` local vs `13.65px` actual.
+- Generated fresh AW2E-only local chat screenshots for default, `aw2e-font-size-only`, and combined `aw2e-message-width-font-size`.
+- Added `aw2e-message-width-font-size` as a diagnostic-only candidate in `scripts/roll20_chat_candidate_compare.mjs` / `scripts/roll20_chat_candidate_style_proof.mjs`, and documented the smoke command in `scripts/README.md`.
+- Result: combined width+font improved raw AW2E crop mismatch from `26.9%` to `18.46%` and removed the `8,0` alignment offset, but best-aligned mismatch is still worse than default (`18.46%` vs `18.03%`) and coverage is only `1/3`. Candidate is correctly classified as `fixture-local-incomplete-coverage`.
+- Boundary: production renderer remains held. Next AW2E work should inspect row/background/crop context or exact source/text model instead of promoting the width+font candidate.
+
 ## 2026-07-12 Roll20 Chat Diagnostic Refresh
 
 - Added `scripts/roll20_chat_diagnostic_refresh.mjs` and package alias `diagnose:roll20-chat-refresh` to rerun the Roll20 chat diagnostic chain from a single current evidence set after actual chat recaptures.

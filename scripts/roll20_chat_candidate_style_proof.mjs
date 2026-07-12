@@ -17,6 +17,7 @@ const CANDIDATE_SMOKE = {
   'no-shadow': 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json',
   'roll20-chat-shell-width-340': 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/rolltemplate-chat-smoke-results.json',
   'aw2e-message-full-width': 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-width-font-size': 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json',
   'table-scale-x': 'reports/rolltemplate-chat-smoke-table-scale-x/rolltemplate-chat-smoke-results.json',
   'aw2e-root-width-actual': 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/rolltemplate-chat-smoke-results.json',
   'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
@@ -117,6 +118,9 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   if (candidate.name === 'no-shadow') {
     return summarizeNoShadow(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
+  if (candidate.name === 'aw2e-message-width-font-size') {
+    return summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+  }
   if (candidate.name === 'roll20-chat-shell-width-340' || candidate.name === 'aw2e-message-full-width') {
     return summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar);
   }
@@ -202,6 +206,31 @@ function summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actu
     evidence: [
       { selector: 'chat', key: 'rect.width', localCandidate: localChatGroupWidth, actual: actualChatWidth },
       { selector: 'message', key: 'rect.width', localCandidate: localMessageWidth, actual: actualMessageWidth },
+    ],
+  };
+}
+
+function summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'official-roll20-AW2E') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'AW2E-scoped candidate does not target this fixture',
+      evidence: [],
+    };
+  }
+  const shell = summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar);
+  const font = summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate);
+  const compatible = shell.status === 'STYLE_COMPATIBLE' && font.status === 'STYLE_COMPATIBLE';
+  return {
+    fixtureId,
+    status: compatible ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: compatible
+      ? 'AW2E message/content width and table font size both match actual Roll20 evidence'
+      : 'AW2E message/content width plus font-size candidate is not fully supported by actual Roll20 style evidence',
+    evidence: [
+      ...shell.evidence.map((item) => ({ ...item, group: 'message-shell' })),
+      ...font.evidence.map((item) => ({ ...item, group: 'font-size' })),
     ],
   };
 }

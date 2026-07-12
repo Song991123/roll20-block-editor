@@ -1,3 +1,14 @@
+## 2026-07-12 AW2E Chat Width Hypothesis TODO Note
+
+- DONE: Tested the AW2E root-cause hypothesis that local ChatPane needs both Roll20's full-width message/content box and the Roll20-observed `13.65px` AW2E table font size.
+- DONE: Added the diagnostic-only `aw2e-message-width-font-size` candidate to chat candidate comparison/style-proof plumbing and documented its smoke command. This candidate is not production renderer behavior.
+- VERIFIED: Fresh AW2E-only local captures:
+  - default fresh: raw mismatch `26.9%`, best aligned `18.03%`.
+  - font-size-only fresh: raw mismatch `27.21%`, best aligned `18.01%`.
+  - message-width + font-size: raw mismatch `18.46%`, best aligned `18.46%`, offset `0,0`.
+- CURRENT: The combined candidate removes the AW2E alignment offset and improves raw crop mismatch, but it is still worse than default after alignment (`18.46%` vs `18.03%`) and only has `1/3` fixture coverage. It is classified as `fixture-local-incomplete-coverage`, not a safe renderer fix.
+- STILL TODO: AW2E needs a narrower row/background/crop or exact text/source-order model next. Do not promote the width+font candidate.
+
 ## 2026-07-12 Roll20 Chat Diagnostic Refresh TODO Note
 
 - DONE: Added `corepack pnpm run diagnose:roll20-chat-refresh -- reports\roll20-actual-compare\2026-06-18-state-map-v1` so chat parity, current metrics, style/candidate diagnostics, width/message/table models, row/background probes, width reconciliation, and `gate:roll20-renderer-action` are regenerated from the same current evidence set.
