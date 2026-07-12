@@ -13,10 +13,29 @@ import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = args.includes('--self-test');
+const optionNamesWithValues = new Set([
+  '--out-dir',
+  '--targeted-plan-dir',
+  '--width-reconciliation-dir',
+  '--policy-dir',
+  '--candidate-comparison-dir',
+  '--style-proof-dir',
+  '--asset-plan-dir',
+  '--row-raster-candidates-dir',
+]);
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
 const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-template-scope-gate');
+const reportOverrides = {
+  plan: readOption('--targeted-plan-dir', ''),
+  reconciliation: readOption('--width-reconciliation-dir', ''),
+  policy: readOption('--policy-dir', ''),
+  candidates: readOption('--candidate-comparison-dir', ''),
+  styleProof: readOption('--style-proof-dir', ''),
+  assetPlan: readOption('--asset-plan-dir', ''),
+  rowRasterCandidates: readOption('--row-raster-candidates-dir', ''),
+};
 
 if (SELF_TEST) {
   selfTest();
@@ -33,20 +52,20 @@ function readOption(name, fallback = '') {
 }
 
 function firstPositionalArg() {
-  return args.find((arg, index) => !arg.startsWith('--') && arg !== '--self-test' && args[index - 1] !== '--out-dir');
+  return args.find((arg, index) => !arg.startsWith('--') && arg !== '--self-test' && !optionNamesWithValues.has(args[index - 1]));
 }
 
 async function main() {
   const reports = {
-    plan: await readOptionalJson(path.join(runDir, 'chat-targeted-renderer-plan', 'chat-targeted-renderer-plan-results.json')),
-    reconciliation: await readOptionalJson(path.join(runDir, 'chat-width-reconciliation', 'chat-width-reconciliation-results.json')),
-    policy: await readOptionalJson(path.join(runDir, 'chat-renderer-policy', 'chat-renderer-policy-results.json')),
-    candidates: await readOptionalJson(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json')),
-    styleProof: await readOptionalJson(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json')),
-    assetPlan: await readOptionalJson(path.join(runDir, 'chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json')),
-    rowRasterCandidates: await readOptionalJson(path.join(runDir, 'chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json')),
+    plan: await readReportJson('chat-targeted-renderer-plan', 'chat-targeted-renderer-plan-results.json', reportOverrides.plan),
+    reconciliation: await readReportJson('chat-width-reconciliation', 'chat-width-reconciliation-results.json', reportOverrides.reconciliation),
+    policy: await readReportJson('chat-renderer-policy', 'chat-renderer-policy-results.json', reportOverrides.policy),
+    candidates: await readReportJson('chat-candidate-comparison', 'chat-candidate-comparison-results.json', reportOverrides.candidates),
+    styleProof: await readReportJson('chat-candidate-style-proof', 'chat-candidate-style-proof-results.json', reportOverrides.styleProof),
+    assetPlan: await readReportJson('chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json', reportOverrides.assetPlan),
+    rowRasterCandidates: await readReportJson('chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json', reportOverrides.rowRasterCandidates),
   };
-  const report = buildReport(runDirArg, reports);
+  const report = buildReport(runDirArg, reports, normalizeReportOverrides(reportOverrides));
 
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, 'chat-template-scope-gate-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
@@ -59,7 +78,7 @@ async function main() {
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
 
-function buildReport(runDirLabel, reports) {
+function buildReport(runDirLabel, reports, overrides = {}) {
   const fixtureIds = collectFixtureIds(reports.plan, reports.reconciliation);
   const candidatesByFixture = bestCandidatesByFixture(reports.candidates, reports.styleProof);
   const fixtures = fixtureIds.map((fixtureId) => {
@@ -123,6 +142,7 @@ function buildReport(runDirLabel, reports) {
   return {
     generatedAt: new Date().toISOString(),
     runDir: runDirLabel,
+    reportOverrides: overrides,
     scope: 'diagnostic-only template scope gate; no production CSS',
     action,
     summary: {
@@ -277,6 +297,13 @@ function renderMarkdown(report) {
   } else {
     lines.push('- No global/template-scope blocker found by this gate.');
   }
+  lines.push('', '## Report Overrides', '');
+  const overrides = Object.entries(report.reportOverrides ?? {});
+  if (overrides.length) {
+    for (const [key, value] of overrides) lines.push(`- ${key}: \`${value}\``);
+  } else {
+    lines.push('- None; canonical run reports were used.');
+  }
   lines.push('', '## Claim Boundary', '');
   lines.push('- `ALLOW_SCOPED_REVIEW` would only allow a scoped renderer review; it would not prove Roll20 visual parity.');
   lines.push('- `HOLD_GLOBAL_CHAT_RENDERER_PATCH` means no global ChatPane width/font/paint CSS should be promoted from this evidence.');
@@ -303,6 +330,33 @@ async function readOptionalJson(file) {
   } catch {
     return null;
   }
+}
+
+async function readReportJson(defaultDirName, reportFileName, overrideDir = '') {
+  const file = overrideDir
+    ? path.join(path.resolve(overrideDir), reportFileName)
+    : path.join(runDir, defaultDirName, reportFileName);
+  if (overrideDir && !(await fileExists(file))) {
+    throw new Error(`Missing override report for ${defaultDirName}: ${file}`);
+  }
+  return readOptionalJson(file);
+}
+
+async function fileExists(file) {
+  try {
+    await readFile(file, 'utf8');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function normalizeReportOverrides(overrides) {
+  return Object.fromEntries(
+    Object.entries(overrides)
+      .filter(([, value]) => Boolean(value))
+      .map(([key, value]) => [key, path.resolve(value)]),
+  );
 }
 
 function fixtureKeyForId(fixtureId) {
@@ -384,8 +438,9 @@ function selfTest() {
         },
       ],
     },
-  });
+  }, { styleProof: path.resolve('tmp-style-proof') });
   assert.equal(report.action, 'HOLD_GLOBAL_CHAT_RENDERER_PATCH');
+  assert.equal(report.reportOverrides.styleProof, path.resolve('tmp-style-proof'));
   assert.ok(report.blockers.some((blocker) => blocker.includes('split renderer models')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('placeholder image')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('row-raster risk=reject-row-raster-regression')));

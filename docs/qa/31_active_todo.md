@@ -1,3 +1,13 @@
+## 2026-07-13 Chat Template Scope Isolated Evidence Override TODO Note
+
+- DONE: `diagnose:roll20-chat-candidate-style` now accepts `--out-dir <writable-report-dir>`, so style-proof reruns can read canonical Roll20 actual evidence while writing into ignored temp folders instead of rewriting `chat-candidate-style-proof` inside the selected run.
+- DONE: `gate:roll20-chat-template-scope` now accepts report override directories for targeted plan, width reconciliation, policy, candidate comparison, style proof, asset plan, and row-raster candidate reports. Override paths are recorded in the generated JSON/Markdown so later agents can audit whether the gate used canonical or temp evidence.
+- VERIFIED: `node --check` passed for both changed scripts, and `node scripts\roll20_chat_template_scope_gate.mjs --self-test` passed.
+- VERIFIED: Live temp-output style proof passed against `reports\roll20-actual-compare\2026-06-18-state-map-v1` with `--out-dir ..\_tmp_codex_smoke\chat-candidate-style-proof-outdir-20260713-r1`.
+- VERIFIED: Live temp-output candidate and row-raster candidate comparisons passed, then `gate:roll20-chat-template-scope` consumed those temp reports with `--candidate-comparison-dir`, `--style-proof-dir`, and `--row-raster-candidates-dir`.
+- OBSERVED: The override gate still returns `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with `9` blockers. AW2E remains scoped to `.sheet-rolltemplate-aw` / `MESSAGE_CONTENT_TEXT_METRICS` and its best text-metrics candidate is blocked by `NOT_STYLE_PROVEN`, asset relink, and row-raster regression. YSHY remains scoped to `.sheet-rolltemplate-coc` / `TABLE_INTRINSIC_SANITIZE_FONT`; `paint-dim-background` improves YSHY aligned mismatch but is still rejected by fixture regression and asset blockers.
+- CURRENT: This is evidence isolation and gate wiring only. It does not promote ChatPane CSS, relink assets, upload to Roll20, or prove Roll20 visual parity. Next P0 remains building a genuinely template-scoped candidate that survives style proof, row-raster checks, and asset policy.
+
 ## 2026-07-13 Renderer Gate Root Report Override TODO Note
 
 - DONE: `gate:roll20-renderer-action` now accepts `--full-root-dir`, `--scroll-metrics-full-root-dir`, `--root-cutoff-dir`, and `--geometry-dir` report overrides. This lets a fresh isolated root/geometry diagnostic run feed the renderer action gate without rewriting canonical actual evidence folders.

@@ -9,8 +9,11 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const RUN_DIR = path.resolve(args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1');
-const OUT_DIR = path.join(RUN_DIR, 'chat-candidate-style-proof');
+const optionNamesWithValues = new Set(['--out-dir']);
+const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
+const RUN_DIR = path.resolve(runDirArg);
+const rawOutDir = readOption('--out-dir', '');
+const OUT_DIR = rawOutDir ? path.resolve(rawOutDir) : path.join(RUN_DIR, 'chat-candidate-style-proof');
 
 const CANDIDATE_SMOKE = {
   default: 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json',
@@ -55,6 +58,18 @@ const COMPARABLE_SELECTORS = [
 
 function rel(file) {
   return path.relative(process.cwd(), file);
+}
+
+function readOption(name, fallback = '') {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(args[index - 1]));
 }
 
 async function readJson(file, fallback = null) {

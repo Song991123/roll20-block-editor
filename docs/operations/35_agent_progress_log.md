@@ -1,3 +1,18 @@
+## 2026-07-13 Chat Template Scope Isolated Evidence Override
+
+- Root cause: style-proof diagnostics still wrote only into the selected actual-run folder, and the template-scope gate could not consume freshly generated candidate/style/row-raster temp reports without copying them back into canonical evidence. That made renderer investigation brittle on locked Windows report folders and made it too easy to mix stale canonical evidence with fresh temp diagnostics.
+- Added `--out-dir <writable-report-dir>` to `scripts/roll20_chat_candidate_style_proof.mjs`.
+- Added report override options to `scripts/roll20_chat_template_scope_gate.mjs`: `--targeted-plan-dir`, `--width-reconciliation-dir`, `--policy-dir`, `--candidate-comparison-dir`, `--style-proof-dir`, `--asset-plan-dir`, and `--row-raster-candidates-dir`.
+- The template-scope gate now records `reportOverrides` in JSON and Markdown. If an override directory is provided but the expected report JSON is missing, the gate fails instead of silently falling back to stale canonical evidence.
+- Verification: `node --check scripts\roll20_chat_candidate_style_proof.mjs`, `node --check scripts\roll20_chat_template_scope_gate.mjs`, and `node scripts\roll20_chat_template_scope_gate.mjs --self-test` passed.
+- Live verification passed against `reports\roll20-actual-compare\2026-06-18-state-map-v1`:
+  - `diagnose:roll20-chat-candidate-style -- ... --out-dir ..\_tmp_codex_smoke\chat-candidate-style-proof-outdir-20260713-r1`
+  - `diagnose:roll20-chat-candidates -- ... --out-dir ..\_tmp_codex_smoke\chat-candidates-outdir-20260713-r1`
+  - `diagnose:roll20-chat-row-raster-candidates -- ... --out-dir ..\_tmp_codex_smoke\row-raster-candidates-outdir-20260713-r1`
+  - `gate:roll20-chat-template-scope -- ... --candidate-comparison-dir ... --style-proof-dir ... --row-raster-candidates-dir ... --out-dir ..\_tmp_codex_smoke\chat-template-scope-overrides-20260713-r1`
+- Current result: `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with `9` blockers. AW2E's best text-metrics candidate is still not style-proven and regresses row-raster evidence; YSHY's `paint-dim-background` candidate improves aligned mismatch but still regresses another fixture and remains held by asset policy.
+- Claim boundary: isolated evidence wiring only. No product renderer CSS changed, no Roll20 upload happened, no assets were relinked, and visual parity remains unproven.
+
 ## 2026-07-13 Renderer Gate Root Report Override
 
 - Root cause: fresh isolated full-root/geometry diagnostics could be generated safely with `--out-dir`, but `gate:roll20-renderer-action` still read only fixed report paths under the canonical actual-run folder. That meant agents had no safe way to test a renderer action recommendation against fresh temp root evidence without copying files back into canonical reports.
