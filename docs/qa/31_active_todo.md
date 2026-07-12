@@ -1,3 +1,11 @@
+## 2026-07-13 Renderer Diagnostics Out-Dir TODO Note
+
+- DONE: `gate:roll20-renderer-action` and `plan:roll20-chat-renderer-targets` now accept `--out-dir <writable-report-dir>`, matching the earlier `status:roll20-actual` / `preflight:roll20-cdp` temp-output behavior.
+- WHY: The canonical actual-run folder can have locked generated report files on Windows. The scripts must still be able to read the evidence and write refreshed diagnostic summaries to ignored temp folders.
+- VERIFIED: `node --check` for both changed scripts, `test:roll20-chat-renderer-targets`, both commands against `reports\roll20-actual-compare\2026-06-18-state-map-v1` with `--out-dir` after the run dir and before the run dir, `lint`, `build`, and `git diff --check` passed. Current renderer state remains `HOLD_PRODUCTION_RENDERER_PATCH`, `same-structure high mismatch=2/3`, and max aligned mismatch `20.68%`.
+- SERVER HYGIENE: No Next/smoke server was started for this batch. Only the existing Roll20 CDP listener on `9222` was present in the pre-check.
+- CLAIM BOUNDARY: Verification resilience only. This does not change product rendering, upload a sheet to Roll20, relink assets, or prove Roll20 visual parity.
+
 ## 2026-07-13 Roll20 Verification Out-Dir TODO Note
 
 - DONE: `status:roll20-actual` and `preflight:roll20-cdp` now accept `--out-dir <writable-report-dir>`. This lets agents read the canonical Roll20 evidence run while writing refreshed summaries into a temp folder when Windows locks the existing generated JSON/Markdown files under the run directory.

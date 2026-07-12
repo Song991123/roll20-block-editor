@@ -13,14 +13,28 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDir = path.resolve(args[0] ?? '');
+const runDirArg = firstPositionalArg() ?? '';
+const runDir = path.resolve(runDirArg);
 
-if (!args[0]) {
-  console.error('Usage: node scripts/roll20_renderer_action_gate.mjs reports/roll20-actual-compare/<label>');
+if (!runDirArg) {
+  console.error('Usage: node scripts/roll20_renderer_action_gate.mjs reports/roll20-actual-compare/<label> [--out-dir <writable-report-dir>]');
   process.exit(2);
 }
 
-const outDir = path.join(runDir, 'renderer-action-gate');
+const rawOutDir = readOption('--out-dir', '');
+const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'renderer-action-gate');
+
+function readOption(name, fallback = '') {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--out-dir');
+}
 
 async function main() {
   const status = await readJsonIfExists(path.join(runDir, 'actual-verification-status', 'actual-verification-status-results.json'));

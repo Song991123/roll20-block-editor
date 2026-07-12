@@ -1,3 +1,17 @@
+## 2026-07-13 Renderer Diagnostics Out-Dir
+
+- Root cause: `gate:roll20-renderer-action` and `plan:roll20-chat-renderer-targets` still wrote only inside the canonical Roll20 actual-run folder. When Windows locked those generated report files, the source evidence was readable but the renderer diagnostic refresh failed with `EPERM`.
+- Added `--out-dir <writable-report-dir>` to both scripts. The run directory remains the evidence source, while JSON/Markdown output can be written to ignored temp folders.
+- Live verification with the locked run succeeded through temp output folders in both argument orders:
+  - `gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ...\_tmp_codex_smoke\renderer-gate-outdir`
+  - `gate:roll20-renderer-action -- --out-dir ...\_tmp_codex_smoke\renderer-gate-outdir-order reports\roll20-actual-compare\2026-06-18-state-map-v1`
+  - `plan:roll20-chat-renderer-targets -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ...\_tmp_codex_smoke\targeted-renderer-plan-outdir`
+  - `plan:roll20-chat-renderer-targets -- --out-dir ...\_tmp_codex_smoke\targeted-renderer-plan-outdir-order reports\roll20-actual-compare\2026-06-18-state-map-v1`
+- Current evidence boundary from those runs: renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`, same-structure chat high mismatch is `2/3`, and max aligned mismatch is `20.68%`.
+- Verification: `node --check` for both changed scripts, `test:roll20-chat-renderer-targets`, all four live `--out-dir` command shapes, `lint`, `build`, and `git diff --check` passed.
+- Server hygiene: no project dev/smoke server was started. Port `9222` remains the existing Roll20 CDP listener; no `3000`/smoke server was present at the pre-check.
+- Claim boundary: verification tooling only. No Roll20 parity claim changed.
+
 ## 2026-07-13 Roll20 Verification Out-Dir
 
 - Root cause: `status:roll20-actual` and `preflight:roll20-cdp` always rewrote their summaries inside the canonical Roll20 run folder. When Windows locked those generated files, agents could still read the source evidence but could not refresh status or CDP readiness.
