@@ -3468,6 +3468,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verification: `corepack pnpm run lint`, `corepack pnpm run build`, `smoke:export-dialog`, `guard:roll20-evidence`, `guard:roll20-renderer-model`, `status:roll20-actual`, and `diagnose:roll20-renderer-blocker`.
 - Claim boundary: this improves product usability only. It does not change production Roll20 renderer CSS and does not prove Roll20 visual parity. Current renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.
 
+## 2026-07-13 AW2E Row Raster Candidate Gate
+
+- Extended row-raster candidate comparison beyond YSHY so AW2E candidate deltas are visible in both the isolated report and top-level renderer gate.
+- Current `aw2e-message-width-text-metrics` evidence: AW2E raw crop mismatch improves, but row raster regresses from `17.93%` to `24.69%` weighted and from `26.28%` to `34.28%` on the worst row.
+- Current `aw2e-message-width-font-size` evidence is similar: row raster regresses to `24.75%` weighted and `34.44%` worst row.
+- Conclusion: AW2E width/text-metric candidates remain diagnostic-only and should not be promoted. The remaining axis is row/background/text antialiasing or paint/source context, with asset relink still blocking any visual parity claim.
+- Verification: `diagnose:roll20-chat-row-raster-candidates` compared `9/9` candidates, and `gate:roll20-renderer-action` now prints AW2E row-raster reject deltas.
+
 ## 2026-07-13 AW2E Message Width + Text Metrics Candidate
 
 - Root cause hypothesis tested: AW2E Roll20 chat mismatch is driven by the combined Roll20 message/content width context plus AW2E table/cell text metrics, not by a global chat shell patch.

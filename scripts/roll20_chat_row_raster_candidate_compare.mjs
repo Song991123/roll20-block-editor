@@ -20,6 +20,8 @@ const outDir = path.join(runDir, 'chat-row-raster-candidate-comparison');
 const candidates = [
   ['default', 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke/screenshots'],
   ['no-shadow', 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-no-template-shadow/screenshots'],
+  ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
+  ['aw2e-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
   ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
   ['coc-background-size-actual', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/screenshots'],
@@ -53,6 +55,9 @@ const compared = rows.map((row) => {
   if (row.status !== 'OK' || !defaultRow) return row;
   return {
     ...row,
+    aw2eRowWeightedDeltaPct: numberDelta(row.aw2e?.rowWeightedPctNumber, defaultRow.aw2e?.rowWeightedPctNumber),
+    aw2eWorstRowDeltaPct: numberDelta(row.aw2e?.worstRowMismatchPctNumber, defaultRow.aw2e?.worstRowMismatchPctNumber),
+    aw2eWorstRowLumaDeltaChange: numberDelta(row.aw2e?.worstRowSignedLumaDelta, defaultRow.aw2e?.worstRowSignedLumaDelta),
     yshyRowWeightedDeltaPct: numberDelta(row.yshy?.rowWeightedPctNumber, defaultRow.yshy?.rowWeightedPctNumber),
     yshyWorstRowDeltaPct: numberDelta(row.yshy?.worstRowMismatchPctNumber, defaultRow.yshy?.worstRowMismatchPctNumber),
     yshyWorstRowLumaDeltaChange: numberDelta(row.yshy?.worstRowSignedLumaDelta, defaultRow.yshy?.worstRowSignedLumaDelta),
@@ -82,7 +87,7 @@ for (const row of compared) {
     console.log(`SKIP ${row.name} ${row.status}`);
     continue;
   }
-  console.log(`ROW_RASTER_CANDIDATE ${row.name} risk=${row.rowRasterRisk} yshyWeighted=${row.yshy?.rowWeightedMismatchPct} delta=${formatSigned(row.yshyRowWeightedDeltaPct)} worst=${row.yshy?.worstRowMismatchPct} worstDelta=${formatSigned(row.yshyWorstRowDeltaPct)}`);
+  console.log(`ROW_RASTER_CANDIDATE ${row.name} risk=${row.rowRasterRisk} aw2eWeighted=${row.aw2e?.rowWeightedMismatchPct} aw2eDelta=${formatSigned(row.aw2eRowWeightedDeltaPct)} aw2eWorst=${row.aw2e?.worstRowMismatchPct} aw2eWorstDelta=${formatSigned(row.aw2eWorstRowDeltaPct)} yshyWeighted=${row.yshy?.rowWeightedMismatchPct} yshyDelta=${formatSigned(row.yshyRowWeightedDeltaPct)} yshyWorst=${row.yshy?.worstRowMismatchPct} yshyWorstDelta=${formatSigned(row.yshyWorstRowDeltaPct)}`);
 }
 console.log(`out=${path.relative(process.cwd(), outDir)}`);
 
@@ -118,10 +123,15 @@ function summarizeFixture(fixture) {
 
 function classifyRowRasterRisk(row, defaultRow) {
   if (row.name === 'default') return 'baseline';
-  const weightedDelta = numberDelta(row.yshy?.rowWeightedPctNumber, defaultRow.yshy?.rowWeightedPctNumber);
-  const worstDelta = numberDelta(row.yshy?.worstRowMismatchPctNumber, defaultRow.yshy?.worstRowMismatchPctNumber);
-  if (worstDelta != null && worstDelta >= 2) return 'reject-row-raster-regression';
-  if (weightedDelta != null && weightedDelta <= -0.5 && (!worstDelta || worstDelta <= 1)) return 'row-raster-improves-needs-style-proof';
+  const fixtureDeltas = ['aw2e', 'yshy'].map((fixtureKey) => ({
+    fixtureKey,
+    weightedDelta: numberDelta(row[fixtureKey]?.rowWeightedPctNumber, defaultRow[fixtureKey]?.rowWeightedPctNumber),
+    worstDelta: numberDelta(row[fixtureKey]?.worstRowMismatchPctNumber, defaultRow[fixtureKey]?.worstRowMismatchPctNumber),
+  }));
+  if (fixtureDeltas.some((item) => item.worstDelta != null && item.worstDelta >= 2)) return 'reject-row-raster-regression';
+  if (fixtureDeltas.some((item) => item.weightedDelta != null && item.weightedDelta <= -0.5) && fixtureDeltas.every((item) => item.worstDelta == null || item.worstDelta <= 1)) {
+    return 'row-raster-improves-needs-style-proof';
+  }
   return 'no-meaningful-row-raster-gain';
 }
 
@@ -134,15 +144,15 @@ function renderMarkdown(report) {
     '',
     'Scope: diagnostic-only. Candidate outputs are isolated under this report folder and do not replace the default gate evidence.',
     '',
-    '| Candidate | Status | Risk | YSHY weighted | Delta | Worst row | Worst mismatch | Worst delta | Luma delta change |',
-    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |',
+    '| Candidate | Status | Risk | AW2E weighted | AW2E delta | AW2E worst | AW2E worst delta | YSHY weighted | YSHY delta | YSHY worst | YSHY worst delta |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
   ];
   for (const row of report.candidates) {
     if (row.status !== 'OK') {
-      lines.push(`| \`${row.name}\` | ${row.status} |  |  |  |  |  |  |  |`);
+      lines.push(`| \`${row.name}\` | ${row.status} |  |  |  |  |  |  |  |  |  |`);
       continue;
     }
-    lines.push(`| \`${row.name}\` | OK | ${row.rowRasterRisk} | ${row.yshy?.rowWeightedMismatchPct ?? ''} | ${formatSigned(row.yshyRowWeightedDeltaPct)} | ${row.yshy?.worstRowIndex ?? ''} | ${row.yshy?.worstRowMismatchPct ?? ''} | ${formatSigned(row.yshyWorstRowDeltaPct)} | ${formatSigned(row.yshyWorstRowLumaDeltaChange)} |`);
+    lines.push(`| \`${row.name}\` | OK | ${row.rowRasterRisk} | ${row.aw2e?.rowWeightedMismatchPct ?? ''} | ${formatSigned(row.aw2eRowWeightedDeltaPct)} | ${row.aw2e?.worstRowMismatchPct ?? ''} | ${formatSigned(row.aw2eWorstRowDeltaPct)} | ${row.yshy?.rowWeightedMismatchPct ?? ''} | ${formatSigned(row.yshyRowWeightedDeltaPct)} | ${row.yshy?.worstRowMismatchPct ?? ''} | ${formatSigned(row.yshyWorstRowDeltaPct)} |`);
   }
   lines.push('', '## Claim Boundary', '');
   lines.push('- This is a routing diagnostic, not Roll20 visual parity.');

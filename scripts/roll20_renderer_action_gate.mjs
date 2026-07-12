@@ -612,7 +612,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   if (chatRowRasterCandidatesSummary) {
     positiveFindings.push(`chat row raster candidate comparison: compared=${chatRowRasterCandidatesSummary.compared}/${chatRowRasterCandidatesSummary.totalCandidates}, rejected=${chatRowRasterCandidatesSummary.rejected}, noMeaningfulGain=${chatRowRasterCandidatesSummary.noMeaningfulGain}`);
     for (const candidate of chatRowRasterCandidatesSummary.rejectedCandidates) {
-      positiveFindings.push(`${candidate.name} row raster rejected: risk=${candidate.rowRasterRisk}, yshyWeightedDelta=${num(candidate.yshyRowWeightedDeltaPct)}, yshyWorstDelta=${num(candidate.yshyWorstRowDeltaPct)}`);
+      positiveFindings.push(`${candidate.name} row raster rejected: risk=${candidate.rowRasterRisk}, aw2eWeightedDelta=${num(candidate.aw2eRowWeightedDeltaPct)}, aw2eWorstDelta=${num(candidate.aw2eWorstRowDeltaPct)}, yshyWeightedDelta=${num(candidate.yshyRowWeightedDeltaPct)}, yshyWorstDelta=${num(candidate.yshyWorstRowDeltaPct)}`);
     }
   }
   if (chatRowCompositingProbeSummary) {
@@ -1513,6 +1513,12 @@ function summarizeChatRowRasterCandidates(report) {
     name: candidate.name,
     status: candidate.status ?? 'UNKNOWN',
     rowRasterRisk: candidate.rowRasterRisk ?? '',
+    aw2eRowWeightedDeltaPct: candidate.aw2eRowWeightedDeltaPct ?? null,
+    aw2eWorstRowDeltaPct: candidate.aw2eWorstRowDeltaPct ?? null,
+    aw2eWorstRowLumaDeltaChange: candidate.aw2eWorstRowLumaDeltaChange ?? null,
+    aw2eRowWeightedMismatchPct: candidate.aw2e?.rowWeightedMismatchPct ?? '',
+    aw2eWorstRowMismatchPct: candidate.aw2e?.worstRowMismatchPct ?? '',
+    aw2eWorstRowIndex: candidate.aw2e?.worstRowIndex ?? null,
     yshyRowWeightedDeltaPct: candidate.yshyRowWeightedDeltaPct ?? null,
     yshyWorstRowDeltaPct: candidate.yshyWorstRowDeltaPct ?? null,
     yshyWorstRowLumaDeltaChange: candidate.yshyWorstRowLumaDeltaChange ?? null,
@@ -2426,10 +2432,10 @@ function renderMarkdown(report) {
     lines.push(`- Production safe: ${report.chatRowRasterCandidates.productionSafe ? 'yes' : 'no'}`);
     if (report.chatRowRasterCandidates.candidates.length) {
       lines.push('');
-      lines.push('| Candidate | Status | Risk | YSHY weighted | Weighted delta | Worst row | Worst mismatch | Worst delta | Luma delta change |');
-      lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |');
+      lines.push('| Candidate | Status | Risk | AW2E weighted | AW2E delta | AW2E worst | AW2E worst delta | YSHY weighted | YSHY delta | YSHY worst | YSHY worst delta |');
+      lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
       for (const candidate of report.chatRowRasterCandidates.candidates) {
-        lines.push(`| \`${candidate.name}\` | ${candidate.status} | ${candidate.rowRasterRisk || 'n/a'} | ${candidate.yshyRowWeightedMismatchPct || 'n/a'} | ${fmtSigned(candidate.yshyRowWeightedDeltaPct)} | ${candidate.yshyWorstRowIndex ?? 'n/a'} | ${candidate.yshyWorstRowMismatchPct || 'n/a'} | ${fmtSigned(candidate.yshyWorstRowDeltaPct)} | ${fmtSigned(candidate.yshyWorstRowLumaDeltaChange)} |`);
+        lines.push(`| \`${candidate.name}\` | ${candidate.status} | ${candidate.rowRasterRisk || 'n/a'} | ${candidate.aw2eRowWeightedMismatchPct || 'n/a'} | ${fmtSigned(candidate.aw2eRowWeightedDeltaPct)} | ${candidate.aw2eWorstRowMismatchPct || 'n/a'} | ${fmtSigned(candidate.aw2eWorstRowDeltaPct)} | ${candidate.yshyRowWeightedMismatchPct || 'n/a'} | ${fmtSigned(candidate.yshyRowWeightedDeltaPct)} | ${candidate.yshyWorstRowMismatchPct || 'n/a'} | ${fmtSigned(candidate.yshyWorstRowDeltaPct)} |`);
       }
     }
     lines.push('');

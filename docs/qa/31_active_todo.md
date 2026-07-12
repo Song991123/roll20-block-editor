@@ -1,3 +1,12 @@
+## 2026-07-13 AW2E Row Raster Candidate Gate TODO Note
+
+- DONE: Extended `diagnose:roll20-chat-row-raster-candidates` and `gate:roll20-renderer-action` so row-raster candidate comparison reports AW2E as well as YSHY deltas.
+- OBSERVED: `aw2e-message-width-text-metrics` improves AW2E raw crop mismatch, but row-raster comparison rejects it: AW2E row-weighted mismatch worsens `17.93% -> 24.69%` and worst row worsens `26.28% -> 34.28%`.
+- OBSERVED: `aw2e-message-width-font-size` is also rejected by row raster: AW2E row-weighted mismatch worsens to `24.75%`, worst row to `34.44%`.
+- CURRENT: This rules out promoting AW2E width/text-metric candidates as renderer fixes. The next AW2E P0 is row/background/text antialiasing or paint-context modeling after asset relink, not more message-width CSS.
+- VERIFIED: `diagnose:roll20-chat-row-raster-candidates` now compares `9/9` candidates and `gate:roll20-renderer-action` reports AW2E reject deltas directly.
+- CLAIM BOUNDARY: This is diagnostic evidence only. It keeps production ChatPane renderer held and does not prove Roll20 visual parity.
+
 ## 2026-07-13 AW2E Message Width + Text Metrics Candidate TODO Note
 
 - DONE: Added the diagnostic-only `aw2e-message-width-text-metrics` candidate to the chat candidate comparison/style-proof/target-plan plumbing.
