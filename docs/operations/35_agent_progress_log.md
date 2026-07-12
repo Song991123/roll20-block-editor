@@ -13,6 +13,13 @@
 - Verification: `test:roll20-chat-assets`, `plan:roll20-chat-assets -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `node --check scripts\roll20_chat_asset_preservation_plan.mjs`.
 - Claim boundary: this is evidence-routing cleanup. It does not relink the dead third-party assets and does not make `rendererReady` pass.
 
+## 2026-07-13 Renderer Gate Asset Policy Link
+
+- Wired `gate:roll20-renderer-action` to read `chat-asset-preservation-plan-results.json` alongside the chat/background diagnostics.
+- The renderer gate now emits an explicit blocker when asset preservation says renderer CSS must stay held. Current evidence reports AW2E and YSHY source/proxy image paths resolving to a placeholder, so the gate routes next work to the local-only asset replacement map and a fresh local preview/edit/export plus Roll20 Sandbox comparison.
+- Verification: `node --check scripts\roll20_renderer_action_gate.mjs`, `plan:roll20-chat-assets -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Claim boundary: this prevents a false CSS promotion path. It does not relink assets, create new Roll20 screenshots, or prove visual parity.
+
 ## 2026-07-12 Targeted Chat Candidate Results
 
 - Ran the target-plan smoke candidates. All local smoke runs passed, but candidate comparison rejects them as renderer fixes: AW2E `aw2e-text-metrics` is `no-meaningful-gain` with AW2E aligned delta `+0.1%`; YSHY `yshy-sanitize-typography` regresses with YSHY aligned delta `+14.95%`; YSHY `coc-table-intrinsic-clamp` is `no-meaningful-gain` with delta `0%`.

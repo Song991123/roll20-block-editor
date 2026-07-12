@@ -61,9 +61,10 @@ async function main() {
   const chatWidthReconciliation = await readJsonIfExists(path.join(runDir, 'chat-width-reconciliation', 'chat-width-reconciliation-results.json'));
   const chatCurrentMetricsAudit = await readJsonIfExists(path.join(runDir, 'chat-current-metrics-audit', 'chat-current-metrics-audit-results.json'));
   const chatStructureCompare = await readJsonIfExists(path.join(runDir, 'chat-structure-compare', 'chat-structure-compare-results.json'));
+  const chatAssetPreservationPlan = await readJsonIfExists(path.join(runDir, 'chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatRowGeometry, chatWidthReconciliation, chatCurrentMetricsAudit, chatStructureCompare);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCurrentMetricsAudit, chatStructureCompare);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -94,6 +95,7 @@ async function main() {
     chatBackgroundSourceProbe: summarizeChatBackgroundSourceProbe(chatBackgroundSourceProbe),
     chatBackgroundRasterModelProbe: summarizeChatBackgroundRasterModelProbe(chatBackgroundRasterModelProbe),
     chatBackgroundAssetProbe: summarizeChatBackgroundAssetProbe(chatBackgroundAssetProbe),
+    chatAssetPreservationPlan: summarizeChatAssetPreservationPlan(chatAssetPreservationPlan),
     chatRowGeometry: summarizeChatRowGeometry(chatRowGeometry),
     chatWidthReconciliation: summarizeChatWidthReconciliation(chatWidthReconciliation),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status, chatCurrentMetricsAudit),
@@ -268,7 +270,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatRowGeometry, chatWidthReconciliation, chatCurrentMetricsAudit, chatStructureCompare) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCurrentMetricsAudit, chatStructureCompare) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -304,6 +306,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatBackgroundSourceProbeSummary = summarizeChatBackgroundSourceProbe(chatBackgroundSourceProbe);
   const chatBackgroundRasterModelProbeSummary = summarizeChatBackgroundRasterModelProbe(chatBackgroundRasterModelProbe);
   const chatBackgroundAssetProbeSummary = summarizeChatBackgroundAssetProbe(chatBackgroundAssetProbe);
+  const chatAssetPreservationPlanSummary = summarizeChatAssetPreservationPlan(chatAssetPreservationPlan);
   const chatRowGeometrySummary = summarizeChatRowGeometry(chatRowGeometry);
   const chatWidthReconciliationSummary = summarizeChatWidthReconciliation(chatWidthReconciliation);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status, chatCurrentMetricsAudit);
@@ -633,6 +636,17 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       positiveFindings.push(`${fixture.fixtureId} background asset=${fixture.decision}, hashes=${fixture.hashesMatch ? 'match' : 'differ'}, local=${fixture.localSummary || 'n/a'}, actual=${fixture.actualSummary || 'n/a'}, source=${fixture.sourceSummary || 'n/a'}, next=${fixture.nextAction}`);
     }
   }
+  if (!chatAssetPreservationPlanSummary && chatBackgroundAssetProbeSummary?.actionableFixtures.length) {
+    warnings.push(`chat asset preservation plan has not been run; run corepack pnpm run plan:roll20-chat-assets -- ${path.relative(process.cwd(), activeRunDir)} before judging background-image chat mismatches as renderer CSS`);
+  } else if (chatAssetPreservationPlanSummary) {
+    positiveFindings.push(`chat asset preservation plan: action=${chatAssetPreservationPlanSummary.rendererAction}, blockers=${chatAssetPreservationPlanSummary.blockers}, requirements=${chatAssetPreservationPlanSummary.productRequirements.map((item) => `${item.id}:${item.implementationStatus}`).join(', ') || 'none'}`);
+    for (const fixture of chatAssetPreservationPlanSummary.actionableFixtures) {
+      positiveFindings.push(`${fixture.fixtureId} asset preservation=${fixture.decision}, policy=${fixture.rendererPolicy}, next=${fixture.nextAction}`);
+    }
+    if (chatAssetPreservationPlanSummary.rendererAction === 'HOLD_RENDERER_FOR_ASSET_POLICY' || chatAssetPreservationPlanSummary.blockers > 0) {
+      blockers.push(`chat asset preservation policy holds renderer CSS: ${chatAssetPreservationPlanSummary.blockerMessages.join('; ') || chatAssetPreservationPlanSummary.rendererAction}`);
+    }
+  }
   if (!chatRowGeometrySummary) {
     warnings.push('chat row geometry model has not been run; run diagnose:roll20-chat-rows to separate row offset, cell allocation, and table-wide width axes before another chat renderer candidate');
   } else {
@@ -804,6 +818,10 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-background-raster -- ${path.relative(process.cwd(), activeRunDir)} to reject or route already-tested raster-only models before touching production ChatPane CSS.`);
   } else if (chatBackgroundRasterModelProbeSummary && !chatBackgroundAssetProbeSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-background-assets -- ${path.relative(process.cwd(), activeRunDir)} to compare background image bytes/proxy placeholders before browser-paint tuning.`);
+  } else if (chatBackgroundAssetProbeSummary?.actionableFixtures.length && !chatAssetPreservationPlanSummary) {
+    nextActions.push(`Run corepack pnpm run plan:roll20-chat-assets -- ${path.relative(process.cwd(), activeRunDir)} before deciding whether asset loss or renderer CSS owns the mismatch.`);
+  } else if (chatAssetPreservationPlanSummary?.actionableFixtures.length) {
+    nextActions.push(...chatAssetPreservationPlanSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   } else if (chatBackgroundAssetProbeSummary?.actionableFixtures.length) {
     nextActions.push(...chatBackgroundAssetProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   } else if (chatBackgroundRasterModelProbeSummary?.actionableFixtures.length) {
@@ -1634,6 +1652,42 @@ function summarizeChatBackgroundAssetProbe(report) {
   };
 }
 
+function summarizeChatAssetPreservationPlan(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    priority: fixture.priority ?? '',
+    decision: fixture.decision ?? 'UNKNOWN',
+    rendererPolicy: fixture.rendererPolicy ?? '',
+    nextAction: fixture.nextAction ?? '',
+    blockers: fixture.blockers ?? [],
+    evidence: fixture.evidence ?? [],
+    sourceSummary: fixture.asset?.sourceSummary ?? '',
+    sourcePlaceholder: Boolean(fixture.asset?.sourcePlaceholder),
+    localSummary: fixture.asset?.localSummary ?? '',
+    actualSummary: fixture.asset?.actualSummary ?? '',
+    hashesMatch: Boolean(fixture.asset?.hashesMatch),
+  }));
+  return {
+    rendererAction: report.rendererAction ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    actionable: Number(report.summary.actionable ?? fixtures.filter((fixture) => fixture.priority !== 'P2' && fixture.decision !== 'NO_BACKGROUND_IMAGE').length),
+    blockers: Number(report.summary.blockers ?? (report.blockers ?? []).length),
+    decisions: report.summary.decisions ?? {},
+    productionSafe: Boolean(report.summary.productionSafe),
+    blockerMessages: report.blockers ?? [],
+    productRequirements: (report.productRequirements ?? []).map((requirement) => ({
+      id: requirement.id ?? '',
+      priority: requirement.priority ?? '',
+      implementationStatus: requirement.implementationStatus ?? '',
+      requirement: requirement.requirement ?? '',
+      publicSafety: requirement.publicSafety ?? '',
+    })),
+    actionableFixtures: fixtures.filter((fixture) => fixture.priority !== 'P2' && fixture.decision !== 'NO_BACKGROUND_IMAGE'),
+    fixtures,
+  };
+}
+
 function summarizeChatRowGeometry(report) {
   if (!report?.summary) return null;
   const fixtures = (report.fixtures ?? []).map((fixture) => ({
@@ -2393,6 +2447,30 @@ function renderMarkdown(report) {
       for (const fixture of report.chatBackgroundAssetProbe.actionableFixtures) {
         const placeholder = [fixture.localPlaceholder ? 'local' : '', fixture.actualPlaceholder ? 'actual' : '', fixture.sourcePlaceholder ? 'source' : ''].filter(Boolean).join(', ') || 'no';
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fixture.hashesMatch ? 'same' : 'different'} | ${fixture.localSummary || 'n/a'} | ${fixture.actualSummary || 'n/a'} | ${fixture.sourceSummary || 'n/a'} | ${placeholder} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatAssetPreservationPlan) {
+    lines.push('### Chat Asset Preservation Plan', '');
+    lines.push(`- Renderer action: ${report.chatAssetPreservationPlan.rendererAction}`);
+    lines.push(`- Actionable fixtures: ${report.chatAssetPreservationPlan.actionable}/${report.chatAssetPreservationPlan.totalFixtures}`);
+    lines.push(`- Blockers: ${report.chatAssetPreservationPlan.blockers}`);
+    lines.push(`- Decisions: ${formatFindingCounts(report.chatAssetPreservationPlan.decisions)}`);
+    if (report.chatAssetPreservationPlan.productRequirements.length) {
+      lines.push('');
+      lines.push('| Requirement | Priority | Status | Safety |');
+      lines.push('| --- | --- | --- | --- |');
+      for (const requirement of report.chatAssetPreservationPlan.productRequirements) {
+        lines.push(`| \`${requirement.id}\` | ${requirement.priority || 'n/a'} | ${requirement.implementationStatus || 'n/a'} | ${requirement.publicSafety || 'n/a'} |`);
+      }
+    }
+    if (report.chatAssetPreservationPlan.actionableFixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Decision | Policy | Source asset | Placeholder | Hashes | Next action |');
+      lines.push('| --- | --- | --- | --- | --- | --- | --- |');
+      for (const fixture of report.chatAssetPreservationPlan.actionableFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fixture.rendererPolicy || 'n/a'} | ${fixture.sourceSummary || 'n/a'} | ${fixture.sourcePlaceholder ? 'source' : 'no'} | ${fixture.hashesMatch ? 'match' : 'differ'} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');
