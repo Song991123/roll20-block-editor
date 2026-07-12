@@ -1,3 +1,11 @@
+## 2026-07-13 Roll20 Proxy Source Relink Draft
+
+- Improved import asset preflight so each Roll20 proxy ref can carry its decoded `src` URL as `proxySourceRef` plus a `replacementRefs` candidate list.
+- The import-side "asset replacement draft" now emits commented replacement lines for both the full Roll20 proxy URL and the decoded source URL, deduped across the sheet.
+- This addresses the current AW2E/YSHY asset blocker shape: Roll20 proxy/local/actual bytes can match while the original source resolves to a placeholder, so users need exact URL-text candidates for user-owned rehosting before Sandbox re-comparison.
+- Verification: `test:asset-refs`, `test:asset-replacements`, `guard:ui-copy`, and `smoke:export-dialog -- --port 4382` passed. The browser smoke confirms `importAssetDraft.hasSourceUrl=true`.
+- Claim boundary: product UX/verification readiness only. No asset files are committed, no Roll20 upload happens, and visual parity remains unproven.
+
 ## 2026-07-13 Chat Renderer Target Plan Command Sharpening
 
 - Updated `plan:roll20-chat-renderer-targets` so its next commands follow the current split evidence instead of sending agents back through generic candidate runs.

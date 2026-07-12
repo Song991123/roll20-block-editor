@@ -488,22 +488,31 @@ function ImportAssetMetric({ label, value }: { label: string; value: number }) {
 export default ImportDialog;
 
 function buildAssetReplacementDraft(result: AssetPreflight): string {
-  const refs = result.refs.filter((ref) => ref.kind !== 'data-url');
-  if (refs.length === 0) return '';
+  const refs = result.refs.flatMap((ref) => {
+    if (ref.kind === 'data-url') return [];
+    const reason = ref.placeholderRisk
+      ? 'placeholder-risk'
+      : ref.kind === 'relative-url'
+        ? 'relative-path'
+        : 'external-url';
+    return (ref.replacementRefs.length ? ref.replacementRefs : [ref.ref]).map((candidate) => ({
+      candidate,
+      reason: candidate === ref.proxySourceRef ? `${reason}:proxy-source` : reason,
+    }));
+  });
+  const uniqueRefs = Array.from(
+    new Map(refs.map((item) => [item.candidate, item])).values(),
+  );
+  if (uniqueRefs.length === 0) return '';
   const lines = [
     '# Asset replacement draft from import preflight.',
     '# Remove the leading "# " after replacing <paste-user-owned-url-here>.',
   ];
-  for (const item of refs.slice(0, 50)) {
-    const reason = item.placeholderRisk
-      ? 'placeholder-risk'
-      : item.kind === 'relative-url'
-        ? 'relative-path'
-        : 'external-url';
-    lines.push(`# ${item.ref} => <paste-user-owned-url-here> # ${reason}`);
+  for (const item of uniqueRefs.slice(0, 50)) {
+    lines.push(`# ${item.candidate} => <paste-user-owned-url-here> # ${item.reason}`);
   }
-  if (refs.length > 50) {
-    lines.push(`# ... ${refs.length - 50} more refs omitted from this draft.`);
+  if (uniqueRefs.length > 50) {
+    lines.push(`# ... ${uniqueRefs.length - 50} more refs omitted from this draft.`);
   }
   return lines.join('\n');
 }

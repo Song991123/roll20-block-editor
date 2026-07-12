@@ -25,32 +25,47 @@ assert.deepEqual(
     ref: item.ref,
     kind: item.kind,
     placeholderRisk: item.placeholderRisk,
+    proxySourceRef: item.proxySourceRef,
+    replacementRefs: item.replacementRefs,
   })),
   [
     {
       ref: 'https://imgsrv.roll20.net/?src=https://imgur.com/dead',
       kind: 'external-url',
       placeholderRisk: true,
+      proxySourceRef: 'https://imgur.com/dead',
+      replacementRefs: [
+        'https://imgsrv.roll20.net/?src=https://imgur.com/dead',
+        'https://imgur.com/dead',
+      ],
     },
     {
       ref: 'data:image/png;base64,aaa',
       kind: 'data-url',
       placeholderRisk: false,
+      proxySourceRef: null,
+      replacementRefs: [],
     },
     {
       ref: 'https://imgur.com/dead',
       kind: 'external-url',
       placeholderRisk: true,
+      proxySourceRef: null,
+      replacementRefs: ['https://imgur.com/dead'],
     },
     {
       ref: '//cdn.example.com/direct.png',
       kind: 'external-url',
       placeholderRisk: false,
+      proxySourceRef: null,
+      replacementRefs: ['//cdn.example.com/direct.png'],
     },
     {
       ref: 'local/background.png',
       kind: 'relative-url',
       placeholderRisk: false,
+      proxySourceRef: null,
+      replacementRefs: ['local/background.png'],
     },
   ],
 );

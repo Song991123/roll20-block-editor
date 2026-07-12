@@ -1,3 +1,10 @@
+## 2026-07-13 Roll20 Proxy Source Relink Draft TODO Note
+
+- DONE: Import asset preflight now keeps the decoded source URL inside Roll20 proxy refs and includes it in the local-only asset replacement draft.
+- WHY: Current actual Roll20 evidence still shows AW2E/YSHY background sources resolving to tiny placeholder images. Users need a clear `old URL => user-owned URL` map for both full proxy URLs and the original `src` URLs before Sandbox re-comparison can prove visual parity.
+- VERIFIED: `test:asset-refs`, `test:asset-replacements`, `guard:ui-copy`, and `smoke:export-dialog -- --port 4382` passed. Browser smoke reports `importAssetDraft.hasSourceUrl=true` and the draft stays commented until the user fills a replacement URL.
+- CLAIM BOUNDARY: This improves relink UX and verification readiness only. It does not provide replacement assets, upload to Roll20, or prove Roll20 visual parity.
+
 ## 2026-07-13 AW2E Row Raster Candidate Gate TODO Note
 
 - DONE: Extended `diagnose:roll20-chat-row-raster-candidates` and `gate:roll20-renderer-action` so row-raster candidate comparison reports AW2E as well as YSHY deltas.

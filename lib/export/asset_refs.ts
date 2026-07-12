@@ -7,6 +7,8 @@ export interface AssetRefSummary {
   roll20Proxy: boolean;
   imgurPage: boolean;
   placeholderRisk: boolean;
+  proxySourceRef: string | null;
+  replacementRefs: string[];
 }
 
 export interface AssetPreflight {
@@ -46,6 +48,8 @@ export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
         roll20Proxy: false,
         imgurPage: false,
         placeholderRisk: false,
+        proxySourceRef: null,
+        replacementRefs: [],
       });
       continue;
     }
@@ -55,6 +59,7 @@ export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
       const host = url.hostname.toLowerCase();
       hosts.add(host);
       const roll20Proxy = host === 'imgsrv.roll20.net';
+      const proxySourceRef = roll20Proxy ? decodeRoll20ProxySource(url) : null;
       const imgurPage = isImgurPageUrl(url);
       if (/(\.|^)roll20\.net$/i.test(host) || /(\.|^)imgur\.com$/i.test(host)) {
         proxyLikeRefs += 1;
@@ -69,6 +74,8 @@ export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
         roll20Proxy,
         imgurPage,
         placeholderRisk: roll20Proxy || imgurPage,
+        proxySourceRef,
+        replacementRefs: uniqueNonEmpty([normalized, proxySourceRef]),
       });
       continue;
     }
@@ -81,6 +88,8 @@ export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
         roll20Proxy: false,
         imgurPage: false,
         placeholderRisk: false,
+        proxySourceRef: null,
+        replacementRefs: [normalized],
       });
     }
   }
@@ -133,4 +142,13 @@ function isImgurPageUrl(url: URL): boolean {
   const host = url.hostname.toLowerCase();
   if (host !== 'imgur.com' && host !== 'www.imgur.com') return false;
   return !/\.(?:png|jpe?g|gif|webp)(?:$|[?#])/i.test(url.pathname);
+}
+
+function decodeRoll20ProxySource(url: URL): string | null {
+  const src = url.searchParams.get('src');
+  return src ? normalizeAssetRef(src) : null;
+}
+
+function uniqueNonEmpty(values: Array<string | null | undefined>): string[] {
+  return Array.from(new Set(values.map((value) => String(value ?? '').trim()).filter(Boolean)));
 }
