@@ -106,7 +106,7 @@ function decide(asset, raster) {
 function nextAction(decision) {
   switch (decision) {
     case 'SOURCE_ASSET_LOST_RELINK_REQUIRED':
-      return 'add a user-facing asset preservation/relink path before judging visual parity; the current external source already resolves to a placeholder';
+      return 'use the local-only asset replacement map with a user-owned hosted URL, then rerun local preview/edit/export and Roll20 Sandbox comparison before judging visual parity';
     case 'ROLL20_PROXY_OR_CACHE_BYTES_DIFFER':
       return 'compare Roll20 proxy cache behavior and URL normalization before any renderer CSS patch';
     case 'RECAPTURE_ASSET_BYTES':
@@ -167,8 +167,9 @@ function buildProductRequirements(fixtures) {
     requirements.push({
       id: 'asset-relink-warning',
       priority: 'P0',
-      requirement: 'Export/verification UI must explain that external images are not embedded and dead Imgur/Roll20 proxy sources must be relinked or rehosted by the user.',
-      publicSafety: 'Do not store or commit third-party sheet assets; support user-provided/local-only replacement instead.',
+      requirement: 'Export/import UI must preserve a local-only asset replacement map and explain that dead Imgur/Roll20 proxy sources must be relinked or rehosted by the user before visual parity can be judged.',
+      implementationStatus: 'implemented-local-map-autosave-restore',
+      publicSafety: 'Do not store or commit third-party sheet assets; use user-provided replacement URLs and keep verification evidence local.',
     });
   }
   if (needsPaint) {
@@ -206,7 +207,8 @@ function renderMarkdown(report) {
   }
   lines.push('', '## Product Requirements', '');
   for (const req of report.productRequirements) {
-    lines.push(`- ${req.priority} \`${req.id}\`: ${req.requirement} ${req.publicSafety}`);
+    const status = req.implementationStatus ? ` Status: ${req.implementationStatus}.` : '';
+    lines.push(`- ${req.priority} \`${req.id}\`: ${req.requirement}${status} ${req.publicSafety}`);
   }
   lines.push('', '## Blockers', '');
   if (report.blockers.length) {
@@ -266,6 +268,9 @@ function selfTest() {
   });
   assert.equal(lost.decision, 'SOURCE_ASSET_LOST_RELINK_REQUIRED');
   assert.equal(lost.rendererPolicy, 'DO_NOT_PROMOTE_CSS');
+  assert.match(lost.nextAction, /asset replacement map/);
+  const requirements = buildProductRequirements([lost]);
+  assert.equal(requirements[0].implementationStatus, 'implemented-local-map-autosave-restore');
   const none = classifyFixture('sample2', { assetProbe: { decision: 'NO_BACKGROUND_IMAGE' } });
   assert.equal(none.decision, 'NO_BACKGROUND_IMAGE');
   console.log('roll20_chat_asset_preservation_plan self-test PASS');

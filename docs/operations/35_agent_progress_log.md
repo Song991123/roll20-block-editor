@@ -6,6 +6,13 @@
 - Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, `smoke:export-dialog -- --port 4370`, `git diff --check`, and `guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - Claim boundary: this preserves user relink work across reloads. It does not prove actual Roll20 visual parity; Sandbox/test-room comparison still needs fresh evidence after assets are relinked/rehosted.
 
+## 2026-07-13 Asset Preservation Plan Wording Sync
+
+- Updated `plan:roll20-chat-assets` so dead-source asset blockers now direct agents/users to the implemented local-only asset replacement map, then local preview/edit/export and Roll20 Sandbox comparison.
+- The plan no longer says the user-facing relink path still needs to be built; it records the implemented local-map/autosave-restore status in product requirements.
+- Verification: `test:roll20-chat-assets`, `plan:roll20-chat-assets -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `node --check scripts\roll20_chat_asset_preservation_plan.mjs`.
+- Claim boundary: this is evidence-routing cleanup. It does not relink the dead third-party assets and does not make `rendererReady` pass.
+
 ## 2026-07-12 Targeted Chat Candidate Results
 
 - Ran the target-plan smoke candidates. All local smoke runs passed, but candidate comparison rejects them as renderer fixes: AW2E `aw2e-text-metrics` is `no-meaningful-gain` with AW2E aligned delta `+0.1%`; YSHY `yshy-sanitize-typography` regresses with YSHY aligned delta `+14.95%`; YSHY `coc-table-intrinsic-clamp` is `no-meaningful-gain` with delta `0%`.
