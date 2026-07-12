@@ -1,3 +1,12 @@
+## 2026-07-13 Edit Layer Selection Path
+
+- Root cause: the adapter already exposed `layerParentId`, but the edit layer panel did not render a selected object's ancestry path. Selecting a nested input could highlight the row/canvas object without showing which frame/container it belonged to.
+- Added `buildLayerPath()` in `components/editor/EditCanvas.tsx` and rendered a compact `선택 위치` breadcrumb in the layer panel. Each breadcrumb item carries block id, role kind, and current-selection attributes, and clicking an ancestor selects that layer.
+- Extended `scripts/edit_flow_browser_smoke.mjs` with `layerSelectionPath`, verifying a nested input selection renders a two-item path from the section/frame to the input.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `git diff --check`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4406 --report-dir D:\훙냥냥\마렌상\영시영 시트 고치기\_tmp_codex_smoke\edit-flow-selection-path`, and `corepack pnpm run guard:ui-copy` passed.
+- Server hygiene: `4406` had only `TIME_WAIT` entries after smoke, and `3000` was not listening. The remaining `9222` listener is the Roll20 CDP browser port from earlier actual-screen verification work.
+- Claim boundary: edit-layer context usability only. No Roll20 renderer CSS was promoted and no actual Roll20 parity evidence changed.
+
 ## 2026-07-13 Edit Layer Auto-Scroll
 
 - Added selection-driven auto-scroll to the edit layer panel. When the selected block changes, the virtualized layer panel now scrolls the selected row into view.

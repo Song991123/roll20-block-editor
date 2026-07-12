@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Layer Selection Path TODO Note
+
+- DONE: The edit layer panel now shows a `선택 위치` breadcrumb for the selected object. When a nested input is selected, the panel exposes its parent frame/container path instead of only highlighting one row in a long virtualized list.
+- VERIFIED: `smoke:edit-flow -- --port 4406 --report-dir D:\훙냥냥\마렌상\영시영 시트 고치기\_tmp_codex_smoke\edit-flow-selection-path` passed. The new `layerSelectionPath` check observed `visible=true`, `depth=2`, `hasSection=true`, `endsWithInput=true`, and `currentIsInput=true`.
+- SERVER HYGIENE: Port `4406` had only `TIME_WAIT` connections after the smoke run; no listening smoke server remained. Port `3000` was not listening before/after this batch. Port `9222` remains the Roll20 CDP browser listener from earlier actual-screen work.
+- VERIFY NOTE: The sandboxed browser logged the same two `ERR_NETWORK_ACCESS_DENIED` resource warnings seen in prior smokes, with `pageErrors=0` and smoke pass intact.
+- CLAIM BOUNDARY: This improves Figma-like edit-layer context and container visibility only. It does not change actual Roll20 renderer parity, asset-relink blockers, worker JS block coding scope, or all-sheet support.
+
 ## 2026-07-13 Edit Layer Auto-Scroll TODO Note
 
 - DONE: The edit layer panel now scrolls the selected layer row into view when selection changes. Clicking a rendered object on the canvas can pull its layer row into the visible layer panel even in long sheets.

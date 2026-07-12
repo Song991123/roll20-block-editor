@@ -86,6 +86,23 @@ function filterLayersWithAncestors(
     }));
 }
 
+function buildLayerPath(nodes: BlockSnapshot[], selectedId: string | null): BlockSnapshot[] {
+  if (!selectedId) return [];
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const selected = byId.get(selectedId);
+  if (!selected) return [];
+
+  const path: BlockSnapshot[] = [];
+  const seen = new Set<string>();
+  let current: BlockSnapshot | undefined = selected;
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    path.push(current);
+    current = current.layerParentId ? byId.get(current.layerParentId) : undefined;
+  }
+  return path.reverse();
+}
+
 type DragOrigin = {
   blockId: string;
   ws: WorkspaceKey;
@@ -724,6 +741,7 @@ function EditLayerPanel({
   }, [tab, structureVersion]);
 
   const filtered = useMemo(() => filterLayersWithAncestors(nodes, search), [nodes, search]);
+  const selectedPath = useMemo(() => buildLayerPath(nodes, selectedId), [nodes, selectedId]);
 
   const virtualizer = useVirtualizer({
     count: filtered.length,
@@ -808,6 +826,41 @@ function EditLayerPanel({
           </span>
         </div>
       </div>
+      {selectedPath.length > 0 && (
+        <div
+          className="border-b border-border px-2 py-2"
+          data-testid="edit-layer-selection-path"
+          data-r20-layer-path-depth={selectedPath.length}
+        >
+          <div className="text-[10px] font-medium text-muted-foreground">선택 위치</div>
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            {selectedPath.map((node, index) => {
+              const role = getLayerRole(node.type);
+              const isCurrent = index === selectedPath.length - 1;
+              return (
+                <button
+                  key={node.id}
+                  type="button"
+                  onClick={() => setSelected(node.id, 'tree')}
+                  data-testid="edit-layer-path-item"
+                  data-r20-block-id={node.id}
+                  data-r20-layer-role-kind={role.kind}
+                  data-r20-layer-path-current={isCurrent ? '1' : '0'}
+                  className={cn(
+                    'max-w-full truncate rounded border px-1.5 py-0.5 text-[10px]',
+                    isCurrent
+                      ? 'border-orange-400/70 bg-orange-500/15 text-orange-100'
+                      : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+                  )}
+                  title={`${node.label} (${node.type})${node.preview ? ` - ${node.preview}` : ''}`}
+                >
+                  {node.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto" data-testid="edit-layer-scroll">
         {filtered.length === 0 ? (
           <div className="px-3 py-8 text-center text-[11px] leading-relaxed text-muted-foreground">

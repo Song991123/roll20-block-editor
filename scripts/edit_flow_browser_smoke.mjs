@@ -664,6 +664,25 @@ async function main() {
     };
   }, dragDropState.nestedInputBlockId);
 
+  const layerSelectionPath = await page.evaluate(({ sectionId, inputId }) => {
+    const root = document.querySelector('[data-testid="edit-layer-selection-path"]');
+    const items = Array.from(root?.querySelectorAll('[data-testid="edit-layer-path-item"]') ?? []);
+    const path = items.map((item) => ({
+      id: item.getAttribute('data-r20-block-id'),
+      role: item.getAttribute('data-r20-layer-role-kind'),
+      current: item.getAttribute('data-r20-layer-path-current'),
+      text: item.textContent?.replace(/\s+/g, ' ').trim() || '',
+    }));
+    return {
+      visible: Boolean(root),
+      depth: Number(root?.getAttribute('data-r20-layer-path-depth') || 0),
+      hasSection: path.some((item) => item.id === sectionId),
+      endsWithInput: path[path.length - 1]?.id === inputId,
+      currentIsInput: path[path.length - 1]?.current === '1',
+      path,
+    };
+  }, { sectionId: sectionInfo.blockId, inputId: dragDropState.nestedInputBlockId });
+
   const canvasSelectionSync = await page.evaluate(async (sectionId) => {
     if (!sectionId) return { selected: false, reason: 'missing section block id' };
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
@@ -1033,6 +1052,7 @@ async function main() {
     layerDropModes,
     layerSearchContext,
     layerSelectionSync,
+    layerSelectionPath,
     canvasSelectionSync,
     layerAutoScroll,
     nonLeafLayerReorder,
@@ -1115,6 +1135,11 @@ async function main() {
     layerSearchContext.input?.contextOnly === '0' &&
     layerSearchContext.input?.hasDepthGuide === true &&
     layerSelectionSync.selected === true &&
+    layerSelectionPath.visible === true &&
+    layerSelectionPath.depth >= 2 &&
+    layerSelectionPath.hasSection === true &&
+    layerSelectionPath.endsWithInput === true &&
+    layerSelectionPath.currentIsInput === true &&
     canvasSelectionSync.selected === true &&
     layerAutoScroll.selected === true &&
     layerAutoScroll.rowRendered === true &&
