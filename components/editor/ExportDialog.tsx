@@ -8,7 +8,9 @@ import {
   CircleDashed,
   FileArchive,
   Info,
+  Save,
   ShieldAlert,
+  Trash2,
 } from 'lucide-react';
 import {
   Dialog,
@@ -60,6 +62,11 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const [legacyWarnings, setLegacyWarnings] = useState<SanitizeWarning[]>([]);
   const assetReplacementText = usePreviewStore((s) => s.assetReplacementMap);
   const setAssetReplacementText = usePreviewStore((s) => s.setAssetReplacementMap);
+  const assetReplacementProfiles = usePreviewStore((s) => s.assetReplacementProfiles);
+  const activeAssetReplacementProfileId = usePreviewStore((s) => s.activeAssetReplacementProfileId);
+  const saveAssetReplacementProfile = usePreviewStore((s) => s.saveAssetReplacementProfile);
+  const loadAssetReplacementProfile = usePreviewStore((s) => s.loadAssetReplacementProfile);
+  const deleteAssetReplacementProfile = usePreviewStore((s) => s.deleteAssetReplacementProfile);
 
   const exportText = useMemo(
     () => applyAssetReplacements(
@@ -367,6 +374,22 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             onChange={setAssetReplacementText}
             replacements={exportText.replacements}
             warnings={exportText.warnings}
+            profiles={assetReplacementProfiles}
+            activeProfileId={activeAssetReplacementProfileId}
+            onSaveProfile={(name) => {
+              const id = saveAssetReplacementProfile(name);
+              if (id) toast.success('자산 URL 치환 묶음을 저장했어요.');
+              return id;
+            }}
+            onLoadProfile={(id) => {
+              if (loadAssetReplacementProfile(id)) {
+                toast.success('자산 URL 치환 묶음을 불러왔어요.');
+              }
+            }}
+            onDeleteProfile={(id) => {
+              deleteAssetReplacementProfile(id);
+              toast.success('자산 URL 치환 묶음을 삭제했어요.');
+            }}
           />
 
           <section
@@ -622,13 +645,30 @@ function AssetReplacementPanel({
   onChange,
   replacements,
   warnings,
+  profiles,
+  activeProfileId,
+  onSaveProfile,
+  onLoadProfile,
+  onDeleteProfile,
 }: {
   value: string;
   onChange: (value: string) => void;
   replacements: number;
   warnings: AssetReplacementWarning[];
+  profiles: { id: string; name: string; updatedAt: number }[];
+  activeProfileId: string | null;
+  onSaveProfile: (name: string) => string | null;
+  onLoadProfile: (id: string) => void;
+  onDeleteProfile: (id: string) => void;
 }) {
   const active = value.trim().length > 0;
+  const [profileName, setProfileName] = useState('');
+  const activeProfile = profiles.find((profile) => profile.id === activeProfileId) ?? null;
+  const saveDisabled = !active || !profileName.trim();
+  function handleSaveProfile() {
+    const id = onSaveProfile(profileName);
+    if (id) setProfileName('');
+  }
   return (
     <section
       className="rounded border border-border bg-[var(--bg-elevated)] p-3"
@@ -662,6 +702,78 @@ function AssetReplacementPanel({
         className="min-h-20 w-full resize-y rounded border border-border bg-[var(--bg-elevated-2)] px-2.5 py-2 font-mono text-[11px] leading-relaxed"
         data-testid="export-asset-replacement-input"
       />
+      <div
+        className="mt-2 grid grid-cols-1 gap-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] p-2 sm:grid-cols-[minmax(0,1fr)_auto]"
+        data-testid="export-asset-replacement-profiles"
+      >
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            <span className="text-[10.5px] font-medium text-muted-foreground">
+              치환 묶음 이름
+            </span>
+            <input
+              value={profileName}
+              onChange={(event) => setProfileName(event.target.value)}
+              placeholder="예: 영시영 1부 이미지"
+              className="h-8 rounded border border-border bg-[var(--bg-elevated)] px-2 text-[12px]"
+              data-testid="export-asset-profile-name"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-[10.5px] font-medium text-muted-foreground">
+              저장된 묶음
+            </span>
+            <select
+              value={activeProfileId ?? ''}
+              onChange={(event) => {
+                if (event.target.value) onLoadProfile(event.target.value);
+              }}
+              className="h-8 rounded border border-border bg-[var(--bg-elevated)] px-2 text-[12px]"
+              data-testid="export-asset-profile-select"
+            >
+              <option value="">선택 안 함</option>
+              {profiles.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="flex items-end gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 px-2"
+            disabled={saveDisabled}
+            onClick={handleSaveProfile}
+            data-testid="export-asset-profile-save"
+          >
+            <Save className="h-3.5 w-3.5" aria-hidden />
+            저장
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            disabled={!activeProfile}
+            onClick={() => {
+              if (activeProfile) onDeleteProfile(activeProfile.id);
+            }}
+            data-testid="export-asset-profile-delete"
+            title="선택한 치환 묶음 삭제"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+          </Button>
+        </div>
+        {profiles.length > 0 ? (
+          <div className="text-[10.5px] leading-relaxed text-muted-foreground sm:col-span-2">
+            {profiles.length}개 묶음이 이 브라우저 작업공간에 저장되어 있습니다. 실제 이미지 파일은 저장하지 않고 URL 치환 규칙만 보관합니다.
+          </div>
+        ) : null}
+      </div>
       <div className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground">
         한 줄에 하나씩 입력하세요. 이 맵은 현재 export에만 적용되며, 원본 워크스페이스나
         외부 시트 폴더는 변경하지 않습니다.

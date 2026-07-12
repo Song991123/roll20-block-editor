@@ -127,6 +127,9 @@ export interface PerfHook {
   setRoll20SandboxSanitize: (enabled: boolean) => void;
   setAssetReplacementMap: (text: string) => void;
   getAssetReplacementMap: () => string;
+  saveAssetReplacementProfile: (name: string) => string | null;
+  loadAssetReplacementProfile: (id: string) => boolean;
+  getAssetReplacementProfiles: () => Array<{ id: string; name: string; text: string; updatedAt: number }>;
   appendFriendlyWidgetForEditSmoke: (input?: {
     containerPresetId?: string;
     widgetPresetId?: string;
@@ -449,6 +452,12 @@ function buildHook(): PerfHook {
     },
 
     getAssetReplacementMap: () => usePreviewStore.getState().assetReplacementMap,
+
+    saveAssetReplacementProfile: (name) => usePreviewStore.getState().saveAssetReplacementProfile(name),
+
+    loadAssetReplacementProfile: (id) => usePreviewStore.getState().loadAssetReplacementProfile(id),
+
+    getAssetReplacementProfiles: () => usePreviewStore.getState().assetReplacementProfiles,
 
     appendFriendlyWidgetForEditSmoke: ({
       containerPresetId = 'section',

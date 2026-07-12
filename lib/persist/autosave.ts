@@ -28,7 +28,10 @@ import {
   type WorkspaceKey,
 } from '@/lib/stores/workspaceStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
-import { usePreviewStore } from '@/lib/stores/previewStore';
+import {
+  usePreviewStore,
+  type AssetReplacementProfile,
+} from '@/lib/stores/previewStore';
 import { AUTOSAVE_KEY, saveWorkspace, type SaveError, type SaveResult } from './indexeddb';
 
 /** 복합 XML 형태 — 3 워크스페이스 합본. spec 22 §3.2. */
@@ -36,6 +39,8 @@ const COMBINED_XML_VERSION = 2;
 
 export type ParsedCombinedXml = Record<WorkspaceKey, string> & {
   assetReplacementMap?: string;
+  assetReplacementProfiles?: AssetReplacementProfile[];
+  activeAssetReplacementProfileId?: string | null;
 };
 
 /**
@@ -44,7 +49,10 @@ export type ParsedCombinedXml = Record<WorkspaceKey, string> & {
  */
 export function buildCombinedXml(): string {
   const adapter = getBlocklyAdapter();
-  const assetReplacementMap = usePreviewStore.getState().assetReplacementMap;
+  const previewState = usePreviewStore.getState();
+  const assetReplacementMap = previewState.assetReplacementMap;
+  const assetReplacementProfiles = previewState.assetReplacementProfiles;
+  const activeAssetReplacementProfileId = previewState.activeAssetReplacementProfileId;
   const parts: string[] = [];
   parts.push(
     `<r20-autosave version="${COMBINED_XML_VERSION}" ts="${Date.now()}">`,
@@ -59,6 +67,9 @@ export function buildCombinedXml(): string {
   parts.push(
     `<asset-replacement-map><![CDATA[${escapeCdata(assetReplacementMap)}]]></asset-replacement-map>`,
   );
+  parts.push(
+    `<asset-replacement-profiles active-id="${escapeAttr(activeAssetReplacementProfileId ?? '')}"><![CDATA[${escapeCdata(JSON.stringify(assetReplacementProfiles))}]]></asset-replacement-profiles>`,
+  );
   parts.push('</preview>');
   parts.push('</r20-autosave>');
   return parts.join('');
@@ -66,6 +77,14 @@ export function buildCombinedXml(): string {
 
 function escapeCdata(text: string): string {
   return String(text ?? '').replace(/\]\]>/g, ']]]]><![CDATA[>');
+}
+
+function escapeAttr(text: string): string {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 /**
@@ -94,15 +113,36 @@ export function parseCombinedXml(
     // 3개 모두 있어야 valid (없으면 빈 XML 로 채워줘도 OK 하지만 안전선 = 모두 존재).
     const previewNode = root.getElementsByTagName('preview')[0] ?? null;
     const assetMapNode = previewNode?.getElementsByTagName('asset-replacement-map')[0] ?? null;
+    const profileNode = previewNode?.getElementsByTagName('asset-replacement-profiles')[0] ?? null;
     return {
       html: out.html ?? '',
       css: out.css ?? '',
       i18n: out.i18n ?? '',
       worker: out.worker ?? '',
       assetReplacementMap: assetMapNode ? assetMapNode.textContent ?? '' : undefined,
+      assetReplacementProfiles: parseAssetReplacementProfiles(profileNode?.textContent ?? ''),
+      activeAssetReplacementProfileId: profileNode?.getAttribute('active-id') || null,
     };
   } catch {
     return null;
+  }
+}
+
+function parseAssetReplacementProfiles(text: string): AssetReplacementProfile[] | undefined {
+  if (!text.trim()) return undefined;
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (!Array.isArray(parsed)) return undefined;
+    return parsed
+      .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+      .map((item) => ({
+        id: String(item.id ?? ''),
+        name: String(item.name ?? ''),
+        text: String(item.text ?? ''),
+        updatedAt: Number(item.updatedAt ?? 0),
+      }));
+  } catch {
+    return undefined;
   }
 }
 
@@ -143,6 +183,8 @@ export function installAutosave(): () => void {
   });
   unsubPreview = usePreviewStore.subscribe((state, prev) => {
     if (state.assetReplacementMap !== prev.assetReplacementMap) trigger();
+    if (state.assetReplacementProfiles !== prev.assetReplacementProfiles) trigger();
+    if (state.activeAssetReplacementProfileId !== prev.activeAssetReplacementProfileId) trigger();
   });
 
   return () => {

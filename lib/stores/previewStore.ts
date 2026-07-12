@@ -23,6 +23,13 @@ export interface DynamicToggle {
  */
 export type PreviewRenderMode = 'shadow' | 'iframe';
 
+export interface AssetReplacementProfile {
+  id: string;
+  name: string;
+  text: string;
+  updatedAt: number;
+}
+
 interface PreviewStore {
   darkMode: boolean;
   sanitize: boolean;        // D4 ① — default ON
@@ -32,6 +39,8 @@ interface PreviewStore {
   iframeSandbox: string;    // allow-scripts only — 사용자 시트 안 script 는 unique origin 안에서만 실행 (parent 접근 X). preview bridge script 동작 필요.
   renderMode: PreviewRenderMode;   // Roll20 sandbox parity default; Shadow DOM is edit mode.
   assetReplacementMap: string;     // Local-only URL replacement map used by preview/edit/export.
+  assetReplacementProfiles: AssetReplacementProfile[]; // Local-only named relink maps for repeated sheet verification.
+  activeAssetReplacementProfileId: string | null;
 
   dynamicToggles: DynamicToggle[];
 
@@ -42,8 +51,42 @@ interface PreviewStore {
   setAutoRegen: (v: boolean) => void;
   setRenderMode: (mode: PreviewRenderMode) => void;
   setAssetReplacementMap: (text: string) => void;
+  setAssetReplacementProfiles: (profiles: AssetReplacementProfile[], activeId?: string | null) => void;
+  saveAssetReplacementProfile: (name: string) => string | null;
+  loadAssetReplacementProfile: (id: string) => boolean;
+  deleteAssetReplacementProfile: (id: string) => void;
   setDynamicToggle: (attr: string, on: boolean) => void;
   setDynamicToggles: (toggles: DynamicToggle[]) => void;
+}
+
+function normalizeProfileName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').slice(0, 80);
+}
+
+function profileIdFromName(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣_-]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return `asset-map-${slug || 'profile'}`;
+}
+
+function sanitizeProfiles(profiles: AssetReplacementProfile[]): AssetReplacementProfile[] {
+  const seen = new Set<string>();
+  return profiles
+    .map((profile) => ({
+      id: String(profile.id || profileIdFromName(profile.name || 'profile')).slice(0, 96),
+      name: normalizeProfileName(profile.name || 'Asset map'),
+      text: String(profile.text ?? ''),
+      updatedAt: Number(profile.updatedAt || Date.now()),
+    }))
+    .filter((profile) => {
+      if (!profile.name || seen.has(profile.id)) return false;
+      seen.add(profile.id);
+      return true;
+    })
+    .slice(0, 20);
 }
 
 export const usePreviewStore = create<PreviewStore>((set) => ({
@@ -55,6 +98,8 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   iframeSandbox: 'allow-scripts',
   renderMode: 'iframe',
   assetReplacementMap: '',
+  assetReplacementProfiles: [],
+  activeAssetReplacementProfileId: null,
   dynamicToggles: [],
 
   setDarkMode: (v) => set({ darkMode: v }),
@@ -63,7 +108,58 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   setRoll20SandboxSanitize: (v) => set({ roll20SandboxSanitize: v }),
   setAutoRegen: (v) => set({ autoRegen: v }),
   setRenderMode: (mode) => set({ renderMode: mode }),
-  setAssetReplacementMap: (text) => set({ assetReplacementMap: text }),
+  setAssetReplacementMap: (text) => set({ assetReplacementMap: text, activeAssetReplacementProfileId: null }),
+  setAssetReplacementProfiles: (profiles, activeId = null) => set(() => {
+    const clean = sanitizeProfiles(profiles);
+    const safeActiveId = activeId && clean.some((profile) => profile.id === activeId) ? activeId : null;
+    const active = safeActiveId ? clean.find((profile) => profile.id === safeActiveId) : null;
+    return {
+      assetReplacementProfiles: clean,
+      activeAssetReplacementProfileId: safeActiveId,
+      ...(active ? { assetReplacementMap: active.text } : {}),
+    };
+  }),
+  saveAssetReplacementProfile: (name) => {
+    const cleanName = normalizeProfileName(name);
+    if (!cleanName) return null;
+    const id = profileIdFromName(cleanName);
+    set((state) => {
+      const existing = state.assetReplacementProfiles.filter((profile) => profile.id !== id);
+      const next = sanitizeProfiles([
+        {
+          id,
+          name: cleanName,
+          text: state.assetReplacementMap,
+          updatedAt: Date.now(),
+        },
+        ...existing,
+      ]);
+      return {
+        assetReplacementProfiles: next,
+        activeAssetReplacementProfileId: id,
+      };
+    });
+    return id;
+  },
+  loadAssetReplacementProfile: (id) => {
+    let loaded = false;
+    set((state) => {
+      const profile = state.assetReplacementProfiles.find((item) => item.id === id);
+      if (!profile) return {};
+      loaded = true;
+      return {
+        assetReplacementMap: profile.text,
+        activeAssetReplacementProfileId: profile.id,
+      };
+    });
+    return loaded;
+  },
+  deleteAssetReplacementProfile: (id) =>
+    set((state) => ({
+      assetReplacementProfiles: state.assetReplacementProfiles.filter((profile) => profile.id !== id),
+      activeAssetReplacementProfileId:
+        state.activeAssetReplacementProfileId === id ? null : state.activeAssetReplacementProfileId,
+    })),
   setDynamicToggle: (attr, on) =>
     set((s) => ({
       dynamicToggles: s.dynamicToggles.map((t) =>

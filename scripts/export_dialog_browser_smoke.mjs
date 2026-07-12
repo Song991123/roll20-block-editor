@@ -143,6 +143,7 @@ async function verifyAssetReplacementRender(page) {
     window.__perfHook.clearAll();
     await window.__perfHook.importSheet({ html: h, css: c, i18n: '{}' });
     window.__perfHook.setAssetReplacementMap(map);
+    window.__perfHook.saveAssetReplacementProfile('Synthetic relink profile');
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setMainMode('preview');
@@ -166,6 +167,7 @@ async function verifyAssetReplacementRender(page) {
       hasNewUrl: srcdoc.includes(newNeedle),
       hasOldUrl: srcdoc.includes(oldNeedle),
       mapValue: window.__perfHook.getAssetReplacementMap(),
+      profileCount: window.__perfHook.getAssetReplacementProfiles().length,
     };
   }, { oldNeedle: oldUrl, newNeedle: newUrl });
 
@@ -234,6 +236,8 @@ async function verifyAssetReplacementRender(page) {
         resolve({
           hasMap: xml.includes(mapNeedle),
           hasPreviewNode: xml.includes('<asset-replacement-map><![CDATA['),
+          hasProfileNode: xml.includes('<asset-replacement-profiles'),
+          hasProfileName: xml.includes('Synthetic relink profile'),
         });
       };
     };
@@ -250,6 +254,9 @@ async function verifyAssetReplacementRender(page) {
   );
   const restored = await page.evaluate(({ mapNeedle }) => ({
     mapRestored: window.__perfHook.getAssetReplacementMap() === mapNeedle,
+    profileRestored: window.__perfHook.getAssetReplacementProfiles().some((profile) => (
+      profile.name === 'Synthetic relink profile' && profile.text === mapNeedle
+    )),
   }), { mapNeedle: mapText });
 
   return { oldUrl, newUrl, preview, edit, persisted, restored };
@@ -343,6 +350,11 @@ async function main() {
         hasAssetPlaceholderMetric: dialogText.includes('placeholder risk'),
         hasAssetReplacementMap: Boolean(document.querySelector('[data-testid="export-asset-replacement-map"]')),
         hasAssetReplacementInput: Boolean(document.querySelector('[data-testid="export-asset-replacement-input"]')),
+        hasAssetReplacementProfiles: Boolean(document.querySelector('[data-testid="export-asset-replacement-profiles"]')),
+        hasAssetProfileName: Boolean(document.querySelector('[data-testid="export-asset-profile-name"]')),
+        hasAssetProfileSelect: Boolean(document.querySelector('[data-testid="export-asset-profile-select"]')),
+        hasAssetProfileSave: Boolean(document.querySelector('[data-testid="export-asset-profile-save"]')),
+        hasAssetProfileDelete: Boolean(document.querySelector('[data-testid="export-asset-profile-delete"]')),
         assetReplacementStatus: document.querySelector('[data-testid="export-asset-replacement-status"]')?.textContent?.trim() ?? '',
         downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
         dialogText,
@@ -432,6 +444,11 @@ async function main() {
     if (!result.checks.exportDialog.hasAssetPlaceholderMetric) failures.push('asset placeholder metric missing');
     if (!result.checks.exportDialog.hasAssetReplacementMap) failures.push('asset replacement map missing');
     if (!result.checks.exportDialog.hasAssetReplacementInput) failures.push('asset replacement input missing');
+    if (!result.checks.exportDialog.hasAssetReplacementProfiles) failures.push('asset replacement profile manager missing');
+    if (!result.checks.exportDialog.hasAssetProfileName) failures.push('asset replacement profile name input missing');
+    if (!result.checks.exportDialog.hasAssetProfileSelect) failures.push('asset replacement profile select missing');
+    if (!result.checks.exportDialog.hasAssetProfileSave) failures.push('asset replacement profile save button missing');
+    if (!result.checks.exportDialog.hasAssetProfileDelete) failures.push('asset replacement profile delete button missing');
     if (!result.checks.exportDialog.assetReplacementStatus) failures.push('asset replacement status missing');
     if (
       result.checks.exportDialog.assetPreflightStatus === '확인 필요' &&
@@ -453,11 +470,15 @@ async function main() {
     if (!result.checks.importAssetDraft.isCommentedDraft) failures.push('import asset draft should be commented until user relinks');
     if (!result.checks.assetReplacementRender.preview.hasNewUrl) failures.push('asset replacement did not reach preview iframe');
     if (result.checks.assetReplacementRender.preview.hasOldUrl) failures.push('original asset URL leaked in preview iframe');
+    if (result.checks.assetReplacementRender.preview.profileCount < 1) failures.push('asset replacement profile was not created in preview store');
     if (!result.checks.assetReplacementRender.edit.hasNewUrl) failures.push('asset replacement did not reach edit shadow render');
     if (result.checks.assetReplacementRender.edit.hasOldUrl) failures.push('original asset URL leaked in edit shadow render');
     if (!result.checks.assetReplacementRender.persisted.hasMap) failures.push('asset replacement map was not saved to autosave XML');
     if (!result.checks.assetReplacementRender.persisted.hasPreviewNode) failures.push('asset replacement autosave preview node missing');
+    if (!result.checks.assetReplacementRender.persisted.hasProfileNode) failures.push('asset replacement profile autosave node missing');
+    if (!result.checks.assetReplacementRender.persisted.hasProfileName) failures.push('asset replacement profile name was not saved');
     if (!result.checks.assetReplacementRender.restored.mapRestored) failures.push('asset replacement map did not restore from autosave');
+    if (!result.checks.assetReplacementRender.restored.profileRestored) failures.push('asset replacement profile did not restore from autosave');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
     if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');

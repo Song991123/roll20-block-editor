@@ -8,6 +8,7 @@
 - DONE: Shared the local-only asset replacement map through preview iframe, edit Shadow render, and export. The same relink text now rewrites rendered HTML/CSS for local preview/edit verification as well as zip payload generation.
 - DONE: Added import-side replacement-map draft generation. When asset preflight finds external or relative refs, the import dialog can append commented `old URL => <paste-user-owned-url-here>` lines to the shared replacement map without activating them prematurely.
 - DONE: Persisted the shared asset replacement map in the IndexedDB autosave/manual-save XML and restored it through the autosave recovery banner.
+- DONE: Added named local-only asset replacement profiles in the export dialog, so users can save and reload sheet-specific URL relink sets without storing actual third-party image/font files.
 - VERIFIED: The current run plan reports `HOLD_RENDERER_FOR_ASSET_POLICY` with P0 `SOURCE_ASSET_LOST_RELINK_REQUIRED` for AW2E and YSHY chat background evidence. Local and actual proxy bytes match, but the source resolves to a placeholder, so CSS cannot recover the intended original image.
 - VERIFIED: `smoke:export-dialog -- --port 4363` passed and confirms the asset preflight panel exposes `Roll20 proxy` and `placeholder risk` metrics without console/page errors.
 - VERIFIED: `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --port 4365` passed for the replacement-map batch.
@@ -17,8 +18,9 @@
 - VERIFIED: `node --check scripts\export_dialog_browser_smoke.mjs`, `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, `smoke:export-dialog -- --port 4370`, `git diff --check`, and `guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed for the autosave persistence batch. The browser smoke confirms IndexedDB XML contains `<asset-replacement-map>`, then reloads and restores the map into `previewStore`.
 - VERIFIED: `test:roll20-chat-assets`, `plan:roll20-chat-assets -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `node --check scripts\roll20_chat_asset_preservation_plan.mjs` passed after updating the asset-preservation plan to point at the implemented local-only replacement map instead of asking agents to build that UX again.
 - VERIFIED: `gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1` now reads the asset-preservation plan and adds a renderer blocker when the plan reports `HOLD_RENDERER_FOR_ASSET_POLICY`. Current gate output includes `chat asset preservation policy holds renderer CSS` for AW2E and YSHY and routes next actions to the local-only asset replacement map plus Roll20 Sandbox re-comparison.
+- VERIFIED: `smoke:export-dialog -- --port 4371` passed after adding replacement profiles. The smoke confirms profile controls render, a synthetic profile is created, autosave XML contains `<asset-replacement-profiles>`, and reload + autosave restore brings the profile back without committing any generated report evidence.
 - CURRENT: Production ChatPane renderer remains held. Asset relink/rehost UX is now a P0 product requirement before claiming visual parity for fixtures whose source images are dead.
-- STILL TODO: Add named per-sheet/per-project asset libraries or history if users need multiple relink sets, and rerun actual Roll20 sandbox comparison after the user relinks/rehosts dead assets. Do not commit downloaded third-party assets, screenshots, or generated report evidence.
+- STILL TODO: Rerun actual Roll20 sandbox comparison after the user relinks/rehosts dead assets. Do not commit downloaded third-party assets, screenshots, or generated report evidence.
 
 ## 2026-07-12 Roll20 Chat Targeted Candidate Results TODO Note
 

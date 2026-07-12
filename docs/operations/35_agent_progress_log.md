@@ -20,6 +20,14 @@
 - Verification: `node --check scripts\roll20_renderer_action_gate.mjs`, `plan:roll20-chat-assets -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
 - Claim boundary: this prevents a false CSS promotion path. It does not relink assets, create new Roll20 screenshots, or prove visual parity.
 
+## 2026-07-13 Asset Replacement Profiles
+
+- Added named local-only asset replacement profiles to the export dialog. Users can save the current `old URL => new URL` relink text under a sheet-specific name, reload it later, or delete it.
+- Profiles are stored as replacement-map text only, never image/font bytes, and are persisted in the combined IndexedDB autosave/manual-save XML under preview metadata.
+- Restore now brings back both the active replacement map and the saved profile list. The browser smoke verifies a synthetic profile is created, saved into XML, and restored after reload.
+- Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `lint`, `build`, and `smoke:export-dialog -- --port 4371`.
+- Claim boundary: this improves repeated relink verification UX. It does not supply replacement assets and does not make Roll20 visual parity pass.
+
 ## 2026-07-12 Targeted Chat Candidate Results
 
 - Ran the target-plan smoke candidates. All local smoke runs passed, but candidate comparison rejects them as renderer fixes: AW2E `aw2e-text-metrics` is `no-meaningful-gain` with AW2E aligned delta `+0.1%`; YSHY `yshy-sanitize-typography` regresses with YSHY aligned delta `+14.95%`; YSHY `coc-table-intrinsic-clamp` is `no-meaningful-gain` with delta `0%`.

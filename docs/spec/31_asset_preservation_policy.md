@@ -40,6 +40,7 @@ corepack pnpm run plan:roll20-chat-assets -- reports\roll20-actual-compare\<labe
 - Import-side detection can generate a commented replacement-map draft from detected external/relative asset refs. The draft is inert until the user replaces the placeholder target with a user-owned hosted URL and removes the comment marker.
 - The current replacement map is persisted in the IndexedDB autosave/manual-save XML under preview metadata and restored through the autosave recovery banner.
 - Browser smoke verifies the synthetic replacement map is saved into IndexedDB, survives reload, and is restored into `previewStore`.
+- The export dialog can save named local-only replacement-map profiles. Profiles store URL replacement text only, not image/font bytes, and are persisted in the autosave/manual-save XML so users can switch between sheet-specific relink sets during repeated verification.
 - Multi-project named asset libraries, replacement history, and Roll20-side rehost verification are still TODO.
 
 ## UI Behavior
