@@ -1,12 +1,12 @@
 ## 2026-07-13 AW2E Cell Wrap Context Candidate TODO Note
 
 - DONE: Added a diagnostic-only `aw2e-message-cell-wrap-context` ChatPane typography policy and wired it into local smoke/candidate/style/row-raster diagnostic allowlists. The default ChatPane renderer is unchanged.
-- VERIFIED: AW2E-only local smoke passed to ignored temp output `..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-cell-wrap-context-20260713-r1`; post-smoke `netstat` showed no listening `4432` server, only the existing Roll20 CDP listener on `9222`.
-- OBSERVED: The candidate reduces local AW2E internal table width from the previously rejected `547.921875px` profile to `343.78125px`, closer to actual Roll20 `359.53125px`, but it does so with contradictory computed style (`table/font/text cells` still local `13px`/`normal` instead of the actual Roll20 cell evidence path).
-- REJECTED: Pixel candidate comparison rejects the candidate: `aw2e-message-cell-wrap-context` reports `fixture-local-incomplete-coverage`, mean delta `+41.04%`, and `1` regression.
-- REJECTED: Style proof reports `REJECT_STYLE_CONTRADICTION`; AW2E local/actual still differ on `chat.rect.width` `328` vs `340`, `message.rect.width` `328` vs `340`, `table.rect.width` `343.78125` vs `359.53125`, and text-cell widths (`Succeeds` `81.140625` vs `85.53125`; `Succeeds partially` `88.765625` vs `93.71875`).
-- REJECTED: Row-raster comparison worsens AW2E weighted mismatch from baseline `17.93%` to `62%` (`+44.07`) and worst-row mismatch from `26.28%` to `65.43%` (`+39.15`).
-- CURRENT: Do not promote width-close or wrap-context CSS to production. The next AW2E renderer investigation should locate the actual DOM/style layer that yields Roll20 table/cell widths without changing the row paint/raster output, then rerun style proof plus row-raster before any renderer gate change.
+- DONE: `rolltemplate_chat_smoke` now records `policyDiagnostics`, including active chat policy attributes plus targeted computed-style checks. This prevents agents from confusing "policy was set" with "policy actually affected computed style."
+- VERIFIED: AW2E-only local smoke passed to ignored temp output `..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-cell-wrap-policy-diag-20260713-r1`; `policyDiagnostics.status=APPLIED` for `aw2e-message-cell-wrap-context`; post-smoke `netstat` showed no listening `4432` server, only the existing Roll20 CDP listener on `9222`.
+- OBSERVED: Once measured with policy diagnostics, the candidate reproduces the same bad width profile as the earlier rejected cell-font candidate: AW2E local `table.rect.width=547.921875px` vs actual Roll20 `359.53125px`; text-cell widths are also too wide (`Succeeds` `151.0625px` vs `85.53125px`; `Succeeds partially` `167.4375px` vs `93.71875px`).
+- REJECTED: Pixel candidate comparison rejects the candidate: `aw2e-message-cell-wrap-context` reports `fixture-local-incomplete-coverage`, mean delta `+41.27%`, and `1` regression.
+- REJECTED: Style proof reports `REJECT_STYLE_CONTRADICTION`; row-raster comparison worsens AW2E weighted mismatch from baseline `17.93%` to `62.08%` (`+44.15`) and worst-row mismatch from `26.28%` to `65.7%` (`+39.42`).
+- CURRENT: Do not promote width-close, broad cell-font, or wrap-context CSS to production. The next AW2E renderer investigation should locate a narrower DOM/style layer that yields Roll20 table/cell widths without changing the row paint/raster output, then rerun style proof plus row-raster before any renderer gate change.
 
 ## 2026-07-13 AW2E Cell Font Width-Guard TODO Note
 

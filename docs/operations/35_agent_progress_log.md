@@ -1,9 +1,10 @@
 ## 2026-07-13 AW2E Cell Wrap Context Candidate
 
 - Tested a narrower AW2E diagnostic hypothesis after the cell-font width guard: keep the candidate local-only, add `aw2e-message-cell-wrap-context`, and feed its temp smoke evidence into candidate comparison, style proof, and row-raster diagnostics.
-- Verification: AW2E-only rolltemplate smoke passed at `..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-cell-wrap-context-20260713-r1`; downstream comparison wrote `..\_tmp_codex_smoke\chat-candidates-aw2e-cell-wrap-20260713-r1`, `..\_tmp_codex_smoke\chat-style-aw2e-cell-wrap-20260713-r1`, and `..\_tmp_codex_smoke\row-raster-candidates-aw2e-cell-wrap-20260713-r1`.
-- Evidence: the candidate pulled AW2E local table width closer to actual (`343.78125px` local vs `359.53125px` actual) compared with the earlier rejected `547.921875px` blow-up, but the improvement was not valid renderer evidence.
-- Result: reject the candidate. Pixel comparison reports mean delta `+41.04%` with `1` regression, style proof reports `REJECT_STYLE_CONTRADICTION`, and row-raster comparison worsens AW2E weighted mismatch from `17.93%` to `62%`.
+- Added policy-effect diagnostics to `rolltemplate_chat_smoke`: the JSON/Markdown now records active chat policy attrs and targeted computed-style checks, so a future diagnostic candidate cannot be mistaken as applied merely because localStorage was set.
+- Verification: AW2E-only rolltemplate smoke passed at `..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-cell-wrap-policy-diag-20260713-r1`, with `policyDiagnostics.status=APPLIED`; downstream comparison wrote `..\_tmp_codex_smoke\chat-candidates-aw2e-cell-wrap-policy-diag-20260713-r1`, `..\_tmp_codex_smoke\chat-style-aw2e-cell-wrap-policy-diag-20260713-r1`, and `..\_tmp_codex_smoke\row-raster-candidates-aw2e-cell-wrap-policy-diag-20260713-r1`.
+- Evidence: the applied candidate does not fix width. It blows AW2E local table width back to `547.921875px` versus actual Roll20 `359.53125px`, with text-cell widths still far too wide (`151.0625px`/`167.4375px` local vs `85.53125px`/`93.71875px` actual).
+- Result: reject the candidate. Pixel comparison reports mean delta `+41.27%` with `1` regression, style proof reports `REJECT_STYLE_CONTRADICTION`, and row-raster comparison worsens AW2E weighted mismatch from `17.93%` to `62.08%`.
 - Server hygiene: no project dev server remained after the smoke; only the existing Roll20 CDP listener on `127.0.0.1:9222` is expected to stay open.
 - Claim boundary: no production ChatPane CSS was promoted, no Roll20 upload happened, no asset relink happened, and Roll20 visual parity remains unproven.
 

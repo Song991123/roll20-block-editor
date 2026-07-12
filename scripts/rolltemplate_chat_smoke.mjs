@@ -250,7 +250,7 @@ async function clickRollAndReadChat(page, fixtureId) {
     await templateLocator.screenshot({ path: templateScreenshotPath });
   }
   const cardCount = await page.locator('[data-testid="chat-list"] [data-r20-chat-card]').count();
-  const cardInfo = await card.evaluate((el) => {
+  const cardInfo = await card.evaluate((el, smokePolicies) => {
     const readStyle = (node) => {
       if (!node) return null;
       const style = getComputedStyle(node);
@@ -528,6 +528,49 @@ async function clickRollAndReadChat(page, fixtureId) {
       };
     };
     const template = el.querySelector('[class*="sheet-rolltemplate-"]');
+    const readPolicyDiagnostics = (root) => {
+      const pane = el.closest('.r20-chat-pane');
+      const attrs = {
+        text: pane?.getAttribute('data-r20-chat-text-policy') || '',
+        shadow: pane?.getAttribute('data-r20-chat-shadow-policy') || '',
+        geometry: pane?.getAttribute('data-r20-chat-geometry-policy') || '',
+        typography: pane?.getAttribute('data-r20-chat-typography-policy') || '',
+        paint: pane?.getAttribute('data-r20-chat-paint-policy') || '',
+      };
+      const table = root?.querySelector('table') ?? null;
+      const firstTd = root?.querySelector('td') ?? null;
+      const tableStyle = readStyle(table);
+      const tdStyle = readStyle(firstTd);
+      const checks = [];
+      if (
+        smokePolicies?.chatTypographyPolicy === 'aw2e-message-cell-wrap-context' &&
+        root?.classList.contains('sheet-rolltemplate-aw')
+      ) {
+        checks.push({
+          target: 'table.overflowWrap',
+          expected: 'break-word',
+          actual: tableStyle?.overflowWrap ?? '',
+          pass: tableStyle?.overflowWrap === 'break-word',
+        });
+        checks.push({
+          target: 'td:first.fontSize',
+          expected: '27.3px',
+          actual: tdStyle?.fontSize ?? '',
+          pass: tdStyle?.fontSize === '27.3px',
+        });
+        checks.push({
+          target: 'td:first.overflowWrap',
+          expected: 'break-word',
+          actual: tdStyle?.overflowWrap ?? '',
+          pass: tdStyle?.overflowWrap === 'break-word',
+        });
+      }
+      return {
+        attrs,
+        checks,
+        status: checks.length === 0 ? 'NO_POLICY_CHECKS' : checks.every((check) => check.pass) ? 'APPLIED' : 'NOT_APPLIED',
+      };
+    };
     const textMeasureEvidence = measureTextEvidence(template);
     const messages = Array.from(el.querySelectorAll('.message')).map((message, index) => {
       const rect = message.getBoundingClientRect();
@@ -591,8 +634,10 @@ async function clickRollAndReadChat(page, fixtureId) {
             rowMetrics: summarizeRows(template),
             tableStructure: summarizeTableStructure(template),
             textMeasureEvidence,
+            policyDiagnostics: readPolicyDiagnostics(template),
           }
         : null,
+      policyDiagnostics: readPolicyDiagnostics(template),
       fontEvidence: checkFonts(),
       textMeasureEvidence,
       viewportEvidence: {
@@ -611,6 +656,12 @@ async function clickRollAndReadChat(page, fixtureId) {
       },
       hasDebugTemplateLabel: /rolltemplate\s*:/i.test(el.textContent || ''),
     };
+  }, {
+    chatTextPolicy: CHAT_TEXT_POLICY,
+    chatShadowPolicy: CHAT_SHADOW_POLICY,
+    chatGeometryPolicy: CHAT_GEOMETRY_POLICY,
+    chatTypographyPolicy: CHAT_TYPOGRAPHY_POLICY,
+    chatPaintPolicy: CHAT_PAINT_POLICY,
   });
   cardInfo.cardCount = cardCount;
   return {
@@ -683,6 +734,34 @@ function renderMarkdown(report) {
     lines.push(
       `| \`${item.id}\` | ${status} | ${item.skipReason ?? ''} | ${item.clickMode ?? ''} | ${visibleCount} | ${actionableCount} | ${escapePipe(chosen)} | ${item.cardInfo?.kind ?? ''} | ${item.cardInfo?.cardCount ?? ''} | ${item.cardInfo?.width ?? ''} | ${item.cardInfo?.templateWidth ?? ''} | ${roll20ShellStatus(item.cardInfo)} | ${item.cardInfo?.hasTemplateClass ? 'yes' : 'no'} | ${item.cardInfo?.hasDebugTemplateLabel ? 'yes' : 'no'} | ${item.cardInfo?.hasTotal ? 'yes' : 'no'} | ${functionalErrors} | ${resourceIssues} |`,
     );
+  }
+  const policyRows = report.fixtures
+    .map((item) => ({
+      id: item.id,
+      diagnostics: item.cardInfo?.policyDiagnostics,
+    }))
+    .filter((row) => row.diagnostics && row.diagnostics.status !== 'NO_POLICY_CHECKS');
+  if (policyRows.length > 0) {
+    lines.push('');
+    lines.push('## Policy Diagnostics');
+    lines.push('');
+    lines.push('| Fixture | Status | Active policies | Failed checks |');
+    lines.push('| --- | --- | --- | --- |');
+    for (const row of policyRows) {
+      const diagnostics = row.diagnostics;
+      const attrs = diagnostics.attrs ?? {};
+      const active = Object.entries(attrs)
+        .filter(([, value]) => value && value !== 'default')
+        .map(([key, value]) => `${key}=${value}`)
+        .join(', ');
+      const failed = (diagnostics.checks ?? [])
+        .filter((check) => !check.pass)
+        .map((check) => `${check.target}: expected ${check.expected}, actual ${check.actual}`)
+        .join('<br>');
+      lines.push(
+        `| \`${row.id}\` | ${diagnostics.status} | ${escapePipe(active || 'default')} | ${escapePipe(failed || 'none')} |`,
+      );
+    }
   }
   lines.push('');
   lines.push('## Notes');
