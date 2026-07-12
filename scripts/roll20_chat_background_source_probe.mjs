@@ -9,19 +9,34 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const optionNamesWithValues = new Set([
+  '--out-dir',
+  '--default-smoke',
+  '--parity-dir',
+  '--style-context-dir',
+  '--row-compositing-dir',
+  '--row-raster-candidates-dir',
+  '--style-proof-dir',
+]);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'chat-background-source-probe');
-const DEFAULT_SMOKE = 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
+const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-background-source-probe')));
+const DEFAULT_SMOKE = readOption('--default-smoke', 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json');
+const parityDir = path.resolve(readOption('--parity-dir', path.join(runDir, 'chat-parity-diagnostics')));
+const styleContextDir = path.resolve(readOption('--style-context-dir', path.join(runDir, 'chat-style-context-diagnostics')));
+const rowCompositingDir = path.resolve(readOption('--row-compositing-dir', path.join(runDir, 'chat-row-compositing-probe')));
+const rowRasterCandidatesDir = path.resolve(readOption('--row-raster-candidates-dir', path.join(runDir, 'chat-row-raster-candidate-comparison')));
+const styleProofDir = path.resolve(readOption('--style-proof-dir', path.join(runDir, 'chat-candidate-style-proof')));
 
 async function main() {
   const localSmoke = await readOptionalJson(DEFAULT_SMOKE);
-  const parity = await readOptionalJson(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
-  const style = await readOptionalJson(path.join(runDir, 'chat-style-context-diagnostics', 'chat-style-context-diagnostics-results.json'));
-  const compositing = await readOptionalJson(path.join(runDir, 'chat-row-compositing-probe', 'chat-row-compositing-probe-results.json'));
-  const rasterCandidates = await readOptionalJson(path.join(runDir, 'chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json'));
-  const styleProof = await readOptionalJson(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json'));
+  const parity = await readOptionalJson(path.join(parityDir, 'chat-parity-diagnostics-results.json'));
+  const style = await readOptionalJson(path.join(styleContextDir, 'chat-style-context-diagnostics-results.json'));
+  const compositing = await readOptionalJson(path.join(rowCompositingDir, 'chat-row-compositing-probe-results.json'));
+  const rasterCandidates = await readOptionalJson(path.join(rowRasterCandidatesDir, 'chat-row-raster-candidate-comparison-results.json'));
+  const styleProof = await readOptionalJson(path.join(styleProofDir, 'chat-candidate-style-proof-results.json'));
   const fixtureIds = collectFixtureIds(localSmoke, parity, style, compositing);
   const fixtures = await Promise.all(fixtureIds.map((fixtureId) => summarizeFixture(fixtureId, {
     localSmoke,
@@ -35,6 +50,15 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
+    reportOverrides: {
+      outDir: rel(outDir),
+      defaultSmoke: rel(path.resolve(DEFAULT_SMOKE)),
+      parityDir: rel(parityDir),
+      styleContextDir: rel(styleContextDir),
+      rowCompositingDir: rel(rowCompositingDir),
+      rowRasterCandidatesDir: rel(rowRasterCandidatesDir),
+      styleProofDir: rel(styleProofDir),
+    },
     scope: 'diagnostic-only background/source-context routing for Roll20 chat; no production CSS',
     summary: {
       status: actionable.length ? 'BACKGROUND_SOURCE_ACTIONABLE' : 'BACKGROUND_SOURCE_SECONDARY',
@@ -55,6 +79,14 @@ async function main() {
     console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} decision=${fixture.decision} mismatch=${fixture.alignedMismatchPct} bg=${fixture.backgroundStyleDecision} widthDelta=${fmtPx(fixture.tableWidthDelta)} lumaGain=${fmtSigned(fixture.lumaCorrectionGainPct)} bgSizeRisk=${fixture.backgroundSizeCandidateRisk || 'n/a'} next=${fixture.nextAction}`);
   }
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
+}
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
 }
 
 async function summarizeFixture(fixtureId, reports) {
@@ -262,6 +294,10 @@ function candidateForFixture(candidate, fixtureId) {
   if (fixtureId === 'official-roll20-Les-Oublies') return candidate.lesOublies ?? null;
   if (fixtureId === 'yshy-commission-1bu') return candidate.yshy ?? null;
   return null;
+}
+
+function rel(file) {
+  return path.relative(process.cwd(), file);
 }
 
 async function readOptionalJson(file) {

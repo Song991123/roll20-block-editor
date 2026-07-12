@@ -14,17 +14,30 @@ import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
 const selfTest = rawArgs.includes('--self-test');
-const args = rawArgs.filter((arg) => !arg.startsWith('--'));
+const optionNamesWithValues = new Set([
+  '--out-dir',
+  '--background-source-dir',
+  '--row-compositing-dir',
+  '--row-raster-dir',
+  '--row-raster-candidates-dir',
+  '--width-reconciliation-dir',
+]);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'chat-background-raster-model-probe');
+const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-background-raster-model-probe')));
+const backgroundSourceDir = path.resolve(readOption('--background-source-dir', path.join(runDir, 'chat-background-source-probe')));
+const rowCompositingDir = path.resolve(readOption('--row-compositing-dir', path.join(runDir, 'chat-row-compositing-probe')));
+const rowRasterDir = path.resolve(readOption('--row-raster-dir', path.join(runDir, 'chat-row-raster-probe')));
+const rowRasterCandidatesDir = path.resolve(readOption('--row-raster-candidates-dir', path.join(runDir, 'chat-row-raster-candidate-comparison')));
+const widthReconciliationDir = path.resolve(readOption('--width-reconciliation-dir', path.join(runDir, 'chat-width-reconciliation')));
 
 async function main() {
-  const backgroundSource = await readOptionalJson(path.join(runDir, 'chat-background-source-probe', 'chat-background-source-probe-results.json'));
-  const compositing = await readOptionalJson(path.join(runDir, 'chat-row-compositing-probe', 'chat-row-compositing-probe-results.json'));
-  const rowRaster = await readOptionalJson(path.join(runDir, 'chat-row-raster-probe', 'chat-row-raster-probe-results.json'));
-  const rowRasterCandidates = await readOptionalJson(path.join(runDir, 'chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json'));
-  const widthReconciliation = await readOptionalJson(path.join(runDir, 'chat-width-reconciliation', 'chat-width-reconciliation-results.json'));
+  const backgroundSource = await readOptionalJson(path.join(backgroundSourceDir, 'chat-background-source-probe-results.json'));
+  const compositing = await readOptionalJson(path.join(rowCompositingDir, 'chat-row-compositing-probe-results.json'));
+  const rowRaster = await readOptionalJson(path.join(rowRasterDir, 'chat-row-raster-probe-results.json'));
+  const rowRasterCandidates = await readOptionalJson(path.join(rowRasterCandidatesDir, 'chat-row-raster-candidate-comparison-results.json'));
+  const widthReconciliation = await readOptionalJson(path.join(widthReconciliationDir, 'chat-width-reconciliation-results.json'));
   const fixtureIds = collectFixtureIds(backgroundSource, compositing, rowRaster, widthReconciliation);
   const fixtures = fixtureIds.map((fixtureId) => summarizeFixture(fixtureId, {
     backgroundSource,
@@ -37,6 +50,14 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
+    reportOverrides: {
+      outDir: rel(outDir),
+      backgroundSourceDir: rel(backgroundSourceDir),
+      rowCompositingDir: rel(rowCompositingDir),
+      rowRasterDir: rel(rowRasterDir),
+      rowRasterCandidatesDir: rel(rowRasterCandidatesDir),
+      widthReconciliationDir: rel(widthReconciliationDir),
+    },
     scope: 'diagnostic-only background raster model routing; no production CSS',
     summary: {
       status: actionable.length ? 'BACKGROUND_RASTER_MODEL_ACTIONABLE' : 'BACKGROUND_RASTER_MODEL_SECONDARY',
@@ -57,6 +78,14 @@ async function main() {
     console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} decision=${fixture.decision} row=${fixture.rowWeightedMismatchPct || 'n/a'} lumaGain=${signed(fixture.lumaCorrectionGainPct)} bgSize=${fixture.backgroundSizeRisk || 'n/a'} width=${fixture.widthExperiment || 'n/a'} next=${fixture.nextAction}`);
   }
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
+}
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
 }
 
 function summarizeFixture(fixtureId, reports) {
@@ -265,6 +294,10 @@ function findFixture(fixtures, fixtureId) {
 
 function candidateByName(report, name) {
   return (report?.candidates ?? []).find((candidate) => candidate.name === name) ?? null;
+}
+
+function rel(file) {
+  return path.relative(process.cwd(), file);
 }
 
 async function readOptionalJson(file) {

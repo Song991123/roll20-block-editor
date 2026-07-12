@@ -1,3 +1,14 @@
+## 2026-07-13 Background Source/Raster Candidate Evidence Override TODO Note
+
+- DONE: `diagnose:roll20-chat-background-source` now accepts isolated evidence overrides: `--out-dir`, `--default-smoke`, `--parity-dir`, `--style-context-dir`, `--row-compositing-dir`, `--row-raster-candidates-dir`, and `--style-proof-dir`.
+- DONE: `diagnose:roll20-chat-background-raster` now accepts `--out-dir`, `--background-source-dir`, `--row-compositing-dir`, `--row-raster-dir`, `--row-raster-candidates-dir`, and `--width-reconciliation-dir`. Both reports record `reportOverrides`.
+- VERIFIED: `node --check` passed for both changed scripts, and `node scripts\roll20_chat_background_raster_model_probe.mjs --self-test` passed.
+- VERIFIED: Default temp-output background source and raster runs passed against `reports\roll20-actual-compare\2026-06-18-state-map-v1`, writing to `..\_tmp_codex_smoke\background-source-outdir-smoke-20260713-r1` and `..\_tmp_codex_smoke\background-raster-outdir-smoke-20260713-r1`.
+- VERIFIED: Candidate-specific runs consumed the rejected `aw2e-message-cell-font-context` smoke/compositing/row-raster evidence. Outputs: `..\_tmp_codex_smoke\background-source-aw2e-cell-font-20260713-r1` and `..\_tmp_codex_smoke\background-raster-aw2e-cell-font-20260713-r1`.
+- OBSERVED: With candidate-specific evidence, AW2E routes to `ROW_LUMA_MODEL_PROMISING` in background raster, but background source first routes it to `TABLE_WIDTH_CONTEXT_BEFORE_BACKGROUND_CSS`. This means the next AW2E probe should inspect Roll20 paint/blend/source and width/crop context before any CSS promotion.
+- OBSERVED: YSHY routes to `BACKGROUND_SIZE_CANDIDATE_REJECTED` / `BACKGROUND_SIZE_SCALE_REJECTED` under the same candidate-specific evidence. Do not retry background-size/table-scale or filter hacks for YSHY.
+- CURRENT: The next implementation candidate should be diagnostic-only and template-scoped. For AW2E, prefer a paint/blend/source/width-context probe over a direct font or filter patch. For YSHY, compare fetched image/proxy bytes and browser paint output next. Roll20 visual parity remains unproven.
+
 ## 2026-07-13 AW2E Cell Font Row Compositing Follow-Up TODO Note
 
 - DONE: `diagnose:roll20-chat-row-paint-source` now accepts isolated evidence overrides: `--out-dir`, `--candidate-comparison-dir`, `--style-proof-dir`, `--parity-dir`, `--mask-dir`, `--row-geometry-dir`, `--width-reconciliation-dir`, `--font-intrinsic-dir`, `--default-smoke`, and `--paint-smoke`.

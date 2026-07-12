@@ -1,3 +1,12 @@
+## 2026-07-13 Background Source/Raster Candidate Evidence Override
+
+- Added isolated evidence override support to background source and background raster probes, so temp candidate compositing/row-raster evidence can flow into the next diagnostic layer without rewriting canonical Roll20 reports.
+- Verification: `node --check` passed for both scripts, and the background raster self-test passed.
+- Default temp-output runs passed against `reports\roll20-actual-compare\2026-06-18-state-map-v1`. Candidate-specific runs consumed the rejected `aw2e-message-cell-font-context` evidence through `..\_tmp_codex_smoke\background-source-aw2e-cell-font-20260713-r1` and `..\_tmp_codex_smoke\background-raster-aw2e-cell-font-20260713-r1`.
+- Result: AW2E routes to `ROW_LUMA_MODEL_PROMISING` in background raster, but background source still says `TABLE_WIDTH_CONTEXT_BEFORE_BACKGROUND_CSS`. Next AW2E work should inspect Roll20 paint/blend/source and width/crop context before any CSS promotion.
+- Result: YSHY routes to `BACKGROUND_SIZE_CANDIDATE_REJECTED` / `BACKGROUND_SIZE_SCALE_REJECTED`; do not retry background-size/table-scale/filter hacks for YSHY.
+- Claim boundary: diagnostic routing only. No production renderer CSS changed, no assets were relinked, no Roll20 upload happened, and visual parity remains unproven.
+
 ## 2026-07-13 AW2E Cell Font Row Compositing Follow-Up
 
 - Added isolated evidence override support to the row paint/source and row compositing probes, so temp candidate smoke, style proof, row-raster, and candidate-comparison reports can be inspected without copying them into canonical Roll20 evidence.
