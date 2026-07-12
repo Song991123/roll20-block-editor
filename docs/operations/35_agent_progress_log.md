@@ -1,3 +1,10 @@
+## 2026-07-13 Current Status Snapshot Refresh
+
+- Refreshed `docs/qa/38_current_project_status.md` from the current `status:roll20-actual`, renderer gate, template-scope gate, browser-paint plan, and runtime visibility bundle.
+- Updated the main progress estimate: local edit/drop UX `58-68%`, local preview/edit sync `~70%`, actual Roll20 sheet-root reproduction `60-70%`, actual Roll20 chat/rolltemplate reproduction `40-50%`, and whole user-ready goal `45-55%`.
+- Added a superseding note to `docs/qa/34_requirements_gap_matrix.md` so older historical `2/6` or `4/6` chat-capture counts are not mistaken for the current state.
+- Current truth: generated actual screenshots/diffs are `6/6` and authoritative, but renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` because same-structure chat mismatch remains high for `2/3` fixtures, AW2E/YSHY need asset relink, and global ChatPane CSS is unsafe.
+
 ## 2026-07-13 Runtime Visibility Verification Bundle
 
 - Added `scripts/roll20_runtime_visibility_verify.mjs` and package alias `verify:runtime-visibility`.

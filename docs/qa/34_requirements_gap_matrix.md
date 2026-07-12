@@ -4,6 +4,19 @@ Date: 2026-06-12
 
 This matrix breaks the operating requirements into actionable work. Use it with `docs/qa/31_active_todo.md`.
 
+Current superseding status, 2026-07-13:
+`corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`
+now reports `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, generated screenshots/diffs
+`6/6`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`,
+`chatNeedsNormalizedCapture=0`, `trustedFullRoot=3/3`,
+`reliableTrustedFullRoot=3/3`, and `rendererReady=NO`. The active blocker is no
+longer missing chat captures. It is renderer/model parity: same-structure chat
+high mismatch remains `2/3` with max aligned mismatch `20.68%`, AW2E/YSHY have
+asset-relink blockers, and the renderer gate still holds global ChatPane CSS
+because AW2E and YSHY require different template-scoped models. Older notes in
+this matrix that mention `2/6`, `4/6`, or missing AW2E/YSHY chat captures are
+historical unless a newer section explicitly reintroduces that state.
+
 Current product-surface note, 2026-06-20 header usability:
 the header no longer exposes placeholder `설정` / `도움말` controls, and `저장`
 now performs a real IndexedDB workspace snapshot save. Browser smoke verified
