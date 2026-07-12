@@ -62,9 +62,10 @@ async function main() {
   const chatCurrentMetricsAudit = await readJsonIfExists(path.join(runDir, 'chat-current-metrics-audit', 'chat-current-metrics-audit-results.json'));
   const chatStructureCompare = await readJsonIfExists(path.join(runDir, 'chat-structure-compare', 'chat-structure-compare-results.json'));
   const chatAssetPreservationPlan = await readJsonIfExists(path.join(runDir, 'chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json'));
+  const chatTemplateScopeGate = await readJsonIfExists(path.join(runDir, 'chat-template-scope-gate', 'chat-template-scope-gate-results.json'));
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCurrentMetricsAudit, chatStructureCompare);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -98,6 +99,7 @@ async function main() {
     chatAssetPreservationPlan: summarizeChatAssetPreservationPlan(chatAssetPreservationPlan),
     chatRowGeometry: summarizeChatRowGeometry(chatRowGeometry),
     chatWidthReconciliation: summarizeChatWidthReconciliation(chatWidthReconciliation),
+    chatTemplateScopeGate: summarizeChatTemplateScopeGate(chatTemplateScopeGate),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status, chatCurrentMetricsAudit),
     chatStructure: summarizeChatStructure(chatStructureCompare),
     summary: summarize(fixtures),
@@ -270,7 +272,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCurrentMetricsAudit, chatStructureCompare) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -309,6 +311,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatAssetPreservationPlanSummary = summarizeChatAssetPreservationPlan(chatAssetPreservationPlan);
   const chatRowGeometrySummary = summarizeChatRowGeometry(chatRowGeometry);
   const chatWidthReconciliationSummary = summarizeChatWidthReconciliation(chatWidthReconciliation);
+  const chatTemplateScopeGateSummary = summarizeChatTemplateScopeGate(chatTemplateScopeGate);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status, chatCurrentMetricsAudit);
   const chatStructureSummary = summarizeChatStructure(chatStructureCompare);
   const chatStructureMismatchIds = new Set((chatStructureSummary?.mismatchFixtures ?? []).map((fixture) => fixture.fixtureId));
@@ -661,6 +664,17 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     positiveFindings.push(`chat width reconciliation: actionable=${chatWidthReconciliationSummary.actionable}/${chatWidthReconciliationSummary.totalFixtures}, decisions=${formatFindingCounts(chatWidthReconciliationSummary.decisions)}`);
     for (const fixture of chatWidthReconciliationSummary.actionableFixtures) {
       positiveFindings.push(`${fixture.fixtureId} width reconciliation=${fixture.nextExperiment}, priority=${fixture.priority}, tableDelta=${fmtPx(fixture.tableWidthDelta)}, textResidual=${fmtPx(fixture.tableTextResidual)}, scrollDelta=${fmtPx(fixture.tableScrollWidthDelta)}, bestCandidate=${fixture.bestCandidateName || 'none'}, next=${fixture.nextAction}`);
+    }
+  }
+  if (!chatTemplateScopeGateSummary) {
+    warnings.push(`chat template scope gate has not been run; run corepack pnpm run gate:roll20-chat-template-scope -- ${path.relative(process.cwd(), activeRunDir)} before promoting a global ChatPane renderer patch`);
+  } else {
+    positiveFindings.push(`chat template scope gate: action=${chatTemplateScopeGateSummary.action}, highModels=${chatTemplateScopeGateSummary.highModels.join(', ') || 'none'}, highScopes=${chatTemplateScopeGateSummary.highScopes.join(', ') || 'none'}, blockers=${chatTemplateScopeGateSummary.blockers}`);
+    for (const fixture of chatTemplateScopeGateSummary.fixtures.filter((item) => item.priority === 'P0')) {
+      positiveFindings.push(`${fixture.fixtureId} template scope=${fixture.requiredScope}, model=${fixture.requiredModel}, ready=${fixture.promotionReady ? 'YES' : 'NO'}, best=${fixture.bestCandidateName || 'none'}, next=${fixture.nextAction}`);
+    }
+    if (chatTemplateScopeGateSummary.action === 'HOLD_GLOBAL_CHAT_RENDERER_PATCH' || chatTemplateScopeGateSummary.blockers > 0) {
+      blockers.push(`chat template scope gate holds global ChatPane renderer CSS: ${chatTemplateScopeGateSummary.blockerMessages.join('; ') || chatTemplateScopeGateSummary.action}`);
     }
   }
 
@@ -1688,6 +1702,36 @@ function summarizeChatAssetPreservationPlan(report) {
   };
 }
 
+function summarizeChatTemplateScopeGate(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    priority: fixture.priority ?? '',
+    requiredScope: fixture.requiredScope ?? '',
+    requiredModel: fixture.requiredModel ?? '',
+    alignedMismatchPct: fixture.alignedMismatchPct ?? '',
+    tableWidthDelta: fixture.tableWidthDelta ?? null,
+    tableTextResidual: fixture.tableTextResidual ?? null,
+    tableScrollWidthDelta: fixture.tableScrollWidthDelta ?? null,
+    bestCandidateName: fixture.bestCandidate?.name ?? '',
+    bestCandidateRisk: fixture.bestCandidate?.risk ?? '',
+    bestCandidateStyleProof: fixture.bestCandidate?.styleProofStatus ?? '',
+    promotionReady: Boolean(fixture.promotionReady),
+    nextAction: fixture.nextAction ?? '',
+  }));
+  return {
+    action: report.action ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    highMismatch: Number(report.summary.highMismatch ?? fixtures.filter((fixture) => fixture.priority === 'P0').length),
+    highModels: report.summary.highModels ?? [],
+    highScopes: report.summary.highScopes ?? [],
+    blockers: Number(report.summary.blockers ?? (report.blockers ?? []).length),
+    blockerMessages: report.blockers ?? [],
+    promotionReadyFixtures: Number(report.summary.promotionReadyFixtures ?? fixtures.filter((fixture) => fixture.promotionReady).length),
+    fixtures,
+  };
+}
+
 function summarizeChatRowGeometry(report) {
   if (!report?.summary) return null;
   const fixtures = (report.fixtures ?? []).map((fixture) => ({
@@ -2471,6 +2515,23 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | --- | --- | --- | --- | --- |');
       for (const fixture of report.chatAssetPreservationPlan.actionableFixtures) {
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fixture.rendererPolicy || 'n/a'} | ${fixture.sourceSummary || 'n/a'} | ${fixture.sourcePlaceholder ? 'source' : 'no'} | ${fixture.hashesMatch ? 'match' : 'differ'} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatTemplateScopeGate) {
+    lines.push('### Chat Template Scope Gate', '');
+    lines.push(`- Action: ${report.chatTemplateScopeGate.action}`);
+    lines.push(`- High-mismatch fixtures: ${report.chatTemplateScopeGate.highMismatch}/${report.chatTemplateScopeGate.totalFixtures}`);
+    lines.push(`- High models: ${report.chatTemplateScopeGate.highModels.join(', ') || 'none'}`);
+    lines.push(`- High scopes: ${report.chatTemplateScopeGate.highScopes.join(', ') || 'none'}`);
+    lines.push(`- Blockers: ${report.chatTemplateScopeGate.blockers}`);
+    if (report.chatTemplateScopeGate.fixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Priority | Scope | Model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Ready | Next action |');
+      lines.push('| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |');
+      for (const fixture of report.chatTemplateScopeGate.fixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct || 'n/a'} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidateName || 'none'} (${fixture.bestCandidateRisk || 'n/a'}) | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');

@@ -3594,3 +3594,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Fixed `scripts/roll20_chat_targeted_renderer_plan.mjs` so generated next commands use the run directory supplied to the script. This prevents future actual Roll20 run directories from producing handoff Markdown that points back to stale `2026-06-18-state-map-v1` evidence.
 - Verification: `node --check scripts\roll20_chat_targeted_renderer_plan.mjs`, `corepack pnpm run test:roll20-chat-renderer-targets`, `corepack pnpm run plan:roll20-chat-renderer-targets -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `git diff --check`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run guard:ui-copy` passed.
 - Claim boundary: handoff/gate safety only. No renderer CSS was promoted and no new actual Roll20 screenshot evidence was captured.
+
+## 2026-07-13 Chat Template Scope Gate
+
+- Added `scripts/roll20_chat_template_scope_gate.mjs` plus `gate:roll20-chat-template-scope` and `test:roll20-chat-template-scope`.
+- The gate reads the targeted renderer plan, width reconciliation, candidate comparison, style proof, and renderer policy reports. It blocks global ChatPane renderer CSS when high-mismatch fixtures require different template scopes or models.
+- Current active run result: `HOLD_GLOBAL_CHAT_RENDERER_PATCH`. AW2E is routed to `.sheet-rolltemplate-aw` with `MESSAGE_CONTENT_TEXT_METRICS`; YSHY is routed to `.sheet-rolltemplate-coc` with `TABLE_INTRINSIC_SANITIZE_FONT`; Les-Oublies remains default/P1 for now.
+- Wired the scope gate into `gate:roll20-renderer-action`, so the top-level renderer gate now emits a blocker: high-mismatch fixtures require split renderer models and split template scopes, and current best candidates are not promotion-ready.
+- Added the scope gate to `diagnose:roll20-chat-refresh` after the targeted plan and before the top-level renderer action gate.
+- Verification: syntax checks, `test:roll20-chat-template-scope`, standalone scope gate against `2026-06-18-state-map-v1`, top-level `gate:roll20-renderer-action`, full `diagnose:roll20-chat-refresh`, `git diff --check`, `lint`, and `build` all passed.
+- Claim boundary: this is promotion safety. It does not prove visual parity and does not apply renderer CSS.
