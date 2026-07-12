@@ -840,22 +840,38 @@ const EditLayerRow = memo(function EditLayerRow({
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-layer-block', node.id);
         e.dataTransfer.effectAllowed = 'move';
+        document.body.dataset.r20LayerDraggingBlock = node.id;
       }}
       onDragLeave={() => setDropMode(null)}
-      onDragEnd={() => setDropMode(null)}
+      onDragEnd={() => {
+        setDropMode(null);
+        delete document.body.dataset.r20LayerDraggingBlock;
+      }}
       onDragOver={(e) => {
+        e.currentTarget.setAttribute('data-r20-layer-drop-mode', '');
+        setDropMode(null);
         if (!e.dataTransfer.types.includes('application/x-r20-layer-block')) return;
+        const draggedId =
+          document.body.dataset.r20LayerDraggingBlock ||
+          e.dataTransfer.getData('application/x-r20-layer-block');
+        if (draggedId === node.id) {
+          e.dataTransfer.dropEffect = 'none';
+          return;
+        }
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         setDropMode(pickMode(e));
       }}
       onDrop={(e) => {
-        const draggedId = e.dataTransfer.getData('application/x-r20-layer-block');
+        const draggedId =
+          document.body.dataset.r20LayerDraggingBlock ||
+          e.dataTransfer.getData('application/x-r20-layer-block');
         if (!draggedId) return;
         e.preventDefault();
         e.stopPropagation();
         const mode = pickMode(e);
         setDropMode(null);
+        delete document.body.dataset.r20LayerDraggingBlock;
         onMove(draggedId, node.id, mode);
       }}
       className={`relative flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs ${

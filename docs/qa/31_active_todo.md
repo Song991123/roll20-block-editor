@@ -1,3 +1,10 @@
+## 2026-07-13 Layer Self-Drop Affordance TODO Note
+
+- DONE: Layer rows no longer show a before/inside/after drop target when the dragged layer is hovering over itself.
+- WHY: The previous behavior could show a valid-looking drop badge even though the move would be ignored, which made layer editing feel less like a trustworthy Figma-style layer panel.
+- VERIFY: Existing `smoke:edit-flow` before/inside/after layer-mode coverage is rerun after this change to guard against regressions. A browser-synthetic self-drag probe was not kept because it produced unstable stale-event results that do not match the real drag-start path.
+- CLAIM BOUNDARY: This improves edit-layer affordance truthfulness only. It does not change Roll20 visual parity or renderer readiness.
+
 ## 2026-07-13 Runtime Visibility Verification Bundle TODO Note
 
 - DONE: Added `verify:runtime-visibility`, a local verification bundle for the requirement that Roll20 worker scripts and rolltemplates stay out of the visible sheet canvas while worker state and rolltemplate chat simulation still run.

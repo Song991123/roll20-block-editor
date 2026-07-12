@@ -1,3 +1,9 @@
+## 2026-07-13 Layer Self-Drop Affordance
+
+- Tightened the edit layer panel so a row does not display a before/inside/after drop affordance when the dragged layer is hovering over itself.
+- Rerun `scripts/edit_flow_browser_smoke.mjs` after this change to guard the existing before/inside/after checks for valid target rows. A browser-synthetic self-drag assertion was not kept because it produced stale-event noise outside the real drag-start path.
+- Claim boundary: this is edit UX truthfulness only. It does not alter Roll20 renderer parity.
+
 ## 2026-07-13 Current Status Snapshot Refresh
 
 - Refreshed `docs/qa/38_current_project_status.md` from the current `status:roll20-actual`, renderer gate, template-scope gate, browser-paint plan, and runtime visibility bundle.
