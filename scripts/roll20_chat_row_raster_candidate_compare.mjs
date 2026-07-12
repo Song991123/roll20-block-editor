@@ -12,10 +12,19 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && rawArgs[index - 1] !== '--out-dir');
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'chat-row-raster-candidate-comparison');
+const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-row-raster-candidate-comparison')));
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
 
 const candidates = [
   ['default', 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke/screenshots'],

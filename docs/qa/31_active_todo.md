@@ -1,3 +1,12 @@
+## 2026-07-13 Chat Candidate Isolated Output TODO Note
+
+- DONE: `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-candidates`, and `diagnose:roll20-chat-row-raster-candidates` now support temp/isolated output for the current locked Roll20 actual-run workflow. Candidate comparison with `--out-dir` writes each internal parity probe under `parity-probes/<candidate>` instead of overwriting canonical `chat-parity-diagnostics`.
+- WHY: The current canonical actual evidence folder can be locked by Windows, and candidate comparisons were also able to contaminate the default parity report with the last experimental screenshot set. That makes renderer gates brittle and makes later agents misread an experiment as the baseline.
+- VERIFIED: Syntax checks passed for all three changed scripts. Live `diagnose:roll20-chat-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ...\_tmp_codex_smoke\chat-candidates-outdir` completed with isolated parity probes. Live `diagnose:roll20-chat-row-raster-candidates -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ...\_tmp_codex_smoke\row-raster-candidates-outdir` also completed.
+- CURRENT CANDIDATE STATE: `paint-dim-background` improves YSHY aligned mismatch from `20.68%` to `19.06%`, but remains unsafe because it regresses another fixture and is still blocked by asset/style proof. `aw2e-message-width-text-metrics` remains rejected by row-raster evidence because AW2E row-weighted mismatch worsens from `17.93%` to `24.69%`.
+- SERVER HYGIENE: No Next/smoke server was started for this batch. Only the existing Roll20 CDP listener on `9222` was present in the pre-check; do not stop it while actual Roll20 verification is active.
+- CLAIM BOUNDARY: Diagnostic isolation only. This does not change product rendering, relink assets, upload to Roll20, or prove Roll20 visual parity.
+
 ## 2026-07-13 Template Scope Asset/Row-Raster Gate TODO Note
 
 - DONE: `gate:roll20-chat-template-scope` now accepts `--out-dir <writable-report-dir>` and reads asset-preservation plus row-raster candidate evidence in addition to targeted plan, width reconciliation, policy, candidate comparison, and style proof.

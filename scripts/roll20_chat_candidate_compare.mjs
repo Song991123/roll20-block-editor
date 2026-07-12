@@ -3,11 +3,22 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const [runDirArg = 'reports/roll20-actual-compare/2026-06-18-state-map-v1'] = args;
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && rawArgs[index - 1] !== '--out-dir');
+const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const diagnosticJson = path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json');
-const outDir = path.join(runDir, 'chat-candidate-comparison');
+const rawOutDir = readOption('--out-dir', '');
+const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-candidate-comparison');
+const useIsolatedParityOutput = Boolean(rawOutDir);
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
 
 const candidates = [
   ['default', 'reports/rolltemplate-chat-smoke/screenshots'],
@@ -60,13 +71,12 @@ for (const [name, screenshotsRelative] of candidates) {
     rows.push({ name, status: 'MISSING_SCREENSHOTS', screenshots: screenshotsRelative });
     continue;
   }
-  execFileSync('node', ['scripts/roll20_chat_parity_diagnostics.mjs', runDir, screenshots], { stdio: 'pipe' });
-  const report = JSON.parse(await readFile(diagnosticJson, 'utf8'));
+  const report = await runParityDiagnostic(name, screenshots);
   rows.push(summarizeReport(name, screenshotsRelative, report));
 }
 
 const defaultScreenshots = path.resolve('reports/rolltemplate-chat-smoke/screenshots');
-if (existsSync(defaultScreenshots)) {
+if (!useIsolatedParityOutput && existsSync(defaultScreenshots)) {
   execFileSync('node', ['scripts/roll20_chat_parity_diagnostics.mjs', runDir, defaultScreenshots], { stdio: 'pipe' });
 }
 
@@ -116,6 +126,20 @@ for (const row of withDelta) {
   console.log(`CANDIDATE ${row.name} risk=${row.promotionRisk ?? ''} mean=${formatPctDelta(row.meanAlignedDeltaPct)} regressions=${row.regressedFixtures ?? ''} yshy=${row.yshy.rawPct}/${row.yshy.alignedPct} delta=${row.yshyAlignedDeltaPct ?? ''} highlightYChange=${row.yshyHighlightYDeltaChange ?? ''}`);
 }
 console.log(`out=${path.relative(process.cwd(), outDir)}`);
+
+async function runParityDiagnostic(name, screenshots) {
+  if (!useIsolatedParityOutput) {
+    execFileSync('node', ['scripts/roll20_chat_parity_diagnostics.mjs', runDir, screenshots], { stdio: 'pipe' });
+    return JSON.parse(await readFile(diagnosticJson, 'utf8'));
+  }
+  const parityOutDir = path.join(outDir, 'parity-probes', safeFilePart(name));
+  execFileSync('node', ['scripts/roll20_chat_parity_diagnostics.mjs', runDir, screenshots, '--out-dir', parityOutDir], { stdio: 'pipe' });
+  return JSON.parse(await readFile(path.join(parityOutDir, 'chat-parity-diagnostics-results.json'), 'utf8'));
+}
+
+function safeFilePart(value) {
+  return String(value || 'candidate').replace(/[^A-Za-z0-9._-]+/g, '-').slice(0, 120);
+}
 
 function summarizeReport(name, screenshots, report) {
   const fixture = (id) => report.fixtures.find((item) => item.fixtureId === id);

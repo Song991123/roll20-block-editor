@@ -12,17 +12,27 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDir = path.resolve(args[0] ?? '');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && rawArgs[index - 1] !== '--out-dir');
+const runDirArg = args[0] ?? '';
+const runDir = path.resolve(runDirArg);
 const localChatDir = path.resolve(args[1] ?? 'reports/rolltemplate-chat-smoke/screenshots');
 const onlyFixture = args[2] ?? '';
 
-if (!args[0]) {
-  console.error('Usage: node scripts/roll20_chat_parity_diagnostics.mjs reports/roll20-actual-compare/<label> [local-chat-screenshot-dir] [fixture-id]');
+if (!runDirArg) {
+  console.error('Usage: node scripts/roll20_chat_parity_diagnostics.mjs reports/roll20-actual-compare/<label> [local-chat-screenshot-dir] [fixture-id] [--out-dir <writable-report-dir>]');
   process.exit(2);
 }
 
-const outDir = path.join(runDir, 'chat-parity-diagnostics');
+const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-parity-diagnostics')));
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
 
 async function main() {
   const baselineDir = path.join(runDir, 'local-baseline');

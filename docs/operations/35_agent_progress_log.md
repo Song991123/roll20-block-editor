@@ -1,3 +1,12 @@
+## 2026-07-13 Chat Candidate Isolated Output
+
+- Root cause: `diagnose:roll20-chat-candidates` called `roll20_chat_parity_diagnostics.mjs` for each experimental screenshot set and wrote into the canonical `chat-parity-diagnostics` folder. In a locked Windows report folder this can fail; when it succeeds, the last candidate can temporarily replace the baseline parity report.
+- Added `--out-dir <writable-report-dir>` to `roll20_chat_parity_diagnostics.mjs`, `roll20_chat_candidate_compare.mjs`, and `roll20_chat_row_raster_candidate_compare.mjs`. Candidate comparison now writes candidate parity probes under `parity-probes/<candidate>` whenever `--out-dir` is supplied.
+- Live candidate comparison with temp output completed against `reports\roll20-actual-compare\2026-06-18-state-map-v1`. Current useful but unsafe result: `paint-dim-background` lowers YSHY aligned mismatch from `20.68%` to `19.06%`, but is rejected because it regresses another fixture and lacks asset/style proof.
+- Live row-raster candidate comparison with temp output completed. Current AW2E result still rejects `aw2e-message-width-text-metrics`: AW2E row-weighted mismatch worsens from `17.93%` to `24.69%`, with worst-row delta worsening too.
+- Server hygiene: no project dev/smoke server was started. Port `9222` remains the existing Roll20 CDP listener; no `3000`/smoke listener was present in the pre-check.
+- Claim boundary: diagnostic isolation only. No product renderer CSS was changed, no assets were relinked, and Roll20 visual parity remains unproven.
+
 ## 2026-07-13 Template Scope Asset/Row-Raster Gate
 
 - Root cause: `gate:roll20-chat-template-scope` only combined targeted plan, width reconciliation, renderer policy, candidate comparison, and style proof. Asset-preservation blockers and row-raster candidate regressions were visible in the top renderer gate, but not in the template-scope report where agents choose the next scoped chat model.
