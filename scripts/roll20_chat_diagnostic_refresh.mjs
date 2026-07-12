@@ -8,10 +8,17 @@
  */
 
 import { execFileSync } from 'node:child_process';
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { chmod, cp, mkdir, readdir, stat, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDir = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && rawArgs[index - 1] !== '--work-run-dir');
+const sourceRunDir = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
+const workRunDirArg = readOption('--work-run-dir', '');
+const selfTest = rawArgs.includes('--self-test');
 
 const steps = [
   ['status:roll20-actual', 'scripts/roll20_actual_status.mjs'],
@@ -50,7 +57,18 @@ const steps = [
   ['gate:roll20-renderer-action', 'scripts/roll20_renderer_action_gate.mjs'],
 ];
 
+if (selfTest) {
+  await runSelfTest();
+  process.exit(0);
+}
+
+const runDir = await prepareRunDir(sourceRunDir, workRunDirArg);
+
 console.log(`ROLL20 CHAT DIAGNOSTIC REFRESH run=${runDir}`);
+if (workRunDirArg) {
+  console.log(`source=${path.normalize(sourceRunDir)}`);
+  console.log(`isolatedWorkRun=${path.normalize(runDir)}`);
+}
 for (const [label, script] of steps) {
   const started = Date.now();
   console.log(`\n[${label}]`);
@@ -63,3 +81,73 @@ for (const [label, script] of steps) {
 }
 
 console.log(`\nROLL20 CHAT DIAGNOSTIC REFRESH DONE run=${path.normalize(runDir)}`);
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+async function prepareRunDir(sourceArg, workArg) {
+  if (!workArg) return sourceArg;
+
+  const source = path.resolve(sourceArg);
+  const work = path.resolve(workArg);
+  if (source === work) {
+    throw new Error('--work-run-dir must differ from the source run directory');
+  }
+  if (work.startsWith(`${source}${path.sep}`)) {
+    throw new Error('--work-run-dir must not be inside the source run directory');
+  }
+  if (!existsSync(source)) {
+    throw new Error(`source run directory does not exist: ${source}`);
+  }
+  if (existsSync(work)) {
+    const entries = await readdir(work);
+    if (entries.length > 0) {
+      throw new Error(`--work-run-dir must be empty or absent: ${work}`);
+    }
+  } else {
+    await mkdir(path.dirname(work), { recursive: true });
+  }
+
+  console.log(`Preparing isolated Roll20 chat diagnostic run copy...`);
+  console.log(`copyFrom=${path.normalize(source)}`);
+  console.log(`copyTo=${path.normalize(work)}`);
+  await cp(source, work, { recursive: true, force: false, errorOnExist: false });
+  await makeWritable(work);
+  return work;
+}
+
+async function makeWritable(target) {
+  const info = await stat(target);
+  await chmod(target, info.isDirectory() ? 0o777 : 0o666).catch(() => {});
+  if (!info.isDirectory()) return;
+  for (const entry of await readdir(target)) {
+    await makeWritable(path.join(target, entry));
+  }
+}
+
+async function runSelfTest() {
+  const root = path.join(tmpdir(), 'roll20-chat-refresh-self-test', `${Date.now()}-${process.pid}`);
+  const source = path.join(root, 'source-run');
+  const work = path.join(root, 'work-run');
+  const marker = path.join(source, 'local-baseline', 'fixture', 'marker.txt');
+  await mkdir(path.dirname(marker), { recursive: true });
+  await writeFile(marker, 'ok\n', 'utf8');
+
+  const prepared = await prepareRunDir(source, work);
+  assert.equal(prepared, work);
+  assert.equal(existsSync(path.join(work, 'local-baseline', 'fixture', 'marker.txt')), true);
+
+  let rejectedNonEmpty = false;
+  try {
+    await prepareRunDir(source, work);
+  } catch (error) {
+    rejectedNonEmpty = String(error?.message ?? '').includes('must be empty or absent');
+  }
+  assert.equal(rejectedNonEmpty, true);
+  console.log('roll20_chat_diagnostic_refresh self-test PASS');
+}

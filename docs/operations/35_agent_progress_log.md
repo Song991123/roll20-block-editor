@@ -1,3 +1,14 @@
+## 2026-07-13 Chat Refresh Isolated Work Run
+
+- Root cause: the full `diagnose:roll20-chat-refresh` chain cannot be made safe by passing only per-script `--out-dir`. Later diagnostics read earlier outputs from `runDir/<report>`, so isolated writes without an isolated read model can make downstream steps consume stale canonical reports.
+- Added `--work-run-dir <empty-temp-run-dir>` to `scripts/roll20_chat_diagnostic_refresh.mjs`. The refresh now copies the source actual-run folder to an empty temp run, makes the copy writable, and runs every chat diagnostic step against the copy.
+- Added `--self-test` for the isolated-copy guard. It verifies that a source run is copied, the marker file appears in the work run, and a non-empty work run is rejected instead of being silently merged or overwritten.
+- Live isolated refresh passed against `reports\roll20-actual-compare\2026-06-18-state-map-v1` using `_tmp_codex_smoke\chat-refresh-isolated-run-final-20260713`. It left the canonical run untouched while producing a coherent temp-run chain.
+- Current evidence from the isolated refresh still holds renderer work: `rendererReady=NO`, same-structure chat high mismatch `2/3`, max aligned mismatch `20.68%`, and `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Note: because this execution could not fetch the background asset URLs, the temp copy's background asset probe classified AW2E/YSHY as `FETCH_FAIL` / `RECAPTURE_ASSET_BYTES`. Treat that as current-run environment evidence, not a replacement for the canonical asset-placeholder evidence.
+- Server hygiene: no project dev/smoke server was started. Port `9222` remains the existing Roll20 CDP listener.
+- Claim boundary: diagnostic orchestration only. No renderer CSS was promoted and no Roll20 visual parity claim changed.
+
 ## 2026-07-13 Chat Candidate Isolated Output
 
 - Root cause: `diagnose:roll20-chat-candidates` called `roll20_chat_parity_diagnostics.mjs` for each experimental screenshot set and wrote into the canonical `chat-parity-diagnostics` folder. In a locked Windows report folder this can fail; when it succeeds, the last candidate can temporarily replace the baseline parity report.

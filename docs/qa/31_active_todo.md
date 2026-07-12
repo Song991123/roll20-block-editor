@@ -1,3 +1,12 @@
+## 2026-07-13 Chat Refresh Isolated Work Run TODO Note
+
+- DONE: `diagnose:roll20-chat-refresh` now accepts `--work-run-dir <empty-temp-run-dir>`. When supplied, it copies the selected Roll20 actual-run folder into that temp run and executes the entire downstream chat diagnostic chain against the copy, leaving the canonical evidence folder untouched.
+- WHY: Passing only per-script `--out-dir` is not enough for the full refresh chain because later diagnostics read earlier reports from `runDir/<report>`. A temp run copy keeps reads and writes coherent without overwriting locked or canonical report files.
+- VERIFIED: `node --check scripts\roll20_chat_diagnostic_refresh.mjs`, `node scripts\roll20_chat_diagnostic_refresh.mjs --self-test`, and live `diagnose:roll20-chat-refresh -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --work-run-dir ...\_tmp_codex_smoke\chat-refresh-isolated-run-final-20260713` passed.
+- OBSERVED: The isolated refresh still reports `rendererReady=NO`, same-structure chat high mismatch `2/3`, max aligned mismatch `20.68%`, and `HOLD_PRODUCTION_RENDERER_PATCH`. In this network-restricted run, the refreshed background asset probe produced `FETCH_FAIL`/`RECAPTURE_ASSET_BYTES` in the temp copy; the canonical source evidence was not changed.
+- SERVER HYGIENE: No Next/smoke server was started. Only the existing Roll20 CDP listener on `9222` was present before the batch.
+- CLAIM BOUNDARY: Verification orchestration only. This does not change product rendering, upload to Roll20, relink assets, or prove Roll20 visual parity.
+
 ## 2026-07-13 Chat Candidate Isolated Output TODO Note
 
 - DONE: `diagnose:roll20-chat-parity`, `diagnose:roll20-chat-candidates`, and `diagnose:roll20-chat-row-raster-candidates` now support temp/isolated output for the current locked Roll20 actual-run workflow. Candidate comparison with `--out-dir` writes each internal parity probe under `parity-probes/<candidate>` instead of overwriting canonical `chat-parity-diagnostics`.
