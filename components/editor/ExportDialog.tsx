@@ -33,6 +33,7 @@ import {
   applyAssetReplacements,
   type AssetReplacementWarning,
 } from '@/lib/export/asset_replacements';
+import { analyzeAssetRefs, type AssetPreflight } from '@/lib/export/asset_refs';
 import {
   sanitizeForRoll20Legacy,
   type SanitizeWarning,
@@ -774,105 +775,6 @@ function severityLabelClass(s: EmitWarning['severity']): string {
   if (s === 'error') return 'font-semibold text-red-500';
   if (s === 'warning') return 'font-semibold text-amber-500';
   return 'font-semibold text-muted-foreground';
-}
-
-interface AssetPreflight {
-  totalRefs: number;
-  externalRefs: number;
-  relativeRefs: number;
-  dataRefs: number;
-  proxyLikeRefs: number;
-  roll20ProxyRefs: number;
-  imgurPageRefs: number;
-  placeholderRiskRefs: number;
-  hosts: string[];
-}
-
-function analyzeAssetRefs(html: string, css: string): AssetPreflight {
-  const refs = Array.from(new Set([...extractCssUrls(css), ...extractHtmlAssetUrls(html)]));
-  let externalRefs = 0;
-  let relativeRefs = 0;
-  let dataRefs = 0;
-  let proxyLikeRefs = 0;
-  let roll20ProxyRefs = 0;
-  let imgurPageRefs = 0;
-  let placeholderRiskRefs = 0;
-  const hosts = new Set<string>();
-
-  for (const ref of refs) {
-    const normalized = normalizeAssetRef(ref);
-    if (!normalized || normalized.startsWith('#')) continue;
-    if (normalized.startsWith('data:')) {
-      dataRefs += 1;
-      continue;
-    }
-    const url = parseExternalUrl(normalized);
-    if (url) {
-      externalRefs += 1;
-      const host = url.hostname.toLowerCase();
-      hosts.add(host);
-      const roll20Proxy = host === 'imgsrv.roll20.net';
-      const imgurPage = isImgurPageUrl(url);
-      if (/(\.|^)roll20\.net$/i.test(host) || /(\.|^)imgur\.com$/i.test(host)) {
-        proxyLikeRefs += 1;
-      }
-      if (roll20Proxy) roll20ProxyRefs += 1;
-      if (imgurPage) imgurPageRefs += 1;
-      if (roll20Proxy || imgurPage) placeholderRiskRefs += 1;
-      continue;
-    }
-    if (!/^(?:javascript|mailto|tel|blob):/i.test(normalized)) {
-      relativeRefs += 1;
-    }
-  }
-
-  return {
-    totalRefs: externalRefs + relativeRefs + dataRefs,
-    externalRefs,
-    relativeRefs,
-    dataRefs,
-    proxyLikeRefs,
-    roll20ProxyRefs,
-    imgurPageRefs,
-    placeholderRiskRefs,
-    hosts: Array.from(hosts).sort(),
-  };
-}
-
-function extractCssUrls(css: string): string[] {
-  const refs: string[] = [];
-  const re = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^'")]+))\s*\)/gi;
-  for (const match of css.matchAll(re)) {
-    refs.push(match[1] ?? match[2] ?? match[3] ?? '');
-  }
-  return refs;
-}
-
-function extractHtmlAssetUrls(html: string): string[] {
-  const refs: string[] = [];
-  const re = /\b(?:src|href|xlink:href)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
-  for (const match of html.matchAll(re)) {
-    refs.push(match[1] ?? match[2] ?? match[3] ?? '');
-  }
-  return refs;
-}
-
-function normalizeAssetRef(ref: string): string {
-  return ref.trim().replace(/^['"]|['"]$/g, '').replaceAll('&amp;', '&');
-}
-
-function parseExternalUrl(ref: string): URL | null {
-  try {
-    if (ref.startsWith('//')) return new URL(`https:${ref}`);
-    if (/^https?:\/\//i.test(ref)) return new URL(ref);
-  } catch {}
-  return null;
-}
-
-function isImgurPageUrl(url: URL): boolean {
-  const host = url.hostname.toLowerCase();
-  if (host !== 'imgur.com' && host !== 'www.imgur.com') return false;
-  return !/\.(?:png|jpe?g|gif|webp)(?:$|[?#])/i.test(url.pathname);
 }
 
 function byteSize(value: string): number {

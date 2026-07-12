@@ -3506,4 +3506,6 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Extended `ExportDialog` asset preflight with visible `Roll20 proxy` and `placeholder risk` metrics. `smoke:export-dialog -- --port 4363` passed and checked the new metrics in the rendered dialog.
 - Added `lib/export/asset_replacements.ts` and export dialog UI for a local-only `old URL => new URL` replacement map. The final zip payload and export-side diagnostics use replaced HTML/CSS; source workspaces and external corpus folders are not mutated.
 - Verification for this batch: `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --port 4365` passed.
+- Moved asset-reference analysis into shared `lib/export/asset_refs.ts` and added import dialog asset preflight. Import now surfaces external URL, relative path, Roll20 proxy, Imgur page, and placeholder-risk counts before users commit to importing.
+- Verification for the import warning batch: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, `smoke:export-dialog -- --port 4367`, and `guard:roll20-evidence` passed.
 - Claim boundary: this is diagnostic/planning and safety policy. It does not make Roll20 chat visual parity pass and does not embed or commit any real sheet assets.

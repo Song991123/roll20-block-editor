@@ -14,7 +14,7 @@
  * 시스템 specific 토큰 0 — Roll20 시트면 무엇이든 입력 가능.
  */
 
-import { useState, type ChangeEvent } from 'react';
+import { useMemo, useState, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -27,6 +27,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { importSheet } from '@/lib/import';
+import { analyzeAssetRefs, type AssetPreflight } from '@/lib/export/asset_refs';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import {
   moveImportedWorkerBlocksToWorkspace,
@@ -106,6 +107,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     wideRowCollapsed: number;
   }>(null);
   const [progress, setProgress] = useState<null | { done: number; total: number; pct: number }>(null);
+  const assetPreflight = useMemo(
+    () => analyzeAssetRefs(htmlText, cssText),
+    [htmlText, cssText],
+  );
 
   function handleFile(setter: (v: string) => void) {
     return (e: ChangeEvent<HTMLInputElement>) => {
@@ -295,6 +300,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           </TabsContent>
         </Tabs>
 
+        <ImportAssetPreflight result={assetPreflight} />
+
         <label className="flex gap-3 rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed">
           <input
             type="checkbox"
@@ -376,6 +383,67 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ImportAssetPreflight({ result }: { result: AssetPreflight }) {
+  const hasRisk =
+    result.externalRefs > 0 || result.relativeRefs > 0 || result.placeholderRiskRefs > 0;
+  return (
+    <section
+      className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px]"
+      data-testid="import-asset-preflight"
+    >
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">불러오기 자산 점검</div>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            이미지와 폰트 URL은 시트 구조와 별개로 Roll20에서 다시 로드됩니다. 삭제된 Imgur
+            이미지나 Roll20 proxy URL은 placeholder로 보일 수 있습니다.
+          </p>
+        </div>
+        <span
+          className={`shrink-0 rounded border px-2 py-1 text-[11px] font-medium ${
+            hasRisk
+              ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200'
+              : 'border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
+          }`}
+          data-testid="import-asset-preflight-status"
+        >
+          {hasRisk ? '확인 필요' : '외부 자산 없음'}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <ImportAssetMetric label="외부 URL" value={result.externalRefs} />
+        <ImportAssetMetric label="상대 경로" value={result.relativeRefs} />
+        <ImportAssetMetric label="Roll20 proxy" value={result.roll20ProxyRefs} />
+        <ImportAssetMetric label="Imgur page" value={result.imgurPageRefs} />
+        <ImportAssetMetric label="placeholder risk" value={result.placeholderRiskRefs} />
+        <ImportAssetMetric label="data URL" value={result.dataRefs} />
+      </div>
+      {hasRisk ? (
+        <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-100">
+          실제 Roll20 동일성을 확인하려면 이 자산들이 로드되는지 먼저 봐야 합니다.
+          삭제되었거나 막힌 URL은 export의 자산 URL 교체에서 사용자가 직접 다시 올린 URL로
+          바꿔 주세요.
+          {result.hosts.length > 0 ? (
+            <span className="mt-1 block text-muted-foreground">
+              감지된 호스트: {result.hosts.slice(0, 5).join(', ')}
+              {result.hosts.length > 5 ? ` 외 ${result.hosts.length - 5}개` : ''}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ImportAssetMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2">
+      <div className="text-[10.5px] text-muted-foreground">{label}</div>
+      <div className="mt-0.5 font-mono text-[13px]">{value}</div>
+    </div>
   );
 }
 

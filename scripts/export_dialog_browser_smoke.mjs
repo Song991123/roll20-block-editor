@@ -240,6 +240,10 @@ async function main() {
       hasTitle: document.body.innerText.includes('시트 불러오기'),
       textareaCount: document.querySelectorAll('textarea').length,
       hasProgressNode: Boolean(document.querySelector('[data-testid="import-progress"]')),
+      hasAssetPreflight: Boolean(document.querySelector('[data-testid="import-asset-preflight"]')),
+      assetPreflightStatus: document.querySelector('[data-testid="import-asset-preflight-status"]')?.textContent?.trim() ?? '',
+      hasAssetProxyMetric: document.body.innerText.includes('Roll20 proxy'),
+      hasAssetPlaceholderMetric: document.body.innerText.includes('placeholder risk'),
     }));
 
     await page.keyboard.press('Escape');
@@ -301,6 +305,12 @@ async function main() {
     if (result.checks.exportDialog.hasMojibake) failures.push('mojibake detected in export dialog text');
     if (!result.checks.importDialog.hasTitle) failures.push('import dialog title missing');
     if (result.checks.importDialog.textareaCount < 1) failures.push('import dialog textarea missing');
+    if (!result.checks.importDialog.hasAssetPreflight) failures.push('import asset preflight missing');
+    if (!['외부 자산 없음', '확인 필요'].includes(result.checks.importDialog.assetPreflightStatus)) {
+      failures.push('import asset preflight status mismatch');
+    }
+    if (!result.checks.importDialog.hasAssetProxyMetric) failures.push('import asset proxy metric missing');
+    if (!result.checks.importDialog.hasAssetPlaceholderMetric) failures.push('import asset placeholder metric missing');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
     if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');

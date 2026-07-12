@@ -4,9 +4,11 @@
 - DONE: Added `docs/spec/31_asset_preservation_policy.md` and linked it from the agent startup rules so preview/parity work checks external asset and placeholder risk before renderer CSS work.
 - DONE: Extended the export dialog asset preflight panel so users can see Roll20 proxy and placeholder-risk counts before downloading a zip.
 - DONE: Added an export dialog local-only asset replacement map. Users can enter `old URL => new URL`; the final zip HTML/CSS and export diagnostics use the replaced URLs without mutating the workspace or source folders.
+- DONE: Added import dialog asset preflight using the same analyzer, so users see external URL, relative path, Roll20 proxy, Imgur page, and placeholder-risk counts before importing.
 - VERIFIED: The current run plan reports `HOLD_RENDERER_FOR_ASSET_POLICY` with P0 `SOURCE_ASSET_LOST_RELINK_REQUIRED` for AW2E and YSHY chat background evidence. Local and actual proxy bytes match, but the source resolves to a placeholder, so CSS cannot recover the intended original image.
 - VERIFIED: `smoke:export-dialog -- --port 4363` passed and confirms the asset preflight panel exposes `Roll20 proxy` and `placeholder risk` metrics without console/page errors.
 - VERIFIED: `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --port 4365` passed for the replacement-map batch.
+- VERIFIED: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, `smoke:export-dialog -- --port 4367`, and `guard:roll20-evidence` passed for the import-side warning batch.
 - CURRENT: Production ChatPane renderer remains held. Asset relink/rehost UX is now a P0 product requirement before claiming visual parity for fixtures whose source images are dead.
 - STILL TODO: Extend replacement-map support into preview/edit verification and richer import-side asset warnings. Do not commit downloaded third-party assets, screenshots, or generated report evidence.
 
