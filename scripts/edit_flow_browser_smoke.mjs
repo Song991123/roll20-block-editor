@@ -646,6 +646,24 @@ async function main() {
     return state;
   })();
 
+  const layerSelectionSync = await page.evaluate(async (inputId) => {
+    if (!inputId) return { selected: false, reason: 'missing nested input block id' };
+    const row = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(inputId)}"]`,
+    );
+    if (!row) return { selected: false, reason: 'missing layer row' };
+    row.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const selected = host?.shadowRoot?.querySelector('[data-r20-selected="1"], .r20-selected');
+    const selectedId = selected?.getAttribute('data-r20-block-id') ?? null;
+    return {
+      selected: selectedId === inputId,
+      selectedId,
+      selectedClass: selected?.className?.toString() ?? '',
+    };
+  }, dragDropState.nestedInputBlockId);
+
   const nonLeafLayerReorder = await page.evaluate(async () => {
     const html = [
       '<div class="outer" style="width:520px; min-height:180px; padding:12px">',
@@ -951,6 +969,7 @@ async function main() {
     canvasSiblingInsert,
     layerDropModes,
     layerSearchContext,
+    layerSelectionSync,
     nonLeafLayerReorder,
     absoluteInsideFrame,
     freePlacementWidgetDrop,
@@ -1030,6 +1049,7 @@ async function main() {
     layerSearchContext.input?.searchMatch === '1' &&
     layerSearchContext.input?.contextOnly === '0' &&
     layerSearchContext.input?.hasDepthGuide === true &&
+    layerSelectionSync.selected === true &&
     nonLeafLayerReorder.mode === 'after' &&
     nonLeafLayerReorder.layerSameParent === true &&
     nonLeafLayerReorder.layerSameDepth === true &&

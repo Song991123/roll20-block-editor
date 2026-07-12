@@ -1,3 +1,10 @@
+## 2026-07-13 Edit Layer Selection Sync TODO Note
+
+- DONE: Edit mode now synchronizes selected layer rows with the actual Shadow DOM sheet object. Clicking a layer row applies the same `.r20-selected` outline to the rendered object instead of only changing the layer list state.
+- DONE: Clicking a rendered object in EditCanvas now updates `workspaceStore.selectedBlockId`, matching the preview-mode selection model.
+- VERIFIED: `smoke:edit-flow -- --port 4402` passed and now checks `layerSelectionSync.selected=true` for a nested input selected from the layer panel.
+- CLAIM BOUNDARY: This improves layer-to-canvas visual pairing only. It does not change Roll20 actual-screen parity, renderer readiness, asset relink status, or import/export fidelity claims.
+
 ## 2026-07-13 Layer Search Context TODO Note
 
 - DONE: Edit-mode layer search now preserves ancestor/container context. Searching for a nested child no longer leaves the child floating without its parent frame/flow context.

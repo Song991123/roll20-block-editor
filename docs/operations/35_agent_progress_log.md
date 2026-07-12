@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Layer Selection Sync
+
+- Found a concrete edit UX wiring gap: `EditCanvas` mounted a Shadow selection API, but layer-row selection changes were not pushed back into the Shadow DOM. A layer row could become selected without the actual rendered sheet object showing the orange `.r20-selected` outline.
+- Wired `EditCanvas` to the shared `workspaceStore.selectedBlockId` / `selectionOrigin` flow, matching the PreviewMain pattern. Layer row clicks now highlight the real Shadow object; object clicks in the edit canvas now update the shared selected block id.
+- Extended `scripts/edit_flow_browser_smoke.mjs` with `layerSelectionSync`, which clicks a nested input layer row and verifies the Shadow DOM object receives `.r20-selected`.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:edit-flow -- --port 4402` passed.
+- Claim boundary: edit UX selection pairing only. No Roll20 renderer parity or actual-screen evidence changed.
+
 ## 2026-07-13 Layer Search Context
 
 - Improved the edit layer panel so search keeps ancestor context. A nested input search now shows both the matching child and its parent container instead of hiding the frame that explains where the child lives.

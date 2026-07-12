@@ -133,7 +133,7 @@ const DESIGN_CSS_MARKER = 'r20-design-css:managed';
 export default function EditCanvas() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const setShadowSelectedRef = useRef<((id: string | null) => void) | null>(null);
+  const setShadowSelectedRef = useRef<((id: string | null, opts?: { scrollIntoView?: boolean }) => void) | null>(null);
   const dragOriginRef = useRef<DragOrigin | null>(null);
   const pendingMoveRef = useRef<PendingMove | null>(null);
   const visualRafRef = useRef<number | null>(null);
@@ -145,6 +145,9 @@ export default function EditCanvas() {
   const htmlCount = useWorkspaceStore((s) => s.workspaces.html.blockCount);
   const cssCount = useWorkspaceStore((s) => s.workspaces.css.blockCount);
   const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
+  const selectedBlockId = useWorkspaceStore((s) => s.selectedBlockId);
+  const selectionOrigin = useWorkspaceStore((s) => s.selectionOrigin);
+  const setSelectedBlockId = useWorkspaceStore((s) => s.setSelectedBlockId);
   const editSubmode = useUiStore((s) => s.editSubmode);
   const previewLayer = useUiStore((s) => s.previewLayer);
   const zoom = useUiStore((s) => s.previewZoom);
@@ -376,7 +379,7 @@ export default function EditCanvas() {
           canReceiveChildren: role.canReceiveChildren && adapter.canNestInContainer('html', blockId),
         };
       },
-      onSelect: (blockId) => setShadowSelectedRef.current?.(blockId),
+      onSelect: (blockId) => setSelectedBlockId(blockId, 'preview'),
       onDragStart: (blockId) => {
         const origin = resolveDragOrigin(host, blockId);
         dragOriginRef.current = origin;
@@ -446,6 +449,8 @@ export default function EditCanvas() {
     });
 
     setShadowSelectedRef.current = mounted.setSelected;
+    const currentSelected = useWorkspaceStore.getState().selectedBlockId;
+    if (currentSelected) mounted.setSelected(currentSelected, { scrollIntoView: false });
     const shadowBody = mounted.shadow.querySelector<HTMLElement>('body[data-r20-shadow-body], body.charsheet');
     const shadowRootEl = mounted.shadow.querySelector<HTMLElement>('#charsheet-root');
     const updateCanvasMetrics = () => {
@@ -512,7 +517,14 @@ export default function EditCanvas() {
     lockVisualAtDrop,
     commitMoveLater,
     editSubmode,
+    setSelectedBlockId,
   ]);
+
+  useEffect(() => {
+    setShadowSelectedRef.current?.(selectedBlockId, {
+      scrollIntoView: selectionOrigin === 'tree',
+    });
+  }, [selectedBlockId, selectionOrigin]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
