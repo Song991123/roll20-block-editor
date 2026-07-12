@@ -44,6 +44,20 @@ The gate records `reportOverrides` in its JSON output. If an override directory
 is provided but the expected report JSON is missing, the command must fail
 rather than silently falling back to stale canonical evidence.
 
+For chat candidate style proof, use isolated output and include the current
+fixture-best candidates when the next gate decision depends on them:
+
+```powershell
+corepack pnpm run diagnose:roll20-chat-candidate-style -- reports\roll20-actual-compare\<run> `
+  --include-best-per-fixture `
+  --out-dir ..\_tmp_codex_smoke\chat-candidate-style-proof-<label>
+```
+
+`--include-candidates <comma-list>` can be used for one-off named candidates.
+The style-proof report records its selection in JSON/Markdown. If a template
+gate best candidate is absent from style proof, treat that as insufficient
+evidence, not as a production-ready CSS candidate.
+
 ## Verification Tracks
 
 | Track | Purpose | Allowed Actions | Forbidden Actions |

@@ -9,11 +9,18 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const optionNamesWithValues = new Set(['--out-dir']);
+const optionNamesWithValues = new Set(['--out-dir', '--include-candidates']);
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const RUN_DIR = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
 const OUT_DIR = rawOutDir ? path.resolve(rawOutDir) : path.join(RUN_DIR, 'chat-candidate-style-proof');
+const INCLUDE_BEST_PER_FIXTURE = args.includes('--include-best-per-fixture');
+const EXPLICIT_CANDIDATES = new Set(
+  readOption('--include-candidates', '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean),
+);
 
 const CANDIDATE_SMOKE = {
   default: 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json',
@@ -82,6 +89,27 @@ async function readJson(file, fallback = null) {
 
 function fixtureById(report, id) {
   return (report?.fixtures ?? []).find((fixture) => fixture.id === id || fixture.fixtureId === id) ?? null;
+}
+
+function bestCandidateNamesByFixture(comparison) {
+  const byFixture = new Map();
+  for (const candidate of comparison?.candidates ?? []) {
+    if (candidate.name === 'default' || candidate.status !== 'OK') continue;
+    for (const [fixtureKey, rawDelta] of Object.entries(candidate.fixtureAlignedDeltaPct ?? {})) {
+      const deltaPct = numberOrNull(rawDelta);
+      if (typeof deltaPct !== 'number') continue;
+      const item = {
+        name: candidate.name,
+        deltaPct,
+        regressedFixtures: Number(candidate.regressedFixtures ?? 0),
+      };
+      const previous = byFixture.get(fixtureKey);
+      if (!previous || item.deltaPct < previous.deltaPct || (item.deltaPct === previous.deltaPct && item.regressedFixtures < previous.regressedFixtures)) {
+        byFixture.set(fixtureKey, item);
+      }
+    }
+  }
+  return new Set([...byFixture.values()].map((item) => item.name));
 }
 
 function templateOf(smokeFixture) {
@@ -596,6 +624,14 @@ function renderMarkdown(report) {
     '',
     'Diagnostic-only check that compares promising local ChatPane candidate styles against actual Roll20 computed styles.',
     '',
+    '## Selection',
+    '',
+    `- Target risks: ${report.selection?.targetRisks?.map((item) => `\`${item}\``).join(', ') || 'none'}`,
+    `- Include best per fixture: ${report.selection?.includeBestPerFixture ? 'yes' : 'no'}`,
+    `- Explicit candidates: ${report.selection?.explicitCandidates?.map((item) => `\`${item}\``).join(', ') || 'none'}`,
+    `- Best-per-fixture candidates: ${report.selection?.bestPerFixtureCandidates?.map((item) => `\`${item}\``).join(', ') || 'none'}`,
+    `- Selected candidates: ${report.selection?.selectedCandidates?.map((item) => `\`${item}\``).join(', ') || 'none'}`,
+    '',
     '| Candidate | Gate status | Mean delta | Regression count | Style proof status | Fixture statuses |',
     '| --- | --- | ---: | ---: | --- | --- |',
   ];
@@ -651,7 +687,12 @@ async function main() {
   const defaultSmoke = await readJson(CANDIDATE_SMOKE.default);
   if (!defaultSmoke?.fixtures) throw new Error(`Missing default local chat smoke: ${CANDIDATE_SMOKE.default}`);
 
-  const targetCandidates = comparison.candidates.filter((candidate) => TARGET_RISKS.has(candidate.promotionRisk));
+  const bestNames = INCLUDE_BEST_PER_FIXTURE ? bestCandidateNamesByFixture(comparison) : new Set();
+  const targetCandidates = comparison.candidates.filter((candidate) => (
+    TARGET_RISKS.has(candidate.promotionRisk) ||
+    EXPLICIT_CANDIDATES.has(candidate.name) ||
+    bestNames.has(candidate.name)
+  ));
   const candidates = [];
   for (const candidate of targetCandidates) {
     const smokePath = CANDIDATE_SMOKE[candidate.name];
@@ -686,6 +727,13 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: rel(RUN_DIR),
+    selection: {
+      targetRisks: [...TARGET_RISKS],
+      includeBestPerFixture: INCLUDE_BEST_PER_FIXTURE,
+      explicitCandidates: [...EXPLICIT_CANDIDATES],
+      bestPerFixtureCandidates: [...bestNames],
+      selectedCandidates: targetCandidates.map((candidate) => candidate.name),
+    },
     candidates,
     summary: {
       candidates: candidates.length,

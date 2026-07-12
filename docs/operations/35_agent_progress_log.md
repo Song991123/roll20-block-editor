@@ -1,3 +1,14 @@
+## 2026-07-13 Chat Candidate Style-Proof Best-Candidate Coverage
+
+- Root cause: `scripts/roll20_chat_candidate_style_proof.mjs` only selected candidates whose comparison risk was `candidate-needs-style-proof` or `single-fixture-only`. The template-scope gate, however, chooses each fixture's best pixel candidate by fixture delta. That meant the actual gate-selected candidates could be missing from style proof and appear as `NOT_STYLE_PROVEN` even when their computed-style evidence could already reject them.
+- Added `--include-best-per-fixture` to include the best candidate selected for each fixture in the candidate-comparison report.
+- Added `--include-candidates <comma-list>` for targeted proof of named candidates.
+- Added a `selection` block to the style-proof JSON/Markdown so agents can see why a candidate was included.
+- Verification: `node --check scripts\roll20_chat_candidate_style_proof.mjs` passed. Live style proof with `--include-best-per-fixture` selected `no-shadow`, `aw2e-message-width-text-metrics`, `roll20-intrinsic-spacing`, and `paint-dim-background`.
+- Current evidence: `3/4` selected candidates are rejected by actual Roll20 style evidence. `aw2e-message-width-text-metrics` contradicts actual Roll20 at AW2E `td:first` font size (`13.65px` candidate vs `27.3px` actual). `paint-dim-background` contradicts actual Roll20 because its pixel gain comes from a local `filter` while actual computed `filter` is `none`.
+- Gate result with the expanded style proof remains `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with `9` blockers, but the failure is now more precise: AW2E/YSHY best candidates are style contradictions, not merely unproven candidates.
+- Claim boundary: diagnostic truthfulness only. No production ChatPane CSS changed, no assets were relinked, no Roll20 upload happened, and visual parity remains unproven.
+
 ## 2026-07-13 Chat Template Scope Isolated Evidence Override
 
 - Root cause: style-proof diagnostics still wrote only into the selected actual-run folder, and the template-scope gate could not consume freshly generated candidate/style/row-raster temp reports without copying them back into canonical evidence. That made renderer investigation brittle on locked Windows report folders and made it too easy to mix stale canonical evidence with fresh temp diagnostics.

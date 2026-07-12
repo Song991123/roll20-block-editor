@@ -1,3 +1,13 @@
+## 2026-07-13 Chat Candidate Style-Proof Best-Candidate Coverage TODO Note
+
+- DONE: `diagnose:roll20-chat-candidate-style` now supports `--include-best-per-fixture` and `--include-candidates <comma-list>`. The default behavior remains narrow, but agents can now force the style-proof report to cover the exact best candidates later consumed by `gate:roll20-chat-template-scope`.
+- WHY: The template-scope gate was selecting best pixel candidates such as `aw2e-message-width-text-metrics` and `paint-dim-background`, but the style-proof script only covered `candidate-needs-style-proof` / `single-fixture-only` risks. Those best candidates therefore appeared as `NOT_STYLE_PROVEN` instead of being accepted or rejected by actual Roll20 computed-style evidence.
+- VERIFIED: `node --check scripts\roll20_chat_candidate_style_proof.mjs` passed.
+- VERIFIED: Live run passed with `--include-best-per-fixture --out-dir ..\_tmp_codex_smoke\chat-candidate-style-proof-best-20260713-r2`, selecting `no-shadow`, `aw2e-message-width-text-metrics`, `roll20-intrinsic-spacing`, and `paint-dim-background`.
+- OBSERVED: The expanded style proof reports `REJECT_STYLE_CONTRADICTION` for `3/4` selected candidates. AW2E's message-width/text-metrics candidate matches chat/message width and table font size, but contradicts actual Roll20 on `td:first` font size (`13.65px` local candidate vs `27.3px` actual). YSHY's `paint-dim-background` pixel gain comes from a local CSS filter, while actual Roll20 computed `filter` is `none`.
+- VERIFIED: Feeding the expanded style proof into `gate:roll20-chat-template-scope` still returns `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with `9` blockers, now with AW2E and YSHY best candidates classified as style contradictions instead of style-proof gaps.
+- CURRENT: Next renderer work should stop retrying these best candidates as-is. AW2E needs a narrower cell font/context model, and YSHY needs a real table/font/asset model rather than local paint filters. Asset relink remains a separate blocker before visual parity can be claimed.
+
 ## 2026-07-13 Chat Template Scope Isolated Evidence Override TODO Note
 
 - DONE: `diagnose:roll20-chat-candidate-style` now accepts `--out-dir <writable-report-dir>`, so style-proof reruns can read canonical Roll20 actual evidence while writing into ignored temp folders instead of rewriting `chat-candidate-style-proof` inside the selected run.
