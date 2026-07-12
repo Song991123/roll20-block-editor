@@ -38,6 +38,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
     mapFile: mapFile || '',
+    templateFile: path.relative(process.cwd(), path.join(outDir, 'asset-relink-map-template.txt')),
     scope: 'diagnostic-only relink coverage check; URL text only, no asset redistribution',
     action: relinkRequired.length === 0
       ? 'NO_RELINK_BLOCKER_FOUND'
@@ -63,6 +64,7 @@ async function main() {
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, 'asset-relink-verification-plan-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   await writeFile(path.join(outDir, 'asset-relink-verification-plan-results.md'), renderMarkdown(report), 'utf8');
+  await writeFile(path.join(outDir, 'asset-relink-map-template.txt'), renderMapTemplate(report), 'utf8');
 
   console.log(`ROLL20 ASSET RELINK VERIFICATION ${report.action}`);
   console.log(`required=${relinkRequired.length} coveredRoll20Ready=${covered.length} localOnly=${localOnly.length} missing=${missing.length} mapEntries=${parsedMap.entries.length}`);
@@ -70,6 +72,7 @@ async function main() {
     console.log(`FIXTURE ${fixture.fixtureId} coverage=${fixture.coverage} target=${fixture.coveringTargetKind || 'none'} next=${fixture.nextAction}`);
   }
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
+  console.log(`template=${report.templateFile}`);
 }
 
 function positionalArgs() {
@@ -141,6 +144,7 @@ function classifyFixture(fixture, parsedMap) {
     priority: fixture.priority ?? '',
     decision: fixture.decision,
     coverage,
+    candidateUrls: candidates,
     sourceUrl: fixture.asset?.sourceUrl ?? '',
     localCssUrl: fixture.asset?.localCssUrl ?? '',
     actualCssUrl: fixture.asset?.actualCssUrl ?? '',
@@ -225,6 +229,7 @@ function renderMarkdown(report) {
     `Generated: ${report.generatedAt}`,
     `Run: \`${report.runDir}\``,
     `Map file: ${report.mapFile ? `\`${report.mapFile}\`` : 'not provided'}`,
+    `Template: \`${report.templateFile}\``,
     `Action: **${report.action}**`,
     '',
     'Scope: URL text coverage only. This report does not download, store, publish, or redistribute sheet assets.',
@@ -237,9 +242,42 @@ function renderMarkdown(report) {
   }
   lines.push('', '## Next Actions', '');
   for (const action of report.nextActions) lines.push(`- ${action}`);
+  lines.push('', '## Map Template', '');
+  lines.push('- Fill the generated `asset-relink-map-template.txt` with user-owned HTTP(S) replacement URLs, then rerun this command with `--map-file`.');
+  lines.push('- The template is commented by default, so it is inert until the placeholder targets are replaced and the leading `#` is removed.');
   if (report.mapWarnings.length) {
     lines.push('', '## Map Warnings', '');
     for (const warning of report.mapWarnings) lines.push(`- line ${warning.line}: ${warning.message}`);
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+function renderMapTemplate(report) {
+  const unresolved = report.fixtures.filter((fixture) => (
+    fixture.decision === 'SOURCE_ASSET_LOST_RELINK_REQUIRED' &&
+    fixture.coverage !== 'COVERED_ROLL20_READY'
+  ));
+  const lines = [
+    '# Roll20 asset relink map template',
+    '# Scope: URL text only. Do not paste third-party asset bytes here.',
+    '# Replace <paste-user-owned-https-url-here> with a user-owned HTTPS URL, then remove the leading "# ".',
+    '# Run after editing:',
+    `# corepack pnpm run plan:roll20-asset-relink -- ${report.runDir} --map-file ${report.templateFile}`,
+  ];
+  if (!unresolved.length) {
+    lines.push('', '# No unresolved relink blockers found.');
+    return `${lines.join('\n')}\n`;
+  }
+  for (const fixture of unresolved) {
+    lines.push(
+      '',
+      `# fixture: ${fixture.fixtureId}`,
+      `# coverage: ${fixture.coverage}`,
+      `# next: ${fixture.nextAction}`,
+    );
+    for (const url of fixture.candidateUrls ?? []) {
+      lines.push(`# ${url} => <paste-user-owned-https-url-here>`);
+    }
   }
   return `${lines.join('\n')}\n`;
 }
@@ -279,5 +317,13 @@ function selfTest() {
   assert.equal(missing.coverage, 'MISSING_RELINK');
   const ignored = classifyFixture({ fixtureId: 'none', decision: 'NO_BACKGROUND_IMAGE' }, parseReplacementMap(''));
   assert.equal(ignored.coverage, 'NOT_REQUIRED');
+  const template = renderMapTemplate({
+    runDir: 'reports/roll20-actual-compare/sample',
+    templateFile: 'reports/roll20-actual-compare/sample/asset-relink-verification-plan/asset-relink-map-template.txt',
+    fixtures: [missing, localOnly, ready, ignored],
+  });
+  assert.match(template, /# https:\/\/i\.imgur\.com\/dead\.jpg => <paste-user-owned-https-url-here>/);
+  assert.match(template, /# http:\/\/i\.imgur\.com\/dead\.jpg => <paste-user-owned-https-url-here>/);
+  assert.doesNotMatch(template, /fixture: sample[\s\S]*COVERED_ROLL20_READY[\s\S]*assets\.example\.com\/live\.jpg/);
   console.log('roll20_asset_relink_verification_plan self-test PASS');
 }

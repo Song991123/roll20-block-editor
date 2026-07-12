@@ -44,6 +44,7 @@ corepack pnpm run plan:roll20-asset-relink -- reports\roll20-actual-compare\<lab
 - The export dialog can save named local-only replacement-map profiles. Profiles store URL replacement text only, not image/font bytes, and are persisted in the autosave/manual-save XML so users can switch between sheet-specific relink sets during repeated verification.
 - `plan:roll20-asset-relink` can check an exported/copied replacement-map text file against current asset-preservation blockers. It reports whether each required fixture is missing a relink, uses a local-only data URL, or is ready for local preview/edit/export plus Roll20 Sandbox re-comparison.
 - The export dialog can copy the active replacement-map text or save it as a local txt file. The text file is the handoff format for `plan:roll20-asset-relink --map-file`; it stores URL rules only and no asset bytes.
+- `plan:roll20-asset-relink` also writes an ignored `asset-relink-map-template.txt` beside its report. The template lists commented candidate source/proxy URL rules for unresolved blockers, so the user can fill user-owned HTTP(S) targets without agents copying asset bytes into the repo.
 - Multi-project named asset libraries, replacement history, and Roll20-side rehost verification are still TODO.
 
 ## UI Behavior

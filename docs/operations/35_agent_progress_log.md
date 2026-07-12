@@ -1,3 +1,11 @@
+## 2026-07-13 Asset Relink Map Template
+
+- Extended `plan:roll20-asset-relink` so every run writes an ignored `asset-relink-map-template.txt` beside the JSON/Markdown report.
+- The template lists unresolved asset blockers as commented `old URL => <paste-user-owned-https-url-here>` rules, using source/proxy candidate URL text only. It stays inert until the placeholder is replaced with a user-owned HTTP(S) target and the comment marker is removed.
+- Current run: `plan:roll20-asset-relink -- reports\roll20-actual-compare\2026-06-18-state-map-v1` still reports `RELINK_MAP_REQUIRED` for AW2E/YSHY and now generates 6 candidate replacement-rule lines under the ignored report folder.
+- Verification: `node --check scripts\roll20_asset_relink_verification_plan.mjs`, `test:roll20-asset-relink`, the current run plan command, `guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `git diff --check`, `lint`, and `build`.
+- Claim boundary: this reduces relink handoff ambiguity. It does not host assets, apply a map, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Asset Relink Autosave Persistence
 
 - Persisted the shared local-only asset replacement map into the combined IndexedDB autosave/manual-save XML as preview metadata.
