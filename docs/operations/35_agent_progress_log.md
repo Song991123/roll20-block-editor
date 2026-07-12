@@ -1,3 +1,10 @@
+## 2026-07-12 Targeted Chat Renderer Plan
+
+- Added `scripts/roll20_chat_targeted_renderer_plan.mjs` plus package aliases `plan:roll20-chat-renderer-targets` and `test:roll20-chat-renderer-targets`.
+- Purpose: convert the current Roll20 actual chat evidence into scoped next experiments and keep production renderer changes held while fixture axes conflict.
+- Verification: `test:roll20-chat-renderer-targets` passed. Running `plan:roll20-chat-renderer-targets -- reports\roll20-actual-compare\2026-06-18-state-map-v1` reports `HOLD_PRODUCTION_RENDERER_PATCH`, 4 blockers, AW2E `18.03%` as `AW2E_TEMPLATE_SCOPED_TEXT_METRICS`, Les `6.34%` as `KEEP_DEFAULT`, and YSHY `20.68%` as `COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL`.
+- Boundary: this is a planning/guardrail improvement, not a product renderer parity fix. Next work should run the exact targeted smoke/candidate commands written under the ignored `chat-targeted-renderer-plan` report.
+
 ## 2026-07-12 Les Same-Template Capture Handoff
 
 - `plan:roll20-chat-capture` now reads `chat-structure-compare` and treats structure mismatch as a recapture reason. For Les-Oublies, the target is explicit: `roll_initiative` should render `sheet-rolltemplate-initiative-roll`.

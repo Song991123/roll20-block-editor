@@ -1,3 +1,13 @@
+## 2026-07-12 Roll20 Chat Targeted Renderer Plan TODO Note
+
+- DONE: Added `plan:roll20-chat-renderer-targets`, a diagnostic-only planner that reads the current Roll20 actual chat evidence reports and turns them into scoped next renderer experiments.
+- VERIFIED: `test:roll20-chat-renderer-targets` passed, and the planner ran against `reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- CURRENT: The planner keeps production chat renderer changes on `HOLD_PRODUCTION_RENDERER_PATCH` with 4 blockers. Current split:
+  - `official-roll20-AW2E`: P0, `AW2E_TEMPLATE_SCOPED_TEXT_METRICS`, aligned mismatch `18.03%`; next experiment is message-width plus exact text-metric allocation scoped to `.sheet-rolltemplate-aw`.
+  - `official-roll20-Les-Oublies`: P1, `KEEP_DEFAULT`, aligned mismatch `6.34%`; do not spend the next renderer pass here unless it regresses.
+  - `yshy-commission-1bu`: P0, `COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL`, aligned mismatch `20.68%`; next experiment is CoC/YSHY-scoped table intrinsic sizing, font availability, and sanitize-order modeling.
+- STILL TODO: Run the targeted AW2E and YSHY smoke/candidate commands from `reports\roll20-actual-compare\2026-06-18-state-map-v1\chat-targeted-renderer-plan\chat-targeted-renderer-plan-results.md`. Do not promote global ChatPane width/font/padding CSS.
+
 ## 2026-07-12 Roll20 Chat Overlay-Clean Recapture TODO Note
 
 - DONE: Confirmed the first Les-Oublies same-template recapture still had a screenshot-quality problem: the character sheet dialog overlapped the text chat, so `roll20-chat.png` included sheet UI (`Modify`) even though DOM evidence selected `sheet-rolltemplate-initiative-roll`.
