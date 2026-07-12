@@ -1,3 +1,10 @@
+## 2026-07-12 Roll20 Chat Structure-Aware Status TODO Note
+
+- DONE: Updated `status:roll20-actual` so it reports chat structure state separately from raw chat pixel mismatch: `chatStructure=STRUCTURE_MISMATCH_FOUND`, `chatStructureMismatch=1/3`, `chatSameStructureHighMismatch=2/3`, and `chatSameStructureMaxAlignedMismatch=20.68%`.
+- DONE: Updated `gate:roll20-renderer-action` so the renderer mismatch blocker excludes structure-mismatched Les-Oublies from the same-structure count. The gate now reports `2/3` same-structure authoritative chat mismatches instead of treating all `3/3` as renderer CSS evidence.
+- VERIFIED: Raw max aligned mismatch still remains `54.1%` because it includes the wrong-template Les-Oublies capture, but same-structure renderer evidence max is now `20.68%` across AW2E/YSHY. The next action remains same-template Les-Oublies recapture.
+- STILL TODO: Recapture Les-Oublies `sheet-rolltemplate-initiative-roll` in Roll20, then rerun the full chat refresh/status/gate chain.
+
 ## 2026-07-12 Roll20 Chat Structure Gate TODO Note
 
 - DONE: Added `corepack pnpm run diagnose:roll20-chat-structure -- reports\roll20-actual-compare\2026-06-18-state-map-v1` to compare local ChatPane rolltemplate class/row/text structure against actual Roll20 chat sidecars before treating pixel diffs as renderer evidence.

@@ -308,6 +308,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatWidthReconciliationSummary = summarizeChatWidthReconciliation(chatWidthReconciliation);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status, chatCurrentMetricsAudit);
   const chatStructureSummary = summarizeChatStructure(chatStructureCompare);
+  const chatStructureMismatchIds = new Set((chatStructureSummary?.mismatchFixtures ?? []).map((fixture) => fixture.fixtureId));
   const styleProofStatusByName = new Map(
     (chatCandidateStyleProofSummary?.candidates ?? []).map((candidate) => [
       candidate.name,
@@ -352,8 +353,12 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     if (chatParitySummary.actualTemplatePixelSuspect > 0) {
       blockers.push(`actual Roll20 chat crop foreground pixels are suspect for ${chatParitySummary.actualTemplatePixelSuspect}/${chatParitySummary.normalizedCompared} normalized fixtures${formatChatSuspectSuffix(chatParitySummary, 'foreground pixels')}; the DOM sidecar has rolltemplate text but the PNG likely captured map/grid/background, so recapture from a visible text chat panel before tuning ChatPane CSS`);
     }
-    if (chatParitySummary.authoritativeNormalizedHighMismatch > 0) {
-      blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${chatParitySummary.authoritativeNormalizedHighMismatch}/${chatParitySummary.normalizedCompared} geometry-authoritative normalized fixtures after small-offset alignment; authoritative max aligned mismatch ${chatParitySummary.authoritativeMaxAlignedMismatchPct}% (raw ${chatParitySummary.authoritativeMaxMismatchPct}%)`);
+    const rendererMismatchFixtures = (chatParitySummary.fixturesWithMismatch ?? [])
+      .filter((fixture) => !chatStructureMismatchIds.has(fixture.fixtureId));
+    if (rendererMismatchFixtures.length > 0) {
+      const maxAligned = rendererMismatchFixtures.reduce((max, fixture) => Math.max(max, Number(fixture.bestAlignedMismatchPct ?? 0)), 0);
+      const maxRaw = rendererMismatchFixtures.reduce((max, fixture) => Math.max(max, Number(fixture.mismatchPct ?? 0)), 0);
+      blockers.push(`actual Roll20 rolltemplate crop differs from local ChatPane template for ${rendererMismatchFixtures.length}/${chatParitySummary.normalizedCompared} same-structure geometry-authoritative normalized fixtures after small-offset alignment; same-structure max aligned mismatch ${num(maxAligned)}% (raw ${num(maxRaw)}%)`);
     }
   }
   if (chatCurrentMetrics.missing > 0) {
@@ -477,7 +482,9 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     }
   }
   if (chatParitySummary) {
-    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, alignedHighMismatch=${chatParitySummary.alignedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, actualTemplatePixelSuspect=${chatParitySummary.actualTemplatePixelSuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, currentMetricMissing=${chatCurrentMetrics.missing}/${chatCurrentMetrics.total}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, authoritativeMaxAlignedMismatch=${chatParitySummary.authoritativeMaxAlignedMismatchPct}%, maxAlignedMismatchIncludingSuspects=${chatParitySummary.maxAlignedMismatchPct}%`);
+    const sameStructureMismatchCount = (chatParitySummary.fixturesWithMismatch ?? [])
+      .filter((fixture) => !chatStructureMismatchIds.has(fixture.fixtureId)).length;
+    positiveFindings.push(`chat parity diagnostic: normalized=${chatParitySummary.normalizedCompared}/${chatParitySummary.fixtures}, normalizedHighMismatch=${chatParitySummary.normalizedHighMismatch}, alignedHighMismatch=${chatParitySummary.alignedHighMismatch}, authoritativeNormalizedHighMismatch=${chatParitySummary.authoritativeNormalizedHighMismatch}, sameStructureAuthoritativeMismatch=${sameStructureMismatchCount}, structureExcluded=${chatStructureMismatchIds.size}, actualCropGeometrySuspect=${chatParitySummary.actualCropGeometrySuspect}, actualTemplatePixelSuspect=${chatParitySummary.actualTemplatePixelSuspect}, needsNormalizedCapture=${chatParitySummary.needsNormalizedCapture}, currentMetricMissing=${chatCurrentMetrics.missing}/${chatCurrentMetrics.total}, actualChatCssInactive=${chatParitySummary.actualChatCssInactive}, actualChatCssScopedMismatch=${chatParitySummary.actualChatCssScopedMismatch}, actualCaptureScaleSuspect=${chatParitySummary.actualCaptureScaleSuspect}, authoritativeMaxAlignedMismatch=${chatParitySummary.authoritativeMaxAlignedMismatchPct}%, maxAlignedMismatchIncludingSuspects=${chatParitySummary.maxAlignedMismatchPct}%`);
   }
   if (!chatStyleSummary) {
     warnings.push('chat style/context diagnostic has not been run; run diagnose:roll20-chat-style before promoting ChatPane shell/template CSS');

@@ -67,6 +67,13 @@ async function main() {
   const scrollMetricsReplacement = await readScrollMetricsReplacement(runDir);
   const rendererAction = await readRendererAction(runDir);
   const chatParity = await readChatParity(runDir);
+  const chatStructure = await readChatStructure(runDir);
+  const chatStructureMismatchIds = new Set(chatStructure.mismatchFixtures.map((fixture) => fixture.fixtureId));
+  const sameStructureChatMismatchFixtures = chatParity.mismatchFixtures.filter((fixture) => !chatStructureMismatchIds.has(fixture.fixtureId));
+  const sameStructureChatMaxAlignedMismatchPct = sameStructureChatMismatchFixtures.reduce(
+    (max, fixture) => Math.max(max, Number(fixture.bestAlignedMismatchPct ?? 0)),
+    0,
+  );
   const fixtures = [];
   for (const fixtureId of await listFixtureIds(baselineDir)) {
     fixtures.push(await inspectFixture(runDir, fixtureId, diffReport));
@@ -187,6 +194,12 @@ async function main() {
       chatParityActualTemplatePixelSuspect: chatParity.actualTemplatePixelSuspect,
       chatParityMaxNormalizedMismatchPct: chatParity.maxNormalizedMismatchPct,
       chatParityMaxAlignedMismatchPct: chatParity.maxAlignedMismatchPct,
+      chatStructureExists: chatStructure.exists,
+      chatStructureMismatchCount: chatStructure.mismatches,
+      chatStructureFixtures: chatStructure.fixtures,
+      chatStructureStatus: chatStructure.status,
+      chatSameStructureHighMismatchCount: sameStructureChatMismatchFixtures.length,
+      chatSameStructureMaxAlignedMismatchPct: pctNumber(sameStructureChatMaxAlignedMismatchPct / 100),
       chatCurrentMetricsPresent: chatCurrentMetrics.presentCount,
       chatCurrentMetricsTotal: chatCurrentMetrics.total,
       chatCurrentMetricsMissing: chatCurrentMetrics.missingCount,
@@ -200,6 +213,7 @@ async function main() {
     scrollMetricsReplacement,
     rendererAction,
     chatParity,
+    chatStructure,
     chatCurrentMetrics,
     fixtures,
     nextAction: buildNextAction({
@@ -217,6 +231,7 @@ async function main() {
       scrollMetricsReplacement,
       rendererAction,
       chatParity,
+      chatStructure,
       chatCurrentMetrics,
       fixtures,
     }),
@@ -477,6 +492,46 @@ async function readChatParity(runDir) {
       })),
     suspectFixtures: summarizeChatParitySuspectFixtures(report.fixtures ?? []),
     note: 'diagnostic only; does not prove Roll20 chat visual parity',
+  };
+}
+
+async function readChatStructure(runDir) {
+  const file = path.join(runDir, 'chat-structure-compare', 'chat-structure-compare-results.json');
+  if (!existsSync(file)) {
+    return {
+      exists: false,
+      file: rel(file),
+      status: 'MISSING_CHAT_STRUCTURE_COMPARE',
+      fixtures: 0,
+      mismatches: 0,
+      mismatchFixtures: [],
+      note: 'missing chat structure compare diagnostic',
+    };
+  }
+  const report = JSON.parse(await fs.readFile(file, 'utf8'));
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    status: fixture.status ?? 'UNKNOWN',
+    decision: fixture.decision ?? '',
+    nextAction: fixture.nextAction ?? '',
+    localTemplate: fixture.local?.templateClass ?? '',
+    actualTemplate: fixture.actual?.templateClass ?? '',
+    localRows: Number(fixture.local?.rowCount ?? 0),
+    actualRows: Number(fixture.actual?.rowCount ?? 0),
+    chosenRollButton: fixture.local?.chosenRollButton ?? '',
+    actualStrategy: fixture.actual?.selectedTemplateStrategy ?? '',
+  }));
+  const mismatchFixtures = fixtures.filter((fixture) => fixture.status !== 'STRUCTURE_MATCH');
+  return {
+    exists: true,
+    file: rel(file),
+    generatedAt: report.generatedAt ?? null,
+    status: report.summary?.status ?? (mismatchFixtures.length ? 'STRUCTURE_MISMATCH_FOUND' : 'STRUCTURE_MATCHED'),
+    fixtures: Number(report.summary?.fixtures ?? fixtures.length),
+    mismatches: Number(report.summary?.mismatches ?? mismatchFixtures.length),
+    mismatchFixtures,
+    fixturesDetail: fixtures,
+    note: 'diagnostic only; structure mismatches must be recaptured or fixed before pixel diffs become renderer evidence',
   };
 }
 
@@ -861,6 +916,7 @@ function buildNextAction({
   scrollMetricsReplacement,
   rendererAction,
   chatParity,
+  chatStructure,
   chatCurrentMetrics,
   fixtures,
 }) {
@@ -911,6 +967,15 @@ function buildNextAction({
       .map((fixture) => `${fixture.fixtureId} (${fixture.missing.join(', ')})`)
       .join('; ');
     return `Roll20 chat screenshots are normalized, but current row/typography sidecar fields are missing for ${missing}. Run corepack pnpm run plan:roll20-chat-capture -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))} --require-current-metrics, recapture same-action roll20-chat.png plus roll20-chat-dom-evidence.json, then rerun screenshot diff, diagnose:roll20-chat-parity, gate:roll20-renderer-action, and this status command.`;
+  }
+  if (chatStructure?.exists && chatStructure.mismatches > 0) {
+    const mismatches = chatStructure.mismatchFixtures
+      .map((fixture) => `${fixture.fixtureId} (${fixture.localTemplate || 'n/a'} vs ${fixture.actualTemplate || 'n/a'}, rows ${fixture.localRows}/${fixture.actualRows})`)
+      .join('; ');
+    return `Roll20 chat screenshots are normalized, but local and actual rolltemplate structures differ for ${mismatches}. Recapture the same local smoke roll/template in Roll20, then rerun diagnose:roll20-chat-structure, diagnose:roll20-chat-parity, gate:roll20-renderer-action, and this status command before treating pixel diffs as renderer CSS evidence.`;
+  }
+  if (!chatStructure?.exists && chatParity?.exists && chatParity.authoritativeNormalizedHighMismatch > 0) {
+    return `Roll20 chat screenshots are normalized but structure comparison is missing. Run corepack pnpm run diagnose:roll20-chat-structure -- ${rel(path.resolve(runDirFromReport(rendererAction.file)))}, then rerun gate:roll20-renderer-action and this status command before treating pixel diffs as renderer CSS evidence.`;
   }
   if (chatParity?.exists && chatParity.actualCropGeometrySuspect > 0) {
     const suspectFixtures = formatChatSuspectFixtures(chatParity, 'crop geometry');
@@ -1010,6 +1075,8 @@ function renderMarkdown(report) {
     `- Renderer ready for production CSS: ${report.summary.rendererReady ? 'yes' : 'NO'}`,
     `- Chat parity diagnostic: ${report.summary.chatParityExists ? 'present' : 'missing'} (${report.summary.chatParityCompared}/${report.summary.chatParityFixtures} compared, normalized ${report.summary.chatParityNormalizedCompared}/${report.summary.chatParityFixtures})`,
     `- Chat blockers: needs normalized capture ${report.summary.chatParityNeedsNormalizedCapture}, crop geometry suspect ${report.summary.chatParityActualCropGeometrySuspect}, template pixel suspect ${report.summary.chatParityActualTemplatePixelSuspect}, aligned high mismatch ${report.summary.chatParityAlignedHighMismatch}, authoritative normalized high mismatch ${report.summary.chatParityAuthoritativeNormalizedHighMismatch}, actual CSS inactive ${report.summary.chatParityActualCssInactive}, scoped/prefix mismatch ${report.summary.chatParityActualCssScopedMismatch}, actual CSS unknown ${report.summary.chatParityActualCssUnknown}`,
+    `- Chat structure compare: ${report.summary.chatStructureExists ? report.summary.chatStructureStatus : 'missing'} (${report.summary.chatStructureMismatchCount}/${report.summary.chatStructureFixtures} mismatched)`,
+    `- Same-structure chat mismatch: ${report.summary.chatSameStructureHighMismatchCount}/${report.summary.chatParityNormalizedCompared} high, max aligned ${report.summary.chatSameStructureMaxAlignedMismatchPct}%`,
     `- Chat current row/typography sidecars: ${report.summary.chatCurrentMetricsPresent}/${report.summary.chatCurrentMetricsTotal} current (${report.summary.chatCurrentMetricsMissing} missing)`,
     `- Max normalized chat mismatch: ${report.summary.chatParityMaxNormalizedMismatchPct ?? 'n/a'}%`,
     `- Max aligned chat mismatch: ${report.summary.chatParityMaxAlignedMismatchPct ?? 'n/a'}%`,
@@ -1088,6 +1155,19 @@ function renderMarkdown(report) {
     }
   }
 
+  if (report.chatStructure.exists) {
+    lines.push('', '## Chat Structure Boundary', '');
+    lines.push(`- Report: \`${report.chatStructure.file}\``);
+    lines.push(`- Status: ${report.chatStructure.status}`);
+    lines.push(`- Mismatches: ${report.chatStructure.mismatches}/${report.chatStructure.fixtures}`);
+    if (report.chatStructure.mismatchFixtures.length) {
+      lines.push('', '| Fixture | Status | Local template | Actual template | Rows L/A | Next action |', '| --- | --- | --- | --- | ---: | --- |');
+      for (const fixture of report.chatStructure.mismatchFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | \`${fixture.localTemplate}\` | \`${fixture.actualTemplate}\` | ${fixture.localRows}/${fixture.actualRows} | ${escapeCell(fixture.nextAction)} |`);
+      }
+    }
+  }
+
   if (report.chatCurrentMetrics?.missingCount > 0) {
     lines.push('', '## Chat Current-Metric Recapture Needed', '', '| Fixture | Status | Missing fields | Sidecar |', '| --- | --- | --- | --- |');
     for (const fixture of report.chatCurrentMetrics.missingFixtures) {
@@ -1138,6 +1218,10 @@ function renderConsoleSummary(report, outDir) {
     `chatActualCssScopedMismatch=${report.summary.chatParityActualCssScopedMismatch}`,
     `chatActualCaptureScaleSuspect=${report.summary.chatParityActualCaptureScaleSuspect}`,
     `chatActualTemplatePixelSuspect=${report.summary.chatParityActualTemplatePixelSuspect}`,
+    `chatStructure=${report.summary.chatStructureExists ? report.summary.chatStructureStatus : 'MISSING'}`,
+    `chatStructureMismatch=${report.summary.chatStructureMismatchCount}/${report.summary.chatStructureFixtures}`,
+    `chatSameStructureHighMismatch=${report.summary.chatSameStructureHighMismatchCount}/${report.summary.chatParityNormalizedCompared}`,
+    `chatSameStructureMaxAlignedMismatch=${report.summary.chatSameStructureMaxAlignedMismatchPct}%`,
     `chatNormalizedHighMismatch=${report.summary.chatParityNormalizedHighMismatch}`,
     `chatAlignedHighMismatch=${report.summary.chatParityAlignedHighMismatch}`,
     `chatAuthoritativeNormalizedHighMismatch=${report.summary.chatParityAuthoritativeNormalizedHighMismatch}`,

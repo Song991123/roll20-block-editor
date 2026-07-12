@@ -1,3 +1,10 @@
+## 2026-07-12 Structure-Aware Roll20 Status/Gate
+
+- Refined the post-capture status layer so raw chat pixel mismatch and same-structure renderer evidence are no longer conflated.
+- `status:roll20-actual` now prints both the raw max aligned chat mismatch (`54.1%`, still including the wrong-template Les-Oublies capture) and the same-structure max aligned mismatch (`20.68%`, AW2E/YSHY only).
+- `gate:roll20-renderer-action` now excludes structure-mismatched fixtures from the same-structure renderer mismatch blocker while still keeping a separate blocker that requires Les-Oublies same-template recapture.
+- Boundary: this is evidence interpretation hardening. It does not change Roll20 capture data, local ChatPane CSS, or actual visual parity.
+
 ## 2026-07-12 Roll20 Chat Structure Gate
 
 - Root cause found: the largest current Les-Oublies chat mismatch was comparing different rendered rolltemplates. Local smoke clicked `roll_initiative` and rendered `sheet-rolltemplate-initiative-roll`, while the actual Roll20 sidecar selected `sheet-rolltemplate-classic-roll`.
