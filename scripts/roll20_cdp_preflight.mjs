@@ -15,7 +15,7 @@ import { ROLL20_READINESS, classifyRoll20Target, isRoll20PageTarget, nextActionF
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = hasFlag('--self-test');
-const RAW_RUN_DIR = readOption('--run-dir', args[0] ?? '');
+const RAW_RUN_DIR = readOption('--run-dir', firstPositionalArg() ?? '');
 const RUN_DIR = path.resolve(RAW_RUN_DIR);
 const CDP_URL = readOption('--cdp', process.env.ROLL20_CDP_URL ?? 'http://127.0.0.1:9222');
 const PAGE_MATCH = readOption('--page-match', 'app.roll20.net');
@@ -24,11 +24,12 @@ const LAUNCH = hasFlag('--launch');
 const PROFILE_DIR = path.resolve(readOption('--profile-dir', path.join('.tmp', 'roll20-cdp-profile')));
 const START_URL = readOption('--url', 'https://app.roll20.net/editor');
 const WAIT_AFTER_LAUNCH_MS = Number(readOption('--wait-after-launch-ms', '2500'));
+const RAW_OUT_DIR = readOption('--out-dir', '');
 
 if (SELF_TEST) {
   runSelfTest();
 } else if (!RAW_RUN_DIR) {
-  console.error('Usage: node scripts/roll20_cdp_preflight.mjs --run-dir reports/roll20-actual-compare/<label> [--fixture <fixture-id>] [--launch] [--wait-after-launch-ms 2500]');
+  console.error('Usage: node scripts/roll20_cdp_preflight.mjs --run-dir reports/roll20-actual-compare/<label> [--out-dir <writable-report-dir>] [--fixture <fixture-id>] [--launch] [--wait-after-launch-ms 2500]');
   process.exit(2);
 } else {
   main().catch((error) => {
@@ -90,7 +91,7 @@ async function main() {
     nextAction: nextActionForEndpoint(endpoint, { plannedFixtures, currentEvidence }),
   };
 
-  const outDir = path.join(RUN_DIR, 'roll20-cdp-preflight');
+  const outDir = RAW_OUT_DIR ? path.resolve(RAW_OUT_DIR) : path.join(RUN_DIR, 'roll20-cdp-preflight');
   await mkdir(outDir, { recursive: true });
   await writeFile(path.join(outDir, 'roll20-cdp-preflight-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   await writeFile(path.join(outDir, 'roll20-cdp-preflight-results.md'), renderMarkdown(report), 'utf8');
@@ -463,6 +464,10 @@ function readOption(name, fallback) {
 
 function hasFlag(name) {
   return args.includes(name);
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && !args[index - 1]?.startsWith('--'));
 }
 
 function quoteArg(value) {

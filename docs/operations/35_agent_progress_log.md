@@ -1,3 +1,15 @@
+## 2026-07-13 Roll20 Verification Out-Dir
+
+- Root cause: `status:roll20-actual` and `preflight:roll20-cdp` always rewrote their summaries inside the canonical Roll20 run folder. When Windows locked those generated files, agents could still read the source evidence but could not refresh status or CDP readiness.
+- Added `--out-dir <writable-report-dir>` to both scripts. The run directory remains the evidence source, while JSON/Markdown output can go to a temporary ignored folder.
+- Live verification with the locked run succeeded through temp output folders:
+  - `status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir D:\훙냥냥\마렌상\영시영 시트 고치기\_tmp_codex_smoke\actual-status-outdir`
+  - `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir D:\훙냥냥\마렌상\영시영 시트 고치기\_tmp_codex_smoke\cdp-preflight-outdir`
+- Current evidence boundary from those runs: renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`, `rendererReady=NO`, same-structure chat high mismatch is `2/3`, max aligned mismatch is `20.68%`, and CDP is `READY` with `plannedFixtures=0`.
+- Verification: `node --check` for both changed scripts, `test:roll20-cdp-preflight`, two `--out-dir` live command shapes for both scripts, `corepack pnpm run lint`, `corepack pnpm run build`, and `git diff --check` passed.
+- Server hygiene: no Next/smoke server was started. Port `9222` remains the existing Roll20 CDP listener; `3000` was not listening.
+- Claim boundary: verification tooling only. No Roll20 parity claim changed.
+
 ## 2026-07-13 Edit Layer Selection Path
 
 - Root cause: the adapter already exposed `layerParentId`, but the edit layer panel did not render a selected object's ancestry path. Selecting a nested input could highlight the row/canvas object without showing which frame/container it belonged to.

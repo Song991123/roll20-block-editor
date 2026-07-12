@@ -9,7 +9,7 @@
  * exits non-zero.
  *
  * Usage:
- *   node scripts/roll20_actual_status.mjs [reports/roll20-actual-compare/<label>] [--require-actual] [--require-renderer-ready]
+ *   node scripts/roll20_actual_status.mjs [reports/roll20-actual-compare/<label>] [--require-actual] [--require-renderer-ready] [--out-dir <writable-report-dir>]
  *
  * If the run folder is omitted, the newest PASS pre-upload run is selected.
  */
@@ -21,7 +21,8 @@ import path from 'node:path';
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const REQUIRE_ACTUAL = args.includes('--require-actual');
 const REQUIRE_RENDERER_READY = args.includes('--require-renderer-ready');
-const RUN_DIR_ARG = args.find((arg) => arg !== '--require-actual' && arg !== '--require-renderer-ready') ?? '';
+const RUN_DIR_ARG = firstPositionalArg() ?? '';
+const OUT_DIR_ARG = readOption('--out-dir', '');
 const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
 const MAX_CHAT_SIDECAR_AGE_MS = 5 * 60 * 1000;
 
@@ -54,7 +55,7 @@ const TARGETS = [
 async function main() {
   const runDir = RUN_DIR_ARG ? path.resolve(RUN_DIR_ARG) : await findLatestPreuploadRun();
   const baselineDir = path.join(runDir, 'local-baseline');
-  const outDir = path.join(runDir, 'actual-verification-status');
+  const outDir = OUT_DIR_ARG ? path.resolve(OUT_DIR_ARG) : path.join(runDir, 'actual-verification-status');
   if (!existsSync(baselineDir)) {
     throw new Error(`missing local baseline folder: ${baselineDir}`);
   }
@@ -1254,6 +1255,16 @@ function ratioPct(value) {
 
 function rel(file) {
   return path.relative(process.cwd(), file);
+}
+
+function readOption(name, fallback) {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  return args[index + 1] ?? fallback;
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && !args[index - 1]?.startsWith('--'));
 }
 
 main().catch((error) => {

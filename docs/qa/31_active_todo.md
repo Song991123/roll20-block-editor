@@ -1,3 +1,11 @@
+## 2026-07-13 Roll20 Verification Out-Dir TODO Note
+
+- DONE: `status:roll20-actual` and `preflight:roll20-cdp` now accept `--out-dir <writable-report-dir>`. This lets agents read the canonical Roll20 evidence run while writing refreshed summaries into a temp folder when Windows locks the existing generated JSON/Markdown files under the run directory.
+- WHY: This batch hit `EPERM` on both `actual-verification-status-results.json` and `roll20-cdp-preflight-results.json` even though the source evidence was readable. The hardcoded output path made actual Roll20 verification brittle.
+- VERIFIED: Both commands passed with temp output directories under `D:\훙냥냥\마렌상\영시영 시트 고치기\_tmp_codex_smoke\...`, including reversed option order. Current measured status remains `rendererReady=NO`, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, `chatSameStructureHighMismatch=2/3`, and `chatSameStructureMaxAlignedMismatch=20.68%`. CDP is `READY`, but `plannedFixtures=0`, so the correct next action is renderer/template/asset diagnostics, not blind recapture.
+- SERVER HYGIENE: No project dev/smoke server was started for this batch. Port `3000` was not listening; port `9222` remains the existing Roll20 CDP browser listener.
+- CLAIM BOUNDARY: This is verification resilience only. It does not change product rendering, upload a sheet to Roll20, relink assets, or prove visual parity.
+
 ## 2026-07-13 Edit Layer Selection Path TODO Note
 
 - DONE: The edit layer panel now shows a `선택 위치` breadcrumb for the selected object. When a nested input is selected, the panel exposes its parent frame/container path instead of only highlighting one row in a long virtualized list.
