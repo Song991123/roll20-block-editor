@@ -3360,3 +3360,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verified both the full planned fixture set and a single-fixture preflight path; both still report `CDP_CLOSED` but now print the correct probe -> capture order.
 - Verification: `node --check scripts\roll20_cdp_preflight.mjs`, `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixture yshy-commission-1bu`.
 - Claim boundary: no Roll20 browser was captured. This is orchestration safety for the next live recapture only.
+
+## 2026-07-12 Edit Canvas Width and Zoom Control
+
+- Added direct edit-toolbar controls for canvas width, fit zoom, and 100% zoom.
+- Split edit canvas width by target: sheet mode uses `sheetCanvasWidth` (`850px` default, still auto-expands for wider imported roots), while rolltemplate mode uses `rolltemplateCanvasWidth` (`280px` default) and no longer inherits or auto-expands from sheet geometry.
+- Updated toolbar guidance so flow placement and free placement describe their real HTML/CSS effect instead of using a generic "will be reflected" message.
+- Hardened `scripts/edit_flow_browser_smoke.mjs` by clearing persisted `r20-ui` state and asserting the width-control roundtrip: sheet `850 -> 930`, rolltemplate `280`, then sheet returns to `930`.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:ui-copy`, and `corepack pnpm run smoke:edit-flow -- --port 4352`.
+- Claim boundary: edit UX only. Actual Roll20 capture status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, and renderer CSS remains gated.

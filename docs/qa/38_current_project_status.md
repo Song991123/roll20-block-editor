@@ -13,7 +13,7 @@ This is a compact status snapshot for handoff and planning. It must not be used 
 | Actual Roll20 sheet root | VERIFY/PARTIAL | `status:roll20-actual`: `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, but AW2E still has a high root-cutoff risk superseded only by diagnostic scroll-metrics evidence. | Sheet-root evidence exists for the prepared fixtures, but renderer promotion still needs cautious cross-fixture interpretation. |
 | Actual Roll20 chat/rolltemplate | DOING/BLOCKED_CAPTURE | `generatedActualScreenshots=4/6`, `generatedDiffed=4/6`, `chatNeedsNormalizedCapture=2`, missing AW2E/YSHY trusted chat captures. | This is the biggest current Roll20 parity blocker. DOM-only or page-only screenshots are not accepted. |
 | Renderer promotion | BLOCKED | `gate:roll20-renderer-action`: `HOLD_PRODUCTION_RENDERER_PATCH`, `rendererBlockers=9`, `rendererReady=NO`. | No production Roll20 renderer CSS/chat patch should be promoted yet. |
-| Edit-mode UX | VERIFY/PARTIAL | Edit smoke and imported-edit sync evidence cover flow/free drops, before/inside/after layer modes, and imported fixture movement. | Usable pieces exist, but it still needs more direct-manipulation polish, clearer layer visualization, and broader fixture coverage. |
+| Edit-mode UX | VERIFY/PARTIAL | Edit smoke and imported-edit sync evidence cover flow/free drops, before/inside/after layer modes, imported fixture movement, direct canvas width editing, and separated sheet/rolltemplate canvas widths. | Usable pieces exist, but it still needs more direct-manipulation polish, clearer layer visualization, and broader fixture coverage. |
 | Public copyright safety | VERIFY/ONGOING | Evidence guard passes and real fixtures/reports remain ignored. | Current workflow is respecting the rule that real sheets and screenshots must not be committed. |
 
 ## Progress Compared With Goal Start
@@ -22,7 +22,7 @@ These percentages are coarse planning estimates based on current gates, not comp
 
 | Area | Goal-start Estimate | Current Estimate | Why |
 | --- | ---: | ---: | --- |
-| Local edit/drop UX | 20% | 55-65% | Flow drop, absolute drop, before/inside/after layer modes, frame-relative free placement, and layer structure visibility now pass smoke checks. |
+| Local edit/drop UX | 20% | 58-68% | Flow drop, absolute drop, before/inside/after layer modes, frame-relative free placement, layer structure visibility, and direct canvas width controls now pass smoke checks. |
 | Local preview/edit visual sync | 20-30% | ~70% | Current fixture smoke is `1.02-2.07%` mismatch, enough for continued UX work but not actual Roll20 parity. |
 | Actual Roll20 sheet-root reproduction | 0-10% | 55-65% | Trusted/reliable full-root evidence is `3/3`, but AW2E root evidence still has diagnostic/cutoff caveats. |
 | Actual Roll20 chat/rolltemplate reproduction | 0-5% | 25-35% | Some evidence and diagnostics exist, but trustworthy generated chat capture is still `4/6` with `2` normalized captures needed. |
@@ -47,6 +47,11 @@ corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll
 => PASS official-roll20-AW2E mismatch=1.86%
 => PASS official-roll20-Les-Oublies mismatch=2.07%
 => PASS yshy-commission-1bu mismatch=1.02%
+
+corepack pnpm run smoke:edit-flow -- --port 4352
+=> PASS canvasWidthControl sheet 850 -> 930
+=> PASS rolltemplate canvas width 280
+=> PASS returning to sheet restores width 930
 ```
 
 ## What Is Actually Usable Today
@@ -55,6 +60,7 @@ corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll
 - Local preview/edit rendering is close enough for development on the current 3 prepared fixtures.
 - Export/payload readiness and safety gates exist.
 - Edit mode has working foundations for direct manipulation, layer rows, flow/free placement, and before/inside/after insertion.
+- Edit mode exposes fixed-canvas controls: sheet width starts at 850px, rolltemplate width starts at 280px, and users can switch between fit zoom and 100%.
 - Worker scripts and rolltemplates are separated from visible sheet nodes in local pipelines.
 
 ## What Is Not Yet Safe To Claim

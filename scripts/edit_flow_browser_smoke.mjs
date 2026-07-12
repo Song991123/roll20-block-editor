@@ -89,6 +89,7 @@ async function main() {
       window.localStorage.setItem('__perfOn', '1');
       // Keep runs deterministic: drop any autosaved workspace state.
       window.localStorage.removeItem('r20be-autosave');
+      window.localStorage.removeItem('r20-ui');
     } catch {}
   });
 
@@ -133,6 +134,8 @@ async function main() {
       text.includes('시트 편집') &&
       text.includes('흐름') &&
       text.includes('자유') &&
+      text.includes('폭') &&
+      text.includes('맞춤') &&
       text.includes('레이어') &&
       Boolean(search);
     return {
@@ -215,6 +218,67 @@ async function main() {
     { timeout: 15000 },
   );
   await page.screenshot({ path: path.join(REPORT_DIR, 'c1-section-dropped.png') });
+
+  const canvasWidthControl = await (async () => {
+    const before = await page.evaluate(() => {
+      const input = document.querySelector('[data-testid="edit-canvas-width-input"]');
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return {
+        inputValue: input?.value ?? null,
+        hostWidth: host ? Math.round(Number.parseFloat(getComputedStyle(host).width)) : null,
+        aria: input?.getAttribute('aria-label') ?? null,
+      };
+    });
+    await page.fill('[data-testid="edit-canvas-width-input"]', '930');
+    await page.waitForFunction(() => {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return host && Math.round(Number.parseFloat(getComputedStyle(host).width)) === 930;
+    }, null, { timeout: 10000 });
+    const afterSheet = await page.evaluate(() => {
+      const input = document.querySelector('[data-testid="edit-canvas-width-input"]');
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return {
+        inputValue: input?.value ?? null,
+        hostWidth: host ? Math.round(Number.parseFloat(getComputedStyle(host).width)) : null,
+        aria: input?.getAttribute('aria-label') ?? null,
+      };
+    });
+    await page.click('[data-testid="edit-submode-rolltemplate"]');
+    await page.waitForFunction(() => {
+      const input = document.querySelector('[data-testid="edit-canvas-width-input"]');
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return input?.value === '280' &&
+        host &&
+        Math.round(Number.parseFloat(getComputedStyle(host).width)) === 280;
+    }, null, { timeout: 10000 });
+    const rolltemplate = await page.evaluate(() => {
+      const input = document.querySelector('[data-testid="edit-canvas-width-input"]');
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return {
+        inputValue: input?.value ?? null,
+        hostWidth: host ? Math.round(Number.parseFloat(getComputedStyle(host).width)) : null,
+        aria: input?.getAttribute('aria-label') ?? null,
+      };
+    });
+    await page.click('[data-testid="edit-submode-sheet"]');
+    await page.waitForFunction(() => {
+      const input = document.querySelector('[data-testid="edit-canvas-width-input"]');
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return input?.value === '930' &&
+        host &&
+        Math.round(Number.parseFloat(getComputedStyle(host).width)) === 930;
+    }, null, { timeout: 10000 });
+    const afterReturn = await page.evaluate(() => {
+      const input = document.querySelector('[data-testid="edit-canvas-width-input"]');
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      return {
+        inputValue: input?.value ?? null,
+        hostWidth: host ? Math.round(Number.parseFloat(getComputedStyle(host).width)) : null,
+        aria: input?.getAttribute('aria-label') ?? null,
+      };
+    });
+    return { before, afterSheet, rolltemplate, afterReturn };
+  })();
 
   const sectionInfo = await page.evaluate(() => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
@@ -850,6 +914,7 @@ async function main() {
     nonLeafLayerReorder,
     absoluteInsideFrame,
     freePlacementWidgetDrop,
+    canvasWidthControl,
   };
   results.consoleErrors = consoleErrors;
   results.pageErrors = pageErrors;
@@ -862,6 +927,16 @@ async function main() {
     results.tests.hookAbsolute.nested === false &&
     results.tests.hookAbsolute.htmlHasAbsoluteWidget === true &&
     c1.dispatched === true &&
+    canvasWidthControl.before.inputValue === '850' &&
+    canvasWidthControl.before.hostWidth === 850 &&
+    canvasWidthControl.afterSheet.inputValue === '930' &&
+    canvasWidthControl.afterSheet.hostWidth === 930 &&
+    canvasWidthControl.afterSheet.aria === '시트 캔버스 폭' &&
+    canvasWidthControl.rolltemplate.inputValue === '280' &&
+    canvasWidthControl.rolltemplate.hostWidth === 280 &&
+    canvasWidthControl.rolltemplate.aria === '굴림 결과 캔버스 폭' &&
+    canvasWidthControl.afterReturn.inputValue === '930' &&
+    canvasWidthControl.afterReturn.hostWidth === 930 &&
     /position\s*:\s*absolute/i.test(sectionInfo.style ?? '') &&
     movedSectionInfo.computedPosition === 'absolute' &&
     typeof movedSectionInfo.computedLeft === 'number' &&

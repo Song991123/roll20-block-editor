@@ -103,8 +103,11 @@ export default function EditCanvas() {
   const editSubmode = useUiStore((s) => s.editSubmode);
   const previewLayer = useUiStore((s) => s.previewLayer);
   const zoom = useUiStore((s) => s.previewZoom);
+  const setPreviewZoom = useUiStore((s) => s.setPreviewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
   const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
+  const rolltemplateCanvasWidth = useUiStore((s) => s.rolltemplateCanvasWidth);
+  const setRolltemplateCanvasWidth = useUiStore((s) => s.setRolltemplateCanvasWidth);
   const snapEnabled = useUiStore((s) => s.snapEnabled);
   const toggleSnap = useUiStore((s) => s.toggleSnapEnabled);
   const editPlacementMode = useUiStore((s) => s.editPlacementMode);
@@ -120,10 +123,14 @@ export default function EditCanvas() {
   const [layerSearch, setLayerSearch] = useState('');
 
   const effectiveLayer = editSubmode === 'rolltemplate' ? 'roll' : previewLayer;
+  const effectiveCanvasWidth =
+    editSubmode === 'rolltemplate' ? rolltemplateCanvasWidth : sheetCanvasWidth;
+  const setEffectiveCanvasWidth =
+    editSubmode === 'rolltemplate' ? setRolltemplateCanvasWidth : setSheetCanvasWidth;
   const isEmpty = htmlCount + cssCount + i18nCount === 0;
   const fitScale =
     zoom === 'fit' && viewportWidth > 0
-      ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / sheetCanvasWidth))
+      ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / effectiveCanvasWidth))
       : 1;
   const scale = zoom === 'fit' ? fitScale : zoom;
   const optimisticHtml = useMemo(
@@ -395,9 +402,11 @@ export default function EditCanvas() {
       const nextBox = measureShadowSheetBox(mounted.shadow);
       const nextHeight = nextBox.height;
       setEditCanvasHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
-      const currentWidth = useUiStore.getState().sheetCanvasWidth;
+      if (editSubmode === 'rolltemplate') return;
+      const ui = useUiStore.getState();
+      const currentWidth = ui.sheetCanvasWidth;
       if (nextBox.width > currentWidth + 8) {
-        setSheetCanvasWidth(nextBox.width);
+        ui.setSheetCanvasWidth(nextBox.width);
       }
     };
     updateCanvasMetrics();
@@ -452,7 +461,7 @@ export default function EditCanvas() {
     cleanupDragVisual,
     lockVisualAtDrop,
     commitMoveLater,
-    setSheetCanvasWidth,
+    editSubmode,
   ]);
 
   useEffect(() => {
@@ -526,8 +535,56 @@ export default function EditCanvas() {
             자유
           </button>
         </div>
+        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          폭
+          <input
+            type="number"
+            min={editSubmode === 'rolltemplate' ? 200 : 320}
+            max={editSubmode === 'rolltemplate' ? 600 : 2000}
+            step={10}
+            value={effectiveCanvasWidth}
+            onChange={(e) => setEffectiveCanvasWidth(Number(e.target.value))}
+            className="h-6 w-[76px] rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-right text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+            aria-label={editSubmode === 'rolltemplate' ? '굴림 결과 캔버스 폭' : '시트 캔버스 폭'}
+            data-testid="edit-canvas-width-input"
+          />
+          px
+        </label>
+        <div className="flex items-center overflow-hidden rounded border border-border bg-[var(--bg-elevated-2)]" data-testid="edit-zoom-control">
+          <button
+            type="button"
+            onClick={() => setPreviewZoom('fit')}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              zoom === 'fit'
+                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="시트 전체를 현재 화면에 맞춥니다."
+            data-testid="edit-zoom-fit"
+          >
+            맞춤
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewZoom(1)}
+            className={cn(
+              'border-l border-border px-2 py-0.5 text-xs',
+              zoom === 1
+                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="Roll20 시트 크기 그대로 봅니다."
+            data-testid="edit-zoom-100"
+          >
+            100%
+          </button>
+        </div>
         <div className="ml-auto text-[10px] text-muted-foreground tabular-nums">
-          {lastMove ?? '요소를 끌어 놓으면 HTML/CSS 위치 값에 반영됩니다.'}
+          {lastMove ??
+            (editPlacementMode === 'free'
+              ? '자유 배치: 틀 안에 놓으면 그 틀 기준 left/top으로 반영됩니다.'
+              : '흐름 배치: 틀 안에 놓으면 순서가 바뀌고 주변 요소가 밀립니다.')}
         </div>
       </div>
 
@@ -554,14 +611,14 @@ export default function EditCanvas() {
             <div
               className="mx-auto"
               style={{
-                width: `${sheetCanvasWidth * scale}px`,
+                width: `${effectiveCanvasWidth * scale}px`,
                 height: `${editCanvasHeight * scale}px`,
                 maxWidth: 'none',
               }}
             >
               <div
                 style={{
-                  width: `${sheetCanvasWidth}px`,
+                  width: `${effectiveCanvasWidth}px`,
                   height: `${editCanvasHeight}px`,
                   transform: `scale(${scale})`,
                   transformOrigin: 'top left',
@@ -571,7 +628,7 @@ export default function EditCanvas() {
                   ref={hostRef}
                   data-testid="edit-canvas-shadow-host"
                   className="block overflow-visible bg-white"
-                  style={{ width: `${sheetCanvasWidth}px`, height: `${editCanvasHeight}px` }}
+                  style={{ width: `${effectiveCanvasWidth}px`, height: `${editCanvasHeight}px` }}
                   onDragOver={onDragOver}
                   onDrop={onDrop}
                 />

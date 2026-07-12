@@ -2736,3 +2736,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CURRENT: CDP remains closed in the current environment, so this does not capture or validate new Roll20 screenshots. It only makes the next live capture sequence harder to run out of order.
 - STILL TODO: launch or attach a CDP-enabled Roll20 Sandbox/test-room tab, rerun preflight until it is not `CDP_CLOSED`, then follow probe -> capture for AW2E/YSHY.
 - CLAIM BOUNDARY: This is recapture orchestration only. Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+
+## 2026-07-12 Edit Canvas Width and Zoom Control TODO Note
+
+- DONE: Edit mode now exposes a direct canvas width input plus `맞춤`/`100%` zoom controls in the edit toolbar, so users can treat the sheet as a fixed Roll20-sized canvas instead of guessing from hidden state.
+- DONE: Sheet editing and rolltemplate editing now use separate canvas widths. Sheet mode defaults to `850px` and can auto-expand for wider imported sheet roots; rolltemplate mode preserves the `280px` chat/template canvas by default and no longer auto-expands from ordinary sheet geometry.
+- DONE: The edit toolbar status text now explains the active placement model: flow drops reorder/push surrounding elements, while free drops write frame-relative `left/top`.
+- VERIFIED: `smoke:edit-flow` now clears persisted `r20-ui` state for deterministic runs and checks width behavior directly: sheet `850 -> 930`, rolltemplate `280`, and sheet width restored to `930` after returning from rolltemplate mode.
+- VERIFIED: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:ui-copy`, and `corepack pnpm run smoke:edit-flow -- --port 4352` passed.
+- CLAIM BOUNDARY: This improves edit-mode usability and prevents sheet/rolltemplate width leakage. It does not add actual Roll20 screenshot evidence and does not change renderer readiness.
