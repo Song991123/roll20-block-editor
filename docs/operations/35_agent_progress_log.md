@@ -1,3 +1,11 @@
+## 2026-07-12 AW2E Actual Roll20 Chat Recapture
+
+- Reapplied `official-roll20-AW2E` only to the dedicated Roll20 Custom Sheet Sandbox/test-room (`21639681`) with the guarded settings-page endpoint fallback. The page saved successfully and reported no translation or editor parse error.
+- Reopened the sandbox character through `open:roll20-character-cdp`; `probe:roll20-sheet-frame -- --fixture official-roll20-AW2E` saved positive iframe DOM evidence with `VISIBLE_MATCH`, `sheetHitCount=92`, `rootCount=3`, `attrCount=486`, and `rollButtonCount=13`.
+- `capture:roll20-chat-cdp -- --fixture official-roll20-AW2E` captured a fresh foreground Roll20 chat PNG/sidecar pair. The AW2E chat crop now enters the screenshot diff and chat-parity diagnostics.
+- Fixed CDP page selection in the open/probe/capture helpers so exact `/editor` pages win over `/editor/character/...` popout targets. This closes a false-negative path where probes could inspect an empty character popout shell while the real VTT editor was open.
+- Latest status: `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatNormalizedCompared=3/3`, `chatNeedsNormalizedCapture=0`. Renderer still remains `HOLD_PRODUCTION_RENDERER_PATCH` because all three normalized Roll20 chat crops differ materially from local ChatPane.
+
 ## 2026-07-12 YSHY Actual Roll20 Chat Recapture
 
 - Used the dedicated Roll20 Custom Sheet Sandbox/test-room editor only. No existing real rooms or private campaign settings were modified.

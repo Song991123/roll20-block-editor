@@ -1,3 +1,13 @@
+## 2026-07-12 AW2E Roll20 Foreground Chat Recapture TODO Note
+
+- DONE: Reapplied `official-roll20-AW2E` to the dedicated Roll20 Custom Sheet Sandbox (`21639681`) through the guarded settings-page endpoint fallback. The settings page reported `Your changes were saved successfully`, and the snippet reported no translation JSON parse error and no Roll20 editor parse error.
+- DONE: Reopened the sandbox character through `open:roll20-character-cdp` and saved fresh AW2E sheet-frame DOM evidence: `probe:roll20-sheet-frame` returned `VISIBLE_MATCH`, frame `Character sheet for Witrav Upijek`, `sheetHitCount=92`, `rootCount=3`, `attrCount=486`, and `rollButtonCount=13`.
+- DONE: Captured foreground AW2E Roll20 chat evidence with `capture:roll20-chat-cdp -- --fixture official-roll20-AW2E`. The capture wrote fresh ignored `roll20-chat.png` and `roll20-chat-dom-evidence.json`.
+- DONE: Tightened CDP page selection in `probe:roll20-sheet-frame`, `capture:roll20-chat-cdp`, and `open:roll20-character-cdp` so `/editor` is preferred over `/editor/character/...` popout pages. This prevents empty popout shells from being mistaken for the active VTT editor.
+- VERIFIED: `status:roll20-actual` now reports `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatNormalizedCompared=3/3`, and `chatNeedsNormalizedCapture=0`.
+- CURRENT: `diagnose:roll20-chat-parity` now compares all 3 chat fixtures and reports high rolltemplate-crop mismatch for all three: AW2E `26.9%`, Les-Oublies `58.73%`, YSHY `24.73%`. Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`; the blocker has moved from missing evidence to real ChatPane/rolltemplate mismatch.
+- STILL TODO: Build the next renderer investigation around actual Roll20 chat shell/message/template width and table intrinsic sizing. Do not promote a single global ChatPane width/padding/font patch while fixture deltas conflict.
+
 ## 2026-07-12 YSHY Roll20 Foreground Chat Recapture TODO Note
 
 - DONE: Used only the dedicated Roll20 Custom Sheet Sandbox/test-room editor (`Codex Roll20 Verify`, campaign `21639681`) and opened the sandbox character through Roll20's own `Campaign.characters` viewer path. Existing real rooms were not edited.

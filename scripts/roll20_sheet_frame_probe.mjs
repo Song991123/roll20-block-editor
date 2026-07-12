@@ -243,12 +243,20 @@ async function connectOverCdp(chromium) {
 }
 
 async function findRoll20Page(browser) {
-  for (const context of browser.contexts()) {
-    for (const page of context.pages()) {
-      if (isRoll20PageUrl(page.url())) return page;
-    }
+  const pages = browser.contexts().flatMap((context) => context.pages());
+  const roll20Pages = pages.filter((page) => isRoll20PageUrl(page.url()));
+  return roll20Pages.find((page) => isRoll20EditorTopPage(page.url()))
+    ?? roll20Pages.find((page) => page.url().includes(PAGE_MATCH) && !/\/editor\/character\//.test(page.url()))
+    ?? roll20Pages[0]
+    ?? null;
+}
+
+function isRoll20EditorTopPage(url) {
+  try {
+    return new URL(url).pathname === '/editor';
+  } catch {
+    return false;
   }
-  return null;
 }
 
 async function getRoll20PageReadiness(page) {
