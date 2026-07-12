@@ -1,3 +1,10 @@
+## 2026-07-13 CDP Preflight No-Plan Renderer-Hold TODO Note
+
+- DONE: `preflight:roll20-cdp` now reads the current actual-status summary and distinguishes "CDP ready but no capture fixtures are planned" from "load fixture and capture missing evidence".
+- WHY: The active run already has generated actual screenshots/diffs `6/6`, trusted full-root `3/3`, and normalized chat evidence `3/3`, but renderer action is still `HOLD_PRODUCTION_RENDERER_PATCH`. A READY CDP browser with `plannedFixtures=0` should not tell agents to recapture blindly.
+- VERIFIED: `test:roll20-cdp-preflight` passed, and `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1` now prints `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, `rendererReady=NO`, and a next action pointing to renderer/template/asset diagnostics unless `--fixture` or `--all` is intentionally used.
+- CLAIM BOUNDARY: This is verification orchestration and truthful handoff only. It does not change product rendering, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Asset Relink Roll20-Ready Target TODO Note
 
 - DONE: Export asset replacement UI now classifies replacement targets as Roll20-ready `http(s)` targets versus local-only targets such as `data:` or relative paths.

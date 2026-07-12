@@ -89,6 +89,7 @@
     "audit:roll20-chrome-observation": "node scripts/roll20_chrome_observation_audit.mjs",
     "test:roll20-chat-capture-plan": "node scripts/roll20_chat_capture_plan.mjs --self-test",
     "test:roll20-chat-cdp-readiness": "node scripts/roll20_chat_cdp_capture.mjs --self-test-readiness",
+    "test:roll20-cdp-preflight": "node scripts/roll20_cdp_preflight.mjs --self-test",
     "test:roll20-chat-renderer-targets": "node scripts/roll20_chat_targeted_renderer_plan.mjs --self-test",
     "test:roll20-chat-assets": "node scripts/roll20_chat_asset_preservation_plan.mjs --self-test",
     "test:roll20-asset-relink": "node scripts/roll20_asset_relink_verification_plan.mjs --self-test",

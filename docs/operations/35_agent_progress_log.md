@@ -1,3 +1,11 @@
+## 2026-07-13 CDP Preflight No-Plan Renderer-Hold Split
+
+- Updated `preflight:roll20-cdp` so a READY CDP browser with `plannedFixtures=0` no longer tells agents to recapture blindly.
+- The preflight report now includes a current actual-evidence snapshot from `actual-verification-status`, including generated screenshots/diffs, trusted full-root count, renderer action, renderer readiness, blocker count, and same-structure chat mismatch count.
+- When current evidence is already captured but renderer readiness is still `NO`, the next action points to renderer/template/asset diagnostics from `gate:roll20-renderer-action`. Passing `--fixture` still prints the explicit sheet-frame probe and chat capture commands for intentional fresh capture.
+- Verification: `test:roll20-cdp-preflight`, `node --check scripts\roll20_cdp_preflight.mjs`, and live `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1` passed.
+- Claim boundary: this is handoff safety only. Product rendering and Roll20 visual parity remain unchanged.
+
 ## 2026-07-13 Asset Relink Roll20-Ready Target Split
 
 - Added `summarizeAssetReplacementReadiness()` so replacement maps report how many active target URLs are Roll20-ready `http(s)` versus local-only (`data:` or relative path).

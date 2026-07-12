@@ -14,7 +14,9 @@ import path from 'node:path';
 import { ROLL20_READINESS, classifyRoll20Target, isRoll20PageTarget, nextActionForReadiness } from './lib/roll20Readiness.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const RUN_DIR = path.resolve(readOption('--run-dir', args[0] ?? ''));
+const SELF_TEST = hasFlag('--self-test');
+const RAW_RUN_DIR = readOption('--run-dir', args[0] ?? '');
+const RUN_DIR = path.resolve(RAW_RUN_DIR);
 const CDP_URL = readOption('--cdp', process.env.ROLL20_CDP_URL ?? 'http://127.0.0.1:9222');
 const PAGE_MATCH = readOption('--page-match', 'app.roll20.net');
 const FIXTURE = readOption('--fixture', '');
@@ -23,15 +25,17 @@ const PROFILE_DIR = path.resolve(readOption('--profile-dir', path.join('.tmp', '
 const START_URL = readOption('--url', 'https://app.roll20.net/editor');
 const WAIT_AFTER_LAUNCH_MS = Number(readOption('--wait-after-launch-ms', '2500'));
 
-if (!RUN_DIR) {
+if (SELF_TEST) {
+  runSelfTest();
+} else if (!RAW_RUN_DIR) {
   console.error('Usage: node scripts/roll20_cdp_preflight.mjs --run-dir reports/roll20-actual-compare/<label> [--fixture <fixture-id>] [--launch] [--wait-after-launch-ms 2500]');
   process.exit(2);
+} else {
+  main().catch((error) => {
+    console.error(error?.stack || error);
+    process.exitCode = 1;
+  });
 }
-
-main().catch((error) => {
-  console.error(error?.stack || error);
-  process.exitCode = 1;
-});
 
 async function main() {
   if (!existsSync(RUN_DIR)) throw new Error(`missing run dir: ${RUN_DIR}`);
@@ -40,6 +44,7 @@ async function main() {
   let endpoint = initialEndpoint;
   const plannedEntries = readPlannedEntries(RUN_DIR, FIXTURE);
   const plannedFixtures = plannedEntries.map((entry) => entry.fixtureId);
+  const currentEvidence = readCurrentEvidence(RUN_DIR);
   const launchCommand = buildLaunchCommand();
   const sheetFrameProbeCommands = plannedEntries.map((entry) => entry.sheetFrameProbeCommand || [
     'corepack pnpm run probe:roll20-sheet-frame --',
@@ -79,9 +84,10 @@ async function main() {
     plannedFixtures,
     sheetFrameProbeCommands,
     captureCommands,
+    currentEvidence,
     launchCommand,
     launchResult,
-    nextAction: nextActionForEndpoint(endpoint),
+    nextAction: nextActionForEndpoint(endpoint, { plannedFixtures, currentEvidence }),
   };
 
   const outDir = path.join(RUN_DIR, 'roll20-cdp-preflight');
@@ -95,6 +101,11 @@ async function main() {
   console.log(`targets=${endpoint.targets?.length ?? 0}`);
   console.log(`roll20Targets=${endpoint.roll20Targets?.length ?? 0}`);
   console.log(`plannedFixtures=${plannedFixtures.length}`);
+  if (currentEvidence.status !== 'UNKNOWN') {
+    console.log(`actualStatus=${currentEvidence.status}`);
+    console.log(`rendererAction=${currentEvidence.rendererAction}`);
+    console.log(`rendererReady=${currentEvidence.rendererReady ? 'YES' : 'NO'}`);
+  }
   if (!endpoint.ok) {
     console.log(`launch=${launchCommand}`);
   }
@@ -166,7 +177,9 @@ function classifyStatus(endpoint) {
   return 'ROLL20_PAGE_NOT_READY';
 }
 
-function nextActionForEndpoint(endpoint) {
+function nextActionForEndpoint(endpoint, context = {}) {
+  const plannedCount = context.plannedFixtures?.length ?? 0;
+  const currentEvidence = context.currentEvidence ?? { status: 'UNKNOWN' };
   const status = classifyStatus(endpoint);
   if (status === 'CDP_CLOSED') {
     return 'Start a CDP-enabled browser with the launch command, log in to Roll20 there if needed, load the dedicated Sandbox/test room, then rerun this preflight.';
@@ -181,9 +194,58 @@ function nextActionForEndpoint(endpoint) {
     return nextActionForReadiness(ROLL20_READINESS.CHALLENGE_OR_WAITING, { pageMatch: PAGE_MATCH, captureVerb: 'this preflight' });
   }
   if (status === 'READY') {
+    if (plannedCount === 0) {
+      if (currentEvidence.status !== 'UNKNOWN' && currentEvidence.rendererReady === false) {
+        return [
+          'CDP is ready, but the current chat capture plan has no missing/stale fixtures.',
+          `Do not recapture blindly. Current renderer action is ${currentEvidence.rendererAction || 'UNKNOWN'} with ${currentEvidence.rendererBlockers} blocker(s)`,
+          currentEvidence.chatSameStructureHighMismatch > 0
+            ? `and ${currentEvidence.chatSameStructureHighMismatch} same-structure high-mismatch chat fixture(s).`
+            : '.',
+          'Run the renderer/template/asset diagnostics named by gate:roll20-renderer-action, or pass --fixture/--all only when you intentionally need a fresh live capture.',
+        ].join(' ');
+      }
+      return 'CDP is ready and no capture fixtures are currently planned. Run plan:roll20-chat-capture --all or pass --fixture only if you intentionally need fresh Roll20 evidence.';
+    }
     return 'Load the intended fixture in the dedicated Roll20 Sandbox/test room, run the sheet-frame probe until it writes VISIBLE_MATCH evidence, then run the capture command for each planned fixture.';
   }
   return 'Navigate the CDP-enabled browser to the dedicated Roll20 Sandbox/test room, then rerun this preflight.';
+}
+
+function readCurrentEvidence(runDir) {
+  const statusPath = path.join(runDir, 'actual-verification-status', 'actual-verification-status-results.json');
+  if (!existsSync(statusPath)) {
+    return {
+      status: 'UNKNOWN',
+      rendererReady: false,
+      rendererAction: 'UNKNOWN',
+      rendererBlockers: 0,
+      chatSameStructureHighMismatch: 0,
+    };
+  }
+  try {
+    const status = JSON.parse(readFileSync(statusPath, 'utf8').replace(/^\uFEFF/, ''));
+    const summary = status.summary ?? {};
+    return {
+      status: status.status ?? 'UNKNOWN',
+      rendererReady: Boolean(summary.rendererReady),
+      rendererAction: summary.rendererAction ?? 'UNKNOWN',
+      rendererBlockers: Number(summary.rendererBlockerCount ?? 0),
+      chatSameStructureHighMismatch: Number(summary.chatSameStructureHighMismatchCount ?? summary.chatSameStructureHighMismatch ?? summary.chatParitySameStructureHighMismatch ?? 0),
+      chatSameStructureMaxAlignedMismatchPct: Number(summary.chatSameStructureMaxAlignedMismatchPct ?? 0),
+      generatedActualScreenshots: ratio(summary.generatedPresentCount, summary.generatedTargetCount),
+      generatedDiffed: ratio(summary.generatedDiffedCount, summary.generatedTargetCount),
+      trustedFullRoot: ratio(summary.trustedFullRootCount, summary.trustedFullRootTotal),
+    };
+  } catch {
+    return {
+      status: 'UNKNOWN',
+      rendererReady: false,
+      rendererAction: 'UNKNOWN',
+      rendererBlockers: 0,
+      chatSameStructureHighMismatch: 0,
+    };
+  }
 }
 
 function readPlannedEntries(runDir, fixtureFilter) {
@@ -275,6 +337,21 @@ function renderMarkdown(report) {
     `- Planned fixtures: ${report.plannedFixtures.length}`,
     '',
   ];
+  if (report.currentEvidence?.status && report.currentEvidence.status !== 'UNKNOWN') {
+    lines.push('## Current Evidence Snapshot', '');
+    lines.push(`- Actual status: ${report.currentEvidence.status}`);
+    lines.push(`- Generated actual screenshots: ${report.currentEvidence.generatedActualScreenshots}`);
+    lines.push(`- Generated diffs: ${report.currentEvidence.generatedDiffed}`);
+    lines.push(`- Trusted full-root: ${report.currentEvidence.trustedFullRoot}`);
+    lines.push(`- Renderer action: ${report.currentEvidence.rendererAction}`);
+    lines.push(`- Renderer ready: ${report.currentEvidence.rendererReady ? 'YES' : 'NO'}`);
+    lines.push(`- Renderer blockers: ${report.currentEvidence.rendererBlockers}`);
+    lines.push(`- Same-structure high-mismatch chat fixtures: ${report.currentEvidence.chatSameStructureHighMismatch}`);
+    if (Number.isFinite(report.currentEvidence.chatSameStructureMaxAlignedMismatchPct)) {
+      lines.push(`- Same-structure max aligned mismatch: ${report.currentEvidence.chatSameStructureMaxAlignedMismatchPct.toFixed(2)}%`);
+    }
+    lines.push('');
+  }
   if (report.endpoint.roll20Targets.length) {
     lines.push('## Roll20 Targets', '');
     lines.push('| Type | Readiness | Title | URL |');
@@ -328,6 +405,56 @@ function renderMarkdown(report) {
   return `${lines.join('\n')}\n`;
 }
 
+function runSelfTest() {
+  const readyEndpoint = {
+    ok: true,
+    reason: 'endpoint reachable',
+    targets: [],
+    roll20Targets: [{ readiness: ROLL20_READINESS.CAPTURE_READY }],
+  };
+  const closedEndpoint = {
+    ok: false,
+    reason: 'connect ECONNREFUSED',
+    targets: [],
+    roll20Targets: [],
+  };
+  const heldEvidence = {
+    status: 'GENERATED_ACTUAL_SCREENSHOTS_DIFFED',
+    rendererReady: false,
+    rendererAction: 'HOLD_PRODUCTION_RENDERER_PATCH',
+    rendererBlockers: 8,
+    chatSameStructureHighMismatch: 2,
+  };
+  const failures = [];
+  const noPlanNext = nextActionForEndpoint(readyEndpoint, {
+    plannedFixtures: [],
+    currentEvidence: heldEvidence,
+  });
+  if (!noPlanNext.includes('Do not recapture blindly') || !noPlanNext.includes('HOLD_PRODUCTION_RENDERER_PATCH')) {
+    failures.push('READY/no-plan next action did not point to renderer diagnostics');
+  }
+  const plannedNext = nextActionForEndpoint(readyEndpoint, {
+    plannedFixtures: ['official-roll20-AW2E'],
+    currentEvidence: heldEvidence,
+  });
+  if (!plannedNext.includes('run the sheet-frame probe')) {
+    failures.push('READY/planned-fixture next action did not preserve capture instructions');
+  }
+  const closedNext = nextActionForEndpoint(closedEndpoint, {
+    plannedFixtures: [],
+    currentEvidence: heldEvidence,
+  });
+  if (!closedNext.includes('Start a CDP-enabled browser')) {
+    failures.push('CDP_CLOSED next action regressed');
+  }
+  if (failures.length) {
+    console.error(`ROLL20 CDP PREFLIGHT SELF_TEST FAIL ${failures.join('; ')}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log('ROLL20 CDP PREFLIGHT SELF_TEST PASS');
+}
+
 function readOption(name, fallback) {
   const index = args.indexOf(name);
   if (index === -1) return fallback;
@@ -345,6 +472,12 @@ function quoteArg(value) {
 
 function escapeCell(value) {
   return String(value ?? '').replace(/\|/g, '\\|').replace(/\n/g, '<br>');
+}
+
+function ratio(a, b) {
+  const left = Number(a ?? 0);
+  const right = Number(b ?? 0);
+  return `${left}/${right}`;
 }
 
 function rel(file) {
