@@ -1463,6 +1463,7 @@ function markDropContainer(host: HTMLElement | null, dropTarget: CanvasDropTarge
     el.classList.remove('r20-drop-target');
     el.removeAttribute('data-r20-drop-mode');
   });
+  shadow.querySelectorAll<HTMLElement>('[data-r20-drop-position-marker="1"]').forEach((el) => el.remove());
   if (!dropTarget) {
     host.removeAttribute('data-r20-widget-dragging');
     host.removeAttribute('data-r20-drop-target');
@@ -1476,6 +1477,27 @@ function markDropContainer(host: HTMLElement | null, dropTarget: CanvasDropTarge
   const targetEl = shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`);
   targetEl?.classList.add('r20-drop-target');
   targetEl?.setAttribute('data-r20-drop-mode', dropTarget.mode);
+  if (targetEl && dropTarget.mode !== 'inside') {
+    const rect = targetEl.getBoundingClientRect();
+    const marker = document.createElement('div');
+    const top = dropTarget.mode === 'before' ? rect.top - 5 : rect.bottom + 2;
+    marker.setAttribute('data-r20-drop-position-marker', '1');
+    marker.setAttribute('data-r20-drop-mode', dropTarget.mode);
+    marker.setAttribute('aria-hidden', 'true');
+    Object.assign(marker.style, {
+      position: 'fixed',
+      left: `${Math.round(Math.max(0, rect.left - 8))}px`,
+      top: `${Math.round(top)}px`,
+      width: `${Math.round(Math.max(24, rect.width + 16))}px`,
+      height: '3px',
+      borderRadius: '999px',
+      background: 'rgba(59, 130, 246, 0.95)',
+      boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 10px rgba(59, 130, 246, 0.45)',
+      pointerEvents: 'none',
+      zIndex: '2147483647',
+    });
+    shadow.appendChild(marker);
+  }
 }
 
 function hasFriendlyWidgetPayload(dataTransfer: DataTransfer | null): boolean {

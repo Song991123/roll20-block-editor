@@ -188,6 +188,8 @@ async function main() {
       Object.defineProperty(event, 'dataTransfer', { value: dt });
       target.dispatchEvent(event);
       const active = host?.shadowRoot?.querySelector('.r20-drop-target') ?? null;
+      const marker = host?.shadowRoot?.querySelector('[data-r20-drop-position-marker="1"]') ?? null;
+      const markerStyle = marker ? getComputedStyle(marker) : null;
       return {
         dispatched: true,
         targetTag: target.tagName,
@@ -197,6 +199,10 @@ async function main() {
         hostDropMode: host?.getAttribute('data-r20-drop-mode') ?? null,
         activeTargetId: active?.getAttribute('data-r20-block-id') ?? null,
         activeTargetMode: active?.getAttribute('data-r20-drop-mode') ?? null,
+        dropMarkerMode: marker?.getAttribute('data-r20-drop-mode') ?? null,
+        dropMarkerPosition: markerStyle?.position ?? null,
+        dropMarkerWidth: markerStyle ? Math.round(Number.parseFloat(markerStyle.width)) : null,
+        dropMarkerHeight: markerStyle ? Math.round(Number.parseFloat(markerStyle.height)) : null,
       };
     };
   });
@@ -1128,8 +1134,16 @@ async function main() {
     nestedReorder.emittedAfter?.[0] !== nestedReorder.emittedBefore?.[0] &&
     canvasSiblingInsert.beforeIndicator?.hostDropMode === 'before' &&
     canvasSiblingInsert.beforeIndicator?.activeTargetMode === 'before' &&
+    canvasSiblingInsert.beforeIndicator?.dropMarkerMode === 'before' &&
+    canvasSiblingInsert.beforeIndicator?.dropMarkerPosition === 'fixed' &&
+    canvasSiblingInsert.beforeIndicator?.dropMarkerWidth >= 24 &&
+    canvasSiblingInsert.beforeIndicator?.dropMarkerHeight === 3 &&
     canvasSiblingInsert.afterIndicator?.hostDropMode === 'after' &&
     canvasSiblingInsert.afterIndicator?.activeTargetMode === 'after' &&
+    canvasSiblingInsert.afterIndicator?.dropMarkerMode === 'after' &&
+    canvasSiblingInsert.afterIndicator?.dropMarkerPosition === 'fixed' &&
+    canvasSiblingInsert.afterIndicator?.dropMarkerWidth >= 24 &&
+    canvasSiblingInsert.afterIndicator?.dropMarkerHeight === 3 &&
     canvasSiblingInsert.beforeDrop?.dispatched === true &&
     typeof canvasSiblingInsert.beforeNewId === 'string' &&
     canvasSiblingInsert.beforeNewIndexAfterEmit >= 0 &&

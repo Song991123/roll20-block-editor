@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Canvas Before/After Drop Marker TODO Note
+
+- DONE: Canvas widget drag now creates an edit-only `data-r20-drop-position-marker="1"` overlay for before/after insertion targets. The marker is a fixed-position blue line computed from the target element rect, and it is removed on drop, dragleave, or target reset.
+- WHY: The existing canvas before/after state was attached to the small target element itself, so dropping around inputs could still feel ambiguous. This makes the insertion line read like a visual editor placement guide while preserving the real preview render underneath.
+- VERIFIED: `smoke:edit-flow -- --port 4414 --report-dir ...\_tmp_codex_smoke\edit-flow-canvas-drop-marker-20260713` passed. The smoke observed `dropMarkerMode=before/after`, `dropMarkerPosition=fixed`, marker width `133`, marker height `3`, and existing flow nesting, layer before/inside/after, no-drift drag, absolute-in-frame, free-placement, layer path/search/autoscroll checks still passed.
+- VERIFIED: `node --check scripts\edit_flow_browser_smoke.mjs`, `lint`, `build`, `guard:ui-copy`, `git diff --check`, and post-smoke server hygiene passed. Smoke port `4414` had only `TIME_WAIT`; no local app server remained. Port `9222` remains the Roll20 CDP listener.
+- CLAIM BOUNDARY: This improves edit-mode drop affordance only. It does not change emitted sheet HTML/CSS, upload to Roll20, relink assets, or prove actual Roll20 visual parity.
+
 ## 2026-07-13 Edit Canvas Persistent Container Affordance TODO Note
 
 - DONE: Edit Shadow DOM now gives droppable containers a subtle persistent outline even before a widget is dragged over them. Frame/flow/table roles use separate outline colors, while selected objects and active drop targets still take priority.

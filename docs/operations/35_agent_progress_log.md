@@ -1,3 +1,12 @@
+## 2026-07-13 Edit Canvas Before/After Drop Marker
+
+- Root cause: canvas before/after dragover already set `data-r20-drop-mode`, but the visual cue lived on the target element itself. For small controls like inputs, that makes the intended insertion position harder to read than a Figma-like placement line.
+- Added an edit-only Shadow DOM `data-r20-drop-position-marker="1"` overlay in `components/editor/EditCanvas.tsx`. Before/after targets now get a fixed-position blue line derived from the target rect; inside drops still use the container highlight. The marker is removed whenever the drop target is cleared, dropped, or drag-leaves the canvas.
+- Extended `scripts/edit_flow_browser_smoke.mjs` so the canvas sibling insertion checks assert the marker mode, fixed positioning, width, and 3px height for both before and after dragover.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run smoke:edit-flow -- --port 4414 --report-dir D:\...\_tmp_codex_smoke\edit-flow-canvas-drop-marker-20260713`, and `git diff --check` passed.
+- Server hygiene: post-smoke `netstat` showed port `4414` only in `TIME_WAIT`; no project dev/smoke server remained. Port `9222` remains the active Roll20 CDP listener and was not stopped.
+- Claim boundary: edit overlay affordance only. The emitted Roll20 sheet HTML/CSS is unchanged, and no actual Roll20 visual-parity evidence changed.
+
 ## 2026-07-13 Edit Canvas Persistent Container Affordance
 
 - Root cause: layer rows exposed frame/flow/table container semantics, but the rendered edit canvas only highlighted containers during active widget drag. Users had to start dragging before they could see which sheet objects were safe container targets.
