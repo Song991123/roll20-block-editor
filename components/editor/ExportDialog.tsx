@@ -30,6 +30,10 @@ import { analyzeEmit } from '@/lib/export/warnings';
 import { buildZip, triggerDownload } from '@/lib/export/zip_builder';
 import { prepareRoll20Payload } from '@/lib/export/payload';
 import {
+  applyAssetReplacements,
+  type AssetReplacementWarning,
+} from '@/lib/export/asset_replacements';
+import {
   sanitizeForRoll20Legacy,
   type SanitizeWarning,
 } from '@/lib/emit/sanitize';
@@ -52,22 +56,31 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const [busy, setBusy] = useState(false);
   const [legacyMode, setLegacyMode] = useState(false);
   const [legacyWarnings, setLegacyWarnings] = useState<SanitizeWarning[]>([]);
+  const [assetReplacementText, setAssetReplacementText] = useState('');
+
+  const exportText = useMemo(
+    () => applyAssetReplacements(
+      { html: emitCache.html, css: emitCache.css },
+      assetReplacementText,
+    ),
+    [emitCache.html, emitCache.css, assetReplacementText],
+  );
 
   const combinedWarnings = useMemo<EmitWarning[]>(() => {
     if (!open) return [];
     const exportWarnings = analyzeEmit({
-      html: emitCache.html,
-      css: emitCache.css,
+      html: exportText.html,
+      css: exportText.css,
       translation: emitCache.i18n,
       warnings: [],
     });
     return [...emitWarnings, ...exportWarnings];
-  }, [open, emitCache, emitWarnings]);
+  }, [open, exportText.html, exportText.css, emitCache.i18n, emitWarnings]);
 
   const blocked = hasBlockingError(combinedWarnings);
   const assetPreflight = useMemo(
-    () => analyzeAssetRefs(emitCache.html, emitCache.css),
-    [emitCache.html, emitCache.css],
+    () => analyzeAssetRefs(exportText.html, exportText.css),
+    [exportText.html, exportText.css],
   );
 
   const counts = useMemo(() => {
@@ -77,8 +90,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   }, [combinedWarnings]);
 
   const uploadReadiness = useMemo(() => {
-    const htmlBytes = byteSize(emitCache.html);
-    const cssBytes = byteSize(emitCache.css);
+    const htmlBytes = byteSize(exportText.html);
+    const cssBytes = byteSize(exportText.css);
     const translationText = emitCache.i18n.trim();
     const translationBytes = byteSize(translationText.length > 0 ? translationText : '{}');
     return [
@@ -118,12 +131,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         pending: true,
       },
     ];
-  }, [emitCache]);
+  }, [emitCache.i18n, exportText.html, exportText.css]);
 
   const sandboxDiagnostics = useMemo(() => {
     const payload = prepareRoll20Payload({
-      html: emitCache.html,
-      css: emitCache.css,
+      html: exportText.html,
+      css: exportText.css,
       translation: emitCache.i18n,
       warnings: [],
     });
@@ -156,17 +169,29 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         (htmlWarnings['html-url-dropped'] ?? 0) + (cssWarnings['css-url-dropped'] ?? 0),
       cssRejected: cssWarnings['css-rejected'] ?? 0,
     };
-  }, [emitCache, legacyMode]);
+  }, [emitCache.i18n, exportText.html, exportText.css, legacyMode]);
 
   async function handleDownload() {
     if (blocked) return;
     setBusy(true);
     try {
-      let cssForZip = emitCache.css;
+      let cssForZip = exportText.css;
       let collectedWarnings: SanitizeWarning[] = [];
       const extraFiles: Record<string, string> = {};
-      if (legacyMode && emitCache.css) {
-        const r = sanitizeForRoll20Legacy(emitCache.css);
+      if (assetReplacementText.trim()) {
+        extraFiles['asset-replacements.json'] = JSON.stringify(
+          {
+            mode: 'local-only-url-replacement',
+            generatedAt: new Date().toISOString(),
+            replacements: exportText.replacements,
+            warnings: exportText.warnings,
+          },
+          null,
+          2,
+        );
+      }
+      if (legacyMode && exportText.css) {
+        const r = sanitizeForRoll20Legacy(exportText.css);
         cssForZip = r.sanitized;
         collectedWarnings = r.warnings;
         extraFiles['sanitize-warnings.json'] = JSON.stringify(
@@ -183,7 +208,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       setLegacyWarnings(collectedWarnings);
       const zip = await buildZip(
         {
-          html: emitCache.html,
+          html: exportText.html,
           css: cssForZip,
           translation: emitCache.i18n,
           warnings: [],
@@ -334,6 +359,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           </section>
 
           <AssetPreflightPanel result={assetPreflight} />
+          <AssetReplacementPanel
+            value={assetReplacementText}
+            onChange={setAssetReplacementText}
+            replacements={exportText.replacements}
+            warnings={exportText.warnings}
+          />
 
           <section
             className="rounded border border-border bg-[var(--bg-elevated)] p-3"
@@ -579,6 +610,68 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
           현재 emit 기준으로 외부 이미지나 폰트 참조가 감지되지 않았습니다.
         </div>
       )}
+    </section>
+  );
+}
+
+function AssetReplacementPanel({
+  value,
+  onChange,
+  replacements,
+  warnings,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  replacements: number;
+  warnings: AssetReplacementWarning[];
+}) {
+  const active = value.trim().length > 0;
+  return (
+    <section
+      className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+      data-testid="export-asset-replacement-map"
+    >
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">자산 URL 교체</div>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            삭제된 이미지나 폰트를 사용자가 직접 다시 올린 URL로 바꿔서 zip을 만들 수 있습니다.
+            실제 파일은 저장하지 않고, HTML/CSS 안의 URL 문자열만 교체합니다.
+          </p>
+        </div>
+        <span
+          className={`shrink-0 rounded border px-2 py-1 text-[11px] font-medium ${
+            active
+              ? warnings.length
+                ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200'
+                : 'border-sky-500/35 bg-sky-500/10 text-sky-700 dark:text-sky-200'
+              : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground'
+          }`}
+          data-testid="export-asset-replacement-status"
+        >
+          {active ? `${replacements}건 교체` : '선택 사항'}
+        </span>
+      </div>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={'https://old.example/image.png => https://new.example/image.png'}
+        className="min-h-20 w-full resize-y rounded border border-border bg-[var(--bg-elevated-2)] px-2.5 py-2 font-mono text-[11px] leading-relaxed"
+        data-testid="export-asset-replacement-input"
+      />
+      <div className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground">
+        한 줄에 하나씩 입력하세요. 이 맵은 현재 export에만 적용되며, 원본 워크스페이스나
+        외부 시트 폴더는 변경하지 않습니다.
+      </div>
+      {warnings.length > 0 ? (
+        <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-amber-800 dark:text-amber-100">
+          {warnings.slice(0, 4).map((warning) => (
+            <li key={`${warning.line}-${warning.message}`}>
+              {warning.line}행: {warning.message}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   );
 }

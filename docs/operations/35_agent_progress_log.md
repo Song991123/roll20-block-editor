@@ -3504,4 +3504,6 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Current evidence for `reports\roll20-actual-compare\2026-06-18-state-map-v1` keeps renderer work held: AW2E and YSHY background sources resolve to placeholder image bytes even though local/actual Roll20 proxy bytes match.
 - Added `docs/spec/31_asset_preservation_policy.md` and linked it from agent startup rules. New P0 product requirement: warn about external assets and require relink/rehost before claiming visual parity when source assets are dead.
 - Extended `ExportDialog` asset preflight with visible `Roll20 proxy` and `placeholder risk` metrics. `smoke:export-dialog -- --port 4363` passed and checked the new metrics in the rendered dialog.
+- Added `lib/export/asset_replacements.ts` and export dialog UI for a local-only `old URL => new URL` replacement map. The final zip payload and export-side diagnostics use replaced HTML/CSS; source workspaces and external corpus folders are not mutated.
+- Verification for this batch: `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --port 4365` passed.
 - Claim boundary: this is diagnostic/planning and safety policy. It does not make Roll20 chat visual parity pass and does not embed or commit any real sheet assets.

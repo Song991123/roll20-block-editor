@@ -30,6 +30,14 @@ corepack pnpm run plan:roll20-chat-assets -- reports\roll20-actual-compare\<labe
 | P1 | Add a local-only asset replacement map for verification and export. | Users need a path to replace dead URLs with their own hosted/local-approved assets. |
 | P1 | Keep asset evidence in ignored `reports/` or `test-fixtures/`. | Verification needs evidence, but public commits must stay clean. |
 
+## Current Implementation
+
+- Export dialog has a local-only URL replacement map using `old URL => new URL` lines.
+- The map rewrites the final export payload HTML/CSS and the export-side sandbox diagnostics/preflight view.
+- The app does not download, embed, publish, or commit the referenced assets.
+- The zip includes only a small `asset-replacements.json` summary with counts/warnings, not the original URL list.
+- Preview/edit render-time replacement and import-side assisted replacement are still TODO.
+
 ## UI Behavior
 
 Export/import checks should distinguish:

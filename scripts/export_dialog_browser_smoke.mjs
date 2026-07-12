@@ -217,6 +217,9 @@ async function main() {
         hasAssetRiskCopy: dialogText.includes('외부 이미지/폰트는 zip에 포함되지 않습니다.'),
         hasAssetProxyMetric: dialogText.includes('Roll20 proxy'),
         hasAssetPlaceholderMetric: dialogText.includes('placeholder risk'),
+        hasAssetReplacementMap: Boolean(document.querySelector('[data-testid="export-asset-replacement-map"]')),
+        hasAssetReplacementInput: Boolean(document.querySelector('[data-testid="export-asset-replacement-input"]')),
+        assetReplacementStatus: document.querySelector('[data-testid="export-asset-replacement-status"]')?.textContent?.trim() ?? '',
         downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
         dialogText,
       };
@@ -286,6 +289,9 @@ async function main() {
     if (!result.checks.exportDialog.hasAssetPreflightCopy) failures.push('asset preflight copy missing');
     if (!result.checks.exportDialog.hasAssetProxyMetric) failures.push('asset proxy metric missing');
     if (!result.checks.exportDialog.hasAssetPlaceholderMetric) failures.push('asset placeholder metric missing');
+    if (!result.checks.exportDialog.hasAssetReplacementMap) failures.push('asset replacement map missing');
+    if (!result.checks.exportDialog.hasAssetReplacementInput) failures.push('asset replacement input missing');
+    if (!result.checks.exportDialog.assetReplacementStatus) failures.push('asset replacement status missing');
     if (
       result.checks.exportDialog.assetPreflightStatus === '확인 필요' &&
       !result.checks.exportDialog.hasAssetRiskCopy
