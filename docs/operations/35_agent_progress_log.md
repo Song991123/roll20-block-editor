@@ -3353,3 +3353,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Updated `scripts/roll20_chat_current_handoff.mjs` so the generated current-metrics handoff table preserves the exact sheet-frame probe and gated chat capture commands from `roll20_chat_capture_plan.mjs`.
 - Verification: `node --check scripts\roll20_chat_cdp_capture.mjs`, `node --check scripts\roll20_chat_current_handoff.mjs`, `test:roll20-chat-cdp-readiness`, `test:roll20-chat-capture-plan`, `handoff:roll20-chat-current`, and `capture:roll20-chat-cdp --plan-only` for `official-roll20-AW2E` and `yshy-commission-1bu`.
 - Claim boundary: this reduces handoff mistakes for the next actual Roll20 recapture. It does not add visual evidence, does not change ChatPane CSS, and does not prove parity.
+
+## 2026-07-12 CDP Preflight Probe Ordering
+
+- Updated `scripts/roll20_cdp_preflight.mjs` so the console output and Markdown report include sheet-frame probe commands before chat capture commands for each planned fixture.
+- Verified both the full planned fixture set and a single-fixture preflight path; both still report `CDP_CLOSED` but now print the correct probe -> capture order.
+- Verification: `node --check scripts\roll20_cdp_preflight.mjs`, `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixture yshy-commission-1bu`.
+- Claim boundary: no Roll20 browser was captured. This is orchestration safety for the next live recapture only.

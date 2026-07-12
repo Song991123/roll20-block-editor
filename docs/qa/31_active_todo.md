@@ -2728,3 +2728,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CURRENT: `preflight:roll20-cdp` still reports `CDP_CLOSED`; no new Roll20 chat PNG or sidecar evidence was captured. Current actual status remains `generatedActualScreenshots=4/6`, `chatNeedsNormalizedCapture=2`, and `rendererReady=NO`.
 - STILL TODO: open a CDP-enabled Roll20 Sandbox/test-room tab, run the printed sheet-frame probe until it writes `VISIBLE_MATCH`, then run the printed capture command for AW2E and YSHY.
 - CLAIM BOUNDARY: This is capture-handoff tooling only. It does not prove Roll20 chat parity and does not justify production renderer CSS.
+
+## 2026-07-12 CDP Preflight Probe Ordering TODO Note
+
+- DONE: `preflight:roll20-cdp` now prints the exact `probe:roll20-sheet-frame` commands before the `capture:roll20-chat-cdp` commands for all planned fixtures and for a single `--fixture` filter.
+- VERIFIED: `node --check scripts\roll20_cdp_preflight.mjs`, `corepack pnpm run preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1`, and the same preflight with `--fixture yshy-commission-1bu` passed.
+- CURRENT: CDP remains closed in the current environment, so this does not capture or validate new Roll20 screenshots. It only makes the next live capture sequence harder to run out of order.
+- STILL TODO: launch or attach a CDP-enabled Roll20 Sandbox/test-room tab, rerun preflight until it is not `CDP_CLOSED`, then follow probe -> capture for AW2E/YSHY.
+- CLAIM BOUNDARY: This is recapture orchestration only. Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`.

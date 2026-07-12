@@ -38,6 +38,11 @@ async function main() {
   const endpoint = await inspectEndpoint(CDP_URL);
   const plannedFixtures = readPlannedFixtures(RUN_DIR, FIXTURE);
   const launchCommand = buildLaunchCommand();
+  const sheetFrameProbeCommands = plannedFixtures.map((fixtureId) => [
+    'corepack pnpm run probe:roll20-sheet-frame --',
+    `--run-dir ${quoteArg(rel(RUN_DIR))}`,
+    `--fixture ${quoteArg(fixtureId)}`,
+  ].join(' '));
   const captureCommands = plannedFixtures.map((fixtureId) => [
     'corepack pnpm run capture:roll20-chat-cdp --',
     `--run-dir ${quoteArg(rel(RUN_DIR))}`,
@@ -58,6 +63,7 @@ async function main() {
     status: classifyStatus(endpoint),
     endpoint,
     plannedFixtures,
+    sheetFrameProbeCommands,
     captureCommands,
     launchCommand,
     launchResult,
@@ -77,6 +83,9 @@ async function main() {
   console.log(`plannedFixtures=${plannedFixtures.length}`);
   if (!endpoint.ok) {
     console.log(`launch=${launchCommand}`);
+  }
+  for (const command of sheetFrameProbeCommands) {
+    console.log(`probe=${command}`);
   }
   for (const command of captureCommands) {
     console.log(`capture=${command}`);
@@ -153,7 +162,7 @@ function nextActionForEndpoint(endpoint) {
     return nextActionForReadiness(ROLL20_READINESS.CHALLENGE_OR_WAITING, { pageMatch: PAGE_MATCH, captureVerb: 'this preflight' });
   }
   if (status === 'READY') {
-    return 'Load the intended fixture in the dedicated Roll20 Sandbox/test room, then run the capture command for each planned fixture.';
+    return 'Load the intended fixture in the dedicated Roll20 Sandbox/test room, run the sheet-frame probe until it writes VISIBLE_MATCH evidence, then run the capture command for each planned fixture.';
   }
   return 'Navigate the CDP-enabled browser to the dedicated Roll20 Sandbox/test room, then rerun this preflight.';
 }
@@ -253,6 +262,15 @@ function renderMarkdown(report) {
     lines.push('```powershell');
     lines.push(report.launchCommand);
     lines.push('```', '');
+  }
+  if (report.sheetFrameProbeCommands.length) {
+    lines.push('## Sheet-Frame Probe Commands', '');
+    for (const command of report.sheetFrameProbeCommands) {
+      lines.push('```powershell');
+      lines.push(command);
+      lines.push('```');
+    }
+    lines.push('');
   }
   if (report.captureCommands.length) {
     lines.push('## Capture Commands', '');
