@@ -1,3 +1,12 @@
+## 2026-07-13 AW2E Width/Text Metrics Cell Allocation Follow-Up TODO Note
+
+- VERIFIED: `aw2e-message-width-text-metrics` was rerun through `diagnose:roll20-chat-cell-allocation` with isolated output at `..\_tmp_codex_smoke\chat-cell-allocation-aw2e-message-width-text-metrics-20260713-r1`.
+- OBSERVED: For `official-roll20-AW2E`, this narrower candidate preserves the current local cell allocation exactly in the probe (`tableDelta=0px`, max text-cell delta `0px`, max ratio delta `0%`). It is not rejected for the broad cell-allocation break seen in `aw2e-message-cell-wrap-context`.
+- VERIFIED: Feeding that cell-allocation evidence into `gate:roll20-chat-template-scope` wrote `..\_tmp_codex_smoke\chat-template-scope-aw2e-message-width-text-metrics-cell-20260713-r1` and still returned `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with `9` blockers.
+- VERIFIED: Feeding the same evidence into `gate:roll20-renderer-action` wrote `..\_tmp_codex_smoke\renderer-gate-aw2e-message-width-text-metrics-cell-20260713-r1` and still returned `HOLD_PRODUCTION_RENDERER_PATCH`.
+- OBSERVED: The remaining AW2E blocker is not cell allocation. The candidate is still not promotion-ready because the renderer gate reports `no-meaningful-gain`, `style=NOT_STYLE_PROVEN`, asset relink blockers, and row-raster regression (`weighted delta=+6.76%`, worst-row delta `+8%`).
+- CURRENT: Keep `aw2e-message-width-text-metrics` diagnostic-only. Next AW2E work should build a style-proofed, template-scoped message/content width plus exact text measurement model that does not regress row raster, and asset relink remains required before visual parity can be judged.
+
 ## 2026-07-13 Cell Allocation Gate Integration TODO Note
 
 - DONE: `gate:roll20-chat-template-scope` now accepts `--cell-allocation-dir` and consumes `chat-cell-allocation-probe-results.json`. A production-blocking cell allocation scenario now becomes a template-scope blocker instead of staying as a standalone diagnostic note.

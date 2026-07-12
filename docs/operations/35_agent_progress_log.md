@@ -1,3 +1,13 @@
+## 2026-07-13 AW2E Width/Text Metrics Cell Allocation Follow-Up
+
+- Reran the existing `aw2e-message-width-text-metrics` candidate through the cell allocation probe instead of promoting or retrying broad AW2E cell/font CSS.
+- Live diagnostic: `corepack pnpm run diagnose:roll20-chat-cell-allocation -- reports\roll20-actual-compare\2026-06-18-state-map-v1 reports\rolltemplate-chat-smoke\rolltemplate-chat-smoke-results.json --candidate-smoke aw2e-message-width-text-metrics=reports\rolltemplate-chat-smoke-aw2e-message-width-text-metrics\rolltemplate-chat-smoke-results.json --out-dir ..\_tmp_codex_smoke\chat-cell-allocation-aw2e-message-width-text-metrics-20260713-r1`.
+- Evidence: for `official-roll20-AW2E`, `aw2e-message-width-text-metrics` preserves cell allocation in the probe (`tableDelta=0px`, max text-cell delta `0px`, max ratio delta `0%`). This separates it from the rejected `aw2e-message-cell-wrap-context` path, which broke allocation.
+- Gate evidence: `..\_tmp_codex_smoke\chat-template-scope-aw2e-message-width-text-metrics-cell-20260713-r1` still returns `HOLD_GLOBAL_CHAT_RENDERER_PATCH`, and `..\_tmp_codex_smoke\renderer-gate-aw2e-message-width-text-metrics-cell-20260713-r1` still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Remaining blocker: the candidate is cell-allocation-safe but not renderer-safe. The top renderer gate still reports `no-meaningful-gain`, `style=NOT_STYLE_PROVEN`, asset relink blockers, and AW2E row-raster regression (`weighted delta=+6.76%`, worst-row delta `+8%`).
+- Server hygiene: no local app/dev server was started for this check. The only expected listener remains the Roll20 CDP browser on `127.0.0.1:9222`.
+- Claim boundary: no production ChatPane CSS changed, no Roll20 upload happened, no asset relink happened, and Roll20 visual parity remains unproven.
+
 ## 2026-07-13 Cell Allocation Gate Integration
 
 - Connected cell allocation evidence to the renderer decision path instead of leaving it as a standalone report.
