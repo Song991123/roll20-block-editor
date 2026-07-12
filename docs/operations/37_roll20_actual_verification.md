@@ -58,6 +58,34 @@ The style-proof report records its selection in JSON/Markdown. If a template
 gate best candidate is absent from style proof, treat that as insufficient
 evidence, not as a production-ready CSS candidate.
 
+When a new chat candidate smoke report must be written to ignored temp output
+instead of `reports/`, pass that temp evidence into downstream diagnostics:
+
+```powershell
+node scripts\rolltemplate_chat_smoke.mjs `
+  --out-dir .\out `
+  --base-path /roll20-block-editor `
+  --fixtures test-fixtures\visual `
+  --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate> `
+  --chat-geometry-policy <policy> `
+  --chat-typography-policy <policy>
+
+corepack pnpm run diagnose:roll20-chat-candidates -- reports\roll20-actual-compare\<run> `
+  --candidate-screenshots <candidate>=..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\screenshots `
+  --out-dir ..\_tmp_codex_smoke\chat-candidates-<candidate>
+
+corepack pnpm run diagnose:roll20-chat-row-raster-candidates -- reports\roll20-actual-compare\<run> `
+  --candidate-smoke <candidate>=..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\rolltemplate-chat-smoke-results.json `
+  --candidate-screenshots <candidate>=..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\screenshots `
+  --out-dir ..\_tmp_codex_smoke\row-raster-<candidate>
+
+corepack pnpm run diagnose:roll20-chat-candidate-style -- reports\roll20-actual-compare\<run> `
+  --candidate-comparison-dir ..\_tmp_codex_smoke\chat-candidates-<candidate> `
+  --candidate-smoke <candidate>=..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\rolltemplate-chat-smoke-results.json `
+  --include-candidates <candidate> `
+  --out-dir ..\_tmp_codex_smoke\chat-style-<candidate>
+```
+
 ## Verification Tracks
 
 | Track | Purpose | Allowed Actions | Forbidden Actions |

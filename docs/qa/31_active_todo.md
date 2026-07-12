@@ -1,3 +1,12 @@
+## 2026-07-13 AW2E Cell Font Context Candidate TODO Note
+
+- DONE: Added a diagnostic-only `aw2e-message-cell-font-context` ChatPane typography policy. It can be combined with `aw2e-message-full-width` to test the actual Roll20 AW2E chat/message width plus table/cell font context without changing the default renderer.
+- DONE: `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-row-raster-candidates`, and `diagnose:roll20-chat-candidate-style` can now consume temp candidate smoke evidence through `--candidate-screenshots`, `--candidate-smoke`, and `--candidate-comparison-dir` overrides. This is needed because `reports/` is read-only on this machine and new candidate smoke output must stay in ignored temp folders.
+- VERIFIED: `node --check` passed for the changed chat scripts. `node scripts\rolltemplate_chat_smoke.mjs ... --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-message-cell-font-context-20260713-r1 --chat-geometry-policy aw2e-message-full-width --chat-typography-policy aw2e-message-cell-font-context` passed for all three visual fixtures.
+- OBSERVED: The candidate style proof confirms the AW2E computed-style target itself: chat/message width `340px`, table font size `13.65px`, and `td:first` font size `27.3px` match actual Roll20 evidence.
+- REJECTED: Pixel and row-raster evidence reject the candidate. Candidate comparison reports `aw2e-message-cell-font-context` as `reject-regresses-fixtures`, mean aligned delta `+16.55%`, AW2E delta `+42.04%`, and YSHY delta `+7.62%`. Row-raster reports AW2E weighted mismatch worsening from `17.93%` to `62.73%` (`+44.8%`) and worst-row mismatch worsening by `+40.24%`.
+- CURRENT: Matching isolated computed font-size values is not sufficient. The next AW2E investigation should inspect row paint/source/rasterization, crop/scale, and possibly nested element-specific text rendering before adding another CSS candidate. Do not promote `aw2e-message-cell-font-context`.
+
 ## 2026-07-13 Chat Candidate Style-Proof Best-Candidate Coverage TODO Note
 
 - DONE: `diagnose:roll20-chat-candidate-style` now supports `--include-best-per-fixture` and `--include-candidates <comma-list>`. The default behavior remains narrow, but agents can now force the style-proof report to cover the exact best candidates later consumed by `gate:roll20-chat-template-scope`.

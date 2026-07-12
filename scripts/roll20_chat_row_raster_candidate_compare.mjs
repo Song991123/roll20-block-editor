@@ -13,10 +13,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
-const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && rawArgs[index - 1] !== '--out-dir');
+const optionNamesWithValues = new Set(['--out-dir', '--candidate-smoke', '--candidate-screenshots']);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-row-raster-candidate-comparison')));
+const candidateSmokeOverrides = readOptionPairs('--candidate-smoke');
+const candidateScreenshotOverrides = readOptionPairs('--candidate-screenshots');
 
 function readOption(name, fallback = '') {
   const index = rawArgs.indexOf(name);
@@ -26,11 +29,25 @@ function readOption(name, fallback = '') {
   return value;
 }
 
+function readOptionPairs(name) {
+  const out = new Map();
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    if (rawArgs[index] !== name) continue;
+    const value = rawArgs[index + 1];
+    if (!value || value.startsWith('--')) continue;
+    const separator = value.indexOf('=');
+    if (separator <= 0) continue;
+    out.set(value.slice(0, separator), value.slice(separator + 1));
+  }
+  return out;
+}
+
 const candidates = [
   ['default', 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke/screenshots'],
   ['no-shadow', 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-no-template-shadow/screenshots'],
   ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
   ['aw2e-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/screenshots'],
+  ['aw2e-message-cell-font-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
   ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
   ['coc-background-size-actual', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/screenshots'],
@@ -42,21 +59,23 @@ await mkdir(outDir, { recursive: true });
 const rows = [];
 
 for (const [name, smokeFile, screenshotsDir] of candidates) {
-  if (!existsSync(smokeFile) || !existsSync(screenshotsDir)) {
-    rows.push({ name, status: 'MISSING_EVIDENCE', smokeFile, screenshotsDir });
+  const smokeSource = candidateSmokeOverrides.get(name) ?? smokeFile;
+  const screenshotsSource = candidateScreenshotOverrides.get(name) ?? screenshotsDir;
+  if (!existsSync(smokeSource) || !existsSync(screenshotsSource)) {
+    rows.push({ name, status: 'MISSING_EVIDENCE', smokeFile: smokeSource, screenshotsDir: screenshotsSource });
     continue;
   }
   const candidateOutDir = path.join(outDir, name);
   execFileSync('node', [
     'scripts/roll20_chat_row_raster_probe.mjs',
     runDirArg,
-    smokeFile,
-    screenshotsDir,
+    smokeSource,
+    screenshotsSource,
     '--report-dir',
     candidateOutDir,
   ], { stdio: 'pipe' });
   const report = JSON.parse(await readFile(path.join(candidateOutDir, 'chat-row-raster-probe-results.json'), 'utf8'));
-  rows.push(summarizeCandidate(name, smokeFile, screenshotsDir, candidateOutDir, report));
+  rows.push(summarizeCandidate(name, smokeSource, screenshotsSource, candidateOutDir, report));
 }
 
 const defaultRow = rows.find((row) => row.name === 'default' && row.status === 'OK');

@@ -9,7 +9,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const optionNamesWithValues = new Set(['--out-dir', '--include-candidates']);
+const optionNamesWithValues = new Set(['--out-dir', '--include-candidates', '--candidate-comparison-dir', '--candidate-smoke']);
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const RUN_DIR = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
@@ -21,6 +21,8 @@ const EXPLICIT_CANDIDATES = new Set(
     .map((name) => name.trim())
     .filter(Boolean),
 );
+const rawCandidateComparisonDir = readOption('--candidate-comparison-dir', '');
+const candidateSmokeOverrides = readOptionPairs('--candidate-smoke');
 
 const CANDIDATE_SMOKE = {
   default: 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json',
@@ -39,6 +41,7 @@ const CANDIDATE_SMOKE = {
   'roll20-border-spacing': 'reports/rolltemplate-chat-smoke-border-spacing/rolltemplate-chat-smoke-results.json',
   'roll20-letter-spacing': 'reports/rolltemplate-chat-smoke-letter-spacing/rolltemplate-chat-smoke-results.json',
   'aw2e-font-size-only': 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-cell-font-context': 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/rolltemplate-chat-smoke-results.json',
   'yshy-bookk-unavailable': 'reports/rolltemplate-chat-smoke-yshy-bookk-unavailable/rolltemplate-chat-smoke-results.json',
   'yshy-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-table-font-context/rolltemplate-chat-smoke-results.json',
   'yshy-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
@@ -77,6 +80,19 @@ function readOption(name, fallback = '') {
 
 function firstPositionalArg() {
   return args.find((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(args[index - 1]));
+}
+
+function readOptionPairs(name) {
+  const out = new Map();
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] !== name) continue;
+    const value = args[index + 1];
+    if (!value || value.startsWith('--')) continue;
+    const separator = value.indexOf('=');
+    if (separator <= 0) continue;
+    out.set(value.slice(0, separator), value.slice(separator + 1));
+  }
+  return out;
 }
 
 async function readJson(file, fallback = null) {
@@ -162,7 +178,11 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   if (candidate.name === 'no-shadow') {
     return summarizeNoShadow(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
-  if (candidate.name === 'aw2e-message-width-font-size' || candidate.name === 'aw2e-message-width-text-metrics') {
+  if (
+    candidate.name === 'aw2e-message-width-font-size' ||
+    candidate.name === 'aw2e-message-width-text-metrics' ||
+    candidate.name === 'aw2e-message-cell-font-context'
+  ) {
     return summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
   if (candidate.name === 'roll20-chat-shell-width-340' || candidate.name === 'aw2e-message-full-width') {
@@ -682,8 +702,11 @@ function delta(localValue, actualValue) {
 }
 
 async function main() {
-  const comparison = await readJson(path.join(RUN_DIR, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
-  if (!comparison?.candidates) throw new Error(`Missing chat candidate comparison under ${RUN_DIR}`);
+  const comparisonFile = rawCandidateComparisonDir
+    ? path.join(path.resolve(rawCandidateComparisonDir), 'chat-candidate-comparison-results.json')
+    : path.join(RUN_DIR, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json');
+  const comparison = await readJson(comparisonFile);
+  if (!comparison?.candidates) throw new Error(`Missing chat candidate comparison: ${comparisonFile}`);
   const defaultSmoke = await readJson(CANDIDATE_SMOKE.default);
   if (!defaultSmoke?.fixtures) throw new Error(`Missing default local chat smoke: ${CANDIDATE_SMOKE.default}`);
 
@@ -695,7 +718,7 @@ async function main() {
   ));
   const candidates = [];
   for (const candidate of targetCandidates) {
-    const smokePath = CANDIDATE_SMOKE[candidate.name];
+    const smokePath = candidateSmokeOverrides.get(candidate.name) ?? CANDIDATE_SMOKE[candidate.name];
     const candidateSmoke = smokePath ? await readJson(smokePath) : null;
     const fixtures = [];
     for (const fixtureId of ['official-roll20-AW2E', 'official-roll20-Les-Oublies', 'yshy-commission-1bu']) {
@@ -728,9 +751,11 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir: rel(RUN_DIR),
     selection: {
+      candidateComparison: rel(path.resolve(comparisonFile)),
       targetRisks: [...TARGET_RISKS],
       includeBestPerFixture: INCLUDE_BEST_PER_FIXTURE,
       explicitCandidates: [...EXPLICIT_CANDIDATES],
+      candidateSmokeOverrides: Object.fromEntries([...candidateSmokeOverrides.entries()]),
       bestPerFixtureCandidates: [...bestNames],
       selectedCandidates: targetCandidates.map((candidate) => candidate.name),
     },

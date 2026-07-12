@@ -1,3 +1,16 @@
+## 2026-07-13 AW2E Cell Font Context Candidate
+
+- Root cause hypothesis tested: AW2E's previous text-metrics candidate failed style proof because local `td:first` stayed at `13.65px` while actual Roll20 reported `27.3px`. A plausible next hypothesis was that matching chat/message width plus AW2E table/cell font context would improve parity.
+- Added diagnostic-only ChatPane typography policy `aw2e-message-cell-font-context`: AW2E rolltemplate table stays `13.65px`, while AW2E caption/td become `27.3px`, with normal letter spacing and auto font smoothing. This is behind localStorage diagnostic policy only; default ChatPane rendering is unchanged.
+- Added temp-evidence overrides to candidate diagnostics:
+  - `roll20_chat_candidate_compare.mjs`: `--candidate-screenshots name=path`
+  - `roll20_chat_row_raster_candidate_compare.mjs`: `--candidate-smoke name=path`, `--candidate-screenshots name=path`
+  - `roll20_chat_candidate_style_proof.mjs`: `--candidate-comparison-dir <dir>`, `--candidate-smoke name=path`
+- Verification: the new smoke ran to ignored temp output and passed all three fixtures. Candidate comparison, style proof, row-raster comparison, and template-scope gate all consumed the temp evidence via overrides.
+- Result: reject the candidate. Style proof confirms the targeted AW2E computed styles match actual Roll20 (`td:first` `27.3px`), but screenshot and row-raster evidence get much worse: candidate comparison mean delta `+16.55%`, AW2E delta `+42.04%`; AW2E row-weighted mismatch `62.73%` vs baseline `17.93%`.
+- Root cause update: AW2E parity is not solved by copying isolated computed font-size values into ChatPane. The remaining gap is likely in row paint/source rasterization, crop/scale, or more specific nested text rendering. The candidate must stay diagnostic-only and rejected.
+- Claim boundary: no production renderer CSS was promoted, no Roll20 visual parity claim changed, and generated candidate evidence stayed local-only under `_tmp_codex_smoke`.
+
 ## 2026-07-13 Chat Candidate Style-Proof Best-Candidate Coverage
 
 - Root cause: `scripts/roll20_chat_candidate_style_proof.mjs` only selected candidates whose comparison risk was `candidate-needs-style-proof` or `single-fixture-only`. The template-scope gate, however, chooses each fixture's best pixel candidate by fixture delta. That meant the actual gate-selected candidates could be missing from style proof and appear as `NOT_STYLE_PROVEN` even when their computed-style evidence could already reject them.

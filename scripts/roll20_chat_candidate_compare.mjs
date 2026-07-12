@@ -4,13 +4,15 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
-const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && rawArgs[index - 1] !== '--out-dir');
+const optionNamesWithValues = new Set(['--out-dir', '--candidate-screenshots']);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const diagnosticJson = path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json');
 const rawOutDir = readOption('--out-dir', '');
 const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-candidate-comparison');
 const useIsolatedParityOutput = Boolean(rawOutDir);
+const candidateScreenshotOverrides = readOptionPairs('--candidate-screenshots');
 
 function readOption(name, fallback = '') {
   const index = rawArgs.indexOf(name);
@@ -18,6 +20,19 @@ function readOption(name, fallback = '') {
   const value = rawArgs[index + 1];
   if (!value || value.startsWith('--')) return fallback;
   return value;
+}
+
+function readOptionPairs(name) {
+  const out = new Map();
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    if (rawArgs[index] !== name) continue;
+    const value = rawArgs[index + 1];
+    if (!value || value.startsWith('--')) continue;
+    const separator = value.indexOf('=');
+    if (separator <= 0) continue;
+    out.set(value.slice(0, separator), value.slice(separator + 1));
+  }
+  return out;
 }
 
 const candidates = [
@@ -48,6 +63,7 @@ const candidates = [
   ['cell-metrics', 'reports/rolltemplate-chat-smoke-cell-metrics/screenshots'],
   ['aw2e-font-size-only', 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/screenshots'],
   ['aw2e-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-text-metrics/screenshots'],
+  ['aw2e-message-cell-font-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/screenshots'],
   ['yshy-bookk-unavailable', 'reports/rolltemplate-chat-smoke-yshy-bookk-unavailable/screenshots'],
   ['yshy-table-font-context', 'reports/rolltemplate-chat-smoke-yshy-table-font-context/screenshots'],
   ['yshy-bookk-table-font-context', 'reports/rolltemplate-chat-smoke-yshy-bookk-table-font-context/screenshots'],
@@ -66,13 +82,14 @@ const candidates = [
 
 const rows = [];
 for (const [name, screenshotsRelative] of candidates) {
-  const screenshots = path.resolve(screenshotsRelative);
+  const screenshotsSource = candidateScreenshotOverrides.get(name) ?? screenshotsRelative;
+  const screenshots = path.resolve(screenshotsSource);
   if (!existsSync(screenshots)) {
-    rows.push({ name, status: 'MISSING_SCREENSHOTS', screenshots: screenshotsRelative });
+    rows.push({ name, status: 'MISSING_SCREENSHOTS', screenshots: screenshotsSource });
     continue;
   }
   const report = await runParityDiagnostic(name, screenshots);
-  rows.push(summarizeReport(name, screenshotsRelative, report));
+  rows.push(summarizeReport(name, screenshotsSource, report));
 }
 
 const defaultScreenshots = path.resolve('reports/rolltemplate-chat-smoke/screenshots');
