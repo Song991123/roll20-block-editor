@@ -125,6 +125,8 @@ export interface PerfHook {
   setPreviewRenderMode: (mode: PreviewRenderMode) => void;
   setLegacyCssSanitize: (enabled: boolean) => void;
   setRoll20SandboxSanitize: (enabled: boolean) => void;
+  setAssetReplacementMap: (text: string) => void;
+  getAssetReplacementMap: () => string;
   appendFriendlyWidgetForEditSmoke: (input?: {
     containerPresetId?: string;
     widgetPresetId?: string;
@@ -441,6 +443,12 @@ function buildHook(): PerfHook {
     setRoll20SandboxSanitize: (enabled) => {
       usePreviewStore.getState().setRoll20SandboxSanitize(enabled);
     },
+
+    setAssetReplacementMap: (text) => {
+      usePreviewStore.getState().setAssetReplacementMap(text);
+    },
+
+    getAssetReplacementMap: () => usePreviewStore.getState().assetReplacementMap,
 
     appendFriendlyWidgetForEditSmoke: ({
       containerPresetId = 'section',

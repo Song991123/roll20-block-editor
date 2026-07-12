@@ -7,6 +7,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
 import { canReceiveChildren, getLayerRole } from '@/lib/editor/layerRoles';
+import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { buildSheetParts } from '@/lib/preview/buildDoc';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { usePreviewStore } from '@/lib/stores/previewStore';
@@ -116,6 +117,7 @@ export default function EditCanvas() {
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
   const darkMode = usePreviewStore((s) => s.darkMode);
+  const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
   const [lastMove, setLastMove] = useState<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [editCanvasHeight, setEditCanvasHeight] = useState(900);
@@ -137,12 +139,16 @@ export default function EditCanvas() {
     () => applyOptimisticPositions(emitHtml, optimisticMoves),
     [emitHtml, optimisticMoves],
   );
+  const editAssetText = useMemo(
+    () => applyAssetReplacements({ html: optimisticHtml, css: emitCss }, assetReplacementMap),
+    [optimisticHtml, emitCss, assetReplacementMap],
+  );
 
   const parts = useMemo(
     () =>
       buildSheetParts({
-        html: optimisticHtml,
-        css: emitCss,
+        html: editAssetText.html,
+        css: editAssetText.css,
         i18n: emitI18n,
         sanitize,
         legacyCssSanitize,
@@ -151,7 +157,7 @@ export default function EditCanvas() {
         previewLayer: effectiveLayer,
         includeEditorOverlays: false,
       }),
-    [optimisticHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, effectiveLayer],
+    [editAssetText.html, editAssetText.css, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, effectiveLayer],
   );
 
   const snap = useCallback(

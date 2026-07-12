@@ -43,6 +43,7 @@ import {
   sanitizeRoll20SandboxHtml,
   type Roll20SandboxWarning,
 } from '@/lib/emit/roll20SandboxSanitize';
+import { usePreviewStore } from '@/lib/stores/previewStore';
 
 export interface ExportDialogProps {
   open: boolean;
@@ -57,7 +58,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const [busy, setBusy] = useState(false);
   const [legacyMode, setLegacyMode] = useState(false);
   const [legacyWarnings, setLegacyWarnings] = useState<SanitizeWarning[]>([]);
-  const [assetReplacementText, setAssetReplacementText] = useState('');
+  const assetReplacementText = usePreviewStore((s) => s.assetReplacementMap);
+  const setAssetReplacementText = usePreviewStore((s) => s.setAssetReplacementMap);
 
   const exportText = useMemo(
     () => applyAssetReplacements(

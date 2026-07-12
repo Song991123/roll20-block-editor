@@ -31,6 +31,7 @@ interface PreviewStore {
   autoRegen: boolean;       // 큰 시트 OFF 권장
   iframeSandbox: string;    // allow-scripts only — 사용자 시트 안 script 는 unique origin 안에서만 실행 (parent 접근 X). preview bridge script 동작 필요.
   renderMode: PreviewRenderMode;   // Roll20 sandbox parity default; Shadow DOM is edit mode.
+  assetReplacementMap: string;     // Local-only URL replacement map used by preview/edit/export.
 
   dynamicToggles: DynamicToggle[];
 
@@ -40,6 +41,7 @@ interface PreviewStore {
   setRoll20SandboxSanitize: (v: boolean) => void;
   setAutoRegen: (v: boolean) => void;
   setRenderMode: (mode: PreviewRenderMode) => void;
+  setAssetReplacementMap: (text: string) => void;
   setDynamicToggle: (attr: string, on: boolean) => void;
   setDynamicToggles: (toggles: DynamicToggle[]) => void;
 }
@@ -52,6 +54,7 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   autoRegen: true,
   iframeSandbox: 'allow-scripts',
   renderMode: 'iframe',
+  assetReplacementMap: '',
   dynamicToggles: [],
 
   setDarkMode: (v) => set({ darkMode: v }),
@@ -60,6 +63,7 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   setRoll20SandboxSanitize: (v) => set({ roll20SandboxSanitize: v }),
   setAutoRegen: (v) => set({ autoRegen: v }),
   setRenderMode: (mode) => set({ renderMode: mode }),
+  setAssetReplacementMap: (text) => set({ assetReplacementMap: text }),
   setDynamicToggle: (attr, on) =>
     set((s) => ({
       dynamicToggles: s.dynamicToggles.map((t) =>

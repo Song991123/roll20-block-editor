@@ -15,6 +15,7 @@ import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlockDef } from '@/lib/blocks/registry';
 import { buildSheetDoc, buildSheetParts } from '@/lib/preview/buildDoc';
+import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import ShadowContextMenu, { type ShadowContextMenuAction } from './ShadowContextMenu';
@@ -58,6 +59,7 @@ export default function PreviewMain() {
   const sanitize = usePreviewStore((s) => s.sanitize);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
+  const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
   const sandbox = usePreviewStore((s) => s.iframeSandbox);
   const renderMode = usePreviewStore((s) => s.renderMode);
   const setRenderMode = usePreviewStore((s) => s.setRenderMode);
@@ -91,6 +93,10 @@ export default function PreviewMain() {
 
   const total = htmlCount + cssCount + i18nCount;
   const isEmpty = total === 0;
+  const previewAssetText = useMemo(
+    () => applyAssetReplacements({ html: emitHtml, css: emitCss }, assetReplacementMap),
+    [emitHtml, emitCss, assetReplacementMap],
+  );
   const fitScale =
     zoom === 'fit' && viewportWidth > 0
       ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / sheetCanvasWidth))
@@ -109,8 +115,8 @@ export default function PreviewMain() {
   const srcdoc = useMemo(
     () =>
       buildSheetDoc({
-        html: emitHtml,
-        css: emitCss,
+        html: previewAssetText.html,
+        css: previewAssetText.css,
         i18n: emitI18n,
         sanitize,
         legacyCssSanitize,
@@ -119,7 +125,7 @@ export default function PreviewMain() {
         previewLayer,
         includeEditorOverlays: false,
       }),
-    [emitHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, previewLayer],
+    [previewAssetText.html, previewAssetText.css, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, previewLayer],
   );
 
   // spec 21 Phase A — Shadow DOM 모드 mount.
@@ -150,8 +156,8 @@ export default function PreviewMain() {
   const parts = useMemo(
     () =>
       buildSheetParts({
-        html: emitHtml,
-        css: emitCss,
+        html: previewAssetText.html,
+        css: previewAssetText.css,
         i18n: emitI18n,
         sanitize,
         legacyCssSanitize,
@@ -160,7 +166,7 @@ export default function PreviewMain() {
         previewLayer,
         includeEditorOverlays: true,
       }),
-    [emitHtml, emitCss, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, previewLayer],
+    [previewAssetText.html, previewAssetText.css, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, previewLayer],
   );
   useEffect(() => {
     if (renderMode !== 'shadow') return;

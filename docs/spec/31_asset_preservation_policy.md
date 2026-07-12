@@ -33,10 +33,11 @@ corepack pnpm run plan:roll20-chat-assets -- reports\roll20-actual-compare\<labe
 ## Current Implementation
 
 - Export dialog has a local-only URL replacement map using `old URL => new URL` lines.
-- The map rewrites the final export payload HTML/CSS and the export-side sandbox diagnostics/preflight view.
+- The map rewrites the local preview iframe, edit Shadow render, final export payload HTML/CSS, and the export-side sandbox diagnostics/preflight view.
 - The app does not download, embed, publish, or commit the referenced assets.
 - The zip includes only a small `asset-replacements.json` summary with counts/warnings, not the original URL list.
-- Preview/edit render-time replacement and import-side assisted replacement are still TODO.
+- Browser smoke verifies a synthetic replacement reaches both preview iframe `srcdoc` and edit Shadow DOM render without leaking the original URL.
+- Import-side detection exists; guided replacement suggestions and persistent per-project asset relink UX are still TODO.
 
 ## UI Behavior
 

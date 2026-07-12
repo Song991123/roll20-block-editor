@@ -131,6 +131,76 @@ async function importFixture(page, fixture) {
   }, fixture);
 }
 
+async function verifyAssetReplacementRender(page) {
+  const oldUrl = 'https://example.invalid/r20-original-asset.png';
+  const newUrl = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+  const html = `<div class="asset-probe" style="background-image:url('${oldUrl}')">asset probe</div>`;
+  const css = `.asset-probe{width:24px;height:24px;background-image:url("${oldUrl}")}`;
+  const mapText = `${oldUrl} => ${newUrl}`;
+
+  await warmPerfHook(page);
+  await page.evaluate(async ({ html: h, css: c, map }) => {
+    window.__perfHook.clearAll();
+    await window.__perfHook.importSheet({ html: h, css: c, i18n: '{}' });
+    window.__perfHook.setAssetReplacementMap(map);
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setPreviewRenderMode('iframe');
+    window.__perfHook.setMainMode('preview');
+  }, { html, css, map: mapText });
+
+  await page.waitForSelector('[data-testid="preview-iframe"]', { timeout: 15000 });
+  await page.waitForFunction(
+    ({ oldNeedle, newNeedle }) => {
+      const iframe = document.querySelector('[data-testid="preview-iframe"]');
+      const srcdoc = iframe?.getAttribute('srcdoc') ?? '';
+      return srcdoc.includes(newNeedle) && !srcdoc.includes(oldNeedle);
+    },
+    { oldNeedle: oldUrl, newNeedle: newUrl },
+    { timeout: 15000 },
+  );
+
+  const preview = await page.evaluate(({ oldNeedle, newNeedle }) => {
+    const iframe = document.querySelector('[data-testid="preview-iframe"]');
+    const srcdoc = iframe?.getAttribute('srcdoc') ?? '';
+    return {
+      hasNewUrl: srcdoc.includes(newNeedle),
+      hasOldUrl: srcdoc.includes(oldNeedle),
+      mapValue: window.__perfHook.getAssetReplacementMap(),
+    };
+  }, { oldNeedle: oldUrl, newNeedle: newUrl });
+
+  await page.evaluate(() => window.__perfHook.setMainMode('edit'));
+  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 15000 });
+  await page.waitForFunction(
+    ({ oldNeedle, newNeedle }) => {
+      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+      const styles = Array.from(host?.shadowRoot?.querySelectorAll('style') ?? [])
+        .map((style) => style.textContent ?? '')
+        .join('\n');
+      const htmlText = host?.shadowRoot?.innerHTML ?? '';
+      const combined = `${styles}\n${htmlText}`;
+      return combined.includes(newNeedle) && !combined.includes(oldNeedle);
+    },
+    { oldNeedle: oldUrl, newNeedle: newUrl },
+    { timeout: 15000 },
+  );
+
+  const edit = await page.evaluate(({ oldNeedle, newNeedle }) => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const styles = Array.from(host?.shadowRoot?.querySelectorAll('style') ?? [])
+      .map((style) => style.textContent ?? '')
+      .join('\n');
+    const htmlText = host?.shadowRoot?.innerHTML ?? '';
+    const combined = `${styles}\n${htmlText}`;
+    return {
+      hasNewUrl: combined.includes(newNeedle),
+      hasOldUrl: combined.includes(oldNeedle),
+    };
+  }, { oldNeedle: oldUrl, newNeedle: newUrl });
+
+  return { oldUrl, newUrl, preview, edit };
+}
+
 async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
   const fixture = await loadFixture(FIXTURE_ID);
@@ -247,6 +317,7 @@ async function main() {
     }));
 
     await page.keyboard.press('Escape');
+    result.checks.assetReplacementRender = await verifyAssetReplacementRender(page);
     await page.click('[data-testid="main-mode-edit"]');
     result.checks.mainModeEdit = await page.evaluate(() => ({
       editSelected: document.querySelector('[data-testid="main-mode-edit"]')?.getAttribute('aria-selected'),
@@ -311,6 +382,10 @@ async function main() {
     }
     if (!result.checks.importDialog.hasAssetProxyMetric) failures.push('import asset proxy metric missing');
     if (!result.checks.importDialog.hasAssetPlaceholderMetric) failures.push('import asset placeholder metric missing');
+    if (!result.checks.assetReplacementRender.preview.hasNewUrl) failures.push('asset replacement did not reach preview iframe');
+    if (result.checks.assetReplacementRender.preview.hasOldUrl) failures.push('original asset URL leaked in preview iframe');
+    if (!result.checks.assetReplacementRender.edit.hasNewUrl) failures.push('asset replacement did not reach edit shadow render');
+    if (result.checks.assetReplacementRender.edit.hasOldUrl) failures.push('original asset URL leaked in edit shadow render');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
     if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');
