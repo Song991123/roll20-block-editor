@@ -1,3 +1,11 @@
+## 2026-07-13 Background Raster Flat-Paint Classification
+
+- Updated `diagnose:roll20-chat-background-raster` so the report no longer collapses row-compositing evidence into a vague source/browser-paint bucket.
+- The report now carries edge, flat-paint, local-darker, local-brighter, chroma, and worst-row details from `chat-row-compositing-probe`.
+- Current AW2E and YSHY chat evidence routes to `FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED`: both are `100%` flat-paint mismatch, `0%` edge mismatch, and only weakly affected by virtual luma correction.
+- Verification: `test:roll20-chat-background-raster`, syntax check, current `diagnose:roll20-chat-background-raster`, and `gate:roll20-renderer-action` passed.
+- Claim boundary: this improves the next investigation path only. Renderer remains held and no product CSS was promoted.
+
 ## 2026-07-13 Targeted Renderer Plan Row-Raster Precision
 
 - Fixed `plan:roll20-chat-renderer-targets` so it reads `worstRows[0]` and `summary` from `chat-row-raster-probe` instead of looking for a non-existent `worstRow` field.

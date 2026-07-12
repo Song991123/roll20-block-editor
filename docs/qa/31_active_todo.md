@@ -1,3 +1,14 @@
+## 2026-07-13 Background Raster Flat-Paint Classification TODO Note
+
+- DONE: `diagnose:roll20-chat-background-raster` now preserves row-compositing bucket evidence in its fixture output and uses it for routing decisions.
+- OBSERVED: Current AW2E and YSHY evidence is now classified as `FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED`, not a generic source/paint bucket. Both have `0%` edge mismatch share and `100%` flat-paint mismatch share, with local darker/chroma-heavy rows.
+- OBSERVED: Current run output:
+  - AW2E: row `17.93%`, luma gain `-0.34%`, flat `100%`, darker `66.87%`, chroma `48.62%`, worst row `1 26.28%`.
+  - YSHY 1BU: row `21.41%`, luma gain `+0.57%`, flat `100%`, darker `65.99%`, chroma `49.02%`, worst row `5 27.73%`.
+- VERIFIED: `test:roll20-chat-background-raster`, `node --check scripts\roll20_chat_background_raster_model_probe.mjs`, `diagnose:roll20-chat-background-raster -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed.
+- CURRENT: Production ChatPane renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`. The next useful P0 remains source/proxy byte, browser decode, Roll20 paint-context, and user-owned asset relink verification, not another broad width/font/background-size CSS candidate.
+- CLAIM BOUNDARY: This is diagnostic routing only. It does not upload to Roll20, relink dead assets, or prove Roll20 visual parity.
+
 ## 2026-07-13 Targeted Renderer Plan Row-Raster Precision TODO Note
 
 - DONE: `plan:roll20-chat-renderer-targets` now carries row-raster worst-row evidence from `chat-row-raster-probe` instead of reporting `unknown worst row`.
