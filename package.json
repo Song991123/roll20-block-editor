@@ -70,6 +70,7 @@
     "diagnose:roll20-chat-rows": "node scripts/roll20_chat_row_geometry_compare.mjs",
     "diagnose:roll20-chat-style": "node scripts/roll20_chat_style_context_diagnostics.mjs",
     "diagnose:roll20-chat-current-metrics": "node scripts/roll20_chat_current_metrics_audit.mjs",
+    "diagnose:roll20-chat-refresh": "node scripts/roll20_chat_diagnostic_refresh.mjs",
     "handoff:roll20-chat-current": "node scripts/roll20_chat_current_handoff.mjs",
     "preflight:roll20-cdp": "node scripts/roll20_cdp_preflight.mjs",
     "open:roll20-character-cdp": "node scripts/roll20_character_cdp_open.mjs",

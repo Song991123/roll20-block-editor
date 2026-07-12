@@ -1,3 +1,14 @@
+## 2026-07-12 Roll20 Chat Diagnostic Refresh TODO Note
+
+- DONE: Added `corepack pnpm run diagnose:roll20-chat-refresh -- reports\roll20-actual-compare\2026-06-18-state-map-v1` so chat parity, current metrics, style/candidate diagnostics, width/message/table models, row/background probes, width reconciliation, and `gate:roll20-renderer-action` are regenerated from the same current evidence set.
+- VERIFIED: The refresh command completed successfully after the AW2E actual chat recapture. Current actual evidence remains complete: `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatCurrentMetrics=3/3`.
+- CURRENT: Renderer is still correctly held: `HOLD_PRODUCTION_RENDERER_PATCH`, `rendererReady=NO`, `chatNormalizedHighMismatch=3`, `chatAlignedHighMismatch=3`, `chatMaxAlignedMismatch=54.1%`.
+- CURRENT: Fresh width reconciliation splits the next work into three P0 axes:
+  - `official-roll20-AW2E`: `CHAT_MESSAGE_CONTENT_WIDTH`, aligned mismatch `18.03%`, table delta `+15.75px`; model per-template message/content width, not global ChatPane width.
+  - `official-roll20-Les-Oublies`: `NEW_NARROW_MODEL_REQUIRED`, aligned mismatch `54.1%`; current candidates are rejected/no-gain, and row/text/table structure parity must be compared before CSS promotion.
+  - `yshy-commission-1bu`: `TABLE_SCROLL_INTRINSIC`, aligned mismatch `20.68%`, table delta `-24.531px`; build a CoC/YSHY-scoped table intrinsic/font/sanitize model, not transform or broad typography CSS.
+- STILL TODO: Implement the next narrow diagnostics/renderer experiments in that order. Do not expose a public chat renderer option or enable production ChatPane CSS until the gate stops reporting split fixture axes and high mismatch.
+
 ## 2026-07-12 AW2E Roll20 Foreground Chat Recapture TODO Note
 
 - DONE: Reapplied `official-roll20-AW2E` to the dedicated Roll20 Custom Sheet Sandbox (`21639681`) through the guarded settings-page endpoint fallback. The settings page reported `Your changes were saved successfully`, and the snippet reported no translation JSON parse error and no Roll20 editor parse error.

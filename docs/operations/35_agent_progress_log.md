@@ -1,3 +1,14 @@
+## 2026-07-12 Roll20 Chat Diagnostic Refresh
+
+- Added `scripts/roll20_chat_diagnostic_refresh.mjs` and package alias `diagnose:roll20-chat-refresh` to rerun the Roll20 chat diagnostic chain from a single current evidence set after actual chat recaptures.
+- Ran the refresh against `reports\roll20-actual-compare\2026-06-18-state-map-v1`; it completed and regenerated parity/current-metrics/style/candidate/width/message/table/row/background/reconciliation reports plus the renderer action gate.
+- Current verified evidence remains complete but not visually matching: generated actual screenshots `6/6`, generated diffs `6/6`, authoritative generated evidence `YES`, chat capture suspects `0`, current metrics `3/3`, renderer action `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Fresh split:
+  - AW2E: `CHAT_MESSAGE_CONTENT_WIDTH`, aligned mismatch `18.03%`.
+  - Les-Oublies: `NEW_NARROW_MODEL_REQUIRED`, aligned mismatch `54.1%`; current CSS candidates are not safe enough and row/text structure needs a narrower probe.
+  - YSHY 1BU: `TABLE_SCROLL_INTRINSIC`, aligned mismatch `20.68%`.
+- Boundary: this is better truth maintenance and renderer triage, not a visual parity fix. The production renderer remains held.
+
 ## 2026-07-12 AW2E Actual Roll20 Chat Recapture
 
 - Reapplied `official-roll20-AW2E` only to the dedicated Roll20 Custom Sheet Sandbox/test-room (`21639681`) with the guarded settings-page endpoint fallback. The page saved successfully and reported no translation or editor parse error.
