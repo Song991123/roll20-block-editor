@@ -11,12 +11,22 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const optionNamesWithValues = new Set(['--out-dir', '--report-dir']);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const localSmokeArg = args[1] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
 const localSmokePath = path.resolve(localSmokeArg);
-const outDir = path.join(runDir, 'chat-font-glyph-model');
+const outDir = path.resolve(readOption('--out-dir', readOption('--report-dir', path.join(runDir, 'chat-font-glyph-model'))));
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
 
 async function main() {
   const localSmoke = await readJson(localSmokePath);
@@ -36,6 +46,9 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
     localSmoke: localSmokeArg,
+    reportOverrides: {
+      outDir: rel(outDir),
+    },
     scope: 'diagnostic-only font/glyph width model',
     summary: {
       status: actionable.length ? 'FONT_GLYPH_MODEL_REQUIRED' : 'FONT_GLYPH_SECONDARY',
@@ -635,6 +648,10 @@ function fmtPx(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return '';
   return `${number > 0 ? '+' : ''}${Number(number.toFixed(3))}px`;
+}
+
+function rel(file) {
+  return path.relative(process.cwd(), file);
 }
 
 await main();

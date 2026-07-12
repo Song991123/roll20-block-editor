@@ -1,3 +1,15 @@
+## 2026-07-13 AW2E Width/Text Metrics Font-Glyph Follow-Up
+
+- Added `--out-dir` / `--report-dir` support to `scripts/roll20_chat_font_glyph_model.mjs` so candidate-specific font/glyph evidence can stay in ignored temp output instead of rewriting the canonical actual Roll20 report folder.
+- Updated `scripts/README.md` for the new font/glyph diagnostic argument shape.
+- Verification: `node --check scripts\roll20_chat_font_glyph_model.mjs` passed.
+- Default font/glyph evidence: `..\_tmp_codex_smoke\chat-font-glyph-default-outdir-20260713-r1` reports AW2E `tableDelta=+15.75px`, `tableTextDelta=+15.602px`, residual `+0.148px`, and `12` compared textMeasure samples.
+- Candidate font/glyph evidence: `..\_tmp_codex_smoke\chat-font-glyph-aw2e-message-width-text-metrics-20260713-r1` reports AW2E `tableDelta=0px`, `tableTextDelta=0px`, residual `0px`, and no table font-family/font-availability change.
+- Candidate raster evidence: `..\_tmp_codex_smoke\row-raster-candidates-aw2e-width-text-metrics-20260713-r1` still rejects `aw2e-message-width-text-metrics`; AW2E weighted row mismatch worsens from `17.93%` to `24.69%`, and worst-row mismatch worsens from `26.28%` to `34.28%`.
+- Candidate compositing evidence: `..\_tmp_codex_smoke\row-compositing-aw2e-width-text-metrics-20260713-r1` classifies AW2E as `LOCAL_BACKGROUND_TOO_DARK`; worst row is `edge=0%`, `flat=100%`, `localDarker=68.48%`.
+- Candidate background-source evidence: `..\_tmp_codex_smoke\background-source-aw2e-width-text-metrics-candidate-smoke-20260713-r1` reports AW2E `bg=DECLARATIONS_MATCH`, `widthDelta=0px`, and `BACKGROUND_SOURCE_SECONDARY`.
+- Claim boundary: this is diagnostic routing only. The candidate proves the width/text measurement axis can be matched, but it is still rejected for production because row raster gets worse. No Roll20 upload, asset relink, or production ChatPane CSS change happened.
+
 ## 2026-07-13 AW2E Width/Text Metrics Cell Allocation Follow-Up
 
 - Reran the existing `aw2e-message-width-text-metrics` candidate through the cell allocation probe instead of promoting or retrying broad AW2E cell/font CSS.

@@ -1,3 +1,14 @@
+## 2026-07-13 AW2E Width/Text Metrics Font-Glyph Follow-Up TODO Note
+
+- DONE: `diagnose:roll20-chat-font-glyph` now accepts `--out-dir` / `--report-dir`, so default and candidate smoke evidence can be compared in ignored temp folders without rewriting canonical Roll20 reports.
+- VERIFIED: `node --check scripts\roll20_chat_font_glyph_model.mjs` passed.
+- VERIFIED: Default font/glyph rerun wrote `..\_tmp_codex_smoke\chat-font-glyph-default-outdir-20260713-r1`. Current default AW2E evidence still says text measurement explains the table delta: `tableDelta=+15.75px`, `tableTextDelta=+15.602px`, residual `+0.148px`, `12` compared samples.
+- VERIFIED: Candidate font/glyph rerun wrote `..\_tmp_codex_smoke\chat-font-glyph-aw2e-message-width-text-metrics-20260713-r1`. For AW2E, `aw2e-message-width-text-metrics` brings `tableDelta`, `tableTextDelta`, and residual to `0px`, with `12` compared samples and no table font-family or font-availability change.
+- VERIFIED: Fresh row-raster candidate comparison wrote `..\_tmp_codex_smoke\row-raster-candidates-aw2e-width-text-metrics-20260713-r1` and still rejects `aw2e-message-width-text-metrics`: AW2E weighted mismatch worsens `17.93% -> 24.69%`, worst row worsens `26.28% -> 34.28%`.
+- VERIFIED: Candidate row-compositing wrote `..\_tmp_codex_smoke\row-compositing-aw2e-width-text-metrics-20260713-r1`; AW2E worst-row mismatch is flat-paint dominated (`edge=0%`, `flat=100%`, `localDarker=68.48%`), not a row text/edge issue.
+- VERIFIED: Candidate background-source rerun with the candidate smoke wrote `..\_tmp_codex_smoke\background-source-aw2e-width-text-metrics-candidate-smoke-20260713-r1`; AW2E reports `bg=DECLARATIONS_MATCH`, `widthDelta=0px`, and `BACKGROUND_SOURCE_SECONDARY`.
+- CURRENT: `aw2e-message-width-text-metrics` is useful diagnostic evidence because it proves AW2E width/text measurement can be matched, but it remains production-rejected by row raster. The next AW2E probe should compare browser paint/capture/compositing context for the flat row background, not another width/font CSS tweak.
+
 ## 2026-07-13 AW2E Width/Text Metrics Cell Allocation Follow-Up TODO Note
 
 - VERIFIED: `aw2e-message-width-text-metrics` was rerun through `diagnose:roll20-chat-cell-allocation` with isolated output at `..\_tmp_codex_smoke\chat-cell-allocation-aw2e-message-width-text-metrics-20260713-r1`.
