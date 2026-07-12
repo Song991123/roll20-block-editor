@@ -3,8 +3,10 @@
 - Root cause update: the rejected AW2E `message width + cell font` candidate matched the obvious style probes (`chat/message` width and `td:first.fontSize`) but blew up the actual rolltemplate table width. That made the candidate look style-compatible in one narrow proof while pixel/row-raster evidence correctly rejected it.
 - Added per-cell `computedStyle` and box metrics to local chat smoke and Roll20 chat capture sidecars so future captures can compare cell-level font/box context directly.
 - Tightened `scripts/roll20_chat_candidate_style_proof.mjs`: AW2E message/cell-font candidates now must also match actual Roll20 `table.rect.width` within an 8px tolerance before they can be style-compatible.
+- Follow-up tightening: AW2E message/cell-font candidates now also compare text-cell rect widths from `rowMetrics`, preventing `td:first` marker-cell evidence from standing in for the real text cells that drive table width.
 - Verification: syntax checks passed for the three changed scripts. Targeted rerun wrote `..\_tmp_codex_smoke\chat-style-aw2e-cell-font-width-guard-20260713-r1` and reports `aw2e-message-cell-font-context` as `REJECT_STYLE_CONTRADICTION`.
 - Evidence: AW2E candidate local `table.rect.width=547.921875px`; actual Roll20 `table.rect.width=359.53125px`. The candidate remains diagnostic-only and rejected.
+- Additional evidence: text-cell widths diverge sharply (`Succeeds` `151.0625px` local vs `85.53125px` actual; `Succeeds partially` `167.4375px` local vs `93.71875px` actual). A local-only smoke combining `aw2e-root-width-actual` and `aw2e-message-cell-font-context` still leaves the table at `547.921875px`, so root width alone is not the missing model.
 - Claim boundary: no production ChatPane CSS changed, no Roll20 upload happened, no assets were relinked, and visual parity remains unproven.
 
 ## 2026-07-13 Background Source/Raster Candidate Evidence Override

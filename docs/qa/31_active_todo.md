@@ -2,9 +2,12 @@
 
 - DONE: `rolltemplate_chat_smoke` and the Roll20 chat capture probe snippet now record per-cell `computedStyle` plus box metrics (`offset/client/scroll` width and height). Future Roll20 chat sidecars can prove cell-level font/box context instead of only row/table summaries.
 - DONE: `diagnose:roll20-chat-candidate-style` now requires the AW2E `message width + cell font` proof path to match actual Roll20 `table` width as well as message-shell width and font context.
+- DONE: The same style proof now checks AW2E text-cell rect widths from `rowMetrics`, so broad cell-font candidates cannot pass by matching only `td:first`.
 - VERIFIED: `node --check` passed for `scripts\rolltemplate_chat_smoke.mjs`, `scripts\roll20_chat_capture_plan.mjs`, and `scripts\roll20_chat_candidate_style_proof.mjs`.
-- VERIFIED: Targeted style-proof rerun passed with temp output `..\_tmp_codex_smoke\chat-style-aw2e-cell-font-width-guard-20260713-r1`.
+- VERIFIED: Targeted style-proof reruns passed with temp outputs `..\_tmp_codex_smoke\chat-style-aw2e-cell-font-width-guard-20260713-r1` and `..\_tmp_codex_smoke\chat-style-aw2e-cell-width-profile-20260713-r1`.
 - OBSERVED: `aw2e-message-cell-font-context` is now explicitly rejected by actual table-width evidence: local candidate `table.rect.width=547.921875px` vs actual Roll20 `359.53125px` while chat/message width and `td:first.fontSize` match. This confirms the earlier `+188.391px` table-width explosion is a real blocker, not just stale background-source routing.
+- OBSERVED: The same candidate is also rejected by text-cell width evidence: `Succeeds` local `151.0625px` vs actual `85.53125px`, and `Succeeds partially` local `167.4375px` vs actual `93.71875px`. Matching only the empty/result marker cell is insufficient.
+- OBSERVED: A local-only smoke combining `aw2e-root-width-actual` with `aw2e-message-cell-font-context` still leaves the internal table at `547.921875px` while the template root is `279px`, so root-width forcing alone does not model actual Roll20 table layout.
 - CURRENT: Do not promote or retry broad AW2E cell-font copying. The next AW2E work should model the table/message width and crop context before any luma/background/text antialiasing candidate is considered production-ready. Roll20 visual parity remains unproven.
 
 ## 2026-07-13 Background Source/Raster Candidate Evidence Override TODO Note

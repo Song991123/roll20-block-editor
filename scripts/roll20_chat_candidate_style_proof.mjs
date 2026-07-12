@@ -286,18 +286,28 @@ function summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTempla
   const shell = summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar);
   const font = summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate);
   const tableWidth = summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 8);
-  const compatible = shell.status === 'STYLE_COMPATIBLE'
-    && font.status === 'STYLE_COMPATIBLE'
-    && tableWidth.status === 'STYLE_COMPATIBLE';
+  const textCells = summarizeAw2eTextCellWidths(candidate, fixtureId, candidateTemplate, actualTemplate);
+  const parts = [shell, tableWidth, font, textCells];
+  const status = parts.some((part) => part.status === 'CONTRADICTED_BY_ACTUAL_STYLE')
+    ? 'CONTRADICTED_BY_ACTUAL_STYLE'
+    : parts.some((part) => part.status === 'NO_COMPUTED_STYLE_PROOF')
+      ? 'NO_COMPUTED_STYLE_PROOF'
+      : parts.every((part) => part.status === 'STYLE_COMPATIBLE')
+        ? 'STYLE_COMPATIBLE'
+        : 'CONTRADICTED_BY_ACTUAL_STYLE';
+  const compatible = status === 'STYLE_COMPATIBLE';
   return {
     fixtureId,
-    status: compatible ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    status,
     finding: compatible
-      ? 'AW2E message/content width, table width, and cell font context match actual Roll20 evidence'
-      : 'AW2E message/content width plus cell font candidate is not fully supported by actual Roll20 table width/style evidence',
+      ? 'AW2E message/content width, table width, text-cell widths, and cell font context match actual Roll20 evidence'
+      : status === 'NO_COMPUTED_STYLE_PROOF'
+        ? 'AW2E text-cell proof needs refreshed Roll20 sidecar fields before this candidate can be style-compatible'
+        : 'AW2E message/content width plus cell font candidate is not fully supported by actual Roll20 table/text-cell style evidence',
     evidence: [
       ...shell.evidence.map((item) => ({ ...item, group: 'message-shell' })),
       ...tableWidth.evidence.map((item) => ({ ...item, group: 'table-width' })),
+      ...textCells.evidence.map((item) => ({ ...item, group: 'text-cell-width' })),
       ...font.evidence.map((item) => ({ ...item, group: 'font-size' })),
     ],
   };
@@ -361,6 +371,64 @@ function summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTe
       : 'AW2E table font-size does not match actual Roll20',
     evidence,
   };
+}
+
+function summarizeAw2eTextCellWidths(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const localCells = aw2eTextCells(candidateTemplate);
+  const actualCells = aw2eTextCells(actualTemplate);
+  const maxCells = Math.max(localCells.length, actualCells.length, 3);
+  const evidence = [];
+  for (let index = 0; index < maxCells; index += 1) {
+    const local = localCells[index] ?? null;
+    const actual = actualCells[index] ?? null;
+    evidence.push({
+      selector: `row:1 text-cell:${index}`,
+      key: 'rect.width',
+      localCandidate: numberOrNull(local?.rect?.width),
+      actual: numberOrNull(actual?.rect?.width),
+      localText: local?.text ?? null,
+      actualText: actual?.text ?? null,
+    });
+    evidence.push({
+      selector: `row:1 text-cell:${index}`,
+      key: 'fontSize',
+      localCandidate: local?.computedStyle?.fontSize ?? null,
+      actual: actual?.computedStyle?.fontSize ?? null,
+      localText: local?.text ?? null,
+      actualText: actual?.text ?? null,
+    });
+  }
+  const widthEvidence = evidence.filter((item) => item.key === 'rect.width');
+  const comparableWidths = widthEvidence.filter((item) => typeof item.localCandidate === 'number' && typeof item.actual === 'number');
+  if (comparableWidths.length < 3) {
+    return {
+      fixtureId,
+      status: 'NO_COMPUTED_STYLE_PROOF',
+      finding: 'AW2E text-cell width fields are missing from local or actual Roll20 sidecars',
+      evidence,
+    };
+  }
+  const deltas = comparableWidths.map((item) => Math.abs(item.localCandidate - item.actual));
+  const maxDelta = Math.max(...deltas);
+  return {
+    fixtureId,
+    status: maxDelta <= 8 ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: maxDelta <= 8
+      ? 'AW2E text-cell widths match actual Roll20 within 8px'
+      : `AW2E text-cell widths differ from actual Roll20 by up to ${fmtPx(maxDelta)}`,
+    evidence,
+  };
+}
+
+function aw2eTextCells(template) {
+  const rows = Array.isArray(template?.rowMetrics) ? template.rowMetrics : [];
+  const dataRow = rows.find((row) => (
+    Array.isArray(row?.cells) &&
+    row.cells.filter((cell) => String(cell?.text ?? '').trim()).length >= 3
+  ));
+  return (dataRow?.cells ?? [])
+    .filter((cell) => String(cell?.text ?? '').trim())
+    .slice(0, 3);
 }
 
 function summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
