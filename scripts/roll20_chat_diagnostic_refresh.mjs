@@ -41,6 +41,8 @@ const steps = [
   ['diagnose:roll20-chat-background-source', 'scripts/roll20_chat_background_source_probe.mjs'],
   ['diagnose:roll20-chat-background-raster', 'scripts/roll20_chat_background_raster_model_probe.mjs'],
   ['diagnose:roll20-chat-background-assets', 'scripts/roll20_chat_background_asset_probe.mjs'],
+  ['plan:roll20-chat-assets', 'scripts/roll20_chat_asset_preservation_plan.mjs'],
+  ['plan:roll20-chat-browser-paint', 'scripts/roll20_chat_browser_paint_plan.mjs'],
   ['diagnose:roll20-chat-rows', 'scripts/roll20_chat_row_geometry_compare.mjs'],
   ['diagnose:roll20-chat-width-reconciliation', 'scripts/roll20_chat_width_reconciliation.mjs'],
   ['plan:roll20-chat-renderer-targets', 'scripts/roll20_chat_targeted_renderer_plan.mjs'],

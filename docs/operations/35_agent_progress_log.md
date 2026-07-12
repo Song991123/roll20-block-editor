@@ -1,3 +1,11 @@
+## 2026-07-13 Browser Paint Plan Routing
+
+- Added `scripts/roll20_chat_browser_paint_plan.mjs`, a diagnostic-only planner for the next browser paint/decode investigation after chat asset and raster evidence is refreshed.
+- The planner classifies fixture work as blocked by asset relink, ready for browser paint context probing, proxy/cache bytes first, recapture first, or secondary/no-background-image.
+- Wired the planner into `diagnose:roll20-chat-refresh` after `plan:roll20-chat-assets` and before renderer gates, so refresh output keeps asset policy, flat-paint evidence, and renderer hold decisions in the same chain.
+- Expected current result: AW2E and YSHY stay blocked by asset relink while placeholder assets are still the evidence source; production renderer CSS remains held.
+- Claim boundary: this is evidence routing only. It does not provide hosted assets, upload to Roll20, change the ChatPane renderer, or prove Roll20 visual parity.
+
 ## 2026-07-13 Asset Probe Flat-Paint Decision Bridge
 
 - Updated `diagnose:roll20-chat-background-assets` so the new flat-paint/color raster decision routes to `ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT` when asset bytes are healthy.

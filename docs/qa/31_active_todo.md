@@ -1,3 +1,11 @@
+## 2026-07-13 Browser Paint Plan Routing TODO Note
+
+- DONE: Added `plan:roll20-chat-browser-paint`, a diagnostic-only router that reads current chat asset, asset-preservation, background-raster, background-source, and row-compositing evidence.
+- WHY: AW2E/YSHY now point at a flat-paint/browser-color-model axis, but browser paint work is only valid after dead placeholder assets are relinked or the fixture is classified as non-image/secondary.
+- CURRENT EXPECTED ROUTING: With the current `reports\roll20-actual-compare\2026-06-18-state-map-v1` evidence, AW2E and YSHY should remain `BLOCKED_BY_ASSET_RELINK`, while no-background-image fixtures stay secondary instead of prompting renderer CSS changes.
+- VERIFIED: `test:roll20-chat-browser-paint`, syntax checks for the new planner and diagnostic refresh, current `plan:roll20-chat-assets`, current `plan:roll20-chat-browser-paint`, `gate:roll20-renderer-action`, `guard:roll20-evidence`, full `diagnose:roll20-chat-refresh`, `lint`, and `build` passed.
+- CLAIM BOUNDARY: This is browser-paint investigation routing only. It does not relink assets, upload to Roll20, change production renderer CSS, or prove visual parity.
+
 ## 2026-07-13 Asset Probe Flat-Paint Decision Bridge TODO Note
 
 - DONE: `diagnose:roll20-chat-background-assets` and `plan:roll20-chat-assets` now recognize the new `FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED` raster decision.
