@@ -1,3 +1,13 @@
+## 2026-07-12 YSHY Roll20 Foreground Chat Recapture TODO Note
+
+- DONE: Used only the dedicated Roll20 Custom Sheet Sandbox/test-room editor (`Codex Roll20 Verify`, campaign `21639681`) and opened the sandbox character through Roll20's own `Campaign.characters` viewer path. Existing real rooms were not edited.
+- DONE: Saved fresh YSHY sheet-frame DOM evidence after the character iframe opened: `probe:roll20-sheet-frame` returned `VISIBLE_MATCH`, frame `Character sheet for Witrav Upijek`, `sheetHitCount=65`, `rootCount=3`, `attrCount=1069`, and `rollButtonCount=808`.
+- DONE: Clicked a YSHY roll button in that loaded character sheet, closed the overlapping character dialog, and recaptured foreground Roll20 chat evidence with `capture:roll20-chat-cdp -- --fixture yshy-commission-1bu --skip-click`. The capture wrote fresh ignored `roll20-chat.png` and `roll20-chat-dom-evidence.json`.
+- DONE: Added `scripts/roll20_character_cdp_open.mjs` plus `open:roll20-character-cdp` so future actual-screen sessions can list/open/close sandbox characters before running the sheet-frame probe.
+- VERIFIED: `node scripts\roll20_actual_screenshot_diff.mjs reports\roll20-actual-compare\2026-06-18-state-map-v1` now diffs YSHY chat (`42.73%` screenshot mismatch). `diagnose:roll20-chat-parity` now compares 2/3 chat fixtures and reports YSHY normalized rolltemplate mismatch `24.73%`.
+- CURRENT: `status:roll20-actual` improved to `generatedActualScreenshots=5/6` and `generatedDiffed=5/6`. `official-roll20-AW2E` still lacks trustworthy foreground chat evidence, so `rendererReady=NO` and `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH` remain correct.
+- STILL TODO: Apply/open the AW2E fixture in the dedicated sandbox, prove its sheet iframe with `probe:roll20-sheet-frame`, then recapture AW2E foreground `roll20-chat.png` with a fresh sidecar.
+
 ## 2026-06-21 Codex Update - AW2E live Roll20 chat observation, extension screenshot blocked
 
 Status: VERIFY/BLOCKED_CAPTURE_PATH. This batch used the logged-in Roll20 editor tab and did not edit existing room/settings/source. It observed live AW2E sheet/chat behavior, but did not add trusted Roll20 chat visual evidence.

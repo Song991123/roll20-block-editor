@@ -1,3 +1,12 @@
+## 2026-07-12 YSHY Actual Roll20 Chat Recapture
+
+- Used the dedicated Roll20 Custom Sheet Sandbox/test-room editor only. No existing real rooms or private campaign settings were modified.
+- Opened the sandbox character through Roll20's internal `Campaign.characters` viewer path after ordinary visible journal clicking failed to expose the iframe.
+- `probe:roll20-sheet-frame -- --fixture yshy-commission-1bu` saved positive iframe DOM evidence: `VISIBLE_MATCH`, `sheetHitCount=65`, `rootCount=3`, `attrCount=1069`, and `rollButtonCount=808`.
+- The first chat capture attempt correctly failed as `FOREGROUND_SUSPECT` because the open character dialog overlapped the right-side chat panel. Closing the character dialog and rerunning `capture:roll20-chat-cdp -- --fixture yshy-commission-1bu --skip-click` saved fresh foreground `roll20-chat.png` and `roll20-chat-dom-evidence.json`.
+- Added `scripts/roll20_character_cdp_open.mjs` and package alias `open:roll20-character-cdp` to make the repeatable sequence explicit: open character -> probe sheet iframe -> click/capture chat -> close character if it overlaps chat.
+- Verification so far: screenshot diff now includes YSHY chat (`42.73%` mismatch), chat parity compares 2/3 fixtures, and evidence guard passes. Overall actual status is now `generatedActualScreenshots=5/6`, `generatedDiffed=5/6`; AW2E chat is still missing and renderer remains HOLD.
+
 ## 2026-06-21 AW2E Live Roll20 Chat Observation
 
 - Used the logged-in `Codex Roll20 Verify | Roll20` editor tab only; no existing room settings, sheet source, character data, or campaign configuration were edited.
