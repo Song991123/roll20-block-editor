@@ -48,6 +48,7 @@ const candidates = [
   ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
   ['aw2e-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/screenshots'],
   ['aw2e-message-cell-font-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/screenshots'],
+  ['aw2e-message-cell-wrap-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
   ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
   ['coc-background-size-actual', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/screenshots'],

@@ -801,6 +801,7 @@ async function main() {
         policy === 'aw2e-font-size-only' ||
         policy === 'aw2e-text-metrics' ||
         policy === 'aw2e-message-cell-font-context' ||
+        policy === 'aw2e-message-cell-wrap-context' ||
         policy === 'yshy-table-font-context' ||
         policy === 'yshy-bookk-missing-render' ||
         policy === 'yshy-missing-bookk-table-font-context' ||

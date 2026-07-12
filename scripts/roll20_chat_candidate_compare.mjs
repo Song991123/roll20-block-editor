@@ -64,6 +64,7 @@ const candidates = [
   ['aw2e-font-size-only', 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/screenshots'],
   ['aw2e-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-text-metrics/screenshots'],
   ['aw2e-message-cell-font-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/screenshots'],
+  ['aw2e-message-cell-wrap-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/screenshots'],
   ['yshy-bookk-unavailable', 'reports/rolltemplate-chat-smoke-yshy-bookk-unavailable/screenshots'],
   ['yshy-table-font-context', 'reports/rolltemplate-chat-smoke-yshy-table-font-context/screenshots'],
   ['yshy-bookk-table-font-context', 'reports/rolltemplate-chat-smoke-yshy-bookk-table-font-context/screenshots'],

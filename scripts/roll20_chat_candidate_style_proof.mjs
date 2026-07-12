@@ -42,6 +42,7 @@ const CANDIDATE_SMOKE = {
   'roll20-letter-spacing': 'reports/rolltemplate-chat-smoke-letter-spacing/rolltemplate-chat-smoke-results.json',
   'aw2e-font-size-only': 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/rolltemplate-chat-smoke-results.json',
   'aw2e-message-cell-font-context': 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-cell-wrap-context': 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/rolltemplate-chat-smoke-results.json',
   'yshy-bookk-unavailable': 'reports/rolltemplate-chat-smoke-yshy-bookk-unavailable/rolltemplate-chat-smoke-results.json',
   'yshy-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-table-font-context/rolltemplate-chat-smoke-results.json',
   'yshy-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
@@ -181,7 +182,8 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   if (
     candidate.name === 'aw2e-message-width-font-size' ||
     candidate.name === 'aw2e-message-width-text-metrics' ||
-    candidate.name === 'aw2e-message-cell-font-context'
+    candidate.name === 'aw2e-message-cell-font-context' ||
+    candidate.name === 'aw2e-message-cell-wrap-context'
   ) {
     return summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }

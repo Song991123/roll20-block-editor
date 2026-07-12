@@ -61,6 +61,7 @@ type ChatTypographyPolicy =
   | 'aw2e-font-size-only'
   | 'aw2e-text-metrics'
   | 'aw2e-message-cell-font-context'
+  | 'aw2e-message-cell-wrap-context'
   | 'yshy-table-font-context'
   | 'yshy-bookk-missing-render'
   | 'yshy-missing-bookk-table-font-context'
@@ -127,6 +128,7 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
     value === 'aw2e-font-size-only' ||
     value === 'aw2e-text-metrics' ||
     value === 'aw2e-message-cell-font-context' ||
+    value === 'aw2e-message-cell-wrap-context' ||
     value === 'yshy-table-font-context' ||
     value === 'yshy-bookk-missing-render' ||
     value === 'yshy-missing-bookk-table-font-context' ||
@@ -326,6 +328,22 @@ const roll20ChatShellCss = `
   font-size: 27.3px;
   letter-spacing: normal;
   -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw,
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw table {
+  color: rgb(64, 64, 64);
+  font-size: 13.65px;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw td {
+  color: rgb(64, 64, 64);
+  font-size: 27.3px;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
 }
 .r20-chat-pane[data-r20-chat-typography-policy="yshy-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
 .r20-chat-pane[data-r20-chat-typography-policy="yshy-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
