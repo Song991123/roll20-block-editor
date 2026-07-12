@@ -13,14 +13,27 @@ import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = args.includes('--self-test');
-const runDirArg = args.find((arg) => arg !== '--self-test') ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
+const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'chat-asset-preservation-plan');
+const rawOutDir = readOption('--out-dir', '');
+const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-asset-preservation-plan');
 
 if (SELF_TEST) {
   selfTest();
 } else {
   await main();
+}
+
+function readOption(name, fallback = '') {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && arg !== '--self-test' && args[index - 1] !== '--out-dir');
 }
 
 async function main() {

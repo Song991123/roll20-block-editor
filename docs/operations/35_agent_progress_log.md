@@ -1,3 +1,11 @@
+## 2026-07-13 Chat Asset/Paint Out-Dir
+
+- Root cause: the chat asset preservation and browser-paint routing scripts still wrote only into the selected actual-run folder. That made quick reruns unsafe or brittle when canonical Roll20 evidence output files were locked, even though the scripts only needed to read the source evidence and write a refreshed diagnostic summary.
+- Added `--out-dir <writable-dir>` to `scripts/roll20_chat_asset_preservation_plan.mjs` and `scripts/roll20_chat_browser_paint_plan.mjs`, matching the newer renderer/status/template-scope temp-output workflow.
+- Live temp-output verification against `reports\roll20-actual-compare\2026-06-18-state-map-v1` kept the current decisions unchanged: asset plan `HOLD_RENDERER_FOR_ASSET_POLICY`; browser-paint plan `BROWSER_PAINT_BLOCKED_BY_RELINK`; AW2E/YSHY still require user-owned relink URLs before CSS or browser-paint conclusions.
+- Verification: `node --check` for both scripts, `test:roll20-chat-assets`, `test:roll20-chat-browser-paint`, and both live `--out-dir` command shapes passed.
+- Claim boundary: diagnostic output isolation only. No renderer CSS was promoted, no assets were relinked, and Roll20 visual parity remains unproven.
+
 ## 2026-07-13 Chat Asset Probe Fetch-Failure Preservation
 
 - Root cause: after isolated refresh copied a canonical run, `diagnose:roll20-chat-background-assets` could still overwrite copied strong asset byte evidence with weaker `ASSET_FETCH_INCOMPLETE` if the current network/session could not fetch Roll20/Imgur background URLs.

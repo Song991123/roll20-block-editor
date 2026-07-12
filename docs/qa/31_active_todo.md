@@ -1,3 +1,11 @@
+## 2026-07-13 Chat Asset/Paint Out-Dir TODO Note
+
+- DONE: `plan:roll20-chat-assets` and `plan:roll20-chat-browser-paint` now accept `--out-dir <writable-dir>`, so agents can refresh asset and browser-paint routing from a locked/canonical actual-run folder without rewriting generated reports inside that folder.
+- WHY: The active renderer work must keep canonical Roll20 evidence read-only when Windows or another tool locks generated report files. Without `--out-dir`, agents either failed on locked reports or had to refresh canonical evidence just to check whether CSS work is still blocked.
+- VERIFIED: `node --check` for both scripts, `test:roll20-chat-assets`, `test:roll20-chat-browser-paint`, and live `--out-dir` runs against `reports\roll20-actual-compare\2026-06-18-state-map-v1` passed.
+- OBSERVED: Current asset plan remains `HOLD_RENDERER_FOR_ASSET_POLICY`; AW2E/YSHY remain `SOURCE_ASSET_LOST_RELINK_REQUIRED`. Current browser-paint plan remains `BROWSER_PAINT_BLOCKED_BY_RELINK`; Les-Oublies is secondary/no-background-image.
+- CURRENT: This is verification resilience only. Renderer CSS remains held until user-owned HTTP(S) relink maps are supplied and local preview/edit/export plus Roll20 Sandbox comparison are rerun.
+
 ## 2026-07-13 Chat Asset Probe Fetch-Failure Preservation TODO Note
 
 - DONE: `diagnose:roll20-chat-background-assets` now preserves stronger previous byte/placeholder evidence when a rerun hits `ASSET_FETCH_INCOMPLETE` for unchanged background URLs. The report records `preservedFetchFailureCount` and keeps the fresh fetch-failure side evidence instead of downgrading the fixture decision.
