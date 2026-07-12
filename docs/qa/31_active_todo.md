@@ -1,3 +1,10 @@
+## 2026-07-13 Edit Canvas-to-Layer Selection TODO Note
+
+- DONE: Edit layer rows now expose a testable selected state, and clicking a rendered object in the edit canvas updates the corresponding layer row selection.
+- VERIFIED: `smoke:edit-flow -- --port 4403` passed with `canvasSelectionSync.selected=true`, `rowSelected=1`, and the clicked Shadow DOM section carrying `.r20-selected`.
+- WHY: This closes the other half of the layer/canvas pairing. Users can now use either the layer list or the rendered sheet object and still see the same selection state.
+- CLAIM BOUNDARY: This is edit-mode selection UX only. It does not prove edit/preview parity for every imported sheet or actual Roll20 renderer parity.
+
 ## 2026-07-13 Edit Layer Selection Sync TODO Note
 
 - DONE: Edit mode now synchronizes selected layer rows with the actual Shadow DOM sheet object. Clicking a layer row applies the same `.r20-selected` outline to the rendered object instead of only changing the layer list state.

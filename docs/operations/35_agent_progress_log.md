@@ -1,3 +1,12 @@
+## 2026-07-13 Edit Canvas-to-Layer Selection
+
+- Added a row-level selected data attribute to the edit layer panel and extended the browser smoke to click a rendered Shadow DOM section, then verify the matching layer row is selected.
+- Current verified bidirectional selection shape:
+  - Layer row click -> rendered Shadow object receives `.r20-selected`.
+  - Rendered Shadow object click -> matching layer row exposes `data-r20-layer-selected="1"`.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:edit-flow -- --port 4403` passed.
+- Claim boundary: edit-mode UX only. It does not change actual Roll20 visual evidence.
+
 ## 2026-07-13 Edit Layer Selection Sync
 
 - Found a concrete edit UX wiring gap: `EditCanvas` mounted a Shadow selection API, but layer-row selection changes were not pushed back into the Shadow DOM. A layer row could become selected without the actual rendered sheet object showing the orange `.r20-selected` outline.

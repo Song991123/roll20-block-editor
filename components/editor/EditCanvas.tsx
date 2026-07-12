@@ -892,6 +892,7 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-layer-child-count={node.childCount}
       data-r20-layer-search-match={searchMatch ? '1' : '0'}
       data-r20-layer-context-only={contextOnly ? '1' : '0'}
+      data-r20-layer-selected={selected ? '1' : '0'}
       aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
       onClick={onSelect}
       onDragStart={(e) => {

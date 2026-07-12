@@ -664,6 +664,26 @@ async function main() {
     };
   }, dragDropState.nestedInputBlockId);
 
+  const canvasSelectionSync = await page.evaluate(async (sectionId) => {
+    if (!sectionId) return { selected: false, reason: 'missing section block id' };
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const target = host?.shadowRoot?.querySelector(`[data-r20-block-id="${CSS.escape(sectionId)}"]`);
+    if (!target) return { selected: false, reason: 'missing shadow target' };
+    target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, composed: true }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const row = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(sectionId)}"]`,
+    );
+    const selected = host?.shadowRoot?.querySelector('[data-r20-selected="1"], .r20-selected');
+    const selectedId = selected?.getAttribute('data-r20-block-id') ?? null;
+    return {
+      selected: selectedId === sectionId && row?.getAttribute('data-r20-layer-selected') === '1',
+      selectedId,
+      rowSelected: row?.getAttribute('data-r20-layer-selected') ?? null,
+      selectedClass: selected?.className?.toString() ?? '',
+    };
+  }, sectionInfo.blockId);
+
   const nonLeafLayerReorder = await page.evaluate(async () => {
     const html = [
       '<div class="outer" style="width:520px; min-height:180px; padding:12px">',
@@ -970,6 +990,7 @@ async function main() {
     layerDropModes,
     layerSearchContext,
     layerSelectionSync,
+    canvasSelectionSync,
     nonLeafLayerReorder,
     absoluteInsideFrame,
     freePlacementWidgetDrop,
@@ -1050,6 +1071,7 @@ async function main() {
     layerSearchContext.input?.contextOnly === '0' &&
     layerSearchContext.input?.hasDepthGuide === true &&
     layerSelectionSync.selected === true &&
+    canvasSelectionSync.selected === true &&
     nonLeafLayerReorder.mode === 'after' &&
     nonLeafLayerReorder.layerSameParent === true &&
     nonLeafLayerReorder.layerSameDepth === true &&
