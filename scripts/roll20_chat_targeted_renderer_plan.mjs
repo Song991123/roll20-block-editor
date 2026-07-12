@@ -313,7 +313,7 @@ function countBy(values) {
 function summarizeTriedCandidates(fixtureId, candidateByName) {
   const fixtureKey = fixtureKeyForId(fixtureId);
   const candidateNames = fixtureId === 'official-roll20-AW2E'
-    ? ['aw2e-text-metrics', 'aw2e-font-size-only', 'aw2e-message-width-font-size']
+    ? ['aw2e-text-metrics', 'aw2e-font-size-only', 'aw2e-message-width-font-size', 'aw2e-message-width-text-metrics']
     : fixtureId === 'yshy-commission-1bu'
       ? ['yshy-sanitize-typography', 'coc-table-intrinsic-clamp', 'paint-dim-background']
       : [];

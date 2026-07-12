@@ -1,3 +1,11 @@
+## 2026-07-13 AW2E Message Width + Text Metrics Candidate TODO Note
+
+- DONE: Added the diagnostic-only `aw2e-message-width-text-metrics` candidate to the chat candidate comparison/style-proof/target-plan plumbing.
+- OBSERVED: Fresh smoke for this candidate passed all 3 chat fixtures. AW2E raw rolltemplate-crop mismatch improved from the current default `26.9%` to `17.94%`, but AW2E aligned mismatch is only `17.94%` vs default aligned `18.03%`, so this is not enough for production promotion.
+- CURRENT: The candidate confirms the AW2E axis is message/content width plus text metrics, but it does not reduce the global high-mismatch count because YSHY remains `20.68%` aligned and Les-Oublies stays in the default/P1 bucket.
+- STILL TODO: Keep this candidate diagnostic-only. Next AW2E work should inspect row/background/text-antialiasing residuals after width/text metrics, while YSHY still needs a separate CoC table intrinsic/sanitize/font-context model.
+- CLAIM BOUNDARY: This is not Roll20 visual parity and not a ChatPane production renderer patch.
+
 ## 2026-07-13 Chat Renderer Target Plan TODO Note
 
 - DONE: Sharpened `plan:roll20-chat-renderer-targets` next commands so AW2E and YSHY no longer point primarily at broad/global candidate reruns.

@@ -3468,6 +3468,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verification: `corepack pnpm run lint`, `corepack pnpm run build`, `smoke:export-dialog`, `guard:roll20-evidence`, `guard:roll20-renderer-model`, `status:roll20-actual`, and `diagnose:roll20-renderer-blocker`.
 - Claim boundary: this improves product usability only. It does not change production Roll20 renderer CSS and does not prove Roll20 visual parity. Current renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH`.
 
+## 2026-07-13 AW2E Message Width + Text Metrics Candidate
+
+- Root cause hypothesis tested: AW2E Roll20 chat mismatch is driven by the combined Roll20 message/content width context plus AW2E table/cell text metrics, not by a global chat shell patch.
+- Ran a fresh diagnostic smoke with `--chat-geometry-policy aw2e-message-full-width --chat-typography-policy aw2e-text-metrics` into ignored `reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics`.
+- Result: smoke passed all 3 fixtures. AW2E raw crop mismatch dropped to `17.94%`, but aligned mismatch only improved from default `18.03%` to `17.94%`; YSHY remained `20.68%`.
+- Added the candidate to automated candidate comparison, style-proof lookup, and targeted renderer planning so later runs record it instead of repeating ad hoc measurement.
+- Claim boundary: diagnostic-only. Production ChatPane renderer remains held by split AW2E/YSHY axes and asset-relink blockers.
+
 ## 2026-06-20 Edit Layer Structure Visualization
 
 - Added direct `childCount` metadata to `BlockSnapshot` from Blockly input children.

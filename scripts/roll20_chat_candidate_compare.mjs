@@ -20,6 +20,7 @@ const candidates = [
   ['roll20-chat-shell-width-340', 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/screenshots'],
   ['aw2e-message-full-width', 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/screenshots'],
   ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
+  ['aw2e-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/screenshots'],
   ['table-scale-x', 'reports/rolltemplate-chat-smoke-table-scale-x/screenshots'],
   ['aw2e-root-width-actual', 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
