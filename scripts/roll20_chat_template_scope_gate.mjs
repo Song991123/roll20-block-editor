@@ -22,6 +22,7 @@ const optionNamesWithValues = new Set([
   '--style-proof-dir',
   '--asset-plan-dir',
   '--row-raster-candidates-dir',
+  '--cell-allocation-dir',
 ]);
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
@@ -35,6 +36,7 @@ const reportOverrides = {
   styleProof: readOption('--style-proof-dir', ''),
   assetPlan: readOption('--asset-plan-dir', ''),
   rowRasterCandidates: readOption('--row-raster-candidates-dir', ''),
+  cellAllocation: readOption('--cell-allocation-dir', ''),
 };
 
 if (SELF_TEST) {
@@ -64,6 +66,7 @@ async function main() {
     styleProof: await readReportJson('chat-candidate-style-proof', 'chat-candidate-style-proof-results.json', reportOverrides.styleProof),
     assetPlan: await readReportJson('chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json', reportOverrides.assetPlan),
     rowRasterCandidates: await readReportJson('chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json', reportOverrides.rowRasterCandidates),
+    cellAllocation: await readReportJson('chat-cell-allocation-probe', 'chat-cell-allocation-probe-results.json', reportOverrides.cellAllocation),
   };
   const report = buildReport(runDirArg, reports, normalizeReportOverrides(reportOverrides));
 
@@ -88,12 +91,14 @@ function buildReport(runDirLabel, reports, overrides = {}) {
     const bestCandidate = candidatesByFixture.get(fixtureKeyForId(fixtureId)) ?? null;
     const rowRasterCandidate = findCandidate(reports.rowRasterCandidates?.candidates, bestCandidate?.name);
     const rowRasterSummary = summarizeRowRasterCandidate(rowRasterCandidate, fixtureId);
+    const cellAllocation = summarizeCellAllocation(reports.cellAllocation, fixtureId, bestCandidate?.name);
     const strategy = plan?.strategy ?? '';
     const nextExperiment = reconciliation?.nextExperiment ?? '';
     const requiredModel = requiredModelFor(strategy, nextExperiment);
     const alignedMismatch = numberOrNull(plan?.alignedMismatchRatio ?? reconciliation?.alignedMismatchRatio);
     const assetBlocksPromotion = assetPlan?.rendererPolicy === 'DO_NOT_PROMOTE_CSS' || assetPlan?.decision === 'SOURCE_ASSET_LOST_RELINK_REQUIRED';
     const rowRasterBlocksPromotion = rowRasterSummary.risk.includes('reject');
+    const cellAllocationBlocksPromotion = Boolean(cellAllocation.bestCandidateScenario?.productionBlocker);
     return {
       fixtureId,
       priority: plan?.priority ?? reconciliation?.priority ?? priorityFor(alignedMismatch),
@@ -113,7 +118,9 @@ function buildReport(runDirLabel, reports, overrides = {}) {
       assetBlocksPromotion,
       rowRaster: rowRasterSummary,
       rowRasterBlocksPromotion,
-      promotionReady: isFixturePromotionReady(bestCandidate, { assetBlocksPromotion, rowRasterBlocksPromotion }),
+      cellAllocation,
+      cellAllocationBlocksPromotion,
+      promotionReady: isFixturePromotionReady(bestCandidate, { assetBlocksPromotion, rowRasterBlocksPromotion, cellAllocationBlocksPromotion }),
       nextAction: nextActionFor(fixtureId, requiredModel),
     };
   });
@@ -129,12 +136,17 @@ function buildReport(runDirLabel, reports, overrides = {}) {
   const rowRasterBlockers = highMismatch
     .filter((fixture) => fixture.rowRasterBlocksPromotion)
     .map((fixture) => `${fixture.fixtureId}: ${fixture.bestCandidate?.name ?? 'none'} row-raster risk=${fixture.rowRaster.risk}; weighted delta=${fmtSignedPct(fixture.rowRaster.weightedDeltaPct)}, worst-row delta=${fmtSignedPct(fixture.rowRaster.worstRowDeltaPct)}`);
+  const cellAllocationBlockers = highMismatch
+    .flatMap((fixture) => fixture.cellAllocation.rejectedScenarios.map((scenario) =>
+      `${fixture.fixtureId}: ${scenario.scenario} cell allocation rejected (${scenario.allocationDecision}; table delta=${fmtPx(scenario.tableDelta)}, max text-cell delta=${fmtPx(scenario.maxAbsTextCellWidthDelta)}, max ratio delta=${fmtSignedPct(scenario.maxAbsCellRatioDeltaPct)})`,
+    ));
   const blockers = [];
   if (highModels.size > 1) blockers.push(`high-mismatch fixtures require split renderer models: ${[...highModels].join(', ')}`);
   if (highScopes.size > 1) blockers.push(`high-mismatch fixtures require template-scoped rules: ${[...highScopes].join(', ')}`);
   blockers.push(...unsafeCandidates);
   blockers.push(...assetBlockers);
   blockers.push(...rowRasterBlockers);
+  blockers.push(...cellAllocationBlockers);
   if (reports.policy?.summary?.globalSafeCandidates === 0 || reports.policy?.summary?.globalSafeCandidates === '0') {
     blockers.push('chat renderer policy reports no global-safe candidates');
   }
@@ -154,6 +166,7 @@ function buildReport(runDirLabel, reports, overrides = {}) {
       promotionReadyFixtures: fixtures.filter((fixture) => fixture.promotionReady).length,
       assetBlockedFixtures: fixtures.filter((fixture) => fixture.assetBlocksPromotion).length,
       rowRasterBlockedFixtures: fixtures.filter((fixture) => fixture.rowRasterBlocksPromotion).length,
+      cellAllocationBlockedFixtures: fixtures.filter((fixture) => fixture.cellAllocationBlocksPromotion || fixture.cellAllocation.rejectedScenarios.length).length,
     },
     fixtures,
     blockers,
@@ -190,7 +203,8 @@ function isFixturePromotionReady(candidate, guards = {}) {
       !['REJECT_STYLE_CONTRADICTION', 'NOT_STYLE_PROVEN'].includes(candidate.styleProofStatus) &&
       !String(candidate.risk ?? '').includes('reject') &&
       !guards.assetBlocksPromotion &&
-      !guards.rowRasterBlocksPromotion
+      !guards.rowRasterBlocksPromotion &&
+      !guards.cellAllocationBlocksPromotion
   );
 }
 
@@ -259,6 +273,32 @@ function summarizeRowRasterCandidate(candidate, fixtureId) {
   };
 }
 
+function summarizeCellAllocation(report, fixtureId, bestCandidateName = '') {
+  const fixture = (report?.fixtures ?? []).find((item) => item.fixtureId === fixtureId);
+  const scenarios = (fixture?.scenarios ?? []).map((scenario) => ({
+    scenario: scenario.scenario ?? '',
+    status: scenario.status ?? '',
+    allocationDecision: scenario.allocationDecision ?? '',
+    productionBlocker: Boolean(scenario.productionBlocker),
+    tableDelta: numberOrNull(scenario.tableDelta),
+    maxAbsCellWidthDelta: numberOrNull(scenario.maxAbsCellWidthDelta),
+    maxAbsTextCellWidthDelta: numberOrNull(scenario.maxAbsTextCellWidthDelta),
+    maxAbsCellRatioDeltaPct: numberOrNull(scenario.maxAbsCellRatioDeltaPct),
+    nextAction: scenario.nextAction ?? '',
+  }));
+  const defaultScenario = scenarios.find((scenario) => scenario.scenario === 'default') ?? null;
+  const bestCandidateScenario = bestCandidateName
+    ? scenarios.find((scenario) => scenario.scenario === bestCandidateName) ?? null
+    : null;
+  return {
+    status: report?.summary?.status ?? '',
+    defaultScenario,
+    bestCandidateScenario,
+    rejectedScenarios: scenarios.filter((scenario) => scenario.productionBlocker && scenario.status !== 'MISSING'),
+    scenarios,
+  };
+}
+
 function rowRasterPrefixForFixture(fixtureId) {
   if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
   if (fixtureId === 'yshy-commission-1bu') return 'yshy';
@@ -272,6 +312,7 @@ function promotionHoldReason(fixture) {
   ];
   if (fixture.assetBlocksPromotion) reasons.push(`asset=${fixture.assetDecision || fixture.assetRendererPolicy || 'held'}`);
   if (fixture.rowRasterBlocksPromotion) reasons.push(`rowRaster=${fixture.rowRaster.risk}`);
+  if (fixture.cellAllocationBlocksPromotion) reasons.push(`cellAllocation=${fixture.cellAllocation.bestCandidateScenario?.allocationDecision ?? 'held'}`);
   return reasons.join(', ');
 }
 
@@ -285,11 +326,12 @@ function renderMarkdown(report) {
     '',
     'Scope: diagnostic-only. This gate prevents global ChatPane CSS promotion when fixtures require different template-scoped models.',
     '',
-    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Asset gate | Row raster | Ready | Next action |',
-    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- |',
+    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Cell allocation | Asset gate | Row raster | Ready | Next action |',
+    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${fixture.assetDecision || 'n/a'} | ${fixture.rowRaster.risk || 'n/a'} ${fixture.rowRaster.weightedMismatchPct ? `(${fixture.rowRaster.weightedMismatchPct})` : ''} | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
+    const cell = fixture.cellAllocation.bestCandidateScenario ?? fixture.cellAllocation.defaultScenario;
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${cell ? `${cell.scenario}:${cell.allocationDecision}` : 'n/a'} | ${fixture.assetDecision || 'n/a'} | ${fixture.rowRaster.risk || 'n/a'} ${fixture.rowRaster.weightedMismatchPct ? `(${fixture.rowRaster.weightedMismatchPct})` : ''} | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
   }
   lines.push('', '## Blockers', '');
   if (report.blockers.length) {
@@ -438,13 +480,43 @@ function selfTest() {
         },
       ],
     },
+    cellAllocation: {
+      summary: { status: 'CELL_ALLOCATION_BLOCKERS_FOUND' },
+      fixtures: [
+        {
+          fixtureId: 'official-roll20-AW2E',
+          scenarios: [
+            {
+              scenario: 'default',
+              status: 'COMPARED',
+              allocationDecision: 'UNIFORM_TABLE_SCALE_OR_CROP_CONTEXT',
+              productionBlocker: false,
+              tableDelta: 15.75,
+              maxAbsTextCellWidthDelta: 4.953,
+              maxAbsCellRatioDeltaPct: 0.255,
+            },
+            {
+              scenario: 'aw2e-font-size-only',
+              status: 'COMPARED',
+              allocationDecision: 'BROAD_STYLE_BREAKS_CELL_ALLOCATION',
+              productionBlocker: true,
+              tableDelta: -188.391,
+              maxAbsTextCellWidthDelta: 73.719,
+              maxAbsCellRatioDeltaPct: 6.802,
+            },
+          ],
+        },
+      ],
+    },
   }, { styleProof: path.resolve('tmp-style-proof') });
   assert.equal(report.action, 'HOLD_GLOBAL_CHAT_RENDERER_PATCH');
   assert.equal(report.reportOverrides.styleProof, path.resolve('tmp-style-proof'));
   assert.ok(report.blockers.some((blocker) => blocker.includes('split renderer models')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('placeholder image')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('row-raster risk=reject-row-raster-regression')));
+  assert.ok(report.blockers.some((blocker) => blocker.includes('cell allocation rejected')));
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredScope, '.sheet-rolltemplate-aw');
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').cellAllocationBlocksPromotion, true);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').promotionReady, false);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredModel, 'TABLE_INTRINSIC_SANITIZE_FONT');
   console.log('roll20_chat_template_scope_gate self-test PASS');

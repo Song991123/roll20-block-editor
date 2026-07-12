@@ -1,3 +1,13 @@
+## 2026-07-13 Cell Allocation Gate Integration TODO Note
+
+- DONE: `gate:roll20-chat-template-scope` now accepts `--cell-allocation-dir` and consumes `chat-cell-allocation-probe-results.json`. A production-blocking cell allocation scenario now becomes a template-scope blocker instead of staying as a standalone diagnostic note.
+- DONE: `gate:roll20-renderer-action` now accepts `--cell-allocation-dir` and `--chat-template-scope-dir`, summarizes cell allocation evidence, and adds a top-level production renderer blocker for production-unsafe cell allocation scenarios.
+- DONE: `diagnose:roll20-chat-refresh` now runs the default cell allocation probe before the template-scope gate, so future isolated refresh runs carry the default row/cell allocation evidence automatically.
+- VERIFIED: `node --check` passed for `roll20_chat_template_scope_gate.mjs`, `roll20_renderer_action_gate.mjs`, and `roll20_chat_diagnostic_refresh.mjs`; `test:roll20-chat-template-scope` passed.
+- VERIFIED: Template-scope gate with isolated cell allocation evidence wrote `..\_tmp_codex_smoke\chat-template-scope-cell-allocation-aw2e-wrap-20260713-r1` and increased blockers to `10`, including `official-roll20-AW2E: aw2e-message-cell-wrap-context cell allocation rejected (BROAD_STYLE_BREAKS_CELL_ALLOCATION; table delta=-188.391px, max text-cell delta=+73.719px, max ratio delta=+6.8%)`.
+- VERIFIED: Renderer action gate with the same overrides wrote `..\_tmp_codex_smoke\renderer-gate-cell-allocation-aw2e-wrap-20260713-r1` and now includes a top-level blocker: `chat cell allocation probe rejects production-unsafe scenarios: official-roll20-AW2E/aw2e-message-cell-wrap-context=BROAD_STYLE_BREAKS_CELL_ALLOCATION`.
+- CURRENT: The broad AW2E cell/wrap/font path is now blocked at the top renderer gate. Next renderer work should preserve default cell ratios and focus on AW2E message/content width plus exact text metrics, while YSHY remains a separate CoC/YSHY table intrinsic/sanitize/font-context track.
+
 ## 2026-07-13 AW2E Cell Allocation Probe TODO Note
 
 - DONE: Added `diagnose:roll20-chat-cell-allocation` and `test:roll20-chat-cell-allocation` to compare actual Roll20 chat DOM sidecars against local/candidate smoke row-cell allocation. The report records table width deltas, text-cell deltas, ratio deltas, and per-scenario decisions.

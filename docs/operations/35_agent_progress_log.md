@@ -1,3 +1,14 @@
+## 2026-07-13 Cell Allocation Gate Integration
+
+- Connected cell allocation evidence to the renderer decision path instead of leaving it as a standalone report.
+- `scripts/roll20_chat_template_scope_gate.mjs` now accepts `--cell-allocation-dir`, records cell allocation summaries per fixture, and adds blockers for production-unsafe scenarios such as `BROAD_STYLE_BREAKS_CELL_ALLOCATION`.
+- `scripts/roll20_renderer_action_gate.mjs` now accepts `--cell-allocation-dir` and `--chat-template-scope-dir`, summarizes the cell allocation probe, and emits a top-level production renderer blocker when a candidate breaks row/cell allocation.
+- `scripts/roll20_chat_diagnostic_refresh.mjs` now runs `diagnose:roll20-chat-cell-allocation` before the template-scope gate during default refreshes.
+- Verification: syntax checks passed for the three changed scripts and `test:roll20-chat-template-scope` passed.
+- Live gate evidence: `..\_tmp_codex_smoke\chat-template-scope-cell-allocation-aw2e-wrap-20260713-r1` reports `10` blockers, including the AW2E `aw2e-message-cell-wrap-context` allocation rejection (`tableDelta=-188.391px`, max text-cell delta `+73.719px`).
+- Live top-level evidence: `..\_tmp_codex_smoke\renderer-gate-cell-allocation-aw2e-wrap-20260713-r1` keeps `HOLD_PRODUCTION_RENDERER_PATCH` and includes the cell allocation blocker alongside split-model, asset, style-proof, row-raster, and candidate-regression blockers.
+- Claim boundary: no production ChatPane CSS changed and no new Roll20 capture/upload happened. This is promotion safety and diagnostic routing only.
+
 ## 2026-07-13 AW2E Cell Allocation Probe
 
 - Added `scripts/roll20_chat_cell_allocation_probe.mjs` plus `diagnose:roll20-chat-cell-allocation` and `test:roll20-chat-cell-allocation`.

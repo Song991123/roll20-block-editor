@@ -52,6 +52,7 @@ const steps = [
   ['plan:roll20-chat-browser-paint', 'scripts/roll20_chat_browser_paint_plan.mjs'],
   ['diagnose:roll20-chat-rows', 'scripts/roll20_chat_row_geometry_compare.mjs'],
   ['diagnose:roll20-chat-width-reconciliation', 'scripts/roll20_chat_width_reconciliation.mjs'],
+  ['diagnose:roll20-chat-cell-allocation', 'scripts/roll20_chat_cell_allocation_probe.mjs'],
   ['plan:roll20-chat-renderer-targets', 'scripts/roll20_chat_targeted_renderer_plan.mjs'],
   ['gate:roll20-chat-template-scope', 'scripts/roll20_chat_template_scope_gate.mjs'],
   ['gate:roll20-renderer-action', 'scripts/roll20_renderer_action_gate.mjs'],

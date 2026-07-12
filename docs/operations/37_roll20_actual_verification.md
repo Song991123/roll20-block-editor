@@ -116,6 +116,24 @@ Use this before promoting table/cell typography candidates. A result such as
 styles but changed the actual text-cell allocation too much to be production
 safe.
 
+To feed that isolated evidence into the template-scope and renderer gates
+without rewriting canonical reports:
+
+```powershell
+corepack pnpm run gate:roll20-chat-template-scope -- reports\roll20-actual-compare\<run> `
+  --cell-allocation-dir ..\_tmp_codex_smoke\chat-cell-allocation-<candidate> `
+  --out-dir ..\_tmp_codex_smoke\chat-template-scope-<candidate>
+
+corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\<run> `
+  --cell-allocation-dir ..\_tmp_codex_smoke\chat-cell-allocation-<candidate> `
+  --chat-template-scope-dir ..\_tmp_codex_smoke\chat-template-scope-<candidate> `
+  --out-dir ..\_tmp_codex_smoke\renderer-gate-<candidate>
+```
+
+The full refresh chain also runs the default cell allocation probe before the
+template-scope gate. Candidate-specific smoke still needs explicit
+`--candidate-smoke` plus the override flow above.
+
 ## Verification Tracks
 
 | Track | Purpose | Allowed Actions | Forbidden Actions |

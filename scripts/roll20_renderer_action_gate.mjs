@@ -19,6 +19,8 @@ const optionNamesWithValues = new Set([
   '--scroll-metrics-full-root-dir',
   '--root-cutoff-dir',
   '--geometry-dir',
+  '--chat-template-scope-dir',
+  '--cell-allocation-dir',
 ]);
 const runDirArg = firstPositionalArg() ?? '';
 const runDir = path.resolve(runDirArg);
@@ -35,6 +37,8 @@ const reportOverrides = {
   scrollMetricsFullRoot: readOption('--scroll-metrics-full-root-dir', ''),
   rootCutoff: readOption('--root-cutoff-dir', ''),
   geometry: readOption('--geometry-dir', ''),
+  chatTemplateScope: readOption('--chat-template-scope-dir', ''),
+  chatCellAllocation: readOption('--cell-allocation-dir', ''),
 };
 
 function readOption(name, fallback = '') {
@@ -89,10 +93,11 @@ async function main() {
   const chatCurrentMetricsAudit = await readJsonIfExists(path.join(runDir, 'chat-current-metrics-audit', 'chat-current-metrics-audit-results.json'));
   const chatStructureCompare = await readJsonIfExists(path.join(runDir, 'chat-structure-compare', 'chat-structure-compare-results.json'));
   const chatAssetPreservationPlan = await readJsonIfExists(path.join(runDir, 'chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json'));
-  const chatTemplateScopeGate = await readJsonIfExists(path.join(runDir, 'chat-template-scope-gate', 'chat-template-scope-gate-results.json'));
+  const chatCellAllocationProbe = await readReportJson('chat-cell-allocation-probe', 'chat-cell-allocation-probe-results.json', reportOverrides.chatCellAllocation);
+  const chatTemplateScopeGate = await readReportJson('chat-template-scope-gate', 'chat-template-scope-gate-results.json', reportOverrides.chatTemplateScope);
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -127,6 +132,7 @@ async function main() {
     chatAssetPreservationPlan: summarizeChatAssetPreservationPlan(chatAssetPreservationPlan),
     chatRowGeometry: summarizeChatRowGeometry(chatRowGeometry),
     chatWidthReconciliation: summarizeChatWidthReconciliation(chatWidthReconciliation),
+    chatCellAllocationProbe: summarizeChatCellAllocationProbe(chatCellAllocationProbe),
     chatTemplateScopeGate: summarizeChatTemplateScopeGate(chatTemplateScopeGate),
     chatCurrentMetrics: summarizeChatCurrentMetrics(status, chatCurrentMetricsAudit),
     chatStructure: summarizeChatStructure(chatStructureCompare),
@@ -300,7 +306,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -339,6 +345,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatAssetPreservationPlanSummary = summarizeChatAssetPreservationPlan(chatAssetPreservationPlan);
   const chatRowGeometrySummary = summarizeChatRowGeometry(chatRowGeometry);
   const chatWidthReconciliationSummary = summarizeChatWidthReconciliation(chatWidthReconciliation);
+  const chatCellAllocationProbeSummary = summarizeChatCellAllocationProbe(chatCellAllocationProbe);
   const chatTemplateScopeGateSummary = summarizeChatTemplateScopeGate(chatTemplateScopeGate);
   const chatCurrentMetrics = summarizeChatCurrentMetrics(status, chatCurrentMetricsAudit);
   const chatStructureSummary = summarizeChatStructure(chatStructureCompare);
@@ -692,6 +699,20 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     positiveFindings.push(`chat width reconciliation: actionable=${chatWidthReconciliationSummary.actionable}/${chatWidthReconciliationSummary.totalFixtures}, decisions=${formatFindingCounts(chatWidthReconciliationSummary.decisions)}`);
     for (const fixture of chatWidthReconciliationSummary.actionableFixtures) {
       positiveFindings.push(`${fixture.fixtureId} width reconciliation=${fixture.nextExperiment}, priority=${fixture.priority}, tableDelta=${fmtPx(fixture.tableWidthDelta)}, textResidual=${fmtPx(fixture.tableTextResidual)}, scrollDelta=${fmtPx(fixture.tableScrollWidthDelta)}, bestCandidate=${fixture.bestCandidateName || 'none'}, next=${fixture.nextAction}`);
+    }
+  }
+  if (!chatCellAllocationProbeSummary) {
+    warnings.push('chat cell allocation probe has not been run; run diagnose:roll20-chat-cell-allocation before promoting table/cell font, wrap, or width candidates');
+  } else {
+    positiveFindings.push(`chat cell allocation probe: status=${chatCellAllocationProbeSummary.status}, scenarios=${chatCellAllocationProbeSummary.scenarios}, rejected=${chatCellAllocationProbeSummary.rejectedScenarios.length}`);
+    for (const fixture of chatCellAllocationProbeSummary.fixtures) {
+      const defaultScenario = fixture.defaultScenario;
+      if (defaultScenario) {
+        positiveFindings.push(`${fixture.fixtureId} default cell allocation=${defaultScenario.allocationDecision}, tableDelta=${fmtPx(defaultScenario.tableDelta)}, maxTextCell=${fmtPx(defaultScenario.maxAbsTextCellWidthDelta)}, maxRatio=${fmtSigned(defaultScenario.maxAbsCellRatioDeltaPct)}%`);
+      }
+    }
+    if (chatCellAllocationProbeSummary.rejectedScenarios.length) {
+      blockers.push(`chat cell allocation probe rejects production-unsafe scenarios: ${chatCellAllocationProbeSummary.rejectedScenarios.map((item) => `${item.fixtureId}/${item.scenario}=${item.allocationDecision} tableDelta=${fmtPx(item.tableDelta)} maxTextCell=${fmtPx(item.maxAbsTextCellWidthDelta)}`).join('; ')}`);
     }
   }
   if (!chatTemplateScopeGateSummary) {
@@ -1766,6 +1787,41 @@ function summarizeChatTemplateScopeGate(report) {
   };
 }
 
+function summarizeChatCellAllocationProbe(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => {
+    const scenarios = (fixture.scenarios ?? []).map((scenario) => ({
+      scenario: scenario.scenario ?? '',
+      status: scenario.status ?? '',
+      allocationDecision: scenario.allocationDecision ?? '',
+      productionBlocker: Boolean(scenario.productionBlocker),
+      tableDelta: scenario.tableDelta ?? null,
+      maxAbsCellWidthDelta: scenario.maxAbsCellWidthDelta ?? null,
+      maxAbsTextCellWidthDelta: scenario.maxAbsTextCellWidthDelta ?? null,
+      maxAbsCellRatioDeltaPct: scenario.maxAbsCellRatioDeltaPct ?? null,
+      nextAction: scenario.nextAction ?? '',
+    }));
+    return {
+      fixtureId: fixture.fixtureId,
+      hasActualEvidence: Boolean(fixture.hasActualEvidence),
+      defaultScenario: scenarios.find((scenario) => scenario.scenario === 'default') ?? null,
+      rejectedScenarios: scenarios.filter((scenario) => scenario.productionBlocker && scenario.status !== 'MISSING'),
+      scenarios,
+    };
+  });
+  const rejectedScenarios = fixtures.flatMap((fixture) =>
+    fixture.rejectedScenarios.map((scenario) => ({ fixtureId: fixture.fixtureId, ...scenario })),
+  );
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    scenarios: Number(report.summary.scenarios ?? fixtures.reduce((sum, fixture) => sum + fixture.scenarios.length, 0)),
+    productionSafe: Boolean(report.summary.productionSafe),
+    rejectedScenarios,
+    fixtures,
+  };
+}
+
 function summarizeChatRowGeometry(report) {
   if (!report?.summary) return null;
   const fixtures = (report.fixtures ?? []).map((fixture) => ({
@@ -2566,6 +2622,24 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |');
       for (const fixture of report.chatTemplateScopeGate.fixtures) {
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct || 'n/a'} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidateName || 'none'} (${fixture.bestCandidateRisk || 'n/a'}) | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatCellAllocationProbe) {
+    lines.push('### Chat Cell Allocation Probe', '');
+    lines.push(`- Status: ${report.chatCellAllocationProbe.status}`);
+    lines.push(`- Fixtures: ${report.chatCellAllocationProbe.totalFixtures}`);
+    lines.push(`- Scenarios: ${report.chatCellAllocationProbe.scenarios}`);
+    lines.push(`- Rejected scenarios: ${report.chatCellAllocationProbe.rejectedScenarios.length}`);
+    if (report.chatCellAllocationProbe.fixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Scenario | Decision | Table delta | Max text cell | Max ratio | Next action |');
+      lines.push('| --- | --- | --- | ---: | ---: | ---: | --- |');
+      for (const fixture of report.chatCellAllocationProbe.fixtures) {
+        for (const scenario of fixture.scenarios) {
+          lines.push(`| \`${fixture.fixtureId}\` | \`${scenario.scenario}\` | ${scenario.allocationDecision} | ${fmtPx(scenario.tableDelta)} | ${fmtPx(scenario.maxAbsTextCellWidthDelta)} | ${fmtSigned(scenario.maxAbsCellRatioDeltaPct)}% | ${scenario.nextAction} |`);
+        }
       }
     }
     lines.push('');
