@@ -285,6 +285,15 @@ async function main() {
     const el = host.shadowRoot.querySelector('div[data-r20-block-id]');
     const rect = el.getBoundingClientRect();
     const style = el.getAttribute('style') ?? '';
+    const selectedClassWasPresent = el.classList.contains('r20-selected');
+    const selectedComputed = getComputedStyle(el);
+    const selectedOutline = selectedComputed.outlineStyle;
+    if (selectedClassWasPresent) el.classList.remove('r20-selected');
+    const affordanceComputed = getComputedStyle(el);
+    const persistentAffordanceOutline = affordanceComputed.outlineStyle;
+    const persistentAffordanceOutlineWidth = affordanceComputed.outlineWidth;
+    const persistentAffordanceBoxShadow = affordanceComputed.boxShadow;
+    if (selectedClassWasPresent) el.classList.add('r20-selected');
     const readPx = (prop) => {
       const match = style.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px`, 'i'));
       return match ? Math.round(Number.parseFloat(match[1])) : null;
@@ -296,6 +305,11 @@ async function main() {
       top: readPx('top'),
       canDrop: el.getAttribute('data-r20-can-drop'),
       layerRole: el.getAttribute('data-r20-layer-role'),
+      selectedClassWasPresent,
+      selectedOutline,
+      persistentAffordanceOutline,
+      persistentAffordanceOutlineWidth,
+      persistentAffordanceBoxShadow,
       cx: Math.round(rect.x + rect.width / 2),
       cy: Math.round(rect.y + rect.height / 2),
     };
@@ -1082,6 +1096,13 @@ async function main() {
     canvasWidthControl.afterReturn.inputValue === '930' &&
     canvasWidthControl.afterReturn.hostWidth === 930 &&
     /position\s*:\s*absolute/i.test(sectionInfo.style ?? '') &&
+    sectionInfo.canDrop === '1' &&
+    sectionInfo.layerRole === 'frame' &&
+    sectionInfo.selectedClassWasPresent === true &&
+    sectionInfo.selectedOutline === 'solid' &&
+    sectionInfo.persistentAffordanceOutline === 'dashed' &&
+    sectionInfo.persistentAffordanceOutlineWidth !== '0px' &&
+    sectionInfo.persistentAffordanceBoxShadow !== 'none' &&
     movedSectionInfo.computedPosition === 'absolute' &&
     typeof movedSectionInfo.computedLeft === 'number' &&
     typeof movedSectionInfo.computedTop === 'number' &&

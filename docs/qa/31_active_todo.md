@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Canvas Persistent Container Affordance TODO Note
+
+- DONE: Edit Shadow DOM now gives droppable containers a subtle persistent outline even before a widget is dragged over them. Frame/flow/table roles use separate outline colors, while selected objects and active drop targets still take priority.
+- WHY: The layer panel already classified containers, but the canvas itself did not continuously show which rendered objects can receive children. This made Figma-like "put this inside that frame" editing harder to read before drag.
+- VERIFIED: `smoke:edit-flow -- --port 4413 --report-dir ...\_tmp_codex_smoke\edit-flow-persistent-affordance-20260713-r3` passed. The smoke observed `data-r20-can-drop=1`, `data-r20-layer-role=frame`, selected outline `solid`, persistent affordance outline `dashed`, outline width `1px`, and non-empty inset box shadow. Existing flow drop, before/inside/after, absolute-in-frame, free-placement, layer search/path/autoscroll, and no-drift drag checks still passed.
+- VERIFIED: `node --check scripts\edit_flow_browser_smoke.mjs`, `guard:ui-copy`, `lint`, `build`, `git diff --check`, and post-smoke port hygiene passed. Smoke ports `4411`-`4413` had only `TIME_WAIT`; no local app server remained. Port `9222` remains the Roll20 CDP listener.
+- CLAIM BOUNDARY: This is edit-overlay UX only. It does not change emitted sheet HTML/CSS, does not prove actual Roll20 visual parity, and does not unblock current chat/asset renderer gates.
+
 ## 2026-07-13 Chat Asset/Paint Out-Dir TODO Note
 
 - DONE: `plan:roll20-chat-assets` and `plan:roll20-chat-browser-paint` now accept `--out-dir <writable-dir>`, so agents can refresh asset and browser-paint routing from a locked/canonical actual-run folder without rewriting generated reports inside that folder.

@@ -1,3 +1,12 @@
+## 2026-07-13 Edit Canvas Persistent Container Affordance
+
+- Root cause: layer rows exposed frame/flow/table container semantics, but the rendered edit canvas only highlighted containers during active widget drag. Users had to start dragging before they could see which sheet objects were safe container targets.
+- Added subtle persistent edit-overlay outlines in `lib/preview/shadowMount.ts` for `[data-r20-can-drop="1"]` containers. Frame, flow, and table roles get different color hints. `.r20-selected` and `.r20-drop-target` remain higher-priority, so selected objects and active drop targets still read clearly.
+- Extended `scripts/edit_flow_browser_smoke.mjs` to prove the overlay behavior. The smoke now checks that the generated section is a frame container, the selected outline is still solid, and the persistent container affordance becomes dashed with a non-empty inset shadow when selection is temporarily removed for measurement.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:edit-flow -- --port 4413 --report-dir D:\...\_tmp_codex_smoke\edit-flow-persistent-affordance-20260713-r3`, and `git diff --check` passed.
+- Server hygiene: post-smoke `netstat` showed ports `4411`, `4412`, and `4413` only in `TIME_WAIT`; no project dev/smoke server remained. Port `9222` remains the active Roll20 CDP listener and was not stopped.
+- Claim boundary: edit overlay affordance only. No emitted Roll20 sheet HTML/CSS was changed, no actual Roll20 screenshot evidence was added, and renderer parity remains gated by the existing chat/asset blockers.
+
 ## 2026-07-13 Chat Asset/Paint Out-Dir
 
 - Root cause: the chat asset preservation and browser-paint routing scripts still wrote only into the selected actual-run folder. That made quick reruns unsafe or brittle when canonical Roll20 evidence output files were locked, even though the scripts only needed to read the source evidence and write a refreshed diagnostic summary.

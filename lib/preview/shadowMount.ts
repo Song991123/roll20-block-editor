@@ -493,6 +493,23 @@ export function mountSheetShadow(
   outline: 2px dashed #f60;
   outline-offset: 2px;
 }
+:host(:not([data-r20-widget-dragging])) [data-r20-can-drop="1"]:not(.r20-selected):not(.r20-drop-target) {
+  outline: 1px dashed rgba(14, 165, 233, 0.34) !important;
+  outline-offset: 2px !important;
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.08);
+}
+:host(:not([data-r20-widget-dragging])) [data-r20-can-drop="1"][data-r20-layer-role="flow"]:not(.r20-selected):not(.r20-drop-target) {
+  outline-color: rgba(6, 182, 212, 0.38) !important;
+  box-shadow: inset 0 0 0 1px rgba(6, 182, 212, 0.1);
+}
+:host(:not([data-r20-widget-dragging])) [data-r20-can-drop="1"][data-r20-layer-role="table"]:not(.r20-selected):not(.r20-drop-target) {
+  outline-color: rgba(99, 102, 241, 0.4) !important;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.1);
+}
+:host(:not([data-r20-widget-dragging])) [data-r20-can-drop="1"]:not(.r20-selected):not(.r20-drop-target):hover {
+  outline-color: rgba(14, 165, 233, 0.62) !important;
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.18);
+}
 :host([data-r20-widget-dragging]) [data-r20-can-drop="1"] {
   background-image: linear-gradient(rgba(14, 165, 233, 0.08), rgba(14, 165, 233, 0.08));
   outline: 2px dashed rgba(14, 165, 233, 0.55);
