@@ -26,6 +26,7 @@ const PAGE_MATCH = readOption('--page-match', 'app.roll20.net');
 const ROLL_BUTTON = readOption('--roll-button', '');
 const EXPECTED_TEMPLATE_CLASS = readOption('--expected-template-class', '');
 const SKIP_CLICK = hasFlag('--skip-click');
+const KEEP_DIALOGS = hasFlag('--keep-dialogs');
 const WAIT_MS = Number(readOption('--wait-ms', '1500'));
 const DRY_RUN = hasFlag('--dry-run');
 const PLAN_ONLY = hasFlag('--plan-only') || hasFlag('--print-plan');
@@ -37,7 +38,7 @@ if (SELF_TEST_READINESS) {
 }
 
 if (!RUN_DIR || !FIXTURE_ID) {
-  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--expected-template-class sheet-rolltemplate-name] [--skip-click] [--dry-run] [--plan-only] [--self-test-readiness]');
+  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--expected-template-class sheet-rolltemplate-name] [--skip-click] [--keep-dialogs] [--dry-run] [--plan-only] [--self-test-readiness]');
   process.exit(2);
 }
 
@@ -103,6 +104,7 @@ async function main() {
       console.log(`frames=${summary.frames.length}`);
       console.log(`rollButton=${ROLL_BUTTON || '(none)'}`);
       console.log(`expectedTemplateClass=${EXPECTED_TEMPLATE_CLASS || '(none)'}`);
+      console.log(`keepDialogs=${KEEP_DIALOGS ? 'YES' : 'NO'}`);
       console.log(`snippet=${rel(snippetPath)}`);
       console.log(`sheetFrameEvidence=${rel(sheetFrameEvidencePath)}`);
       console.log(`targets=${rel(chatPngPath)}, ${rel(sidecarPath)}`);
@@ -123,6 +125,8 @@ async function main() {
       await page.waitForTimeout(Math.max(0, WAIT_MS));
     }
 
+    const overlayCleanup = KEEP_DIALOGS ? { status: 'disabled' } : await closeOverlappingCharacterDialogs(page);
+    if (overlayCleanup.closedCount) await page.waitForTimeout(300);
     const snippet = await readFile(snippetPath, 'utf8');
     const { evidence, frameInfo } = await evaluateChatProbe(page, snippet);
     validateEvidence(evidence);
@@ -147,6 +151,7 @@ async function main() {
         pageMatch: PAGE_MATCH,
         rollButton: SKIP_CLICK ? null : ROLL_BUTTON || '(auto)',
         expectedTemplateClass: EXPECTED_TEMPLATE_CLASS || null,
+        overlayCleanup,
         screenshotPath: rel(chatPngPath),
         sidecarPath: rel(sidecarPath),
         screenshotBytes: png.length,
@@ -174,6 +179,53 @@ async function main() {
   } finally {
     await browser.close();
   }
+}
+
+async function closeOverlappingCharacterDialogs(page) {
+  return page.evaluate(() => {
+    const rectOf = (el) => {
+      const rect = el?.getBoundingClientRect?.();
+      if (!rect) return null;
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom };
+    };
+    const intersects = (a, b) => Boolean(a && b && a.x < b.right && a.right > b.x && a.y < b.bottom && a.bottom > b.y);
+    const chatRoot = document.querySelector('#textchat, .textchatcontainer, #rightsidebar');
+    const chatRect = rectOf(chatRoot) || { x: window.innerWidth * 0.55, y: 0, right: window.innerWidth, bottom: window.innerHeight, width: window.innerWidth * 0.45, height: window.innerHeight };
+    const dialogs = Array.from(document.querySelectorAll('.ui-dialog,.characterdialog,.characterviewer,.charactereditor'))
+      .filter((dialog) => {
+        const rect = rectOf(dialog);
+        if (!rect || rect.width <= 0 || rect.height <= 0 || !intersects(rect, chatRect)) return false;
+        const hasSheetFrame = Boolean(dialog.querySelector('iframe[title*="Character sheet" i], iframe[src*="/editor/character/"]'));
+        const looksLikeCharacter = hasSheetFrame || /character|charsheet|characterviewer|charactereditor/i.test(String(dialog.className || ''));
+        return looksLikeCharacter;
+      });
+    const closed = [];
+    for (const dialog of dialogs) {
+      const summary = {
+        className: String(dialog.className || '').slice(0, 160),
+        rect: rectOf(dialog),
+        method: '',
+      };
+      const closeButton = dialog.querySelector('.ui-dialog-titlebar-close,[aria-label="Close"],.close');
+      if (closeButton instanceof HTMLElement) {
+        closeButton.click();
+        summary.method = 'close-button';
+      } else if (globalThis.jQuery && typeof globalThis.jQuery(dialog).dialog === 'function') {
+        globalThis.jQuery(dialog).dialog('close');
+        summary.method = 'jquery-dialog-close';
+      } else {
+        dialog.style.display = 'none';
+        summary.method = 'hide-fallback';
+      }
+      closed.push(summary);
+    }
+    return {
+      status: closed.length ? 'closed-overlapping-character-dialogs' : 'none',
+      closedCount: closed.length,
+      chatRect,
+      closed,
+    };
+  });
 }
 
 async function evaluateChatProbe(page, snippet) {

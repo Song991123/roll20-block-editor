@@ -895,6 +895,16 @@ function renderDomProbeSnippet(entry) {
         withinChatRoot: Boolean(el && textchat && (el === textchat || textchat.contains(el))),
       };
     });
+    const sampleOverlayCandidates = samples
+      .filter((sample) => !sample.withinTemplate && (
+        sample.element?.tagName === 'IFRAME'
+        || /ui-dialog|characterdialog|characterviewer|charactereditor/i.test(sample.element?.className || '')
+      ))
+      .map((sample) => ({
+        ...sample.element,
+        sampleLabel: sample.label,
+        overlayReason: sample.element?.tagName === 'IFRAME' ? 'iframe-over-template-sample' : 'dialog-over-template-sample',
+      }));
     const overlayKeywords = ['Sheet Sandbox Tools', 'HTML', 'CSS', 'Translation', 'Reload', 'Your session needs to be refreshed'];
     const overlayCandidates = Array.from(document.querySelectorAll('body *')).slice(0, 2500)
       .filter((el) => {
@@ -907,10 +917,11 @@ function renderDomProbeSnippet(entry) {
       })
       .slice(0, 12)
       .map((el) => summarizeTopElement(el));
+    const allOverlayCandidates = [...sampleOverlayCandidates, ...overlayCandidates].slice(0, 16);
     const templateHitRatio = samples.length
       ? samples.filter((sample) => sample.withinTemplate).length / samples.length
       : 0;
-    const ok = samples.length > 0 && templateHitRatio >= 0.6 && overlayCandidates.length === 0;
+    const ok = samples.length > 0 && templateHitRatio >= 0.6 && allOverlayCandidates.length === 0;
     return {
       status: ok ? 'FOREGROUND_TEMPLATE_HIT' : 'FOREGROUND_SUSPECT',
       ok,
@@ -919,7 +930,7 @@ function renderDomProbeSnippet(entry) {
         : 'selected rolltemplate DOM exists, but foreground sampling or overlay candidates make the screenshot crop suspect',
       templateHitRatio,
       samples,
-      overlayCandidates,
+      overlayCandidates: allOverlayCandidates,
     };
   };
   const templateForegroundEvidence = inspectTemplateForeground(selectedTemplateElement, selectedClip);

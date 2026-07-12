@@ -3284,6 +3284,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - The height-closest candidate remains `sandbox-sheet-alias-attr-class-state-first-13-source` at root delta `+208.5px`; pixel-best remains over-hidden `sandbox-sheet-alias-playbook-hide-source` at `7.22%` and `-6636.125px`.
 - Claim boundary: actual display-visible panel names are not sufficient to model AW2E Roll20 default state. This is diagnostic evidence only and still keeps renderer action on HOLD.
 
+## 2026-07-12 Roll20 Chat Overlay-Clean Recapture
+
+- Found a second evidence-quality issue after the Les same-template recapture: the selected DOM template was `sheet-rolltemplate-initiative-roll`, but the first PNG crop included the overlapping character-sheet dialog (`Modify` visible in the crop). This made `actualTemplatePixelSuspect=1` and downgraded `generatedAuthoritative=NO`.
+- Closed the overlapping Roll20 character dialog and recaptured Les-Oublies with `capture:roll20-chat-cdp -- --skip-click --expected-template-class sheet-rolltemplate-initiative-roll`. Visual inspection of the ignored local PNG showed only the `Initiative :` rolltemplate.
+- Hardened `capture:roll20-chat-cdp` to close overlapping character-sheet dialogs before chat probe/capture by default. The helper records `overlayCleanup` in `captureAutomation`; `--keep-dialogs` preserves old behavior for diagnostics.
+- Hardened generated chat probes so `IFRAME`/character dialog samples over the selected rolltemplate are recorded as overlay candidates. This prevents a 60% foreground hit ratio from passing when a character iframe covers part of the chat template.
+- After `diagnose:roll20-chat-refresh`, current status is authoritative again: `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatActualTemplatePixelSuspect=0`, `chatStructure=STRUCTURE_MATCHED`, `chatStructureMismatch=0/3`, `chatSameStructureHighMismatch=2/3`, and `chatSameStructureMaxAlignedMismatch=20.68%`.
+- Les-Oublies improved from the stale wrong-template/overlap path to `KEEP_DEFAULT_CHAT_RENDERER` with aligned mismatch `6.34%`. Remaining P0 chat renderer work is now AW2E message/content width (`18.03%`) and YSHY table intrinsic sizing (`20.68%`).
+- Claim boundary: Roll20 chat parity is still not achieved. This batch improves evidence trust and narrows the remaining renderer problem; production ChatPane CSS remains held.
+
 ## 2026-07-12 Les Same-Template Roll20 Chat Recapture
 
 - Added `scripts/roll20_upload_cdp_apply.mjs` and package alias `apply:roll20-upload-cdp` so generated Sandbox upload snippets can be executed through a CDP-enabled Roll20 session instead of manual console paste. The helper requires an explicit `--endpoint-campaign-id`, navigates to the dedicated Sandbox settings page by default, and saves only ignored local apply evidence.

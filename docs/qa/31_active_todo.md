@@ -1,3 +1,13 @@
+## 2026-07-12 Roll20 Chat Overlay-Clean Recapture TODO Note
+
+- DONE: Confirmed the first Les-Oublies same-template recapture still had a screenshot-quality problem: the character sheet dialog overlapped the text chat, so `roll20-chat.png` included sheet UI (`Modify`) even though DOM evidence selected `sheet-rolltemplate-initiative-roll`.
+- DONE: Closed the overlapping Roll20 character dialog and recaptured Les-Oublies chat with `--skip-click --expected-template-class sheet-rolltemplate-initiative-roll`. The new PNG visibly contains only the `Initiative :` rolltemplate.
+- DONE: Hardened `capture:roll20-chat-cdp` so it closes overlapping character-sheet dialogs before chat probing/capture by default. Use `--keep-dialogs` only for diagnostic cases where the overlap itself must be inspected.
+- DONE: Hardened the generated chat DOM probe so iframe/dialog samples over the selected rolltemplate become overlay candidates instead of passing foreground proof.
+- VERIFIED: `diagnose:roll20-chat-refresh` now reports trusted same-structure chat evidence with `chatCaptureSuspects=0`, `chatActualTemplatePixelSuspect=0`, `chatStructure=STRUCTURE_MATCHED`, `chatStructureMismatch=0/3`, `chatSameStructureHighMismatch=2/3`, and `chatSameStructureMaxAlignedMismatch=20.68%`.
+- CURRENT: Les-Oublies is no longer P0 for chat renderer work: `diagnose:roll20-chat-renderer-policy` classifies it as `KEEP_DEFAULT_CHAT_RENDERER` with aligned mismatch `6.34%`. Remaining P0 axes are AW2E `CHAT_MESSAGE_CONTENT_WIDTH` and YSHY `TABLE_SCROLL_INTRINSIC`.
+- STILL TODO: Build narrow diagnostics/renderer experiments for AW2E message/content width and YSHY/CoC table intrinsic sizing. Do not promote a global ChatPane width/font/padding patch.
+
 ## 2026-07-12 Les Same-Template Roll20 Chat Recapture Resolved
 
 - DONE: Added `apply:roll20-upload-cdp` as a guarded local-only CDP helper for executing generated Sandbox upload snippets against an explicit dedicated Sandbox/test campaign id. It writes ignored apply results under `reports/.../roll20-upload-handoff/cdp-apply/` and does not treat upload/storage as visual parity.
