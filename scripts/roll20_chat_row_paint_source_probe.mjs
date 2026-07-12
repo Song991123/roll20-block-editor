@@ -10,24 +10,44 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const optionNamesWithValues = new Set([
+  '--out-dir',
+  '--parity-dir',
+  '--candidate-comparison-dir',
+  '--style-proof-dir',
+  '--mask-dir',
+  '--row-geometry-dir',
+  '--width-reconciliation-dir',
+  '--font-intrinsic-dir',
+  '--default-smoke',
+  '--paint-smoke',
+]);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'chat-row-paint-source-probe');
+const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-row-paint-source-probe')));
 
-const DEFAULT_SMOKE = 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
-const PAINT_DIM_SMOKE = 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json';
+const DEFAULT_SMOKE = readOption('--default-smoke', 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json');
+const PAINT_DIM_SMOKE = readOption('--paint-smoke', 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json');
+const parityDir = path.resolve(readOption('--parity-dir', path.join(runDir, 'chat-parity-diagnostics')));
+const candidateComparisonDir = path.resolve(readOption('--candidate-comparison-dir', path.join(runDir, 'chat-candidate-comparison')));
+const styleProofDir = path.resolve(readOption('--style-proof-dir', path.join(runDir, 'chat-candidate-style-proof')));
+const maskDir = path.resolve(readOption('--mask-dir', path.join(runDir, 'chat-mask-strategy')));
+const rowGeometryDir = path.resolve(readOption('--row-geometry-dir', path.join(runDir, 'chat-row-geometry')));
+const widthReconciliationDir = path.resolve(readOption('--width-reconciliation-dir', path.join(runDir, 'chat-width-reconciliation')));
+const fontIntrinsicDir = path.resolve(readOption('--font-intrinsic-dir', path.join(runDir, 'chat-font-intrinsic-probe')));
 const HIGH_MISMATCH = 0.1;
 const MEANINGFUL_GAIN_PCT = -0.5;
 
 async function main() {
-  const parity = await readOptionalJson(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
-  const candidates = await readOptionalJson(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
-  const styleProof = await readOptionalJson(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json'));
-  const mask = await readOptionalJson(path.join(runDir, 'chat-mask-strategy', 'chat-mask-strategy-results.json'));
-  const rows = await readOptionalJson(path.join(runDir, 'chat-row-geometry', 'chat-row-geometry-results.json'));
-  const widthReconciliation = await readOptionalJson(path.join(runDir, 'chat-width-reconciliation', 'chat-width-reconciliation-results.json'));
-  const fontIntrinsic = await readOptionalJson(path.join(runDir, 'chat-font-intrinsic-probe', 'chat-font-intrinsic-probe-results.json'));
+  const parity = await readOptionalJson(path.join(parityDir, 'chat-parity-diagnostics-results.json'));
+  const candidates = await readOptionalJson(path.join(candidateComparisonDir, 'chat-candidate-comparison-results.json'));
+  const styleProof = await readOptionalJson(path.join(styleProofDir, 'chat-candidate-style-proof-results.json'));
+  const mask = await readOptionalJson(path.join(maskDir, 'chat-mask-strategy-results.json'));
+  const rows = await readOptionalJson(path.join(rowGeometryDir, 'chat-row-geometry-results.json'));
+  const widthReconciliation = await readOptionalJson(path.join(widthReconciliationDir, 'chat-width-reconciliation-results.json'));
+  const fontIntrinsic = await readOptionalJson(path.join(fontIntrinsicDir, 'chat-font-intrinsic-probe-results.json'));
   const defaultSmoke = await readOptionalJson(DEFAULT_SMOKE);
   const paintSmoke = await readOptionalJson(PAINT_DIM_SMOKE);
 
@@ -47,6 +67,18 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
+    reportOverrides: {
+      outDir: rel(outDir),
+      parityDir: rel(parityDir),
+      candidateComparisonDir: rel(candidateComparisonDir),
+      styleProofDir: rel(styleProofDir),
+      maskDir: rel(maskDir),
+      rowGeometryDir: rel(rowGeometryDir),
+      widthReconciliationDir: rel(widthReconciliationDir),
+      fontIntrinsicDir: rel(fontIntrinsicDir),
+      defaultSmoke: rel(path.resolve(DEFAULT_SMOKE)),
+      paintSmoke: rel(path.resolve(PAINT_DIM_SMOKE)),
+    },
     scope: 'diagnostic-only row/paint/source-order probe for Roll20 chat; no production CSS',
     summary: {
       status: actionable.length ? 'ROW_PAINT_SOURCE_ACTIONABLE' : 'ROW_PAINT_SOURCE_SECONDARY',
@@ -67,6 +99,14 @@ async function main() {
     console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} decision=${fixture.decision} mismatch=${fixture.alignedMismatchPct} row=${fixture.rowDecision || 'n/a'} paint=${fixture.paintGainLabel} style=${fixture.paintStyleStatus || 'n/a'} source=${fixture.sourceOrderDecision} next=${fixture.nextAction}`);
   }
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
+}
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
 }
 
 async function summarizeFixture(fixtureId, reports) {
@@ -300,6 +340,10 @@ function findSmokeFixture(report, fixtureId) {
 
 function findFixture(fixtures, fixtureId) {
   return (fixtures ?? []).find((fixture) => fixture.id === fixtureId || fixture.fixtureId === fixtureId) ?? null;
+}
+
+function rel(file) {
+  return path.relative(process.cwd(), file);
 }
 
 function candidateByName(report, name) {

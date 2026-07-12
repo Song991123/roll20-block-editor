@@ -1,3 +1,13 @@
+## 2026-07-13 AW2E Cell Font Row Compositing Follow-Up TODO Note
+
+- DONE: `diagnose:roll20-chat-row-paint-source` now accepts isolated evidence overrides: `--out-dir`, `--candidate-comparison-dir`, `--style-proof-dir`, `--parity-dir`, `--mask-dir`, `--row-geometry-dir`, `--width-reconciliation-dir`, `--font-intrinsic-dir`, `--default-smoke`, and `--paint-smoke`.
+- DONE: `diagnose:roll20-chat-row-compositing` now accepts `--out-dir`, `--parity-dir`, `--row-raster-dir`, and `--row-paint-source-dir` while still preserving the existing positional local smoke/screenshot arguments. Reports record `reportOverrides` so agents can tell whether a run used canonical or temp candidate evidence.
+- VERIFIED: Syntax checks passed for both changed scripts. Default temp-output runs passed against `reports\roll20-actual-compare\2026-06-18-state-map-v1` and wrote to `..\_tmp_codex_smoke\row-paint-source-outdir-smoke-20260713-r1` plus `..\_tmp_codex_smoke\row-compositing-outdir-smoke-20260713-r1`.
+- VERIFIED: Candidate-specific reruns consumed the rejected `aw2e-message-cell-font-context` smoke, row-raster, candidate comparison, and style-proof temp evidence. Final compositing output was `..\_tmp_codex_smoke\row-compositing-aw2e-cell-font-with-paint-source-20260713-r1`.
+- OBSERVED: The rejected AW2E cell-font candidate worsens AW2E row-weighted mismatch to `62.73%`, but a virtual luma correction drops that to `14.83%` (`-47.9%` gain). The decision is `LUMA_BACKGROUND_COMPOSITING_MODEL_REQUIRED`, not a font-size or width promotion.
+- OBSERVED: In the same candidate-specific compositing run, YSHY routes to `BACKGROUND_COMPOSITING_MODEL_REQUIRED`; the next YSHY/CoC experiment should target row background/source compositing and must not promote a CSS filter hack.
+- CURRENT: Do not retry or promote `aw2e-message-cell-font-context`. Next P0 is a template-scoped background/luma compositing probe for AW2E, then a separate YSHY/CoC background/source compositing probe. This still does not prove Roll20 visual parity.
+
 ## 2026-07-13 AW2E Cell Font Context Candidate TODO Note
 
 - DONE: Added a diagnostic-only `aw2e-message-cell-font-context` ChatPane typography policy. It can be combined with `aw2e-message-full-width` to test the actual Roll20 AW2E chat/message width plus table/cell font context without changing the default renderer.

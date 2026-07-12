@@ -1,3 +1,11 @@
+## 2026-07-13 AW2E Cell Font Row Compositing Follow-Up
+
+- Added isolated evidence override support to the row paint/source and row compositing probes, so temp candidate smoke, style proof, row-raster, and candidate-comparison reports can be inspected without copying them into canonical Roll20 evidence.
+- Verification: `node --check` passed for both changed scripts. Default temp-output runs passed for row paint/source and row compositing against `reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Candidate-specific rerun consumed `aw2e-message-cell-font-context` temp evidence from `_tmp_codex_smoke`. AW2E row-weighted mismatch stayed rejected at `62.73%`, but virtual luma correction reduced it to `14.83%` (`-47.9%`), routing the next AW2E work to `LUMA_BACKGROUND_COMPOSITING_MODEL_REQUIRED`.
+- YSHY in the same candidate-specific row compositing run routes to `BACKGROUND_COMPOSITING_MODEL_REQUIRED`, so the next YSHY/CoC experiment should target row background/source compositing and not a CSS filter hack.
+- Claim boundary: this is diagnostic routing only. No production ChatPane CSS changed, no assets were relinked, no Roll20 upload happened, and Roll20 visual parity remains unproven.
+
 ## 2026-07-13 AW2E Cell Font Context Candidate
 
 - Root cause hypothesis tested: AW2E's previous text-metrics candidate failed style proof because local `td:first` stayed at `13.65px` while actual Roll20 reported `27.3px`. A plausible next hypothesis was that matching chat/message width plus AW2E table/cell font context would improve parity.

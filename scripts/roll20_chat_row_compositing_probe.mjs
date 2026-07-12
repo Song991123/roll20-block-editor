@@ -16,19 +16,23 @@ function argOf(name, fallback) {
   const index = rawArgs.indexOf(name);
   return index >= 0 && rawArgs[index + 1] ? rawArgs[index + 1] : fallback;
 }
-const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !rawArgs[index - 1]?.startsWith('--'));
+const optionNamesWithValues = new Set(['--out-dir', '--report-dir', '--parity-dir', '--row-raster-dir', '--row-paint-source-dir']);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const localSmokeArg = args[1] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
 const localChatDirArg = args[2] ?? 'reports/rolltemplate-chat-smoke/screenshots';
 const runDir = path.resolve(runDirArg);
 const localSmokeFile = path.resolve(localSmokeArg);
 const localChatDir = path.resolve(localChatDirArg);
-const outDir = path.resolve(argOf('--report-dir', path.join(runDir, 'chat-row-compositing-probe')));
+const outDir = path.resolve(argOf('--out-dir', argOf('--report-dir', path.join(runDir, 'chat-row-compositing-probe'))));
+const parityDir = path.resolve(argOf('--parity-dir', path.join(runDir, 'chat-parity-diagnostics')));
+const rowRasterDir = path.resolve(argOf('--row-raster-dir', path.join(runDir, 'chat-row-raster-probe')));
+const rowPaintSourceDir = path.resolve(argOf('--row-paint-source-dir', path.join(runDir, 'chat-row-paint-source-probe')));
 
 async function main() {
-  const parity = await readOptionalJson(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
-  const rowRaster = await readOptionalJson(path.join(runDir, 'chat-row-raster-probe', 'chat-row-raster-probe-results.json'));
-  const rowPaintSource = await readOptionalJson(path.join(runDir, 'chat-row-paint-source-probe', 'chat-row-paint-source-probe-results.json'));
+  const parity = await readOptionalJson(path.join(parityDir, 'chat-parity-diagnostics-results.json'));
+  const rowRaster = await readOptionalJson(path.join(rowRasterDir, 'chat-row-raster-probe-results.json'));
+  const rowPaintSource = await readOptionalJson(path.join(rowPaintSourceDir, 'chat-row-paint-source-probe-results.json'));
   const localSmoke = await readRequiredJson(localSmokeFile);
   const fixtureIds = collectFixtureIds(parity, rowRaster, rowPaintSource, localSmoke);
   const browser = await chromium.launch({ headless: true });
@@ -48,6 +52,12 @@ async function main() {
     runDir: runDirArg,
     localSmoke: localSmokeArg,
     localChatDir: localChatDirArg,
+    reportOverrides: {
+      outDir: rel(outDir),
+      parityDir: rel(parityDir),
+      rowRasterDir: rel(rowRasterDir),
+      rowPaintSourceDir: rel(rowPaintSourceDir),
+    },
     scope: 'diagnostic-only chat row compositing decomposition; no production CSS and no visual parity claim',
     summary: {
       status: actionable.length ? 'ROW_COMPOSITING_ACTIONABLE' : 'ROW_COMPOSITING_SECONDARY',
