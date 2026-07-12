@@ -36,6 +36,14 @@
 - Verification: `node --check scripts\roll20_asset_relink_verification_plan.mjs`, `test:roll20-asset-relink`, `plan:roll20-asset-relink -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and a temporary `.tmp` map smoke.
 - Claim boundary: this is a readiness gate for the next Sandbox comparison. It does not host assets, upload to Roll20, or prove visual parity.
 
+## 2026-07-13 Asset Map Export Bridge
+
+- Added copy and txt-save controls to the export dialog's local-only asset replacement map panel.
+- The downloaded text contains only the user's `old URL => new URL` rules and can be passed directly to `corepack pnpm run plan:roll20-asset-relink -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --map-file <file>`.
+- Browser smoke now verifies that those controls exist and are enabled after a synthetic relink map is restored from autosave, while preview iframe and edit Shadow render still consume the same replacement map.
+- Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `test:asset-replacements`, `test:roll20-asset-relink`, `guard:ui-copy`, `lint`, `build`, and `smoke:export-dialog -- --port 4381`.
+- Claim boundary: this bridges product UI to the relink gate. It does not provide user-owned hosted assets and does not make Roll20 visual parity pass.
+
 ## 2026-07-12 Targeted Chat Candidate Results
 
 - Ran the target-plan smoke candidates. All local smoke runs passed, but candidate comparison rejects them as renderer fixes: AW2E `aw2e-text-metrics` is `no-meaningful-gain` with AW2E aligned delta `+0.1%`; YSHY `yshy-sanitize-typography` regresses with YSHY aligned delta `+14.95%`; YSHY `coc-table-intrinsic-clamp` is `no-meaningful-gain` with delta `0%`.

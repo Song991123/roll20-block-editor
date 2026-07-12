@@ -259,7 +259,22 @@ async function verifyAssetReplacementRender(page) {
     )),
   }), { mapNeedle: mapText });
 
-  return { oldUrl, newUrl, preview, edit, persisted, restored };
+  await page.click('[data-testid="header-export-button"]');
+  await page.waitForSelector('[data-testid="export-asset-map-copy"]', { timeout: 15000 });
+  const exportMapUi = await page.evaluate(() => ({
+    hasCopy: Boolean(document.querySelector('[data-testid="export-asset-map-copy"]')),
+    hasDownload: Boolean(document.querySelector('[data-testid="export-asset-map-download"]')),
+    hasCliHint: Boolean(document.querySelector('[data-testid="export-asset-map-cli-hint"]')?.textContent?.includes('plan:roll20-asset-relink --map-file')),
+    copyEnabled: !document.querySelector('[data-testid="export-asset-map-copy"]')?.disabled,
+    downloadEnabled: !document.querySelector('[data-testid="export-asset-map-download"]')?.disabled,
+  }));
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[data-testid="export-asset-map-copy"]', {
+    state: 'detached',
+    timeout: 5000,
+  }).catch(() => {});
+
+  return { oldUrl, newUrl, preview, edit, persisted, restored, exportMapUi };
 }
 
 async function main() {
@@ -355,6 +370,9 @@ async function main() {
         hasAssetProfileSelect: Boolean(document.querySelector('[data-testid="export-asset-profile-select"]')),
         hasAssetProfileSave: Boolean(document.querySelector('[data-testid="export-asset-profile-save"]')),
         hasAssetProfileDelete: Boolean(document.querySelector('[data-testid="export-asset-profile-delete"]')),
+        hasAssetMapCopy: Boolean(document.querySelector('[data-testid="export-asset-map-copy"]')),
+        hasAssetMapDownload: Boolean(document.querySelector('[data-testid="export-asset-map-download"]')),
+        hasAssetMapCliHint: Boolean(document.querySelector('[data-testid="export-asset-map-cli-hint"]')?.textContent?.includes('plan:roll20-asset-relink --map-file')),
         assetReplacementStatus: document.querySelector('[data-testid="export-asset-replacement-status"]')?.textContent?.trim() ?? '',
         downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
         dialogText,
@@ -449,6 +467,9 @@ async function main() {
     if (!result.checks.exportDialog.hasAssetProfileSelect) failures.push('asset replacement profile select missing');
     if (!result.checks.exportDialog.hasAssetProfileSave) failures.push('asset replacement profile save button missing');
     if (!result.checks.exportDialog.hasAssetProfileDelete) failures.push('asset replacement profile delete button missing');
+    if (!result.checks.exportDialog.hasAssetMapCopy) failures.push('asset replacement map copy button missing');
+    if (!result.checks.exportDialog.hasAssetMapDownload) failures.push('asset replacement map download button missing');
+    if (!result.checks.exportDialog.hasAssetMapCliHint) failures.push('asset replacement map CLI hint missing');
     if (!result.checks.exportDialog.assetReplacementStatus) failures.push('asset replacement status missing');
     if (
       result.checks.exportDialog.assetPreflightStatus === '확인 필요' &&
@@ -479,6 +500,11 @@ async function main() {
     if (!result.checks.assetReplacementRender.persisted.hasProfileName) failures.push('asset replacement profile name was not saved');
     if (!result.checks.assetReplacementRender.restored.mapRestored) failures.push('asset replacement map did not restore from autosave');
     if (!result.checks.assetReplacementRender.restored.profileRestored) failures.push('asset replacement profile did not restore from autosave');
+    if (!result.checks.assetReplacementRender.exportMapUi.hasCopy) failures.push('restored asset map copy button missing');
+    if (!result.checks.assetReplacementRender.exportMapUi.hasDownload) failures.push('restored asset map download button missing');
+    if (!result.checks.assetReplacementRender.exportMapUi.hasCliHint) failures.push('restored asset map CLI hint missing');
+    if (!result.checks.assetReplacementRender.exportMapUi.copyEnabled) failures.push('restored asset map copy button disabled');
+    if (!result.checks.assetReplacementRender.exportMapUi.downloadEnabled) failures.push('restored asset map download button disabled');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
     if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');

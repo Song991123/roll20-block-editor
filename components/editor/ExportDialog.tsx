@@ -6,6 +6,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   CircleDashed,
+  Clipboard,
+  Download,
   FileArchive,
   Info,
   Save,
@@ -669,6 +671,30 @@ function AssetReplacementPanel({
     const id = onSaveProfile(profileName);
     if (id) setProfileName('');
   }
+  async function handleCopyMap() {
+    if (!active) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success('URL 교체 목록을 클립보드에 복사했어요.');
+    } catch {
+      toast.error('브라우저가 클립보드 복사를 막았어요. 텍스트를 직접 선택해서 복사해 주세요.');
+    }
+  }
+  function handleDownloadMap() {
+    if (!active) return;
+    const blob = new Blob([value.endsWith('\n') ? value : `${value}\n`], {
+      type: 'text/plain;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${safeRelinkFileName(activeProfile?.name ?? profileName)}.txt`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    toast.success('URL 교체 목록 txt를 만들었어요. 이 파일은 로컬 검증용입니다.');
+  }
   return (
     <section
       className="rounded border border-border bg-[var(--bg-elevated)] p-3"
@@ -768,6 +794,38 @@ function AssetReplacementPanel({
             <Trash2 className="h-3.5 w-3.5" aria-hidden />
           </Button>
         </div>
+        <div className="flex flex-wrap items-center gap-1.5 sm:col-span-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 px-2"
+            disabled={!active}
+            onClick={handleCopyMap}
+            data-testid="export-asset-map-copy"
+          >
+            <Clipboard className="h-3.5 w-3.5" aria-hidden />
+            복사
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 gap-1.5 px-2"
+            disabled={!active}
+            onClick={handleDownloadMap}
+            data-testid="export-asset-map-download"
+          >
+            <Download className="h-3.5 w-3.5" aria-hidden />
+            txt 저장
+          </Button>
+          <span
+            className="text-[10.5px] leading-relaxed text-muted-foreground"
+            data-testid="export-asset-map-cli-hint"
+          >
+            저장한 txt는 `plan:roll20-asset-relink --map-file` 검증에 그대로 사용할 수 있습니다.
+          </span>
+        </div>
         {profiles.length > 0 ? (
           <div className="text-[10.5px] leading-relaxed text-muted-foreground sm:col-span-2">
             {profiles.length}개 묶음이 이 브라우저 작업공간에 저장되어 있습니다. 실제 이미지 파일은 저장하지 않고 URL 치환 규칙만 보관합니다.
@@ -798,6 +856,17 @@ function Metric({ label, value }: { label: string; value: number }) {
       <div className="mt-0.5 font-mono text-[13px]">{value}</div>
     </div>
   );
+}
+
+function safeRelinkFileName(name: string): string {
+  const base = name.trim() || 'roll20-asset-relink-map';
+  const safe = base
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80);
+  return safe || 'roll20-asset-relink-map';
 }
 
 function DiagnosticRow({
