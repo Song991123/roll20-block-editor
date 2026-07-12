@@ -92,6 +92,7 @@
     "test:roll20-cdp-preflight": "node scripts/roll20_cdp_preflight.mjs --self-test",
     "test:roll20-chat-renderer-targets": "node scripts/roll20_chat_targeted_renderer_plan.mjs --self-test",
     "test:roll20-chat-assets": "node scripts/roll20_chat_asset_preservation_plan.mjs --self-test",
+    "test:roll20-chat-background-assets": "node scripts/roll20_chat_background_asset_probe.mjs --self-test",
     "test:roll20-asset-relink": "node scripts/roll20_asset_relink_verification_plan.mjs --self-test",
     "test:roll20-chat-background-raster": "node scripts/roll20_chat_background_raster_model_probe.mjs --self-test",
     "test:roll20-chat-template-scope": "node scripts/roll20_chat_template_scope_gate.mjs --self-test",

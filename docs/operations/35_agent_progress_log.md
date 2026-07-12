@@ -1,3 +1,11 @@
+## 2026-07-13 Asset Probe Flat-Paint Decision Bridge
+
+- Updated `diagnose:roll20-chat-background-assets` so the new flat-paint/color raster decision routes to `ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT` when asset bytes are healthy.
+- Updated `plan:roll20-chat-assets` so `FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED` keeps CSS held under `BROWSER_PAINT_CONTEXT_REQUIRED` after assets are relinked.
+- Added self-test coverage for both scripts. Current real evidence still lands on `SOURCE_ASSET_LOST_RELINK_REQUIRED` for AW2E and YSHY because the fetched source/proxy image is the `503b png 161x81 removed.png` placeholder.
+- Verification: background asset self-test, asset preservation self-test, current asset probe, current asset plan, and renderer action gate passed.
+- Claim boundary: evidence routing only. No asset files, screenshots, or production renderer CSS changed.
+
 ## 2026-07-13 Background Raster Flat-Paint Classification
 
 - Updated `diagnose:roll20-chat-background-raster` so the report no longer collapses row-compositing evidence into a vague source/browser-paint bucket.

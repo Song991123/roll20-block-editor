@@ -97,10 +97,17 @@ function decide(asset, raster) {
   if (asset.decision === 'LOCAL_ACTUAL_ASSET_BYTES_DIFFER') return 'ROLL20_PROXY_OR_CACHE_BYTES_DIFFER';
   if (asset.decision === 'ASSET_FETCH_INCOMPLETE') return 'RECAPTURE_ASSET_BYTES';
   if (asset.decision === 'ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER') return 'SOURCE_ASSET_LOST_RELINK_REQUIRED';
-  if (asset.decision === 'ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT' || raster?.decision === 'SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED') {
+  if (asset.decision === 'ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT' || isBrowserPaintRasterDecision(raster?.decision)) {
     return 'BROWSER_PAINT_CONTEXT_REQUIRED';
   }
   return 'ASSET_BYTES_SECONDARY';
+}
+
+function isBrowserPaintRasterDecision(decision) {
+  return [
+    'SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED',
+    'FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED',
+  ].includes(decision);
 }
 
 function nextAction(decision) {
@@ -271,6 +278,20 @@ function selfTest() {
   assert.match(lost.nextAction, /asset replacement map/);
   const requirements = buildProductRequirements([lost]);
   assert.equal(requirements[0].implementationStatus, 'implemented-local-map-autosave-restore');
+  const paint = classifyFixture('paint', {
+    assetProbe: {
+      decision: 'ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT',
+      localAsset: { summary: '200 image/png 12345b png 800x600', placeholder: false },
+      actualAsset: { summary: '200 image/png 12345b png 800x600', placeholder: false },
+      sourceAsset: { summary: '200 image/png 12345b png 800x600', placeholder: false },
+      hashesMatch: true,
+      sourceMatchesProxy: true,
+    },
+    backgroundRaster: { decision: 'FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED' },
+    targetPlan: { priority: 'P0', strategy: 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS' },
+  });
+  assert.equal(paint.decision, 'BROWSER_PAINT_CONTEXT_REQUIRED');
+  assert.equal(paint.rendererPolicy, 'CSS_HELD_UNTIL_PAINT_PROVEN');
   const none = classifyFixture('sample2', { assetProbe: { decision: 'NO_BACKGROUND_IMAGE' } });
   assert.equal(none.decision, 'NO_BACKGROUND_IMAGE');
   console.log('roll20_chat_asset_preservation_plan self-test PASS');

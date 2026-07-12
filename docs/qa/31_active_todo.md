@@ -1,3 +1,11 @@
+## 2026-07-13 Asset Probe Flat-Paint Decision Bridge TODO Note
+
+- DONE: `diagnose:roll20-chat-background-assets` and `plan:roll20-chat-assets` now recognize the new `FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED` raster decision.
+- WHY: After dead assets are relinked/rehosted, the next correct path should be browser paint/decode/context verification, not falling through to a secondary asset bucket or repeating width/font CSS candidates.
+- VERIFIED: `test:roll20-chat-background-assets`, `test:roll20-chat-assets`, syntax checks for both scripts, fresh `diagnose:roll20-chat-background-assets`, fresh `plan:roll20-chat-assets`, and `gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed.
+- CURRENT: The current evidence still reports `SOURCE_ASSET_LOST_RELINK_REQUIRED` for AW2E and YSHY because both source/proxy paths resolve to the `503b png 161x81 removed.png` placeholder. Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`.
+- CLAIM BOUNDARY: This is evidence-routing and future regression coverage only. It does not relink assets, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Background Raster Flat-Paint Classification TODO Note
 
 - DONE: `diagnose:roll20-chat-background-raster` now preserves row-compositing bucket evidence in its fixture output and uses it for routing decisions.

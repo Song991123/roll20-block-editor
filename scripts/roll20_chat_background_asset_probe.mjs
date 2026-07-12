@@ -8,10 +8,13 @@
  */
 
 import { createHash } from 'node:crypto';
+import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--' && !arg.startsWith('--'));
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const selfTest = rawArgs.includes('--self-test');
+const args = rawArgs.filter((arg) => !arg.startsWith('--'));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const outDir = path.join(runDir, 'chat-background-asset-probe');
@@ -100,8 +103,15 @@ function decide({ localCssUrl, actualCssUrl, localAsset, actualAsset, sourceAsse
   if (!localAsset?.ok || !actualAsset?.ok) return 'ASSET_FETCH_INCOMPLETE';
   if (localAsset.sha256 !== actualAsset.sha256) return 'LOCAL_ACTUAL_ASSET_BYTES_DIFFER';
   if (sourceAsset?.placeholder || localAsset.placeholder || actualAsset.placeholder) return 'ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER';
-  if (rasterDecision === 'SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED') return 'ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT';
+  if (isBrowserPaintRasterDecision(rasterDecision)) return 'ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT';
   return 'ASSET_BYTES_MATCH_SECONDARY';
+}
+
+function isBrowserPaintRasterDecision(decision) {
+  return [
+    'SOURCE_IMAGE_OR_BROWSER_PAINT_MODEL_REQUIRED',
+    'FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED',
+  ].includes(decision);
 }
 
 function nextAction(decision) {
@@ -372,4 +382,38 @@ function signed(value) {
   return `${rounded > 0 ? '+' : ''}${rounded}%`;
 }
 
-await main();
+function selfTestProbe() {
+  const shared = {
+    ok: true,
+    sha256: 'same',
+    placeholder: false,
+  };
+  assert.equal(
+    decide({
+      localCssUrl: 'https://example.test/a.png',
+      actualCssUrl: 'https://example.test/a.png',
+      localAsset: shared,
+      actualAsset: shared,
+      sourceAsset: { ...shared },
+      backgroundSourceDecision: 'BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS',
+      rasterDecision: 'FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED',
+    }),
+    'ASSET_BYTES_MATCH_BROWSER_PAINT_NEXT',
+  );
+  assert.equal(
+    decide({
+      localCssUrl: 'https://example.test/a.png',
+      actualCssUrl: 'https://example.test/a.png',
+      localAsset: { ...shared, placeholder: true },
+      actualAsset: shared,
+      sourceAsset: shared,
+      backgroundSourceDecision: 'BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS',
+      rasterDecision: 'FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED',
+    }),
+    'ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER',
+  );
+  console.log('roll20_chat_background_asset_probe self-test PASS');
+}
+
+if (selfTest) selfTestProbe();
+else await main();
