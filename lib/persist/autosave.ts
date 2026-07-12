@@ -28,10 +28,15 @@ import {
   type WorkspaceKey,
 } from '@/lib/stores/workspaceStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
+import { usePreviewStore } from '@/lib/stores/previewStore';
 import { AUTOSAVE_KEY, saveWorkspace, type SaveError, type SaveResult } from './indexeddb';
 
 /** 복합 XML 형태 — 3 워크스페이스 합본. spec 22 §3.2. */
-const COMBINED_XML_VERSION = 1;
+const COMBINED_XML_VERSION = 2;
+
+export type ParsedCombinedXml = Record<WorkspaceKey, string> & {
+  assetReplacementMap?: string;
+};
 
 /**
  * 3 워크스페이스 (html/css/i18n) XML 을 하나의 wrapper 로 묶는다.
@@ -39,6 +44,7 @@ const COMBINED_XML_VERSION = 1;
  */
 export function buildCombinedXml(): string {
   const adapter = getBlocklyAdapter();
+  const assetReplacementMap = usePreviewStore.getState().assetReplacementMap;
   const parts: string[] = [];
   parts.push(
     `<r20-autosave version="${COMBINED_XML_VERSION}" ts="${Date.now()}">`,
@@ -49,8 +55,17 @@ export function buildCombinedXml(): string {
     const safe = xml.replace(/\]\]>/g, ']]]]><![CDATA[>');
     parts.push(`<ws key="${key}"><![CDATA[${safe}]]></ws>`);
   }
+  parts.push('<preview>');
+  parts.push(
+    `<asset-replacement-map><![CDATA[${escapeCdata(assetReplacementMap)}]]></asset-replacement-map>`,
+  );
+  parts.push('</preview>');
   parts.push('</r20-autosave>');
   return parts.join('');
+}
+
+function escapeCdata(text: string): string {
+  return String(text ?? '').replace(/\]\]>/g, ']]]]><![CDATA[>');
 }
 
 /**
@@ -61,7 +76,7 @@ export function buildCombinedXml(): string {
  */
 export function parseCombinedXml(
   xml: string,
-): Record<WorkspaceKey, string> | null {
+): ParsedCombinedXml | null {
   if (typeof DOMParser === 'undefined') return null;
   if (!xml || typeof xml !== 'string') return null;
   try {
@@ -77,11 +92,14 @@ export function parseCombinedXml(
       out[key] = node.textContent ?? '';
     }
     // 3개 모두 있어야 valid (없으면 빈 XML 로 채워줘도 OK 하지만 안전선 = 모두 존재).
+    const previewNode = root.getElementsByTagName('preview')[0] ?? null;
+    const assetMapNode = previewNode?.getElementsByTagName('asset-replacement-map')[0] ?? null;
     return {
       html: out.html ?? '',
       css: out.css ?? '',
       i18n: out.i18n ?? '',
       worker: out.worker ?? '',
+      assetReplacementMap: assetMapNode ? assetMapNode.textContent ?? '' : undefined,
     };
   } catch {
     return null;
@@ -92,6 +110,7 @@ let installed = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let lastErrorAt = 0;
 let unsubVersion: (() => void) | null = null;
+let unsubPreview: (() => void) | null = null;
 
 /**
  * EditorShell mount 시 1회 호출. 두 번째 호출은 no-op (idempotent).
@@ -122,6 +141,9 @@ export function installAutosave(): () => void {
       WORKSPACE_KEYS.reduce((sum, key) => sum + prev.workspaces[key].structureVersion, 0);
     if (sumNow !== sumPrev) trigger();
   });
+  unsubPreview = usePreviewStore.subscribe((state, prev) => {
+    if (state.assetReplacementMap !== prev.assetReplacementMap) trigger();
+  });
 
   return () => {
     installed = false;
@@ -132,6 +154,10 @@ export function installAutosave(): () => void {
     if (unsubVersion) {
       unsubVersion();
       unsubVersion = null;
+    }
+    if (unsubPreview) {
+      unsubPreview();
+      unsubPreview = null;
     }
   };
 }

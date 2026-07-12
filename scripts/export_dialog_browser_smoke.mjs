@@ -198,7 +198,61 @@ async function verifyAssetReplacementRender(page) {
     };
   }, { oldNeedle: oldUrl, newNeedle: newUrl });
 
-  return { oldUrl, newUrl, preview, edit };
+  await page.click('[data-testid="header-save-button"]');
+  await page.waitForFunction(
+    async ({ mapNeedle }) => {
+      const record = await new Promise((resolve) => {
+        const req = indexedDB.open('roll20-block-editor');
+        req.onerror = () => resolve(null);
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction('workspaces', 'readonly');
+          const getReq = tx.objectStore('workspaces').get('autosave-current');
+          getReq.onerror = () => resolve(null);
+          getReq.onsuccess = () => {
+            db.close();
+            resolve(getReq.result ?? null);
+          };
+        };
+      });
+      return Boolean(record?.xml?.includes(mapNeedle));
+    },
+    { mapNeedle: mapText },
+    { timeout: 15000 },
+  );
+  const persisted = await page.evaluate(({ mapNeedle }) => new Promise((resolve) => {
+    const req = indexedDB.open('roll20-block-editor');
+    req.onerror = () => resolve({ hasMap: false });
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction('workspaces', 'readonly');
+      const getReq = tx.objectStore('workspaces').get('autosave-current');
+      getReq.onerror = () => resolve({ hasMap: false });
+      getReq.onsuccess = () => {
+        const xml = getReq.result?.xml ?? '';
+        db.close();
+        resolve({
+          hasMap: xml.includes(mapNeedle),
+          hasPreviewNode: xml.includes('<asset-replacement-map><![CDATA['),
+        });
+      };
+    };
+  }), { mapNeedle: mapText });
+
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
+  await page.waitForSelector('[data-testid="autosave-restore"]', { timeout: 15000 });
+  await page.click('[data-testid="autosave-restore"]');
+  await page.waitForFunction(
+    ({ mapNeedle }) => window.__perfHook.getAssetReplacementMap() === mapNeedle,
+    { mapNeedle: mapText },
+    { timeout: 15000 },
+  );
+  const restored = await page.evaluate(({ mapNeedle }) => ({
+    mapRestored: window.__perfHook.getAssetReplacementMap() === mapNeedle,
+  }), { mapNeedle: mapText });
+
+  return { oldUrl, newUrl, preview, edit, persisted, restored };
 }
 
 async function main() {
@@ -401,6 +455,9 @@ async function main() {
     if (result.checks.assetReplacementRender.preview.hasOldUrl) failures.push('original asset URL leaked in preview iframe');
     if (!result.checks.assetReplacementRender.edit.hasNewUrl) failures.push('asset replacement did not reach edit shadow render');
     if (result.checks.assetReplacementRender.edit.hasOldUrl) failures.push('original asset URL leaked in edit shadow render');
+    if (!result.checks.assetReplacementRender.persisted.hasMap) failures.push('asset replacement map was not saved to autosave XML');
+    if (!result.checks.assetReplacementRender.persisted.hasPreviewNode) failures.push('asset replacement autosave preview node missing');
+    if (!result.checks.assetReplacementRender.restored.mapRestored) failures.push('asset replacement map did not restore from autosave');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
     if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');

@@ -20,6 +20,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import { WORKSPACE_KEYS, useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { usePreviewStore } from '@/lib/stores/previewStore';
 import {
   deleteWorkspace,
   AUTOSAVE_KEY,
@@ -79,6 +80,9 @@ export default function AutosaveBanner({ xml, meta, onDismiss }: Props) {
       // changeListener 가 bumpStructure 호출하지만, 안전을 위해 explicit count 동기화.
       // (Blockly.Events.disable 안에서 hydrate 했으면 listener 가 못 잡았을 수 있음.)
       const store = useWorkspaceStore.getState();
+      if (parts.assetReplacementMap !== undefined) {
+        usePreviewStore.getState().setAssetReplacementMap(parts.assetReplacementMap);
+      }
       for (const key of WORKSPACE_KEYS) {
         const ws = adapter.getWorkspace(key);
         if (ws) {

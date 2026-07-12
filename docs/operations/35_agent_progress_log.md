@@ -1,3 +1,11 @@
+## 2026-07-13 Asset Relink Autosave Persistence
+
+- Persisted the shared local-only asset replacement map into the combined IndexedDB autosave/manual-save XML as preview metadata.
+- Restoring from the autosave banner now restores the map into `previewStore`, so preview iframe, edit Shadow render, and export keep using the same relink text after reload.
+- Hardened `smoke:export-dialog` so it saves a synthetic relink map, confirms the XML contains `<asset-replacement-map>`, reloads, restores autosave, and verifies the map is back in `previewStore`.
+- Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, `smoke:export-dialog -- --port 4370`, `git diff --check`, and `guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`.
+- Claim boundary: this preserves user relink work across reloads. It does not prove actual Roll20 visual parity; Sandbox/test-room comparison still needs fresh evidence after assets are relinked/rehosted.
+
 ## 2026-07-12 Targeted Chat Candidate Results
 
 - Ran the target-plan smoke candidates. All local smoke runs passed, but candidate comparison rejects them as renderer fixes: AW2E `aw2e-text-metrics` is `no-meaningful-gain` with AW2E aligned delta `+0.1%`; YSHY `yshy-sanitize-typography` regresses with YSHY aligned delta `+14.95%`; YSHY `coc-table-intrinsic-clamp` is `no-meaningful-gain` with delta `0%`.
