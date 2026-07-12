@@ -21,9 +21,10 @@ const FIXTURE = readOption('--fixture', '');
 const LAUNCH = hasFlag('--launch');
 const PROFILE_DIR = path.resolve(readOption('--profile-dir', path.join('.tmp', 'roll20-cdp-profile')));
 const START_URL = readOption('--url', 'https://app.roll20.net/editor');
+const WAIT_AFTER_LAUNCH_MS = Number(readOption('--wait-after-launch-ms', '2500'));
 
 if (!RUN_DIR) {
-  console.error('Usage: node scripts/roll20_cdp_preflight.mjs --run-dir reports/roll20-actual-compare/<label> [--fixture <fixture-id>] [--launch]');
+  console.error('Usage: node scripts/roll20_cdp_preflight.mjs --run-dir reports/roll20-actual-compare/<label> [--fixture <fixture-id>] [--launch] [--wait-after-launch-ms 2500]');
   process.exit(2);
 }
 
@@ -35,7 +36,8 @@ main().catch((error) => {
 async function main() {
   if (!existsSync(RUN_DIR)) throw new Error(`missing run dir: ${RUN_DIR}`);
 
-  const endpoint = await inspectEndpoint(CDP_URL);
+  const initialEndpoint = await inspectEndpoint(CDP_URL);
+  let endpoint = initialEndpoint;
   const plannedFixtures = readPlannedFixtures(RUN_DIR, FIXTURE);
   const launchCommand = buildLaunchCommand();
   const sheetFrameProbeCommands = plannedFixtures.map((fixtureId) => [
@@ -53,6 +55,15 @@ async function main() {
   if (LAUNCH && !endpoint.ok) {
     await mkdir(PROFILE_DIR, { recursive: true });
     launchResult = launchBrowser();
+    if (launchResult.ok && WAIT_AFTER_LAUNCH_MS > 0) {
+      await sleep(WAIT_AFTER_LAUNCH_MS);
+      endpoint = await inspectEndpoint(CDP_URL);
+      launchResult.recheckAfterMs = WAIT_AFTER_LAUNCH_MS;
+      launchResult.recheckStatus = classifyStatus(endpoint);
+      launchResult.recheckReason = endpoint.reason;
+      launchResult.recheckTargets = endpoint.targets?.length ?? 0;
+      launchResult.recheckRoll20Targets = endpoint.roll20Targets?.length ?? 0;
+    }
   }
 
   const report = {
@@ -61,6 +72,8 @@ async function main() {
     cdpUrl: CDP_URL,
     pageMatch: PAGE_MATCH,
     status: classifyStatus(endpoint),
+    initialStatus: classifyStatus(initialEndpoint),
+    initialEndpoint,
     endpoint,
     plannedFixtures,
     sheetFrameProbeCommands,
@@ -84,12 +97,17 @@ async function main() {
   if (!endpoint.ok) {
     console.log(`launch=${launchCommand}`);
   }
+  if (launchResult) {
+    console.log(`launchResult=${launchResult.ok ? 'STARTED' : 'FAILED'}`);
+    if (launchResult.recheckStatus) console.log(`launchRecheck=${launchResult.recheckStatus}`);
+  }
   for (const command of sheetFrameProbeCommands) {
     console.log(`probe=${command}`);
   }
   for (const command of captureCommands) {
     console.log(`capture=${command}`);
   }
+  console.log(`next=${report.nextAction}`);
   console.log(`out=${rel(outDir)}`);
 }
 
@@ -231,6 +249,10 @@ function launchBrowser() {
   };
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function renderMarkdown(report) {
   const lines = [
     '# Roll20 CDP Preflight',
@@ -243,6 +265,7 @@ function renderMarkdown(report) {
     `- CDP URL: \`${report.cdpUrl}\``,
     `- Page match: \`${report.pageMatch}\``,
     `- Endpoint: ${report.endpoint.ok ? 'reachable' : `closed (${report.endpoint.reason})`}`,
+    `- Initial status: ${report.initialStatus}`,
     `- Targets: ${report.endpoint.targets.length}`,
     `- Roll20 targets: ${report.endpoint.roll20Targets.length}`,
     `- Planned fixtures: ${report.plannedFixtures.length}`,
@@ -262,6 +285,20 @@ function renderMarkdown(report) {
     lines.push('```powershell');
     lines.push(report.launchCommand);
     lines.push('```', '');
+  }
+  if (report.launchResult) {
+    lines.push('## Launch Result', '');
+    lines.push(`- Started: ${report.launchResult.ok ? 'yes' : 'no'}`);
+    if (report.launchResult.reason) lines.push(`- Reason: ${report.launchResult.reason}`);
+    if (report.launchResult.executable) lines.push(`- Executable: \`${report.launchResult.executable}\``);
+    if (report.launchResult.profileDir) lines.push(`- Profile: \`${report.launchResult.profileDir}\``);
+    if (report.launchResult.recheckStatus) {
+      lines.push(`- Recheck after: ${report.launchResult.recheckAfterMs}ms`);
+      lines.push(`- Recheck status: **${report.launchResult.recheckStatus}**`);
+      lines.push(`- Recheck targets: ${report.launchResult.recheckTargets}`);
+      lines.push(`- Recheck Roll20 targets: ${report.launchResult.recheckRoll20Targets}`);
+    }
+    lines.push('');
   }
   if (report.sheetFrameProbeCommands.length) {
     lines.push('## Sheet-Frame Probe Commands', '');

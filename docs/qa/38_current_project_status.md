@@ -12,7 +12,7 @@ This is a compact status snapshot for handoff and planning. It must not be used 
 | Local preview vs edit | VERIFY/GOOD_LOCAL | `smoke:preview-edit-visual` PASS on 2026-06-21: AW2E `1.86%`, Les-Oublies `2.07%`, YSHY `1.02%`. | Preview/edit share enough local rendering behavior to keep improving edit UX, but exact Roll20 parity is still unproven. |
 | Actual Roll20 sheet root | VERIFY/PARTIAL | `status:roll20-actual`: `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, but AW2E still has a high root-cutoff risk superseded only by diagnostic scroll-metrics evidence. | Sheet-root evidence exists for the prepared fixtures, but renderer promotion still needs cautious cross-fixture interpretation. |
 | Actual Roll20 chat/rolltemplate | DOING/BLOCKED_CAPTURE | `generatedActualScreenshots=4/6`, `generatedDiffed=4/6`, `chatNeedsNormalizedCapture=2`, missing AW2E/YSHY trusted chat captures. | This is the biggest current Roll20 parity blocker. DOM-only or page-only screenshots are not accepted. |
-| Renderer promotion | BLOCKED | `gate:roll20-renderer-action`: `HOLD_PRODUCTION_RENDERER_PATCH`, `rendererBlockers=9`, `rendererReady=NO`. | No production Roll20 renderer CSS/chat patch should be promoted yet. |
+| Renderer promotion | BLOCKED | `gate:roll20-renderer-action`: `HOLD_PRODUCTION_RENDERER_PATCH`, current status reports `rendererBlockers=10`, `rendererReady=NO`. | No production Roll20 renderer CSS/chat patch should be promoted yet. |
 | Edit-mode UX | VERIFY/PARTIAL | Edit smoke and imported-edit sync evidence cover flow/free drops, before/inside/after layer modes, imported fixture movement, direct canvas width editing, and separated sheet/rolltemplate canvas widths. | Usable pieces exist, but it still needs more direct-manipulation polish, clearer layer visualization, and broader fixture coverage. |
 | Public copyright safety | VERIFY/ONGOING | Evidence guard passes and real fixtures/reports remain ignored. | Current workflow is respecting the rule that real sheets and screenshots must not be committed. |
 
@@ -39,9 +39,14 @@ corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-
 => chatNeedsNormalizedCapture=2
 => rendererReady=NO
 
+corepack pnpm run preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --launch --wait-after-launch-ms 5000
+=> launched CDP Chrome on port 9222
+=> post-launch status LOGIN_REQUIRED
+=> next: log in, open dedicated Sandbox/test room, rerun preflight
+
 corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1
 => HOLD_PRODUCTION_RENDERER_PATCH
-=> rendererBlockers=9
+=> rendererBlockers=10
 
 corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4336
 => PASS official-roll20-AW2E mismatch=1.86%
@@ -89,6 +94,7 @@ These are planning estimates, not promises. They assume focused work and no new 
    - Preferred: CDP-enabled Roll20 tab with `probe:roll20-sheet-frame` followed by `capture:roll20-chat-cdp`.
    - Current 2026-07-12 handoff improvement: `capture:roll20-chat-cdp --plan-only` now prints the exact sheet-frame probe command and gated capture command for each fixture.
    - Current 2026-07-12 preflight improvement: `preflight:roll20-cdp` now also prints probe commands before capture commands.
+   - Current 2026-07-12 launch check: a CDP Chrome temp profile can be launched and rechecked; current live state is `LOGIN_REQUIRED`, so the next human/browser action is logging in inside that CDP window and opening the dedicated Sandbox/test room.
    - Alternative: build and verify a full-screenshot crop adapter that proves the saved PNG visibly contains the foreground text chat panel.
 2. Keep renderer patches on hold until chat/root evidence supports them.
 3. Continue edit-mode UX polish in parallel:

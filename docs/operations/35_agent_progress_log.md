@@ -3369,3 +3369,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Hardened `scripts/edit_flow_browser_smoke.mjs` by clearing persisted `r20-ui` state and asserting the width-control roundtrip: sheet `850 -> 930`, rolltemplate `280`, then sheet returns to `930`.
 - Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:ui-copy`, and `corepack pnpm run smoke:edit-flow -- --port 4352`.
 - Claim boundary: edit UX only. Actual Roll20 capture status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, and renderer CSS remains gated.
+
+## 2026-07-12 CDP Launch Recheck
+
+- Updated `scripts/roll20_cdp_preflight.mjs` so `--launch` rechecks the CDP endpoint after a short wait and records `initialStatus`, `initialEndpoint`, and the launch recheck fields in the ignored report.
+- Added a `next=` console line to preflight output, so the action after `CDP_CLOSED`, `LOGIN_REQUIRED`, `CHALLENGE_OR_WAITING`, or `READY` is visible without opening the Markdown report.
+- Live check: `preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --launch --wait-after-launch-ms 5000` opened CDP Chrome on `9222`; the post-launch report found a Roll20 login page and correctly classified it as `LOGIN_REQUIRED`.
+- Safety check: `probe:roll20-sheet-frame --dry-run` and `capture:roll20-chat-cdp --dry-run` both refused to proceed on the login page and wrote no new visual evidence.
+- Verification: `node --check scripts\roll20_cdp_preflight.mjs`, full and single-fixture preflight, the two dry-run guards, `lint`, `build`, `guard:ui-copy`, `guard:roll20-evidence`, and `status:roll20-actual`.
+- Claim boundary: no new Roll20 screenshots were captured. The next real-world step is logging into the visible CDP Chrome window, opening the dedicated Sandbox/test room, then rerunning preflight -> sheet-frame probe -> chat capture.

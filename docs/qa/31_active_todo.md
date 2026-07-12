@@ -2745,3 +2745,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `smoke:edit-flow` now clears persisted `r20-ui` state for deterministic runs and checks width behavior directly: sheet `850 -> 930`, rolltemplate `280`, and sheet width restored to `930` after returning from rolltemplate mode.
 - VERIFIED: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:ui-copy`, and `corepack pnpm run smoke:edit-flow -- --port 4352` passed.
 - CLAIM BOUNDARY: This improves edit-mode usability and prevents sheet/rolltemplate width leakage. It does not add actual Roll20 screenshot evidence and does not change renderer readiness.
+
+## 2026-07-12 CDP Launch Recheck TODO Note
+
+- DONE: `preflight:roll20-cdp --launch` now waits briefly after launching Chrome/Edge and records both the initial endpoint status and the post-launch recheck status in the ignored JSON/Markdown report.
+- DONE: The preflight console output now always prints a `next=` line so the next agent/user can see whether to log in, open a Sandbox/test room, probe the sheet frame, or capture chat.
+- VERIFIED: Running `corepack pnpm run preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1 --launch --wait-after-launch-ms 5000` started a CDP Chrome on port `9222`; the recheck classified the visible Roll20 target as `LOGIN_REQUIRED`, not capture-ready.
+- VERIFIED: `probe:roll20-sheet-frame --dry-run` and `capture:roll20-chat-cdp --dry-run` both stopped at `LOGIN_REQUIRED` and did not write new screenshot evidence.
+- VERIFIED: `node --check scripts\roll20_cdp_preflight.mjs`, two non-launch preflight paths, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed.
+- CURRENT: A CDP Chrome temp profile is open on `https://app.roll20.net/login`. It needs Roll20 login plus the dedicated Sandbox/test-room page before actual sheet-frame probe or chat capture can proceed.
+- CLAIM BOUNDARY: This is browser-readiness orchestration only. No new Roll20 visual parity evidence was captured, and `rendererReady` remains `NO`.
