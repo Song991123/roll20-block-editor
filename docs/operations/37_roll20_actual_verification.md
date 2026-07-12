@@ -211,6 +211,10 @@ The preflight writes an ignored report, lists Roll20 tabs if the CDP endpoint is
 reachable, and prints the exact Chrome/Edge launch command plus per-fixture
 capture commands when the endpoint is closed. It does not launch a browser
 unless `--launch` is passed, and it does not capture or upload evidence.
+The preflight must only count real top-level Roll20 page targets. Third-party
+iframes or service pages whose URL merely contains an encoded Roll20 referrer
+must stay in the raw target list and must not be treated as Roll20 readiness
+evidence.
 `READY` means a matching Roll20 editor/campaign target is present; login and
 challenge pages are reported separately as `LOGIN_REQUIRED` or
 `CHALLENGE_OR_WAITING` and must not be used for capture.

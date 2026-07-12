@@ -22,6 +22,7 @@ const LAUNCH = hasFlag('--launch');
 const PROFILE_DIR = path.resolve(readOption('--profile-dir', path.join('.tmp', 'roll20-cdp-profile')));
 const START_URL = readOption('--url', 'https://app.roll20.net/editor');
 const WAIT_AFTER_LAUNCH_MS = Number(readOption('--wait-after-launch-ms', '2500'));
+const ROLL20_HOSTS = new Set(['app.roll20.net', 'roll20.net']);
 
 if (!RUN_DIR) {
   console.error('Usage: node scripts/roll20_cdp_preflight.mjs --run-dir reports/roll20-actual-compare/<label> [--fixture <fixture-id>] [--launch] [--wait-after-launch-ms 2500]');
@@ -126,7 +127,7 @@ async function inspectEndpoint(cdpUrl) {
     const targets = await response.json();
     const pages = Array.isArray(targets) ? targets : [];
     const roll20Targets = pages
-      .filter((target) => String(target.url ?? '').includes(PAGE_MATCH))
+      .filter(isRoll20PageTarget)
       .map((target) => ({
         id: target.id ?? '',
         type: target.type ?? '',
@@ -153,6 +154,16 @@ async function inspectEndpoint(cdpUrl) {
       targets: [],
       roll20Targets: [],
     };
+  }
+}
+
+function isRoll20PageTarget(target) {
+  if (target?.type !== 'page') return false;
+  try {
+    const url = new URL(String(target.url ?? ''));
+    return ROLL20_HOSTS.has(url.hostname);
+  } catch {
+    return false;
   }
 }
 

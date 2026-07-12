@@ -3378,3 +3378,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Safety check: `probe:roll20-sheet-frame --dry-run` and `capture:roll20-chat-cdp --dry-run` both refused to proceed on the login page and wrote no new visual evidence.
 - Verification: `node --check scripts\roll20_cdp_preflight.mjs`, full and single-fixture preflight, the two dry-run guards, `lint`, `build`, `guard:ui-copy`, `guard:roll20-evidence`, and `status:roll20-actual`.
 - Claim boundary: no new Roll20 screenshots were captured. The next real-world step is logging into the visible CDP Chrome window, opening the dedicated Sandbox/test room, then rerunning preflight -> sheet-frame probe -> chat capture.
+
+## 2026-07-12 CDP Roll20 Target Filtering
+
+- Root cause: `preflight:roll20-cdp` used a raw URL substring match for `app.roll20.net`, so third-party iframe targets such as Stripe could be counted as Roll20 targets when their encoded URL/referrer mentioned Roll20.
+- Updated `scripts/roll20_cdp_preflight.mjs` to count only CDP targets with `type: "page"` and a real Roll20 hostname (`app.roll20.net` or `roll20.net`).
+- Live recheck against the current CDP browser now reports `targets=7`, `roll20Targets=1`, `ROLL20_PAGE_NOT_READY`; the one Roll20 target is `https://roll20.net/welcome`, while Stripe/Twitter iframe targets stay out of `roll20Targets`.
+- Verification: `node --check scripts\roll20_cdp_preflight.mjs`, `node --check scripts\lib\roll20Readiness.mjs`, `test:roll20-chat-cdp-readiness`, and full/single-fixture `preflight:roll20-cdp`.
+- Claim boundary: this hardens readiness reporting only. It does not add actual Roll20 screenshot evidence or change renderer readiness.

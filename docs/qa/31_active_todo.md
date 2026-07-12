@@ -2755,3 +2755,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `node --check scripts\roll20_cdp_preflight.mjs`, two non-launch preflight paths, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` passed.
 - CURRENT: A CDP Chrome temp profile is open on `https://app.roll20.net/login`. It needs Roll20 login plus the dedicated Sandbox/test-room page before actual sheet-frame probe or chat capture can proceed.
 - CLAIM BOUNDARY: This is browser-readiness orchestration only. No new Roll20 visual parity evidence was captured, and `rendererReady` remains `NO`.
+
+## 2026-07-12 CDP Roll20 Target Filtering TODO Note
+
+- DONE: `preflight:roll20-cdp` now counts only real top-level Roll20 page targets (`app.roll20.net` / `roll20.net`) instead of any CDP target whose URL merely contains `app.roll20.net` in a referrer or encoded iframe parameter.
+- ROOT CAUSE: The old substring match misclassified third-party Stripe iframe targets as Roll20 targets because their URLs contained encoded Roll20 referrers.
+- VERIFIED: With the current CDP browser on `https://roll20.net/welcome`, preflight reports `targets=7`, `roll20Targets=1`, and `ROLL20_PAGE_NOT_READY`; the ignored report's `roll20Targets` list contains only the real Roll20 welcome page while Stripe/Twitter iframes remain only in the raw target list.
+- VERIFIED: `node --check scripts\roll20_cdp_preflight.mjs`, `node --check scripts\lib\roll20Readiness.mjs`, `corepack pnpm run test:roll20-chat-cdp-readiness`, and both full/single-fixture `preflight:roll20-cdp` paths passed before the final lint/build batch.
+- CURRENT: This prevents false readiness or misleading target counts, but it does not capture new Roll20 screenshots. The next real verification step is still to navigate the CDP browser to the dedicated Sandbox/test room, run sheet-frame probe, then capture AW2E/YSHY chat evidence.
+- CLAIM BOUNDARY: Verification orchestration only. Actual Roll20 visual parity and chat parity remain unproven.
