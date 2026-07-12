@@ -3386,3 +3386,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Live recheck against the current CDP browser now reports `targets=7`, `roll20Targets=1`, `ROLL20_PAGE_NOT_READY`; the one Roll20 target is `https://roll20.net/welcome`, while Stripe/Twitter iframe targets stay out of `roll20Targets`.
 - Verification: `node --check scripts\roll20_cdp_preflight.mjs`, `node --check scripts\lib\roll20Readiness.mjs`, `test:roll20-chat-cdp-readiness`, and full/single-fixture `preflight:roll20-cdp`.
 - Claim boundary: this hardens readiness reporting only. It does not add actual Roll20 screenshot evidence or change renderer readiness.
+
+## 2026-07-12 Shared CDP Roll20 Page Filter
+
+- Follow-up root cause: `probe:roll20-sheet-frame` and `capture:roll20-chat-cdp` still selected pages with `page.url().includes(PAGE_MATCH)`, so the same referrer/iframe false-positive shape could reappear after preflight.
+- Moved Roll20 page detection into `scripts/lib/roll20Readiness.mjs` as `isRoll20PageUrl` / `isRoll20PageTarget`, then reused it from preflight, sheet-frame probe, and chat capture.
+- Self-test now includes a Stripe iframe URL with an encoded Roll20 referrer and verifies it is not a Roll20 page target.
+- Live dry-run check: preflight still reports `roll20Targets=1`; both sheet-frame probe and chat capture select the real `https://roll20.net/welcome` page and stop as `UNKNOWN_ROLL20_PAGE` without writing evidence.
+- Verification: syntax checks, `test:roll20-chat-cdp-readiness`, `test:roll20-sheet-frame-probe`, preflight, probe dry-run, and capture dry-run.
+- Claim boundary: capture readiness is safer. Actual Roll20 chat evidence remains missing/suspect for AW2E and YSHY.

@@ -13,6 +13,7 @@ import path from 'node:path';
 import {
   classifyRoll20Target,
   isRoll20CaptureReady,
+  isRoll20PageUrl,
   nextActionForReadiness,
   selfTestRoll20Readiness,
 } from './lib/roll20Readiness.mjs';
@@ -233,7 +234,7 @@ async function connectOverCdp(chromium) {
 async function findRoll20Page(browser) {
   for (const context of browser.contexts()) {
     for (const page of context.pages()) {
-      if (page.url().includes(PAGE_MATCH)) return page;
+      if (isRoll20PageUrl(page.url())) return page;
     }
   }
   return null;

@@ -215,6 +215,9 @@ The preflight must only count real top-level Roll20 page targets. Third-party
 iframes or service pages whose URL merely contains an encoded Roll20 referrer
 must stay in the raw target list and must not be treated as Roll20 readiness
 evidence.
+The sheet-frame probe and chat capture helpers must use the same Roll20 page
+filter as preflight; do not reintroduce raw substring page matching in later
+capture steps.
 `READY` means a matching Roll20 editor/campaign target is present; login and
 challenge pages are reported separately as `LOGIN_REQUIRED` or
 `CHALLENGE_OR_WAITING` and must not be used for capture.

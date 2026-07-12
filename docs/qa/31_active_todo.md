@@ -2764,3 +2764,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `node --check scripts\roll20_cdp_preflight.mjs`, `node --check scripts\lib\roll20Readiness.mjs`, `corepack pnpm run test:roll20-chat-cdp-readiness`, and both full/single-fixture `preflight:roll20-cdp` paths passed before the final lint/build batch.
 - CURRENT: This prevents false readiness or misleading target counts, but it does not capture new Roll20 screenshots. The next real verification step is still to navigate the CDP browser to the dedicated Sandbox/test room, run sheet-frame probe, then capture AW2E/YSHY chat evidence.
 - CLAIM BOUNDARY: Verification orchestration only. Actual Roll20 visual parity and chat parity remain unproven.
+
+## 2026-07-12 Shared CDP Roll20 Page Filter TODO Note
+
+- DONE: Moved real Roll20 page detection into `scripts/lib/roll20Readiness.mjs` and reused it from `preflight:roll20-cdp`, `probe:roll20-sheet-frame`, and `capture:roll20-chat-cdp`.
+- DONE: The shared filter rejects iframe/service targets whose URLs only contain Roll20 in an encoded referrer, while accepting real top-level Roll20 pages such as `https://roll20.net/welcome` for readiness classification.
+- VERIFIED: `test:roll20-chat-cdp-readiness` and `test:roll20-sheet-frame-probe` pass with the new shared filter.
+- VERIFIED: Against the current CDP browser, preflight reports `roll20Targets=1`; `probe:roll20-sheet-frame --dry-run` and `capture:roll20-chat-cdp --dry-run` both select `https://roll20.net/welcome` and stop as `DRY_RUN_NOT_READY` / `UNKNOWN_ROLL20_PAGE` without writing new evidence.
+- CURRENT: Capture is still waiting on the dedicated Sandbox/test-room page. The current CDP page is a Roll20 welcome page, not a loaded custom sheet.
+- CLAIM BOUNDARY: This closes another false-positive capture path. It does not add Roll20 screenshot evidence or change `rendererReady=NO`.

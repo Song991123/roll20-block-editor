@@ -5,6 +5,22 @@ export const ROLL20_READINESS = Object.freeze({
   UNKNOWN_ROLL20_PAGE: 'UNKNOWN_ROLL20_PAGE',
 });
 
+export const ROLL20_PAGE_HOSTS = Object.freeze(['app.roll20.net', 'roll20.net']);
+
+export function isRoll20PageUrl(url) {
+  try {
+    const parsed = new URL(String(url ?? ''));
+    return ROLL20_PAGE_HOSTS.includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+export function isRoll20PageTarget(target) {
+  if (target?.type && target.type !== 'page') return false;
+  return isRoll20PageUrl(target?.url);
+}
+
 export function classifyRoll20Target(target) {
   const url = String(target?.url ?? '');
   const title = String(target?.title ?? '');
@@ -58,15 +74,31 @@ export function selfTestRoll20Readiness() {
       expected: ROLL20_READINESS.CAPTURE_READY,
     },
     {
+      name: 'welcome',
+      target: { url: 'https://roll20.net/welcome', title: 'Welcome' },
+      expected: ROLL20_READINESS.UNKNOWN_ROLL20_PAGE,
+    },
+    {
       name: 'unknown',
       target: { url: 'https://app.roll20.net/account', title: 'Account' },
       expected: ROLL20_READINESS.UNKNOWN_ROLL20_PAGE,
     },
+    {
+      name: 'stripe-referrer',
+      target: { type: 'iframe', url: 'https://js.stripe.com/v3/foo.html#referrer=https%3A%2F%2Fapp.roll20.net%2Feditor', title: 'Stripe' },
+      expectedPageTarget: false,
+    },
   ];
-  return cases
-    .map((testCase) => ({
-      ...testCase,
-      actual: classifyRoll20Target(testCase.target),
-    }))
-    .filter((testCase) => testCase.actual !== testCase.expected);
+  return cases.flatMap((testCase) => {
+    const failures = [];
+    if (testCase.expected) {
+      const actual = classifyRoll20Target(testCase.target);
+      if (actual !== testCase.expected) failures.push({ ...testCase, actual });
+    }
+    if ('expectedPageTarget' in testCase) {
+      const actualPageTarget = isRoll20PageTarget(testCase.target);
+      if (actualPageTarget !== testCase.expectedPageTarget) failures.push({ ...testCase, actualPageTarget });
+    }
+    return failures;
+  });
 }
