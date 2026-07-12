@@ -74,7 +74,7 @@ async function listFixtures() {
 
 async function auditFixture(fixtureId) {
   const fixtureDir = path.join(FIXTURES_DIR, fixtureId);
-  const manifest = JSON.parse(await fs.readFile(path.join(fixtureDir, 'manifest.json'), 'utf8'));
+  const manifest = JSON.parse(await readMaybe(path.join(fixtureDir, 'manifest.json')));
   const sourceHtml = await readMaybe(path.join(fixtureDir, 'source.html'));
   const sourceCss = await readMaybe(path.join(fixtureDir, 'source.css'));
   const source = auditDoc({ html: sourceHtml, css: sourceCss, label: 'source' });
@@ -301,7 +301,8 @@ function classAlternates(className) {
 }
 
 async function readMaybe(file) {
-  return existsSync(file) ? fs.readFile(file, 'utf8') : '';
+  if (!existsSync(file)) return '';
+  return (await fs.readFile(file, 'utf8')).replace(/^\uFEFF/, '');
 }
 
 function summary(audit) {

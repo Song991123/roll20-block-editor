@@ -1,3 +1,13 @@
+## 2026-07-13 Asset Map Preupload Pipeline
+
+- Added a shared script-side asset replacement helper for local verification tooling.
+- `roll20_actual_local_baseline.mjs` now accepts `--asset-map-file <local-map.txt>` and applies the same URL-text relink map to local preview/edit render state and emitted Roll20 upload payload HTML/CSS.
+- `verify:roll20-preupload` now forwards `--asset-map-file` into the regenerated local baseline and records the map path in the preupload report.
+- Hardened `roll20_state_selector_audit.mjs` and `roll20_asset_resource_audit.mjs` so Windows UTF-8 BOM-prefixed `manifest.json`/source files do not crash the gate.
+- Synthetic local-only verification: `.tmp\asset-map-fixtures\asset-map-pipe-smoke` plus `.tmp\asset-map-pipe-smoke.txt` produced 2 actual payload URL replacements, then `verify:roll20-preupload` passed all checks including payload audit, Sandbox sanitize audit, payload roundtrip, state selectors, asset audit, and evidence guard.
+- Current real evidence boundary: `plan:roll20-asset-relink -- reports\roll20-actual-compare\2026-06-18-state-map-v1` still reports `RELINK_MAP_REQUIRED` for AW2E/YSHY. The pipeline is connected, but the user still needs user-owned HTTP(S) replacement URLs before Roll20 Sandbox re-comparison or visual parity claims.
+- Claim boundary: this proves local/preupload relink plumbing with copyright-safe synthetic URLs only. It does not rehost assets, upload to Roll20, or prove Roll20 visual parity.
+
 ## 2026-07-13 Asset Relink Map Template
 
 - Extended `plan:roll20-asset-relink` so every run writes an ignored `asset-relink-map-template.txt` beside the JSON/Markdown report.

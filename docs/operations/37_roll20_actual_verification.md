@@ -51,6 +51,12 @@ This document defines how agents verify that this editor's preview/edit output m
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json`
      - `--state-map` affects only local screenshot state normalization for baseline/payload comparison. It may click a local action button or local checkbox/radio control before screenshot capture. It does not mutate the Roll20 upload payload files.
      - If `payload-roundtrip` fails after renderer changes, regenerate the local baseline with the same code and state map before diagnosing export drift. A stale `local-preview.png` can create false visual mismatches even when source preview and cleaned payload render identically.
+   - If external assets were relinked, pass the user-owned local map into the local baseline/pre-upload gate:
+     `node scripts/roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label <label> --asset-map-file <local-map.txt>`
+     or:
+     `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor --asset-map-file <local-map.txt>`
+     - The map is URL text only. It is applied to local preview/edit screenshots and emitted upload payload HTML/CSS, but the map file and generated evidence remain local-only.
+     - Run `corepack pnpm run plan:roll20-asset-relink -- reports/roll20-actual-compare/<label> --map-file <local-map.txt>` first; only `COVERED_ROLL20_READY` HTTP(S) targets are suitable for Roll20 Sandbox upload.
 2. Observe existing Roll20 solo rooms:
    - Use the user's logged-in Chrome session.
    - Identify rooms where the user is alone or intended for testing.

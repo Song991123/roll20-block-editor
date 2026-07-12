@@ -24,6 +24,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import JSZip from 'jszip';
 import { chromium } from 'playwright-core';
+import { applyAssetReplacements, parseAssetReplacementMap } from './lib/assetReplacements.mjs';
 
 const args = process.argv.slice(2);
 function argOf(name, fallback) {
@@ -38,6 +39,7 @@ const REPORT_ROOT = path.resolve(argOf('--report-dir', 'reports/roll20-actual-co
 const RUN_LABEL = slug(argOf('--run-label', new Date().toISOString().slice(0, 19)));
 const ONLY = argOf('--only', '');
 const STATE_MAP_PATH = argOf('--state-map', '');
+const ASSET_MAP_FILE = argOf('--asset-map-file', '');
 const OFFICIAL_SHEETS_ROOT = path.resolve(
   argOf('--official-sheets-root', process.env.ROLL20_OFFICIAL_SHEETS_ROOT || path.join(process.cwd(), '..', '..', 'roll20-character-sheets-master')),
 );
@@ -172,6 +174,13 @@ async function loadStateMap() {
   };
 }
 
+async function loadAssetReplacementMap() {
+  if (!ASSET_MAP_FILE) return { path: null, text: '', parsed: { entries: [], warnings: [] } };
+  const resolvedPath = path.resolve(ASSET_MAP_FILE);
+  const text = await fs.readFile(resolvedPath, 'utf8');
+  return { path: resolvedPath, text, parsed: parseAssetReplacementMap(text) };
+}
+
 function sanitizeStateCandidate(candidate) {
   if (!candidate || typeof candidate !== 'object') return null;
   return {
@@ -211,9 +220,10 @@ async function warmPerfHook(page) {
 }
 
 async function importFixture(page, fixture) {
-  return page.evaluate(async ({ html, css, i18n }) => {
+  return page.evaluate(async ({ html, css, i18n, assetReplacementMap }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     window.__perfHook.clearAll();
+    window.__perfHook.setAssetReplacementMap(assetReplacementMap || '');
     await sleep(700);
     let last = null;
     for (let i = 0; i < 40; i += 1) {
@@ -500,6 +510,9 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push(`Run label: \`${report.runLabel}\``);
   lines.push(`Generated: ${report.createdAt}`);
+  if (report.assetMapPath) {
+    lines.push(`Asset map: \`${report.assetMapPath}\` (${report.assetMapEntryCount} entries)`);
+  }
   lines.push('');
   lines.push('This report is local-only and ignored by Git. Do not commit generated screenshots, payloads, zips, fixture names, room names, or source-derived HTML.');
   lines.push('');
@@ -524,6 +537,7 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('- Proves local import -> emit -> payload package generation for selected ignored fixtures only.');
   lines.push('- Optional `--state-map` changes only the local preview screenshot state before capture. It does not mutate exported payloads or the edit screenshot.');
+  lines.push('- Optional `--asset-map-file` applies URL text replacements to local preview/edit renders and emitted Roll20 upload payload HTML/CSS. The map file and generated evidence stay local-only.');
   lines.push('- Does not prove actual Roll20 visual parity or all-sheet support.');
   return `${lines.join('\n')}\n`;
 }
@@ -559,6 +573,7 @@ async function main() {
     throw new Error(`No fixtures found in ${FIXTURES_DIR}${ONLY ? ` matching ${ONLY}` : ''}`);
   }
   const stateMap = await loadStateMap();
+  const assetReplacementMap = await loadAssetReplacementMap();
 
   const server = await startServer();
   const browser = await chromium.launch({ headless: true });
@@ -576,6 +591,9 @@ async function main() {
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
     reportDir: runDir,
     stateMapPath: stateMap.path,
+    assetMapPath: assetReplacementMap.path,
+    assetMapEntryCount: assetReplacementMap.parsed.entries.length,
+    assetMapWarnings: assetReplacementMap.parsed.warnings,
     fixtures: [],
     consoleErrors,
     pageErrors,
@@ -604,12 +622,19 @@ async function main() {
         },
       };
       try {
-        const imported = await importFixture(page, fixture);
+        const imported = await importFixture(page, {
+          ...fixture,
+          assetReplacementMap: assetReplacementMap.text,
+        });
         entry.import = imported.result;
         const htmlPayload = stripInternalBlockIds(imported.emit.html ?? '');
+        const relinked = applyAssetReplacements(
+          { html: htmlPayload.html, css: imported.emit.css ?? '' },
+          assetReplacementMap.text,
+        );
         const emit = {
-          html: htmlPayload.html,
-          css: imported.emit.css ?? '',
+          html: relinked.html,
+          css: relinked.css,
           translation: normalizeTranslation(imported.emit.i18n ?? ''),
         };
         const manifest = buildManifest(fixture.id, fixture.legacyMode);
@@ -643,6 +668,12 @@ async function main() {
         };
         entry.legacyMode = fixture.legacyMode;
         entry.removedInternalBlockIds = htmlPayload.removed;
+        entry.assetReplacement = {
+          mapFile: assetReplacementMap.path,
+          mapEntries: assetReplacementMap.parsed.entries.length,
+          mapWarnings: assetReplacementMap.parsed.warnings,
+          replacements: relinked.replacements,
+        };
         entry.emitSha256 = {
           html: sha256(emit.html),
           css: sha256(emit.css),

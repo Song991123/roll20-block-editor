@@ -45,6 +45,7 @@ corepack pnpm run plan:roll20-asset-relink -- reports\roll20-actual-compare\<lab
 - `plan:roll20-asset-relink` can check an exported/copied replacement-map text file against current asset-preservation blockers. It reports whether each required fixture is missing a relink, uses a local-only data URL, or is ready for local preview/edit/export plus Roll20 Sandbox re-comparison.
 - The export dialog can copy the active replacement-map text or save it as a local txt file. The text file is the handoff format for `plan:roll20-asset-relink --map-file`; it stores URL rules only and no asset bytes.
 - `plan:roll20-asset-relink` also writes an ignored `asset-relink-map-template.txt` beside its report. The template lists commented candidate source/proxy URL rules for unresolved blockers, so the user can fill user-owned HTTP(S) targets without agents copying asset bytes into the repo.
+- `roll20_actual_local_baseline.mjs` and `verify:roll20-preupload` accept `--asset-map-file <local-map.txt>`. When provided, the map is applied to local preview/edit screenshots and to the emitted Roll20 upload payload HTML/CSS before Sandbox comparison.
 - Multi-project named asset libraries, replacement history, and Roll20-side rehost verification are still TODO.
 
 ## UI Behavior

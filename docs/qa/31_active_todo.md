@@ -1,3 +1,15 @@
+## 2026-07-13 Asset Map Preupload Pipeline TODO Note
+
+- DONE: Added script-side `--asset-map-file` support to `roll20_actual_local_baseline.mjs` and `verify:roll20-preupload`, using the same `old URL => new URL` map format as the product export/import UI.
+- DONE: The map is applied before local preview/edit screenshots and before emitted Roll20 upload payload HTML/CSS are written, so local verification and Sandbox payloads no longer diverge from the user-filled relink map.
+- DONE: Hardened `roll20_state_selector_audit.mjs` and `roll20_asset_resource_audit.mjs` against UTF-8 BOM-prefixed fixture manifests/source files.
+- VERIFIED: A copyright-safe synthetic fixture in ignored `.tmp` produced `assetMapEntryCount=2` and `assetReplacement.replacements=2`; payload checks confirmed the old synthetic HTML/CSS URLs were gone and the replacement targets were present.
+- VERIFIED: `verify:roll20-preupload -- reports\roll20-actual-compare\2026-07-13-asset-map-pipe-smoke --fixtures .tmp\asset-map-fixtures --out-dir ./out --base-path /roll20-block-editor --asset-map-file .tmp\asset-map-pipe-smoke.txt` passed local baseline, payload audit, Sandbox sanitize audit, cleaned-payload visual roundtrip, state selector audit, asset/resource audit, and evidence guard.
+- VERIFIED: Syntax checks passed for the changed baseline/preupload/audit helper scripts, and `guard:roll20-evidence -- reports\roll20-actual-compare\2026-07-13-asset-map-pipe-smoke` passed.
+- CURRENT: `plan:roll20-asset-relink -- reports\roll20-actual-compare\2026-06-18-state-map-v1` still reports `RELINK_MAP_REQUIRED` for AW2E/YSHY because no user-owned replacement URLs have been supplied for the real blockers.
+- STILL TODO: Fill the ignored `asset-relink-map-template.txt` with user-owned HTTP(S) asset URLs, rerun `plan:roll20-asset-relink --map-file`, then rerun local preview/edit/export plus Roll20 Sandbox comparison. Do not commit the map, screenshots, fixtures, or generated reports.
+- CLAIM BOUNDARY: This proves the verification pipeline consumes a relink map. It does not provide replacement assets, upload to Roll20, or prove Roll20 visual parity.
+
 ## 2026-07-13 Roll20 Chat Asset Preservation TODO Note
 
 - DONE: Added a diagnostic asset-preservation planner for Roll20 chat/background evidence: `corepack pnpm run plan:roll20-chat-assets -- reports\roll20-actual-compare\<label>`.

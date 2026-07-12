@@ -40,6 +40,7 @@ const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const STATE_MAP_PATH = argOf('--state-map', '');
+const ASSET_MAP_FILE = argOf('--asset-map-file', '');
 const REPORT_DIR = path.join(RUN_DIR, 'preupload-verification');
 const NODE = process.execPath;
 const RUN_PARENT_DIR = path.dirname(RUN_DIR);
@@ -47,6 +48,10 @@ const RUN_LABEL = path.basename(RUN_DIR);
 
 function maybeStateMapArgs() {
   return STATE_MAP_PATH ? ['--state-map', path.resolve(STATE_MAP_PATH)] : [];
+}
+
+function maybeAssetMapArgs() {
+  return ASSET_MAP_FILE ? ['--asset-map-file', path.resolve(ASSET_MAP_FILE)] : [];
 }
 
 const checks = [
@@ -67,6 +72,7 @@ const checks = [
       '--run-label',
       RUN_LABEL,
       ...maybeStateMapArgs(),
+      ...maybeAssetMapArgs(),
     ],
   },
   {
@@ -150,6 +156,7 @@ async function main() {
     outDir: OUT_DIR,
     basePath: BASE_PATH,
     stateMapPath: STATE_MAP_PATH ? path.resolve(STATE_MAP_PATH) : null,
+    assetMapFile: ASSET_MAP_FILE ? path.resolve(ASSET_MAP_FILE) : null,
     scope: 'local pre-upload gate; not Roll20 visual parity',
     pass: results.length === checks.length && results.every((result) => result.ok),
     results,
@@ -207,6 +214,7 @@ function renderMarkdown(report) {
     'Scope: local pre-upload gate. This does not prove Roll20 visual parity.',
     '',
     `Run folder: \`${path.relative(process.cwd(), report.runDir)}\``,
+    report.assetMapFile ? `Asset map: \`${path.relative(process.cwd(), report.assetMapFile)}\`` : '',
     '',
     '| Check | Result | Exit | Time |',
     '| --- | --- | ---: | ---: |',

@@ -93,7 +93,7 @@ async function listFixtureIds() {
 
 async function auditFixture(fixtureId, probeCache, browserProbeCache, browserPage) {
   const fixtureDir = path.join(FIXTURES_DIR, fixtureId);
-  const manifest = JSON.parse(await fs.readFile(path.join(fixtureDir, 'manifest.json'), 'utf8'));
+  const manifest = JSON.parse(await readMaybe(path.join(fixtureDir, 'manifest.json')));
   const source = await auditDoc({
     htmlPath: path.join(fixtureDir, 'source.html'),
     cssPath: path.join(fixtureDir, 'source.css'),
@@ -354,7 +354,8 @@ function findPayloadRegressions(source, payload) {
 }
 
 async function readMaybe(file) {
-  return existsSync(file) ? fs.readFile(file, 'utf8') : '';
+  if (!existsSync(file)) return '';
+  return (await fs.readFile(file, 'utf8')).replace(/^\uFEFF/, '');
 }
 
 function countBy(values) {
