@@ -1,3 +1,10 @@
+## 2026-07-13 Targeted Renderer Plan Row-Raster Precision TODO Note
+
+- DONE: `plan:roll20-chat-renderer-targets` now carries row-raster worst-row evidence from `chat-row-raster-probe` instead of reporting `unknown worst row`.
+- WHY: The active renderer gate is held partly because AW2E and YSHY have row/luma raster mismatches even when some width/text candidates improve raw crop. The handoff plan must preserve the actual row-weighted and worst-row numbers so agents do not repeat rejected width/font CSS guesses.
+- VERIFIED: `test:roll20-chat-renderer-targets` passed, and the regenerated targeted plan records AW2E `weighted 17.93%, worst row 1 26.28%, luma -66.819` plus YSHY `weighted 21.41%, worst row 5 27.73%, luma -35.682`.
+- CLAIM BOUNDARY: This improves diagnostic precision only. Production ChatPane renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`, and no Roll20 visual parity claim is allowed.
+
 ## 2026-07-13 CDP Preflight No-Plan Renderer-Hold TODO Note
 
 - DONE: `preflight:roll20-cdp` now reads the current actual-status summary and distinguishes "CDP ready but no capture fixtures are planned" from "load fixture and capture missing evidence".

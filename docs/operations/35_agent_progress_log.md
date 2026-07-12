@@ -1,3 +1,11 @@
+## 2026-07-13 Targeted Renderer Plan Row-Raster Precision
+
+- Fixed `plan:roll20-chat-renderer-targets` so it reads `worstRows[0]` and `summary` from `chat-row-raster-probe` instead of looking for a non-existent `worstRow` field.
+- The targeted plan now preserves row-raster/luma details in fixture blockers and evidence: AW2E `weighted 17.93%, worst row 1 26.28%, luma -66.819`; YSHY `weighted 21.41%, worst row 5 27.73%, luma -35.682`.
+- Added self-test coverage so AW2E row-raster blocker text must include the concrete worst-row signal.
+- Verification: `test:roll20-chat-renderer-targets`, `node --check scripts\roll20_chat_targeted_renderer_plan.mjs`, regenerated `plan:roll20-chat-renderer-targets`, and `gate:roll20-renderer-action` passed.
+- Claim boundary: diagnostic handoff only. Renderer remains held and no production CSS was promoted.
+
 ## 2026-07-13 CDP Preflight No-Plan Renderer-Hold Split
 
 - Updated `preflight:roll20-cdp` so a READY CDP browser with `plannedFixtures=0` no longer tells agents to recapture blindly.

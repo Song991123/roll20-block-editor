@@ -78,6 +78,7 @@ function buildFixturePlan(fixtureId, reports) {
   const fontGlyph = findFixture(reports.fontGlyph?.fixtures, fixtureId);
   const rowPaintSource = findFixture(reports.rowPaintSource?.fixtures, fixtureId);
   const rowRaster = findFixture(reports.rowRaster?.fixtures, fixtureId);
+  const rowRasterSignals = summarizeRowRaster(rowRaster);
   const backgroundSource = findFixture(reports.backgroundSource?.fixtures, fixtureId);
   const backgroundAssets = findFixture(reports.backgroundAssets?.fixtures, fixtureId);
   const policy = findFixture(reports.policy?.fixtures, fixtureId);
@@ -100,9 +101,10 @@ function buildFixturePlan(fixtureId, reports) {
     triedCandidates: summarizeTriedCandidates(fixtureId, candidateByName),
     rowPaintSourceDecision: rowPaintSource?.decision ?? '',
     rowRasterDecision: rowRaster?.decision ?? '',
+    rowRaster: rowRasterSignals,
     backgroundSourceDecision: backgroundSource?.decision ?? '',
     backgroundAssetDecision: backgroundAssets?.decision ?? '',
-    worstRowMismatchPct: rowRaster?.worstRow?.mismatchPct ?? rowRaster?.worstRowMismatchPct ?? '',
+    worstRowMismatchPct: rowRasterSignals.worstRowMismatchPct,
     backgroundAssetSummary: backgroundAssets?.sourceSummary ?? backgroundAssets?.source ?? '',
   };
   const classification = classifyFixture(fixtureId, alignedMismatch, signals);
@@ -212,7 +214,7 @@ function sourceAssetBlockers(signals) {
     blockers.push('background asset bytes match a Roll20 placeholder/removed image, so original-sheet parity needs asset preservation before CSS promotion');
   }
   if (signals.rowRasterDecision === 'ROW_LUMA_RASTER_MODEL_REQUIRED') {
-    blockers.push(`row raster/luma mismatch remains (${signals.worstRowMismatchPct || 'unknown worst row'})`);
+    blockers.push(`row raster/luma mismatch remains (${formatWorstRow(signals.rowRaster)})`);
   }
   return blockers;
 }
@@ -221,8 +223,34 @@ function sourceAssetEvidence(signals) {
   const evidence = [];
   if (signals.backgroundSourceDecision) evidence.push(`background source ${signals.backgroundSourceDecision}`);
   if (signals.backgroundAssetDecision) evidence.push(`background asset ${signals.backgroundAssetDecision}`);
-  if (signals.rowRasterDecision) evidence.push(`row raster ${signals.rowRasterDecision}`);
+  if (signals.rowRasterDecision) evidence.push(`row raster ${signals.rowRasterDecision}: ${formatWorstRow(signals.rowRaster)}`);
   return evidence;
+}
+
+function summarizeRowRaster(rowRaster) {
+  const worst = rowRaster?.worstRows?.[0] ?? null;
+  return {
+    rowWeightedMismatchPct: rowRaster?.summary?.rowWeightedMismatchPct ?? '',
+    maxRowMismatchPct: rowRaster?.summary?.maxRowMismatchPct ?? worst?.mismatchPct ?? '',
+    worstRowIndex: worst?.index ?? null,
+    worstRowMismatchPct: worst?.mismatchPct ?? rowRaster?.summary?.maxRowMismatchPct ?? '',
+    worstRowLumaDelta: numberOrNull(worst?.avgSignedLumaDelta),
+    worstRowBrightMismatchSharePct: worst?.brightMismatchSharePct ?? '',
+    worstRowDarkMismatchSharePct: worst?.darkMismatchSharePct ?? '',
+  };
+}
+
+function formatWorstRow(rowRaster) {
+  if (!rowRaster) return 'unknown worst row';
+  const parts = [];
+  if (rowRaster.rowWeightedMismatchPct) parts.push(`weighted ${rowRaster.rowWeightedMismatchPct}`);
+  if (rowRaster.worstRowIndex != null || rowRaster.worstRowMismatchPct) {
+    parts.push(`worst row ${rowRaster.worstRowIndex ?? 'n/a'} ${rowRaster.worstRowMismatchPct || 'n/a'}`);
+  }
+  if (typeof rowRaster.worstRowLumaDelta === 'number') parts.push(`luma ${fmtSigned(rowRaster.worstRowLumaDelta)}`);
+  if (rowRaster.worstRowBrightMismatchSharePct) parts.push(`bright ${rowRaster.worstRowBrightMismatchSharePct}`);
+  if (rowRaster.worstRowDarkMismatchSharePct) parts.push(`dark ${rowRaster.worstRowDarkMismatchSharePct}`);
+  return parts.length ? parts.join(', ') : 'unknown worst row';
 }
 
 function renderMarkdown(report) {
@@ -353,6 +381,10 @@ function fmtSignedPct(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `${value > 0 ? '+' : ''}${value}%` : 'n/a';
 }
 
+function fmtSigned(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${value > 0 ? '+' : ''}${value}` : 'n/a';
+}
+
 function command(scriptName, suffix = '') {
   return `corepack pnpm run ${scriptName} -- ${quoteCommandArg(runDirForCommand)}${suffix ? ` ${suffix}` : ''}`;
 }
@@ -367,8 +399,19 @@ function selfTest() {
     tableTextResidual: 0.148,
     tableWidthDelta: 15.75,
     shellDeltas: { messageWidthDelta: 12, contentWidthDelta: 12 },
+    rowRasterDecision: 'ROW_LUMA_RASTER_MODEL_REQUIRED',
+    rowRaster: {
+      rowWeightedMismatchPct: '17.93%',
+      worstRowIndex: 1,
+      worstRowMismatchPct: '26.28%',
+      worstRowLumaDelta: -66.819,
+      worstRowBrightMismatchSharePct: '91.19%',
+      worstRowDarkMismatchSharePct: '36.22%',
+    },
   });
   assert.equal(aw2e.strategy, 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS');
+  assert(aw2e.blockers.some((blocker) => blocker.includes('worst row 1 26.28%')));
+  assert(aw2e.evidence.some((item) => item.includes('weighted 17.93%')));
   const yshy = classifyFixture('yshy-commission-1bu', 0.2068, {
     textWidthDecision: 'TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT',
     tableScrollWidthDelta: -25,
