@@ -1,3 +1,13 @@
+## 2026-07-13 Renderer Gate Root Report Override
+
+- Root cause: fresh isolated full-root/geometry diagnostics could be generated safely with `--out-dir`, but `gate:roll20-renderer-action` still read only fixed report paths under the canonical actual-run folder. That meant agents had no safe way to test a renderer action recommendation against fresh temp root evidence without copying files back into canonical reports.
+- Added `--full-root-dir`, `--scroll-metrics-full-root-dir`, `--root-cutoff-dir`, and `--geometry-dir` to `scripts/roll20_renderer_action_gate.mjs`. Override directories must contain the expected report JSON; if an override is provided but missing, the gate fails instead of silently falling back.
+- Added `reportOverrides` to the generated gate JSON so the evidence source is auditable.
+- Verification: `node --check scripts\roll20_renderer_action_gate.mjs` passed. Live gate run with fresh isolated full-root and geometry reports passed:
+  - `gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --full-root-dir ..\_tmp_codex_smoke\full-root-candidates-outdir-20260713 --geometry-dir ..\_tmp_codex_smoke\geometry-outdir-20260713 --out-dir ..\_tmp_codex_smoke\renderer-gate-with-root-overrides-20260713`
+- Current result: `HOLD_PRODUCTION_RENDERER_PATCH`. The gate now sees the fresh diagnostic full-root candidates (`8.23%` AW2E, `7.77%` Les-Oublies, `15.69%` YSHY), but the renderer remains held by split chat/template models, asset relink blockers, rejected candidate regressions, and non-uniform patch families.
+- Claim boundary: renderer gate wiring only. No production CSS was promoted, no canonical reports were rewritten, and Roll20 visual parity remains unproven.
+
 ## 2026-07-13 Root Geometry Diagnostics Out-Dir
 
 - Root cause: several Roll20 root/height diagnostics still wrote only into the selected actual-run folder, and `smoke:roll20-full-root-candidates` also compiled `buildDoc.ts` into the old `.tmp/full-root-candidate-build` folder. On this machine that build folder is read-only/locked, so a fresh full-root candidate rerun failed before it could write the requested temp report.

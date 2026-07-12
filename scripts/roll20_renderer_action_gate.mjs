@@ -13,16 +13,29 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const optionNamesWithValues = new Set([
+  '--out-dir',
+  '--full-root-dir',
+  '--scroll-metrics-full-root-dir',
+  '--root-cutoff-dir',
+  '--geometry-dir',
+]);
 const runDirArg = firstPositionalArg() ?? '';
 const runDir = path.resolve(runDirArg);
 
 if (!runDirArg) {
-  console.error('Usage: node scripts/roll20_renderer_action_gate.mjs reports/roll20-actual-compare/<label> [--out-dir <writable-report-dir>]');
+  console.error('Usage: node scripts/roll20_renderer_action_gate.mjs reports/roll20-actual-compare/<label> [--out-dir <writable-report-dir>] [--full-root-dir <report-dir>] [--geometry-dir <report-dir>]');
   process.exit(2);
 }
 
 const rawOutDir = readOption('--out-dir', '');
 const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'renderer-action-gate');
+const reportOverrides = {
+  fullRoot: readOption('--full-root-dir', ''),
+  scrollMetricsFullRoot: readOption('--scroll-metrics-full-root-dir', ''),
+  rootCutoff: readOption('--root-cutoff-dir', ''),
+  geometry: readOption('--geometry-dir', ''),
+};
 
 function readOption(name, fallback = '') {
   const index = args.indexOf(name);
@@ -33,19 +46,19 @@ function readOption(name, fallback = '') {
 }
 
 function firstPositionalArg() {
-  return args.find((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--out-dir');
+  return args.find((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(args[index - 1]));
 }
 
 async function main() {
   const status = await readJsonIfExists(path.join(runDir, 'actual-verification-status', 'actual-verification-status-results.json'));
-  const fullRoot = await readJsonIfExists(path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json'));
-  const scrollMetricsFullRoot = await readJsonIfExists(path.join(runDir, 'full-root-candidate-smoke-scroll-metrics', 'full-root-candidate-smoke-results.json'));
+  const fullRoot = await readReportJson('full-root-candidate-smoke', 'full-root-candidate-smoke-results.json', reportOverrides.fullRoot);
+  const scrollMetricsFullRoot = await readReportJson('full-root-candidate-smoke-scroll-metrics', 'full-root-candidate-smoke-results.json', reportOverrides.scrollMetricsFullRoot);
   const rootStitchAudit = await readJsonIfExists(path.join(runDir, 'root-stitch-audit', 'root-stitch-audit-results.json'));
-  const rootCutoff = await readJsonIfExists(path.join(runDir, 'root-cutoff-diagnostics', 'root-cutoff-diagnostics-results.json'));
+  const rootCutoff = await readReportJson('root-cutoff-diagnostics', 'root-cutoff-diagnostics-results.json', reportOverrides.rootCutoff);
   const stateVisibility = await readJsonIfExists(path.join(runDir, 'state-visibility-diagnostics', 'state-visibility-diagnostics-results.json'));
   const attrClassVisibility = await readJsonIfExists(path.join(runDir, 'attr-class-visibility-diagnostics', 'attr-class-visibility-diagnostics-results.json'));
   const attrClassGeometry = await readJsonIfExists(path.join(runDir, 'attr-class-panel-geometry-diagnostics', 'attr-class-panel-geometry-diagnostics-results.json'));
-  const geometry = await readJsonIfExists(path.join(runDir, 'geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json'));
+  const geometry = await readReportJson('geometry-delta-diagnostics', 'geometry-delta-diagnostics-results.json', reportOverrides.geometry);
   const inputFlowAxis = await readJsonIfExists(path.join(runDir, 'input-flow-axis-diagnostics', 'input-flow-axis-diagnostics-results.json'));
   const chatParity = await readJsonIfExists(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
   const chatStyle = await readJsonIfExists(path.join(runDir, 'chat-style-context-diagnostics', 'chat-style-context-diagnostics-results.json'));
@@ -83,6 +96,7 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
+    reportOverrides: normalizeReportOverrides(reportOverrides),
     scope: 'Roll20 renderer action gate; diagnostic only, not visual parity',
     recommendation,
     inputFlowAxis: summarizeInputFlowAxis(inputFlowAxis),
@@ -2721,6 +2735,24 @@ async function readJsonIfExists(file) {
     }
   }
   throw lastError;
+}
+
+async function readReportJson(defaultDirName, reportFileName, overrideDir = '') {
+  const file = overrideDir
+    ? path.join(path.resolve(overrideDir), reportFileName)
+    : path.join(runDir, defaultDirName, reportFileName);
+  if (overrideDir && !existsSync(file)) {
+    throw new Error(`Missing override report for ${defaultDirName}: ${file}`);
+  }
+  return readJsonIfExists(file);
+}
+
+function normalizeReportOverrides(overrides) {
+  return Object.fromEntries(
+    Object.entries(overrides)
+      .filter(([, value]) => Boolean(value))
+      .map(([key, value]) => [key, path.resolve(value)]),
+  );
 }
 
 function sleep(ms) {

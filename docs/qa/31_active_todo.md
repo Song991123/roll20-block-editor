@@ -1,3 +1,12 @@
+## 2026-07-13 Renderer Gate Root Report Override TODO Note
+
+- DONE: `gate:roll20-renderer-action` now accepts `--full-root-dir`, `--scroll-metrics-full-root-dir`, `--root-cutoff-dir`, and `--geometry-dir` report overrides. This lets a fresh isolated root/geometry diagnostic run feed the renderer action gate without rewriting canonical actual evidence folders.
+- DONE: The renderer gate output JSON records `reportOverrides`, so later agents can tell whether the gate used canonical reports or temp isolated reports.
+- VERIFIED: `node --check scripts\roll20_renderer_action_gate.mjs` passed.
+- VERIFIED: Live override run passed against `reports\roll20-actual-compare\2026-06-18-state-map-v1` with `--full-root-dir ..\_tmp_codex_smoke\full-root-candidates-outdir-20260713`, `--geometry-dir ..\_tmp_codex_smoke\geometry-outdir-20260713`, and temp gate output `..\_tmp_codex_smoke\renderer-gate-with-root-overrides-20260713`.
+- OBSERVED: The override gate still returns `HOLD_PRODUCTION_RENDERER_PATCH`. It now includes the fresh diagnostic evidence lines: AW2E best `normal-state-map` `8.23%`, Les-Oublies best `normal-state-map` `7.77%`, and YSHY best `sandbox-inline-block-font-zero-source` `15.69%`.
+- CURRENT: This connects isolated root diagnostics to the renderer decision flow. It still does not promote CSS or prove visual parity; the active blockers remain chat/template split models, asset relink for AW2E/YSHY, and non-uniform diagnostic patch families.
+
 ## 2026-07-13 Root Geometry Diagnostics Out-Dir TODO Note
 
 - DONE: `diagnose:roll20-geometry`, `diagnose:roll20-height-drift`, and `smoke:roll20-full-root-candidates` now accept `--out-dir <writable-report-dir>`, so agents can rerun Roll20 root/height diagnostics without rewriting canonical actual evidence folders.

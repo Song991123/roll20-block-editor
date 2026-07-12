@@ -29,6 +29,21 @@ only when a separate writable compile directory is needed.
 Isolated output proves the diagnostic can be rerun safely. It does not update
 canonical renderer gates by itself and must not be reported as visual parity.
 
+To test a renderer action gate against isolated root diagnostics without copying
+those reports back into the canonical run, pass the report directories as
+overrides:
+
+```powershell
+corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\<run> `
+  --full-root-dir ..\_tmp_codex_smoke\full-root-candidates-<label> `
+  --geometry-dir ..\_tmp_codex_smoke\geometry-<label> `
+  --out-dir ..\_tmp_codex_smoke\renderer-gate-<label>
+```
+
+The gate records `reportOverrides` in its JSON output. If an override directory
+is provided but the expected report JSON is missing, the command must fail
+rather than silently falling back to stale canonical evidence.
+
 ## Verification Tracks
 
 | Track | Purpose | Allowed Actions | Forbidden Actions |
