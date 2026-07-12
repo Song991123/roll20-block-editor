@@ -183,6 +183,7 @@ async function main() {
         hasSampleMenu: bodyText.includes('샘플 시트'),
         hasLocalPreviewBoundaryCopy: bodyText.includes('Roll20 형식 시트를 로컬에서 미리 보는 자리예요.'),
         hasActualRoll20PreviewClaim: bodyText.includes('실제 Roll20 시트가 렌더되는 자리예요.'),
+        hasCurrentLocalPreviewBoundaryCopy: bodyText.includes('Roll20 형식 시트를 로컬에서 미리 보는 자리입니다.'),
         bodyText,
       };
     });
@@ -214,6 +215,8 @@ async function main() {
         hasZipIsNotProofCopy: dialogText.includes('zip 다운로드만으로는 Roll20 실제 표시가 검증된 것이 아닙니다.'),
         hasAssetPreflightCopy: dialogText.includes('zip에는 HTML, CSS, translation만 들어갑니다.'),
         hasAssetRiskCopy: dialogText.includes('외부 이미지/폰트는 zip에 포함되지 않습니다.'),
+        hasAssetProxyMetric: dialogText.includes('Roll20 proxy'),
+        hasAssetPlaceholderMetric: dialogText.includes('placeholder risk'),
         downloadButtonEnabled: !document.querySelector('[data-testid="export-download-button"]')?.disabled,
         dialogText,
       };
@@ -247,7 +250,11 @@ async function main() {
     if (!result.checks.shell.hasHeaderTitle) failures.push('header title missing');
     if (!fixture && !result.checks.shell.hasEmptyTitle) failures.push('empty state title missing');
     if (!fixture && !result.checks.shell.hasBlankCta) failures.push('blank sheet CTA missing');
-    if (!fixture && !result.checks.shell.hasLocalPreviewBoundaryCopy) {
+    if (
+      !fixture &&
+      !result.checks.shell.hasLocalPreviewBoundaryCopy &&
+      !result.checks.shell.hasCurrentLocalPreviewBoundaryCopy
+    ) {
       failures.push('local preview boundary copy missing');
     }
     if (result.checks.shell.hasActualRoll20PreviewClaim) failures.push('misleading actual Roll20 preview claim visible');
@@ -277,6 +284,8 @@ async function main() {
     if (!result.checks.exportDialog.hasFileAccessCopy) failures.push('file-access blocker copy missing');
     if (!result.checks.exportDialog.hasZipIsNotProofCopy) failures.push('zip-is-not-proof copy missing');
     if (!result.checks.exportDialog.hasAssetPreflightCopy) failures.push('asset preflight copy missing');
+    if (!result.checks.exportDialog.hasAssetProxyMetric) failures.push('asset proxy metric missing');
+    if (!result.checks.exportDialog.hasAssetPlaceholderMetric) failures.push('asset placeholder metric missing');
     if (
       result.checks.exportDialog.assetPreflightStatus === '확인 필요' &&
       !result.checks.exportDialog.hasAssetRiskCopy

@@ -521,7 +521,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 }
 
 function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
-  const hasRisk = result.externalRefs > 0 || result.relativeRefs > 0 || result.proxyLikeRefs > 0;
+  const hasRisk =
+    result.externalRefs > 0 || result.relativeRefs > 0 || result.placeholderRiskRefs > 0;
   return (
     <section
       className="rounded border border-border bg-[var(--bg-elevated)] p-3"
@@ -546,17 +547,26 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
           {hasRisk ? '확인 필요' : '외부 자산 없음'}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-2 text-[12px] sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 text-[12px] sm:grid-cols-3">
         <Metric label="전체 참조" value={result.totalRefs} />
         <Metric label="외부 URL" value={result.externalRefs} />
         <Metric label="상대경로" value={result.relativeRefs} />
         <Metric label="data URL" value={result.dataRefs} />
+        <Metric label="Roll20 proxy" value={result.roll20ProxyRefs} />
+        <Metric label="placeholder risk" value={result.placeholderRiskRefs} />
       </div>
       {hasRisk ? (
         <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-100">
           외부 이미지/폰트는 zip에 포함되지 않습니다. Roll20 프록시, Imgur, 원본 서버가 이미지를
           placeholder로 바꾸면 실제 화면도 달라질 수 있어요. 배포 전에 직접 보관한 URL로 교체하거나
           Roll20 Sandbox에서 자산 로딩을 확인하세요.
+          {result.placeholderRiskRefs > 0 ? (
+            <span className="mt-1 block" data-testid="export-asset-placeholder-risk">
+              Roll20 proxy or Imgur page URLs can resolve to placeholder images when the
+              original source is deleted. Relink or rehost those assets before claiming
+              visual parity.
+            </span>
+          ) : null}
           {result.hosts.length > 0 ? (
             <span className="mt-1 block text-muted-foreground">
               감지된 호스트: {result.hosts.slice(0, 5).join(', ')}
@@ -679,6 +689,9 @@ interface AssetPreflight {
   relativeRefs: number;
   dataRefs: number;
   proxyLikeRefs: number;
+  roll20ProxyRefs: number;
+  imgurPageRefs: number;
+  placeholderRiskRefs: number;
   hosts: string[];
 }
 
@@ -688,6 +701,9 @@ function analyzeAssetRefs(html: string, css: string): AssetPreflight {
   let relativeRefs = 0;
   let dataRefs = 0;
   let proxyLikeRefs = 0;
+  let roll20ProxyRefs = 0;
+  let imgurPageRefs = 0;
+  let placeholderRiskRefs = 0;
   const hosts = new Set<string>();
 
   for (const ref of refs) {
@@ -700,10 +716,16 @@ function analyzeAssetRefs(html: string, css: string): AssetPreflight {
     const url = parseExternalUrl(normalized);
     if (url) {
       externalRefs += 1;
-      hosts.add(url.hostname);
-      if (/(\.|^)roll20\.net$/i.test(url.hostname) || /(\.|^)imgur\.com$/i.test(url.hostname)) {
+      const host = url.hostname.toLowerCase();
+      hosts.add(host);
+      const roll20Proxy = host === 'imgsrv.roll20.net';
+      const imgurPage = isImgurPageUrl(url);
+      if (/(\.|^)roll20\.net$/i.test(host) || /(\.|^)imgur\.com$/i.test(host)) {
         proxyLikeRefs += 1;
       }
+      if (roll20Proxy) roll20ProxyRefs += 1;
+      if (imgurPage) imgurPageRefs += 1;
+      if (roll20Proxy || imgurPage) placeholderRiskRefs += 1;
       continue;
     }
     if (!/^(?:javascript|mailto|tel|blob):/i.test(normalized)) {
@@ -717,6 +739,9 @@ function analyzeAssetRefs(html: string, css: string): AssetPreflight {
     relativeRefs,
     dataRefs,
     proxyLikeRefs,
+    roll20ProxyRefs,
+    imgurPageRefs,
+    placeholderRiskRefs,
     hosts: Array.from(hosts).sort(),
   };
 }
@@ -749,6 +774,12 @@ function parseExternalUrl(ref: string): URL | null {
     if (/^https?:\/\//i.test(ref)) return new URL(ref);
   } catch {}
   return null;
+}
+
+function isImgurPageUrl(url: URL): boolean {
+  const host = url.hostname.toLowerCase();
+  if (host !== 'imgur.com' && host !== 'www.imgur.com') return false;
+  return !/\.(?:png|jpe?g|gif|webp)(?:$|[?#])/i.test(url.pathname);
 }
 
 function byteSize(value: string): number {
