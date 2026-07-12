@@ -105,6 +105,8 @@ async function main() {
       console.log(`sheetFrameEvidence=${rel(sheetFrameEvidencePath)}`);
       console.log(`targets=${rel(chatPngPath)}, ${rel(sidecarPath)}`);
       if (!readiness.ready) console.log(`next=${readiness.nextAction}`);
+      else if (summary.frames.length <= 1) console.log(`next=The Roll20 editor URL is open, but no character-sheet iframe is present. Open the intended character sheet and rerun: ${sheetFrameProbeCommand}`);
+      else console.log(`next=Run or re-run the current-page sheet-frame probe first: ${sheetFrameProbeCommand}`);
       return;
     }
     assertCaptureReadyPage(readiness);

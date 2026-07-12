@@ -2773,3 +2773,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: Against the current CDP browser, preflight reports `roll20Targets=1`; `probe:roll20-sheet-frame --dry-run` and `capture:roll20-chat-cdp --dry-run` both select `https://roll20.net/welcome` and stop as `DRY_RUN_NOT_READY` / `UNKNOWN_ROLL20_PAGE` without writing new evidence.
 - CURRENT: Capture is still waiting on the dedicated Sandbox/test-room page. The current CDP page is a Roll20 welcome page, not a loaded custom sheet.
 - CLAIM BOUNDARY: This closes another false-positive capture path. It does not add Roll20 screenshot evidence or change `rendererReady=NO`.
+
+## 2026-07-12 CDP Ready But Sheet Frame Missing TODO Note
+
+- OBSERVED: Navigating the CDP browser from `https://roll20.net/welcome` to `https://app.roll20.net/editor` makes preflight report `READY`, but the page currently has only one frame and no character-sheet iframe.
+- OBSERVED: Full sheet-frame probes for AW2E and YSHY both return `NOT_PROVEN` with `sheetHitCount=0`, `rootCount=0`, `attrCount=0`, and `rollButtonCount=0`.
+- DONE: `probe:roll20-sheet-frame --dry-run` now runs a lightweight non-writing frame probe when the URL is capture-ready, so it prints `probeStatus=NOT_PROVEN` and the best-frame counts before any evidence is saved.
+- DONE: `capture:roll20-chat-cdp --dry-run` now prints an explicit next action when the editor URL is open but no character-sheet iframe is present.
+- VERIFIED: Current AW2E dry-runs show `probeStatus=NOT_PROVEN` and `next=Open the intended character sheet iframe/tab or apply the generated fixture before saving DOM evidence.`
+- CURRENT: The next real action is still to open/load the intended generated custom sheet in the dedicated Sandbox/test room; URL readiness alone is not enough.
+- CLAIM BOUNDARY: This improves blocker visibility only. No Roll20 screenshot or chat evidence was captured.

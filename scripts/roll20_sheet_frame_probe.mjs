@@ -82,13 +82,24 @@ async function main() {
     const readiness = await getRoll20PageReadiness(page);
     const summary = await pageSummary(page);
     if (DRY_RUN) {
+      const dryProbe = readiness.ready ? await probeSheetFrames(page, hints) : null;
+      const best = dryProbe?.bestProbe ?? null;
       console.log(`ROLL20 SHEET FRAME PROBE ${readiness.ready ? 'DRY_RUN_READY' : 'DRY_RUN_NOT_READY'}`);
       console.log(`page=${summary.url}`);
       console.log(`readiness=${readiness.status}`);
       console.log(`title=${summary.title}`);
       console.log(`frames=${summary.frames.length}`);
+      if (dryProbe) {
+        console.log(`probeStatus=${dryProbe.status}`);
+        console.log(`bestFrame=${best?.frame?.title || best?.frame?.name || best?.frame?.url || '(none)'}`);
+        console.log(`sheetHitCount=${best?.sheetHitCount ?? 0}`);
+        console.log(`rootCount=${best?.rootCount ?? 0}`);
+        console.log(`attrCount=${best?.counts?.attrCount ?? 0}`);
+        console.log(`rollButtonCount=${best?.counts?.rollButtonCount ?? 0}`);
+      }
       console.log(`sidecar=${rel(sidecarPath)}`);
       if (!readiness.ready) console.log(`next=${readiness.nextAction}`);
+      else if (dryProbe?.status !== 'VISIBLE_MATCH') console.log('next=Open the intended character sheet iframe/tab or apply the generated fixture before saving DOM evidence.');
       return;
     }
     assertProbeReadyPage(readiness);

@@ -3395,3 +3395,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Live dry-run check: preflight still reports `roll20Targets=1`; both sheet-frame probe and chat capture select the real `https://roll20.net/welcome` page and stop as `UNKNOWN_ROLL20_PAGE` without writing evidence.
 - Verification: syntax checks, `test:roll20-chat-cdp-readiness`, `test:roll20-sheet-frame-probe`, preflight, probe dry-run, and capture dry-run.
 - Claim boundary: capture readiness is safer. Actual Roll20 chat evidence remains missing/suspect for AW2E and YSHY.
+
+## 2026-07-12 CDP Ready But Sheet Frame Missing
+
+- Navigated the CDP browser from Roll20 welcome to `https://app.roll20.net/editor` without editing any room/sheet settings.
+- Preflight then reported `READY`, but sheet-frame probe showed the important missing piece: `frames=1`, `sheetHitCount=0`, `rootCount=0`, `attrCount=0`, `rollButtonCount=0`.
+- Full probes for both `official-roll20-AW2E` and `yshy-commission-1bu` returned `ROLL20 SHEET FRAME PROBE NOT_PROVEN`, so no positive DOM sidecar was written.
+- Updated `probe:roll20-sheet-frame --dry-run` to run a lightweight non-writing frame probe when the Roll20 URL is capture-ready.
+- Updated `capture:roll20-chat-cdp --dry-run` to warn when `/editor` is open but no character-sheet iframe is present, and to point back to the required sheet-frame probe command.
+- Verification: syntax checks plus live AW2E dry-runs for probe and capture. The dry-runs now distinguish URL readiness from loaded-fixture readiness.
+- Claim boundary: no actual Roll20 evidence was captured. The next step is loading/opening the intended generated sheet in the dedicated Sandbox/test room.
