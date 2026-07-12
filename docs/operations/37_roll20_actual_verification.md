@@ -99,6 +99,23 @@ This is especially important for AW2E-style candidates: a policy can be
 `APPLIED` while still breaking intrinsic cell allocation. Treat the intrinsic
 report as a blocker/guidance report, not production CSS approval.
 
+When the next question is whether a local/candidate smoke preserves Roll20's
+cell and column allocation, run the cell allocation probe. Candidate smokes may
+be fixture-scoped; fixtures absent from a candidate smoke are reported as
+`SCENARIO_NOT_IN_LOCAL_SMOKE`, not as renderer failures:
+
+```powershell
+corepack pnpm run diagnose:roll20-chat-cell-allocation -- reports\roll20-actual-compare\<run> `
+  reports\rolltemplate-chat-smoke\rolltemplate-chat-smoke-results.json `
+  --candidate-smoke <candidate>=..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\rolltemplate-chat-smoke-results.json `
+  --out-dir ..\_tmp_codex_smoke\chat-cell-allocation-<candidate>
+```
+
+Use this before promoting table/cell typography candidates. A result such as
+`BROAD_STYLE_BREAKS_CELL_ALLOCATION` means the candidate matched some computed
+styles but changed the actual text-cell allocation too much to be production
+safe.
+
 ## Verification Tracks
 
 | Track | Purpose | Allowed Actions | Forbidden Actions |

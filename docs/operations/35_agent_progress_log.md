@@ -1,3 +1,13 @@
+## 2026-07-13 AW2E Cell Allocation Probe
+
+- Added `scripts/roll20_chat_cell_allocation_probe.mjs` plus `diagnose:roll20-chat-cell-allocation` and `test:roll20-chat-cell-allocation`.
+- Purpose: compare actual Roll20 chat DOM sidecars with local/candidate smoke at row/cell allocation level before trying another ChatPane CSS candidate.
+- Verification: `node --check scripts\roll20_chat_cell_allocation_probe.mjs` and `corepack pnpm run test:roll20-chat-cell-allocation` passed.
+- Live diagnostic: `corepack pnpm run diagnose:roll20-chat-cell-allocation -- reports\roll20-actual-compare\2026-06-18-state-map-v1 reports\rolltemplate-chat-smoke\rolltemplate-chat-smoke-results.json --candidate-smoke aw2e-message-cell-wrap-context=..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-cell-wrap-policy-diag-20260713-r1\rolltemplate-chat-smoke-results.json --out-dir ..\_tmp_codex_smoke\chat-cell-allocation-aw2e-wrap-20260713-r2`.
+- Evidence: default renderer preserves cell ratios for current actual evidence (`max ratio delta` AW2E `+0.255%`, Les-Oublies `+0.602%`, YSHY `+0.039%`), which points to root/table/crop context before typography CSS.
+- Evidence: the AW2E wrap/cell-font candidate breaks allocation (`tableDelta=-188.391px`, max text-cell delta `+73.719px`, max ratio delta `+6.802%`) and remains rejected.
+- Claim boundary: no production ChatPane CSS changed, no Roll20 upload happened, and Roll20 visual parity remains unproven.
+
 ## 2026-07-13 AW2E Cell Wrap Context Candidate
 
 - Tested a narrower AW2E diagnostic hypothesis after the cell-font width guard: keep the candidate local-only, add `aw2e-message-cell-wrap-context`, and feed its temp smoke evidence into candidate comparison, style proof, and row-raster diagnostics.

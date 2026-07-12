@@ -1,3 +1,13 @@
+## 2026-07-13 AW2E Cell Allocation Probe TODO Note
+
+- DONE: Added `diagnose:roll20-chat-cell-allocation` and `test:roll20-chat-cell-allocation` to compare actual Roll20 chat DOM sidecars against local/candidate smoke row-cell allocation. The report records table width deltas, text-cell deltas, ratio deltas, and per-scenario decisions.
+- DONE: Candidate smokes that intentionally cover only one fixture are now reported as `SCENARIO_NOT_IN_LOCAL_SMOKE` for the other fixtures instead of false renderer blockers.
+- VERIFIED: `node --check scripts\roll20_chat_cell_allocation_probe.mjs` and `corepack pnpm run test:roll20-chat-cell-allocation` passed.
+- VERIFIED: Live diagnostic output wrote `..\_tmp_codex_smoke\chat-cell-allocation-aw2e-wrap-20260713-r2`.
+- OBSERVED: Default local chat rendering keeps cell ratios stable for all three current fixtures: AW2E `tableDelta=+15.75px`, max text-cell delta `+4.953px`, max ratio delta `+0.255%`; Les-Oublies `tableDelta=+12px`, max ratio `+0.602%`; YSHY `tableDelta=-24.531px`, max ratio `+0.039%`.
+- OBSERVED: The AW2E `aw2e-message-cell-wrap-context` candidate is explicitly rejected as `BROAD_STYLE_BREAKS_CELL_ALLOCATION`: `tableDelta=-188.391px`, max text-cell delta `+73.719px`, max ratio delta `+6.802%`.
+- CURRENT: Do not promote or retry broad AW2E cell/wrap/font CSS copying. The next AW2E renderer work should inspect narrower nested text wrappers, table width constraints, or Roll20 paint/crop context while preserving the stable default cell ratios.
+
 ## 2026-07-13 AW2E Cell Wrap Context Candidate TODO Note
 
 - DONE: Added a diagnostic-only `aw2e-message-cell-wrap-context` ChatPane typography policy and wired it into local smoke/candidate/style/row-raster diagnostic allowlists. The default ChatPane renderer is unchanged.
