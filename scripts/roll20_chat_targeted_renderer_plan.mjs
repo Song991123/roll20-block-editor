@@ -8,15 +8,22 @@
  */
 
 import assert from 'node:assert/strict';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = args.includes('--self-test');
+const optionNamesWithValues = new Set([
+  '--out-dir',
+  '--source-context-dir',
+]);
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
 const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-targeted-renderer-plan');
+const reportOverrides = {
+  sourceContext: readOption('--source-context-dir', ''),
+};
 const runDirForCommand = runDirArg;
 
 if (SELF_TEST) {
@@ -34,10 +41,11 @@ function readOption(name, fallback = '') {
 }
 
 function firstPositionalArg() {
-  return args.find((arg, index) => !arg.startsWith('--') && arg !== '--self-test' && args[index - 1] !== '--out-dir');
+  return args.find((arg, index) => !arg.startsWith('--') && arg !== '--self-test' && !optionNamesWithValues.has(args[index - 1]));
 }
 
 async function main() {
+  await resolveImplicitReportOverrides();
   const reports = {
     parity: await readOptionalJson(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json')),
     reconciliation: await readOptionalJson(path.join(runDir, 'chat-width-reconciliation', 'chat-width-reconciliation-results.json')),
@@ -52,6 +60,7 @@ async function main() {
     policy: await readOptionalJson(path.join(runDir, 'chat-renderer-policy', 'chat-renderer-policy-results.json')),
     candidates: await readOptionalJson(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json')),
     styleProof: await readOptionalJson(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json')),
+    sourceContext: await readReportJson('chat-source-context-probe', 'chat-source-context-probe-results.json', reportOverrides.sourceContext),
   };
   const fixtureIds = collectFixtureIds(reports);
   const fixtures = fixtureIds.map((fixtureId) => buildFixturePlan(fixtureId, reports));
@@ -59,6 +68,7 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
+    reportOverrides: normalizeReportOverrides(reportOverrides),
     scope: 'diagnostic-only targeted Roll20 chat renderer plan',
     productionRendererAction: blockers.length ? 'HOLD_PRODUCTION_RENDERER_PATCH' : 'READY_FOR_REVIEW',
     summary: {
@@ -82,6 +92,17 @@ async function main() {
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
 }
 
+async function resolveImplicitReportOverrides() {
+  if (reportOverrides.sourceContext) return;
+  const defaultSourceContext = await readOptionalJson(path.join(runDir, 'chat-source-context-probe', 'chat-source-context-probe-results.json'));
+  if (sourceContextHasActionableEvidence(defaultSourceContext)) return;
+  reportOverrides.sourceContext = await findLatestFallbackReportDir(
+    ['chat-source-context-probe', 'chat-source-context'],
+    'chat-source-context-probe-results.json',
+    sourceContextHasActionableEvidence,
+  );
+}
+
 function buildFixturePlan(fixtureId, reports) {
   const parity = findFixture(reports.parity?.fixtures, fixtureId);
   const reconciliation = findFixture(reports.reconciliation?.fixtures, fixtureId);
@@ -95,6 +116,7 @@ function buildFixturePlan(fixtureId, reports) {
   const backgroundSource = findFixture(reports.backgroundSource?.fixtures, fixtureId);
   const backgroundAssets = findFixture(reports.backgroundAssets?.fixtures, fixtureId);
   const policy = findFixture(reports.policy?.fixtures, fixtureId);
+  const sourceContext = findFixture(reports.sourceContext?.fixtures, fixtureId);
   const candidateByName = new Map((reports.candidates?.candidates ?? []).map((candidate) => [candidate.name, candidate]));
   const alignedMismatch = numberOrNull(parity?.bestAlignedMismatchRatio ?? reconciliation?.alignedMismatchRatio ?? parity?.mismatchRatio);
   const signals = {
@@ -119,6 +141,14 @@ function buildFixturePlan(fixtureId, reports) {
     backgroundAssetDecision: backgroundAssets?.decision ?? '',
     worstRowMismatchPct: rowRasterSignals.worstRowMismatchPct,
     backgroundAssetSummary: backgroundAssets?.sourceSummary ?? backgroundAssets?.source ?? '',
+    sourceContextDecision: sourceContext?.decision ?? '',
+    sourceContextNextAction: sourceContext?.nextAction ?? '',
+    sourceCssClassification: sourceContext?.cssEvidence?.classification ?? '',
+    sourceFontDecision: sourceContext?.fontActivation?.decision ?? '',
+    sourceChangedFonts: numberOrNull(sourceContext?.fontActivation?.changedFonts?.length) ?? 0,
+    sourceTableDecision: sourceContext?.tableContext?.decision ?? '',
+    sourceTableWidthDelta: numberOrNull(sourceContext?.tableContext?.tableWidthDelta),
+    sourceSanitizeReplayDeltaPct: numberOrNull(sourceContext?.rowPaintSource?.sanitizeReplayDeltaPct),
   };
   const classification = classifyFixture(fixtureId, alignedMismatch, signals);
   const requiredProofChecklist = proofChecklistForStrategy(classification.strategy);
@@ -158,6 +188,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         'combined width/font candidate improved raw crop but did not beat default after alignment',
         ...failedCandidateBlockers(signals.triedCandidates),
         ...sourceAssetBlockers(signals),
+        ...sourceContextBlockers(signals),
       ],
       evidence: [
         `table width delta ${fmtPx(signals.tableWidthDelta)} with text residual ${fmtPx(signals.tableTextResidual)}`,
@@ -165,9 +196,11 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         'text metrics explain AW2E table width, so broad typography and global shell CSS are too risky',
         ...candidateEvidence(signals.triedCandidates),
         ...sourceAssetEvidence(signals),
+        ...sourceContextEvidence(signals),
       ],
       commands: [
         command('plan:roll20-asset-relink', '--map-file <local-map.txt>'),
+        command('diagnose:roll20-chat-source-context'),
         command('diagnose:roll20-chat-message-shell'),
         command('diagnose:roll20-chat-table-width-budget'),
         command('diagnose:roll20-chat-font-glyph'),
@@ -190,6 +223,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         'current transform, broad font, and paint candidates are rejected or fixture-local',
         ...failedCandidateBlockers(signals.triedCandidates),
         ...sourceAssetBlockers(signals),
+        ...sourceContextBlockers(signals),
       ],
       evidence: [
         `table width delta ${fmtPx(signals.tableWidthDelta)} and scroll delta ${fmtPx(signals.tableScrollWidthDelta)}`,
@@ -197,9 +231,11 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         signals.fontFamilyDiffers ? 'font-family/font availability differs in actual Roll20 evidence' : 'font sidecar does not yet prove a clean font-family match',
         ...candidateEvidence(signals.triedCandidates),
         ...sourceAssetEvidence(signals),
+        ...sourceContextEvidence(signals),
       ],
       commands: [
         command('plan:roll20-asset-relink', '--map-file <local-map.txt>'),
+        command('diagnose:roll20-chat-source-context'),
         command('diagnose:roll20-chat-table-intrinsic-probe'),
         command('diagnose:roll20-chat-overflow-crop'),
         command('diagnose:roll20-chat-intrinsic-width'),
@@ -239,6 +275,26 @@ function sourceAssetEvidence(signals) {
   if (signals.backgroundSourceDecision) evidence.push(`background source ${signals.backgroundSourceDecision}`);
   if (signals.backgroundAssetDecision) evidence.push(`background asset ${signals.backgroundAssetDecision}`);
   if (signals.rowRasterDecision) evidence.push(`row raster ${signals.rowRasterDecision}: ${formatWorstRow(signals.rowRaster)}`);
+  return evidence;
+}
+
+function sourceContextBlockers(signals) {
+  const decision = signals.sourceContextDecision;
+  if (!decision) return ['source-context probe evidence is missing for this high-mismatch fixture'];
+  if (decision === 'SOURCE_CONTEXT_SECONDARY') return [];
+  if (decision === 'MISSING_EVIDENCE') return ['source-context probe is missing required Roll20/local DOM or style evidence'];
+  return [`source-context gate requires ${decision} before renderer CSS review`];
+}
+
+function sourceContextEvidence(signals) {
+  const evidence = [];
+  if (!signals.sourceContextDecision) return evidence;
+  evidence.push(`source context ${signals.sourceContextDecision}`);
+  if (signals.sourceCssClassification) evidence.push(`actual chat CSS ${signals.sourceCssClassification}`);
+  if (signals.sourceFontDecision) evidence.push(`font ${signals.sourceFontDecision} changedFonts=${signals.sourceChangedFonts}`);
+  if (signals.sourceTableDecision) evidence.push(`table ${signals.sourceTableDecision} widthDelta=${fmtPx(signals.sourceTableWidthDelta)}`);
+  if (typeof signals.sourceSanitizeReplayDeltaPct === 'number') evidence.push(`sanitize replay delta ${fmtSignedPct(signals.sourceSanitizeReplayDeltaPct)}`);
+  if (signals.sourceContextNextAction) evidence.push(`source next ${signals.sourceContextNextAction}`);
   return evidence;
 }
 
@@ -326,6 +382,7 @@ function renderMarkdown(report) {
     lines.push('', `## ${fixture.fixtureId}`, '');
     lines.push(`- Evidence: ${fixture.evidence.join('; ') || 'none'}`);
     lines.push(`- Blockers: ${fixture.blockers.join('; ') || 'none'}`);
+    lines.push(`- Source context: ${fixture.signals.sourceContextDecision || 'missing'} / ${fixture.signals.sourceContextNextAction || 'no next action'}`);
     lines.push(`- Required proof before renderer review: ${fixture.requiredProofChecklist.join('; ') || 'none'}`);
     if (fixture.signals.triedCandidates?.length) {
       lines.push('- Tried candidate evidence:');
@@ -361,6 +418,73 @@ async function readOptionalJson(file) {
   } catch {
     return null;
   }
+}
+
+async function readReportJson(defaultDirName, reportFileName, overrideDir = '') {
+  const file = overrideDir
+    ? path.join(path.resolve(overrideDir), reportFileName)
+    : path.join(runDir, defaultDirName, reportFileName);
+  if (overrideDir && !(await fileExists(file))) {
+    throw new Error(`Missing override report for ${defaultDirName}: ${file}`);
+  }
+  return readOptionalJson(file);
+}
+
+async function findLatestFallbackReportDir(prefixes, reportFileName, predicate = null) {
+  const root = path.resolve('..', '_tmp_codex_smoke');
+  let entries = [];
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch {
+    return '';
+  }
+
+  const normalizedPrefixes = Array.isArray(prefixes) ? prefixes : [prefixes];
+  const candidates = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (!normalizedPrefixes.some((prefix) => entry.name.startsWith(`${prefix}-`))) continue;
+    const dir = path.join(root, entry.name);
+    const reportFile = path.join(dir, reportFileName);
+    if (!(await fileExists(reportFile))) continue;
+    const report = await readOptionalJson(reportFile);
+    if (path.resolve(report?.runDir ?? '') !== runDir) continue;
+    if (predicate && !predicate(report)) continue;
+    let mtimeMs = 0;
+    try {
+      mtimeMs = (await stat(reportFile)).mtimeMs;
+    } catch {
+      mtimeMs = 0;
+    }
+    candidates.push({ dir, mtimeMs });
+  }
+
+  candidates.sort((a, b) => b.mtimeMs - a.mtimeMs || b.dir.localeCompare(a.dir));
+  return candidates[0]?.dir ?? '';
+}
+
+async function fileExists(file) {
+  try {
+    await readFile(file, 'utf8');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function sourceContextHasActionableEvidence(report) {
+  return (report?.fixtures ?? []).some((fixture) => {
+    const decision = fixture?.decision ?? '';
+    return decision && !['MISSING_EVIDENCE', 'SOURCE_CONTEXT_SECONDARY'].includes(decision);
+  });
+}
+
+function normalizeReportOverrides(overrides) {
+  return Object.fromEntries(
+    Object.entries(overrides)
+      .filter(([, value]) => Boolean(value))
+      .map(([key, value]) => [key, path.resolve(value)]),
+  );
 }
 
 function evidenceIncludes(reportFixture, text) {
@@ -456,19 +580,34 @@ function selfTest() {
       worstRowBrightMismatchSharePct: '91.19%',
       worstRowDarkMismatchSharePct: '36.22%',
     },
+    sourceContextDecision: 'RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED',
+    sourceCssClassification: 'EXPECTED_RULE_PRESENT',
+    sourceFontDecision: 'FONT_FACE_ACTIVATION_DIFFERS',
+    sourceChangedFonts: 0,
+    sourceTableDecision: 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED',
+    sourceTableWidthDelta: 15.75,
   });
   assert.equal(aw2e.strategy, 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS');
   assert(proofChecklistForStrategy(aw2e.strategy).includes('style-proof:.sheet-rolltemplate-aw'));
   assert(aw2e.blockers.some((blocker) => blocker.includes('worst row 1 26.28%')));
+  assert(aw2e.blockers.some((blocker) => blocker.includes('RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED')));
   assert(aw2e.evidence.some((item) => item.includes('weighted 17.93%')));
+  assert(aw2e.evidence.some((item) => item.includes('actual chat CSS EXPECTED_RULE_PRESENT')));
   const yshy = classifyFixture('yshy-commission-1bu', 0.2068, {
     textWidthDecision: 'TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT',
     tableScrollWidthDelta: -25,
     tableTextResidual: 30.415,
     tableWidthDelta: -24.531,
+    sourceContextDecision: 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED',
+    sourceFontDecision: 'FONT_FACE_ACTIVATION_DIFFERS',
+    sourceChangedFonts: 6,
+    sourceTableDecision: 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED',
+    sourceTableWidthDelta: -24.531,
+    sourceSanitizeReplayDeltaPct: 14.95,
   });
   assert.equal(yshy.strategy, 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL');
   assert(proofChecklistForStrategy(yshy.strategy).includes('font-face-rule-order-sanitize-source-context'));
+  assert(yshy.blockers.some((blocker) => blocker.includes('SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED')));
   const les = classifyFixture('official-roll20-Les-Oublies', 0.0634, {});
   assert.equal(les.strategy, 'KEEP_DEFAULT');
   const fallback = classifyFixture('unknown-fixture', 0.5, {});

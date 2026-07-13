@@ -1,3 +1,13 @@
+## 2026-07-13 Targeted Renderer Source-Context Plan TODO Note
+
+- DONE: `plan:roll20-chat-renderer-targets` now consumes `chat-source-context-probe-results.json` and carries rule-order/font-face/table-context blockers into the targeted renderer plan instead of leaving that proof only to downstream gates.
+- DONE: The plan accepts `--source-context-dir`; when no explicit override is supplied and the canonical source-context report is missing or weak, it auto-selects the newest same-run ignored temp `chat-source-context*` report.
+- DONE: `scripts/README.md` now documents the source-context override and auto-fallback behavior for `plan:roll20-chat-renderer-targets`.
+- VERIFIED: `corepack pnpm run test:roll20-chat-renderer-targets` passed with self-test assertions for AW2E `RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED` and YSHY `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`.
+- VERIFIED: `corepack pnpm run plan:roll20-chat-renderer-targets -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\chat-targeted-renderer-plan-source-context-20260713-r1` recorded `reportOverrides.sourceContext=..\_tmp_codex_smoke\chat-source-context-autofallback-20260713-r2`, returned `HOLD_PRODUCTION_RENDERER_PATCH`, and listed source-context blockers for AW2E and YSHY.
+- VERIFIED: Feeding that targeted plan into `gate:roll20-chat-template-scope` still returned `HOLD_GLOBAL_CHAT_RENDERER_PATCH`; feeding the template-scope report into `gate:roll20-renderer-action` still returned `HOLD_PRODUCTION_RENDERER_PATCH`.
+- CURRENT: This improves plan truthfulness and prevents unsafe renderer-review drift. It does not change product renderer CSS, relink missing assets, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Chat Source Context Row/Paint Auto Fallback TODO Note
 
 - DONE: `diagnose:roll20-chat-source-context` now auto-selects the newest same-run ignored temp `row-paint-source*` report when the canonical row/paint/source report has weaker sanitize-replay evidence and no explicit `--row-paint-source-dir` was supplied.

@@ -1,3 +1,14 @@
+## 2026-07-13 Targeted Renderer Source-Context Plan
+
+- Root cause: `gate:roll20-chat-template-scope` and `gate:roll20-renderer-action` already held renderer CSS on source-context proof, but `plan:roll20-chat-renderer-targets` did not read that report directly. A future agent could start from the targeted plan and miss that AW2E/YSHY still require rule-order/font-face/table-context proof before CSS review.
+- Updated `scripts/roll20_chat_targeted_renderer_plan.mjs` to accept `--source-context-dir`, auto-select the newest same-run ignored temp `chat-source-context*` report when canonical source-context evidence is missing or weak, and write the chosen override into `reportOverrides`.
+- The targeted plan now adds source-context blockers and evidence to high-mismatch fixtures. AW2E carries `RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED`, actual chat CSS `EXPECTED_RULE_PRESENT`, font decision `FONT_FACE_ACTIVATION_DIFFERS`, and table decision `TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED`. YSHY carries `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`, `6` changed font checks, table width delta `-24.531px`, and sanitize replay delta `+14.95%`.
+- Updated `scripts/README.md` so the command table documents the new source-context override and auto-fallback behavior.
+- Verification: `node --check scripts\roll20_chat_targeted_renderer_plan.mjs` and `corepack pnpm run test:roll20-chat-renderer-targets` passed.
+- Verification: `corepack pnpm run plan:roll20-chat-renderer-targets -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\chat-targeted-renderer-plan-source-context-20260713-r1` passed with `HOLD_PRODUCTION_RENDERER_PATCH`, `19` blockers, and `reportOverrides.sourceContext=..\_tmp_codex_smoke\chat-source-context-autofallback-20260713-r2`.
+- Verification: `corepack pnpm run gate:roll20-chat-template-scope -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --targeted-plan-dir ..\_tmp_codex_smoke\chat-targeted-renderer-plan-source-context-20260713-r1 --out-dir ..\_tmp_codex_smoke\chat-template-scope-targeted-source-context-20260713-r1` passed with `HOLD_GLOBAL_CHAT_RENDERER_PATCH`, and the top renderer gate using that output passed with `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Current evidence: this makes the planning report safer and more truthful. It does not change product renderer CSS, upload to Roll20, relink missing assets, or prove visual parity.
+
 ## 2026-07-13 Chat Source Context Row/Paint Auto Fallback
 
 - Root cause: the strongest YSHY row/paint/source evidence was in ignored temp output, where the top-level row/paint decision had been promoted to `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`. The canonical row/paint/source report still had only weaker mixed evidence, so a normal source-context run could under-report which row/paint/source proof it used unless the temp report was passed manually.
