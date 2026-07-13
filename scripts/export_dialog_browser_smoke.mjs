@@ -594,6 +594,13 @@ async function main() {
     if (fixture && !result.checks.exportDialog.sandboxDiagnosticStates.some((item) => item.state === 'rewritten')) {
       failures.push('imported fixture sandbox diagnostics did not report any expected rewrite');
     }
+    if (
+      result.checks.exportDialog.sandboxDiagnosticStates.some((item) =>
+        /selector prefix|class prefix|\bproxy\b|\bdrop\b/.test(item.text)
+      )
+    ) {
+      failures.push('sandbox diagnostic copy contains mixed English implementation terms');
+    }
     if (!result.checks.exportDialog.hasLegacyToggle) failures.push('legacy toggle copy missing');
     if (!result.checks.exportDialog.hasLocalVsActualCopy) failures.push('local-vs-actual verification copy missing');
     if (!result.checks.exportDialog.hasFileAccessCopy) failures.push('file-access blocker copy missing');

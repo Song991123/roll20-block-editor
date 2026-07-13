@@ -3541,3 +3541,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `corepack pnpm run guard:ui-copy`, `corepack pnpm run test:asset-refs`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run build`, `corepack pnpm run smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-copy-polish-20260713-r2 --port 4390`, `corepack pnpm run lint`, `git diff --check`, and `corepack pnpm run check:server-hygiene` passed.
 - CURRENT: This improves user-facing clarity around asset relink/upload readiness. It does not change the active actual-Roll20 blocker: AW2E/YSHY still need user-owned HTTP(S) replacement URLs and fresh Sandbox/test-room comparison.
 - CLAIM BOUNDARY: Wording/guard coverage only. No asset was relinked, no Roll20 upload happened, no product renderer CSS changed, and visual parity remains unproven.
+
+## 2026-07-13 Roll20 Sandbox Diagnostic Copy Polish TODO Note
+
+- DONE: Export dialog Sandbox diagnostic rows now use Korean-first labels for rewrite details: `선택자 보정`, `클래스 보정`, `태그 제거`, `프록시 처리`, and `제거`.
+- DONE: `smoke:export-dialog` now fails if visible Sandbox diagnostic rows contain `selector prefix`, `class prefix`, `proxy`, or `drop`.
+- VERIFIED: `corepack pnpm run guard:ui-copy`, `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run build`, `corepack pnpm run smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-sandbox-copy-20260713-r1 --port 4391`, `corepack pnpm run lint`, `git diff --check`, and `corepack pnpm run check:server-hygiene` passed.
+- CURRENT: This reduces visible implementation jargon in the upload-readiness UI. It does not alter actual Roll20 render behavior or unblock renderer readiness.
+- CLAIM BOUNDARY: UI copy and smoke coverage only. No asset relink, Roll20 upload, renderer CSS promotion, or visual parity proof happened.

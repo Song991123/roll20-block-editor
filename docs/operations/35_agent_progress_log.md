@@ -4241,3 +4241,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Extended `guard:ui-copy` to scan `lib/export/asset_replacements.ts` and reject the old mixed labels in product UI paths.
 - Verification: `guard:ui-copy`, `test:asset-refs`, `test:asset-replacements`, `build`, `smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-copy-polish-20260713-r2 --port 4390`, `lint`, `git diff --check`, and `check:server-hygiene` passed. The smoke confirmed `hasMojibake=false`, zero console/page errors, and the placeholder guard text now uses Korean parser warnings.
 - Claim boundary: UI wording clarity only. This does not relink assets, upload to Roll20, promote renderer CSS, or prove Roll20 visual parity.
+
+## 2026-07-13 Roll20 Sandbox Diagnostic Copy Polish
+
+- Cleaned the export dialog's Roll20 Sandbox diagnostic rows so implementation terms no longer leak into visible UI: `selector prefix` became `선택자 보정`, `class prefix` became `클래스 보정`, and `proxy/drop` became `프록시 처리/제거`.
+- Hardened `smoke:export-dialog` so the Sandbox diagnostic rows fail if those mixed English implementation terms return.
+- Verification: `guard:ui-copy`, `node --check scripts\export_dialog_browser_smoke.mjs`, `build`, `smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-sandbox-copy-20260713-r1 --port 4391`, `lint`, `git diff --check`, and `check:server-hygiene` passed. The browser smoke confirmed the new Korean diagnostic row text, `hasMojibake=false`, and zero console/page errors.
+- Claim boundary: visible UI clarity and regression coverage only. No renderer CSS was promoted, no Roll20 upload happened, no asset was relinked, and visual parity remains unproven.

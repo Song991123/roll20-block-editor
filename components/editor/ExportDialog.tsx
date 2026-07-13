@@ -526,7 +526,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 }
                 detail={`${formatBytes(sandboxDiagnostics.cssBeforeBytes)} -> ${formatBytes(
                   sandboxDiagnostics.cssAfterBytes,
-                )}, selector prefix ${sandboxDiagnostics.selectorPrefixed}건`}
+                )}, 선택자 보정 ${sandboxDiagnostics.selectorPrefixed}건`}
               />
               <DiagnosticRow
                 label="클래스/태그"
@@ -535,12 +535,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                     ? 'rewritten'
                     : 'same'
                 }
-                detail={`class prefix ${sandboxDiagnostics.classPrefixed}건, tag 제거 ${sandboxDiagnostics.tagStripped}건`}
+                detail={`클래스 보정 ${sandboxDiagnostics.classPrefixed}건, 태그 제거 ${sandboxDiagnostics.tagStripped}건`}
               />
               <DiagnosticRow
                 label="외부 URL"
                 state={sandboxDiagnostics.urlsDropped > 0 ? 'rewritten' : 'same'}
-                detail={`proxy ${sandboxDiagnostics.urlsProxied}건, drop ${sandboxDiagnostics.urlsDropped}건`}
+                detail={`프록시 처리 ${sandboxDiagnostics.urlsProxied}건, 제거 ${sandboxDiagnostics.urlsDropped}건`}
               />
             </div>
           </section>
