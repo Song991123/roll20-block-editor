@@ -59,6 +59,27 @@ export function applyAssetReplacements(input, mapText) {
   return { html, css, replacements, entries: parsed.entries, warnings: parsed.warnings };
 }
 
+export function summarizeAssetReplacementReadiness(mapText) {
+  const parsed = parseAssetReplacementMap(mapText);
+  const placeholderTargets = countPlaceholderReplacementTargets(mapText);
+  let roll20ReadyTargets = 0;
+  let localOnlyTargets = 0;
+
+  for (const entry of parsed.entries) {
+    if (isRoll20ReadyReplacementTarget(entry.to)) roll20ReadyTargets += 1;
+    else localOnlyTargets += 1;
+  }
+
+  return {
+    entries: parsed.entries.length,
+    roll20ReadyTargets,
+    localOnlyTargets,
+    placeholderTargets,
+    hasLocalOnlyTargets: localOnlyTargets > 0,
+    hasPlaceholderTargets: placeholderTargets > 0,
+  };
+}
+
 function splitReplacementLine(line) {
   const arrow = line.indexOf('=>');
   if (arrow >= 0) return [line.slice(0, arrow), line.slice(arrow + 2)];
@@ -82,6 +103,23 @@ function isAllowedReplacementTarget(value) {
   if (/^data:/i.test(value)) return true;
   if (/^(?:javascript|mailto|tel|blob):/i.test(value)) return false;
   return !value.startsWith('#');
+}
+
+function isRoll20ReadyReplacementTarget(value) {
+  return /^(?:https?:)?\/\//i.test(value);
+}
+
+function countPlaceholderReplacementTargets(text) {
+  let count = 0;
+  const lines = String(text ?? '').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const parts = splitReplacementLine(trimmed);
+    if (!parts) continue;
+    if (isPlaceholderReplacementTarget(cleanReplacementValue(parts[1]))) count += 1;
+  }
+  return count;
 }
 
 function isPlaceholderReplacementTarget(value) {

@@ -27,6 +27,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { summarizeAssetReplacementReadiness } from './lib/assetReplacements.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const RUN_DIR = path.resolve(args[0] ?? 'reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1');
@@ -41,7 +42,9 @@ const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const STATE_MAP_PATH = argOf('--state-map', '');
 const ASSET_MAP_FILE = argOf('--asset-map-file', '');
-const REPORT_DIR = path.join(RUN_DIR, 'preupload-verification');
+const EXPLICIT_REPORT_DIR = argOf('--report-out-dir', '');
+const DEFAULT_REPORT_DIR = path.join(RUN_DIR, 'preupload-verification');
+const REPORT_DIR = EXPLICIT_REPORT_DIR ? path.resolve(EXPLICIT_REPORT_DIR) : DEFAULT_REPORT_DIR;
 const NODE = process.execPath;
 const RUN_PARENT_DIR = path.dirname(RUN_DIR);
 const RUN_LABEL = path.basename(RUN_DIR);
@@ -140,12 +143,19 @@ async function main() {
   }
   const startedAt = new Date().toISOString();
   const results = [];
-  for (const check of checks) {
-    console.log(`RUN ${check.id}`);
-    const result = runCheck(check);
-    results.push(result);
-    console.log(`${result.ok ? 'PASS' : 'FAIL'} ${check.id}`);
-    if (!result.ok) break;
+  const assetMapGate = await runAssetMapReadinessGate();
+  if (assetMapGate) {
+    results.push(assetMapGate);
+    console.log(`${assetMapGate.ok ? 'PASS' : 'FAIL'} ${assetMapGate.id}`);
+  }
+  if (!assetMapGate || assetMapGate.ok) {
+    for (const check of checks) {
+      console.log(`RUN ${check.id}`);
+      const result = runCheck(check);
+      results.push(result);
+      console.log(`${result.ok ? 'PASS' : 'FAIL'} ${check.id}`);
+      if (!result.ok) break;
+    }
   }
 
   const report = {
@@ -157,6 +167,11 @@ async function main() {
     basePath: BASE_PATH,
     stateMapPath: STATE_MAP_PATH ? path.resolve(STATE_MAP_PATH) : null,
     assetMapFile: ASSET_MAP_FILE ? path.resolve(ASSET_MAP_FILE) : null,
+    output: {
+      requestedReportDir: REPORT_DIR,
+      reportDir: REPORT_DIR,
+      fallbackReason: '',
+    },
     scope: 'local pre-upload gate; not Roll20 visual parity',
     pass: results.length === checks.length && results.every((result) => result.ok),
     results,
@@ -166,12 +181,86 @@ async function main() {
         : 'Fix the failing local pre-upload check before attempting Roll20 upload.',
   };
 
-  await fs.mkdir(REPORT_DIR, { recursive: true });
-  await fs.writeFile(path.join(REPORT_DIR, 'preupload-verification-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await fs.writeFile(path.join(REPORT_DIR, 'preupload-verification-results.md'), renderMarkdown(report), 'utf8');
+  const expectedChecks = checks.length + (assetMapGate ? 1 : 0);
+  report.pass = results.length === expectedChecks && results.every((result) => result.ok);
+  report.nextAction = report.pass
+    ? 'Upload the payload files in Roll20 Custom Sheet Sandbox, capture roll20-sandbox.png and roll20-chat.png, then run scripts/roll20_actual_screenshot_diff.mjs.'
+    : 'Fix the failing local pre-upload check before attempting Roll20 upload.';
+
+  const writtenReportDir = await writeReport(report);
+  console.log(`out=${writtenReportDir}`);
 
   console.log(report.pass ? 'ROLL20 PREUPLOAD VERIFICATION PASS' : 'ROLL20 PREUPLOAD VERIFICATION FAIL');
   process.exitCode = report.pass ? 0 : 1;
+}
+
+async function writeReport(report) {
+  try {
+    await writeReportFiles(REPORT_DIR, report);
+    return REPORT_DIR;
+  } catch (error) {
+    if (EXPLICIT_REPORT_DIR || !isWriteDenied(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `roll20-preupload-${slug(RUN_LABEL)}-${Date.now()}`,
+    );
+    report.output.reportDir = fallbackDir;
+    report.output.fallbackReason = `${error.code || 'WRITE_FAILED'}:${error.syscall || 'write'}`;
+    await writeReportFiles(fallbackDir, report);
+    console.warn(`WARNING report write fallback ${fallbackDir}`);
+    return fallbackDir;
+  }
+}
+
+async function writeReportFiles(dir, report) {
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'preupload-verification-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  await fs.writeFile(path.join(dir, 'preupload-verification-results.md'), renderMarkdown(report), 'utf8');
+}
+
+function isWriteDenied(error) {
+  return ['EACCES', 'EPERM', 'EROFS'].includes(error?.code);
+}
+
+function slug(value) {
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'roll20-preupload';
+}
+
+async function runAssetMapReadinessGate() {
+  if (!ASSET_MAP_FILE) return null;
+  const started = Date.now();
+  const resolved = path.resolve(ASSET_MAP_FILE);
+  const text = await fs.readFile(resolved, 'utf8');
+  const readiness = summarizeAssetReplacementReadiness(text);
+  const ok = !readiness.hasLocalOnlyTargets && !readiness.hasPlaceholderTargets;
+  const lines = [
+    `assetMapFile=${resolved}`,
+    `entries=${readiness.entries}`,
+    `roll20ReadyTargets=${readiness.roll20ReadyTargets}`,
+    `localOnlyTargets=${readiness.localOnlyTargets}`,
+    `placeholderTargets=${readiness.placeholderTargets}`,
+  ];
+  if (!ok) {
+    lines.push('Roll20 pre-upload requires http(s) or protocol-relative replacement targets. Use local baseline only for data: or relative-path plumbing checks.');
+  }
+  return {
+    id: 'asset-map-roll20-readiness',
+    title: 'Asset replacement map Roll20 readiness',
+    command: `asset-map-readiness ${quoteArg(resolved)}`,
+    exitCode: ok ? 0 : 1,
+    signal: null,
+    ok,
+    elapsedMs: Date.now() - started,
+    stdout: lines.join('\n'),
+    stderr: '',
+    readiness,
+  };
 }
 
 function runCheck(check) {

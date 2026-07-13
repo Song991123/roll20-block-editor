@@ -24,7 +24,11 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import JSZip from 'jszip';
 import { chromium } from 'playwright-core';
-import { applyAssetReplacements, parseAssetReplacementMap } from './lib/assetReplacements.mjs';
+import {
+  applyAssetReplacements,
+  parseAssetReplacementMap,
+  summarizeAssetReplacementReadiness,
+} from './lib/assetReplacements.mjs';
 
 const args = process.argv.slice(2);
 function argOf(name, fallback) {
@@ -175,10 +179,22 @@ async function loadStateMap() {
 }
 
 async function loadAssetReplacementMap() {
-  if (!ASSET_MAP_FILE) return { path: null, text: '', parsed: { entries: [], warnings: [] } };
+  if (!ASSET_MAP_FILE) {
+    return {
+      path: null,
+      text: '',
+      parsed: { entries: [], warnings: [] },
+      readiness: summarizeAssetReplacementReadiness(''),
+    };
+  }
   const resolvedPath = path.resolve(ASSET_MAP_FILE);
   const text = await fs.readFile(resolvedPath, 'utf8');
-  return { path: resolvedPath, text, parsed: parseAssetReplacementMap(text) };
+  return {
+    path: resolvedPath,
+    text,
+    parsed: parseAssetReplacementMap(text),
+    readiness: summarizeAssetReplacementReadiness(text),
+  };
 }
 
 function sanitizeStateCandidate(candidate) {
@@ -511,7 +527,7 @@ function renderMarkdown(report) {
   lines.push(`Run label: \`${report.runLabel}\``);
   lines.push(`Generated: ${report.createdAt}`);
   if (report.assetMapPath) {
-    lines.push(`Asset map: \`${report.assetMapPath}\` (${report.assetMapEntryCount} entries)`);
+    lines.push(`Asset map: \`${report.assetMapPath}\` (${report.assetMapEntryCount} entries; Roll20-ready ${report.assetMapReadiness?.roll20ReadyTargets ?? 0}; local-only ${report.assetMapReadiness?.localOnlyTargets ?? 0}; placeholders ${report.assetMapReadiness?.placeholderTargets ?? 0})`);
   }
   lines.push('');
   lines.push('This report is local-only and ignored by Git. Do not commit generated screenshots, payloads, zips, fixture names, room names, or source-derived HTML.');
@@ -538,6 +554,7 @@ function renderMarkdown(report) {
   lines.push('- Proves local import -> emit -> payload package generation for selected ignored fixtures only.');
   lines.push('- Optional `--state-map` changes only the local preview screenshot state before capture. It does not mutate exported payloads or the edit screenshot.');
   lines.push('- Optional `--asset-map-file` applies URL text replacements to local preview/edit renders and emitted Roll20 upload payload HTML/CSS. The map file and generated evidence stay local-only.');
+  lines.push('- Local baseline allows `data:` and relative replacement targets for plumbing checks, but Roll20 upload verification requires Roll20-ready http(s) or protocol-relative replacement targets.');
   lines.push('- Does not prove actual Roll20 visual parity or all-sheet support.');
   return `${lines.join('\n')}\n`;
 }
@@ -594,6 +611,7 @@ async function main() {
     assetMapPath: assetReplacementMap.path,
     assetMapEntryCount: assetReplacementMap.parsed.entries.length,
     assetMapWarnings: assetReplacementMap.parsed.warnings,
+    assetMapReadiness: assetReplacementMap.readiness,
     fixtures: [],
     consoleErrors,
     pageErrors,
@@ -672,6 +690,7 @@ async function main() {
           mapFile: assetReplacementMap.path,
           mapEntries: assetReplacementMap.parsed.entries.length,
           mapWarnings: assetReplacementMap.parsed.warnings,
+          readiness: assetReplacementMap.readiness,
           replacements: relinked.replacements,
         };
         entry.emitSha256 = {

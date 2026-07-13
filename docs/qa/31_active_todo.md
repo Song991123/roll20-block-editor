@@ -3523,3 +3523,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - DONE: `test:asset-replacements` now runs both the app-side TypeScript parser test and the script-side parser test, preventing preview/edit/export UI behavior from silently drifting away from local verification scripts.
 - STILL TODO: Fill a local ignored asset replacement map with user-owned HTTP(S) URLs, rerun `plan:roll20-asset-relink --map-file`, then rerun local preview/edit/export and Roll20 Sandbox/test-room comparison. Keep all maps, screenshots, generated reports, and real sheet evidence ignored.
 - CLAIM BOUNDARY: Verification-path consistency only. No asset was relinked, no generated sheet was uploaded to Roll20, no product renderer CSS changed, and visual parity is still unproven.
+
+## 2026-07-13 Preupload Asset Map Readiness TODO Note
+
+- DONE: Added script-side readiness counts for active asset replacement maps: Roll20-ready targets, local-only targets, and placeholders.
+- DONE: Local baseline reports now include readiness counts but still allow `data:` or relative replacements for local preview/edit plumbing tests.
+- DONE: Preupload verification now stops early when an asset map contains local-only or placeholder targets, so `data:`/relative replacements cannot be mistaken for Roll20 Sandbox upload readiness.
+- DONE: Preupload verification now falls back to ignored `..\_tmp_codex_smoke` output when the canonical actual-run report folder is locked and no explicit `--report-out-dir` was supplied.
+- STILL TODO: Supply user-owned HTTP(S) replacement URLs for AW2E/YSHY before rerunning preupload and Roll20 Sandbox/test-room comparison.
+- CLAIM BOUNDARY: Upload-readiness safety only. No real asset was relinked, no Roll20 upload happened, no renderer CSS changed, and visual parity remains unproven.

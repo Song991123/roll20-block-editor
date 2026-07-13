@@ -4225,3 +4225,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added `scripts/lib/assetReplacements.test.mjs` so the script-side relink parser used by local baseline/preupload tooling is tested directly, not only through the app-side TypeScript parser.
 - Extended `test:asset-replacements` to run both the app parser tests and the script parser tests. The script test covers active draft-note stripping, placeholder rejection, unsafe target rejection, duplicate handling, and HTML/CSS URL replacement.
 - Claim boundary: this hardens the next real verification path only. No user asset was relinked, no Roll20 upload happened, no renderer CSS was promoted, and Roll20 visual parity remains unproven.
+
+## 2026-07-13 Preupload Asset Map Roll20 Readiness Gate
+
+- Added script-side Roll20 readiness classification for replacement-map targets: http(s)/protocol-relative targets count as Roll20-ready, while `data:` and relative paths stay local-only.
+- `roll20_actual_local_baseline` now records asset-map readiness counts in local-only reports while still allowing local-only targets for preview/edit plumbing checks.
+- `verify:roll20-preupload` now fails before upload-package checks when `--asset-map-file` contains local-only or placeholder targets, because those maps cannot prove Roll20 Sandbox visual parity.
+- Also added ignored temp fallback for preupload verification reports when the canonical run folder is locked/read-only.
+- Claim boundary: this prevents a false Roll20-upload-ready state only. It does not provide user-owned replacement URLs, upload to Roll20, or prove visual parity.

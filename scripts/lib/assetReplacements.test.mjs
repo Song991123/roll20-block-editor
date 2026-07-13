@@ -2,6 +2,7 @@ import { strict as assert } from 'node:assert';
 import {
   applyAssetReplacements,
   parseAssetReplacementMap,
+  summarizeAssetReplacementReadiness,
 } from './assetReplacements.mjs';
 
 function testValidAndInvalidLines() {
@@ -72,9 +73,27 @@ function testUnsafeAndDuplicateTargets() {
   assert.equal(parsed.warnings.length, 2);
 }
 
+function testRoll20ReadinessSummary() {
+  const summary = summarizeAssetReplacementReadiness([
+    'https://old.example/a.png => https://assets.example.com/a.png',
+    'https://old.example/b.png => //assets.example.com/b.png',
+    'https://old.example/c.png => data:image/png;base64,aaa',
+    'https://old.example/d.png => local/d.png',
+    'https://old.example/e.png => <paste-user-owned-https-url-here>',
+  ].join('\n'));
+
+  assert.equal(summary.entries, 4);
+  assert.equal(summary.roll20ReadyTargets, 2);
+  assert.equal(summary.localOnlyTargets, 2);
+  assert.equal(summary.placeholderTargets, 1);
+  assert.equal(summary.hasLocalOnlyTargets, true);
+  assert.equal(summary.hasPlaceholderTargets, true);
+}
+
 testValidAndInvalidLines();
 testHtmlAndCssReplacement();
 testInlineDraftNoteIsNotPartOfTarget();
 testPlaceholderTargetWarning();
 testUnsafeAndDuplicateTargets();
+testRoll20ReadinessSummary();
 console.log('scripts/lib/assetReplacements.test PASS');
