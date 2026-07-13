@@ -91,10 +91,8 @@ async function main() {
     nextAction: nextActionForEndpoint(endpoint, { plannedFixtures, currentEvidence }),
   };
 
-  const outDir = RAW_OUT_DIR ? path.resolve(RAW_OUT_DIR) : path.join(RUN_DIR, 'roll20-cdp-preflight');
-  await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(outDir, 'roll20-cdp-preflight-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await writeFile(path.join(outDir, 'roll20-cdp-preflight-results.md'), renderMarkdown(report), 'utf8');
+  const requestedOutDir = RAW_OUT_DIR ? path.resolve(RAW_OUT_DIR) : path.join(RUN_DIR, 'roll20-cdp-preflight');
+  const writeResult = await writePreflightReport(report, requestedOutDir, RUN_DIR);
 
   console.log(`ROLL20 CDP PREFLIGHT ${report.status}`);
   console.log(`run=${rel(RUN_DIR)}`);
@@ -121,7 +119,36 @@ async function main() {
     console.log(`capture=${command}`);
   }
   console.log(`next=${report.nextAction}`);
-  console.log(`out=${rel(outDir)}`);
+  if (writeResult.fallbackReason) {
+    console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
+  }
+  console.log(`out=${rel(writeResult.outDir)}`);
+}
+
+async function writePreflightReport(report, requestedOutDir, runDir) {
+  const writeTo = async (targetDir, fallbackReason = '') => {
+    report.output = {
+      requestedOutDir,
+      outDir: targetDir,
+      fallbackReason,
+    };
+    await mkdir(targetDir, { recursive: true });
+    await writeFile(path.join(targetDir, 'roll20-cdp-preflight-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    await writeFile(path.join(targetDir, 'roll20-cdp-preflight-results.md'), renderMarkdown(report), 'utf8');
+    return { outDir: targetDir, fallbackReason };
+  };
+
+  try {
+    return await writeTo(requestedOutDir);
+  } catch (error) {
+    if (RAW_OUT_DIR || !isAccessError(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `roll20-cdp-preflight-${safePathLabel(path.basename(runDir))}-${Date.now()}`,
+    );
+    return writeTo(fallbackDir, `${error.code ?? 'WRITE_ERROR'} while writing ${rel(requestedOutDir)}`);
+  }
 }
 
 async function inspectEndpoint(cdpUrl) {
@@ -487,4 +514,12 @@ function ratio(a, b) {
 
 function rel(file) {
   return path.relative(process.cwd(), path.resolve(file)) || '.';
+}
+
+function isAccessError(error) {
+  return error?.code === 'EPERM' || error?.code === 'EACCES';
+}
+
+function safePathLabel(value) {
+  return String(value || 'run').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'run';
 }

@@ -1,3 +1,12 @@
+## 2026-07-13 CDP Preflight Locked-Report Fallback
+
+- Root cause: `preflight:roll20-cdp` still failed hard when the canonical `reports\roll20-actual-compare\...\roll20-cdp-preflight` folder was read-only, even though other Roll20 gates already fall back to ignored temp output under `..\_tmp_codex_smoke`.
+- Added `EPERM`/`EACCES` fallback writing to `scripts/roll20_cdp_preflight.mjs` for the default report path. Explicit `--out-dir` failures still fail, so user-specified output mistakes are not hidden.
+- Live rerun: `corepack pnpm run preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1` now succeeds, reports `READY`, `targets=8`, `roll20Targets=2`, `plannedFixtures=0`, and writes fallback evidence to `..\_tmp_codex_smoke\roll20-cdp-preflight-2026-06-18-state-map-v1-1783929646464`.
+- Current next action from the tool: do not recapture blindly because no fixtures are currently planned for capture; continue renderer/template/asset diagnostics from `gate:roll20-renderer-action` unless a fresh live capture is intentionally requested.
+- Verification: `node --check scripts\roll20_cdp_preflight.mjs` and `node scripts\roll20_cdp_preflight.mjs --self-test` passed before the live preflight rerun.
+- Claim boundary: this repairs actual-verification workflow reliability only. It does not upload a sheet, capture new Roll20 screenshots, relink assets, or prove visual parity.
+
 ## 2026-07-13 Roll20 Sandbox Font Proxy Candidate
 
 - Root cause test: actual Roll20 fails YSHY `BookkMyungjo-Bd` font checks, while local ChatPane had been preserving font URLs directly. The hypothesis was that local needed a Roll20-sandbox-like font URL proxy/failure model.

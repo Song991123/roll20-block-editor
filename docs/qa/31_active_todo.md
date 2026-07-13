@@ -3442,3 +3442,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `corepack pnpm run check:server-hygiene`, `corepack pnpm run test:layer-roles`, `corepack pnpm run lint`, and `corepack pnpm run build` passed. Final server hygiene preserved only CDP `9222` and found no project dev/smoke listeners.
 - CURRENT: This makes drag intent more legible, but edit-mode UX still needs richer screenshot review on imported real sheets and actual Roll20 comparison remains separate.
 - CLAIM BOUNDARY: Edit overlay usability only. This is not a Roll20 visual parity claim and does not promote chat/rolltemplate renderer CSS.
+
+## 2026-07-13 CDP Preflight Locked-Report Fallback TODO Note
+
+- DONE: `preflight:roll20-cdp` now uses the same locked-report fallback pattern as other Roll20 gates. If the default canonical report folder is read-only and no explicit `--out-dir` was supplied, it writes ignored local evidence under `..\_tmp_codex_smoke`.
+- DONE: The report JSON records `output.requestedOutDir`, `output.outDir`, and `output.fallbackReason`, and the console prints `WARNING report write fallback`.
+- VERIFIED: `node --check scripts\roll20_cdp_preflight.mjs`, `node scripts\roll20_cdp_preflight.mjs --self-test`, and `corepack pnpm run preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1` passed. The live preflight reports `READY`, `targets=8`, `roll20Targets=2`, `plannedFixtures=0`, `rendererReady=NO`, and fallback output `..\_tmp_codex_smoke\roll20-cdp-preflight-2026-06-18-state-map-v1-1783929646464`.
+- CURRENT: CDP/browser readiness is not the active blocker right now. Since no fixtures are currently planned for recapture, the next real work remains renderer/template/asset diagnostics named by `gate:roll20-renderer-action`.
+- CLAIM BOUNDARY: Verification workflow reliability only. This does not add new Roll20 screenshots, upload a sheet, relink assets, or prove visual parity.

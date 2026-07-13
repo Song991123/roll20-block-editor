@@ -13,6 +13,7 @@ This is a compact status snapshot for handoff and planning. It must not be used 
 | Actual Roll20 sheet root | VERIFY/PARTIAL | `status:roll20-actual`: `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, but AW2E still has a high root-cutoff risk superseded only by diagnostic scroll-metrics evidence. | Sheet-root evidence exists for the prepared fixtures, but renderer promotion still needs cautious cross-fixture interpretation. |
 | Actual Roll20 chat/rolltemplate | DOING/HIGH_MISMATCH | `status:roll20-actual` now reports `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatNormalizedCompared=3/3`, and `chatNeedsNormalizedCapture=0`. However, same-structure high mismatch remains `2/3`, max aligned mismatch `20.68%`. | Capture/evidence plumbing is no longer the main blocker. The current blocker is renderer/model parity for AW2E and YSHY chat templates. |
 | Renderer promotion | BLOCKED | `gate:roll20-renderer-action`: `HOLD_PRODUCTION_RENDERER_PATCH`, `rendererBlockers=8`, `rendererReady=NO`. The gate also reports asset-relink blockers for AW2E/YSHY and split template scopes `.sheet-rolltemplate-aw` vs `.sheet-rolltemplate-coc`. | No production Roll20 renderer CSS/chat patch should be promoted yet. Global ChatPane tweaks are specifically unsafe. |
+| Roll20 CDP readiness | VERIFY/READY_NO_CAPTURE_PLANNED | `preflight:roll20-cdp` on 2026-07-13 reports `READY`, `targets=8`, `roll20Targets=2`, `plannedFixtures=0`, and writes to ignored temp fallback when the canonical report folder is read-only. | Browser/CDP plumbing is reachable, but the current capture plan has no missing/stale fixtures. Do not recapture blindly; continue renderer/template/asset diagnostics unless a fresh live capture is explicitly needed. |
 | Runtime visibility | VERIFY/GOOD_LOCAL | `verify:runtime-visibility` PASS on 2026-07-13. It wraps worker workspace separation, worker state smoke, Sandbox expected-preview runtime stripping, preview/edit visible-runtime-node checks, and local rolltemplate chat smoke. | Local preview/edit no longer show raw worker/rolltemplate source for the prepared fixtures, while local chat simulation still works. This is not actual Roll20 parity. |
 | Edit-mode UX | VERIFY/PARTIAL | Edit smoke and imported-edit sync evidence cover flow/free drops, before/inside/after layer modes, imported fixture movement, direct canvas width editing, and separated sheet/rolltemplate canvas widths. | Usable pieces exist, but it still needs more direct-manipulation polish, clearer layer visualization, and broader fixture coverage. |
 | Public copyright safety | VERIFY/ONGOING | Evidence guard passes and real fixtures/reports remain ignored. | Current workflow is respecting the rule that real sheets and screenshots must not be committed. |
@@ -50,6 +51,14 @@ corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2
 => rendererBlockers=8
 => asset relink blocks AW2E/YSHY chat background judgment
 => split template scopes block global ChatPane CSS
+
+corepack pnpm run preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1
+=> READY
+=> targets=8
+=> roll20Targets=2
+=> plannedFixtures=0
+=> report write fallback to ..\_tmp_codex_smoke because canonical reports folder is read-only
+=> next: do not recapture blindly; continue renderer/template/asset diagnostics unless a fresh capture is intentional
 
 corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4336
 => PASS official-roll20-AW2E mismatch=1.86%
