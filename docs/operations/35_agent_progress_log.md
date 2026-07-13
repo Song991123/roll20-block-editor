@@ -1,3 +1,15 @@
+## 2026-07-13 Candidate Asset Evidence Override
+
+- Added isolated-output/report-override support to asset routing:
+  - `scripts/roll20_chat_background_asset_probe.mjs`: `--out-dir`, `--background-source-dir`, `--background-raster-dir`.
+  - `scripts/roll20_chat_asset_preservation_plan.mjs`: `--asset-probe-dir`, `--background-raster-dir`, `--target-plan-dir`.
+- Updated `scripts/README.md` with the override arguments.
+- Verification: syntax checks and self-tests passed for both changed scripts.
+- Sandboxed candidate asset probe output `..\_tmp_codex_smoke\background-assets-aw2e-width-text-metrics-20260713-r1` reported `ASSET_FETCH_INCOMPLETE`, so the probe was rerun with network access.
+- Network-enabled candidate asset probe output `..\_tmp_codex_smoke\background-assets-aw2e-width-text-metrics-net-20260713-r1` reports AW2E and YSHY as `ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER`: local and actual proxy bytes match (`200 image/png 503b png 161x81`), and the source resolves to the same `removed.png` placeholder.
+- Candidate asset plan output `..\_tmp_codex_smoke\chat-assets-aw2e-width-text-metrics-20260713-r1` keeps `HOLD_RENDERER_FOR_ASSET_POLICY`; AW2E and YSHY are `SOURCE_ASSET_LOST_RELINK_REQUIRED`.
+- Claim boundary: no assets were downloaded into the repo, no real sheet assets were committed, no Roll20 upload happened, and visual parity remains unproven until user-owned live assets are relinked and reverified.
+
 ## 2026-07-13 AW2E Width/Text Metrics Background-Raster Follow-Up
 
 - Fed the `aw2e-message-width-text-metrics` candidate evidence through the background-raster routing probe.

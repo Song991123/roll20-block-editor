@@ -1,3 +1,13 @@
+## 2026-07-13 Candidate Asset Evidence Override TODO Note
+
+- DONE: `diagnose:roll20-chat-background-assets` now accepts `--out-dir`, `--background-source-dir`, and `--background-raster-dir`, so candidate-specific background evidence can flow into asset byte checks without rewriting canonical reports.
+- DONE: `plan:roll20-chat-assets` now accepts `--asset-probe-dir`, `--background-raster-dir`, and `--target-plan-dir` overrides, so asset policy can follow the same candidate evidence branch.
+- VERIFIED: `node --check` and self-tests passed for `roll20_chat_background_asset_probe.mjs` and `roll20_chat_asset_preservation_plan.mjs`.
+- VERIFIED: First sandboxed candidate asset probe wrote `..\_tmp_codex_smoke\background-assets-aw2e-width-text-metrics-20260713-r1` but reported `ASSET_FETCH_INCOMPLETE`; the network-enabled rerun wrote `..\_tmp_codex_smoke\background-assets-aw2e-width-text-metrics-net-20260713-r1`.
+- OBSERVED: With network access, AW2E and YSHY both report `ASSET_BYTES_MATCH_BUT_SOURCE_PLACEHOLDER`: local and actual proxy bytes match (`200 image/png 503b png 161x81`), and the decoded source is the same `removed.png` placeholder.
+- VERIFIED: Candidate asset preservation plan wrote `..\_tmp_codex_smoke\chat-assets-aw2e-width-text-metrics-20260713-r1` and keeps `HOLD_RENDERER_FOR_ASSET_POLICY` with `SOURCE_ASSET_LOST_RELINK_REQUIRED` for AW2E and YSHY.
+- CURRENT: For these evidence fixtures, no renderer CSS can honestly prove original visual parity until the user supplies/relinks user-owned live assets and the local preview/edit/export plus Roll20 Sandbox comparison are rerun.
+
 ## 2026-07-13 AW2E Width/Text Metrics Background-Raster Follow-Up TODO Note
 
 - VERIFIED: Candidate background-raster routing wrote `..\_tmp_codex_smoke\background-raster-aw2e-width-text-metrics-20260713-r1` using the `aw2e-message-width-text-metrics` smoke, candidate row-raster output, candidate row-compositing output, and candidate background-source output.

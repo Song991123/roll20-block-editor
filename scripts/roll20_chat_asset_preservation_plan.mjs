@@ -11,12 +11,17 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const SELF_TEST = args.includes('--self-test');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const optionNamesWithValues = new Set(['--out-dir', '--asset-probe-dir', '--background-raster-dir', '--target-plan-dir']);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
+const SELF_TEST = rawArgs.includes('--self-test');
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
 const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-asset-preservation-plan');
+const assetProbeDir = path.resolve(readOption('--asset-probe-dir', path.join(runDir, 'chat-background-asset-probe')));
+const backgroundRasterDir = path.resolve(readOption('--background-raster-dir', path.join(runDir, 'chat-background-raster-model-probe')));
+const targetPlanDir = path.resolve(readOption('--target-plan-dir', path.join(runDir, 'chat-targeted-renderer-plan')));
 
 if (SELF_TEST) {
   selfTest();
@@ -25,21 +30,21 @@ if (SELF_TEST) {
 }
 
 function readOption(name, fallback = '') {
-  const index = args.indexOf(name);
+  const index = rawArgs.indexOf(name);
   if (index === -1) return fallback;
-  const value = args[index + 1];
+  const value = rawArgs[index + 1];
   if (!value || value.startsWith('--')) return fallback;
   return value;
 }
 
 function firstPositionalArg() {
-  return args.find((arg, index) => !arg.startsWith('--') && arg !== '--self-test' && args[index - 1] !== '--out-dir');
+  return args.find((arg) => !arg.startsWith('--') && arg !== '--self-test');
 }
 
 async function main() {
-  const assetProbe = await readOptionalJson(path.join(runDir, 'chat-background-asset-probe', 'chat-background-asset-probe-results.json'));
-  const backgroundRaster = await readOptionalJson(path.join(runDir, 'chat-background-raster-model-probe', 'chat-background-raster-model-probe-results.json'));
-  const targetPlan = await readOptionalJson(path.join(runDir, 'chat-targeted-renderer-plan', 'chat-targeted-renderer-plan-results.json'));
+  const assetProbe = await readOptionalJson(path.join(assetProbeDir, 'chat-background-asset-probe-results.json'));
+  const backgroundRaster = await readOptionalJson(path.join(backgroundRasterDir, 'chat-background-raster-model-probe-results.json'));
+  const targetPlan = await readOptionalJson(path.join(targetPlanDir, 'chat-targeted-renderer-plan-results.json'));
   const fixtureIds = collectFixtureIds(assetProbe, backgroundRaster, targetPlan);
   const fixtures = fixtureIds.map((fixtureId) => classifyFixture(fixtureId, {
     assetProbe: findFixture(assetProbe?.fixtures, fixtureId),
@@ -50,6 +55,12 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
+    reportOverrides: {
+      outDir: rel(outDir),
+      assetProbeDir: rel(assetProbeDir),
+      backgroundRasterDir: rel(backgroundRasterDir),
+      targetPlanDir: rel(targetPlanDir),
+    },
     scope: 'diagnostic-only asset preservation/proxy/browser-paint plan; no asset redistribution',
     rendererAction: blockers.length ? 'HOLD_RENDERER_FOR_ASSET_POLICY' : 'ASSET_POLICY_SECONDARY',
     summary: {
@@ -271,6 +282,10 @@ function countBy(values) {
   const out = {};
   for (const value of values) out[value] = (out[value] ?? 0) + 1;
   return out;
+}
+
+function rel(file) {
+  return path.relative(process.cwd(), file);
 }
 
 function selfTest() {

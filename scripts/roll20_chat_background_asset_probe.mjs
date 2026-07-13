@@ -14,15 +14,26 @@ import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
 const selfTest = rawArgs.includes('--self-test');
-const args = rawArgs.filter((arg) => !arg.startsWith('--'));
+const optionNamesWithValues = new Set(['--out-dir', '--background-source-dir', '--background-raster-dir']);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'chat-background-asset-probe');
+const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-background-asset-probe')));
+const backgroundSourceDir = path.resolve(readOption('--background-source-dir', path.join(runDir, 'chat-background-source-probe')));
+const backgroundRasterDir = path.resolve(readOption('--background-raster-dir', path.join(runDir, 'chat-background-raster-model-probe')));
 const FETCH_TIMEOUT_MS = 15000;
 
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
 async function main() {
-  const backgroundSource = await readOptionalJson(path.join(runDir, 'chat-background-source-probe', 'chat-background-source-probe-results.json'));
-  const rasterModel = await readOptionalJson(path.join(runDir, 'chat-background-raster-model-probe', 'chat-background-raster-model-probe-results.json'));
+  const backgroundSource = await readOptionalJson(path.join(backgroundSourceDir, 'chat-background-source-probe-results.json'));
+  const rasterModel = await readOptionalJson(path.join(backgroundRasterDir, 'chat-background-raster-model-probe-results.json'));
   const previousReport = await readOptionalJson(path.join(outDir, 'chat-background-asset-probe-results.json'));
   const fixtureIds = collectFixtureIds(backgroundSource, rasterModel);
   const fixtures = [];
@@ -36,6 +47,11 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
+    reportOverrides: {
+      outDir: rel(outDir),
+      backgroundSourceDir: rel(backgroundSourceDir),
+      backgroundRasterDir: rel(backgroundRasterDir),
+    },
     scope: 'diagnostic-only Roll20 chat background asset/proxy byte routing; no production CSS',
     summary: {
       status: actionable.length ? 'BACKGROUND_ASSET_PROBE_ACTIONABLE' : 'BACKGROUND_ASSET_PROBE_SECONDARY',
@@ -428,6 +444,10 @@ function signed(value) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '';
   const rounded = Number(value.toFixed(2));
   return `${rounded > 0 ? '+' : ''}${rounded}%`;
+}
+
+function rel(file) {
+  return path.relative(process.cwd(), file);
 }
 
 function selfTestProbe() {
