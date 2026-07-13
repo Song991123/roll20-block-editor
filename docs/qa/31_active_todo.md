@@ -3514,3 +3514,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - DONE: Replacement-map parsers strip trailing generated explanation notes such as `# imgur-direct-image:verify-permission` after a user activates a draft line, so the note is not treated as part of the replacement URL.
 - VERIFIED: `test:asset-replacements`, `test:roll20-asset-relink`, and a live ignored run `plan:roll20-asset-relink -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\asset-relink-canonical-template-20260713-r1` passed. The live template contains `verify-permission` suggestions and remains local-only.
 - CURRENT: Active fixtures still need user-owned HTTP(S) replacement URLs before local preupload and Roll20 Sandbox/test-room recomparison can move forward.
+
+## 2026-07-13 Script Asset Replacement Parser Coverage TODO Note
+
+- OBSERVED: Current actual Roll20 status remains `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, with generated screenshots/diffs `6/6`, chat structure matched, `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH`, and `rendererReady=NO`.
+- OBSERVED: `plan:roll20-asset-relink` still reports `RELINK_MAP_REQUIRED`; AW2E/YSHY are `MISSING_RELINK` because no user-owned HTTP(S) replacements are supplied yet.
+- DONE: Added direct self-test coverage for `scripts/lib/assetReplacements.mjs`, the parser used by local actual-baseline/preupload tooling.
+- DONE: `test:asset-replacements` now runs both the app-side TypeScript parser test and the script-side parser test, preventing preview/edit/export UI behavior from silently drifting away from local verification scripts.
+- STILL TODO: Fill a local ignored asset replacement map with user-owned HTTP(S) URLs, rerun `plan:roll20-asset-relink --map-file`, then rerun local preview/edit/export and Roll20 Sandbox/test-room comparison. Keep all maps, screenshots, generated reports, and real sheet evidence ignored.
+- CLAIM BOUNDARY: Verification-path consistency only. No asset was relinked, no generated sheet was uploaded to Roll20, no product renderer CSS changed, and visual parity is still unproven.

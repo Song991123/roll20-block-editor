@@ -4217,3 +4217,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Hardened replacement-map parsing in `lib/export/asset_replacements.ts`, `scripts/lib/assetReplacements.mjs`, and the relink verification plan so generated trailing notes are stripped from active replacement targets. This prevents a user from activating a draft line and accidentally turning the explanatory `# reason` text into part of the URL.
 - Verification: `node --check scripts\roll20_asset_relink_verification_plan.mjs`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run test:roll20-asset-relink`, and a live ignored relink-plan run against `reports\roll20-actual-compare\2026-06-18-state-map-v1` passed. Pattern check on the ignored template found `verify-permission` suggestions without committing private URLs.
 - Claim boundary: this is relink workflow usability only. It still requires user-owned HTTP(S) replacements and fresh local + Roll20 Sandbox/test-room comparison before visual parity can be judged.
+
+## 2026-07-13 Script Asset Replacement Parser Coverage
+
+- Rechecked the active Roll20 actual status before changing code: generated actual screenshots/diffs are `6/6`, chat structure is matched, but renderer action remains `HOLD_PRODUCTION_RENDERER_PATCH` and `rendererReady=NO`.
+- Current blockers are unchanged: AW2E/YSHY still require user-owned HTTP(S) asset relinks before local preview/edit/export plus Roll20 Sandbox/test-room comparison can honestly judge visual parity.
+- Added `scripts/lib/assetReplacements.test.mjs` so the script-side relink parser used by local baseline/preupload tooling is tested directly, not only through the app-side TypeScript parser.
+- Extended `test:asset-replacements` to run both the app parser tests and the script parser tests. The script test covers active draft-note stripping, placeholder rejection, unsafe target rejection, duplicate handling, and HTML/CSS URL replacement.
+- Claim boundary: this hardens the next real verification path only. No user asset was relinked, no Roll20 upload happened, no renderer CSS was promoted, and Roll20 visual parity remains unproven.
