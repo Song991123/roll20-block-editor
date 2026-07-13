@@ -63,6 +63,15 @@ corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe -- reports\roll20-a
   --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
   --out-dir ..\_tmp_codex_smoke\table-intrinsic-<fixture>-<label>
 
+corepack pnpm run diagnose:roll20-chat-min-content -- reports\roll20-actual-compare\<run> <local-smoke-json> `
+  --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
+  --font-glyph-dir ..\_tmp_codex_smoke\font-glyph-<fixture>-<label> `
+  --intrinsic-width-dir ..\_tmp_codex_smoke\intrinsic-width-<fixture>-<label> `
+  --table-intrinsic-dir ..\_tmp_codex_smoke\table-intrinsic-<fixture>-<label> `
+  --table-layout-dir ..\_tmp_codex_smoke\table-layout-constraint-<fixture>-<label> `
+  --source-context-dir ..\_tmp_codex_smoke\source-context-<fixture>-<label> `
+  --out-dir ..\_tmp_codex_smoke\min-content-<fixture>-<label>
+
 corepack pnpm run diagnose:roll20-chat-font-glyph -- reports\roll20-actual-compare\<run> <local-smoke-json> `
   --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
   --out-dir ..\_tmp_codex_smoke\font-glyph-<fixture>-<label>

@@ -64,6 +64,7 @@
     "diagnose:roll20-chat-table-width-budget": "node scripts/roll20_chat_table_width_budget.mjs",
     "diagnose:roll20-chat-table-intrinsic-probe": "node scripts/roll20_chat_table_intrinsic_probe.mjs",
     "diagnose:roll20-chat-table-layout-constraint": "node scripts/roll20_chat_table_layout_constraint_probe.mjs",
+    "diagnose:roll20-chat-min-content": "node scripts/roll20_chat_min_content_model.mjs",
     "diagnose:roll20-chat-cell-allocation": "node scripts/roll20_chat_cell_allocation_probe.mjs",
     "diagnose:roll20-chat-overflow-crop": "node scripts/roll20_chat_overflow_crop_probe.mjs",
     "diagnose:roll20-chat-width-reconciliation": "node scripts/roll20_chat_width_reconciliation.mjs",

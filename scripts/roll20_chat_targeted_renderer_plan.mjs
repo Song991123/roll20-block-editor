@@ -241,6 +241,8 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         command('plan:roll20-asset-relink', '--map-file <local-map.txt>'),
         command('diagnose:roll20-chat-source-context'),
         command('diagnose:roll20-chat-table-intrinsic-probe'),
+        command('diagnose:roll20-chat-table-layout-constraint'),
+        command('diagnose:roll20-chat-min-content'),
         command('diagnose:roll20-chat-overflow-crop'),
         command('diagnose:roll20-chat-intrinsic-width'),
         command('diagnose:roll20-chat-font-glyph'),

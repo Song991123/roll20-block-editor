@@ -4413,6 +4413,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verification: syntax checks, `test:roll20-chat-cdp-readiness`, `test:roll20-sheet-frame-probe`, preflight, probe dry-run, and capture dry-run.
 - Claim boundary: capture readiness is safer. Actual Roll20 chat evidence remains missing/suspect for AW2E and YSHY.
 
+## 2026-07-13 Chat Min-Content Model Diagnostic
+
+- Added `scripts/roll20_chat_min_content_model.mjs` plus `diagnose:roll20-chat-min-content`.
+- The report fuses text measurement, table used/scroll/max-width signals, row/cell uniformity, crop/top-offset, and source-context decisions before any new CoC/YSHY renderer candidate is attempted.
+- Wired the new diagnostic into `diagnose:roll20-chat-refresh`; the refresh chain now also runs `diagnose:roll20-chat-source-context` and `diagnose:roll20-chat-table-layout-constraint`, which were previously absent from the full chat refresh sequence.
+- Updated the targeted renderer plan so YSHY/CoC next commands include table-layout and min-content diagnostics before another candidate.
+- Fresh YSHY actual sidecar result: AW2E routes to `TEXT_METRIC_WIDTH_MODEL`; YSHY routes to `TABLE_AUTO_LAYOUT_MIN_CONTENT_MODEL_REQUIRED`; Les-Oublies is kept on crop/context investigation.
+- Claim boundary: this still does not promote renderer CSS or prove visual parity. It prevents the next candidate from being another broad font/width/transform replay.
+
 ## 2026-07-13 Fresh Actual Sidecar Routing for Chat Font/Source Diagnostics
 
 - Server hygiene before this batch passed: no project dev/smoke listeners were running; the existing Roll20 CDP browser on `127.0.0.1:9222` was preserved.

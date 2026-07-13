@@ -1,3 +1,12 @@
+## 2026-07-13 Chat Min-Content Model TODO Note
+
+- DONE: Added `diagnose:roll20-chat-min-content` to fuse fresh actual Roll20 sidecars with local ChatPane smoke, font/glyph, intrinsic-width, table-intrinsic, table-layout, and source-context evidence.
+- DONE: Added the min-content route to `diagnose:roll20-chat-refresh`, and added `diagnose:roll20-chat-table-layout-constraint` plus `diagnose:roll20-chat-min-content` to the targeted YSHY/CoC renderer-plan command list.
+- VERIFIED: Fresh YSHY sidecar run passed at ignored temp `chat-min-content-yshy-current-sidecar-20260713-r1`.
+- RESULT: AW2E is classified as `TEXT_METRIC_WIDTH_MODEL` (`tableDelta=+15.75px`, `textDelta=+15.602px`, residual `+0.148px`), so AW2E remains a message/text-metric route.
+- RESULT: YSHY is classified as `TABLE_AUTO_LAYOUT_MIN_CONTENT_MODEL_REQUIRED` (`tableDelta=-24.531px`, `textDelta=-54.946px`, residual `+30.415px`, table/text ratio delta `+0.012x`), so text metrics alone over-explain the table delta and the next candidate must preserve table auto-layout/min-content behavior.
+- CURRENT: Next P0 is to create a scoped `.sheet-rolltemplate-coc` table auto-layout/min-content candidate and run the full smoke/candidate comparison/row raster/style proof/renderer gate. Do not promote broad font, glyph substitution, transform, width clamp, or global ChatPane CSS.
+
 ## 2026-07-13 Fresh Actual Sidecar Routing TODO Note
 
 - DONE: `diagnose:roll20-chat-font-glyph` now accepts `--actual-sidecar <fixture-id>=<json>`, matching the locked-report-safe actual Roll20 evidence flow already used by the table-layout probe.
