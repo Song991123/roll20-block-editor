@@ -1,3 +1,13 @@
+## 2026-07-13 Renderer Gate Candidate Override Routing
+
+- Root cause: isolated candidate experiments could reach targeted planning and template-scope gates, but the final `gate:roll20-renderer-action` still read canonical candidate comparison, style proof, and row-raster candidate reports only. That meant a temp candidate could be rejected in local evidence without appearing in the top production renderer hold.
+- Updated `scripts/roll20_renderer_action_gate.mjs` with `--chat-candidate-comparison-dir`, `--chat-candidate-style-proof-dir`, and `--chat-row-raster-candidates-dir`.
+- Updated `scripts/README.md` so the renderer action gate command documents the new candidate/style/row-raster overrides.
+- Verification: `node --check scripts\roll20_renderer_action_gate.mjs` passed.
+- Verification: `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --chat-candidate-comparison-dir ..\_tmp_codex_smoke\chat-candidates-aw2e-cell-context-20260713-r1 --chat-candidate-style-proof-dir ..\_tmp_codex_smoke\chat-style-aw2e-cell-context-20260713-r1 --chat-row-raster-candidates-dir ..\_tmp_codex_smoke\row-raster-aw2e-cell-context-20260713-r1 --chat-table-budget-dir ..\_tmp_codex_smoke\chat-table-width-budget-targeted-override-20260713-r1 --chat-source-context-dir ..\_tmp_codex_smoke\chat-source-context-autofallback-20260713-r2 --out-dir ..\_tmp_codex_smoke\renderer-gate-candidate-overrides-20260713-r1` passed with `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Evidence: the generated renderer gate report records all three candidate overrides and now surfaces `aw2e-message-cell-font-context` / `aw2e-message-cell-wrap-context` as rejected by candidate comparison, contradicted by actual Roll20 style proof, and row-raster-regressing (`+44%` AW2E weighted row delta, `+8.68%` YSHY weighted row delta).
+- Current evidence: this completes isolated candidate evidence routing to the top renderer gate. It does not improve pixels, relink assets, upload to Roll20, or authorize production renderer CSS.
+
 ## 2026-07-13 Renderer Gate Table-Budget Override
 
 - Root cause: `diagnose:roll20-chat-table-width-budget` and `plan:roll20-chat-renderer-targets` could now use ignored temp table-budget evidence, but the final `gate:roll20-renderer-action` still read only the canonical table-budget report. That left the last production renderer gate unable to consume isolated table-budget experiments.

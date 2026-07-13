@@ -1,3 +1,11 @@
+## 2026-07-13 Renderer Gate Candidate Override TODO Note
+
+- DONE: `gate:roll20-renderer-action` now accepts `--chat-candidate-comparison-dir`, `--chat-candidate-style-proof-dir`, and `--chat-row-raster-candidates-dir`.
+- VERIFIED: Renderer gate with AW2E cell-context temp candidate reports records all three overrides and still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- VERIFIED: The final gate now surfaces temp-only candidate evidence directly: `aw2e-message-cell-font-context` and `aw2e-message-cell-wrap-context` are both rejected by candidate comparison, style proof, and row-raster comparison.
+- VERIFIED: The same gate lists both AW2E cell-context candidates in the production exclusion notes, with row-raster deltas around `+44%` for AW2E and `+8.68%` for YSHY.
+- CURRENT: Candidate experiment evidence can now flow from ignored temp reports into the final renderer gate without rewriting canonical reports. This does not change product renderer CSS, relink assets, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Renderer Gate Table-Budget Override TODO Note
 
 - DONE: `gate:roll20-renderer-action` now accepts `--chat-table-budget-dir`, so ignored temp table-budget evidence can reach the final renderer action gate.

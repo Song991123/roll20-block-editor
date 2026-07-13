@@ -19,6 +19,9 @@ const optionNamesWithValues = new Set([
   '--scroll-metrics-full-root-dir',
   '--root-cutoff-dir',
   '--geometry-dir',
+  '--chat-candidate-comparison-dir',
+  '--chat-candidate-style-proof-dir',
+  '--chat-row-raster-candidates-dir',
   '--row-paint-source-dir',
   '--chat-source-context-dir',
   '--chat-template-scope-dir',
@@ -40,6 +43,9 @@ const reportOverrides = {
   scrollMetricsFullRoot: readOption('--scroll-metrics-full-root-dir', ''),
   rootCutoff: readOption('--root-cutoff-dir', ''),
   geometry: readOption('--geometry-dir', ''),
+  chatCandidateComparison: readOption('--chat-candidate-comparison-dir', ''),
+  chatCandidateStyleProof: readOption('--chat-candidate-style-proof-dir', ''),
+  chatRowRasterCandidates: readOption('--chat-row-raster-candidates-dir', ''),
   chatRowPaintSource: readOption('--row-paint-source-dir', ''),
   chatSourceContext: readOption('--chat-source-context-dir', ''),
   chatTemplateScope: readOption('--chat-template-scope-dir', ''),
@@ -74,8 +80,8 @@ async function main() {
   const inputFlowAxis = await readJsonIfExists(path.join(runDir, 'input-flow-axis-diagnostics', 'input-flow-axis-diagnostics-results.json'));
   const chatParity = await readJsonIfExists(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
   const chatStyle = await readJsonIfExists(path.join(runDir, 'chat-style-context-diagnostics', 'chat-style-context-diagnostics-results.json'));
-  const chatCandidates = await readJsonIfExists(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
-  const chatCandidateStyleProof = await readJsonIfExists(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json'));
+  const chatCandidates = await readReportJson('chat-candidate-comparison', 'chat-candidate-comparison-results.json', reportOverrides.chatCandidateComparison);
+  const chatCandidateStyleProof = await readReportJson('chat-candidate-style-proof', 'chat-candidate-style-proof-results.json', reportOverrides.chatCandidateStyleProof);
   const chatRendererPolicy = await readJsonIfExists(path.join(runDir, 'chat-renderer-policy', 'chat-renderer-policy-results.json'));
   const chatResidual = await readJsonIfExists(path.join(runDir, 'chat-residual-diagnostics', 'chat-residual-diagnostics-results.json'));
   const chatMaskStrategy = await readJsonIfExists(path.join(runDir, 'chat-mask-strategy', 'chat-mask-strategy-results.json'));
@@ -92,7 +98,7 @@ async function main() {
   const chatSourceContextProbe = await readReportJson('chat-source-context-probe', 'chat-source-context-probe-results.json', reportOverrides.chatSourceContext);
   const chatRowPaintSourceProbe = await readReportJson('chat-row-paint-source-probe', 'chat-row-paint-source-probe-results.json', reportOverrides.chatRowPaintSource);
   const chatRowRasterProbe = await readJsonIfExists(path.join(runDir, 'chat-row-raster-probe', 'chat-row-raster-probe-results.json'));
-  const chatRowRasterCandidates = await readJsonIfExists(path.join(runDir, 'chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json'));
+  const chatRowRasterCandidates = await readReportJson('chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json', reportOverrides.chatRowRasterCandidates);
   const chatRowCompositingProbe = await readJsonIfExists(path.join(runDir, 'chat-row-compositing-probe', 'chat-row-compositing-probe-results.json'));
   const chatBackgroundSourceProbe = await readJsonIfExists(path.join(runDir, 'chat-background-source-probe', 'chat-background-source-probe-results.json'));
   const chatBackgroundRasterModelProbe = await readJsonIfExists(path.join(runDir, 'chat-background-raster-model-probe', 'chat-background-raster-model-probe-results.json'));
