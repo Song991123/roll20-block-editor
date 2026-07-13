@@ -11,6 +11,7 @@ Run scripts from the project root unless noted otherwise.
 | `corepack pnpm run lint` | Lint the app. |
 | `corepack pnpm run build` | Production build/type check. |
 | `corepack pnpm run guard:ui-copy` | Scan product-facing UI source for mojibake-looking Korean copy regressions. Excludes Roll20 base CSS, fixtures, reports, and imported sheet corpora because user sheets can contain arbitrary languages. |
+| `corepack pnpm run check:server-hygiene` | Check for leftover project dev/smoke listeners on `3000`, `3001`, `3002`, and `4300-4499`. Roll20 CDP `9222` is reported as preserved, not a failure. Add `-- --kill-project` only when you intentionally want to stop matching `node.exe` listeners; non-node system/user processes are never killed by this helper. |
 | `corepack pnpm run verify:runtime-visibility` | Run the local worker/rolltemplate visibility bundle: worker workspace separation, worker state smoke, Sandbox expected-preview runtime stripping, preview/edit visible-runtime-node checks, and local rolltemplate chat smoke. This is local evidence, not actual Roll20 visual parity. |
 | `node scripts/visual_reference_inventory.mjs` | Inventory visual reference candidates. |
 | `node scripts/prepare_visual_fixture.mjs <inventory_json> <out_root> <selector>` | Copy selected source sheets into workspace-owned visual fixtures. |

@@ -1,3 +1,12 @@
+## 2026-07-13 Server Hygiene Check TODO Note
+
+- DONE: Added `check:server-hygiene` so agents can verify leftover project dev/smoke listeners before and after browser work without manually reading all Windows listeners.
+- DONE: The checker treats `3000`, `3001`, `3002`, and `4300-4499` as project dev/smoke ports and reports Roll20 CDP `9222` as preserved instead of a failure.
+- DONE: `--kill-project` is explicit and limited to matching `node.exe` project listeners; unknown, system, security, Discord, OneDrive, Wacom, and other non-node processes are not killed by this helper.
+- VERIFIED: `corepack pnpm run test:server-hygiene`, `node --check scripts\server_hygiene_check.mjs`, and `corepack pnpm run check:server-hygiene` passed. Current check reports no project dev/smoke listener and preserves `127.0.0.1:9222`.
+- OBSERVED: This sandbox can deny `tasklist.exe`, so the helper falls back to PID/port evidence with `processName: "unknown"` instead of failing the hygiene check.
+- CURRENT: This is workflow safety tooling. It does not change Roll20 rendering, asset relinking, edit sync, or visual parity.
+
 ## 2026-07-13 Export README Asset Relink Guidance TODO Note
 
 - DONE: Exported `README.txt` now explains that external images, fonts, Roll20 image proxies, and Imgur page links are not embedded in the zip and must be relinked to user-owned http(s) URLs for Roll20 verification.

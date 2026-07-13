@@ -20,6 +20,8 @@
     "test:asset-replacements": "node --no-warnings lib/export/__tests__/asset_replacements.test.ts",
     "test:export-readme": "node --no-warnings lib/export/__tests__/readme.test.ts",
     "test:layer-roles": "node --no-warnings lib/editor/__tests__/layerRoles.test.ts",
+    "test:server-hygiene": "node scripts/server_hygiene_check.mjs --self-test",
+    "check:server-hygiene": "node scripts/server_hygiene_check.mjs",
     "test:roll20-sandbox-sanitize": "node lib/emit/__tests__/roll20SandboxSanitize.test.ts",
     "smoke:legacy-preview": "node scripts/roll20_legacy_preview_smoke.mjs",
     "smoke:legacy-fixture-visual": "node scripts/roll20_legacy_fixture_visual_smoke.mjs",

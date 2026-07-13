@@ -37,8 +37,8 @@ fixtures.
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
-| DONE | P0 | Stop unnecessary project dev servers. | `netstat` showed no `127.0.0.1:3000` listener and no Node/pnpm dev process. | Recheck before starting new local servers. |
-| VERIFY | P1 | Identify unknown listeners safely. | Remaining listeners were system/user apps such as Discord, Steam, OneDrive, Wacom, and security modules. Command-line inspection was permission-blocked. | Do not stop user/system apps without explicit confirmation. |
+| DONE | P0 | Stop unnecessary project dev servers. | `corepack pnpm run check:server-hygiene` reports no project dev/smoke listener on `3000`, `3001`, `3002`, or `4300-4499`; Roll20 CDP `9222` is preserved. | Recheck before and after browser smokes; use `-- --kill-project` only for matching project `node.exe` listeners. |
+| VERIFY | P1 | Identify unknown listeners safely. | `tasklist.exe` can be permission-blocked in this sandbox, so `check:server-hygiene` falls back to port/PID evidence and reports process names as `unknown`. | Do not stop user/system apps or unknown processes without explicit confirmation. |
 
 ## Preview and Roll20 Parity
 

@@ -1,3 +1,12 @@
+## 2026-07-13 Server Hygiene Check
+
+- Root cause: agents were checking `netstat` manually and had to remember which listeners were project leftovers versus Roll20 CDP or user/system apps. That made it easy to either miss a leftover smoke server or consider stopping unrelated software.
+- Added `scripts/server_hygiene_check.mjs` plus `check:server-hygiene` and `test:server-hygiene`.
+- The checker watches project dev/smoke ports `3000`, `3001`, `3002`, and `4300-4499`, while preserving Roll20 CDP `9222` as an expected actual-verification listener.
+- Safety boundary: `--kill-project` is opt-in and only attempts to stop matching `node.exe` listeners. When process-name lookup is denied, it reports `unknown` and skips killing rather than guessing.
+- Verification: `corepack pnpm run test:server-hygiene`, `node --check scripts\server_hygiene_check.mjs`, and `corepack pnpm run check:server-hygiene` passed. Current environment reports no project dev/smoke listener and preserves `127.0.0.1:9222`.
+- Claim boundary: workflow hygiene only. No renderer CSS, Roll20 upload, asset relink, or edit-mode sync behavior changed.
+
 ## 2026-07-13 Export README Asset Relink Guidance
 
 - Root cause: the export dialog already had asset replacement UI, but the generated `README.txt` only described Roll20 upload slots. That left users without the critical warning that external images/fonts are not packaged and that local/data URLs are not enough for Roll20 visual parity.

@@ -21,7 +21,7 @@ Every agent must do this before changing code or claiming status. `AGENTS.md` is
 11. For actual Roll20 sandbox sanitize/prefix behavior, read `docs/spec/30_roll20_actual_sandbox_contract.md` before changing preview/export sanitize, prefix, URL proxy, or allow-list behavior.
 11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
 12. Check `git status --short --branch`.
-13. Check for unnecessary local dev servers before starting another one.
+13. Check for unnecessary local dev/smoke servers before starting another one. Prefer `corepack pnpm run check:server-hygiene`; use `-- --kill-project` only for matching project `node.exe` listeners. Preserve Roll20 CDP `9222` when actual Roll20 verification is active.
 14. Update `docs/qa/31_active_todo.md` after each coherent work batch.
 
 ## 0.1 Source Safety
