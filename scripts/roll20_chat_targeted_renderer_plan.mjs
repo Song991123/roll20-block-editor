@@ -18,6 +18,7 @@ const optionNamesWithValues = new Set([
   '--table-budget-dir',
   '--candidate-comparison-dir',
   '--source-context-dir',
+  '--source-intrinsic-dir',
 ]);
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
@@ -27,6 +28,7 @@ const reportOverrides = {
   tableBudget: readOption('--table-budget-dir', ''),
   candidateComparison: readOption('--candidate-comparison-dir', ''),
   sourceContext: readOption('--source-context-dir', ''),
+  sourceIntrinsic: readOption('--source-intrinsic-dir', ''),
 };
 const runDirForCommand = runDirArg;
 
@@ -65,6 +67,7 @@ async function main() {
     candidates: await readReportJson('chat-candidate-comparison', 'chat-candidate-comparison-results.json', reportOverrides.candidateComparison),
     styleProof: await readOptionalJson(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json')),
     sourceContext: await readReportJson('chat-source-context-probe', 'chat-source-context-probe-results.json', reportOverrides.sourceContext),
+    sourceIntrinsic: await readReportJson('chat-source-intrinsic-matrix', 'chat-source-intrinsic-matrix-results.json', reportOverrides.sourceIntrinsic),
   };
   const fixtureIds = collectFixtureIds(reports);
   const fixtures = fixtureIds.map((fixtureId) => buildFixturePlan(fixtureId, reports));
@@ -97,13 +100,25 @@ async function main() {
 }
 
 async function resolveImplicitReportOverrides() {
-  if (reportOverrides.sourceContext) return;
-  const defaultSourceContext = await readOptionalJson(path.join(runDir, 'chat-source-context-probe', 'chat-source-context-probe-results.json'));
-  if (sourceContextHasActionableEvidence(defaultSourceContext)) return;
-  reportOverrides.sourceContext = await findLatestFallbackReportDir(
-    ['chat-source-context-probe', 'chat-source-context'],
-    'chat-source-context-probe-results.json',
-    sourceContextHasActionableEvidence,
+  if (!reportOverrides.sourceContext) {
+    const defaultSourceContext = await readOptionalJson(path.join(runDir, 'chat-source-context-probe', 'chat-source-context-probe-results.json'));
+    if (sourceContextHasActionableEvidence(defaultSourceContext)) {
+      // canonical report is good enough
+    } else {
+      reportOverrides.sourceContext = await findLatestFallbackReportDir(
+        ['chat-source-context-probe', 'chat-source-context'],
+        'chat-source-context-probe-results.json',
+        sourceContextHasActionableEvidence,
+      );
+    }
+  }
+  if (reportOverrides.sourceIntrinsic) return;
+  const defaultSourceIntrinsic = await readOptionalJson(path.join(runDir, 'chat-source-intrinsic-matrix', 'chat-source-intrinsic-matrix-results.json'));
+  if (sourceIntrinsicHasActionableEvidence(defaultSourceIntrinsic)) return;
+  reportOverrides.sourceIntrinsic = await findLatestFallbackReportDir(
+    ['chat-source-intrinsic-matrix', 'chat-source-intrinsic'],
+    'chat-source-intrinsic-matrix-results.json',
+    sourceIntrinsicHasActionableEvidence,
   );
 }
 
@@ -121,6 +136,7 @@ function buildFixturePlan(fixtureId, reports) {
   const backgroundAssets = findFixture(reports.backgroundAssets?.fixtures, fixtureId);
   const policy = findFixture(reports.policy?.fixtures, fixtureId);
   const sourceContext = findFixture(reports.sourceContext?.fixtures, fixtureId);
+  const sourceIntrinsic = findFixture(reports.sourceIntrinsic?.fixtures, fixtureId);
   const candidateByName = new Map((reports.candidates?.candidates ?? []).map((candidate) => [candidate.name, candidate]));
   const alignedMismatch = numberOrNull(parity?.bestAlignedMismatchRatio ?? reconciliation?.alignedMismatchRatio ?? parity?.mismatchRatio);
   const signals = {
@@ -153,6 +169,15 @@ function buildFixturePlan(fixtureId, reports) {
     sourceTableDecision: sourceContext?.tableContext?.decision ?? '',
     sourceTableWidthDelta: numberOrNull(sourceContext?.tableContext?.tableWidthDelta),
     sourceSanitizeReplayDeltaPct: numberOrNull(sourceContext?.rowPaintSource?.sanitizeReplayDeltaPct),
+    sourceIntrinsicDecision: sourceIntrinsic?.decision ?? '',
+    sourceIntrinsicPromotionBlocker: Boolean(sourceIntrinsic?.promotionBlocker),
+    sourceIntrinsicNextAction: sourceIntrinsic?.nextAction ?? '',
+    sourceIntrinsicTableWidthDelta: numberOrNull(sourceIntrinsic?.metrics?.tableWidthDelta),
+    sourceIntrinsicTableScrollWidthDelta: numberOrNull(sourceIntrinsic?.metrics?.tableScrollWidthDelta),
+    sourceIntrinsicSourceMaxWidthPx: numberOrNull(sourceIntrinsic?.source?.tableMaxWidthPx),
+    sourceIntrinsicRowWidthDeltaSpread: numberOrNull(sourceIntrinsic?.metrics?.rowWidthDeltaSpread),
+    sourceIntrinsicMaxAbsCellDelta: numberOrNull(sourceIntrinsic?.metrics?.maxAbsCellDelta),
+    sourceIntrinsicMaxAbsTopDelta: numberOrNull(sourceIntrinsic?.metrics?.maxAbsTopDelta),
   };
   const classification = classifyFixture(fixtureId, alignedMismatch, signals);
   const requiredProofChecklist = proofChecklistForStrategy(classification.strategy);
@@ -193,6 +218,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...failedCandidateBlockers(signals.triedCandidates),
         ...sourceAssetBlockers(signals),
         ...sourceContextBlockers(signals),
+        ...sourceIntrinsicBlockers(signals),
       ],
       evidence: [
         `table width delta ${fmtPx(signals.tableWidthDelta)} with text residual ${fmtPx(signals.tableTextResidual)}`,
@@ -201,10 +227,12 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...candidateEvidence(signals.triedCandidates),
         ...sourceAssetEvidence(signals),
         ...sourceContextEvidence(signals),
+        ...sourceIntrinsicEvidence(signals),
       ],
       commands: [
         command('plan:roll20-asset-relink', '--map-file <local-map.txt>'),
         command('diagnose:roll20-chat-source-context'),
+        command('diagnose:roll20-chat-source-intrinsic'),
         command('diagnose:roll20-chat-message-shell'),
         command('diagnose:roll20-chat-table-width-budget'),
         command('diagnose:roll20-chat-font-glyph'),
@@ -228,6 +256,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...failedCandidateBlockers(signals.triedCandidates),
         ...sourceAssetBlockers(signals),
         ...sourceContextBlockers(signals),
+        ...sourceIntrinsicBlockers(signals),
       ],
       evidence: [
         `table width delta ${fmtPx(signals.tableWidthDelta)} and scroll delta ${fmtPx(signals.tableScrollWidthDelta)}`,
@@ -236,6 +265,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         ...candidateEvidence(signals.triedCandidates),
         ...sourceAssetEvidence(signals),
         ...sourceContextEvidence(signals),
+        ...sourceIntrinsicEvidence(signals),
       ],
       commands: [
         command('plan:roll20-asset-relink', '--map-file <local-map.txt>'),
@@ -243,6 +273,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         command('diagnose:roll20-chat-table-intrinsic-probe'),
         command('diagnose:roll20-chat-table-layout-constraint'),
         command('diagnose:roll20-chat-min-content'),
+        command('diagnose:roll20-chat-source-intrinsic'),
         command('diagnose:roll20-chat-overflow-crop'),
         command('diagnose:roll20-chat-intrinsic-width'),
         command('diagnose:roll20-chat-font-glyph'),
@@ -304,6 +335,26 @@ function sourceContextEvidence(signals) {
   return evidence;
 }
 
+function sourceIntrinsicBlockers(signals) {
+  if (!signals.sourceIntrinsicDecision) return ['source/intrinsic matrix evidence is missing for this high-mismatch fixture'];
+  if (!signals.sourceIntrinsicPromotionBlocker) return [];
+  return [`source/intrinsic matrix requires ${signals.sourceIntrinsicDecision} before renderer CSS review`];
+}
+
+function sourceIntrinsicEvidence(signals) {
+  const evidence = [];
+  if (!signals.sourceIntrinsicDecision) return evidence;
+  evidence.push(`source/intrinsic ${signals.sourceIntrinsicDecision}`);
+  if (typeof signals.sourceIntrinsicSourceMaxWidthPx === 'number') evidence.push(`source max ${fmtPx(signals.sourceIntrinsicSourceMaxWidthPx)}`);
+  if (typeof signals.sourceIntrinsicTableWidthDelta === 'number') evidence.push(`matrix table delta ${fmtPx(signals.sourceIntrinsicTableWidthDelta)}`);
+  if (typeof signals.sourceIntrinsicTableScrollWidthDelta === 'number') evidence.push(`matrix scroll delta ${fmtPx(signals.sourceIntrinsicTableScrollWidthDelta)}`);
+  if (typeof signals.sourceIntrinsicRowWidthDeltaSpread === 'number') evidence.push(`row spread ${fmtPx(signals.sourceIntrinsicRowWidthDeltaSpread)}`);
+  if (typeof signals.sourceIntrinsicMaxAbsCellDelta === 'number') evidence.push(`cell delta ${fmtPx(signals.sourceIntrinsicMaxAbsCellDelta)}`);
+  if (typeof signals.sourceIntrinsicMaxAbsTopDelta === 'number') evidence.push(`top offset ${fmtPx(signals.sourceIntrinsicMaxAbsTopDelta)}`);
+  if (signals.sourceIntrinsicNextAction) evidence.push(`source/intrinsic next ${signals.sourceIntrinsicNextAction}`);
+  return evidence;
+}
+
 function summarizeRowRaster(rowRaster) {
   const worst = rowRaster?.worstRows?.[0] ?? null;
   return {
@@ -337,6 +388,7 @@ function proofChecklistForStrategy(strategy) {
       'style-proof:.sheet-rolltemplate-aw',
       'message-content-width-sidecar',
       'exact-text-measurement-sidecar',
+      'source-intrinsic-matrix-promotion-blocker-cleared',
       'no-les-yshy-regression',
       'row-raster-and-background-nonregression',
     ];
@@ -347,6 +399,7 @@ function proofChecklistForStrategy(strategy) {
       'style-proof:.sheet-rolltemplate-coc',
       'scrollwidth-clientwidth-table-intrinsic-sidecar',
       'font-face-rule-order-sanitize-source-context',
+      'source-intrinsic-matrix-promotion-blocker-cleared',
       'no-aw2e-les-regression',
       'row-raster-and-background-nonregression',
     ];
@@ -389,6 +442,7 @@ function renderMarkdown(report) {
     lines.push(`- Evidence: ${fixture.evidence.join('; ') || 'none'}`);
     lines.push(`- Blockers: ${fixture.blockers.join('; ') || 'none'}`);
     lines.push(`- Source context: ${fixture.signals.sourceContextDecision || 'missing'} / ${fixture.signals.sourceContextNextAction || 'no next action'}`);
+    lines.push(`- Source/intrinsic: ${fixture.signals.sourceIntrinsicDecision || 'missing'} / ${fixture.signals.sourceIntrinsicNextAction || 'no next action'}`);
     lines.push(`- Required proof before renderer review: ${fixture.requiredProofChecklist.join('; ') || 'none'}`);
     if (fixture.signals.triedCandidates?.length) {
       lines.push('- Tried candidate evidence:');
@@ -482,6 +536,13 @@ function sourceContextHasActionableEvidence(report) {
   return (report?.fixtures ?? []).some((fixture) => {
     const decision = fixture?.decision ?? '';
     return decision && !['MISSING_EVIDENCE', 'SOURCE_CONTEXT_SECONDARY'].includes(decision);
+  });
+}
+
+function sourceIntrinsicHasActionableEvidence(report) {
+  return (report?.fixtures ?? []).some((fixture) => {
+    const decision = fixture?.decision ?? '';
+    return decision && decision !== 'SOURCE_INTRINSIC_SECONDARY';
   });
 }
 
@@ -600,13 +661,20 @@ function selfTest() {
     sourceChangedFonts: 0,
     sourceTableDecision: 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED',
     sourceTableWidthDelta: 15.75,
+    sourceIntrinsicDecision: 'CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED',
+    sourceIntrinsicPromotionBlocker: true,
+    sourceIntrinsicTableWidthDelta: 15.75,
+    sourceIntrinsicMaxAbsTopDelta: 406.188,
   });
   assert.equal(aw2e.strategy, 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS');
   assert(proofChecklistForStrategy(aw2e.strategy).includes('style-proof:.sheet-rolltemplate-aw'));
+  assert(proofChecklistForStrategy(aw2e.strategy).includes('source-intrinsic-matrix-promotion-blocker-cleared'));
   assert(aw2e.blockers.some((blocker) => blocker.includes('worst row 1 26.28%')));
   assert(aw2e.blockers.some((blocker) => blocker.includes('RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED')));
+  assert(aw2e.blockers.some((blocker) => blocker.includes('CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED')));
   assert(aw2e.evidence.some((item) => item.includes('weighted 17.93%')));
   assert(aw2e.evidence.some((item) => item.includes('actual chat CSS EXPECTED_RULE_PRESENT')));
+  assert(aw2e.evidence.some((item) => item.includes('source/intrinsic CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED')));
   const yshy = classifyFixture('yshy-commission-1bu', 0.2068, {
     textWidthDecision: 'TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT',
     tableScrollWidthDelta: -25,
@@ -618,10 +686,18 @@ function selfTest() {
     sourceTableDecision: 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED',
     sourceTableWidthDelta: -24.531,
     sourceSanitizeReplayDeltaPct: 14.95,
+    sourceIntrinsicDecision: 'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED',
+    sourceIntrinsicPromotionBlocker: true,
+    sourceIntrinsicSourceMaxWidthPx: 280,
+    sourceIntrinsicTableWidthDelta: -24.531,
+    sourceIntrinsicMaxAbsCellDelta: 0.906,
+    sourceIntrinsicMaxAbsTopDelta: 52.703,
   });
   assert.equal(yshy.strategy, 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL');
   assert(proofChecklistForStrategy(yshy.strategy).includes('font-face-rule-order-sanitize-source-context'));
+  assert(proofChecklistForStrategy(yshy.strategy).includes('source-intrinsic-matrix-promotion-blocker-cleared'));
   assert(yshy.blockers.some((blocker) => blocker.includes('SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED')));
+  assert(yshy.blockers.some((blocker) => blocker.includes('SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED')));
   const les = classifyFixture('official-roll20-Les-Oublies', 0.0634, {});
   assert.equal(les.strategy, 'KEEP_DEFAULT');
   const fallback = classifyFixture('unknown-fixture', 0.5, {});

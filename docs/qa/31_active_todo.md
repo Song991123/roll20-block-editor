@@ -1,3 +1,16 @@
+## 2026-07-13 Source/Intrinsic Pipeline Propagation TODO Note
+
+- DONE: Wired source/intrinsic matrix evidence into `plan:roll20-chat-renderer-targets`, `gate:roll20-chat-template-scope`, `gate:roll20-chat-candidate-experiment`, and `diagnose:roll20-chat-refresh`.
+- DONE: Targeted renderer plans now accept `--source-intrinsic-dir`, auto-fallback to the latest ignored temp matrix when canonical evidence is not actionable, list `diagnose:roll20-chat-source-intrinsic` as a required command for AW2E/YSHY P0 routes, and add `source-intrinsic-matrix-promotion-blocker-cleared` to the renderer proof checklist.
+- DONE: Template-scope gate now records source/intrinsic decision metrics per fixture and blocks scoped/global renderer promotion when AW2E/YSHY still require `CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED` or `SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED`.
+- DONE: Candidate experiment bundle now forwards `--source-intrinsic-dir` into the final renderer action gate, so one-off candidate reports cannot bypass the source/intrinsic blocker.
+- FIXED: `status:roll20-actual` no longer throws when the newest preupload run has no chat parity diagnostic; missing chat parity is now reported as missing evidence instead of a TypeError.
+- VERIFIED: `node --check` passed for `roll20_chat_targeted_renderer_plan.mjs`, `roll20_chat_template_scope_gate.mjs`, `roll20_chat_diagnostic_refresh.mjs`, and `roll20_chat_candidate_experiment_gate.mjs`.
+- VERIFIED: Self-tests passed for targeted renderer plan, template-scope gate, and diagnostic refresh; `status:roll20-actual` now passes both the default latest-run path and the explicit `2026-06-18-state-map-v1` baseline path.
+- VERIFIED: With ignored temp matrix `..\_tmp_codex_smoke\chat-source-intrinsic-yshy-current-20260713-r1`, targeted plan stayed `HOLD_PRODUCTION_RENDERER_PATCH` with 21 blockers, template-scope gate stayed `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with 13 blockers, and final renderer gate stayed `HOLD_PRODUCTION_RENDERER_PATCH`.
+- CURRENT: This is a pipeline truthfulness/guardrail improvement only. It does not improve pixels, does not prove Roll20 visual parity, does not relink placeholder assets, and does not authorize ChatPane renderer CSS.
+- NEXT P0: Build the actual template-scoped source/intrinsic renderer model: AW2E needs crop/top-origin separated from intrinsic width; YSHY needs Roll20 sanitize/rule order, table auto-layout intrinsic sizing, and crop/top-origin modeled together.
+
 ## 2026-07-13 Source/Intrinsic Matrix Gate TODO Note
 
 - DONE: Added diagnostic-only `diagnose:roll20-chat-source-intrinsic` to combine source CSS, source/context, intrinsic-width, table-intrinsic, table-layout, min-content, row/cell, and crop/top-offset evidence before renderer CSS review.

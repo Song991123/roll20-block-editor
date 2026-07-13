@@ -44,6 +44,7 @@ const steps = [
   ['diagnose:roll20-chat-source-context', 'scripts/roll20_chat_source_context_probe.mjs'],
   ['diagnose:roll20-chat-table-layout-constraint', 'scripts/roll20_chat_table_layout_constraint_probe.mjs'],
   ['diagnose:roll20-chat-min-content', 'scripts/roll20_chat_min_content_model.mjs'],
+  ['diagnose:roll20-chat-source-intrinsic', 'scripts/roll20_chat_source_intrinsic_matrix.mjs'],
   ['diagnose:roll20-chat-row-paint-source', 'scripts/roll20_chat_row_paint_source_probe.mjs'],
   ['diagnose:roll20-chat-row-raster', 'scripts/roll20_chat_row_raster_probe.mjs'],
   ['diagnose:roll20-chat-row-raster-candidates', 'scripts/roll20_chat_row_raster_candidate_compare.mjs'],

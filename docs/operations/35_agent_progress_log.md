@@ -1,3 +1,17 @@
+## 2026-07-13 Source/Intrinsic Pipeline Propagation
+
+- Root cause refinement: the previous matrix gate blocked the final renderer action, but targeted planning, template-scope review, candidate experiment bundles, and diagnostic refresh could still omit or stale-read that source/intrinsic blocker. That created false-review risk for one-off ChatPane candidates.
+- Updated `scripts/roll20_chat_targeted_renderer_plan.mjs` with `--source-intrinsic-dir`, latest ignored-temp fallback, P0 blocker/evidence text, source/intrinsic command routing, and proof checklist requirements.
+- Updated `scripts/roll20_chat_template_scope_gate.mjs` so source/intrinsic decisions are summarized per fixture, included in Markdown, counted in summary, and treated as promotion blockers before scoped renderer review.
+- Updated `scripts/roll20_chat_candidate_experiment_gate.mjs` to forward `--source-intrinsic-dir` into the final renderer action gate.
+- Updated `scripts/roll20_chat_diagnostic_refresh.mjs` so a full refresh runs `diagnose:roll20-chat-source-intrinsic` before row/paint and renderer gates.
+- Fixed `scripts/roll20_actual_status.mjs` so a newest preupload run with missing chat parity evidence reports missing evidence instead of crashing on an absent `mismatchFixtures` array.
+- Verification: syntax checks passed for all four touched scripts; targeted renderer plan self-test, template-scope gate self-test, and diagnostic refresh self-test passed.
+- Verification: `status:roll20-actual` now passes both default latest-run selection and the explicit `reports\roll20-actual-compare\2026-06-18-state-map-v1` baseline run.
+- Evidence: targeted plan with `..\_tmp_codex_smoke\chat-source-intrinsic-yshy-current-20260713-r1` stayed `HOLD_PRODUCTION_RENDERER_PATCH` with source/intrinsic blockers. Template-scope gate stayed `HOLD_GLOBAL_CHAT_RENDERER_PATCH` and listed AW2E `CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED` plus YSHY `SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED`. Final renderer gate stayed `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Server hygiene: checked during work; no project dev/smoke listener was running, and CDP `9222` was preserved.
+- Current evidence: routing/guardrail improved only. Roll20 visual parity, asset relink, and production ChatPane CSS remain unproven and blocked.
+
 ## 2026-07-13 Source/Intrinsic Matrix Gate
 
 - Root cause refinement: the current blocker is not "missing one width CSS rule"; AW2E and YSHY need source/context, intrinsic table sizing, and crop/top-origin evidence to be considered together before any ChatPane renderer CSS can be reviewed.

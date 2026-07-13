@@ -20,6 +20,7 @@ const optionNamesWithValues = new Set([
   '--candidate-screenshots',
   '--out-dir',
   '--source-context-dir',
+  '--source-intrinsic-dir',
   '--row-paint-source-dir',
   '--cell-allocation-dir',
 ]);
@@ -28,6 +29,7 @@ const candidate = readOption('--candidate', '');
 const candidateSmoke = readOption('--candidate-smoke', '');
 const candidateScreenshots = readOption('--candidate-screenshots', '');
 const sourceContextDir = readOption('--source-context-dir', '');
+const sourceIntrinsicDir = readOption('--source-intrinsic-dir', '');
 const rowPaintSourceDir = readOption('--row-paint-source-dir', '');
 const cellAllocationDir = readOption('--cell-allocation-dir', '');
 const rawOutDir = readOption('--out-dir', '');
@@ -40,7 +42,7 @@ function usage() {
     '    --candidate <name> \\',
     '    --candidate-smoke <rolltemplate-chat-smoke-results.json> \\',
     '    --candidate-screenshots <screenshots-dir> \\',
-    '    [--source-context-dir <report-dir>] [--row-paint-source-dir <report-dir>] [--cell-allocation-dir <report-dir>] [--out-dir <writable-dir>]',
+    '    [--source-context-dir <report-dir>] [--source-intrinsic-dir <report-dir>] [--row-paint-source-dir <report-dir>] [--cell-allocation-dir <report-dir>] [--out-dir <writable-dir>]',
   ].join('\n');
 }
 
@@ -125,6 +127,7 @@ const rendererArgs = [
   reportDirs.rendererGate,
 ];
 if (sourceContextDir) rendererArgs.push('--chat-source-context-dir', sourceContextDir);
+if (sourceIntrinsicDir) rendererArgs.push('--chat-source-intrinsic-dir', sourceIntrinsicDir);
 if (rowPaintSourceDir) rendererArgs.push('--row-paint-source-dir', rowPaintSourceDir);
 if (cellAllocationDir) rendererArgs.push('--cell-allocation-dir', cellAllocationDir);
 runNode('scripts/roll20_renderer_action_gate.mjs', rendererArgs);
@@ -146,6 +149,7 @@ const finalReport = {
     candidateSmoke,
     candidateScreenshots,
     sourceContextDir: sourceContextDir || null,
+    sourceIntrinsicDir: sourceIntrinsicDir || null,
     rowPaintSourceDir: rowPaintSourceDir || null,
     cellAllocationDir: cellAllocationDir || null,
   },

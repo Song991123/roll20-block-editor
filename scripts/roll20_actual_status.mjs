@@ -488,8 +488,11 @@ async function readChatParity(runDir) {
       actualChatCssInactive: 0,
       actualChatCssScopedMismatch: 0,
       actualChatCssUnknown: 0,
+      actualCaptureScaleSuspect: 0,
       maxNormalizedMismatchPct: null,
       maxAlignedMismatchPct: null,
+      mismatchFixtures: [],
+      suspectFixtures: [],
       note: 'missing chat parity diagnostic',
     };
   }

@@ -24,6 +24,7 @@ const optionNamesWithValues = new Set([
   '--row-raster-candidates-dir',
   '--cell-allocation-dir',
   '--source-context-dir',
+  '--source-intrinsic-dir',
 ]);
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
@@ -39,6 +40,7 @@ const reportOverrides = {
   rowRasterCandidates: readOption('--row-raster-candidates-dir', ''),
   cellAllocation: readOption('--cell-allocation-dir', ''),
   sourceContext: readOption('--source-context-dir', ''),
+  sourceIntrinsic: readOption('--source-intrinsic-dir', ''),
 };
 
 if (SELF_TEST) {
@@ -71,6 +73,7 @@ async function main() {
     rowRasterCandidates: await readReportJson('chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json', reportOverrides.rowRasterCandidates),
     cellAllocation: await readReportJson('chat-cell-allocation-probe', 'chat-cell-allocation-probe-results.json', reportOverrides.cellAllocation),
     sourceContext: await readReportJson('chat-source-context-probe', 'chat-source-context-probe-results.json', reportOverrides.sourceContext),
+    sourceIntrinsic: await readReportJson('chat-source-intrinsic-matrix', 'chat-source-intrinsic-matrix-results.json', reportOverrides.sourceIntrinsic),
   };
   const report = buildReport(runDirArg, reports, normalizeReportOverrides(reportOverrides));
 
@@ -98,6 +101,12 @@ async function resolveImplicitReportOverrides() {
       'chat-source-context-probe-results.json',
     );
   }
+  if (!reportOverrides.sourceIntrinsic && !(await defaultReportExists('chat-source-intrinsic-matrix', 'chat-source-intrinsic-matrix-results.json'))) {
+    reportOverrides.sourceIntrinsic = await findLatestFallbackReportDir(
+      ['chat-source-intrinsic-matrix', 'chat-source-intrinsic'],
+      'chat-source-intrinsic-matrix-results.json',
+    );
+  }
 }
 
 function buildReport(runDirLabel, reports, overrides = {}) {
@@ -120,7 +129,9 @@ function buildReport(runDirLabel, reports, overrides = {}) {
     const cellAllocationBlocksPromotion = Boolean(cellAllocation.bestCandidateScenario?.productionBlocker);
     const fixturePriority = plan?.priority ?? reconciliation?.priority ?? priorityFor(alignedMismatch);
     const sourceContext = summarizeSourceContext(reports.sourceContext, fixtureId);
+    const sourceIntrinsic = summarizeSourceIntrinsic(reports.sourceIntrinsic, fixtureId);
     const sourceContextBlocksPromotion = sourceContextBlocks(sourceContext, fixturePriority);
+    const sourceIntrinsicBlocksPromotion = sourceIntrinsicBlocks(sourceIntrinsic, fixturePriority);
     return {
       fixtureId,
       priority: fixturePriority,
@@ -144,9 +155,11 @@ function buildReport(runDirLabel, reports, overrides = {}) {
       cellAllocationBlocksPromotion,
       sourceContext,
       sourceContextBlocksPromotion,
+      sourceIntrinsic,
+      sourceIntrinsicBlocksPromotion,
       requiredProofChecklist: plan?.requiredProofChecklist ?? proofChecklistForModel(requiredModel),
-      promotionReady: isFixturePromotionReady(bestCandidate, { assetBlocksPromotion, rowRasterBlocksPromotion, cellAllocationBlocksPromotion, sourceContextBlocksPromotion }),
-      nextAction: nextActionFor(fixtureId, requiredModel, sourceContext),
+      promotionReady: isFixturePromotionReady(bestCandidate, { assetBlocksPromotion, rowRasterBlocksPromotion, cellAllocationBlocksPromotion, sourceContextBlocksPromotion, sourceIntrinsicBlocksPromotion }),
+      nextAction: nextActionFor(fixtureId, requiredModel, sourceContext, sourceIntrinsic),
     };
   });
   const highMismatch = fixtures.filter((fixture) => fixture.priority === 'P0');
@@ -168,6 +181,9 @@ function buildReport(runDirLabel, reports, overrides = {}) {
   const sourceContextBlockers = highMismatch
     .filter((fixture) => fixture.sourceContextBlocksPromotion)
     .map((fixture) => `${fixture.fixtureId}: source/context gate requires ${fixture.sourceContext.decision} before scoped renderer promotion (${sourceContextHoldReason(fixture.sourceContext)})`);
+  const sourceIntrinsicBlockers = highMismatch
+    .filter((fixture) => fixture.sourceIntrinsicBlocksPromotion)
+    .map((fixture) => `${fixture.fixtureId}: source/intrinsic matrix requires ${fixture.sourceIntrinsic.decision} before scoped renderer promotion (${sourceIntrinsicHoldReason(fixture.sourceIntrinsic)})`);
   const blockers = [];
   if (highModels.size > 1) blockers.push(`high-mismatch fixtures require split renderer models: ${[...highModels].join(', ')}`);
   if (highScopes.size > 1) blockers.push(`high-mismatch fixtures require template-scoped rules: ${[...highScopes].join(', ')}`);
@@ -176,6 +192,7 @@ function buildReport(runDirLabel, reports, overrides = {}) {
   blockers.push(...rowRasterBlockers);
   blockers.push(...cellAllocationBlockers);
   blockers.push(...sourceContextBlockers);
+  blockers.push(...sourceIntrinsicBlockers);
   if (reports.policy?.summary?.globalSafeCandidates === 0 || reports.policy?.summary?.globalSafeCandidates === '0') {
     blockers.push('chat renderer policy reports no global-safe candidates');
   }
@@ -197,6 +214,7 @@ function buildReport(runDirLabel, reports, overrides = {}) {
       rowRasterBlockedFixtures: fixtures.filter((fixture) => fixture.rowRasterBlocksPromotion).length,
       cellAllocationBlockedFixtures: fixtures.filter((fixture) => fixture.cellAllocationBlocksPromotion || fixture.cellAllocation.rejectedScenarios.length).length,
       sourceContextBlockedFixtures: fixtures.filter((fixture) => fixture.sourceContextBlocksPromotion).length,
+      sourceIntrinsicBlockedFixtures: fixtures.filter((fixture) => fixture.sourceIntrinsicBlocksPromotion).length,
     },
     fixtures,
     blockers,
@@ -232,6 +250,7 @@ function proofChecklistForModel(requiredModel) {
       'style-proof:.sheet-rolltemplate-aw',
       'message-content-width-sidecar',
       'exact-text-measurement-sidecar',
+      'source-intrinsic-matrix-promotion-blocker-cleared',
       'no-les-yshy-regression',
       'row-raster-and-background-nonregression',
     ];
@@ -242,6 +261,7 @@ function proofChecklistForModel(requiredModel) {
       'style-proof:.sheet-rolltemplate-coc',
       'scrollwidth-clientwidth-table-intrinsic-sidecar',
       'font-face-rule-order-sanitize-source-context',
+      'source-intrinsic-matrix-promotion-blocker-cleared',
       'no-aw2e-les-regression',
       'row-raster-and-background-nonregression',
     ];
@@ -267,11 +287,18 @@ function isFixturePromotionReady(candidate, guards = {}) {
       !guards.assetBlocksPromotion &&
       !guards.rowRasterBlocksPromotion &&
       !guards.cellAllocationBlocksPromotion &&
-      !guards.sourceContextBlocksPromotion
+      !guards.sourceContextBlocksPromotion &&
+      !guards.sourceIntrinsicBlocksPromotion
   );
 }
 
-function nextActionFor(fixtureId, requiredModel, sourceContext = null) {
+function nextActionFor(fixtureId, requiredModel, sourceContext = null, sourceIntrinsic = null) {
+  if (sourceIntrinsic?.decision === 'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED') {
+    return 'Build a CoC/YSHY scoped source/intrinsic model that proves Roll20 sanitize/rule order, table auto-layout intrinsic sizing, and crop/top-origin together before CSS review.';
+  }
+  if (sourceIntrinsic?.decision === 'CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED') {
+    return 'Separate crop/top-origin from intrinsic table width with paired source/intrinsic evidence before reviewing renderer CSS.';
+  }
   if (sourceContext?.decision === 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED') {
     return 'Build a CoC/YSHY scoped source model that proves Roll20 rule order, font-face activation, and table intrinsic context together; do not replay sanitized typography as CSS.';
   }
@@ -397,6 +424,34 @@ function summarizeSourceContext(report, fixtureId) {
   };
 }
 
+function summarizeSourceIntrinsic(report, fixtureId) {
+  const fixture = (report?.fixtures ?? []).find((item) => item.fixtureId === fixtureId);
+  if (!fixture) {
+    return {
+      decision: 'MISSING_SOURCE_INTRINSIC_MATRIX',
+      promotionBlocker: true,
+      sourceMaxWidthPx: null,
+      tableWidthDelta: null,
+      tableScrollWidthDelta: null,
+      rowWidthDeltaSpread: null,
+      maxAbsCellDelta: null,
+      maxAbsTopDelta: null,
+      nextAction: '',
+    };
+  }
+  return {
+    decision: fixture.decision ?? '',
+    promotionBlocker: Boolean(fixture.promotionBlocker),
+    sourceMaxWidthPx: numberOrNull(fixture.source?.tableMaxWidthPx),
+    tableWidthDelta: numberOrNull(fixture.metrics?.tableWidthDelta),
+    tableScrollWidthDelta: numberOrNull(fixture.metrics?.tableScrollWidthDelta),
+    rowWidthDeltaSpread: numberOrNull(fixture.metrics?.rowWidthDeltaSpread),
+    maxAbsCellDelta: numberOrNull(fixture.metrics?.maxAbsCellDelta),
+    maxAbsTopDelta: numberOrNull(fixture.metrics?.maxAbsTopDelta),
+    nextAction: fixture.nextAction ?? '',
+  };
+}
+
 function sourceContextBlocks(sourceContext, priority) {
   if (!sourceContext || priority === 'P2') return false;
   return [
@@ -406,6 +461,18 @@ function sourceContextBlocks(sourceContext, priority) {
     'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED',
     'MISSING_SOURCE_CONTEXT',
   ].includes(sourceContext.decision);
+}
+
+function sourceIntrinsicBlocks(sourceIntrinsic, priority) {
+  if (!sourceIntrinsic || priority === 'P2') return false;
+  return (
+    sourceIntrinsic.promotionBlocker ||
+    [
+      'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED',
+      'CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED',
+      'MISSING_SOURCE_INTRINSIC_MATRIX',
+    ].includes(sourceIntrinsic.decision)
+  );
 }
 
 function sourceContextHoldReason(sourceContext) {
@@ -418,6 +485,18 @@ function sourceContextHoldReason(sourceContext) {
   if (sourceContext.changedFonts) parts.push(`changedFonts=${sourceContext.changedFonts}`);
   if (typeof sourceContext.sanitizeReplayDeltaPct === 'number') parts.push(`sanitizeReplay=${fmtSignedPct(sourceContext.sanitizeReplayDeltaPct)}`);
   return parts.join(', ') || 'missing source/context evidence';
+}
+
+function sourceIntrinsicHoldReason(sourceIntrinsic) {
+  if (!sourceIntrinsic) return 'missing source/intrinsic evidence';
+  const parts = [];
+  if (typeof sourceIntrinsic.sourceMaxWidthPx === 'number') parts.push(`sourceMax=${fmtPx(sourceIntrinsic.sourceMaxWidthPx)}`);
+  if (typeof sourceIntrinsic.tableWidthDelta === 'number') parts.push(`tableDelta=${fmtPx(sourceIntrinsic.tableWidthDelta)}`);
+  if (typeof sourceIntrinsic.tableScrollWidthDelta === 'number') parts.push(`scrollDelta=${fmtPx(sourceIntrinsic.tableScrollWidthDelta)}`);
+  if (typeof sourceIntrinsic.rowWidthDeltaSpread === 'number') parts.push(`rowSpread=${fmtPx(sourceIntrinsic.rowWidthDeltaSpread)}`);
+  if (typeof sourceIntrinsic.maxAbsCellDelta === 'number') parts.push(`cellDelta=${fmtPx(sourceIntrinsic.maxAbsCellDelta)}`);
+  if (typeof sourceIntrinsic.maxAbsTopDelta === 'number') parts.push(`topDelta=${fmtPx(sourceIntrinsic.maxAbsTopDelta)}`);
+  return parts.join(', ') || 'missing source/intrinsic evidence';
 }
 
 function rowRasterPrefixForFixture(fixtureId) {
@@ -435,6 +514,7 @@ function promotionHoldReason(fixture) {
   if (fixture.rowRasterBlocksPromotion) reasons.push(`rowRaster=${fixture.rowRaster.risk}`);
   if (fixture.cellAllocationBlocksPromotion) reasons.push(`cellAllocation=${fixture.cellAllocation.bestCandidateScenario?.allocationDecision ?? 'held'}`);
   if (fixture.sourceContextBlocksPromotion) reasons.push(`sourceContext=${fixture.sourceContext.decision}`);
+  if (fixture.sourceIntrinsicBlocksPromotion) reasons.push(`sourceIntrinsic=${fixture.sourceIntrinsic.decision}`);
   return reasons.join(', ');
 }
 
@@ -448,12 +528,12 @@ function renderMarkdown(report) {
     '',
     'Scope: diagnostic-only. This gate prevents global ChatPane CSS promotion when fixtures require different template-scoped models.',
     '',
-    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Cell allocation | Source context | Asset gate | Row raster | Proof checklist | Ready | Next action |',
-    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Cell allocation | Source context | Source/intrinsic | Asset gate | Row raster | Proof checklist | Ready | Next action |',
+    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
     const cell = fixture.cellAllocation.bestCandidateScenario ?? fixture.cellAllocation.defaultScenario;
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${cell ? `${cell.scenario}:${cell.allocationDecision}` : 'n/a'} | ${fixture.sourceContext.decision || 'n/a'} | ${fixture.assetDecision || 'n/a'} | ${fixture.rowRaster.risk || 'n/a'} ${fixture.rowRaster.weightedMismatchPct ? `(${fixture.rowRaster.weightedMismatchPct})` : ''} | ${fixture.requiredProofChecklist.join('<br>') || 'none'} | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${cell ? `${cell.scenario}:${cell.allocationDecision}` : 'n/a'} | ${fixture.sourceContext.decision || 'n/a'} | ${fixture.sourceIntrinsic.decision || 'n/a'} (${sourceIntrinsicHoldReason(fixture.sourceIntrinsic)}) | ${fixture.assetDecision || 'n/a'} | ${fixture.rowRaster.risk || 'n/a'} ${fixture.rowRaster.weightedMismatchPct ? `(${fixture.rowRaster.weightedMismatchPct})` : ''} | ${fixture.requiredProofChecklist.join('<br>') || 'none'} | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
   }
   lines.push('', '## Blockers', '');
   if (report.blockers.length) {
@@ -685,6 +765,36 @@ function selfTest() {
         },
       ],
     },
+    sourceIntrinsic: {
+      fixtures: [
+        {
+          fixtureId: 'official-roll20-AW2E',
+          decision: 'CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED',
+          promotionBlocker: true,
+          source: { tableMaxWidthPx: 110 },
+          metrics: {
+            tableWidthDelta: 15.75,
+            tableScrollWidthDelta: 16,
+            rowWidthDeltaSpread: 0,
+            maxAbsCellDelta: 4.953,
+            maxAbsTopDelta: 406.188,
+          },
+        },
+        {
+          fixtureId: 'yshy-commission-1bu',
+          decision: 'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED',
+          promotionBlocker: true,
+          source: { tableMaxWidthPx: 280 },
+          metrics: {
+            tableWidthDelta: -24.531,
+            tableScrollWidthDelta: -25,
+            rowWidthDeltaSpread: 0,
+            maxAbsCellDelta: 0.906,
+            maxAbsTopDelta: 52.703,
+          },
+        },
+      ],
+    },
   }, { styleProof: path.resolve('tmp-style-proof') });
   assert.equal(report.action, 'HOLD_GLOBAL_CHAT_RENDERER_PATCH');
   assert.equal(report.reportOverrides.styleProof, path.resolve('tmp-style-proof'));
@@ -694,12 +804,18 @@ function selfTest() {
   assert.ok(report.blockers.some((blocker) => blocker.includes('cell allocation rejected')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('source/context gate requires RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('source/context gate requires SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED')));
+  assert.ok(report.blockers.some((blocker) => blocker.includes('source/intrinsic matrix requires CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED')));
+  assert.ok(report.blockers.some((blocker) => blocker.includes('source/intrinsic matrix requires SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED')));
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredScope, '.sheet-rolltemplate-aw');
   assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredProofChecklist.includes('message-content-width-sidecar'));
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredProofChecklist.includes('source-intrinsic-matrix-promotion-blocker-cleared'));
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').cellAllocationBlocksPromotion, true);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').sourceContextBlocksPromotion, true);
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').sourceIntrinsicBlocksPromotion, true);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').promotionReady, false);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredModel, 'TABLE_INTRINSIC_SANITIZE_FONT');
   assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredProofChecklist.includes('font-face-rule-order-sanitize-source-context'));
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredProofChecklist.includes('source-intrinsic-matrix-promotion-blocker-cleared'));
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').sourceIntrinsicBlocksPromotion, true);
   console.log('roll20_chat_template_scope_gate self-test PASS');
 }
