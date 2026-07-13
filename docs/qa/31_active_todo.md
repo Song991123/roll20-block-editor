@@ -1,3 +1,11 @@
+## 2026-07-13 YSHY Intrinsic Width Model TODO Note
+
+- VERIFIED: `diagnose:roll20-chat-intrinsic-width` against the rejected crop-origin actual-font smoke wrote ignored output to `..\_tmp_codex_smoke\chat-intrinsic-width-yshy-crop-origin-actual-font-20260713-r1`.
+- RESULT: The diagnostic reports `INTRINSIC_WIDTH_MODEL_REQUIRED`.
+- RESULT: YSHY is now narrowed to `TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED`: table delta `-68.813px`, first-cell delta `-0.188px`, transform contradicted `NO`.
+- RESULT: AW2E and Les-Oublies are classified as `CSS_METRIC_CANDIDATES_REJECTED`, so they should not be solved by the same YSHY table-scroll model.
+- CURRENT: Next YSHY P0 is to model Roll20 table scroll/intrinsic width calculation directly. Do not retry transform, broad font CSS, simple top-origin replay, or measured width declarations as fixes.
+
 ## 2026-07-13 YSHY Crop-Origin Source-Context Rejection TODO Note
 
 - DONE: Added diagnostic-only chat geometry policy `coc-overflow-crop-origin-y20`, combining CoC/YSHY overflow crop, measured table width declarations, and a `20px` table top-origin offset.

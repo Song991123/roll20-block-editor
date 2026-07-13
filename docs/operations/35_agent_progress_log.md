@@ -1,3 +1,13 @@
+## 2026-07-13 YSHY Intrinsic Width Model Routing
+
+- Root cause hypothesis refined: after actual-font and crop-origin source-context candidates were rejected, the remaining YSHY/CoC blocker should be treated as a table scroll/intrinsic width calculation problem, not a CSS declaration replay problem.
+- Verification: `corepack pnpm run diagnose:roll20-chat-intrinsic-width -- reports\roll20-actual-compare\2026-06-18-state-map-v1 ..\_tmp_codex_smoke\rolltemplate-chat-smoke-yshy-coc-table-source-context-crop-origin-actual-font-20260713-r1\rolltemplate-chat-smoke-results.json --out-dir ..\_tmp_codex_smoke\chat-intrinsic-width-yshy-crop-origin-actual-font-20260713-r1` passed.
+- Evidence: the diagnostic returned `INTRINSIC_WIDTH_MODEL_REQUIRED`.
+- Evidence: YSHY is classified as `TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED`, with table delta `-68.813px`, first-cell delta `-0.188px`, and `transformContradicted=NO`.
+- Evidence: AW2E and Les-Oublies are classified as `CSS_METRIC_CANDIDATES_REJECTED`, confirming they should remain separate axes instead of sharing the YSHY table-scroll model.
+- Server hygiene: `corepack pnpm run check:server-hygiene` passed after the diagnostic; no project dev/smoke listener remained and CDP `127.0.0.1:9222` was preserved.
+- Current evidence: next YSHY P0 is direct Roll20 table scroll/intrinsic width modeling. Do not retry transform, broad font CSS, simple top-origin replay, or measured width declarations as renderer fixes.
+
 ## 2026-07-13 YSHY Crop-Origin Source-Context Rejection
 
 - Root cause hypothesis tested: YSHY/CoC may need the measured table-width override, overflow crop, actual font context, and a top-origin offset combined before table intrinsic/crop evidence improves.
