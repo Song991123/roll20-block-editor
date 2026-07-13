@@ -1,3 +1,12 @@
+## 2026-07-13 AW2E Cell Context Targeted-Plan Routing
+
+- Root cause: after the cell-font and cell-wrap context candidates were rejected, `plan:roll20-chat-renderer-targets` still did not list those two names in AW2E tried-candidate evidence. A future renderer pass could therefore miss that the `27.3px` cell-context replay had already been tested and rejected.
+- Updated `scripts/roll20_chat_targeted_renderer_plan.mjs` so AW2E tried candidates include `aw2e-message-cell-font-context` and `aw2e-message-cell-wrap-context`.
+- Verification: `node --check scripts\roll20_chat_targeted_renderer_plan.mjs` and `corepack pnpm run test:roll20-chat-renderer-targets` passed.
+- Verification: targeted plan with `--candidate-comparison-dir ..\_tmp_codex_smoke\chat-candidates-aw2e-cell-context-20260713-r1` and `--source-context-dir ..\_tmp_codex_smoke\chat-source-context-autofallback-20260713-r2` passed with `HOLD_PRODUCTION_RENDERER_PATCH` and blockers `22`.
+- Evidence: the plan now reports `aw2e-message-cell-font-context is already tried and not promotable (reject-regresses-fixtures, delta +41.29%)` and `aw2e-message-cell-wrap-context is already tried and not promotable (reject-regresses-fixtures, delta +41.27%)`.
+- Current evidence: this is renderer planning truthfulness only. It does not improve pixels, relink assets, upload to Roll20, or authorize production renderer CSS.
+
 ## 2026-07-13 AW2E Cell Context Axis Rejection
 
 - Root cause tested: after the combined AW2E source-context candidate was rejected, the next question was whether the regression came from the AW2E message shell, the `27.3px` cell font context, or the wrap/color context. The diagnostic split tested the cell-font axis and the cell-wrap axis separately without promoting product CSS.

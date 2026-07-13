@@ -1,3 +1,10 @@
+## 2026-07-13 AW2E Cell Context Targeted-Plan Routing TODO Note
+
+- DONE: `plan:roll20-chat-renderer-targets` now carries `aw2e-message-cell-font-context` and `aw2e-message-cell-wrap-context` in AW2E tried-candidate evidence.
+- VERIFIED: Targeted renderer plan with the isolated cell-context candidate comparison now reports both as already tried and not promotable: `aw2e-message-cell-font-context` delta `+41.29%`, `aw2e-message-cell-wrap-context` delta `+41.27%`.
+- VERIFIED: The same plan still returns `HOLD_PRODUCTION_RENDERER_PATCH` and increases blockers from `20` to `22`, which is expected because these are additional rejected paths, not renderer fixes.
+- CURRENT: Future renderer work should start from the table-width budget/source-context path, not from AW2E `27.3px` cell-context replay. No visual parity claim.
+
 ## 2026-07-13 AW2E Cell Context Axis Rejection TODO Note
 
 - DONE: Split the AW2E source-context hypothesis into two narrower smoke candidates: `aw2e-message-cell-font-context` and `aw2e-message-cell-wrap-context`.
