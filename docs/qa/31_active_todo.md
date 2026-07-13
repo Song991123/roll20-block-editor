@@ -1,3 +1,16 @@
+## 2026-07-13 Source/Intrinsic Candidate Audit TODO Note
+
+- DONE: Added diagnostic-only `diagnose:roll20-chat-source-intrinsic-candidates` to audit whether current AW2E/Les/YSHY source-intrinsic evidence is ready for renderer CSS review.
+- DONE: Wired the candidate audit into `diagnose:roll20-chat-refresh`, targeted renderer plan command routing, and the final `gate:roll20-renderer-action` blocker surface.
+- VERIFIED: Candidate audit run at ignored temp `..\_tmp_codex_smoke\chat-source-intrinsic-candidate-audit-20260713-r1` returned `SOURCE_INTRINSIC_CANDIDATE_BLOCKED`, with `readyCandidates=0`.
+- VERIFIED: Reproduced the same audit at ignored temp `..\_tmp_codex_smoke\chat-source-intrinsic-candidate-audit-20260713-r2`: AW2E `ready=0`, Les-Oublies `ready=0`, YSHY `ready=0`.
+- VERIFIED: Renderer gate with both source-intrinsic matrix and candidate-audit overrides stayed `HOLD_PRODUCTION_RENDERER_PATCH` and now blocks on "no candidate ready for renderer CSS review".
+- VERIFIED: `node --check` passed for the new/updated scripts, audit self-test passed, `git diff --check`, `guard:roll20-evidence`, `corepack pnpm run lint`, and `corepack pnpm run build` passed.
+- VERIFIED: Server hygiene passed after validation; no project dev/smoke listener remained, and CDP `9222` was preserved.
+- RESULT: AW2E still needs paired evidence for message-content-width, crop-top-origin, intrinsic-width-split, row-raster nonregression, style proof, and asset policy. YSHY still needs sanitize/rule-order, table auto-layout intrinsic sizing, crop/top-origin, row-raster nonregression, style proof, and asset policy together.
+- CURRENT: This is another truthfulness guardrail, not a visual fix. Do not ship ChatPane renderer CSS from the existing partial candidates.
+- NEXT P0: Build a scoped source/intrinsic model candidate that clears all required axes before another renderer CSS review.
+
 ## 2026-07-13 Source/Intrinsic Pipeline Propagation TODO Note
 
 - DONE: Wired source/intrinsic matrix evidence into `plan:roll20-chat-renderer-targets`, `gate:roll20-chat-template-scope`, `gate:roll20-chat-candidate-experiment`, and `diagnose:roll20-chat-refresh`.

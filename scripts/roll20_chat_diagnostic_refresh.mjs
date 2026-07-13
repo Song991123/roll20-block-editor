@@ -48,6 +48,7 @@ const steps = [
   ['diagnose:roll20-chat-row-paint-source', 'scripts/roll20_chat_row_paint_source_probe.mjs'],
   ['diagnose:roll20-chat-row-raster', 'scripts/roll20_chat_row_raster_probe.mjs'],
   ['diagnose:roll20-chat-row-raster-candidates', 'scripts/roll20_chat_row_raster_candidate_compare.mjs'],
+  ['diagnose:roll20-chat-source-intrinsic-candidates', 'scripts/roll20_chat_source_intrinsic_candidate_audit.mjs'],
   ['diagnose:roll20-chat-row-compositing', 'scripts/roll20_chat_row_compositing_probe.mjs'],
   ['diagnose:roll20-chat-background-source', 'scripts/roll20_chat_background_source_probe.mjs'],
   ['diagnose:roll20-chat-background-raster', 'scripts/roll20_chat_background_raster_model_probe.mjs'],

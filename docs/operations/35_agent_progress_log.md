@@ -1,3 +1,17 @@
+## 2026-07-13 Source/Intrinsic Candidate Audit
+
+- Root cause refinement: the current evidence has many partial/rejected chat renderer experiments, but nothing proves the combined source/intrinsic axes needed for production CSS review. A separate audit is now needed before any future candidate can look "close enough" by one metric.
+- Added `scripts/roll20_chat_source_intrinsic_candidate_audit.mjs` and package script `diagnose:roll20-chat-source-intrinsic-candidates`.
+- Updated diagnostic refresh, targeted renderer planning, and renderer action gate so source/intrinsic candidate readiness is visible and can block production renderer CSS.
+- Evidence: `diagnose:roll20-chat-source-intrinsic-candidates` against `reports\roll20-actual-compare\2026-06-18-state-map-v1` plus ignored temp source-intrinsic evidence wrote `..\_tmp_codex_smoke\chat-source-intrinsic-candidate-audit-20260713-r1` and returned `SOURCE_INTRINSIC_CANDIDATE_BLOCKED`.
+- Reproduction evidence: the same audit was rerun at `..\_tmp_codex_smoke\chat-source-intrinsic-candidate-audit-20260713-r2` and again returned `SOURCE_INTRINSIC_CANDIDATE_BLOCKED` with all fixtures at `ready=0`.
+- Evidence: the audit found `readyCandidates=0`; AW2E/Les/YSHY are partial or blocked, with AW2E and YSHY additionally blocked by source/intrinsic matrix and asset-policy evidence.
+- Renderer gate evidence: with `--chat-source-intrinsic-dir ..\_tmp_codex_smoke\chat-source-intrinsic-yshy-current-20260713-r1` and `--chat-source-intrinsic-candidates-dir ..\_tmp_codex_smoke\chat-source-intrinsic-candidate-audit-20260713-r1`, `gate:roll20-renderer-action` stayed `HOLD_PRODUCTION_RENDERER_PATCH` and now lists the candidate audit as a blocker.
+- Renderer gate reproduction: rerun with `..\_tmp_codex_smoke\chat-source-intrinsic-candidate-audit-20260713-r2` produced the same `HOLD_PRODUCTION_RENDERER_PATCH` result and blocker text.
+- Verification: syntax checks passed for the new/updated scripts, audit self-test passed, `git diff --check`, `guard:roll20-evidence`, lint, and build passed.
+- Current evidence: this improves routing and false-positive prevention only. It does not improve pixels, does not prove Roll20 visual parity, and does not unblock ChatPane renderer CSS.
+- Server hygiene: checked before and after validation; no project dev/smoke listener was running, and CDP `9222` was preserved.
+
 ## 2026-07-13 Source/Intrinsic Pipeline Propagation
 
 - Root cause refinement: the previous matrix gate blocked the final renderer action, but targeted planning, template-scope review, candidate experiment bundles, and diagnostic refresh could still omit or stale-read that source/intrinsic blocker. That created false-review risk for one-off ChatPane candidates.

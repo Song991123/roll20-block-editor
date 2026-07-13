@@ -25,6 +25,7 @@ const optionNamesWithValues = new Set([
   '--row-paint-source-dir',
   '--chat-source-context-dir',
   '--chat-source-intrinsic-dir',
+  '--chat-source-intrinsic-candidates-dir',
   '--chat-template-scope-dir',
   '--chat-table-budget-dir',
   '--cell-allocation-dir',
@@ -50,6 +51,7 @@ const reportOverrides = {
   chatRowPaintSource: readOption('--row-paint-source-dir', ''),
   chatSourceContext: readOption('--chat-source-context-dir', ''),
   chatSourceIntrinsic: readOption('--chat-source-intrinsic-dir', ''),
+  chatSourceIntrinsicCandidates: readOption('--chat-source-intrinsic-candidates-dir', ''),
   chatTemplateScope: readOption('--chat-template-scope-dir', ''),
   chatTableWidthBudget: readOption('--chat-table-budget-dir', ''),
   chatCellAllocation: readOption('--cell-allocation-dir', ''),
@@ -99,6 +101,7 @@ async function main() {
   const chatFontIntrinsicProbe = await readJsonIfExists(path.join(runDir, 'chat-font-intrinsic-probe', 'chat-font-intrinsic-probe-results.json'));
   const chatSourceContextProbe = await readReportJson('chat-source-context-probe', 'chat-source-context-probe-results.json', reportOverrides.chatSourceContext);
   const chatSourceIntrinsicMatrix = await readReportJson('chat-source-intrinsic-matrix', 'chat-source-intrinsic-matrix-results.json', reportOverrides.chatSourceIntrinsic);
+  const chatSourceIntrinsicCandidateAudit = await readReportJson('chat-source-intrinsic-candidate-audit', 'chat-source-intrinsic-candidate-audit-results.json', reportOverrides.chatSourceIntrinsicCandidates);
   const chatRowPaintSourceProbe = await readReportJson('chat-row-paint-source-probe', 'chat-row-paint-source-probe-results.json', reportOverrides.chatRowPaintSource);
   const chatRowRasterProbe = await readJsonIfExists(path.join(runDir, 'chat-row-raster-probe', 'chat-row-raster-probe-results.json'));
   const chatRowRasterCandidates = await readReportJson('chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json', reportOverrides.chatRowRasterCandidates);
@@ -115,7 +118,7 @@ async function main() {
   const chatTemplateScopeGate = await readReportJson('chat-template-scope-gate', 'chat-template-scope-gate-results.json', reportOverrides.chatTemplateScope);
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatSourceContextProbe, chatSourceIntrinsicMatrix, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatSourceContextProbe, chatSourceIntrinsicMatrix, chatSourceIntrinsicCandidateAudit, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -142,6 +145,7 @@ async function main() {
     chatFontIntrinsicProbe: summarizeChatFontIntrinsicProbe(chatFontIntrinsicProbe),
     chatSourceContextProbe: summarizeChatSourceContextProbe(chatSourceContextProbe),
     chatSourceIntrinsicMatrix: summarizeChatSourceIntrinsicMatrix(chatSourceIntrinsicMatrix),
+    chatSourceIntrinsicCandidateAudit: summarizeChatSourceIntrinsicCandidateAudit(chatSourceIntrinsicCandidateAudit),
     chatRowPaintSourceProbe: summarizeChatRowPaintSourceProbe(chatRowPaintSourceProbe),
     chatRowRasterProbe: summarizeChatRowRasterProbe(chatRowRasterProbe),
     chatRowRasterCandidates: summarizeChatRowRasterCandidates(chatRowRasterCandidates),
@@ -188,6 +192,17 @@ async function resolveImplicitReportOverrides() {
         templateScopeHasSourceContextEvidence,
       );
       if (latestTemplateScopeDir) reportOverrides.chatTemplateScope = latestTemplateScopeDir;
+    }
+  }
+  if (!reportOverrides.chatSourceIntrinsicCandidates) {
+    const defaultCandidateAudit = await readJsonIfExists(path.join(runDir, 'chat-source-intrinsic-candidate-audit', 'chat-source-intrinsic-candidate-audit-results.json'));
+    if (!sourceIntrinsicCandidateAuditHasEvidence(defaultCandidateAudit)) {
+      const latestCandidateAuditDir = await findLatestFallbackReportDir(
+        'chat-source-intrinsic-candidate-audit',
+        'chat-source-intrinsic-candidate-audit-results.json',
+        sourceIntrinsicCandidateAuditHasEvidence,
+      );
+      if (latestCandidateAuditDir) reportOverrides.chatSourceIntrinsicCandidates = latestCandidateAuditDir;
     }
   }
 }
@@ -381,7 +396,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatSourceContextProbe, chatSourceIntrinsicMatrix, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatSourceContextProbe, chatSourceIntrinsicMatrix, chatSourceIntrinsicCandidateAudit, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -412,6 +427,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatFontIntrinsicProbeSummary = summarizeChatFontIntrinsicProbe(chatFontIntrinsicProbe);
   const chatSourceContextProbeSummary = summarizeChatSourceContextProbe(chatSourceContextProbe);
   const chatSourceIntrinsicMatrixSummary = summarizeChatSourceIntrinsicMatrix(chatSourceIntrinsicMatrix);
+  const chatSourceIntrinsicCandidateAuditSummary = summarizeChatSourceIntrinsicCandidateAudit(chatSourceIntrinsicCandidateAudit);
   const chatRowPaintSourceProbeSummary = summarizeChatRowPaintSourceProbe(chatRowPaintSourceProbe);
   const chatRowRasterProbeSummary = summarizeChatRowRasterProbe(chatRowRasterProbe);
   const chatRowRasterCandidatesSummary = summarizeChatRowRasterCandidates(chatRowRasterCandidates);
@@ -730,6 +746,17 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   } else if (needsSourceIntrinsicMatrix) {
     warnings.push('chat source/intrinsic matrix has not been run; run diagnose:roll20-chat-source-intrinsic before promoting CoC/YSHY table renderer CSS');
   }
+  if (chatSourceIntrinsicCandidateAuditSummary) {
+    positiveFindings.push(`chat source/intrinsic candidate audit: status=${chatSourceIntrinsicCandidateAuditSummary.status}, ready=${chatSourceIntrinsicCandidateAuditSummary.readyCandidates}, partial=${chatSourceIntrinsicCandidateAuditSummary.partialCandidates}, blockers=${chatSourceIntrinsicCandidateAuditSummary.blockers}`);
+    for (const fixture of chatSourceIntrinsicCandidateAuditSummary.fixtures) {
+      positiveFindings.push(`${fixture.fixtureId} source/intrinsic candidate audit ready=${fixture.readyCandidates}, partial=${fixture.partialCandidates}, rejected=${fixture.rejectedCandidates}, next=${fixture.nextAction}`);
+    }
+    if (chatSourceIntrinsicCandidateAuditSummary.readyCandidates === 0 && chatSourceIntrinsicCandidateAuditSummary.blockers > 0) {
+      blockers.push(`chat source/intrinsic candidate audit has no candidate ready for renderer CSS review: ${chatSourceIntrinsicCandidateAuditSummary.blockerMessages.join('; ') || chatSourceIntrinsicCandidateAuditSummary.status}`);
+    }
+  } else if (chatSourceIntrinsicMatrixSummary?.promotionBlocked > 0) {
+    warnings.push('chat source/intrinsic candidate audit has not been run; run diagnose:roll20-chat-source-intrinsic-candidates before reviewing another ChatPane renderer candidate');
+  }
   if (chatRowPaintSourceProbeSummary) {
     positiveFindings.push(`chat row/paint/source probe: status=${chatRowPaintSourceProbeSummary.status}, actionable=${chatRowPaintSourceProbeSummary.actionable}/${chatRowPaintSourceProbeSummary.totalFixtures}, decisions=${formatFindingCounts(chatRowPaintSourceProbeSummary.decisions)}`);
     for (const fixture of chatRowPaintSourceProbeSummary.actionableFixtures) {
@@ -952,6 +979,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-source-intrinsic -- ${path.relative(process.cwd(), activeRunDir)} before changing CoC/YSHY table renderer CSS.`);
   } else if (chatSourceIntrinsicMatrixSummary?.blockingFixtures.length) {
     nextActions.push(...chatSourceIntrinsicMatrixSummary.blockingFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
+  }
+  if (chatSourceIntrinsicMatrixSummary?.promotionBlocked > 0 && !chatSourceIntrinsicCandidateAuditSummary) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-source-intrinsic-candidates -- ${path.relative(process.cwd(), activeRunDir)} before testing another ChatPane renderer candidate.`);
+  } else if (chatSourceIntrinsicCandidateAuditSummary?.fixtures.length) {
+    nextActions.push(...chatSourceIntrinsicCandidateAuditSummary.fixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   const needsRowPaintSourceProbe =
     chatFontIntrinsicProbeSummary?.actionableFixtures?.some((fixture) => /FONT_FACE_INTRINSIC|TABLE_MIN_CONTENT|FONT_CONTEXT/i.test(fixture.decision || '')) ||
@@ -1665,6 +1697,48 @@ function summarizeChatSourceIntrinsicMatrix(report) {
     productionSafe: Boolean(report.summary.productionSafe),
     actionableFixtures,
     blockingFixtures,
+    fixtures,
+  };
+}
+
+function summarizeChatSourceIntrinsicCandidateAudit(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    priority: fixture.priority ?? '',
+    sourceIntrinsicDecision: fixture.sourceIntrinsicDecision ?? '',
+    model: fixture.requirements?.model ?? '',
+    axes: fixture.requirements?.axes ?? [],
+    assetDecision: fixture.assetDecision ?? '',
+    readyCandidates: Number(fixture.readyCandidates?.length ?? 0),
+    partialCandidates: Number(fixture.partialCandidates?.length ?? 0),
+    rejectedCandidates: Number(fixture.rejectedCandidates?.length ?? 0),
+    topPartialCandidates: (fixture.partialCandidates ?? []).slice(0, 3).map((candidate) => ({
+      name: candidate.name ?? '',
+      fixtureDeltaPct: candidate.fixtureDeltaPct ?? null,
+      coveredAxes: candidate.coveredAxes ?? [],
+      missingAxes: candidate.missingAxes ?? [],
+      styleProofStatus: candidate.styleProofStatus ?? '',
+      rowRasterRisk: candidate.rowRasterRisk ?? '',
+    })),
+    topRejectedCandidates: (fixture.rejectedCandidates ?? []).slice(0, 3).map((candidate) => ({
+      name: candidate.name ?? '',
+      fixtureDeltaPct: candidate.fixtureDeltaPct ?? null,
+      rejectedReasons: candidate.rejectedReasons ?? [],
+      styleProofStatus: candidate.styleProofStatus ?? '',
+      rowRasterRisk: candidate.rowRasterRisk ?? '',
+    })),
+    blockers: fixture.blockers ?? [],
+    nextAction: fixture.nextAction ?? '',
+  }));
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    readyCandidates: Number(report.summary.readyCandidates ?? fixtures.reduce((sum, fixture) => sum + fixture.readyCandidates, 0)),
+    partialCandidates: Number(report.summary.partialCandidates ?? fixtures.reduce((sum, fixture) => sum + fixture.partialCandidates, 0)),
+    blockers: Number(report.summary.blockers ?? (report.blockers ?? []).length),
+    blockerMessages: report.blockers ?? [],
+    productionSafe: Boolean(report.summary.productionSafe),
     fixtures,
   };
 }
@@ -2692,6 +2766,28 @@ function renderMarkdown(report) {
     }
     lines.push('');
   }
+  if (report.chatSourceIntrinsicCandidateAudit) {
+    lines.push('### Chat Source/Intrinsic Candidate Audit', '');
+    lines.push(`- Status: ${report.chatSourceIntrinsicCandidateAudit.status}`);
+    lines.push(`- Ready candidates: ${report.chatSourceIntrinsicCandidateAudit.readyCandidates}`);
+    lines.push(`- Partial candidates: ${report.chatSourceIntrinsicCandidateAudit.partialCandidates}`);
+    lines.push(`- Blockers: ${report.chatSourceIntrinsicCandidateAudit.blockers}`);
+    if (report.chatSourceIntrinsicCandidateAudit.fixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Source/intrinsic | Model | Ready | Partial | Rejected | Top partial | Top rejected | Next action |');
+      lines.push('| --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |');
+      for (const fixture of report.chatSourceIntrinsicCandidateAudit.fixtures) {
+        const partial = fixture.topPartialCandidates.map((candidate) =>
+          `${candidate.name} (${fmtSigned(candidate.fixtureDeltaPct)}; missing ${candidate.missingAxes.join('/') || 'none'})`,
+        ).join('<br>') || 'none';
+        const rejected = fixture.topRejectedCandidates.map((candidate) =>
+          `${candidate.name} (${fmtSigned(candidate.fixtureDeltaPct)}; ${candidate.rejectedReasons.join('/') || candidate.rowRasterRisk || 'rejected'})`,
+        ).join('<br>') || 'none';
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.sourceIntrinsicDecision} | ${fixture.model} | ${fixture.readyCandidates} | ${fixture.partialCandidates} | ${fixture.rejectedCandidates} | ${partial} | ${rejected} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
   if (report.chatRowPaintSourceProbe) {
     lines.push('### Chat Row/Paint/Source Probe', '');
     lines.push(`- Status: ${report.chatRowPaintSourceProbe.status}`);
@@ -3075,6 +3171,13 @@ function templateScopeHasSourceContextEvidence(report) {
     fixture?.sourceContext &&
     fixture.sourceContext.decision &&
     fixture.sourceContext.decision !== 'MISSING_SOURCE_CONTEXT'
+  );
+}
+
+function sourceIntrinsicCandidateAuditHasEvidence(report) {
+  return (report?.fixtures ?? []).some((fixture) =>
+    fixture?.sourceIntrinsicDecision &&
+    Array.isArray(fixture.requirements?.axes)
   );
 }
 
