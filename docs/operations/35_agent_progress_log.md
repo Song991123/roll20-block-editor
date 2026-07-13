@@ -3919,6 +3919,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verification: `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:export-dialog -- --port 4370 --report-dir ..\_tmp_codex_smoke\export-dialog-local-assets-20260713-r1` passed with console issues `0`, page errors `0`, request failures `0`, and external resource requests `0`.
 - Claim boundary: this removes app-shell external request noise from the verified path. It does not change Roll20 sheet renderer parity or the policy for user-supplied sheet asset URLs.
 
+## 2026-07-13 Actual Status/Gate Locked-Report Fallback
+
+- Added automatic `EPERM`/`EACCES` fallback for `status:roll20-actual` and `gate:roll20-renderer-action`: if their default canonical output folder is locked and no explicit `--out-dir` is supplied, they now write refreshed JSON/Markdown under `..\_tmp_codex_smoke\...`.
+- Added `test:layer-roles` assertions for Korean layer role labels so Figma-like layer-panel role copy cannot silently regress.
+- Verification: `node --check scripts\roll20_actual_status.mjs`, `node --check scripts\roll20_renderer_action_gate.mjs`, `corepack pnpm run test:layer-roles`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `git diff --check` passed.
+- Live rerun: `status:roll20-actual` wrote `..\_tmp_codex_smoke\actual-verification-status-2026-06-18-state-map-v1-1783904650122`; `gate:roll20-renderer-action` wrote `..\_tmp_codex_smoke\renderer-action-gate-2026-06-18-state-map-v1-1783904651010`.
+- Current measured gate remains unchanged: `rendererReady=NO`, `rendererBlockers=8`, same-structure high chat mismatch `2/3`, max aligned mismatch `20.68%`.
+- Claim boundary: this improves evidence refresh reliability only. It does not reduce renderer blockers, relink assets, or prove Roll20 parity.
+
 ## 2026-06-21 Chat Foreground Suspect Handoff Precision
 
 - Root cause: the aggregate `chatActualTemplatePixelSuspect=1` status made the next action too generic even though `chat-parity-diagnostics` already knew the exact fixture and pixel sanity reason.

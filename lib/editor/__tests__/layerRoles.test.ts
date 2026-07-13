@@ -25,4 +25,14 @@ assert.equal(classifyLayerRole('r20_image'), 'media');
 assert.equal(classifyLayerRole('r20_i18n_text'), 'text');
 assert.equal(classifyLayerRole('r20_worker_script'), 'runtime');
 
+assert.equal(getLayerRole('r20_div').label, '프레임');
+assert.equal(getLayerRole('r20_row').label, '흐름');
+assert.equal(getLayerRole('r20_table').label, '표');
+assert.equal(getLayerRole('r20_text_input').label, '입력');
+assert.equal(getLayerRole('r20_roll_button').label, '버튼');
+assert.equal(getLayerRole('r20_i18n_text').label, '텍스트');
+assert.equal(getLayerRole('r20_image').label, '이미지');
+assert.equal(getLayerRole('r20_worker_script').label, '스크립트');
+assert.equal(getLayerRole('unknown_block').label, '노드');
+
 console.log('layerRoles.test PASS');

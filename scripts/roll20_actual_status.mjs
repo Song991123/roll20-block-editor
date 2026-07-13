@@ -238,12 +238,47 @@ async function main() {
     }),
   };
 
-  await fs.mkdir(outDir, { recursive: true });
-  await fs.writeFile(path.join(outDir, 'actual-verification-status-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await fs.writeFile(path.join(outDir, 'actual-verification-status-results.md'), renderMarkdown(report), 'utf8');
+  const writeResult = await writeStatusReport(report, outDir, runDir);
 
-  console.log(renderConsoleSummary(report, outDir));
+  console.log(renderConsoleSummary(report, writeResult.outDir));
+  if (writeResult.fallbackReason) {
+    console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
+  }
   process.exitCode = commandPass ? 0 : 1;
+}
+
+async function writeStatusReport(report, requestedOutDir, runDir) {
+  const writeTo = async (targetDir, fallbackReason = '') => {
+    report.output = {
+      requestedOutDir,
+      outDir: targetDir,
+      fallbackReason,
+    };
+    await fs.mkdir(targetDir, { recursive: true });
+    await fs.writeFile(path.join(targetDir, 'actual-verification-status-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    await fs.writeFile(path.join(targetDir, 'actual-verification-status-results.md'), renderMarkdown(report), 'utf8');
+    return { outDir: targetDir, fallbackReason };
+  };
+
+  try {
+    return await writeTo(requestedOutDir);
+  } catch (error) {
+    if (OUT_DIR_ARG || !isAccessError(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `actual-verification-status-${safePathLabel(path.basename(runDir))}-${Date.now()}`,
+    );
+    return writeTo(fallbackDir, `${error.code ?? 'WRITE_ERROR'} while writing ${rel(requestedOutDir)}`);
+  }
+}
+
+function isAccessError(error) {
+  return error?.code === 'EPERM' || error?.code === 'EACCES';
+}
+
+function safePathLabel(value) {
+  return String(value || 'run').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'run';
 }
 
 async function findLatestPreuploadRun() {

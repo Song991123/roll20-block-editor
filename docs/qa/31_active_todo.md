@@ -1,3 +1,12 @@
+## 2026-07-13 Actual Status/Gate Locked-Report Fallback TODO Note
+
+- DONE: `status:roll20-actual` and `gate:roll20-renderer-action` now fall back to `..\_tmp_codex_smoke\...` when the default canonical report output folder is locked with `EPERM`/`EACCES` and no explicit `--out-dir` was provided.
+- DONE: `test:layer-roles` now asserts the Korean layer role labels (`프레임`, `흐름`, `표`, `입력`, `버튼`, `텍스트`, `이미지`, `스크립트`, `노드`) so layer-panel copy regressions are caught.
+- VERIFIED: `node --check scripts\roll20_actual_status.mjs`, `node --check scripts\roll20_renderer_action_gate.mjs`, `corepack pnpm run test:layer-roles`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, and `git diff --check` passed.
+- VERIFIED: `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1` now passes after fallback and wrote `..\_tmp_codex_smoke\actual-verification-status-2026-06-18-state-map-v1-1783904650122`.
+- VERIFIED: `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1` now passes after fallback and wrote `..\_tmp_codex_smoke\renderer-action-gate-2026-06-18-state-map-v1-1783904651010`.
+- OBSERVED: Current Roll20 actual status remains `rendererReady=NO`, `rendererBlockers=8`, same-structure high chat mismatch `2/3`, max aligned mismatch `20.68%`; this is not a parity claim.
+
 ## 2026-07-13 Local App Asset Request TODO Note
 
 - DONE: Removed the app-level Pretendard CDN stylesheet/preconnect from `app/layout.tsx` and restored the Korean metadata title/description.

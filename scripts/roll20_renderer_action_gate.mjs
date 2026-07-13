@@ -140,15 +140,50 @@ async function main() {
     fixtures,
   };
 
-  await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(outDir, 'renderer-action-gate-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await writeFile(path.join(outDir, 'renderer-action-gate-results.md'), renderMarkdown(report), 'utf8');
+  const writeResult = await writeRendererActionReport(report, outDir, runDir);
 
   console.log(`ROLL20 RENDERER ACTION ${recommendation.action}`);
   for (const reason of recommendation.blockers) console.log(`BLOCKER ${reason}`);
   for (const warning of recommendation.warnings) console.log(`WARNING ${warning}`);
   for (const note of recommendation.positiveFindings) console.log(`EVIDENCE ${note}`);
-  console.log(`out=${path.relative(process.cwd(), outDir)}`);
+  if (writeResult.fallbackReason) {
+    console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
+  }
+  console.log(`out=${path.relative(process.cwd(), writeResult.outDir)}`);
+}
+
+async function writeRendererActionReport(report, requestedOutDir, runDir) {
+  const writeTo = async (targetDir, fallbackReason = '') => {
+    report.output = {
+      requestedOutDir,
+      outDir: targetDir,
+      fallbackReason,
+    };
+    await mkdir(targetDir, { recursive: true });
+    await writeFile(path.join(targetDir, 'renderer-action-gate-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    await writeFile(path.join(targetDir, 'renderer-action-gate-results.md'), renderMarkdown(report), 'utf8');
+    return { outDir: targetDir, fallbackReason };
+  };
+
+  try {
+    return await writeTo(requestedOutDir);
+  } catch (error) {
+    if (rawOutDir || !isAccessError(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `renderer-action-gate-${safePathLabel(path.basename(runDir))}-${Date.now()}`,
+    );
+    return writeTo(fallbackDir, `${error.code ?? 'WRITE_ERROR'} while writing ${path.relative(process.cwd(), requestedOutDir)}`);
+  }
+}
+
+function isAccessError(error) {
+  return error?.code === 'EPERM' || error?.code === 'EACCES';
+}
+
+function safePathLabel(value) {
+  return String(value || 'run').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'run';
 }
 
 function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry }) {
