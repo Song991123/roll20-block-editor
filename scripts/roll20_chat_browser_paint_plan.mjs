@@ -16,7 +16,7 @@ const selfTest = args.includes('--self-test');
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
-const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-browser-paint-plan');
+const requestedOutDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-browser-paint-plan');
 
 if (selfTest) selfTestPlan();
 else await main();
@@ -64,15 +64,41 @@ async function main() {
     fixtures,
   };
 
-  await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(outDir, 'chat-browser-paint-plan-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await writeFile(path.join(outDir, 'chat-browser-paint-plan-results.md'), renderMarkdown(report), 'utf8');
+  const writeResult = await writeBrowserPaintReport(report, requestedOutDir, runDir);
 
   console.log(`ROLL20 CHAT BROWSER PAINT PLAN ${report.summary.status}`);
   for (const fixture of fixtures) {
     console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} decision=${fixture.decision} asset=${fixture.assetDecision || 'n/a'} raster=${fixture.rasterDecision || 'n/a'} flat=${fixture.flatPaintMismatchSharePct || 'n/a'} next=${fixture.nextAction}`);
   }
-  console.log(`out=${path.relative(process.cwd(), outDir)}`);
+  if (writeResult.fallbackReason) {
+    console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
+  }
+  console.log(`out=${path.relative(process.cwd(), writeResult.outDir)}`);
+}
+
+async function writeBrowserPaintReport(report, targetOutDir, reportRunDir) {
+  const writeTo = async (dir, fallbackReason = '') => {
+    report.output = {
+      requestedOutDir: targetOutDir,
+      outDir: dir,
+      fallbackReason,
+    };
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, 'chat-browser-paint-plan-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    await writeFile(path.join(dir, 'chat-browser-paint-plan-results.md'), renderMarkdown(report), 'utf8');
+    return { outDir: dir, fallbackReason };
+  };
+  try {
+    return await writeTo(targetOutDir);
+  } catch (error) {
+    if (rawOutDir || !isAccessError(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `chat-browser-paint-plan-${safePathLabel(path.basename(reportRunDir))}-${Date.now()}`,
+    );
+    return writeTo(fallbackDir, `${error.code ?? 'WRITE_ERROR'} while writing ${path.relative(process.cwd(), targetOutDir)}`);
+  }
 }
 
 function classifyFixture(fixtureId, reports) {
@@ -302,4 +328,12 @@ function selfTestPlan() {
   });
   assert.equal(noImage.decision, 'PAINT_SECONDARY_NO_BACKGROUND_IMAGE');
   console.log('roll20_chat_browser_paint_plan self-test PASS');
+}
+
+function isAccessError(error) {
+  return error?.code === 'EPERM' || error?.code === 'EACCES';
+}
+
+function safePathLabel(value) {
+  return String(value || 'run').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'run';
 }

@@ -17,7 +17,7 @@ const SELF_TEST = args.includes('--self-test');
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
-const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'asset-relink-verification-plan');
+const requestedOutDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'asset-relink-verification-plan');
 
 if (SELF_TEST) {
   selfTest();
@@ -39,7 +39,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
     mapFile: mapFile || '',
-    templateFile: path.relative(process.cwd(), path.join(outDir, 'asset-relink-map-template.txt')),
+    templateFile: path.relative(process.cwd(), path.join(requestedOutDir, 'asset-relink-map-template.txt')),
     scope: 'diagnostic-only relink coverage check; URL text only, no asset redistribution',
     action: relinkRequired.length === 0
       ? 'NO_RELINK_BLOCKER_FOUND'
@@ -62,18 +62,45 @@ async function main() {
     nextActions: buildNextActions({ missing, localOnly, covered, runDir }),
   };
 
-  await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(outDir, 'asset-relink-verification-plan-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await writeFile(path.join(outDir, 'asset-relink-verification-plan-results.md'), renderMarkdown(report), 'utf8');
-  await writeFile(path.join(outDir, 'asset-relink-map-template.txt'), renderMapTemplate(report), 'utf8');
+  const writeResult = await writeRelinkReport(report, requestedOutDir, runDir);
 
   console.log(`ROLL20 ASSET RELINK VERIFICATION ${report.action}`);
   console.log(`required=${relinkRequired.length} coveredRoll20Ready=${covered.length} localOnly=${localOnly.length} missing=${missing.length} mapEntries=${parsedMap.entries.length}`);
   for (const fixture of fixtures.filter((item) => item.decision === 'SOURCE_ASSET_LOST_RELINK_REQUIRED')) {
     console.log(`FIXTURE ${fixture.fixtureId} coverage=${fixture.coverage} target=${fixture.coveringTargetKind || 'none'} next=${fixture.nextAction}`);
   }
-  console.log(`out=${path.relative(process.cwd(), outDir)}`);
+  if (writeResult.fallbackReason) {
+    console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
+  }
+  console.log(`out=${path.relative(process.cwd(), writeResult.outDir)}`);
   console.log(`template=${report.templateFile}`);
+}
+
+async function writeRelinkReport(report, targetOutDir, reportRunDir) {
+  const writeTo = async (dir, fallbackReason = '') => {
+    report.output = {
+      requestedOutDir: targetOutDir,
+      outDir: dir,
+      fallbackReason,
+    };
+    report.templateFile = path.relative(process.cwd(), path.join(dir, 'asset-relink-map-template.txt'));
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, 'asset-relink-verification-plan-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    await writeFile(path.join(dir, 'asset-relink-verification-plan-results.md'), renderMarkdown(report), 'utf8');
+    await writeFile(path.join(dir, 'asset-relink-map-template.txt'), renderMapTemplate(report), 'utf8');
+    return { outDir: dir, fallbackReason };
+  };
+  try {
+    return await writeTo(targetOutDir);
+  } catch (error) {
+    if (rawOutDir || !isAccessError(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `asset-relink-verification-plan-${safePathLabel(path.basename(reportRunDir))}-${Date.now()}`,
+    );
+    return writeTo(fallbackDir, `${error.code ?? 'WRITE_ERROR'} while writing ${path.relative(process.cwd(), targetOutDir)}`);
+  }
 }
 
 function readOption(name, fallback = '') {
@@ -337,4 +364,12 @@ function selfTest() {
   assert.match(template, /# http:\/\/i\.imgur\.com\/dead\.jpg => <paste-user-owned-https-url-here>/);
   assert.doesNotMatch(template, /fixture: sample[\s\S]*COVERED_ROLL20_READY[\s\S]*assets\.example\.com\/live\.jpg/);
   console.log('roll20_asset_relink_verification_plan self-test PASS');
+}
+
+function isAccessError(error) {
+  return error?.code === 'EPERM' || error?.code === 'EACCES';
+}
+
+function safePathLabel(value) {
+  return String(value || 'run').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'run';
 }

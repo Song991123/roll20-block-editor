@@ -1,3 +1,12 @@
+## 2026-07-13 Asset Relink and Browser Paint Locked-Report Fallback
+
+- Root cause: the next P0 path from the renderer gate depends on `plan:roll20-asset-relink` and `plan:roll20-chat-browser-paint`, but both scripts failed with `EPERM` when the active run's canonical report folders were read-only.
+- Added the same default-output fallback pattern used by `preflight:roll20-cdp`: if no explicit `--out-dir` is supplied and the canonical report folder is locked, the scripts write ignored evidence under `..\_tmp_codex_smoke\...` and print `WARNING report write fallback`.
+- Live asset relink rerun: `plan:roll20-asset-relink` now reports `RELINK_MAP_REQUIRED`, with AW2E and YSHY both `MISSING_RELINK`, and writes template evidence to `..\_tmp_codex_smoke\asset-relink-verification-plan-2026-06-18-state-map-v1-1783929958954`.
+- Live browser paint rerun: `plan:roll20-chat-browser-paint` now reports `BROWSER_PAINT_BLOCKED_BY_RELINK`; AW2E and YSHY are blocked by source asset relink, while Les-Oublies is secondary because no chat background image is present in current evidence.
+- Verification: syntax checks, `test:roll20-asset-relink`, `test:roll20-chat-browser-paint`, and the two live plan reruns passed.
+- Claim boundary: workflow reliability and blocker clarity only. No asset was downloaded, no replacement URL was invented, no renderer CSS was promoted, and Roll20 visual parity remains unproven until user-owned HTTP(S) assets are supplied and reverified.
+
 ## 2026-07-13 CDP Preflight Locked-Report Fallback
 
 - Root cause: `preflight:roll20-cdp` still failed hard when the canonical `reports\roll20-actual-compare\...\roll20-cdp-preflight` folder was read-only, even though other Roll20 gates already fall back to ignored temp output under `..\_tmp_codex_smoke`.

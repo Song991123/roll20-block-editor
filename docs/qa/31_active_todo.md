@@ -3450,3 +3450,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `node --check scripts\roll20_cdp_preflight.mjs`, `node scripts\roll20_cdp_preflight.mjs --self-test`, and `corepack pnpm run preflight:roll20-cdp -- --run-dir reports\roll20-actual-compare\2026-06-18-state-map-v1` passed. The live preflight reports `READY`, `targets=8`, `roll20Targets=2`, `plannedFixtures=0`, `rendererReady=NO`, and fallback output `..\_tmp_codex_smoke\roll20-cdp-preflight-2026-06-18-state-map-v1-1783929646464`.
 - CURRENT: CDP/browser readiness is not the active blocker right now. Since no fixtures are currently planned for recapture, the next real work remains renderer/template/asset diagnostics named by `gate:roll20-renderer-action`.
 - CLAIM BOUNDARY: Verification workflow reliability only. This does not add new Roll20 screenshots, upload a sheet, relink assets, or prove visual parity.
+
+## 2026-07-13 Asset Relink and Browser Paint Locked-Report Fallback TODO Note
+
+- DONE: `plan:roll20-asset-relink` and `plan:roll20-chat-browser-paint` now fall back to ignored temp evidence when their default canonical report folders are read-only. Explicit `--out-dir` remains strict.
+- VERIFIED: `node --check scripts\roll20_asset_relink_verification_plan.mjs`, `node --check scripts\roll20_chat_browser_paint_plan.mjs`, `corepack pnpm run test:roll20-asset-relink`, and `corepack pnpm run test:roll20-chat-browser-paint` passed.
+- VERIFIED: Live `plan:roll20-asset-relink` now returns `RELINK_MAP_REQUIRED`, AW2E/YSHY `MISSING_RELINK`, and writes fallback template output under `..\_tmp_codex_smoke\asset-relink-verification-plan-2026-06-18-state-map-v1-1783929958954`.
+- VERIFIED: Live `plan:roll20-chat-browser-paint` now returns `BROWSER_PAINT_BLOCKED_BY_RELINK`, with AW2E/YSHY blocked by `BLOCKED_BY_ASSET_RELINK` and Les-Oublies secondary because current evidence has no chat background image.
+- CURRENT: The active P0 visual-parity blocker is not another broad ChatPane CSS patch. AW2E/YSHY need user-owned HTTP(S) replacement URLs in the local-only asset map, followed by local preview/edit/export and Roll20 Sandbox recomparison.
+- CLAIM BOUNDARY: No replacement URL was invented, no third-party asset was copied, and no production renderer CSS was promoted.
