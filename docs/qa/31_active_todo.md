@@ -1,3 +1,13 @@
+## 2026-07-13 YSHY Actual-Font Source-Context Rejection TODO Note
+
+- DONE: `diagnose:roll20-chat-candidate-style` now routes `yshy-coc-table-source-context*actual-font*` through the actual Roll20 YSHY table font-context proof instead of the older missing-Bookk proof.
+- VERIFIED: `rolltemplate_chat_smoke` for `yshy-coc-table-source-context-actual-font-r1` passed 3/3 fixtures in ignored output at `..\_tmp_codex_smoke\rolltemplate-chat-smoke-yshy-coc-table-source-context-actual-font-20260713-r1`.
+- VERIFIED: `gate:roll20-chat-candidate-experiment` rejected that candidate with `HOLD_PRODUCTION_RENDERER_PATCH`, risk `reject-regresses-fixtures`, style `REJECT_STYLE_CONTRADICTION`, row raster `reject-row-raster-regression`, mean aligned delta `16.47`, and regressions `2`.
+- EVIDENCE: YSHY style proof says font/source now matches, but table width still contradicts actual Roll20: local `1317.140625px` vs actual `1248.328125px`.
+- EVIDENCE: Row raster regressed from baseline: AW2E weighted `17.93% -> 62%` (`+44.07`), YSHY weighted `21.41% -> 31.55%` (`+10.14`).
+- VERIFIED: `diagnose:roll20-chat-table-intrinsic-probe` on the same candidate still classifies YSHY as `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET`: root `-3px`, table `-68.813px`, row spread `0px`, max cell `+0.906px`, top offset `+52.703px`.
+- CURRENT: Do not promote `yshy-coc-table-source-context-actual-font-r1`. Next P0 is a table intrinsic width plus rolltemplate crop/top-origin probe; keep broad width, transform, global font, and spacing patches out of production renderer defaults.
+
 ## 2026-07-13 YSHY Table Intrinsic Probe TODO Note
 
 - DONE: `diagnose:roll20-chat-table-intrinsic-probe` now accepts `[local-smoke-json]` plus `--out-dir`, so YSHY/CoC candidate smokes can be checked in ignored temp output without rewriting canonical actual-run reports.

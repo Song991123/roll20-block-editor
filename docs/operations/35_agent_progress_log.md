@@ -1,3 +1,17 @@
+## 2026-07-13 YSHY Actual-Font Source-Context Rejection
+
+- Root cause hypothesis tested: the previous YSHY/CoC source-context candidate may have been unfairly evaluated against a missing-Bookk font proof, while actual Roll20 evidence shows Bookk is active inside caption/cells.
+- Updated `scripts/roll20_chat_candidate_style_proof.mjs` so `yshy-coc-table-source-context*actual-font*` uses `yshy-table-font-context`; older source-context candidates continue to use the missing-Bookk proof.
+- Verification: `node --check scripts\roll20_chat_candidate_style_proof.mjs` passed.
+- Verification: the already-generated smoke for `yshy-coc-table-source-context-actual-font-r1` passed 3/3 fixtures; the candidate root/table metrics for YSHY were root `267px`, table `1317.140625px`, caption `1317.140625px`, with Bookk active in caption and first cell.
+- Verification: `gate:roll20-chat-candidate-experiment` wrote ignored output to `..\_tmp_codex_smoke\candidate-experiment-yshy-coc-table-source-context-actual-font-20260713-r1` and returned `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Evidence: the gate rejected the candidate with risk `reject-regresses-fixtures`, style `REJECT_STYLE_CONTRADICTION`, row raster `reject-row-raster-regression`, mean aligned delta `16.47`, fixture deltas `AW2E=41.04`, `Les=0`, `YSHY=8.36`, and regressions `2`.
+- Evidence: style proof now narrows the failure to table width only for YSHY: local `1317.140625px` vs actual Roll20 `1248.328125px`; root/table font and Bookk caption/cell font match actual evidence.
+- Evidence: row-raster comparison rejects this path: AW2E weighted mismatch regresses from `17.93%` to `62%`, and YSHY from `21.41%` to `31.55%`.
+- Verification: `diagnose:roll20-chat-table-intrinsic-probe` on the same candidate still reports YSHY `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET` with root `-3px`, table `-68.813px`, first cell `-0.188px`, row spread `0px`, max cell `+0.906px`, and top offset `+52.703px`.
+- Server hygiene: `corepack pnpm run check:server-hygiene` passed after the diagnostic run. No project dev/smoke listener remained; CDP `127.0.0.1:9222` was preserved.
+- Current evidence: actual-font source context is a rejected diagnostic candidate, not a product renderer fix. Next renderer work should model table intrinsic width plus Roll20 crop/top-origin context.
+
 ## 2026-07-13 YSHY Table Intrinsic Probe Routing
 
 - Root cause hypothesis: YSHY/CoC still fails because table width declarations are weaker than the table's intrinsic/crop context, not because another broad ChatPane CSS rule should be promoted.
