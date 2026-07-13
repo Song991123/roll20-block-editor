@@ -1,3 +1,14 @@
+## 2026-07-13 Source/Intrinsic Matrix Gate
+
+- Root cause refinement: the current blocker is not "missing one width CSS rule"; AW2E and YSHY need source/context, intrinsic table sizing, and crop/top-origin evidence to be considered together before any ChatPane renderer CSS can be reviewed.
+- Added `scripts/roll20_chat_source_intrinsic_matrix.mjs` and package script `diagnose:roll20-chat-source-intrinsic`.
+- Wired `--chat-source-intrinsic-dir` into `gate:roll20-renderer-action`, including JSON/Markdown summaries and a production renderer blocker when the matrix marks P0 fixtures as promotion blockers.
+- Verification: syntax checks passed for the new matrix and renderer gate scripts; matrix self-test passed; `git diff --check`, `guard:roll20-evidence`, `status:roll20-actual`, `corepack pnpm run lint`, and `corepack pnpm run build` passed.
+- Live evidence: `diagnose:roll20-chat-source-intrinsic` against current ignored temp sidecar diagnostics wrote `..\_tmp_codex_smoke\chat-source-intrinsic-yshy-current-20260713-r1` and classified AW2E as `CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED`, Les-Oublies as `CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED`, and YSHY as `SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED`.
+- Renderer gate evidence: with `--chat-source-intrinsic-dir ..\_tmp_codex_smoke\chat-source-intrinsic-yshy-current-20260713-r1`, `gate:roll20-renderer-action` stayed `HOLD_PRODUCTION_RENDERER_PATCH` and now explicitly blocks renderer CSS on AW2E/YSHY source-intrinsic evidence.
+- Current evidence: this improves truthfulness and routing only. It does not prove Roll20 visual parity, does not ship renderer CSS, and does not clear the asset/template-scope/row-raster gates.
+- Server hygiene: checked before and after validation; no project dev/smoke listener was running, and CDP `9222` was preserved.
+
 ## 2026-07-13 YSHY CoC Table Width + Fallback Candidate Rejected
 
 - Added a diagnostic style-proof route for one-off `yshy-coc-table-source-context-*-fallback-only` candidates so combined table/source-context experiments can be classified instead of reported as unknown candidates.

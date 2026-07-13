@@ -1,3 +1,14 @@
+## 2026-07-13 Source/Intrinsic Matrix Gate TODO Note
+
+- DONE: Added diagnostic-only `diagnose:roll20-chat-source-intrinsic` to combine source CSS, source/context, intrinsic-width, table-intrinsic, table-layout, min-content, row/cell, and crop/top-offset evidence before renderer CSS review.
+- DONE: Wired `--chat-source-intrinsic-dir` into `gate:roll20-renderer-action` so ignored temp matrix reports can block production renderer CSS without copying private evidence into canonical `reports/`.
+- VERIFIED: `node --check scripts\roll20_chat_source_intrinsic_matrix.mjs`, `node --check scripts\roll20_renderer_action_gate.mjs`, `node scripts\roll20_chat_source_intrinsic_matrix.mjs --self-test`, `git diff --check`, `guard:roll20-evidence`, `status:roll20-actual`, `corepack pnpm run lint`, and `corepack pnpm run build` passed.
+- VERIFIED: Current matrix run at ignored temp `..\_tmp_codex_smoke\chat-source-intrinsic-yshy-current-20260713-r1` returned `SOURCE_INTRINSIC_MATRIX_ACTIONABLE`: AW2E `CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED`, Les-Oublies `CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED`, and YSHY `SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED`.
+- VERIFIED: Renderer gate with the matrix override stayed `HOLD_PRODUCTION_RENDERER_PATCH` and now adds a source/intrinsic blocker for AW2E and YSHY. This is a guardrail improvement, not Roll20 visual parity and not permission to ship ChatPane CSS.
+- VERIFIED: Server hygiene passed after validation; no project dev/smoke listener remained, and CDP `9222` was preserved.
+- EVIDENCE: YSHY still has source `.sheet-rolltemplate-coc table` max-width `280px`, actual/local table auto-layout evidence, table delta `-24.531px`, row width spread `0px`, max cell delta `+0.906px`, and top offset `+52.703px`; the next model must combine sanitize/rule order, table intrinsic sizing, and crop/top-origin.
+- CURRENT: Do not retry broad font fallback, direct used-width clamps, transforms, or global ChatPane CSS. Next P0 is a template-scoped source/intrinsic model that preserves AW2E/Les nonregression and then passes row-raster, style-proof, asset, template-scope, and renderer gates.
+
 ## 2026-07-13 YSHY CoC Table Width + Fallback Rejection TODO Note
 
 - DONE: Tested diagnostic-only combined candidate `yshy-coc-table-source-context-fallback-only` using `--chat-geometry-policy coc-table-actual-width` plus `--chat-typography-policy yshy-bookk-fallback-only`.

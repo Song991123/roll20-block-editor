@@ -24,6 +24,7 @@ const optionNamesWithValues = new Set([
   '--chat-row-raster-candidates-dir',
   '--row-paint-source-dir',
   '--chat-source-context-dir',
+  '--chat-source-intrinsic-dir',
   '--chat-template-scope-dir',
   '--chat-table-budget-dir',
   '--cell-allocation-dir',
@@ -48,6 +49,7 @@ const reportOverrides = {
   chatRowRasterCandidates: readOption('--chat-row-raster-candidates-dir', ''),
   chatRowPaintSource: readOption('--row-paint-source-dir', ''),
   chatSourceContext: readOption('--chat-source-context-dir', ''),
+  chatSourceIntrinsic: readOption('--chat-source-intrinsic-dir', ''),
   chatTemplateScope: readOption('--chat-template-scope-dir', ''),
   chatTableWidthBudget: readOption('--chat-table-budget-dir', ''),
   chatCellAllocation: readOption('--cell-allocation-dir', ''),
@@ -96,6 +98,7 @@ async function main() {
   const chatFontGlyphModel = await readJsonIfExists(path.join(runDir, 'chat-font-glyph-model', 'chat-font-glyph-model-results.json'));
   const chatFontIntrinsicProbe = await readJsonIfExists(path.join(runDir, 'chat-font-intrinsic-probe', 'chat-font-intrinsic-probe-results.json'));
   const chatSourceContextProbe = await readReportJson('chat-source-context-probe', 'chat-source-context-probe-results.json', reportOverrides.chatSourceContext);
+  const chatSourceIntrinsicMatrix = await readReportJson('chat-source-intrinsic-matrix', 'chat-source-intrinsic-matrix-results.json', reportOverrides.chatSourceIntrinsic);
   const chatRowPaintSourceProbe = await readReportJson('chat-row-paint-source-probe', 'chat-row-paint-source-probe-results.json', reportOverrides.chatRowPaintSource);
   const chatRowRasterProbe = await readJsonIfExists(path.join(runDir, 'chat-row-raster-probe', 'chat-row-raster-probe-results.json'));
   const chatRowRasterCandidates = await readReportJson('chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json', reportOverrides.chatRowRasterCandidates);
@@ -112,7 +115,7 @@ async function main() {
   const chatTemplateScopeGate = await readReportJson('chat-template-scope-gate', 'chat-template-scope-gate-results.json', reportOverrides.chatTemplateScope);
 
   const fixtures = mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudit, rootCutoff, stateVisibility, attrClassVisibility, attrClassGeometry, geometry });
-  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatSourceContextProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare);
+  const recommendation = recommend(fixtures, status, runDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatSourceContextProbe, chatSourceIntrinsicMatrix, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare);
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
@@ -138,6 +141,7 @@ async function main() {
     chatFontGlyphModel: summarizeChatFontGlyphModel(chatFontGlyphModel),
     chatFontIntrinsicProbe: summarizeChatFontIntrinsicProbe(chatFontIntrinsicProbe),
     chatSourceContextProbe: summarizeChatSourceContextProbe(chatSourceContextProbe),
+    chatSourceIntrinsicMatrix: summarizeChatSourceIntrinsicMatrix(chatSourceIntrinsicMatrix),
     chatRowPaintSourceProbe: summarizeChatRowPaintSourceProbe(chatRowPaintSourceProbe),
     chatRowRasterProbe: summarizeChatRowRasterProbe(chatRowRasterProbe),
     chatRowRasterCandidates: summarizeChatRowRasterCandidates(chatRowRasterCandidates),
@@ -377,7 +381,7 @@ function mergeFixtures({ status, fullRoot, scrollMetricsFullRoot, rootStitchAudi
   });
 }
 
-function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatSourceContextProbe, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare) {
+function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, chatStyle, chatCandidates, chatCandidateStyleProof, chatRendererPolicy, chatResidual, chatMaskStrategy, chatShellGeometry, chatFontCell, chatWidthModel, chatMessageShellModel, chatTableWidthBudget, chatTableIntrinsicProbe, chatOverflowCropProbe, chatIntrinsicWidthModel, chatFontGlyphModel, chatFontIntrinsicProbe, chatSourceContextProbe, chatSourceIntrinsicMatrix, chatRowPaintSourceProbe, chatRowRasterProbe, chatRowRasterCandidates, chatRowCompositingProbe, chatBackgroundSourceProbe, chatBackgroundRasterModelProbe, chatBackgroundAssetProbe, chatAssetPreservationPlan, chatRowGeometry, chatWidthReconciliation, chatCellAllocationProbe, chatTemplateScopeGate, chatCurrentMetricsAudit, chatStructureCompare) {
   const blockers = [];
   const warnings = [];
   const positiveFindings = [];
@@ -407,6 +411,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   const chatFontGlyphModelSummary = summarizeChatFontGlyphModel(chatFontGlyphModel);
   const chatFontIntrinsicProbeSummary = summarizeChatFontIntrinsicProbe(chatFontIntrinsicProbe);
   const chatSourceContextProbeSummary = summarizeChatSourceContextProbe(chatSourceContextProbe);
+  const chatSourceIntrinsicMatrixSummary = summarizeChatSourceIntrinsicMatrix(chatSourceIntrinsicMatrix);
   const chatRowPaintSourceProbeSummary = summarizeChatRowPaintSourceProbe(chatRowPaintSourceProbe);
   const chatRowRasterProbeSummary = summarizeChatRowRasterProbe(chatRowRasterProbe);
   const chatRowRasterCandidatesSummary = summarizeChatRowRasterCandidates(chatRowRasterCandidates);
@@ -710,6 +715,21 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       positiveFindings.push(`${fixture.fixtureId} source/context=${fixture.decision}, css=${fixture.cssClassification || 'n/a'}, font=${fixture.fontDecision || 'n/a'}, table=${fixture.tableDecision || 'n/a'}, tableDelta=${fmtPx(fixture.tableWidthDelta)}, changedFonts=${fixture.changedFonts}, next=${fixture.nextAction}`);
     }
   }
+  const needsSourceIntrinsicMatrix =
+    chatSourceContextProbeSummary?.actionableFixtures?.some((fixture) => /SANITIZE|INTRINSIC|TABLE/i.test(`${fixture.decision} ${fixture.tableDecision}`)) ||
+    chatTableIntrinsicProbeSummary?.actionableFixtures?.some((fixture) => /INTRINSIC|CONSTRAINT|CROP/i.test(`${fixture.decision} ${fixture.probeDecision}`)) ||
+    chatIntrinsicWidthModelSummary?.actionableFixtures?.some((fixture) => /INTRINSIC|CONSTRAINT|CROP/i.test(`${fixture.intrinsicDecision} ${fixture.constraintDecision}`));
+  if (chatSourceIntrinsicMatrixSummary) {
+    positiveFindings.push(`chat source/intrinsic matrix: status=${chatSourceIntrinsicMatrixSummary.status}, actionable=${chatSourceIntrinsicMatrixSummary.actionable}/${chatSourceIntrinsicMatrixSummary.totalFixtures}, promotionBlocked=${chatSourceIntrinsicMatrixSummary.promotionBlocked}, decisions=${formatFindingCounts(chatSourceIntrinsicMatrixSummary.decisions)}`);
+    for (const fixture of chatSourceIntrinsicMatrixSummary.actionableFixtures) {
+      positiveFindings.push(`${fixture.fixtureId} source/intrinsic=${fixture.decision}, tableDelta=${fmtPx(fixture.tableWidthDelta)}, sourceMax=${fmtPx(fixture.tableMaxWidthPx)}, rowSpread=${fmtPx(fixture.rowWidthDeltaSpread)}, cell=${fmtPx(fixture.maxAbsCellDelta)}, top=${fmtPx(fixture.maxAbsTopDelta)}, next=${fixture.nextAction}`);
+    }
+    if (chatSourceIntrinsicMatrixSummary.promotionBlocked > 0) {
+      blockers.push(`chat source/intrinsic matrix blocks renderer CSS: ${chatSourceIntrinsicMatrixSummary.blockingFixtures.map((fixture) => `${fixture.fixtureId}:${fixture.decision}`).join(', ')}`);
+    }
+  } else if (needsSourceIntrinsicMatrix) {
+    warnings.push('chat source/intrinsic matrix has not been run; run diagnose:roll20-chat-source-intrinsic before promoting CoC/YSHY table renderer CSS');
+  }
   if (chatRowPaintSourceProbeSummary) {
     positiveFindings.push(`chat row/paint/source probe: status=${chatRowPaintSourceProbeSummary.status}, actionable=${chatRowPaintSourceProbeSummary.actionable}/${chatRowPaintSourceProbeSummary.totalFixtures}, decisions=${formatFindingCounts(chatRowPaintSourceProbeSummary.decisions)}`);
     for (const fixture of chatRowPaintSourceProbeSummary.actionableFixtures) {
@@ -927,6 +947,11 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-font-intrinsic -- ${path.relative(process.cwd(), activeRunDir)} before adding another table width or font candidate.`);
   } else if (chatFontIntrinsicProbeSummary?.actionableFixtures.length) {
     nextActions.push(...chatFontIntrinsicProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
+  }
+  if (!chatSourceIntrinsicMatrixSummary && needsSourceIntrinsicMatrix) {
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-source-intrinsic -- ${path.relative(process.cwd(), activeRunDir)} before changing CoC/YSHY table renderer CSS.`);
+  } else if (chatSourceIntrinsicMatrixSummary?.blockingFixtures.length) {
+    nextActions.push(...chatSourceIntrinsicMatrixSummary.blockingFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   const needsRowPaintSourceProbe =
     chatFontIntrinsicProbeSummary?.actionableFixtures?.some((fixture) => /FONT_FACE_INTRINSIC|TABLE_MIN_CONTENT|FONT_CONTEXT/i.test(fixture.decision || '')) ||
@@ -1592,6 +1617,54 @@ function summarizeChatSourceContextProbe(report) {
     decisions: report.summary.decisions ?? {},
     productionSafe: Boolean(report.summary.productionSafe),
     actionableFixtures: fixtures.filter((fixture) => fixture.priority !== 'P2' && !['SOURCE_CONTEXT_SECONDARY', 'MISSING_EVIDENCE'].includes(fixture.decision)),
+    fixtures,
+  };
+}
+
+function summarizeChatSourceIntrinsicMatrix(report) {
+  if (!report?.summary) return null;
+  const fixtures = (report.fixtures ?? []).map((fixture) => ({
+    fixtureId: fixture.fixtureId,
+    priority: fixture.priority ?? '',
+    decision: fixture.decision ?? 'UNKNOWN',
+    alignedMismatchPct: fixture.alignedMismatchPct ?? '',
+    promotionBlocker: Boolean(fixture.promotionBlocker),
+    sourceContextDecision: fixture.source?.sourceContextDecision ?? '',
+    tableContextDecision: fixture.source?.tableContextDecision ?? '',
+    sourceCssStatus: fixture.source?.sourceCssStatus ?? '',
+    tableMaxWidth: fixture.source?.tableMaxWidth ?? '',
+    tableMaxWidthPx: fixture.source?.tableMaxWidthPx ?? null,
+    tableWidthDelta: fixture.metrics?.tableWidthDelta ?? null,
+    tableScrollWidthDelta: fixture.metrics?.tableScrollWidthDelta ?? null,
+    tableClientWidthDelta: fixture.metrics?.tableClientWidthDelta ?? null,
+    rootWidthDelta: fixture.metrics?.rootWidthDelta ?? null,
+    captionWidthDelta: fixture.metrics?.captionWidthDelta ?? null,
+    firstCellWidthDelta: fixture.metrics?.firstCellWidthDelta ?? null,
+    rowWidthDeltaSpread: fixture.metrics?.rowWidthDeltaSpread ?? null,
+    maxAbsCellDelta: fixture.metrics?.maxAbsCellDelta ?? null,
+    maxAbsTopDelta: fixture.metrics?.maxAbsTopDelta ?? null,
+    bothAutoLayout: Boolean(fixture.signals?.bothAutoLayout),
+    actualExceedsComputedMax: Boolean(fixture.signals?.actualExceedsComputedMax),
+    localExceedsComputedMax: Boolean(fixture.signals?.localExceedsComputedMax),
+    actualMaxWidthCaptured: Boolean(fixture.signals?.actualMaxWidthCaptured),
+    uniformRows: Boolean(fixture.signals?.uniformRows),
+    cellsSmall: Boolean(fixture.signals?.cellsSmall),
+    rowOffsetPresent: Boolean(fixture.signals?.rowOffsetPresent),
+    sanitizeReplayRejected: Boolean(fixture.signals?.sanitizeReplayRejected),
+    nextAction: fixture.nextAction ?? '',
+    evidence: fixture.evidence ?? [],
+  }));
+  const actionableFixtures = fixtures.filter((fixture) => fixture.priority !== 'P2' && fixture.decision !== 'SOURCE_INTRINSIC_SECONDARY');
+  const blockingFixtures = fixtures.filter((fixture) => fixture.promotionBlocker);
+  return {
+    status: report.summary.status ?? 'UNKNOWN',
+    totalFixtures: Number(report.summary.fixtures ?? fixtures.length),
+    actionable: Number(report.summary.actionable ?? actionableFixtures.length),
+    promotionBlocked: Number(report.summary.promotionBlocked ?? blockingFixtures.length),
+    decisions: report.summary.decisions ?? {},
+    productionSafe: Boolean(report.summary.productionSafe),
+    actionableFixtures,
+    blockingFixtures,
     fixtures,
   };
 }
@@ -2599,6 +2672,22 @@ function renderMarkdown(report) {
       lines.push('| --- | --- | --- | --- | --- | ---: | ---: | ---: | --- | --- |');
       for (const fixture of report.chatSourceContextProbe.actionableFixtures) {
         lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fixture.cssClassification || 'n/a'} | ${fixture.fontDecision || 'n/a'} | ${fixture.tableDecision || 'n/a'} | ${fmtPx(fixture.tableWidthDelta)} | ${fixture.comparedTextMeasureSamples} | ${fixture.changedFonts} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
+      }
+    }
+    lines.push('');
+  }
+  if (report.chatSourceIntrinsicMatrix) {
+    lines.push('### Chat Source/Intrinsic Matrix', '');
+    lines.push(`- Status: ${report.chatSourceIntrinsicMatrix.status}`);
+    lines.push(`- Actionable fixtures: ${report.chatSourceIntrinsicMatrix.actionable}/${report.chatSourceIntrinsicMatrix.totalFixtures}`);
+    lines.push(`- Promotion blockers: ${report.chatSourceIntrinsicMatrix.promotionBlocked}`);
+    lines.push(`- Decisions: ${formatFindingCounts(report.chatSourceIntrinsicMatrix.decisions)}`);
+    if (report.chatSourceIntrinsicMatrix.actionableFixtures.length) {
+      lines.push('');
+      lines.push('| Fixture | Decision | Source max | Table delta | Scroll delta | Row spread | Cell delta | Top delta | Actual exceeds max | Local exceeds max | Evidence | Next action |');
+      lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- |');
+      for (const fixture of report.chatSourceIntrinsicMatrix.actionableFixtures) {
+        lines.push(`| \`${fixture.fixtureId}\` | ${fixture.decision} | ${fmtPx(fixture.tableMaxWidthPx)} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fmtPx(fixture.rowWidthDeltaSpread)} | ${fmtPx(fixture.maxAbsCellDelta)} | ${fmtPx(fixture.maxAbsTopDelta)} | ${fixture.actualExceedsComputedMax ? 'yes' : 'no'} | ${fixture.localExceedsComputedMax ? 'yes' : 'no'} | ${fixture.evidence.join('<br>')} | ${fixture.nextAction} |`);
       }
     }
     lines.push('');

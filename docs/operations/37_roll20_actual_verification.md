@@ -72,6 +72,14 @@ corepack pnpm run diagnose:roll20-chat-min-content -- reports\roll20-actual-comp
   --source-context-dir ..\_tmp_codex_smoke\source-context-<fixture>-<label> `
   --out-dir ..\_tmp_codex_smoke\min-content-<fixture>-<label>
 
+corepack pnpm run diagnose:roll20-chat-source-intrinsic -- reports\roll20-actual-compare\<run> `
+  --source-context-dir ..\_tmp_codex_smoke\source-context-<fixture>-<label> `
+  --intrinsic-width-dir ..\_tmp_codex_smoke\intrinsic-width-<fixture>-<label> `
+  --table-intrinsic-dir ..\_tmp_codex_smoke\table-intrinsic-<fixture>-<label> `
+  --table-layout-dir ..\_tmp_codex_smoke\table-layout-constraint-<fixture>-<label> `
+  --min-content-dir ..\_tmp_codex_smoke\min-content-<fixture>-<label> `
+  --out-dir ..\_tmp_codex_smoke\source-intrinsic-<fixture>-<label>
+
 corepack pnpm run diagnose:roll20-chat-font-glyph -- reports\roll20-actual-compare\<run> <local-smoke-json> `
   --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
   --out-dir ..\_tmp_codex_smoke\font-glyph-<fixture>-<label>
@@ -104,6 +112,7 @@ overrides:
 corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\<run> `
   --full-root-dir ..\_tmp_codex_smoke\full-root-candidates-<label> `
   --geometry-dir ..\_tmp_codex_smoke\geometry-<label> `
+  --chat-source-intrinsic-dir ..\_tmp_codex_smoke\source-intrinsic-<fixture>-<label> `
   --out-dir ..\_tmp_codex_smoke\renderer-gate-<label>
 ```
 
