@@ -1,3 +1,13 @@
+## 2026-07-13 YSHY Intrinsic Constraint Classification
+
+- Root cause refinement: the YSHY intrinsic-width script already detected `TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED`, but the nested constraint model still reported `CONSTRAINT_SECONDARY` unless a transform candidate was present and contradicted. That made the next action less obvious for source-context/crop-origin candidates where transform is not the active failure.
+- Updated `scripts/roll20_chat_intrinsic_width_model.mjs` so table-wide scroll/client width deltas with matching structure, uniform row deltas, small cell deltas, and rejected CSS metric candidates classify as `TABLE_SCROLL_INTRINSIC_CONSTRAINT`.
+- Verification: `node --check scripts\roll20_chat_intrinsic_width_model.mjs` passed.
+- Verification: `corepack pnpm run diagnose:roll20-chat-intrinsic-width -- reports\roll20-actual-compare\2026-06-18-state-map-v1 ..\_tmp_codex_smoke\rolltemplate-chat-smoke-yshy-coc-table-source-context-crop-origin-actual-font-20260713-r1\rolltemplate-chat-smoke-results.json --out-dir ..\_tmp_codex_smoke\chat-intrinsic-width-yshy-crop-origin-actual-font-20260713-r2` passed.
+- Evidence: YSHY still reports `TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED`, now with constraint `TABLE_SCROLL_INTRINSIC_CONSTRAINT`.
+- Evidence: the explicit signals are `structureMatches=true`, `rowDeltaUniform=true`, `cellsSmall=true`, `tableScrollTracksWidth=true`, `clientTracksWidth=true`, `cssMetricCandidatesRejected=true`, table scrollWidth delta `-69px`, first cell delta `-0.188px`, and actual/local table width `0.948x`.
+- Current evidence: next YSHY renderer work should model table scroll/client intrinsic width directly. Crop-origin, measured width declarations, spacing/letter replay, transform, and broad font CSS remain rejected or misrouted.
+
 ## 2026-07-13 YSHY Intrinsic Width Model Routing
 
 - Root cause hypothesis refined: after actual-font and crop-origin source-context candidates were rejected, the remaining YSHY/CoC blocker should be treated as a table scroll/intrinsic width calculation problem, not a CSS declaration replay problem.

@@ -490,6 +490,9 @@ function buildConstraintModel({ deltas, rowCellDeltas, structureDeltas, ratios, 
   } else if (tableWideOnly && tableScrollTracksWidth && styleProof.transformContradicted && cssMetricCandidatesRejected) {
     decision = 'TABLE_SCROLL_INTRINSIC_CONSTRAINT_NOT_TRANSFORM';
     nextAction = 'model Roll20 table scroll/intrinsic width calculation; table structure matches and transform/spacing are rejected';
+  } else if (tableWideOnly && tableScrollTracksWidth && clientTracksWidth && cssMetricCandidatesRejected) {
+    decision = 'TABLE_SCROLL_INTRINSIC_CONSTRAINT';
+    nextAction = 'model Roll20 table scroll/client intrinsic width calculation; row/cell/text structure matches and CSS metric candidates are rejected';
   } else if (tableWideOnly && styleProof.transformContradicted && cssMetricCandidatesRejected) {
     decision = 'TABLE_WIDE_CONSTRAINT_NOT_TRANSFORM';
     nextAction = 'model Roll20 table intrinsic/max-content sizing and sanitize/font activation; do not use transform or global spacing CSS';
@@ -553,6 +556,9 @@ function decideIntrinsic({ deltas, rowCellDeltas, structureDeltas, styleProof, p
     return 'TABLE_STRUCTURE_MODEL_REQUIRED';
   }
   if (constraintModel?.decision === 'TABLE_SCROLL_INTRINSIC_CONSTRAINT_NOT_TRANSFORM') {
+    return 'TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED';
+  }
+  if (constraintModel?.decision === 'TABLE_SCROLL_INTRINSIC_CONSTRAINT') {
     return 'TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED';
   }
   if (constraintModel?.decision === 'TABLE_WIDE_CONSTRAINT_NOT_TRANSFORM') {

@@ -1,3 +1,10 @@
+## 2026-07-13 YSHY Intrinsic Constraint Classification TODO Note
+
+- DONE: `diagnose:roll20-chat-intrinsic-width` now classifies table-wide scroll/client width deltas as `TABLE_SCROLL_INTRINSIC_CONSTRAINT` even when the active style-proof set does not include a transform-contradicted candidate.
+- VERIFIED: Rerun at `..\_tmp_codex_smoke\chat-intrinsic-width-yshy-crop-origin-actual-font-20260713-r2` keeps YSHY at `TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED`, but the constraint model is no longer vague `CONSTRAINT_SECONDARY`.
+- EVIDENCE: YSHY constraint signals are now explicit: structure matches, row deltas are uniform, cells are small-delta, `tableScrollTracksWidth=true`, `clientTracksWidth=true`, `cssMetricCandidatesRejected=true`, table scrollWidth delta `-69px`, first cell delta `-0.188px`, actual/local table width `0.948x`.
+- CURRENT: Next renderer experiment should be a direct table scroll/client intrinsic width model. Do not spend another pass on crop-origin, measured width declarations, spacing/letter replay, transform, or broad font CSS.
+
 ## 2026-07-13 YSHY Intrinsic Width Model TODO Note
 
 - VERIFIED: `diagnose:roll20-chat-intrinsic-width` against the rejected crop-origin actual-font smoke wrote ignored output to `..\_tmp_codex_smoke\chat-intrinsic-width-yshy-crop-origin-actual-font-20260713-r1`.
