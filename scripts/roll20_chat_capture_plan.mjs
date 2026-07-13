@@ -572,6 +572,8 @@ function renderDomProbeSnippet(entry) {
       position: style.position,
       boxSizing: style.boxSizing,
       width: style.width,
+      minWidth: style.minWidth,
+      maxWidth: style.maxWidth,
       height: style.height,
       margin: style.margin,
       padding: style.padding,

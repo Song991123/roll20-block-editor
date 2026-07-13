@@ -1,3 +1,16 @@
+## 2026-07-13 CoC Table Intrinsic Clamp Rejection
+
+- Root cause hypothesis tested: the existing diagnostic `coc-table-intrinsic-clamp` might reproduce Roll20 by constraining the YSHY/CoC table with `max-width` while keeping transform-free table layout.
+- Updated local and Roll20 chat capture style sidecars to include `minWidth` and `maxWidth`, then surfaced computed max-width overflow notes in the intrinsic probes.
+- Verification: `node --check scripts\rolltemplate_chat_smoke.mjs`, `node --check scripts\roll20_chat_capture_plan.mjs`, `node --check scripts\roll20_chat_table_intrinsic_probe.mjs`, and `node --check scripts\roll20_chat_intrinsic_width_model.mjs` passed.
+- Verification: `node scripts\rolltemplate_chat_smoke.mjs --out-dir .\out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-coc-table-intrinsic-clamp-20260713-r2 --chat-geometry-policy coc-table-intrinsic-clamp --chat-typography-policy yshy-table-font-context --port 4403` passed 3/3 fixtures.
+- Verification: `corepack pnpm run gate:roll20-chat-candidate-experiment -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --candidate coc-table-intrinsic-clamp --candidate-smoke ..\_tmp_codex_smoke\rolltemplate-chat-smoke-coc-table-intrinsic-clamp-20260713-r2\rolltemplate-chat-smoke-results.json --candidate-screenshots ..\_tmp_codex_smoke\rolltemplate-chat-smoke-coc-table-intrinsic-clamp-20260713-r2\screenshots --source-context-dir ..\_tmp_codex_smoke\chat-source-context-source-css-audit-20260713-r4 --out-dir ..\_tmp_codex_smoke\candidate-experiment-coc-table-intrinsic-clamp-20260713-r2` returned `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Evidence: the candidate regressed AW2E and YSHY (`meanAlignedDeltaPct=16.47`, fixture deltas `AW2E=+41.04`, `YSHY=+8.36`), contradicted actual Roll20 styles for AW2E/Les-Oublies, and regressed row raster (`AW2E +44.07`, `YSHY +10.14` weighted).
+- Evidence: YSHY local candidate has computed `maxWidth=1249px`, but table used width and scroll width stay around `1317px`; `diagnose:roll20-chat-table-intrinsic-probe` records `local table used width +1317.141px exceeds computed max-width +1249px`.
+- Fixed a truthfulness bug in `scripts/roll20_chat_intrinsic_width_model.mjs`: missing `maxWidth` is now `null`, not a misleading `0px`. Rerun at `..\_tmp_codex_smoke\chat-intrinsic-width-coc-table-intrinsic-clamp-20260713-r3` keeps only verified local max-width overflow evidence.
+- Server hygiene: after the smoke, `corepack pnpm run check:server-hygiene -- --kill-project` and the normal hygiene check preserved CDP `9222` and left no project server listeners.
+- Current evidence: `coc-table-intrinsic-clamp` is rejected. The next YSHY/CoC renderer work should model table auto-layout/min-content behavior directly, alongside crop/top-origin evidence; do not retry max-width, transform, spacing, or broad font patches.
+
 ## 2026-07-13 Source CSS Audit in Source-Context Probe
 
 - Root cause refinement: YSHY table intrinsic work needs to know what the original rolltemplate CSS actually declared, not only local/actual computed styles. The relevant source block has `width: 100%` and `max-width: 280px`, while local/actual used table widths are far larger.

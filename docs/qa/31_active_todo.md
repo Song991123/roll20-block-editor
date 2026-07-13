@@ -1,3 +1,12 @@
+## 2026-07-13 CoC Table Intrinsic Clamp Rejection TODO Note
+
+- DONE: Reran diagnostic-only `coc-table-intrinsic-clamp` with YSHY table font context after adding `minWidth`/`maxWidth` to local and Roll20 chat capture style sidecars.
+- VERIFIED: `rolltemplate_chat_smoke` passed 3/3 fixtures at `..\_tmp_codex_smoke\rolltemplate-chat-smoke-coc-table-intrinsic-clamp-20260713-r2`.
+- VERIFIED: `gate:roll20-chat-candidate-experiment` at `..\_tmp_codex_smoke\candidate-experiment-coc-table-intrinsic-clamp-20260713-r2` rejected the candidate with `HOLD_PRODUCTION_RENDERER_PATCH`, `reject-regresses-fixtures`, `REJECT_STYLE_CONTRADICTION`, and `reject-row-raster-regression`.
+- EVIDENCE: YSHY local candidate computed `maxWidth=1249px`, but the table used width and scroll width stayed about `1317px`; `diagnose:roll20-chat-table-intrinsic-probe` at `..\_tmp_codex_smoke\chat-table-intrinsic-coc-table-intrinsic-clamp-20260713-r2` records `local table used width +1317.141px exceeds computed max-width +1249px`.
+- FIXED: `diagnose:roll20-chat-intrinsic-width` no longer reports missing actual `maxWidth` as fake `0px`; rerun at `..\_tmp_codex_smoke\chat-intrinsic-width-coc-table-intrinsic-clamp-20260713-r3` keeps only the verified local max-width evidence.
+- CURRENT: Do not retry `coc-table-intrinsic-clamp` as production CSS. Next YSHY P0 is a real table auto-layout/min-content model, likely around table formatting context and crop/top-origin, not another `max-width`, transform, spacing, or broad font patch.
+
 ## 2026-07-13 Source CSS Audit TODO Note
 
 - DONE: `diagnose:roll20-chat-source-context` now reads fixture `source.css` through `--fixtures-dir` and records exact rolltemplate source declarations for root/table/caption/td targets.

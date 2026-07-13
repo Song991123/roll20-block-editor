@@ -166,7 +166,7 @@ async function summarizeFixture(fixtureId, reports) {
     intrinsicDecision: intrinsic?.intrinsicDecision ?? '',
     local: localNodes,
     actual: actualNodes,
-    evidence: evidenceNotes({ deltas, rowModel, styleDeltas, candidateSignals, budget }),
+    evidence: evidenceNotes({ deltas, rowModel, styleDeltas, candidateSignals, budget, localNodes, actualNodes }),
   };
 }
 
@@ -205,6 +205,8 @@ function pickStyle(style) {
     'display',
     'boxSizing',
     'width',
+    'minWidth',
+    'maxWidth',
     'fontFamily',
     'fontSize',
     'lineHeight',
@@ -306,7 +308,7 @@ function nextAction(decision) {
   }
 }
 
-function evidenceNotes({ deltas, rowModel, styleDeltas, candidateSignals, budget }) {
+function evidenceNotes({ deltas, rowModel, styleDeltas, candidateSignals, budget, localNodes, actualNodes }) {
   const notes = [];
   notes.push(`root width delta ${fmtPx(deltas.rootWidth)}`);
   notes.push(`table width delta ${fmtPx(deltas.tableWidth)}`);
@@ -317,6 +319,12 @@ function evidenceNotes({ deltas, rowModel, styleDeltas, candidateSignals, budget
   notes.push(`max cell delta ${fmtPx(rowModel.maxAbsCellDelta)}`);
   if (Math.abs(rowModel.maxAbsTopDelta ?? 0) >= 24) notes.push(`uniform top offset ${fmtPx(rowModel.maxAbsTopDelta)}`);
   if (budget?.budgetDecision) notes.push(`budget decision ${budget.budgetDecision}`);
+  for (const [label, table] of [['local', localNodes.table], ['actual', actualNodes.table]]) {
+    const maxWidth = cssPx(table?.style?.maxWidth);
+    if (maxWidth != null && table?.width != null && table.width > maxWidth + 1) {
+      notes.push(`${label} table used width ${fmtPx(table.width)} exceeds computed max-width ${fmtPx(maxWidth)}`);
+    }
+  }
   const tableStyleKeys = Object.keys(styleDeltas.table ?? {});
   if (tableStyleKeys.length) notes.push(`table style differs: ${tableStyleKeys.join(', ')}`);
   if (candidateSignals.best?.name) notes.push(`best current candidate ${candidateSignals.best.name} (${candidateSignals.best.deltaPct}%)`);
@@ -411,6 +419,11 @@ function countBy(values) {
 
 function fmtPx(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `${value > 0 ? '+' : ''}${Number(value.toFixed(3))}px` : 'n/a';
+}
+
+function cssPx(value) {
+  const match = String(value ?? '').trim().match(/^(-?\d+(?:\.\d+)?)px$/i);
+  return match ? Number(match[1]) : null;
 }
 
 main().catch((error) => {

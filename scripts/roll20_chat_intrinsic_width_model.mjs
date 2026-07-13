@@ -192,7 +192,11 @@ function extractElement(element) {
     width: numberOrNull(element.rect?.width),
     height: numberOrNull(element.rect?.height),
     computedWidth: px(element.computedStyle?.width),
+    computedMinWidth: cssLengthOrNull(element.computedStyle?.minWidth),
+    computedMaxWidth: cssLengthOrNull(element.computedStyle?.maxWidth),
     computedHeight: px(element.computedStyle?.height),
+    minWidth: normalizeCssValue(element.computedStyle?.minWidth),
+    maxWidth: normalizeCssValue(element.computedStyle?.maxWidth),
     fontFamily: normalizeCssValue(element.computedStyle?.fontFamily),
     fontSize: px(element.computedStyle?.fontSize),
     lineHeight: px(element.computedStyle?.lineHeight),
@@ -641,6 +645,11 @@ function evidenceNotes({ deltas, rowCellDeltas, structureDeltas, ratios, stylePr
   if (styleProof.transformContradicted) notes.push('actual Roll20 table transform is none; scaleX candidate rejected');
   if (candidateEvidence.spacingRejectedOrNoGain) notes.push('spacing/letter candidates rejected or no-gain in pixel comparison');
   if (Math.abs(deltas.tableWidthDelta ?? 0) >= 8) notes.push(`table width delta ${fmtPx(deltas.tableWidthDelta)}`);
+  for (const [label, table] of [['local', local.table], ['actual', actual.table]]) {
+    if (table?.computedMaxWidth != null && table?.width != null && table.width > table.computedMaxWidth + 1) {
+      notes.push(`${label} table used width ${fmtPx(table.width)} exceeds computed max-width ${fmtPx(table.computedMaxWidth)}`);
+    }
+  }
   if (Math.abs(deltas.fontSizeDelta ?? 0) >= 0.5) notes.push(`table font-size delta ${fmtPx(deltas.fontSizeDelta)}`);
   if (Math.abs(deltas.letterSpacingDelta ?? 0) >= 0.1) notes.push(`letter-spacing delta ${fmtPx(deltas.letterSpacingDelta)}`);
   if (Math.abs(deltas.borderSpacingXDelta ?? 0) >= 0.5) notes.push(`border-spacing-x delta ${fmtPx(deltas.borderSpacingXDelta)}`);
@@ -755,6 +764,12 @@ function px(value) {
 
 function cssLength(value) {
   if (value == null || value === '' || value === 'normal') return 0;
+  const match = String(value).match(/-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : null;
+}
+
+function cssLengthOrNull(value) {
+  if (value == null || value === '' || value === 'normal' || value === 'none') return null;
   const match = String(value).match(/-?\d+(?:\.\d+)?/);
   return match ? Number(match[0]) : null;
 }
