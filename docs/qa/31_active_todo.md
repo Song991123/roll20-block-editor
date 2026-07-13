@@ -1,3 +1,12 @@
+## 2026-07-13 AW2E Cell Context Axis Rejection TODO Note
+
+- DONE: Split the AW2E source-context hypothesis into two narrower smoke candidates: `aw2e-message-cell-font-context` and `aw2e-message-cell-wrap-context`.
+- VERIFIED: Both narrow candidates passed 3/3 functional rolltemplate smoke, so the rejection is visual/style evidence, not a click/runtime failure.
+- VERIFIED: Candidate comparison rejected both: `risk=reject-regresses-fixtures`, mean `16.3%`, regressions `2`, AW2E aligned mismatch about `59.3%`, YSHY delta `+7.62%`.
+- VERIFIED: Row-raster comparison rejected both: AW2E weighted about `62.1%` (`+44.17` / `+44.15`), worst about `65.7%` (`+39.48` / `+39.42`), YSHY weighted `30.09%` (`+8.68`).
+- VERIFIED: Style proof rejected both with `REJECT_STYLE_CONTRADICTION`: local AW2E table width `547.921875px` vs actual Roll20 `359.53125px`, and row text-cell widths roughly doubled.
+- CURRENT: Do not promote AW2E `27.3px` cell font/context or wrap-context candidates. The next useful P0 is a table intrinsic/source-model probe that explains why actual Roll20 keeps the AW2E table around `359.5px` while local context expands to `547.9px`.
+
 ## 2026-07-13 AW2E Source-Context Candidate Rejection TODO Note
 
 - DONE: Added `aw2e-message-source-context` as a diagnostic-only candidate route for candidate comparison, row-raster comparison, style proof, and targeted renderer planning.

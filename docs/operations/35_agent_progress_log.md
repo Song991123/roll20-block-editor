@@ -1,3 +1,14 @@
+## 2026-07-13 AW2E Cell Context Axis Rejection
+
+- Root cause tested: after the combined AW2E source-context candidate was rejected, the next question was whether the regression came from the AW2E message shell, the `27.3px` cell font context, or the wrap/color context. The diagnostic split tested the cell-font axis and the cell-wrap axis separately without promoting product CSS.
+- Verification: `node scripts\rolltemplate_chat_smoke.mjs --out-dir .\out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-cell-font-context-20260713-r1 --chat-typography-policy aw2e-message-cell-font-context --port 4396` passed 3/3 functional rolltemplate smoke.
+- Verification: `node scripts\rolltemplate_chat_smoke.mjs --out-dir .\out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-cell-wrap-context-20260713-r1 --chat-typography-policy aw2e-message-cell-wrap-context --port 4397` passed 3/3 functional rolltemplate smoke.
+- Evidence: candidate comparison rejected both narrow candidates with `risk=reject-regresses-fixtures`, mean `16.3%`, regressions `2`, AW2E aligned mismatch about `59.3%`, and YSHY aligned delta `+7.62%`.
+- Evidence: row-raster comparison rejected both. `aw2e-message-cell-font-context` had AW2E weighted `62.1%` (`+44.17`) and worst `65.76%` (`+39.48`); `aw2e-message-cell-wrap-context` had AW2E weighted `62.08%` (`+44.15`) and worst `65.7%` (`+39.42`).
+- Evidence: style proof rejected both with `REJECT_STYLE_CONTRADICTION`; local AW2E table width was `547.921875px` while actual Roll20 was `359.53125px`, and local row text-cell widths were roughly doubled (`151.0625` vs `85.53125`, `167.4375` vs `93.71875`).
+- Server hygiene: `corepack pnpm run check:server-hygiene` passed after both smokes and diagnostics. No project dev/smoke listener remained; the CDP listener on `127.0.0.1:9222` was preserved.
+- Current evidence: the `27.3px` AW2E cell font/context path is unsafe. The next useful P0 is a table intrinsic/source-model probe rather than another broad typography replay. This does not prove visual parity or authorize production renderer CSS.
+
 ## 2026-07-13 AW2E Source-Context Candidate Rejection
 
 - Root cause tested: the previous renderer gate pointed at AW2E source-context proof (`RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED`). A tempting next step was to combine AW2E's full-width Roll20 chat message shell with Roll20-observed AW2E cell font/wrap context as one scoped local renderer candidate.
