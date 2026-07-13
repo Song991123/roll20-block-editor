@@ -26,6 +26,8 @@ const RUN_DIR = path.resolve(readOption('--run-dir', args[0] ?? ''));
 const FIXTURE_ID = readOption('--fixture', args[1] ?? '');
 const CDP_URL = readOption('--cdp', process.env.ROLL20_CDP_URL ?? 'http://127.0.0.1:9222');
 const PAGE_MATCH = readOption('--page-match', 'app.roll20.net');
+const OUT_DIR_RAW = readOption('--out-dir', '');
+const OUT_DIR = OUT_DIR_RAW ? path.resolve(OUT_DIR_RAW) : '';
 
 if (SELF_TEST) {
   runSelfTest();
@@ -33,13 +35,14 @@ if (SELF_TEST) {
 }
 
 if (!RUN_DIR || !FIXTURE_ID) {
-  console.error('Usage: node scripts/roll20_sheet_frame_probe.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--page-match app.roll20.net] [--dry-run] [--plan-only] [--self-test]');
+  console.error('Usage: node scripts/roll20_sheet_frame_probe.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--out-dir <ignored-temp-dir>] [--cdp http://127.0.0.1:9222] [--page-match app.roll20.net] [--dry-run] [--plan-only] [--self-test]');
   process.exit(2);
 }
 
 const payloadDir = path.join(RUN_DIR, 'local-baseline', FIXTURE_ID, 'payload');
 const screenshotsDir = path.join(RUN_DIR, 'local-baseline', FIXTURE_ID, 'screenshots');
-const sidecarPath = path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json');
+const canonicalSidecarPath = path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json');
+const sidecarPath = path.join(OUT_DIR || screenshotsDir, 'roll20-sandbox-dom-evidence.json');
 
 main().catch((error) => {
   const message = String(error?.message ?? error);
@@ -56,13 +59,14 @@ async function main() {
   if (!existsSync(payloadDir)) throw new Error(`missing payload dir: ${payloadDir}`);
   const sourceTexts = await readPayloadTexts(payloadDir);
   const hints = extractActivationHints(sourceTexts);
-  await mkdir(screenshotsDir, { recursive: true });
+  await mkdir(OUT_DIR || screenshotsDir, { recursive: true });
 
   if (PLAN_ONLY) {
     console.log('ROLL20 SHEET FRAME PROBE PLAN_ONLY');
     console.log(`fixture=${FIXTURE_ID}`);
     console.log(`run=${rel(RUN_DIR)}`);
     console.log(`sidecar=${rel(sidecarPath)}`);
+    if (OUT_DIR) console.log(`canonicalSidecar=${rel(canonicalSidecarPath)}`);
     console.log(`cdp=${CDP_URL}`);
     console.log(`pageMatch=${PAGE_MATCH}`);
     console.log(`expectedRollButtons=${hints.rollButtonNames.slice(0, 8).join(', ') || '(none)'}`);
@@ -115,6 +119,7 @@ async function main() {
         `rootCount=${best?.rootCount ?? 0}`,
         `rollButtonCount=${best?.counts?.rollButtonCount ?? 0}`,
         `attrCount=${best?.counts?.attrCount ?? 0}`,
+        `activationMatch=${best?.activationMatch?.reason ?? 'none'}`,
         'Open the intended character sheet iframe/tab or verify the generated fixture was applied before saving DOM evidence.',
       ].join('\n'));
     }
@@ -140,7 +145,11 @@ async function main() {
       candidates: probe.candidates,
       nextAction: 'Capture Roll20 root/chat screenshots from the same loaded fixture, then rerun screenshot diff and status gates.',
     };
-    await writeFile(sidecarPath, `${JSON.stringify(sidecar, null, 2)}\n`, 'utf8');
+    const writeResult = await writeJsonWithFallback(sidecarPath, sidecar, {
+      fixtureId: FIXTURE_ID,
+      label: 'roll20-sandbox-dom-evidence',
+      allowFallback: !OUT_DIR,
+    });
 
     console.log('ROLL20 SHEET FRAME PROBE PASS');
     console.log(`fixture=${FIXTURE_ID}`);
@@ -150,9 +159,32 @@ async function main() {
     console.log(`rootCount=${sidecar.rootCount}`);
     console.log(`attrCount=${sidecar.counts.attrCount}`);
     console.log(`rollButtonCount=${sidecar.counts.rollButtonCount}`);
-    console.log(`sidecar=${rel(sidecarPath)}`);
+    if (writeResult.fallbackReason) console.log(`WARNING sidecar write fallback=${writeResult.fallbackReason}`);
+    console.log(`sidecar=${rel(writeResult.path)}`);
+    if (writeResult.path !== sidecarPath) console.log(`requestedSidecar=${rel(sidecarPath)}`);
   } finally {
     await browser.close();
+  }
+}
+
+async function writeJsonWithFallback(targetPath, payload, { fixtureId, label, allowFallback }) {
+  try {
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+    return { path: targetPath, fallbackReason: '' };
+  } catch (error) {
+    const message = String(error?.message ?? error);
+    const locked = /EPERM|EACCES|EBUSY|permission denied|resource busy/i.test(message);
+    if (!allowFallback || !locked) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `sheet-frame-probe-${safeName(fixtureId)}-${Date.now()}`,
+    );
+    const fallbackPath = path.join(fallbackDir, `${label}.json`);
+    await mkdir(fallbackDir, { recursive: true });
+    await writeFile(fallbackPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+    return { path: fallbackPath, fallbackReason: message.split('\n')[0] };
   }
 }
 
@@ -326,11 +358,13 @@ async function probeSheetFrames(page, hints) {
       }, hints);
       const sheetHitCount = result.hits.rollButtonNames.length + result.hits.attrNames.length + result.hits.textTokens.length;
       const chatTemplateHitCount = result.hits.rolltemplateClasses.length;
+      const activationMatch = classifyActivationMatch(result.hits);
       candidates.push({
         frame: frameMeta,
         ...result,
         sheetHitCount,
         chatTemplateHitCount,
+        activationMatch,
         textMarkers: {
           expectedSheetText: result.hits.textTokens.length > 0,
           expectedAttr: result.hits.attrNames.length > 0,
@@ -353,9 +387,25 @@ async function probeSheetFrames(page, hints) {
   candidates.sort((a, b) => scoreProbe(b) - scoreProbe(a));
   const bestProbe = candidates[0] ?? null;
   return {
-    status: bestProbe && bestProbe.sheetHitCount > 0 ? 'VISIBLE_MATCH' : 'NOT_PROVEN',
+    status: bestProbe && bestProbe.activationMatch?.ok ? 'VISIBLE_MATCH' : 'NOT_PROVEN',
     bestProbe,
     candidates,
+  };
+}
+
+function classifyActivationMatch(hits) {
+  const rollButtons = hits?.rollButtonNames?.length ?? 0;
+  const attrs = hits?.attrNames?.length ?? 0;
+  const text = hits?.textTokens?.length ?? 0;
+  if (rollButtons > 0) return { ok: true, reason: 'expected roll button marker matched', rollButtons, attrs, text };
+  if (text > 0) return { ok: true, reason: 'expected visible text marker matched', rollButtons, attrs, text };
+  if (attrs >= 5) return { ok: true, reason: 'five or more expected attr markers matched', rollButtons, attrs, text };
+  return {
+    ok: false,
+    reason: `weak marker match: rollButtons=${rollButtons}, attrs=${attrs}, text=${text}`,
+    rollButtons,
+    attrs,
+    text,
   };
 }
 
@@ -443,6 +493,10 @@ function readOption(name, fallback = '') {
   const prefix = `${name}=`;
   const match = args.find((arg) => arg.startsWith(prefix));
   return match ? match.slice(prefix.length) : fallback;
+}
+
+function safeName(value) {
+  return String(value || 'fixture').replace(/[^a-z0-9_-]+/gi, '-').slice(0, 80) || 'fixture';
 }
 
 function finiteNumber(value) {

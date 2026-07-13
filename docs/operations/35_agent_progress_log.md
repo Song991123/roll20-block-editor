@@ -1,3 +1,14 @@
+## 2026-07-13 Strict Sheet-Frame Evidence and Temp Capture Routing
+
+- Root cause refinement: the live Roll20 page was capture-ready, but the currently opened character sheet was only weakly matching `yshy-commission-1bu` through generic `attr_str`/`attr_int` markers. That is not enough to trust a YSHY chat capture.
+- Added `--out-dir` support to `scripts/roll20_sheet_frame_probe.mjs` and `scripts/roll20_chat_cdp_capture.mjs` so fresh actual Roll20 evidence can be written under ignored temp directories instead of rewriting locked canonical screenshots.
+- Added `--sheet-frame-evidence` to chat capture, and `--actual-sidecar <fixture-id>=<json>` to `scripts/roll20_chat_table_layout_constraint_probe.mjs`, allowing temp sheet-frame/chat evidence to flow into diagnostics without copying private evidence into canonical reports.
+- Tightened sheet-frame proof: `VISIBLE_MATCH` now requires an expected roll button marker, expected visible text marker, or at least five expected attr markers. Weak matches such as only `attr_str`/`attr_int` now return `NOT_PROVEN`.
+- Live evidence: `probe:roll20-sheet-frame` for Witrav Upijek against `yshy-commission-1bu` now blocks with `activationMatch=weak marker match: rollButtons=0, attrs=2, text=0`.
+- Live evidence: a no-click chat capture wrote temp files, but selected `sheet-rolltemplate-classic-roll`; it is not YSHY `sheet-rolltemplate-coc` evidence and was not fed into the YSHY table-layout probe.
+- Verification: `test:roll20-sheet-frame-probe`, `test:roll20-chat-cdp-readiness`, and syntax checks for `roll20_sheet_frame_probe.mjs`, `roll20_chat_cdp_capture.mjs`, and `roll20_chat_table_layout_constraint_probe.mjs` passed.
+- Current evidence: before the YSHY max-width/min-width recapture can continue, the dedicated Roll20 Sandbox/test room must be reloaded/applied with the correct `yshy-commission-1bu` payload and must pass strict sheet-frame proof. This is an activation/setup blocker, not a renderer parity pass.
+
 ## 2026-07-13 Table Layout Constraint Probe
 
 - Root cause refinement: after `coc-table-intrinsic-clamp` was rejected, the missing piece was distinguishing an ineffective CSS constraint from a true Roll20 table auto-layout/min-content constraint.

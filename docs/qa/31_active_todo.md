@@ -1,3 +1,13 @@
+## 2026-07-13 Strict Roll20 Sheet-Frame Match TODO Note
+
+- DONE: `probe:roll20-sheet-frame` and `capture:roll20-chat-cdp` now support ignored temp output paths, so locked canonical Roll20 evidence folders no longer force agents to overwrite stale reports.
+- DONE: `diagnose:roll20-chat-table-layout-constraint` now accepts `--actual-sidecar <fixture-id>=<json>`, allowing a fresh temp Roll20 chat sidecar to feed the table-layout probe without copying evidence into `reports/`.
+- FIXED: Sheet-frame proof no longer treats a weak generic attr match such as `attr_str`/`attr_int` as `VISIBLE_MATCH`. A fixture now needs an expected roll button marker, expected visible text marker, or at least five expected attr markers before chat capture can trust it.
+- VERIFIED: `corepack pnpm run test:roll20-sheet-frame-probe`, `corepack pnpm run test:roll20-chat-cdp-readiness`, and syntax checks for the three touched scripts passed.
+- LIVE CHECK: Current Roll20 Witrav/YSHY attempt is now correctly blocked as `NOT_PROVEN`: `sheetHitCount=2`, `rollButtons=0`, `attrs=2`, `text=0`, activation reason `weak marker match`.
+- LIVE CHECK: A temp chat capture without clicking did succeed, but it selected `sheet-rolltemplate-classic-roll`, not YSHY `sheet-rolltemplate-coc`; that capture is not valid evidence for the YSHY CoC table P0.
+- CURRENT: Next YSHY P0 is no longer plain recapture. First reload/apply the correct `yshy-commission-1bu` payload in the dedicated Sandbox/test room until strict sheet-frame proof records strong fixture markers, then recapture `sheet-rolltemplate-coc` chat with `minWidth/maxWidth` fields and feed it through the table-layout constraint probe.
+
 ## 2026-07-13 Table Layout Constraint Probe TODO Note
 
 - DONE: Added `diagnose:roll20-chat-table-layout-constraint` to separate ineffective width/min-width/max-width constraints from table auto-layout/min-content behavior.

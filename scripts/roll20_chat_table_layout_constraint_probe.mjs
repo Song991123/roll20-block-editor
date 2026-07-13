@@ -16,6 +16,7 @@ const optionNamesWithValues = new Set([
   '--source-context-dir',
   '--intrinsic-width-dir',
   '--table-intrinsic-dir',
+  '--actual-sidecar',
 ]);
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
@@ -25,6 +26,7 @@ const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-tabl
 const sourceContextDir = path.resolve(readOption('--source-context-dir', path.join(runDir, 'chat-source-context-probe')));
 const intrinsicWidthDir = path.resolve(readOption('--intrinsic-width-dir', path.join(runDir, 'chat-intrinsic-width-model')));
 const tableIntrinsicDir = path.resolve(readOption('--table-intrinsic-dir', path.join(runDir, 'chat-table-intrinsic-probe')));
+const actualSidecarOverrides = readKeyValueOptions('--actual-sidecar');
 
 async function main() {
   const smoke = await readJson(smokePath);
@@ -47,6 +49,7 @@ async function main() {
       sourceContextDir: rel(sourceContextDir),
       intrinsicWidthDir: rel(intrinsicWidthDir),
       tableIntrinsicDir: rel(tableIntrinsicDir),
+      actualSidecars: Object.fromEntries([...actualSidecarOverrides].map(([fixtureId, file]) => [fixtureId, rel(file)])),
     },
     scope: 'diagnostic-only chat table auto-layout constraint probe; no production CSS',
     summary: {
@@ -72,7 +75,9 @@ async function main() {
 
 async function summarizeFixture(fixtureId, reports) {
   const localTemplate = localTemplateFor(reports.smoke, fixtureId);
-  const actualSidecar = await readOptionalJson(path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json'));
+  const actualSidecarPath = actualSidecarOverrides.get(fixtureId)
+    ?? path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
+  const actualSidecar = await readOptionalJson(actualSidecarPath);
   const actualTemplate = actualSidecar?.latestTemplate ?? null;
   const local = summarizeTemplate(localTemplate);
   const actual = summarizeTemplate(actualTemplate);
@@ -88,6 +93,7 @@ async function summarizeFixture(fixtureId, reports) {
       nextAction: 'regenerate local smoke and actual Roll20 chat DOM sidecars before layout constraint modeling',
       hasLocal: Boolean(local),
       hasActual: Boolean(actual),
+      actualSidecarPath: rel(actualSidecarPath),
       signals: {},
       deltas: {},
       evidence: [],
@@ -115,6 +121,7 @@ async function summarizeFixture(fixtureId, reports) {
     sourceTableSummary: source?.sourceCssAudit?.targets?.table?.summary ?? '',
     local,
     actual,
+    actualSidecarPath: rel(actualSidecarPath),
     deltas,
     signals,
     evidence: evidenceNotes({ decision, signals, deltas }),
@@ -317,6 +324,32 @@ function readOption(name, fallback = '') {
   if (index < 0) return fallback;
   const value = rawArgs[index + 1];
   return value && !value.startsWith('--') ? value : fallback;
+}
+
+function readKeyValueOptions(name) {
+  const values = new Map();
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    const arg = rawArgs[index];
+    let raw = '';
+    if (arg === name) {
+      raw = rawArgs[index + 1] ?? '';
+      index += 1;
+    } else if (arg.startsWith(`${name}=`)) {
+      raw = arg.slice(name.length + 1);
+    }
+    if (!raw) continue;
+    const separator = raw.indexOf('=');
+    if (separator <= 0) {
+      throw new Error(`Expected ${name} <fixture-id>=<path>, got: ${raw}`);
+    }
+    const key = raw.slice(0, separator);
+    const value = raw.slice(separator + 1);
+    if (!key || !value) {
+      throw new Error(`Expected ${name} <fixture-id>=<path>, got: ${raw}`);
+    }
+    values.set(key, path.resolve(value));
+  }
+  return values;
 }
 
 async function readJson(file) {

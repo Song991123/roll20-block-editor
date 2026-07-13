@@ -31,6 +31,8 @@ const WAIT_MS = Number(readOption('--wait-ms', '1500'));
 const DRY_RUN = hasFlag('--dry-run');
 const PLAN_ONLY = hasFlag('--plan-only') || hasFlag('--print-plan');
 const SELF_TEST_READINESS = hasFlag('--self-test-readiness');
+const OUT_DIR_RAW = readOption('--out-dir', '');
+const OUT_DIR = OUT_DIR_RAW ? path.resolve(OUT_DIR_RAW) : '';
 
 if (SELF_TEST_READINESS) {
   runReadinessSelfTest();
@@ -38,17 +40,18 @@ if (SELF_TEST_READINESS) {
 }
 
 if (!RUN_DIR || !FIXTURE_ID) {
-  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--expected-template-class sheet-rolltemplate-name] [--skip-click] [--keep-dialogs] [--dry-run] [--plan-only] [--self-test-readiness]');
+  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--out-dir <ignored-temp-dir>] [--sheet-frame-evidence <json>] [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--expected-template-class sheet-rolltemplate-name] [--skip-click] [--keep-dialogs] [--dry-run] [--plan-only] [--self-test-readiness]');
   process.exit(2);
 }
 
 const screenshotsDir = path.join(RUN_DIR, 'local-baseline', FIXTURE_ID, 'screenshots');
+const outputDir = OUT_DIR || screenshotsDir;
 const snippetPath = path.join(RUN_DIR, 'roll20-chat-capture-plan', 'snippets', `${FIXTURE_ID}-chat-dom-probe-snippet.js`);
-const chatPngPath = path.join(screenshotsDir, 'roll20-chat.png');
-const sidecarPath = path.join(screenshotsDir, 'roll20-chat-dom-evidence.json');
-const sheetFrameEvidencePath = path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json');
-const sheetFrameProbeCommand = `corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}`;
-const chatCaptureCommand = `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}`;
+const chatPngPath = path.join(outputDir, 'roll20-chat.png');
+const sidecarPath = path.join(outputDir, 'roll20-chat-dom-evidence.json');
+const sheetFrameEvidencePath = path.resolve(readOption('--sheet-frame-evidence', path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json')));
+const sheetFrameProbeCommand = `corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}${OUT_DIR ? ` --out-dir ${rel(path.join(OUT_DIR, 'sheet-frame'))}` : ''}`;
+const chatCaptureCommand = `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}${OUT_DIR ? ` --out-dir ${rel(OUT_DIR)}` : ''}${sheetFrameEvidencePath !== path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json') ? ` --sheet-frame-evidence ${rel(sheetFrameEvidencePath)}` : ''}`;
 
 main().catch((error) => {
   const message = String(error?.message ?? error);
@@ -65,7 +68,7 @@ async function main() {
   if (!existsSync(snippetPath)) {
     throw new Error(`missing chat probe snippet: ${snippetPath}\nRun: corepack pnpm run plan:roll20-chat-capture -- ${rel(RUN_DIR)} ${FIXTURE_ID} --require-current-metrics`);
   }
-  await mkdir(screenshotsDir, { recursive: true });
+  await mkdir(outputDir, { recursive: true });
 
   if (PLAN_ONLY) {
     const buttons = await suggestedRollButtons();
@@ -76,6 +79,7 @@ async function main() {
     console.log(`chatPng=${rel(chatPngPath)}`);
     console.log(`sidecar=${rel(sidecarPath)}`);
     console.log(`sheetFrameEvidence=${rel(sheetFrameEvidencePath)}`);
+    if (OUT_DIR) console.log(`canonicalScreenshotsDir=${rel(screenshotsDir)}`);
     console.log(`sheetFrameProbe=${sheetFrameProbeCommand}`);
     console.log(`cdp=${CDP_URL}`);
     console.log(`pageMatch=${PAGE_MATCH}`);
@@ -505,10 +509,20 @@ function classifySheetFrameEvidence(evidence, expectedFixture = FIXTURE_ID) {
   const expectedHits = (evidence.hits?.rollButtonNames?.length || 0)
     + (evidence.hits?.attrNames?.length || 0)
     + (evidence.hits?.textTokens?.length || 0);
-  if (sheetHitCount <= 0 && expectedHits <= 0 && !expectedMarkers) {
+  const strongHits = (evidence.hits?.rollButtonNames?.length || 0) > 0
+    || (evidence.hits?.textTokens?.length || 0) > 0
+    || (evidence.hits?.attrNames?.length || 0) >= 5
+    || evidence.activationMatch?.ok === true;
+  if (!strongHits && (sheetHitCount <= 0 && expectedHits <= 0 && !expectedMarkers)) {
     return {
       ok: false,
       note: 'sheet-frame evidence does not contain expected fixture markers; generic root/body evidence is not enough before chat capture',
+    };
+  }
+  if (!strongHits) {
+    return {
+      ok: false,
+      note: `sheet-frame evidence is too weak for fixture proof: rollButtons=${evidence.hits?.rollButtonNames?.length || 0}, attrs=${evidence.hits?.attrNames?.length || 0}, text=${evidence.hits?.textTokens?.length || 0}`,
     };
   }
   return {
@@ -668,8 +682,10 @@ async function pageSummary(page) {
 
 function readOption(name, fallback) {
   const index = args.indexOf(name);
-  if (index === -1) return fallback;
-  return args[index + 1] ?? fallback;
+  if (index !== -1) return args[index + 1] ?? fallback;
+  const prefix = `${name}=`;
+  const match = args.find((arg) => arg.startsWith(prefix));
+  return match ? match.slice(prefix.length) : fallback;
 }
 
 function hasFlag(name) {

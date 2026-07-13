@@ -31,6 +31,30 @@ only when a separate writable compile directory is needed.
 Isolated output proves the diagnostic can be rerun safely. It does not update
 canonical renderer gates by itself and must not be reported as visual parity.
 
+When refreshing actual Roll20 CDP evidence and the canonical screenshot folder
+is locked or should not be rewritten, keep the new evidence in ignored temp
+output and pass the sidecar path forward explicitly:
+
+```powershell
+corepack pnpm run probe:roll20-sheet-frame -- --run-dir reports\roll20-actual-compare\<run> `
+  --fixture <fixture-id> `
+  --out-dir ..\_tmp_codex_smoke\sheet-frame-<fixture>-<label>
+
+corepack pnpm run capture:roll20-chat-cdp -- --run-dir reports\roll20-actual-compare\<run> `
+  --fixture <fixture-id> `
+  --sheet-frame-evidence ..\_tmp_codex_smoke\sheet-frame-<fixture>-<label>\roll20-sandbox-dom-evidence.json `
+  --out-dir ..\_tmp_codex_smoke\chat-capture-<fixture>-<label>
+
+corepack pnpm run diagnose:roll20-chat-table-layout-constraint -- reports\roll20-actual-compare\<run> <local-smoke-json> `
+  --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
+  --out-dir ..\_tmp_codex_smoke\table-layout-constraint-<fixture>-<label>
+```
+
+Do not copy temp sidecars into the canonical report folder just to make later
+commands pass. Either pass explicit overrides or recapture the canonical run in
+a clean session. Temp actual evidence is still local-only and not a parity
+claim.
+
 To test a renderer action gate against isolated root diagnostics without copying
 those reports back into the canonical run, pass the report directories as
 overrides:
