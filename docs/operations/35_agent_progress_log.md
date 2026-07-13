@@ -1,3 +1,15 @@
+## 2026-07-13 YSHY Roll20 Fallback Stack Rejection
+
+- Root cause refinement: matching YSHY/CoC table used width and a few Korean fallback glyph metrics is not enough to reproduce actual Roll20 chat rendering.
+- Added diagnostic-only ChatPane typography policy `yshy-roll20-fallback-stack`; it is localStorage-gated and is not a product default.
+- Added `yshy-roll20-fallback-stack` support to the chat smoke allow-list and chat candidate style proof, so candidate bundles no longer treat the experiment as unknown.
+- Verification: `node --check scripts\rolltemplate_chat_smoke.mjs` and `node --check scripts\roll20_chat_candidate_style_proof.mjs` passed.
+- Verification: after rebuilding `out/`, rolltemplate smoke with `--chat-font-policy roll20-sandbox-font-proxy --chat-typography-policy yshy-roll20-fallback-stack` passed 3/3 fixtures at ignored temp `..\_tmp_codex_smoke\rolltemplate-chat-smoke-yshy-roll20-fallback-stack-20260713-r2`.
+- Evidence: local candidate matched actual Roll20 YSHY table width exactly (`1248.328125px`) and matched Bookk-failure fallback metrics for caption (`23.92px`) and first td/label (`37.032px`).
+- Rejection evidence: style proof returned `REJECT_STYLE_CONTRADICTION` because only `3/7` computed font/style fields matched and max text metric delta was still `9.421px`.
+- Rejection evidence: `gate:roll20-chat-candidate-experiment` stayed `HOLD_PRODUCTION_RENDERER_PATCH` with `reject-regresses-fixtures`, `REJECT_STYLE_CONTRADICTION`, and `reject-row-raster-regression`.
+- Current evidence: this is guardrail/negative evidence only. Do not promote fallback-stack CSS; the next useful route is source/intrinsic plus row paint/crop/rule-order analysis.
+
 ## 2026-07-13 Source/Intrinsic Candidate Audit
 
 - Root cause refinement: the current evidence has many partial/rejected chat renderer experiments, but nothing proves the combined source/intrinsic axes needed for production CSS review. A separate audit is now needed before any future candidate can look "close enough" by one metric.

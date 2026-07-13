@@ -50,6 +50,7 @@ const CANDIDATE_SMOKE = {
   'yshy-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
   'yshy-bookk-missing-render': 'reports/rolltemplate-chat-smoke-yshy-bookk-missing-render/rolltemplate-chat-smoke-results.json',
   'yshy-missing-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-missing-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
+  'yshy-roll20-fallback-stack': 'reports/rolltemplate-chat-smoke-yshy-roll20-fallback-stack/rolltemplate-chat-smoke-results.json',
   'coc-table-intrinsic-clamp': 'reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp/rolltemplate-chat-smoke-results.json',
   'paint-dim-background': 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json',
   'paint-dim-brightness': 'reports/rolltemplate-chat-smoke-paint-dim-brightness/rolltemplate-chat-smoke-results.json',
@@ -226,6 +227,9 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   ) {
     return summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
+  if (candidate.name === 'yshy-roll20-fallback-stack') {
+    return summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+  }
   if (candidate.name.startsWith('yshy-coc-table-source-context')) {
     return summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
@@ -351,6 +355,22 @@ function widthOf(template, selector) {
   const width = node?.rect?.width ?? node?.boxMetrics?.offsetWidth ?? null;
   const number = Number(width);
   return Number.isFinite(number) ? number : null;
+}
+
+function textMeasureSample(fixtureOrSidecar, template, selector) {
+  const evidence = fixtureOrSidecar?.cardInfo?.textMeasureEvidence ??
+    fixtureOrSidecar?.textMeasureEvidence ??
+    template?.textMeasureEvidence ??
+    {};
+  return (evidence.samples ?? []).find((sample) => sample?.selector === selector) ?? null;
+}
+
+function fontCheckValue(fixtureOrSidecar, spec) {
+  const checks = fixtureOrSidecar?.cardInfo?.fontEvidence?.checks ??
+    fixtureOrSidecar?.fontEvidence?.checks ??
+    [];
+  const match = checks.find((check) => check?.spec === spec);
+  return match ? Boolean(match.ok) : null;
 }
 
 function summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate) {
@@ -489,6 +509,80 @@ function summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actua
       ? 'YSHY font-context candidate matches the targeted actual Roll20 font checks/styles'
       : `YSHY font-context candidate mismatch: table=${tableMatches ? 'match' : 'diff'}, Bookk availability=${bookkMatches ? 'match' : 'diff'}`,
     evidence: [...evidence, ...fontEvidence],
+  };
+}
+
+function summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'yshy-commission-1bu') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'YSHY Roll20 fallback-stack diagnostic is scoped away from this fixture',
+      evidence: [],
+    };
+  }
+  const widthProof = summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 1.5);
+  const styleEvidence = [
+    ['table', 'fontFamily'],
+    ['table', 'fontSize'],
+    ['table', 'letterSpacing'],
+    ['table', 'overflowWrap'],
+    ['caption', 'fontFamily'],
+    ['td:first', 'fontFamily'],
+    ['sheet-template_label:first', 'fontFamily'],
+  ].map(([selector, key]) => ({
+    selector,
+    key,
+    localCandidate: styleValue(candidateTemplate, selector, key),
+    actual: styleValue(actualTemplate, selector, key),
+    group: 'computed-style',
+  }));
+  const metricEvidence = ['table', 'caption', 'td:first', 'sheet-template_label:first'].map((selector) => {
+    const local = textMeasureSample(candidateFixture, candidateTemplate, selector);
+    const actual = textMeasureSample(actualSidecar, actualTemplate, selector);
+    return {
+      selector,
+      key: 'measureText.width',
+      localCandidate: numberOrNull(local?.metrics?.width),
+      actual: numberOrNull(actual?.metrics?.width),
+      localFont: local?.font ?? null,
+      actualFont: actual?.font ?? null,
+      deltaPx: delta(local?.metrics?.width, actual?.metrics?.width),
+      group: 'text-metrics',
+    };
+  });
+  const localBookk = fontCheckValue(candidateFixture, '700 12px "BookkMyungjo-Bd"');
+  const actualBookk = fontCheckValue(actualSidecar, '700 12px "BookkMyungjo-Bd"');
+  const bookkFace = {
+    selector: 'font-face',
+    key: 'BookkMyungjo-Bd active',
+    localCandidate: localBookk,
+    actual: actualBookk,
+    group: 'font-availability',
+  };
+  const comparableStyles = styleEvidence.filter((item) => item.localCandidate != null && item.actual != null);
+  const styleMatches = comparableStyles.filter((item) => sameValue(item.localCandidate, item.actual)).length;
+  const metricComparable = metricEvidence.filter((item) => typeof item.localCandidate === 'number' && typeof item.actual === 'number');
+  const metricMaxDelta = metricComparable.length
+    ? Math.max(...metricComparable.map((item) => Math.abs(item.deltaPx ?? 0)))
+    : null;
+  const tableWidthCompatible = widthProof.status === 'STYLE_COMPATIBLE';
+  const computedStyleCompatible = comparableStyles.length > 0 && styleMatches === comparableStyles.length;
+  const textMetricsCompatible = typeof metricMaxDelta === 'number' && metricMaxDelta <= 1.5;
+  return {
+    fixtureId,
+    status: tableWidthCompatible && computedStyleCompatible && textMetricsCompatible
+      ? 'STYLE_COMPATIBLE'
+      : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: tableWidthCompatible
+      ? `YSHY fallback-stack matches table width but only ${styleMatches}/${comparableStyles.length} computed font/style fields match actual Roll20; max text metric delta ${fmtPx(metricMaxDelta)}`
+      : `YSHY fallback-stack table width differs from actual Roll20; max text metric delta ${fmtPx(metricMaxDelta)}`,
+    evidence: [
+      ...widthProof.evidence.map((item) => ({ ...item, group: 'table-width' })),
+      ...styleEvidence,
+      ...metricEvidence,
+      bookkFace,
+    ],
   };
 }
 

@@ -889,7 +889,8 @@ async function main() {
         policy === 'yshy-missing-bookk-table-font-context' ||
         policy === 'yshy-sanitize-typography' ||
         policy === 'yshy-bookk-fallback-only' ||
-        policy === 'yshy-korean-glyph-metrics'
+        policy === 'yshy-korean-glyph-metrics' ||
+        policy === 'yshy-roll20-fallback-stack'
       ) {
         localStorage.setItem('__r20ChatTypographyPolicy', policy);
       } else {

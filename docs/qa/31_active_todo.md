@@ -1,3 +1,15 @@
+## 2026-07-13 YSHY Roll20 Fallback Stack Rejection TODO Note
+
+- DONE: Added diagnostic-only ChatPane typography policy `yshy-roll20-fallback-stack` and smoke-script allow-list support. This is not a product default.
+- DONE: Added style-proof handling for `yshy-roll20-fallback-stack` so one-off candidate reports classify it instead of reporting `UNKNOWN_CANDIDATE`.
+- VERIFIED: Functional rolltemplate smoke passed 3/3 fixtures after rebuilding static `out/`, at ignored temp `..\_tmp_codex_smoke\rolltemplate-chat-smoke-yshy-roll20-fallback-stack-20260713-r2`.
+- EVIDENCE: The candidate exactly matched the actual Roll20 YSHY table used width (`1248.328125px`) and the Bookk-failure Korean label metrics for caption (`23.92px`) plus first td/label (`37.032px`).
+- REJECTED: Style proof returned `REJECT_STYLE_CONTRADICTION`: table width matched, but only `3/7` computed font/style fields matched actual Roll20 and max text metric delta remained `9.421px`.
+- REJECTED: Candidate experiment gate returned `HOLD_PRODUCTION_RENDERER_PATCH` with `risk=reject-regresses-fixtures`, `style=REJECT_STYLE_CONTRADICTION`, and `rowRaster=reject-row-raster-regression`.
+- REJECTED: Candidate comparison stayed worse than baseline: mean aligned delta `+15.25%`, regressions `2`, and YSHY aligned delta `+4.7%`; row-raster also regressed YSHY by `+10.7` weighted mismatch and worst row by `+16.85`.
+- CURRENT: This is useful negative evidence only. Matching YSHY table width and a few Korean fallback metrics does not reproduce actual Roll20 paint/raster behavior.
+- NEXT P0: Continue with the source/intrinsic route: inspect row luma/background/paint/source/crop and Roll20 sanitize/rule order instead of promoting fallback-stack CSS.
+
 ## 2026-07-13 Source/Intrinsic Candidate Audit TODO Note
 
 - DONE: Added diagnostic-only `diagnose:roll20-chat-source-intrinsic-candidates` to audit whether current AW2E/Les/YSHY source-intrinsic evidence is ready for renderer CSS review.

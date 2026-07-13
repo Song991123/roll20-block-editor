@@ -72,7 +72,8 @@ type ChatTypographyPolicy =
   | 'yshy-missing-bookk-table-font-context'
   | 'yshy-sanitize-typography'
   | 'yshy-bookk-fallback-only'
-  | 'yshy-korean-glyph-metrics';
+  | 'yshy-korean-glyph-metrics'
+  | 'yshy-roll20-fallback-stack';
 type ChatPaintPolicy =
   | 'default'
   | 'roll20-dim-background'
@@ -146,7 +147,8 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
     value === 'yshy-missing-bookk-table-font-context' ||
     value === 'yshy-sanitize-typography' ||
     value === 'yshy-bookk-fallback-only' ||
-    value === 'yshy-korean-glyph-metrics'
+    value === 'yshy-korean-glyph-metrics' ||
+    value === 'yshy-roll20-fallback-stack'
   ) return value;
   return 'default';
 }
@@ -418,6 +420,25 @@ const roll20ChatShellCss = `
   font-size: 13.65px;
 }
 .r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Noto Sans KR", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
+  font-family: "BookkMyungjo-Bd", "Noto Sans KR", sans-serif;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   border-spacing: 0;
 }
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
