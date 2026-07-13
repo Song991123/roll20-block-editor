@@ -25,6 +25,10 @@ export function parseAssetReplacementMap(text) {
       warnings.push({ line: lineNumber, message: 'old and new URLs are identical' });
       return;
     }
+    if (isPlaceholderReplacementTarget(to)) {
+      warnings.push({ line: lineNumber, message: 'replace the placeholder target with a user-owned http(s) URL before applying this map' });
+      return;
+    }
     if (!isAllowedReplacementTarget(to)) {
       warnings.push({ line: lineNumber, message: 'replacement target is not Roll20-safe' });
       return;
@@ -72,6 +76,15 @@ function isAllowedReplacementTarget(value) {
   if (/^data:/i.test(value)) return true;
   if (/^(?:javascript|mailto|tel|blob):/i.test(value)) return false;
   return !value.startsWith('#');
+}
+
+function isPlaceholderReplacementTarget(value) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return (
+    normalized === '<paste-user-owned-https-url-here>' ||
+    normalized.includes('paste-user-owned') ||
+    normalized.includes('user-owned-https-url')
+  );
 }
 
 function replaceAllLiteral(text, from, to) {

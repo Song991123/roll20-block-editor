@@ -136,14 +136,31 @@ function parseReplacementMap(text) {
       warnings.push({ line: index + 1, message: 'expected old URL => new URL' });
       return;
     }
+    const target = parts[1].trim();
+    if (isPlaceholderReplacementTarget(target)) {
+      warnings.push({
+        line: index + 1,
+        message: 'replace the placeholder target with a user-owned HTTP(S) URL before counting this fixture as relinked',
+      });
+      return;
+    }
     entries.push({
       line: index + 1,
       from: parts[0].trim(),
-      to: parts[1].trim(),
-      targetKind: classifyTarget(parts[1].trim()),
+      to: target,
+      targetKind: classifyTarget(target),
     });
   });
   return { entries, warnings };
+}
+
+function isPlaceholderReplacementTarget(url) {
+  const normalized = String(url ?? '').trim().toLowerCase();
+  return (
+    normalized === '<paste-user-owned-https-url-here>' ||
+    normalized.includes('paste-user-owned') ||
+    normalized.includes('user-owned-https-url')
+  );
 }
 
 function classifyTarget(url) {
@@ -351,6 +368,12 @@ function selfTest() {
   assert.equal(ready.coverage, 'COVERED_ROLL20_READY');
   const localOnly = classifyFixture(fixture, parseReplacementMap('https://i.imgur.com/dead.jpg => data:image/gif;base64,AAAA'));
   assert.equal(localOnly.coverage, 'COVERED_LOCAL_ONLY');
+  const placeholderMap = parseReplacementMap('https://i.imgur.com/dead.jpg => <paste-user-owned-https-url-here>');
+  assert.equal(placeholderMap.entries.length, 0);
+  assert.equal(placeholderMap.warnings.length, 1);
+  assert.match(placeholderMap.warnings[0].message, /placeholder target/);
+  const placeholder = classifyFixture(fixture, placeholderMap);
+  assert.equal(placeholder.coverage, 'MISSING_RELINK');
   const missing = classifyFixture(fixture, parseReplacementMap('https://i.imgur.com/other.jpg => https://assets.example.com/live.jpg'));
   assert.equal(missing.coverage, 'MISSING_RELINK');
   const ignored = classifyFixture({ fixtureId: 'none', decision: 'NO_BACKGROUND_IMAGE' }, parseReplacementMap(''));
