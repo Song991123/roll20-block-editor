@@ -36,6 +36,23 @@ function testUnsafeTargetWarning(): void {
   assert.equal(parsed.warnings.length, 1);
 }
 
+function testPlaceholderTargetWarning(): void {
+  const map = 'https://old.example/a.png => <paste-user-owned-https-url-here>';
+  const parsed = parseAssetReplacementMap(map);
+  assert.equal(parsed.entries.length, 0);
+  assert.equal(parsed.warnings.length, 1);
+  assert.match(parsed.warnings[0].message, /placeholder target/);
+
+  const result = applyAssetReplacements({ html: '<img src="https://old.example/a.png">', css: '' }, map);
+  assert.equal(result.replacements, 0);
+  assert.match(result.html, /https:\/\/old\.example\/a\.png/);
+
+  const summary = summarizeAssetReplacementReadiness(map);
+  assert.equal(summary.entries, 0);
+  assert.equal(summary.placeholderTargets, 1);
+  assert.equal(summary.hasPlaceholderTargets, true);
+}
+
 function testRoll20ReadinessSummary(): void {
   const summary = summarizeAssetReplacementReadiness([
     'https://old.example/a.png => https://assets.example.com/a.png',
@@ -46,11 +63,14 @@ function testRoll20ReadinessSummary(): void {
   assert.equal(summary.entries, 4);
   assert.equal(summary.roll20ReadyTargets, 2);
   assert.equal(summary.localOnlyTargets, 2);
+  assert.equal(summary.placeholderTargets, 0);
   assert.equal(summary.hasLocalOnlyTargets, true);
+  assert.equal(summary.hasPlaceholderTargets, false);
 }
 
 testValidAndInvalidLines();
 testHtmlAndCssReplacement();
 testUnsafeTargetWarning();
+testPlaceholderTargetWarning();
 testRoll20ReadinessSummary();
 console.log('asset_replacements.test PASS');

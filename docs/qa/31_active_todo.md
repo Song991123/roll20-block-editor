@@ -1,3 +1,11 @@
+## 2026-07-13 Asset Placeholder Relink Guard TODO Note
+
+- DONE: Asset replacement maps now reject uncommented draft placeholder targets such as `<paste-user-owned-https-url-here>` instead of treating them as usable replacement URLs.
+- DONE: Export readiness now counts placeholder targets separately and warns the user that real Roll20 verification requires user-owned HTTP(S) URLs.
+- DONE: `smoke:export-dialog` now verifies that an active placeholder map does not rewrite preview output, does not leak the placeholder into render output, and exposes the expected `미입력` readiness state.
+- VERIFIED: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run test:asset-replacements`, `git diff --check`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\export-dialog-placeholder-guard-20260713-r3 --port 4383`, and `corepack pnpm run check:server-hygiene` passed.
+- CURRENT: This prevents a false "relinked" state from draft maps. AW2E/YSHY still need real user-owned HTTP(S) replacement URLs and Roll20 Sandbox/test-room re-comparison before asset or renderer parity can be claimed.
+
 ## 2026-07-13 Edit Layer Mini Map TODO Note
 
 - DONE: Added a compact visual mini-map to each edit layer row so users can scan frame/flow/table-like containers, child density, selected state, and whether the row can receive dropped children without reading DOM-only text.

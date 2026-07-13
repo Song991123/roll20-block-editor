@@ -1,3 +1,13 @@
+## 2026-07-13 Asset Placeholder Relink Guard
+
+- Root cause: asset relink drafts use `<paste-user-owned-https-url-here>` as a safe placeholder, but an uncommented draft line could be misread as an active replacement rule and create a false "ready" state.
+- Updated `lib/export/asset_replacements.ts` so placeholder targets are rejected, counted separately in readiness, and never applied to preview/edit/export HTML/CSS.
+- Updated `components/editor/ExportDialog.tsx` so the replacement status and readiness panel show placeholder target counts and tell the user to replace them with user-owned HTTP(S) URLs before actual Roll20 verification.
+- Extended `scripts/export_dialog_browser_smoke.mjs` with a placeholder guard that imports a preserved Roll20-style input value, verifies the old URL remains, verifies the placeholder does not leak into render output, and checks the UI warning/counters.
+- Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run test:asset-replacements`, `git diff --check`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\export-dialog-placeholder-guard-20260713-r3 --port 4383`, and `corepack pnpm run check:server-hygiene` passed.
+- Server hygiene: no project dev/smoke listener remained after the smoke; the existing Roll20 CDP listener on `127.0.0.1:9222` was preserved.
+- Claim boundary: this prevents false asset relink readiness only. It does not supply user-owned replacement URLs, relink AW2E/YSHY, upload to Roll20, promote renderer CSS, or prove Roll20 visual parity.
+
 ## 2026-07-13 Edit Layer Mini Map
 
 - Root cause: edit mode already supported flow/free drops and layer reordering, but the layer list was still mostly text plus small badges. Users could not quickly see which rows were frame-like containers or how much child structure they contained.

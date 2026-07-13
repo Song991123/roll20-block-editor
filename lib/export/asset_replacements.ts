@@ -24,8 +24,12 @@ export interface AssetReplacementReadiness {
   entries: number;
   roll20ReadyTargets: number;
   localOnlyTargets: number;
+  placeholderTargets: number;
   hasLocalOnlyTargets: boolean;
+  hasPlaceholderTargets: boolean;
 }
+
+const USER_OWNED_URL_PLACEHOLDER = '<paste-user-owned-https-url-here>';
 
 export function parseAssetReplacementMap(text: string): ParsedAssetReplacementMap {
   const entries: AssetReplacementEntry[] = [];
@@ -55,6 +59,13 @@ export function parseAssetReplacementMap(text: string): ParsedAssetReplacementMa
     }
     if (from === to) {
       warnings.push({ line: lineNumber, message: 'Old and new URLs are identical.' });
+      return;
+    }
+    if (isPlaceholderReplacementTarget(to)) {
+      warnings.push({
+        line: lineNumber,
+        message: 'Replace the placeholder target with a user-owned http(s) URL before applying this map.',
+      });
       return;
     }
     if (!isAllowedReplacementTarget(to)) {
@@ -97,6 +108,7 @@ export function applyAssetReplacements(
 
 export function summarizeAssetReplacementReadiness(mapText: string): AssetReplacementReadiness {
   const parsed = parseAssetReplacementMap(mapText);
+  const placeholderTargets = countPlaceholderReplacementTargets(mapText);
   let roll20ReadyTargets = 0;
   let localOnlyTargets = 0;
 
@@ -109,12 +121,36 @@ export function summarizeAssetReplacementReadiness(mapText: string): AssetReplac
     entries: parsed.entries.length,
     roll20ReadyTargets,
     localOnlyTargets,
+    placeholderTargets,
     hasLocalOnlyTargets: localOnlyTargets > 0,
+    hasPlaceholderTargets: placeholderTargets > 0,
   };
 }
 
 function isRoll20ReadyReplacementTarget(value: string): boolean {
   return /^(?:https?:)?\/\//i.test(value);
+}
+
+function countPlaceholderReplacementTargets(text: string): number {
+  let count = 0;
+  const lines = String(text ?? '').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const parts = splitReplacementLine(trimmed);
+    if (!parts) continue;
+    if (isPlaceholderReplacementTarget(cleanReplacementValue(parts[1]))) count += 1;
+  }
+  return count;
+}
+
+function isPlaceholderReplacementTarget(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === USER_OWNED_URL_PLACEHOLDER ||
+    normalized.includes('paste-user-owned') ||
+    normalized.includes('user-owned-https-url')
+  );
 }
 
 function splitReplacementLine(line: string): [string, string] | null {

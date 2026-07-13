@@ -280,6 +280,7 @@ async function verifyAssetReplacementRender(page) {
     hasRoll20Readiness: Boolean(document.querySelector('[data-testid="export-asset-roll20-readiness"]')),
     localOnlyTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-local-only-targets') ?? '',
     roll20ReadyTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-roll20-ready-targets') ?? '',
+    placeholderTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-placeholder-targets') ?? '',
     copyEnabled: !document.querySelector('[data-testid="export-asset-map-copy"]')?.disabled,
     downloadEnabled: !document.querySelector('[data-testid="export-asset-map-download"]')?.disabled,
   }));
@@ -290,6 +291,53 @@ async function verifyAssetReplacementRender(page) {
   }).catch(() => {});
 
   return { oldUrl, newUrl, preview, edit, persisted, restored, exportMapUi };
+}
+
+async function verifyAssetReplacementPlaceholderGuard(page) {
+  const oldUrl = 'https://example.invalid/r20-placeholder-source.png';
+  const placeholderTarget = '<paste-user-owned-https-url-here>';
+  const mapText = `${oldUrl} => ${placeholderTarget}`;
+  await warmPerfHook(page);
+  await page.evaluate(async ({ html, map }) => {
+    window.__perfHook.clearAll();
+    window.__perfHook.setAssetReplacementMap(map);
+    await window.__perfHook.importSheet({ html, css: '', i18n: '{}' });
+    window.__perfHook.setMainMode('preview');
+  }, { html: `<input type="hidden" name="attr_asset_placeholder_probe" value="${oldUrl}">`, map: mapText });
+
+  await page.waitForSelector('[data-testid="preview-iframe"]', { timeout: 15000 });
+  const preview = await page.evaluate(({ oldNeedle, placeholderNeedle }) => {
+    const iframe = document.querySelector('[data-testid="preview-iframe"]');
+    const srcdoc = iframe?.getAttribute('srcdoc') ?? '';
+    return {
+      hasOldUrl: srcdoc.includes(oldNeedle),
+      hasPlaceholderTarget: srcdoc.includes(placeholderNeedle),
+      mapValue: window.__perfHook.getAssetReplacementMap(),
+    };
+  }, { oldNeedle: oldUrl, placeholderNeedle: placeholderTarget });
+
+  await page.click('[data-testid="header-export-button"]');
+  await page.waitForSelector('[data-testid="export-asset-roll20-readiness"]', { timeout: 15000 });
+  const ui = await page.evaluate(() => {
+    const readiness = document.querySelector('[data-testid="export-asset-roll20-readiness"]');
+    const status = document.querySelector('[data-testid="export-asset-replacement-status"]');
+    const warningItems = Array.from(document.querySelectorAll('[data-testid="export-asset-replacement-map"] li'));
+    return {
+      placeholderTargets: readiness?.getAttribute('data-placeholder-targets') ?? '',
+      localOnlyTargets: readiness?.getAttribute('data-local-only-targets') ?? '',
+      roll20ReadyTargets: readiness?.getAttribute('data-roll20-ready-targets') ?? '',
+      readinessText: readiness?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      statusText: status?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      warningText: warningItems.map((item) => item.textContent?.replace(/\s+/g, ' ').trim() ?? '').join('\n'),
+    };
+  });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[data-testid="export-asset-roll20-readiness"]', {
+    state: 'detached',
+    timeout: 5000,
+  }).catch(() => {});
+
+  return { oldUrl, placeholderTarget, preview, ui };
 }
 
 async function verifyExportAssetDraft(page) {
@@ -496,6 +544,7 @@ async function main() {
 
     await page.keyboard.press('Escape');
     result.checks.exportAssetDraft = await verifyExportAssetDraft(page);
+    result.checks.exportAssetPlaceholderGuard = await verifyAssetReplacementPlaceholderGuard(page);
     result.checks.assetReplacementRender = await verifyAssetReplacementRender(page);
     await page.click('[data-testid="main-mode-edit"]');
     result.checks.mainModeEdit = await page.evaluate(() => ({
@@ -594,8 +643,15 @@ async function main() {
     if (!result.checks.assetReplacementRender.exportMapUi.hasRoll20Readiness) failures.push('asset replacement Roll20 readiness note missing');
     if (result.checks.assetReplacementRender.exportMapUi.localOnlyTargets !== '1') failures.push('asset replacement local-only target count missing');
     if (result.checks.assetReplacementRender.exportMapUi.roll20ReadyTargets !== '0') failures.push('asset replacement Roll20-ready target count should be 0 for data URL smoke');
+    if (result.checks.assetReplacementRender.exportMapUi.placeholderTargets !== '0') failures.push('asset replacement placeholder target count should be 0 for valid data URL smoke');
     if (!result.checks.assetReplacementRender.exportMapUi.copyEnabled) failures.push('restored asset map copy button disabled');
     if (!result.checks.assetReplacementRender.exportMapUi.downloadEnabled) failures.push('restored asset map download button disabled');
+    if (!result.checks.exportAssetPlaceholderGuard.preview.hasOldUrl) failures.push('placeholder target guard should leave original URL unchanged');
+    if (result.checks.exportAssetPlaceholderGuard.preview.hasPlaceholderTarget) failures.push('placeholder target leaked into preview render');
+    if (result.checks.exportAssetPlaceholderGuard.ui.placeholderTargets !== '1') failures.push('placeholder target readiness count missing');
+    if (result.checks.exportAssetPlaceholderGuard.ui.roll20ReadyTargets !== '0') failures.push('placeholder guard should not count Roll20-ready targets');
+    if (!/미입력|placeholder|채워/.test(result.checks.exportAssetPlaceholderGuard.ui.readinessText)) failures.push('placeholder target readiness copy missing');
+    if (!/placeholder|http/.test(result.checks.exportAssetPlaceholderGuard.ui.warningText)) failures.push('placeholder target parser warning missing');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
     if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');

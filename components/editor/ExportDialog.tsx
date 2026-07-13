@@ -753,7 +753,9 @@ function AssetReplacementPanel({
           }`}
           data-testid="export-asset-replacement-status"
         >
-          {active ? `${replacements}건 교체 · Roll20용 ${readiness.roll20ReadyTargets}건` : '선택 사항'}
+          {active
+            ? `${replacements}건 교체 · Roll20용 ${readiness.roll20ReadyTargets}건 · 미입력 ${readiness.placeholderTargets}건`
+            : '선택 사항'}
         </span>
       </div>
       <textarea
@@ -881,15 +883,21 @@ function AssetReplacementPanel({
         {active ? (
           <div
             className={`rounded border px-2 py-1.5 text-[10.5px] leading-relaxed sm:col-span-2 ${
-              readiness.hasLocalOnlyTargets
+              readiness.hasPlaceholderTargets || readiness.hasLocalOnlyTargets
                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-100'
                 : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-100'
             }`}
             data-testid="export-asset-roll20-readiness"
             data-local-only-targets={readiness.localOnlyTargets}
             data-roll20-ready-targets={readiness.roll20ReadyTargets}
+            data-placeholder-targets={readiness.placeholderTargets}
           >
-            {readiness.hasLocalOnlyTargets ? (
+            {readiness.hasPlaceholderTargets ? (
+              <>
+                교체 초안의 placeholder target {readiness.placeholderTargets}건이 아직 채워지지 않았습니다.
+                실제 Roll20 검증 전에 사용자가 직접 다시 올린 http(s) URL로 바꿔 주세요.
+              </>
+            ) : readiness.hasLocalOnlyTargets ? (
               <>
                 Roll20 Sandbox 재검증에는 http(s)로 직접 접근 가능한 사용자 소유 URL이 필요합니다.
                 현재 교체 목록에는 로컬 미리보기 전용 target {readiness.localOnlyTargets}건이 있습니다.

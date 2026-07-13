@@ -39,6 +39,7 @@ corepack pnpm run plan:roll20-asset-relink -- reports\roll20-actual-compare\<lab
 - The zip includes only a small `asset-replacements.json` summary with counts/warnings, not the original URL list.
 - Browser smoke verifies a synthetic replacement reaches both preview iframe `srcdoc` and edit Shadow DOM render without leaking the original URL.
 - Import-side and export-side detection can generate a commented replacement-map draft from detected external/relative asset refs. The draft is inert until the user replaces `<paste-user-owned-https-url-here>` with a user-owned hosted URL and removes the comment marker.
+- If a draft placeholder target is accidentally uncommented, the replacement parser rejects it, reports a warning, and counts it as `placeholderTargets` instead of applying it to preview/edit/export output.
 - The current replacement map is persisted in the IndexedDB autosave/manual-save XML under preview metadata and restored through the autosave recovery banner.
 - Browser smoke verifies the synthetic replacement map is saved into IndexedDB, survives reload, and is restored into `previewStore`.
 - The export dialog can save named local-only replacement-map profiles. Profiles store URL replacement text only, not image/font bytes, and are persisted in the autosave/manual-save XML so users can switch between sheet-specific relink sets during repeated verification.
