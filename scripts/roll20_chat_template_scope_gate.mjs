@@ -8,7 +8,7 @@
  */
 
 import assert from 'node:assert/strict';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
@@ -60,6 +60,7 @@ function firstPositionalArg() {
 }
 
 async function main() {
+  await resolveImplicitReportOverrides();
   const reports = {
     plan: await readReportJson('chat-targeted-renderer-plan', 'chat-targeted-renderer-plan-results.json', reportOverrides.plan),
     reconciliation: await readReportJson('chat-width-reconciliation', 'chat-width-reconciliation-results.json', reportOverrides.reconciliation),
@@ -82,6 +83,21 @@ async function main() {
     console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} scope=${fixture.requiredScope} model=${fixture.requiredModel} mismatch=${fixture.alignedMismatchPct} best=${fixture.bestCandidate?.name ?? 'none'} risk=${fixture.bestCandidate?.risk ?? 'none'}`);
   }
   console.log(`out=${path.relative(process.cwd(), outDir)}`);
+}
+
+async function resolveImplicitReportOverrides() {
+  if (!reportOverrides.cellAllocation && !(await defaultReportExists('chat-cell-allocation-probe', 'chat-cell-allocation-probe-results.json'))) {
+    reportOverrides.cellAllocation = await findLatestFallbackReportDir(
+      ['chat-cell-allocation-probe'],
+      'chat-cell-allocation-probe-results.json',
+    );
+  }
+  if (!reportOverrides.sourceContext && !(await defaultReportExists('chat-source-context-probe', 'chat-source-context-probe-results.json'))) {
+    reportOverrides.sourceContext = await findLatestFallbackReportDir(
+      ['chat-source-context-probe', 'chat-source-context'],
+      'chat-source-context-probe-results.json',
+    );
+  }
 }
 
 function buildReport(runDirLabel, reports, overrides = {}) {
@@ -488,6 +504,42 @@ async function readReportJson(defaultDirName, reportFileName, overrideDir = '') 
     throw new Error(`Missing override report for ${defaultDirName}: ${file}`);
   }
   return readOptionalJson(file);
+}
+
+async function defaultReportExists(defaultDirName, reportFileName) {
+  return fileExists(path.join(runDir, defaultDirName, reportFileName));
+}
+
+async function findLatestFallbackReportDir(prefixes, reportFileName) {
+  const root = path.resolve('..', '_tmp_codex_smoke');
+  let entries = [];
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch {
+    return '';
+  }
+
+  const normalizedPrefixes = Array.isArray(prefixes) ? prefixes : [prefixes];
+  const candidates = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (!normalizedPrefixes.some((prefix) => entry.name.startsWith(`${prefix}-`))) continue;
+    const dir = path.join(root, entry.name);
+    const reportFile = path.join(dir, reportFileName);
+    if (!(await fileExists(reportFile))) continue;
+    const report = await readOptionalJson(reportFile);
+    if (path.resolve(report?.runDir ?? '') !== runDir) continue;
+    let mtimeMs = 0;
+    try {
+      mtimeMs = (await stat(reportFile)).mtimeMs;
+    } catch {
+      mtimeMs = 0;
+    }
+    candidates.push({ dir, mtimeMs });
+  }
+
+  candidates.sort((a, b) => b.mtimeMs - a.mtimeMs || b.dir.localeCompare(a.dir));
+  return candidates[0]?.dir ?? '';
 }
 
 async function fileExists(file) {

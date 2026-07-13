@@ -167,6 +167,17 @@ async function resolveImplicitReportOverrides() {
       'chat-cell-allocation-probe-results.json',
     );
   }
+  if (!reportOverrides.chatTemplateScope) {
+    const defaultTemplateScope = await readJsonIfExists(path.join(runDir, 'chat-template-scope-gate', 'chat-template-scope-gate-results.json'));
+    if (!templateScopeHasSourceContextEvidence(defaultTemplateScope)) {
+      const latestTemplateScopeDir = await findLatestFallbackReportDir(
+        'chat-template-scope',
+        'chat-template-scope-gate-results.json',
+        templateScopeHasSourceContextEvidence,
+      );
+      if (latestTemplateScopeDir) reportOverrides.chatTemplateScope = latestTemplateScopeDir;
+    }
+  }
 }
 
 async function writeRendererActionReport(report, requestedOutDir, runDir) {
@@ -2931,7 +2942,7 @@ function defaultReportExists(defaultDirName, reportFileName) {
   return existsSync(path.join(runDir, defaultDirName, reportFileName));
 }
 
-async function findLatestFallbackReportDir(prefix, reportFileName) {
+async function findLatestFallbackReportDir(prefix, reportFileName, predicate = null) {
   const root = path.resolve('..', '_tmp_codex_smoke');
   let entries = [];
   try {
@@ -2948,6 +2959,7 @@ async function findLatestFallbackReportDir(prefix, reportFileName) {
     if (!existsSync(reportFile)) continue;
     const report = await readJsonIfExists(reportFile);
     if (path.resolve(report?.runDir ?? '') !== runDir) continue;
+    if (predicate && !predicate(report)) continue;
     let mtimeMs = 0;
     try {
       mtimeMs = (await stat(reportFile)).mtimeMs;
@@ -2959,6 +2971,14 @@ async function findLatestFallbackReportDir(prefix, reportFileName) {
 
   candidates.sort((a, b) => b.mtimeMs - a.mtimeMs || b.dir.localeCompare(a.dir));
   return candidates[0]?.dir ?? '';
+}
+
+function templateScopeHasSourceContextEvidence(report) {
+  return (report?.fixtures ?? []).some((fixture) =>
+    fixture?.sourceContext &&
+    fixture.sourceContext.decision &&
+    fixture.sourceContext.decision !== 'MISSING_SOURCE_CONTEXT'
+  );
 }
 
 function normalizeReportOverrides(overrides) {

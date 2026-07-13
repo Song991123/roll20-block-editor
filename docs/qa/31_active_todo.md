@@ -1,3 +1,11 @@
+## 2026-07-13 Template Scope Source-Context Auto Fallback TODO Note
+
+- DONE: `gate:roll20-chat-template-scope` now auto-uses the newest same-run ignored temp `chat-cell-allocation-probe-*` and `chat-source-context-*` reports when canonical report folders are missing and no explicit override was supplied.
+- DONE: `gate:roll20-renderer-action` now auto-uses the newest same-run ignored temp `chat-template-scope-*` report when the canonical template-scope report lacks source-context evidence.
+- VERIFIED: `gate:roll20-chat-template-scope` without manual `--source-context-dir` now records source-context overrides and reports AW2E as `RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED` and YSHY as `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED` instead of collapsing to `MISSING_SOURCE_CONTEXT`.
+- VERIFIED: `gate:roll20-renderer-action` without manual `--chat-template-scope-dir` now records the autosource template-scope override and surfaces the same source-context blockers in the top renderer hold output.
+- CURRENT: Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH`. This improves gate freshness/truthfulness only; assets, scoped renderer CSS, Roll20 upload, and visual parity remain open.
+
 ## 2026-07-13 Chat Renderer Proof Checklist TODO Note
 
 - DONE: `plan:roll20-chat-renderer-targets` now emits a per-fixture `requiredProofChecklist` so AW2E, YSHY/CoC, and unknown narrow-model work cannot be reviewed from strategy names alone.
