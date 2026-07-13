@@ -1,3 +1,12 @@
+## 2026-07-13 Chat Renderer Proof Checklist TODO Note
+
+- DONE: `plan:roll20-chat-renderer-targets` now emits a per-fixture `requiredProofChecklist` so AW2E, YSHY/CoC, and unknown narrow-model work cannot be reviewed from strategy names alone.
+- DONE: `gate:roll20-chat-template-scope` now propagates the targeted checklist, or derives the same checklist from the required model when an older targeted-plan report is used.
+- DONE: Markdown reports now show `Proof checklist`, including AW2E requirements for `.sheet-rolltemplate-aw` style proof, message/content width sidecar, exact text metrics, and Les/YSHY nonregression; YSHY/CoC requirements for `.sheet-rolltemplate-coc` style proof, table intrinsic sidecar, font-face/rule-order/sanitize source context, and AW2E/Les nonregression.
+- VERIFIED: `node --check scripts\roll20_chat_targeted_renderer_plan.mjs`, `node --check scripts\roll20_chat_template_scope_gate.mjs`, `corepack pnpm run test:roll20-chat-renderer-targets`, `corepack pnpm run test:roll20-chat-template-scope`, targeted plan run, template-scope gate run, proof-checklist `rg`, `corepack pnpm run lint`, `corepack pnpm run build`, and top renderer gate run passed.
+- CURRENT: Renderer action remains correctly held: targeted plan `HOLD_PRODUCTION_RENDERER_PATCH`, template-scope gate `HOLD_GLOBAL_CHAT_RENDERER_PATCH`, top gate `HOLD_PRODUCTION_RENDERER_PATCH`. This is expected because asset relink, style proof, source-context proof, and scoped nonregression are still unresolved.
+- CLAIM BOUNDARY: This hardens the diagnostic gate only. It does not change product renderer CSS, upload generated sheets to Roll20, supply user-owned asset URLs, or prove visual parity.
+
 ## 2026-07-13 Worker Code Boundary TODO Note
 
 - DONE: The right Code panel now distinguishes Worker JS from visible sheet HTML/CSS. The Worker JS tab shows byte count and states that worker code is preserved for the Roll20 runtime instead of being shown as a sheet canvas object.

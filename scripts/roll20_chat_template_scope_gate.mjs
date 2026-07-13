@@ -128,6 +128,7 @@ function buildReport(runDirLabel, reports, overrides = {}) {
       cellAllocationBlocksPromotion,
       sourceContext,
       sourceContextBlocksPromotion,
+      requiredProofChecklist: plan?.requiredProofChecklist ?? proofChecklistForModel(requiredModel),
       promotionReady: isFixturePromotionReady(bestCandidate, { assetBlocksPromotion, rowRasterBlocksPromotion, cellAllocationBlocksPromotion, sourceContextBlocksPromotion }),
       nextAction: nextActionFor(fixtureId, requiredModel, sourceContext),
     };
@@ -206,6 +207,38 @@ function requiredScopeFor(fixtureId, strategy, nextExperiment) {
   }
   if (strategy === 'KEEP_DEFAULT' || nextExperiment === 'KEEP_DEFAULT') return 'default';
   return 'template-specific';
+}
+
+function proofChecklistForModel(requiredModel) {
+  if (requiredModel === 'MESSAGE_CONTENT_TEXT_METRICS') {
+    return [
+      'asset-relink-or-explicit-placeholder-acceptance',
+      'style-proof:.sheet-rolltemplate-aw',
+      'message-content-width-sidecar',
+      'exact-text-measurement-sidecar',
+      'no-les-yshy-regression',
+      'row-raster-and-background-nonregression',
+    ];
+  }
+  if (requiredModel === 'TABLE_INTRINSIC_SANITIZE_FONT') {
+    return [
+      'asset-relink-or-explicit-placeholder-acceptance',
+      'style-proof:.sheet-rolltemplate-coc',
+      'scrollwidth-clientwidth-table-intrinsic-sidecar',
+      'font-face-rule-order-sanitize-source-context',
+      'no-aw2e-les-regression',
+      'row-raster-and-background-nonregression',
+    ];
+  }
+  if (requiredModel === 'NEW_NARROW_MODEL') {
+    return [
+      'template-scope-identified',
+      'actual-roll20-style-proof',
+      'same-template-pixel-gain',
+      'cross-fixture-nonregression',
+    ];
+  }
+  return [];
 }
 
 function isFixturePromotionReady(candidate, guards = {}) {
@@ -399,12 +432,12 @@ function renderMarkdown(report) {
     '',
     'Scope: diagnostic-only. This gate prevents global ChatPane CSS promotion when fixtures require different template-scoped models.',
     '',
-    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Cell allocation | Source context | Asset gate | Row raster | Ready | Next action |',
-    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- | --- |',
+    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Cell allocation | Source context | Asset gate | Row raster | Proof checklist | Ready | Next action |',
+    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
     const cell = fixture.cellAllocation.bestCandidateScenario ?? fixture.cellAllocation.defaultScenario;
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${cell ? `${cell.scenario}:${cell.allocationDecision}` : 'n/a'} | ${fixture.sourceContext.decision || 'n/a'} | ${fixture.assetDecision || 'n/a'} | ${fixture.rowRaster.risk || 'n/a'} ${fixture.rowRaster.weightedMismatchPct ? `(${fixture.rowRaster.weightedMismatchPct})` : ''} | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${cell ? `${cell.scenario}:${cell.allocationDecision}` : 'n/a'} | ${fixture.sourceContext.decision || 'n/a'} | ${fixture.assetDecision || 'n/a'} | ${fixture.rowRaster.risk || 'n/a'} ${fixture.rowRaster.weightedMismatchPct ? `(${fixture.rowRaster.weightedMismatchPct})` : ''} | ${fixture.requiredProofChecklist.join('<br>') || 'none'} | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
   }
   lines.push('', '## Blockers', '');
   if (report.blockers.length) {
@@ -610,9 +643,11 @@ function selfTest() {
   assert.ok(report.blockers.some((blocker) => blocker.includes('source/context gate requires RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('source/context gate requires SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED')));
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredScope, '.sheet-rolltemplate-aw');
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredProofChecklist.includes('message-content-width-sidecar'));
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').cellAllocationBlocksPromotion, true);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').sourceContextBlocksPromotion, true);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').promotionReady, false);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredModel, 'TABLE_INTRINSIC_SANITIZE_FONT');
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredProofChecklist.includes('font-face-rule-order-sanitize-source-context'));
   console.log('roll20_chat_template_scope_gate self-test PASS');
 }

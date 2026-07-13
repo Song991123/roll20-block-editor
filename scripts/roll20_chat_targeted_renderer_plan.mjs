@@ -121,12 +121,14 @@ function buildFixturePlan(fixtureId, reports) {
     backgroundAssetSummary: backgroundAssets?.sourceSummary ?? backgroundAssets?.source ?? '',
   };
   const classification = classifyFixture(fixtureId, alignedMismatch, signals);
+  const requiredProofChecklist = proofChecklistForStrategy(classification.strategy);
   return {
     fixtureId,
     priority: alignedMismatch > 0.1 ? 'P0' : alignedMismatch > 0.06 ? 'P1' : 'P2',
     alignedMismatchRatio: alignedMismatch,
     alignedMismatchPct: pct(alignedMismatch),
     ...classification,
+    requiredProofChecklist,
     signals,
   };
 }
@@ -266,6 +268,38 @@ function formatWorstRow(rowRaster) {
   return parts.length ? parts.join(', ') : 'unknown worst row';
 }
 
+function proofChecklistForStrategy(strategy) {
+  if (strategy === 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS') {
+    return [
+      'asset-relink-or-explicit-placeholder-acceptance',
+      'style-proof:.sheet-rolltemplate-aw',
+      'message-content-width-sidecar',
+      'exact-text-measurement-sidecar',
+      'no-les-yshy-regression',
+      'row-raster-and-background-nonregression',
+    ];
+  }
+  if (strategy === 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL') {
+    return [
+      'asset-relink-or-explicit-placeholder-acceptance',
+      'style-proof:.sheet-rolltemplate-coc',
+      'scrollwidth-clientwidth-table-intrinsic-sidecar',
+      'font-face-rule-order-sanitize-source-context',
+      'no-aw2e-les-regression',
+      'row-raster-and-background-nonregression',
+    ];
+  }
+  if (strategy === 'NEW_NARROW_MODEL_REQUIRED') {
+    return [
+      'template-scope-identified',
+      'actual-roll20-style-proof',
+      'same-template-pixel-gain',
+      'cross-fixture-nonregression',
+    ];
+  }
+  return [];
+}
+
 function renderMarkdown(report) {
   const lines = [
     '# Roll20 Chat Targeted Renderer Plan',
@@ -276,11 +310,11 @@ function renderMarkdown(report) {
     '',
     'Scope: diagnostic-only. This plan does not enable product CSS or claim Roll20 visual parity.',
     '',
-    '| Fixture | Priority | Strategy | Aligned mismatch | Next experiment | Promotion rule |',
-    '| --- | --- | --- | ---: | --- | --- |',
+    '| Fixture | Priority | Strategy | Aligned mismatch | Next experiment | Proof checklist | Promotion rule |',
+    '| --- | --- | --- | ---: | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.strategy} | ${fixture.alignedMismatchPct} | ${fixture.nextExperiment} | ${fixture.promotionRule} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | ${fixture.strategy} | ${fixture.alignedMismatchPct} | ${fixture.nextExperiment} | ${fixture.requiredProofChecklist.join('<br>') || 'none'} | ${fixture.promotionRule} |`);
   }
   lines.push('', '## Blockers', '');
   if (report.blockers.length) {
@@ -292,6 +326,7 @@ function renderMarkdown(report) {
     lines.push('', `## ${fixture.fixtureId}`, '');
     lines.push(`- Evidence: ${fixture.evidence.join('; ') || 'none'}`);
     lines.push(`- Blockers: ${fixture.blockers.join('; ') || 'none'}`);
+    lines.push(`- Required proof before renderer review: ${fixture.requiredProofChecklist.join('; ') || 'none'}`);
     if (fixture.signals.triedCandidates?.length) {
       lines.push('- Tried candidate evidence:');
       for (const candidate of fixture.signals.triedCandidates) {
@@ -423,6 +458,7 @@ function selfTest() {
     },
   });
   assert.equal(aw2e.strategy, 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS');
+  assert(proofChecklistForStrategy(aw2e.strategy).includes('style-proof:.sheet-rolltemplate-aw'));
   assert(aw2e.blockers.some((blocker) => blocker.includes('worst row 1 26.28%')));
   assert(aw2e.evidence.some((item) => item.includes('weighted 17.93%')));
   const yshy = classifyFixture('yshy-commission-1bu', 0.2068, {
@@ -432,6 +468,7 @@ function selfTest() {
     tableWidthDelta: -24.531,
   });
   assert.equal(yshy.strategy, 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL');
+  assert(proofChecklistForStrategy(yshy.strategy).includes('font-face-rule-order-sanitize-source-context'));
   const les = classifyFixture('official-roll20-Les-Oublies', 0.0634, {});
   assert.equal(les.strategy, 'KEEP_DEFAULT');
   const fallback = classifyFixture('unknown-fixture', 0.5, {});
