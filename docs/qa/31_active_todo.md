@@ -1,3 +1,13 @@
+## 2026-07-13 YSHY Roll20 Actual Payload and Chat Metrics Note
+
+- DONE: Re-applied `yshy-commission-1bu` to the dedicated Roll20 Sandbox/test campaign `21639681` using the generated upload helper plus the full settings save path. Existing real rooms were not modified.
+- VERIFIED: Reopened sandbox character `Witrav Upijek` and `probe:roll20-sheet-frame` passed with strong iframe markers: `sheetHitCount=65`, `rootCount=3`, `attrCount=1069`, `rollButtonCount=808`.
+- DONE: `plan:roll20-chat-capture` now supports `--out-dir`, and `capture:roll20-chat-cdp` now supports `--snippet <probe-snippet.js>`, so fresh chat sidecars can be generated from ignored temp snippets when canonical `reports/` output is locked.
+- VERIFIED: Fresh Roll20 chat capture for `roll_str_check` passed in ignored temp output with `sheet-rolltemplate-coc`, `rolltemplateCount=6`, a paired `roll20-chat.png`, and current `rowMetrics`/computed style fields.
+- EVIDENCE: Actual Roll20 CoC table computed `maxWidth=280px`, `minWidth=0px`, `display=table`, `tableLayout=auto`, but used table width was `1248.328125px`. This proves the old missing `maxWidth` field was a capture gap, and the remaining issue is table auto-layout/intrinsic sizing rather than a missing source `max-width` rule.
+- RESULT: `diagnose:roll20-chat-table-layout-constraint` now classifies YSHY as `TABLE_AUTO_LAYOUT_OVERRIDES_MAX_WIDTH_BOTH_CONTEXTS`; next renderer work should model the table auto-layout/min-content behavior directly.
+- CURRENT: Do not promote global ChatPane CSS, broad font changes, transforms, or another max-width clamp. Next P0 is a scoped `.sheet-rolltemplate-coc` intrinsic table model with AW2E/Les nonregression proof, then the same live Roll20 capture loop.
+
 ## 2026-07-13 Strict Roll20 Sheet-Frame Match TODO Note
 
 - DONE: `probe:roll20-sheet-frame` and `capture:roll20-chat-cdp` now support ignored temp output paths, so locked canonical Roll20 evidence folders no longer force agents to overwrite stale reports.
@@ -6,7 +16,7 @@
 - VERIFIED: `corepack pnpm run test:roll20-sheet-frame-probe`, `corepack pnpm run test:roll20-chat-cdp-readiness`, and syntax checks for the three touched scripts passed.
 - LIVE CHECK: Current Roll20 Witrav/YSHY attempt is now correctly blocked as `NOT_PROVEN`: `sheetHitCount=2`, `rollButtons=0`, `attrs=2`, `text=0`, activation reason `weak marker match`.
 - LIVE CHECK: A temp chat capture without clicking did succeed, but it selected `sheet-rolltemplate-classic-roll`, not YSHY `sheet-rolltemplate-coc`; that capture is not valid evidence for the YSHY CoC table P0.
-- CURRENT: Next YSHY P0 is no longer plain recapture. First reload/apply the correct `yshy-commission-1bu` payload in the dedicated Sandbox/test room until strict sheet-frame proof records strong fixture markers, then recapture `sheet-rolltemplate-coc` chat with `minWidth/maxWidth` fields and feed it through the table-layout constraint probe.
+- SUPERSEDED: The YSHY reload/apply and CoC recapture step above has now been completed in the `2026-07-13 YSHY Roll20 Actual Payload and Chat Metrics Note`. Continue from the intrinsic table model work, not from another plain recapture.
 
 ## 2026-07-13 Table Layout Constraint Probe TODO Note
 

@@ -4513,3 +4513,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Hardened `smoke:export-dialog` so the Sandbox diagnostic rows fail if those mixed English implementation terms return.
 - Verification: `guard:ui-copy`, `node --check scripts\export_dialog_browser_smoke.mjs`, `build`, `smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-sandbox-copy-20260713-r1 --port 4391`, `lint`, `git diff --check`, and `check:server-hygiene` passed. The browser smoke confirmed the new Korean diagnostic row text, `hasMojibake=false`, and zero console/page errors.
 - Claim boundary: visible UI clarity and regression coverage only. No renderer CSS was promoted, no Roll20 upload happened, no asset was relinked, and visual parity remains unproven.
+
+## 2026-07-13 YSHY Roll20 Actual Payload Reapplied and Chat Metrics Refreshed
+
+- Server hygiene before live Roll20 work: no project dev/smoke listeners were running; only the approved CDP browser on `127.0.0.1:9222` remained open for Roll20 verification.
+- Re-applied `yshy-commission-1bu` to the dedicated Roll20 Sandbox/test campaign `21639681`. The settings page apply helper reported storage/save as not enough for visual proof, so the editor was reloaded and the character iframe was probed separately.
+- Reopened sandbox character `Witrav Upijek` and captured strong sheet-frame evidence in ignored temp output: `sheetHitCount=65`, `rootCount=3`, `attrCount=1069`, `rollButtonCount=808`.
+- Added safe output routing for the live chat proof chain: `plan:roll20-chat-capture --out-dir` writes fresh snippets outside locked canonical `reports/`, and `capture:roll20-chat-cdp --snippet` can consume that temp snippet without copying private evidence into the repo.
+- Fresh Roll20 chat capture clicked `roll_str_check` and captured `sheet-rolltemplate-coc` with `rolltemplateCount=6`, paired `roll20-chat.png`, current row metrics, and computed style fields.
+- Important measured result: actual Roll20 CoC table computed `display=table`, `tableLayout=auto`, `minWidth=0px`, `maxWidth=280px`, but used table width was `1248.328125px`.
+- Feeding that sidecar into `diagnose:roll20-chat-table-layout-constraint` classified YSHY as `TABLE_AUTO_LAYOUT_OVERRIDES_MAX_WIDTH_BOTH_CONTEXTS`; source `max-width` exists and is applied, but table auto-layout/intrinsic sizing still determines used width.
+- Claim boundary: this is actual Roll20 iframe/chat evidence and a stronger root-cause classification, not visual parity and not a production renderer CSS patch. Next P0 is a scoped `.sheet-rolltemplate-coc` table intrinsic/min-content model with AW2E/Les nonregression proof.

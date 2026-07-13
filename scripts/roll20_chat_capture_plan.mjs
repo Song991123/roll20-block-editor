@@ -18,12 +18,14 @@ const onlyFixture = args.find((arg, index) => index > 0 && !arg.startsWith('--')
 const INCLUDE_ALL = args.includes('--all');
 const SELF_TEST = args.includes('--self-test');
 const REQUIRE_CURRENT_METRICS = args.includes('--require-current-metrics');
+const OUT_DIR_RAW = readOption('--out-dir', '');
+const outDir = OUT_DIR_RAW ? path.resolve(OUT_DIR_RAW) : path.join(runDir, 'roll20-chat-capture-plan');
 const MAX_CHAT_SIDECAR_AGE_MS = 5 * 60 * 1000;
 
 if (SELF_TEST) {
   runSelfTest();
 } else if (!args[0]) {
-  console.error('Usage: node scripts/roll20_chat_capture_plan.mjs reports/roll20-actual-compare/<label> [fixture-id] [--all]');
+  console.error('Usage: node scripts/roll20_chat_capture_plan.mjs reports/roll20-actual-compare/<label> [fixture-id] [--all] [--require-current-metrics] [--out-dir <ignored-temp-dir>]');
   process.exit(2);
 } else {
   main().catch((error) => {
@@ -31,8 +33,6 @@ if (SELF_TEST) {
     process.exitCode = 1;
   });
 }
-
-const outDir = path.join(runDir, 'roll20-chat-capture-plan');
 
 async function main() {
   if (!existsSync(runDir)) throw new Error(`missing run folder: ${runDir}`);
@@ -67,6 +67,11 @@ async function main() {
     requireCurrentMetrics: REQUIRE_CURRENT_METRICS,
     fixtureFilter: onlyFixture || null,
     scope: 'local-only Roll20 chat capture handoff plan; not Roll20 visual parity',
+    output: {
+      outDir,
+      canonicalOutDir: path.join(runDir, 'roll20-chat-capture-plan'),
+      outputOverride: Boolean(OUT_DIR_RAW),
+    },
     currentStatus: {
       status: status?.status ?? 'UNKNOWN',
       generatedActualScreenshots: ratio(status?.summary?.generatedPresentCount, status?.summary?.generatedTargetCount),
@@ -109,6 +114,7 @@ async function main() {
     console.log(`CHAT_CAPTURE ${entry.fixtureId}: ${entry.chat.status} ${entry.captureReasons.join('; ')}`);
   }
   console.log(`out=${rel(outDir)}`);
+  if (OUT_DIR_RAW) console.log(`canonicalOut=${rel(path.join(runDir, 'roll20-chat-capture-plan'))}`);
 }
 
 function buildEntry(fixtureId, status, chatParity, chatStructure) {
@@ -1399,4 +1405,12 @@ function escapeCell(value) {
 
 function rel(file) {
   return path.relative(process.cwd(), file);
+}
+
+function readOption(name, fallback) {
+  const index = args.indexOf(name);
+  if (index !== -1) return args[index + 1] ?? fallback;
+  const prefix = `${name}=`;
+  const match = args.find((arg) => arg.startsWith(prefix));
+  return match ? match.slice(prefix.length) : fallback;
 }

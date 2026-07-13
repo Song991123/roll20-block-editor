@@ -40,8 +40,14 @@ corepack pnpm run probe:roll20-sheet-frame -- --run-dir reports\roll20-actual-co
   --fixture <fixture-id> `
   --out-dir ..\_tmp_codex_smoke\sheet-frame-<fixture>-<label>
 
+corepack pnpm run plan:roll20-chat-capture -- reports\roll20-actual-compare\<run> <fixture-id> `
+  --require-current-metrics `
+  --all `
+  --out-dir ..\_tmp_codex_smoke\chat-plan-<fixture>-<label>
+
 corepack pnpm run capture:roll20-chat-cdp -- --run-dir reports\roll20-actual-compare\<run> `
   --fixture <fixture-id> `
+  --snippet ..\_tmp_codex_smoke\chat-plan-<fixture>-<label>\snippets\<fixture-id>-chat-dom-probe-snippet.js `
   --sheet-frame-evidence ..\_tmp_codex_smoke\sheet-frame-<fixture>-<label>\roll20-sandbox-dom-evidence.json `
   --out-dir ..\_tmp_codex_smoke\chat-capture-<fixture>-<label>
 
@@ -50,10 +56,10 @@ corepack pnpm run diagnose:roll20-chat-table-layout-constraint -- reports\roll20
   --out-dir ..\_tmp_codex_smoke\table-layout-constraint-<fixture>-<label>
 ```
 
-Do not copy temp sidecars into the canonical report folder just to make later
-commands pass. Either pass explicit overrides or recapture the canonical run in
-a clean session. Temp actual evidence is still local-only and not a parity
-claim.
+Do not copy temp snippets or sidecars into the canonical report folder just to
+make later commands pass. Either pass explicit overrides (`--snippet`,
+`--sheet-frame-evidence`, `--actual-sidecar`) or recapture the canonical run in a
+clean session. Temp actual evidence is still local-only and not a parity claim.
 
 To test a renderer action gate against isolated root diagnostics without copying
 those reports back into the canonical run, pass the report directories as

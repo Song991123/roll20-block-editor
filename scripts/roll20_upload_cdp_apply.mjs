@@ -26,6 +26,8 @@ const SETTINGS_URL = readOption(
   '--settings-url',
   ENDPOINT_CAMPAIGN_ID ? `https://app.roll20.net/sheetsandbox/settings/${ENDPOINT_CAMPAIGN_ID}` : '',
 );
+const OUT_DIR_RAW = readOption('--out-dir', '');
+const OUT_DIR = OUT_DIR_RAW ? path.resolve(OUT_DIR_RAW) : '';
 const STAY_ON_CURRENT_PAGE = hasFlag('--stay-on-current-page');
 const DRY_RUN = hasFlag('--dry-run');
 const SELF_TEST = hasFlag('--self-test');
@@ -36,7 +38,7 @@ if (SELF_TEST) {
 }
 
 if (!RUN_DIR || !FIXTURE_ID || !ENDPOINT_CAMPAIGN_ID) {
-  console.error('Usage: node scripts/roll20_upload_cdp_apply.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> --endpoint-campaign-id <sandboxCampaignId> [--cdp http://127.0.0.1:9222] [--settings-url <url>] [--stay-on-current-page] [--dry-run]');
+  console.error('Usage: node scripts/roll20_upload_cdp_apply.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> --endpoint-campaign-id <sandboxCampaignId> [--out-dir <ignored-temp-dir>] [--cdp http://127.0.0.1:9222] [--settings-url <url>] [--stay-on-current-page] [--dry-run]');
   process.exit(2);
 }
 
@@ -104,7 +106,7 @@ async function main() {
       ].join('\n'));
     }
 
-    const outDir = path.join(RUN_DIR, 'roll20-upload-handoff', 'cdp-apply');
+    const outDir = OUT_DIR || path.join(RUN_DIR, 'roll20-upload-handoff', 'cdp-apply');
     await mkdir(outDir, { recursive: true });
     const outPath = path.join(outDir, `${FIXTURE_ID}-cdp-apply-result.json`);
 
@@ -116,6 +118,7 @@ async function main() {
         page: readiness,
         snippetPath,
         outPath,
+        canonicalOutDir: path.join(RUN_DIR, 'roll20-upload-handoff', 'cdp-apply'),
       };
       await writeFile(outPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
       printResult('DRY_RUN_READY', report, outPath);

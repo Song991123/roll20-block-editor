@@ -33,6 +33,7 @@ const PLAN_ONLY = hasFlag('--plan-only') || hasFlag('--print-plan');
 const SELF_TEST_READINESS = hasFlag('--self-test-readiness');
 const OUT_DIR_RAW = readOption('--out-dir', '');
 const OUT_DIR = OUT_DIR_RAW ? path.resolve(OUT_DIR_RAW) : '';
+const SNIPPET_RAW = readOption('--snippet', '');
 
 if (SELF_TEST_READINESS) {
   runReadinessSelfTest();
@@ -40,18 +41,19 @@ if (SELF_TEST_READINESS) {
 }
 
 if (!RUN_DIR || !FIXTURE_ID) {
-  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--out-dir <ignored-temp-dir>] [--sheet-frame-evidence <json>] [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--expected-template-class sheet-rolltemplate-name] [--skip-click] [--keep-dialogs] [--dry-run] [--plan-only] [--self-test-readiness]');
+  console.error('Usage: node scripts/roll20_chat_cdp_capture.mjs --run-dir reports/roll20-actual-compare/<label> --fixture <fixture-id> [--out-dir <ignored-temp-dir>] [--snippet <probe-snippet.js>] [--sheet-frame-evidence <json>] [--cdp http://127.0.0.1:9222] [--roll-button roll_name] [--expected-template-class sheet-rolltemplate-name] [--skip-click] [--keep-dialogs] [--dry-run] [--plan-only] [--self-test-readiness]');
   process.exit(2);
 }
 
 const screenshotsDir = path.join(RUN_DIR, 'local-baseline', FIXTURE_ID, 'screenshots');
 const outputDir = OUT_DIR || screenshotsDir;
-const snippetPath = path.join(RUN_DIR, 'roll20-chat-capture-plan', 'snippets', `${FIXTURE_ID}-chat-dom-probe-snippet.js`);
+const canonicalSnippetPath = path.join(RUN_DIR, 'roll20-chat-capture-plan', 'snippets', `${FIXTURE_ID}-chat-dom-probe-snippet.js`);
+const snippetPath = SNIPPET_RAW ? path.resolve(SNIPPET_RAW) : canonicalSnippetPath;
 const chatPngPath = path.join(outputDir, 'roll20-chat.png');
 const sidecarPath = path.join(outputDir, 'roll20-chat-dom-evidence.json');
 const sheetFrameEvidencePath = path.resolve(readOption('--sheet-frame-evidence', path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json')));
 const sheetFrameProbeCommand = `corepack pnpm run probe:roll20-sheet-frame -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}${OUT_DIR ? ` --out-dir ${rel(path.join(OUT_DIR, 'sheet-frame'))}` : ''}`;
-const chatCaptureCommand = `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}${OUT_DIR ? ` --out-dir ${rel(OUT_DIR)}` : ''}${sheetFrameEvidencePath !== path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json') ? ` --sheet-frame-evidence ${rel(sheetFrameEvidencePath)}` : ''}`;
+const chatCaptureCommand = `corepack pnpm run capture:roll20-chat-cdp -- --run-dir ${rel(RUN_DIR)} --fixture ${FIXTURE_ID}${OUT_DIR ? ` --out-dir ${rel(OUT_DIR)}` : ''}${SNIPPET_RAW ? ` --snippet ${rel(snippetPath)}` : ''}${sheetFrameEvidencePath !== path.join(screenshotsDir, 'roll20-sandbox-dom-evidence.json') ? ` --sheet-frame-evidence ${rel(sheetFrameEvidencePath)}` : ''}`;
 
 main().catch((error) => {
   const message = String(error?.message ?? error);
@@ -66,7 +68,7 @@ main().catch((error) => {
 async function main() {
   if (!existsSync(RUN_DIR)) throw new Error(`missing run dir: ${RUN_DIR}`);
   if (!existsSync(snippetPath)) {
-    throw new Error(`missing chat probe snippet: ${snippetPath}\nRun: corepack pnpm run plan:roll20-chat-capture -- ${rel(RUN_DIR)} ${FIXTURE_ID} --require-current-metrics`);
+    throw new Error(`missing chat probe snippet: ${snippetPath}\nRun: corepack pnpm run plan:roll20-chat-capture -- ${rel(RUN_DIR)} ${FIXTURE_ID} --require-current-metrics${OUT_DIR ? ` --out-dir ${rel(path.join(OUT_DIR, 'plan'))}` : ''}`);
   }
   await mkdir(outputDir, { recursive: true });
 
@@ -76,6 +78,7 @@ async function main() {
     console.log(`fixture=${FIXTURE_ID}`);
     console.log(`run=${rel(RUN_DIR)}`);
     console.log(`snippet=${rel(snippetPath)}`);
+    if (SNIPPET_RAW) console.log(`canonicalSnippet=${rel(canonicalSnippetPath)}`);
     console.log(`chatPng=${rel(chatPngPath)}`);
     console.log(`sidecar=${rel(sidecarPath)}`);
     console.log(`sheetFrameEvidence=${rel(sheetFrameEvidencePath)}`);
@@ -110,6 +113,7 @@ async function main() {
       console.log(`expectedTemplateClass=${EXPECTED_TEMPLATE_CLASS || '(none)'}`);
       console.log(`keepDialogs=${KEEP_DIALOGS ? 'YES' : 'NO'}`);
       console.log(`snippet=${rel(snippetPath)}`);
+      if (SNIPPET_RAW) console.log(`canonicalSnippet=${rel(canonicalSnippetPath)}`);
       console.log(`sheetFrameEvidence=${rel(sheetFrameEvidencePath)}`);
       console.log(`targets=${rel(chatPngPath)}, ${rel(sidecarPath)}`);
       if (!readiness.ready) console.log(`next=${readiness.nextAction}`);
