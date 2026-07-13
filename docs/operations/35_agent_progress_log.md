@@ -7,6 +7,7 @@
 - Verification: `diagnose:roll20-chat-background-raster` classified AW2E/YSHY as `FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED`; YSHY row mismatch is `21.41%` and luma gain is only `+0.57%`.
 - Verification: `diagnose:roll20-chat-background-assets` found AW2E/YSHY local and actual proxy bytes match, but both source paths resolve to `200 image/png 503b png 161x81 removed.png`.
 - Verification: with current temp overrides, `plan:roll20-chat-assets` returned `HOLD_RENDERER_FOR_ASSET_POLICY` with `4` blockers, and `plan:roll20-chat-browser-paint` returned `BROWSER_PAINT_BLOCKED_BY_RELINK`.
+- Verification: `plan:roll20-asset-relink` wrote ignored template `..\_tmp_codex_smoke\asset-relink-current-20260713-r1\asset-relink-map-template.txt` and reported `RELINK_MAP_REQUIRED`, required `2`, covered Roll20-ready `0`, missing `2`.
 - Current evidence: fill the local-only asset replacement map with user-owned HTTP(S) URLs, rerun preupload/Sandbox comparison, then rerun browser-paint routing. Do not promote another width/font/background-size ChatPane CSS candidate before that.
 
 ## 2026-07-13 YSHY Roll20 Fallback Stack Rejection

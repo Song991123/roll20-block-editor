@@ -7,6 +7,7 @@
 - VERIFIED: `diagnose:roll20-chat-background-raster` classifies AW2E and YSHY as `FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED`, with YSHY row mismatch `21.41%` and weak luma gain `+0.57%`.
 - VERIFIED: `diagnose:roll20-chat-background-assets` reports AW2E/YSHY local and actual proxy bytes match, but both resolve to the same tiny source placeholder (`200 image/png 503b png 161x81 removed.png`).
 - VERIFIED: `plan:roll20-chat-assets` stays `HOLD_RENDERER_FOR_ASSET_POLICY` with `4` blockers, and `plan:roll20-chat-browser-paint` now returns `BROWSER_PAINT_BLOCKED_BY_RELINK` for AW2E/YSHY when fed the current temp evidence.
+- VERIFIED: `plan:roll20-asset-relink` generated ignored template `..\_tmp_codex_smoke\asset-relink-current-20260713-r1\asset-relink-map-template.txt` and reports `RELINK_MAP_REQUIRED`, required `2`, covered Roll20-ready `0`, missing `2`.
 - CURRENT: Browser-paint/decode work is blocked until affected assets are relinked to user-owned HTTP(S) URLs and the local preupload plus Roll20 Sandbox comparison are rerun. Do not chase another width/font/background-size CSS candidate before that.
 - NEXT P0: Use the local-only asset replacement map flow for AW2E/YSHY, then rerun preupload/Sandbox screenshots and the same browser-paint plan with the relinked evidence.
 
