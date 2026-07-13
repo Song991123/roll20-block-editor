@@ -27,7 +27,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { importSheet } from '@/lib/import';
-import { analyzeAssetRefs, type AssetPreflight } from '@/lib/export/asset_refs';
+import {
+  analyzeAssetRefs,
+  buildAssetReplacementDraft,
+  type AssetPreflight,
+} from '@/lib/export/asset_refs';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import {
   moveImportedWorkerBlocksToWorkspace,
@@ -233,7 +237,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   }
 
   function handleCreateAssetReplacementDraft() {
-    const draft = buildAssetReplacementDraft(assetPreflight);
+    const draft = buildAssetReplacementDraft(assetPreflight, {
+      sourceLabel: 'import preflight',
+    });
     if (!draft) {
       toast('교체할 외부 자산 URL이 없습니다.', { duration: 2200 });
       return;
@@ -486,33 +492,3 @@ function ImportAssetMetric({ label, value }: { label: string; value: number }) {
 }
 
 export default ImportDialog;
-
-function buildAssetReplacementDraft(result: AssetPreflight): string {
-  const refs = result.refs.flatMap((ref) => {
-    if (ref.kind === 'data-url') return [];
-    const reason = ref.placeholderRisk
-      ? 'placeholder-risk'
-      : ref.kind === 'relative-url'
-        ? 'relative-path'
-        : 'external-url';
-    return (ref.replacementRefs.length ? ref.replacementRefs : [ref.ref]).map((candidate) => ({
-      candidate,
-      reason: candidate === ref.proxySourceRef ? `${reason}:proxy-source` : reason,
-    }));
-  });
-  const uniqueRefs = Array.from(
-    new Map(refs.map((item) => [item.candidate, item])).values(),
-  );
-  if (uniqueRefs.length === 0) return '';
-  const lines = [
-    '# Asset replacement draft from import preflight.',
-    '# Remove the leading "# " after replacing <paste-user-owned-url-here>.',
-  ];
-  for (const item of uniqueRefs.slice(0, 50)) {
-    lines.push(`# ${item.candidate} => <paste-user-owned-url-here> # ${item.reason}`);
-  }
-  if (uniqueRefs.length > 50) {
-    lines.push(`# ... ${uniqueRefs.length - 50} more refs omitted from this draft.`);
-  }
-  return lines.join('\n');
-}

@@ -24,6 +24,12 @@ export interface AssetPreflight {
   refs: AssetRefSummary[];
 }
 
+export interface AssetReplacementDraftOptions {
+  sourceLabel?: string;
+  limit?: number;
+  targetPlaceholder?: string;
+}
+
 export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
   const refs = Array.from(new Set([...extractCssUrls(css), ...extractHtmlAssetUrls(html)]));
   let externalRefs = 0;
@@ -106,6 +112,43 @@ export function analyzeAssetRefs(html: string, css: string): AssetPreflight {
     hosts: Array.from(hosts).sort(),
     refs: refSummaries,
   };
+}
+
+export function buildAssetReplacementDraft(
+  result: AssetPreflight,
+  options: AssetReplacementDraftOptions = {},
+): string {
+  const limit = Math.max(1, Math.floor(options.limit ?? 50));
+  const targetPlaceholder = options.targetPlaceholder ?? '<paste-user-owned-https-url-here>';
+  const sourceLabel = options.sourceLabel ?? 'asset preflight';
+  const refs = result.refs.flatMap((ref) => {
+    if (ref.kind === 'data-url') return [];
+    const reason = ref.placeholderRisk
+      ? 'placeholder-risk'
+      : ref.kind === 'relative-url'
+        ? 'relative-path'
+        : 'external-url';
+    return (ref.replacementRefs.length ? ref.replacementRefs : [ref.ref]).map((candidate) => ({
+      candidate,
+      reason: candidate === ref.proxySourceRef ? `${reason}:proxy-source` : reason,
+    }));
+  });
+  const uniqueRefs = Array.from(
+    new Map(refs.map((item) => [item.candidate, item])).values(),
+  );
+  if (uniqueRefs.length === 0) return '';
+  const lines = [
+    `# Asset replacement draft from ${sourceLabel}.`,
+    `# Replace ${targetPlaceholder} with a user-owned http(s) URL that Roll20 can fetch.`,
+    '# Remove the leading "# " after filling each URL.',
+  ];
+  for (const item of uniqueRefs.slice(0, limit)) {
+    lines.push(`# ${item.candidate} => ${targetPlaceholder} # ${item.reason}`);
+  }
+  if (uniqueRefs.length > limit) {
+    lines.push(`# ... ${uniqueRefs.length - limit} more refs omitted from this draft.`);
+  }
+  return lines.join('\n');
 }
 
 function extractCssUrls(css: string): string[] {

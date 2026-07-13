@@ -3936,6 +3936,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verification: `diagnose:roll20-chat-residual`, `gate:roll20-renderer-action`, `corepack pnpm run lint`, and `corepack pnpm run build`.
 - Claim boundary: this is a diagnostic classifier. It does not change production ChatPane CSS and does not prove Roll20 chat parity.
 
+## 2026-07-13 Export Asset Relink Draft
+
+- Moved asset replacement draft generation into shared `lib/export/asset_refs.ts` so import and export use the same URL classification and commented map format.
+- Export dialog now has a `교체 목록 초안 만들기` action that appends commented `old URL => <paste-user-owned-https-url-here>` entries from the current exported HTML/CSS refs.
+- `smoke:export-dialog` now verifies both import-side and export-side draft creation, the shared preview/edit/export replacement persistence path, and 0 console/page/request failures.
+- Added a retry wrapper around the smoke's screenshot calls after Chromium returned a transient `Page.captureScreenshot` protocol error.
+- Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\export-dialog-asset-draft-20260713-r3 --port 4381`.
+- Claim boundary: this is user-facing relink workflow progress only. It does not supply replacement asset URLs, relink AW2E/YSHY, promote renderer CSS, or prove Roll20 visual parity.
+
 ## 2026-06-20 Template Typography Candidate Rejected
 
 - Tested the Les-Oublies hypothesis that the remaining chat mismatch was mainly template typography/color/letter-spacing/font-smoothing.

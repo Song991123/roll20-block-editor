@@ -39,7 +39,11 @@ import {
   type AssetReplacementWarning,
   type AssetReplacementReadiness,
 } from '@/lib/export/asset_replacements';
-import { analyzeAssetRefs, type AssetPreflight } from '@/lib/export/asset_refs';
+import {
+  analyzeAssetRefs,
+  buildAssetReplacementDraft,
+  type AssetPreflight,
+} from '@/lib/export/asset_refs';
 import {
   sanitizeForRoll20Legacy,
   type SanitizeWarning,
@@ -248,6 +252,21 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     }
   }
 
+  function handleCreateAssetReplacementDraft() {
+    const draft = buildAssetReplacementDraft(assetPreflight, {
+      sourceLabel: 'export preflight',
+    });
+    if (!draft) {
+      toast('교체할 외부 자산 URL이 없습니다.', { duration: 2200 });
+      return;
+    }
+    const next = [assetReplacementText.trim(), draft].filter(Boolean).join('\n\n');
+    setAssetReplacementText(next);
+    toast.success('현재 내보내기 기준으로 자산 URL 교체 초안을 만들었습니다.', {
+      duration: 3500,
+    });
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -380,6 +399,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           <AssetReplacementPanel
             value={assetReplacementText}
             onChange={setAssetReplacementText}
+            assetPreflight={assetPreflight}
             replacements={exportText.replacements}
             readiness={assetReplacementReadiness}
             warnings={exportText.warnings}
@@ -399,6 +419,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               deleteAssetReplacementProfile(id);
               toast.success('자산 URL 교체 묶음을 삭제했습니다.');
             }}
+            onCreateDraft={handleCreateAssetReplacementDraft}
           />
 
           <section
@@ -652,6 +673,7 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
 function AssetReplacementPanel({
   value,
   onChange,
+  assetPreflight,
   replacements,
   readiness,
   warnings,
@@ -660,9 +682,11 @@ function AssetReplacementPanel({
   onSaveProfile,
   onLoadProfile,
   onDeleteProfile,
+  onCreateDraft,
 }: {
   value: string;
   onChange: (value: string) => void;
+  assetPreflight: AssetPreflight;
   replacements: number;
   readiness: AssetReplacementReadiness;
   warnings: AssetReplacementWarning[];
@@ -671,8 +695,10 @@ function AssetReplacementPanel({
   onSaveProfile: (name: string) => string | null;
   onLoadProfile: (id: string) => void;
   onDeleteProfile: (id: string) => void;
+  onCreateDraft: () => void;
 }) {
   const active = value.trim().length > 0;
+  const draftableRefs = assetPreflight.refs.filter((ref) => ref.kind !== 'data-url').length;
   const [profileName, setProfileName] = useState('');
   const activeProfile = profiles.find((profile) => profile.id === activeProfileId) ?? null;
   const saveDisabled = !active || !profileName.trim();
@@ -737,6 +763,23 @@ function AssetReplacementPanel({
         className="min-h-20 w-full resize-y rounded border border-border bg-[var(--bg-elevated-2)] px-2.5 py-2 font-mono text-[11px] leading-relaxed"
         data-testid="export-asset-replacement-input"
       />
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 px-2"
+          disabled={draftableRefs === 0}
+          onClick={onCreateDraft}
+          data-testid="export-asset-replacement-draft"
+        >
+          교체 목록 초안 만들기
+        </Button>
+        <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+          현재 내보내기 HTML/CSS에서 감지한 외부 URL과 상대 경로를 commented map으로 넣습니다.
+          실제 Roll20 검증에는 사용자가 다시 올린 http(s) URL이 필요합니다.
+        </span>
+      </div>
       <div
         className="mt-2 grid grid-cols-1 gap-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] p-2 sm:grid-cols-[minmax(0,1fr)_auto]"
         data-testid="export-asset-replacement-profiles"

@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { analyzeAssetRefs } from '../asset_refs.ts';
+import { analyzeAssetRefs, buildAssetReplacementDraft } from '../asset_refs.ts';
 
 const result = analyzeAssetRefs(
   [
@@ -69,4 +69,12 @@ assert.deepEqual(
     },
   ],
 );
+
+const draft = buildAssetReplacementDraft(result, { sourceLabel: 'unit test' });
+assert.match(draft, /Asset replacement draft from unit test/);
+assert.match(draft, /https:\/\/imgsrv\.roll20\.net\/\?src=https:\/\/imgur\.com\/dead => <paste-user-owned-https-url-here> # placeholder-risk/);
+assert.match(draft, /https:\/\/imgur\.com\/dead => <paste-user-owned-https-url-here> # placeholder-risk/);
+assert.match(draft, /local\/background\.png => <paste-user-owned-https-url-here> # relative-path/);
+assert.doesNotMatch(draft, /data:image\/png/);
+
 console.log('asset_refs.test PASS');

@@ -1,3 +1,11 @@
+## 2026-07-13 Export Asset Relink Draft TODO Note
+
+- DONE: Shared the asset replacement draft builder between import and export flows. The export dialog can now generate a commented `old URL => <paste-user-owned-https-url-here>` draft from the current exported HTML/CSS asset refs, not only from the import dialog.
+- DONE: `smoke:export-dialog` now verifies the export draft button, an enabled draft path for an exported asset URL, source URL preservation in the commented map, export-source labeling, and the existing preview/edit/export replacement persistence path.
+- DONE: Hardened the export dialog smoke screenshot calls with a short retry so transient Chromium `Page.captureScreenshot` protocol errors do not mask real UI checks.
+- VERIFIED: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run test:asset-refs`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\export-dialog-asset-draft-20260713-r3 --port 4381` passed.
+- CURRENT: This removes one user-facing relink friction point. AW2E/YSHY still need real user-owned HTTP(S) replacement URLs, followed by local preview/edit/export rerun and Roll20 Sandbox/test-room re-comparison before renderer CSS can be promoted or visual parity can be claimed.
+
 ## 2026-07-13 Roll20 Sandbox Font Proxy Candidate TODO Note
 
 - DONE: Added a diagnostic-only `roll20-sandbox-font-proxy` ChatPane font policy. It suppresses document-level user font registration and rewrites rolltemplate font URLs through the Roll20 image-proxy approximation so the font-url/sandbox hypothesis can be measured instead of guessed.

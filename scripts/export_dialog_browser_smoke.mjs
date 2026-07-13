@@ -75,6 +75,20 @@ async function readMaybe(file) {
   }
 }
 
+async function safeScreenshot(page, file) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await page.screenshot({ path: file });
+      return;
+    } catch (err) {
+      lastError = err;
+      await page.waitForTimeout(350 * attempt);
+    }
+  }
+  throw lastError;
+}
+
 async function loadFixture(id) {
   if (!id) return null;
   const dir = path.join(FIXTURES_DIR, id);
@@ -278,6 +292,43 @@ async function verifyAssetReplacementRender(page) {
   return { oldUrl, newUrl, preview, edit, persisted, restored, exportMapUi };
 }
 
+async function verifyExportAssetDraft(page) {
+  const sourceUrl = 'https://imgur.com/export-dead';
+  await warmPerfHook(page);
+  await page.evaluate(async ({ html }) => {
+    window.__perfHook.clearAll();
+    window.__perfHook.setAssetReplacementMap('');
+    await window.__perfHook.importSheet({ html, css: '', i18n: '{}' });
+    window.__perfHook.setMainMode('preview');
+  }, { html: `<a href="${sourceUrl}">export asset probe</a>` });
+
+  await page.click('[data-testid="header-export-button"]');
+  await page.waitForSelector('[data-testid="export-asset-replacement-draft"]', { timeout: 15000 });
+  const before = await page.evaluate(() => ({
+    disabled: Boolean(document.querySelector('[data-testid="export-asset-replacement-draft"]')?.disabled),
+  }));
+  await page.click('[data-testid="export-asset-replacement-draft"]');
+  await page.waitForFunction(
+    ({ url }) => window.__perfHook.getAssetReplacementMap().includes(url),
+    { url: sourceUrl },
+    { timeout: 15000 },
+  );
+  const after = await page.evaluate(({ url }) => {
+    const map = window.__perfHook.getAssetReplacementMap();
+    return {
+      hasSourceUrl: map.includes(url),
+      isCommentedDraft: map.includes(`# ${url} => <paste-user-owned-https-url-here>`),
+      hasExportSourceLabel: map.includes('Asset replacement draft from export preflight.'),
+    };
+  }, { url: sourceUrl });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[data-testid="export-asset-replacement-draft"]', {
+    state: 'detached',
+    timeout: 5000,
+  }).catch(() => {});
+  return { sourceUrl, before, after };
+}
+
 async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
   const fixture = await loadFixture(FIXTURE_ID);
@@ -365,7 +416,7 @@ async function main() {
     });
     result.checks.shell.hasMojibake = hasMojibake(result.checks.shell.bodyText);
     delete result.checks.shell.bodyText;
-    await page.screenshot({ path: path.join(REPORT_DIR, 'initial-shell.png') });
+    await safeScreenshot(page, path.join(REPORT_DIR, 'initial-shell.png'));
 
     await page.click('[data-testid="header-export-button"]');
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', { timeout: 15000 });
@@ -395,6 +446,7 @@ async function main() {
         hasAssetPlaceholderMetric: dialogText.includes('placeholder risk'),
         hasAssetReplacementMap: Boolean(document.querySelector('[data-testid="export-asset-replacement-map"]')),
         hasAssetReplacementInput: Boolean(document.querySelector('[data-testid="export-asset-replacement-input"]')),
+        hasAssetReplacementDraft: Boolean(document.querySelector('[data-testid="export-asset-replacement-draft"]')),
         hasAssetReplacementProfiles: Boolean(document.querySelector('[data-testid="export-asset-replacement-profiles"]')),
         hasAssetProfileName: Boolean(document.querySelector('[data-testid="export-asset-profile-name"]')),
         hasAssetProfileSelect: Boolean(document.querySelector('[data-testid="export-asset-profile-select"]')),
@@ -410,7 +462,7 @@ async function main() {
     });
     result.checks.exportDialog.hasMojibake = hasMojibake(result.checks.exportDialog.dialogText);
     delete result.checks.exportDialog.dialogText;
-    await page.screenshot({ path: path.join(REPORT_DIR, 'export-dialog.png') });
+    await safeScreenshot(page, path.join(REPORT_DIR, 'export-dialog.png'));
 
     await page.keyboard.press('Escape');
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', {
@@ -438,11 +490,12 @@ async function main() {
       const map = window.__perfHook.getAssetReplacementMap();
       return {
         hasSourceUrl: map.includes('https://imgur.com/dead'),
-        isCommentedDraft: map.includes('# https://imgur.com/dead => <paste-user-owned-url-here>'),
+        isCommentedDraft: map.includes('# https://imgur.com/dead => <paste-user-owned-https-url-here>'),
       };
     });
 
     await page.keyboard.press('Escape');
+    result.checks.exportAssetDraft = await verifyExportAssetDraft(page);
     result.checks.assetReplacementRender = await verifyAssetReplacementRender(page);
     await page.click('[data-testid="main-mode-edit"]');
     result.checks.mainModeEdit = await page.evaluate(() => ({
@@ -492,6 +545,7 @@ async function main() {
     if (!result.checks.exportDialog.hasAssetPlaceholderMetric) failures.push('asset placeholder metric missing');
     if (!result.checks.exportDialog.hasAssetReplacementMap) failures.push('asset replacement map missing');
     if (!result.checks.exportDialog.hasAssetReplacementInput) failures.push('asset replacement input missing');
+    if (!result.checks.exportDialog.hasAssetReplacementDraft) failures.push('asset replacement draft button missing');
     if (!result.checks.exportDialog.hasAssetReplacementProfiles) failures.push('asset replacement profile manager missing');
     if (!result.checks.exportDialog.hasAssetProfileName) failures.push('asset replacement profile name input missing');
     if (!result.checks.exportDialog.hasAssetProfileSelect) failures.push('asset replacement profile select missing');
@@ -519,6 +573,10 @@ async function main() {
     if (!result.checks.importDialog.hasAssetReplacementDraft) failures.push('import asset replacement draft button missing');
     if (!result.checks.importAssetDraft.hasSourceUrl) failures.push('import asset draft missing source URL');
     if (!result.checks.importAssetDraft.isCommentedDraft) failures.push('import asset draft should be commented until user relinks');
+    if (result.checks.exportAssetDraft.before.disabled) failures.push('export asset draft button disabled for export asset URL');
+    if (!result.checks.exportAssetDraft.after.hasSourceUrl) failures.push('export asset draft missing source URL');
+    if (!result.checks.exportAssetDraft.after.isCommentedDraft) failures.push('export asset draft should be commented until user relinks');
+    if (!result.checks.exportAssetDraft.after.hasExportSourceLabel) failures.push('export asset draft source label missing');
     if (!result.checks.assetReplacementRender.preview.hasNewUrl) failures.push('asset replacement did not reach preview iframe');
     if (result.checks.assetReplacementRender.preview.hasOldUrl) failures.push('original asset URL leaked in preview iframe');
     if (result.checks.assetReplacementRender.preview.profileCount < 1) failures.push('asset replacement profile was not created in preview store');
