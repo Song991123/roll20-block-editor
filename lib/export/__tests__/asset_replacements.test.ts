@@ -30,6 +30,20 @@ function testHtmlAndCssReplacement(): void {
   assert.match(result.css, /https:\/\/assets\.example\.com\/live\.png/);
 }
 
+function testInlineDraftNoteIsNotPartOfTarget(): void {
+  const parsed = parseAssetReplacementMap(
+    'https://imgur.com/dead.png => https://i.imgur.com/dead.png # imgur-direct-image:verify-permission',
+  );
+  assert.equal(parsed.entries.length, 1);
+  assert.equal(parsed.entries[0].to, 'https://i.imgur.com/dead.png');
+
+  const result = applyAssetReplacements(
+    { html: '<img src="https://imgur.com/dead.png">', css: '' },
+    'https://imgur.com/dead.png => https://i.imgur.com/dead.png # imgur-direct-image:verify-permission',
+  );
+  assert.equal(result.html, '<img src="https://i.imgur.com/dead.png">');
+}
+
 function testUnsafeTargetWarning(): void {
   const parsed = parseAssetReplacementMap('https://old.example/a.png => javascript:alert(1)');
   assert.equal(parsed.entries.length, 0);
@@ -70,6 +84,7 @@ function testRoll20ReadinessSummary(): void {
 
 testValidAndInvalidLines();
 testHtmlAndCssReplacement();
+testInlineDraftNoteIsNotPartOfTarget();
 testUnsafeTargetWarning();
 testPlaceholderTargetWarning();
 testRoll20ReadinessSummary();

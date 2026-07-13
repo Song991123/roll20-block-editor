@@ -3507,3 +3507,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-asset-canonical-20260713-r3 --port 4388` passed. The browser smoke confirms import/export drafts contain canonical suggestions and the new metrics render with no console/page errors.
 - CURRENT: This helps users relink blocked/dead/external assets before Roll20 comparison, but it still does not apply candidates automatically and does not prove visual parity.
 - STILL TODO: Fill user-owned replacement URLs for the active fixtures, rerun local preview/edit/export with the map, then compare in Roll20 Sandbox/test room.
+
+## 2026-07-13 Asset Relink CLI Canonical Template TODO Note
+
+- DONE: `plan:roll20-asset-relink` now writes the same kind of commented canonical/direct candidates into `asset-relink-map-template.txt` that the import/export UI draft shows.
+- DONE: Replacement-map parsers strip trailing generated explanation notes such as `# imgur-direct-image:verify-permission` after a user activates a draft line, so the note is not treated as part of the replacement URL.
+- VERIFIED: `test:asset-replacements`, `test:roll20-asset-relink`, and a live ignored run `plan:roll20-asset-relink -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\asset-relink-canonical-template-20260713-r1` passed. The live template contains `verify-permission` suggestions and remains local-only.
+- CURRENT: Active fixtures still need user-owned HTTP(S) replacement URLs before local preupload and Roll20 Sandbox/test-room recomparison can move forward.

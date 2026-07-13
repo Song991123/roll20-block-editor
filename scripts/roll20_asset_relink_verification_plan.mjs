@@ -136,7 +136,7 @@ function parseReplacementMap(text) {
       warnings.push({ line: index + 1, message: 'expected old URL => new URL' });
       return;
     }
-    const target = parts[1].trim();
+    const target = cleanReplacementValue(parts[1]);
     if (isPlaceholderReplacementTarget(target)) {
       warnings.push({
         line: index + 1,
@@ -146,7 +146,7 @@ function parseReplacementMap(text) {
     }
     entries.push({
       line: index + 1,
-      from: parts[0].trim(),
+      from: cleanReplacementValue(parts[0]),
       to: target,
       targetKind: classifyTarget(target),
     });
@@ -161,6 +161,14 @@ function isPlaceholderReplacementTarget(url) {
     normalized.includes('paste-user-owned') ||
     normalized.includes('user-owned-https-url')
   );
+}
+
+function cleanReplacementValue(value) {
+  return stripInlineReplacementNote(String(value ?? '').trim().replace(/^['"]|['"]$/g, '').replaceAll('&amp;', '&'));
+}
+
+function stripInlineReplacementNote(value) {
+  return value.replace(/\s+#\s+.*$/, '').trim();
 }
 
 function classifyTarget(url) {
@@ -180,6 +188,7 @@ function classifyFixture(fixture, parsedMap) {
     };
   }
   const candidates = assetCandidateUrls(fixture.asset ?? {});
+  const canonicalSuggestions = canonicalReplacementSuggestions(candidates);
   const coveringEntry = parsedMap.entries.find((entry) => coversAnyCandidate(entry.from, candidates));
   const coverage = !coveringEntry
     ? 'MISSING_RELINK'
@@ -192,6 +201,7 @@ function classifyFixture(fixture, parsedMap) {
     decision: fixture.decision,
     coverage,
     candidateUrls: candidates,
+    canonicalSuggestions,
     sourceUrl: fixture.asset?.sourceUrl ?? '',
     localCssUrl: fixture.asset?.localCssUrl ?? '',
     actualCssUrl: fixture.asset?.actualCssUrl ?? '',
@@ -214,6 +224,80 @@ function assetCandidateUrls(asset) {
     protocolVariant(extractProxySrc(asset.actualCssUrl)),
   ];
   return [...new Set(values.filter(Boolean).map((value) => value.trim()))];
+}
+
+function canonicalReplacementSuggestions(candidates) {
+  const suggestions = [];
+  const seen = new Set();
+  for (const candidate of candidates) {
+    const canonical = canonicalDirectAssetRef(candidate);
+    if (!canonical || canonical.ref === candidate) continue;
+    const key = `${candidate}\u0000${canonical.ref}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    suggestions.push({
+      from: candidate,
+      to: canonical.ref,
+      reason: `${canonical.reason}:verify-permission`,
+    });
+  }
+  return suggestions;
+}
+
+function canonicalDirectAssetRef(ref) {
+  const url = parseExternalUrl(ref);
+  if (!url) return null;
+
+  const host = url.hostname.toLowerCase();
+  if (host === 'imgsrv.roll20.net') {
+    const src = url.searchParams.get('src');
+    const canonical = src ? canonicalDirectAssetRef(src) : null;
+    return canonical
+      ? {
+          ref: canonical.ref,
+          reason: canonical.reason === 'imgur-direct-image'
+            ? 'roll20-proxy-imgur-direct-image'
+            : `roll20-proxy-${canonical.reason}`,
+        }
+      : null;
+  }
+
+  if ((host === 'imgur.com' || host === 'www.imgur.com') && isImagePath(url.pathname)) {
+    return {
+      ref: `https://i.imgur.com${url.pathname}${url.search}`,
+      reason: 'imgur-direct-image',
+    };
+  }
+
+  if (url.protocol === 'http:') {
+    const upgraded = new URL(url.toString());
+    upgraded.protocol = 'https:';
+    return {
+      ref: upgraded.toString(),
+      reason: host === 'i.imgur.com' ? 'imgur-https-upgrade' : 'https-upgrade',
+    };
+  }
+
+  if (String(ref).startsWith('//')) {
+    return {
+      ref: `https:${ref}`,
+      reason: 'protocol-relative-https',
+    };
+  }
+
+  return null;
+}
+
+function parseExternalUrl(ref) {
+  try {
+    if (String(ref).startsWith('//')) return new URL(`https:${ref}`);
+    if (/^https?:\/\//i.test(ref)) return new URL(ref);
+  } catch {}
+  return null;
+}
+
+function isImagePath(pathname) {
+  return /\.(?:png|jpe?g|gif|webp)(?:$|[?#])/i.test(pathname);
 }
 
 function extractProxySrc(url) {
@@ -325,6 +409,12 @@ function renderMapTemplate(report) {
     for (const url of fixture.candidateUrls ?? []) {
       lines.push(`# ${url} => <paste-user-owned-https-url-here>`);
     }
+    if ((fixture.canonicalSuggestions ?? []).length) {
+      lines.push('# Suggested direct URL candidates. Verify permission/ownership before using:');
+      for (const suggestion of fixture.canonicalSuggestions) {
+        lines.push(`# ${suggestion.from} => ${suggestion.to} # ${suggestion.reason}`);
+      }
+    }
   }
   return `${lines.join('\n')}\n`;
 }
@@ -359,13 +449,14 @@ function selfTest() {
     priority: 'P0',
     decision: 'SOURCE_ASSET_LOST_RELINK_REQUIRED',
     asset: {
-      sourceUrl: 'https://i.imgur.com/dead.jpg',
+      sourceUrl: 'https://imgur.com/dead.png',
       localCssUrl: 'https://imgsrv.roll20.net/?src=http://i.imgur.com/dead.jpg',
       actualCssUrl: 'https://imgsrv.roll20.net/?src=http://i.imgur.com/dead.jpg',
     },
   };
-  const ready = classifyFixture(fixture, parseReplacementMap('http://i.imgur.com/dead.jpg => https://assets.example.com/live.jpg'));
+  const ready = classifyFixture(fixture, parseReplacementMap('http://i.imgur.com/dead.jpg => https://assets.example.com/live.jpg # verified hosted copy'));
   assert.equal(ready.coverage, 'COVERED_ROLL20_READY');
+  assert.equal(ready.coveringTargetKind, 'roll20-fetchable-url');
   const localOnly = classifyFixture(fixture, parseReplacementMap('https://i.imgur.com/dead.jpg => data:image/gif;base64,AAAA'));
   assert.equal(localOnly.coverage, 'COVERED_LOCAL_ONLY');
   const placeholderMap = parseReplacementMap('https://i.imgur.com/dead.jpg => <paste-user-owned-https-url-here>');
@@ -383,8 +474,11 @@ function selfTest() {
     templateFile: 'reports/roll20-actual-compare/sample/asset-relink-verification-plan/asset-relink-map-template.txt',
     fixtures: [missing, localOnly, ready, ignored],
   });
-  assert.match(template, /# https:\/\/i\.imgur\.com\/dead\.jpg => <paste-user-owned-https-url-here>/);
+  assert.match(template, /# https:\/\/imgur\.com\/dead\.png => <paste-user-owned-https-url-here>/);
   assert.match(template, /# http:\/\/i\.imgur\.com\/dead\.jpg => <paste-user-owned-https-url-here>/);
+  assert.match(template, /# https:\/\/imgur\.com\/dead\.png => https:\/\/i\.imgur\.com\/dead\.png # imgur-direct-image:verify-permission/);
+  assert.match(template, /# https:\/\/imgsrv\.roll20\.net\/\?src=http:\/\/i\.imgur\.com\/dead\.jpg => https:\/\/i\.imgur\.com\/dead\.jpg # roll20-proxy-imgur-https-upgrade:verify-permission/);
+  assert.match(template, /# http:\/\/i\.imgur\.com\/dead\.jpg => https:\/\/i\.imgur\.com\/dead\.jpg # imgur-https-upgrade:verify-permission/);
   assert.doesNotMatch(template, /fixture: sample[\s\S]*COVERED_ROLL20_READY[\s\S]*assets\.example\.com\/live\.jpg/);
   console.log('roll20_asset_relink_verification_plan self-test PASS');
 }

@@ -162,7 +162,13 @@ function splitReplacementLine(line: string): [string, string] | null {
 }
 
 function cleanReplacementValue(value: string): string {
-  return value.trim().replace(/^['"]|['"]$/g, '').replaceAll('&amp;', '&');
+  return stripInlineReplacementNote(
+    value.trim().replace(/^['"]|['"]$/g, '').replaceAll('&amp;', '&'),
+  );
+}
+
+function stripInlineReplacementNote(value: string): string {
+  return value.replace(/\s+#\s+.*$/, '').trim();
 }
 
 function isAllowedReplacementTarget(value: string): boolean {

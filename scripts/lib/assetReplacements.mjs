@@ -68,7 +68,13 @@ function splitReplacementLine(line) {
 }
 
 function cleanReplacementValue(value) {
-  return String(value ?? '').trim().replace(/^['"]|['"]$/g, '').replaceAll('&amp;', '&');
+  return stripInlineReplacementNote(
+    String(value ?? '').trim().replace(/^['"]|['"]$/g, '').replaceAll('&amp;', '&'),
+  );
+}
+
+function stripInlineReplacementNote(value) {
+  return value.replace(/\s+#\s+.*$/, '').trim();
 }
 
 function isAllowedReplacementTarget(value) {

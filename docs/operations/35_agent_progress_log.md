@@ -4210,3 +4210,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Hardened `scripts/export_dialog_browser_smoke.mjs` so browser smoke fails unless both import and export drafts include canonical/direct suggestions and the new UI metrics render.
 - Verification: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-asset-canonical-20260713-r3 --port 4388` passed. Final server hygiene still found no project dev/smoke listener and preserved CDP `9222`.
 - Claim boundary: this does not copy assets, does not silently rewrite user sheets, and does not prove Roll20 visual parity. It only makes the relink step less blind before the next Sandbox/test-room comparison.
+
+## 2026-07-13 Asset Relink CLI Template Alignment
+
+- Updated `scripts/roll20_asset_relink_verification_plan.mjs` so the ignored `asset-relink-map-template.txt` includes canonical/direct `verify-permission` suggestions for unresolved asset blockers, matching the import/export dialog draft behavior.
+- Hardened replacement-map parsing in `lib/export/asset_replacements.ts`, `scripts/lib/assetReplacements.mjs`, and the relink verification plan so generated trailing notes are stripped from active replacement targets. This prevents a user from activating a draft line and accidentally turning the explanatory `# reason` text into part of the URL.
+- Verification: `node --check scripts\roll20_asset_relink_verification_plan.mjs`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run test:roll20-asset-relink`, and a live ignored relink-plan run against `reports\roll20-actual-compare\2026-06-18-state-map-v1` passed. Pattern check on the ignored template found `verify-permission` suggestions without committing private URLs.
+- Claim boundary: this is relink workflow usability only. It still requires user-owned HTTP(S) replacements and fresh local + Roll20 Sandbox/test-room comparison before visual parity can be judged.
