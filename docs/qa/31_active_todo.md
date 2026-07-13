@@ -1,3 +1,12 @@
+## 2026-07-13 YSHY Sanitize Replay Source Model TODO Note
+
+- DONE: `diagnose:roll20-chat-row-paint-source` now separates YSHY/CoC's rejected sanitize replay path from the broader table-intrinsic bucket.
+- DONE: When `yshy-sanitize-typography` makes a `TABLE_SCROLL_INTRINSIC` fixture worse, the probe reports `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED` and records `sourceEvidence.sanitizeReplayDeltaPct`.
+- DONE: `gate:roll20-renderer-action` now accepts `--row-paint-source-dir`, so ignored temp row/paint/source diagnostics can feed the renderer decision gate without rewriting canonical Roll20 evidence.
+- VERIFIED: `node --check scripts\roll20_chat_row_paint_source_probe.mjs`, `node --check scripts\roll20_renderer_action_gate.mjs`, `corepack pnpm run diagnose:roll20-chat-row-paint-source -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\row-paint-source-sanitize-replay-20260713-r1`, and `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --row-paint-source-dir ..\_tmp_codex_smoke\row-paint-source-sanitize-replay-20260713-r1 --out-dir ..\_tmp_codex_smoke\renderer-gate-row-paint-sanitize-replay-20260713-r1` passed.
+- OBSERVED: YSHY remains P0 at `20.68%` aligned mismatch. Its row/paint/source decision is now `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`; `yshy-sanitize-typography` worsens YSHY by `+14.95%`, so simply replaying observed Roll20 typography/sanitize values as local CSS is explicitly rejected.
+- CURRENT: Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` / `rendererReady=NO`. Next YSHY work should compare actual Roll20 rule order, font-face activation, and table intrinsic source context for `.sheet-rolltemplate-coc`; do not promote transform, filter, or broad typography CSS.
+
 ## 2026-07-13 Renderer Gate Cell Allocation Fallback TODO Note
 
 - DONE: `gate:roll20-renderer-action` now auto-uses the newest matching ignored temp `chat-cell-allocation-probe-*` report when the canonical `chat-cell-allocation-probe` folder is missing and no explicit `--cell-allocation-dir` was supplied.

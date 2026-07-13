@@ -19,6 +19,7 @@ const optionNamesWithValues = new Set([
   '--scroll-metrics-full-root-dir',
   '--root-cutoff-dir',
   '--geometry-dir',
+  '--row-paint-source-dir',
   '--chat-template-scope-dir',
   '--cell-allocation-dir',
 ]);
@@ -37,6 +38,7 @@ const reportOverrides = {
   scrollMetricsFullRoot: readOption('--scroll-metrics-full-root-dir', ''),
   rootCutoff: readOption('--root-cutoff-dir', ''),
   geometry: readOption('--geometry-dir', ''),
+  chatRowPaintSource: readOption('--row-paint-source-dir', ''),
   chatTemplateScope: readOption('--chat-template-scope-dir', ''),
   chatCellAllocation: readOption('--cell-allocation-dir', ''),
 };
@@ -83,7 +85,7 @@ async function main() {
   const chatIntrinsicWidthModel = await readJsonIfExists(path.join(runDir, 'chat-intrinsic-width-model', 'chat-intrinsic-width-model-results.json'));
   const chatFontGlyphModel = await readJsonIfExists(path.join(runDir, 'chat-font-glyph-model', 'chat-font-glyph-model-results.json'));
   const chatFontIntrinsicProbe = await readJsonIfExists(path.join(runDir, 'chat-font-intrinsic-probe', 'chat-font-intrinsic-probe-results.json'));
-  const chatRowPaintSourceProbe = await readJsonIfExists(path.join(runDir, 'chat-row-paint-source-probe', 'chat-row-paint-source-probe-results.json'));
+  const chatRowPaintSourceProbe = await readReportJson('chat-row-paint-source-probe', 'chat-row-paint-source-probe-results.json', reportOverrides.chatRowPaintSource);
   const chatRowRasterProbe = await readJsonIfExists(path.join(runDir, 'chat-row-raster-probe', 'chat-row-raster-probe-results.json'));
   const chatRowRasterCandidates = await readJsonIfExists(path.join(runDir, 'chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json'));
   const chatRowCompositingProbe = await readJsonIfExists(path.join(runDir, 'chat-row-compositing-probe', 'chat-row-compositing-probe-results.json'));

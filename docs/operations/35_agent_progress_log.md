@@ -1,3 +1,12 @@
+## 2026-07-13 YSHY Sanitize Replay Source Model
+
+- Root cause update: the active evidence does not support simply copying observed Roll20 typography/sanitize values into local ChatPane CSS for YSHY/CoC. The existing `yshy-sanitize-typography` candidate worsens YSHY by `+14.95%`, while actual Roll20 and local still differ on table intrinsic/source context such as border spacing, font family, letter spacing, overflow wrapping, and table width.
+- Updated `scripts/roll20_chat_row_paint_source_probe.mjs` to classify that path as `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED` instead of the broader `TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED` bucket, and to record `sourceEvidence.sanitizeReplayDeltaPct`.
+- Added `--row-paint-source-dir` to `scripts/roll20_renderer_action_gate.mjs` so a fresh ignored temp row/paint/source report can flow into the renderer gate without rewriting canonical Roll20 evidence.
+- Verification: syntax checks passed for both changed scripts. The fresh row/paint/source probe wrote `..\_tmp_codex_smoke\row-paint-source-sanitize-replay-20260713-r1`, and the renderer gate consumed it at `..\_tmp_codex_smoke\renderer-gate-row-paint-sanitize-replay-20260713-r1`.
+- Current evidence: YSHY stays P0 with aligned mismatch `20.68%`; the next YSHY work is actual Roll20 rule order, font-face activation, and `.sheet-rolltemplate-coc` table intrinsic source context, not transform/filter/broad typography CSS.
+- Claim boundary: diagnostic narrowing only. Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` / `rendererReady=NO`; no production CSS, Roll20 upload, or asset relink happened.
+
 ## 2026-07-13 Renderer Gate Cell Allocation Fallback
 
 - Root cause: `gate:roll20-renderer-action` accepted `--cell-allocation-dir`, but a normal gate run still emitted the stale warning "chat cell allocation probe has not been run" when the canonical report folder was locked/missing and the usable probe lived under ignored `_tmp_codex_smoke`.

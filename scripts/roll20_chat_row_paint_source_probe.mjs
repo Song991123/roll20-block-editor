@@ -132,8 +132,9 @@ async function summarizeFixture(fixtureId, reports) {
   const edgeShadowCandidate = candidateByName(reports.candidates, 'paint-edge-shadow');
   const paintStyle = styleProofByName(reports.styleProof, 'paint-dim-background')?.fixtures?.find((item) => item.fixtureId === fixtureId);
   const cssEvidence = actualSidecar?.chatCssEvidence ?? {};
+  const sanitizeDelta = fixtureDelta(sanitizeCandidate, key);
   const sourceOrderDecision = decideSourceOrder(cssEvidence, localTable, actualTable, {
-    sanitizeDelta: fixtureDelta(sanitizeCandidate, key),
+    sanitizeDelta,
   });
   const styleAlignment = compareStyleContext(localTable, actualTable, paintTable);
   const paintGain = fixtureDelta(paintCandidate, key);
@@ -195,6 +196,7 @@ async function summarizeFixture(fixtureId, reports) {
       styleElementCount: cssEvidence.styleElementCount ?? null,
       styleTextLength: cssEvidence.styleTextLength ?? null,
       stylesheetLinkCount: cssEvidence.stylesheetLinkCount ?? null,
+      sanitizeReplayDeltaPct: sanitizeDelta,
     },
     styleAlignment,
     evidence: evidenceNotes({
@@ -213,6 +215,12 @@ async function summarizeFixture(fixtureId, reports) {
 function decide(signals) {
   if (signals.priority === 'P2') return 'KEEP_CURRENT_AXIS';
   if (!signals.rowDecision) return 'MISSING_EVIDENCE';
+  if (
+    signals.sourceOrderDecision === 'SANITIZE_STYLE_REPLAY_REJECTED' &&
+    signals.widthExperiment === 'TABLE_SCROLL_INTRINSIC'
+  ) {
+    return 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED';
+  }
   if (
     signals.rowDecision === 'TABLE_WIDE_WIDTH_WITH_UNIFORM_OFFSET' &&
     signals.paintGain <= MEANINGFUL_GAIN_PCT &&
@@ -241,6 +249,8 @@ function nextAction(decision) {
       return 'do not promote filter CSS; build a capture/probe that compares real row-band background/text rasterization and source-order around the CoC table';
     case 'SOURCE_ORDER_BEFORE_NEXT_CSS':
       return 'recapture or inspect actual Roll20 chat CSS rule order and sanitized rolltemplate CSS before another local CSS candidate';
+    case 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED':
+      return 'do not replay observed sanitized typography as CSS; compare actual Roll20 rule order, font-face activation, and table intrinsic source context for the CoC rolltemplate';
     case 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED':
       return 'continue table intrinsic/source-context modeling; keep crop/filter/typography hacks diagnostic-only';
     case 'PAINT_STYLE_PROOF_REQUIRED':
