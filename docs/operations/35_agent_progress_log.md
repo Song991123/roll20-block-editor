@@ -1,3 +1,15 @@
+## 2026-07-13 Source CSS Audit in Source-Context Probe
+
+- Root cause refinement: YSHY table intrinsic work needs to know what the original rolltemplate CSS actually declared, not only local/actual computed styles. The relevant source block has `width: 100%` and `max-width: 280px`, while local/actual used table widths are far larger.
+- Updated `scripts/roll20_chat_source_context_probe.mjs` to read fixture `source.css` via `--fixtures-dir` and record exact rolltemplate source declarations for root/table/caption/td targets.
+- Fixed selector matching so `.sheet-rolltemplate-coc` does not accidentally match `.sheet-rolltemplate-coc-attack`, `.sheet-rolltemplate-coc-defence`, or other prefixed variants.
+- Verification: `node --check scripts\roll20_chat_source_context_probe.mjs` passed.
+- Verification: `corepack pnpm run diagnose:roll20-chat-source-context -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --intrinsic-width-dir ..\_tmp_codex_smoke\chat-intrinsic-width-yshy-crop-origin-actual-font-20260713-r2 --out-dir ..\_tmp_codex_smoke\chat-source-context-source-css-audit-20260713-r4` passed.
+- Evidence: YSHY source audit now reports exactly one `.sheet-rolltemplate-coc table` rule with `width=100%`, `max-width=280px`, and `background-size=100%`.
+- Evidence: YSHY caption/td source typography is now captured as BookkMyungjo-Bd (`caption font-size=13px`, `td font-size=12px`) instead of being flattened into computed-style-only evidence.
+- Evidence: the source-context report records `sourceMaxWidthExceeded=true`; source `max-width: 280px` exists, but local/actual used table width exceeds it while table context remains `TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED`.
+- Current evidence: next YSHY work should inspect Roll20 rule order/sanitize and table layout semantics around source `width:100%`/`max-width:280px`, not broad scaling, transform, or measured width declarations.
+
 ## 2026-07-13 YSHY Intrinsic Constraint Classification
 
 - Root cause refinement: the YSHY intrinsic-width script already detected `TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED`, but the nested constraint model still reported `CONSTRAINT_SECONDARY` unless a transform candidate was present and contradicted. That made the next action less obvious for source-context/crop-origin candidates where transform is not the active failure.

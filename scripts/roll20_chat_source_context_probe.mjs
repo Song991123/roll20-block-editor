@@ -18,6 +18,7 @@ const optionNamesWithValues = new Set([
   '--row-paint-source-dir',
   '--width-reconciliation-dir',
   '--intrinsic-width-dir',
+  '--fixtures-dir',
 ]);
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
@@ -30,6 +31,7 @@ const rowPaintSourceDirExplicit = hasOption('--row-paint-source-dir');
 let rowPaintSourceDir = path.resolve(readOption('--row-paint-source-dir', path.join(runDir, 'chat-row-paint-source-probe')));
 const widthReconciliationDir = path.resolve(readOption('--width-reconciliation-dir', path.join(runDir, 'chat-width-reconciliation')));
 const intrinsicWidthDir = path.resolve(readOption('--intrinsic-width-dir', path.join(runDir, 'chat-intrinsic-width-model')));
+const fixturesDir = path.resolve(readOption('--fixtures-dir', 'test-fixtures/visual'));
 
 const STYLE_KEYS = [
   'fontFamily',
@@ -41,6 +43,8 @@ const STYLE_KEYS = [
   'borderSpacing',
   'tableLayout',
   'width',
+  'maxWidth',
+  'minWidth',
   'backgroundImage',
   'backgroundSize',
   'filter',
@@ -79,6 +83,7 @@ async function main() {
       rowPaintSourceDir: rel(rowPaintSourceDir),
       widthReconciliationDir: rel(widthReconciliationDir),
       intrinsicWidthDir: rel(intrinsicWidthDir),
+      fixturesDir: rel(fixturesDir),
     },
     summary: {
       status: actionable.length ? 'SOURCE_CONTEXT_ACTIONABLE' : 'SOURCE_CONTEXT_SECONDARY',
@@ -139,6 +144,7 @@ async function summarizeFixture(fixtureId, reports) {
   const actualCaption = child(actualTemplate, 'caption');
   const localFirstCell = child(localTemplate, 'td:first');
   const actualFirstCell = child(actualTemplate, 'td:first');
+  const sourceCssAudit = await auditSourceCss(fixtureId, localTemplate?.className ?? actualTemplate?.className ?? '');
   const parity = findFixture(reports.parity?.fixtures, fixtureId);
   const fontIntrinsic = findFixture(reports.fontIntrinsic?.fixtures, fixtureId);
   const rowPaintSource = findFixture(reports.rowPaintSource?.fixtures, fixtureId);
@@ -183,6 +189,7 @@ async function summarizeFixture(fixtureId, reports) {
   const tableContext = classifyTableContext({
     styleDiffs,
     textMeasure,
+    sourceCssAudit,
     widthReconciliation,
     intrinsicWidth,
     localTable,
@@ -228,6 +235,7 @@ async function summarizeFixture(fixtureId, reports) {
         }
       : null,
     styleDiffs,
+    sourceCssAudit,
     boxDeltas: {
       templateWidth: delta(widthOf(localTemplate), widthOf(actualTemplate)),
       tableWidth: delta(widthOf(localTable), widthOf(actualTable)),
@@ -240,6 +248,7 @@ async function summarizeFixture(fixtureId, reports) {
       fontActivation,
       textMeasure,
       tableContext,
+      sourceCssAudit,
       rowPaintSource,
       styleDiffs,
     }),
@@ -329,19 +338,26 @@ function classifyFontActivation({ localFontEvidence, actualFontEvidence, localTa
   };
 }
 
-function classifyTableContext({ styleDiffs, textMeasure, widthReconciliation, intrinsicWidth, localTable, actualTable, localTemplate, actualTemplate }) {
+function classifyTableContext({ styleDiffs, textMeasure, sourceCssAudit, widthReconciliation, intrinsicWidth, localTable, actualTable, localTemplate, actualTemplate }) {
   const mismatchedTableStyles = Object.entries(styleDiffs.table ?? {})
-    .filter(([key, value]) => !value.same && ['borderSpacing', 'fontFamily', 'fontSize', 'letterSpacing', 'overflowWrap', 'width'].includes(key))
+    .filter(([key, value]) => !value.same && ['borderSpacing', 'fontFamily', 'fontSize', 'letterSpacing', 'maxWidth', 'minWidth', 'overflowWrap', 'width'].includes(key))
     .map(([key]) => key);
   const tableWidthDelta = delta(widthOf(localTable), widthOf(actualTable));
   const tableScrollWidthDelta = delta(localTable?.boxMetrics?.scrollWidth, actualTable?.boxMetrics?.scrollWidth);
   const templateWidthDelta = delta(widthOf(localTemplate), widthOf(actualTemplate));
   const widthNextExperiment = widthReconciliation?.nextExperiment ?? '';
   const intrinsicDecision = intrinsicWidth?.intrinsicDecision ?? intrinsicWidth?.decision ?? '';
+  const sourceMaxWidth = sourceCssAudit?.targets?.table?.declarations?.maxWidthPx ?? null;
+  const localTableWidth = widthOf(localTable);
+  const actualTableWidth = widthOf(actualTable);
+  const sourceMaxWidthExceeded =
+    sourceMaxWidth != null &&
+    ((localTableWidth != null && localTableWidth > sourceMaxWidth + 1) || (actualTableWidth != null && actualTableWidth > sourceMaxWidth + 1));
   const decision = (
     widthNextExperiment === 'TABLE_SCROLL_INTRINSIC' ||
     /INTRINSIC|SANITIZE|TABLE/.test(intrinsicDecision) ||
     Math.abs(tableWidthDelta ?? 0) >= 8 ||
+    sourceMaxWidthExceeded ||
     mismatchedTableStyles.length >= 3
   )
     ? 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED'
@@ -354,6 +370,9 @@ function classifyTableContext({ styleDiffs, textMeasure, widthReconciliation, in
     tableScrollWidthDelta,
     templateWidthDelta,
     mismatchedTableStyles,
+    sourceCssAudit,
+    sourceMaxWidth,
+    sourceMaxWidthExceeded,
     comparedTextMeasureSamples: textMeasure.comparedSamples,
     maxTextMeasureDelta: textMeasure.maxWidthDelta,
     meanTextMeasureDelta: textMeasure.meanWidthDelta,
@@ -391,6 +410,169 @@ function compareTextMeasure(localEvidence, actualEvidence) {
   };
 }
 
+async function auditSourceCss(fixtureId, className) {
+  const rolltemplateClass = String(className ?? '')
+    .split(/\s+/)
+    .find((item) => item.startsWith('sheet-rolltemplate-'));
+  const sourceCssFile = path.join(fixturesDir, fixtureId, 'source.css');
+  if (!rolltemplateClass) {
+    return {
+      status: 'MISSING_ROLLTEMPLATE_CLASS',
+      sourceCss: rel(sourceCssFile),
+      rolltemplateClass: '',
+      targets: {},
+    };
+  }
+  const cssText = await readOptionalText(sourceCssFile);
+  if (!cssText) {
+    return {
+      status: 'MISSING_SOURCE_CSS',
+      sourceCss: rel(sourceCssFile),
+      rolltemplateClass,
+      targets: {},
+    };
+  }
+  const rules = extractCssRules(cssText, rolltemplateClass);
+  const targets = {
+    root: summarizeSourceDeclarations(rules, 'root'),
+    table: summarizeSourceDeclarations(rules, 'table'),
+    caption: summarizeSourceDeclarations(rules, 'caption'),
+    firstCell: summarizeSourceDeclarations(rules, 'td'),
+  };
+  return {
+    status: 'FOUND_SOURCE_CSS',
+    sourceCss: rel(sourceCssFile),
+    rolltemplateClass,
+    matchedRuleCount: rules.length,
+    targets,
+  };
+}
+
+function extractCssRules(cssText, rolltemplateClass) {
+  const withoutComments = String(cssText ?? '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const classSelector = `.${rolltemplateClass}`;
+  const rules = [];
+  const ruleRe = /([^{}]+)\{([^{}]*)\}/g;
+  let match;
+  while ((match = ruleRe.exec(withoutComments))) {
+    const selectorText = match[1].trim();
+    const declarations = parseDeclarations(match[2]);
+    if (!Object.keys(declarations).length) continue;
+    const selectors = selectorText.split(',').map((selector) => selector.trim()).filter(Boolean);
+    for (const selector of selectors) {
+      if (!selectorHasClass(selector, rolltemplateClass)) continue;
+      rules.push({
+        selector,
+        target: classifySourceTarget(selector, classSelector),
+        declarations,
+      });
+    }
+  }
+  return rules;
+}
+
+function selectorHasClass(selector, className) {
+  return new RegExp(`\\.${escapeRegExp(className)}(?![A-Za-z0-9_-])`).test(selector);
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function classifySourceTarget(selector, classSelector) {
+  const classMatch = new RegExp(`${escapeRegExp(classSelector)}(?![A-Za-z0-9_-])`).exec(selector);
+  const afterClass = classMatch
+    ? selector.slice(classMatch.index + classMatch[0].length).trim()
+    : '';
+  if (!afterClass) return 'root';
+  if (/\btable\b/i.test(afterClass)) return 'table';
+  if (/\bcaption\b/i.test(afterClass)) return 'caption';
+  if (/\btd\b/i.test(afterClass)) return 'td';
+  return 'other';
+}
+
+function parseDeclarations(block) {
+  const tracked = new Set([
+    'background',
+    'background-image',
+    'background-position',
+    'background-repeat',
+    'background-size',
+    'border-collapse',
+    'border-spacing',
+    'display',
+    'font-family',
+    'font-size',
+    'letter-spacing',
+    'line-height',
+    'max-width',
+    'min-width',
+    'overflow-wrap',
+    'table-layout',
+    'white-space',
+    'width',
+    'word-break',
+  ]);
+  const out = {};
+  for (const part of String(block ?? '').split(';')) {
+    const separator = part.indexOf(':');
+    if (separator <= 0) continue;
+    const property = part.slice(0, separator).trim().toLowerCase();
+    if (!tracked.has(property)) continue;
+    const key = cssPropertyToCamel(property);
+    out[key] = part.slice(separator + 1).trim();
+  }
+  return out;
+}
+
+function cssPropertyToCamel(property) {
+  return property.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+}
+
+function summarizeSourceDeclarations(rules, target) {
+  const selected = rules.filter((rule) => rule.target === target);
+  const declarations = {};
+  const selectors = [];
+  for (const rule of selected) {
+    selectors.push(rule.selector);
+    Object.assign(declarations, rule.declarations);
+  }
+  const widthPx = cssLengthPx(declarations.width);
+  const maxWidthPx = cssLengthPx(declarations.maxWidth);
+  const minWidthPx = cssLengthPx(declarations.minWidth);
+  const summaryParts = [
+    declarations.display && `display=${declarations.display}`,
+    declarations.fontFamily && `font-family=${declarations.fontFamily}`,
+    declarations.fontSize && `font-size=${declarations.fontSize}`,
+    declarations.lineHeight && `line-height=${declarations.lineHeight}`,
+    declarations.letterSpacing && `letter-spacing=${declarations.letterSpacing}`,
+    declarations.width && `width=${declarations.width}`,
+    declarations.maxWidth && `max-width=${declarations.maxWidth}`,
+    declarations.minWidth && `min-width=${declarations.minWidth}`,
+    declarations.tableLayout && `table-layout=${declarations.tableLayout}`,
+    declarations.overflowWrap && `overflow-wrap=${declarations.overflowWrap}`,
+    declarations.wordBreak && `word-break=${declarations.wordBreak}`,
+    declarations.whiteSpace && `white-space=${declarations.whiteSpace}`,
+    declarations.backgroundSize && `background-size=${declarations.backgroundSize}`,
+  ].filter(Boolean);
+  return {
+    ruleCount: selected.length,
+    selectors,
+    declarations: {
+      ...declarations,
+      widthPx,
+      maxWidthPx,
+      minWidthPx,
+    },
+    summary: summaryParts.join(', '),
+  };
+}
+
+function cssLengthPx(value) {
+  const match = String(value ?? '').trim().match(/^(-?\d+(?:\.\d+)?)px$/i);
+  return match ? Number(match[1]) : null;
+}
+
 function compareStyles(local, actual, keys) {
   return Object.fromEntries(keys.map((key) => {
     const localValue = local?.computedStyle?.[key] ?? '';
@@ -403,12 +585,21 @@ function compareStyles(local, actual, keys) {
   }));
 }
 
-function evidenceNotes({ cssEvidence, fontActivation, textMeasure, tableContext, rowPaintSource, styleDiffs }) {
+function evidenceNotes({ cssEvidence, fontActivation, textMeasure, tableContext, sourceCssAudit, rowPaintSource, styleDiffs }) {
   const notes = [];
   notes.push(`actual CSS ${cssEvidence.classification || 'missing'}; expected rule present=${cssEvidence.expectedRulePresent ? 'yes' : 'no'}; styles=${cssEvidence.styleElementCount ?? 'n/a'} links=${cssEvidence.stylesheetLinkCount ?? 'n/a'}`);
   notes.push(`font activation ${fontActivation.decision}; changed custom specs=${fontActivation.changedFonts.length}`);
   if (fontActivation.actualCustomFontFailed) notes.push('local custom font checks pass while actual Roll20 custom font checks fail');
   notes.push(`table context ${tableContext.decision}; table width delta=${fmtPx(tableContext.tableWidthDelta)}, scroll delta=${fmtPx(tableContext.tableScrollWidthDelta)}, style diffs=${tableContext.mismatchedTableStyles.join(', ') || 'none'}`);
+  if (sourceCssAudit?.status === 'FOUND_SOURCE_CSS') {
+    const table = sourceCssAudit.targets?.table;
+    notes.push(`source CSS table declarations: ${table?.summary || 'none'}`);
+    if (tableContext.sourceMaxWidthExceeded) {
+      notes.push(`source table max-width ${fmtPx(tableContext.sourceMaxWidth)} is exceeded by local/actual used table width`);
+    }
+  } else {
+    notes.push(`source CSS audit ${sourceCssAudit?.status || 'missing'}`);
+  }
   if (textMeasure.comparedSamples) notes.push(`text measure compared ${textMeasure.comparedSamples} samples; max delta=${fmtPx(textMeasure.maxWidthDelta)}, mean abs delta=${fmtPx(textMeasure.meanWidthDelta)}`);
   if (rowPaintSource?.decision) notes.push(`row/paint/source prior decision ${rowPaintSource.decision}; source=${rowPaintSource.sourceOrderDecision ?? 'n/a'}; sanitize replay delta=${fmtSigned(rowPaintSource.sourceEvidence?.sanitizeReplayDeltaPct)}`);
   const tableFilter = styleDiffs.table?.filter;
@@ -437,6 +628,11 @@ function renderMarkdown(report) {
     for (const note of fixture.evidence ?? []) lines.push(`- ${note}`);
     if (fixture.fontActivation.changedFonts?.length) {
       lines.push(`- changed font specs: ${fixture.fontActivation.changedFonts.map((item) => `${item.spec} local=${item.localOk ? 'yes' : 'no'} actual=${item.actualOk ? 'yes' : 'no'}`).join('; ')}`);
+    }
+    if (fixture.sourceCssAudit?.status === 'FOUND_SOURCE_CSS') {
+      for (const [target, details] of Object.entries(fixture.sourceCssAudit.targets ?? {})) {
+        lines.push(`- source ${target}: ${details.summary || 'no tracked declarations'}`);
+      }
     }
     lines.push('');
   }
@@ -520,6 +716,14 @@ async function readOptionalJson(file) {
     return await readJson(file);
   } catch {
     return null;
+  }
+}
+
+async function readOptionalText(file) {
+  try {
+    return await readFile(file, 'utf8');
+  } catch {
+    return '';
   }
 }
 

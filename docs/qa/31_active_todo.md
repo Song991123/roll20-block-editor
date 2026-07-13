@@ -1,3 +1,11 @@
+## 2026-07-13 Source CSS Audit TODO Note
+
+- DONE: `diagnose:roll20-chat-source-context` now reads fixture `source.css` through `--fixtures-dir` and records exact rolltemplate source declarations for root/table/caption/td targets.
+- FIXED: The source CSS selector matcher now uses exact rolltemplate class boundaries, so `.sheet-rolltemplate-coc` no longer accidentally includes `.sheet-rolltemplate-coc-attack` or `.sheet-rolltemplate-coc-defence` rules.
+- VERIFIED: Rerun at `..\_tmp_codex_smoke\chat-source-context-source-css-audit-20260713-r4` reports YSHY `.sheet-rolltemplate-coc table` source declarations as `width=100%, max-width=280px, background-size=100%`.
+- EVIDENCE: The same report records YSHY caption/td source typography as BookkMyungjo-Bd (`caption font-size=13px`, `td font-size=12px`) and records `sourceMaxWidthExceeded=true`: source table `max-width: 280px` exists, but local/actual used table width still exceeds it while the active table context remains `TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED`.
+- CURRENT: Next YSHY work should inspect Roll20 rule order/sanitize and table layout semantics around source `width:100%`/`max-width:280px`; do not promote broad table scaling or width declarations.
+
 ## 2026-07-13 YSHY Intrinsic Constraint Classification TODO Note
 
 - DONE: `diagnose:roll20-chat-intrinsic-width` now classifies table-wide scroll/client width deltas as `TABLE_SCROLL_INTRINSIC_CONSTRAINT` even when the active style-proof set does not include a transform-contradicted candidate.
