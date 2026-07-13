@@ -1,3 +1,12 @@
+## 2026-07-13 Worker Code Boundary Copy
+
+- Root cause: worker JS was already preserved through the emit/code path, but the right code panel did not clearly tell users that worker scripts are Roll20 runtime code, not visible sheet objects. This could make hidden script behavior look like a preview bug.
+- Updated `components/editor/CodeTabs.tsx` with per-tab status text, byte counts, and tab-specific empty messages. The Worker JS tab now states that worker code is not shown on the sheet canvas and is preserved for the Roll20 runtime.
+- Added `data-testid` hooks for the right code tab and code subtabs, then extended `scripts/export_dialog_browser_smoke.mjs` so the browser smoke verifies the Worker JS tab can be selected and exposes the runtime-boundary/preservation copy.
+- Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-worker-boundary-20260713-r1 --port 4393` passed.
+- Evidence: the smoke reported `codeTabs.workerSelected=true`, Worker status text `Worker JS|0 B|시트 위에는 표시하지 않고 Roll20 런타임에서 실행되는 코드입니다.`, no console/page/request errors, and no external resource requests.
+- Claim boundary: this clarifies and regression-tests the worker-code UI boundary only. It does not implement worker JS block editing, simulate all sheet-worker APIs, upload to Roll20, or prove actual Roll20 visual parity.
+
 ## 2026-07-13 Export Sandbox Diagnostics Progressive Disclosure
 
 - Root cause: the Roll20 export dialog was exposing low-level Sandbox cleanup diagnostics directly in the main upload path. That preserved evidence, but it added cognitive noise for users who only need to know whether the zip is ready and what must be verified in Roll20.

@@ -1,3 +1,10 @@
+## 2026-07-13 Worker Code Boundary TODO Note
+
+- DONE: The right Code panel now distinguishes Worker JS from visible sheet HTML/CSS. The Worker JS tab shows byte count and states that worker code is preserved for the Roll20 runtime instead of being shown as a sheet canvas object.
+- DONE: `smoke:export-dialog` now verifies the right Code tab, Worker JS subtab activation, runtime-boundary copy, and empty-state preservation copy.
+- VERIFIED: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-worker-boundary-20260713-r1 --port 4393` passed.
+- CURRENT: This is a UI/verification boundary improvement. Worker JS block editing, full sheet-worker API simulation, actual Roll20 upload verification, and visual parity remain open.
+
 ## 2026-07-13 Export Sandbox Diagnostics Progressive Disclosure TODO Note
 
 - DONE: Moved the Roll20 Sandbox cleanup diagnostic rows behind a collapsed advanced section in the export dialog. The user still sees the upload readiness and fatal/non-fatal Sandbox status, but low-level HTML/CSS cleanup metrics no longer crowd the default path.

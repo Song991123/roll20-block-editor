@@ -21,11 +21,11 @@ export default function SidebarRight() {
     >
       <div className="h-10 shrink-0 border-b border-border px-3 flex items-center">
         <TabsList className="h-7 bg-[var(--bg-elevated-2)] w-full">
-          <TabsTrigger value="attrs" className="flex-1 gap-1.5 text-xs">
+          <TabsTrigger value="attrs" className="flex-1 gap-1.5 text-xs" data-testid="tab-attrs">
             <Settings2 className="h-3.5 w-3.5" />
             속성
           </TabsTrigger>
-          <TabsTrigger value="code" className="flex-1 gap-1.5 text-xs">
+          <TabsTrigger value="code" className="flex-1 gap-1.5 text-xs" data-testid="tab-code">
             <CodeXml className="h-3.5 w-3.5" />
             코드
           </TabsTrigger>

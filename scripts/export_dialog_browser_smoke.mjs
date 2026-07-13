@@ -468,6 +468,17 @@ async function main() {
     delete result.checks.shell.bodyText;
     await safeScreenshot(page, path.join(REPORT_DIR, 'initial-shell.png'));
 
+    await page.click('[data-testid="tab-code"]');
+    await page.click('[data-testid="code-subtab-worker"]');
+    await page.waitForSelector('[data-testid="code-tab-status"]', { timeout: 5000 });
+    result.checks.codeTabs = await page.evaluate(() => ({
+      hasCodeTab: Boolean(document.querySelector('[data-testid="tab-code"]')),
+      workerSelected:
+        document.querySelector('[data-testid="code-subtab-worker"]')?.getAttribute('data-state') === 'on',
+      statusText: document.querySelector('[data-testid="code-tab-status"]')?.textContent?.trim() ?? '',
+      emptyText: document.querySelector('[data-testid="code-tab-empty"]')?.textContent?.trim() ?? '',
+    }));
+
     await page.click('[data-testid="header-export-button"]');
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', { timeout: 15000 });
     result.checks.exportDialog = await page.evaluate(() => {
@@ -595,6 +606,14 @@ async function main() {
     if (result.checks.shell.hasActualRoll20PreviewClaim) failures.push('misleading actual Roll20 preview claim visible');
     if (result.checks.shell.hasSampleCta || result.checks.shell.hasSampleMenu) failures.push('sample UI visible with empty public catalog');
     if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');
+    if (!result.checks.codeTabs.hasCodeTab) failures.push('code tab missing');
+    if (!result.checks.codeTabs.workerSelected) failures.push('worker code tab did not become active');
+    if (!result.checks.codeTabs.statusText.includes('시트 위에는 표시하지 않고 Roll20 런타임에서 실행되는 코드입니다.')) {
+      failures.push('worker code tab runtime boundary copy missing');
+    }
+    if (!result.checks.codeTabs.emptyText.includes('worker 스크립트는 여기에 보존됩니다.')) {
+      failures.push('worker code tab empty preservation copy missing');
+    }
     if (!result.checks.exportDialog.hasTitle) failures.push('export dialog title missing');
     if (!result.checks.exportDialog.hasReadiness) failures.push('export readiness panel missing');
     if (result.checks.exportDialog.readinessItemCount !== 6) failures.push('export readiness item count mismatch');
