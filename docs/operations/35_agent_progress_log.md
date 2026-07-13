@@ -1,3 +1,11 @@
+## 2026-07-13 Renderer Gate Cell Allocation Fallback
+
+- Root cause: `gate:roll20-renderer-action` accepted `--cell-allocation-dir`, but a normal gate run still emitted the stale warning "chat cell allocation probe has not been run" when the canonical report folder was locked/missing and the usable probe lived under ignored `_tmp_codex_smoke`.
+- Added implicit fallback discovery for `chat-cell-allocation-probe-*` temp reports. The gate only auto-selects a report when the canonical report is missing, no explicit override was supplied, and the report JSON `runDir` resolves to the active Roll20 actual run.
+- Verification: `node --check scripts\roll20_renderer_action_gate.mjs` passed. `gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\renderer-gate-current-20260713-autocell` now records `reportOverrides.chatCellAllocation` and emits actual cell allocation evidence.
+- Current evidence: cell allocation is `CELL_ALLOCATION_SECONDARY_OR_ACCEPTABLE`, scenarios `1`, rejected `0`, with AW2E/Les/YSHY all classified as `UNIFORM_TABLE_SCALE_OR_CROP_CONTEXT`.
+- Claim boundary: renderer still stays `HOLD_PRODUCTION_RENDERER_PATCH` / `rendererReady=NO`. This removes a stale diagnostic warning; it does not promote renderer CSS, upload to Roll20, relink assets, or prove visual parity.
+
 ## 2026-07-13 Server Hygiene Check
 
 - Root cause: agents were checking `netstat` manually and had to remember which listeners were project leftovers versus Roll20 CDP or user/system apps. That made it easy to either miss a leftover smoke server or consider stopping unrelated software.

@@ -9,7 +9,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
@@ -54,6 +54,8 @@ function firstPositionalArg() {
 }
 
 async function main() {
+  await resolveImplicitReportOverrides();
+
   const status = await readJsonIfExists(path.join(runDir, 'actual-verification-status', 'actual-verification-status-results.json'));
   const fullRoot = await readReportJson('full-root-candidate-smoke', 'full-root-candidate-smoke-results.json', reportOverrides.fullRoot);
   const scrollMetricsFullRoot = await readReportJson('full-root-candidate-smoke-scroll-metrics', 'full-root-candidate-smoke-results.json', reportOverrides.scrollMetricsFullRoot);
@@ -150,6 +152,15 @@ async function main() {
     console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
   }
   console.log(`out=${path.relative(process.cwd(), writeResult.outDir)}`);
+}
+
+async function resolveImplicitReportOverrides() {
+  if (!reportOverrides.chatCellAllocation && !defaultReportExists('chat-cell-allocation-probe', 'chat-cell-allocation-probe-results.json')) {
+    reportOverrides.chatCellAllocation = await findLatestFallbackReportDir(
+      'chat-cell-allocation-probe',
+      'chat-cell-allocation-probe-results.json',
+    );
+  }
 }
 
 async function writeRendererActionReport(report, requestedOutDir, runDir) {
@@ -2854,6 +2865,40 @@ async function readReportJson(defaultDirName, reportFileName, overrideDir = '') 
     throw new Error(`Missing override report for ${defaultDirName}: ${file}`);
   }
   return readJsonIfExists(file);
+}
+
+function defaultReportExists(defaultDirName, reportFileName) {
+  return existsSync(path.join(runDir, defaultDirName, reportFileName));
+}
+
+async function findLatestFallbackReportDir(prefix, reportFileName) {
+  const root = path.resolve('..', '_tmp_codex_smoke');
+  let entries = [];
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch {
+    return '';
+  }
+
+  const candidates = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !entry.name.startsWith(`${prefix}-`)) continue;
+    const dir = path.join(root, entry.name);
+    const reportFile = path.join(dir, reportFileName);
+    if (!existsSync(reportFile)) continue;
+    const report = await readJsonIfExists(reportFile);
+    if (path.resolve(report?.runDir ?? '') !== runDir) continue;
+    let mtimeMs = 0;
+    try {
+      mtimeMs = (await stat(reportFile)).mtimeMs;
+    } catch {
+      mtimeMs = 0;
+    }
+    candidates.push({ dir, mtimeMs });
+  }
+
+  candidates.sort((a, b) => b.mtimeMs - a.mtimeMs || b.dir.localeCompare(a.dir));
+  return candidates[0]?.dir ?? '';
 }
 
 function normalizeReportOverrides(overrides) {

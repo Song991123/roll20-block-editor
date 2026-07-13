@@ -1,3 +1,11 @@
+## 2026-07-13 Renderer Gate Cell Allocation Fallback TODO Note
+
+- DONE: `gate:roll20-renderer-action` now auto-uses the newest matching ignored temp `chat-cell-allocation-probe-*` report when the canonical `chat-cell-allocation-probe` folder is missing and no explicit `--cell-allocation-dir` was supplied.
+- DONE: The auto-selected report must contain a JSON `runDir` that resolves to the active Roll20 actual run, so unrelated temp probes are not silently reused.
+- VERIFIED: `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\renderer-gate-current-20260713-autocell` now records the fallback in `reportOverrides.chatCellAllocation` and reports cell allocation evidence instead of the stale "probe has not been run" warning.
+- OBSERVED: Current cell-allocation evidence remains `CELL_ALLOCATION_SECONDARY_OR_ACCEPTABLE`, scenarios `1`, rejected `0`; all three current fixtures route to `UNIFORM_TABLE_SCALE_OR_CROP_CONTEXT`.
+- CURRENT: Renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` / `rendererReady=NO`; this fixes gate truthfulness only and does not prove visual parity.
+
 ## 2026-07-13 Server Hygiene Check TODO Note
 
 - DONE: Added `check:server-hygiene` so agents can verify leftover project dev/smoke listeners before and after browser work without manually reading all Windows listeners.
