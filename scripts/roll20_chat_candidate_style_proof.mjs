@@ -221,7 +221,8 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
     candidate.name === 'yshy-table-font-context' ||
     candidate.name === 'yshy-bookk-table-font-context' ||
     candidate.name === 'yshy-bookk-missing-render' ||
-    candidate.name === 'yshy-missing-bookk-table-font-context'
+    candidate.name === 'yshy-missing-bookk-table-font-context' ||
+    candidate.name === 'yshy-bookk-fallback-only'
   ) {
     return summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }

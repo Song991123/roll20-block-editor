@@ -76,6 +76,11 @@ corepack pnpm run diagnose:roll20-chat-font-glyph -- reports\roll20-actual-compa
   --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
   --out-dir ..\_tmp_codex_smoke\font-glyph-<fixture>-<label>
 
+corepack pnpm run diagnose:roll20-chat-font-fallback -- reports\roll20-actual-compare\<run> `
+  --fixture <fixture-id> `
+  --actual-sidecar ..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
+  --out-dir ..\_tmp_codex_smoke\font-fallback-<fixture>-<label>
+
 corepack pnpm run diagnose:roll20-chat-source-context -- reports\roll20-actual-compare\<run> `
   --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
   --out-dir ..\_tmp_codex_smoke\source-context-<fixture>-<label>

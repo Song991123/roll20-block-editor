@@ -71,6 +71,7 @@ type ChatTypographyPolicy =
   | 'yshy-bookk-missing-render'
   | 'yshy-missing-bookk-table-font-context'
   | 'yshy-sanitize-typography'
+  | 'yshy-bookk-fallback-only'
   | 'yshy-korean-glyph-metrics';
 type ChatPaintPolicy =
   | 'default'
@@ -144,6 +145,7 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
     value === 'yshy-bookk-missing-render' ||
     value === 'yshy-missing-bookk-table-font-context' ||
     value === 'yshy-sanitize-typography' ||
+    value === 'yshy-bookk-fallback-only' ||
     value === 'yshy-korean-glyph-metrics'
   ) return value;
   return 'default';
@@ -395,6 +397,12 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   border-spacing: 0;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
+  font-family: "Noto Sans KR", sans-serif !important;
 }
 .r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
 .r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table,

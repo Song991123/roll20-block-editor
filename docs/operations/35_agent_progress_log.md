@@ -4413,6 +4413,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verification: syntax checks, `test:roll20-chat-cdp-readiness`, `test:roll20-sheet-frame-probe`, preflight, probe dry-run, and capture dry-run.
 - Claim boundary: capture readiness is safer. Actual Roll20 chat evidence remains missing/suspect for AW2E and YSHY.
 
+## 2026-07-13 YSHY Bookk Fallback-Only Candidate Rejected
+
+- Added `scripts/roll20_chat_font_fallback_probe.mjs` plus `diagnose:roll20-chat-font-fallback`.
+- The probe confirmed the actual Roll20 Bookk-failure text samples match local `Noto Sans KR` canvas widths exactly for 3/3 sampled caption/td selectors.
+- Added diagnostic-only ChatPane typography policy `yshy-bookk-fallback-only`, scoped to `.sheet-rolltemplate-coc` caption/td/template value/label only.
+- Functional smoke passed 3/3, but the candidate experiment gate rejected the policy: `HOLD_PRODUCTION_RENDERER_PATCH`, `reject-regresses-fixtures`, mean `+15.75%`, AW2E delta `+41.04%`, YSHY delta `+6.21%`.
+- Row raster rejected it as well: AW2E weighted `+44.07%`, YSHY weighted `+12.29%`.
+- Claim boundary: this is useful negative evidence. It proves that matching the failed Bookk fallback glyph widths alone is not enough; the next candidate must include table auto-layout/min-content and crop context without breaking row raster.
+
 ## 2026-07-13 Chat Min-Content Model Diagnostic
 
 - Added `scripts/roll20_chat_min_content_model.mjs` plus `diagnose:roll20-chat-min-content`.

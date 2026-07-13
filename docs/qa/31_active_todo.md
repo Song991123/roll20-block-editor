@@ -1,3 +1,14 @@
+## 2026-07-13 YSHY Bookk Fallback-Only Rejection TODO Note
+
+- DONE: Added diagnostic-only `diagnose:roll20-chat-font-fallback` to measure actual Roll20 Bookk failure samples against local Chromium fallback candidates.
+- RESULT: For actual Roll20 Bookk-failure samples, local `Noto Sans KR` exactly matched 3/3 measured widths: caption `23.92px`, `td:first` `37.032px`, and `sheet-template_label:first` `37.032px`.
+- DONE: Added diagnostic-only ChatPane typography policy `yshy-bookk-fallback-only`, scoped only to `.sheet-rolltemplate-coc` caption/td/template value/label font-family. It does not alter root/table font, width, transform, border-spacing, or global ChatPane CSS.
+- VERIFIED: Functional rolltemplate smoke passed 3/3 fixtures at ignored temp `rolltemplate-chat-smoke-yshy-bookk-fallback-only-20260713-r1`.
+- REJECTED: Candidate experiment gate returned `HOLD_PRODUCTION_RENDERER_PATCH`: candidate comparison `reject-regresses-fixtures`, mean `+15.75%`, regressions `2`, AW2E delta `+41.04%`, YSHY delta `+6.21%`.
+- REJECTED: Row raster also rejected it: AW2E weighted `+44.07%`, YSHY weighted `+12.29%`.
+- EVIDENCE: The candidate narrowed YSHY local table width to `1236.765625px`, undershooting actual Roll20 `1248.328125px`; matching only Bookk fallback glyph width is not sufficient for the full table/crop/raster model.
+- CURRENT: Do not promote or retry `yshy-bookk-fallback-only` as renderer CSS. Next P0 must combine font fallback evidence with table auto-layout/min-content and crop context, then pass row-raster and cross-fixture gates.
+
 ## 2026-07-13 Chat Min-Content Model TODO Note
 
 - DONE: Added `diagnose:roll20-chat-min-content` to fuse fresh actual Roll20 sidecars with local ChatPane smoke, font/glyph, intrinsic-width, table-intrinsic, table-layout, and source-context evidence.
