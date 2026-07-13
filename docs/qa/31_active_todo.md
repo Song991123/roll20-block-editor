@@ -1,3 +1,15 @@
+## 2026-07-13 Chat Background Paint Relink Blocker TODO Note
+
+- DONE: Reran current row/paint/source, background-source, background-raster, background-asset, asset-preservation, and browser-paint routing into ignored temp evidence under `..\_tmp_codex_smoke\chat-*-current-20260713-r1`.
+- DONE: Added override inputs to `plan:roll20-chat-browser-paint` (`--asset-probe-dir`, `--asset-plan-dir`, `--background-raster-dir`, `--background-source-dir`, `--row-compositing-dir`) so candidate/temp evidence can flow into the browser-paint decision instead of silently reading stale canonical folders.
+- VERIFIED: `diagnose:roll20-chat-row-paint-source` still classifies YSHY as `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`.
+- VERIFIED: `diagnose:roll20-chat-background-source` classifies AW2E, Les-Oublies, and YSHY as `BACKGROUND_DECLARATION_MATCHES_BUT_RASTER_DIFFERS`; for YSHY, `coc-background-size-actual` is already `reject-row-raster-regression`.
+- VERIFIED: `diagnose:roll20-chat-background-raster` classifies AW2E and YSHY as `FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED`, with YSHY row mismatch `21.41%` and weak luma gain `+0.57%`.
+- VERIFIED: `diagnose:roll20-chat-background-assets` reports AW2E/YSHY local and actual proxy bytes match, but both resolve to the same tiny source placeholder (`200 image/png 503b png 161x81 removed.png`).
+- VERIFIED: `plan:roll20-chat-assets` stays `HOLD_RENDERER_FOR_ASSET_POLICY` with `4` blockers, and `plan:roll20-chat-browser-paint` now returns `BROWSER_PAINT_BLOCKED_BY_RELINK` for AW2E/YSHY when fed the current temp evidence.
+- CURRENT: Browser-paint/decode work is blocked until affected assets are relinked to user-owned HTTP(S) URLs and the local preupload plus Roll20 Sandbox comparison are rerun. Do not chase another width/font/background-size CSS candidate before that.
+- NEXT P0: Use the local-only asset replacement map flow for AW2E/YSHY, then rerun preupload/Sandbox screenshots and the same browser-paint plan with the relinked evidence.
+
 ## 2026-07-13 YSHY Roll20 Fallback Stack Rejection TODO Note
 
 - DONE: Added diagnostic-only ChatPane typography policy `yshy-roll20-fallback-stack` and smoke-script allow-list support. This is not a product default.

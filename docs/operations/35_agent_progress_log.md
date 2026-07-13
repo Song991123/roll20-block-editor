@@ -1,3 +1,14 @@
+## 2026-07-13 Chat Background Paint Relink Blocker
+
+- Root cause refinement: after rejecting fallback/width/font candidates, the remaining YSHY/AW2E chat background mismatch is flat-paint dominated but blocked by missing source assets, not ready for another renderer CSS candidate.
+- Reran current temp diagnostics: row/paint/source, background-source, background-raster, background-asset, asset-preservation, and browser-paint routing.
+- Updated `scripts/roll20_chat_browser_paint_plan.mjs` so it accepts override dirs for asset probe, asset plan, background raster, background source, and row compositing evidence. Updated `scripts/README.md` with the new command form.
+- Verification: `diagnose:roll20-chat-row-paint-source` kept YSHY at `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`.
+- Verification: `diagnose:roll20-chat-background-raster` classified AW2E/YSHY as `FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED`; YSHY row mismatch is `21.41%` and luma gain is only `+0.57%`.
+- Verification: `diagnose:roll20-chat-background-assets` found AW2E/YSHY local and actual proxy bytes match, but both source paths resolve to `200 image/png 503b png 161x81 removed.png`.
+- Verification: with current temp overrides, `plan:roll20-chat-assets` returned `HOLD_RENDERER_FOR_ASSET_POLICY` with `4` blockers, and `plan:roll20-chat-browser-paint` returned `BROWSER_PAINT_BLOCKED_BY_RELINK`.
+- Current evidence: fill the local-only asset replacement map with user-owned HTTP(S) URLs, rerun preupload/Sandbox comparison, then rerun browser-paint routing. Do not promote another width/font/background-size ChatPane CSS candidate before that.
+
 ## 2026-07-13 YSHY Roll20 Fallback Stack Rejection
 
 - Root cause refinement: matching YSHY/CoC table used width and a few Korean fallback glyph metrics is not enough to reproduce actual Roll20 chat rendering.

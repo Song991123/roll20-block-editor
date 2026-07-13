@@ -17,6 +17,11 @@ const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06
 const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
 const requestedOutDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-browser-paint-plan');
+const assetProbeDir = path.resolve(readOption('--asset-probe-dir', path.join(runDir, 'chat-background-asset-probe')));
+const assetPlanDir = path.resolve(readOption('--asset-plan-dir', path.join(runDir, 'chat-asset-preservation-plan')));
+const backgroundRasterDir = path.resolve(readOption('--background-raster-dir', path.join(runDir, 'chat-background-raster-model-probe')));
+const backgroundSourceDir = path.resolve(readOption('--background-source-dir', path.join(runDir, 'chat-background-source-probe')));
+const rowCompositingDir = path.resolve(readOption('--row-compositing-dir', path.join(runDir, 'chat-row-compositing-probe')));
 
 if (selfTest) selfTestPlan();
 else await main();
@@ -30,15 +35,23 @@ function readOption(name, fallback = '') {
 }
 
 function firstPositionalArg() {
-  return args.find((arg, index) => !arg.startsWith('--') && arg !== '--self-test' && args[index - 1] !== '--out-dir');
+  const optionNamesWithValues = new Set([
+    '--out-dir',
+    '--asset-probe-dir',
+    '--asset-plan-dir',
+    '--background-raster-dir',
+    '--background-source-dir',
+    '--row-compositing-dir',
+  ]);
+  return args.find((arg, index) => !arg.startsWith('--') && arg !== '--self-test' && !optionNamesWithValues.has(args[index - 1]));
 }
 
 async function main() {
-  const assetProbe = await readOptionalJson(path.join(runDir, 'chat-background-asset-probe', 'chat-background-asset-probe-results.json'));
-  const assetPlan = await readOptionalJson(path.join(runDir, 'chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json'));
-  const backgroundRaster = await readOptionalJson(path.join(runDir, 'chat-background-raster-model-probe', 'chat-background-raster-model-probe-results.json'));
-  const backgroundSource = await readOptionalJson(path.join(runDir, 'chat-background-source-probe', 'chat-background-source-probe-results.json'));
-  const rowCompositing = await readOptionalJson(path.join(runDir, 'chat-row-compositing-probe', 'chat-row-compositing-probe-results.json'));
+  const assetProbe = await readOptionalJson(path.join(assetProbeDir, 'chat-background-asset-probe-results.json'));
+  const assetPlan = await readOptionalJson(path.join(assetPlanDir, 'chat-asset-preservation-plan-results.json'));
+  const backgroundRaster = await readOptionalJson(path.join(backgroundRasterDir, 'chat-background-raster-model-probe-results.json'));
+  const backgroundSource = await readOptionalJson(path.join(backgroundSourceDir, 'chat-background-source-probe-results.json'));
+  const rowCompositing = await readOptionalJson(path.join(rowCompositingDir, 'chat-row-compositing-probe-results.json'));
   const fixtureIds = collectFixtureIds(assetProbe, assetPlan, backgroundRaster, backgroundSource, rowCompositing);
   const fixtures = fixtureIds.map((fixtureId) => classifyFixture(fixtureId, {
     assetProbe: findFixture(assetProbe?.fixtures, fixtureId),
@@ -60,6 +73,14 @@ async function main() {
       blocked: blocked.length,
       decisions: countBy(fixtures.map((fixture) => fixture.decision)),
       productionSafe: false,
+    },
+    reportOverrides: {
+      outDir: rel(requestedOutDir),
+      assetProbeDir: rel(assetProbeDir),
+      assetPlanDir: rel(assetPlanDir),
+      backgroundRasterDir: rel(backgroundRasterDir),
+      backgroundSourceDir: rel(backgroundSourceDir),
+      rowCompositingDir: rel(rowCompositingDir),
     },
     fixtures,
   };
@@ -221,6 +242,10 @@ function summarizeWorstRow(compositing) {
   };
 }
 
+function rel(file) {
+  return path.relative(process.cwd(), file);
+}
+
 function renderMarkdown(report) {
   const lines = [
     '# Roll20 Chat Browser Paint Plan',
@@ -229,6 +254,14 @@ function renderMarkdown(report) {
     `Run: \`${report.runDir}\``,
     '',
     'Scope: diagnostic-only. This routes browser paint/decode work after asset preservation checks and does not change renderer CSS.',
+    '',
+    '## Inputs',
+    '',
+    `- Asset probe: \`${report.reportOverrides?.assetProbeDir ?? ''}\``,
+    `- Asset plan: \`${report.reportOverrides?.assetPlanDir ?? ''}\``,
+    `- Background raster: \`${report.reportOverrides?.backgroundRasterDir ?? ''}\``,
+    `- Background source: \`${report.reportOverrides?.backgroundSourceDir ?? ''}\``,
+    `- Row compositing: \`${report.reportOverrides?.rowCompositingDir ?? ''}\``,
     '',
     '| Fixture | Priority | Decision | Asset | Raster | Flat | Chroma | Next |',
     '| --- | --- | --- | --- | --- | ---: | ---: | --- |',
