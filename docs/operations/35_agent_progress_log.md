@@ -1,3 +1,15 @@
+## 2026-07-13 Table Layout Constraint Probe
+
+- Root cause refinement: after `coc-table-intrinsic-clamp` was rejected, the missing piece was distinguishing an ineffective CSS constraint from a true Roll20 table auto-layout/min-content constraint.
+- Added `scripts/roll20_chat_table_layout_constraint_probe.mjs` and package script `diagnose:roll20-chat-table-layout-constraint`.
+- The probe reads a local smoke JSON plus source-context, intrinsic-width, and table-intrinsic reports, then records source max-width, local/actual computed max-width, used width, scrollWidth, table auto-layout flags, and recapture gaps.
+- Verification: `node --check scripts\roll20_chat_table_layout_constraint_probe.mjs` passed.
+- Verification: `corepack pnpm run diagnose:roll20-chat-table-layout-constraint -- reports\roll20-actual-compare\2026-06-18-state-map-v1 ..\_tmp_codex_smoke\rolltemplate-chat-smoke-coc-table-intrinsic-clamp-20260713-r2\rolltemplate-chat-smoke-results.json --source-context-dir ..\_tmp_codex_smoke\chat-source-context-source-css-audit-20260713-r4 --intrinsic-width-dir ..\_tmp_codex_smoke\chat-intrinsic-width-coc-table-intrinsic-clamp-20260713-r3 --table-intrinsic-dir ..\_tmp_codex_smoke\chat-table-intrinsic-coc-table-intrinsic-clamp-20260713-r2 --out-dir ..\_tmp_codex_smoke\chat-table-layout-constraint-coc-clamp-20260713-r2` passed.
+- Evidence: the report is `TABLE_LAYOUT_CONSTRAINT_ACTIONABLE`; YSHY is `ACTUAL_MAX_WIDTH_CAPTURE_GAP_BEFORE_AUTO_LAYOUT_MODEL`, while AW2E and Les-Oublies are secondary for this axis.
+- Evidence: YSHY source table max-width is `280px`, the local clamp candidate computed max-width is `1249px`, but local used table width still exceeds it at about `1317px` and scrollWidth tracks used width.
+- Evidence: actual Roll20 chat sidecars still lack `maxWidth/minWidth`; the next actual-screen step is recapture with updated sidecar fields before claiming whether Roll20 drops, applies, or ignores the source max-width.
+- Current evidence: next YSHY P0 is actual chat DOM recapture plus table auto-layout/min-content modeling. Do not retry max-width, transform, spacing, or broad font CSS as production renderer patches.
+
 ## 2026-07-13 CoC Table Intrinsic Clamp Rejection
 
 - Root cause hypothesis tested: the existing diagnostic `coc-table-intrinsic-clamp` might reproduce Roll20 by constraining the YSHY/CoC table with `max-width` while keeping transform-free table layout.

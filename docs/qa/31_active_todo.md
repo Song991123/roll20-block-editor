@@ -1,3 +1,11 @@
+## 2026-07-13 Table Layout Constraint Probe TODO Note
+
+- DONE: Added `diagnose:roll20-chat-table-layout-constraint` to separate ineffective width/min-width/max-width constraints from table auto-layout/min-content behavior.
+- VERIFIED: `corepack pnpm run diagnose:roll20-chat-table-layout-constraint -- reports\roll20-actual-compare\2026-06-18-state-map-v1 ..\_tmp_codex_smoke\rolltemplate-chat-smoke-coc-table-intrinsic-clamp-20260713-r2\rolltemplate-chat-smoke-results.json --source-context-dir ..\_tmp_codex_smoke\chat-source-context-source-css-audit-20260713-r4 --intrinsic-width-dir ..\_tmp_codex_smoke\chat-intrinsic-width-coc-table-intrinsic-clamp-20260713-r3 --table-intrinsic-dir ..\_tmp_codex_smoke\chat-table-intrinsic-coc-table-intrinsic-clamp-20260713-r2 --out-dir ..\_tmp_codex_smoke\chat-table-layout-constraint-coc-clamp-20260713-r2` passed.
+- RESULT: The new report is `TABLE_LAYOUT_CONSTRAINT_ACTIONABLE` with only YSHY actionable: `ACTUAL_MAX_WIDTH_CAPTURE_GAP_BEFORE_AUTO_LAYOUT_MODEL`. AW2E and Les-Oublies stay `LAYOUT_CONSTRAINT_SECONDARY` for this axis.
+- EVIDENCE: YSHY source table has `max-width:280px`, the local clamp candidate computes `maxWidth=1249px`, but local used table width still exceeds it (`1317.141px`) and scrollWidth tracks used width. Actual Roll20 sidecars predate `maxWidth/minWidth`, so actual computed max-width must be recaptured before the auto-layout model can be promoted.
+- CURRENT: Next YSHY P0 is actual Roll20 chat DOM recapture with updated `minWidth/maxWidth` fields, then a table auto-layout/min-content model. Do not retry source `max-width`, measured `max-width`, transform, spacing, or broad font CSS as production renderer patches.
+
 ## 2026-07-13 CoC Table Intrinsic Clamp Rejection TODO Note
 
 - DONE: Reran diagnostic-only `coc-table-intrinsic-clamp` with YSHY table font context after adding `minWidth`/`maxWidth` to local and Roll20 chat capture style sidecars.
