@@ -28,6 +28,7 @@ const CANDIDATE_SMOKE = {
   default: 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json',
   'no-shadow': 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json',
   'roll20-chat-shell-width-340': 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/rolltemplate-chat-smoke-results.json',
+  'roll20-sandbox-font-proxy': 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/rolltemplate-chat-smoke-results.json',
   'aw2e-message-full-width': 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/rolltemplate-chat-smoke-results.json',
   'aw2e-message-width-font-size': 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json',
   'aw2e-message-width-text-metrics': 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json',

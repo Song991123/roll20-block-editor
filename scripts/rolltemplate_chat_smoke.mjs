@@ -823,9 +823,9 @@ async function main() {
     await page.goto(report.baseUrl, { waitUntil: 'networkidle' });
     await page.evaluate(() => localStorage.setItem('__perfOn', '1'));
     await page.evaluate((policy) => {
-      if (policy === 'roll20-chat-fallback' || policy === 'yshy-bookk-unavailable') {
+      if (policy === 'roll20-chat-fallback' || policy === 'roll20-sandbox-font-proxy' || policy === 'yshy-bookk-unavailable') {
         localStorage.setItem('__r20ChatFontPolicy', policy);
-        if (policy === 'roll20-chat-fallback') {
+        if (policy === 'roll20-chat-fallback' || policy === 'roll20-sandbox-font-proxy') {
           localStorage.setItem('__r20SuppressUserDocumentFonts', '1');
         } else {
           localStorage.removeItem('__r20SuppressUserDocumentFonts');

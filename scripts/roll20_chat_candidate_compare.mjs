@@ -39,6 +39,7 @@ const candidates = [
   ['default', 'reports/rolltemplate-chat-smoke/screenshots'],
   ['no-shadow', 'reports/rolltemplate-chat-smoke-no-template-shadow/screenshots'],
   ['font-fallback', 'reports/rolltemplate-chat-smoke-font-fallback/screenshots'],
+  ['roll20-sandbox-font-proxy', 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/screenshots'],
   ['font-fallback-no-shadow-rejected', 'reports/rolltemplate-chat-smoke-font-fallback-no-shadow/screenshots'],
   ['text-auto-aa', 'reports/rolltemplate-chat-smoke-text-auto-aa/screenshots'],
   ['soft-shadow-rejected', 'reports/rolltemplate-chat-smoke-soft-template-shadow/screenshots'],

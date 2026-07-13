@@ -33,7 +33,11 @@ function safeRolltemplateClass(name: string): string {
   return `sheet-rolltemplate-${safe || 'default'}`;
 }
 
-type ChatFontPolicy = 'default' | 'roll20-chat-fallback' | 'yshy-bookk-unavailable';
+type ChatFontPolicy =
+  | 'default'
+  | 'roll20-chat-fallback'
+  | 'roll20-sandbox-font-proxy'
+  | 'yshy-bookk-unavailable';
 type ChatTextPolicy = 'default' | 'roll20-auto-aa';
 type ChatShadowPolicy = 'default' | 'no-template-shadow';
 type ChatGeometryPolicy =
@@ -77,7 +81,11 @@ type ChatPaintPolicy =
 function currentChatFontPolicy(): ChatFontPolicy {
   if (typeof window === 'undefined') return 'default';
   const value = window.localStorage.getItem('__r20ChatFontPolicy');
-  if (value === 'roll20-chat-fallback' || value === 'yshy-bookk-unavailable') return value;
+  if (
+    value === 'roll20-chat-fallback' ||
+    value === 'roll20-sandbox-font-proxy' ||
+    value === 'yshy-bookk-unavailable'
+  ) return value;
   return 'default';
 }
 
@@ -159,15 +167,17 @@ function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'defau
       ? rawFontFaces.filter((fontFace) => !/font-family\s*:\s*["']?BookkMyungjo-Bd["']?/i.test(fontFace))
       : rawFontFaces;
   const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
-  const rolltemplateCss = rewriteRoll20AssetUrls([...fontFaces, ...(matches ?? [])].join('\n'));
+  const rolltemplateCss = rewriteRoll20AssetUrls([...fontFaces, ...(matches ?? [])].join('\n'), {
+    proxyFontUrls: fontPolicy === 'roll20-sandbox-font-proxy',
+  });
   return rolltemplateCss.trim() ? rolltemplateCss : '';
 }
 
-function rewriteRoll20AssetUrls(css: string): string {
+function rewriteRoll20AssetUrls(css: string, opts: { proxyFontUrls?: boolean } = {}): string {
   return css.replace(/url\s*\(([^)]+)\)/gi, (_full, rawUrl: string) => {
     const normalized = String(rawUrl).trim().replace(/^["']|["']$/g, '');
     if (!/^https?:\/\//i.test(normalized)) return '';
-    if (/\.(?:woff2?|ttf|otf|eot)(?:[?#].*)?$/i.test(normalized)) {
+    if (!opts.proxyFontUrls && /\.(?:woff2?|ttf|otf|eot)(?:[?#].*)?$/i.test(normalized)) {
       return `url("${normalized}")`;
     }
     if (

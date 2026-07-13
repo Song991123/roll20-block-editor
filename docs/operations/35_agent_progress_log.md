@@ -1,3 +1,13 @@
+## 2026-07-13 Roll20 Sandbox Font Proxy Candidate
+
+- Root cause test: actual Roll20 fails YSHY `BookkMyungjo-Bd` font checks, while local ChatPane had been preserving font URLs directly. The hypothesis was that local needed a Roll20-sandbox-like font URL proxy/failure model.
+- Added diagnostic-only `roll20-sandbox-font-proxy` support in `components/editor/ChatPane.tsx`. It rewrites rolltemplate font URLs through the Roll20 image-proxy approximation when explicitly enabled and relies on `rolltemplate_chat_smoke` to suppress document-level user font registration for the run.
+- Added the candidate to chat candidate comparison, row-raster candidate comparison, and style-proof lookup tables so future diagnostic refreshes do not silently skip it.
+- Verification: syntax checks passed for the three changed scripts. `corepack pnpm run build` passed. Local smoke wrote `..\_tmp_codex_smoke\rolltemplate-chat-smoke-roll20-sandbox-font-proxy-20260713-r1` and passed all three fixtures.
+- Rejection evidence: candidate comparison at `..\_tmp_codex_smoke\chat-candidates-roll20-sandbox-font-proxy-20260713-r1` reports `reject-regresses-fixtures`, mean aligned delta `+16.22%`, AW2E `+41.04%`, YSHY `+7.62%`.
+- Row-raster evidence: `..\_tmp_codex_smoke\row-raster-roll20-sandbox-font-proxy-20260713-r2` reports `reject-row-raster-regression`, AW2E weighted row delta `+44.07%`, YSHY weighted row delta `+8.68%`.
+- Claim boundary: this is diagnostic-only and rejected. It does not enable production renderer CSS, does not prove Roll20 visual parity, and does not remove the need for exact scoped rule-order/table-intrinsic/paint-context modeling.
+
 ## 2026-07-13 Template Scope Source Context Gate
 
 - Root cause update: the template-scope gate knew AW2E and YSHY require different renderer models, but it did not directly consume the source-context probe. That left room for a scoped candidate to be reviewed before rule order, font-face activation, and table intrinsic source context were proven together.

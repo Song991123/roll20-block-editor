@@ -1,3 +1,12 @@
+## 2026-07-13 Roll20 Sandbox Font Proxy Candidate TODO Note
+
+- DONE: Added a diagnostic-only `roll20-sandbox-font-proxy` ChatPane font policy. It suppresses document-level user font registration and rewrites rolltemplate font URLs through the Roll20 image-proxy approximation so the font-url/sandbox hypothesis can be measured instead of guessed.
+- DONE: Wired the candidate into `rolltemplate_chat_smoke`, `diagnose:roll20-chat-candidates`, `diagnose:roll20-chat-row-raster-candidates`, and `diagnose:roll20-chat-candidate-style` candidate lookup paths.
+- VERIFIED: `node --check scripts\rolltemplate_chat_smoke.mjs`, `node --check scripts\roll20_chat_candidate_compare.mjs`, `node --check scripts\roll20_chat_candidate_style_proof.mjs`, `corepack pnpm run build`, and `node scripts\rolltemplate_chat_smoke.mjs --out-dir .\out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-roll20-sandbox-font-proxy-20260713-r1 --chat-font-policy roll20-sandbox-font-proxy --port 4371` passed.
+- OBSERVED: Candidate comparison rejected `roll20-sandbox-font-proxy`: mean aligned delta `+16.22%`, regressions `2`, AW2E delta `+41.04%`, YSHY delta `+7.62%` (`20.68%` to `28.30%` aligned mismatch).
+- OBSERVED: Row-raster comparison also rejected it: AW2E weighted row delta `+44.07%`, YSHY weighted row delta `+8.68%`, `rowRasterRisk=reject-row-raster-regression`.
+- CURRENT: Do not promote this candidate. Font URL proxying plus user-font suppression is not the missing Roll20 parity model by itself; next P0 remains exact Roll20 rule order, template shell typography, table intrinsic context, asset/paint context, and scoped model proof before renderer CSS.
+
 ## 2026-07-13 Template Scope Source Context Gate TODO Note
 
 - DONE: `gate:roll20-chat-template-scope` now accepts `--source-context-dir` and consumes `chat-source-context-probe-results.json` before a scoped renderer candidate can be reviewed.

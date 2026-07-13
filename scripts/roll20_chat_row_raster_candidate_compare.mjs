@@ -45,6 +45,7 @@ function readOptionPairs(name) {
 const candidates = [
   ['default', 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke/screenshots'],
   ['no-shadow', 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-no-template-shadow/screenshots'],
+  ['roll20-sandbox-font-proxy', 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/screenshots'],
   ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
   ['aw2e-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/screenshots'],
   ['aw2e-message-cell-font-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/screenshots'],
