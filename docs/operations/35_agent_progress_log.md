@@ -1,3 +1,13 @@
+## 2026-07-13 Template Scope Source Context Gate
+
+- Root cause update: the template-scope gate knew AW2E and YSHY require different renderer models, but it did not directly consume the source-context probe. That left room for a scoped candidate to be reviewed before rule order, font-face activation, and table intrinsic source context were proven together.
+- Added `--source-context-dir` to `scripts/roll20_chat_template_scope_gate.mjs` and made source/context decisions promotion blockers for non-P2 fixtures.
+- Verification: `node --check scripts\roll20_chat_template_scope_gate.mjs` and `corepack pnpm run test:roll20-chat-template-scope` passed.
+- Live isolated gate run wrote `..\_tmp_codex_smoke\chat-template-scope-source-context-20260713-r2` and returned `HOLD_GLOBAL_CHAT_RENDERER_PATCH` with `11` blockers.
+- Top renderer gate consumed that scoped output at `..\_tmp_codex_smoke\renderer-gate-template-source-context-20260713-r2` and still returned `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Current evidence: AW2E source/context remains `RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED`; YSHY remains `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED` with `+14.95%` sanitize replay regression and `6` changed font checks.
+- Claim boundary: gate accuracy and next-action narrowing only. No production renderer CSS, asset relink, Roll20 upload, or visual parity claim changed.
+
 ## 2026-07-13 Chat Source Context Probe
 
 - Root cause update: current actual Roll20 chat evidence already proves user rolltemplate CSS is present, so the remaining high-mismatch chat path is not "CSS missing" and should not be attacked with broad local typography/filter/transform patches.

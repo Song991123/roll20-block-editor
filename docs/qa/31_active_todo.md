@@ -1,3 +1,11 @@
+## 2026-07-13 Template Scope Source Context Gate TODO Note
+
+- DONE: `gate:roll20-chat-template-scope` now accepts `--source-context-dir` and consumes `chat-source-context-probe-results.json` before a scoped renderer candidate can be reviewed.
+- DONE: P0 template-scope promotion is now explicitly blocked when source/context evidence still says `RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED`, `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`, `FONT_FACE_ACTIVATION_REQUIRED`, or `TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED`.
+- VERIFIED: `node --check scripts\roll20_chat_template_scope_gate.mjs`, `corepack pnpm run test:roll20-chat-template-scope`, and `corepack pnpm run gate:roll20-chat-template-scope -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --source-context-dir ..\_tmp_codex_smoke\chat-source-context-20260713-r2 --cell-allocation-dir ..\_tmp_codex_smoke\chat-cell-allocation-probe-2026-06-18-state-map-v1-1783904920839 --out-dir ..\_tmp_codex_smoke\chat-template-scope-source-context-20260713-r2` passed.
+- OBSERVED: The scoped gate still returns `HOLD_GLOBAL_CHAT_RENDERER_PATCH`, now with `11` blockers. AW2E remains blocked by source/context `RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED`, row-raster regression, asset relink, and no style proof; YSHY remains blocked by `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`, asset relink, and rejected candidates.
+- CURRENT: No production renderer CSS is enabled. Next P0 is a scoped source model that proves Roll20 rule order, font-face activation, and table intrinsic context before any ChatPane renderer promotion.
+
 ## 2026-07-13 Chat Source Context Probe TODO Note
 
 - DONE: Added `diagnose:roll20-chat-source-context` to fuse actual Roll20 chat CSS activation, font-face checks, computed table styles, text-measurement samples, width reconciliation, intrinsic-width, and row/paint/source evidence before any renderer CSS change.

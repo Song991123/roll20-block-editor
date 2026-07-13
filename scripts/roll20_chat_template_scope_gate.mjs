@@ -23,6 +23,7 @@ const optionNamesWithValues = new Set([
   '--asset-plan-dir',
   '--row-raster-candidates-dir',
   '--cell-allocation-dir',
+  '--source-context-dir',
 ]);
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
@@ -37,6 +38,7 @@ const reportOverrides = {
   assetPlan: readOption('--asset-plan-dir', ''),
   rowRasterCandidates: readOption('--row-raster-candidates-dir', ''),
   cellAllocation: readOption('--cell-allocation-dir', ''),
+  sourceContext: readOption('--source-context-dir', ''),
 };
 
 if (SELF_TEST) {
@@ -67,6 +69,7 @@ async function main() {
     assetPlan: await readReportJson('chat-asset-preservation-plan', 'chat-asset-preservation-plan-results.json', reportOverrides.assetPlan),
     rowRasterCandidates: await readReportJson('chat-row-raster-candidate-comparison', 'chat-row-raster-candidate-comparison-results.json', reportOverrides.rowRasterCandidates),
     cellAllocation: await readReportJson('chat-cell-allocation-probe', 'chat-cell-allocation-probe-results.json', reportOverrides.cellAllocation),
+    sourceContext: await readReportJson('chat-source-context-probe', 'chat-source-context-probe-results.json', reportOverrides.sourceContext),
   };
   const report = buildReport(runDirArg, reports, normalizeReportOverrides(reportOverrides));
 
@@ -99,9 +102,12 @@ function buildReport(runDirLabel, reports, overrides = {}) {
     const assetBlocksPromotion = assetPlan?.rendererPolicy === 'DO_NOT_PROMOTE_CSS' || assetPlan?.decision === 'SOURCE_ASSET_LOST_RELINK_REQUIRED';
     const rowRasterBlocksPromotion = rowRasterSummary.risk.includes('reject');
     const cellAllocationBlocksPromotion = Boolean(cellAllocation.bestCandidateScenario?.productionBlocker);
+    const fixturePriority = plan?.priority ?? reconciliation?.priority ?? priorityFor(alignedMismatch);
+    const sourceContext = summarizeSourceContext(reports.sourceContext, fixtureId);
+    const sourceContextBlocksPromotion = sourceContextBlocks(sourceContext, fixturePriority);
     return {
       fixtureId,
-      priority: plan?.priority ?? reconciliation?.priority ?? priorityFor(alignedMismatch),
+      priority: fixturePriority,
       alignedMismatchRatio: alignedMismatch,
       alignedMismatchPct: pct(alignedMismatch),
       strategy,
@@ -120,8 +126,10 @@ function buildReport(runDirLabel, reports, overrides = {}) {
       rowRasterBlocksPromotion,
       cellAllocation,
       cellAllocationBlocksPromotion,
-      promotionReady: isFixturePromotionReady(bestCandidate, { assetBlocksPromotion, rowRasterBlocksPromotion, cellAllocationBlocksPromotion }),
-      nextAction: nextActionFor(fixtureId, requiredModel),
+      sourceContext,
+      sourceContextBlocksPromotion,
+      promotionReady: isFixturePromotionReady(bestCandidate, { assetBlocksPromotion, rowRasterBlocksPromotion, cellAllocationBlocksPromotion, sourceContextBlocksPromotion }),
+      nextAction: nextActionFor(fixtureId, requiredModel, sourceContext),
     };
   });
   const highMismatch = fixtures.filter((fixture) => fixture.priority === 'P0');
@@ -140,6 +148,9 @@ function buildReport(runDirLabel, reports, overrides = {}) {
     .flatMap((fixture) => fixture.cellAllocation.rejectedScenarios.map((scenario) =>
       `${fixture.fixtureId}: ${scenario.scenario} cell allocation rejected (${scenario.allocationDecision}; table delta=${fmtPx(scenario.tableDelta)}, max text-cell delta=${fmtPx(scenario.maxAbsTextCellWidthDelta)}, max ratio delta=${fmtSignedPct(scenario.maxAbsCellRatioDeltaPct)})`,
     ));
+  const sourceContextBlockers = highMismatch
+    .filter((fixture) => fixture.sourceContextBlocksPromotion)
+    .map((fixture) => `${fixture.fixtureId}: source/context gate requires ${fixture.sourceContext.decision} before scoped renderer promotion (${sourceContextHoldReason(fixture.sourceContext)})`);
   const blockers = [];
   if (highModels.size > 1) blockers.push(`high-mismatch fixtures require split renderer models: ${[...highModels].join(', ')}`);
   if (highScopes.size > 1) blockers.push(`high-mismatch fixtures require template-scoped rules: ${[...highScopes].join(', ')}`);
@@ -147,6 +158,7 @@ function buildReport(runDirLabel, reports, overrides = {}) {
   blockers.push(...assetBlockers);
   blockers.push(...rowRasterBlockers);
   blockers.push(...cellAllocationBlockers);
+  blockers.push(...sourceContextBlockers);
   if (reports.policy?.summary?.globalSafeCandidates === 0 || reports.policy?.summary?.globalSafeCandidates === '0') {
     blockers.push('chat renderer policy reports no global-safe candidates');
   }
@@ -167,6 +179,7 @@ function buildReport(runDirLabel, reports, overrides = {}) {
       assetBlockedFixtures: fixtures.filter((fixture) => fixture.assetBlocksPromotion).length,
       rowRasterBlockedFixtures: fixtures.filter((fixture) => fixture.rowRasterBlocksPromotion).length,
       cellAllocationBlockedFixtures: fixtures.filter((fixture) => fixture.cellAllocationBlocksPromotion || fixture.cellAllocation.rejectedScenarios.length).length,
+      sourceContextBlockedFixtures: fixtures.filter((fixture) => fixture.sourceContextBlocksPromotion).length,
     },
     fixtures,
     blockers,
@@ -204,11 +217,18 @@ function isFixturePromotionReady(candidate, guards = {}) {
       !String(candidate.risk ?? '').includes('reject') &&
       !guards.assetBlocksPromotion &&
       !guards.rowRasterBlocksPromotion &&
-      !guards.cellAllocationBlocksPromotion
+      !guards.cellAllocationBlocksPromotion &&
+      !guards.sourceContextBlocksPromotion
   );
 }
 
-function nextActionFor(fixtureId, requiredModel) {
+function nextActionFor(fixtureId, requiredModel, sourceContext = null) {
+  if (sourceContext?.decision === 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED') {
+    return 'Build a CoC/YSHY scoped source model that proves Roll20 rule order, font-face activation, and table intrinsic context together; do not replay sanitized typography as CSS.';
+  }
+  if (sourceContext?.decision === 'RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED') {
+    return 'Build a template-scoped source-context model and prove rule order plus font-face/table intrinsic behavior before reviewing renderer CSS.';
+  }
   if (requiredModel === 'MESSAGE_CONTENT_TEXT_METRICS') {
     return 'Build and style-proof an AW2E template-scoped message/content width plus exact text metrics candidate; do not widen global ChatPane.';
   }
@@ -299,6 +319,58 @@ function summarizeCellAllocation(report, fixtureId, bestCandidateName = '') {
   };
 }
 
+function summarizeSourceContext(report, fixtureId) {
+  const fixture = (report?.fixtures ?? []).find((item) => item.fixtureId === fixtureId);
+  if (!fixture) {
+    return {
+      decision: 'MISSING_SOURCE_CONTEXT',
+      cssClassification: '',
+      fontDecision: '',
+      tableDecision: '',
+      changedFonts: 0,
+      tableWidthDelta: null,
+      sanitizeReplayDeltaPct: null,
+      evidence: [],
+      nextAction: '',
+    };
+  }
+  return {
+    decision: fixture.decision ?? '',
+    cssClassification: fixture.cssEvidence?.classification ?? '',
+    expectedRulePresent: Boolean(fixture.cssEvidence?.expectedRulePresent),
+    fontDecision: fixture.fontActivation?.decision ?? '',
+    tableDecision: fixture.tableContext?.decision ?? '',
+    changedFonts: Number(fixture.fontActivation?.changedFonts?.length ?? 0),
+    tableWidthDelta: numberOrNull(fixture.tableContext?.tableWidthDelta),
+    sanitizeReplayDeltaPct: numberOrNull(fixture.rowPaintSource?.sanitizeReplayDeltaPct),
+    evidence: fixture.evidence ?? [],
+    nextAction: fixture.nextAction ?? '',
+  };
+}
+
+function sourceContextBlocks(sourceContext, priority) {
+  if (!sourceContext || priority === 'P2') return false;
+  return [
+    'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED',
+    'RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED',
+    'FONT_FACE_ACTIVATION_REQUIRED',
+    'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED',
+    'MISSING_SOURCE_CONTEXT',
+  ].includes(sourceContext.decision);
+}
+
+function sourceContextHoldReason(sourceContext) {
+  if (!sourceContext) return 'missing source/context evidence';
+  const parts = [];
+  if (sourceContext.cssClassification) parts.push(`css=${sourceContext.cssClassification}`);
+  if (sourceContext.fontDecision) parts.push(`font=${sourceContext.fontDecision}`);
+  if (sourceContext.tableDecision) parts.push(`table=${sourceContext.tableDecision}`);
+  if (typeof sourceContext.tableWidthDelta === 'number') parts.push(`tableDelta=${fmtPx(sourceContext.tableWidthDelta)}`);
+  if (sourceContext.changedFonts) parts.push(`changedFonts=${sourceContext.changedFonts}`);
+  if (typeof sourceContext.sanitizeReplayDeltaPct === 'number') parts.push(`sanitizeReplay=${fmtSignedPct(sourceContext.sanitizeReplayDeltaPct)}`);
+  return parts.join(', ') || 'missing source/context evidence';
+}
+
 function rowRasterPrefixForFixture(fixtureId) {
   if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
   if (fixtureId === 'yshy-commission-1bu') return 'yshy';
@@ -313,6 +385,7 @@ function promotionHoldReason(fixture) {
   if (fixture.assetBlocksPromotion) reasons.push(`asset=${fixture.assetDecision || fixture.assetRendererPolicy || 'held'}`);
   if (fixture.rowRasterBlocksPromotion) reasons.push(`rowRaster=${fixture.rowRaster.risk}`);
   if (fixture.cellAllocationBlocksPromotion) reasons.push(`cellAllocation=${fixture.cellAllocation.bestCandidateScenario?.allocationDecision ?? 'held'}`);
+  if (fixture.sourceContextBlocksPromotion) reasons.push(`sourceContext=${fixture.sourceContext.decision}`);
   return reasons.join(', ');
 }
 
@@ -326,12 +399,12 @@ function renderMarkdown(report) {
     '',
     'Scope: diagnostic-only. This gate prevents global ChatPane CSS promotion when fixtures require different template-scoped models.',
     '',
-    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Cell allocation | Asset gate | Row raster | Ready | Next action |',
-    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- |',
+    '| Fixture | Priority | Required scope | Required model | Mismatch | Table delta | Text residual | Scroll delta | Best candidate | Cell allocation | Source context | Asset gate | Row raster | Ready | Next action |',
+    '| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const fixture of report.fixtures) {
     const cell = fixture.cellAllocation.bestCandidateScenario ?? fixture.cellAllocation.defaultScenario;
-    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${cell ? `${cell.scenario}:${cell.allocationDecision}` : 'n/a'} | ${fixture.assetDecision || 'n/a'} | ${fixture.rowRaster.risk || 'n/a'} ${fixture.rowRaster.weightedMismatchPct ? `(${fixture.rowRaster.weightedMismatchPct})` : ''} | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.priority} | \`${fixture.requiredScope}\` | ${fixture.requiredModel} | ${fixture.alignedMismatchPct} | ${fmtPx(fixture.tableWidthDelta)} | ${fmtPx(fixture.tableTextResidual)} | ${fmtPx(fixture.tableScrollWidthDelta)} | ${fixture.bestCandidate?.name ?? 'none'} (${fixture.bestCandidate?.risk ?? 'n/a'}) | ${cell ? `${cell.scenario}:${cell.allocationDecision}` : 'n/a'} | ${fixture.sourceContext.decision || 'n/a'} | ${fixture.assetDecision || 'n/a'} | ${fixture.rowRaster.risk || 'n/a'} ${fixture.rowRaster.weightedMismatchPct ? `(${fixture.rowRaster.weightedMismatchPct})` : ''} | ${fixture.promotionReady ? 'yes' : 'no'} | ${fixture.nextAction} |`);
   }
   lines.push('', '## Blockers', '');
   if (report.blockers.length) {
@@ -508,6 +581,25 @@ function selfTest() {
         },
       ],
     },
+    sourceContext: {
+      fixtures: [
+        {
+          fixtureId: 'official-roll20-AW2E',
+          decision: 'RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED',
+          cssEvidence: { classification: 'EXPECTED_RULE_PRESENT', expectedRulePresent: true },
+          fontActivation: { decision: 'FONT_FACE_ACTIVATION_DIFFERS', changedFonts: [] },
+          tableContext: { decision: 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED', tableWidthDelta: 15.75 },
+        },
+        {
+          fixtureId: 'yshy-commission-1bu',
+          decision: 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED',
+          cssEvidence: { classification: 'EXPECTED_RULE_PRESENT', expectedRulePresent: true },
+          fontActivation: { decision: 'FONT_FACE_ACTIVATION_DIFFERS', changedFonts: [{ spec: '12px BookkMyungjo-Bd' }] },
+          tableContext: { decision: 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED', tableWidthDelta: -24.531 },
+          rowPaintSource: { sanitizeReplayDeltaPct: 14.95 },
+        },
+      ],
+    },
   }, { styleProof: path.resolve('tmp-style-proof') });
   assert.equal(report.action, 'HOLD_GLOBAL_CHAT_RENDERER_PATCH');
   assert.equal(report.reportOverrides.styleProof, path.resolve('tmp-style-proof'));
@@ -515,8 +607,11 @@ function selfTest() {
   assert.ok(report.blockers.some((blocker) => blocker.includes('placeholder image')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('row-raster risk=reject-row-raster-regression')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('cell allocation rejected')));
+  assert.ok(report.blockers.some((blocker) => blocker.includes('source/context gate requires RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED')));
+  assert.ok(report.blockers.some((blocker) => blocker.includes('source/context gate requires SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED')));
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredScope, '.sheet-rolltemplate-aw');
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').cellAllocationBlocksPromotion, true);
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').sourceContextBlocksPromotion, true);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').promotionReady, false);
   assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredModel, 'TABLE_INTRINSIC_SANITIZE_FONT');
   console.log('roll20_chat_template_scope_gate self-test PASS');
