@@ -11,9 +11,23 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
+const optionNamesWithValues = new Set(['--out-dir']);
+const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'chat-table-width-budget');
+const rawOutDir = readOption('--out-dir', '');
+const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-table-width-budget');
+
+function readOption(name, fallback = '') {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(args[index - 1]));
+}
 
 async function main() {
   const width = await readOptionalJson(path.join(runDir, 'chat-width-model', 'chat-width-model-results.json'));
@@ -38,6 +52,10 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
+    output: {
+      requestedOutDir: rawOutDir || null,
+      outDir: path.relative(process.cwd(), outDir),
+    },
     scope: 'diagnostic-only Roll20 chat table-width budget',
     summary: {
       status: actionable.length ? 'TABLE_WIDTH_BUDGET_ACTIONABLE' : 'TABLE_WIDTH_BUDGET_SECONDARY',

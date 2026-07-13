@@ -1,3 +1,15 @@
+## 2026-07-13 Table Budget Override Routing
+
+- Root cause: the next renderer P0 needs iterative AW2E/YSHY table-budget experiments, but `diagnose:roll20-chat-table-width-budget` could only write canonical report output and `plan:roll20-chat-renderer-targets` could not consume an isolated temp table-budget report. Also, the targeted plan read older table-budget field names, so newer `budgetDecision` / `tableWidthDelta` evidence was not surfaced directly in its signals.
+- Updated `scripts/roll20_chat_table_width_budget.mjs` with `--out-dir` and report output metadata.
+- Updated `scripts/roll20_chat_targeted_renderer_plan.mjs` with `--table-budget-dir`, table-budget report override recording, and current schema reads for `budgetDecision` and `tableWidthDelta`.
+- Updated `scripts/README.md` to document the new table-budget output override and targeted-plan table-budget override.
+- Verification: `node --check scripts\roll20_chat_table_width_budget.mjs`, `node --check scripts\roll20_chat_targeted_renderer_plan.mjs`, and `corepack pnpm run test:roll20-chat-renderer-targets` passed.
+- Verification: `corepack pnpm run diagnose:roll20-chat-table-width-budget -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\chat-table-width-budget-targeted-override-20260713-r1` passed with `TABLE_WIDTH_BUDGET_ACTIONABLE`.
+- Evidence: temp budget output reports AW2E `MESSAGE_CONTENT_WIDTH_BUDGET` with table delta `+15.75px`, text delta `+15.602px`, residual `+0.148px`; Les-Oublies `NARROW_WIDTH_MODEL_REQUIRED`; YSHY `TEXT_LAYOUT_CONSTRAINT_BUDGET` with table delta `-24.531px`, text delta `-54.946px`, residual `+30.415px`.
+- Verification: targeted plan with `--table-budget-dir ..\_tmp_codex_smoke\chat-table-width-budget-targeted-override-20260713-r1` and `--source-context-dir ..\_tmp_codex_smoke\chat-source-context-autofallback-20260713-r2` passed with `HOLD_PRODUCTION_RENDERER_PATCH` and recorded the table-budget override.
+- Current evidence: this improves renderer planning and temp evidence routing only. It does not improve pixels, relink assets, upload to Roll20, or authorize production renderer CSS.
+
 ## 2026-07-13 AW2E Cell Context Targeted-Plan Routing
 
 - Root cause: after the cell-font and cell-wrap context candidates were rejected, `plan:roll20-chat-renderer-targets` still did not list those two names in AW2E tried-candidate evidence. A future renderer pass could therefore miss that the `27.3px` cell-context replay had already been tested and rejected.

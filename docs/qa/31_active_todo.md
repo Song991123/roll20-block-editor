@@ -1,3 +1,11 @@
+## 2026-07-13 Table Budget Override Routing TODO Note
+
+- DONE: `diagnose:roll20-chat-table-width-budget` now accepts `--out-dir`, so agents can write ignored temp budget evidence without rewriting canonical actual-run reports.
+- DONE: `plan:roll20-chat-renderer-targets` now accepts `--table-budget-dir` and reads the current table-budget schema (`budgetDecision`, `tableWidthDelta`) from that override.
+- VERIFIED: Temp budget output at `..\_tmp_codex_smoke\chat-table-width-budget-targeted-override-20260713-r1` reports AW2E `MESSAGE_CONTENT_WIDTH_BUDGET` (`+15.75px` table delta, `+0.148px` residual), Les `NARROW_WIDTH_MODEL_REQUIRED`, and YSHY `TEXT_LAYOUT_CONSTRAINT_BUDGET` (`-24.531px` table delta).
+- VERIFIED: Targeted renderer plan with the table-budget override records `reportOverrides.tableBudget`, returns `HOLD_PRODUCTION_RENDERER_PATCH`, and preserves the split AW2E/YSHY strategies.
+- CURRENT: This improves P0 evidence routing for the next renderer experiments. It does not change product renderer CSS, relink assets, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 AW2E Cell Context Targeted-Plan Routing TODO Note
 
 - DONE: `plan:roll20-chat-renderer-targets` now carries `aw2e-message-cell-font-context` and `aw2e-message-cell-wrap-context` in AW2E tried-candidate evidence.

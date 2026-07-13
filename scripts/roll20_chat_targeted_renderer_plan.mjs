@@ -15,6 +15,7 @@ const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = args.includes('--self-test');
 const optionNamesWithValues = new Set([
   '--out-dir',
+  '--table-budget-dir',
   '--candidate-comparison-dir',
   '--source-context-dir',
 ]);
@@ -23,6 +24,7 @@ const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
 const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-targeted-renderer-plan');
 const reportOverrides = {
+  tableBudget: readOption('--table-budget-dir', ''),
   candidateComparison: readOption('--candidate-comparison-dir', ''),
   sourceContext: readOption('--source-context-dir', ''),
 };
@@ -52,7 +54,7 @@ async function main() {
     parity: await readOptionalJson(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json')),
     reconciliation: await readOptionalJson(path.join(runDir, 'chat-width-reconciliation', 'chat-width-reconciliation-results.json')),
     shell: await readOptionalJson(path.join(runDir, 'chat-message-shell-model', 'chat-message-shell-model-results.json')),
-    tableBudget: await readOptionalJson(path.join(runDir, 'chat-table-width-budget', 'chat-table-width-budget-results.json')),
+    tableBudget: await readReportJson('chat-table-width-budget', 'chat-table-width-budget-results.json', reportOverrides.tableBudget),
     intrinsic: await readOptionalJson(path.join(runDir, 'chat-intrinsic-width-model', 'chat-intrinsic-width-model-results.json')),
     fontGlyph: await readOptionalJson(path.join(runDir, 'chat-font-glyph-model', 'chat-font-glyph-model-results.json')),
     rowPaintSource: await readOptionalJson(path.join(runDir, 'chat-row-paint-source-probe', 'chat-row-paint-source-probe-results.json')),
@@ -126,10 +128,10 @@ function buildFixturePlan(fixtureId, reports) {
     reconciliationDecision: reconciliation?.nextExperiment ?? '',
     shellDecision: shell?.messageShellDecision ?? shell?.decision ?? '',
     shellDeltas: shell?.deltas ?? {},
-    tableBudgetDecision: tableBudget?.decision ?? tableBudget?.widthDecision ?? '',
+    tableBudgetDecision: tableBudget?.budgetDecision ?? tableBudget?.decision ?? tableBudget?.widthDecision ?? '',
     intrinsicDecision: intrinsic?.intrinsicDecision ?? intrinsic?.model?.decision ?? '',
     textWidthDecision: fontGlyph?.textWidthModel?.decision ?? '',
-    tableWidthDelta: numberOrNull(reconciliation?.signals?.tableWidthDelta ?? tableBudget?.tableDelta ?? intrinsic?.deltas?.tableWidthDelta),
+    tableWidthDelta: numberOrNull(reconciliation?.signals?.tableWidthDelta ?? tableBudget?.tableWidthDelta ?? tableBudget?.tableDelta ?? intrinsic?.deltas?.tableWidthDelta),
     tableTextResidual: numberOrNull(reconciliation?.signals?.tableTextResidual ?? tableBudget?.textResidual ?? fontGlyph?.textWidthModel?.tableTextResidual),
     tableScrollWidthDelta: numberOrNull(reconciliation?.signals?.tableScrollWidthDelta ?? tableBudget?.scrollDelta),
     textWidthTableDelta: numberOrNull(fontGlyph?.textWidthModel?.tableTextDelta),
