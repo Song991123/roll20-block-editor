@@ -3902,6 +3902,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - `scripts/export_dialog_browser_smoke.mjs` now guards against the old misleading actual-Roll20 preview claim returning.
 - Claim boundary: copy/truthfulness only. No Roll20 renderer CSS or parity claim changed.
 
+## 2026-07-13 Export Dialog Copy and Smoke Reliability
+
+- Cleaned `components/editor/ExportDialog.tsx` copy around Roll20 zip export, upload readiness, asset replacement, Sandbox diagnostics, and legacy sanitize mode.
+- Repaired `scripts/export_dialog_browser_smoke.mjs` so it asserts normal Korean UI text instead of mojibake strings.
+- Added request-failure evidence to the export dialog smoke and stubbed known external environment resources (Pretendard CDN CSS and Blockly sprite PNG) so restricted-network QA still requires console/page/request failures to stay at `0`.
+- Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:export-dialog -- --port 4370 --report-dir ..\_tmp_codex_smoke\export-dialog-copy-20260713-final` passed.
+- Server hygiene: post-smoke `netstat` showed no listening app/smoke server on `3000`, `3001`, `4431`, `4432`, or `4370`; only the existing Roll20 CDP listener on `127.0.0.1:9222` remained.
+- Claim boundary: this is UX copy and QA reliability work. It does not add actual Roll20 screenshot evidence, does not prove visual parity, and does not change renderer CSS.
+
 ## 2026-06-21 Chat Foreground Suspect Handoff Precision
 
 - Root cause: the aggregate `chatActualTemplatePixelSuspect=1` status made the next action too generic even though `chat-parity-diagnostics` already knew the exact fixture and pixel sanity reason.

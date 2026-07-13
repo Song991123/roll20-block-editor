@@ -1,3 +1,13 @@
+## 2026-07-13 Export Dialog Copy and Smoke Reliability TODO Note
+
+- DONE: Cleaned the Roll20 export dialog wording so user-facing Korean no longer mixes stiff/unclear copy around zip export, asset replacement, Roll20 upload readiness, Sandbox diagnostics, and legacy sanitize mode.
+- DONE: `smoke:export-dialog` now checks the same normal Korean copy that users see instead of mojibake/broken expected strings.
+- DONE: The export-dialog smoke records failed request URLs and locally stubs the known external-only test environment resources (Pretendard CDN CSS and Blockly sprite PNG), so a restricted-network run can still enforce console/page/request failure counts.
+- VERIFIED: `node --check scripts\export_dialog_browser_smoke.mjs` passed.
+- VERIFIED: `corepack pnpm run lint` and `corepack pnpm run build` passed.
+- VERIFIED: `corepack pnpm run smoke:export-dialog -- --port 4370 --report-dir ..\_tmp_codex_smoke\export-dialog-copy-20260713-final` passed with console issues `0`, page errors `0`, and request failures `0`.
+- CURRENT: This improves export/import UX truthfulness and the browser smoke gate. It does not add new actual Roll20 screenshots, does not prove visual parity, and does not promote renderer CSS.
+
 ## 2026-07-13 Candidate Asset Evidence Override TODO Note
 
 - DONE: `diagnose:roll20-chat-background-assets` now accepts `--out-dir`, `--background-source-dir`, and `--background-raster-dir`, so candidate-specific background evidence can flow into asset byte checks without rewriting canonical reports.

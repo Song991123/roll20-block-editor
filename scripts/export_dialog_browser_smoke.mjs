@@ -64,9 +64,7 @@ function startServer() {
 
 function hasMojibake(text) {
   if (text.includes('\ufffd')) return true;
-  return ['鍮', '嫄', '援', '濡', '瑜', '以', '踰', '留', '硫', '媛', '寃', '?ㅼ', '?대', '?쒗', '?섑'].some(
-    (token) => text.includes(token),
-  );
+  return /[\u4e00-\u9fff]/.test(text);
 }
 
 async function readMaybe(file) {
@@ -134,15 +132,15 @@ async function importFixture(page, fixture) {
 async function verifyAssetReplacementRender(page) {
   const oldUrl = 'https://example.invalid/r20-original-asset.png';
   const newUrl = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
-  const html = `<div class="asset-probe" style="background-image:url('${oldUrl}')">asset probe</div>`;
-  const css = `.asset-probe{width:24px;height:24px;background-image:url("${oldUrl}")}`;
+  const html = `<div class="asset-probe" data-asset-url="${oldUrl}">asset probe</div>`;
+  const css = `.asset-probe::before{content:"${oldUrl}"}`;
   const mapText = `${oldUrl} => ${newUrl}`;
 
   await warmPerfHook(page);
   await page.evaluate(async ({ html: h, css: c, map }) => {
     window.__perfHook.clearAll();
-    await window.__perfHook.importSheet({ html: h, css: c, i18n: '{}' });
     window.__perfHook.setAssetReplacementMap(map);
+    await window.__perfHook.importSheet({ html: h, css: c, i18n: '{}' });
     window.__perfHook.saveAssetReplacementProfile('Synthetic relink profile');
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setPreviewRenderMode('iframe');
@@ -288,6 +286,7 @@ async function main() {
   const page = await browser.newPage({ viewport: { width: 1480, height: 960 } });
   const consoleIssues = [];
   const pageErrors = [];
+  const requestFailures = [];
 
   page.on('console', (msg) => {
     if (msg.type() === 'error' || msg.type() === 'warning') {
@@ -295,6 +294,12 @@ async function main() {
     }
   });
   page.on('pageerror', (err) => pageErrors.push(String(err)));
+  page.on('requestfailed', (request) => {
+    requestFailures.push({
+      url: request.url(),
+      errorText: request.failure()?.errorText ?? '',
+    });
+  });
 
   const result = {
     status: 'PASS',
@@ -303,9 +308,23 @@ async function main() {
     checks: {},
     consoleIssues,
     pageErrors,
+    requestFailures,
   };
 
   try {
+    await page.route('https://cdn.jsdelivr.net/**', (route) => route.fulfill({
+      status: 200,
+      contentType: 'text/css; charset=utf-8',
+      body: '',
+    }));
+    await page.route('https://blockly-demo.appspot.com/static/media/sprites.png', (route) => route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      body: Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+        'base64',
+      ),
+    }));
     await page.addInitScript(() => {
       try {
         window.localStorage.setItem('__perfOn', '1');
@@ -345,7 +364,7 @@ async function main() {
     result.checks.exportDialog = await page.evaluate(() => {
       const dialogText = document.querySelector('[role="dialog"]')?.textContent ?? '';
       return {
-        hasTitle: dialogText.includes('Roll20용 zip 내보내기'),
+        hasTitle: dialogText.includes('Roll20 zip 내보내기'),
         hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
         readinessItemCount: document.querySelectorAll('[data-testid="export-roll20-readiness-item"]').length,
         badgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
@@ -359,8 +378,8 @@ async function main() {
           text: el.textContent?.trim() ?? '',
         })),
         hasLegacyToggle: dialogText.includes('구버전 Roll20 무해화'),
-        hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox 또는 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.'),
-        hasFileAccessCopy: dialogText.includes('Chrome 파일 선택이 막히면 Codex/브라우저 파일 접근 권한을 확인하고 다시 업로드하세요.'),
+        hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.'),
+        hasFileAccessCopy: dialogText.includes('Chrome 파일 선택이 막히면 브라우저 파일 접근 권한을 확인하고 다시 업로드하세요.'),
         hasZipIsNotProofCopy: dialogText.includes('zip 다운로드만으로는 Roll20 실제 표시가 검증된 것이 아닙니다.'),
         hasAssetPreflightCopy: dialogText.includes('zip에는 HTML, CSS, translation만 들어갑니다.'),
         hasAssetRiskCopy: dialogText.includes('외부 이미지/폰트는 zip에 포함되지 않습니다.'),
@@ -396,7 +415,7 @@ async function main() {
     await page.fill('[role="dialog"] textarea', '<img src="https://imgur.com/dead">');
     await page.waitForSelector('[data-testid="import-asset-replacement-draft"]', { timeout: 5000 });
     result.checks.importDialog = await page.evaluate(() => ({
-      hasTitle: document.body.innerText.includes('시트 불러오기'),
+      hasTitle: document.body.innerText.includes('외부 시트 불러오기'),
       textareaCount: document.querySelectorAll('textarea').length,
       hasProgressNode: Boolean(document.querySelector('[data-testid="import-progress"]')),
       hasAssetPreflight: Boolean(document.querySelector('[data-testid="import-asset-preflight"]')),

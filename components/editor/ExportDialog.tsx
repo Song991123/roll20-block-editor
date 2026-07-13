@@ -138,13 +138,13 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       },
       {
         label: '브라우저 업로드 권한',
-        detail: 'Chrome 파일 선택이 막히면 Codex/브라우저 파일 접근 권한을 다시 확인해야 합니다',
+        detail: 'Chrome 파일 선택이 막히면 브라우저 파일 접근 권한을 확인하세요',
         ok: false,
         pending: true,
       },
       {
         label: 'Roll20 실제 검증',
-        detail: 'Sandbox 또는 테스트 방에 실제 업로드한 뒤 스크린샷 비교가 필요합니다',
+        detail: 'Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 비교해야 합니다',
         ok: false,
         pending: true,
       },
@@ -236,7 +236,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       );
       triggerDownload(zip);
       const kb = (zip.size / 1024).toFixed(1);
-      toast.success(`${zip.fileName} 내보내기 완료 (${kb} KB). README.txt에 등록 순서를 적어뒀어요.`, {
+      toast.success(`${zip.fileName} 내보내기 완료 (${kb} KB). README.txt에 등록 순서를 적어두었습니다.`, {
         duration: 4500,
       });
       onOpenChange(false);
@@ -254,27 +254,27 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileArchive className="h-5 w-5" />
-            Roll20용 zip 내보내기
+            Roll20 zip 내보내기
           </DialogTitle>
           <DialogDescription>
-            Roll20 Custom Sheet Sandbox에 올릴 파일을 zip으로 묶습니다. sheet.html,
-            sheet.css, translation.json, sheet.json, README.txt가 포함됩니다.
+            Roll20 Custom Sheet Sandbox에 올릴 `sheet.html`, `sheet.css`,
+            `translation.json`, `sheet.json`, `README.txt`를 zip으로 묶습니다.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="시트 이름" hint="비어 있으면 Untitled Sheet">
+            <Field label="시트 이름" hint="비워두면 Untitled Sheet">
               <input
                 type="text"
                 value={meta.name}
                 onChange={(e) => setMeta({ ...meta, name: e.target.value })}
-                placeholder="예: 나의 캐릭터 시트"
+                placeholder="예: 나만의 캐릭터 시트"
                 className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 text-sm"
                 data-testid="export-meta-name"
               />
             </Field>
-            <Field label="작성자" hint="비어 있으면 Anonymous">
+            <Field label="작성자" hint="비워두면 Anonymous">
               <input
                 type="text"
                 value={meta.author}
@@ -340,7 +340,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
             {combinedWarnings.length === 0 ? (
               <div className="text-[12px] text-muted-foreground">
-                감지된 문제가 없어요. 바로 내보낼 수 있습니다.
+                감지된 문제가 없습니다. 바로 내보낼 수 있습니다.
               </div>
             ) : (
               <ul className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
@@ -371,7 +371,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 role="alert"
                 data-testid="export-blocked-banner"
               >
-                <strong>내보내기를 막았어요.</strong> 위의 오류 항목을 먼저 해결해 주세요.
+                <strong>내보내기를 막았습니다.</strong> 위의 오류 항목을 먼저 해결해주세요.
               </div>
             )}
           </section>
@@ -387,17 +387,17 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             activeProfileId={activeAssetReplacementProfileId}
             onSaveProfile={(name) => {
               const id = saveAssetReplacementProfile(name);
-              if (id) toast.success('자산 URL 치환 묶음을 저장했어요.');
+              if (id) toast.success('자산 URL 교체 묶음을 저장했습니다.');
               return id;
             }}
             onLoadProfile={(id) => {
               if (loadAssetReplacementProfile(id)) {
-                toast.success('자산 URL 치환 묶음을 불러왔어요.');
+                toast.success('자산 URL 교체 묶음을 불러왔습니다.');
               }
             }}
             onDeleteProfile={(id) => {
               deleteAssetReplacementProfile(id);
-              toast.success('자산 URL 치환 묶음을 삭제했어요.');
+              toast.success('자산 URL 교체 묶음을 삭제했습니다.');
             }}
           />
 
@@ -410,8 +410,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 <div className="text-sm font-medium">Roll20 업로드 준비 상태</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                   이 항목은 zip 구성 파일의 로컬 준비 상태입니다. 실제 Roll20 화면 일치는
-                  Sandbox 또는 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다. Chrome
-                  파일 선택이 막히면 Codex/브라우저 파일 접근 권한을 확인하고 다시 업로드하세요.
+                  Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.
+                  Chrome 파일 선택이 막히면 브라우저 파일 접근 권한을 확인하고 다시 업로드하세요.
                 </p>
               </div>
               <span
@@ -455,9 +455,10 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               ))}
             </ul>
             <div className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
-              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 각각 Sandbox에 올려 비교하세요.
-              기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은 Custom Sheet Sandbox 또는 새 테스트
-              방에서 진행합니다. zip 다운로드만으로는 Roll20 실제 표시가 검증된 것이 아닙니다.
+              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 각각 Sandbox에 올려
+              비교하세요. 기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은 Custom Sheet
+              Sandbox나 새 테스트 방에서 진행합니다. zip 다운로드만으로는 Roll20 실제
+              표시가 검증된 것이 아닙니다.
             </div>
           </section>
 
@@ -467,11 +468,11 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           >
             <div className="mb-2 flex items-center justify-between gap-3">
               <div>
-                <div className="text-sm font-medium">Roll20 Sandbox 예상 변환</div>
+                <div className="text-sm font-medium">Roll20 Sandbox 예상 정리</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                  Roll20 Custom Sheet Sandbox가 업로드 시 적용하는 HTML/CSS 정리 규칙을
-                  로컬에서 미리 계산한 값입니다. 실제 동일성은 Sandbox나 테스트 방 스크린샷으로
-                  별도 확인해야 합니다.
+                  Roll20 Custom Sheet Sandbox가 업로드 때 적용하는 HTML/CSS 정리 규칙을
+                  로컬에서 미리 계산한 값입니다. 실제 동일성은 Sandbox나 테스트 방
+                  스크린샷으로 별도 확인해야 합니다.
                 </p>
               </div>
               <span
@@ -540,7 +541,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 <span className="font-medium">구버전 Roll20 무해화</span>
                 <span className="ml-1 text-[11px] text-muted-foreground">
                   끄면 원본 CSS를 그대로 내보냅니다. 켜면 구버전 Roll20에서 막힐 수 있는 CSS를
-                  변환하거나 제거하고 보고서를 zip에 넣습니다.
+                  바꾸거나 제거하고 보고서를 zip에 넣습니다.
                 </span>
               </span>
             </label>
@@ -549,8 +550,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 className="mt-2 text-[11px] text-muted-foreground"
                 data-testid="export-legacy-warnings"
               >
-                최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 sanitize-warnings.json에
-                저장됩니다.
+                최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 sanitize-warnings.json에 저장됩니다.
               </div>
             )}
             {legacyMode && legacyWarnings.length === 0 && (
@@ -598,8 +598,8 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
         <div>
           <div className="text-sm font-medium">외부 자산 점검</div>
           <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            zip에는 HTML, CSS, translation만 들어갑니다. 이미지와 폰트 URL은 Roll20에서 다시
-            불러오기 때문에 원본처럼 보이려면 링크가 살아 있어야 합니다.
+            zip에는 HTML, CSS, translation만 들어갑니다. 이미지와 폰트 URL은 Roll20에서
+            다시 불러오기 때문에 원본처럼 보이려면 링크가 살아 있어야 합니다.
           </p>
         </div>
         <span
@@ -616,16 +616,16 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
       <div className="grid grid-cols-2 gap-2 text-[12px] sm:grid-cols-3">
         <Metric label="전체 참조" value={result.totalRefs} />
         <Metric label="외부 URL" value={result.externalRefs} />
-        <Metric label="상대경로" value={result.relativeRefs} />
+        <Metric label="상대 경로" value={result.relativeRefs} />
         <Metric label="data URL" value={result.dataRefs} />
         <Metric label="Roll20 proxy" value={result.roll20ProxyRefs} />
         <Metric label="placeholder risk" value={result.placeholderRiskRefs} />
       </div>
       {hasRisk ? (
         <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-100">
-          외부 이미지/폰트는 zip에 포함되지 않습니다. Roll20 프록시, Imgur, 원본 서버가 이미지를
-          placeholder로 바꾸면 실제 화면도 달라질 수 있어요. 배포 전에 직접 보관한 URL로 교체하거나
-          Roll20 Sandbox에서 자산 로딩을 확인하세요.
+          외부 이미지/폰트는 zip에 포함되지 않습니다. Roll20 프록시, Imgur, 원본 서버가
+          이미지를 placeholder로 바꾸면 실제 화면이 달라질 수 있습니다. 배포 전에 직접
+          보는 URL로 교체하거나 Roll20 Sandbox에서 자산 로딩을 확인하세요.
           {result.placeholderRiskRefs > 0 ? (
             <span className="mt-1 block" data-testid="export-asset-placeholder-risk">
               Roll20 proxy or Imgur page URLs can resolve to placeholder images when the
@@ -642,7 +642,7 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
         </div>
       ) : (
         <div className="mt-2 text-[11px] text-muted-foreground">
-          현재 emit 기준으로 외부 이미지나 폰트 참조가 감지되지 않았습니다.
+          현재 내보내기 기준으로 외부 이미지나 폰트 참조가 감지되지 않았습니다.
         </div>
       )}
     </section>
@@ -684,9 +684,9 @@ function AssetReplacementPanel({
     if (!active) return;
     try {
       await navigator.clipboard.writeText(value);
-      toast.success('URL 교체 목록을 클립보드에 복사했어요.');
+      toast.success('URL 교체 목록을 클립보드에 복사했습니다.');
     } catch {
-      toast.error('브라우저가 클립보드 복사를 막았어요. 텍스트를 직접 선택해서 복사해 주세요.');
+      toast.error('브라우저가 클립보드 복사를 막았습니다. 텍스트를 직접 선택해서 복사해주세요.');
     }
   }
   function handleDownloadMap() {
@@ -702,7 +702,7 @@ function AssetReplacementPanel({
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
-    toast.success('URL 교체 목록 txt를 만들었어요. 이 파일은 로컬 검증용입니다.');
+    toast.success('URL 교체 목록 txt를 만들었습니다. 이 파일은 로컬 검증용입니다.');
   }
   return (
     <section
@@ -713,8 +713,8 @@ function AssetReplacementPanel({
         <div>
           <div className="text-sm font-medium">자산 URL 교체</div>
           <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            삭제된 이미지나 폰트를 사용자가 직접 다시 올린 URL로 바꿔서 zip을 만들 수 있습니다.
-            실제 파일은 저장하지 않고, HTML/CSS 안의 URL 문자열만 교체합니다.
+            삭제된 이미지나 폰트를 사용자가 다시 올린 URL로 바꾼 뒤 zip을 만들 수 있습니다.
+            실제 파일은 저장하지 않고, HTML/CSS 안의 URL 문자만 교체합니다.
           </p>
         </div>
         <span
@@ -744,7 +744,7 @@ function AssetReplacementPanel({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-[10.5px] font-medium text-muted-foreground">
-              치환 묶음 이름
+              교체 묶음 이름
             </span>
             <input
               value={profileName}
@@ -798,7 +798,7 @@ function AssetReplacementPanel({
               if (activeProfile) onDeleteProfile(activeProfile.id);
             }}
             data-testid="export-asset-profile-delete"
-            title="선택한 치환 묶음 삭제"
+            title="선택한 교체 묶음 삭제"
           >
             <Trash2 className="h-3.5 w-3.5" aria-hidden />
           </Button>
@@ -849,7 +849,7 @@ function AssetReplacementPanel({
             {readiness.hasLocalOnlyTargets ? (
               <>
                 Roll20 Sandbox 재검증에는 http(s)로 직접 접근 가능한 사용자 소유 URL이 필요합니다.
-                현재 교체 목록에는 로컬 미리보기 전용 target {readiness.localOnlyTargets}건이 있어요.
+                현재 교체 목록에는 로컬 미리보기 전용 target {readiness.localOnlyTargets}건이 있습니다.
               </>
             ) : (
               <>
@@ -861,13 +861,14 @@ function AssetReplacementPanel({
         ) : null}
         {profiles.length > 0 ? (
           <div className="text-[10.5px] leading-relaxed text-muted-foreground sm:col-span-2">
-            {profiles.length}개 묶음이 이 브라우저 작업공간에 저장되어 있습니다. 실제 이미지 파일은 저장하지 않고 URL 치환 규칙만 보관합니다.
+            {profiles.length}개 묶음이 이 브라우저 작업공간에 저장되어 있습니다. 실제 이미지 파일은
+            저장하지 않고 URL 교체 규칙만 보관합니다.
           </div>
         ) : null}
       </div>
       <div className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground">
-        한 줄에 하나씩 입력하세요. 이 맵은 현재 export에만 적용되며, 원본 워크스페이스나
-        외부 시트 폴더는 변경하지 않습니다.
+        한 줄에 하나씩 입력하세요. 이 맵은 현재 export에만 적용되며, 원본 작업공간이나 외부 시트
+        폴더를 변경하지 않습니다.
       </div>
       {warnings.length > 0 ? (
         <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-amber-800 dark:text-amber-100">
@@ -918,7 +919,7 @@ function DiagnosticRow({
         ? 'text-amber-500'
         : 'text-emerald-500';
   const labelText =
-    state === 'fatal' ? '거부 위험' : state === 'rewritten' ? '재작성 예상' : '변경 없음';
+    state === 'fatal' ? '거부 위험' : state === 'rewritten' ? '수정 예상' : '변경 없음';
   return (
     <div
       className="flex items-start gap-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[12px]"
