@@ -1,3 +1,12 @@
+## 2026-07-13 Imported Edit No-Rollback and Interaction Split TODO Note
+
+- DONE: Strengthened `smoke:imported-edit-sync` so imported real-fixture pointer drags must now keep four post-drop samples aligned with the emitted absolute position. This extends the no-rollback guard from the synthetic edit-flow fixture to imported sheets.
+- DONE: Split imported non-leaf subtree pixel parity from the default interaction pass with `--require-nonleaf-visual-sync`. Non-leaf layer reorder still records subtree screenshots and pixel diff, but default interaction now tracks structure, preview geometry sync, emitted order, and reimport stability without falsely failing because external resources or pixel-level visual parity are still unresolved.
+- DONE: Fixed imported canvas flow insertion smoke so it only drops when the active canvas drop mode is `inside`. If a candidate resolves to `before`/`after`, the smoke skips that drop and tries another target instead of creating an absolute widget and reporting a misleading flow failure.
+- VERIFIED: `node --check scripts\imported_edit_sync_smoke.mjs`, `corepack pnpm run smoke:imported-edit-sync -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir ..\_tmp_codex_smoke\imported-edit-no-rollback-strict-20260713-r2 --port 4387`, and `corepack pnpm run check:server-hygiene` passed.
+- OBSERVED: AW2E, Les-Oublies, synthetic-nonleaf-flow, and YSHY all report `interaction=PASS`. The moved imported block timelines all report `numericSampleCount=4`, `leftDrift=0`, `topDrift=0`, and first/final sampled coordinates equal the emitted coordinate. AW2E/Les-Oublies/YSHY still report resource WARN/failure and non-leaf subtree pixel visual false, so this is edit interaction/sync proof only.
+- CURRENT: Actual Roll20 visual parity, asset relink readiness, external image/font loading, and production renderer CSS remain unresolved.
+
 ## 2026-07-13 Edit Drag No-Rollback Strict Smoke TODO Note
 
 - DONE: Strengthened `smoke:edit-flow` so the existing object-drag path now proves all four post-drop samples (`after-pointerup`, `after-1raf`, `after-50ms`, `after-250ms`) stay aligned with the final emitted HTML/CSS position.

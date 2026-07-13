@@ -42,6 +42,7 @@ const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 
 const COMPACT_WIDE_ROWS = argOf('--compact-wide-rows', 'false') === 'true';
 const NONLEAF_VISUAL_MISMATCH_LIMIT_PCT = Number(argOf('--nonleaf-visual-limit-pct', '2'));
 const SHEET_VISUAL_MISMATCH_LIMIT_PCT = Number(argOf('--sheet-visual-limit-pct', '2'));
+const REQUIRE_NONLEAF_VISUAL_SYNC = argOf('--require-nonleaf-visual-sync', 'false') === 'true';
 const REQUIRE_SHEET_VISUAL_SYNC = argOf('--require-sheet-visual-sync', 'false') === 'true';
 
 const BUILTIN_FIXTURES = [
@@ -1335,7 +1336,7 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
     previewAfter,
     previewSync,
     visualSync,
-    pass: result.pass && previewSync && visualSync.pass,
+    pass: result.pass && previewSync && (!REQUIRE_NONLEAF_VISUAL_SYNC || visualSync.pass),
   };
 }
 
@@ -1399,7 +1400,7 @@ async function runImportedCanvasInsert(page) {
         hostDropMode: host.getAttribute('data-r20-drop-mode'),
         activeTargetId: host.getAttribute('data-r20-drop-target'),
       };
-      if (!indicator.hostDropMode) {
+      if (indicator.hostDropMode !== 'inside') {
         attempts.push({
           pass: false,
           target: {
@@ -1434,7 +1435,7 @@ async function runImportedCanvasInsert(page) {
       const pass =
         over.defaultPrevented &&
         drop.defaultPrevented &&
-        Boolean(indicator.hostDropMode) &&
+        indicator.hostDropMode === 'inside' &&
         Boolean(newId) &&
         !/position\s*:\s*absolute/i.test(`${style};${emittedStyle}`);
       const attempt = {
@@ -1453,7 +1454,7 @@ async function runImportedCanvasInsert(page) {
         emittedTag,
       };
       attempts.push(attempt);
-      if (newId) return { ...attempt, attempts };
+      if (pass) return { ...attempt, attempts };
     }
     return { pass: false, reason: 'no imported canvas insertion attempt created flow content', attempts };
 
@@ -1941,8 +1942,15 @@ async function dragTarget(page, target) {
     const numeric = samples.filter((s) => typeof s.left === 'number' && typeof s.top === 'number');
     const lefts = numeric.map((s) => s.left);
     const tops = numeric.map((s) => s.top);
+    const first = numeric[0] ?? null;
+    const last = numeric[numeric.length - 1] ?? null;
     return {
       samples,
+      numericSampleCount: numeric.length,
+      firstLeft: first?.left ?? null,
+      firstTop: first?.top ?? null,
+      finalLeft: last?.left ?? null,
+      finalTop: last?.top ?? null,
       leftDrift: lefts.length ? Math.max(...lefts) - Math.min(...lefts) : null,
       topDrift: tops.length ? Math.max(...tops) - Math.min(...tops) : null,
     };
@@ -2094,12 +2102,26 @@ function isSyncedMoveAttempt(entry, pageErrors) {
     entry.import?.blockCount > 0 &&
     Boolean(entry.before && entry.editAfter && entry.previewAfter) &&
     movedFarEnough(entry.before.relative, entry.editAfter.relative) &&
+    hasStablePostDropTimeline(entry.dragTimeline, entry.emitted) &&
     closeEnough(entry.previewAfter.relative.left, entry.editAfter.relative.left, 2) &&
     closeEnough(entry.previewAfter.relative.top, entry.editAfter.relative.top, 2) &&
     entry.emitted?.hasAbsolute === true &&
     closeEnough(entry.emitted.left, cssPx(entry.editAfter.computed.left), 2) &&
     closeEnough(entry.emitted.top, cssPx(entry.editAfter.computed.top), 2) &&
     pageErrors.length === 0
+  );
+}
+
+function hasStablePostDropTimeline(timeline, emitted) {
+  return (
+    emitted?.hasAbsolute === true &&
+    timeline?.numericSampleCount === 4 &&
+    closeEnough(timeline.firstLeft, emitted.left, 2) &&
+    closeEnough(timeline.firstTop, emitted.top, 2) &&
+    closeEnough(timeline.finalLeft, emitted.left, 2) &&
+    closeEnough(timeline.finalTop, emitted.top, 2) &&
+    closeEnough(timeline.leftDrift, 0, 2) &&
+    closeEnough(timeline.topDrift, 0, 2)
   );
 }
 

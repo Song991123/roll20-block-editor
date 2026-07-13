@@ -1,3 +1,14 @@
+## 2026-07-13 Imported Edit No-Rollback and Interaction Split
+
+- Root cause: imported-sheet edit smoke sampled post-drop coordinates, but the pass condition did not require those samples to stay aligned with emitted absolute CSS. Separately, non-leaf subtree pixel diff and flow canvas insertion were folded into the interaction result in a way that could misreport the real state.
+- Updated `scripts/imported_edit_sync_smoke.mjs` so imported pointer-drag attempts require four post-drop samples, first/final sampled coordinates matching emitted `left/top` within 2px, and `leftDrift/topDrift` within 2px.
+- Added `--require-nonleaf-visual-sync` and made it default to false, matching the existing sheet-root visual-sync split. Non-leaf reorder still records subtree pixel diff, but default interaction pass now means structure/order/geometry/emit/reimport sync rather than unresolved visual parity.
+- Fixed imported canvas flow insertion smoke so it only dispatches the drop when the current canvas drop mode is `inside`; before/after candidates are recorded and skipped instead of mutating the sheet into an absolute-placement failure.
+- Verification: `node --check scripts\imported_edit_sync_smoke.mjs` passed. Full `corepack pnpm run smoke:imported-edit-sync -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir ..\_tmp_codex_smoke\imported-edit-no-rollback-strict-20260713-r2 --port 4387` passed for AW2E, Les-Oublies, synthetic-nonleaf-flow, and YSHY with `interaction=PASS`.
+- Evidence: all four imported pointer-drag timelines reported `numericSampleCount=4`, `leftDrift=0`, `topDrift=0`, and first/final sampled positions equal to emitted `left/top`. AW2E/Les-Oublies/YSHY still reported resource failures and non-leaf subtree visual mismatch, so those stay visual-parity blockers rather than edit-interaction blockers.
+- Server hygiene: `corepack pnpm run check:server-hygiene` passed after the smoke. No project dev/smoke listener remained; the existing Roll20 CDP listener on `127.0.0.1:9222` was preserved.
+- Claim boundary: this improves imported-sheet edit interaction evidence and smoke truthfulness only. It does not relink user assets, fix external images/fonts, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Edit Drag No-Rollback Strict Smoke
 
 - Root cause guard: edit mode already keeps the dropped object visually locked while the Blockly/CSS model commit follows, but the previous smoke only checked broad drift after the move. It did not explicitly require the first post-pointerup coordinate to match the final emitted HTML/CSS coordinate.
