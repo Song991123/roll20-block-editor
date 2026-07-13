@@ -8,11 +8,14 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const optionNamesWithValues = new Set(['--out-dir']);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const smokePath = path.resolve(args[1] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json');
-const outDir = path.join(runDir, 'chat-table-intrinsic-probe');
+const rawOutDir = readOption('--out-dir', '');
+const outDir = path.resolve(rawOutDir || path.join(runDir, 'chat-table-intrinsic-probe'));
 
 async function main() {
   const smoke = await readOptionalJson(smokePath);
@@ -39,6 +42,11 @@ async function main() {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
     smokePath: path.relative(process.cwd(), smokePath),
+    output: {
+      requestedOutDir: rawOutDir || null,
+      outDir: path.relative(process.cwd(), outDir),
+      fallbackReason: '',
+    },
     scope: 'diagnostic-only Roll20 chat table intrinsic probe; no production CSS',
     summary: {
       status: actionable.length ? 'TABLE_INTRINSIC_PROBE_ACTIONABLE' : 'TABLE_INTRINSIC_PROBE_SECONDARY',
@@ -50,15 +58,57 @@ async function main() {
     fixtures,
   };
 
-  await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(outDir, 'chat-table-intrinsic-probe-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await writeFile(path.join(outDir, 'chat-table-intrinsic-probe-results.md'), renderMarkdown(report), 'utf8');
+  const writeResult = await writeIntrinsicProbeReport(report, outDir, runDir);
 
   console.log(`ROLL20 CHAT TABLE INTRINSIC PROBE ${report.summary.status}`);
   for (const fixture of fixtures) {
     console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} decision=${fixture.probeDecision} tableDelta=${fmtPx(fixture.deltas.tableWidth)} rowSpread=${fmtPx(fixture.rowModel.rowWidthDeltaSpread)} maxCell=${fmtPx(fixture.rowModel.maxAbsCellDelta)} topOffset=${fmtPx(fixture.rowModel.maxAbsTopDelta)} next=${fixture.nextAction}`);
   }
-  console.log(`out=${path.relative(process.cwd(), outDir)}`);
+  if (writeResult.fallbackReason) {
+    console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
+  }
+  console.log(`out=${path.relative(process.cwd(), writeResult.outDir)}`);
+}
+
+async function writeIntrinsicProbeReport(report, requestedOutDir, runDir) {
+  const writeTo = async (targetDir, fallbackReason = '') => {
+    report.output = {
+      requestedOutDir: rawOutDir || null,
+      outDir: path.relative(process.cwd(), targetDir),
+      fallbackReason,
+    };
+    await mkdir(targetDir, { recursive: true });
+    await writeFile(path.join(targetDir, 'chat-table-intrinsic-probe-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    await writeFile(path.join(targetDir, 'chat-table-intrinsic-probe-results.md'), renderMarkdown(report), 'utf8');
+    return { outDir: targetDir, fallbackReason };
+  };
+
+  try {
+    return await writeTo(requestedOutDir);
+  } catch (error) {
+    if (rawOutDir || !isAccessError(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `chat-table-intrinsic-probe-${safePathLabel(path.basename(runDir))}-${Date.now()}`,
+    );
+    return writeTo(fallbackDir, `${error.code ?? 'WRITE_ERROR'} while writing ${path.relative(process.cwd(), requestedOutDir)}`);
+  }
+}
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index < 0) return fallback;
+  const value = rawArgs[index + 1];
+  return value && !value.startsWith('--') ? value : fallback;
+}
+
+function isAccessError(error) {
+  return error?.code === 'EPERM' || error?.code === 'EACCES';
+}
+
+function safePathLabel(value) {
+  return String(value || 'run').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'run';
 }
 
 async function summarizeFixture(fixtureId, reports) {
@@ -218,11 +268,15 @@ function candidateComplexity(name) {
 function decideProbe(signals) {
   if (!signals.hasActual || !signals.hasLocal) return 'MISSING_DOM_EVIDENCE';
   if (signals.priority === 'P2' || Math.abs(signals.deltas.tableWidth ?? 0) < 2) return 'WIDTH_SECONDARY';
+  const tableDeltaAbs = Math.abs(signals.deltas.tableWidth ?? 0);
+  const rootDeltaAbs = Math.abs(signals.deltas.rootWidth ?? 0);
   const tableWide =
-    Math.abs(signals.deltas.tableWidth ?? 0) >= 8 &&
+    tableDeltaAbs >= 8 &&
     Math.abs(signals.rowModel.rowWidthDeltaSpread ?? 999) <= 1 &&
     Math.abs(signals.rowModel.maxAbsCellDelta ?? 999) <= 2;
-  const rootMatches = Math.abs(signals.deltas.rootWidth ?? 999) <= 1;
+  const rootMatches =
+    rootDeltaAbs <= 4 ||
+    (tableDeltaAbs >= 8 && rootDeltaAbs / tableDeltaAbs <= 0.08);
   const topOffset = Math.abs(signals.rowModel.maxAbsTopDelta ?? 0) >= 24;
   const rejectedCss = signals.budgetDecision === 'LAYOUT_CONSTRAINT_AFTER_REJECTED_CSS' ||
     signals.candidateSignals.rejectedOrNoGain.length >= 4;

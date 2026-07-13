@@ -20,6 +20,8 @@ are not rewritten during investigation:
 corepack pnpm run diagnose:roll20-geometry -- reports\roll20-actual-compare\<run> --out-dir ..\_tmp_codex_smoke\geometry-<label>
 corepack pnpm run diagnose:roll20-height-drift -- reports\roll20-actual-compare\<run> <fixture-id> --out-dir ..\_tmp_codex_smoke\height-drift-<label>
 corepack pnpm run smoke:roll20-full-root-candidates -- reports\roll20-actual-compare\<run> --out-dir ..\_tmp_codex_smoke\full-root-candidates-<label>
+corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe -- reports\roll20-actual-compare\<run> <local-smoke-json> --out-dir ..\_tmp_codex_smoke\table-intrinsic-<label>
+corepack pnpm run diagnose:roll20-chat-font-intrinsic -- reports\roll20-actual-compare\<run> --out-dir ..\_tmp_codex_smoke\font-intrinsic-<label>
 ```
 
 `smoke:roll20-full-root-candidates` also sends its temporary `buildDoc.ts`

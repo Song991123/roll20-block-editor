@@ -1,3 +1,12 @@
+## 2026-07-13 YSHY Table Intrinsic Probe TODO Note
+
+- DONE: `diagnose:roll20-chat-table-intrinsic-probe` now accepts `[local-smoke-json]` plus `--out-dir`, so YSHY/CoC candidate smokes can be checked in ignored temp output without rewriting canonical actual-run reports.
+- DONE: `diagnose:roll20-chat-font-intrinsic` now accepts `--out-dir` for the same locked-report-safe diagnostic workflow.
+- FIXED: The table intrinsic probe no longer treats a tiny root width delta as a root/message blocker when the table delta is much larger. This avoids misrouting YSHY: root delta `-3px` vs table delta `-68.813px`.
+- VERIFIED: Temp YSHY source-context probe at `..\_tmp_codex_smoke\chat-table-intrinsic-yshy-source-context-20260713-r2` reports `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET` for `yshy-commission-1bu`.
+- VERIFIED: Temp font/intrinsic probe at `..\_tmp_codex_smoke\chat-font-intrinsic-current-20260713-r1` reports YSHY as `FONT_CONTEXT_BEFORE_WIDTH_CSS`, with width override candidates `NO_GAIN`.
+- CURRENT: Do not promote CoC/YSHY width, transform, global font, spacing, or broad ChatPane CSS. Next P0 candidate must model CoC/YSHY table-wide intrinsic width together with rolltemplate crop/top-origin and font-face activation/order proof.
+
 ## 2026-07-13 Dynamic Chat Candidate Source-Context TODO Note
 
 - DONE: `diagnose:roll20-chat-candidates` and `diagnose:roll20-chat-row-raster-candidates` can now include dynamic candidate names when matching smoke/screenshot overrides are supplied.

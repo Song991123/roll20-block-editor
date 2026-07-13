@@ -1,3 +1,14 @@
+## 2026-07-13 YSHY Table Intrinsic Probe Routing
+
+- Root cause hypothesis: YSHY/CoC still fails because table width declarations are weaker than the table's intrinsic/crop context, not because another broad ChatPane CSS rule should be promoted.
+- Added ignored-output support to `scripts/roll20_chat_table_intrinsic_probe.mjs` (`[local-smoke-json] --out-dir <dir>`) and `scripts/roll20_chat_font_intrinsic_probe.mjs` (`--out-dir <dir>`), then documented the commands in `scripts/README.md`.
+- Fixed the table intrinsic classifier: a tiny root delta no longer masks a much larger table-wide delta. The observed YSHY candidate evidence is root `-3px`, table `-68.813px`, row spread `0px`, max cell `+0.906px`, and top offset `+52.703px`.
+- Verification: `node --check scripts\roll20_chat_table_intrinsic_probe.mjs` and `node --check scripts\roll20_chat_font_intrinsic_probe.mjs` passed.
+- Verification: `diagnose:roll20-chat-table-intrinsic-probe` with the `yshy-coc-table-source-context-r2` smoke wrote ignored output to `..\_tmp_codex_smoke\chat-table-intrinsic-yshy-source-context-20260713-r2` and now classifies YSHY as `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET`.
+- Verification: `diagnose:roll20-chat-font-intrinsic --out-dir ..\_tmp_codex_smoke\chat-font-intrinsic-current-20260713-r1` reports YSHY as `FONT_CONTEXT_BEFORE_WIDTH_CSS`, with `widthOverride=NO_GAIN`.
+- Current evidence: next YSHY/CoC renderer work should combine table-wide intrinsic width, crop/top-origin, and font-face activation/order evidence. Do not promote transform, global font, spacing, or broad width CSS.
+- Claim boundary: diagnostic routing only. No product renderer CSS was promoted, no Roll20 upload happened, and visual parity remains unproven.
+
 ## 2026-07-13 Dynamic Chat Candidate Source-Context Probe
 
 - Root cause hypothesis: the next renderer blocker is not another broad ChatPane CSS candidate. AW2E and YSHY require split renderer models, and YSHY/CoC specifically needs table intrinsic/source-context proof before CSS promotion.

@@ -10,10 +10,13 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const optionNamesWithValues = new Set(['--out-dir']);
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const outDir = path.join(runDir, 'chat-font-intrinsic-probe');
+const rawOutDir = readOption('--out-dir', '');
+const outDir = path.resolve(rawOutDir || path.join(runDir, 'chat-font-intrinsic-probe'));
 
 async function main() {
   const fontGlyph = await readOptionalJson(path.join(runDir, 'chat-font-glyph-model', 'chat-font-glyph-model-results.json'));
@@ -34,6 +37,11 @@ async function main() {
   const report = {
     generatedAt: new Date().toISOString(),
     runDir: runDirArg,
+    output: {
+      requestedOutDir: rawOutDir || null,
+      outDir: path.relative(process.cwd(), outDir),
+      fallbackReason: '',
+    },
     scope: 'diagnostic-only Roll20 chat font/intrinsic probe; no production CSS',
     summary: {
       status: actionable.length ? 'FONT_INTRINSIC_PROBE_ACTIONABLE' : 'FONT_INTRINSIC_PROBE_SECONDARY',
@@ -45,15 +53,57 @@ async function main() {
     fixtures,
   };
 
-  await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(outDir, 'chat-font-intrinsic-probe-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await writeFile(path.join(outDir, 'chat-font-intrinsic-probe-results.md'), renderMarkdown(report), 'utf8');
+  const writeResult = await writeFontIntrinsicReport(report, outDir, runDir);
 
   console.log(`ROLL20 CHAT FONT INTRINSIC PROBE ${report.summary.status}`);
   for (const fixture of fixtures) {
     console.log(`FIXTURE ${fixture.fixtureId} priority=${fixture.priority} decision=${fixture.decision} tableDelta=${fmtPx(fixture.tableWidthDelta)} fontAvail=${fixture.fontAvailabilityChanged ? 'YES' : 'NO'} tableFont=${fixture.tableFontFamilyChanged ? 'YES' : 'NO'} textResidual=${fmtPx(fixture.tableTextResidual)} widthOverride=${fixture.widthOverrideGain} next=${fixture.nextAction}`);
   }
-  console.log(`out=${path.relative(process.cwd(), outDir)}`);
+  if (writeResult.fallbackReason) {
+    console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
+  }
+  console.log(`out=${path.relative(process.cwd(), writeResult.outDir)}`);
+}
+
+async function writeFontIntrinsicReport(report, requestedOutDir, runDir) {
+  const writeTo = async (targetDir, fallbackReason = '') => {
+    report.output = {
+      requestedOutDir: rawOutDir || null,
+      outDir: path.relative(process.cwd(), targetDir),
+      fallbackReason,
+    };
+    await mkdir(targetDir, { recursive: true });
+    await writeFile(path.join(targetDir, 'chat-font-intrinsic-probe-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    await writeFile(path.join(targetDir, 'chat-font-intrinsic-probe-results.md'), renderMarkdown(report), 'utf8');
+    return { outDir: targetDir, fallbackReason };
+  };
+
+  try {
+    return await writeTo(requestedOutDir);
+  } catch (error) {
+    if (rawOutDir || !isAccessError(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `chat-font-intrinsic-probe-${safePathLabel(path.basename(runDir))}-${Date.now()}`,
+    );
+    return writeTo(fallbackDir, `${error.code ?? 'WRITE_ERROR'} while writing ${path.relative(process.cwd(), requestedOutDir)}`);
+  }
+}
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index < 0) return fallback;
+  const value = rawArgs[index + 1];
+  return value && !value.startsWith('--') ? value : fallback;
+}
+
+function isAccessError(error) {
+  return error?.code === 'EPERM' || error?.code === 'EACCES';
+}
+
+function safePathLabel(value) {
+  return String(value || 'run').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'run';
 }
 
 function summarizeFixture(fixtureId, reports) {
