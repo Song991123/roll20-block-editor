@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Canvas Edge Drop Targeting
+
+- UX refinement: canvas widget drops now use the same before/inside/after mental model as the layer panel. A container's top edge inserts before it, the middle drops inside it, and the bottom edge inserts after it.
+- Updated `components/editor/EditCanvas.tsx` by extracting canvas drop-mode picking and applying it to child-capable containers, instead of always returning `inside` for the whole container.
+- Verification: `corepack pnpm run lint`, `corepack pnpm run build`, and edit-flow browser smoke passed at ignored temp `..\_tmp_codex_smoke\edit-flow-canvas-edge-drop-20260713-r1`.
+- Smoke evidence: real DragEvent path still passed flow nesting, canvas sibling insertion indicators, layer before/inside/after modes, absolute-in-frame movement, free-placement widget drop, and canvas width control checks.
+- Server hygiene: checked after smoke; no project dev/smoke listener remained.
+
 ## 2026-07-13 Risky Roll20 Asset Replacement URL Guard
 
 - Root cause refinement: the current asset relink blocker can be hidden if the app treats Roll20 proxy URLs or Imgur page URLs as fully Roll20-ready. Actual Roll20 may still decode those to removed/placeholder assets.

@@ -1,3 +1,12 @@
+## 2026-07-13 Edit Canvas Edge Drop Target TODO Note
+
+- DONE: Updated edit-canvas widget drop targeting so containers distinguish top edge `before`, middle `inside`, and bottom edge `after` instead of treating the whole container as inside-only.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\edit-flow-canvas-edge-drop-20260713-r1 --port 4338` passed.
+- VERIFIED: The smoke confirmed real DragEvent behavior for flow nesting, canvas sibling insertion indicators, layer before/inside/after modes, absolute-in-frame movement, and free-placement widget drop.
+- VERIFIED: `corepack pnpm run check:server-hygiene` passed after smoke; no project dev/smoke listener remained.
+- CURRENT: This improves one Figma-like editing affordance. It does not finish full drag-to-restructure UX, multi-select/grouping, or Roll20 visual parity.
+- NEXT P1: Add clearer visual differentiation between candidate containers and exact before/inside/after drop positions on the canvas and layer panel.
+
 ## 2026-07-13 Risky Roll20 Asset Replacement URL TODO Note
 
 - DONE: Tightened export asset replacement readiness so only explicit `http(s)` targets count as Roll20-ready; protocol-relative and data/local targets stay local-only.

@@ -1515,21 +1515,21 @@ function findCanvasDropTarget(
     if (blockId) {
       const block = adapter.getBlock('html', blockId);
       if (block && canReceiveChildren(block.type) && adapter.canNestInContainer('html', blockId)) {
+        const mode = pickCanvasDropMode(cur, clientY, true);
         return {
           blockId,
           label: block.label || block.type,
-          mode: 'inside',
-          containerBlockId: blockId,
-          siblingBlockId: null,
+          mode,
+          containerBlockId: mode === 'inside' ? blockId : null,
+          siblingBlockId: mode === 'inside' ? null : blockId,
         };
       }
       if (block) {
-        const rect = cur.getBoundingClientRect();
-        const y = rect.height > 0 ? (clientY - rect.top) / rect.height : 0.5;
+        const mode = pickCanvasDropMode(cur, clientY, false);
         return {
           blockId,
           label: block.label || block.type,
-          mode: y < 0.5 ? 'before' : 'after',
+          mode,
           containerBlockId: null,
           siblingBlockId: blockId,
         };
@@ -1538,6 +1538,18 @@ function findCanvasDropTarget(
     cur = cur.parentElement;
   }
   return null;
+}
+
+function pickCanvasDropMode(
+  el: HTMLElement,
+  clientY: number,
+  canDropInside: boolean,
+): LayerDropMode {
+  const rect = el.getBoundingClientRect();
+  const y = rect.height > 0 ? (clientY - rect.top) / rect.height : 0.5;
+  if (y < 0.24) return 'before';
+  if (y > 0.76) return 'after';
+  return canDropInside ? 'inside' : y < 0.5 ? 'before' : 'after';
 }
 
 function formatCanvasDropLabel(
