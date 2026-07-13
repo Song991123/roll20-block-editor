@@ -1,3 +1,12 @@
+## 2026-07-13 Chat Source Context Row/Paint Auto Fallback TODO Note
+
+- DONE: `diagnose:roll20-chat-source-context` now auto-selects the newest same-run ignored temp `row-paint-source*` report when the canonical row/paint/source report has weaker sanitize-replay evidence and no explicit `--row-paint-source-dir` was supplied.
+- DONE: The fallback requires the candidate report `runDir` to resolve to the active Roll20 actual run, and explicit CLI overrides still win.
+- VERIFIED: `corepack pnpm run diagnose:roll20-chat-source-context -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\chat-source-context-autofallback-20260713-r2` recorded `reportOverrides.rowPaintSourceDir=..\_tmp_codex_smoke\row-paint-source-sanitize-replay-20260713-r1`.
+- VERIFIED: The refreshed source-context report stays `SOURCE_CONTEXT_ACTIONABLE`: AW2E and Les-Oublies are `RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED`, and YSHY is `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED` with row/paint/source prior decision `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED` and sanitize replay delta `+14.95%`.
+- VERIFIED: `gate:roll20-chat-template-scope` with the refreshed source-context report still returns `HOLD_GLOBAL_CHAT_RENDERER_PATCH`, and `gate:roll20-renderer-action` with the refreshed source-context/template-scope reports still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- CURRENT: This is evidence freshness and false-promotion prevention only. It does not change product renderer CSS, relink AW2E/YSHY assets, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Template Scope Source-Context Auto Fallback TODO Note
 
 - DONE: `gate:roll20-chat-template-scope` now auto-uses the newest same-run ignored temp `chat-cell-allocation-probe-*` and `chat-source-context-*` reports when canonical report folders are missing and no explicit override was supplied.

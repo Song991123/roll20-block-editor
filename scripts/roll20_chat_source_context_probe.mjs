@@ -7,7 +7,7 @@
  * width reports. It does not emit product CSS or claim visual parity.
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
@@ -26,7 +26,8 @@ const defaultSmokeArg = readOption('--default-smoke', 'reports/rolltemplate-chat
 const defaultSmokePath = path.resolve(defaultSmokeArg);
 const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-source-context-probe')));
 const fontIntrinsicDir = path.resolve(readOption('--font-intrinsic-dir', path.join(runDir, 'chat-font-intrinsic-probe')));
-const rowPaintSourceDir = path.resolve(readOption('--row-paint-source-dir', path.join(runDir, 'chat-row-paint-source-probe')));
+const rowPaintSourceDirExplicit = hasOption('--row-paint-source-dir');
+let rowPaintSourceDir = path.resolve(readOption('--row-paint-source-dir', path.join(runDir, 'chat-row-paint-source-probe')));
 const widthReconciliationDir = path.resolve(readOption('--width-reconciliation-dir', path.join(runDir, 'chat-width-reconciliation')));
 const intrinsicWidthDir = path.resolve(readOption('--intrinsic-width-dir', path.join(runDir, 'chat-intrinsic-width-model')));
 
@@ -48,6 +49,8 @@ const STYLE_KEYS = [
 const CUSTOM_FONT_RE = /BookkMyungjo-Bd/i;
 
 async function main() {
+  await resolveImplicitReportOverrides();
+
   const defaultSmoke = await readJson(defaultSmokePath);
   const parity = await readOptionalJson(path.join(runDir, 'chat-parity-diagnostics', 'chat-parity-diagnostics-results.json'));
   const fontIntrinsic = await readOptionalJson(path.join(fontIntrinsicDir, 'chat-font-intrinsic-probe-results.json'));
@@ -104,6 +107,25 @@ function readOption(name, fallback = '') {
   const value = rawArgs[index + 1];
   if (!value || value.startsWith('--')) return fallback;
   return value;
+}
+
+function hasOption(name) {
+  return rawArgs.includes(name);
+}
+
+async function resolveImplicitReportOverrides() {
+  if (rowPaintSourceDirExplicit) return;
+
+  const reportFileName = 'chat-row-paint-source-probe-results.json';
+  const currentReport = await readOptionalJson(path.join(rowPaintSourceDir, reportFileName));
+  if (rowPaintSourceHasSanitizeReplayRejection(currentReport)) return;
+
+  const fallbackDir = await findLatestFallbackReportDir(
+    ['chat-row-paint-source-probe', 'chat-row-paint-source', 'row-paint-source'],
+    reportFileName,
+    (candidateReport) => rowPaintSourceReportImproves(candidateReport, currentReport),
+  );
+  if (fallbackDir) rowPaintSourceDir = fallbackDir;
 }
 
 async function summarizeFixture(fixtureId, reports) {
@@ -499,6 +521,75 @@ async function readOptionalJson(file) {
   } catch {
     return null;
   }
+}
+
+async function findLatestFallbackReportDir(prefixes, reportFileName, predicate = null) {
+  const root = path.resolve('..', '_tmp_codex_smoke');
+  let entries = [];
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch {
+    return '';
+  }
+
+  const normalizedPrefixes = Array.isArray(prefixes) ? prefixes : [prefixes];
+  const candidates = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (!normalizedPrefixes.some((prefix) => entry.name.startsWith(`${prefix}-`))) continue;
+    const dir = path.join(root, entry.name);
+    const reportFile = path.join(dir, reportFileName);
+    if (!(await fileExists(reportFile))) continue;
+    const report = await readOptionalJson(reportFile);
+    if (path.resolve(report?.runDir ?? '') !== runDir) continue;
+    if (predicate && !predicate(report)) continue;
+    let mtimeMs = 0;
+    try {
+      mtimeMs = (await stat(reportFile)).mtimeMs;
+    } catch {
+      mtimeMs = 0;
+    }
+    candidates.push({ dir, mtimeMs });
+  }
+
+  candidates.sort((a, b) => b.mtimeMs - a.mtimeMs || b.dir.localeCompare(a.dir));
+  return candidates[0]?.dir ?? '';
+}
+
+async function fileExists(file) {
+  try {
+    await readFile(file, 'utf8');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function rowPaintSourceReportImproves(candidateReport, currentReport) {
+  if (!candidateReport) return false;
+  if (!currentReport) return true;
+  const candidatePromoted = countPromotedSanitizeReplayRejections(candidateReport);
+  const currentPromoted = countPromotedSanitizeReplayRejections(currentReport);
+  if (candidatePromoted !== currentPromoted) return candidatePromoted > currentPromoted;
+  return countSanitizeReplaySignals(candidateReport) > countSanitizeReplaySignals(currentReport);
+}
+
+function rowPaintSourceHasSanitizeReplayRejection(report) {
+  return countPromotedSanitizeReplayRejections(report) > 0;
+}
+
+function countPromotedSanitizeReplayRejections(report) {
+  return (report?.fixtures ?? []).filter((fixture) => (
+    fixture?.decision === 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED'
+  )).length;
+}
+
+function countSanitizeReplaySignals(report) {
+  return (report?.fixtures ?? []).filter((fixture) => (
+    fixture?.decision === 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED' ||
+    fixture?.sourceOrderDecision === 'SANITIZE_STYLE_REPLAY_REJECTED' ||
+    Number(fixture?.sourceEvidence?.sanitizeReplayDeltaPct) > 0
+  )).length;
 }
 
 function numberOrNull(value) {
