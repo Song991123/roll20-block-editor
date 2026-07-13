@@ -55,6 +55,14 @@ corepack pnpm run diagnose:roll20-chat-table-layout-constraint -- reports\roll20
   --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
   --out-dir ..\_tmp_codex_smoke\table-layout-constraint-<fixture>-<label>
 
+corepack pnpm run diagnose:roll20-chat-intrinsic-width -- reports\roll20-actual-compare\<run> <local-smoke-json> `
+  --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
+  --out-dir ..\_tmp_codex_smoke\intrinsic-width-<fixture>-<label>
+
+corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe -- reports\roll20-actual-compare\<run> <local-smoke-json> `
+  --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
+  --out-dir ..\_tmp_codex_smoke\table-intrinsic-<fixture>-<label>
+
 corepack pnpm run diagnose:roll20-chat-font-glyph -- reports\roll20-actual-compare\<run> <local-smoke-json> `
   --actual-sidecar <fixture-id>=..\_tmp_codex_smoke\chat-capture-<fixture>-<label>\roll20-chat-dom-evidence.json `
   --out-dir ..\_tmp_codex_smoke\font-glyph-<fixture>-<label>

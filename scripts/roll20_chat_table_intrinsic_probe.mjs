@@ -9,13 +9,14 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
-const optionNamesWithValues = new Set(['--out-dir']);
+const optionNamesWithValues = new Set(['--out-dir', '--actual-sidecar']);
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const smokePath = path.resolve(args[1] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json');
 const rawOutDir = readOption('--out-dir', '');
 const outDir = path.resolve(rawOutDir || path.join(runDir, 'chat-table-intrinsic-probe'));
+const actualSidecarOverrides = readKeyValueOptions('--actual-sidecar');
 
 async function main() {
   const smoke = await readOptionalJson(smokePath);
@@ -46,6 +47,9 @@ async function main() {
       requestedOutDir: rawOutDir || null,
       outDir: path.relative(process.cwd(), outDir),
       fallbackReason: '',
+    },
+    reportOverrides: {
+      actualSidecars: Object.fromEntries([...actualSidecarOverrides].map(([fixtureId, file]) => [fixtureId, path.relative(process.cwd(), file)])),
     },
     scope: 'diagnostic-only Roll20 chat table intrinsic probe; no production CSS',
     summary: {
@@ -103,6 +107,32 @@ function readOption(name, fallback = '') {
   return value && !value.startsWith('--') ? value : fallback;
 }
 
+function readKeyValueOptions(name) {
+  const values = new Map();
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    const arg = rawArgs[index];
+    let raw = '';
+    if (arg === name) {
+      raw = rawArgs[index + 1] ?? '';
+      index += 1;
+    } else if (arg.startsWith(`${name}=`)) {
+      raw = arg.slice(name.length + 1);
+    }
+    if (!raw) continue;
+    const separator = raw.indexOf('=');
+    if (separator <= 0) {
+      throw new Error(`Expected ${name} <fixture-id>=<path>, got: ${raw}`);
+    }
+    const key = raw.slice(0, separator);
+    const value = raw.slice(separator + 1);
+    if (!key || !value) {
+      throw new Error(`Expected ${name} <fixture-id>=<path>, got: ${raw}`);
+    }
+    values.set(key, path.resolve(value));
+  }
+  return values;
+}
+
 function isAccessError(error) {
   return error?.code === 'EPERM' || error?.code === 'EACCES';
 }
@@ -113,7 +143,9 @@ function safePathLabel(value) {
 
 async function summarizeFixture(fixtureId, reports) {
   const localTemplate = localTemplateFor(reports.smoke, fixtureId);
-  const actualSidecar = await readOptionalJson(path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json'));
+  const actualSidecarPath = actualSidecarOverrides.get(fixtureId)
+    ?? path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
+  const actualSidecar = await readOptionalJson(actualSidecarPath);
   const actualTemplate = actualSidecar?.latestTemplate ?? null;
   const row = findFixture(reports.rowGeometry?.fixtures, fixtureId);
   const intrinsic = findFixture(reports.intrinsic?.fixtures, fixtureId);

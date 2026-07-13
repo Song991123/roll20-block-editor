@@ -4418,11 +4418,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Server hygiene before this batch passed: no project dev/smoke listeners were running; the existing Roll20 CDP browser on `127.0.0.1:9222` was preserved.
 - Added `--actual-sidecar <fixture-id>=<json>` to `diagnose:roll20-chat-font-glyph` and `diagnose:roll20-chat-source-context`, allowing fresh ignored-temp Roll20 chat sidecars to feed the font/glyph and source/context models directly.
 - Added `--font-glyph-dir` to `diagnose:roll20-chat-font-intrinsic`, so an isolated font/glyph report can feed the next fused font/intrinsic route without rewriting canonical reports.
+- Added `--actual-sidecar <fixture-id>=<json>` to `diagnose:roll20-chat-intrinsic-width` and `diagnose:roll20-chat-table-intrinsic-probe`, completing the fresh actual sidecar route for the intrinsic table/row/cell diagnostics.
 - Updated `scripts/README.md` with the new override commands.
 - Verification against fresh YSHY CoC Roll20 chat sidecar:
   - `diagnose:roll20-chat-font-glyph` passed and kept YSHY at `TEXT_WIDTH_LAYOUT_CONSTRAINT_MODEL_REQUIRED`.
   - `diagnose:roll20-chat-source-context` passed and kept YSHY at `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`.
   - `diagnose:roll20-chat-font-intrinsic` passed with isolated font/glyph input and kept YSHY at `FONT_CONTEXT_BEFORE_WIDTH_CSS`.
+  - `diagnose:roll20-chat-intrinsic-width` passed and kept YSHY at `TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED`.
+  - `diagnose:roll20-chat-table-intrinsic-probe` passed and kept YSHY at `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET`.
   - `diagnose:roll20-chat-table-layout-constraint` passed and classified YSHY as `TABLE_AUTO_LAYOUT_MIN_CONTENT_MODEL_REQUIRED`.
   - `gate:roll20-renderer-action` with fresh source/context override still returned `HOLD_PRODUCTION_RENDERER_PATCH`.
 - Claim boundary: this improves evidence routing and root-cause confidence only. No renderer CSS was promoted, no visual parity was claimed, no user/private evidence was committed, and asset relink blockers remain.

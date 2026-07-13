@@ -3,8 +3,11 @@
 - DONE: `diagnose:roll20-chat-font-glyph` now accepts `--actual-sidecar <fixture-id>=<json>`, matching the locked-report-safe actual Roll20 evidence flow already used by the table-layout probe.
 - DONE: `diagnose:roll20-chat-source-context` now accepts `--actual-sidecar <fixture-id>=<json>`, so fresh ignored-temp Roll20 chat captures can feed rule-order/font-face/table-context checks without copying evidence into `reports/`.
 - DONE: `diagnose:roll20-chat-font-intrinsic` now accepts `--font-glyph-dir`, so isolated font/glyph evidence can flow into the font/intrinsic route.
+- DONE: `diagnose:roll20-chat-intrinsic-width` and `diagnose:roll20-chat-table-intrinsic-probe` now also accept `--actual-sidecar <fixture-id>=<json>`, so fresh actual Roll20 table/row/cell metrics are not stranded outside the intrinsic model.
 - VERIFIED: Fresh YSHY sidecar at ignored temp `chat-capture-yshy-coc-current-metrics-20260713-r2` feeds the new route. Font/glyph keeps YSHY at `TEXT_WIDTH_LAYOUT_CONSTRAINT_MODEL_REQUIRED` with table delta `-24.531px`, text residual `+30.415px`, and changed font/table signals.
 - VERIFIED: Source/context with the same sidecar reports YSHY `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`, while AW2E/Les remain `RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED`.
+- VERIFIED: Intrinsic-width with the same sidecar reports YSHY `TABLE_SCROLL_INTRINSIC_MODEL_REQUIRED`, table delta `-24.531px`, first-cell delta `-0.906px`, and no transform contradiction.
+- VERIFIED: Table-intrinsic with the same sidecar reports YSHY `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET`, row spread `0px`, max cell delta `+0.906px`, and top offset `+52.703px`.
 - VERIFIED: Table-layout with the same sidecar reports YSHY `TABLE_AUTO_LAYOUT_MIN_CONTENT_MODEL_REQUIRED`; actual Roll20 computes `maxWidth=280px` but the used table width is still `1248.328125px`.
 - VERIFIED: Renderer gate with the fresh source/context override still returns `HOLD_PRODUCTION_RENDERER_PATCH`; no production renderer CSS is safe to promote yet.
 - CURRENT: Next P0 is a scoped `.sheet-rolltemplate-coc` table auto-layout/min-content diagnostic model using actual rule order, font activation, and table intrinsic context together. Do not retry broad font/glyph substitution, simple max-width clamp, transform, or global ChatPane CSS.
