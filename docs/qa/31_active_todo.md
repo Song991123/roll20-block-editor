@@ -1,3 +1,10 @@
+## 2026-07-13 Renderer Gate Table-Budget Override TODO Note
+
+- DONE: `gate:roll20-renderer-action` now accepts `--chat-table-budget-dir`, so ignored temp table-budget evidence can reach the final renderer action gate.
+- VERIFIED: Renderer gate with `--chat-table-budget-dir ..\_tmp_codex_smoke\chat-table-width-budget-targeted-override-20260713-r1` records `reportOverrides.chatTableWidthBudget` and still returns `HOLD_PRODUCTION_RENDERER_PATCH`.
+- VERIFIED: The final gate surfaces the temp budget decisions: AW2E `MESSAGE_CONTENT_WIDTH_BUDGET`, Les `NARROW_WIDTH_MODEL_REQUIRED`, YSHY `TEXT_LAYOUT_CONSTRAINT_BUDGET`.
+- CURRENT: This completes the table-budget evidence route from diagnostic output -> targeted plan -> renderer action gate. It does not change product renderer CSS, relink assets, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Table Budget Override Routing TODO Note
 
 - DONE: `diagnose:roll20-chat-table-width-budget` now accepts `--out-dir`, so agents can write ignored temp budget evidence without rewriting canonical actual-run reports.

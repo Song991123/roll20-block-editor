@@ -22,6 +22,7 @@ const optionNamesWithValues = new Set([
   '--row-paint-source-dir',
   '--chat-source-context-dir',
   '--chat-template-scope-dir',
+  '--chat-table-budget-dir',
   '--cell-allocation-dir',
 ]);
 const runDirArg = firstPositionalArg() ?? '';
@@ -42,6 +43,7 @@ const reportOverrides = {
   chatRowPaintSource: readOption('--row-paint-source-dir', ''),
   chatSourceContext: readOption('--chat-source-context-dir', ''),
   chatTemplateScope: readOption('--chat-template-scope-dir', ''),
+  chatTableWidthBudget: readOption('--chat-table-budget-dir', ''),
   chatCellAllocation: readOption('--cell-allocation-dir', ''),
 };
 
@@ -81,7 +83,7 @@ async function main() {
   const chatFontCell = await readJsonIfExists(path.join(runDir, 'chat-font-cell-model', 'chat-font-cell-model-results.json'));
   const chatWidthModel = await readJsonIfExists(path.join(runDir, 'chat-width-model', 'chat-width-model-results.json'));
   const chatMessageShellModel = await readJsonIfExists(path.join(runDir, 'chat-message-shell-model', 'chat-message-shell-model-results.json'));
-  const chatTableWidthBudget = await readJsonIfExists(path.join(runDir, 'chat-table-width-budget', 'chat-table-width-budget-results.json'));
+  const chatTableWidthBudget = await readReportJson('chat-table-width-budget', 'chat-table-width-budget-results.json', reportOverrides.chatTableWidthBudget);
   const chatTableIntrinsicProbe = await readJsonIfExists(path.join(runDir, 'chat-table-intrinsic-probe', 'chat-table-intrinsic-probe-results.json'));
   const chatOverflowCropProbe = await readJsonIfExists(path.join(runDir, 'chat-overflow-crop-probe', 'chat-overflow-crop-probe-results.json'));
   const chatIntrinsicWidthModel = await readJsonIfExists(path.join(runDir, 'chat-intrinsic-width-model', 'chat-intrinsic-width-model-results.json'));

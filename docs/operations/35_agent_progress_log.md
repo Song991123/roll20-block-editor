@@ -1,3 +1,13 @@
+## 2026-07-13 Renderer Gate Table-Budget Override
+
+- Root cause: `diagnose:roll20-chat-table-width-budget` and `plan:roll20-chat-renderer-targets` could now use ignored temp table-budget evidence, but the final `gate:roll20-renderer-action` still read only the canonical table-budget report. That left the last production renderer gate unable to consume isolated table-budget experiments.
+- Updated `scripts/roll20_renderer_action_gate.mjs` with `--chat-table-budget-dir` and routed table-budget reads through the same override-aware `readReportJson` path used by other gate inputs.
+- Updated `scripts/README.md` so the renderer action gate command documents the table-budget override.
+- Verification: `node --check scripts\roll20_renderer_action_gate.mjs` passed.
+- Verification: `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --chat-table-budget-dir ..\_tmp_codex_smoke\chat-table-width-budget-targeted-override-20260713-r1 --chat-source-context-dir ..\_tmp_codex_smoke\chat-source-context-autofallback-20260713-r2 --out-dir ..\_tmp_codex_smoke\renderer-gate-table-budget-override-20260713-r1` passed with `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Evidence: the generated renderer gate report records `reportOverrides.chatTableWidthBudget` and surfaces the temp budget decisions: AW2E `MESSAGE_CONTENT_WIDTH_BUDGET`, Les-Oublies `NARROW_WIDTH_MODEL_REQUIRED`, and YSHY `TEXT_LAYOUT_CONSTRAINT_BUDGET`.
+- Current evidence: this finishes table-budget evidence routing to the top renderer gate. It does not improve pixels, relink assets, upload to Roll20, or authorize production renderer CSS.
+
 ## 2026-07-13 Table Budget Override Routing
 
 - Root cause: the next renderer P0 needs iterative AW2E/YSHY table-budget experiments, but `diagnose:roll20-chat-table-width-budget` could only write canonical report output and `plan:roll20-chat-renderer-targets` could not consume an isolated temp table-budget report. Also, the targeted plan read older table-budget field names, so newer `budgetDecision` / `tableWidthDelta` evidence was not surfaced directly in its signals.
