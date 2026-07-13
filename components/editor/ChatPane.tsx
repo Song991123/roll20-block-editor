@@ -52,6 +52,7 @@ type ChatGeometryPolicy =
   | 'coc-table-actual-width'
   | 'coc-crop-origin-y20'
   | 'coc-overflow-crop-model'
+  | 'coc-overflow-crop-origin-y20'
   | 'roll20-message-padding'
   | 'roll20-break-word'
   | 'roll20-intrinsic-spacing'
@@ -117,6 +118,7 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
     value === 'coc-table-actual-width' ||
     value === 'coc-crop-origin-y20' ||
     value === 'coc-overflow-crop-model' ||
+    value === 'coc-overflow-crop-origin-y20' ||
     value === 'roll20-message-padding' ||
     value === 'roll20-break-word' ||
     value === 'roll20-intrinsic-spacing' ||
@@ -568,6 +570,16 @@ const roll20ChatDiagnosticOverrideCss = `
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-model"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   border-spacing: 0 !important;
+  max-width: 1248.55px !important;
+  overflow-wrap: break-word !important;
+  width: 1248.55px !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-origin-y20"] .r20-chat-card-group .message:has(.sheet-rolltemplate-coc) {
+  overflow: hidden;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-origin-y20"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0 !important;
+  margin-top: 20px !important;
   max-width: 1248.55px !important;
   overflow-wrap: break-word !important;
   width: 1248.55px !important;

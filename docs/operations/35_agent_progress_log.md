@@ -1,3 +1,17 @@
+## 2026-07-13 YSHY Crop-Origin Source-Context Rejection
+
+- Root cause hypothesis tested: YSHY/CoC may need the measured table-width override, overflow crop, actual font context, and a top-origin offset combined before table intrinsic/crop evidence improves.
+- Added diagnostic-only `coc-overflow-crop-origin-y20` to `components/editor/ChatPane.tsx` and allowed it in `scripts/rolltemplate_chat_smoke.mjs`.
+- Verification: `node --check scripts\rolltemplate_chat_smoke.mjs` passed.
+- Verification: `corepack pnpm run build` passed before the browser smoke.
+- Verification: `node scripts\rolltemplate_chat_smoke.mjs --out-dir .\out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-yshy-coc-table-source-context-crop-origin-actual-font-20260713-r1 --chat-geometry-policy coc-overflow-crop-origin-y20 --chat-typography-policy yshy-table-font-context --port 4401` passed 3/3 fixtures.
+- Evidence: the candidate moved YSHY root/table/caption/cell top by `+20px`, but width remained unchanged: root `267px`, table `1317.140625px`, caption `1317.140625px`; Bookk stayed active in caption and first cell.
+- Verification: `gate:roll20-chat-candidate-experiment` rejected `yshy-coc-table-source-context-crop-origin-actual-font-r1` with `HOLD_PRODUCTION_RENDERER_PATCH`, `reject-regresses-fixtures`, `REJECT_STYLE_CONTRADICTION`, `reject-row-raster-regression`, mean aligned delta `16.47`, fixture deltas `AW2E=41.04`, `Les=0`, `YSHY=8.36`, and regressions `2`.
+- Evidence: row-raster comparison stayed worse than baseline: AW2E weighted `17.93% -> 62%`, YSHY weighted `21.41% -> 31.55%`.
+- Verification: table intrinsic probe still reports YSHY `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET` with root `-3px`, table `-68.813px`, row spread `0px`, max cell `+0.906px`, and top offset `+52.703px`.
+- Server hygiene: `corepack pnpm run check:server-hygiene` passed after the smoke/gate/probe; no project dev/smoke listener remained and CDP `127.0.0.1:9222` was preserved.
+- Current evidence: `coc-overflow-crop-origin-y20` is a rejected diagnostic, not a renderer fix. Simple crop-origin replay should not be retried until the table intrinsic/max-content calculation is measured directly.
+
 ## 2026-07-13 YSHY Actual-Font Source-Context Rejection
 
 - Root cause hypothesis tested: the previous YSHY/CoC source-context candidate may have been unfairly evaluated against a missing-Bookk font proof, while actual Roll20 evidence shows Bookk is active inside caption/cells.

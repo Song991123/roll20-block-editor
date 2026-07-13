@@ -1,3 +1,13 @@
+## 2026-07-13 YSHY Crop-Origin Source-Context Rejection TODO Note
+
+- DONE: Added diagnostic-only chat geometry policy `coc-overflow-crop-origin-y20`, combining CoC/YSHY overflow crop, measured table width declarations, and a `20px` table top-origin offset.
+- VERIFIED: `rolltemplate_chat_smoke` for `yshy-coc-table-source-context-crop-origin-actual-font-r1` passed 3/3 fixtures in ignored output at `..\_tmp_codex_smoke\rolltemplate-chat-smoke-yshy-coc-table-source-context-crop-origin-actual-font-20260713-r1`.
+- VERIFIED: The candidate only moved YSHY root/table/caption/cell top by `+20px`; table width stayed `1317.140625px`, so measured width declarations still did not control used table width.
+- VERIFIED: `gate:roll20-chat-candidate-experiment` rejected the candidate with the same signature as actual-font alone: `HOLD_PRODUCTION_RENDERER_PATCH`, `reject-regresses-fixtures`, `REJECT_STYLE_CONTRADICTION`, `reject-row-raster-regression`, mean aligned delta `16.47`, regressions `2`.
+- EVIDENCE: Row raster remained worse than baseline: AW2E weighted `17.93% -> 62%` (`+44.07`), YSHY weighted `21.41% -> 31.55%` (`+10.14`).
+- VERIFIED: `diagnose:roll20-chat-table-intrinsic-probe` still reports YSHY `TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET`: root `-3px`, table `-68.813px`, row spread `0px`, max cell `+0.906px`, top offset `+52.703px`.
+- CURRENT: Do not promote `coc-overflow-crop-origin-y20` or the `yshy-coc-table-source-context-crop-origin-actual-font-r1` candidate. Simple top-origin/crop replay is now negative evidence. Next P0 should inspect the table intrinsic/max-content calculation itself.
+
 ## 2026-07-13 YSHY Actual-Font Source-Context Rejection TODO Note
 
 - DONE: `diagnose:roll20-chat-candidate-style` now routes `yshy-coc-table-source-context*actual-font*` through the actual Roll20 YSHY table font-context proof instead of the older missing-Bookk proof.

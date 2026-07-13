@@ -861,6 +861,7 @@ async function main() {
         policy === 'coc-table-actual-width' ||
         policy === 'coc-crop-origin-y20' ||
         policy === 'coc-overflow-crop-model' ||
+        policy === 'coc-overflow-crop-origin-y20' ||
         policy === 'roll20-message-padding' ||
         policy === 'roll20-break-word' ||
         policy === 'roll20-intrinsic-spacing' ||
