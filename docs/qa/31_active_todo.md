@@ -3433,3 +3433,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CURRENT NEXT: AW2E needs a `.sheet-rolltemplate-aw` scoped message/content width plus exact text-metric candidate; YSHY needs a `.sheet-rolltemplate-coc` scoped table intrinsic/sanitize/font-context candidate. Do not widen global ChatPane CSS.
 - VERIFIED: `node --check scripts\roll20_chat_template_scope_gate.mjs`, `node --check scripts\roll20_renderer_action_gate.mjs`, `node --check scripts\roll20_chat_diagnostic_refresh.mjs`, `corepack pnpm run test:roll20-chat-template-scope`, `corepack pnpm run gate:roll20-chat-template-scope -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `corepack pnpm run diagnose:roll20-chat-refresh -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `git diff --check`, `corepack pnpm run lint`, and `corepack pnpm run build` passed.
 - CLAIM BOUNDARY: This is renderer-promotion safety only. It does not make Roll20 chat visual parity pass and does not promote product CSS.
+
+## 2026-07-13 Edit Canvas Drop Label Feedback TODO Note
+
+- DONE: Edit canvas widget dragover now creates a visible Shadow DOM badge for the active drop operation. Flow mode shows `안에 넣기`, `앞에 넣기`, or `뒤에 넣기`; free mode inside a frame shows `자유 배치`.
+- DONE: The badge is written as an edit overlay marker and is cleared with the existing drop target cleanup, so it is not part of exported sheet HTML/CSS.
+- VERIFIED: `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_edit_flow_smoke_drop_label --port 4319` passed after rebuilding `out/`. The smoke asserts fixed-position label markers for inside, before, after, and free-placement drags, plus existing nested flow insert, sibling insert, layer reorder, non-leaf reorder, absolute-inside-frame, width control, and 0 console/page errors.
+- VERIFIED: `corepack pnpm run check:server-hygiene`, `corepack pnpm run test:layer-roles`, `corepack pnpm run lint`, and `corepack pnpm run build` passed. Final server hygiene preserved only CDP `9222` and found no project dev/smoke listeners.
+- CURRENT: This makes drag intent more legible, but edit-mode UX still needs richer screenshot review on imported real sheets and actual Roll20 comparison remains separate.
+- CLAIM BOUNDARY: Edit overlay usability only. This is not a Roll20 visual parity claim and does not promote chat/rolltemplate renderer CSS.

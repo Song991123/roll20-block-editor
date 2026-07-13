@@ -189,7 +189,9 @@ async function main() {
       target.dispatchEvent(event);
       const active = host?.shadowRoot?.querySelector('.r20-drop-target') ?? null;
       const marker = host?.shadowRoot?.querySelector('[data-r20-drop-position-marker="1"]') ?? null;
+      const labelMarker = host?.shadowRoot?.querySelector('[data-r20-drop-label-marker="1"]') ?? null;
       const markerStyle = marker ? getComputedStyle(marker) : null;
+      const labelStyle = labelMarker ? getComputedStyle(labelMarker) : null;
       return {
         dispatched: true,
         targetTag: target.tagName,
@@ -200,6 +202,9 @@ async function main() {
         activeTargetId: active?.getAttribute('data-r20-block-id') ?? null,
         activeTargetMode: active?.getAttribute('data-r20-drop-mode') ?? null,
         dropMarkerMode: marker?.getAttribute('data-r20-drop-mode') ?? null,
+        dropLabelMode: labelMarker?.getAttribute('data-r20-drop-mode') ?? null,
+        dropLabelText: labelMarker?.textContent?.trim() ?? '',
+        dropLabelPosition: labelStyle?.position ?? null,
         dropMarkerPosition: markerStyle?.position ?? null,
         dropMarkerWidth: markerStyle ? Math.round(Number.parseFloat(markerStyle.width)) : null,
         dropMarkerHeight: markerStyle ? Math.round(Number.parseFloat(markerStyle.height)) : null,
@@ -1002,12 +1007,16 @@ async function main() {
       return { dropped: false, reason: 'missing free target setup', setup };
     }
     await page.click('[data-testid="edit-placement-free"]');
+    const indicator = await page.evaluate(
+      ({ x, y }) => window.__smokeDragOver('text-input', x, y),
+      setup.dropPoint,
+    );
     const drop = await page.evaluate(
       ({ x, y }) => window.__smokeDrop('text-input', x, y),
       setup.dropPoint,
     );
     await page.waitForTimeout(500);
-    return await page.evaluate(({ setup, drop }) => {
+    return await page.evaluate(({ setup, drop, indicator }) => {
       const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
       const root = host?.shadowRoot;
       const frame = root?.querySelector(`[data-r20-block-id="${CSS.escape(setup.frameId)}"]`);
@@ -1041,6 +1050,7 @@ async function main() {
       return {
         dropped: true,
         setup,
+        indicator,
         drop,
         inputId,
         frameTag,
@@ -1055,7 +1065,7 @@ async function main() {
         emittedTop: px(inputInline, 'top'),
         inputNestedInFrame: frameIndex >= 0 && inputIndex > frameIndex && inputIndex < frameEndIndex,
       };
-    }, { setup, drop });
+    }, { setup, drop, indicator });
   })();
 
   results.tests.realDrag = {
@@ -1124,6 +1134,9 @@ async function main() {
     c2Indicator.hostDropMode === 'inside' &&
     c2Indicator.activeTargetId === sectionInfo.blockId &&
     c2Indicator.activeTargetMode === 'inside' &&
+    c2Indicator.dropLabelMode === 'inside' &&
+    c2Indicator.dropLabelText === '안에 넣기' &&
+    c2Indicator.dropLabelPosition === 'fixed' &&
     dragDropState.nestedInputFound === true &&
     dragDropState.nestedInputAbsolute === false &&
     dragDropState.rootHtmlBlocks === 1 &&
@@ -1135,12 +1148,18 @@ async function main() {
     canvasSiblingInsert.beforeIndicator?.hostDropMode === 'before' &&
     canvasSiblingInsert.beforeIndicator?.activeTargetMode === 'before' &&
     canvasSiblingInsert.beforeIndicator?.dropMarkerMode === 'before' &&
+    canvasSiblingInsert.beforeIndicator?.dropLabelMode === 'before' &&
+    canvasSiblingInsert.beforeIndicator?.dropLabelText === '앞에 넣기' &&
+    canvasSiblingInsert.beforeIndicator?.dropLabelPosition === 'fixed' &&
     canvasSiblingInsert.beforeIndicator?.dropMarkerPosition === 'fixed' &&
     canvasSiblingInsert.beforeIndicator?.dropMarkerWidth >= 24 &&
     canvasSiblingInsert.beforeIndicator?.dropMarkerHeight === 3 &&
     canvasSiblingInsert.afterIndicator?.hostDropMode === 'after' &&
     canvasSiblingInsert.afterIndicator?.activeTargetMode === 'after' &&
     canvasSiblingInsert.afterIndicator?.dropMarkerMode === 'after' &&
+    canvasSiblingInsert.afterIndicator?.dropLabelMode === 'after' &&
+    canvasSiblingInsert.afterIndicator?.dropLabelText === '뒤에 넣기' &&
+    canvasSiblingInsert.afterIndicator?.dropLabelPosition === 'fixed' &&
     canvasSiblingInsert.afterIndicator?.dropMarkerPosition === 'fixed' &&
     canvasSiblingInsert.afterIndicator?.dropMarkerWidth >= 24 &&
     canvasSiblingInsert.afterIndicator?.dropMarkerHeight === 3 &&
@@ -1199,6 +1218,11 @@ async function main() {
     absoluteInsideFrame.inputHasAbsolute === true &&
     absoluteInsideFrame.emittedLeft === absoluteInsideFrame.inputComputedLeft &&
     absoluteInsideFrame.emittedTop === absoluteInsideFrame.inputComputedTop &&
+    freePlacementWidgetDrop.indicator?.hostDropMode === 'inside' &&
+    freePlacementWidgetDrop.indicator?.activeTargetMode === 'inside' &&
+    freePlacementWidgetDrop.indicator?.dropLabelMode === 'inside' &&
+    freePlacementWidgetDrop.indicator?.dropLabelText === '자유 배치' &&
+    freePlacementWidgetDrop.indicator?.dropLabelPosition === 'fixed' &&
     freePlacementWidgetDrop.drop?.dispatched === true &&
     freePlacementWidgetDrop.inputNestedInFrame === true &&
     freePlacementWidgetDrop.frameComputedPosition === 'relative' &&

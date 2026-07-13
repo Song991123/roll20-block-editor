@@ -290,8 +290,10 @@ export default function EditCanvas() {
     if (e.dataTransfer.types.includes(FRIENDLY_WIDGET_MIME)) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
+      const target = findCanvasDropTarget(hostRef.current, e.clientX, e.clientY);
+      markDropContainer(hostRef.current, target, formatCanvasDropLabel(target, editPlacementMode));
     }
-  }, []);
+  }, [editPlacementMode]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     const payload = e.dataTransfer.getData(FRIENDLY_WIDGET_MIME);
@@ -338,8 +340,9 @@ export default function EditCanvas() {
     if (!hasFriendlyWidgetPayload(e.dataTransfer)) return;
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-    markDropContainer(hostRef.current, findCanvasDropTarget(hostRef.current, e.clientX, e.clientY));
-  }, []);
+    const target = findCanvasDropTarget(hostRef.current, e.clientX, e.clientY);
+    markDropContainer(hostRef.current, target, formatCanvasDropLabel(target, editPlacementMode));
+  }, [editPlacementMode]);
 
   const handleNativeDrop = useCallback((event: Event) => {
     const e = event as DragEvent;
@@ -1456,7 +1459,20 @@ function findCanvasDropTarget(
   return null;
 }
 
-function markDropContainer(host: HTMLElement | null, dropTarget: CanvasDropTarget | null): void {
+function formatCanvasDropLabel(
+  dropTarget: CanvasDropTarget | null,
+  placementMode: 'flow' | 'free',
+): string | null {
+  if (!dropTarget) return null;
+  if (placementMode === 'free' && dropTarget.mode === 'inside') return '자유 배치';
+  return formatDropModeLabel(dropTarget.mode);
+}
+
+function markDropContainer(
+  host: HTMLElement | null,
+  dropTarget: CanvasDropTarget | null,
+  label: string | null = null,
+): void {
   const shadow = host?.shadowRoot;
   if (!host || !shadow) return;
   shadow.querySelectorAll<HTMLElement>('.r20-drop-target').forEach((el) => {
@@ -1464,6 +1480,7 @@ function markDropContainer(host: HTMLElement | null, dropTarget: CanvasDropTarge
     el.removeAttribute('data-r20-drop-mode');
   });
   shadow.querySelectorAll<HTMLElement>('[data-r20-drop-position-marker="1"]').forEach((el) => el.remove());
+  shadow.querySelectorAll<HTMLElement>('[data-r20-drop-label-marker="1"]').forEach((el) => el.remove());
   if (!dropTarget) {
     host.removeAttribute('data-r20-widget-dragging');
     host.removeAttribute('data-r20-drop-target');
@@ -1477,26 +1494,51 @@ function markDropContainer(host: HTMLElement | null, dropTarget: CanvasDropTarge
   const targetEl = shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`);
   targetEl?.classList.add('r20-drop-target');
   targetEl?.setAttribute('data-r20-drop-mode', dropTarget.mode);
-  if (targetEl && dropTarget.mode !== 'inside') {
+  if (targetEl) {
     const rect = targetEl.getBoundingClientRect();
-    const marker = document.createElement('div');
-    const top = dropTarget.mode === 'before' ? rect.top - 5 : rect.bottom + 2;
-    marker.setAttribute('data-r20-drop-position-marker', '1');
-    marker.setAttribute('data-r20-drop-mode', dropTarget.mode);
-    marker.setAttribute('aria-hidden', 'true');
-    Object.assign(marker.style, {
+    const badge = document.createElement('div');
+    badge.setAttribute('data-r20-drop-label-marker', '1');
+    badge.setAttribute('data-r20-drop-mode', dropTarget.mode);
+    badge.setAttribute('aria-hidden', 'true');
+    badge.textContent = label ?? formatDropModeLabel(dropTarget.mode);
+    Object.assign(badge.style, {
       position: 'fixed',
-      left: `${Math.round(Math.max(0, rect.left - 8))}px`,
-      top: `${Math.round(top)}px`,
-      width: `${Math.round(Math.max(24, rect.width + 16))}px`,
-      height: '3px',
+      left: `${Math.round(Math.max(8, rect.left + 8))}px`,
+      top: `${Math.round(Math.max(8, rect.top + 8))}px`,
+      maxWidth: `${Math.round(Math.max(80, rect.width - 16))}px`,
+      padding: '3px 7px',
       borderRadius: '999px',
-      background: 'rgba(59, 130, 246, 0.95)',
-      boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 10px rgba(59, 130, 246, 0.45)',
+      background: dropTarget.mode === 'inside' ? 'rgba(22, 163, 74, 0.94)' : 'rgba(37, 99, 235, 0.95)',
+      boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.86), 0 8px 22px rgba(15, 23, 42, 0.2)',
+      color: '#fff',
+      font: '600 11px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
       pointerEvents: 'none',
       zIndex: '2147483647',
     });
-    shadow.appendChild(marker);
+    shadow.appendChild(badge);
+    if (dropTarget.mode !== 'inside') {
+      const marker = document.createElement('div');
+      const top = dropTarget.mode === 'before' ? rect.top - 5 : rect.bottom + 2;
+      marker.setAttribute('data-r20-drop-position-marker', '1');
+      marker.setAttribute('data-r20-drop-mode', dropTarget.mode);
+      marker.setAttribute('aria-hidden', 'true');
+      Object.assign(marker.style, {
+        position: 'fixed',
+        left: `${Math.round(Math.max(0, rect.left - 8))}px`,
+        top: `${Math.round(top)}px`,
+        width: `${Math.round(Math.max(24, rect.width + 16))}px`,
+        height: '3px',
+        borderRadius: '999px',
+        background: 'rgba(59, 130, 246, 0.95)',
+        boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 10px rgba(59, 130, 246, 0.45)',
+        pointerEvents: 'none',
+        zIndex: '2147483647',
+      });
+      shadow.appendChild(marker);
+    }
   }
 }
 

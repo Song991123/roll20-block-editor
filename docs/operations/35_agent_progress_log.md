@@ -4126,3 +4126,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added the scope gate to `diagnose:roll20-chat-refresh` after the targeted plan and before the top-level renderer action gate.
 - Verification: syntax checks, `test:roll20-chat-template-scope`, standalone scope gate against `2026-06-18-state-map-v1`, top-level `gate:roll20-renderer-action`, full `diagnose:roll20-chat-refresh`, `git diff --check`, `lint`, and `build` all passed.
 - Claim boundary: this is promotion safety. It does not prove visual parity and does not apply renderer CSS.
+
+## 2026-07-13 Edit Canvas Drop Label Feedback
+
+- Added a visible Shadow DOM drop-label marker for edit-canvas widget drags. Canvas targets now show Korean badges for `안에 넣기`, `앞에 넣기`, `뒤에 넣기`, and `자유 배치` while preserving the existing Roll20-rendered sheet plus edit overlay approach.
+- The label marker is separate from the before/after insertion line, so flow insertion and frame-relative free placement are both readable during drag, not only after drop.
+- Hardened `scripts/edit_flow_browser_smoke.mjs` so the browser smoke fails unless those label markers are present with fixed overlay positioning for inside, before, after, and free-placement drags.
+- Verification: `check:server-hygiene` passed before and after smoke, `test:layer-roles` passed, `lint` passed, `build` passed, and `smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_edit_flow_smoke_drop_label --port 4319` passed with 0 console/page errors.
+- Note: the repo `reports/` directory was read-only in this Windows session, so this smoke's local screenshots/JSON were written to ignored parent temp evidence instead of `web-push-main/reports/`.
+- Claim boundary: this improves edit-mode drag clarity only. It does not prove actual Roll20 visual parity and does not change chat/rolltemplate renderer readiness.
