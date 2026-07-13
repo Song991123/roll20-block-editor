@@ -3499,3 +3499,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: Live `plan:roll20-chat-browser-paint` now returns `BROWSER_PAINT_BLOCKED_BY_RELINK`, with AW2E/YSHY blocked by `BLOCKED_BY_ASSET_RELINK` and Les-Oublies secondary because current evidence has no chat background image.
 - CURRENT: The active P0 visual-parity blocker is not another broad ChatPane CSS patch. AW2E/YSHY need user-owned HTTP(S) replacement URLs in the local-only asset map, followed by local preview/edit/export and Roll20 Sandbox recomparison.
 - CLAIM BOUNDARY: No replacement URL was invented, no third-party asset was copied, and no production renderer CSS was promoted.
+
+## 2026-07-13 Asset Canonical Candidate TODO Note
+
+- DONE: Import/export asset preflight now counts insecure `HTTP URL`, `직링크 후보`, and `Imgur 직링크` cases in the UI.
+- DONE: Replacement-map drafts now include commented canonical/direct candidates for review, including `https://imgur.com/<id>.png` -> `https://i.imgur.com/<id>.png`, `http://i.imgur.com/<id>.jpg` -> `https://i.imgur.com/<id>.jpg`, protocol-relative URLs, and Roll20 proxy `src=` values when a canonical source can be inferred.
+- VERIFIED: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-asset-canonical-20260713-r3 --port 4388` passed. The browser smoke confirms import/export drafts contain canonical suggestions and the new metrics render with no console/page errors.
+- CURRENT: This helps users relink blocked/dead/external assets before Roll20 comparison, but it still does not apply candidates automatically and does not prove visual parity.
+- STILL TODO: Fill user-owned replacement URLs for the active fixtures, rerun local preview/edit/export with the map, then compare in Roll20 Sandbox/test room.

@@ -452,12 +452,21 @@ function ImportAssetPreflight({
         <ImportAssetMetric label="Imgur page" value={result.imgurPageRefs} />
         <ImportAssetMetric label="placeholder risk" value={result.placeholderRiskRefs} />
         <ImportAssetMetric label="data URL" value={result.dataRefs} />
+        <ImportAssetMetric label="HTTP URL" value={result.insecureHttpRefs} />
+        <ImportAssetMetric label="직링크 후보" value={result.canonicalDirectRefs} />
+        <ImportAssetMetric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
       </div>
       {hasRisk ? (
         <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-100">
           실제 Roll20 동일성을 확인하려면 이 자산들이 로드되는지 먼저 봐야 합니다.
           삭제되었거나 막힌 URL은 export의 자산 URL 교체에서 사용자가 직접 다시 올린 URL로
           바꿔 주세요.
+          {result.canonicalDirectRefs > 0 ? (
+            <span className="mt-1 block" data-testid="import-asset-canonical-candidates">
+              교체 초안에 {result.canonicalDirectRefs}개의 https/direct 후보를 같이 적습니다.
+              후보 URL도 권한과 로딩 상태를 확인한 뒤 사용해야 합니다.
+            </span>
+          ) : null}
           {result.hosts.length > 0 ? (
             <span className="mt-1 block text-muted-foreground">
               감지된 호스트: {result.hosts.slice(0, 5).join(', ')}

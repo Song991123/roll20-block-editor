@@ -45,6 +45,7 @@ corepack pnpm run plan:roll20-asset-relink -- reports\roll20-actual-compare\<lab
 - The export dialog can save named local-only replacement-map profiles. Profiles store URL replacement text only, not image/font bytes, and are persisted in the autosave/manual-save XML so users can switch between sheet-specific relink sets during repeated verification.
 - `plan:roll20-asset-relink` can check an exported/copied replacement-map text file against current asset-preservation blockers. It reports whether each required fixture is missing a relink, uses a local-only data URL, or is ready for local preview/edit/export plus Roll20 Sandbox re-comparison. Placeholder targets stay `MISSING_RELINK`.
 - The export dialog can copy the active replacement-map text or save it as a local txt file. The text file is the handoff format for `plan:roll20-asset-relink --map-file`; it stores URL rules only and no asset bytes.
+- Import/export asset preflight now detects insecure `http://` asset URLs and canonical direct URL candidates such as `https://imgur.com/<id>.png` -> `https://i.imgur.com/<id>.png`, protocol-relative URLs, and proxied Roll20 `src=` values. These are written as commented verification candidates in the replacement-map draft with `verify-permission`; they are not applied silently and do not prove ownership.
 - `plan:roll20-asset-relink` also writes an ignored `asset-relink-map-template.txt` beside its report. The template lists commented candidate source/proxy URL rules for unresolved blockers, so the user can fill user-owned HTTP(S) targets without agents copying asset bytes into the repo.
 - `roll20_actual_local_baseline.mjs` and `verify:roll20-preupload` accept `--asset-map-file <local-map.txt>`. When provided, the map is applied to local preview/edit screenshots and to the emitted Roll20 upload payload HTML/CSS before Sandbox comparison.
 - Multi-project named asset libraries, replacement history, and Roll20-side rehost verification are still TODO.
@@ -57,6 +58,8 @@ Export/import checks should distinguish:
 - `roll20-proxy-url`: the sheet already references `imgsrv.roll20.net`.
 - `imgur-page-url`: the sheet references an Imgur page-style URL that may not be a stable direct image.
 - `relative-url`: the sheet references a local relative asset path that is not in the Roll20 zip.
+- `http-url`: the sheet references an insecure HTTP asset that may be blocked or redirected in HTTPS contexts.
+- `direct-url-candidate`: the app can suggest a safer direct HTTPS candidate for review, but the user still has to verify ownership, permission, and actual Roll20 loading.
 - `placeholder-risk`: current diagnostics show the source/proxy resolves to a placeholder.
 
 The user-facing wording should be plain:

@@ -341,7 +341,8 @@ async function verifyAssetReplacementPlaceholderGuard(page) {
 }
 
 async function verifyExportAssetDraft(page) {
-  const sourceUrl = 'https://imgur.com/export-dead';
+  const sourceUrl = 'https://imgur.com/export-dead.png';
+  const canonicalUrl = 'https://i.imgur.com/export-dead.png';
   await warmPerfHook(page);
   await page.evaluate(async ({ html }) => {
     window.__perfHook.clearAll();
@@ -361,14 +362,15 @@ async function verifyExportAssetDraft(page) {
     { url: sourceUrl },
     { timeout: 15000 },
   );
-  const after = await page.evaluate(({ url }) => {
+  const after = await page.evaluate(({ url, canonicalUrl }) => {
     const map = window.__perfHook.getAssetReplacementMap();
     return {
       hasSourceUrl: map.includes(url),
       isCommentedDraft: map.includes(`# ${url} => <paste-user-owned-https-url-here>`),
+      hasCanonicalSuggestion: map.includes(`# ${url} => ${canonicalUrl} # imgur-direct-image:verify-permission`),
       hasExportSourceLabel: map.includes('Asset replacement draft from export preflight.'),
     };
-  }, { url: sourceUrl });
+  }, { url: sourceUrl, canonicalUrl });
   await page.keyboard.press('Escape');
   await page.waitForSelector('[data-testid="export-asset-replacement-draft"]', {
     state: 'detached',
@@ -492,6 +494,9 @@ async function main() {
         hasAssetRiskCopy: dialogText.includes('외부 이미지/폰트는 zip에 포함되지 않습니다.'),
         hasAssetProxyMetric: dialogText.includes('Roll20 proxy'),
         hasAssetPlaceholderMetric: dialogText.includes('placeholder risk'),
+        hasAssetHttpMetric: dialogText.includes('HTTP URL'),
+        hasAssetCanonicalMetric: dialogText.includes('직링크 후보'),
+        hasAssetImgurDirectMetric: dialogText.includes('Imgur 직링크'),
         hasAssetReplacementMap: Boolean(document.querySelector('[data-testid="export-asset-replacement-map"]')),
         hasAssetReplacementInput: Boolean(document.querySelector('[data-testid="export-asset-replacement-input"]')),
         hasAssetReplacementDraft: Boolean(document.querySelector('[data-testid="export-asset-replacement-draft"]')),
@@ -520,7 +525,7 @@ async function main() {
 
     await page.click('[data-testid="header-import-button"]');
     await page.waitForSelector('[role="dialog"]', { timeout: 15000 });
-    await page.fill('[role="dialog"] textarea', '<img src="https://imgur.com/dead">');
+    await page.fill('[role="dialog"] textarea', '<img src="https://imgur.com/import-dead.png">');
     await page.waitForSelector('[data-testid="import-asset-replacement-draft"]', { timeout: 5000 });
     result.checks.importDialog = await page.evaluate(() => ({
       hasTitle: document.body.innerText.includes('외부 시트 불러오기'),
@@ -530,6 +535,9 @@ async function main() {
       assetPreflightStatus: document.querySelector('[data-testid="import-asset-preflight-status"]')?.textContent?.trim() ?? '',
       hasAssetProxyMetric: document.body.innerText.includes('Roll20 proxy'),
       hasAssetPlaceholderMetric: document.body.innerText.includes('placeholder risk'),
+      hasAssetHttpMetric: document.body.innerText.includes('HTTP URL'),
+      hasAssetCanonicalMetric: document.body.innerText.includes('직링크 후보'),
+      hasAssetImgurDirectMetric: document.body.innerText.includes('Imgur 직링크'),
       hasAssetReplacementDraft: Boolean(document.querySelector('[data-testid="import-asset-replacement-draft"]')),
     }));
     await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 15000 });
@@ -537,8 +545,9 @@ async function main() {
     result.checks.importAssetDraft = await page.evaluate(() => {
       const map = window.__perfHook.getAssetReplacementMap();
       return {
-        hasSourceUrl: map.includes('https://imgur.com/dead'),
-        isCommentedDraft: map.includes('# https://imgur.com/dead => <paste-user-owned-https-url-here>'),
+        hasSourceUrl: map.includes('https://imgur.com/import-dead.png'),
+        isCommentedDraft: map.includes('# https://imgur.com/import-dead.png => <paste-user-owned-https-url-here>'),
+        hasCanonicalSuggestion: map.includes('# https://imgur.com/import-dead.png => https://i.imgur.com/import-dead.png # imgur-direct-image:verify-permission'),
       };
     });
 
@@ -592,6 +601,9 @@ async function main() {
     if (!result.checks.exportDialog.hasAssetPreflightCopy) failures.push('asset preflight copy missing');
     if (!result.checks.exportDialog.hasAssetProxyMetric) failures.push('asset proxy metric missing');
     if (!result.checks.exportDialog.hasAssetPlaceholderMetric) failures.push('asset placeholder metric missing');
+    if (!result.checks.exportDialog.hasAssetHttpMetric) failures.push('asset HTTP metric missing');
+    if (!result.checks.exportDialog.hasAssetCanonicalMetric) failures.push('asset canonical metric missing');
+    if (!result.checks.exportDialog.hasAssetImgurDirectMetric) failures.push('asset Imgur direct metric missing');
     if (!result.checks.exportDialog.hasAssetReplacementMap) failures.push('asset replacement map missing');
     if (!result.checks.exportDialog.hasAssetReplacementInput) failures.push('asset replacement input missing');
     if (!result.checks.exportDialog.hasAssetReplacementDraft) failures.push('asset replacement draft button missing');
@@ -619,12 +631,17 @@ async function main() {
     }
     if (!result.checks.importDialog.hasAssetProxyMetric) failures.push('import asset proxy metric missing');
     if (!result.checks.importDialog.hasAssetPlaceholderMetric) failures.push('import asset placeholder metric missing');
+    if (!result.checks.importDialog.hasAssetHttpMetric) failures.push('import asset HTTP metric missing');
+    if (!result.checks.importDialog.hasAssetCanonicalMetric) failures.push('import asset canonical metric missing');
+    if (!result.checks.importDialog.hasAssetImgurDirectMetric) failures.push('import asset Imgur direct metric missing');
     if (!result.checks.importDialog.hasAssetReplacementDraft) failures.push('import asset replacement draft button missing');
     if (!result.checks.importAssetDraft.hasSourceUrl) failures.push('import asset draft missing source URL');
     if (!result.checks.importAssetDraft.isCommentedDraft) failures.push('import asset draft should be commented until user relinks');
+    if (!result.checks.importAssetDraft.hasCanonicalSuggestion) failures.push('import asset draft missing canonical/direct suggestion');
     if (result.checks.exportAssetDraft.before.disabled) failures.push('export asset draft button disabled for export asset URL');
     if (!result.checks.exportAssetDraft.after.hasSourceUrl) failures.push('export asset draft missing source URL');
     if (!result.checks.exportAssetDraft.after.isCommentedDraft) failures.push('export asset draft should be commented until user relinks');
+    if (!result.checks.exportAssetDraft.after.hasCanonicalSuggestion) failures.push('export asset draft missing canonical/direct suggestion');
     if (!result.checks.exportAssetDraft.after.hasExportSourceLabel) failures.push('export asset draft source label missing');
     if (!result.checks.assetReplacementRender.preview.hasNewUrl) failures.push('asset replacement did not reach preview iframe');
     if (result.checks.assetReplacementRender.preview.hasOldUrl) failures.push('original asset URL leaked in preview iframe');

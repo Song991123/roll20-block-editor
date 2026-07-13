@@ -4201,3 +4201,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verification: `check:server-hygiene` passed before and after smoke, `test:layer-roles` passed, `lint` passed, `build` passed, and `smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_edit_flow_smoke_drop_label --port 4319` passed with 0 console/page errors.
 - Note: the repo `reports/` directory was read-only in this Windows session, so this smoke's local screenshots/JSON were written to ignored parent temp evidence instead of `web-push-main/reports/`.
 - Claim boundary: this improves edit-mode drag clarity only. It does not prove actual Roll20 visual parity and does not change chat/rolltemplate renderer readiness.
+
+## 2026-07-13 Asset Canonical Candidate Detection
+
+- Extended `lib/export/asset_refs.ts` so import/export preflight distinguishes insecure HTTP assets, canonical/direct URL candidates, and Imgur direct-link candidates.
+- Replacement-map drafts now keep the normal placeholder lines and additionally add commented `verify-permission` candidates for review. Examples covered by tests: `https://imgur.com/<id>.png` to `https://i.imgur.com/<id>.png`, `http://i.imgur.com/<id>.jpg` to HTTPS, protocol-relative URLs, and Roll20 `imgsrv.roll20.net/?src=` sources.
+- Updated Import and Export dialogs to show `HTTP URL`, `직링크 후보`, and `Imgur 직링크` metrics, plus Korean copy explaining that candidates still require permission/ownership and Roll20 loading checks.
+- Hardened `scripts/export_dialog_browser_smoke.mjs` so browser smoke fails unless both import and export drafts include canonical/direct suggestions and the new UI metrics render.
+- Verification: `test:asset-refs`, `test:asset-replacements`, `lint`, `build`, and `smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-asset-canonical-20260713-r3 --port 4388` passed. Final server hygiene still found no project dev/smoke listener and preserved CDP `9222`.
+- Claim boundary: this does not copy assets, does not silently rewrite user sheets, and does not prove Roll20 visual parity. It only makes the relink step less blind before the next Sandbox/test-room comparison.

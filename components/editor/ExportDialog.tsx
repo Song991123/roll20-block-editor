@@ -641,12 +641,21 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
         <Metric label="data URL" value={result.dataRefs} />
         <Metric label="Roll20 proxy" value={result.roll20ProxyRefs} />
         <Metric label="placeholder risk" value={result.placeholderRiskRefs} />
+        <Metric label="HTTP URL" value={result.insecureHttpRefs} />
+        <Metric label="직링크 후보" value={result.canonicalDirectRefs} />
+        <Metric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
       </div>
       {hasRisk ? (
         <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-100">
           외부 이미지/폰트는 zip에 포함되지 않습니다. Roll20 프록시, Imgur, 원본 서버가
           이미지를 placeholder로 바꾸면 실제 화면이 달라질 수 있습니다. 배포 전에 직접
           보는 URL로 교체하거나 Roll20 Sandbox에서 자산 로딩을 확인하세요.
+          {result.canonicalDirectRefs > 0 ? (
+            <span className="mt-1 block" data-testid="export-asset-canonical-candidates">
+              교체 초안에 {result.canonicalDirectRefs}개의 https/direct 후보를 함께 적습니다.
+              권한과 소유 여부를 확인한 뒤 실제 교체 URL로 사용하세요.
+            </span>
+          ) : null}
           {result.placeholderRiskRefs > 0 ? (
             <span className="mt-1 block" data-testid="export-asset-placeholder-risk">
               Roll20 proxy or Imgur page URLs can resolve to placeholder images when the
