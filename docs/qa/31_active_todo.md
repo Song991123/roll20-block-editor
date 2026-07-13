@@ -1,3 +1,10 @@
+## 2026-07-13 Edit Drag No-Rollback Strict Smoke TODO Note
+
+- DONE: Strengthened `smoke:edit-flow` so the existing object-drag path now proves all four post-drop samples (`after-pointerup`, `after-1raf`, `after-50ms`, `after-250ms`) stay aligned with the final emitted HTML/CSS position.
+- WHY: The user-visible failure mode is not just a final wrong coordinate; it is the feeling that the object snaps back or jitters before the model commit catches up. The smoke now fails if the first rendered post-drop coordinate diverges from the final emitted coordinate by more than 2px.
+- VERIFIED: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\edit-flow-no-rollback-strict-20260713 --port 4386`, and `corepack pnpm run check:server-hygiene` passed. The smoke observed `numericSampleCount=4`, `leftDrift=0`, `topDrift=0`, and identical sampled coordinates `472px, 264px`.
+- CURRENT: This is a regression guard for the synthetic edit-flow fixture. It does not prove imported large-sheet drag performance, actual Roll20 visual parity, asset relink readiness, or production renderer CSS readiness.
+
 ## 2026-07-13 Asset Placeholder Relink Guard TODO Note
 
 - DONE: Asset replacement maps now reject uncommented draft placeholder targets such as `<paste-user-owned-https-url-here>` instead of treating them as usable replacement URLs.

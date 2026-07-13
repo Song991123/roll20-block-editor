@@ -359,8 +359,15 @@ async function main() {
     const numeric = samples.filter((s) => typeof s.left === 'number' && typeof s.top === 'number');
     const lefts = numeric.map((s) => s.left);
     const tops = numeric.map((s) => s.top);
+    const first = numeric[0] ?? null;
+    const last = numeric[numeric.length - 1] ?? null;
     return {
       samples,
+      numericSampleCount: numeric.length,
+      firstLeft: first?.left ?? null,
+      firstTop: first?.top ?? null,
+      finalLeft: last?.left ?? null,
+      finalTop: last?.top ?? null,
       leftDrift: lefts.length ? Math.max(...lefts) - Math.min(...lefts) : null,
       topDrift: tops.length ? Math.max(...tops) - Math.min(...tops) : null,
     };
@@ -1132,6 +1139,11 @@ async function main() {
     movedSectionInfo.emittedLeft === movedSectionInfo.computedLeft &&
     movedSectionInfo.emittedTop === movedSectionInfo.computedTop &&
     movedSectionInfo.emittedHasAbsolute === true &&
+    sectionMoveTimeline.numericSampleCount === 4 &&
+    Math.abs(sectionMoveTimeline.firstLeft - movedSectionInfo.computedLeft) <= 2 &&
+    Math.abs(sectionMoveTimeline.firstTop - movedSectionInfo.computedTop) <= 2 &&
+    Math.abs(sectionMoveTimeline.finalLeft - movedSectionInfo.emittedLeft) <= 2 &&
+    Math.abs(sectionMoveTimeline.finalTop - movedSectionInfo.emittedTop) <= 2 &&
     sectionMoveTimeline.leftDrift <= 2 &&
     sectionMoveTimeline.topDrift <= 2 &&
     c2Indicator.dispatched === true &&

@@ -1,3 +1,12 @@
+## 2026-07-13 Edit Drag No-Rollback Strict Smoke
+
+- Root cause guard: edit mode already keeps the dropped object visually locked while the Blockly/CSS model commit follows, but the previous smoke only checked broad drift after the move. It did not explicitly require the first post-pointerup coordinate to match the final emitted HTML/CSS coordinate.
+- Updated `scripts/edit_flow_browser_smoke.mjs` to record `numericSampleCount`, first sampled position, and final sampled position for the section drag timeline.
+- The pass condition now requires four post-drop samples, first sampled position matching the final computed position within 2px, final sampled position matching the emitted HTML/CSS position within 2px, and the existing drift guard.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs` passed. `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\edit-flow-no-rollback-strict-20260713 --port 4386` passed with all four samples at `472px, 264px` and `leftDrift=0`, `topDrift=0`.
+- Server hygiene: `corepack pnpm run check:server-hygiene` passed after the smoke. No project dev/smoke listener remained; the existing Roll20 CDP listener on `127.0.0.1:9222` was preserved.
+- Claim boundary: this strengthens the regression net for the synthetic edit-flow fixture. It does not prove imported large-sheet performance, actual Roll20 parity, AW2E/YSHY asset relink, or production renderer readiness.
+
 ## 2026-07-13 Asset Placeholder Relink Guard
 
 - Root cause: asset relink drafts use `<paste-user-owned-https-url-here>` as a safe placeholder, but an uncommented draft line could be misread as an active replacement rule and create a false "ready" state.
