@@ -608,6 +608,11 @@ async function main() {
         defaultDropMode: row.getAttribute('data-r20-default-drop-mode') || '',
         childCount: row.getAttribute('data-r20-layer-child-count') || '',
         roleRail: Boolean(row.querySelector('[data-testid="edit-layer-role-rail"]')),
+        miniMap: Boolean(row.querySelector('[data-testid="edit-layer-mini-map"]')),
+        miniMapRole: row.querySelector('[data-testid="edit-layer-mini-map"]')?.getAttribute('data-r20-layer-mini-role') || '',
+        miniMapCanDrop: row.querySelector('[data-testid="edit-layer-mini-map"]')?.getAttribute('data-r20-layer-mini-can-drop') || '',
+        miniMapChildCount: row.querySelector('[data-testid="edit-layer-mini-map"]')?.getAttribute('data-r20-layer-mini-child-count') || '',
+        miniMapDropMode: row.querySelector('[data-testid="edit-layer-mini-map"]')?.getAttribute('data-r20-layer-mini-drop-mode') || '',
         childBadge: row.querySelector('[data-testid="edit-layer-child-count"]')?.textContent?.trim() || '',
         text: row.textContent?.replace(/\s+/g, ' ').trim() || '',
       };
@@ -1176,6 +1181,11 @@ async function main() {
     layerDropModes.attrs?.canDrop === '1' &&
     layerDropModes.attrs?.defaultDropMode === 'flow' &&
     layerDropModes.attrs?.roleRail === true &&
+    layerDropModes.attrs?.miniMap === true &&
+    layerDropModes.attrs?.miniMapRole === 'frame' &&
+    layerDropModes.attrs?.miniMapCanDrop === '1' &&
+    layerDropModes.attrs?.miniMapDropMode === 'flow' &&
+    Number(layerDropModes.attrs?.miniMapChildCount) >= 1 &&
     Number(layerDropModes.attrs?.childCount) >= 1 &&
     Boolean(layerDropModes.attrs?.childBadge) &&
     layerDropModes.attrs?.text?.includes('담기 가능') &&

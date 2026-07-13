@@ -1,3 +1,10 @@
+## 2026-07-13 Edit Layer Mini Map TODO Note
+
+- DONE: Added a compact visual mini-map to each edit layer row so users can scan frame/flow/table-like containers, child density, selected state, and whether the row can receive dropped children without reading DOM-only text.
+- DONE: Extended `smoke:edit-flow` so layer drop verification now asserts the mini-map exists on a droppable frame row and exposes role, drop mode, can-drop, and child-count metadata.
+- VERIFIED: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run test:layer-roles`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\edit-flow-layer-minimap-20260713-r1 --port 4382` passed.
+- CURRENT: This improves edit-mode layer readability only. It does not change Roll20 renderer CSS, does not relink AW2E/YSHY assets, and does not prove actual Roll20 visual parity.
+
 ## 2026-07-13 Export Asset Relink Draft TODO Note
 
 - DONE: Shared the asset replacement draft builder between import and export flows. The export dialog can now generate a commented `old URL => <paste-user-owned-https-url-here>` draft from the current exported HTML/CSS asset refs, not only from the import dialog.

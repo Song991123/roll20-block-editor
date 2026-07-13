@@ -1,3 +1,11 @@
+## 2026-07-13 Edit Layer Mini Map
+
+- Root cause: edit mode already supported flow/free drops and layer reordering, but the layer list was still mostly text plus small badges. Users could not quickly see which rows were frame-like containers or how much child structure they contained.
+- Added a compact mini-map to each edit layer row in `components/editor/EditCanvas.tsx`. It is app UI only, carries `data-r20-layer-mini-*` metadata for verification, and is not inserted into exported Roll20 sheet HTML/CSS.
+- Extended `scripts/edit_flow_browser_smoke.mjs` so the layer drop-mode check now requires the mini-map on the droppable frame row and verifies role, can-drop, default drop mode, and child count.
+- Verification: `node --check scripts\edit_flow_browser_smoke.mjs`, `corepack pnpm run test:layer-roles`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:edit-flow -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\edit-flow-layer-minimap-20260713-r1 --port 4382` passed.
+- Claim boundary: edit-mode readability and Figma-like layer affordance only. This does not affect actual Roll20 renderer parity, AW2E/YSHY asset relink, or production renderer readiness.
+
 ## 2026-07-13 Asset Relink and Browser Paint Locked-Report Fallback
 
 - Root cause: the next P0 path from the renderer gate depends on `plan:roll20-asset-relink` and `plan:roll20-chat-browser-paint`, but both scripts failed with `EPERM` when the active run's canonical report folders were read-only.

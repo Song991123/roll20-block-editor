@@ -146,6 +146,7 @@ type OptimisticMove = {
 };
 
 const DESIGN_CSS_MARKER = 'r20-design-css:managed';
+const LAYER_MINI_CHILD_SLOTS = 4;
 
 export default function EditCanvas() {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -1042,6 +1043,14 @@ const EditLayerRow = memo(function EditLayerRow({
       >
         {role.icon}
       </span>
+      <LayerMiniMap
+        roleKind={role.kind}
+        canReceiveChildren={role.canReceiveChildren}
+        childCount={node.childCount}
+        relation={node.layerRelation}
+        selected={selected}
+        defaultDropMode={role.defaultDropMode}
+      />
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-1.5">
           <span className="truncate font-mono text-[10.5px]">{node.type}</span>
@@ -1086,6 +1095,78 @@ const EditLayerRow = memo(function EditLayerRow({
     </button>
   );
 });
+
+function LayerMiniMap({
+  roleKind,
+  canReceiveChildren,
+  childCount,
+  relation,
+  selected,
+  defaultDropMode,
+}: {
+  roleKind: ReturnType<typeof getLayerRole>['kind'];
+  canReceiveChildren: boolean;
+  childCount: number;
+  relation: BlockSnapshot['layerRelation'];
+  selected: boolean;
+  defaultDropMode: ReturnType<typeof getLayerRole>['defaultDropMode'];
+}) {
+  const visibleSlots = Math.min(LAYER_MINI_CHILD_SLOTS, Math.max(0, childCount));
+  const isContainer = canReceiveChildren || roleKind === 'frame' || roleKind === 'flow' || roleKind === 'table';
+  return (
+    <span
+      aria-hidden
+      data-testid="edit-layer-mini-map"
+      data-r20-layer-mini-role={roleKind}
+      data-r20-layer-mini-can-drop={canReceiveChildren ? '1' : '0'}
+      data-r20-layer-mini-child-count={childCount}
+      data-r20-layer-mini-relation={relation}
+      data-r20-layer-mini-drop-mode={defaultDropMode}
+      className={cn(
+        'grid h-5 w-9 shrink-0 items-center rounded border px-1',
+        selected
+          ? 'border-orange-400/80 bg-orange-400/15'
+          : canReceiveChildren
+            ? 'border-sky-400/60 bg-sky-400/10'
+            : 'border-border/70 bg-[var(--bg-elevated-2)]',
+      )}
+    >
+      <span
+        className={cn(
+          'relative block h-3 rounded-[3px] border',
+          isContainer
+            ? 'border-sky-300/70 bg-sky-400/10'
+            : 'border-zinc-500/50 bg-zinc-500/15',
+          roleKind === 'table' && 'border-indigo-300/80 bg-indigo-400/10',
+          roleKind === 'flow' && 'border-cyan-300/80 bg-cyan-400/10',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute bottom-[2px] top-[2px] w-[2px] rounded-full',
+            relation === 'child' ? 'left-[2px] bg-emerald-300/90' : 'left-1/2 bg-zinc-400/70',
+          )}
+        />
+        {Array.from({ length: visibleSlots }).map((_, idx) => (
+          <span
+            key={idx}
+            className={cn(
+              'absolute bottom-[2px] top-[2px] rounded-[1px]',
+              canReceiveChildren ? 'bg-sky-200/85' : 'bg-zinc-300/55',
+            )}
+            style={{
+              left: `${9 + idx * 5}px`,
+              width: childCount > LAYER_MINI_CHILD_SLOTS && idx === LAYER_MINI_CHILD_SLOTS - 1 ? '5px' : '3px',
+            }}
+          />
+        ))}
+        {childCount > LAYER_MINI_CHILD_SLOTS && (
+          <span className="absolute right-[2px] top-[1px] h-[2px] w-[2px] rounded-full bg-sky-100/90" />
+        )}
+      </span>
+    </span>
+  );
+}
 
 function commitMove(pending: PendingMove): void {
   const adapter = getBlocklyAdapter();
