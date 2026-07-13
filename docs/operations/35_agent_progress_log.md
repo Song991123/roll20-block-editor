@@ -1,3 +1,12 @@
+## 2026-07-13 Cell Allocation Locked-Report Fallback
+
+- Root cause: `diagnose:roll20-chat-cell-allocation` could not write the canonical `chat-cell-allocation-probe` folder in the active Roll20 run because Windows returned `EPERM` on `mkdir`, leaving the default renderer gate with a stale "cell allocation probe has not been run" warning unless an override path was supplied.
+- Added automatic `EPERM`/`EACCES` fallback for `diagnose:roll20-chat-cell-allocation`: without an explicit `--out-dir`, locked canonical writes now fall back to `..\_tmp_codex_smoke\...`.
+- Verification: `node --check scripts\roll20_chat_cell_allocation_probe.mjs`, `corepack pnpm run test:roll20-chat-cell-allocation`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `git diff --check`, `corepack pnpm run lint`, and `corepack pnpm run build` passed.
+- Live rerun: `diagnose:roll20-chat-cell-allocation` wrote `..\_tmp_codex_smoke\chat-cell-allocation-probe-2026-06-18-state-map-v1-1783904920839`; `gate:roll20-renderer-action --cell-allocation-dir ..\_tmp_codex_smoke\chat-cell-allocation-probe-2026-06-18-state-map-v1-1783904920839` wrote `..\_tmp_codex_smoke\renderer-action-gate-2026-06-18-state-map-v1-1783904928615`.
+- Current evidence: default cell allocation is `CELL_ALLOCATION_SECONDARY_OR_ACCEPTABLE`, with all three fixtures classified as `UNIFORM_TABLE_SCALE_OR_CROP_CONTEXT`. The remaining renderer work is therefore message/table width, crop/context, style proof, assets, and split template scope, not a broad cell/font/wrap CSS patch.
+- Claim boundary: renderer remains `HOLD_PRODUCTION_RENDERER_PATCH` and `rendererReady=NO`; no Roll20 visual parity claim changed.
+
 ## 2026-07-13 Candidate Asset Evidence Override
 
 - Added isolated-output/report-override support to asset routing:

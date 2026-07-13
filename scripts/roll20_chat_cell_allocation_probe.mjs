@@ -19,7 +19,8 @@ const runDirArg = positional(0) ?? 'reports/roll20-actual-compare/2026-06-18-sta
 const defaultSmokeArg = positional(1) ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
 const runDir = path.resolve(runDirArg);
 const defaultSmokePath = path.resolve(defaultSmokeArg);
-const outDir = path.resolve(readOption('--out-dir') ?? path.join(runDir, 'chat-cell-allocation-probe'));
+const rawOutDir = readOption('--out-dir');
+const outDir = path.resolve(rawOutDir ?? path.join(runDir, 'chat-cell-allocation-probe'));
 const candidateSmokeArgs = readRepeatedOption('--candidate-smoke');
 
 async function main() {
@@ -75,9 +76,7 @@ async function main() {
     fixtures,
   };
 
-  await mkdir(outDir, { recursive: true });
-  await writeFile(path.join(outDir, 'chat-cell-allocation-probe-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  await writeFile(path.join(outDir, 'chat-cell-allocation-probe-results.md'), renderMarkdown(report), 'utf8');
+  const writeResult = await writeCellAllocationReport(report, outDir, runDir);
 
   console.log(`ROLL20 CHAT CELL ALLOCATION PROBE ${report.summary.status}`);
   for (const fixture of fixtures) {
@@ -85,7 +84,45 @@ async function main() {
       console.log(`FIXTURE ${fixture.fixtureId} scenario=${scenario.scenario} decision=${scenario.allocationDecision} tableDelta=${fmtPx(scenario.tableDelta)} maxCell=${fmtPx(scenario.maxAbsCellWidthDelta)} maxTextCell=${fmtPx(scenario.maxAbsTextCellWidthDelta)} maxRatio=${fmtPct(scenario.maxAbsCellRatioDeltaPct)} next=${scenario.nextAction}`);
     }
   }
-  console.log(`out=${path.relative(process.cwd(), outDir)}`);
+  if (writeResult.fallbackReason) {
+    console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
+  }
+  console.log(`out=${path.relative(process.cwd(), writeResult.outDir)}`);
+}
+
+async function writeCellAllocationReport(report, requestedOutDir, runDir) {
+  const writeTo = async (targetDir, fallbackReason = '') => {
+    report.outDir = path.relative(process.cwd(), targetDir);
+    report.output = {
+      requestedOutDir,
+      outDir: targetDir,
+      fallbackReason,
+    };
+    await mkdir(targetDir, { recursive: true });
+    await writeFile(path.join(targetDir, 'chat-cell-allocation-probe-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    await writeFile(path.join(targetDir, 'chat-cell-allocation-probe-results.md'), renderMarkdown(report), 'utf8');
+    return { outDir: targetDir, fallbackReason };
+  };
+
+  try {
+    return await writeTo(requestedOutDir);
+  } catch (error) {
+    if (rawOutDir || !isAccessError(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `chat-cell-allocation-probe-${safePathLabel(path.basename(runDir))}-${Date.now()}`,
+    );
+    return writeTo(fallbackDir, `${error.code ?? 'WRITE_ERROR'} while writing ${path.relative(process.cwd(), requestedOutDir)}`);
+  }
+}
+
+function isAccessError(error) {
+  return error?.code === 'EPERM' || error?.code === 'EACCES';
+}
+
+function safePathLabel(value) {
+  return String(value || 'run').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'run';
 }
 
 async function compareFixtureScenarios(fixtureId, scenarios) {

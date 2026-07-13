@@ -1,3 +1,12 @@
+## 2026-07-13 Cell Allocation Locked-Report Fallback TODO Note
+
+- DONE: `diagnose:roll20-chat-cell-allocation` now falls back to `..\_tmp_codex_smoke\...` when the canonical `chat-cell-allocation-probe` report folder is locked with `EPERM`/`EACCES` and no explicit `--out-dir` was provided.
+- VERIFIED: `node --check scripts\roll20_chat_cell_allocation_probe.mjs`, `corepack pnpm run test:roll20-chat-cell-allocation`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `git diff --check`, `corepack pnpm run lint`, and `corepack pnpm run build` passed.
+- VERIFIED: The previously failing command now passes and wrote `..\_tmp_codex_smoke\chat-cell-allocation-probe-2026-06-18-state-map-v1-1783904920839`.
+- VERIFIED: Feeding that fallback report into `gate:roll20-renderer-action` wrote `..\_tmp_codex_smoke\renderer-action-gate-2026-06-18-state-map-v1-1783904928615` and replaces the stale "cell allocation probe has not been run" warning with actual evidence.
+- OBSERVED: Default cell allocation is `CELL_ALLOCATION_SECONDARY_OR_ACCEPTABLE`; AW2E, Les-Oublies, and YSHY all route to `UNIFORM_TABLE_SCALE_OR_CROP_CONTEXT`, so the next renderer work should keep focusing on template-scoped message/table width, crop/context, assets, and style proof rather than broad cell/font/wrap CSS.
+- CURRENT: Renderer still remains `HOLD_PRODUCTION_RENDERER_PATCH` / `rendererReady=NO`; this closes a stale diagnostic gap but does not prove Roll20 visual parity.
+
 ## 2026-07-13 Actual Status/Gate Locked-Report Fallback TODO Note
 
 - DONE: `status:roll20-actual` and `gate:roll20-renderer-action` now fall back to `..\_tmp_codex_smoke\...` when the default canonical report output folder is locked with `EPERM`/`EACCES` and no explicit `--out-dir` was provided.
