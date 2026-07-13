@@ -4,7 +4,9 @@
 - Updated `lib/export/asset_replacements.ts` so explicit `http(s)` targets are Roll20-ready, protocol-relative/data/local targets are not, and risky Roll20 proxy or non-direct Imgur page targets are counted separately.
 - Updated `components/editor/ExportDialog.tsx` to show the risky-target count and warn users to replace risky targets with direct user-owned HTTPS asset URLs before Sandbox comparison.
 - Updated asset replacement unit tests and `scripts/export_dialog_browser_smoke.mjs` so the browser smoke captures `data-risky-roll20-targets`.
+- Synced `scripts/lib/assetReplacements.mjs` and `scripts/roll20_asset_relink_verification_plan.mjs`; risky Roll20 proxy/Imgur-page targets now produce `COVERED_RISKY_ROLL20_URL` instead of passing as Roll20-ready.
 - Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run lint`, `corepack pnpm run build`, and export-dialog browser smoke passed.
+- Verification: `node --check scripts\roll20_asset_relink_verification_plan.mjs` and `corepack pnpm run test:roll20-asset-relink` passed.
 - Server hygiene: checked after smoke; no project dev/smoke listener remained, and CDP `9222` was preserved.
 - Current evidence: this is a false-positive guard and export UX improvement only. The AW2E/YSHY relink map still needs user-owned direct URLs before Roll20 visual parity can move again.
 

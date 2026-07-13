@@ -3,7 +3,9 @@
 - DONE: Tightened export asset replacement readiness so only explicit `http(s)` targets count as Roll20-ready; protocol-relative and data/local targets stay local-only.
 - DONE: Added a separate risky-target count for Roll20 proxy URLs and non-direct Imgur page URLs, because they can resolve to placeholder/removed assets in actual Roll20 even when they look like web URLs.
 - DONE: Surfaced the risky-target count in the Export dialog status/readiness UI with `data-risky-roll20-targets`, so browser smoke and future MCP checks can prove whether the UI is warning correctly.
+- DONE: Synced the script-side asset replacement helper and `plan:roll20-asset-relink`; risky Roll20 proxy/Imgur-page targets now report `COVERED_RISKY_ROLL20_URL` instead of `COVERED_ROLL20_READY`.
 - VERIFIED: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:export-dialog -- --out-dir ./out --base-path /roll20-block-editor --report-dir ..\_tmp_codex_smoke\export-dialog-risky-relink-20260713-r1 --port 4337` passed.
+- VERIFIED: `node --check scripts\roll20_asset_relink_verification_plan.mjs` and `corepack pnpm run test:roll20-asset-relink` passed after adding risky coverage.
 - VERIFIED: `corepack pnpm run check:server-hygiene` passed after browser smoke; no project dev/smoke listener remained and CDP `9222` was preserved.
 - CURRENT: This prevents false confidence in asset relink maps. It does not relink AW2E/YSHY assets, does not prove Roll20 visual parity, and does not unblock ChatPane renderer CSS.
 - NEXT P0: Fill the ignored relink template with user-owned direct HTTPS asset URLs, rerun local preupload/Sandbox evidence, then rerun browser-paint routing.

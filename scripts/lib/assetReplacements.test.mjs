@@ -83,11 +83,27 @@ function testRoll20ReadinessSummary() {
   ].join('\n'));
 
   assert.equal(summary.entries, 4);
-  assert.equal(summary.roll20ReadyTargets, 2);
-  assert.equal(summary.localOnlyTargets, 2);
+  assert.equal(summary.roll20ReadyTargets, 1);
+  assert.equal(summary.localOnlyTargets, 3);
+  assert.equal(summary.riskyRoll20Targets, 0);
   assert.equal(summary.placeholderTargets, 1);
   assert.equal(summary.hasLocalOnlyTargets, true);
+  assert.equal(summary.hasRiskyRoll20Targets, false);
   assert.equal(summary.hasPlaceholderTargets, true);
+}
+
+function testRiskyRoll20TargetSummary() {
+  const summary = summarizeAssetReplacementReadiness([
+    'https://old.example/a.png => https://imgur.com/dead',
+    'https://old.example/b.png => https://imgsrv.roll20.net/?src=https://imgur.com/dead',
+    'https://old.example/c.png => https://i.imgur.com/live.png',
+  ].join('\n'));
+
+  assert.equal(summary.entries, 3);
+  assert.equal(summary.roll20ReadyTargets, 3);
+  assert.equal(summary.localOnlyTargets, 0);
+  assert.equal(summary.riskyRoll20Targets, 2);
+  assert.equal(summary.hasRiskyRoll20Targets, true);
 }
 
 testValidAndInvalidLines();
@@ -96,4 +112,5 @@ testInlineDraftNoteIsNotPartOfTarget();
 testPlaceholderTargetWarning();
 testUnsafeAndDuplicateTargets();
 testRoll20ReadinessSummary();
+testRiskyRoll20TargetSummary();
 console.log('scripts/lib/assetReplacements.test PASS');

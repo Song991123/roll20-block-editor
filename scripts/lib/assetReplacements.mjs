@@ -64,18 +64,25 @@ export function summarizeAssetReplacementReadiness(mapText) {
   const placeholderTargets = countPlaceholderReplacementTargets(mapText);
   let roll20ReadyTargets = 0;
   let localOnlyTargets = 0;
+  let riskyRoll20Targets = 0;
 
   for (const entry of parsed.entries) {
-    if (isRoll20ReadyReplacementTarget(entry.to)) roll20ReadyTargets += 1;
-    else localOnlyTargets += 1;
+    if (isRoll20ReadyReplacementTarget(entry.to)) {
+      roll20ReadyTargets += 1;
+      if (isRiskyRoll20ReplacementTarget(entry.to)) riskyRoll20Targets += 1;
+    } else {
+      localOnlyTargets += 1;
+    }
   }
 
   return {
     entries: parsed.entries.length,
     roll20ReadyTargets,
     localOnlyTargets,
+    riskyRoll20Targets,
     placeholderTargets,
     hasLocalOnlyTargets: localOnlyTargets > 0,
+    hasRiskyRoll20Targets: riskyRoll20Targets > 0,
     hasPlaceholderTargets: placeholderTargets > 0,
   };
 }
@@ -106,7 +113,27 @@ function isAllowedReplacementTarget(value) {
 }
 
 function isRoll20ReadyReplacementTarget(value) {
-  return /^(?:https?:)?\/\//i.test(value);
+  return /^https?:\/\//i.test(value);
+}
+
+function isRiskyRoll20ReplacementTarget(value) {
+  const url = parseHttpUrl(value);
+  if (!url) return false;
+  const host = url.hostname.toLowerCase();
+  if (host === 'imgsrv.roll20.net') return true;
+  if ((host === 'imgur.com' || host === 'www.imgur.com') && !isImagePath(url.pathname)) return true;
+  return false;
+}
+
+function parseHttpUrl(value) {
+  try {
+    if (/^https?:\/\//i.test(value)) return new URL(value);
+  } catch {}
+  return null;
+}
+
+function isImagePath(pathname) {
+  return /\.(?:png|jpe?g|gif|webp)(?:$|[?#])/i.test(pathname);
 }
 
 function countPlaceholderReplacementTargets(text) {

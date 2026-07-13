@@ -33,6 +33,7 @@ async function main() {
   const fixtures = (plan?.fixtures ?? []).map((fixture) => classifyFixture(fixture, parsedMap));
   const relinkRequired = fixtures.filter((fixture) => fixture.decision === 'SOURCE_ASSET_LOST_RELINK_REQUIRED');
   const covered = relinkRequired.filter((fixture) => fixture.coverage === 'COVERED_ROLL20_READY');
+  const risky = relinkRequired.filter((fixture) => fixture.coverage === 'COVERED_RISKY_ROLL20_URL');
   const localOnly = relinkRequired.filter((fixture) => fixture.coverage === 'COVERED_LOCAL_ONLY');
   const missing = relinkRequired.filter((fixture) => fixture.coverage === 'MISSING_RELINK');
   const report = {
@@ -45,13 +46,14 @@ async function main() {
       ? 'NO_RELINK_BLOCKER_FOUND'
       : missing.length
         ? 'RELINK_MAP_REQUIRED'
-        : localOnly.length
+        : localOnly.length || risky.length
           ? 'ROLL20_HOSTED_URL_REQUIRED'
           : 'READY_FOR_LOCAL_AND_ROLL20_RECOMPARE',
     summary: {
       fixtures: fixtures.length,
       relinkRequired: relinkRequired.length,
       coveredRoll20Ready: covered.length,
+      coveredRiskyRoll20: risky.length,
       coveredLocalOnly: localOnly.length,
       missing: missing.length,
       mapEntries: parsedMap.entries.length,
@@ -59,13 +61,13 @@ async function main() {
     },
     fixtures,
     mapWarnings: parsedMap.warnings,
-    nextActions: buildNextActions({ missing, localOnly, covered, runDir }),
+    nextActions: buildNextActions({ missing, localOnly, risky, covered, runDir }),
   };
 
   const writeResult = await writeRelinkReport(report, requestedOutDir, runDir);
 
   console.log(`ROLL20 ASSET RELINK VERIFICATION ${report.action}`);
-  console.log(`required=${relinkRequired.length} coveredRoll20Ready=${covered.length} localOnly=${localOnly.length} missing=${missing.length} mapEntries=${parsedMap.entries.length}`);
+  console.log(`required=${relinkRequired.length} coveredRoll20Ready=${covered.length} riskyRoll20=${risky.length} localOnly=${localOnly.length} missing=${missing.length} mapEntries=${parsedMap.entries.length}`);
   for (const fixture of fixtures.filter((item) => item.decision === 'SOURCE_ASSET_LOST_RELINK_REQUIRED')) {
     console.log(`FIXTURE ${fixture.fixtureId} coverage=${fixture.coverage} target=${fixture.coveringTargetKind || 'none'} next=${fixture.nextAction}`);
   }
@@ -172,6 +174,7 @@ function stripInlineReplacementNote(value) {
 }
 
 function classifyTarget(url) {
+  if (isRiskyRoll20ReplacementTarget(url)) return 'risky-roll20-url';
   if (/^https?:\/\//i.test(url)) return 'roll20-fetchable-url';
   if (/^data:/i.test(url)) return 'local-only-data-url';
   return 'unsupported-url';
@@ -194,7 +197,9 @@ function classifyFixture(fixture, parsedMap) {
     ? 'MISSING_RELINK'
     : coveringEntry.targetKind === 'roll20-fetchable-url'
       ? 'COVERED_ROLL20_READY'
-      : 'COVERED_LOCAL_ONLY';
+      : coveringEntry.targetKind === 'risky-roll20-url'
+        ? 'COVERED_RISKY_ROLL20_URL'
+        : 'COVERED_LOCAL_ONLY';
   return {
     fixtureId: fixture.fixtureId,
     priority: fixture.priority ?? '',
@@ -328,6 +333,8 @@ function nextActionForCoverage(coverage) {
   switch (coverage) {
     case 'COVERED_ROLL20_READY':
       return 'rerun local preview/edit/export, apply the exported sheet in Roll20 Sandbox/test room, then compare screenshots before judging parity';
+    case 'COVERED_RISKY_ROLL20_URL':
+      return 'replace the Roll20 proxy or Imgur page target with a direct user-owned HTTPS asset URL before Sandbox comparison; risky URLs can still resolve to placeholders';
     case 'COVERED_LOCAL_ONLY':
       return 'replace the local-only target with a user-owned HTTP(S) hosted URL before Roll20 Sandbox upload; data URLs can prove local preview plumbing only';
     case 'MISSING_RELINK':
@@ -337,10 +344,13 @@ function nextActionForCoverage(coverage) {
   }
 }
 
-function buildNextActions({ missing, localOnly, covered, runDir }) {
+function buildNextActions({ missing, localOnly, risky, covered, runDir }) {
   const actions = [];
   if (missing.length) {
     actions.push(`Add replacement-map entries for ${missing.map((fixture) => fixture.fixtureId).join(', ')}.`);
+  }
+  if (risky.length) {
+    actions.push(`Replace risky Roll20 proxy or Imgur page targets with direct user-owned HTTPS asset URLs for ${risky.map((fixture) => fixture.fixtureId).join(', ')} before Roll20 Sandbox upload.`);
   }
   if (localOnly.length) {
     actions.push(`Replace local-only data URL targets with user-owned HTTP(S) hosted URLs for ${localOnly.map((fixture) => fixture.fixtureId).join(', ')} before Roll20 upload.`);
@@ -351,6 +361,22 @@ function buildNextActions({ missing, localOnly, covered, runDir }) {
   }
   if (!actions.length) actions.push('Run plan:roll20-chat-assets first or provide a replacement map with --map-file.');
   return actions;
+}
+
+function isRiskyRoll20ReplacementTarget(value) {
+  const url = parseHttpUrl(value);
+  if (!url) return false;
+  const host = url.hostname.toLowerCase();
+  if (host === 'imgsrv.roll20.net') return true;
+  if ((host === 'imgur.com' || host === 'www.imgur.com') && !isImagePath(url.pathname)) return true;
+  return false;
+}
+
+function parseHttpUrl(value) {
+  try {
+    if (/^https?:\/\//i.test(value)) return new URL(value);
+  } catch {}
+  return null;
 }
 
 function renderMarkdown(report) {
@@ -457,6 +483,9 @@ function selfTest() {
   const ready = classifyFixture(fixture, parseReplacementMap('http://i.imgur.com/dead.jpg => https://assets.example.com/live.jpg # verified hosted copy'));
   assert.equal(ready.coverage, 'COVERED_ROLL20_READY');
   assert.equal(ready.coveringTargetKind, 'roll20-fetchable-url');
+  const risky = classifyFixture(fixture, parseReplacementMap('https://imgur.com/dead.png => https://imgur.com/dead'));
+  assert.equal(risky.coverage, 'COVERED_RISKY_ROLL20_URL');
+  assert.equal(risky.coveringTargetKind, 'risky-roll20-url');
   const localOnly = classifyFixture(fixture, parseReplacementMap('https://i.imgur.com/dead.jpg => data:image/gif;base64,AAAA'));
   assert.equal(localOnly.coverage, 'COVERED_LOCAL_ONLY');
   const placeholderMap = parseReplacementMap('https://i.imgur.com/dead.jpg => <paste-user-owned-https-url-here>');
