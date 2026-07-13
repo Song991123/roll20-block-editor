@@ -1,3 +1,11 @@
+## 2026-07-13 YSHY CoC Table Width + Fallback Candidate Rejected
+
+- Added a diagnostic style-proof route for one-off `yshy-coc-table-source-context-*-fallback-only` candidates so combined table/source-context experiments can be classified instead of reported as unknown candidates.
+- Ran `rolltemplate_chat_smoke` with `coc-table-actual-width` and `yshy-bookk-fallback-only`; smoke passed 3/3 fixtures and wrote ignored evidence to `..\_tmp_codex_smoke\rolltemplate-chat-smoke-yshy-coc-table-source-context-fallback-only-20260713-r1`.
+- Ran `gate:roll20-chat-candidate-experiment`; result stayed `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Evidence: candidate comparison rejected the combined candidate (`meanAlignedDeltaPct=+15.28`, regressions `2`, AW2E `+41.04`, YSHY `+4.81`), and row raster rejected it (`AW2E +44.07`, `YSHY +10.67` weighted).
+- Interpretation: even with YSHY-compatible style proof, hard-forcing the observed CoC table width plus Bookk fallback is not the Roll20 model. Continue with source rule order, intrinsic sizing, and crop/top-origin modeling; do not promote width/fallback CSS.
+
 ## 2026-07-13 Strict Sheet-Frame Evidence and Temp Capture Routing
 
 - Root cause refinement: the live Roll20 page was capture-ready, but the currently opened character sheet was only weakly matching `yshy-commission-1bu` through generic `attr_str`/`attr_int` markers. That is not enough to trust a YSHY chat capture.

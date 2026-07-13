@@ -1,3 +1,12 @@
+## 2026-07-13 YSHY CoC Table Width + Fallback Rejection TODO Note
+
+- DONE: Tested diagnostic-only combined candidate `yshy-coc-table-source-context-fallback-only` using `--chat-geometry-policy coc-table-actual-width` plus `--chat-typography-policy yshy-bookk-fallback-only`.
+- VERIFIED: Functional rolltemplate smoke passed 3/3 fixtures at ignored temp `rolltemplate-chat-smoke-yshy-coc-table-source-context-fallback-only-20260713-r1`.
+- REJECTED: Candidate experiment gate returned `HOLD_PRODUCTION_RENDERER_PATCH`: `reject-regresses-fixtures`, mean aligned delta `+15.28%`, regressions `2`, AW2E delta `+41.04%`, YSHY delta `+4.81%`.
+- REJECTED: Row raster rejected it as well: AW2E weighted `+44.07%`, YSHY weighted `+10.67%`.
+- RESULT: Style proof was compatible for the YSHY/CoC target, so the blocker is not "style proof missing"; the blocker is that forcing the observed table width still worsens the real pixel/row raster model.
+- CURRENT: Do not retry `coc-table-actual-width` plus font fallback as renderer CSS. Next P0 should model Roll20's source rule order, intrinsic table sizing, and crop/top-origin behavior without hard-coding a used width.
+
 ## 2026-07-13 YSHY Bookk Fallback-Only Rejection TODO Note
 
 - DONE: Added diagnostic-only `diagnose:roll20-chat-font-fallback` to measure actual Roll20 Bookk failure samples against local Chromium fallback candidates.

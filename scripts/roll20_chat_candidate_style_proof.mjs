@@ -504,6 +504,8 @@ function summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTempl
   const widthProof = summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 1.5);
   const fontCandidateName = candidate.name.includes('actual-font')
     ? 'yshy-table-font-context'
+    : candidate.name.includes('fallback-only')
+      ? 'yshy-bookk-fallback-only'
     : 'yshy-missing-bookk-table-font-context';
   const fontProof = summarizeYshyFontContext(
     { ...candidate, name: fontCandidateName },

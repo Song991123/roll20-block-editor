@@ -151,7 +151,20 @@ corepack pnpm run diagnose:roll20-chat-candidate-style -- reports\roll20-actual-
   --candidate-smoke <candidate>=..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\rolltemplate-chat-smoke-results.json `
   --include-candidates <candidate> `
   --out-dir ..\_tmp_codex_smoke\chat-style-<candidate>
+
+corepack pnpm run gate:roll20-chat-candidate-experiment -- reports\roll20-actual-compare\<run> `
+  --candidate <candidate> `
+  --candidate-smoke ..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\rolltemplate-chat-smoke-results.json `
+  --candidate-screenshots ..\_tmp_codex_smoke\rolltemplate-chat-smoke-<candidate>\screenshots `
+  --out-dir ..\_tmp_codex_smoke\candidate-experiment-<candidate>
 ```
+
+For combined YSHY/CoC one-off candidates, a `STYLE_COMPATIBLE` or
+`STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW` style proof is not enough. The candidate
+must also avoid cross-fixture pixel regression and row-raster regression. The
+rejected `yshy-coc-table-source-context-fallback-only` run is the current
+example: style proof was compatible for YSHY, but candidate comparison and row
+raster still required `HOLD_PRODUCTION_RENDERER_PATCH`.
 
 When a fresh local smoke needs to be compared against actual Roll20 intrinsic
 table/cell sizing, pass the smoke path and isolate the output:
