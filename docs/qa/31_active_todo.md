@@ -1,3 +1,12 @@
+## 2026-07-13 Local App Asset Request TODO Note
+
+- DONE: Removed the app-level Pretendard CDN stylesheet/preconnect from `app/layout.tsx` and restored the Korean metadata title/description.
+- DONE: Copied Blockly package media into `public/blockly-media/` and configured both the hidden Blockly workspaces and block gallery previews to use that local media path.
+- DONE: `smoke:export-dialog` now records intercepted external resource requests and fails if the old CDN font or remote Blockly sprite path is requested.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:export-dialog -- --port 4370 --report-dir ..\_tmp_codex_smoke\export-dialog-local-assets-20260713-r1` passed.
+- VERIFIED: The final smoke reported console issues `0`, page errors `0`, request failures `0`, and external resource requests `0`.
+- CURRENT: This removes app-shell CDN noise from the verified path. It does not change Roll20 sheet rendering, and user sheet assets can still intentionally reference external URLs that must be relinked/verified separately.
+
 ## 2026-07-13 Export Dialog Copy and Smoke Reliability TODO Note
 
 - DONE: Cleaned the Roll20 export dialog wording so user-facing Korean no longer mixes stiff/unclear copy around zip export, asset replacement, Roll20 upload readiness, Sandbox diagnostics, and legacy sanitize mode.

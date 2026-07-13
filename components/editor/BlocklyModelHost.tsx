@@ -31,6 +31,8 @@ import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { registerAllBlocks, getBlockDef } from '@/lib/blocks/registry';
 import { playSfx } from '@/lib/sfx';
 
+const BLOCKLY_MEDIA_PATH = 'blockly-media/';
+
 interface Props {
   /** true = 메인 영역에 visible (블록 조립 가능). false = off-screen (모델만 유지). */
   visible: boolean;
@@ -59,6 +61,7 @@ export default function BlocklyModelHost({ visible }: Props) {
       const ws = Blockly.inject(mountPoint, {
         toolbox: null as unknown as undefined,
         renderer,
+        media: BLOCKLY_MEDIA_PATH,
         readOnly: false,
         trashcan: true,
         zoom: {

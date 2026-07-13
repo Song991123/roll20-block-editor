@@ -3911,6 +3911,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Server hygiene: post-smoke `netstat` showed no listening app/smoke server on `3000`, `3001`, `4431`, `4432`, or `4370`; only the existing Roll20 CDP listener on `127.0.0.1:9222` remained.
 - Claim boundary: this is UX copy and QA reliability work. It does not add actual Roll20 screenshot evidence, does not prove visual parity, and does not change renderer CSS.
 
+## 2026-07-13 Local App Asset Request Cleanup
+
+- Removed the root layout's Pretendard CDN stylesheet/preconnect and restored the Korean metadata title/description.
+- Copied Blockly package media into `public/blockly-media/`, then set `media: 'blockly-media/'` for both `BlocklyModelHost` and block gallery preview workspaces.
+- Hardened `smoke:export-dialog` so old external CDN/font or Blockly remote sprite requests are recorded and fail the smoke instead of being silently stubbed.
+- Verification: `corepack pnpm run lint`, `corepack pnpm run build`, and `corepack pnpm run smoke:export-dialog -- --port 4370 --report-dir ..\_tmp_codex_smoke\export-dialog-local-assets-20260713-r1` passed with console issues `0`, page errors `0`, request failures `0`, and external resource requests `0`.
+- Claim boundary: this removes app-shell external request noise from the verified path. It does not change Roll20 sheet renderer parity or the policy for user-supplied sheet asset URLs.
+
 ## 2026-06-21 Chat Foreground Suspect Handoff Precision
 
 - Root cause: the aggregate `chatActualTemplatePixelSuspect=1` status made the next action too generic even though `chat-parity-diagnostics` already knew the exact fixture and pixel sanity reason.

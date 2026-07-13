@@ -287,6 +287,7 @@ async function main() {
   const consoleIssues = [];
   const pageErrors = [];
   const requestFailures = [];
+  const externalResourceRequests = [];
 
   page.on('console', (msg) => {
     if (msg.type() === 'error' || msg.type() === 'warning') {
@@ -309,22 +310,29 @@ async function main() {
     consoleIssues,
     pageErrors,
     requestFailures,
+    externalResourceRequests,
   };
 
   try {
-    await page.route('https://cdn.jsdelivr.net/**', (route) => route.fulfill({
-      status: 200,
-      contentType: 'text/css; charset=utf-8',
-      body: '',
-    }));
-    await page.route('https://blockly-demo.appspot.com/static/media/sprites.png', (route) => route.fulfill({
-      status: 200,
-      contentType: 'image/png',
-      body: Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
-        'base64',
-      ),
-    }));
+    await page.route('https://cdn.jsdelivr.net/**', (route) => {
+      externalResourceRequests.push(route.request().url());
+      return route.fulfill({
+        status: 200,
+        contentType: 'text/css; charset=utf-8',
+        body: '',
+      });
+    });
+    await page.route('https://blockly-demo.appspot.com/static/media/sprites.png', (route) => {
+      externalResourceRequests.push(route.request().url());
+      return route.fulfill({
+        status: 200,
+        contentType: 'image/png',
+        body: Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+          'base64',
+        ),
+      });
+    });
     await page.addInitScript(() => {
       try {
         window.localStorage.setItem('__perfOn', '1');
@@ -533,6 +541,7 @@ async function main() {
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
     if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');
+    if (externalResourceRequests.length > 0) failures.push('external CDN/Blockly media requests present');
 
     if (failures.length > 0) {
       result.status = 'FAIL';
