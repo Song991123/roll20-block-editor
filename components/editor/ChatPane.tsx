@@ -557,6 +557,12 @@ const roll20ChatShellCss = `
 `;
 
 const roll20ChatDiagnosticOverrideCss = `
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-actual-width"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0 !important;
+  max-width: 1248.55px !important;
+  overflow-wrap: break-word !important;
+  width: 1248.55px !important;
+}
 .r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-model"] .r20-chat-card-group .message:has(.sheet-rolltemplate-coc) {
   overflow: hidden;
 }

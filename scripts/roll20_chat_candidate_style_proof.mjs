@@ -225,6 +225,9 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   ) {
     return summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
+  if (candidate.name.startsWith('yshy-coc-table-source-context')) {
+    return summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+  }
   if (candidate.name === 'text-auto-aa') {
     return summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
@@ -485,6 +488,39 @@ function summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actua
       ? 'YSHY font-context candidate matches the targeted actual Roll20 font checks/styles'
       : `YSHY font-context candidate mismatch: table=${tableMatches ? 'match' : 'diff'}, Bookk availability=${bookkMatches ? 'match' : 'diff'}`,
     evidence: [...evidence, ...fontEvidence],
+  };
+}
+
+function summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'yshy-commission-1bu') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'YSHY/CoC table source-context candidate is scoped away from this fixture',
+      evidence: [],
+    };
+  }
+  const widthProof = summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 1.5);
+  const fontProof = summarizeYshyFontContext(
+    { ...candidate, name: 'yshy-missing-bookk-table-font-context' },
+    fixtureId,
+    candidateTemplate,
+    actualTemplate,
+    candidateFixture,
+    actualSidecar,
+  );
+  const widthCompatible = widthProof.status === 'STYLE_COMPATIBLE';
+  const fontCompatible = fontProof.status === 'STYLE_COMPATIBLE';
+  return {
+    fixtureId,
+    status: widthCompatible && fontCompatible ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: widthCompatible && fontCompatible
+      ? 'CoC/YSHY table width and font/source context match actual Roll20 evidence'
+      : `CoC/YSHY source-context candidate mismatch: table width=${widthCompatible ? 'match' : 'diff'}, font/source=${fontCompatible ? 'match' : 'diff'}`,
+    evidence: [
+      ...widthProof.evidence.map((item) => ({ ...item, group: 'table-width' })),
+      ...fontProof.evidence.map((item) => ({ ...item, group: 'font-source-context' })),
+    ],
   };
 }
 

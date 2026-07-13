@@ -41,7 +41,7 @@ function readOptionPairs(name) {
   return out;
 }
 
-const candidates = [
+const baseCandidates = [
   ['default', 'reports/rolltemplate-chat-smoke/screenshots'],
   ['no-shadow', 'reports/rolltemplate-chat-smoke-no-template-shadow/screenshots'],
   ['font-fallback', 'reports/rolltemplate-chat-smoke-font-fallback/screenshots'],
@@ -87,7 +87,13 @@ const candidates = [
   ['coc-table-actual-width-dim-background', 'reports/rolltemplate-chat-smoke-coc-table-actual-width-dim-background/screenshots'],
   ['coc-crop-origin-y20-dim-background', 'reports/rolltemplate-chat-smoke-coc-crop-origin-y20-dim-background/screenshots'],
   ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],
-].filter(([name]) => includedCandidates.size === 0 || name === 'default' || includedCandidates.has(name));
+];
+const knownCandidateNames = new Set(baseCandidates.map(([name]) => name));
+const dynamicCandidates = [...includedCandidates]
+  .filter((name) => !knownCandidateNames.has(name) && candidateScreenshotOverrides.has(name))
+  .map((name) => [name, candidateScreenshotOverrides.get(name)]);
+const candidates = [...baseCandidates, ...dynamicCandidates]
+  .filter(([name]) => includedCandidates.size === 0 || name === 'default' || includedCandidates.has(name));
 
 const rows = [];
 for (const [name, screenshotsRelative] of candidates) {

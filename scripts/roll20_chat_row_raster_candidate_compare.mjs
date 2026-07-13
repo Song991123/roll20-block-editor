@@ -48,7 +48,7 @@ function readOptionPairs(name) {
   return out;
 }
 
-const candidates = [
+const baseCandidates = [
   ['default', 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke/screenshots'],
   ['no-shadow', 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-no-template-shadow/screenshots'],
   ['roll20-sandbox-font-proxy', 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/screenshots'],
@@ -62,7 +62,13 @@ const candidates = [
   ['coc-background-size-actual', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/screenshots'],
   ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],
   ['yshy-sanitize-typography', 'reports/rolltemplate-chat-smoke-yshy-sanitize-typography/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-yshy-sanitize-typography/screenshots'],
-].filter(([name]) => includedCandidates.size === 0 || name === 'default' || includedCandidates.has(name));
+];
+const knownCandidateNames = new Set(baseCandidates.map(([name]) => name));
+const dynamicCandidates = [...includedCandidates]
+  .filter((name) => !knownCandidateNames.has(name) && candidateSmokeOverrides.has(name) && candidateScreenshotOverrides.has(name))
+  .map((name) => [name, candidateSmokeOverrides.get(name), candidateScreenshotOverrides.get(name)]);
+const candidates = [...baseCandidates, ...dynamicCandidates]
+  .filter(([name]) => includedCandidates.size === 0 || name === 'default' || includedCandidates.has(name));
 
 await mkdir(outDir, { recursive: true });
 const rows = [];

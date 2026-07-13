@@ -1,3 +1,13 @@
+## 2026-07-13 Dynamic Chat Candidate Source-Context TODO Note
+
+- DONE: `diagnose:roll20-chat-candidates` and `diagnose:roll20-chat-row-raster-candidates` can now include dynamic candidate names when matching smoke/screenshot overrides are supplied.
+- DONE: `diagnose:roll20-chat-candidate-style` now has explicit style-proof handling for the `yshy-coc-table-source-context*` diagnostic family, combining CoC/YSHY table width proof with YSHY font/source-context proof.
+- DONE: Moved the `coc-table-actual-width` diagnostic width rule into the post-user-CSS diagnostic override layer as well, so this diagnostic path is not silently weaker than source rolltemplate CSS.
+- VERIFIED: `rolltemplate_chat_smoke` for `yshy-coc-table-source-context-r2` passed 3/3 fixtures using `--chat-geometry-policy coc-table-actual-width` and `--chat-typography-policy yshy-missing-bookk-table-font-context`.
+- VERIFIED: The candidate experiment gate still returned `HOLD_PRODUCTION_RENDERER_PATCH`, with candidate risk `reject-regresses-fixtures`, style proof `REJECT_STYLE_CONTRADICTION`, and row-raster risk `reject-row-raster-regression`.
+- EVIDENCE: The new style proof narrowed the YSHY/CoC failure: font/source context matched, but table width stayed wrong (`localCandidate=1317.140625`, actual Roll20 `1248.328125`). This means a simple table `width` override is not enough; the next useful probe must target table intrinsic/min-content/layout constraints.
+- CURRENT: Do not promote `yshy-coc-table-source-context-r1/r2`. Continue with a CoC/YSHY table intrinsic constraint probe, not broad font, transform, or global ChatPane CSS.
+
 ## 2026-07-13 Chat Candidate Experiment Bundle TODO Note
 
 - DONE: Added `gate:roll20-chat-candidate-experiment` to bundle one already-generated ChatPane candidate through candidate comparison, row-raster comparison, style proof, table-width budget, and the final renderer action gate.

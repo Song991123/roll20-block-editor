@@ -1,3 +1,15 @@
+## 2026-07-13 Dynamic Chat Candidate Source-Context Probe
+
+- Root cause hypothesis: the next renderer blocker is not another broad ChatPane CSS candidate. AW2E and YSHY require split renderer models, and YSHY/CoC specifically needs table intrinsic/source-context proof before CSS promotion.
+- Updated `scripts/roll20_chat_candidate_compare.mjs` and `scripts/roll20_chat_row_raster_candidate_compare.mjs` so included candidate names can be dynamic when matching smoke/screenshot overrides are supplied.
+- Updated `scripts/roll20_chat_candidate_style_proof.mjs` with explicit `yshy-coc-table-source-context*` handling. It checks the CoC/YSHY table width and font/source context together instead of leaving dynamic candidates as `UNKNOWN_CANDIDATE`.
+- Updated `components/editor/ChatPane.tsx` so `coc-table-actual-width` also exists in the post-user-CSS diagnostic override layer. This keeps the diagnostic candidate from being silently weaker than user rolltemplate CSS.
+- Verification: syntax checks for the three touched diagnostic scripts passed.
+- Verification: `node scripts\rolltemplate_chat_smoke.mjs --out-dir .\out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-yshy-coc-table-source-context-20260713-r2 --chat-geometry-policy coc-table-actual-width --chat-typography-policy yshy-missing-bookk-table-font-context --port 4399` passed 3/3 fixtures.
+- Verification: `gate:roll20-chat-candidate-experiment` for `yshy-coc-table-source-context-r2` passed and returned `HOLD_PRODUCTION_RENDERER_PATCH`, `reject-regresses-fixtures`, `REJECT_STYLE_CONTRADICTION`, and `reject-row-raster-regression`.
+- Evidence: the style proof showed YSHY/CoC font/source context matched, but table width still contradicted actual Roll20: local candidate `1317.140625px` vs actual `1248.328125px`. The simple `width: 1248.55px !important` diagnostic is insufficient because the table intrinsic/min-content/layout constraint still expands the used table width.
+- Current evidence: do not promote the r1/r2 source-context candidates. The next P0 is a CoC/YSHY table intrinsic constraint probe, not transform, broad typography, or global ChatPane CSS.
+
 ## 2026-07-13 Chat Candidate Experiment Bundle Gate
 
 - Root cause: after candidate/style/row-raster/table-budget overrides were added, testing one renderer candidate still required manually running several scripts and then hand-wiring their temp report folders into the top renderer gate. That was slow and error-prone enough to create false PASS risk.
