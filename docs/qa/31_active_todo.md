@@ -8,6 +8,14 @@
 - RESULT: `diagnose:roll20-chat-table-layout-constraint` now classifies YSHY as `TABLE_AUTO_LAYOUT_OVERRIDES_MAX_WIDTH_BOTH_CONTEXTS`; next renderer work should model the table auto-layout/min-content behavior directly.
 - CURRENT: Do not promote global ChatPane CSS, broad font changes, transforms, or another max-width clamp. Next P0 is a scoped `.sheet-rolltemplate-coc` intrinsic table model with AW2E/Les nonregression proof, then the same live Roll20 capture loop.
 
+## 2026-07-13 YSHY Korean Glyph Metric Rejection TODO Note
+
+- DONE: Added diagnostic-only typography policy `yshy-korean-glyph-metrics` to test whether matching the actual Roll20 Korean glyph width can explain the YSHY CoC table delta.
+- VERIFIED: YSHY-only smoke passed and moved the local CoC table from default `1305.578125px` to actual Roll20 `1248.328125px` exactly, while preserving source `maxWidth=280px`.
+- REJECTED: Full candidate comparison rejected the policy: `risk=reject-regresses-fixtures`, mean `+15.25%`, regressions `2`, YSHY aligned delta `+4.7%`.
+- REJECTED: Row-raster comparison rejected the policy harder: AW2E weighted `17.93% -> 62%` (`+44.07`), YSHY weighted `21.41% -> 32.11%` (`+10.7`).
+- CURRENT: Do not promote `yshy-korean-glyph-metrics`. It is useful negative evidence: glyph metric substitution can match table width numerically, but it breaks visual raster and cross-fixture behavior. Next useful model must preserve actual source/rendered style and row raster, not just table width.
+
 ## 2026-07-13 Strict Roll20 Sheet-Frame Match TODO Note
 
 - DONE: `probe:roll20-sheet-frame` and `capture:roll20-chat-cdp` now support ignored temp output paths, so locked canonical Roll20 evidence folders no longer force agents to overwrite stale reports.

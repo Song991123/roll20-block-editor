@@ -4524,3 +4524,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Important measured result: actual Roll20 CoC table computed `display=table`, `tableLayout=auto`, `minWidth=0px`, `maxWidth=280px`, but used table width was `1248.328125px`.
 - Feeding that sidecar into `diagnose:roll20-chat-table-layout-constraint` classified YSHY as `TABLE_AUTO_LAYOUT_OVERRIDES_MAX_WIDTH_BOTH_CONTEXTS`; source `max-width` exists and is applied, but table auto-layout/intrinsic sizing still determines used width.
 - Claim boundary: this is actual Roll20 iframe/chat evidence and a stronger root-cause classification, not visual parity and not a production renderer CSS patch. Next P0 is a scoped `.sheet-rolltemplate-coc` table intrinsic/min-content model with AW2E/Les nonregression proof.
+
+## 2026-07-13 YSHY Korean Glyph Metric Candidate Rejected
+
+- Added diagnostic-only ChatPane typography policy `yshy-korean-glyph-metrics` after comparing actual Roll20 text measurement evidence against local browser font-family candidates.
+- The hypothesis was useful but narrow: the candidate matched the YSHY CoC table used width exactly (`1248.328125px`) while keeping source `maxWidth=280px`, proving the table-width delta is strongly tied to glyph/text metrics.
+- The same candidate failed visual gates and must not become production CSS:
+  - `diagnose:roll20-chat-candidates` with isolated candidate screenshots returned `reject-regresses-fixtures`, mean `+15.25%`, regressions `2`, YSHY aligned delta `+4.7%`.
+  - `diagnose:roll20-chat-row-raster-candidates` returned `reject-row-raster-regression`, AW2E weighted `17.93% -> 62%` (`+44.07`) and YSHY weighted `21.41% -> 32.11%` (`+10.7`).
+- Claim boundary: this is negative diagnostic evidence only. It does not change default ChatPane rendering, does not prove visual parity, and should prevent future agents from chasing glyph metric substitution as the production fix.

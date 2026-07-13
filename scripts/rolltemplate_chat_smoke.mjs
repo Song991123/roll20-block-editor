@@ -887,7 +887,8 @@ async function main() {
         policy === 'yshy-table-font-context' ||
         policy === 'yshy-bookk-missing-render' ||
         policy === 'yshy-missing-bookk-table-font-context' ||
-        policy === 'yshy-sanitize-typography'
+        policy === 'yshy-sanitize-typography' ||
+        policy === 'yshy-korean-glyph-metrics'
       ) {
         localStorage.setItem('__r20ChatTypographyPolicy', policy);
       } else {

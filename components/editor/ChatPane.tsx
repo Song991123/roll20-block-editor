@@ -70,7 +70,8 @@ type ChatTypographyPolicy =
   | 'yshy-table-font-context'
   | 'yshy-bookk-missing-render'
   | 'yshy-missing-bookk-table-font-context'
-  | 'yshy-sanitize-typography';
+  | 'yshy-sanitize-typography'
+  | 'yshy-korean-glyph-metrics';
 type ChatPaintPolicy =
   | 'default'
   | 'roll20-dim-background'
@@ -142,7 +143,8 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
     value === 'yshy-table-font-context' ||
     value === 'yshy-bookk-missing-render' ||
     value === 'yshy-missing-bookk-table-font-context' ||
-    value === 'yshy-sanitize-typography'
+    value === 'yshy-sanitize-typography' ||
+    value === 'yshy-korean-glyph-metrics'
   ) return value;
   return 'default';
 }
@@ -392,6 +394,22 @@ const roll20ChatShellCss = `
   -webkit-font-smoothing: antialiased;
 }
 .r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc td {
+  font-family: "Noto Sans KR", sans-serif;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  font-size: 13.65px;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   border-spacing: 0;
 }
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
