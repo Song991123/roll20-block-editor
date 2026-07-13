@@ -1,3 +1,14 @@
+## 2026-07-13 Chat Current Metrics Out-Dir/Fallback
+
+- Root cause: `scripts/roll20_chat_current_metrics_audit.mjs` parsed only the first positional argument and always wrote to the canonical `chat-current-metrics-audit` folder. Passing `--out-dir` through the package script was ignored, so a locked canonical report folder could stop the current-metrics diagnostic even when a writable temp output was supplied.
+- Updated the script to parse `--out-dir`, keep the run directory as the first positional argument, write JSON/Markdown to the requested output, and record `output.requestedOutDir`, `output.outDir`, and `output.fallbackReason` in the report.
+- Added a conservative fallback for implicit canonical writes only: if no explicit `--out-dir` is supplied and the canonical write fails with `EPERM` or `EACCES`, the report is written to ignored `..\_tmp_codex_smoke\chat-current-metrics-audit-<run>-<timestamp>`.
+- Updated `scripts/README.md` with the new output override and fallback behavior.
+- Verification: `node --check scripts\roll20_chat_current_metrics_audit.mjs` passed.
+- Verification: `corepack pnpm run diagnose:roll20-chat-current-metrics -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\chat-current-metrics-source-context-20260713-r2` passed with `ROLL20 CHAT CURRENT METRICS PASS`, fixtures `3/3 current`, and `missingFields=0`.
+- Verification: `corepack pnpm run gate:roll20-renderer-action -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\renderer-gate-after-current-metrics-20260713-r1` passed and still returned `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Current evidence: the current chat metric sidecars are fresh enough for the renderer gate, but production renderer CSS remains held by source-context, asset, and template-scope blockers. No visual parity claim was made.
+
 ## 2026-07-13 Targeted Renderer Source-Context Plan
 
 - Root cause: `gate:roll20-chat-template-scope` and `gate:roll20-renderer-action` already held renderer CSS on source-context proof, but `plan:roll20-chat-renderer-targets` did not read that report directly. A future agent could start from the targeted plan and miss that AW2E/YSHY still require rule-order/font-face/table-context proof before CSS review.

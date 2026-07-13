@@ -12,10 +12,14 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDir = path.resolve(args[0] ?? '');
+const optionNamesWithValues = new Set(['--out-dir']);
+const runDirArg = firstPositionalArg();
+const runDir = path.resolve(runDirArg ?? '');
+const rawOutDir = readOption('--out-dir', '');
+const requestedOutDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-current-metrics-audit');
 
-if (!args[0]) {
-  console.error('Usage: node scripts/roll20_chat_current_metrics_audit.mjs reports/roll20-actual-compare/<label>');
+if (!runDirArg) {
+  console.error('Usage: node scripts/roll20_chat_current_metrics_audit.mjs reports/roll20-actual-compare/<label> [--out-dir <writable-dir>]');
   process.exit(2);
 }
 
@@ -56,18 +60,7 @@ async function main() {
     nextActions: buildNextActions(missingFixtures),
   };
 
-  const outDir = path.join(runDir, 'chat-current-metrics-audit');
-  await fs.mkdir(outDir, { recursive: true });
-  await fs.writeFile(
-    path.join(outDir, 'chat-current-metrics-audit-results.json'),
-    `${JSON.stringify(report, null, 2)}\n`,
-    'utf8',
-  );
-  await fs.writeFile(
-    path.join(outDir, 'chat-current-metrics-audit-results.md'),
-    renderMarkdown(report),
-    'utf8',
-  );
+  const writeResult = await writeReport(report, requestedOutDir);
 
   console.log(`ROLL20 CHAT CURRENT METRICS ${report.status}`);
   console.log(`run=${rel(runDir)}`);
@@ -76,7 +69,57 @@ async function main() {
   for (const fixture of missingFixtures) {
     console.log(`STALE_CHAT_METRICS ${fixture.fixtureId}: missing ${fixture.missing.join(', ')}`);
   }
-  console.log(`out=${rel(outDir)}`);
+  if (writeResult.fallbackReason) {
+    console.log(`WARNING report write fallback: ${writeResult.fallbackReason}`);
+  }
+  console.log(`out=${rel(writeResult.outDir)}`);
+}
+
+function readOption(name, fallback = '') {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(args[index - 1]));
+}
+
+async function writeReport(report, outDir) {
+  const writeTo = async (dir, fallbackReason = '') => {
+    const output = {
+      requestedOutDir: rel(requestedOutDir),
+      outDir: rel(dir),
+      fallbackReason,
+    };
+    const reportWithOutput = { ...report, output };
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(
+      path.join(dir, 'chat-current-metrics-audit-results.json'),
+      `${JSON.stringify(reportWithOutput, null, 2)}\n`,
+      'utf8',
+    );
+    await fs.writeFile(
+      path.join(dir, 'chat-current-metrics-audit-results.md'),
+      renderMarkdown(reportWithOutput),
+      'utf8',
+    );
+    return { outDir: dir, fallbackReason };
+  };
+
+  try {
+    return await writeTo(outDir);
+  } catch (error) {
+    if (rawOutDir || !isAccessError(error)) throw error;
+    const fallbackDir = path.resolve(
+      '..',
+      '_tmp_codex_smoke',
+      `chat-current-metrics-audit-${path.basename(runDir)}-${Date.now()}`,
+    );
+    return writeTo(fallbackDir, `${error.code ?? 'WRITE_ERROR'} while writing ${rel(outDir)}`);
+  }
 }
 
 async function auditFixture(fixtureId) {
@@ -267,6 +310,10 @@ function renderMarkdown(report) {
 
 function escapeCell(value) {
   return String(value ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').slice(0, 240);
+}
+
+function isAccessError(error) {
+  return ['EACCES', 'EPERM'].includes(error?.code);
 }
 
 function rel(file) {

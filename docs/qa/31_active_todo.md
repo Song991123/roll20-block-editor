@@ -1,3 +1,13 @@
+## 2026-07-13 Chat Current Metrics Out-Dir/Fallback TODO Note
+
+- DONE: `diagnose:roll20-chat-current-metrics` now honors `--out-dir` so agents can write ignored temp evidence when the canonical actual-run report folder is locked.
+- DONE: When no explicit `--out-dir` is supplied, locked canonical writes now fall back to ignored `..\_tmp_codex_smoke\...` output on `EPERM`/`EACCES` instead of blocking the diagnostic chain.
+- DONE: `scripts/README.md` documents the writable output override and locked-report fallback behavior.
+- VERIFIED: `node --check scripts\roll20_chat_current_metrics_audit.mjs` passed.
+- VERIFIED: `corepack pnpm run diagnose:roll20-chat-current-metrics -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --out-dir ..\_tmp_codex_smoke\chat-current-metrics-source-context-20260713-r2` passed with `ROLL20 CHAT CURRENT METRICS PASS`, fixtures `3/3 current`, and `missingFields=0`.
+- VERIFIED: A follow-up `gate:roll20-renderer-action` run still returned `HOLD_PRODUCTION_RENDERER_PATCH`; this confirms the current-metrics sidecars are no longer the blocker, while source-context/assets/template-scope proof still hold production renderer CSS.
+- CURRENT: This is diagnostic plumbing and evidence freshness only. It does not change product renderer CSS, relink assets, upload to Roll20, or prove Roll20 visual parity.
+
 ## 2026-07-13 Targeted Renderer Source-Context Plan TODO Note
 
 - DONE: `plan:roll20-chat-renderer-targets` now consumes `chat-source-context-probe-results.json` and carries rule-order/font-face/table-context blockers into the targeted renderer plan instead of leaving that proof only to downstream gates.
