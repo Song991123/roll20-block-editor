@@ -48,6 +48,7 @@ const candidates = [
   ['roll20-sandbox-font-proxy', 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/screenshots'],
   ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
   ['aw2e-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/screenshots'],
+  ['aw2e-message-source-context', 'reports/rolltemplate-chat-smoke-aw2e-message-source-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-source-context/screenshots'],
   ['aw2e-message-cell-font-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/screenshots'],
   ['aw2e-message-cell-wrap-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],

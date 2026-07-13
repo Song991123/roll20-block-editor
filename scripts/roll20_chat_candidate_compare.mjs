@@ -48,6 +48,7 @@ const candidates = [
   ['aw2e-message-full-width', 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/screenshots'],
   ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
   ['aw2e-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/screenshots'],
+  ['aw2e-message-source-context', 'reports/rolltemplate-chat-smoke-aw2e-message-source-context/screenshots'],
   ['table-scale-x', 'reports/rolltemplate-chat-smoke-table-scale-x/screenshots'],
   ['aw2e-root-width-actual', 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],

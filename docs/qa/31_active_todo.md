@@ -1,3 +1,15 @@
+## 2026-07-13 AW2E Source-Context Candidate Rejection TODO Note
+
+- DONE: Added `aw2e-message-source-context` as a diagnostic-only candidate route for candidate comparison, row-raster comparison, style proof, and targeted renderer planning.
+- DONE: `plan:roll20-chat-renderer-targets` now accepts `--candidate-comparison-dir` so isolated temp candidate evidence can be included without rewriting canonical reports.
+- VERIFIED: Syntax checks for the four touched renderer-diagnostic scripts passed.
+- VERIFIED: `rolltemplate_chat_smoke` for `aw2e-message-source-context` passed 3/3 functional rolltemplate smoke.
+- VERIFIED: Candidate comparison rejected it: mean `16.55%`, regressions `2`, AW2E delta `+42.03%`, YSHY delta `+7.62%`.
+- VERIFIED: Row-raster comparison rejected it: AW2E weighted `62.71%` (`+44.78`), worst `66.48%` (`+40.2`); YSHY weighted `30.09%` (`+8.68`), worst `42.36%` (`+14.63`).
+- VERIFIED: Style proof rejected it with `REJECT_STYLE_CONTRADICTION`; AW2E chat/message width matched, but table/text-cell widths contradicted actual Roll20 evidence.
+- VERIFIED: Targeted renderer plan with `--candidate-comparison-dir` surfaced the rejected candidate as a blocker and still returned `HOLD_PRODUCTION_RENDERER_PATCH`.
+- CURRENT: This prevents a tempting AW2E source-context replay from becoming production renderer CSS. Next P0 remains asset relink plus a narrower exact text metric/table intrinsic model. No visual parity claim.
+
 ## 2026-07-13 Chat Current Metrics Out-Dir/Fallback TODO Note
 
 - DONE: `diagnose:roll20-chat-current-metrics` now honors `--out-dir` so agents can write ignored temp evidence when the canonical actual-run report folder is locked.

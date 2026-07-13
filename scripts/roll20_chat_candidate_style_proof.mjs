@@ -32,6 +32,7 @@ const CANDIDATE_SMOKE = {
   'aw2e-message-full-width': 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/rolltemplate-chat-smoke-results.json',
   'aw2e-message-width-font-size': 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json',
   'aw2e-message-width-text-metrics': 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-source-context': 'reports/rolltemplate-chat-smoke-aw2e-message-source-context/rolltemplate-chat-smoke-results.json',
   'table-scale-x': 'reports/rolltemplate-chat-smoke-table-scale-x/rolltemplate-chat-smoke-results.json',
   'aw2e-root-width-actual': 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/rolltemplate-chat-smoke-results.json',
   'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
@@ -183,6 +184,7 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   if (
     candidate.name === 'aw2e-message-width-font-size' ||
     candidate.name === 'aw2e-message-width-text-metrics' ||
+    candidate.name === 'aw2e-message-source-context' ||
     candidate.name === 'aw2e-message-cell-font-context' ||
     candidate.name === 'aw2e-message-cell-wrap-context'
   ) {

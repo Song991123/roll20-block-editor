@@ -1,3 +1,17 @@
+## 2026-07-13 AW2E Source-Context Candidate Rejection
+
+- Root cause tested: the previous renderer gate pointed at AW2E source-context proof (`RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED`). A tempting next step was to combine AW2E's full-width Roll20 chat message shell with Roll20-observed AW2E cell font/wrap context as one scoped local renderer candidate.
+- Added the diagnostic-only `aw2e-message-source-context` candidate route to candidate comparison, row-raster comparison, style proof, and targeted renderer planning.
+- Updated `scripts/roll20_chat_targeted_renderer_plan.mjs` to accept `--candidate-comparison-dir`, so isolated ignored-temp candidate evidence can be included in the plan without rewriting canonical reports.
+- Updated `scripts/README.md` with the candidate-comparison override and the new diagnostic smoke command.
+- Verification: `node --check scripts\roll20_chat_candidate_compare.mjs`, `node --check scripts\roll20_chat_row_raster_candidate_compare.mjs`, `node --check scripts\roll20_chat_candidate_style_proof.mjs`, and `node --check scripts\roll20_chat_targeted_renderer_plan.mjs` passed.
+- Verification: `node scripts\rolltemplate_chat_smoke.mjs --out-dir .\out --base-path /roll20-block-editor --fixtures test-fixtures\visual --report-dir ..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-message-source-context-20260713-r1 --chat-geometry-policy aw2e-message-full-width --chat-typography-policy aw2e-message-cell-wrap-context --port 4395` passed 3/3 functional rolltemplate smoke.
+- Evidence: candidate comparison rejected the candidate with `risk=reject-regresses-fixtures`, mean `16.55%`, regressions `2`, AW2E delta `+42.03%`, and YSHY delta `+7.62%`.
+- Evidence: row-raster comparison rejected the same candidate with `risk=reject-row-raster-regression`; AW2E weighted `62.71%` (`+44.78`) and worst `66.48%` (`+40.2`), while YSHY weighted `30.09%` (`+8.68`) and worst `42.36%` (`+14.63`).
+- Evidence: style proof rejected it with `REJECT_STYLE_CONTRADICTION`. The AW2E chat/message width matched actual Roll20, but table width and text-cell widths contradicted the actual Roll20 capture.
+- Evidence: targeted renderer planning with `--candidate-comparison-dir ..\_tmp_codex_smoke\chat-candidates-aw2e-source-context-20260713-r1` surfaced `aw2e-message-source-context is already tried and not promotable` and still returned `HOLD_PRODUCTION_RENDERER_PATCH`.
+- Current evidence: this is a negative result that narrows the renderer search. It does not improve visual parity, relink missing assets, upload to Roll20, or justify production renderer CSS.
+
 ## 2026-07-13 Chat Current Metrics Out-Dir/Fallback
 
 - Root cause: `scripts/roll20_chat_current_metrics_audit.mjs` parsed only the first positional argument and always wrote to the canonical `chat-current-metrics-audit` folder. Passing `--out-dir` through the package script was ignored, so a locked canonical report folder could stop the current-metrics diagnostic even when a writable temp output was supplied.

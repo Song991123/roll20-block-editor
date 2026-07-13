@@ -15,6 +15,7 @@ const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = args.includes('--self-test');
 const optionNamesWithValues = new Set([
   '--out-dir',
+  '--candidate-comparison-dir',
   '--source-context-dir',
 ]);
 const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
@@ -22,6 +23,7 @@ const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
 const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-targeted-renderer-plan');
 const reportOverrides = {
+  candidateComparison: readOption('--candidate-comparison-dir', ''),
   sourceContext: readOption('--source-context-dir', ''),
 };
 const runDirForCommand = runDirArg;
@@ -58,7 +60,7 @@ async function main() {
     backgroundSource: await readOptionalJson(path.join(runDir, 'chat-background-source-probe', 'chat-background-source-probe-results.json')),
     backgroundAssets: await readOptionalJson(path.join(runDir, 'chat-background-asset-probe', 'chat-background-asset-probe-results.json')),
     policy: await readOptionalJson(path.join(runDir, 'chat-renderer-policy', 'chat-renderer-policy-results.json')),
-    candidates: await readOptionalJson(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json')),
+    candidates: await readReportJson('chat-candidate-comparison', 'chat-candidate-comparison-results.json', reportOverrides.candidateComparison),
     styleProof: await readOptionalJson(path.join(runDir, 'chat-candidate-style-proof', 'chat-candidate-style-proof-results.json')),
     sourceContext: await readReportJson('chat-source-context-probe', 'chat-source-context-probe-results.json', reportOverrides.sourceContext),
   };
@@ -513,7 +515,7 @@ function countBy(values) {
 function summarizeTriedCandidates(fixtureId, candidateByName) {
   const fixtureKey = fixtureKeyForId(fixtureId);
   const candidateNames = fixtureId === 'official-roll20-AW2E'
-    ? ['aw2e-text-metrics', 'aw2e-font-size-only', 'aw2e-message-width-font-size', 'aw2e-message-width-text-metrics']
+    ? ['aw2e-text-metrics', 'aw2e-font-size-only', 'aw2e-message-width-font-size', 'aw2e-message-width-text-metrics', 'aw2e-message-source-context']
     : fixtureId === 'yshy-commission-1bu'
       ? ['yshy-sanitize-typography', 'coc-table-intrinsic-clamp', 'paint-dim-background']
       : [];
