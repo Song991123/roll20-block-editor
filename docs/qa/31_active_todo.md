@@ -3532,3 +3532,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - DONE: Preupload verification now falls back to ignored `..\_tmp_codex_smoke` output when the canonical actual-run report folder is locked and no explicit `--report-out-dir` was supplied.
 - STILL TODO: Supply user-owned HTTP(S) replacement URLs for AW2E/YSHY before rerunning preupload and Roll20 Sandbox/test-room comparison.
 - CLAIM BOUNDARY: Upload-readiness safety only. No real asset was relinked, no Roll20 upload happened, no renderer CSS changed, and visual parity remains unproven.
+
+## 2026-07-13 Import/Export Asset Copy Polish TODO Note
+
+- DONE: Replaced mixed English asset labels in the import/export UI with Korean-first labels: `Roll20 프록시`, `Imgur 페이지`, `placeholder 위험`, `데이터 URL`, `HTTPS/직링크 후보`, and `placeholder 대상`.
+- DONE: Localized app-side asset replacement parser warnings that appear in the export dialog, including placeholder and unsafe target warnings.
+- DONE: Extended `guard:ui-copy` so these product UI paths fail if the old mixed labels return.
+- VERIFIED: `corepack pnpm run guard:ui-copy`, `corepack pnpm run test:asset-refs`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run build`, `corepack pnpm run smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-copy-polish-20260713-r2 --port 4390`, `corepack pnpm run lint`, `git diff --check`, and `corepack pnpm run check:server-hygiene` passed.
+- CURRENT: This improves user-facing clarity around asset relink/upload readiness. It does not change the active actual-Roll20 blocker: AW2E/YSHY still need user-owned HTTP(S) replacement URLs and fresh Sandbox/test-room comparison.
+- CLAIM BOUNDARY: Wording/guard coverage only. No asset was relinked, no Roll20 upload happened, no product renderer CSS changed, and visual parity remains unproven.

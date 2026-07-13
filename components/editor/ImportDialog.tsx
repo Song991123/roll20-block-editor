@@ -337,7 +337,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           <span>
             <span className="block font-medium">큰 표 행 빠르게 불러오기</span>
             <span className="block text-muted-foreground">
-              반복되는 큰 표 행을 묶음으로 보존해 불러오기 속도를 줄입니다. Roll20 출력 HTML은 유지하지만,
+              반복되는 큰 표 행을 묶음으로 보존해 불러오기 시간을 줄입니다. Roll20 출력 HTML은 유지하지만,
               묶인 행 내부 요소는 나중에 분해하기 전까지 개별 블록으로 편집하기 어렵습니다.
             </span>
           </span>
@@ -431,7 +431,7 @@ function ImportAssetPreflight({
           <div className="text-sm font-medium">불러오기 자산 점검</div>
           <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
             이미지와 폰트 URL은 시트 구조와 별개로 Roll20에서 다시 로드됩니다. 삭제된 Imgur
-            이미지나 Roll20 proxy URL은 placeholder로 보일 수 있습니다.
+            이미지나 Roll20 프록시 URL은 placeholder로 보일 수 있습니다.
           </p>
         </div>
         <span
@@ -448,10 +448,10 @@ function ImportAssetPreflight({
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <ImportAssetMetric label="외부 URL" value={result.externalRefs} />
         <ImportAssetMetric label="상대 경로" value={result.relativeRefs} />
-        <ImportAssetMetric label="Roll20 proxy" value={result.roll20ProxyRefs} />
-        <ImportAssetMetric label="Imgur page" value={result.imgurPageRefs} />
-        <ImportAssetMetric label="placeholder risk" value={result.placeholderRiskRefs} />
-        <ImportAssetMetric label="data URL" value={result.dataRefs} />
+        <ImportAssetMetric label="Roll20 프록시" value={result.roll20ProxyRefs} />
+        <ImportAssetMetric label="Imgur 페이지" value={result.imgurPageRefs} />
+        <ImportAssetMetric label="placeholder 위험" value={result.placeholderRiskRefs} />
+        <ImportAssetMetric label="데이터 URL" value={result.dataRefs} />
         <ImportAssetMetric label="HTTP URL" value={result.insecureHttpRefs} />
         <ImportAssetMetric label="직링크 후보" value={result.canonicalDirectRefs} />
         <ImportAssetMetric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
@@ -463,7 +463,7 @@ function ImportAssetPreflight({
           바꿔 주세요.
           {result.canonicalDirectRefs > 0 ? (
             <span className="mt-1 block" data-testid="import-asset-canonical-candidates">
-              교체 초안에 {result.canonicalDirectRefs}개의 https/direct 후보를 같이 적습니다.
+              교체 초안에 {result.canonicalDirectRefs}개의 HTTPS/직링크 후보를 같이 적습니다.
               후보 URL도 권한과 로딩 상태를 확인한 뒤 사용해야 합니다.
             </span>
           ) : null}

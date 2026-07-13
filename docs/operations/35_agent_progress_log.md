@@ -4233,3 +4233,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - `verify:roll20-preupload` now fails before upload-package checks when `--asset-map-file` contains local-only or placeholder targets, because those maps cannot prove Roll20 Sandbox visual parity.
 - Also added ignored temp fallback for preupload verification reports when the canonical run folder is locked/read-only.
 - Claim boundary: this prevents a false Roll20-upload-ready state only. It does not provide user-owned replacement URLs, upload to Roll20, or prove visual parity.
+
+## 2026-07-13 Import/Export Asset Copy Polish
+
+- Cleaned product-facing import/export asset wording so users see Korean labels such as `Roll20 프록시`, `Imgur 페이지`, `placeholder 위험`, `데이터 URL`, `HTTPS/직링크 후보`, and `placeholder 대상` instead of mixed English/translationese.
+- Localized app-side asset replacement parser warnings because those warnings are displayed directly in the export dialog.
+- Extended `guard:ui-copy` to scan `lib/export/asset_replacements.ts` and reject the old mixed labels in product UI paths.
+- Verification: `guard:ui-copy`, `test:asset-refs`, `test:asset-replacements`, `build`, `smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-copy-polish-20260713-r2 --port 4390`, `lint`, `git diff --check`, and `check:server-hygiene` passed. The smoke confirmed `hasMojibake=false`, zero console/page errors, and the placeholder guard text now uses Korean parser warnings.
+- Claim boundary: UI wording clarity only. This does not relink assets, upload to Roll20, promote renderer CSS, or prove Roll20 visual parity.

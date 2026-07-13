@@ -46,7 +46,7 @@ export function parseAssetReplacementMap(text: string): ParsedAssetReplacementMa
     if (!parts) {
       warnings.push({
         line: lineNumber,
-        message: 'Use "old URL => new URL" for each asset replacement.',
+        message: '각 줄은 "기존 URL => 새 URL" 형식으로 입력하세요.',
       });
       return;
     }
@@ -54,29 +54,29 @@ export function parseAssetReplacementMap(text: string): ParsedAssetReplacementMa
     const from = cleanReplacementValue(parts[0]);
     const to = cleanReplacementValue(parts[1]);
     if (!from || !to) {
-      warnings.push({ line: lineNumber, message: 'Both old and new URLs are required.' });
+      warnings.push({ line: lineNumber, message: '기존 URL과 새 URL을 모두 입력하세요.' });
       return;
     }
     if (from === to) {
-      warnings.push({ line: lineNumber, message: 'Old and new URLs are identical.' });
+      warnings.push({ line: lineNumber, message: '기존 URL과 새 URL이 같습니다.' });
       return;
     }
     if (isPlaceholderReplacementTarget(to)) {
       warnings.push({
         line: lineNumber,
-        message: 'Replace the placeholder target with a user-owned http(s) URL before applying this map.',
+        message: '이 목록을 적용하기 전에 placeholder 대상을 사용자가 소유한 http(s) URL로 바꿔 주세요.',
       });
       return;
     }
     if (!isAllowedReplacementTarget(to)) {
       warnings.push({
         line: lineNumber,
-        message: 'Replacement target must be http(s), protocol-relative, data:, or a relative Roll20-safe path.',
+        message: '교체 대상은 http(s), 프로토콜 생략 URL, 데이터 URL, 또는 Roll20에서 허용되는 상대 경로여야 합니다.',
       });
       return;
     }
     if (seen.has(from)) {
-      warnings.push({ line: lineNumber, message: 'Duplicate source URL; first mapping is used.' });
+      warnings.push({ line: lineNumber, message: '같은 기존 URL이 중복되었습니다. 첫 번째 규칙만 사용합니다.' });
       return;
     }
     seen.add(from);

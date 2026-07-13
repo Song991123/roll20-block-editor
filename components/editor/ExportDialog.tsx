@@ -638,9 +638,9 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
         <Metric label="전체 참조" value={result.totalRefs} />
         <Metric label="외부 URL" value={result.externalRefs} />
         <Metric label="상대 경로" value={result.relativeRefs} />
-        <Metric label="data URL" value={result.dataRefs} />
-        <Metric label="Roll20 proxy" value={result.roll20ProxyRefs} />
-        <Metric label="placeholder risk" value={result.placeholderRiskRefs} />
+        <Metric label="데이터 URL" value={result.dataRefs} />
+        <Metric label="Roll20 프록시" value={result.roll20ProxyRefs} />
+        <Metric label="placeholder 위험" value={result.placeholderRiskRefs} />
         <Metric label="HTTP URL" value={result.insecureHttpRefs} />
         <Metric label="직링크 후보" value={result.canonicalDirectRefs} />
         <Metric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
@@ -652,15 +652,15 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
           보는 URL로 교체하거나 Roll20 Sandbox에서 자산 로딩을 확인하세요.
           {result.canonicalDirectRefs > 0 ? (
             <span className="mt-1 block" data-testid="export-asset-canonical-candidates">
-              교체 초안에 {result.canonicalDirectRefs}개의 https/direct 후보를 함께 적습니다.
+              교체 초안에 {result.canonicalDirectRefs}개의 HTTPS/직링크 후보를 함께 적습니다.
               권한과 소유 여부를 확인한 뒤 실제 교체 URL로 사용하세요.
             </span>
           ) : null}
           {result.placeholderRiskRefs > 0 ? (
             <span className="mt-1 block" data-testid="export-asset-placeholder-risk">
-              Roll20 proxy or Imgur page URLs can resolve to placeholder images when the
-              original source is deleted. Relink or rehost those assets before claiming
-              visual parity.
+              Roll20 프록시나 Imgur 페이지 URL은 원본이 삭제되면 placeholder 이미지로
+              바뀔 수 있습니다. 실제 동일성을 말하기 전에 해당 자산을 다시 올리거나
+              사용자가 소유한 URL로 교체하세요.
             </span>
           ) : null}
           {result.hosts.length > 0 ? (
@@ -903,17 +903,17 @@ function AssetReplacementPanel({
           >
             {readiness.hasPlaceholderTargets ? (
               <>
-                교체 초안의 placeholder target {readiness.placeholderTargets}건이 아직 채워지지 않았습니다.
+                교체 초안의 placeholder 대상 {readiness.placeholderTargets}건이 아직 채워지지 않았습니다.
                 실제 Roll20 검증 전에 사용자가 직접 다시 올린 http(s) URL로 바꿔 주세요.
               </>
             ) : readiness.hasLocalOnlyTargets ? (
               <>
                 Roll20 Sandbox 재검증에는 http(s)로 직접 접근 가능한 사용자 소유 URL이 필요합니다.
-                현재 교체 목록에는 로컬 미리보기 전용 target {readiness.localOnlyTargets}건이 있습니다.
+                현재 교체 목록에는 로컬 미리보기 전용 대상 {readiness.localOnlyTargets}건이 있습니다.
               </>
             ) : (
               <>
-                교체 target {readiness.roll20ReadyTargets}건이 Roll20 업로드 검증에 쓸 수 있는
+                교체 대상 {readiness.roll20ReadyTargets}건이 Roll20 업로드 검증에 쓸 수 있는
                 http(s) URL 형식입니다.
               </>
             )}

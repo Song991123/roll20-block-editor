@@ -492,8 +492,8 @@ async function main() {
         hasZipIsNotProofCopy: dialogText.includes('zip 다운로드만으로는 Roll20 실제 표시가 검증된 것이 아닙니다.'),
         hasAssetPreflightCopy: dialogText.includes('zip에는 HTML, CSS, translation만 들어갑니다.'),
         hasAssetRiskCopy: dialogText.includes('외부 이미지/폰트는 zip에 포함되지 않습니다.'),
-        hasAssetProxyMetric: dialogText.includes('Roll20 proxy'),
-        hasAssetPlaceholderMetric: dialogText.includes('placeholder risk'),
+        hasAssetProxyMetric: dialogText.includes('Roll20 프록시'),
+        hasAssetPlaceholderMetric: dialogText.includes('placeholder 위험'),
         hasAssetHttpMetric: dialogText.includes('HTTP URL'),
         hasAssetCanonicalMetric: dialogText.includes('직링크 후보'),
         hasAssetImgurDirectMetric: dialogText.includes('Imgur 직링크'),
@@ -533,8 +533,8 @@ async function main() {
       hasProgressNode: Boolean(document.querySelector('[data-testid="import-progress"]')),
       hasAssetPreflight: Boolean(document.querySelector('[data-testid="import-asset-preflight"]')),
       assetPreflightStatus: document.querySelector('[data-testid="import-asset-preflight-status"]')?.textContent?.trim() ?? '',
-      hasAssetProxyMetric: document.body.innerText.includes('Roll20 proxy'),
-      hasAssetPlaceholderMetric: document.body.innerText.includes('placeholder risk'),
+      hasAssetProxyMetric: document.body.innerText.includes('Roll20 프록시'),
+      hasAssetPlaceholderMetric: document.body.innerText.includes('placeholder 위험'),
       hasAssetHttpMetric: document.body.innerText.includes('HTTP URL'),
       hasAssetCanonicalMetric: document.body.innerText.includes('직링크 후보'),
       hasAssetImgurDirectMetric: document.body.innerText.includes('Imgur 직링크'),
@@ -667,8 +667,8 @@ async function main() {
     if (result.checks.exportAssetPlaceholderGuard.preview.hasPlaceholderTarget) failures.push('placeholder target leaked into preview render');
     if (result.checks.exportAssetPlaceholderGuard.ui.placeholderTargets !== '1') failures.push('placeholder target readiness count missing');
     if (result.checks.exportAssetPlaceholderGuard.ui.roll20ReadyTargets !== '0') failures.push('placeholder guard should not count Roll20-ready targets');
-    if (!/미입력|placeholder|채워/.test(result.checks.exportAssetPlaceholderGuard.ui.readinessText)) failures.push('placeholder target readiness copy missing');
-    if (!/placeholder|http/.test(result.checks.exportAssetPlaceholderGuard.ui.warningText)) failures.push('placeholder target parser warning missing');
+    if (!/미입력|placeholder 대상|채워/.test(result.checks.exportAssetPlaceholderGuard.ui.readinessText)) failures.push('placeholder target readiness copy missing');
+    if (!/placeholder 대상|http/.test(result.checks.exportAssetPlaceholderGuard.ui.warningText)) failures.push('placeholder target parser warning missing');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
     if (consoleIssues.length > 0) failures.push('console errors/warnings present');
     if (pageErrors.length > 0) failures.push('page errors present');

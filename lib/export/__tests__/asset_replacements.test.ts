@@ -55,7 +55,7 @@ function testPlaceholderTargetWarning(): void {
   const parsed = parseAssetReplacementMap(map);
   assert.equal(parsed.entries.length, 0);
   assert.equal(parsed.warnings.length, 1);
-  assert.match(parsed.warnings[0].message, /placeholder target/);
+  assert.match(parsed.warnings[0].message, /placeholder 대상/);
 
   const result = applyAssetReplacements({ html: '<img src="https://old.example/a.png">', css: '' }, map);
   assert.equal(result.replacements, 0);

@@ -14,6 +14,7 @@ const ROOTS = [
   'lib/editor',
   'lib/widgets',
   'lib/stores',
+  'lib/export/asset_replacements.ts',
   'lib/preview/shadowMount.ts',
 ];
 
@@ -45,6 +46,16 @@ const COMMON_MOJIBAKE_TOKENS = [
   '?띿',
   '?꾨',
   '?ㅽ',
+];
+
+const PRODUCT_COPY_BLOCKLIST = [
+  { token: 'Roll20 proxy', reason: 'use Roll20 프록시 in product UI' },
+  { token: 'Imgur page', reason: 'use Imgur 페이지 in product UI' },
+  { token: 'placeholder risk', reason: 'use placeholder 위험 in product UI' },
+  { token: 'data URL', reason: 'use 데이터 URL in product UI' },
+  { token: 'https/direct', reason: 'use HTTPS/직링크 in product UI' },
+  { token: 'placeholder target', reason: 'use placeholder 대상 in product UI' },
+  { token: 'local preview only target', reason: 'use 로컬 미리보기 전용 대상 in product UI' },
 ];
 
 const findings = [];
@@ -95,6 +106,8 @@ function suspiciousReasons(line) {
   if (containsCjkOrCompatibilityIdeograph(line)) reasons.push('cjk-mojibake-looking-character');
   const token = COMMON_MOJIBAKE_TOKENS.find((candidate) => line.includes(candidate));
   if (token) reasons.push(`common-mojibake-token:${token}`);
+  const blocked = PRODUCT_COPY_BLOCKLIST.find((candidate) => line.includes(candidate.token));
+  if (blocked) reasons.push(`blocked-product-copy:${blocked.reason}`);
   return reasons;
 }
 
