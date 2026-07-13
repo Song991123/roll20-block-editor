@@ -1,3 +1,13 @@
+## 2026-07-13 Export README Asset Relink Guidance
+
+- Root cause: the export dialog already had asset replacement UI, but the generated `README.txt` only described Roll20 upload slots. That left users without the critical warning that external images/fonts are not packaged and that local/data URLs are not enough for Roll20 visual parity.
+- Updated `lib/export/readme.ts` so every export README includes an external image/font section covering zip limits, user-owned http(s) relink targets, data/local-path limits, Roll20 proxy/Imgur placeholder risk, and Sandbox/new-test-room recomparison.
+- Updated `lib/export/zip_builder.ts` to tell the README when `asset-replacements.json` is included.
+- Added `lib/export/__tests__/readme.test.ts` plus `test:export-readme` to guard the new README guidance and zip wiring.
+- Verification: `corepack pnpm run test:export-readme`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `git diff --check`, and `corepack pnpm run smoke:export-dialog -- --port 4370 --report-dir ..\_tmp_codex_smoke\export-dialog-readme-assets-20260713-r1` passed. The smoke reported console issues `0`, page errors `0`, request failures `0`, external resource requests `0`, and no mojibake.
+- Server hygiene: no local app server remained listening after the smoke; only the existing Roll20 CDP listener on `127.0.0.1:9222` stayed open.
+- Claim boundary: this improves user-facing export/relink instructions only. It does not relink missing assets, promote renderer CSS, or prove Roll20 visual parity.
+
 ## 2026-07-13 Cell Allocation Locked-Report Fallback
 
 - Root cause: `diagnose:roll20-chat-cell-allocation` could not write the canonical `chat-cell-allocation-probe` folder in the active Roll20 run because Windows returned `EPERM` on `mkdir`, leaving the default renderer gate with a stale "cell allocation probe has not been run" warning unless an override path was supplied.

@@ -1,3 +1,12 @@
+## 2026-07-13 Export README Asset Relink Guidance TODO Note
+
+- DONE: Exported `README.txt` now explains that external images, fonts, Roll20 image proxies, and Imgur page links are not embedded in the zip and must be relinked to user-owned http(s) URLs for Roll20 verification.
+- DONE: When `asset-replacements.json` is included in the zip, the README now explicitly tells the user to review the replaced URLs and recompare in Sandbox or a new test room.
+- DONE: Added `test:export-readme` so the asset guidance and zip/readme wiring cannot silently disappear.
+- VERIFIED: `corepack pnpm run test:export-readme`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run guard:roll20-evidence -- reports\roll20-actual-compare\2026-06-18-state-map-v1`, `git diff --check`, and `corepack pnpm run smoke:export-dialog -- --port 4370 --report-dir ..\_tmp_codex_smoke\export-dialog-readme-assets-20260713-r1` passed.
+- OBSERVED: Export dialog smoke still reports console issues `0`, page errors `0`, request failures `0`, external resource requests `0`, and no mojibake.
+- CURRENT: This improves the user-facing Roll20 upload/relink path. It does not relink missing third-party assets, does not change production renderer CSS, and does not prove Roll20 visual parity.
+
 ## 2026-07-13 Cell Allocation Locked-Report Fallback TODO Note
 
 - DONE: `diagnose:roll20-chat-cell-allocation` now falls back to `..\_tmp_codex_smoke\...` when the canonical `chat-cell-allocation-probe` report folder is locked with `EPERM`/`EACCES` and no explicit `--out-dir` was provided.

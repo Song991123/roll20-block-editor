@@ -45,10 +45,12 @@ export async function buildZip(
   const translation = payload.translation.trim().length > 0 ? payload.translation : '{}';
   zip.file(ZIP_FILES.TRANSLATION, translation);
   zip.file(ZIP_FILES.MANIFEST, buildManifest(meta));
-  zip.file(ZIP_FILES.README, buildReadme(meta));
   for (const [name, content] of Object.entries(payload.extraFiles ?? {})) {
     zip.file(name, content);
   }
+  zip.file(ZIP_FILES.README, buildReadme(meta, {
+    includesAssetReplacements: Boolean(payload.extraFiles?.['asset-replacements.json']),
+  }));
 
   const blob = await zip.generateAsync({
     type: 'blob',

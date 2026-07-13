@@ -73,6 +73,8 @@ async function testDndSmoke(): Promise<void> {
   assert(readme.includes('Roll20 커스텀 시트 등록 가이드'), 'README KR title');
   assert(readme.includes('sheet.html'), 'README mentions sheet.html');
   assert(readme.includes('HTML Layout'), 'README mentions HTML Layout slot');
+  assert(readme.includes('외부 이미지/폰트 확인'), 'README mentions asset verification');
+  assert(readme.includes('http(s) 이미지/폰트 URL'), 'README mentions Roll20-ready asset URLs');
 }
 
 // ── (2) PbtA narrative-style emit (정상) ──────────────────────────────────
@@ -191,6 +193,15 @@ function testReadmeIncludesSystem(): void {
   assert(r.includes('시스템: PbtA'), 'readme system line');
 }
 
+function testReadmeIncludesAssetReplacementNotice(): void {
+  const r = buildReadme(
+    { ...DEFAULT_METADATA, name: 'Asset Sheet' },
+    { includesAssetReplacements: true },
+  );
+  assert(r.includes('asset-replacements.json'), 'readme asset replacement file line');
+  assert(r.includes('Sandbox 또는 새 테스트 방'), 'readme Roll20 recheck line');
+}
+
 async function main(): Promise<void> {
   await testDndSmoke();
   console.log('  ✓ D&D smoke');
@@ -214,6 +225,8 @@ async function main(): Promise<void> {
   console.log('  ✓ manifest shape');
   testReadmeIncludesSystem();
   console.log('  ✓ README system line');
+  testReadmeIncludesAssetReplacementNotice();
+  console.log('  ✓ README asset replacement notice');
   console.log('All export smoke tests passed.');
 }
 
