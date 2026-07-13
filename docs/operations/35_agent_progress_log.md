@@ -1,3 +1,13 @@
+## 2026-07-13 Chat Source Context Probe
+
+- Root cause update: current actual Roll20 chat evidence already proves user rolltemplate CSS is present, so the remaining high-mismatch chat path is not "CSS missing" and should not be attacked with broad local typography/filter/transform patches.
+- Added `scripts/roll20_chat_source_context_probe.mjs` plus `diagnose:roll20-chat-source-context`.
+- The probe compares actual Roll20 `chatCssEvidence`, local/actual `fontEvidence`, template/table/caption/cell computed styles, text measurement samples, width reconciliation, intrinsic-width decisions, and the latest row/paint/source route.
+- Verification: syntax check passed. Live isolated run wrote `..\_tmp_codex_smoke\chat-source-context-20260713-r2`.
+- Current evidence: AW2E `18.03%` and Les-Oublies `6.34%` both route to `RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED`; YSHY `20.68%` routes to `SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED`.
+- YSHY specifics: actual `.sheet-rolltemplate-coc` CSS is present, but six `BookkMyungjo-Bd` checks pass locally and fail in actual Roll20; table styles differ on font family, size, letter spacing, wrapping, border spacing, and width; sanitize replay remains rejected at `+14.95%`.
+- Claim boundary: diagnostic routing only. No production renderer CSS, Roll20 upload, asset relink, or visual parity claim changed.
+
 ## 2026-07-13 YSHY Sanitize Replay Source Model
 
 - Root cause update: the active evidence does not support simply copying observed Roll20 typography/sanitize values into local ChatPane CSS for YSHY/CoC. The existing `yshy-sanitize-typography` candidate worsens YSHY by `+14.95%`, while actual Roll20 and local still differ on table intrinsic/source context such as border spacing, font family, letter spacing, overflow wrapping, and table width.

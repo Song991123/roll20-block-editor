@@ -1,3 +1,11 @@
+## 2026-07-13 Chat Source Context Probe TODO Note
+
+- DONE: Added `diagnose:roll20-chat-source-context` to fuse actual Roll20 chat CSS activation, font-face checks, computed table styles, text-measurement samples, width reconciliation, intrinsic-width, and row/paint/source evidence before any renderer CSS change.
+- VERIFIED: `node --check scripts\roll20_chat_source_context_probe.mjs` and `corepack pnpm run diagnose:roll20-chat-source-context -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --row-paint-source-dir ..\_tmp_codex_smoke\row-paint-source-sanitize-replay-20260713-r1 --out-dir ..\_tmp_codex_smoke\chat-source-context-20260713-r2` passed.
+- OBSERVED: Current source-context report is `SOURCE_CONTEXT_ACTIONABLE`. AW2E is P0 at `18.03%`, Les-Oublies is P1 at `6.34%`, and YSHY is P0 at `20.68%`; all have actual Roll20 chat CSS `EXPECTED_RULE_PRESENT` but local-vs-actual font/table context differences.
+- OBSERVED: YSHY remains the strongest blocker: actual Roll20 has `.sheet-rolltemplate-coc` rules present, but six `BookkMyungjo-Bd` font checks pass locally and fail in actual Roll20, table context differs across `fontFamily`, `fontSize`, `letterSpacing`, `overflowWrap`, `borderSpacing`, and `width`, and the rejected sanitize replay candidate still worsens YSHY by `+14.95%`.
+- CURRENT: Renderer remains held. Next renderer work should build a template-scoped rule-order/font-face/table-intrinsic diagnostic model; do not promote broad typography, filter, transform, or global ChatPane CSS.
+
 ## 2026-07-13 YSHY Sanitize Replay Source Model TODO Note
 
 - DONE: `diagnose:roll20-chat-row-paint-source` now separates YSHY/CoC's rejected sanitize replay path from the broader table-intrinsic bucket.

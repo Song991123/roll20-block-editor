@@ -68,6 +68,7 @@
     "diagnose:roll20-chat-intrinsic-width": "node scripts/roll20_chat_intrinsic_width_model.mjs",
     "diagnose:roll20-chat-font-glyph": "node scripts/roll20_chat_font_glyph_model.mjs",
     "diagnose:roll20-chat-font-intrinsic": "node scripts/roll20_chat_font_intrinsic_probe.mjs",
+    "diagnose:roll20-chat-source-context": "node scripts/roll20_chat_source_context_probe.mjs",
     "diagnose:roll20-chat-row-paint-source": "node scripts/roll20_chat_row_paint_source_probe.mjs",
     "diagnose:roll20-chat-row-raster": "node scripts/roll20_chat_row_raster_probe.mjs",
     "diagnose:roll20-chat-row-raster-candidates": "node scripts/roll20_chat_row_raster_candidate_compare.mjs",
