@@ -12,13 +12,14 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
-const optionNamesWithValues = new Set(['--out-dir', '--report-dir']);
+const optionNamesWithValues = new Set(['--out-dir', '--report-dir', '--actual-sidecar']);
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const localSmokeArg = args[1] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
 const localSmokePath = path.resolve(localSmokeArg);
 const outDir = path.resolve(readOption('--out-dir', readOption('--report-dir', path.join(runDir, 'chat-font-glyph-model'))));
+const actualSidecarOverrides = readKeyValueOptions('--actual-sidecar');
 
 function readOption(name, fallback = '') {
   const index = rawArgs.indexOf(name);
@@ -26,6 +27,32 @@ function readOption(name, fallback = '') {
   const value = rawArgs[index + 1];
   if (!value || value.startsWith('--')) return fallback;
   return value;
+}
+
+function readKeyValueOptions(name) {
+  const values = new Map();
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    const arg = rawArgs[index];
+    let raw = '';
+    if (arg === name) {
+      raw = rawArgs[index + 1] ?? '';
+      index += 1;
+    } else if (arg.startsWith(`${name}=`)) {
+      raw = arg.slice(name.length + 1);
+    }
+    if (!raw) continue;
+    const separator = raw.indexOf('=');
+    if (separator <= 0) {
+      throw new Error(`Expected ${name} <fixture-id>=<path>, got: ${raw}`);
+    }
+    const key = raw.slice(0, separator);
+    const value = raw.slice(separator + 1);
+    if (!key || !value) {
+      throw new Error(`Expected ${name} <fixture-id>=<path>, got: ${raw}`);
+    }
+    values.set(key, path.resolve(value));
+  }
+  return values;
 }
 
 async function main() {
@@ -48,6 +75,7 @@ async function main() {
     localSmoke: localSmokeArg,
     reportOverrides: {
       outDir: rel(outDir),
+      actualSidecars: Object.fromEntries([...actualSidecarOverrides].map(([fixtureId, file]) => [fixtureId, rel(file)])),
     },
     scope: 'diagnostic-only font/glyph width model',
     summary: {
@@ -75,7 +103,8 @@ async function main() {
 
 async function compareFixture(localFixture, reports) {
   const fixtureId = localFixture.id;
-  const actualPath = path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
+  const actualPath = actualSidecarOverrides.get(fixtureId)
+    ?? path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
   const actualSidecar = await readOptionalJson(actualPath);
   const localTemplate = localFixture?.cardInfo?.templateComputed ?? null;
   const actualTemplate = actualSidecar?.latestTemplate ?? null;

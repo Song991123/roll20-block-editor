@@ -11,15 +11,16 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
-const optionNamesWithValues = new Set(['--out-dir']);
+const optionNamesWithValues = new Set(['--out-dir', '--font-glyph-dir']);
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const rawOutDir = readOption('--out-dir', '');
 const outDir = path.resolve(rawOutDir || path.join(runDir, 'chat-font-intrinsic-probe'));
+const fontGlyphDir = path.resolve(readOption('--font-glyph-dir', path.join(runDir, 'chat-font-glyph-model')));
 
 async function main() {
-  const fontGlyph = await readOptionalJson(path.join(runDir, 'chat-font-glyph-model', 'chat-font-glyph-model-results.json'));
+  const fontGlyph = await readOptionalJson(path.join(fontGlyphDir, 'chat-font-glyph-model-results.json'));
   const intrinsic = await readOptionalJson(path.join(runDir, 'chat-intrinsic-width-model', 'chat-intrinsic-width-model-results.json'));
   const overflowCrop = await readOptionalJson(path.join(runDir, 'chat-overflow-crop-probe', 'chat-overflow-crop-probe-results.json'));
   const candidates = await readOptionalJson(path.join(runDir, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json'));
@@ -41,6 +42,9 @@ async function main() {
       requestedOutDir: rawOutDir || null,
       outDir: path.relative(process.cwd(), outDir),
       fallbackReason: '',
+    },
+    reportOverrides: {
+      fontGlyphDir: path.relative(process.cwd(), fontGlyphDir),
     },
     scope: 'diagnostic-only Roll20 chat font/intrinsic probe; no production CSS',
     summary: {

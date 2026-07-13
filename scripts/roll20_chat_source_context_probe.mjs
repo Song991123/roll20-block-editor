@@ -19,6 +19,7 @@ const optionNamesWithValues = new Set([
   '--width-reconciliation-dir',
   '--intrinsic-width-dir',
   '--fixtures-dir',
+  '--actual-sidecar',
 ]);
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
@@ -32,6 +33,7 @@ let rowPaintSourceDir = path.resolve(readOption('--row-paint-source-dir', path.j
 const widthReconciliationDir = path.resolve(readOption('--width-reconciliation-dir', path.join(runDir, 'chat-width-reconciliation')));
 const intrinsicWidthDir = path.resolve(readOption('--intrinsic-width-dir', path.join(runDir, 'chat-intrinsic-width-model')));
 const fixturesDir = path.resolve(readOption('--fixtures-dir', 'test-fixtures/visual'));
+const actualSidecarOverrides = readKeyValueOptions('--actual-sidecar');
 
 const STYLE_KEYS = [
   'fontFamily',
@@ -84,6 +86,7 @@ async function main() {
       widthReconciliationDir: rel(widthReconciliationDir),
       intrinsicWidthDir: rel(intrinsicWidthDir),
       fixturesDir: rel(fixturesDir),
+      actualSidecars: Object.fromEntries([...actualSidecarOverrides].map(([fixtureId, file]) => [fixtureId, rel(file)])),
     },
     summary: {
       status: actionable.length ? 'SOURCE_CONTEXT_ACTIONABLE' : 'SOURCE_CONTEXT_SECONDARY',
@@ -118,6 +121,32 @@ function hasOption(name) {
   return rawArgs.includes(name);
 }
 
+function readKeyValueOptions(name) {
+  const values = new Map();
+  for (let index = 0; index < rawArgs.length; index += 1) {
+    const arg = rawArgs[index];
+    let raw = '';
+    if (arg === name) {
+      raw = rawArgs[index + 1] ?? '';
+      index += 1;
+    } else if (arg.startsWith(`${name}=`)) {
+      raw = arg.slice(name.length + 1);
+    }
+    if (!raw) continue;
+    const separator = raw.indexOf('=');
+    if (separator <= 0) {
+      throw new Error(`Expected ${name} <fixture-id>=<path>, got: ${raw}`);
+    }
+    const key = raw.slice(0, separator);
+    const value = raw.slice(separator + 1);
+    if (!key || !value) {
+      throw new Error(`Expected ${name} <fixture-id>=<path>, got: ${raw}`);
+    }
+    values.set(key, path.resolve(value));
+  }
+  return values;
+}
+
 async function resolveImplicitReportOverrides() {
   if (rowPaintSourceDirExplicit) return;
 
@@ -135,7 +164,9 @@ async function resolveImplicitReportOverrides() {
 
 async function summarizeFixture(fixtureId, reports) {
   const localFixture = findSmokeFixture(reports.defaultSmoke, fixtureId);
-  const actualSidecar = await readOptionalJson(path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json'));
+  const actualSidecarPath = actualSidecarOverrides.get(fixtureId)
+    ?? path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
+  const actualSidecar = await readOptionalJson(actualSidecarPath);
   const localTemplate = localFixture?.cardInfo?.templateComputed ?? null;
   const actualTemplate = actualSidecar?.latestTemplate ?? null;
   const localTable = child(localTemplate, 'table');
