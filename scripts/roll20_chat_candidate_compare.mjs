@@ -4,7 +4,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
-const optionNamesWithValues = new Set(['--out-dir', '--candidate-screenshots']);
+const optionNamesWithValues = new Set(['--out-dir', '--candidate-screenshots', '--include-candidates']);
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
@@ -13,6 +13,12 @@ const rawOutDir = readOption('--out-dir', '');
 const outDir = rawOutDir ? path.resolve(rawOutDir) : path.join(runDir, 'chat-candidate-comparison');
 const useIsolatedParityOutput = Boolean(rawOutDir);
 const candidateScreenshotOverrides = readOptionPairs('--candidate-screenshots');
+const includedCandidates = new Set(
+  readOption('--include-candidates', '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean),
+);
 
 function readOption(name, fallback = '') {
   const index = rawArgs.indexOf(name);
@@ -81,7 +87,7 @@ const candidates = [
   ['coc-table-actual-width-dim-background', 'reports/rolltemplate-chat-smoke-coc-table-actual-width-dim-background/screenshots'],
   ['coc-crop-origin-y20-dim-background', 'reports/rolltemplate-chat-smoke-coc-crop-origin-y20-dim-background/screenshots'],
   ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],
-];
+].filter(([name]) => includedCandidates.size === 0 || name === 'default' || includedCandidates.has(name));
 
 const rows = [];
 for (const [name, screenshotsRelative] of candidates) {

@@ -1,3 +1,11 @@
+## 2026-07-13 Chat Candidate Experiment Bundle TODO Note
+
+- DONE: Added `gate:roll20-chat-candidate-experiment` to bundle one already-generated ChatPane candidate through candidate comparison, row-raster comparison, style proof, table-width budget, and the final renderer action gate.
+- DONE: `diagnose:roll20-chat-candidates` and `diagnose:roll20-chat-row-raster-candidates` now accept `--include-candidates`, so isolated experiments run only the default baseline plus named candidates instead of recalculating every historical candidate.
+- VERIFIED: `gate:roll20-chat-candidate-experiment` with `aw2e-message-cell-font-context` completed in isolated temp output at `..\_tmp_codex_smoke\candidate-experiment-aw2e-cell-font-20260713-r2`.
+- VERIFIED: The bundle returned `HOLD_PRODUCTION_RENDERER_PATCH`, candidate risk `reject-regresses-fixtures`, style proof `REJECT_STYLE_CONTRADICTION`, row-raster risk `reject-row-raster-regression`, and table budget `TABLE_WIDTH_BUDGET_ACTIONABLE`.
+- CURRENT: Candidate experiment evidence is now reproducible through the top renderer gate without starting a browser/dev server or rewriting canonical reports. This does not change product renderer CSS, relink assets, upload to Roll20, or prove visual parity.
+
 ## 2026-07-13 Renderer Gate Candidate Override TODO Note
 
 - DONE: `gate:roll20-renderer-action` now accepts `--chat-candidate-comparison-dir`, `--chat-candidate-style-proof-dir`, and `--chat-row-raster-candidates-dir`.

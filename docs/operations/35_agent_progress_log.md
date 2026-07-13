@@ -1,3 +1,14 @@
+## 2026-07-13 Chat Candidate Experiment Bundle Gate
+
+- Root cause: after candidate/style/row-raster/table-budget overrides were added, testing one renderer candidate still required manually running several scripts and then hand-wiring their temp report folders into the top renderer gate. That was slow and error-prone enough to create false PASS risk.
+- Added `scripts/roll20_chat_candidate_experiment_gate.mjs` and package script `gate:roll20-chat-candidate-experiment`.
+- The bundle consumes an existing candidate smoke JSON and screenshot folder, runs candidate comparison, row-raster comparison, candidate style proof, table-width budget, and `gate:roll20-renderer-action`, then writes `chat-candidate-experiment-gate-results.json/.md` into an ignored output folder.
+- Added `--include-candidates` to `scripts/roll20_chat_candidate_compare.mjs` and `scripts/roll20_chat_row_raster_candidate_compare.mjs` so isolated experiments run only `default` plus the named candidate instead of recalculating every historical candidate.
+- Verification: `node --check scripts\roll20_chat_candidate_compare.mjs`, `node --check scripts\roll20_chat_row_raster_candidate_compare.mjs`, and `node --check scripts\roll20_chat_candidate_experiment_gate.mjs` passed.
+- Verification: `corepack pnpm run gate:roll20-chat-candidate-experiment -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --candidate aw2e-message-cell-font-context --candidate-smoke ..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-cell-font-context-20260713-r1\rolltemplate-chat-smoke-results.json --candidate-screenshots ..\_tmp_codex_smoke\rolltemplate-chat-smoke-aw2e-cell-font-context-20260713-r1\screenshots --source-context-dir ..\_tmp_codex_smoke\chat-source-context-autofallback-20260713-r2 --out-dir ..\_tmp_codex_smoke\candidate-experiment-aw2e-cell-font-20260713-r2` passed.
+- Evidence: the bundle returned `HOLD_PRODUCTION_RENDERER_PATCH`, `reject-regresses-fixtures`, `REJECT_STYLE_CONTRADICTION`, and `reject-row-raster-regression`; AW2E row-weighted delta stayed `+44.17` and YSHY row-weighted delta stayed `+8.68`.
+- Current evidence: this makes negative and future candidate experiments repeatable through the final gate. It does not improve pixels, relink assets, upload to Roll20, or authorize production renderer CSS.
+
 ## 2026-07-13 Renderer Gate Candidate Override Routing
 
 - Root cause: isolated candidate experiments could reach targeted planning and template-scope gates, but the final `gate:roll20-renderer-action` still read canonical candidate comparison, style proof, and row-raster candidate reports only. That meant a temp candidate could be rejected in local evidence without appearing in the top production renderer hold.

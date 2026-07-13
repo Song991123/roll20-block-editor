@@ -47,6 +47,7 @@
     "diagnose:roll20-root-cutoff": "node scripts/roll20_root_cutoff_diagnostics.mjs",
     "diagnose:roll20-state-visibility": "node scripts/roll20_state_visibility_diagnostics.mjs",
     "gate:roll20-renderer-action": "node scripts/roll20_renderer_action_gate.mjs",
+    "gate:roll20-chat-candidate-experiment": "node scripts/roll20_chat_candidate_experiment_gate.mjs",
     "diagnose:roll20-renderer-blocker": "node scripts/roll20_renderer_blocker_matrix.mjs",
     "diagnose:roll20-computed-style-context": "node scripts/roll20_computed_style_context_diagnostics.mjs",
     "diagnose:roll20-input-flow-axis": "node scripts/roll20_input_flow_axis_diagnostics.mjs",

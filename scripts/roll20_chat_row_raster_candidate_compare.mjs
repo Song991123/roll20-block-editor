@@ -13,13 +13,19 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
-const optionNamesWithValues = new Set(['--out-dir', '--candidate-smoke', '--candidate-screenshots']);
+const optionNamesWithValues = new Set(['--out-dir', '--candidate-smoke', '--candidate-screenshots', '--include-candidates']);
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
 const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-row-raster-candidate-comparison')));
 const candidateSmokeOverrides = readOptionPairs('--candidate-smoke');
 const candidateScreenshotOverrides = readOptionPairs('--candidate-screenshots');
+const includedCandidates = new Set(
+  readOption('--include-candidates', '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean),
+);
 
 function readOption(name, fallback = '') {
   const index = rawArgs.indexOf(name);
@@ -56,7 +62,7 @@ const candidates = [
   ['coc-background-size-actual', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/screenshots'],
   ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],
   ['yshy-sanitize-typography', 'reports/rolltemplate-chat-smoke-yshy-sanitize-typography/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-yshy-sanitize-typography/screenshots'],
-];
+].filter(([name]) => includedCandidates.size === 0 || name === 'default' || includedCandidates.has(name));
 
 await mkdir(outDir, { recursive: true });
 const rows = [];
