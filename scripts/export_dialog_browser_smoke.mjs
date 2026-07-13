@@ -472,6 +472,8 @@ async function main() {
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', { timeout: 15000 });
     result.checks.exportDialog = await page.evaluate(() => {
       const dialogText = document.querySelector('[role="dialog"]')?.textContent ?? '';
+      const sandboxDetails = document.querySelector('[data-testid="export-roll20-sandbox-diagnostics"]');
+      const sandboxDiagnosticList = document.querySelector('[data-testid="export-roll20-sandbox-diagnostic-list"]');
       return {
         hasTitle: dialogText.includes('Roll20 zip 내보내기'),
         hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
@@ -480,6 +482,17 @@ async function main() {
         hasAssetPreflight: Boolean(document.querySelector('[data-testid="export-asset-preflight"]')),
         assetPreflightStatus: document.querySelector('[data-testid="export-asset-preflight-status"]')?.textContent?.trim() ?? '',
         hasSandboxDiagnostics: Boolean(document.querySelector('[data-testid="export-roll20-sandbox-diagnostics"]')),
+        hasSandboxDiagnosticSummary: Boolean(sandboxDetails?.querySelector('summary')),
+        sandboxDiagnosticsInitiallyOpen: sandboxDetails instanceof HTMLDetailsElement ? sandboxDetails.open : null,
+        sandboxDiagnosticListVisibleBeforeExpand: sandboxDiagnosticList
+          ? typeof sandboxDiagnosticList.checkVisibility === 'function'
+            ? sandboxDiagnosticList.checkVisibility({
+                contentVisibilityAuto: true,
+                opacityProperty: true,
+                visibilityProperty: true,
+              })
+            : sandboxDiagnosticList.offsetWidth > 0 && sandboxDiagnosticList.offsetHeight > 0
+          : false,
         sandboxDiagnosticItemCount: document.querySelectorAll('[data-testid="export-roll20-sandbox-diagnostic-item"]').length,
         sandboxStatus: document.querySelector('[data-testid="export-roll20-sandbox-status"]')?.textContent?.trim() ?? '',
         sandboxDiagnosticStates: Array.from(document.querySelectorAll('[data-testid="export-roll20-sandbox-diagnostic-item"]')).map((el) => ({
@@ -516,6 +529,13 @@ async function main() {
     result.checks.exportDialog.hasMojibake = hasMojibake(result.checks.exportDialog.dialogText);
     delete result.checks.exportDialog.dialogText;
     await safeScreenshot(page, path.join(REPORT_DIR, 'export-dialog.png'));
+    result.checks.exportDialog.sandboxDiagnosticsExpanded = await page.evaluate(() => {
+      const sandboxDetails = document.querySelector('[data-testid="export-roll20-sandbox-diagnostics"]');
+      sandboxDetails?.querySelector('summary')?.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, view: window }),
+      );
+      return sandboxDetails instanceof HTMLDetailsElement ? sandboxDetails.open : false;
+    });
 
     await page.keyboard.press('Escape');
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', {
@@ -584,6 +604,16 @@ async function main() {
       failures.push('export asset preflight status mismatch');
     }
     if (!result.checks.exportDialog.hasSandboxDiagnostics) failures.push('export sandbox diagnostics panel missing');
+    if (!result.checks.exportDialog.hasSandboxDiagnosticSummary) failures.push('export sandbox diagnostics summary missing');
+    if (result.checks.exportDialog.sandboxDiagnosticsInitiallyOpen !== false) {
+      failures.push('export sandbox diagnostics should be collapsed by default');
+    }
+    if (result.checks.exportDialog.sandboxDiagnosticListVisibleBeforeExpand) {
+      failures.push('export sandbox diagnostics list is visible before expand');
+    }
+    if (!result.checks.exportDialog.sandboxDiagnosticsExpanded) {
+      failures.push('export sandbox diagnostics did not expand');
+    }
     if (result.checks.exportDialog.sandboxDiagnosticItemCount !== 4) failures.push('export sandbox diagnostics item count mismatch');
     if (!['치명 오류 없음', '수정 필요'].includes(result.checks.exportDialog.sandboxStatus)) {
       failures.push('export sandbox diagnostics status mismatch');

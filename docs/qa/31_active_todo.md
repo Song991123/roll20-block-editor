@@ -1,3 +1,10 @@
+## 2026-07-13 Export Sandbox Diagnostics Progressive Disclosure TODO Note
+
+- DONE: Moved the Roll20 Sandbox cleanup diagnostic rows behind a collapsed advanced section in the export dialog. The user still sees the upload readiness and fatal/non-fatal Sandbox status, but low-level HTML/CSS cleanup metrics no longer crowd the default path.
+- DONE: `smoke:export-dialog` now verifies the advanced section starts collapsed, the diagnostic list is not visible before expansion, and the section can be opened to reveal the four preserved diagnostic rows.
+- VERIFIED: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-sandbox-details-20260713-r3 --port 4392`, and `corepack pnpm run check:server-hygiene` passed.
+- CURRENT: This removes one confusing default UI surface only. Actual Roll20 visual parity, asset relink readiness, Sandbox upload verification, and renderer CSS promotion remain open.
+
 ## 2026-07-13 Imported Edit No-Rollback and Interaction Split TODO Note
 
 - DONE: Strengthened `smoke:imported-edit-sync` so imported real-fixture pointer drags must now keep four post-drop samples aligned with the emitted absolute position. This extends the no-rollback guard from the synthetic edit-flow fixture to imported sheets.

@@ -483,17 +483,16 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             </div>
           </section>
 
-          <section
-            className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+          <details
+            className="group rounded border border-border bg-[var(--bg-elevated)]"
             data-testid="export-roll20-sandbox-diagnostics"
           >
-            <div className="mb-2 flex items-center justify-between gap-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3 [&::-webkit-details-marker]:hidden">
               <div>
-                <div className="text-sm font-medium">Roll20 Sandbox 예상 정리</div>
+                <div className="text-sm font-medium">Roll20 Sandbox 고급 진단</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                   Roll20 Custom Sheet Sandbox가 업로드 때 적용하는 HTML/CSS 정리 규칙을
-                  로컬에서 미리 계산한 값입니다. 실제 동일성은 Sandbox나 테스트 방
-                  스크린샷으로 별도 확인해야 합니다.
+                  로컬에서 미리 계산한 값입니다. 필요할 때만 펼쳐 보세요.
                 </p>
               </div>
               <span
@@ -506,8 +505,11 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               >
                 {sandboxDiagnostics.fatal ? '수정 필요' : '치명 오류 없음'}
               </span>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            </summary>
+            <div
+              className="grid grid-cols-1 gap-2 border-t border-border/70 p-3 pt-2 sm:grid-cols-2"
+              data-testid="export-roll20-sandbox-diagnostic-list"
+            >
               <DiagnosticRow
                 label="HTML 정리"
                 state={sandboxDiagnostics.htmlChanged ? 'rewritten' : 'same'}
@@ -543,7 +545,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 detail={`프록시 처리 ${sandboxDiagnostics.urlsProxied}건, 제거 ${sandboxDiagnostics.urlsDropped}건`}
               />
             </div>
-          </section>
+          </details>
 
           <section
             className="rounded border border-border bg-[var(--bg-elevated)] p-3"

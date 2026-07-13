@@ -1,3 +1,13 @@
+## 2026-07-13 Export Sandbox Diagnostics Progressive Disclosure
+
+- Root cause: the Roll20 export dialog was exposing low-level Sandbox cleanup diagnostics directly in the main upload path. That preserved evidence, but it added cognitive noise for users who only need to know whether the zip is ready and what must be verified in Roll20.
+- Changed `components/editor/ExportDialog.tsx` so the Sandbox cleanup rows now live in a native collapsed `<details>` advanced section. The status badge remains visible, while byte counts, HTML/CSS cleanup counts, class/tag cleanup, and external URL cleanup details are hidden until the user opens the section.
+- Extended `scripts/export_dialog_browser_smoke.mjs` so the browser smoke now proves the advanced section exists, starts collapsed, hides the diagnostic list before expansion, and can still expand to expose the four diagnostic rows.
+- Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-sandbox-details-20260713-r3 --port 4392`, and `corepack pnpm run check:server-hygiene` passed.
+- Evidence: the smoke reported `sandboxDiagnosticsInitiallyOpen=false`, `sandboxDiagnosticListVisibleBeforeExpand=false`, `sandboxDiagnosticsExpanded=true`, `consoleIssues=0`, `pageErrors=0`, `requestFailures=0`, and `externalResourceRequests=0`.
+- Server hygiene: no project dev/smoke listener remained after the smoke; the existing Roll20 CDP listener on `127.0.0.1:9222` was preserved.
+- Claim boundary: this is UI decluttering and regression coverage for the export dialog only. It does not upload a sheet to Roll20, relink AW2E/YSHY assets, change renderer CSS, or prove actual Roll20 visual parity.
+
 ## 2026-07-13 Imported Edit No-Rollback and Interaction Split
 
 - Root cause: imported-sheet edit smoke sampled post-drop coordinates, but the pass condition did not require those samples to stay aligned with emitted absolute CSS. Separately, non-leaf subtree pixel diff and flow canvas insertion were folded into the interaction result in a way that could misreport the real state.
