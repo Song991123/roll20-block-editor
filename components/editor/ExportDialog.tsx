@@ -759,13 +759,15 @@ function AssetReplacementPanel({
             active
               ? warnings.length
                 ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200'
+                : readiness.hasRiskyRoll20Targets
+                  ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200'
                 : 'border-sky-500/35 bg-sky-500/10 text-sky-700 dark:text-sky-200'
               : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground'
           }`}
           data-testid="export-asset-replacement-status"
         >
           {active
-            ? `${replacements}건 교체 · Roll20용 ${readiness.roll20ReadyTargets}건 · 미입력 ${readiness.placeholderTargets}건`
+            ? `${replacements}건 교체 · Roll20용 ${readiness.roll20ReadyTargets}건 · 위험 ${readiness.riskyRoll20Targets}건 · 미입력 ${readiness.placeholderTargets}건`
             : '선택 사항'}
         </span>
       </div>
@@ -895,18 +897,26 @@ function AssetReplacementPanel({
           <div
             className={`rounded border px-2 py-1.5 text-[10.5px] leading-relaxed sm:col-span-2 ${
               readiness.hasPlaceholderTargets || readiness.hasLocalOnlyTargets
+                || readiness.hasRiskyRoll20Targets
                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-100'
                 : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-100'
             }`}
             data-testid="export-asset-roll20-readiness"
             data-local-only-targets={readiness.localOnlyTargets}
             data-roll20-ready-targets={readiness.roll20ReadyTargets}
+            data-risky-roll20-targets={readiness.riskyRoll20Targets}
             data-placeholder-targets={readiness.placeholderTargets}
           >
             {readiness.hasPlaceholderTargets ? (
               <>
                 교체 초안의 placeholder 대상 {readiness.placeholderTargets}건이 아직 채워지지 않았습니다.
                 실제 Roll20 검증 전에 사용자가 직접 다시 올린 http(s) URL로 바꿔 주세요.
+              </>
+            ) : readiness.hasRiskyRoll20Targets ? (
+              <>
+                Roll20용 URL {readiness.roll20ReadyTargets}건 중 {readiness.riskyRoll20Targets}건은 Roll20 프록시나
+                Imgur 페이지라 placeholder로 바뀔 수 있습니다. 사용 권한을 확인한 직접 이미지 URL이나
+                사용자가 직접 호스팅한 HTTPS URL로 바꾼 뒤 Sandbox에서 다시 비교해 주세요.
               </>
             ) : readiness.hasLocalOnlyTargets ? (
               <>

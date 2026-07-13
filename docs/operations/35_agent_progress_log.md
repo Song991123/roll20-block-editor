@@ -1,3 +1,13 @@
+## 2026-07-13 Risky Roll20 Asset Replacement URL Guard
+
+- Root cause refinement: the current asset relink blocker can be hidden if the app treats Roll20 proxy URLs or Imgur page URLs as fully Roll20-ready. Actual Roll20 may still decode those to removed/placeholder assets.
+- Updated `lib/export/asset_replacements.ts` so explicit `http(s)` targets are Roll20-ready, protocol-relative/data/local targets are not, and risky Roll20 proxy or non-direct Imgur page targets are counted separately.
+- Updated `components/editor/ExportDialog.tsx` to show the risky-target count and warn users to replace risky targets with direct user-owned HTTPS asset URLs before Sandbox comparison.
+- Updated asset replacement unit tests and `scripts/export_dialog_browser_smoke.mjs` so the browser smoke captures `data-risky-roll20-targets`.
+- Verification: `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run test:asset-replacements`, `corepack pnpm run guard:ui-copy`, `corepack pnpm run lint`, `corepack pnpm run build`, and export-dialog browser smoke passed.
+- Server hygiene: checked after smoke; no project dev/smoke listener remained, and CDP `9222` was preserved.
+- Current evidence: this is a false-positive guard and export UX improvement only. The AW2E/YSHY relink map still needs user-owned direct URLs before Roll20 visual parity can move again.
+
 ## 2026-07-13 Chat Background Paint Relink Blocker
 
 - Root cause refinement: after rejecting fallback/width/font candidates, the remaining YSHY/AW2E chat background mismatch is flat-paint dominated but blocked by missing source assets, not ready for another renderer CSS candidate.

@@ -280,6 +280,7 @@ async function verifyAssetReplacementRender(page) {
     hasRoll20Readiness: Boolean(document.querySelector('[data-testid="export-asset-roll20-readiness"]')),
     localOnlyTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-local-only-targets') ?? '',
     roll20ReadyTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-roll20-ready-targets') ?? '',
+    riskyRoll20Targets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-risky-roll20-targets') ?? '',
     placeholderTargets: document.querySelector('[data-testid="export-asset-roll20-readiness"]')?.getAttribute('data-placeholder-targets') ?? '',
     copyEnabled: !document.querySelector('[data-testid="export-asset-map-copy"]')?.disabled,
     downloadEnabled: !document.querySelector('[data-testid="export-asset-map-download"]')?.disabled,
@@ -326,6 +327,7 @@ async function verifyAssetReplacementPlaceholderGuard(page) {
       placeholderTargets: readiness?.getAttribute('data-placeholder-targets') ?? '',
       localOnlyTargets: readiness?.getAttribute('data-local-only-targets') ?? '',
       roll20ReadyTargets: readiness?.getAttribute('data-roll20-ready-targets') ?? '',
+      riskyRoll20Targets: readiness?.getAttribute('data-risky-roll20-targets') ?? '',
       readinessText: readiness?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
       statusText: status?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
       warningText: warningItems.map((item) => item.textContent?.replace(/\s+/g, ' ').trim() ?? '').join('\n'),
@@ -716,6 +718,7 @@ async function main() {
     if (!result.checks.assetReplacementRender.exportMapUi.hasRoll20Readiness) failures.push('asset replacement Roll20 readiness note missing');
     if (result.checks.assetReplacementRender.exportMapUi.localOnlyTargets !== '1') failures.push('asset replacement local-only target count missing');
     if (result.checks.assetReplacementRender.exportMapUi.roll20ReadyTargets !== '0') failures.push('asset replacement Roll20-ready target count should be 0 for data URL smoke');
+    if (result.checks.assetReplacementRender.exportMapUi.riskyRoll20Targets !== '0') failures.push('asset replacement risky Roll20 target count should be 0 for data URL smoke');
     if (result.checks.assetReplacementRender.exportMapUi.placeholderTargets !== '0') failures.push('asset replacement placeholder target count should be 0 for valid data URL smoke');
     if (!result.checks.assetReplacementRender.exportMapUi.copyEnabled) failures.push('restored asset map copy button disabled');
     if (!result.checks.assetReplacementRender.exportMapUi.downloadEnabled) failures.push('restored asset map download button disabled');
@@ -723,6 +726,7 @@ async function main() {
     if (result.checks.exportAssetPlaceholderGuard.preview.hasPlaceholderTarget) failures.push('placeholder target leaked into preview render');
     if (result.checks.exportAssetPlaceholderGuard.ui.placeholderTargets !== '1') failures.push('placeholder target readiness count missing');
     if (result.checks.exportAssetPlaceholderGuard.ui.roll20ReadyTargets !== '0') failures.push('placeholder guard should not count Roll20-ready targets');
+    if (result.checks.exportAssetPlaceholderGuard.ui.riskyRoll20Targets !== '0') failures.push('placeholder guard should not count risky Roll20 targets');
     if (!/미입력|placeholder 대상|채워/.test(result.checks.exportAssetPlaceholderGuard.ui.readinessText)) failures.push('placeholder target readiness copy missing');
     if (!/placeholder 대상|http/.test(result.checks.exportAssetPlaceholderGuard.ui.warningText)) failures.push('placeholder target parser warning missing');
     if (result.checks.mainModeEdit.editSelected !== 'true') failures.push('main mode edit did not select');
