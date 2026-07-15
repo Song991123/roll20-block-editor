@@ -330,22 +330,106 @@ async function main() {
   // path: pointer drag should keep the visual position and update emitted HTML
   // immediately, while the Blockly/CSS model commit follows behind.
   const dragDelta = { x: 96, y: 40 };
+  await page.evaluate((blockId) => {
+    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
+    const escaped = CSS.escape(blockId);
+    const samples = [];
+    let done = false;
+    const startedAt = performance.now();
+    const readSample = (time) => {
+      const el = host?.shadowRoot?.querySelector(`div[data-r20-block-id="${escaped}"]`);
+      samples.push({
+        time: Math.round((time - startedAt) * 10) / 10,
+        transform: el?.style.transform ?? '',
+        left: el ? Math.round(Number.parseFloat(getComputedStyle(el).left)) : null,
+        top: el ? Math.round(Number.parseFloat(getComputedStyle(el).top)) : null,
+      });
+    };
+    const summarize = () => {
+      const gaps = [];
+      for (let i = 1; i < samples.length; i += 1) {
+        gaps.push(samples[i].time - samples[i - 1].time);
+      }
+      const movingSamples = samples.filter((sample) => sample.transform.includes('translate3d'));
+      return {
+        frameCount: samples.length,
+        movingFrameCount: movingSamples.length,
+        durationMs: samples.length ? samples[samples.length - 1].time : 0,
+        avgFrameGapMs: gaps.length
+          ? Math.round((gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length) * 10) / 10
+          : null,
+        maxFrameGapMs: gaps.length ? Math.round(Math.max(...gaps) * 10) / 10 : null,
+        firstMovingFrameMs: movingSamples[0]?.time ?? null,
+        lastMovingFrameMs: movingSamples[movingSamples.length - 1]?.time ?? null,
+        samples: samples.slice(0, 24),
+      };
+    };
+    window.__r20EditDragPerf = {
+      stop() {
+        done = true;
+        const summary = summarize();
+        window.__r20EditDragPerfSummary = summary;
+        return summary;
+      },
+    };
+    requestAnimationFrame(function tick(time) {
+      readSample(time);
+      if (!done) requestAnimationFrame(tick);
+    });
+  }, sectionInfo.blockId);
   await page.mouse.move(sectionInfo.cx, sectionInfo.cy);
   await page.mouse.down();
   await page.mouse.move(sectionInfo.cx + 20, sectionInfo.cy + 10, { steps: 2 });
   await page.mouse.move(sectionInfo.cx + dragDelta.x, sectionInfo.cy + dragDelta.y, { steps: 8 });
   await page.mouse.up();
+  const sectionDragPerf = await page.evaluate(() => window.__r20EditDragPerf?.stop?.() ?? null);
   const sectionMoveTimeline = await page.evaluate(async (blockId) => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
     const escaped = CSS.escape(blockId);
     const samples = [];
+    const t0 = performance.now();
+    const readPx = (text, prop) => {
+      const match = text.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px`, 'i'));
+      return match ? Math.round(Number.parseFloat(match[1])) : null;
+    };
+    const readEmitPosition = () => {
+      const emit = window.__perfHook.getEmitContent();
+      const marker = `data-r20-block-id="${blockId}"`;
+      const markerIndex = emit.html.indexOf(marker);
+      const tagStart = markerIndex >= 0 ? emit.html.lastIndexOf('<', markerIndex) : -1;
+      const tagEnd = markerIndex >= 0 ? emit.html.indexOf('>', markerIndex) : -1;
+      const emittedTag = tagStart >= 0 && tagEnd > tagStart ? emit.html.slice(tagStart, tagEnd + 1) : '';
+      const styleAttr = emittedTag.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+      const classAttr = emittedTag.match(/\sclass=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
+      const classNames = classAttr
+        .split(/\s+/)
+        .filter((name) => name.includes('r20-node'))
+        .flatMap((name) => (name.startsWith('sheet-') ? [name, name.slice('sheet-'.length)] : [name]));
+      let cssRule = '';
+      for (const className of classNames) {
+        const escapedClass = className.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const match = emit.css.match(new RegExp(`[^{}]*\\.${escapedClass}[^{}]*\\{([^}]*)\\}`, 'm'));
+        if (match) {
+          cssRule = match[1];
+          break;
+        }
+      }
+      return {
+        emittedLeft: readPx(styleAttr, 'left') ?? readPx(cssRule, 'left'),
+        emittedTop: readPx(styleAttr, 'top') ?? readPx(cssRule, 'top'),
+      };
+    };
     const sample = (label) => {
       const el = host?.shadowRoot?.querySelector(`div[data-r20-block-id="${escaped}"]`);
       const computed = el ? getComputedStyle(el) : null;
+      const emitPosition = readEmitPosition();
       samples.push({
         label,
+        t: Math.round((performance.now() - t0) * 10) / 10,
         left: computed ? Math.round(Number.parseFloat(computed.left)) : null,
         top: computed ? Math.round(Number.parseFloat(computed.top)) : null,
+        emittedLeft: emitPosition.emittedLeft,
+        emittedTop: emitPosition.emittedTop,
         transform: el?.style.transform ?? null,
       });
     };
@@ -361,6 +445,15 @@ async function main() {
     const tops = numeric.map((s) => s.top);
     const first = numeric[0] ?? null;
     const last = numeric[numeric.length - 1] ?? null;
+    const emittedMatches = samples.filter(
+      (s) =>
+        typeof s.emittedLeft === 'number' &&
+        typeof s.emittedTop === 'number' &&
+        s.emittedLeft === last?.left &&
+        s.emittedTop === last?.top,
+    );
+    const firstRaf = samples.find((s) => s.label === 'after-1raf');
+    const firstEmitMatch = emittedMatches[0] ?? null;
     return {
       samples,
       numericSampleCount: numeric.length,
@@ -370,6 +463,11 @@ async function main() {
       finalTop: last?.top ?? null,
       leftDrift: lefts.length ? Math.max(...lefts) - Math.min(...lefts) : null,
       topDrift: tops.length ? Math.max(...tops) - Math.min(...tops) : null,
+      timing: {
+        firstRafDelayMs: typeof firstRaf?.t === 'number' ? firstRaf.t : null,
+        dropCommitLatencyMs: typeof firstEmitMatch?.t === 'number' ? firstEmitMatch.t : null,
+        firstEmitMatchLabel: firstEmitMatch?.label ?? null,
+      },
     };
   }, sectionInfo.blockId);
 
@@ -1083,6 +1181,7 @@ async function main() {
   results.tests.realDrag = {
     c1,
     sectionInfo,
+    sectionDragPerf,
     sectionMoveTimeline,
     movedSectionInfo,
     c2Indicator,
@@ -1139,6 +1238,9 @@ async function main() {
     movedSectionInfo.emittedLeft === movedSectionInfo.computedLeft &&
     movedSectionInfo.emittedTop === movedSectionInfo.computedTop &&
     movedSectionInfo.emittedHasAbsolute === true &&
+    sectionDragPerf?.frameCount >= 2 &&
+    sectionDragPerf?.movingFrameCount >= 1 &&
+    typeof sectionDragPerf?.maxFrameGapMs === 'number' &&
     sectionMoveTimeline.numericSampleCount === 4 &&
     Math.abs(sectionMoveTimeline.firstLeft - movedSectionInfo.computedLeft) <= 2 &&
     Math.abs(sectionMoveTimeline.firstTop - movedSectionInfo.computedTop) <= 2 &&
@@ -1146,6 +1248,8 @@ async function main() {
     Math.abs(sectionMoveTimeline.finalTop - movedSectionInfo.emittedTop) <= 2 &&
     sectionMoveTimeline.leftDrift <= 2 &&
     sectionMoveTimeline.topDrift <= 2 &&
+    typeof sectionMoveTimeline.timing?.dropCommitLatencyMs === 'number' &&
+    typeof sectionMoveTimeline.timing?.firstRafDelayMs === 'number' &&
     c2Indicator.dispatched === true &&
     c2Indicator.hostDragging === '1' &&
     c2Indicator.hostDropMode === 'inside' &&

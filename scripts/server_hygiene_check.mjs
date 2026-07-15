@@ -54,6 +54,24 @@ function parseNetstat(text) {
   return rows;
 }
 
+function parseLsof(text) {
+  const rows = [];
+  for (const line of String(text ?? '').split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || /^COMMAND\s+PID\s+/i.test(trimmed)) continue;
+    const m = trimmed.match(/^(\S+)\s+(\d+)\s+.*\sTCP\s+(.+):(\d+)\s+\(LISTEN\)\s*$/i);
+    if (!m) continue;
+    rows.push({
+      localAddress: m[3],
+      localPort: Number(m[4]),
+      pid: Number(m[2]),
+      processName: m[1],
+      raw: trimmed,
+    });
+  }
+  return rows;
+}
+
 function parseCsvLine(line) {
   const cells = [];
   let cell = '';
@@ -93,6 +111,17 @@ function parseTasklist(text) {
 }
 
 function readListeners() {
+  if (process.platform !== 'win32') {
+    try {
+      const lsofText = execFileSync('lsof', ['-nP', '-iTCP', '-sTCP:LISTEN'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      return { listeners: parseLsof(lsofText), processLookupUnavailable: false };
+    } catch {
+      return { listeners: [], processLookupUnavailable: true };
+    }
+  }
   const netstatText = execFileSync('netstat.exe', ['-ano', '-p', 'tcp'], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -135,7 +164,7 @@ function killProjectListeners(projectRows) {
     if (seen.has(row.pid)) continue;
     seen.add(row.pid);
     const processName = String(row.processName ?? '').toLowerCase();
-    if (processName !== 'node.exe') {
+    if (processName !== 'node.exe' && processName !== 'node') {
       skipped.push({ ...row, reason: processName === 'unknown' ? 'unknown-process-name' : 'non-node-process' });
       continue;
     }
@@ -178,6 +207,16 @@ function selfTest() {
   if (result.project.length !== 2) throw new Error('expected two project listeners');
   if (result.cdp.length !== 1) throw new Error('expected one cdp listener');
   if (result.cdp[0].processName !== 'chrome.exe') throw new Error('expected chrome cdp process');
+  const lsof = `
+COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+node      444 maren  20u  IPv4 0x0000      0t0  TCP 127.0.0.1:4414 (LISTEN)
+Google    555 maren  21u  IPv4 0x0000      0t0  TCP 127.0.0.1:9222 (LISTEN)
+`;
+  const lsofRows = parseLsof(lsof);
+  if (lsofRows.length !== 2) throw new Error('expected two lsof listeners');
+  if (lsofRows[0].processName !== 'node' || lsofRows[0].localPort !== 4414) {
+    throw new Error('expected parsed macOS node listener');
+  }
   console.log('server_hygiene_check self-test passed');
 }
 

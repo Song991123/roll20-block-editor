@@ -20,9 +20,13 @@ const positionalArgs = process.argv.slice(2).filter((arg) => arg !== '--');
 const runDirArg = positionalArgs[0] ? path.resolve(positionalArgs[0]) : '';
 const repoRoot = runGit(['rev-parse', '--show-toplevel']).trim();
 const repoName = path.basename(repoRoot).toLowerCase();
+const packageName = readPackageName();
 const allowedRepoRootNames = new Set(['web-push-main']);
 if (process.env.GITHUB_ACTIONS === 'true') {
   allowedRepoRootNames.add('roll20-block-editor');
+}
+if (packageName === 'roll20-block-editor' && repoName === 'roll20-block-editor-edit') {
+  allowedRepoRootNames.add(repoName);
 }
 
 const localOnlyRoots = [
@@ -88,6 +92,14 @@ function check(label, ok, detail = '') {
 
 function normalizePath(value) {
   return value.replace(/\\/g, '/').replace(/^\.\//, '');
+}
+
+function readPackageName() {
+  try {
+    return JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8')).name ?? '';
+  } catch {
+    return '';
+  }
 }
 
 function checkGitignore() {
