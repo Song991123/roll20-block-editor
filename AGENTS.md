@@ -29,6 +29,9 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Record agent-facing progress in `docs/operations/35_agent_progress_log.md` and task status in `docs/qa/31_active_todo.md`, not in `README.md`.
 - Keep README as a Korean portfolio landing page: visual first, compact cards, details linked out.
 - Do not commit real or derived Roll20 sheet assets, public examples, local fixtures, generated reports, source screenshots, or third-party reference images.
+- Do not bundle copyrighted/public Roll20 sheets as in-app samples or seeded demo content. The product must support user import, user-authored sheets, and local ignored verification fixtures instead.
+- Roll20 preview/edit/export must support both modern and legacy Roll20 paths. Keep the legacy sanitize option separate from auto-prefixing and verify legacy sheets with the option enabled.
+- The product goal is universal mapping: imported HTML, CSS, translation/i18n, and future worker JS must map to editable blocks/layers without hard-coding one commissioned sheet or one official sheet family.
 - Commit only from the active Next/React worktree (`web-push-main/`). Confirm with `git rev-parse --show-toplevel` before committing.
 - Roll20 actual-screen verification has two tracks: read-only observation of existing solo rooms, and write/apply checks only in Custom Sheet Sandbox or a newly-created test room.
 - Existing Roll20 rooms are observation-only unless the user explicitly authorizes a specific edit in that specific room.

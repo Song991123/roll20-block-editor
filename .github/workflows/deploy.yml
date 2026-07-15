@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -23,6 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
       - name: Enable Corepack
         run: corepack enable
@@ -30,11 +31,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Safety and unit verification
+        run: pnpm ci:verify
+
+      - name: Lint
+        run: pnpm lint
+
       - name: Build (static export to out)
         run: pnpm build
 
       - name: Disable Jekyll on GitHub Pages
         run: touch out/.nojekyll
+
+      - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:

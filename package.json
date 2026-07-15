@@ -2,6 +2,7 @@
   "name": "roll20-block-editor",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.1.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -29,6 +30,7 @@
     "guard:roll20-evidence": "node scripts/roll20_actual_evidence_guard.mjs",
     "guard:roll20-renderer-model": "node scripts/roll20_renderer_model_guard.mjs",
     "guard:ui-copy": "node scripts/ui_copy_guard.mjs",
+    "ci:verify": "node scripts/ci_verify.mjs",
     "handoff:roll20-upload": "node scripts/roll20_upload_handoff.mjs",
     "snippet:roll20-upload": "node scripts/roll20_upload_snippet.mjs",
     "apply:roll20-upload-cdp": "node scripts/roll20_upload_cdp_apply.mjs",

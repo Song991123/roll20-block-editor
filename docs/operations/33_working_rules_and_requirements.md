@@ -42,6 +42,14 @@ Allowed workspace-owned places for copied evidence:
 
 These are local-only by default. They are intentionally ignored so real sheets, generated fixture HTML, private screenshots, source-derived report JSON, and third-party reference images do not ship with the public app.
 
+## 0.1.1 Product Copyright and Import Boundary
+
+- Do not ship copyrighted/public Roll20 sheet source, generated sheet fixtures, screenshots, or preview images as in-app samples, seeded examples, docs assets, or public repo material.
+- The app may support users importing their own HTML, CSS, translation/i18n, assets, and later worker JS, and agents may use local ignored fixtures/reports for verification.
+- Any fixture copied from a real sheet must stay local-only and ignored. Public demos must be synthetic, user-authored, or explicitly cleared for publication.
+- Do not optimize for a single sheet family. Renderer, importer, editor layers, and export paths must be universal enough for custom sheets and official-style sheets.
+- Legacy Roll20 support is a product requirement. Keep modern and legacy behavior selectable, and never describe auto-prefixing as legacy sanitize unless actual legacy CSS sanitization has been verified.
+
 ## 0.2 Forbidden Claims
 
 Do not say any of the following unless the exact current report proves it:

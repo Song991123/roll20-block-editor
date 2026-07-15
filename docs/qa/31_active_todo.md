@@ -1,3 +1,23 @@
+## 2026-07-15 Render Unification Product Boundary Note
+
+- TODO: Continue renderer unification against actual Roll20 evidence, not against a bundled sample sheet.
+- RULE: Do not add real Roll20/commissioned/official sheet files, screenshots, generated fixtures, or reference images to the app or public repo. Use ignored local fixtures/reports only.
+- RULE: Users may import their own HTML/CSS/translation/assets, and that import/export path must remain the supported workflow.
+- RULE: Support modern and legacy Roll20 modes separately; legacy mode must be a real selectable behavior, not a renamed prefixing path.
+- RULE: Mapping must stay universal for custom sheets, official-style sheets, translation/i18n files, assets, and future worker JS block/layer support. Do not hard-code YSHY, CoC, AW2E, or one official family as product logic.
+- CURRENT: Renderer parity is still unproven. The current highest-value renderer work is template-scoped source/intrinsic modeling plus asset relink-safe Roll20 comparison.
+
+## 2026-07-15 CI/CD and Roll20 Research TODO Note
+
+- DONE: Added `ci:verify` as the shared lightweight CI safety suite for local, PR/dev CI, and production Pages deploy.
+- DONE: Updated CI to run safety/unit verification, lint, and build on `main`, `dev`, and PRs.
+- DONE: Updated GitHub Pages deploy to repeat safety/unit verification and lint before static export/upload.
+- DONE: Confirmed `gh` is authenticated for `Song991123/roll20-block-editor`, so future pushed branches can be checked with GitHub Actions/Pages status commands.
+- VERIFIED: Local `corepack pnpm run ci:verify` passed.
+- CURRENT: GitHub Pages remains the right current host because the app is statically exported. A separate public dev URL is still TODO and should use Vercel/Netlify, a second Pages repo, or a controlled same-site `/dev/` artifact only after a hosting strategy is chosen.
+- RESEARCH TODO: Keep collecting Roll20 technical references from official docs/wiki, the official `roll20-character-sheets` GitHub repo, and dated forum threads. Treat forum posts as hypotheses until verified in Sandbox/CDP.
+- RESEARCH NOTE: Initial external sources indicate legacy sanitization must be tested as a real option, and Roll20 rolltemplates may still behave differently from the newer iframe sheet sanitizer. Fold this into the render-unification checklist before promoting rolltemplate CSS.
+
 ## 2026-07-13 Edit Canvas Edge Drop Target TODO Note
 
 - DONE: Updated edit-canvas widget drop targeting so containers distinguish top edge `before`, middle `inside`, and bottom edge `after` instead of treating the whole container as inside-only.

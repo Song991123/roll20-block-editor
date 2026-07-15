@@ -4633,6 +4633,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verification: `guard:ui-copy`, `test:asset-refs`, `test:asset-replacements`, `build`, `smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-copy-polish-20260713-r2 --port 4390`, `lint`, `git diff --check`, and `check:server-hygiene` passed. The smoke confirmed `hasMojibake=false`, zero console/page errors, and the placeholder guard text now uses Korean parser warnings.
 - Claim boundary: UI wording clarity only. This does not relink assets, upload to Roll20, promote renderer CSS, or prove Roll20 visual parity.
 
+## 2026-07-15 Render Boundary, CI/CD Gate, and Research Track
+
+- Reaffirmed the product boundary in `AGENTS.md` and `docs/operations/33_working_rules_and_requirements.md`: no copyrighted/public Roll20 sheet samples in the app or public repo; user import and ignored local evidence are allowed; mapping must remain universal; legacy and modern Roll20 modes must stay separate.
+- Added `ci:verify` through `scripts/ci_verify.mjs` so CI reuses the same pnpm executable that launched the script, avoiding Windows/Corepack nested-pnpm drift.
+- Updated `.github/workflows/ci.yml` so `main`, `dev`, and PRs run safety/unit verification, lint, and build.
+- Updated `.github/workflows/deploy.yml` so the GitHub Pages deploy repeats safety/unit verification and lint before static export/upload.
+- Updated `docs/operations/34_branch_and_deployment_plan.md`: GitHub Pages is enough for the current static export, while actual Roll20 room/sandbox verification remains local/browser evidence because it depends on login/private sheet material.
+- Reran current source/intrinsic diagnostics into ignored temp evidence: AW2E and Les need crop/top-origin separated from intrinsic table width; YSHY needs Roll20 sanitize/rule order, table auto-layout intrinsic sizing, and crop/top-origin modeled together.
+- Current renderer gate still correctly holds production renderer CSS: `HOLD_PRODUCTION_RENDERER_PATCH`, with source/intrinsic, template-scope, candidate-audit, and asset-policy blockers.
+- External research started: Roll20 official/wiki/GitHub sources remain the implementation baseline, while dated forum posts are only hypotheses. Initial useful lead: newer sheet sanitizer and rolltemplate sanitizer behavior may differ, so rolltemplate parity cannot be inferred from sheet iframe parity.
+- Verification so far: `corepack pnpm run ci:verify` passed; `gh auth status` confirms authenticated access to `Song991123/roll20-block-editor`.
+- Claim boundary: CI/CD is safer and renderer evidence is fresher, but this does not prove Roll20 visual parity, does not relink private assets, and does not promote renderer CSS.
+
 ## 2026-07-13 Roll20 Sandbox Diagnostic Copy Polish
 
 - Cleaned the export dialog's Roll20 Sandbox diagnostic rows so implementation terms no longer leak into visible UI: `selector prefix` became `선택자 보정`, `class prefix` became `클래스 보정`, and `proxy/drop` became `프록시 처리/제거`.
