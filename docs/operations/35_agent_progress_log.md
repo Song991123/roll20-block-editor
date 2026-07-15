@@ -4654,6 +4654,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added shared skill source at `agent/skills/roll20-render-ops` and installed the same skill locally at `C:\Users\acorn\.codex\skills\roll20-render-ops`. MacBook should copy or symlink the repo skill folder into its Codex skills directory.
 - Claim boundary: this is operations/security/performance planning and handoff tooling. It does not itself improve Roll20 pixels, edit UX, or renderer readiness.
 
+## 2026-07-15 Two-Host Codex and Claude Code Execution Prompts
+
+- Added `docs/operations/39_two_host_agent_prompts.md` for the actual available capacity: this Windows Codex lead, one additional MacBook Codex, and two Claude Code workers.
+- Claude Code is assigned persistent implementation tracks rather than short read-only Cowork audits: Windows owns universal mapping plus legacy/modern separation; MacBook owns CI/CD plus security/public-evidence gates.
+- Each worker uses a separate physical worktree or clone and branch. Only the Windows Codex lead merges, updates shared progress docs, pushes the integration branch, and decides deployment readiness.
+- Every prompt includes startup reads, protected file boundaries, acceptance commands, commit/push requirements, and a structured handoff with commit hash and residual VERIFY items.
+- Verification: `git diff --check` and `corepack pnpm run check:server-hygiene` passed; no project dev/smoke listener or CDP listener was active.
+- Claim boundary: coordination and handoff implementation only. No renderer, importer, editor, Roll20 upload, or visual parity behavior changed in this batch.
+
 ## 2026-07-13 Roll20 Sandbox Diagnostic Copy Polish
 
 - Cleaned the export dialog's Roll20 Sandbox diagnostic rows so implementation terms no longer leak into visible UI: `selector prefix` became `선택자 보정`, `class prefix` became `클래스 보정`, and `proxy/drop` became `프록시 처리/제거`.

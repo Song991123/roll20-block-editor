@@ -3932,3 +3932,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `corepack pnpm run guard:ui-copy`, `node --check scripts\export_dialog_browser_smoke.mjs`, `corepack pnpm run build`, `corepack pnpm run smoke:export-dialog -- --report-dir ..\_tmp_codex_smoke\export-dialog-sandbox-copy-20260713-r1 --port 4391`, `corepack pnpm run lint`, `git diff --check`, and `corepack pnpm run check:server-hygiene` passed.
 - CURRENT: This reduces visible implementation jargon in the upload-readiness UI. It does not alter actual Roll20 render behavior or unblock renderer readiness.
 - CLAIM BOUNDARY: UI copy and smoke coverage only. No asset relink, Roll20 upload, renderer CSS promotion, or visual parity proof happened.
+
+## 2026-07-15 Two-Host Agent Execution TODO Note
+
+- DONE: Replaced the stale 3-Codex allocation with the actual capacity: Windows Codex lead, one MacBook Codex worker, and two Claude Code workers.
+- DONE: Added OS-specific setup and copy-paste prompts in `docs/operations/39_two_host_agent_prompts.md`.
+- DONE: Assigned non-overlapping ownership: lead/render integration, edit UX, universal mapping/legacy, and CI/security.
+- DONE: Every non-lead worker now has a separate branch, worktree/clone rule, acceptance checks, commit/push requirement, and exact handoff contract.
+- TODO: Start the three external worker sessions and collect their branch names and commit hashes for lead review.
+- TODO: Cherry-pick only after full diff review and rerun combined renderer/edit/mapping/security verification on the integration branch.
+- CLAIM BOUNDARY: This completes executable multi-agent coordination only. It does not itself change Roll20 rendering, mapping fidelity, edit UX, or renderer readiness.

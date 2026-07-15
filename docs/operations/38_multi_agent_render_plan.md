@@ -76,18 +76,16 @@ Preserve CDP `9222` only when Roll20 browser verification is active. Do not kill
 
 ## Agent Allocation
 
-Recommended immediate parallelism: 4 active agents, 1 optional verifier.
+Recommended immediate parallelism for the currently available accounts: 4 active agents across two hosts. Use `docs/operations/39_two_host_agent_prompts.md` for the current copy-paste prompts and setup commands.
 
 | Agent | Track | Mode |
 | --- | --- | --- |
-| Codex 1 | Lead/integrator | Owns branch integration, TODO/progress docs, CI/CD, GitHub Actions, final push. |
-| Codex 2 | Render evidence | Owns local preview/edit vs actual Roll20 evidence, source/intrinsic model, Sandbox/test-room screenshots, ignored reports. |
-| Codex 3 | Edit UX/performance | Owns Figma-like overlay, flow-aware insertion, layer panel visualization, drag/drop latency. |
-| Claude 1 | Research/corpus | Read-only official Roll20 repo/forum/GitHub pattern analysis. No private sheet commits. |
-| Claude 2 | Security/perf audit | Read-only first. Reviews dependency risk, untrusted import threat model, bundle/perf budget. |
-| MacBook | Clean verifier | Optional clean-room CI/browser check after push so Windows cache state does not hide failures. |
+| Windows Codex 1 | Lead/render integrator | Owns canonical render parity, branch integration, TODO/progress docs, CI/CD, GitHub Actions, and final push. |
+| MacBook Codex 2 | Edit UX/performance | Owns Figma-like overlay, flow-aware insertion, layer visualization, and drag/drop latency on a separate branch. |
+| Windows Claude Code 1 | Mapping/legacy worker | Owns universal import/export mapping and legacy/modern separation on a separate worktree and branch. |
+| MacBook Claude Code 2 | CI/security worker | Owns CI/CD, security gates, public-repo guards, and clean-clone verification on a separate clone and branch. |
 
-Do not run more than 3 mutating code streams at once. The lead agent decides merge order.
+All four sessions may work concurrently only because their file ownership and physical worktrees are separated. Keep at most 2 writers on core product-code paths; Claude Code 2 is limited to CI/security/tooling. The Windows Codex lead decides merge order. The prompts below are retained as historical role templates; use the current two-host prompts in `docs/operations/39_two_host_agent_prompts.md` for execution.
 
 ## Copy-Paste Prompts
 

@@ -15,6 +15,7 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 9. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
 10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/31_asset_preservation_policy.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
 11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+12. For two-host Codex/Claude parallel work, read `docs/operations/39_two_host_agent_prompts.md`; only the lead integration agent merges or pushes the integration branch.
 12. For external render/editor references, read `docs/research/40_roll20_render_reference_inventory.md`.
 13. For parallel Codex/Claude/MacBook work, read `docs/operations/38_multi_agent_render_plan.md`.
 14. Run `git status --short --branch`.
