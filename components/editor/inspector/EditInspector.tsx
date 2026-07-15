@@ -52,12 +52,22 @@ export default function EditInspector() {
     if (!selectedId) return { snap: null, ws: null };
     const wsKey = resolveBlockWorkspace(selectedId);
     if (!wsKey) return { snap: null, ws: null };
-    return { snap: getBlocklyAdapter().getBlock(wsKey, selectedId), ws: wsKey };
+    // listAllBlocks carries layer relations (parent/relation/depth) that a
+    // single getBlock snapshot does not.
+    const fromTree = getBlocklyAdapter()
+      .listAllBlocks(wsKey)
+      .find((node) => node.id === selectedId);
+    return { snap: fromTree ?? getBlocklyAdapter().getBlock(wsKey, selectedId), ws: wsKey };
   }, [selectedId, htmlV, cssV, i18nV]);
 
   const parentSnap = useMemo(() => {
     if (!snap?.layerParentId || !ws) return null;
-    return getBlocklyAdapter().getBlock(ws, snap.layerParentId);
+    const parentId = snap.layerParentId;
+    return (
+      getBlocklyAdapter()
+        .listAllBlocks(ws)
+        .find((node) => node.id === parentId) ?? getBlocklyAdapter().getBlock(ws, parentId)
+    );
   }, [snap, ws]);
 
   const fields: BlockFieldInfo[] = useMemo(() => {
