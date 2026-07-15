@@ -20,6 +20,10 @@ const positionalArgs = process.argv.slice(2).filter((arg) => arg !== '--');
 const runDirArg = positionalArgs[0] ? path.resolve(positionalArgs[0]) : '';
 const repoRoot = runGit(['rev-parse', '--show-toplevel']).trim();
 const repoName = path.basename(repoRoot).toLowerCase();
+const allowedRepoRootNames = new Set(['web-push-main']);
+if (process.env.GITHUB_ACTIONS === 'true') {
+  allowedRepoRootNames.add('roll20-block-editor');
+}
 
 const localOnlyRoots = [
   'test-fixtures',
@@ -48,7 +52,7 @@ const requiredIgnoreSnippets = [
 
 const results = [];
 
-check('git root is web-push-main', repoName === 'web-push-main', repoRoot);
+check('git root is active app repository', allowedRepoRootNames.has(repoName), repoRoot);
 checkGitignore();
 checkPreCommitHook();
 checkTrackedLocalEvidence();
