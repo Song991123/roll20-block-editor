@@ -537,6 +537,13 @@ export function mountSheetShadow(
   background: rgba(22, 163, 74, 0.06);
   cursor: text !important;
 }
+/* Edit-canvas hover affordance — JS-driven (deepest block only), never in
+   preview shadow mode. Weaker than selection and drop-target chrome. */
+:host(:not([data-r20-dragging]):not([data-r20-widget-dragging])) [data-r20-block-id].r20-hover:not(.r20-selected):not(.r20-drop-target) {
+  outline: 1px solid rgba(37, 99, 235, 0.55);
+  outline-offset: 1px;
+  cursor: default;
+}
 `, 'edit-shadow-host-reset');
   appendSourceMarkedStyles(shadow, opts.css);
 
@@ -687,6 +694,7 @@ export function mountSheetShadow(
         return;
       }
       dragState.active = true;
+      clearHover();
       dragState.blockEl.classList.add('r20-dragging');
       host.setAttribute('data-r20-dragging', '');
       opts.onDragStart?.(dragState.blockId, e.clientX, e.clientY);
@@ -830,6 +838,34 @@ export function mountSheetShadow(
   };
   shadow.addEventListener('contextmenu', onContextMenu);
 
+  // Edit-canvas hover highlight — track the deepest hovered block and mark it
+  // with .r20-hover so only one element lights up (CSS :hover would stack the
+  // whole ancestor chain). Enabled only for the edit surface.
+  let hoverEl: HTMLElement | null = null;
+  const clearHover = () => {
+    if (hoverEl) {
+      hoverEl.classList.remove('r20-hover');
+      hoverEl = null;
+    }
+  };
+  const onPointerOver = (ev: Event) => {
+    if (!opts.disableNativeControls) return;
+    if (dragState?.active || editingState) return;
+    const target = (ev as PointerEvent).target as HTMLElement | null;
+    const el = (target?.closest('[data-r20-block-id]') as HTMLElement | null) ?? null;
+    if (el === hoverEl) return;
+    clearHover();
+    if (el) {
+      hoverEl = el;
+      el.classList.add('r20-hover');
+    }
+  };
+  const onPointerLeaveHost = () => clearHover();
+  if (opts.disableNativeControls) {
+    shadow.addEventListener('pointerover', onPointerOver);
+    host.addEventListener('pointerleave', onPointerLeaveHost);
+  }
+
   const escapeAttr = (raw: string): string =>
     (typeof CSS !== 'undefined' && CSS.escape)
       ? CSS.escape(raw)
@@ -913,16 +949,19 @@ export function mountSheetShadow(
           /* element already removed by innerHTML reset */
         }
       }
+      clearHover();
       if (shadow) {
         shadow.removeEventListener('click', onClick);
         shadow.removeEventListener('pointerdown', onPointerDown);
         shadow.removeEventListener('dblclick', onDblClick);
         shadow.removeEventListener('contextmenu', onContextMenu);
+        shadow.removeEventListener('pointerover', onPointerOver);
         shadow.innerHTML = '';
       }
       host.removeEventListener('pointermove', onPointerMove);
       host.removeEventListener('pointerup', finishDrag);
       host.removeEventListener('pointercancel', finishDrag);
+      host.removeEventListener('pointerleave', onPointerLeaveHost);
       host.removeAttribute('data-r20-dragging');
     },
     setSelected,

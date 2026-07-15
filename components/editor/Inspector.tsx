@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { WORKSPACE_KEYS, useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import WidgetInspector from './WidgetInspector';
+import EditInspector from './inspector/EditInspector';
 import {
   getBlocklyAdapter,
   type BlockSnapshot,
@@ -25,8 +26,13 @@ import { CATEGORIES } from '@/lib/blocks/types';
  */
 export default function Inspector() {
   const mainMode = useUiStore((s) => s.mainMode);
+  const selectedWidgetId = useUiStore((s) => s.selectedWidgetId);
+  const selectedBlockId = useWorkspaceStore((s) => s.selectedBlockId);
   if (mainMode === 'edit') {
-    return <WidgetInspector />;
+    // Edit-canvas selection is block-based; the widget-instance inspector stays
+    // as fallback for the legacy overlay widget flow (PreviewMain).
+    if (!selectedBlockId && selectedWidgetId) return <WidgetInspector />;
+    return <EditInspector />;
   }
   return <BlockInspector />;
 }

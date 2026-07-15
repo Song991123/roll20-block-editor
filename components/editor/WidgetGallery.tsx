@@ -1,10 +1,20 @@
 'use client';
 
+/**
+ * WidgetGallery — element palette for the edit canvas.
+ *
+ * Tool-palette presentation: compact two-column tiles grouped by category,
+ * draggable onto the canvas (FRIENDLY_WIDGET_MIME payload) or click-to-add.
+ * Tile identity comes from the preset icon + label; the long description
+ * lives in the tooltip so the list stays scannable.
+ */
+
 import { useMemo, useState } from 'react';
 import {
   AlignLeft,
   Box,
   CheckSquare,
+  GripVertical,
   Hash,
   Heading1,
   Image as ImageIcon,
@@ -59,7 +69,7 @@ export default function WidgetGallery() {
       <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border px-3 text-xs">
         <span className="font-semibold">요소 갤러리</span>
         <span className="ml-auto rounded bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          시트에 추가
+          끌어서 놓기
         </span>
       </div>
 
@@ -89,9 +99,9 @@ export default function WidgetGallery() {
                 {FRIENDLY_WIDGET_GROUPS[group]}
                 <span className="ml-auto text-[10px] font-normal">{items.length}</span>
               </div>
-              <div className="grid grid-cols-1 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 {items.map((preset) => (
-                  <WidgetPresetCard
+                  <WidgetPresetTile
                     key={preset.id}
                     preset={preset}
                     onClick={() => addPreset(preset)}
@@ -102,11 +112,15 @@ export default function WidgetGallery() {
           ))
         )}
       </div>
+
+      <div className="shrink-0 border-t border-border px-3 py-2 text-[10px] leading-relaxed text-muted-foreground">
+        타일을 시트로 끌어 놓으면 놓은 위치의 틀 안에 배치되고, 클릭하면 시트에 바로 추가됩니다.
+      </div>
     </div>
   );
 }
 
-function WidgetPresetCard({
+function WidgetPresetTile({
   preset,
   onClick,
 }: {
@@ -118,7 +132,7 @@ function WidgetPresetCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex w-full items-center gap-2 rounded-md border border-border bg-[var(--bg-elevated-2)] p-2 text-left',
+        'group relative flex w-full flex-col items-center gap-1.5 rounded-md border border-border bg-[var(--bg-elevated-2)] px-1.5 pb-1.5 pt-2 text-center',
         'transition-colors hover:border-[var(--color-primary,#2563eb)] hover:bg-[var(--bg-hover)]',
         'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
       )}
@@ -151,17 +165,16 @@ function WidgetPresetCard({
       }}
       title={`${preset.label}\n${preset.description}`}
     >
-      <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded border border-border bg-white">
+      <GripVertical
+        aria-hidden="true"
+        className="absolute left-0.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/0 transition-colors group-hover:text-muted-foreground/60"
+      />
+      <div className="flex h-9 w-full items-center justify-center rounded border border-border bg-white">
         <PreviewShape preset={preset} />
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          {renderPresetIcon(preset)}
-          <span className="truncate text-xs font-medium text-foreground">{preset.label}</span>
-        </div>
-        <div className="mt-0.5 line-clamp-2 text-[10.5px] leading-snug text-muted-foreground">
-          {preset.description}
-        </div>
+      <div className="flex w-full min-w-0 items-center justify-center gap-1">
+        {renderPresetIcon(preset)}
+        <span className="truncate text-[11px] font-medium text-foreground">{preset.label}</span>
       </div>
     </button>
   );
@@ -170,30 +183,30 @@ function WidgetPresetCard({
 function PreviewShape({ preset }: { preset: FriendlyWidgetPreset }) {
   switch (preset.preview) {
     case 'box':
-      return <div className="h-8 w-12 rounded-sm border border-[#9ca3af] bg-[#f8fafc]" />;
+      return <div className="h-6 w-10 rounded-sm border border-[#9ca3af] bg-[#f8fafc]" />;
     case 'heading':
-      return <div className="h-4 w-12 rounded-sm bg-[#111827]" />;
+      return <div className="h-3 w-10 rounded-sm bg-[#111827]" />;
     case 'label':
-      return <div className="h-2 w-10 rounded-sm bg-[#4b5563]" />;
+      return <div className="h-1.5 w-8 rounded-sm bg-[#4b5563]" />;
     case 'text':
-      return <div className="h-6 w-12 rounded border border-[#9ca3af] bg-white" />;
+      return <div className="h-5 w-10 rounded border border-[#9ca3af] bg-white" />;
     case 'number':
-      return <div className="h-6 w-9 rounded border border-[#9ca3af] bg-white text-center text-[10px] leading-6 text-[#4b5563]">0</div>;
+      return <div className="h-5 w-7 rounded border border-[#9ca3af] bg-white text-center text-[9px] leading-5 text-[#4b5563]">0</div>;
     case 'textarea':
-      return <div className="h-8 w-12 rounded border border-[#9ca3af] bg-white" />;
+      return <div className="h-6 w-10 rounded border border-[#9ca3af] bg-white" />;
     case 'checkbox':
-      return <div className="h-4 w-4 rounded border border-[#6b7280] bg-white" />;
+      return <div className="h-3.5 w-3.5 rounded border border-[#6b7280] bg-white" />;
     case 'image':
-      return <ImageIcon className="h-7 w-7 text-[#6b7280]" />;
+      return <ImageIcon className="h-5 w-5 text-[#6b7280]" />;
     case 'button':
-      return <div className="h-6 w-12 rounded bg-[#2563eb]" />;
+      return <div className="h-5 w-10 rounded bg-[#2563eb]" />;
     default:
       return null;
   }
 }
 
 function renderPresetIcon(preset: FriendlyWidgetPreset) {
-  const className = 'h-3.5 w-3.5 shrink-0 text-muted-foreground';
+  const className = 'h-3 w-3 shrink-0 text-muted-foreground';
   switch (preset.preview) {
     case 'heading':
       return <Heading1 className={className} />;
