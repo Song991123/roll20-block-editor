@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    # codex/** and claude/** are the per-agent task branches from
+    # docs/operations/39_two_host_agent_prompts.md; they get CI but never deploy.
+    branches: [main, dev, 'codex/**', 'claude/**']
   pull_request:
     branches: [main, dev]
   workflow_dispatch:

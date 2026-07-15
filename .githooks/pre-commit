@@ -8,6 +8,12 @@ changes="$(git diff --cached --name-status -- \
   'reports/**' \
   'docs/portfolio/private/**' \
   'docs/portfolio/assets/private/**' \
+  'docs/perf/**' \
+  'docs/qa/yshy_*' \
+  'docs/qa/archive/**' \
+  'docs/validation/verify/**' \
+  'docs/validation/working/**' \
+  'docs/validation/sheets/**' \
   ':!reports/README.md' \
   ':!reports/.gitkeep' || true)"
 
@@ -32,11 +38,19 @@ if [ -n "$blocked" ]; then
 fi
 
 root="$(git rev-parse --show-toplevel)"
+origin_url="$(git config --get remote.origin.url 2>/dev/null || true)"
 case "$root" in
   *web-push-main) ;;
   *)
-    echo "Blocked commit: git root is not web-push-main: $root" >&2
-    exit 1
+    # Clean-room clones/worktrees (docs/operations/39_two_host_agent_prompts.md)
+    # are identified by the canonical origin instead of the folder name.
+    case "$origin_url" in
+      *[Ss]ong991123/roll20-block-editor*) ;;
+      *)
+        echo "Blocked commit: git root is not web-push-main and origin is not the canonical repo: $root ($origin_url)" >&2
+        exit 1
+        ;;
+    esac
     ;;
 esac
 

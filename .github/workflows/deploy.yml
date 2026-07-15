@@ -16,6 +16,9 @@ concurrency:
 
 jobs:
   build:
+    # Hard gate: GitHub Pages production must never deploy from a non-main ref,
+    # including manual workflow_dispatch on a feature branch.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
