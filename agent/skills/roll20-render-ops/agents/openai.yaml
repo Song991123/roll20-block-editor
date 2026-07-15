@@ -1,0 +1,6 @@
+interface:
+  display_name: "Roll20 Render Ops"
+  short_description: "Roll20 render parity runbook"
+  default_prompt: "Use $roll20-render-ops to continue Roll20 render parity with current TODOs, CI status, and safe multi-agent handoff."
+policy:
+  allow_implicit_invocation: true

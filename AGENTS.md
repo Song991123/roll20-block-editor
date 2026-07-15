@@ -15,8 +15,10 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 9. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
 10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/31_asset_preservation_policy.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
 11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-12. Run `git status --short --branch`.
-13. Check for unnecessary local dev servers before starting another one.
+12. For external render/editor references, read `docs/research/40_roll20_render_reference_inventory.md`.
+13. For parallel Codex/Claude/MacBook work, read `docs/operations/38_multi_agent_render_plan.md`.
+14. Run `git status --short --branch`.
+15. Check for unnecessary local dev servers before starting another one.
 
 ## Non-Negotiable Rules
 
@@ -35,6 +37,8 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Commit only from the active Next/React worktree (`web-push-main/`). Confirm with `git rev-parse --show-toplevel` before committing.
 - Roll20 actual-screen verification has two tracks: read-only observation of existing solo rooms, and write/apply checks only in Custom Sheet Sandbox or a newly-created test room.
 - Existing Roll20 rooms are observation-only unless the user explicitly authorizes a specific edit in that specific room.
+- Optimization and security work must keep render truthfulness first: performance improvements cannot bypass Roll20 wrapper/context, source/intrinsic, legacy/modern, asset, and private-evidence gates.
+- Parallel agents must use separate branches or read-only reports. One lead/integrator owns merges and pushes to shared branches.
 
 ## Protected Source Folders
 

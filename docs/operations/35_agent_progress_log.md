@@ -4646,6 +4646,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verification so far: `corepack pnpm run ci:verify` passed; `gh auth status` confirms authenticated access to `Song991123/roll20-block-editor`.
 - Claim boundary: CI/CD is safer and renderer evidence is fresher, but this does not prove Roll20 visual parity, does not relink private assets, and does not promote renderer CSS.
 
+## 2026-07-15 Multi-Agent Render Plan, Optimization, and Security Strategy
+
+- Added `docs/research/40_roll20_render_reference_inventory.md` so Roll20/GitHub/forum/editor references are tracked with evidence boundaries instead of scattered chat memory.
+- Added `docs/operations/38_multi_agent_render_plan.md` with current progress estimates, branch strategy, server hygiene commands, Codex/Claude/MacBook allocation, copy-paste prompts, optimization strategy, security strategy, and reporting contract.
+- Updated `AGENTS.md` startup order so future agents read the research inventory and multi-agent plan before branching, optimizing, or claiming status.
+- Added shared skill source at `agent/skills/roll20-render-ops` and installed the same skill locally at `C:\Users\acorn\.codex\skills\roll20-render-ops`. MacBook should copy or symlink the repo skill folder into its Codex skills directory.
+- Claim boundary: this is operations/security/performance planning and handoff tooling. It does not itself improve Roll20 pixels, edit UX, or renderer readiness.
+
 ## 2026-07-13 Roll20 Sandbox Diagnostic Copy Polish
 
 - Cleaned the export dialog's Roll20 Sandbox diagnostic rows so implementation terms no longer leak into visible UI: `selector prefix` became `선택자 보정`, `class prefix` became `클래스 보정`, and `proxy/drop` became `프록시 처리/제거`.

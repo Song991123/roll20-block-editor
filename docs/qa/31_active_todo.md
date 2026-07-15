@@ -18,6 +18,17 @@
 - RESEARCH TODO: Keep collecting Roll20 technical references from official docs/wiki, the official `roll20-character-sheets` GitHub repo, and dated forum threads. Treat forum posts as hypotheses until verified in Sandbox/CDP.
 - RESEARCH NOTE: Initial external sources indicate legacy sanitization must be tested as a real option, and Roll20 rolltemplates may still behave differently from the newer iframe sheet sanitizer. Fold this into the render-unification checklist before promoting rolltemplate CSS.
 
+## 2026-07-15 Multi-Agent Optimization and Security TODO Note
+
+- DONE: Added external reference inventory at `docs/research/40_roll20_render_reference_inventory.md`.
+- DONE: Added multi-agent branch/server/CI/prompt/optimization/security plan at `docs/operations/38_multi_agent_render_plan.md`.
+- DONE: Added shared Codex skill source at `agent/skills/roll20-render-ops` and installed the same skill locally for this Windows session.
+- VERIFY: On MacBook, copy or symlink `agent/skills/roll20-render-ops` into `~/.codex/skills/roll20-render-ops` before using `$roll20-render-ops`.
+- TODO: Run the next real render batch on a dedicated render branch: source/intrinsic model, asset-safe local preview/edit/export, then Roll20 Sandbox/test-room comparison.
+- TODO: Run the next edit UX batch on a dedicated edit branch: drag latency smoke, flow-aware insertion polish, and layer visualization.
+- TODO: Expand security checks for untrusted worker JS and private evidence leakage before worker block coding is implemented.
+- TODO: Add measurable performance budgets for import wall time, drag frame time, drop commit latency, and route bundle size.
+
 ## 2026-07-13 Edit Canvas Edge Drop Target TODO Note
 
 - DONE: Updated edit-canvas widget drop targeting so containers distinguish top edge `before`, middle `inside`, and bottom edge `after` instead of treating the whole container as inside-only.
