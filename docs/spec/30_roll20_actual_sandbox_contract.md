@@ -142,6 +142,45 @@ legacy final table height is within about `0.61px`, but its two intrinsic column
 widths still differ by about `12px`. Do not claim pixel parity or add a
 fixture-specific width rule from this evidence.
 
+### 2026-07-17 Superseding Runtime Asset Observation
+
+The earlier font-only observation above is now superseded by a complete host-
+surface inventory for the same prepared payload in both dedicated runtimes.
+The mode split is not "proxy every external URL".
+
+| Surface | Modern Roll20 | Legacy Roll20 |
+| --- | --- | --- |
+| HTML `<img src>` (`11`) | `imgsrv.roll20.net` | authored Imgur host |
+| user `<style>` URLs (`15`) | authored hosts | `imgsrv.roll20.net` |
+| HTML inline-style URLs (`3`) | authored Imgur host | `imgsrv.roll20.net` |
+| image load result | `11/11` loaded | `11/11` loaded |
+| root scroll size | `1189x1936` | `896x1917` |
+
+This was collected read-only from the dedicated modern Sandbox character and
+dedicated legacy test-room character. No sheet source or room setting was
+changed. Official documentation explains the broader sanitizer generations,
+but the current per-surface direction above comes from direct current runtime
+evidence.
+
+Local preview/edit runtime behavior now mirrors this split through
+`lib/preview/runtimeAssetPolicy.ts` after class/allow-list handling. The policy
+is preview-only: authored workspace source and exported ZIP HTML/CSS retain the
+user's URLs so Roll20 can apply its own runtime processing. Relative URLs, data
+URLs, and existing Roll20-managed URLs are not silently re-proxied.
+
+The optional `roll20SandboxSanitize` diagnostic no longer proxies both HTML and
+CSS before the mode-specific policy. Standalone sanitizer calls keep their
+backward-compatible URL-rewrite default, while the shared render contract asks
+the sanitizer to preserve URLs and then applies the measured modern or legacy
+runtime rule once.
+
+Ignored Chrome 150 local evidence at
+`%TEMP%\roll20-runtime-asset-policy-r20` matches the host direction in both
+modes, including all three inline-style URLs. It is not visual-parity evidence:
+all local remote images and both font paths failed to load, shortening the local
+roots to `1187x1879` modern and `895x1861` legacy. An asset-complete same-browser
+recapture remains required before geometry or pixel claims.
+
 Later evidence supersedes the `18.81%` visible-top screenshot as the main
 Les-Oublies generated-sheet comparison: a stitched full-height actual Roll20 root
 image is available locally and currently differs from the local preview by

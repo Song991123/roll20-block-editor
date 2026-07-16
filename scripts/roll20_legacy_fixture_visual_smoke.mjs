@@ -717,6 +717,53 @@ async function capturePreviewMode(page, fixtureId, mode, captureLabel = mode) {
         });
       }
     }
+    const countByHost = (values, resolveRelative = false) => {
+      const counts = {};
+      for (const value of values) {
+        const normalized = String(value || '').trim();
+        let key = 'empty';
+        if (/^data:/i.test(normalized)) {
+          key = 'data:';
+        } else if (!/^[a-z][a-z0-9+.-]*:/i.test(normalized) && !normalized.startsWith('//')) {
+          key = resolveRelative ? new URL(normalized, sheetEl.ownerDocument.baseURI).hostname : 'relative';
+        } else {
+          try {
+            key = new URL(normalized, sheetEl.ownerDocument.baseURI).hostname || 'no-host';
+          } catch {
+            key = 'invalid';
+          }
+        }
+        counts[key] = (counts[key] || 0) + 1;
+      }
+      return counts;
+    };
+    const urlsFromCss = (css) => Array.from(String(css || '').matchAll(
+      /url\s*\(\s*(?:"((?:\\.|[^"])*)"|'((?:\\.|[^'])*)'|((?:\\.|[^)])*))\s*\)/gi,
+    )).map((match) => (match[1] ?? match[2] ?? match[3] ?? '').trim());
+    const images = Array.from(sheetEl.querySelectorAll('img'));
+    const inlineStyleUrlElements = elements.filter((element) => (
+      /url\s*\(/i.test(element.getAttribute('style') || '')
+    ));
+    const computedBackgroundUrls = elements.flatMap((element) => (
+      urlsFromCss(getComputedStyle(element).backgroundImage)
+    ));
+    const userStyleText = sheetEl.ownerDocument.getElementById('r20-user')?.textContent || '';
+    const assetRuntime = {
+      imageCount: images.length,
+      imageAttributeHosts: countByHost(images.map((image) => image.getAttribute('src'))),
+      imageCurrentHosts: countByHost(images.map((image) => image.currentSrc || image.src), true),
+      failedImageCount: images.filter((image) => image.complete && image.naturalWidth === 0).length,
+      pendingImageCount: images.filter((image) => !image.complete).length,
+      userStyleUrlHosts: countByHost(urlsFromCss(userStyleText)),
+      inlineStyleUrlElementCount: inlineStyleUrlElements.length,
+      inlineStyleUrlHosts: countByHost(inlineStyleUrlElements.flatMap((element) => (
+        urlsFromCss(element.getAttribute('style') || '')
+      ))),
+      inlineStyleComputedBackgroundHosts: countByHost(inlineStyleUrlElements.flatMap((element) => (
+        urlsFromCss(getComputedStyle(element).backgroundImage)
+      )), true),
+      computedBackgroundHosts: countByHost(computedBackgroundUrls, true),
+    };
     const tables = Array.from(sheetEl.querySelectorAll('table')).flatMap((table, index) => {
       const tableStyle = getComputedStyle(table);
       const tableRect = table.getBoundingClientRect();
@@ -824,6 +871,7 @@ async function capturePreviewMode(page, fixtureId, mode, captureLabel = mode) {
       stateInputs,
       controlGroups: Array.from(controlGroupMap.values()).sort((a, b) => b.count - a.count),
       fontFaces,
+      assetRuntime,
       tables,
       visibleRuntimeNodeCount: elements.filter((el) => {
         if (!['SCRIPT', 'ROLLTEMPLATE'].includes(el.tagName)) return false;
