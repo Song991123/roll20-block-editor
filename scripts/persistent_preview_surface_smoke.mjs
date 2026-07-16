@@ -21,6 +21,11 @@ const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/persistent-preview-surface'));
 const PORT = Number(argOf('--port', '4198'));
+const SYNTHETIC_BLOCKS = Math.max(0, Math.min(10000, Number(argOf('--synthetic-blocks', '0')) || 0));
+const OPTIMISTIC_BUDGET_MS = Math.max(
+  16,
+  Number(argOf('--optimistic-budget-ms', SYNTHETIC_BLOCKS >= 6000 ? '75' : '100')) || 100,
+);
 const MODES = ['modern', 'legacy'];
 
 const MIME = {
@@ -72,6 +77,20 @@ async function warmPerfHook(page) {
   );
 }
 
+async function readApplyStats(frame) {
+  return frame.evaluate(() => ({
+    mode: document.body?.getAttribute('data-r20-last-apply-mode') ?? '',
+    rootReplacements: Number(document.body?.getAttribute('data-r20-root-replacements') ?? 0),
+    styleOnlyApplies: Number(document.body?.getAttribute('data-r20-style-only-applies') ?? 0),
+    optimisticFlowMoves: Number(document.body?.getAttribute('data-r20-optimistic-flow-moves') ?? 0),
+    optimisticFlowRollbacks: Number(document.body?.getAttribute('data-r20-optimistic-flow-rollbacks') ?? 0),
+    lastOptimisticAt: Number(document.body?.getAttribute('data-r20-last-optimistic-at') ?? 0),
+    lastOptimisticEpoch: Number(document.body?.getAttribute('data-r20-last-optimistic-epoch') ?? 0),
+    lastApplyAt: Number(document.body?.getAttribute('data-r20-last-apply-at') ?? 0),
+    lastApplyEpoch: Number(document.body?.getAttribute('data-r20-last-apply-epoch') ?? 0),
+  }));
+}
+
 async function runMode(browser, mode) {
   const page = await browser.newPage({ viewport: { width: 1500, height: 1000 } });
   const consoleErrors = [];
@@ -118,19 +137,23 @@ async function runMode(browser, mode) {
     result.leftSidebar.restoredWidth = await leftSidebar.evaluate(
       (element) => element.getBoundingClientRect().width,
     );
-    result.import = await page.evaluate(async () => {
+    result.import = await page.evaluate(async (syntheticBlocks) => {
+      const filler = Array.from(
+        { length: syntheticBlocks },
+        (_, index) => `<span class="sheet-probe-filler">${index % 10}</span>`,
+      ).join('');
       let imported = null;
       for (let attempt = 0; attempt < 10; attempt += 1) {
         window.__perfHook.clearAll();
         if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 150));
         imported = await window.__perfHook.importSheet({
-          html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "A" }); }); on("change:probe", function () { setAttrs({ worker_probe: "A-OLD" }); });</script>',
-          css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
+          html: `<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div><div class="sheet-probe-load">${filler}</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "A" }); }); on("change:probe", function () { setAttrs({ worker_probe: "A-OLD" }); });</script>`,
+          css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; } .sheet-probe-load { display: flex; flex-wrap: wrap; width: 320px; } .sheet-probe-filler { display: block; width: 4px; height: 4px; overflow: hidden; }',
         });
         if (imported.blockCount > 0) return imported;
       }
       return imported;
-    });
+    }, SYNTHETIC_BLOCKS);
     if (!result.import || result.import.blockCount <= 0) {
       throw new Error('synthetic fixture import did not create blocks after retries');
     }
@@ -153,6 +176,9 @@ async function runMode(browser, mode) {
     const frame = await handle?.contentFrame();
     if (!frame) throw new Error('preview iframe content frame unavailable');
     await frame.locator(expectedSelector).waitFor({ state: 'visible', timeout: 30000 });
+    result.autoCanvasWidth = await page.locator('[data-testid="preview-iframe"]').evaluate((node) => ({
+      width: Number.parseFloat(node.getAttribute('style')?.match(/width:\s*([\d.]+)px/)?.[1] ?? ''),
+    }));
     result.initialApply = await page.evaluate(() => {
       const root = document.querySelector('[data-r20-apply-acked]');
       const srcdoc = document.querySelector('[data-testid="preview-iframe"]')?.getAttribute('srcdoc') ?? '';
@@ -162,6 +188,7 @@ async function runMode(browser, mode) {
         sourceStayedOutOfSrcdoc: !srcdoc.includes('class="sheet-probe-card"'),
       };
     });
+    result.initialApply.stats = await readApplyStats(frame);
     const input = frame.locator('input[name="attr_probe"]');
     await frame.waitForFunction(
       () => document.querySelector('input[name="attr_worker_probe"]')?.value === 'A',
@@ -223,6 +250,7 @@ async function runMode(browser, mode) {
     result.liveApplyMutation.loadCount = await page.evaluate(
       () => window.__persistentPreviewLoadCount,
     );
+    result.liveApplyMutation.stats = await readApplyStats(frame);
 
     await page.evaluate(() => window.__perfHook.setMainMode('edit'));
     await page.locator('[data-testid="edit-canvas-root"]').waitFor({ state: 'visible', timeout: 30000 });
@@ -261,6 +289,12 @@ async function runMode(browser, mode) {
     };
     const widthInput = page.locator('[data-testid="edit-canvas-width-input"]');
     await widthInput.fill('1600');
+    await widthInput.press('Enter');
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="preview-iframe"]')?.getAttribute('style')?.includes('width: 1600px'),
+      null,
+      { timeout: 30000 },
+    );
     await page.locator('[data-testid="edit-zoom-100"]').click();
     result.zoom.scale100 = await page.locator('[data-testid="preview-iframe"]')
       .evaluate((node) => node.parentElement?.style.transform ?? '');
@@ -274,6 +308,16 @@ async function runMode(browser, mode) {
     result.zoom.scaleFit = await page.locator('[data-testid="preview-iframe"]')
       .evaluate((node) => node.parentElement?.style.transform ?? '');
     await widthInput.fill('850');
+    await widthInput.press('Enter');
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="preview-iframe"]')?.getAttribute('style')?.includes('width: 850px'),
+      null,
+      { timeout: 30000 },
+    );
+    result.manualCanvasWidth = await page.evaluate(() => ({
+      inputValue: document.querySelector('[data-testid="edit-canvas-width-input"]')?.value ?? '',
+      iframeStyle: document.querySelector('[data-testid="preview-iframe"]')?.getAttribute('style') ?? '',
+    }));
     await page.locator('[data-testid="edit-zoom-100"]').click();
     Object.assign(result.zoom, await page.evaluate(() => ({
       afterLoadCount: window.__persistentPreviewLoadCount,
@@ -513,11 +557,16 @@ async function runMode(browser, mode) {
         overlayHeight: Number.parseFloat(overlay?.style.height || '0'),
       };
     });
-    result.flowCommit = await page.evaluate(() => ({
-      beforeAck: Number(document
-        .querySelector('[data-r20-apply-acked]')
-        ?.getAttribute('data-r20-apply-acked')),
-    }));
+    result.flowCommit = await page.evaluate(() => {
+      window.__r20SmokeFlowStartedAt = performance.now();
+      window.__r20SmokeFlowStartedEpoch = performance.timeOrigin + performance.now();
+      return {
+        beforeAck: Number(document
+          .querySelector('[data-r20-apply-acked]')
+          ?.getAttribute('data-r20-apply-acked')),
+      };
+    });
+    result.flowCommit.beforeStats = await readApplyStats(frame);
     Object.assign(result.flowCommit, await frame.evaluate(() => {
       const subject = document.querySelector('.sheet-probe-card');
       const target = document.querySelector('.sheet-probe-drop');
@@ -534,12 +583,12 @@ async function runMode(browser, mode) {
         clientX: subjectRect.left + subjectRect.width / 2,
         clientY: subjectRect.top + subjectRect.height / 2,
       }));
-      subject.dispatchEvent(new PointerEvent('pointerup', {
+      subject.dispatchEvent(new PointerEvent('pointermove', {
         bubbles: true,
         cancelable: true,
         pointerId,
         button: 0,
-        buttons: 0,
+        buttons: 1,
         clientX: targetRect.left + targetRect.width / 2,
         clientY: targetRect.top + targetRect.height / 2,
       }));
@@ -549,6 +598,46 @@ async function runMode(browser, mode) {
         targetBlockId: target.getAttribute('data-r20-block-id'),
       };
     }));
+    await frame.waitForFunction(
+      ({ pointerId, subjectBlockId }) => (
+        document.body?.getAttribute('data-r20-flow-target-ready') === String(pointerId)
+        && document.body?.getAttribute('data-r20-flow-target-subject') === subjectBlockId
+      ),
+      { pointerId: 18, subjectBlockId: result.flowCommit.subjectBlockId },
+      { timeout: 30000 },
+    );
+    result.flowCommit.targetReadyObservedMs = await page.evaluate(
+      () => performance.now() - window.__r20SmokeFlowStartedAt,
+    );
+    result.flowCommit.targetReadyMs = await frame.evaluate(
+      () => Number(document.body?.getAttribute('data-r20-flow-target-ready-at') ?? 0),
+    ) - await page.evaluate(() => window.__r20SmokeFlowStartedEpoch);
+    await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      const target = document.querySelector('.sheet-probe-drop');
+      if (!subject || !target) return;
+      const targetRect = target.getBoundingClientRect();
+      subject.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 18,
+        button: 0,
+        buttons: 0,
+        clientX: targetRect.left + targetRect.width / 2,
+        clientY: targetRect.top + targetRect.height / 2,
+      }));
+    });
+    await frame.waitForFunction(
+      (beforeMoves) => Number(document.body?.getAttribute('data-r20-optimistic-flow-moves') ?? 0) > beforeMoves,
+      result.flowCommit.beforeStats.optimisticFlowMoves,
+      { timeout: 30000 },
+    );
+    result.flowCommit.optimisticObservedMs = await page.evaluate(
+      () => performance.now() - window.__r20SmokeFlowStartedAt,
+    );
+    result.flowCommit.optimisticMs = await frame.evaluate(
+      () => Number(document.body?.getAttribute('data-r20-last-optimistic-epoch') ?? 0),
+    ) - await page.evaluate(() => window.__r20SmokeFlowStartedEpoch);
     await page.waitForFunction(
       (beforeAck) => Number(document
         .querySelector('[data-r20-apply-acked]')
@@ -571,7 +660,9 @@ async function runMode(browser, mode) {
       inputValue: await input.inputValue(),
       runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
       loadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
+      ackMs: await page.evaluate(() => performance.now() - window.__r20SmokeFlowStartedAt),
     });
+    result.flowCommit.stats = await readApplyStats(frame);
     await page.locator('[data-testid="edit-placement-free"]').evaluate((button) => button.click());
     result.freeCommit = await page.evaluate(() => ({
       beforeAck: Number(document
@@ -645,6 +736,63 @@ async function runMode(browser, mode) {
       inputValue: await input.inputValue(),
       runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
     });
+    result.freeCommit.stats = await readApplyStats(frame);
+    result.freeRecommit = await page.evaluate(() => {
+      window.__r20SmokeFreeStartedAt = performance.now();
+      return {
+        beforeAck: Number(document
+          .querySelector('[data-r20-apply-acked]')
+          ?.getAttribute('data-r20-apply-acked')),
+      };
+    });
+    Object.assign(result.freeRecommit, await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      if (!subject) return { dispatched: false };
+      const rect = subject.getBoundingClientRect();
+      const pointerId = 20;
+      const start = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      subject.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 1,
+        clientX: start.x,
+        clientY: start.y,
+      }));
+      subject.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 0,
+        clientX: start.x + 16,
+        clientY: start.y + 16,
+      }));
+      return { dispatched: true };
+    }));
+    await page.waitForFunction(
+      (beforeAck) => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > beforeAck,
+      result.freeRecommit.beforeAck,
+      { timeout: 30000 },
+    );
+    Object.assign(result.freeRecommit, await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      const style = subject ? getComputedStyle(subject) : null;
+      return {
+        computedLeft: Number.parseFloat(style?.left ?? ''),
+        computedTop: Number.parseFloat(style?.top ?? ''),
+      };
+    }));
+    result.freeRecommit.afterAck = await page.evaluate(() => Number(document
+      .querySelector('[data-r20-apply-acked]')
+      ?.getAttribute('data-r20-apply-acked')));
+    result.freeRecommit.ackMs = await page.evaluate(
+      () => performance.now() - window.__r20SmokeFreeStartedAt,
+    );
+    result.freeRecommit.stats = await readApplyStats(frame);
     await page.locator('[data-testid="edit-placement-flow"]').evaluate((button) => button.click());
     result.widgetDrop = await page.evaluate(() => ({
       beforeAck: Number(document
@@ -705,6 +853,7 @@ async function runMode(browser, mode) {
       inputValue: await input.inputValue(),
       runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
     });
+    result.widgetDrop.stats = await readApplyStats(frame);
     result.hiddenInputValue = await input.inputValue();
     result.hiddenRuntimeToken = await frame.evaluate(() => window.__persistentPreviewRuntimeToken);
 
@@ -789,6 +938,7 @@ async function runMode(browser, mode) {
       iframeCount: await page.locator('[data-testid="preview-iframe"]').count(),
       afterLoadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
     });
+    result.workerChange.stats = await readApplyStats(frame);
     result.consoleErrors = consoleErrors;
     result.pageErrors = pageErrors;
     result.pass =
@@ -796,6 +946,7 @@ async function runMode(browser, mode) {
       && result.initialApply.ackedRevision > 0
       && result.initialApply.pendingRevision === ''
       && result.initialApply.sourceStayedOutOfSrcdoc === true
+      && Number.isFinite(result.initialApply.stats.rootReplacements)
       && result.leftSidebar.openWidth > 0
       && result.leftSidebar.collapsedWidth === 0
       && result.leftSidebar.collapsedButtonCount === 0
@@ -806,6 +957,8 @@ async function runMode(browser, mode) {
       && result.liveApplyMutation.inputValue === `runtime-${mode}`
       && result.liveApplyMutation.runtimeToken === token
       && result.liveApplyMutation.loadCount === 0
+      && result.liveApplyMutation.stats.mode === 'replace'
+      && result.liveApplyMutation.stats.rootReplacements === result.initialApply.stats.rootReplacements + 1
       && result.before.iframeCount === 1
       && result.before.paneVisible === 'true'
       && result.before.hasLegacyInputStyle === (mode === 'legacy')
@@ -823,6 +976,11 @@ async function runMode(browser, mode) {
       && result.duringEdit.shadowCount === 0
       && result.duringEdit.iframeSlotCount === 1
       && result.duringEdit.loadCount === 0
+      && Number.isFinite(result.autoCanvasWidth.width)
+      && result.autoCanvasWidth.width >= 320
+      && result.autoCanvasWidth.width < 850
+      && result.manualCanvasWidth.inputValue === '850'
+      && result.manualCanvasWidth.iframeStyle.includes('width: 850px')
       && result.layerSelection.layerRowClicked === true
       && result.layerSelection.iframeHighlighted === true
       && result.layerSelection.layerHighlightedFromIframe === true
@@ -865,6 +1023,14 @@ async function runMode(browser, mode) {
       && result.flowCommit.inputValue === `runtime-${mode}`
       && result.flowCommit.runtimeToken === token
       && result.flowCommit.loadCount === 0
+      && result.flowCommit.stats.mode === 'replace'
+      && result.flowCommit.stats.rootReplacements === result.liveApplyMutation.stats.rootReplacements + 1
+      && result.flowCommit.stats.optimisticFlowMoves > result.liveApplyMutation.stats.optimisticFlowMoves
+      && result.flowCommit.stats.lastOptimisticAt > 0
+      && result.flowCommit.stats.lastOptimisticAt <= result.flowCommit.stats.lastApplyAt
+      && Number.isFinite(result.flowCommit.optimisticMs)
+      && result.flowCommit.optimisticMs >= 0
+      && result.flowCommit.optimisticMs <= OPTIMISTIC_BUDGET_MS
       && result.freeCommit.dispatched === true
       && result.freeCommit.afterAck > result.freeCommit.beforeAck
       && result.freeCommit.computedPosition === 'absolute'
@@ -880,6 +1046,17 @@ async function runMode(browser, mode) {
       && result.freeCommit.inputValue === `runtime-${mode}`
       && result.freeCommit.runtimeToken === token
       && result.freeCommit.loadCount === 0
+      && result.freeCommit.stats.mode === 'replace'
+      && result.freeCommit.stats.rootReplacements === result.flowCommit.stats.rootReplacements + 1
+      && result.freeRecommit.dispatched === true
+      && result.freeRecommit.afterAck > result.freeRecommit.beforeAck
+      && result.freeRecommit.computedLeft !== result.freeCommit.computedLeft
+      && result.freeRecommit.computedTop !== result.freeCommit.computedTop
+      && result.freeRecommit.computedLeft % 8 === 0
+      && result.freeRecommit.computedTop % 8 === 0
+      && result.freeRecommit.stats.mode === 'styles'
+      && result.freeRecommit.stats.rootReplacements === result.freeCommit.stats.rootReplacements
+      && result.freeRecommit.stats.styleOnlyApplies > result.freeCommit.stats.styleOnlyApplies
       && result.widgetDrop.dispatched === true
       && result.widgetDrop.dragOverAccepted === true
       && result.widgetDrop.dropAccepted === true
@@ -888,6 +1065,8 @@ async function runMode(browser, mode) {
       && result.widgetDrop.loadCount === 0
       && result.widgetDrop.inputValue === `runtime-${mode}`
       && result.widgetDrop.runtimeToken === token
+      && result.widgetDrop.stats.mode === 'replace'
+      && result.widgetDrop.stats.rootReplacements === result.freeRecommit.stats.rootReplacements + 1
       && result.hiddenInputValue === `runtime-${mode}`
       && result.hiddenRuntimeToken === token
       && result.after.sameElement
@@ -913,6 +1092,8 @@ async function runMode(browser, mode) {
       && result.workerChange.sameElement === true
       && result.workerChange.iframeCount === 1
       && result.workerChange.afterLoadCount === result.workerChange.beforeLoadCount
+      && result.workerChange.stats.mode === 'replace'
+      && result.workerChange.stats.rootReplacements === result.widgetDrop.stats.rootReplacements + 1
       && consoleErrors.length === 0
       && pageErrors.length === 0;
   } catch (error) {
@@ -929,7 +1110,12 @@ async function main() {
   await fs.mkdir(REPORT_DIR, { recursive: true });
   const server = await startServer();
   const browser = await chromium.launch();
-  const report = { startedAt: new Date().toISOString(), modes: [] };
+  const report = {
+    startedAt: new Date().toISOString(),
+    syntheticBlocks: SYNTHETIC_BLOCKS,
+    optimisticBudgetMs: OPTIMISTIC_BUDGET_MS,
+    modes: [],
+  };
   try {
     for (const mode of MODES) {
       const result = await runMode(browser, mode);

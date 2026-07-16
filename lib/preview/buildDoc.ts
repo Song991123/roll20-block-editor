@@ -120,6 +120,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var lastAppliedBlockCount = initialSheetRoot
     ? initialSheetRoot.querySelectorAll('[data-r20-block-id]').length
     : 0;
+  var rootReplacementCount = 0;
+  var styleOnlyApplyCount = 0;
+  var optimisticFlowMoveCount = 0;
+  var optimisticFlowRollbackCount = 0;
+  var validatedFlowTarget = null;
+  var optimisticFlowSnapshot = null;
   function blockNodeOf(node) {
     while (node && node !== document.body) {
       if (node.dataset && node.dataset.r20BlockId) return node;
@@ -224,6 +230,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       editMoveFrame = 0;
       pendingEditMove = null;
       activeEditPointer = null;
+      rollbackOptimisticFlowMove();
+      clearValidatedFlowTarget();
     }
     if (!editBridgeEnabled || !selectedBlockId) return;
     var selected = document.querySelector('[data-r20-block-id="' + cssEscape(selectedBlockId) + '"]');
@@ -251,6 +259,120 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     if (style.textContent !== css) style.textContent = css;
   }
+  function clearValidatedFlowTarget() {
+    validatedFlowTarget = null;
+    document.body.removeAttribute('data-r20-flow-target-ready');
+    document.body.removeAttribute('data-r20-flow-target-subject');
+    document.body.removeAttribute('data-r20-flow-target-ready-at');
+  }
+  function rememberValidatedFlowTarget(data) {
+    clearValidatedFlowTarget();
+    if (!data || !Number.isInteger(data.pointerId)) return false;
+    if (typeof data.subjectBlockId !== 'string') return false;
+    if (data.subjectBlockId.length < 1 || data.subjectBlockId.length > 256) return false;
+    if (data.placement !== 'inside' && data.placement !== 'before' && data.placement !== 'after') {
+      return false;
+    }
+    validatedFlowTarget = {
+      pointerId: data.pointerId,
+      subjectBlockId: data.subjectBlockId,
+      placement: data.placement,
+      containerBlockId: typeof data.containerBlockId === 'string' ? data.containerBlockId : null,
+      siblingBlockId: typeof data.siblingBlockId === 'string' ? data.siblingBlockId : null
+    };
+    document.body.setAttribute('data-r20-flow-target-ready', String(data.pointerId));
+    document.body.setAttribute('data-r20-flow-target-subject', data.subjectBlockId);
+    document.body.setAttribute(
+      'data-r20-flow-target-ready-at',
+      String(window.performance.timeOrigin + window.performance.now())
+    );
+    return true;
+  }
+  function rollbackOptimisticFlowMove() {
+    var snapshot = optimisticFlowSnapshot;
+    optimisticFlowSnapshot = null;
+    if (!snapshot || !snapshot.subject || !snapshot.parent) return false;
+    if (!snapshot.subject.isConnected || !snapshot.parent.isConnected) return false;
+    try {
+      var anchor = snapshot.nextSibling && snapshot.nextSibling.parentNode === snapshot.parent
+        ? snapshot.nextSibling
+        : null;
+      snapshot.parent.insertBefore(snapshot.subject, anchor);
+      optimisticFlowRollbackCount += 1;
+      document.body.setAttribute(
+        'data-r20-optimistic-flow-rollbacks',
+        String(optimisticFlowRollbackCount)
+      );
+      scheduleResize();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+  function finalizeOptimisticFlowMove(data) {
+    if (data && data.committed === true) {
+      optimisticFlowSnapshot = null;
+    } else {
+      rollbackOptimisticFlowMove();
+    }
+    clearValidatedFlowTarget();
+  }
+  function optimisticFlowMove(data, captureSnapshot) {
+    if (!data || typeof data.subjectBlockId !== 'string') return false;
+    if (data.subjectBlockId.length < 1 || data.subjectBlockId.length > 256) return false;
+    var subject = document.querySelector(
+      '[data-r20-block-id="' + cssEscape(data.subjectBlockId) + '"]'
+    );
+    if (!subject) return false;
+    var destinationParent = null;
+    var beforeNode = null;
+    var alreadyPlaced = false;
+    try {
+      if (data.placement === 'inside' && typeof data.containerBlockId === 'string') {
+        var container = document.querySelector(
+          '[data-r20-block-id="' + cssEscape(data.containerBlockId) + '"]'
+        );
+        if (!container || container === subject || subject.contains(container)) return false;
+        destinationParent = container;
+        alreadyPlaced = subject.parentNode === container && subject.nextSibling === null;
+      } else if (
+        (data.placement === 'before' || data.placement === 'after')
+        && typeof data.siblingBlockId === 'string'
+      ) {
+        var sibling = document.querySelector(
+          '[data-r20-block-id="' + cssEscape(data.siblingBlockId) + '"]'
+        );
+        if (!sibling || !sibling.parentNode || sibling === subject || subject.contains(sibling)) return false;
+        destinationParent = sibling.parentNode;
+        beforeNode = data.placement === 'before' ? sibling : sibling.nextSibling;
+        alreadyPlaced = data.placement === 'before'
+          ? subject.parentNode === destinationParent && subject.nextSibling === sibling
+          : subject.parentNode === destinationParent && sibling.nextSibling === subject;
+      } else {
+        return false;
+      }
+      if (alreadyPlaced) return true;
+      if (captureSnapshot === true && !optimisticFlowSnapshot) {
+        optimisticFlowSnapshot = {
+          subject: subject,
+          parent: subject.parentNode,
+          nextSibling: subject.nextSibling
+        };
+      }
+      destinationParent.insertBefore(subject, beforeNode);
+    } catch (error) {
+      return false;
+    }
+    optimisticFlowMoveCount += 1;
+    document.body.setAttribute('data-r20-optimistic-flow-moves', String(optimisticFlowMoveCount));
+    document.body.setAttribute('data-r20-last-optimistic-at', window.performance.now().toFixed(3));
+    document.body.setAttribute(
+      'data-r20-last-optimistic-epoch',
+      String(window.performance.timeOrigin + window.performance.now())
+    );
+    scheduleResize();
+    return true;
+  }
   function applyLivePatch(data) {
     if (!data || !Number.isInteger(data.revision) || data.revision < 1) return;
     if (typeof data.html !== 'string' || data.html.length > 15000000) return;
@@ -277,8 +399,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var previousWorkerSource = htmlChanged ? workerSourceText(root) : '';
     if (htmlChanged) {
       root.innerHTML = data.html;
+      optimisticFlowSnapshot = null;
+      clearValidatedFlowTarget();
+      rootReplacementCount += 1;
       lastAppliedHtmlKey = data.htmlKey;
       document.body.setAttribute('data-r20-html-key', data.htmlKey);
+    } else {
+      styleOnlyApplyCount += 1;
     }
     for (var j = 0; j < allowedStyles.length; j++) {
       ensureStyle(allowedStyles[j], data.styles[allowedStyles[j]]);
@@ -319,6 +446,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       }
       lastAppliedBlockCount = root.querySelectorAll('[data-r20-block-id]').length;
     }
+    document.body.setAttribute('data-r20-last-apply-mode', htmlChanged ? 'replace' : 'styles');
+    document.body.setAttribute('data-r20-root-replacements', String(rootReplacementCount));
+    document.body.setAttribute('data-r20-style-only-applies', String(styleOnlyApplyCount));
+    document.body.setAttribute('data-r20-optimistic-flow-moves', String(optimisticFlowMoveCount));
+    document.body.setAttribute('data-r20-optimistic-flow-rollbacks', String(optimisticFlowRollbackCount));
+    document.body.setAttribute('data-r20-last-apply-at', window.performance.now().toFixed(3));
+    document.body.setAttribute(
+      'data-r20-last-apply-epoch',
+      String(window.performance.timeOrigin + window.performance.now())
+    );
     scheduleResize();
     try {
       parent.postMessage({
@@ -373,12 +510,15 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!sheet) return null;
     var box = measureContentBox(sheet);
     if (!box.width || box.width < 120) return null;
-    return Math.max(850, Math.min(2400, Math.ceil(box.width)));
+    return Math.max(320, Math.min(2400, Math.ceil(box.width)));
   }
   function measureContentBox(root) {
     var rootRect = root.getBoundingClientRect();
-    var maxRight = Math.max(root.scrollWidth || 0, root.offsetWidth || 0);
-    var maxBottom = Math.max(root.scrollHeight || 0, root.offsetHeight || 0);
+    // The generated Roll20 wrapper fills the iframe viewport. Start with
+    // descendant paint bounds so an imported narrow sheet is not reported as
+    // the default canvas width merely because the wrapper is full width.
+    var maxRight = 0;
+    var maxBottom = 0;
     var nodes = root.querySelectorAll('*:not(script):not(rolltemplate)');
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
@@ -388,6 +528,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       if (rect.width <= 0 && rect.height <= 0) continue;
       maxRight = Math.max(maxRight, rect.right - rootRect.left + root.scrollLeft);
       maxBottom = Math.max(maxBottom, rect.bottom - rootRect.top + root.scrollTop);
+    }
+    if (maxRight <= 0 || maxBottom <= 0) {
+      maxRight = Math.max(maxRight, root.scrollWidth || 0, root.offsetWidth || 0);
+      maxBottom = Math.max(maxBottom, root.scrollHeight || 0, root.offsetHeight || 0);
     }
     return { width: maxRight, height: maxBottom };
   }
@@ -693,6 +837,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (e.button !== 0) return;
     var subjectNode = blockNodeOf(e.target);
     if (!subjectNode) return;
+    rollbackOptimisticFlowMove();
+    clearValidatedFlowTarget();
     activeEditPointer = { pointerId: e.pointerId, subjectNode: subjectNode };
     try { subjectNode.setPointerCapture(e.pointerId); } catch (_) {}
     postEditHit('pointerdown', subjectNode, subjectNode, {
@@ -712,6 +858,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
     editMoveFrame = 0;
     pendingEditMove = null;
+    var flowTarget = validatedFlowTarget;
     postEditHit('pointerup', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target), {
       x: e.clientX,
       y: e.clientY,
@@ -719,6 +866,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       button: e.button,
       buttons: e.buttons
     });
+    if (
+      flowTarget
+      && flowTarget.pointerId === e.pointerId
+      && flowTarget.subjectBlockId === subjectNode.dataset.r20BlockId
+    ) {
+      // Capture the authored pointer-up geometry first. The visual move runs
+      // immediately afterward, before the queued parent message is handled.
+      optimisticFlowMove(flowTarget, true);
+    }
+    clearValidatedFlowTarget();
     try { subjectNode.releasePointerCapture(e.pointerId); } catch (_) {}
     activeEditPointer = null;
     try { e.preventDefault(); } catch (_) {}
@@ -731,6 +888,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
     editMoveFrame = 0;
     pendingEditMove = null;
+    rollbackOptimisticFlowMove();
+    clearValidatedFlowTarget();
     postEditHit('pointercancel', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target), {
       x: e.clientX,
       y: e.clientY,
@@ -786,6 +945,30 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       && e.data.bridgeId === editBridgeId
     ) {
       setEditBridgeEnabled(e.data.enabled, e.data.selectedBlockId || null);
+      return;
+    }
+    if (
+      e.data.type === 'r20:edit-flow-target'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      rememberValidatedFlowTarget(e.data);
+      return;
+    }
+    if (
+      e.data.type === 'r20:edit-optimistic-flow'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      optimisticFlowMove(e.data, false);
+      return;
+    }
+    if (
+      e.data.type === 'r20:edit-optimistic-flow-finalize'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      finalizeOptimisticFlowMove(e.data);
       return;
     }
     if (

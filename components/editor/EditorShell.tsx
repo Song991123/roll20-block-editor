@@ -134,6 +134,7 @@ export default function EditorShell() {
   const toggleRight = useUiStore((s) => s.toggleSidebarRight);
   const setLeftMode = useUiStore((s) => s.setSidebarLeftMode);
   const setRightTab = useUiStore((s) => s.setSidebarRightTab);
+  const resetCanvasWidths = useUiStore((s) => s.resetCanvasWidths);
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
 
@@ -232,7 +233,10 @@ export default function EditorShell() {
 
   return (
     <div className="app-shell dark flex h-screen flex-col bg-[var(--bg-app)] text-foreground">
-      <EditorHeader onNewSheet={() => setRecovered(null)} />
+      <EditorHeader onNewSheet={() => {
+        resetCanvasWidths();
+        setRecovered(null);
+      }} />
       {recovered && (
         <AutosaveBanner
           xml={recovered.xml}

@@ -637,8 +637,8 @@ export function LegacyShadowEditCanvas() {
       if (editSubmode === 'rolltemplate') return;
       const ui = useUiStore.getState();
       const currentWidth = ui.sheetCanvasWidth;
-      if (nextBox.width > currentWidth + 8) {
-        ui.setSheetCanvasWidth(nextBox.width);
+      if (ui.sheetCanvasWidthAuto && Math.abs(nextBox.width - currentWidth) > 8) {
+        ui.setAutoSheetCanvasWidth(nextBox.width);
       }
     };
     updateCanvasMetrics();

@@ -83,7 +83,7 @@ export default function PreviewMain() {
   const setRenderMode = usePreviewStore((s) => s.setRenderMode);
   const zoom = useUiStore((s) => s.previewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
-  const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
+  const setAutoSheetCanvasWidth = useUiStore((s) => s.setAutoSheetCanvasWidth);
   const previewLayer = useUiStore((s) => s.previewLayer);
   const setHoveredWidgetId = useUiStore((s) => s.setHoveredWidgetId);
   const setSelectedWidgetId = useUiStore((s) => s.setSelectedWidgetId);
@@ -488,6 +488,20 @@ export default function PreviewMain() {
         });
         setIframeEditOverlay(editMessage);
         setIframeEditDropTarget(nextDropTarget);
+        if (editMessage.phase === 'pointermove') {
+          const ui = useUiStore.getState();
+          const flowTarget = ui.editPlacementMode === 'flow' ? nextDropTarget : null;
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'r20:edit-flow-target',
+            protocol: R20_IFRAME_EDIT_PROTOCOL,
+            bridgeId: editMessage.bridgeId,
+            pointerId: editMessage.pointerId,
+            subjectBlockId: editMessage.subject.blockId,
+            placement: flowTarget?.mode ?? null,
+            containerBlockId: flowTarget?.containerBlockId ?? null,
+            siblingBlockId: flowTarget?.siblingBlockId ?? null,
+          }, '*');
+        }
         if (editMessage.phase === 'pointerdown') {
           iframeEditDragOriginRef.current = editMessage;
           setIframeEditDragOrigin(editMessage);
@@ -524,6 +538,17 @@ export default function PreviewMain() {
             }
           }
           if (moved) {
+            if (ui.editPlacementMode === 'flow' && nextDropTarget) {
+              iframeRef.current?.contentWindow?.postMessage({
+                type: 'r20:edit-optimistic-flow',
+                protocol: R20_IFRAME_EDIT_PROTOCOL,
+                bridgeId: editMessage.bridgeId,
+                subjectBlockId: editMessage.subject.blockId,
+                placement: nextDropTarget.mode,
+                containerBlockId: nextDropTarget.containerBlockId,
+                siblingBlockId: nextDropTarget.siblingBlockId,
+              }, '*');
+            }
             const store = useWorkspaceStore.getState();
             store.bumpStructure('html', adapter.countBlocks('html'));
             store.setSelectedBlockId(editMessage.subject.blockId, 'preview');
@@ -531,6 +556,12 @@ export default function PreviewMain() {
             iframeEditDragOriginRef.current = null;
             setIframeEditDragOrigin(null);
           }
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'r20:edit-optimistic-flow-finalize',
+            protocol: R20_IFRAME_EDIT_PROTOCOL,
+            bridgeId: editMessage.bridgeId,
+            committed: moved,
+          }, '*');
         }
         return;
       }
@@ -613,12 +644,16 @@ export default function PreviewMain() {
       if (data?.type === 'r20:resize' && typeof data.height === 'number') {
         const nextHeight = Math.max(120, Math.min(60000, Math.ceil(data.height)));
         setIframeHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
-        if (!autoWidthSizedRef.current && typeof data.width === 'number') {
+        if (
+          !autoWidthSizedRef.current
+          && useUiStore.getState().sheetCanvasWidthAuto
+          && typeof data.width === 'number'
+        ) {
           autoWidthSizedRef.current = true;
-          const nextWidth = Math.max(850, Math.min(2400, Math.ceil(data.width)));
+          const nextWidth = Math.max(320, Math.min(2400, Math.ceil(data.width)));
           const currentWidth = useUiStore.getState().sheetCanvasWidth;
-          if (nextWidth > currentWidth + 8) {
-            setSheetCanvasWidth(nextWidth);
+          if (Math.abs(nextWidth - currentWidth) > 8) {
+            setAutoSheetCanvasWidth(nextWidth);
           }
         }
         return;
@@ -705,7 +740,7 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [iframeDocumentSrcdoc, setHoveredWidgetId, setSelected, setSelectedWidgetId, setSheetCanvasWidth]);
+  }, [iframeDocumentSrcdoc, setHoveredWidgetId, setSelected, setSelectedWidgetId, setAutoSheetCanvasWidth]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
@@ -717,8 +752,8 @@ export default function PreviewMain() {
     applySourcesRef.current.set(revision, srcdoc);
     pendingApplySourceRef.current = srcdoc;
     // A persistent iframe first reports the empty/default document width. Let
-    // each applied sheet source report its own intrinsic width without ever
-    // shrinking a wider user-selected canvas (the resize handler only grows).
+    // each applied sheet source report its own intrinsic width while manual
+    // width input remains authoritative until the user resets automatic sizing.
     autoWidthSizedRef.current = false;
     setPendingApplyRevision(revision);
     target.postMessage({

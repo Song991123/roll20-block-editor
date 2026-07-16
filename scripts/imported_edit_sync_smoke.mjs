@@ -35,6 +35,7 @@ const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/imported-edit-sync'));
 const ONLY = argOf('--only', '');
+const CANONICAL_IFRAME = argOf('--canonical-iframe', 'true') !== 'false';
 const PORT = Number(argOf('--port', '4196'));
 const VIEWPORT = { width: 2200, height: 1200 };
 const DRAG_DELTA = { x: Number(argOf('--dx', '80')), y: Number(argOf('--dy', '48')) };
@@ -203,6 +204,152 @@ async function importFixture(page, fixture) {
     }
     return last;
   }, { ...fixture, compactWideRows: COMPACT_WIDE_ROWS });
+}
+
+async function waitForFrameMode(frame, expected) {
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    if (await frame.locator('body').getAttribute('data-r20-edit-mode') === expected) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`iframe edit mode did not reach ${expected}`);
+}
+
+async function runCanonicalIframeEditSync(page) {
+  await page.waitForTimeout(1300);
+  const iframe = page.locator('[data-testid="preview-iframe"]');
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setPreviewRenderMode('iframe');
+    window.__perfHook.setMainMode('preview');
+  });
+  await iframe.waitFor({ state: 'visible', timeout: 30000 });
+  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
+  await page.waitForFunction(
+    () => Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0) > 0,
+    null,
+    { timeout: 30000 },
+  );
+  await page.waitForFunction(
+    () => document.querySelector('[data-r20-edit-bridge-ready]')?.getAttribute('data-r20-edit-bridge-ready') === '1',
+    null,
+    { timeout: 30000 },
+  );
+
+  const target = await frame.locator('[data-r20-block-id]').evaluateAll((elements) => {
+    const doc = document;
+    const nodes = Array.from(doc.querySelectorAll('[data-r20-block-id]'))
+      .map((node) => {
+        const rect = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        const nested = node.querySelector('[data-r20-block-id]');
+        return {
+          node,
+          rect,
+          visible: style.display !== 'none' && style.visibility !== 'hidden'
+            && rect.width >= 12 && rect.height >= 12,
+          leaf: !nested,
+        };
+      })
+      .filter((item) => item.visible && item.leaf)
+      .sort((a, b) => (a.rect.width * a.rect.height) - (b.rect.width * b.rect.height));
+    const item = nodes[0];
+    if (!item) {
+      return {
+        blockId: null,
+        debug: {
+          blockCount: nodes.length,
+          allElements: doc.querySelectorAll('*').length,
+          rootText: (doc.querySelector('#charsheet-root')?.textContent || '').trim().slice(0, 120),
+          rootHtmlLength: doc.querySelector('#charsheet-root')?.innerHTML.length || 0,
+        },
+      };
+    }
+    return {
+      blockId: item.node.getAttribute('data-r20-block-id'),
+      tag: item.node.tagName.toLowerCase(),
+      rect: {
+        left: item.rect.left,
+        top: item.rect.top,
+        width: item.rect.width,
+        height: item.rect.height,
+      },
+    };
+  });
+  if (!target?.blockId) return { pass: false, skipped: true, reason: 'no visible leaf in canonical iframe', debug: target?.debug };
+
+  await page.evaluate(() => window.__perfHook.setMainMode('edit'));
+  await page.locator('[data-testid="edit-canvas-root"]').waitFor({ state: 'visible', timeout: 30000 });
+  await waitForFrameMode(frame, '1');
+  await page.locator('[data-testid="edit-placement-free"]').click();
+
+  const beforeAck = await page.evaluate(() => Number(
+    document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0,
+  ));
+  const drag = await frame.locator('[data-r20-block-id]').evaluateAll((nodes, target) => {
+    const node = nodes
+      .find((candidate) => candidate.getAttribute('data-r20-block-id') === target.blockId);
+    if (!node) return { dispatched: false };
+    const rect = node.getBoundingClientRect();
+    const pointerId = 77;
+    const startX = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height / 2;
+    const endX = startX + 24;
+    const endY = startY + 16;
+    node.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true, cancelable: true, pointerId, button: 0, buttons: 1,
+      clientX: startX, clientY: startY,
+    }));
+    node.dispatchEvent(new PointerEvent('pointermove', {
+      bubbles: true, cancelable: true, pointerId, button: 0, buttons: 1,
+      clientX: endX, clientY: endY,
+    }));
+    node.dispatchEvent(new PointerEvent('pointerup', {
+      bubbles: true, cancelable: true, pointerId, button: 0, buttons: 0,
+      clientX: endX, clientY: endY,
+    }));
+    return { dispatched: true, pointerId, startX, startY, endX, endY };
+  }, target);
+  if (!drag.dispatched) return { pass: false, target, drag };
+
+  await page.waitForFunction(
+    (revision) => Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0) > revision,
+    beforeAck,
+    { timeout: 30000 },
+  );
+  const editAfter = await frame.locator('[data-r20-block-id]').evaluateAll((nodes, target) => {
+    const node = nodes
+      .find((candidate) => candidate.getAttribute('data-r20-block-id') === target.blockId);
+    if (!node) return null;
+    const rect = node.getBoundingClientRect();
+    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  }, target);
+  const emitted = await page.evaluate(() => window.__perfHook.getEmitContent());
+
+  await page.evaluate(() => window.__perfHook.setMainMode('preview'));
+  await waitForFrameMode(frame, '0');
+  const previewAfter = await frame.locator('[data-r20-block-id]').evaluateAll((nodes, target) => {
+    const node = nodes
+      .find((candidate) => candidate.getAttribute('data-r20-block-id') === target.blockId);
+    if (!node) return null;
+    const rect = node.getBoundingClientRect();
+    return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  }, target);
+  const synced = Boolean(editAfter && previewAfter)
+    && Math.abs(editAfter.left - previewAfter.left) <= 2
+    && Math.abs(editAfter.top - previewAfter.top) <= 2
+    && Math.abs(editAfter.width - previewAfter.width) <= 2
+    && Math.abs(editAfter.height - previewAfter.height) <= 2;
+  return {
+    pass: synced && typeof emitted?.html === 'string' && emitted.html.length > 0,
+    target,
+    drag,
+    editAfter,
+    previewAfter,
+    previewSync: synced,
+    emittedHtmlLength: emitted?.html?.length ?? 0,
+  };
 }
 
 function cssString(value) {
@@ -2501,6 +2648,11 @@ async function main() {
         entry.htmlWorkspaceShape = summarizeHtmlWorkspaceShape(
           await page.evaluate(() => window.__perfHook.getBlockGraph?.('html') || []),
         );
+        if (CANONICAL_IFRAME) {
+          entry.canonicalEditSync = await runCanonicalIframeEditSync(page);
+          entry.interactionPass = entry.canonicalEditSync.pass === true;
+          entry.pass = entry.interactionPass;
+        } else {
         await page.waitForTimeout(1300);
         entry.layerReorder = await runImportedLayerReorder(page);
         entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page, fixture.id);
@@ -2556,6 +2708,7 @@ async function main() {
           (!REQUIRE_SHEET_VISUAL_SYNC || entry.sheetVisualSync?.pass === true) &&
           isStableReimport(entry.reimport);
         entry.pass = entry.interactionPass;
+        }
       } catch (err) {
         entry.error = String(err?.stack || err).slice(0, 1200);
       }

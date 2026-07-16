@@ -4921,3 +4921,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Remaining performance blocker: structural edits still parse and replace the full root. Keyed/partial structural apply plus a stricter interaction budget remain P0.
 - Third-party external validation sources are now ephemeral-only. Their identity, URL, source, media, screenshots, fixtures, and per-sheet reports must not be retained; only generic fixes and synthetic tests may persist.
 - Verification for this batch: focused render/sanitizer/bridge tests, full `ci:verify`, lint, and the production build passed. Browser-mounted performance proof was intentionally not claimed in this batch.
+## 2026-07-17 Anonymous Batch Update: Canonical Render and Interaction Smoke
+
+- Implemented: automatic canvas measurement now uses descendant paint bounds instead of the generated wrapper viewport, so narrow imported sheets are not forced to the default width.
+- Implemented: new-sheet reset restores the `850px` default; manual width entry remains stable until the user resets automatic sizing.
+- Implemented: imported edit synchronization smoke now observes the persistent iframe directly instead of the retired Shadow Canvas selector.
+- Verified: modern/legacy persistent preview smoke, large synthetic smoke, canonical synthetic edit/preview coordinate sync, lint, build, `ci:verify`, and server hygiene passed.
+- Boundary: these checks prove the local renderer contract and synthetic interaction path only. Actual Roll20 parity and broad user-import coverage are still open gates.
+- Privacy: this update records no creator, sheet, source URL, source snippet, asset URL, screenshot, or source-derived measurement. Future progress entries must use the same anonymous convention.

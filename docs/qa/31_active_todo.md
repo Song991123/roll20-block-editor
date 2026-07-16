@@ -4201,3 +4201,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - TODO: Start the three external worker sessions and collect their branch names and commit hashes for lead review.
 - TODO: Cherry-pick only after full diff review and rerun combined renderer/edit/mapping/security verification on the integration branch.
 - CLAIM BOUNDARY: This completes executable multi-agent coordination only. It does not itself change Roll20 rendering, mapping fidelity, edit UX, or renderer readiness.
+## 2026-07-17 Canonical Render Surface and Width Policy
+
+- DONE: The visible preview and edit canvas use one persistent iframe render surface; edit chrome and overlays remain parent-owned.
+- DONE: New sheets restore the default canvas width of `850px`. Automatic sizing uses measured descendant paint bounds and may shrink or grow within a bounded range; explicit width input locks the chosen width until reset.
+- VERIFIED SYNTHETIC: Modern and legacy persistent-surface smoke passed independently, including a large synthetic input. Iframe reload count remained `0`, browser/page errors remained `0`, and optimistic placement stayed within the configured budget.
+- VERIFIED SYNTHETIC: The imported-edit smoke now exercises the canonical iframe locator path. A synthetic object moved in edit mode retained matching coordinates after returning to preview, and emitted HTML was non-empty.
+- VERIFY: Actual Roll20 screenshot parity, user-provided import corpus coverage, legacy dedicated-room behavior, and worker/roll-template coverage remain separate verification gates. No source-identifying evidence is retained in this update.
+
+### Next Gates
+
+- TODO: Run modern and legacy actual-runtime checks using only user-provided local imports and ignored evidence; keep source identities and collected payload details out of tracked docs.
+- TODO: Expand canonical iframe interaction coverage to flow-aware before/inside/after insertion and layer-panel operations.
+- TODO: Keep CI/CD deployment verification separate from local implementation proof.

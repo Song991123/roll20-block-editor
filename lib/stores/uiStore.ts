@@ -80,6 +80,8 @@ export interface UiState {
   // Phase A — 캔버스 폭 (시트 / 굴림틀 별도).
   sheetCanvasWidth: number;       // default 850
   rolltemplateCanvasWidth: number; // default 280
+  sheetCanvasWidthAuto: boolean;
+  rolltemplateCanvasWidthAuto: boolean;
   // Phase A — snap 8px on/off.
   snapEnabled: boolean;
   editPlacementMode: EditPlacementMode;
@@ -114,6 +116,9 @@ export interface UiState {
   setEditSubmode: (m: EditSubmode) => void;
   setSheetCanvasWidth: (w: number) => void;
   setRolltemplateCanvasWidth: (w: number) => void;
+  setAutoSheetCanvasWidth: (w: number) => void;
+  setAutoRolltemplateCanvasWidth: (w: number) => void;
+  resetCanvasWidths: () => void;
   setSnapEnabled: (b: boolean) => void;
   toggleSnapEnabled: () => void;
   setEditPlacementMode: (m: EditPlacementMode) => void;
@@ -144,6 +149,8 @@ const DEFAULT_STATE = {
   editSubmode: 'sheet' as EditSubmode,
   sheetCanvasWidth: 850,
   rolltemplateCanvasWidth: 280,
+  sheetCanvasWidthAuto: true,
+  rolltemplateCanvasWidthAuto: true,
   snapEnabled: true,
   editPlacementMode: 'flow' as EditPlacementMode,
   selectedWidgetId: null as string | null,
@@ -211,9 +218,32 @@ export const useUiStore = create<UiState>()(
       setPreviewLayer: (l) => set({ previewLayer: l }),
       setEditSubmode: (m) => set({ editSubmode: m }),
       setSheetCanvasWidth: (w) =>
-        set({ sheetCanvasWidth: Math.max(320, Math.min(2000, Math.round(w))) }),
+        set({
+          sheetCanvasWidth: Math.max(320, Math.min(2000, Math.round(w))),
+          sheetCanvasWidthAuto: false,
+        }),
       setRolltemplateCanvasWidth: (w) =>
-        set({ rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))) }),
+        set({
+          rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))),
+          rolltemplateCanvasWidthAuto: false,
+        }),
+      setAutoSheetCanvasWidth: (w) =>
+        set({
+          sheetCanvasWidth: Math.max(320, Math.min(2000, Math.round(w))),
+          sheetCanvasWidthAuto: true,
+        }),
+      setAutoRolltemplateCanvasWidth: (w) =>
+        set({
+          rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))),
+          rolltemplateCanvasWidthAuto: true,
+        }),
+      resetCanvasWidths: () =>
+        set({
+          sheetCanvasWidth: DEFAULT_STATE.sheetCanvasWidth,
+          rolltemplateCanvasWidth: DEFAULT_STATE.rolltemplateCanvasWidth,
+          sheetCanvasWidthAuto: true,
+          rolltemplateCanvasWidthAuto: true,
+        }),
       setSnapEnabled: (b) => set({ snapEnabled: b }),
       toggleSnapEnabled: () => set((s) => ({ snapEnabled: !s.snapEnabled })),
       setEditPlacementMode: (m) => set({ editPlacementMode: m }),
@@ -258,6 +288,8 @@ export const useUiStore = create<UiState>()(
         editSubmode: s.editSubmode,
         sheetCanvasWidth: s.sheetCanvasWidth,
         rolltemplateCanvasWidth: s.rolltemplateCanvasWidth,
+        sheetCanvasWidthAuto: s.sheetCanvasWidthAuto,
+        rolltemplateCanvasWidthAuto: s.rolltemplateCanvasWidthAuto,
         snapEnabled: s.snapEnabled,
         editPlacementMode: s.editPlacementMode,
         previewLayer: s.previewLayer,

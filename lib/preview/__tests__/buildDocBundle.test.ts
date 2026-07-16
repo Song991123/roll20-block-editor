@@ -43,5 +43,9 @@ assert.notEqual(
 );
 assert.match(bundle.doc, /var htmlChanged = data\.htmlKey !== lastAppliedHtmlKey/);
 assert.match(bundle.doc, /if \(style\.textContent !== css\) style\.textContent = css/);
+assert.match(bundle.doc, /r20:edit-flow-target/);
+assert.match(bundle.doc, /r20:edit-optimistic-flow-finalize/);
+assert.match(bundle.doc, /rollbackOptimisticFlowMove/);
+assert.match(bundle.doc, /data-r20-last-optimistic-epoch/);
 
 console.log('buildDoc bundle tests: PASS');
