@@ -65,6 +65,8 @@ export interface ShadowMountOptions {
   layer?: string;
   /** dark mode 토큰. */
   darkMode?: boolean;
+  /** Keep edit-only outlines, drop targets, and manipulation paint separate from sheet rendering. */
+  includeEditorOverlays?: boolean;
   /**
    * Shadow 안 element 가 클릭됐을 때 호출. ancestor 검색으로 가장 가까운
    * `[data-r20-block-id]` element 의 id 를 넘긴다. 없으면 호출 안 됨.
@@ -477,6 +479,9 @@ export function mountSheetShadow(
   color: #e6e6e6;
   background: #1f1f1f;
 }
+`, 'shadow-host-reset');
+  if (opts.includeEditorOverlays !== false) {
+    appendStyleElement(shadow, `
 :host([data-r20-dragging]) {
   cursor: grabbing !important;
 }
@@ -537,7 +542,8 @@ export function mountSheetShadow(
   background: rgba(22, 163, 74, 0.06);
   cursor: text !important;
 }
-`, 'edit-shadow-host-reset');
+`, 'edit-shadow-overlay');
+  }
   appendSourceMarkedStyles(shadow, opts.css);
 
   // spec 25 + isolation fix — wrapper 를 <body class="charsheet"> 로 만들어

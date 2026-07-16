@@ -145,6 +145,253 @@ function summarizeSheetElement(sheetEl) {
   };
 }
 
+function summarizeStableSheetState(sheetEl) {
+  function localHashString(value) {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i += 1) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+  }
+
+  const rect = sheetEl.getBoundingClientRect();
+  let contentHeight = Math.max(sheetEl.scrollHeight, sheetEl.offsetHeight, Math.ceil(rect.height));
+  let contentWidth = Math.max(sheetEl.scrollWidth, sheetEl.offsetWidth, Math.ceil(rect.width));
+  sheetEl.querySelectorAll('*').forEach((el) => {
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+    const childRect = el.getBoundingClientRect();
+    if (childRect.width <= 0 && childRect.height <= 0) return;
+    contentHeight = Math.max(contentHeight, Math.ceil(childRect.bottom - rect.top + sheetEl.scrollTop));
+    contentWidth = Math.max(contentWidth, Math.ceil(childRect.right - rect.left + sheetEl.scrollLeft));
+  });
+  const text = sheetEl.innerText || '';
+  const images = Array.from(sheetEl.querySelectorAll('img'));
+  const doc = sheetEl.ownerDocument;
+  return {
+    rect: {
+      width: Math.round(rect.width * 100) / 100,
+      height: Math.round(rect.height * 100) / 100,
+      left: Math.round(rect.left * 100) / 100,
+      top: Math.round(rect.top * 100) / 100,
+    },
+    contentWidth,
+    contentHeight,
+    scrollWidth: sheetEl.scrollWidth,
+    scrollHeight: sheetEl.scrollHeight,
+    textLength: text.length,
+    textHash: localHashString(text),
+    imageCount: images.length,
+    pendingImageCount: images.filter((img) => !img.complete).length,
+    fontStatus: doc.fonts?.status ?? 'unsupported',
+    readyState: doc.readyState,
+  };
+}
+
+function summarizeRenderStyles(sheetEl) {
+  function localHashString(value) {
+    let hash = 2166136261;
+    for (let i = 0; i < value.length; i += 1) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16).padStart(8, '0');
+  }
+
+  function isVisible(el) {
+    if (!el) return false;
+    const cs = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    return cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+  }
+
+  function firstVisible(selector) {
+    return Array.from(sheetEl.querySelectorAll(selector)).find(isVisible) ?? null;
+  }
+
+  function summarize(el) {
+    if (!el) return null;
+    const cs = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    return {
+      tag: el.tagName.toLowerCase(),
+      className: typeof el.className === 'string' ? el.className.slice(0, 240) : '',
+      display: cs.display,
+      visibility: cs.visibility,
+      position: cs.position,
+      boxSizing: cs.boxSizing,
+      width: cs.width,
+      height: cs.height,
+      rectWidth: Math.round(rect.width * 100) / 100,
+      rectHeight: Math.round(rect.height * 100) / 100,
+      margin: cs.margin,
+      padding: cs.padding,
+      borderWidth: cs.borderWidth,
+      fontFamily: cs.fontFamily,
+      fontSize: cs.fontSize,
+      fontWeight: cs.fontWeight,
+      lineHeight: cs.lineHeight,
+      letterSpacing: cs.letterSpacing,
+      color: cs.color,
+      backgroundColor: cs.backgroundColor,
+      overflow: cs.overflow,
+    };
+  }
+
+  const rootNode = sheetEl.getRootNode();
+  const styleRoot = rootNode instanceof ShadowRoot ? rootNode : sheetEl.ownerDocument;
+  const styleSources = Array.from(styleRoot.querySelectorAll('style')).map((style, index) => ({
+    index,
+    id: style.id || '',
+    source: style.getAttribute('data-r20-style-source') || '',
+    length: (style.textContent || '').length,
+    hash: localHashString(style.textContent || ''),
+  }));
+  const bodyContainer = rootNode instanceof ShadowRoot
+    ? sheetEl.closest('body[data-r20-shadow-body]')
+    : sheetEl.ownerDocument.body;
+  const rootRect = sheetEl.getBoundingClientRect();
+  const geometry = [sheetEl, ...sheetEl.querySelectorAll('*')].map((el, index) => {
+    if (!isVisible(el)) return null;
+    const rect = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return {
+      index,
+      tag: el.tagName.toLowerCase(),
+      blockId: el.getAttribute('data-r20-block-id') || '',
+      className: typeof el.className === 'string' ? el.className.slice(0, 180) : '',
+      left: Math.round((rect.left - rootRect.left) * 100) / 100,
+      top: Math.round((rect.top - rootRect.top) * 100) / 100,
+      width: Math.round(rect.width * 100) / 100,
+      height: Math.round(rect.height * 100) / 100,
+      position: cs.position,
+      transform: cs.transform,
+      opacity: cs.opacity,
+    };
+  }).filter(Boolean);
+
+  return {
+    targets: {
+      root: summarize(sheetEl),
+      dialog: summarize(sheetEl.closest('#dialog-window')),
+      sheetform: summarize(sheetEl.closest('form.sheetform')),
+      bodyContainer: summarize(bodyContainer),
+      firstText: summarize(firstVisible('h1, h2, h3, h4, h5, h6, p, label, span, legend')),
+      firstControl: summarize(firstVisible('input, select, textarea, button')),
+      firstTable: summarize(firstVisible('table')),
+      firstRollButton: summarize(firstVisible('button[type="roll"], button.roll')),
+    },
+    styleSources,
+    geometry,
+  };
+}
+
+async function waitForSheetAssets(sheet, timeoutMs = 8000) {
+  return sheet.evaluate(async (sheetEl, limit) => {
+    const startedAt = performance.now();
+    const doc = sheetEl.ownerDocument;
+    const imagePromises = Array.from(sheetEl.querySelectorAll('img')).map((img) => {
+      if (img.complete) return img.decode?.().catch(() => undefined) ?? Promise.resolve();
+      return new Promise((resolve) => {
+        img.addEventListener('load', resolve, { once: true });
+        img.addEventListener('error', resolve, { once: true });
+      });
+    });
+    const ready = Promise.all([
+      doc.fonts?.ready?.catch?.(() => undefined) ?? Promise.resolve(),
+      ...imagePromises,
+    ]).then(() => 'ready');
+    const timeout = new Promise((resolve) => setTimeout(() => resolve('timeout'), limit));
+    const status = await Promise.race([ready, timeout]);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return {
+      status,
+      waitedMs: Math.round(performance.now() - startedAt),
+      fontStatus: doc.fonts?.status ?? 'unsupported',
+      pendingImageCount: Array.from(sheetEl.querySelectorAll('img')).filter((img) => !img.complete).length,
+    };
+  }, timeoutMs);
+}
+
+async function waitForStableSheet(page, sheet, timeoutMs = 12000) {
+  const assets = await waitForSheetAssets(sheet, Math.min(timeoutMs, 8000));
+  const samples = [];
+  let stableCount = 0;
+  let previousKey = '';
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const sample = await sheet.evaluate(summarizeStableSheetState);
+    const key = JSON.stringify([
+      sample.rect.width,
+      sample.rect.height,
+      sample.contentWidth,
+      sample.contentHeight,
+      sample.scrollWidth,
+      sample.scrollHeight,
+      sample.textHash,
+      sample.pendingImageCount,
+      sample.fontStatus,
+    ]);
+    stableCount = key === previousKey ? stableCount + 1 : 1;
+    previousKey = key;
+    samples.push(sample);
+    if (samples.length > 12) samples.shift();
+    if (
+      stableCount >= 5 &&
+      Date.now() - startedAt >= 600 &&
+      sample.pendingImageCount === 0 &&
+      sample.fontStatus !== 'loading'
+    ) {
+      await page.waitForTimeout(250);
+      return {
+        status: 'stable',
+        waitedMs: Date.now() - startedAt,
+        stableCount,
+        assets,
+        final: await sheet.evaluate(summarizeStableSheetState),
+        samples,
+      };
+    }
+    await page.waitForTimeout(120);
+  }
+  return {
+    status: 'timeout',
+    waitedMs: Date.now() - startedAt,
+    stableCount,
+    assets,
+    final: await sheet.evaluate(summarizeStableSheetState),
+    samples,
+  };
+}
+
+async function ensureSheetFitsViewport(page, sheet) {
+  const before = page.viewportSize() ?? VIEWPORT;
+  const box = await sheet.boundingBox();
+  if (!box) return { status: 'missing-box', before, after: before };
+  const requiredHeight = Math.min(20000, Math.max(before.height, Math.ceil(box.y + box.height + 200)));
+  if (requiredHeight > before.height) {
+    await page.setViewportSize({ width: before.width, height: requiredHeight });
+    await page.waitForTimeout(100);
+  }
+  return {
+    status: requiredHeight > before.height ? 'expanded' : 'unchanged',
+    before,
+    after: page.viewportSize() ?? before,
+    sheetBox: box,
+  };
+}
+
+async function settleSheetForCapture(page, sheet) {
+  const initialFit = await ensureSheetFitsViewport(page, sheet);
+  let stability = await waitForStableSheet(page, sheet);
+  const finalFit = await ensureSheetFitsViewport(page, sheet);
+  if (finalFit.status === 'expanded') {
+    stability = await waitForStableSheet(page, sheet);
+  }
+  return { initialFit, finalFit, stability };
+}
+
 function summarizeSheetSignature(sheetEl) {
   function localHashString(value) {
     let hash = 2166136261;
@@ -350,6 +597,43 @@ async function withHiddenAppChrome(page, fn) {
   }
 }
 
+async function withHiddenEditOverlays(host, fn) {
+  await host.evaluate((hostEl) => {
+    const shadow = hostEl.shadowRoot;
+    const style = shadow?.querySelector('style[data-r20-style-source="edit-shadow-overlay"]');
+    if (!style) throw new Error('edit overlay style source missing');
+    hostEl.__r20SmokeOverlayMedia = style.getAttribute('media');
+    style.setAttribute('media', 'not all');
+  });
+  try {
+    return await fn();
+  } finally {
+    await host.evaluate((hostEl) => {
+      const style = hostEl.shadowRoot?.querySelector('style[data-r20-style-source="edit-shadow-overlay"]');
+      if (style) {
+        const previous = hostEl.__r20SmokeOverlayMedia;
+        if (previous == null) style.removeAttribute('media');
+        else style.setAttribute('media', previous);
+      }
+      delete hostEl.__r20SmokeOverlayMedia;
+    });
+  }
+}
+
+async function summarizeEditOverlay(host) {
+  return host.evaluate((hostEl) => {
+    const shadow = hostEl.shadowRoot;
+    if (!shadow) return { status: 'missing' };
+    return {
+      status: 'ok',
+      droppableCount: shadow.querySelectorAll('[data-r20-can-drop="1"]').length,
+      selectedCount: shadow.querySelectorAll('.r20-selected').length,
+      activeDropTargetCount: shadow.querySelectorAll('.r20-drop-target').length,
+      overlayMarkerCount: shadow.querySelectorAll('[data-r20-edit-overlay], [data-r20-drop-label], .r20-drop-label').length,
+    };
+  });
+}
+
 async function capturePreview(page, fixtureId) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
@@ -359,14 +643,26 @@ async function capturePreview(page, fixtureId) {
   const frame = page.frameLocator('iframe[title]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
+  const settled = await settleSheetForCapture(page, sheet);
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-preview.png`);
   const box = await sheet.boundingBox();
   const dom = await sheet.evaluate(summarizeSheetElement);
   const diagnostics = await sheet.evaluate(summarizeRenderDiagnostics);
+  const styles = await sheet.evaluate(summarizeRenderStyles);
   const signature = await sheet.evaluate(summarizeSheetSignature);
   const appOcclusion = await collectAppOcclusion(page, box);
   await withHiddenAppChrome(page, () => sheet.screenshot({ path: output }));
-  return { path: output, box, dom, diagnostics, signature, appOcclusion };
+  return {
+    path: output,
+    box,
+    dom,
+    diagnostics,
+    styles,
+    signature,
+    appOcclusion,
+    stability: settled.stability,
+    viewportFit: { initial: settled.initialFit, final: settled.finalFit },
+  };
 }
 
 async function captureEdit(page, fixtureId) {
@@ -382,6 +678,7 @@ async function captureEdit(page, fixtureId) {
   }, null, { timeout: 30000 });
   const sheet = page.locator('[data-testid="edit-canvas-shadow-host"] #charsheet-root').first();
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-edit.png`);
+  const overlayOutput = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-edit-overlay.png`);
   await page.waitForFunction(() => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
     const shadow = host?.shadowRoot;
@@ -400,14 +697,31 @@ async function captureEdit(page, fixtureId) {
     const delta = Math.round(hostRect.height - contentHeight);
     return hostRect.height >= contentHeight && Math.abs(delta) <= 24;
   }, null, { timeout: 30000 });
+  const settled = await settleSheetForCapture(page, sheet);
   const box = await sheet.boundingBox();
   const dom = await sheet.evaluate(summarizeSheetElement);
   const diagnostics = await sheet.evaluate(summarizeRenderDiagnostics);
+  const styles = await sheet.evaluate(summarizeRenderStyles);
   const signature = await sheet.evaluate(summarizeSheetSignature);
   const appOcclusion = await collectAppOcclusion(page, box);
   const layout = await page.evaluate(summarizeEditCanvasLayout);
-  await withHiddenAppChrome(page, () => sheet.screenshot({ path: output }));
-  return { path: output, box, dom, diagnostics, signature, appOcclusion, layout };
+  const overlay = await summarizeEditOverlay(host);
+  await withHiddenAppChrome(page, () => sheet.screenshot({ path: overlayOutput }));
+  await withHiddenEditOverlays(host, () => withHiddenAppChrome(page, () => sheet.screenshot({ path: output })));
+  return {
+    path: output,
+    overlayPath: overlayOutput,
+    box,
+    dom,
+    diagnostics,
+    styles,
+    signature,
+    appOcclusion,
+    layout,
+    stability: settled.stability,
+    viewportFit: { initial: settled.initialFit, final: settled.finalFit },
+    overlay,
+  };
 }
 
 async function diffPngs(page, previewPath, editPath) {
@@ -440,6 +754,8 @@ async function diffPngs(page, previewPath, editPath) {
 
       let mismatch = 0;
       let sumAbs = 0;
+      let maxChannelDelta = 0;
+      let maxPixelDelta = 0;
       const total = width * height;
       const bounds = { left: width, top: height, right: -1, bottom: -1 };
       const quadrants = {
@@ -454,6 +770,8 @@ async function diffPngs(page, previewPath, editPath) {
         const db = Math.abs(aData[i + 2] - bData[i + 2]);
         const da = Math.abs(aData[i + 3] - bData[i + 3]);
         const delta = dr + dg + db + da;
+        maxChannelDelta = Math.max(maxChannelDelta, dr, dg, db, da);
+        maxPixelDelta = Math.max(maxPixelDelta, delta);
         sumAbs += delta;
         if (delta > 24) {
           mismatch += 1;
@@ -475,7 +793,10 @@ async function diffPngs(page, previewPath, editPath) {
         crop: { width, height },
         mismatchPixels: mismatch,
         mismatchPct: total > 0 ? Math.round((mismatch / total) * 10000) / 100 : null,
+        mismatchPpm: total > 0 ? Math.round((mismatch / total) * 100000000) / 100 : null,
         meanAbsChannelDelta: total > 0 ? Math.round((sumAbs / (total * 4)) * 100) / 100 : null,
+        maxChannelDelta,
+        maxPixelDelta,
         mismatchBounds:
           mismatch > 0
             ? {
@@ -543,16 +864,30 @@ async function main() {
       entry.previewCapture = await capturePreview(page, fixture.id);
       entry.previewDom = entry.previewCapture.dom;
       entry.previewDiagnostics = entry.previewCapture.diagnostics;
+      entry.previewStyles = entry.previewCapture.styles;
+      entry.previewStability = entry.previewCapture.stability;
+      entry.previewViewportFit = entry.previewCapture.viewportFit;
       entry.previewSignature = entry.previewCapture.signature;
       entry.previewAppOcclusion = entry.previewCapture.appOcclusion;
       entry.editCapture = await captureEdit(page, fixture.id);
       entry.editDom = entry.editCapture.dom;
       entry.editDiagnostics = entry.editCapture.diagnostics;
+      entry.editStyles = entry.editCapture.styles;
+      entry.editStability = entry.editCapture.stability;
+      entry.editViewportFit = entry.editCapture.viewportFit;
+      entry.editOverlay = entry.editCapture.overlay;
       entry.editSignature = entry.editCapture.signature;
       entry.domSignatureParity = compareSheetSignatures(entry.previewSignature, entry.editSignature);
+      entry.computedStyleParity = compareRenderStyles(entry.previewStyles, entry.editStyles);
+      entry.geometryParity = compareRenderGeometry(entry.previewStyles, entry.editStyles);
       entry.editAppOcclusion = entry.editCapture.appOcclusion;
       entry.editLayout = entry.editCapture.layout;
       entry.diff = await diffPngs(page, entry.previewCapture.path, entry.editCapture.path);
+      entry.pixelParity = classifyPixelParity(
+        entry.diff,
+        entry.computedStyleParity,
+        entry.geometryParity,
+      );
       entry.pass =
         entry.import?.blockCount > 0 &&
         entry.previewDom.status === 'ok' &&
@@ -560,7 +895,12 @@ async function main() {
         entry.editLayout?.status === 'ok' &&
         entry.editLayout.hostHeight >= entry.editLayout.contentHeight &&
         Math.abs(entry.editLayout.hostContentDelta) <= 24 &&
+        entry.previewStability?.status === 'stable' &&
+        entry.editStability?.status === 'stable' &&
         entry.domSignatureParity.pass &&
+        entry.computedStyleParity.pass &&
+        entry.geometryParity.pass &&
+        entry.pixelParity.pass &&
         consoleErrors.length === 0 &&
         pageErrors.length === 0;
     } catch (err) {
@@ -570,7 +910,12 @@ async function main() {
     entry.pageErrors = pageErrors;
     entry.resourceIssues = summarizeResourceIssues(resourceIssues);
     report.fixtures.push(entry);
-    console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} mismatch=${entry.diff?.mismatchPct ?? 'n/a'}%`);
+    console.log(
+      `${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} ` +
+      `mismatch=${entry.diff?.mismatchPct ?? 'n/a'}% ` +
+      `pixels=${entry.diff?.mismatchPixels ?? 'n/a'} ppm=${entry.diff?.mismatchPpm ?? 'n/a'} ` +
+      `parity=${entry.pixelParity?.status ?? 'n/a'}`,
+    );
     await page.close();
   }
 
@@ -626,6 +971,126 @@ function compareCountMaps(a = {}, b = {}, label) {
   return failures;
 }
 
+function compareRenderStyles(preview, edit) {
+  const differences = [];
+  const targetNames = new Set([
+    ...Object.keys(preview?.targets ?? {}),
+    ...Object.keys(edit?.targets ?? {}),
+  ]);
+  const properties = [
+    'tag',
+    'display',
+    'visibility',
+    'position',
+    'boxSizing',
+    'width',
+    'height',
+    'rectWidth',
+    'rectHeight',
+    'margin',
+    'padding',
+    'borderWidth',
+    'fontFamily',
+    'fontSize',
+    'fontWeight',
+    'lineHeight',
+    'letterSpacing',
+    'color',
+    'backgroundColor',
+    'overflow',
+  ];
+
+  for (const target of Array.from(targetNames).sort()) {
+    const a = preview?.targets?.[target] ?? null;
+    const b = edit?.targets?.[target] ?? null;
+    if (!a || !b) {
+      if (a || b) differences.push({ target, property: 'presence', preview: Boolean(a), edit: Boolean(b) });
+      continue;
+    }
+    for (const property of properties) {
+      const av = a[property];
+      const bv = b[property];
+      const bothNumbers = typeof av === 'number' && typeof bv === 'number';
+      const equal = bothNumbers ? Math.abs(av - bv) <= 0.5 : av === bv;
+      if (!equal) differences.push({ target, property, preview: av, edit: bv });
+    }
+  }
+
+  return {
+    pass: differences.length === 0,
+    differenceCount: differences.length,
+    differences,
+  };
+}
+
+function classifyPixelParity(diff, computedStyleParity, geometryParity) {
+  if (!diff) return { pass: false, status: 'MISSING_DIFF' };
+  if (diff.mismatchPixels === 0) return { pass: true, status: 'EXACT' };
+  const rasterTolerancePass =
+    computedStyleParity?.pass === true &&
+    geometryParity?.pass === true &&
+    diff.mismatchPpm <= 10 &&
+    diff.maxChannelDelta <= 16;
+  return {
+    pass: rasterTolerancePass,
+    status: rasterTolerancePass ? 'RASTER_TOLERANCE' : 'MISMATCH',
+    limits: {
+      mismatchPpm: 10,
+      maxChannelDelta: 16,
+    },
+  };
+}
+
+function compareRenderGeometry(preview, edit) {
+  const differences = [];
+  const previewByIndex = new Map((preview?.geometry ?? []).map((item) => [item.index, item]));
+  const editByIndex = new Map((edit?.geometry ?? []).map((item) => [item.index, item]));
+  const indexes = new Set([...previewByIndex.keys(), ...editByIndex.keys()]);
+  const numericProperties = ['left', 'top', 'width', 'height'];
+  const stringProperties = ['tag', 'position', 'transform', 'opacity'];
+  for (const index of Array.from(indexes).sort((a, b) => a - b)) {
+    const a = previewByIndex.get(index);
+    const b = editByIndex.get(index);
+    if (!a || !b) {
+      differences.push({ index, property: 'visibility', preview: a ?? null, edit: b ?? null });
+      continue;
+    }
+    for (const property of numericProperties) {
+      if (Math.abs(a[property] - b[property]) > 0.5) {
+        differences.push({
+          index,
+          tag: a.tag,
+          blockId: a.blockId || b.blockId,
+          className: a.className || b.className,
+          property,
+          preview: a[property],
+          edit: b[property],
+        });
+      }
+    }
+    for (const property of stringProperties) {
+      if (a[property] !== b[property]) {
+        differences.push({
+          index,
+          tag: a.tag,
+          blockId: a.blockId || b.blockId,
+          className: a.className || b.className,
+          property,
+          preview: a[property],
+          edit: b[property],
+        });
+      }
+    }
+  }
+  return {
+    pass: differences.length === 0,
+    previewVisibleCount: previewByIndex.size,
+    editVisibleCount: editByIndex.size,
+    differenceCount: differences.length,
+    differences,
+  };
+}
+
 function renderMarkdown(report) {
   const lines = [
     '# Preview/Edit Visual Smoke',
@@ -634,21 +1099,22 @@ function renderMarkdown(report) {
     '',
     'Scope: local static app, real browser import path, preview iframe screenshot, and edit Shadow DOM screenshot. This does not prove actual Roll20 visual parity.',
     '',
-    '| Fixture | Blocks | Preview size | Edit size | Crop | Mismatch | Bounds | Dominant area | Mean delta | Console errors | Page errors |',
-    '| --- | ---: | --- | --- | --- | ---: | --- | --- | ---: | ---: | ---: |',
+    '| Fixture | Blocks | Preview size | Edit size | Crop | Pixel parity | Mismatch pixels | PPM | Max channel | Bounds | Mean delta | Console errors | Page errors |',
+    '| --- | ---: | --- | --- | --- | --- | ---: | ---: | ---: | --- | ---: | ---: | ---: |',
   ];
   for (const item of report.fixtures) {
     const d = item.diff ?? {};
     lines.push(
-      `| \`${item.id}\` | ${item.import?.blockCount ?? ''} | ${fmtSize(d.previewSize)} | ${fmtSize(d.editSize)} | ${fmtSize(d.crop)} | ${d.mismatchPct ?? ''}% | ${fmtBounds(d.mismatchBounds)} | ${d.dominantQuadrant ?? ''} | ${d.meanAbsChannelDelta ?? ''} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`,
+      `| \`${item.id}\` | ${item.import?.blockCount ?? ''} | ${fmtSize(d.previewSize)} | ${fmtSize(d.editSize)} | ${fmtSize(d.crop)} | ${item.pixelParity?.status ?? ''} | ${d.mismatchPixels ?? ''} | ${d.mismatchPpm ?? ''} | ${d.maxChannelDelta ?? ''} | ${fmtBounds(d.mismatchBounds)} | ${d.meanAbsChannelDelta ?? ''} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`,
     );
   }
   lines.push('');
   lines.push('Notes:');
-  lines.push('- PASS means the diagnostic ran without app/page errors and both preview/edit roots rendered.');
-  lines.push('- Mismatch is a diagnostic over the shared top-left crop, not a visual parity gate yet.');
+  lines.push('- PASS requires stable preview/edit roots, matching DOM signatures, 0 sampled computed-style differences, and 0 visible-geometry differences after edit-only overlays are disabled.');
+  lines.push('- Pixel parity is `EXACT` at 0 mismatched pixels. `RASTER_TOLERANCE` is limited to 10 ppm and max channel delta 16 when style and geometry are exact; the exact pixel count remains visible and is not rounded away.');
+  lines.push('- This is a local preview/edit render-unification gate. It is not actual Roll20 visual parity evidence.');
   lines.push('- Bounds and dominant area are coarse triage hints for locating remaining preview/edit differences.');
-  lines.push(`- Browser viewport for capture: ${VIEWPORT.width}x${VIEWPORT.height}.`);
+  lines.push(`- Browser viewport starts at ${VIEWPORT.width}x${VIEWPORT.height} and expands vertically so full-sheet element screenshots do not cross the viewport stitching boundary.`);
   lines.push('- Screenshots are local-only and ignored by Git.');
   lines.push('- App chrome is hidden only during root screenshots; toolbar overlap is still measured separately.');
   lines.push('');
@@ -670,6 +1136,51 @@ function renderMarkdown(report) {
   for (const item of report.fixtures) {
     const l = item.editLayout ?? {};
     lines.push(`| \`${item.id}\` | ${l.hostHeight ?? ''} | ${l.rootHeight ?? ''} | ${l.contentHeight ?? ''} | ${l.hostContentDelta ?? ''} |`);
+  }
+  lines.push('');
+  lines.push('## Render Stability');
+  lines.push('');
+  lines.push('| Fixture | Preview | Edit | Preview text hash | Edit text hash | Preview viewport | Edit viewport | Preview assets | Edit assets |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  for (const item of report.fixtures) {
+    const p = item.previewStability ?? {};
+    const e = item.editStability ?? {};
+    lines.push(
+      `| \`${item.id}\` | ${fmtStability(p)} | ${fmtStability(e)} | ${p.final?.textHash ?? ''} | ${e.final?.textHash ?? ''} | ${fmtViewportFit(item.previewViewportFit)} | ${fmtViewportFit(item.editViewportFit)} | ${fmtAssets(p.assets)} | ${fmtAssets(e.assets)} |`,
+    );
+  }
+  lines.push('');
+  lines.push('## Computed Style Parity');
+  lines.push('');
+  lines.push('| Fixture | Status | Differences | First differences | Preview style sources | Edit style sources |');
+  lines.push('| --- | --- | ---: | --- | ---: | ---: |');
+  for (const item of report.fixtures) {
+    const parity = item.computedStyleParity ?? {};
+    lines.push(
+      `| \`${item.id}\` | ${parity.pass ? 'PASS' : 'DIFF'} | ${parity.differenceCount ?? ''} | ${fmtStyleDifferences(parity.differences)} | ${item.previewStyles?.styleSources?.length ?? ''} | ${item.editStyles?.styleSources?.length ?? ''} |`,
+    );
+  }
+  lines.push('');
+  lines.push('## Geometry Parity');
+  lines.push('');
+  lines.push('| Fixture | Status | Preview visible | Edit visible | Differences | First differences |');
+  lines.push('| --- | --- | ---: | ---: | ---: | --- |');
+  for (const item of report.fixtures) {
+    const parity = item.geometryParity ?? {};
+    lines.push(
+      `| \`${item.id}\` | ${parity.pass ? 'PASS' : 'DIFF'} | ${parity.previewVisibleCount ?? ''} | ${parity.editVisibleCount ?? ''} | ${parity.differenceCount ?? ''} | ${fmtGeometryDifferences(parity.differences)} |`,
+    );
+  }
+  lines.push('');
+  lines.push('## Edit Overlay Diagnostics');
+  lines.push('');
+  lines.push('| Fixture | Droppable containers | Selected | Active target | Overlay markers | Parity capture behavior |');
+  lines.push('| --- | ---: | ---: | ---: | ---: | --- |');
+  for (const item of report.fixtures) {
+    const overlay = item.editOverlay ?? {};
+    lines.push(
+      `| \`${item.id}\` | ${overlay.droppableCount ?? ''} | ${overlay.selectedCount ?? ''} | ${overlay.activeDropTargetCount ?? ''} | ${overlay.overlayMarkerCount ?? ''} | overlay screenshot retained; overlay-only paint hidden for preview/edit diff |`,
+    );
   }
   lines.push('');
   lines.push('## Render Diagnostics');
@@ -723,6 +1234,42 @@ function fmtResourceIssues(items) {
 function fmtFailures(items) {
   if (!Array.isArray(items) || items.length === 0) return '';
   return items.slice(0, 4).join('<br>');
+}
+
+function fmtStability(stability) {
+  if (!stability?.status) return '';
+  return `${stability.status} ${stability.waitedMs ?? 0}ms (${stability.stableCount ?? 0})`;
+}
+
+function fmtAssets(assets) {
+  if (!assets) return '';
+  return `${assets.status ?? ''} ${assets.waitedMs ?? 0}ms; fonts=${assets.fontStatus ?? ''}; pending=${assets.pendingImageCount ?? ''}`;
+}
+
+function fmtViewportFit(viewportFit) {
+  if (!viewportFit) return '';
+  const initial = viewportFit.initial ?? viewportFit;
+  const final = viewportFit.final ?? viewportFit;
+  const before = initial.before;
+  const after = final.after ?? initial.after;
+  if (!before || !after) return final.status ?? initial.status ?? '';
+  return `${before.width}x${before.height} -> ${after.width}x${after.height}`;
+}
+
+function fmtStyleDifferences(items) {
+  if (!Array.isArray(items) || items.length === 0) return '';
+  return items
+    .slice(0, 6)
+    .map((item) => `${item.target}.${item.property}: ${String(item.preview)} -> ${String(item.edit)}`)
+    .join('<br>');
+}
+
+function fmtGeometryDifferences(items) {
+  if (!Array.isArray(items) || items.length === 0) return '';
+  return items
+    .slice(0, 6)
+    .map((item) => `#${item.index} ${item.tag ?? ''}.${item.property}: ${String(item.preview)} -> ${String(item.edit)}`)
+    .join('<br>');
 }
 
 main().catch((err) => {

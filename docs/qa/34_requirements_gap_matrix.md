@@ -17,6 +17,19 @@ because AW2E and YSHY require different template-scoped models. Older notes in
 this matrix that mention `2/6`, `4/6`, or missing AW2E/YSHY chat captures are
 historical unless a newer section explicitly reintroduces that state.
 
+Current local preview/edit status, 2026-07-16:
+`smoke:preview-edit-visual` now separates edit-only overlay paint from the
+underlying sheet and expands the browser viewport before full-sheet capture.
+Ignored local run `.tmp/preview-edit-visual-20260716-r14` passes all 3 prepared
+fixtures: two are exact at `0` mismatched pixels and one records `14` background
+resampling pixels (`8.4 ppm`, max channel delta `12`) under the explicit raster
+tolerance. All have `0` sampled computed-style differences, `0` visible-geometry
+differences, matching DOM/text signatures, and no console/page/resource errors.
+The earlier 1-9% local values mixed real edit affordances or viewport-stitching
+bands into the diff. This strengthens local equivalence evidence only; actual
+Roll20 parity and the stronger single live render-surface architecture remain
+unverified.
+
 Current product-surface note, 2026-06-20 header usability:
 the header no longer exposes placeholder `설정` / `도움말` controls, and `저장`
 now performs a real IndexedDB workspace snapshot save. Browser smoke verified

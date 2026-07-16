@@ -385,6 +385,7 @@ export default function EditCanvas() {
       html: parts.html,
       css: parts.css,
       i18n: emitI18n,
+      includeEditorOverlays: true,
       layer: effectiveLayer,
       darkMode,
       disableNativeControls: true,

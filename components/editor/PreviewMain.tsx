@@ -193,6 +193,7 @@ export default function PreviewMain() {
       html: parts.html,
       css: parts.css,
       i18n: emitI18n,
+      includeEditorOverlays: true,
       layer: previewLayer,
       darkMode,
       // Phase B — Shadow 안 element 클릭 → workspaceStore.selectedBlockId 갱신.

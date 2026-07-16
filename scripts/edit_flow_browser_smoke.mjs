@@ -304,6 +304,15 @@ async function main() {
     const persistentAffordanceOutline = affordanceComputed.outlineStyle;
     const persistentAffordanceOutlineWidth = affordanceComputed.outlineWidth;
     const persistentAffordanceBoxShadow = affordanceComputed.boxShadow;
+    const hostResetStyleCount = host.shadowRoot.querySelectorAll(
+      'style[data-r20-style-source="shadow-host-reset"]',
+    ).length;
+    const editOverlayStyleCount = host.shadowRoot.querySelectorAll(
+      'style[data-r20-style-source="edit-shadow-overlay"]',
+    ).length;
+    const legacyCombinedStyleCount = host.shadowRoot.querySelectorAll(
+      'style[data-r20-style-source="edit-shadow-host-reset"]',
+    ).length;
     if (selectedClassWasPresent) el.classList.add('r20-selected');
     const readPx = (prop) => {
       const match = style.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px`, 'i'));
@@ -321,6 +330,9 @@ async function main() {
       persistentAffordanceOutline,
       persistentAffordanceOutlineWidth,
       persistentAffordanceBoxShadow,
+      hostResetStyleCount,
+      editOverlayStyleCount,
+      legacyCombinedStyleCount,
       cx: Math.round(rect.x + rect.width / 2),
       cy: Math.round(rect.y + rect.height / 2),
     };
@@ -1131,6 +1143,9 @@ async function main() {
     sectionInfo.persistentAffordanceOutline === 'dashed' &&
     sectionInfo.persistentAffordanceOutlineWidth !== '0px' &&
     sectionInfo.persistentAffordanceBoxShadow !== 'none' &&
+    sectionInfo.hostResetStyleCount === 1 &&
+    sectionInfo.editOverlayStyleCount === 1 &&
+    sectionInfo.legacyCombinedStyleCount === 0 &&
     movedSectionInfo.computedPosition === 'absolute' &&
     typeof movedSectionInfo.computedLeft === 'number' &&
     typeof movedSectionInfo.computedTop === 'number' &&

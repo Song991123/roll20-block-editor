@@ -1,3 +1,14 @@
+## 2026-07-16 Preview/Edit Underlying Paint Gate
+
+- Investigated the regression from historical 1-2% local preview/edit mismatch to 5-9%. Direct screenshot inspection showed edit-only layer affordances were being counted as renderer differences.
+- Found a second false-diff source: one fixture's remaining mismatch was exactly two full-width 12px bands at the outer browser viewport boundary while all 107 visible element geometries matched. It was Playwright element-screenshot stitching, not sheet layout.
+- Split Shadow host isolation and edit-only overlay CSS into independent `data-r20-style-source` styles. Both edit surfaces explicitly keep overlays enabled; the parity smoke disables only `edit-shadow-overlay` while retaining a separate overlay screenshot.
+- Extended `scripts/preview_edit_visual_smoke.mjs` to wait for fonts/images and stable text/geometry, expand the viewport to contain the complete sheet, compare DOM signatures, sampled computed styles, all visible geometry, and report exact mismatch pixels, ppm, and max channel delta instead of rounding tiny differences to `0%`.
+- Local evidence: `.tmp/preview-edit-visual-20260716-r14` passed 3/3 prepared ignored fixtures. Two were `EXACT` at `0` mismatched pixels; one was `RASTER_TOLERANCE` at `14/1,666,050` pixels (`8.4 ppm`, max channel delta `12`). All three had zero style/geometry differences, matching text hashes and DOM signatures, and no console/page/resource errors.
+- Regression evidence: `.tmp/edit-flow-overlay-split-20260716-r2` passed the real synthetic drag/drop paths and confirmed persistent frame affordances still render. The smoke now also requires separate `shadow-host-reset` and `edit-shadow-overlay` sources and rejects the old combined source.
+- Final verification: `ci:verify`, lint, build, and `git diff --check` passed. `ci:verify` now runs without the previous typeless TypeScript test warning by using the same `node --no-warnings` convention as the adjacent TypeScript tests.
+- Claim boundary: local underlying render equivalence is verified only within the recorded exact/raster limits on the prepared fixture set. Actual Roll20 visual parity, modern/legacy Sandbox comparison, and a literal single live iframe/render node are not complete.
+
 ## 2026-07-13 Edit Canvas Edge Drop Targeting
 
 - UX refinement: canvas widget drops now use the same before/inside/after mental model as the layer panel. A container's top edge inserts before it, the middle drops inside it, and the bottom edge inserts after it.

@@ -1,3 +1,14 @@
+## 2026-07-16 Preview/Edit Underlying Paint Separation
+
+- ROOT CAUSE: The local visual smoke mixed edit-only container outlines into the preview/edit pixel diff, and long element screenshots crossed the browser viewport boundary. The latter produced a full-width stitched band even when DOM, computed style, and visible geometry were identical.
+- DONE: Split Shadow host isolation CSS (`shadow-host-reset`) from edit-only manipulation paint (`edit-shadow-overlay`). Edit mode still enables the overlay; the parity capture can disable only that style source without mutating imported sheet elements or user CSS.
+- DONE: Hardened `smoke:preview-edit-visual` with font/image readiness, stable text/geometry polling, full-sheet viewport expansion, separate edit-overlay evidence, DOM signature checks, sampled computed-style comparison, all-visible-element geometry comparison, and exact pixel/ppm/max-channel reporting.
+- VERIFIED: Ignored local run `.tmp/preview-edit-visual-20260716-r14` passed all 3 prepared fixtures. Two were byte-threshold exact (`0` mismatched pixels); one retained `14` background-image resampling pixels across `1,666,050` pixels (`8.4 ppm`, max channel delta `12`) and passed the explicit `RASTER_TOLERANCE` limit (`10 ppm`, max channel `16`). All 3 had computed-style differences `0`, geometry differences `0`, matching DOM/text signatures, visible runtime nodes `0`, resource issues `0`, console errors `0`, and page errors `0`.
+- VERIFIED: Synthetic `smoke:edit-flow` passed at ignored local `.tmp/edit-flow-overlay-split-20260716-r2`; persistent container affordances, selection, before/inside/after indicators, flow nesting, absolute-in-frame movement, free placement, emitted CSS coordinates, and the separate style-source contract all pass after the split.
+- VERIFIED: Final `corepack pnpm run ci:verify`, `corepack pnpm run lint`, `corepack pnpm run build`, and `git diff --check` passed. The lone typeless TypeScript test warning was removed by aligning that script with the repository's existing `node --no-warnings` test convention.
+- VERIFY: This proves local underlying preview/edit equivalence within the recorded exact/raster limits only for the 3 prepared ignored fixtures. The app still has iframe and Shadow mounting paths, so the stronger single-live-render-surface architecture and actual Roll20 Sandbox modern/legacy parity remain P0.
+- NEXT P0: Reuse this strict local gate while moving toward one canonical render surface, then compare the same generated payload in Roll20 Custom Sheet Sandbox with user-owned/relinked assets. Keep the global ChatPane renderer patch on HOLD.
+
 ## 2026-07-15 Render Unification Product Boundary Note
 
 - TODO: Continue renderer unification against actual Roll20 evidence, not against a bundled sample sheet.
