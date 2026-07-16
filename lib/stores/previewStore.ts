@@ -39,6 +39,7 @@ interface PreviewStore {
   autoRegen: boolean;       // 큰 시트 OFF 권장
   iframeSandbox: string;    // allow-scripts only — 사용자 시트 안 script 는 unique origin 안에서만 실행 (parent 접근 X). preview bridge script 동작 필요.
   renderMode: PreviewRenderMode;   // Roll20 sandbox parity default; Shadow DOM is edit mode.
+  documentLanguage: string;        // Roll20 page language for :lang() and fallback-font parity.
   assetReplacementMap: string;     // Local-only URL replacement map used by preview/edit/export.
   assetReplacementProfiles: AssetReplacementProfile[]; // Local-only named relink maps for repeated sheet verification.
   activeAssetReplacementProfileId: string | null;
@@ -50,6 +51,7 @@ interface PreviewStore {
   setRoll20SandboxSanitize: (v: boolean) => void;
   setAutoRegen: (v: boolean) => void;
   setRenderMode: (mode: PreviewRenderMode) => void;
+  setDocumentLanguage: (language: string) => void;
   setAssetReplacementMap: (text: string) => void;
   setAssetReplacementProfiles: (profiles: AssetReplacementProfile[], activeId?: string | null) => void;
   saveAssetReplacementProfile: (name: string) => string | null;
@@ -97,6 +99,7 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   autoRegen: true,
   iframeSandbox: 'allow-scripts',
   renderMode: 'iframe',
+  documentLanguage: 'en',
   assetReplacementMap: '',
   assetReplacementProfiles: [],
   activeAssetReplacementProfileId: null,
@@ -110,6 +113,7 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   setRoll20SandboxSanitize: (v) => set({ roll20SandboxSanitize: v }),
   setAutoRegen: (v) => set({ autoRegen: v }),
   setRenderMode: (mode) => set({ renderMode: mode }),
+  setDocumentLanguage: (language) => set({ documentLanguage: language.trim().slice(0, 35) }),
   setAssetReplacementMap: (text) => set({ assetReplacementMap: text, activeAssetReplacementProfileId: null }),
   setAssetReplacementProfiles: (profiles, activeId = null) => set(() => {
     const clean = sanitizeProfiles(profiles);

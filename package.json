@@ -25,6 +25,7 @@
     "test:layer-roles": "tsx lib/editor/__tests__/layerRoles.test.ts",
     "test:design-position": "tsx lib/editor/__tests__/designPosition.test.ts",
     "test:iframe-drop-target": "tsx lib/editor/__tests__/iframeDropTarget.test.ts",
+    "test:blockly-sound-policy": "tsx lib/editor/__tests__/blocklySoundPolicy.test.ts",
     "test:iframe-edit-bridge": "tsx lib/preview/__tests__/iframeEditBridge.test.ts",
     "test:runtime-font-policy": "tsx lib/preview/__tests__/runtimeFontPolicy.test.ts",
     "test:server-hygiene": "node scripts/server_hygiene_check.mjs --self-test",

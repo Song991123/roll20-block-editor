@@ -62,6 +62,8 @@ export interface BuildDocOptions {
   /** spec 17 §8 — 캔버스에서 선택된 위젯 id 와 sync (강조 표시). */
   includeEditorOverlays?: boolean;
   selectedWidgetName?: string | null;
+  /** Roll20 page language used by :lang() selectors and browser fallback fonts. */
+  documentLanguage?: string;
 }
 
 export interface SheetLivePatch {
@@ -72,6 +74,7 @@ export interface SheetLivePatch {
   layer: NonNullable<BuildDocOptions['previewLayer']>;
   roll20SandboxSanitize: boolean;
   roll20RendererModel: NonNullable<BuildDocOptions['roll20RendererModel']>;
+  documentLanguage: string;
 }
 
 /** 미리보기 iframe 안에서 부모창에 클릭 이벤트 전달하는 ES2015 inline 스크립트. */
@@ -261,6 +264,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       document.documentElement.removeAttribute('data-theme');
       document.body.removeAttribute('data-theme');
     }
+    document.documentElement.lang = typeof data.documentLanguage === 'string'
+      ? data.documentLanguage
+      : 'en';
     document.body.setAttribute('data-layer', typeof data.layer === 'string' ? data.layer : 'all');
     document.body.setAttribute('data-roll20-sandbox-sanitize', data.roll20SandboxSanitize === true ? '1' : '0');
     document.body.setAttribute('data-roll20-renderer-model', String(data.roll20RendererModel || 'default'));
@@ -994,6 +1000,11 @@ function jsonScriptText(value: string | undefined): string {
     .replace(/&/g, '\\u0026');
 }
 
+function normalizeDocumentLanguage(value: string | undefined): string {
+  const language = value?.trim() || 'en';
+  return /^[a-z]{2,8}(?:-[a-z0-9]{1,8})*$/i.test(language) ? language : 'en';
+}
+
 /**
  * spec 17 §9 — 9 레이어 CSS 필터.
  * 활성 레이어 element 만 정상 / 나머지는 opacity 0.3 + pointer-events none.
@@ -1075,9 +1086,10 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
   const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
+  const documentLanguage = normalizeDocumentLanguage(opts.documentLanguage);
 
   return `<!doctype html>
-<html lang="ko"${darkMode ? ' data-theme="dark"' : ''}>
+<html lang="${documentLanguage}"${darkMode ? ' data-theme="dark"' : ''}>
 <head>
 <meta charset="utf-8">
 <meta name="referrer" content="no-referrer">
@@ -1131,6 +1143,7 @@ export function buildSheetLivePatch(opts: BuildDocOptions): SheetLivePatch {
     layer,
     roll20SandboxSanitize: contract.roll20SandboxSanitize,
     roll20RendererModel,
+    documentLanguage: normalizeDocumentLanguage(opts.documentLanguage),
   };
 }
 
@@ -1147,6 +1160,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   const { legacyCssSanitize, previewCss } = contract;
   const roll20RendererModel = opts.roll20RendererModel ?? 'default';
   const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
+  const documentLanguage = normalizeDocumentLanguage(opts.documentLanguage);
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
   // layerFilterCss scope = '.charsheet' 로 selector 일관성 유지.
@@ -1167,7 +1181,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   ].join('\n');
 
   const html = `
-<div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
+<div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" lang="${documentLanguage}" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
 <form class="sheetform">

@@ -36,6 +36,8 @@ export default function MainAreaToolbar() {
   const setEditSubmode = useUiStore((s) => s.setEditSubmode);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const setRoll20CompatibilityMode = usePreviewStore((s) => s.setRoll20CompatibilityMode);
+  const documentLanguage = usePreviewStore((s) => s.documentLanguage);
+  const setDocumentLanguage = usePreviewStore((s) => s.setDocumentLanguage);
   const roll20Mode: Roll20CompatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
 
   return (
@@ -76,6 +78,25 @@ export default function MainAreaToolbar() {
         </div>
 
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground tabular-nums">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <label className="inline-flex h-7 items-center gap-1 rounded bg-[var(--bg-elevated-2)] px-2">
+                <span>언어</span>
+                <input
+                  type="text"
+                  value={documentLanguage}
+                  onChange={(event) => setDocumentLanguage(event.target.value)}
+                  placeholder="en"
+                  maxLength={35}
+                  spellCheck={false}
+                  aria-label="Roll20 문서 언어"
+                  data-testid="roll20-document-language"
+                  className="h-5 w-12 border-0 bg-transparent px-1 text-center text-[11px] text-foreground outline-none"
+                />
+              </label>
+            </TooltipTrigger>
+            <TooltipContent>Roll20의 문서 언어 코드입니다. 예: en, ko, ja</TooltipContent>
+          </Tooltip>
           <div
             role="group"
             aria-label="Roll20 렌더 버전"

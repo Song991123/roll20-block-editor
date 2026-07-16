@@ -1,3 +1,16 @@
+## 2026-07-17 Roll20 Document Language and Import SFX Evidence
+
+- DONE: Replaced the preview builder's unconditional `lang="ko"` with a validated BCP-47 document-language contract. The measured Roll20 default is `en`, and users can override it from the mounted main toolbar. Iframe source, persistent live patch, and the Shadow fallback receive the same value.
+- DONE: Programmatic Blockly import/create moves no longer play the block-snap sound. Snap feedback is now limited to `BLOCK_MOVE` events whose reason includes `drag` and whose destination parent changed.
+- VERIFIED CAUSE: In the ignored language probe, legacy `lang=ko`/no-lang rendered root width `898px` and direct label text `52.219px`; `lang=en` rendered root width `896px` and direct label text `47.500px`. Actual Roll20 legacy evidence is root width `896px` and direct label text `47.525px`.
+- VERIFIED LOCAL: `%TEMP%\roll20-legacy-language-and-sfx-r14` PASSed the prepared ignored import at `6530` blocks and `100%` structural match. Modern remained `1189x1936`. Transition legacy and fresh-page legacy both rendered `896x1919`, with maximum root/table/cell delta `0`.
+- VERIFIED ERROR BOUNDARY: Import-time WebAudio/AudioContext errors fell to `0`. The remaining two legacy console messages are the expected correlated CORS/resource pair for the Roll20-proxied external font and remain recorded rather than hidden.
+- PARTIAL: Legacy root width now matches actual, but full parity is not reached. Local height is `1919px` versus actual `1917px`; final-table cells are `172.297/177.438px` local versus `166.075/183.637px` actual.
+- CURRENT P0: Diagnose the remaining generic roughly `6.22px` intrinsic column allocation and roughly `2px` height residual. Do not add fixture-, table-, attribute-, language-, or font-family-specific CSS.
+- P1: Persist the selected document language with workspace save/restore and consider import-time language suggestion when the chosen translation filename supplies a reliable locale. Do not infer a locale from translated text.
+- VERIFIED GATES: `test:blockly-sound-policy`, `test:roll20-render-modes`, lint, production build, server hygiene, and the focused ignored browser smoke passed.
+- CLAIM BOUNDARY: This closes one measured fallback-font/root-width cause and one import-side interaction error. It does not prove all-sheet parity, complete legacy sanitization, or the remaining table/height residual.
+
 ## 2026-07-17 Mode-Specific External Font Runtime
 
 - DONE: Added a fixture-agnostic Roll20 runtime font policy. Modern preview/edit/live-patch CSS preserves authored external `@font-face` URLs; legacy preview/edit/live-patch CSS rewrites only external font URLs through `imgsrv.roll20.net`. Background/image URLs and export payload CSS are not changed by this policy.

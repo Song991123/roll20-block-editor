@@ -394,7 +394,7 @@ async function captureFullIframeRoot(page, sheet, output) {
   };
 }
 
-async function capturePreviewMode(page, fixtureId, mode) {
+async function capturePreviewMode(page, fixtureId, mode, captureLabel = mode) {
   await setCompatibilityMode(page, mode);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
@@ -402,7 +402,7 @@ async function capturePreviewMode(page, fixtureId, mode) {
   const stableGeometry = await waitForStableSheet(page, sheet);
   const style = frame.locator('#r20-user').first();
   const userCss = (await style.textContent({ timeout: 30000 }).catch(() => '')) ?? '';
-  const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-${mode}.png`);
+  const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-${captureLabel}.png`);
   const capture = await captureFullIframeRoot(page, sheet, output);
   const dom = await sheet.evaluate((sheetEl) => {
     const rect = sheetEl.getBoundingClientRect();
@@ -710,11 +710,53 @@ async function capturePreviewMode(page, fixtureId, mode) {
           const rowRect = row.getBoundingClientRect();
           return {
             height: round(rowRect.height),
-            cells: Array.from(row.cells).map((cell) => ({
-              width: round(cell.getBoundingClientRect().width),
-              colSpan: cell.colSpan,
-              text: (cell.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40),
-            })),
+            cells: Array.from(row.cells).map((cell) => {
+              const cellStyle = getComputedStyle(cell);
+              const textNodes = Array.from(cell.childNodes).filter((node) => (
+                node.nodeType === Node.TEXT_NODE && (node.textContent || '').trim()
+              ));
+              let directTextWidth = 0;
+              for (const node of textNodes) {
+                const range = cell.ownerDocument.createRange();
+                range.selectNodeContents(node);
+                directTextWidth += range.getBoundingClientRect().width;
+              }
+              return {
+                width: round(cell.getBoundingClientRect().width),
+                colSpan: cell.colSpan,
+                text: (cell.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40),
+                directTextWidth: round(directTextWidth),
+                style: {
+                  boxSizing: cellStyle.boxSizing,
+                  fontFamily: cellStyle.fontFamily,
+                  fontSize: cellStyle.fontSize,
+                  fontWeight: cellStyle.fontWeight,
+                  lineHeight: cellStyle.lineHeight,
+                  padding: cellStyle.padding,
+                  whiteSpace: cellStyle.whiteSpace,
+                },
+                children: Array.from(cell.children).slice(0, 8).map((child) => {
+                  const childStyle = getComputedStyle(child);
+                  const childRect = child.getBoundingClientRect();
+                  return {
+                    tag: child.tagName,
+                    name: child.getAttribute('name'),
+                    className: child.className,
+                    inlineStyle: child.getAttribute('style') || '',
+                    width: round(childRect.width),
+                    height: round(childRect.height),
+                    display: childStyle.display,
+                    boxSizing: childStyle.boxSizing,
+                    minWidth: childStyle.minWidth,
+                    maxWidth: childStyle.maxWidth,
+                    padding: childStyle.padding,
+                    fontFamily: childStyle.fontFamily,
+                    fontSize: childStyle.fontSize,
+                    lineHeight: childStyle.lineHeight,
+                  };
+                }),
+              };
+            }),
           };
         }),
       }];
@@ -760,6 +802,59 @@ async function capturePreviewMode(page, fixtureId, mode) {
       }).length,
     };
   });
+  const languageProbe = await sheet.evaluate(async (sheetEl) => {
+    const doc = sheetEl.ownerDocument;
+    const originalLang = doc.documentElement.getAttribute('lang');
+    const settle = () => new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+    const measure = () => {
+      const visibleTables = Array.from(sheetEl.querySelectorAll('table')).filter((table) => {
+        const style = getComputedStyle(table);
+        const rect = table.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      });
+      const table = visibleTables.at(-1);
+      const cells = table?.rows[0] ? Array.from(table.rows[0].cells) : [];
+      const firstCell = cells[0] ?? null;
+      const secondCell = cells[1] ?? null;
+      const control = secondCell?.querySelector('input, select, textarea, button') ?? null;
+      let directTextWidth = 0;
+      if (firstCell) {
+        for (const node of Array.from(firstCell.childNodes)) {
+          if (node.nodeType !== Node.TEXT_NODE || !(node.textContent || '').trim()) continue;
+          const range = doc.createRange();
+          range.selectNodeContents(node);
+          directTextWidth += range.getBoundingClientRect().width;
+        }
+      }
+      const round = (value) => Math.round(value * 1000) / 1000;
+      return {
+        documentLang: doc.documentElement.getAttribute('lang'),
+        rootScroll: { width: sheetEl.scrollWidth, height: sheetEl.scrollHeight },
+        table: table ? {
+          width: round(table.getBoundingClientRect().width),
+          height: round(table.getBoundingClientRect().height),
+          firstCellWidth: firstCell ? round(firstCell.getBoundingClientRect().width) : null,
+          secondCellWidth: secondCell ? round(secondCell.getBoundingClientRect().width) : null,
+          directTextWidth: round(directTextWidth),
+          controlWidth: control ? round(control.getBoundingClientRect().width) : null,
+        } : null,
+      };
+    };
+
+    const results = {};
+    for (const candidate of [null, 'en', 'ko']) {
+      if (candidate === null) doc.documentElement.removeAttribute('lang');
+      else doc.documentElement.setAttribute('lang', candidate);
+      await settle();
+      results[candidate ?? 'none'] = measure();
+    }
+    if (originalLang === null) doc.documentElement.removeAttribute('lang');
+    else doc.documentElement.setAttribute('lang', originalLang);
+    await settle();
+    return { originalLang, candidates: results, restored: measure() };
+  });
   return {
     mode,
     path: output,
@@ -768,8 +863,123 @@ async function capturePreviewMode(page, fixtureId, mode) {
     userCss,
     risk: countLegacyRisks(userCss),
     dom,
+    languageProbe,
     capture,
   };
+}
+
+function compareModeGeometry(transitionCapture, freshCapture) {
+  const transitionTables = transitionCapture?.dom?.tables ?? [];
+  const freshTables = freshCapture?.dom?.tables ?? [];
+  const tableDeltas = [];
+  let maxTableWidthDelta = 0;
+  let maxTableHeightDelta = 0;
+  let maxCellWidthDelta = 0;
+
+  for (const transitionTable of transitionTables) {
+    const freshTable = freshTables.find((table) => table.index === transitionTable.index);
+    if (!freshTable) continue;
+    const widthDelta = Math.abs(transitionTable.rect.width - freshTable.rect.width);
+    const heightDelta = Math.abs(transitionTable.rect.height - freshTable.rect.height);
+    let cellWidthDelta = 0;
+    transitionTable.rows.forEach((row, rowIndex) => {
+      row.cells.forEach((cell, cellIndex) => {
+        const freshCell = freshTable.rows[rowIndex]?.cells[cellIndex];
+        if (!freshCell) return;
+        cellWidthDelta = Math.max(cellWidthDelta, Math.abs(cell.width - freshCell.width));
+      });
+    });
+    maxTableWidthDelta = Math.max(maxTableWidthDelta, widthDelta);
+    maxTableHeightDelta = Math.max(maxTableHeightDelta, heightDelta);
+    maxCellWidthDelta = Math.max(maxCellWidthDelta, cellWidthDelta);
+    if (widthDelta > 0.05 || heightDelta > 0.05 || cellWidthDelta > 0.05) {
+      tableDeltas.push({
+        index: transitionTable.index,
+        widthDelta: Math.round(widthDelta * 100) / 100,
+        heightDelta: Math.round(heightDelta * 100) / 100,
+        maxCellWidthDelta: Math.round(cellWidthDelta * 100) / 100,
+      });
+    }
+  }
+
+  const rootWidthDelta = Math.abs(
+    (transitionCapture?.dom?.scroll?.width ?? 0) - (freshCapture?.dom?.scroll?.width ?? 0),
+  );
+  const rootHeightDelta = Math.abs(
+    (transitionCapture?.dom?.scroll?.height ?? 0) - (freshCapture?.dom?.scroll?.height ?? 0),
+  );
+  const maxDelta = Math.max(
+    rootWidthDelta,
+    rootHeightDelta,
+    maxTableWidthDelta,
+    maxTableHeightDelta,
+    maxCellWidthDelta,
+  );
+  return {
+    equivalent: maxDelta <= 0.05 && transitionTables.length === freshTables.length,
+    rootWidthDelta,
+    rootHeightDelta,
+    tableCount: { transition: transitionTables.length, fresh: freshTables.length },
+    maxTableWidthDelta: Math.round(maxTableWidthDelta * 100) / 100,
+    maxTableHeightDelta: Math.round(maxTableHeightDelta * 100) / 100,
+    maxCellWidthDelta: Math.round(maxCellWidthDelta * 100) / 100,
+    differingTables: tableDeltas
+      .sort((a, b) => b.maxCellWidthDelta - a.maxCellWidthDelta || b.heightDelta - a.heightDelta)
+      .slice(0, 12),
+  };
+}
+
+async function captureFreshMode(browser, fixture, mode) {
+  const page = await browser.newPage({ viewport: VIEWPORT });
+  const consoleErrors = [];
+  const consoleErrorEvents = [];
+  const pageErrors = [];
+  const resourceIssues = [];
+  page.on('console', (msg) => {
+    if (msg.type() !== 'error') return;
+    const text = msg.text().slice(0, 500);
+    consoleErrors.push(text);
+    consoleErrorEvents.push({ text, url: msg.location().url || '' });
+  });
+  page.on('pageerror', (err) => pageErrors.push(String(err).slice(0, 500)));
+  page.on('response', (response) => {
+    if (response.status() >= 400) {
+      resourceIssues.push(summarizeResourceIssue('http', response.request(), response));
+    }
+  });
+  page.on('requestfailed', (request) => {
+    resourceIssues.push({
+      ...summarizeResourceIssue('failed', request),
+      failure: request.failure()?.errorText ?? '',
+    });
+  });
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem('__perfOn', '1');
+      window.localStorage.removeItem('r20be-autosave');
+    } catch {}
+  });
+
+  try {
+    await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
+    await warmPerfHook(page);
+    const importResult = await waitForLiveImport(page, fixture);
+    const capture = await capturePreviewMode(page, fixture.id, mode, `${mode}-fresh`);
+    const fontProxyConsole = mode === 'legacy'
+      ? classifyLegacyFontProxyConsoleErrors(consoleErrorEvents)
+      : { expected: [], unexpected: consoleErrorEvents };
+    return {
+      import: importResult,
+      capture,
+      consoleErrors,
+      consoleErrorEvents,
+      fontProxyConsole,
+      pageErrors,
+      resourceIssues: summarizeResourceIssues(resourceIssues),
+    };
+  } finally {
+    await page.close();
+  }
 }
 
 async function diffImages(page, modernFile, legacyFile) {
@@ -913,9 +1123,19 @@ async function main() {
       entry.legacy.fontProxyConsole = classifyLegacyFontProxyConsoleErrors(
         entry.legacy.consoleErrorEvents,
       );
+      const freshLegacy = await captureFreshMode(browser, fixture, 'legacy');
+      entry.legacyFreshImport = freshLegacy.import;
+      entry.legacyFresh = freshLegacy.capture;
+      entry.legacyFresh.consoleErrors = freshLegacy.consoleErrors;
+      entry.legacyFresh.consoleErrorEvents = freshLegacy.consoleErrorEvents;
+      entry.legacyFresh.fontProxyConsole = freshLegacy.fontProxyConsole;
+      entry.legacyFresh.pageErrors = freshLegacy.pageErrors;
+      entry.legacyFresh.resourceIssues = freshLegacy.resourceIssues;
+      entry.legacyTransitionParity = compareModeGeometry(entry.legacy, entry.legacyFresh);
       entry.cssChanged = entry.modern.userCss !== entry.legacy.userCss;
       delete entry.modern.userCss;
       delete entry.legacy.userCss;
+      delete entry.legacyFresh.userCss;
       entry.legacyRiskReduced = entry.legacy.risk.total < entry.modern.risk.total;
       entry.modeEffect = entry.modern.risk.total > 0
         ? entry.legacyRiskReduced
@@ -925,12 +1145,18 @@ async function main() {
       entry.diff = await diffImages(page, entry.modern.path, entry.legacy.path);
       entry.pass =
         entry.import?.blockCount > 0 &&
+        entry.legacyFreshImport?.blockCount > 0 &&
         entry.modern.dom.visibleElementCount > 0 &&
         entry.legacy.dom.visibleElementCount > 0 &&
+        entry.legacyFresh.dom.visibleElementCount > 0 &&
         entry.modern.dom.visibleRuntimeNodeCount === 0 &&
         entry.legacy.dom.visibleRuntimeNodeCount === 0 &&
+        entry.legacyFresh.dom.visibleRuntimeNodeCount === 0 &&
         entry.modern.consoleErrors.length === 0 &&
         entry.legacy.fontProxyConsole.unexpected.length === 0 &&
+        entry.legacyFresh.fontProxyConsole.unexpected.length === 0 &&
+        entry.legacyFresh.pageErrors.length === 0 &&
+        entry.legacyTransitionParity.equivalent &&
         pageErrors.length === 0 &&
         (entry.modern.risk.total === 0 || entry.legacyRiskReduced);
     } catch (err) {
@@ -976,18 +1202,19 @@ function renderMarkdown(report) {
     '',
     'Scope: local static app, ignored imported fixtures, preview iframe only. This verifies local legacy CSS preview plumbing and does not prove actual Roll20 legacy visual parity.',
     '',
-    '| Fixture | Blocks | Modern risk | Legacy risk | Mode effect | CSS changed | Modern size | Legacy size | Mismatch | Console errors | Page errors | Status |',
-    '| --- | ---: | ---: | ---: | --- | --- | --- | --- | ---: | ---: | ---: | --- |',
+    '| Fixture | Blocks | Modern risk | Legacy risk | Mode effect | CSS changed | Modern size | Legacy size | Fresh legacy | Transition parity | Mismatch | Console errors | Page errors | Status |',
+    '| --- | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |',
   ];
   for (const item of report.fixtures) {
     lines.push(
-      `| \`${item.id}\` | ${item.import?.blockCount ?? ''} | ${item.modern?.risk?.total ?? ''} | ${item.legacy?.risk?.total ?? ''} | ${item.modeEffect ?? ''} | ${item.cssChanged ? 'yes' : 'no'} | ${fmtSize(item.diff?.modernSize)} | ${fmtSize(item.diff?.legacySize)} | ${item.diff?.mismatchPct ?? ''}% | ${item.legacy?.fontProxyConsole?.unexpected?.length ?? item.consoleErrors?.length ?? 0}/${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} | ${item.pass ? 'PASS' : 'FAIL'} |`,
+      `| \`${item.id}\` | ${item.import?.blockCount ?? ''} | ${item.modern?.risk?.total ?? ''} | ${item.legacy?.risk?.total ?? ''} | ${item.modeEffect ?? ''} | ${item.cssChanged ? 'yes' : 'no'} | ${fmtSize(item.diff?.modernSize)} | ${fmtSize(item.diff?.legacySize)} | ${item.legacyFresh ? `${item.legacyFresh.dom.scroll.width}x${item.legacyFresh.dom.scroll.height}` : ''} | ${item.legacyTransitionParity?.equivalent ? 'match' : 'drift'} | ${item.diff?.mismatchPct ?? ''}% | ${item.legacy?.fontProxyConsole?.unexpected?.length ?? item.consoleErrors?.length ?? 0}/${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} | ${item.pass ? 'PASS' : 'FAIL'} |`,
     );
   }
   lines.push('');
   lines.push('Notes:');
   lines.push('- PASS requires both preview roots to render, no visible script/rolltemplate runtime nodes, and zero unexpected console/page errors.');
   lines.push('- The console column is unexpected/total. A legacy Roll20 font-proxy CORS pair is retained as expected evidence and does not hide unrelated console errors.');
+  lines.push('- PASS also requires transition-to-legacy geometry to match a fresh legacy-first document. This catches stale font/runtime state from a prior modern render.');
   lines.push('- If modern user CSS contains legacy-risk declarations, legacy mode must reduce that risk count.');
   lines.push('- A fixture with no legacy-risk CSS is recorded as `no-risk-css`; it still exercises the import and toggle path.');
   lines.push('- Screenshot mismatch is diagnostic only. Real Roll20 sandbox/test-room parity remains unverified until actual Roll20 screenshots are captured.');

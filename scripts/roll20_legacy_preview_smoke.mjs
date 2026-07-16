@@ -101,6 +101,10 @@ const modernAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, c
 const legacyAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy', sanitize: false, legacyCssSanitize: false });
 const modernAtomicPatchOverride = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern', sanitize: true, legacyCssSanitize: true });
 const legacyAtomicPatchOverride = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy', sanitize: false, legacyCssSanitize: false });
+const koreanDocument = buildSheetDoc({ html: HTML, css: CSS, documentLanguage: 'ko' });
+const unsafeDocumentLanguage = buildSheetDoc({ html: HTML, css: CSS, documentLanguage: 'en\" onload=\"alert(1)' });
+const koreanParts = buildSheetParts({ html: HTML, css: CSS, documentLanguage: 'ko' });
+const koreanPatch = buildSheetLivePatch({ html: HTML, css: CSS, documentLanguage: 'ko' });
 
 const modernUserCss = extractStyle(modernDoc, 'r20-user');
 const legacyUserCss = extractStyle(legacyDoc, 'r20-user');
@@ -115,6 +119,11 @@ const modernShadowDialogCss = extractStyleSourceChunk(modernParts.css, 'roll20-d
 const modernShadowLegacyInputCss = extractStyleSourceChunk(modernParts.css, 'roll20-legacy-input-state');
 const legacyShadowInputCss = extractStyleSourceChunk(legacyParts.css, 'roll20-legacy-input-state');
 const checks = [];
+
+assertCheck(checks, 'iframe defaults to the measured Roll20 document language', modernDoc.includes('<html lang="en"'));
+assertCheck(checks, 'iframe accepts an explicit safe document language', koreanDocument.includes('<html lang="ko"'));
+assertCheck(checks, 'iframe rejects unsafe document language markup', unsafeDocumentLanguage.includes('<html lang="en"') && !unsafeDocumentLanguage.includes('onload='));
+assertCheck(checks, 'shadow and live patch share the explicit document language', koreanParts.html.includes('lang="ko"') && koreanPatch.documentLanguage === 'ko');
 
 assertCheck(checks, 'atomic modern contract matches the prior paired low-level inputs',
   modernAtomicDoc === modernDoc && modernAtomicParts.html === modernParts.html && modernAtomicParts.css === modernParts.css);
@@ -198,6 +207,10 @@ assertCheck(checks, 'mounted main toolbar exposes modern and legacy modes',
   mainAreaToolbar.includes('data-testid="roll20-mode-control"')
     && mainAreaToolbar.includes('data-testid={`roll20-mode-${key}`}')
     && mainAreaToolbar.includes('setRoll20CompatibilityMode'));
+assertCheck(checks, 'mounted main toolbar exposes the shared Roll20 document language',
+  mainAreaToolbar.includes('data-testid="roll20-document-language"')
+    && mainAreaToolbar.includes('setDocumentLanguage(event.target.value)')
+    && /documentLanguage:\s*'en'/.test(previewStore));
 assertCheck(checks, 'editor shell mounts the main toolbar', editorShell.includes('<MainAreaToolbar />'));
 assertCheck(checks, 'preview store defaults to modern class handling', /sanitize:\s*false/.test(previewStore));
 assertCheck(checks, 'preview store defaults legacy sanitize off', /legacyCssSanitize:\s*false/.test(previewStore));

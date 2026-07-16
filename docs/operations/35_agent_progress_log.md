@@ -4868,3 +4868,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Synthetic contract and ZIP tests pass. Ignored browser evidence `%TEMP%\roll20-legacy-font-policy-r9` passes with modern `1189x1936`, active direct font, and legacy `898x1918`, inactive proxied font. The legacy final table is now `181.28px` local versus `180.675px` actual, but column allocation remains `178.13/171.61px` local versus `166.075/183.637px` actual.
 - The browser smoke keeps the expected proxy-font CORS messages in evidence and fails only on unrelated console errors. Generated source, screenshots, and reports remain ignored; no Roll20 room/source was modified.
 - Next: diagnose the remaining legacy intrinsic column allocation and 2px root-width/1px height residual using generic computed-style/font metrics. Do not promote a table-, attribute-, or font-family-specific patch.
+## 2026-07-17 Roll20 Document Language and Import SFX
+
+- Recovered after a Codex desktop restart and resumed from the existing clean branch plus the in-progress ignored visual harness. No unneeded project or CDP listener was left running.
+- Added `lib/editor/blocklySoundPolicy.ts` with a focused regression test. Blockly import/create events stay silent; only a real drag into a changed parent plays `block.snap`.
+- Added a validated document-language input to the shared preview contract. The default now follows measured Roll20 evidence (`en`), the mounted toolbar exposes an override, and iframe source/live patch/Shadow fallback use the same value.
+- Extended `smoke:legacy-fixture-visual` with fresh-page legacy capture, transition-vs-fresh geometry comparison, table direct-text/control diagnostics, and a reversible document-language probe.
+- Focused ignored evidence `%TEMP%\roll20-legacy-language-and-sfx-r14` PASSed: import `6530` blocks, structural match `100%`, AudioContext errors `0`, modern `1189x1936`, legacy transition/fresh `896x1919`, and transition/fresh maximum geometry delta `0`.
+- Actual-vs-local claim remains partial. Actual legacy is `896x1917`; local final-table cells are `172.297/177.438px` versus actual `166.075/183.637px`. The remaining intrinsic allocation and height residual stay P0.
+- Verification: `test:blockly-sound-policy`, `test:roll20-render-modes`, lint, production build, `check:server-hygiene`, focused external-resource browser smoke, and `git diff --check` passed.
+- Private fixture source, screenshots, and reports remain ignored and uncommitted.

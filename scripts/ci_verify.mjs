@@ -23,6 +23,7 @@ const tasks = [
   'test:layer-roles',
   'test:design-position',
   'test:iframe-drop-target',
+  'test:blockly-sound-policy',
   'test:iframe-edit-bridge',
   'test:runtime-font-policy',
   'test:roll20-sandbox-sanitize',

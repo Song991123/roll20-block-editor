@@ -79,6 +79,7 @@ export default function PreviewMain() {
   const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
   const sandbox = usePreviewStore((s) => s.iframeSandbox);
   const renderMode = usePreviewStore((s) => s.renderMode);
+  const documentLanguage = usePreviewStore((s) => s.documentLanguage);
   const setRenderMode = usePreviewStore((s) => s.setRenderMode);
   const zoom = useUiStore((s) => s.previewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
@@ -161,8 +162,9 @@ export default function PreviewMain() {
         darkMode,
         previewLayer,
         includeEditorOverlays: false,
+        documentLanguage,
       }),
-    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer],
+    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
   );
   const livePatch = useMemo(
     () => buildSheetLivePatch({
@@ -174,8 +176,9 @@ export default function PreviewMain() {
       darkMode,
       previewLayer,
       includeEditorOverlays: false,
+      documentLanguage,
     }),
-    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer],
+    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
   );
   const [iframeDocumentSrcdoc] = useState(srcdoc);
 
@@ -216,8 +219,9 @@ export default function PreviewMain() {
         darkMode,
         previewLayer,
         includeEditorOverlays: true,
+        documentLanguage,
       }),
-    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer],
+    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
   );
   useEffect(() => {
     if (renderMode !== 'shadow') return;

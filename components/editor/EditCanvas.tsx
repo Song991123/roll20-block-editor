@@ -335,6 +335,7 @@ export function LegacyShadowEditCanvas() {
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
   const darkMode = usePreviewStore((s) => s.darkMode);
+  const documentLanguage = usePreviewStore((s) => s.documentLanguage);
   const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
   const [lastMove, setLastMove] = useState<string | null>(null);
   const [viewportWidth, setViewportWidth] = useState(0);
@@ -374,8 +375,9 @@ export function LegacyShadowEditCanvas() {
         darkMode,
         previewLayer: effectiveLayer,
         includeEditorOverlays: false,
+        documentLanguage,
       }),
-    [editAssetText.html, editAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, effectiveLayer],
+    [editAssetText.html, editAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, effectiveLayer, documentLanguage],
   );
 
   const snap = useCallback(

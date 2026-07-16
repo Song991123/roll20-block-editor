@@ -30,6 +30,7 @@ import {
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { registerAllBlocks, getBlockDef } from '@/lib/blocks/registry';
 import { playSfx } from '@/lib/sfx';
+import { shouldPlayBlockSnap } from '@/lib/editor/blocklySoundPolicy';
 
 const BLOCKLY_MEDIA_PATH = 'blockly-media/';
 
@@ -107,11 +108,7 @@ export default function BlocklyModelHost({ visible }: Props) {
         // Snap SFX — preserved (drag-end BLOCK_MOVE with parent change).
         if (ev.type === Blockly.Events.BLOCK_MOVE) {
           const mv = ev as Blockly.Events.BlockMove;
-          if (
-            (mv.newParentId !== undefined || mv.oldParentId !== undefined) &&
-            mv.newParentId !== mv.oldParentId &&
-            mv.newParentId
-          ) {
+          if (shouldPlayBlockSnap(mv)) {
             playSfx('block.snap');
           }
         }
