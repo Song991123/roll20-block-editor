@@ -6,7 +6,10 @@ import { sanitizeForRoll20Legacy } from '../emit/sanitize';
 import { parseTranslationMap } from '../export/payload';
 import { annotateRoll20AutocalcHtml } from './autocalc';
 import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
-import { applyRoll20RuntimeFontUrlPolicy } from './runtimeFontPolicy';
+import {
+  applyRoll20RuntimeCssAssetPolicy,
+  applyRoll20RuntimeHtmlAssetPolicy,
+} from './runtimeAssetPolicy';
 
 export type Roll20CompatibilityMode = 'modern' | 'legacy';
 
@@ -52,18 +55,25 @@ export function prepareSheetRenderContract(
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
   const sandboxHtml = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxHtml(userHtml, { prefixClasses: legacyCssSanitize }).html
+    ? sanitizeRoll20SandboxHtml(userHtml, {
+        prefixClasses: legacyCssSanitize,
+        rewriteUrls: false,
+      }).html
     : prefixedHtml;
   const sandboxCss = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxCss(userCss, { prefixSelectors: false }).css
+    ? sanitizeRoll20SandboxCss(userCss, {
+        prefixSelectors: false,
+        rewriteUrls: false,
+      }).css
     : prefixedCss;
-  const runtimeCss = applyRoll20RuntimeFontUrlPolicy(sandboxCss, compatibilityMode);
+  const runtimeHtml = applyRoll20RuntimeHtmlAssetPolicy(sandboxHtml, compatibilityMode);
+  const runtimeCss = applyRoll20RuntimeCssAssetPolicy(sandboxCss, compatibilityMode);
   const previewCss = legacyCssSanitize
     ? sanitizeForRoll20Legacy(runtimeCss).sanitized
     : runtimeCss;
-  const bodyInner = sandboxHtml
+  const bodyInner = runtimeHtml
     ? addRoll20RepeatingRuntimeHtml(
-        annotateRoll20AutocalcHtml(applyTranslationsToHtml(sandboxHtml, input.i18n)),
+        annotateRoll20AutocalcHtml(applyTranslationsToHtml(runtimeHtml, input.i18n)),
       )
     : '';
 

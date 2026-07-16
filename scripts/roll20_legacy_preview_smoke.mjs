@@ -30,6 +30,8 @@ function argOf(name, fallback) {
 
 const HTML = `
 <div class="legacy-card">
+  <img src="https://images.example.test/synthetic-runtime.png" alt="synthetic">
+  <div style="background-image: url('https://images.example.test/synthetic-inline.png')"></div>
   <button type="roll" name="roll_test" value="/roll 1d20">Roll</button>
   <span data-i18n="hello">hello</span>
   <input type="number" name="attr_base" value="50">
@@ -45,6 +47,7 @@ const CSS = `
 }
 :root { --accent: #c02030; }
 .sheet-legacy-card {
+  background-image: url("https://images.example.test/synthetic-runtime-background.png");
   position: sticky;
   transform: scale(0.92);
   animation: r20-fade 200ms ease-in-out;
@@ -101,6 +104,8 @@ const modernAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, c
 const legacyAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy', sanitize: false, legacyCssSanitize: false });
 const modernAtomicPatchOverride = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern', sanitize: true, legacyCssSanitize: true });
 const legacyAtomicPatchOverride = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy', sanitize: false, legacyCssSanitize: false });
+const modernSandboxAtomicDoc = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern', roll20SandboxSanitize: true });
+const legacySandboxAtomicDoc = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy', roll20SandboxSanitize: true });
 const koreanDocument = buildSheetDoc({ html: HTML, css: CSS, documentLanguage: 'ko' });
 const unsafeDocumentLanguage = buildSheetDoc({ html: HTML, css: CSS, documentLanguage: 'en\" onload=\"alert(1)' });
 const koreanParts = buildSheetParts({ html: HTML, css: CSS, documentLanguage: 'ko' });
@@ -112,6 +117,8 @@ const modernBaseCss = extractStyle(modernDoc, 'roll20-base');
 const modernDialogCss = extractStyle(modernDoc, 'roll20-dialog-open');
 const modernLegacyInputCss = extractStyle(modernDoc, 'roll20-legacy-input-state');
 const legacyInputCss = extractStyle(legacyDoc, 'roll20-legacy-input-state');
+const modernSandboxUserCss = extractStyle(modernSandboxAtomicDoc, 'r20-user');
+const legacySandboxUserCss = extractStyle(legacySandboxAtomicDoc, 'r20-user');
 const modernShadowUserCss = extractStyleSourceChunk(modernParts.css, 'sheet-user-css');
 const legacyShadowUserCss = extractStyleSourceChunk(legacyParts.css, 'sheet-user-css');
 const modernShadowBaseCss = extractStyleSourceChunk(modernParts.css, 'roll20-base');
@@ -137,6 +144,15 @@ assertCheck(checks, 'explicit compatibility mode overrides conflicting low-level
     && legacyAtomicOverride === legacyAtomicDoc
     && JSON.stringify(modernAtomicPatchOverride) === JSON.stringify(modernAtomicPatch)
     && JSON.stringify(legacyAtomicPatchOverride) === JSON.stringify(legacyAtomicPatch));
+assertCheck(checks, 'sandbox diagnostic keeps the measured modern asset direction',
+  modernSandboxAtomicDoc.includes('src="https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-runtime.png"')
+    && modernSandboxAtomicDoc.includes("url('https://images.example.test/synthetic-inline.png')")
+    && modernSandboxUserCss.includes('https://images.example.test/synthetic-runtime-background.png')
+    && !modernSandboxUserCss.includes('https://imgsrv.roll20.net/?src='));
+assertCheck(checks, 'sandbox diagnostic keeps the measured legacy asset direction',
+  legacySandboxAtomicDoc.includes('src="https://images.example.test/synthetic-runtime.png"')
+    && legacySandboxAtomicDoc.includes("url('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-inline.png')")
+    && legacySandboxUserCss.includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-runtime-background.png'));
 assertCheck(checks, 'iframe modern preserves authored HTML class', modernDoc.includes('class="legacy-card"'));
 assertCheck(checks, 'iframe modern does not legacy-prefix HTML class', !modernDoc.includes('class="sheet-legacy-card"'));
 assertCheck(checks, 'iframe legacy prefixes HTML class', legacyDoc.includes('class="sheet-legacy-card"'));
@@ -145,9 +161,17 @@ assertCheck(checks, 'iframe modern keeps animation', includesText(modernUserCss,
 assertCheck(checks, 'iframe modern preserves authored external font URL',
   modernUserCss.includes('https://fonts.example.test/synthetic-runtime.woff2')
     && !modernUserCss.includes('https://imgsrv.roll20.net/?src='));
+assertCheck(checks, 'iframe modern proxies external HTML images only',
+  modernDoc.includes('src="https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-runtime.png"')
+    && modernDoc.includes("url('https://images.example.test/synthetic-inline.png')")
+    && modernUserCss.includes('https://images.example.test/synthetic-runtime-background.png'));
 assertCheck(checks, 'iframe legacy converts scale to zoom', includesText(legacyUserCss, 'zoom: 0.92'));
 assertCheck(checks, 'iframe legacy proxies external font URL through Roll20',
   legacyUserCss.includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Ffonts.example.test%2Fsynthetic-runtime.woff2'));
+assertCheck(checks, 'iframe legacy preserves HTML images and proxies CSS backgrounds',
+  legacyDoc.includes('src="https://images.example.test/synthetic-runtime.png"')
+    && legacyDoc.includes("url('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-inline.png')")
+    && legacyUserCss.includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-runtime-background.png'));
 assertCheck(checks, 'iframe legacy removes transform declarations', !/transform\s*:/i.test(legacyUserCss));
 assertCheck(checks, 'iframe legacy removes animation declarations', !/animation(?:-[a-z-]+)?\s*:/i.test(legacyUserCss));
 assertCheck(checks, 'iframe legacy removes keyframes', !/@(?:-[a-z]+-)?keyframes\b/i.test(legacyUserCss));
@@ -173,9 +197,17 @@ assertCheck(checks, 'shadow modern keeps animation', includesText(modernShadowUs
 assertCheck(checks, 'shadow modern preserves authored external font URL',
   modernShadowUserCss.includes('https://fonts.example.test/synthetic-runtime.woff2')
     && !modernShadowUserCss.includes('https://imgsrv.roll20.net/?src='));
+assertCheck(checks, 'shadow modern proxies external HTML images only',
+  modernParts.html.includes('src="https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-runtime.png"')
+    && modernParts.html.includes("url('https://images.example.test/synthetic-inline.png')")
+    && modernShadowUserCss.includes('https://images.example.test/synthetic-runtime-background.png'));
 assertCheck(checks, 'shadow legacy converts scale to zoom', includesText(legacyShadowUserCss, 'zoom: 0.92'));
 assertCheck(checks, 'shadow legacy proxies external font URL through Roll20',
   legacyShadowUserCss.includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Ffonts.example.test%2Fsynthetic-runtime.woff2'));
+assertCheck(checks, 'shadow legacy preserves HTML images and proxies CSS backgrounds',
+  legacyParts.html.includes('src="https://images.example.test/synthetic-runtime.png"')
+    && legacyParts.html.includes("url('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-inline.png')")
+    && legacyShadowUserCss.includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-runtime-background.png'));
 assertCheck(checks, 'shadow legacy removes transform declarations', !/transform\s*:/i.test(legacyShadowUserCss));
 assertCheck(checks, 'shadow legacy removes animation declarations', !/animation(?:-[a-z-]+)?\s*:/i.test(legacyShadowUserCss));
 assertCheck(checks, 'shadow legacy removes keyframes', !/@(?:-[a-z]+-)?keyframes\b/i.test(legacyShadowUserCss));
@@ -191,10 +223,15 @@ assertCheck(checks, 'shadow dialog context does not override disabled input pain
 assertCheck(checks, 'shadow dialog context does not override sheet backgrounds', !/\.charsheet\s*{[\s\S]*?background-(?:repeat|position)/i.test(modernShadowDialogCss));
 assertCheck(checks, 'shadow modern does not force legacy disabled input paint', modernShadowLegacyInputCss === '');
 assertCheck(checks, 'shadow legacy applies overridable disabled input paint', /input\[disabled\][\s\S]*?background-color:\s*rgba\(255,\s*255,\s*255,\s*0\)/i.test(legacyShadowInputCss) && !/!important/i.test(legacyShadowInputCss));
-assertCheck(checks, 'live patch keeps modern and legacy font URL policies separate',
+assertCheck(checks, 'live patch keeps modern and legacy asset URL policies separate',
   modernAtomicPatch.styles['r20-user'].includes('https://fonts.example.test/synthetic-runtime.woff2')
     && !modernAtomicPatch.styles['r20-user'].includes('https://imgsrv.roll20.net/?src=')
-    && legacyAtomicPatch.styles['r20-user'].includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Ffonts.example.test%2Fsynthetic-runtime.woff2'));
+    && modernAtomicPatch.html.includes('src="https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-runtime.png"')
+    && modernAtomicPatch.html.includes("url('https://images.example.test/synthetic-inline.png')")
+    && legacyAtomicPatch.html.includes('src="https://images.example.test/synthetic-runtime.png"')
+    && legacyAtomicPatch.html.includes("url('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-inline.png')")
+    && legacyAtomicPatch.styles['r20-user'].includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Ffonts.example.test%2Fsynthetic-runtime.woff2')
+    && legacyAtomicPatch.styles['r20-user'].includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-runtime-background.png'));
 
 const mainAreaToolbar = readFileSync(join(REPO_ROOT, 'components/editor/MainAreaToolbar.tsx'), 'utf8');
 const editorShell = readFileSync(join(REPO_ROOT, 'components/editor/EditorShell.tsx'), 'utf8');

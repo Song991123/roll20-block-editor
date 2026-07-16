@@ -25,7 +25,7 @@ const tasks = [
   'test:iframe-drop-target',
   'test:blockly-sound-policy',
   'test:iframe-edit-bridge',
-  'test:runtime-font-policy',
+  'test:runtime-asset-policy',
   'test:roll20-sandbox-sanitize',
   'test:roll20-render-modes',
   'test:roll20-upload-snippet',

@@ -40,6 +40,8 @@ export interface Roll20SandboxHtmlResult {
 export interface Roll20SandboxHtmlOptions {
   /** Legacy Roll20 prefixes non-reserved class names; modern Roll20 preserves them. */
   prefixClasses?: boolean;
+  /** Let the shared runtime asset policy apply the measured mode-specific URL behavior. */
+  rewriteUrls?: boolean;
 }
 
 export interface Roll20SandboxCssOptions {
@@ -51,6 +53,8 @@ export interface Roll20SandboxCssOptions {
    * callers opt out explicitly.
    */
   prefixSelectors?: boolean;
+  /** Let the shared runtime asset policy apply the measured mode-specific URL behavior. */
+  rewriteUrls?: boolean;
 }
 
 const ROLL20_DIRECT_URL_PREFIXES = [
@@ -117,11 +121,13 @@ export function sanitizeRoll20SandboxCss(
     return { css: '', warnings };
   }
 
-  out = out.replace(/url\s*\(([^)]+)\)/gi, (_full, rawUrl: string) => {
-    const normalized = stripCssUrlQuotes(String(rawUrl).replace(/\s+/g, ''));
-    const rewritten = rewriteRoll20Url(normalized, warnings, 'css');
-    return rewritten ? `url("${rewritten}")` : '';
-  });
+  if (options.rewriteUrls !== false) {
+    out = out.replace(/url\s*\(([^)]+)\)/gi, (_full, rawUrl: string) => {
+      const normalized = stripCssUrlQuotes(String(rawUrl).replace(/\s+/g, ''));
+      const rewritten = rewriteRoll20Url(normalized, warnings, 'css');
+      return rewritten ? `url("${rewritten}")` : '';
+    });
+  }
 
   out = out.replace(/([^{]+){([^}]*)}/g, (full, selectorText: string, body: string) => {
     const selectors = selectorText.trim();
@@ -187,6 +193,7 @@ export function sanitizeRoll20SandboxHtml(
         return ` class=${quote}${normalized}${quote}`;
       })
       .replace(/\s(src|href)=(["'])(.*?)\2/gi, (attrSource, attrName: string, quote: string, url: string) => {
+        if (options.rewriteUrls === false) return attrSource;
         const rewritten = rewriteRoll20Url(url.trim(), warnings, 'html');
         return rewritten ? ` ${attrName}=${quote}${rewritten}${quote}` : '';
       });

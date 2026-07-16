@@ -4888,3 +4888,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Removed the collapsed left sidebar's duplicate no-op button and unused `56px` rail. The real header toggle now collapses the sidebar to `0px` with no mounted child.
 - `%TEMP%\persistent-preview-sidebar-r17` PASSed modern and legacy independently: sidebar `280px -> 0px -> 279.125px`, collapsed button/child count `0`, persistent iframe reload count `0`, console/page errors `0`, and existing worker/rolltemplate/edit interaction assertions intact.
 - Verification: syntax checks, `git diff --check`, lint, production build, and persistent preview surface browser smoke PASSed. Actual Roll20 runtime metadata and a same-asset local/actual recapture remain P0.
+
+## 2026-07-17 - Mode-specific runtime asset contract
+
+- Recovered from a confirmed Codex desktop application crash with the task branch clean at merge commit `6c4bea6`. Heavy browser work remained sequential and the focused smoke listener was closed after each run.
+- Read-only Chrome evidence from the dedicated modern Sandbox and legacy test room proved a four-way asset rule for the same payload: modern proxies HTML images but leaves stylesheet/inline CSS direct; legacy leaves HTML images direct but proxies stylesheet and inline CSS URLs. Both actual runtimes loaded all `11` images.
+- Replaced `runtimeFontPolicy.ts` with fixture-agnostic `runtimeAssetPolicy.ts`. Iframe preview, persistent live patch, and Shadow fallback now share the same measured policy. Authored source and ZIP export remain unmodified.
+- Added synthetic coverage for quoted/unquoted images, stylesheet fonts/backgrounds, inline-style backgrounds, relative/data URLs, Roll20-managed URLs, double-proxy prevention, hostname lookalikes, and parentheses. The optional Sandbox diagnostic path now defers URL direction to the same mode-specific policy.
+- Extended `smoke:legacy-fixture-visual` with host-only asset evidence for image attributes/current sources, user CSS, inline CSS, computed backgrounds, and failed/pending image counts.
+- Ignored Chrome 150 run `%TEMP%\roll20-runtime-asset-policy-r20` matched actual host direction in modern and legacy, but FAILed its visual gate because all remote images/fonts failed locally. Its shortened geometry is recorded as blocked evidence, not parity.
+- One initial integration assertion used a nonexistent live-patch field and was corrected to the real `html` field. A second test caught invalid quote nesting for a bare CSS URL inside `style="..."`; the policy now chooses the opposite quote for bare inline URLs and preserves valid HTML.
+- Production build initially hit `EPERM` on a `.next` diagnostic file owned by the prior Codex sandbox identity. No locking process was reported; the approved user-context build succeeded. This was an environment ownership issue, not a TypeScript/build failure.
+- Contract verification passed: full `ci:verify`, lint, `test:runtime-asset-policy`, `test:roll20-sandbox-sanitize`, `test:roll20-render-modes`, `test:export-smoke`, and the production build. Commit/push and GitHub CI remain for the end of this coherent batch.
+- Next P0: obtain asset-complete same-Chrome local evidence and compare modern/legacy geometry independently. Do not convert network/relink failure into renderer CSS.
