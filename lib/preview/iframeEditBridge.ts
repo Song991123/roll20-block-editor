@@ -62,11 +62,20 @@ export type IframeWidgetDragMessage = {
   hitPath: IframeEditNodeGeometry[];
 };
 
+export type IframeEditContextMenuMessage = {
+  type: 'r20:edit-context-menu';
+  protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
+  bridgeId: string;
+  blockId: string;
+  pointer: { x: number; y: number };
+};
+
 export type IframeEditBridgeMessage =
   | IframeEditReadyMessage
   | IframeEditHitMessage
   | IframeEditAppliedMessage
-  | IframeWidgetDragMessage;
+  | IframeWidgetDragMessage
+  | IframeEditContextMenuMessage;
 
 export type IframeEditModeCommand = {
   type: 'r20:edit-mode';
@@ -178,6 +187,20 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
       payload: value.payload,
       pointer: { x: value.pointer.x, y: value.pointer.y },
       hitPath: value.hitPath,
+    };
+  }
+  if (value.type === 'r20:edit-context-menu') {
+    if (typeof value.blockId !== 'string' || value.blockId.length === 0 || value.blockId.length > 256) {
+      return null;
+    }
+    if (!isRecord(value.pointer)) return null;
+    if (!isFiniteCoordinate(value.pointer.x) || !isFiniteCoordinate(value.pointer.y)) return null;
+    return {
+      type: 'r20:edit-context-menu',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: value.bridgeId,
+      blockId: value.blockId,
+      pointer: { x: value.pointer.x, y: value.pointer.y },
     };
   }
   if (value.type !== 'r20:edit-hit') return null;

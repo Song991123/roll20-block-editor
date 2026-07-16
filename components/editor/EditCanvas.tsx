@@ -150,6 +150,159 @@ const DESIGN_CSS_MARKER = 'r20-design-css:managed';
 const LAYER_MINI_CHILD_SLOTS = 4;
 
 export default function EditCanvas() {
+  const editSubmode = useUiStore((s) => s.editSubmode);
+  const zoom = useUiStore((s) => s.previewZoom);
+  const setPreviewZoom = useUiStore((s) => s.setPreviewZoom);
+  const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
+  const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
+  const rolltemplateCanvasWidth = useUiStore((s) => s.rolltemplateCanvasWidth);
+  const setRolltemplateCanvasWidth = useUiStore((s) => s.setRolltemplateCanvasWidth);
+  const snapEnabled = useUiStore((s) => s.snapEnabled);
+  const toggleSnap = useUiStore((s) => s.toggleSnapEnabled);
+  const editPlacementMode = useUiStore((s) => s.editPlacementMode);
+  const setEditPlacementMode = useUiStore((s) => s.setEditPlacementMode);
+  const [layerSearch, setLayerSearch] = useState('');
+  const canvasWidth = editSubmode === 'rolltemplate' ? rolltemplateCanvasWidth : sheetCanvasWidth;
+  const setCanvasWidth = editSubmode === 'rolltemplate'
+    ? setRolltemplateCanvasWidth
+    : setSheetCanvasWidth;
+  const minWidth = editSubmode === 'rolltemplate' ? 200 : 320;
+  const maxWidth = editSubmode === 'rolltemplate' ? 600 : 2000;
+
+  return (
+    <div
+      className="flex flex-1 min-h-0 flex-col bg-[var(--bg-canvas)]"
+      data-testid="edit-canvas-root"
+      data-edit-submode={editSubmode}
+      data-edit-render-owner="persistent-iframe"
+    >
+      <div
+        className="flex h-9 shrink-0 items-center gap-3 border-b border-border bg-[var(--bg-elevated)] px-3 text-xs"
+        data-testid="edit-surface-toolbar"
+      >
+        <span className="font-medium text-foreground">
+          {editSubmode === 'rolltemplate' ? '굴림 결과 편집' : '시트 편집'}
+        </span>
+        <button
+          type="button"
+          onClick={toggleSnap}
+          className={cn(
+            'rounded border px-2 py-0.5 text-xs',
+            snapEnabled
+              ? 'border-[var(--color-primary,#2563eb)] bg-[var(--color-primary,#2563eb)] text-white'
+              : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
+          )}
+          title="8px 격자에 맞추기"
+          data-testid="edit-canvas-snap-toggle"
+        >
+          격자 {snapEnabled ? '8px' : '끔'}
+        </button>
+        <div
+          className="flex items-center overflow-hidden rounded border border-border bg-[var(--bg-elevated-2)]"
+          data-testid="edit-placement-mode"
+        >
+          <button
+            type="button"
+            onClick={() => setEditPlacementMode('flow')}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              editPlacementMode === 'flow'
+                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="틀의 배치 규칙에 따라 주변 요소와 함께 정렬합니다."
+            data-testid="edit-placement-flow"
+          >
+            흐름
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditPlacementMode('free')}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              editPlacementMode === 'free'
+                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="선택한 틀을 기준으로 원하는 위치에 배치합니다."
+            data-testid="edit-placement-free"
+          >
+            자유
+          </button>
+        </div>
+        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          너비
+          <input
+            key={`${editSubmode}-${canvasWidth}`}
+            type="number"
+            min={minWidth}
+            max={maxWidth}
+            step={10}
+            defaultValue={canvasWidth}
+            onBlur={(event) => {
+              const next = Number(event.currentTarget.value);
+              if (Number.isFinite(next)) setCanvasWidth(next);
+              else event.currentTarget.value = String(canvasWidth);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+            className="h-6 w-[76px] rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-right text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+            aria-label={editSubmode === 'rolltemplate' ? '굴림 결과 캔버스 폭' : '시트 캔버스 폭'}
+            data-testid="edit-canvas-width-input"
+          />
+          px
+        </label>
+        <div
+          className="flex items-center overflow-hidden rounded border border-border bg-[var(--bg-elevated-2)]"
+          data-testid="edit-zoom-control"
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewZoom('fit')}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              zoom === 'fit'
+                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="전체 시트를 작업 영역에 맞춥니다."
+            data-testid="edit-zoom-fit"
+          >
+            맞춤
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewZoom(1)}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              zoom === 1
+                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="Roll20 시트 크기 그대로 봅니다."
+            data-testid="edit-zoom-100"
+          >
+            100%
+          </button>
+        </div>
+      </div>
+      <div
+        className="grid flex-1 min-h-0"
+        style={{ gridTemplateColumns: `${EDIT_SURFACE_LAYER_PANEL_WIDTH_PX}px minmax(0, 1fr)` }}
+      >
+        <EditLayerPanel search={layerSearch} onSearchChange={setLayerSearch} />
+        <div
+          className="min-h-0 bg-[var(--bg-canvas)]"
+          data-testid="edit-canvas-iframe-slot"
+          aria-hidden="true"
+        />
+      </div>
+    </div>
+  );
+}
+
+export function LegacyShadowEditCanvas() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const setShadowSelectedRef = useRef<((id: string | null, opts?: { scrollIntoView?: boolean }) => void) | null>(null);

@@ -79,6 +79,14 @@ const widgetDrag = {
   hitPath: hit.hitPath,
 };
 assert.deepEqual(parseIframeEditBridgeMessage(widgetDrag), widgetDrag);
+const contextMenu = {
+  type: 'r20:edit-context-menu',
+  protocol: R20_IFRAME_EDIT_PROTOCOL,
+  bridgeId,
+  blockId: 'block-1',
+  pointer: { x: 33, y: 44 },
+};
+assert.deepEqual(parseIframeEditBridgeMessage(contextMenu), contextMenu);
 
 assert.equal(parseIframeEditBridgeMessage({ ...hit, protocol: 2 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, bridgeId: 'short' }), null);
@@ -103,6 +111,8 @@ assert.equal(parseIframeEditBridgeMessage({
 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...widgetDrag, phase: 'dragstart' }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...widgetDrag, payload: 'x'.repeat(1025) }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...contextMenu, blockId: '' }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...contextMenu, pointer: { x: Number.NaN, y: 0 } }), null);
 
 const frameWindow = {};
 const iframe = { contentWindow: frameWindow } as unknown as HTMLIFrameElement;

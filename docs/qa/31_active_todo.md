@@ -1,3 +1,15 @@
+## 2026-07-17 Canonical Iframe Edit Surface Phase 2F
+
+- DONE: The default edit component is now lightweight chrome only: the `36px` toolbar, `248px` layer panel, and an iframe slot. It does not subscribe to emitted sheet source, rebuild preview parts, mount a Shadow root, or install duplicate drag/resize observers.
+- DONE: The old Shadow implementation remains an explicit named fallback component but is not mounted by the product path. The visible and interactive sheet in preview and edit is one persistent iframe.
+- DONE: Added validated iframe context-menu messages with parent-viewport coordinate conversion. Right click no longer starts a left-button drag, and the existing inspect/duplicate/reorder/delete menu actions are available from the iframe surface.
+- VERIFIED WORKER: `.tmp/persistent-worker-change-r61` proves worker A runs, source B live-applies, B `sheet:opened` runs, A's previous `change:probe` handler is removed, one worker script remains, and iframe reload count stays `0` in modern and legacy independently.
+- VERIFIED FINAL SURFACE: `.tmp/persistent-lightweight-chrome-r63` PASSes modern and legacy independently with Shadow host count `0`, iframe slot count `1`, iframe count `1`, reload count `0`, context inspect, layer roundtrip, flow/free/widget commits, zoom, rolltemplate chat, worker replacement, and browser errors `0`.
+- VERIFIED STATIC: iframe bridge tests, lint, and production build PASS after the final surface split.
+- PARTIAL: This completes the local single-render-surface edit migration. It does not prove actual Roll20 pixel parity or every third-party sheet/worker API; actual Sandbox/test-room upload and broader corpus verification remain P0.
+- NEXT P0: Re-run the actual Roll20 modern Sandbox and legacy test-room upload comparison from ignored fixtures, classify remaining render differences, and fix only measured shared or mode-specific causes.
+- COPYRIGHT: All committed test source is synthetic. Generated reports and actual Roll20 evidence stay ignored and untracked.
+
 ## 2026-07-17 Persistent Iframe Edit Surface Phase 2E
 
 - DONE: The one persistent Roll20 iframe is now the visible sheet surface in edit mode. It occupies the canvas area after the `248px` layer panel and `36px` edit toolbar, while selection and drop indicators remain parent-owned overlays.

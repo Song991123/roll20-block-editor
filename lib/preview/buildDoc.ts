@@ -651,6 +651,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }, true);
   document.addEventListener('pointerdown', function (e) {
     if (!editBridgeEnabled) return;
+    if (e.button !== 0) return;
     var subjectNode = blockNodeOf(e.target);
     if (!subjectNode) return;
     activeEditPointer = { pointerId: e.pointerId, subjectNode: subjectNode };
@@ -721,6 +722,22 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
     postWidgetDrag('drop', e, payload);
+  }, true);
+  document.addEventListener('contextmenu', function (e) {
+    if (!editBridgeEnabled) return;
+    var node = blockNodeOf(e.target);
+    if (!node || !node.dataset || !node.dataset.r20BlockId) return;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+    try {
+      parent.postMessage({
+        type: 'r20:edit-context-menu',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        blockId: node.dataset.r20BlockId,
+        pointer: { x: Number(e.clientX) || 0, y: Number(e.clientY) || 0 }
+      }, '*');
+    } catch (_) {}
   }, true);
   window.addEventListener('message', function (e) {
     if (e.source !== parent || !e.data) return;

@@ -97,7 +97,7 @@ async function runMode(browser, mode) {
         window.__perfHook.clearAll();
         if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 150));
         imported = await window.__perfHook.importSheet({
-          html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate>',
+          html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "A" }); }); on("change:probe", function () { setAttrs({ worker_probe: "A-OLD" }); });</script>',
           css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
         });
         if (imported.blockCount > 0) return imported;
@@ -136,7 +136,18 @@ async function runMode(browser, mode) {
       };
     });
     const input = frame.locator('input[name="attr_probe"]');
+    await frame.waitForFunction(
+      () => document.querySelector('input[name="attr_worker_probe"]')?.value === 'A',
+      null,
+      { timeout: 30000 },
+    );
     await input.fill(`runtime-${mode}`);
+    await input.evaluate((node) => node.dispatchEvent(new Event('change', { bubbles: true })));
+    await frame.waitForFunction(
+      () => document.querySelector('input[name="attr_worker_probe"]')?.value === 'A-OLD',
+      null,
+      { timeout: 30000 },
+    );
     const token = `token-${mode}-${Date.now()}`;
     await frame.evaluate((value) => {
       window.__persistentPreviewRuntimeToken = value;
@@ -241,6 +252,52 @@ async function runMode(browser, mode) {
       afterLoadCount: window.__persistentPreviewLoadCount,
       iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
     })));
+    result.contextMenu = await frame.evaluate(() => {
+      const target = document.querySelector('.sheet-probe-card');
+      if (!target) return { dispatched: false };
+      const rect = target.getBoundingClientRect();
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        button: 2,
+        clientX: rect.left + 12,
+        clientY: rect.top + 12,
+      });
+      return {
+        dispatched: true,
+        defaultPrevented: !target.dispatchEvent(event),
+        blockId: target.getAttribute('data-r20-block-id'),
+      };
+    });
+    const contextMenu = page.locator('[data-testid="shadow-context-menu"]');
+    await contextMenu.waitFor({ state: 'visible', timeout: 30000 });
+    Object.assign(result.contextMenu, await contextMenu.evaluate((menu) => {
+      const rect = menu.getBoundingClientRect();
+      const iframe = document.querySelector('[data-testid="preview-iframe"]');
+      const iframeRect = iframe?.getBoundingClientRect();
+      return {
+        menuBlockId: menu.getAttribute('data-r20-block-id'),
+        left: rect.left,
+        top: rect.top,
+        insideIframeViewport: Boolean(
+          iframeRect
+          && rect.left >= iframeRect.left
+          && rect.top >= iframeRect.top
+          && rect.left <= iframeRect.right
+          && rect.top <= iframeRect.bottom,
+        ),
+      };
+    }));
+    await contextMenu.locator('[role="menuitem"]').first().click();
+    await page.locator('[data-testid="tab-attrs"][data-state="active"]')
+      .waitFor({ state: 'visible', timeout: 30000 });
+    result.contextMenu.inspectActivated = await page.evaluate((blockId) => {
+      const menu = document.querySelector('[data-testid="shadow-context-menu"]');
+      const selected = Array.from(document.querySelectorAll('[data-testid="edit-layer-row"]'))
+        .some((row) => row.getAttribute('data-r20-block-id') === blockId
+          && row.getAttribute('data-r20-layer-selected') === '1');
+      return !menu && selected;
+    }, result.contextMenu.blockId);
     const overlaySignature = () => page.evaluate(() => {
       const overlay = document.querySelector('[data-testid="iframe-edit-overlay"]');
       return {
@@ -415,6 +472,7 @@ async function runMode(browser, mode) {
         layerWidth: layerRect?.width ?? 0,
         toolbarHeight: toolbarRect?.height ?? 0,
         shadowCount: document.querySelectorAll('[data-testid="edit-canvas-shadow-host"]').length,
+        iframeSlotCount: document.querySelectorAll('[data-testid="edit-canvas-iframe-slot"]').length,
         loadCount: window.__persistentPreviewLoadCount,
         bridgeReady: bridgeRoot?.getAttribute('data-r20-edit-bridge-ready'),
         overlayCount: document.querySelectorAll('[data-testid="iframe-edit-overlay"]').length,
@@ -661,6 +719,49 @@ async function runMode(browser, mode) {
         loadCount: window.__persistentPreviewLoadCount,
       };
     }));
+    result.workerChange = await page.evaluate(() => ({
+      beforeAck: Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')),
+      beforeLoadCount: window.__persistentPreviewLoadCount,
+    }));
+    result.workerChange.beforeValue = await frame
+      .locator('input[name="attr_worker_probe"]')
+      .inputValue();
+    result.workerChange.import = await page.evaluate(async () => window.__perfHook.importSheet({
+      html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "B" }); });</script>',
+      css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
+    }));
+    await page.waitForFunction(
+      (beforeAck) => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > beforeAck,
+      result.workerChange.beforeAck,
+      { timeout: 30000 },
+    );
+    await frame.waitForFunction(
+      () => document.querySelector('input[name="attr_worker_probe"]')?.value === 'B',
+      null,
+      { timeout: 30000 },
+    );
+    result.workerChange.installedValue = await frame
+      .locator('input[name="attr_worker_probe"]')
+      .inputValue();
+    const replacedProbe = frame.locator('input[name="attr_probe"]');
+    await replacedProbe.fill(`after-worker-${mode}`);
+    await replacedProbe.evaluate((node) => node.dispatchEvent(new Event('change', { bubbles: true })));
+    await page.waitForTimeout(50);
+    Object.assign(result.workerChange, {
+      afterAck: await page.evaluate(() => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked'))),
+      afterProbeChangeValue: await frame.locator('input[name="attr_worker_probe"]').inputValue(),
+      workerScriptCount: await frame.locator('script[type="text/worker"]').count(),
+      sameElement: await page.evaluate(() => document
+        .querySelector('[data-testid="preview-iframe"]') === window.__persistentPreviewIframeElement),
+      iframeCount: await page.locator('[data-testid="preview-iframe"]').count(),
+      afterLoadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
+    });
     result.consoleErrors = consoleErrors;
     result.pageErrors = pageErrors;
     result.pass =
@@ -687,7 +788,8 @@ async function runMode(browser, mode) {
       && result.duringEdit.paneTop >= result.duringEdit.toolbarBottom - 1
       && Math.abs(result.duringEdit.layerWidth - 248) <= 1
       && Math.abs(result.duringEdit.toolbarHeight - 36) <= 1
-      && result.duringEdit.shadowCount === 1
+      && result.duringEdit.shadowCount === 0
+      && result.duringEdit.iframeSlotCount === 1
       && result.duringEdit.loadCount === 0
       && result.layerSelection.layerRowClicked === true
       && result.layerSelection.iframeHighlighted === true
@@ -696,6 +798,11 @@ async function runMode(browser, mode) {
       && /^scale\(0\.[0-9]+\)$/.test(result.zoom.scaleFit)
       && result.zoom.afterLoadCount === result.zoom.beforeLoadCount
       && result.zoom.iframeCount === 1
+      && result.contextMenu.dispatched === true
+      && result.contextMenu.defaultPrevented === true
+      && result.contextMenu.menuBlockId === result.contextMenu.blockId
+      && result.contextMenu.insideIframeViewport === true
+      && result.contextMenu.inspectActivated === true
       && result.staleBridgeRejected === true
       && result.bridgeDispatch.dispatched === true
       && result.bridgeDispatch.defaultPrevented === true
@@ -765,6 +872,15 @@ async function runMode(browser, mode) {
       && result.rollChat.hasTemplateBody === true
       && result.rollChat.iframeCount === 1
       && result.rollChat.loadCount === 0
+      && result.workerChange.beforeValue === 'A-OLD'
+      && result.workerChange.import?.workerBlockCount > 0
+      && result.workerChange.afterAck > result.workerChange.beforeAck
+      && result.workerChange.installedValue === 'B'
+      && result.workerChange.afterProbeChangeValue === 'B'
+      && result.workerChange.workerScriptCount === 1
+      && result.workerChange.sameElement === true
+      && result.workerChange.iframeCount === 1
+      && result.workerChange.afterLoadCount === result.workerChange.beforeLoadCount
       && consoleErrors.length === 0
       && pageErrors.length === 0;
   } catch (error) {

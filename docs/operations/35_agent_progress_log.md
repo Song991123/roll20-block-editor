@@ -1,3 +1,11 @@
+## 2026-07-17 Canonical Iframe Edit Surface Phase 2F
+
+- Connected iframe right click to the existing edit context menu through the validated opaque-origin bridge. Parent coordinates account for iframe scaling, and non-left pointerdown no longer enters drag state.
+- Added worker replacement coverage: a live A-to-B source update resets old handlers, runs the new `sheet:opened`, preserves one iframe and one worker script, and does not reload in either compatibility mode.
+- Split the runtime edit path from the old Shadow implementation. The default component now renders only toolbar/layer chrome and the persistent iframe slot; the named fallback is not mounted, so duplicate source preparation, Shadow DOM, and observers no longer run.
+- Final local evidence `.tmp/persistent-lightweight-chrome-r63` PASSes the complete synthetic interaction contract independently in modern and legacy with Shadow hosts `0`, iframe reloads `0`, and browser errors `0`.
+- Claim boundary: local preview/edit now share one live render surface. Actual Roll20 visual parity and broad third-party worker API support remain separate open gates.
+
 ## 2026-07-17 Persistent Iframe Edit Surface Phase 2E
 
 - Promoted the persistent preview iframe to the visible edit canvas without remounting it. Parent-owned toolbar, layer panel, selection outline, and drop-target outline remain outside the Roll20 document.

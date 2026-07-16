@@ -605,6 +605,24 @@ export default function PreviewMain() {
         if (id) setSelected(id, 'preview');
         return;
       }
+      if (editMessage?.type === 'r20:edit-context-menu') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        if (useUiStore.getState().mainMode !== 'edit') return;
+        const adapter = getBlocklyAdapter();
+        if (!adapter.getBlock('html', editMessage.blockId)) return;
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+        const rect = iframe.getBoundingClientRect();
+        const scaleX = iframe.offsetWidth > 0 ? rect.width / iframe.offsetWidth : 1;
+        const scaleY = iframe.offsetHeight > 0 ? rect.height / iframe.offsetHeight : scaleX;
+        setSelected(editMessage.blockId, 'preview');
+        setContextMenuState({
+          blockId: editMessage.blockId,
+          x: rect.left + editMessage.pointer.x * scaleX,
+          y: rect.top + editMessage.pointer.y * scaleY,
+        });
+        return;
+      }
       const data = e.data;
       if (data?.type === 'r20:select' && typeof data.blockId === 'string') {
         setSelected(data.blockId, 'preview');
@@ -742,6 +760,12 @@ export default function PreviewMain() {
       selectedBlockId: selectedId,
     }, '*');
   }, [iframeEditBridgeId, mainMode, selectedId, lastApplyAck]);
+
+  useEffect(() => {
+    if (mainMode === 'edit') return;
+    const frame = window.requestAnimationFrame(() => setContextMenuState(null));
+    return () => window.cancelAnimationFrame(frame);
+  }, [mainMode]);
 
   // 선택된 블록 → iframe 안 highlight.
   useEffect(() => {
@@ -931,7 +955,7 @@ export default function PreviewMain() {
           </div>
         )}
       </div>
-      {contextMenuState && renderMode === 'shadow' && (
+      {contextMenuState && mainMode === 'edit' && (
         <ShadowContextMenu
           blockId={contextMenuState.blockId}
           x={contextMenuState.x}
