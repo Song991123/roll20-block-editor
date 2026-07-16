@@ -1,9 +1,11 @@
 ## 2026-07-17 Matching-Runtime Activation Evidence
 
 - Rechecked the paired actual evidence against later local runs and confirmed that the previously reported shared `+9px` row drift was stale: current modern local root height matches actual at `1936px`, while legacy retains an isolated roughly `2px` final-section difference.
-- Extended `roll20_upload_snippet.mjs` so its generated activation checker returns bounded root/top-level/direct-child geometry and computed styles, focused-control state, and representative attribute values for the visible matching-runtime sheet.
-- Added an explicit ignored output override for locked canonical reports. A real local payload generated under `%TEMP%\roll20-activation-render-evidence-r3`; source and generated activation snippets passed syntax/self-tests.
-- No Roll20 room was modified in this batch. The next actual step remains separate modern Sandbox and legacy test-room activation capture before any renderer CSS change.
+- Captured read-only matching-runtime evidence in the dedicated modern Sandbox and legacy test room. Modern actual/local root scroll is `1189x1936` in both. Legacy actual is `896x1917` versus local `895x1919`.
+- Localized the remaining geometry. Modern final row is `433.913px` actual versus `434.30px` local; legacy is `432.313px` actual versus `434.30px` local. Inside it, the asset-table row is effectively exact in modern (`113.138px` actual, `113.14px` local) but `1.603px` shorter in actual legacy (`111.537px`).
+- Extended `roll20_upload_snippet.mjs` so its generated activation checker also returns bounded final-layout descendants, table spacing/collapse/layout styles, and grouped duplicate-attribute state instead of an unstructured duplicate list.
+- Added an explicit ignored output override for locked canonical reports. A real local payload generated under `%TEMP%\roll20-activation-render-evidence-r5`; source and generated activation snippets passed syntax/self-tests.
+- No Roll20 room or sheet source was modified and no private evidence was added to Git. No renderer CSS was changed because table spacing/collapse/allocation evidence is not yet complete enough for a generic mode-specific rule.
 
 ## 2026-07-17 Canonical Iframe Edit Surface Phase 2F
 

@@ -1,11 +1,13 @@
 ## 2026-07-17 Matching-Runtime Activation Render Evidence
 
-- DONE: Extended the generated post-upload activation checker with generic, fixture-agnostic render evidence: sheet-root rect/scroll size, visible top-level rows and bounded direct-child computed styles, focused-control state, and bounded representative `attr_*` values.
+- DONE: Extended the generated post-upload activation checker with generic, fixture-agnostic render evidence: sheet-root rect/scroll size, visible top-level rows, bounded direct-child and final-layout computed styles, table spacing/collapse/layout values, focused-control state, and grouped representative `attr_*` values.
 - DONE: Added `--out-dir <ignored-local-folder>` to `snippet:roll20-upload` so locked canonical evidence can remain untouched while a fresh modern or legacy handoff is generated elsewhere.
-- VERIFIED: `node --check scripts/roll20_upload_snippet.mjs`, `test:roll20-upload-snippet`, generated-snippet compilation inside the self-test, and a real YSHY payload handoff generated under `%TEMP%\roll20-activation-render-evidence-r3` all PASS. The generated activation checker also passes `node --check`.
-- CURRENT: The current local renderer already resolves the former shared `+9px` control-row drift. Latest local evidence is modern `1189x1936` versus actual `1189x1936`; legacy remains about `895x1919` versus actual `896x1917` and needs matching-runtime computed-style recapture.
-- NEXT P0: Run the fresh activation checker independently in the dedicated modern Sandbox and legacy test room, preserve both local-only results, then compare the legacy final row's measured contributors before changing shared or mode-specific CSS.
-- CLAIM BOUNDARY: This improves actual-screen evidence quality and locked-report recovery. It does not itself upload a sheet, recapture Roll20, or prove modern/legacy visual parity.
+- VERIFIED ACTUAL MODERN: Read-only collection from the dedicated modern Roll20 Sandbox measured root scroll `1189x1936`. Local modern is also `1189x1936`; top-level row deltas are subpixel and the final row is `434.30px` local versus `433.913px` actual.
+- VERIFIED ACTUAL LEGACY: Read-only collection from the dedicated legacy test room measured root scroll `896x1917`. Local legacy is `895x1919`; landmarks through the center background agree within subpixel rounding, while the final row is `434.30px` local versus `432.313px` actual.
+- VERIFIED LOCALIZATION: The modern final asset-table row is `113.138px` actual versus `113.14px` local. The same legacy row is `111.537px` actual versus `113.14px` local, accounting for about `1.60px` of the remaining roughly `1.99px` final-section delta. No room or source was modified and no guessed CSS correction was added.
+- VERIFIED TOOLING: `node --check scripts/roll20_upload_snippet.mjs`, `test:roll20-upload-snippet`, and a real ignored payload handoff under `%TEMP%\roll20-activation-render-evidence-r5` PASS; its generated activation checker also passes `node --check`.
+- NEXT P0: Recapture that final table with the upgraded `border-spacing`, `border-collapse`, `table-layout`, width-allocation, and grouped state evidence in both runtimes. Add a renderer rule only if the difference is generic to the measured Roll20 mode, then rerun modern and legacy independently.
+- CLAIM BOUNDARY: Modern root geometry is matched for this prepared payload and the remaining legacy drift is localized. This is not all-sheet pixel parity, complete legacy-sanitizer fidelity, or permission to use one mode's evidence for the other.
 
 ## 2026-07-17 Canonical Iframe Edit Surface Phase 2F
 

@@ -10,6 +10,22 @@ This document defines how agents verify that this editor's preview/edit output m
 - Separate observation of existing rooms from applying our generated sheet.
 - Keep all real room screenshots, uploaded sheet source, exports, and generated reports local-only.
 
+## Modern And Legacy Are Separate Required Destinations
+
+- A modern Sandbox result never passes a legacy test-room gate, and a legacy
+  result never passes the modern gate.
+- Measure the same prepared payload independently in both modes. Record root
+  scroll size, top-level landmarks, final-layout contributors, focused state,
+  and representative attribute state before changing renderer CSS.
+- On 2026-07-17 the prepared comparison measured modern actual/local root
+  scroll at `1189x1936` in both modes. Legacy measured `896x1917` actual versus
+  `895x1919` local. The remaining legacy height delta was localized mainly to
+  one final asset-table row (`111.537px` actual versus `113.14px` local), while
+  the modern row was effectively exact (`113.138px` versus `113.14px`).
+- This measurement is a scoped diagnostic, not all-sheet visual parity. Do not
+  add fixture-specific selectors or a guessed pixel offset. Recapture generic
+  table spacing, collapse, layout, and width-allocation evidence first.
+
 ## Isolated Diagnostic Output
 
 When refreshing diagnostics from a canonical `reports/roll20-actual-compare/<run>`

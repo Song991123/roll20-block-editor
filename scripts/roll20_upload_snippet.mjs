@@ -406,7 +406,12 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
         margin: style.margin,
         padding: style.padding,
         border: style.border,
+        borderCollapse: style.borderCollapse,
+        borderSpacing: style.borderSpacing,
+        tableLayout: style.tableLayout,
         verticalAlign: style.verticalAlign,
+        cssFloat: style.cssFloat,
+        whiteSpace: style.whiteSpace,
         fontFamily: style.fontFamily,
         fontSize: style.fontSize,
         lineHeight: style.lineHeight,
@@ -421,8 +426,8 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
     const root = roots.find(isVisible) || roots[0] || null;
     if (!root) return null;
     const rootRect = root.getBoundingClientRect();
-    const topLevelChildren = Array.from(root.children)
-      .filter(isVisible)
+    const visibleTopLevel = Array.from(root.children).filter(isVisible);
+    const topLevelChildren = visibleTopLevel
       .slice(0, 40)
       .map((el, index) => ({
         ...summarizeElement(el, rootRect, index),
@@ -431,23 +436,72 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
           .slice(0, 16)
           .map((child, childIndex) => summarizeElement(child, rootRect, childIndex)),
       }));
+    const bottomRoot = visibleTopLevel.at(-1) || null;
+    const bottomLayout = [];
+    if (bottomRoot) {
+      for (const el of bottomRoot.querySelectorAll('*')) {
+        if (!isVisible(el)) continue;
+        let depth = 0;
+        let parent = el.parentElement;
+        while (parent && parent !== bottomRoot) {
+          depth += 1;
+          parent = parent.parentElement;
+        }
+        bottomLayout.push({
+          ...summarizeElement(el, rootRect, bottomLayout.length),
+          depth,
+          text: el.children.length === 0 ? normalize(el.textContent).slice(0, 80) : '',
+        });
+        if (bottomLayout.length >= 160) break;
+      }
+    }
     const active = doc.activeElement && root.contains(doc.activeElement)
       ? doc.activeElement
       : null;
-    const wantedAttrs = new Set(attrNames.slice(0, 80));
-    const attributeState = Array.from(root.querySelectorAll('[name^="attr_"]'))
-      .filter((el) => wantedAttrs.has(el.getAttribute('name')))
-      .slice(0, 80)
-      .map((el) => ({
-        name: el.getAttribute('name') || '',
-        tag: el.tagName,
-        type: el.getAttribute('type') || '',
+    const attrElements = Array.from(root.querySelectorAll('[name^="attr_"]'));
+    const attrGroups = new Map();
+    for (const el of attrElements) {
+      const name = el.getAttribute('name') || '';
+      if (!attrGroups.has(name)) attrGroups.set(name, []);
+      attrGroups.get(name).push(el);
+    }
+    const attributeState = attrNames.slice(0, 80).flatMap((name) => {
+      const matches = attrGroups.get(name) || [];
+      if (matches.length === 0) return [];
+      const selected = [];
+      const add = (el) => {
+        if (el && !selected.includes(el)) selected.push(el);
+      };
+      add(matches.find(isVisible));
+      add(matches[0]);
+      for (const el of matches) {
+        if (selected.length >= 3) break;
+        const signature = [
+          'value' in el ? String(el.value ?? '') : '',
+          'checked' in el ? String(Boolean(el.checked)) : '',
+          String(isVisible(el)),
+        ].join('|');
+        const represented = selected.some((candidate) => [
+          'value' in candidate ? String(candidate.value ?? '') : '',
+          'checked' in candidate ? String(Boolean(candidate.checked)) : '',
+          String(isVisible(candidate)),
+        ].join('|') === signature);
+        if (!represented) add(el);
+      }
+      const visibleOccurrenceCount = matches.filter(isVisible).length;
+      return selected.map((el) => ({
+        ...summarizeElement(el, rootRect),
+        occurrence: matches.indexOf(el),
+        occurrenceCount: matches.length,
+        visibleOccurrenceCount,
+        visible: isVisible(el),
         value: 'value' in el ? String(el.value ?? '') : '',
         defaultValue: 'defaultValue' in el ? String(el.defaultValue ?? '') : '',
         checked: 'checked' in el ? Boolean(el.checked) : null,
         defaultChecked: 'defaultChecked' in el ? Boolean(el.defaultChecked) : null,
         disabled: Boolean(el.disabled),
       }));
+    }).slice(0, 80);
     return {
       root: summarizeElement(root, rootRect),
       rootScroll: {
@@ -455,6 +509,7 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
         height: root.scrollHeight,
       },
       topLevelChildren,
+      bottomLayout,
       focusedControl: active ? {
         ...summarizeElement(active, rootRect),
         value: 'value' in active ? String(active.value ?? '') : '',
@@ -1126,8 +1181,11 @@ function runSelfTest() {
   if (!activationCheckSnippet.includes('rollButtonCount')) failures.push('generated activation check missing roll button count');
   if (!activationCheckSnippet.includes('renderEvidence')) failures.push('generated activation check missing render evidence');
   if (!activationCheckSnippet.includes('topLevelChildren')) failures.push('generated activation check missing top-level geometry');
+  if (!activationCheckSnippet.includes('bottomLayout')) failures.push('generated activation check missing bottom-layout evidence');
+  if (!activationCheckSnippet.includes('borderSpacing')) failures.push('generated activation check missing table-spacing evidence');
   if (!activationCheckSnippet.includes('focusedControl')) failures.push('generated activation check missing focus state');
   if (!activationCheckSnippet.includes('attributeState')) failures.push('generated activation check missing attribute state');
+  if (!activationCheckSnippet.includes('visibleOccurrenceCount')) failures.push('generated activation check missing grouped attribute-state evidence');
   if (!readme.includes('settings-page `{ sheet, userOptions, jsoninfo }` wrapper')) failures.push('generated README text does not describe wrapper');
   if (!readme.includes('Activation check')) failures.push('generated README missing activation check column');
   if (!readme.includes('*-activation-check-snippet.js')) failures.push('generated README missing activation check instruction');
