@@ -7,6 +7,7 @@
 - Verification: `ci:verify`, lint, build, and translation unit tests passed. Ignored `.tmp/preview-edit-visual-20260716-r19` passed 3/3 with all translation matches (`436/436`, `0/0`, `1148/1148`), zero style/geometry differences, two exact pixel matches, and one 14-pixel raster-tolerance match. Ignored `.tmp/edit-flow-translation-sync-20260716-r1` passed with no console/page errors.
 - Actual Roll20: the dedicated Sandbox was reached and its currently rendered translated sheet was observed, but normal file-picker re-upload failed because the Chrome extension lacks local file URL access. Existing endpoint-applied horizontal overflow/class evidence remains diagnostic-only and must not drive production CSS.
 - Next P0: enable **Allow access to file URLs** for the ChatGPT Chrome Extension, re-upload the generated payload through Sheet Sandbox Tools, and recapture class prefix, root scroll width/height, screenshot, and diff before renderer changes.
+- CI maintenance: after the feature-branch run passed, GitHub warned that `actions/checkout@v4` and `actions/setup-node@v4` still target deprecated Node 20. Both CI and Pages workflows now use the official Node 24-based `@v6` actions; the follow-up branch run is the verification gate.
 
 ## 2026-07-16 Preview/Edit Underlying Paint Gate
 
