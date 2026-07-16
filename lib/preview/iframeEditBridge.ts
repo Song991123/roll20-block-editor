@@ -14,6 +14,11 @@ export type IframeEditNodeGeometry = {
   rect: IframeEditRect;
   offsetLeft: number;
   offsetTop: number;
+  scrollLeft: number;
+  scrollTop: number;
+  clientLeft: number;
+  clientTop: number;
+  position: string;
   offsetParentBlockId: string | null;
   offsetParentPosition: string;
 };
@@ -47,10 +52,21 @@ export type IframeEditAppliedMessage = {
   blockCount: number;
 };
 
+export type IframeWidgetDragMessage = {
+  type: 'r20:widget-drag';
+  protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
+  bridgeId: string;
+  phase: 'dragover' | 'dragleave' | 'drop';
+  payload: string | null;
+  pointer: { x: number; y: number };
+  hitPath: IframeEditNodeGeometry[];
+};
+
 export type IframeEditBridgeMessage =
   | IframeEditReadyMessage
   | IframeEditHitMessage
-  | IframeEditAppliedMessage;
+  | IframeEditAppliedMessage
+  | IframeWidgetDragMessage;
 
 export type IframeEditModeCommand = {
   type: 'r20:edit-mode';
@@ -90,6 +106,12 @@ function isNodeGeometry(value: unknown): value is IframeEditNodeGeometry {
     && isRect(value.rect)
     && isFiniteCoordinate(value.offsetLeft)
     && isFiniteCoordinate(value.offsetTop)
+    && isFiniteCoordinate(value.scrollLeft)
+    && isFiniteCoordinate(value.scrollTop)
+    && isFiniteCoordinate(value.clientLeft)
+    && isFiniteCoordinate(value.clientTop)
+    && typeof value.position === 'string'
+    && value.position.length <= 64
     && (value.offsetParentBlockId === null
       || (typeof value.offsetParentBlockId === 'string' && value.offsetParentBlockId.length <= 256))
     && typeof value.offsetParentPosition === 'string'
@@ -132,6 +154,30 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
       bridgeId: value.bridgeId,
       revision: value.revision,
       blockCount: value.blockCount,
+    };
+  }
+  if (value.type === 'r20:widget-drag') {
+    if (
+      value.phase !== 'dragover'
+      && value.phase !== 'dragleave'
+      && value.phase !== 'drop'
+    ) return null;
+    if (value.payload !== null && (typeof value.payload !== 'string' || value.payload.length > 1024)) {
+      return null;
+    }
+    if (!isRecord(value.pointer)) return null;
+    if (!isFiniteCoordinate(value.pointer.x) || !isFiniteCoordinate(value.pointer.y)) return null;
+    if (!Array.isArray(value.hitPath) || value.hitPath.length > 64 || !value.hitPath.every(isNodeGeometry)) {
+      return null;
+    }
+    return {
+      type: 'r20:widget-drag',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: value.bridgeId,
+      phase: value.phase,
+      payload: value.payload,
+      pointer: { x: value.pointer.x, y: value.pointer.y },
+      hitPath: value.hitPath,
     };
   }
   if (value.type !== 'r20:edit-hit') return null;

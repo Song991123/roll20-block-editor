@@ -1,3 +1,17 @@
+## 2026-07-17 Persistent Iframe Edit Surface Phase 2E
+
+- DONE: The one persistent Roll20 iframe is now the visible sheet surface in edit mode. It occupies the canvas area after the `248px` layer panel and `36px` edit toolbar, while selection and drop indicators remain parent-owned overlays.
+- DONE: Added containing-block-aware free placement. Pointer movement is painted optimistically, then pointer-up writes generated `sheet-r20-node-*` classes and a separate `r20-design-css:managed` CSS block instead of adding `position`, `left`, or `top` to the authored HTML style field.
+- DONE: Added a validated iframe widget-drag boundary. The iframe accepts only the friendly-widget MIME while edit mode is enabled; the parent validates source/origin/protocol/current bridge ids and resolves only registered preset payloads before committing flow or free placement.
+- DONE: Widget gallery absolute placement now uses managed CSS rules. Flow placement still nests/reorders the Blockly topology and removes positional declarations.
+- VERIFIED MODERN: `.tmp/persistent-widget-drop-r55` modern PASS; visible edit iframe, exact layer/toolbar boundary, flow move, snapped free move, gallery drag/drop into a container, live apply acknowledgements, preserved input/runtime state, iframe reload count `0`, and console/page errors `0`.
+- VERIFIED LEGACY: The same report contains an independent legacy PASS with the same interaction/state assertions plus the legacy-only runtime style. Modern evidence is not reused.
+- VERIFIED STATIC: `test:design-position`, `test:iframe-drop-target`, `test:iframe-edit-bridge`, lint, and production build PASS.
+- PARTIAL: `EditCanvas` still mounts the transitional Shadow surface underneath the visible iframe. Remove that duplicate render only after layer-panel selection, widget gallery drag, worker-source replacement, roll/chat, zoom, and context actions have independent modern and legacy browser coverage.
+- PARTIAL: This proves local edit/preview surface identity and interaction persistence, not visual parity with actual Roll20. Actual Sandbox/test-room upload and strict modern/legacy comparison remain open.
+- NEXT P0: Add browser proof for layer-panel selection roundtrip and roll/chat/zoom on the visible iframe, then stop mounting the duplicate Shadow sheet surface and re-run both mode gates.
+- COPYRIGHT: Test source is synthetic. Generated reports remain ignored under `.tmp/`; no private sheet source, screenshot, or asset is staged.
+
 ## 2026-07-17 Persistent Iframe Edit Bridge Phase 2D
 
 - DONE: Added revisioned `r20:edit-apply` / `r20:edit-applied` live updates. The persistent iframe now replaces emitted sheet HTML and the allow-listed dynamic CSS/i18n/runtime layers without changing `srcdoc` or remounting the document.

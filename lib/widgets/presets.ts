@@ -1,4 +1,5 @@
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { commitManagedDesignPosition } from '@/lib/editor/designPosition';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 
 export const FRIENDLY_WIDGET_MIME = 'application/x-r20-friendly-widget';
@@ -235,20 +236,29 @@ export function appendFriendlyWidgetPreset(
     if (useContainerAbsoluteStyle) {
       state.bumpStructure('html', adapter.countBlocks('html'));
       state.setSelectedBlockId(id, 'tree');
-      const parentStyle = adapter.getBlockField('html', options.containerBlockId, 'STYLE') ?? '';
-      if (adapter.hasBlockField('html', options.containerBlockId, 'STYLE') && !hasPositionDeclaration(parentStyle)) {
-        adapter.setBlockField('html', options.containerBlockId, 'STYLE', upsertCssDeclarations(parentStyle, { position: 'relative' }));
-      }
     }
   }
 
-  const style = useFlowStyle
-    ? removeCssDeclarations(baseStyle, ['position', 'left', 'top'])
-    : useContainerAbsoluteStyle
-      ? withAbsolutePosition(baseStyle, position?.left ?? 24, position?.top ?? 24)
-      : withAbsolutePosition(baseStyle, targetPosition?.left ?? 24, targetPosition?.top ?? 24);
+  const style = removeCssDeclarations(baseStyle, ['position', 'left', 'top']);
   if (style || adapter.hasBlockField('html', id, 'STYLE')) {
     adapter.setBlockField('html', id, 'STYLE', style);
+  }
+  if (!useFlowStyle) {
+    const containingBlockId = useContainerAbsoluteStyle ? options.containerBlockId ?? null : null;
+    const parentStyle = containingBlockId
+      ? adapter.getBlockField('html', containingBlockId, 'STYLE') ?? ''
+      : '';
+    const committed = commitManagedDesignPosition(adapter, {
+      workspace: 'html',
+      blockId: id,
+      left: useContainerAbsoluteStyle ? position?.left ?? 24 : targetPosition?.left ?? 24,
+      top: useContainerAbsoluteStyle ? position?.top ?? 24 : targetPosition?.top ?? 24,
+      containingBlockId,
+      containingBlockNeedsRelative: Boolean(containingBlockId) && !hasPositionDeclaration(parentStyle),
+    });
+    if (committed.cssBlockCreated) {
+      state.bumpStructure('css', adapter.countBlocks('css'));
+    }
   }
   return id;
 }
@@ -337,23 +347,6 @@ function parseCssPx(style: string, prop: 'left' | 'top'): number | null {
   return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
 }
 
-function withAbsolutePosition(style: string, left: number, top: number): string {
-  const map = new Map<string, string>();
-  for (const chunk of style.split(';')) {
-    const idx = chunk.indexOf(':');
-    if (idx <= 0) continue;
-    const key = chunk.slice(0, idx).trim().toLowerCase();
-    const value = chunk.slice(idx + 1).trim();
-    if (key && value) map.set(key, value);
-  }
-  map.set('position', 'absolute');
-  map.set('left', `${Math.max(0, Math.round(left))}px`);
-  map.set('top', `${Math.max(0, Math.round(top))}px`);
-  return Array.from(map.entries())
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('; ');
-}
-
 function removeCssDeclarations(style: string, props: string[]): string {
   const remove = new Set(props.map((prop) => prop.toLowerCase()));
   const map = new Map<string, string>();
@@ -371,21 +364,4 @@ function removeCssDeclarations(style: string, props: string[]): string {
 
 function hasPositionDeclaration(style: string): boolean {
   return /(?:^|;)\s*position\s*:/i.test(style);
-}
-
-function upsertCssDeclarations(style: string, declarations: Record<string, string>): string {
-  const map = new Map<string, string>();
-  for (const chunk of style.split(';')) {
-    const idx = chunk.indexOf(':');
-    if (idx <= 0) continue;
-    const key = chunk.slice(0, idx).trim().toLowerCase();
-    const value = chunk.slice(idx + 1).trim();
-    if (key && value) map.set(key, value);
-  }
-  for (const [key, value] of Object.entries(declarations)) {
-    map.set(key.toLowerCase(), value);
-  }
-  return Array.from(map.entries())
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('; ');
 }

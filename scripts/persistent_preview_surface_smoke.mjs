@@ -213,6 +213,11 @@ async function runMode(browser, mode) {
           : { left: 0, top: 0, width: 10, height: 10 },
         offsetLeft: target?.offsetLeft || 0,
         offsetTop: target?.offsetTop || 0,
+        scrollLeft: target?.scrollLeft || 0,
+        scrollTop: target?.scrollTop || 0,
+        clientLeft: target?.clientLeft || 0,
+        clientTop: target?.clientTop || 0,
+        position: target ? getComputedStyle(target).position : '',
         offsetParentBlockId: target?.offsetParent?.getAttribute('data-r20-block-id') || null,
         offsetParentPosition: target?.offsetParent
           ? getComputedStyle(target.offsetParent).position
@@ -264,15 +269,6 @@ async function runMode(browser, mode) {
       result.bridgeDispatch.blockId,
       { timeout: 30000 },
     );
-    await page.evaluate(() => {
-      const pane = document.querySelector('[data-testid="preview-pane"]');
-      if (!(pane instanceof HTMLElement)) return;
-      pane.style.visibility = 'visible';
-      pane.style.width = '720px';
-      pane.style.position = 'absolute';
-      pane.style.inset = '0';
-      pane.style.zIndex = '50';
-    });
     result.pointerSequence = await frame.evaluate(() => {
       const subject = document.querySelector('.sheet-probe-card');
       const target = document.querySelector('.sheet-probe-drop');
@@ -337,11 +333,26 @@ async function runMode(browser, mode) {
       const current = document.querySelector('[data-testid="preview-iframe"]');
       const bridgeRoot = current?.closest('[data-r20-edit-bridge-ready]');
       const overlay = document.querySelector('[data-testid="iframe-edit-overlay"]');
+      const pane = document.querySelector('[data-testid="preview-pane"]');
+      const layerPanel = document.querySelector('[data-testid="edit-layer-panel"]');
+      const toolbar = document.querySelector('[data-testid="edit-surface-toolbar"]');
+      const paneRect = pane?.getBoundingClientRect();
+      const layerRect = layerPanel?.getBoundingClientRect();
+      const toolbarRect = toolbar?.getBoundingClientRect();
       return {
         sameElement: current === window.__persistentPreviewIframeElement,
         connected: Boolean(current?.isConnected),
         iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
         paneVisible: document.querySelector('[data-testid="preview-pane"]')?.getAttribute('data-visible'),
+        editRenderSurface: pane?.getAttribute('data-edit-render-surface'),
+        paneVisibility: pane ? getComputedStyle(pane).visibility : '',
+        iframeVisibility: current ? getComputedStyle(current).visibility : '',
+        paneLeft: paneRect?.left ?? 0,
+        paneTop: paneRect?.top ?? 0,
+        layerRight: layerRect?.right ?? 0,
+        toolbarBottom: toolbarRect?.bottom ?? 0,
+        layerWidth: layerRect?.width ?? 0,
+        toolbarHeight: toolbarRect?.height ?? 0,
         shadowCount: document.querySelectorAll('[data-testid="edit-canvas-shadow-host"]').length,
         loadCount: window.__persistentPreviewLoadCount,
         bridgeReady: bridgeRoot?.getAttribute('data-r20-edit-bridge-ready'),
@@ -415,16 +426,141 @@ async function runMode(browser, mode) {
       runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
       loadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
     });
+    await page.locator('[data-testid="edit-placement-free"]').evaluate((button) => button.click());
+    result.freeCommit = await page.evaluate(() => ({
+      beforeAck: Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')),
+    }));
+    Object.assign(result.freeCommit, await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      const container = document.querySelector('.sheet-probe-drop');
+      if (!subject || !container) return { dispatched: false };
+      const rect = subject.getBoundingClientRect();
+      const pointerId = 19;
+      const start = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      subject.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 1,
+        clientX: start.x,
+        clientY: start.y,
+      }));
+      subject.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 0,
+        clientX: start.x + 40,
+        clientY: start.y + 24,
+      }));
+      return {
+        dispatched: true,
+        subjectBlockId: subject.getAttribute('data-r20-block-id'),
+        containerBlockId: container.getAttribute('data-r20-block-id'),
+      };
+    }));
+    await page.waitForFunction(
+      (beforeAck) => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > beforeAck,
+      result.freeCommit.beforeAck,
+      { timeout: 30000 },
+    );
+    Object.assign(result.freeCommit, await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      const container = document.querySelector('.sheet-probe-drop');
+      const subjectStyle = subject ? getComputedStyle(subject) : null;
+      const containerStyle = container ? getComputedStyle(container) : null;
+      return {
+        computedPosition: subjectStyle?.position ?? '',
+        computedLeft: Number.parseFloat(subjectStyle?.left ?? ''),
+        computedTop: Number.parseFloat(subjectStyle?.top ?? ''),
+        containerPosition: containerStyle?.position ?? '',
+        subjectClass: subject?.className ?? '',
+        containerClass: container?.className ?? '',
+      };
+    }));
+    Object.assign(result.freeCommit, await page.evaluate(() => {
+      const emit = window.__perfHook.getEmitContent();
+      return {
+        afterAck: Number(document
+          .querySelector('[data-r20-apply-acked]')
+          ?.getAttribute('data-r20-apply-acked')),
+        emittedCssHasAbsolute: /sheet-r20-node-[^{]+\{[^}]*position:\s*absolute;[^}]*left:\s*\d+px;[^}]*top:\s*\d+px;/i.test(emit.css),
+        emittedCssHasRelative: /sheet-r20-node-[^{]+\{[^}]*position:\s*relative;/i.test(emit.css),
+        loadCount: window.__persistentPreviewLoadCount,
+      };
+    }));
+    Object.assign(result.freeCommit, {
+      inputValue: await input.inputValue(),
+      runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
+    });
+    await page.locator('[data-testid="edit-placement-flow"]').evaluate((button) => button.click());
+    result.widgetDrop = await page.evaluate(() => ({
+      beforeAck: Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')),
+    }));
+    Object.assign(result.widgetDrop, await frame.evaluate(() => {
+      const target = document.querySelector('.sheet-probe-drop');
+      if (!target) return { dispatched: false };
+      const rect = target.getBoundingClientRect();
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData(
+        'application/x-r20-friendly-widget',
+        JSON.stringify({ id: 'number-input' }),
+      );
+      const point = {
+        x: rect.left + Math.max(8, rect.width / 2),
+        y: rect.top + Math.max(8, rect.height / 2),
+      };
+      const dragOver = new DragEvent('dragover', {
+        bubbles: true,
+        cancelable: true,
+        clientX: point.x,
+        clientY: point.y,
+        dataTransfer,
+      });
+      const drop = new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        clientX: point.x,
+        clientY: point.y,
+        dataTransfer,
+      });
+      const dragOverAccepted = !target.dispatchEvent(dragOver);
+      const dropAccepted = !target.dispatchEvent(drop);
+      return { dispatched: true, dragOverAccepted, dropAccepted };
+    }));
+    await page.waitForFunction(
+      (beforeAck) => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > beforeAck,
+      result.widgetDrop.beforeAck,
+      { timeout: 30000 },
+    );
+    await frame.waitForFunction(
+      () => Boolean(document.querySelector('.sheet-probe-drop input[name="attr_value"]')),
+      null,
+      { timeout: 30000 },
+    );
+    Object.assign(result.widgetDrop, {
+      afterAck: await page.evaluate(() => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked'))),
+      nestedInTarget: await frame.evaluate(
+        () => Boolean(document.querySelector('.sheet-probe-drop input[name="attr_value"]')),
+      ),
+      loadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
+      inputValue: await input.inputValue(),
+      runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
+    });
     result.hiddenInputValue = await input.inputValue();
     result.hiddenRuntimeToken = await frame.evaluate(() => window.__persistentPreviewRuntimeToken);
-
-    await page.evaluate(() => {
-      const pane = document.querySelector('[data-testid="preview-pane"]');
-      if (!(pane instanceof HTMLElement)) return;
-      pane.style.position = '';
-      pane.style.inset = '';
-      pane.style.zIndex = '';
-    });
 
     await page.evaluate(() => window.__perfHook.setMainMode('preview'));
     await iframe.waitFor({ state: 'visible', timeout: 30000 });
@@ -464,7 +600,14 @@ async function runMode(browser, mode) {
       && result.duringEdit.sameElement
       && result.duringEdit.connected
       && result.duringEdit.iframeCount === 1
-      && result.duringEdit.paneVisible === 'false'
+      && result.duringEdit.paneVisible === 'true'
+      && result.duringEdit.editRenderSurface === 'iframe'
+      && result.duringEdit.paneVisibility === 'visible'
+      && result.duringEdit.iframeVisibility === 'visible'
+      && result.duringEdit.paneLeft >= result.duringEdit.layerRight - 1
+      && result.duringEdit.paneTop >= result.duringEdit.toolbarBottom - 1
+      && Math.abs(result.duringEdit.layerWidth - 248) <= 1
+      && Math.abs(result.duringEdit.toolbarHeight - 36) <= 1
       && result.duringEdit.shadowCount === 1
       && result.duringEdit.loadCount === 0
       && result.staleBridgeRejected === true
@@ -497,6 +640,29 @@ async function runMode(browser, mode) {
       && result.flowCommit.inputValue === `runtime-${mode}`
       && result.flowCommit.runtimeToken === token
       && result.flowCommit.loadCount === 0
+      && result.freeCommit.dispatched === true
+      && result.freeCommit.afterAck > result.freeCommit.beforeAck
+      && result.freeCommit.computedPosition === 'absolute'
+      && Number.isFinite(result.freeCommit.computedLeft)
+      && Number.isFinite(result.freeCommit.computedTop)
+      && result.freeCommit.computedLeft % 8 === 0
+      && result.freeCommit.computedTop % 8 === 0
+      && result.freeCommit.containerPosition === 'relative'
+      && result.freeCommit.subjectClass.includes('sheet-r20-node-')
+      && result.freeCommit.containerClass.includes('sheet-r20-node-')
+      && result.freeCommit.emittedCssHasAbsolute === true
+      && result.freeCommit.emittedCssHasRelative === true
+      && result.freeCommit.inputValue === `runtime-${mode}`
+      && result.freeCommit.runtimeToken === token
+      && result.freeCommit.loadCount === 0
+      && result.widgetDrop.dispatched === true
+      && result.widgetDrop.dragOverAccepted === true
+      && result.widgetDrop.dropAccepted === true
+      && result.widgetDrop.afterAck > result.widgetDrop.beforeAck
+      && result.widgetDrop.nestedInTarget === true
+      && result.widgetDrop.loadCount === 0
+      && result.widgetDrop.inputValue === `runtime-${mode}`
+      && result.widgetDrop.runtimeToken === token
       && result.hiddenInputValue === `runtime-${mode}`
       && result.hiddenRuntimeToken === token
       && result.after.sameElement

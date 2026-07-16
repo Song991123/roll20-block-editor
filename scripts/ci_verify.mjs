@@ -21,6 +21,7 @@ const tasks = [
   'test:translation-payload',
   'test:export-smoke',
   'test:layer-roles',
+  'test:design-position',
   'test:iframe-drop-target',
   'test:iframe-edit-bridge',
   'test:roll20-sandbox-sanitize',

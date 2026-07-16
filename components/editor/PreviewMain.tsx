@@ -30,8 +30,15 @@ import {
 import {
   commitIframeFlowDrop,
   resolveIframeEditDropTarget,
+  resolveIframeFreePlacement,
+  resolveIframeWidgetDropTarget,
   type IframeEditDropTarget,
 } from '@/lib/editor/iframeDropTarget';
+import { commitManagedDesignPosition } from '@/lib/editor/designPosition';
+import {
+  appendFriendlyWidgetPreset,
+  decodeFriendlyWidgetDrag,
+} from '@/lib/widgets/presets';
 
 /**
  * 미리보기 메인 — iframe srcdoc, sandbox.
@@ -100,6 +107,7 @@ export default function PreviewMain() {
   const [iframeEditOverlay, setIframeEditOverlay] = useState<IframeEditHitMessage | null>(null);
   const [iframeEditDropTarget, setIframeEditDropTarget] = useState<IframeEditDropTarget | null>(null);
   const [iframeEditDragOrigin, setIframeEditDragOrigin] = useState<IframeEditHitMessage | null>(null);
+  const iframeEditDragOriginRef = useRef<IframeEditHitMessage | null>(null);
   const applyRevisionRef = useRef(0);
   const applySourcesRef = useRef(new Map<number, string>());
   const lastAppliedSourceRef = useRef<string | null>(null);
@@ -445,6 +453,7 @@ export default function PreviewMain() {
           setIframeEditOverlay(null);
           setIframeEditDropTarget(null);
           setIframeEditDragOrigin(null);
+          iframeEditDragOriginRef.current = null;
         }
         iframeEditBridgeIdRef.current = editMessage.bridgeId;
         if (lastAppliedSourceRef.current == null) {
@@ -468,6 +477,7 @@ export default function PreviewMain() {
         // one-shot intrinsic-width measurement for the newly applied sheet.
         autoWidthSizedRef.current = false;
         setIframeEditDragOrigin(null);
+        iframeEditDragOriginRef.current = null;
         setIframeEditDropTarget(null);
         setLastApplyAck(editMessage.revision);
         const target = iframeRef.current?.contentWindow;
@@ -497,21 +507,102 @@ export default function PreviewMain() {
         setIframeEditOverlay(editMessage);
         setIframeEditDropTarget(nextDropTarget);
         if (editMessage.phase === 'pointerdown') {
+          iframeEditDragOriginRef.current = editMessage;
           setIframeEditDragOrigin(editMessage);
           setSelected(editMessage.blockId, 'preview');
         } else if (editMessage.phase === 'pointercancel') {
+          iframeEditDragOriginRef.current = null;
           setIframeEditDragOrigin(null);
         } else if (editMessage.phase === 'pointerup') {
-          const moved = useUiStore.getState().editPlacementMode === 'flow'
-            && commitIframeFlowDrop(editMessage.subject.blockId, nextDropTarget, adapter);
+          const ui = useUiStore.getState();
+          let moved = false;
+          if (ui.editPlacementMode === 'flow') {
+            moved = commitIframeFlowDrop(editMessage.subject.blockId, nextDropTarget, adapter);
+          } else {
+            const origin = iframeEditDragOriginRef.current;
+            const placement = origin
+              ? resolveIframeFreePlacement(origin, editMessage, {
+                  getBlock: (blockId) => adapter.getBlock('html', blockId),
+                  canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+                }, ui.snapEnabled ? 8 : 1)
+              : null;
+            if (placement) {
+              const committed = commitManagedDesignPosition(adapter, {
+                workspace: 'html',
+                blockId: editMessage.subject.blockId,
+                left: placement.left,
+                top: placement.top,
+                containingBlockId: placement.containingBlockId,
+                containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+              });
+              moved = committed.moved;
+              if (committed.cssBlockCreated) {
+                useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+              }
+            }
+          }
           if (moved) {
             const store = useWorkspaceStore.getState();
             store.bumpStructure('html', adapter.countBlocks('html'));
             store.setSelectedBlockId(editMessage.subject.blockId, 'preview');
           } else {
+            iframeEditDragOriginRef.current = null;
             setIframeEditDragOrigin(null);
           }
         }
+        return;
+      }
+      if (editMessage?.type === 'r20:widget-drag') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        if (useUiStore.getState().mainMode !== 'edit') return;
+        if (editMessage.phase === 'dragleave') {
+          setIframeEditDropTarget(null);
+          return;
+        }
+        const adapter = getBlocklyAdapter();
+        if (!editMessage.hitPath.every((item) => adapter.getBlock('html', item.blockId))) return;
+        const nextDropTarget = resolveIframeWidgetDropTarget(editMessage, {
+          getBlock: (blockId) => adapter.getBlock('html', blockId),
+          canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+        });
+        setIframeEditDropTarget(nextDropTarget);
+        if (editMessage.phase !== 'drop' || !editMessage.payload) return;
+        const preset = decodeFriendlyWidgetDrag(editMessage.payload);
+        if (!preset) {
+          setIframeEditDropTarget(null);
+          return;
+        }
+        const ui = useUiStore.getState();
+        const freeInside = ui.editPlacementMode === 'free'
+          && nextDropTarget?.mode === 'inside'
+          && Boolean(nextDropTarget.containerBlockId);
+        const position = freeInside && nextDropTarget
+          ? {
+              left: Math.max(0, Math.round(
+                editMessage.pointer.x
+                - nextDropTarget.geometry.rect.left
+                - nextDropTarget.geometry.clientLeft
+                + nextDropTarget.geometry.scrollLeft,
+              )),
+              top: Math.max(0, Math.round(
+                editMessage.pointer.y
+                - nextDropTarget.geometry.rect.top
+                - nextDropTarget.geometry.clientTop
+                + nextDropTarget.geometry.scrollTop,
+              )),
+            }
+          : {
+              left: Math.max(0, Math.round(editMessage.pointer.x)),
+              top: Math.max(0, Math.round(editMessage.pointer.y)),
+            };
+        const id = appendFriendlyWidgetPreset(preset, position, {
+          mode: freeInside ? 'absolute-in-container' : nextDropTarget ? 'flow' : 'absolute',
+          placement: nextDropTarget?.mode,
+          containerBlockId: nextDropTarget?.containerBlockId ?? nextDropTarget?.blockId ?? null,
+          siblingBlockId: nextDropTarget?.siblingBlockId ?? null,
+        });
+        setIframeEditDropTarget(null);
+        if (id) setSelected(id, 'preview');
         return;
       }
       const data = e.data;

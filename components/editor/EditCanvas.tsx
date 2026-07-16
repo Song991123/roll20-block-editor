@@ -7,6 +7,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
 import { canReceiveChildren, getLayerRole } from '@/lib/editor/layerRoles';
+import { EDIT_SURFACE_LAYER_PANEL_WIDTH_PX } from '@/lib/editor/editSurfaceLayout';
 import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { buildSheetParts } from '@/lib/preview/buildDoc';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
@@ -570,7 +571,10 @@ export default function EditCanvas() {
       data-testid="edit-canvas-root"
       data-edit-submode={editSubmode}
     >
-      <div className="flex h-9 shrink-0 items-center gap-3 border-b border-border bg-[var(--bg-elevated)] px-3 text-xs">
+      <div
+        className="flex h-9 shrink-0 items-center gap-3 border-b border-border bg-[var(--bg-elevated)] px-3 text-xs"
+        data-testid="edit-surface-toolbar"
+      >
         <span className="font-medium text-foreground">
           {editSubmode === 'rolltemplate' ? '굴림 결과 편집' : '시트 편집'}
         </span>
@@ -673,7 +677,7 @@ export default function EditCanvas() {
 
       <div
         className="grid flex-1 min-h-0"
-        style={{ gridTemplateColumns: '248px minmax(0, 1fr)' }}
+        style={{ gridTemplateColumns: `${EDIT_SURFACE_LAYER_PANEL_WIDTH_PX}px minmax(0, 1fr)` }}
       >
         <EditLayerPanel search={layerSearch} onSearchChange={setLayerSearch} />
         <div
@@ -779,7 +783,10 @@ function EditLayerPanel({
   );
 
   return (
-    <aside className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]">
+    <aside
+      className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]"
+      data-testid="edit-layer-panel"
+    >
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3 text-xs font-medium text-foreground">
         <Layers className="h-3.5 w-3.5" />
         <span>레이어</span>

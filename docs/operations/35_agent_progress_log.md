@@ -1,3 +1,12 @@
+## 2026-07-17 Persistent Iframe Edit Surface Phase 2E
+
+- Promoted the persistent preview iframe to the visible edit canvas without remounting it. Parent-owned toolbar, layer panel, selection outline, and drop-target outline remain outside the Roll20 document.
+- Added containing-block geometry and managed design CSS commits for free placement. The visible drop position is held optimistically until the live iframe apply acknowledgement, avoiding rollback paint and keeping design coordinates out of authored HTML inline styles.
+- Bridged friendly widget drag/drop through the sandbox boundary. Only the known MIME and registered preset payloads are accepted; flow drops update Blockly topology and free drops use generated CSS classes.
+- Local evidence `.tmp/persistent-widget-drop-r55` PASSes modern and legacy independently. Each row verifies visible iframe geometry, flow and free commits, gallery drop, state preservation, zero iframe reloads, and zero browser errors.
+- Static evidence: focused protocol/target/position tests, lint, and production build PASS.
+- Remaining boundary: the hidden Shadow render is still mounted as a transitional fallback, and actual Roll20 visual parity is not claimed. Next is visible-iframe layer/roll/chat/zoom coverage, followed by duplicate Shadow removal and actual Roll20 upload comparison.
+
 ## 2026-07-17 Persistent Iframe Edit Bridge Phase 2D
 
 - Added revisioned in-frame HTML/CSS/i18n live apply with an explicit acknowledgement. The persistent iframe keeps its document identity and Roll20 form/runtime state instead of reloading `srcdoc` after each emit.

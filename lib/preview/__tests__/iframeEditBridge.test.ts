@@ -11,6 +11,11 @@ const subject = {
   rect: { left: 10, top: 20, width: 100, height: 40 },
   offsetLeft: 6,
   offsetTop: 8,
+  scrollLeft: 0,
+  scrollTop: 0,
+  clientLeft: 1,
+  clientTop: 1,
+  position: 'absolute',
   offsetParentBlockId: 'frame-1',
   offsetParentPosition: 'relative',
 };
@@ -31,6 +36,11 @@ const hit = {
     rect: { left: 4, top: 6, width: 140, height: 90 },
     offsetLeft: 0,
     offsetTop: 0,
+    scrollLeft: 0,
+    scrollTop: 0,
+    clientLeft: 1,
+    clientTop: 1,
+    position: 'relative',
     offsetParentBlockId: null,
     offsetParentPosition: 'static',
   }],
@@ -59,6 +69,16 @@ assert.deepEqual(parseIframeEditBridgeMessage({
   protocol: R20_IFRAME_EDIT_PROTOCOL,
   bridgeId,
 });
+const widgetDrag = {
+  type: 'r20:widget-drag',
+  protocol: R20_IFRAME_EDIT_PROTOCOL,
+  bridgeId,
+  phase: 'drop',
+  payload: JSON.stringify({ id: 'number-input' }),
+  pointer: { x: 44, y: 55 },
+  hitPath: hit.hitPath,
+};
+assert.deepEqual(parseIframeEditBridgeMessage(widgetDrag), widgetDrag);
 
 assert.equal(parseIframeEditBridgeMessage({ ...hit, protocol: 2 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, bridgeId: 'short' }), null);
@@ -81,6 +101,8 @@ assert.equal(parseIframeEditBridgeMessage({
   ...hit,
   pointer: { x: 20_000_000, y: 0 },
 }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...widgetDrag, phase: 'dragstart' }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...widgetDrag, payload: 'x'.repeat(1025) }), null);
 
 const frameWindow = {};
 const iframe = { contentWindow: frameWindow } as unknown as HTMLIFrameElement;

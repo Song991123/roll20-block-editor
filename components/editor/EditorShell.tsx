@@ -15,6 +15,10 @@ import { useEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { installPerfHook } from '@/lib/perf/hook';
 import MainAreaToolbar from './MainAreaToolbar';
 import WorkspaceSubToolbar from './WorkspaceSubToolbar';
+import {
+  EDIT_SURFACE_LAYER_PANEL_WIDTH_PX,
+  EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
+} from '@/lib/editor/editSurfaceLayout';
 import { installAutosave } from '@/lib/persist/autosave';
 import { loadWorkspace, AUTOSAVE_KEY, type SavedRecord } from '@/lib/persist/indexeddb';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
@@ -164,11 +168,11 @@ export default function EditorShell() {
   const leftWidth = leftCollapsed ? 'var(--sidebar-left-collapsed)' : 'var(--sidebar-left-w)';
   const rightWidthPx = rightCollapsed ? '0px' : `${rightWidth}px`;
 
-  // Keep the canonical preview iframe mounted across mode switches. Hidden
-  // panes retain their live Roll20 runtime state while edit still uses the
-  // transitional Shadow interaction surface.
+  // Keep one canonical Roll20 iframe mounted across preview and edit. In edit
+  // mode the same pane is placed over the canvas slot while EditCanvas owns
+  // only the toolbar/layer chrome beneath it.
   const workspaceVisible = mainMode !== 'preview' && mainMode !== 'edit';
-  const previewVisible = mainMode !== 'assemble' && mainMode !== 'edit';
+  const previewVisible = mainMode !== 'assemble';
 
   // onResize: store getState() 로 fresh 읽기 — deps 가 [setMainSplit] 만 → stable callback.
   // 이전: deps=[mainSplit.left] → mousemove 다발 발생 시 closure stale → 한 drag 가 ~20px 한계.
@@ -213,7 +217,16 @@ export default function EditorShell() {
   } else {
     // mainMode === 'edit'
     workspaceStyle = hiddenPaneStyle;
-    previewStyle = hiddenPaneStyle;
+    previewStyle = {
+      position: 'absolute',
+      left: EDIT_SURFACE_LAYER_PANEL_WIDTH_PX,
+      top: EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
+      right: 0,
+      bottom: 0,
+      zIndex: 20,
+      minWidth: 0,
+      background: 'var(--bg-canvas)',
+    };
     editStyle = { flex: '1 1 auto' };
   }
 
@@ -271,6 +284,7 @@ export default function EditorShell() {
               data-testid="preview-pane"
               data-visible={previewVisible ? 'true' : 'false'}
               data-persistent-render-surface="true"
+              data-edit-render-surface={mainMode === 'edit' ? 'iframe' : undefined}
               aria-hidden={previewVisible ? undefined : true}
             >
               <PreviewMain />

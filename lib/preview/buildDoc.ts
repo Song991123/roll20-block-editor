@@ -110,14 +110,21 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var offsetParent = node.offsetParent;
     var offsetParentBlock = blockNodeOf(offsetParent);
     var offsetParentPosition = '';
+    var position = '';
     try {
       offsetParentPosition = offsetParent ? window.getComputedStyle(offsetParent).position : '';
+      position = window.getComputedStyle(node).position;
     } catch (e) {}
     return {
       blockId: node.dataset.r20BlockId,
       rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
       offsetLeft: Number(node.offsetLeft) || 0,
       offsetTop: Number(node.offsetTop) || 0,
+      scrollLeft: Number(node.scrollLeft) || 0,
+      scrollTop: Number(node.scrollTop) || 0,
+      clientLeft: Number(node.clientLeft) || 0,
+      clientTop: Number(node.clientTop) || 0,
+      position: position,
       offsetParentBlockId: offsetParentBlock && offsetParentBlock.dataset
         ? offsetParentBlock.dataset.r20BlockId || null
         : null,
@@ -160,6 +167,28 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         button: Number.isInteger(pointer.button) ? pointer.button : -1,
         buttons: Number.isInteger(pointer.buttons) ? pointer.buttons : 0,
         subject: subject,
+        hitPath: hitPathOf(hitNode)
+      }, '*');
+    } catch (e) {}
+  }
+  function hasFriendlyWidgetPayload(dataTransfer) {
+    if (!dataTransfer || !dataTransfer.types) return false;
+    for (var i = 0; i < dataTransfer.types.length; i += 1) {
+      if (dataTransfer.types[i] === 'application/x-r20-friendly-widget') return true;
+    }
+    return false;
+  }
+  function postWidgetDrag(phase, event, payload) {
+    if (!editBridgeEnabled) return;
+    var hitNode = hitNodeAt(event.clientX, event.clientY, event.target);
+    try {
+      parent.postMessage({
+        type: 'r20:widget-drag',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        phase: phase,
+        payload: payload || null,
+        pointer: { x: Number(event.clientX) || 0, y: Number(event.clientY) || 0 },
         hitPath: hitPathOf(hitNode)
       }, '*');
     } catch (e) {}
@@ -673,6 +702,25 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     activeEditPointer = null;
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
+  }, true);
+  document.addEventListener('dragover', function (e) {
+    if (!editBridgeEnabled || !hasFriendlyWidgetPayload(e.dataTransfer)) return;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.dataTransfer.dropEffect = 'copy'; } catch (_) {}
+    postWidgetDrag('dragover', e, null);
+  }, true);
+  document.addEventListener('dragleave', function (e) {
+    if (!editBridgeEnabled || !hasFriendlyWidgetPayload(e.dataTransfer)) return;
+    if (e.relatedTarget && document.documentElement.contains(e.relatedTarget)) return;
+    postWidgetDrag('dragleave', e, null);
+  }, true);
+  document.addEventListener('drop', function (e) {
+    if (!editBridgeEnabled || !hasFriendlyWidgetPayload(e.dataTransfer)) return;
+    var payload = '';
+    try { payload = e.dataTransfer.getData('application/x-r20-friendly-widget') || ''; } catch (_) {}
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+    postWidgetDrag('drop', e, payload);
   }, true);
   window.addEventListener('message', function (e) {
     if (e.source !== parent || !e.data) return;
