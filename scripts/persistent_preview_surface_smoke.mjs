@@ -94,8 +94,8 @@ async function runMode(browser, mode) {
     result.import = await page.evaluate(async () => {
       window.__perfHook.clearAll();
       return window.__perfHook.importSheet({
-        html: '<div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"></div>',
-        css: '.sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; }',
+        html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"></div></div>',
+        css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; }',
       });
     });
     await page.evaluate((compatibilityMode) => {
@@ -151,16 +151,32 @@ async function runMode(browser, mode) {
     await frame.evaluate(() => {
       const target = document.querySelector('.sheet-probe-card');
       const rect = target?.getBoundingClientRect();
+      const blockId = target?.getAttribute('data-r20-block-id') || 'missing';
+      const subject = {
+        blockId,
+        rect: rect
+          ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+          : { left: 0, top: 0, width: 10, height: 10 },
+        offsetLeft: target?.offsetLeft || 0,
+        offsetTop: target?.offsetTop || 0,
+        offsetParentBlockId: target?.offsetParent?.getAttribute('data-r20-block-id') || null,
+        offsetParentPosition: target?.offsetParent
+          ? getComputedStyle(target.offsetParent).position
+          : '',
+      };
       parent.postMessage({
         type: 'r20:edit-hit',
         protocol: 1,
         bridgeId: 'stale-bridge-token',
         phase: 'pointerdown',
-        blockId: target?.getAttribute('data-r20-block-id') || 'missing',
-        rect: rect
-          ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
-          : { left: 0, top: 0, width: 10, height: 10 },
+        blockId,
+        rect: subject.rect,
         pointer: { x: 1, y: 1 },
+        pointerId: 17,
+        button: 0,
+        buttons: 1,
+        subject,
+        hitPath: [subject],
       }, '*');
     });
     await page.waitForTimeout(50);
@@ -172,6 +188,9 @@ async function runMode(browser, mode) {
       const event = new PointerEvent('pointerdown', {
         bubbles: true,
         cancelable: true,
+        pointerId: 17,
+        button: 0,
+        buttons: 1,
         clientX: rect.left + Math.min(8, rect.width / 2),
         clientY: rect.top + Math.min(8, rect.height / 2),
       });
@@ -191,6 +210,38 @@ async function runMode(browser, mode) {
       result.bridgeDispatch.blockId,
       { timeout: 30000 },
     );
+    result.pointerSequence = await frame.evaluate(() => {
+      const target = document.querySelector('input[name="attr_probe"]');
+      if (!target) return { dispatched: false, reason: 'missing nested input' };
+      const rect = target.getBoundingClientRect();
+      target.dispatchEvent(new PointerEvent('pointermove', {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 17,
+        buttons: 1,
+        clientX: rect.left + 2,
+        clientY: rect.top + 2,
+      }));
+      target.dispatchEvent(new PointerEvent('pointercancel', {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 17,
+        buttons: 0,
+        clientX: rect.left + 2,
+        clientY: rect.top + 2,
+      }));
+      return {
+        dispatched: true,
+        hitBlockId: target.getAttribute('data-r20-block-id'),
+      };
+    });
+    await page.waitForFunction(
+      () => document
+        .querySelector('[data-testid="iframe-edit-overlay"]')
+        ?.getAttribute('data-r20-edit-phase') === 'pointercancel',
+      null,
+      { timeout: 30000 },
+    );
     result.duringEdit = await page.evaluate(() => {
       const current = document.querySelector('[data-testid="preview-iframe"]');
       const bridgeRoot = current?.closest('[data-r20-edit-bridge-ready]');
@@ -206,6 +257,9 @@ async function runMode(browser, mode) {
         overlayCount: document.querySelectorAll('[data-testid="iframe-edit-overlay"]').length,
         overlayBlockId: overlay?.getAttribute('data-r20-block-id'),
         overlayPhase: overlay?.getAttribute('data-r20-edit-phase'),
+        pointerId: Number(overlay?.getAttribute('data-r20-pointer-id')),
+        hitPathLength: Number(overlay?.getAttribute('data-r20-hit-path-length')),
+        offsetParentBlockId: overlay?.getAttribute('data-r20-offset-parent-block-id'),
         overlayWidth: Number.parseFloat(overlay?.style.width || '0'),
         overlayHeight: Number.parseFloat(overlay?.style.height || '0'),
       };
@@ -253,7 +307,13 @@ async function runMode(browser, mode) {
       && result.duringEdit.bridgeReady === '1'
       && result.duringEdit.overlayCount === 1
       && result.duringEdit.overlayBlockId === result.bridgeDispatch.blockId
-      && result.duringEdit.overlayPhase === 'measure'
+      && result.pointerSequence.dispatched === true
+      && typeof result.pointerSequence.hitBlockId === 'string'
+      && result.duringEdit.overlayPhase === 'pointercancel'
+      && result.duringEdit.pointerId === 17
+      && result.duringEdit.hitPathLength >= 2
+      && typeof result.duringEdit.offsetParentBlockId === 'string'
+      && result.duringEdit.offsetParentBlockId.length > 0
       && result.duringEdit.overlayWidth > 0
       && result.duringEdit.overlayHeight > 0
       && result.hiddenInputValue === `runtime-${mode}`

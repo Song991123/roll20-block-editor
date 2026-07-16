@@ -417,7 +417,13 @@ export default function PreviewMain() {
       if (editMessage?.type === 'r20:edit-hit') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         if (useUiStore.getState().mainMode !== 'edit') return;
-        if (!getBlocklyAdapter().getBlock('html', editMessage.blockId)) return;
+        const adapter = getBlocklyAdapter();
+        if (!adapter.getBlock('html', editMessage.blockId)) return;
+        if (!editMessage.hitPath.every((item) => adapter.getBlock('html', item.blockId))) return;
+        if (
+          editMessage.subject.offsetParentBlockId
+          && !adapter.getBlock('html', editMessage.subject.offsetParentBlockId)
+        ) return;
         setIframeEditOverlay(editMessage);
         if (editMessage.phase === 'pointerdown') {
           setSelected(editMessage.blockId, 'preview');
@@ -688,6 +694,9 @@ export default function PreviewMain() {
                 data-testid="iframe-edit-overlay"
                 data-r20-block-id={iframeEditOverlay.blockId}
                 data-r20-edit-phase={iframeEditOverlay.phase}
+                data-r20-pointer-id={iframeEditOverlay.pointerId}
+                data-r20-hit-path-length={iframeEditOverlay.hitPath.length}
+                data-r20-offset-parent-block-id={iframeEditOverlay.subject.offsetParentBlockId ?? ''}
                 className="pointer-events-none absolute z-20 border-2 border-amber-500 bg-amber-400/10"
                 style={{
                   left: `${iframeEditOverlay.rect.left}px`,

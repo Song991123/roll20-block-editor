@@ -1,12 +1,21 @@
 export const R20_IFRAME_EDIT_PROTOCOL = 1 as const;
 
-export type IframeEditPhase = 'pointermove' | 'pointerdown' | 'pointerup' | 'measure';
+export type IframeEditPhase = 'pointermove' | 'pointerdown' | 'pointerup' | 'pointercancel' | 'measure';
 
 export type IframeEditRect = {
   left: number;
   top: number;
   width: number;
   height: number;
+};
+
+export type IframeEditNodeGeometry = {
+  blockId: string;
+  rect: IframeEditRect;
+  offsetLeft: number;
+  offsetTop: number;
+  offsetParentBlockId: string | null;
+  offsetParentPosition: string;
 };
 
 export type IframeEditReadyMessage = {
@@ -23,6 +32,11 @@ export type IframeEditHitMessage = {
   blockId: string;
   rect: IframeEditRect;
   pointer: { x: number; y: number };
+  pointerId: number;
+  button: number;
+  buttons: number;
+  subject: IframeEditNodeGeometry;
+  hitPath: IframeEditNodeGeometry[];
 };
 
 export type IframeEditBridgeMessage = IframeEditReadyMessage | IframeEditHitMessage;
@@ -57,6 +71,20 @@ function isRect(value: unknown): value is IframeEditRect {
     && value.height >= 0;
 }
 
+function isNodeGeometry(value: unknown): value is IframeEditNodeGeometry {
+  if (!isRecord(value)) return false;
+  return typeof value.blockId === 'string'
+    && value.blockId.length > 0
+    && value.blockId.length <= 256
+    && isRect(value.rect)
+    && isFiniteCoordinate(value.offsetLeft)
+    && isFiniteCoordinate(value.offsetTop)
+    && (value.offsetParentBlockId === null
+      || (typeof value.offsetParentBlockId === 'string' && value.offsetParentBlockId.length <= 256))
+    && typeof value.offsetParentPosition === 'string'
+    && value.offsetParentPosition.length <= 64;
+}
+
 export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMessage | null {
   if (
     !isRecord(value)
@@ -75,6 +103,7 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
     value.phase !== 'pointermove'
     && value.phase !== 'pointerdown'
     && value.phase !== 'pointerup'
+    && value.phase !== 'pointercancel'
     && value.phase !== 'measure'
   ) return null;
   if (typeof value.blockId !== 'string' || value.blockId.length === 0 || value.blockId.length > 256) {
@@ -82,6 +111,13 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
   }
   if (!isRect(value.rect) || !isRecord(value.pointer)) return null;
   if (!isFiniteCoordinate(value.pointer.x) || !isFiniteCoordinate(value.pointer.y)) return null;
+  if (!Number.isInteger(value.pointerId) || !isFiniteCoordinate(value.pointerId)) return null;
+  if (!Number.isInteger(value.button) || !isFiniteCoordinate(value.button)) return null;
+  if (!Number.isInteger(value.buttons) || !isFiniteCoordinate(value.buttons)) return null;
+  if (!isNodeGeometry(value.subject) || value.subject.blockId !== value.blockId) return null;
+  if (!Array.isArray(value.hitPath) || value.hitPath.length > 64 || !value.hitPath.every(isNodeGeometry)) {
+    return null;
+  }
   return {
     type: 'r20:edit-hit',
     protocol: R20_IFRAME_EDIT_PROTOCOL,
@@ -90,6 +126,11 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
     blockId: value.blockId,
     rect: value.rect,
     pointer: { x: value.pointer.x, y: value.pointer.y },
+    pointerId: value.pointerId,
+    button: value.button,
+    buttons: value.buttons,
+    subject: value.subject,
+    hitPath: value.hitPath,
   };
 }
 

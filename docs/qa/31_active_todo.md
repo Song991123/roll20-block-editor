@@ -1,3 +1,15 @@
+## 2026-07-17 Persistent Iframe Edit Bridge Phase 2B
+
+- DONE: Extended the iframe edit contract with a stable pointer subject, `pointerId`/button state, `pointercancel`, ancestor `hitPath`, and offset-parent geometry. The parent rejects every unknown block id before showing the overlay.
+- DONE: Pointer move messages are rAF-coalesced inside the iframe, while pointer-up/cancel keeps the original subject and clears pointer/capture state. This remains a read-only geometry bridge; no Blockly drag commit is claimed.
+- VERIFIED MODERN: `.tmp/persistent-pointer-geometry-r35` has a separate modern PASS with pointer id `17`, final `pointercancel`, hit-path length `3`, a recognized offset-parent block, input/runtime preservation, iframe reload count `0`, and console/page errors `0`.
+- VERIFIED LEGACY: The same report has an independent legacy PASS with the same bridge assertions, legacy-only runtime style present, iframe reload count `0`, and console/page errors `0`. Modern evidence is not reused for this row.
+- VERIFIED: `.tmp/edit-flow-pointer-geometry-r34` PASSes the existing Shadow fallback flow/free drag paths with `0px` post-drop drift. `.tmp/preview-edit-pointer-geometry-r34` is `EXACT` for the focused ignored fixture in modern and legacy (`0` differing pixels in each mode).
+- VERIFIED: `ci:verify`, lint, production build, `test:iframe-edit-bridge`, `test:roll20-render-modes`, and server hygiene PASS.
+- PARTIAL: The iframe is hidden while the transitional Shadow editor is visible, so the browser can suspend iframe `requestAnimationFrame`. Down/cancel, stable subject, ancestor path, and containing-block geometry are browser-verified; a visible-surface pointer-move stream is not yet verified.
+- NEXT P0: Make the persistent iframe the visible edit surface, derive before/inside/after targets from the reported path, paint optimistic drag feedback in the parent overlay, commit Blockly once on pointer-up, and add an in-frame apply/ack path. Keep Shadow fallback until these gates pass independently in modern and legacy.
+- COPYRIGHT: All browser evidence remains ignored under `.tmp/`; no fixture source, screenshot, or generated report is staged.
+
 ## 2026-07-16 Persistent Iframe Edit Bridge Phase 2A
 
 - DONE: Added a typed `r20:edit-ready` / `r20:edit-mode` / `r20:edit-hit` protocol for the persistent sandboxed iframe. The iframe now reports block geometry for pointer and selected-node measurement without exposing or reparenting its DOM.

@@ -1,3 +1,13 @@
+## 2026-07-17 Persistent Iframe Edit Bridge Phase 2B
+
+- Extended `r20:edit-hit` with stable pointer identity/button state, `pointercancel`, fixed drag subject geometry, ancestor hit paths, and offset-parent/position evidence.
+- The iframe now attempts pointer capture, coalesces move reports with rAF, retains the pointer-down subject across the sequence, and clears pending state on cancel or edit-mode exit.
+- Hardened parent acceptance so subject, offset-parent, and every hit-path block id must exist in the live HTML Blockly adapter before the edit overlay is updated.
+- Modern and legacy browser evidence is separate in `.tmp/persistent-pointer-geometry-r35`: both PASS with hit-path length `3`, a valid containing block, final cancel state, preserved input/runtime state, zero iframe reloads, and no console/page errors. The legacy row also requires its mode-specific runtime style.
+- Regression evidence `.tmp/edit-flow-pointer-geometry-r34` PASSes current Shadow interactions with `0px` drift. Focused `.tmp/preview-edit-pointer-geometry-r34` is pixel exact in both modes. `ci:verify`, lint, production build, and server hygiene pass.
+- A first smoke attempt deadlocked because the iframe is deliberately `visibility:hidden` during transitional edit mode and Chromium suspends its rAF. The harness now verifies synchronous down/cancel geometry in that state; it does not misreport a visible pointer-move stream.
+- Next P0 is the visible iframe edit-surface switch, parent-derived flow targets, optimistic overlay drag paint, one Blockly commit on pointer-up, and iframe apply/ack. Shadow remains the fallback until modern and legacy pass those gates independently.
+
 ## 2026-07-16 Persistent Iframe Edit Bridge Phase 2A
 
 - Added `lib/preview/iframeEditBridge.ts` as the typed/validated parent boundary for persistent iframe edit messages.

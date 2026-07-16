@@ -86,6 +86,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   })();
   var editMoveFrame = 0;
   var pendingEditMove = null;
+  var activeEditPointer = null;
   function blockNodeOf(node) {
     while (node && node !== document.body) {
       if (node.dataset && node.dataset.r20BlockId) return node;
@@ -93,27 +94,73 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return null;
   }
-  function postEditHit(phase, node, clientX, clientY) {
-    if (!editBridgeEnabled || !node || !node.dataset || !node.dataset.r20BlockId) return;
+  function geometryOf(node) {
+    if (!node || !node.dataset || !node.dataset.r20BlockId) return null;
     var rect = node.getBoundingClientRect();
+    var offsetParent = node.offsetParent;
+    var offsetParentBlock = blockNodeOf(offsetParent);
+    var offsetParentPosition = '';
+    try {
+      offsetParentPosition = offsetParent ? window.getComputedStyle(offsetParent).position : '';
+    } catch (e) {}
+    return {
+      blockId: node.dataset.r20BlockId,
+      rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      offsetLeft: Number(node.offsetLeft) || 0,
+      offsetTop: Number(node.offsetTop) || 0,
+      offsetParentBlockId: offsetParentBlock && offsetParentBlock.dataset
+        ? offsetParentBlock.dataset.r20BlockId || null
+        : null,
+      offsetParentPosition: offsetParentPosition
+    };
+  }
+  function hitPathOf(node) {
+    var path = [];
+    var current = node;
+    while (current && current !== document.body && path.length < 64) {
+      if (current.dataset && current.dataset.r20BlockId) {
+        var geometry = geometryOf(current);
+        if (geometry) path.push(geometry);
+      }
+      current = current.parentNode;
+    }
+    return path;
+  }
+  function postEditHit(phase, subjectNode, hitNode, pointer) {
+    if (!editBridgeEnabled) return;
+    var subject = geometryOf(subjectNode);
+    if (!subject) return;
     try {
       parent.postMessage({
         type: 'r20:edit-hit',
         protocol: 1,
         bridgeId: editBridgeId,
         phase: phase,
-        blockId: node.dataset.r20BlockId,
-        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
-        pointer: { x: Number(clientX) || 0, y: Number(clientY) || 0 }
+        blockId: subject.blockId,
+        rect: subject.rect,
+        pointer: { x: Number(pointer.x) || 0, y: Number(pointer.y) || 0 },
+        pointerId: Number.isInteger(pointer.pointerId) ? pointer.pointerId : -1,
+        button: Number.isInteger(pointer.button) ? pointer.button : -1,
+        buttons: Number.isInteger(pointer.buttons) ? pointer.buttons : 0,
+        subject: subject,
+        hitPath: hitPathOf(hitNode)
       }, '*');
     } catch (e) {}
   }
   function setEditBridgeEnabled(enabled, selectedBlockId) {
     editBridgeEnabled = enabled === true;
     document.body.setAttribute('data-r20-edit-mode', editBridgeEnabled ? '1' : '0');
+    if (!editBridgeEnabled) {
+      if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
+      editMoveFrame = 0;
+      pendingEditMove = null;
+      activeEditPointer = null;
+    }
     if (!editBridgeEnabled || !selectedBlockId) return;
     var selected = document.querySelector('[data-r20-block-id="' + cssEscape(selectedBlockId) + '"]');
-    if (selected) postEditHit('measure', selected, 0, 0);
+    if (selected) postEditHit('measure', selected, selected, {
+      x: 0, y: 0, pointerId: -1, button: -1, buttons: 0
+    });
   }
   function collectAttrs() {
     var out = {};
@@ -451,24 +498,79 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }, true);
   document.addEventListener('pointermove', function (e) {
     if (!editBridgeEnabled) return;
-    pendingEditMove = { node: blockNodeOf(e.target), x: e.clientX, y: e.clientY };
+    if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
+    pendingEditMove = {
+      subjectNode: activeEditPointer.subjectNode,
+      hitNode: blockNodeOf(e.target),
+      pointer: {
+        x: e.clientX,
+        y: e.clientY,
+        pointerId: e.pointerId,
+        button: e.button,
+        buttons: e.buttons
+      }
+    };
     if (editMoveFrame) return;
     editMoveFrame = window.requestAnimationFrame(function () {
       editMoveFrame = 0;
       var pending = pendingEditMove;
       pendingEditMove = null;
-      if (pending) postEditHit('pointermove', pending.node, pending.x, pending.y);
+      if (pending) {
+        postEditHit('pointermove', pending.subjectNode, pending.hitNode, pending.pointer);
+      }
     });
   }, true);
   document.addEventListener('pointerdown', function (e) {
     if (!editBridgeEnabled) return;
-    postEditHit('pointerdown', blockNodeOf(e.target), e.clientX, e.clientY);
+    var subjectNode = blockNodeOf(e.target);
+    if (!subjectNode) return;
+    activeEditPointer = { pointerId: e.pointerId, subjectNode: subjectNode };
+    try { subjectNode.setPointerCapture(e.pointerId); } catch (_) {}
+    postEditHit('pointerdown', subjectNode, subjectNode, {
+      x: e.clientX,
+      y: e.clientY,
+      pointerId: e.pointerId,
+      button: e.button,
+      buttons: e.buttons
+    });
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
   }, true);
   document.addEventListener('pointerup', function (e) {
     if (!editBridgeEnabled) return;
-    postEditHit('pointerup', blockNodeOf(e.target), e.clientX, e.clientY);
+    if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
+    var subjectNode = activeEditPointer.subjectNode;
+    if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
+    editMoveFrame = 0;
+    pendingEditMove = null;
+    postEditHit('pointerup', subjectNode, blockNodeOf(e.target), {
+      x: e.clientX,
+      y: e.clientY,
+      pointerId: e.pointerId,
+      button: e.button,
+      buttons: e.buttons
+    });
+    try { subjectNode.releasePointerCapture(e.pointerId); } catch (_) {}
+    activeEditPointer = null;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+  }, true);
+  document.addEventListener('pointercancel', function (e) {
+    if (!editBridgeEnabled) return;
+    if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
+    var subjectNode = activeEditPointer.subjectNode;
+    if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
+    editMoveFrame = 0;
+    pendingEditMove = null;
+    postEditHit('pointercancel', subjectNode, blockNodeOf(e.target), {
+      x: e.clientX,
+      y: e.clientY,
+      pointerId: e.pointerId,
+      button: e.button,
+      buttons: e.buttons
+    });
+    try { subjectNode.releasePointerCapture(e.pointerId); } catch (_) {}
+    activeEditPointer = null;
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
   }, true);
