@@ -99,9 +99,12 @@ trustworthy chat-pane screenshot is still missing. Therefore the current state i
 partial actual evidence, not Roll20 visual parity.
 
 2026-07-16 runtime-mode note: the current Custom Sheet Sandbox reports a modern
-runtime and preserved an authored `attr-input` class. A dedicated legacy test
-room with legacy sanitization enabled produced `sheet-attr-input` from the same
-source. Therefore modern and legacy evidence are separate contracts. Generated
+runtime and preserved an authored `attr-input` class. Custom Sheet Sandbox does
+not recognize or reproduce the legacy runtime, so it is a modern-only validation
+destination. A dedicated legacy test room with legacy sanitization enabled
+produced `sheet-attr-input` from the same source. Therefore modern and legacy
+evidence are separate contracts. A legacy package rendered in Sandbox is a
+destination mismatch, not legacy evidence and not a legacy renderer failure. Generated
 activation checks derive the expected mode from `sheet.json` and must return
 `RUNTIME_MODE_MISMATCH` before screenshot evidence when the destination runtime
 does not match. Handler execution and a matching mode still prove only upload

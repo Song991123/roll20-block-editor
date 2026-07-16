@@ -79,11 +79,17 @@ function stripKeyframes(css: string, warnings: SanitizeWarning[]): string {
   // 중첩 brace 처리 — 단순 depth 카운터.
   let out = '';
   let i = 0;
+  let line = 0;
   const n = css.length;
   while (i < n) {
+    if (css[i] !== '@') {
+      if (css[i] === '\n') line += 1;
+      out += css[i];
+      i += 1;
+      continue;
+    }
     // case-insensitive @keyframes / @-webkit-keyframes 시작 매칭.
-    const slice = css.slice(i);
-    const kw = matchKeyframesStart(slice);
+    const kw = matchKeyframesStart(css, i);
     if (kw) {
       // body 의 `{` 찾기.
       const braceStart = css.indexOf('{', i + kw.length);
@@ -106,13 +112,21 @@ function stripKeyframes(css: string, warnings: SanitizeWarning[]): string {
       warnings.push({
         code: 'keyframes-stripped',
         message: `@keyframes at-rule 가 sandbox 차단으로 제거됨.`,
-        line: lineOf(css, i),
+        line,
         source: shorten(original),
       });
+      // Visit each removed character once. Recounting from index 0 for every
+      // warning makes keyframe-heavy stylesheets quadratic.
+      for (let k = i; k < ruleEnd; k += 1) {
+        if (css[k] === '\n') line += 1;
+      }
       // 빈 줄 보존 (gap 생기지 않도록 newline 1 개 정도).
       i = ruleEnd;
       // 연속 공백 정리 — 줄 끝 newline 만 보존.
-      if (css[i] === '\n') i += 1;
+      if (css[i] === '\n') {
+        line += 1;
+        i += 1;
+      }
     } else {
       out += css[i];
       i += 1;
@@ -121,9 +135,10 @@ function stripKeyframes(css: string, warnings: SanitizeWarning[]): string {
   return out;
 }
 
-function matchKeyframesStart(s: string): string | null {
+function matchKeyframesStart(css: string, index: number): string | null {
   // `@keyframes` 또는 vendor prefix 변종.
-  // 정규식 보다 직접 매칭이 빠름.
+  // Only inspect the short candidate window. Slicing/lowercasing the entire
+  // remaining stylesheet for every character makes large sheets O(n^2).
   const candidates = [
     '@keyframes',
     '@-webkit-keyframes',
@@ -131,11 +146,11 @@ function matchKeyframesStart(s: string): string | null {
     '@-o-keyframes',
     '@-ms-keyframes',
   ];
-  const lower = s.toLowerCase();
   for (const c of candidates) {
-    if (lower.startsWith(c)) {
+    const end = index + c.length;
+    if (css.slice(index, end).toLowerCase() === c) {
       // 다음 글자가 공백 또는 식별자 시작이어야 함.
-      const next = lower[c.length];
+      const next = css[end]?.toLowerCase();
       if (!next || /\s|[a-zA-Z0-9_\-]/.test(next)) return c;
     }
   }
@@ -330,14 +345,6 @@ function transformLine(line: string, lineIdx: number, warnings: SanitizeWarning[
 // ============================================================================
 // helpers
 // ============================================================================
-
-function lineOf(text: string, index: number): number {
-  let line = 0;
-  for (let i = 0; i < index && i < text.length; i++) {
-    if (text[i] === '\n') line += 1;
-  }
-  return line;
-}
 
 function shorten(s: string, max = 80): string {
   const trimmed = s.replace(/\s+/g, ' ').trim();

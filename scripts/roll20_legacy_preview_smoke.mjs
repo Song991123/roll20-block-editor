@@ -15,7 +15,12 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSheetDoc, buildSheetLivePatch, buildSheetParts } from '../lib/preview/buildDoc.ts';
+import {
+  buildSheetDoc,
+  buildSheetLivePatch,
+  buildSheetParts,
+  buildSheetRenderBundle,
+} from '../lib/preview/buildDoc.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..');
@@ -100,6 +105,8 @@ const modernPatch = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, sani
 const legacyPatch = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, sanitize: true, legacyCssSanitize: true });
 const modernAtomicPatch = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern' });
 const legacyAtomicPatch = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy' });
+const modernAtomicBundle = buildSheetRenderBundle({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern' });
+const legacyAtomicBundle = buildSheetRenderBundle({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy' });
 const modernAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern', sanitize: true, legacyCssSanitize: true });
 const legacyAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy', sanitize: false, legacyCssSanitize: false });
 const modernAtomicPatchOverride = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern', sanitize: true, legacyCssSanitize: true });
@@ -232,6 +239,12 @@ assertCheck(checks, 'live patch keeps modern and legacy asset URL policies separ
     && legacyAtomicPatch.html.includes("url('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-inline.png')")
     && legacyAtomicPatch.styles['r20-user'].includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Ffonts.example.test%2Fsynthetic-runtime.woff2')
     && legacyAtomicPatch.styles['r20-user'].includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Fimages.example.test%2Fsynthetic-runtime-background.png'));
+assertCheck(checks, 'shared render bundle preserves standalone modern outputs',
+  modernAtomicBundle.doc === modernAtomicDoc
+    && JSON.stringify(modernAtomicBundle.livePatch) === JSON.stringify(modernAtomicPatch));
+assertCheck(checks, 'shared render bundle preserves standalone legacy outputs',
+  legacyAtomicBundle.doc === legacyAtomicDoc
+    && JSON.stringify(legacyAtomicBundle.livePatch) === JSON.stringify(legacyAtomicPatch));
 
 const mainAreaToolbar = readFileSync(join(REPO_ROOT, 'components/editor/MainAreaToolbar.tsx'), 'utf8');
 const editorShell = readFileSync(join(REPO_ROOT, 'components/editor/EditorShell.tsx'), 'utf8');
@@ -261,7 +274,12 @@ assertCheck(checks, 'preview and edit consume the same atomic render contract in
     && !editCanvas.includes('const sanitize = usePreviewStore'));
 assertCheck(checks, 'iframe, live patch, and Shadow serializers share one prepared render contract',
   renderContract.includes('export function prepareSheetRenderContract')
-    && (readFileSync(join(REPO_ROOT, 'lib/preview/buildDoc.ts'), 'utf8').match(/prepareSheetRenderContract\(opts\)/g) ?? []).length === 3);
+    && previewMain.includes('buildSheetRenderBundle(')
+    && !previewMain.includes('buildSheetDoc({')
+    && !previewMain.includes('buildSheetLivePatch({')
+    && !previewMain.includes('buildSheetParts({')
+    && previewMain.includes("renderMode === 'shadow'")
+    && readFileSync(join(REPO_ROOT, 'lib/preview/buildDoc.ts'), 'utf8').includes('buildSheetPartsFromContract(opts, contract)'));
 assertCheck(checks, 'visual smoke hook exposes the same atomic compatibility mode action',
   perfHook.includes('setRoll20CompatibilityMode: (mode: Roll20CompatibilityMode) => void')
     && perfHook.includes('usePreviewStore.getState().setRoll20CompatibilityMode(mode)'));

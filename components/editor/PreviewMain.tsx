@@ -14,7 +14,7 @@ import {
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlockDef } from '@/lib/blocks/registry';
-import { buildSheetDoc, buildSheetLivePatch, buildSheetParts } from '@/lib/preview/buildDoc';
+import { buildSheetRenderBundle } from '@/lib/preview/buildDoc';
 import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
@@ -151,35 +151,26 @@ export default function PreviewMain() {
   // tick 에 setSrcdoc → React 가 srcDoc prop 갱신, 하지만 iframe 이 reload 안 함 (Chrome
   // 의 srcdoc 속성 변경 quirk). useMemo 로 바꿔 첫 렌더부터 올바른 값으로 렌더 →
   // 모드 전환 후에도 즉시 컨텐츠 표시.
-  const srcdoc = useMemo(
+  const renderBundle = useMemo(
     () =>
-      buildSheetDoc({
-        html: previewAssetText.html,
-        css: previewAssetText.css,
-        i18n: emitI18n,
-        compatibilityMode,
-        roll20SandboxSanitize,
-        darkMode,
-        previewLayer,
-        includeEditorOverlays: false,
-        documentLanguage,
-      }),
-    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
+      buildSheetRenderBundle(
+        {
+          html: previewAssetText.html,
+          css: previewAssetText.css,
+          i18n: emitI18n,
+          compatibilityMode,
+          roll20SandboxSanitize,
+          darkMode,
+          previewLayer,
+          includeEditorOverlays: renderMode === 'shadow',
+          documentLanguage,
+        },
+        { includeParts: renderMode === 'shadow' },
+      ),
+    [renderMode, previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
   );
-  const livePatch = useMemo(
-    () => buildSheetLivePatch({
-      html: previewAssetText.html,
-      css: previewAssetText.css,
-      i18n: emitI18n,
-      compatibilityMode,
-      roll20SandboxSanitize,
-      darkMode,
-      previewLayer,
-      includeEditorOverlays: false,
-      documentLanguage,
-    }),
-    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
-  );
+  const srcdoc = renderBundle.doc;
+  const livePatch = renderBundle.livePatch;
   const [iframeDocumentSrcdoc] = useState(srcdoc);
 
   // spec 21 Phase A — Shadow DOM 모드 mount.
@@ -208,23 +199,10 @@ export default function PreviewMain() {
   // selectedBlockId 변경 effect 에서 호출. mount 사이클 (parts 변경) 마다 새 ref
   // 발급 — cleanup 단계에서 null 로 비워 stale 호출 방지.
   const shadowSetSelectedRef = useRef<((id: string | null, opts?: { scrollIntoView?: boolean }) => void) | null>(null);
-  const parts = useMemo(
-    () =>
-      buildSheetParts({
-        html: previewAssetText.html,
-        css: previewAssetText.css,
-        i18n: emitI18n,
-        compatibilityMode,
-        roll20SandboxSanitize,
-        darkMode,
-        previewLayer,
-        includeEditorOverlays: true,
-        documentLanguage,
-      }),
-    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
-  );
+  const parts = renderBundle.parts ?? null;
   useEffect(() => {
     if (renderMode !== 'shadow') return;
+    if (!parts) return;
     const host = hostRef.current;
     if (!host) return;
     // Phase C drag — 시작 시점의 LEFT_PX/TOP_PX 를 origin 으로 저장.

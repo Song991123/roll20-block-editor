@@ -4901,3 +4901,23 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Production build initially hit `EPERM` on a `.next` diagnostic file owned by the prior Codex sandbox identity. No locking process was reported; the approved user-context build succeeded. This was an environment ownership issue, not a TypeScript/build failure.
 - Contract verification passed: full `ci:verify`, lint, `test:runtime-asset-policy`, `test:roll20-sandbox-sanitize`, `test:roll20-render-modes`, `test:export-smoke`, and the production build. Commit/push and GitHub CI remain for the end of this coherent batch.
 - Next P0: obtain asset-complete same-Chrome local evidence and compare modern/legacy geometry independently. Do not convert network/relink failure into renderer CSS.
+
+## 2026-07-17 - Generation-specific Roll20 validation destinations
+
+- User-confirmed operating constraint: Custom Sheet Sandbox does not recognize or reproduce the legacy Roll20 runtime.
+- Updated agent rules, actual-screen operations, the Sandbox contract, and the active TODO so modern actual checks target Custom Sheet Sandbox while legacy checks target a dedicated legacy-enabled test room.
+- A legacy-intended package shown in Sandbox is now classified as `RUNTIME_MODE_MISMATCH`; it cannot count as legacy PASS, legacy FAIL, or visual-parity evidence.
+- This is a validation-contract correction only. It does not itself change preview rendering or prove modern/legacy parity.
+
+## 2026-07-17 - Same-Chrome asset-complete comparison and render-toggle optimization
+
+- Ran same-browser local/actual diagnostics without retaining source identity, media, screenshots, dimensions, asset counts, or per-sheet measurements. The run confirmed that the mode-specific runtime asset policy is pointed in the right direction, but strict visual parity remains unproven.
+- The diagnostic exposed a large render-toggle stall. `PreviewMain` prepared the same source independently for iframe document, live patch, and Shadow fallback.
+- Added `buildSheetRenderBundle` so iframe outputs and optional Shadow parts share one prepared contract. Shadow serialization is produced only when Shadow mode is selected.
+- Removed both quadratic paths in legacy `stripKeyframes`: bounded keyword matching no longer processes the remaining stylesheet at every character, and warning line numbers no longer rescan from the beginning for every keyframe.
+- Added the legacy sanitizer suite to `ci:verify`. Its copyright-safe synthetic scaling case doubles keyframe-heavy input, checks warning-line correctness, rejects quadratic growth, and enforces a broad absolute ceiling.
+- Added an HTML-stable live-patch fast path. CSS-only edits now preserve the mounted sheet DOM and skip full attribute collection, worker reinstall, repeating-control rebuild, and block recount; unchanged style nodes are not rewritten. Structural HTML changes still use the conservative full-root replacement path.
+- Synthetic contract tests verify that CSS-only changes retain the HTML key while structural changes invalidate it. Mounted large-sheet interaction latency remains `VERIFY`; do not describe the fast path as a complete lag fix until an ephemeral browser run proves frame and commit budgets.
+- Remaining performance blocker: structural edits still parse and replace the full root. Keyed/partial structural apply plus a stricter interaction budget remain P0.
+- Third-party external validation sources are now ephemeral-only. Their identity, URL, source, media, screenshots, fixtures, and per-sheet reports must not be retained; only generic fixes and synthetic tests may persist.
+- Verification for this batch: focused render/sanitizer/bridge tests, full `ci:verify`, lint, and the production build passed. Browser-mounted performance proof was intentionally not claimed in this batch.
