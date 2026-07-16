@@ -47,6 +47,7 @@ These are local-only by default. They are intentionally ignored so real sheets, 
 - Do not ship copyrighted/public Roll20 sheet source, generated sheet fixtures, screenshots, or preview images as in-app samples, seeded examples, docs assets, or public repo material.
 - The app may support users importing their own HTML, CSS, translation/i18n, assets, and later worker JS, and agents may use local ignored fixtures/reports for verification.
 - Any fixture copied from a real sheet must stay local-only and ignored. Public demos must be synthetic, user-authored, or explicitly cleared for publication.
+- External third-party sheets used only to discover or validate generic behavior are stricter than retained local fixtures: keep them in an ephemeral temp location, do not write their identity, URL, source, media, screenshots, or derived per-sheet report into repository docs/logs or permanent local evidence, and remove the temporary copy after the generic finding is converted into a synthetic test.
 - Do not optimize for a single sheet family. Renderer, importer, editor layers, and export paths must be universal enough for custom sheets and official-style sheets.
 - Legacy Roll20 support is a product requirement alongside modern Roll20 support. Treat them as separate render contracts, switch preview/edit/HTML/CSS/manifest/verification destination together, and never use evidence from one mode to pass the other. Never describe auto-prefixing as complete legacy sanitization unless actual legacy CSS behavior has been verified.
 
@@ -129,7 +130,8 @@ For preview/parity work, also run the relevant fixture/report script and record 
 - Verify the GitHub Pages deployment after push when the change affects deployed behavior.
 - Split Roll20 actual-screen verification into two tracks:
   - Existing solo rooms are read-only observation targets.
-  - Generated sheet upload/apply checks must use Custom Sheet Sandbox first, or a newly-created test room if sandbox is insufficient.
+  - Modern generated-sheet upload/apply checks use Custom Sheet Sandbox first.
+  - Custom Sheet Sandbox does not expose the legacy runtime. Legacy generated-sheet checks must use a dedicated test room with legacy sanitization enabled; a Sandbox result must never pass or fail the legacy gate.
 - Do not modify existing real rooms, characters, settings, chat, handouts, macros, or sheet code unless the user explicitly authorizes that exact edit.
 
 ## 4. Visual Comparison Pipeline

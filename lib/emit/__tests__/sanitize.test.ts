@@ -213,6 +213,43 @@ function testIntegration(): void {
   assert(codes.has('var-decl-stripped'), 'var-decl-stripped warning');
 }
 
+function testLargeStylesheetLinearBudget(): void {
+  const makeCss = (count: number) => Array.from(
+    { length: count },
+    (_, index) => `.stable-${index} { color: #222; }\n@keyframes pulse-${index} { from { opacity: 0; } to { opacity: 1; } }\n`,
+  ).join('');
+  const measureMedian = (css: string): { elapsedMs: number; result: ReturnType<typeof sanitizeForRoll20Legacy> } => {
+    sanitizeForRoll20Legacy(css);
+    const samples: Array<{ elapsedMs: number; result: ReturnType<typeof sanitizeForRoll20Legacy> }> = [];
+    for (let round = 0; round < 3; round += 1) {
+      const startedAt = performance.now();
+      const result = sanitizeForRoll20Legacy(css);
+      samples.push({ elapsedMs: performance.now() - startedAt, result });
+    }
+    samples.sort((a, b) => a.elapsedMs - b.elapsedMs);
+    return samples[1];
+  };
+
+  const small = measureMedian(makeCss(2000));
+  const large = measureMedian(makeCss(4000));
+  const growth = large.elapsedMs / Math.max(small.elapsedMs, 1);
+
+  expectNotContains(large.result.sanitized, '@keyframes', 'large fixture keyframes removed');
+  expectContains(large.result.sanitized, '.stable-3999', 'large fixture stable rules preserved');
+  assert(
+    large.result.warnings.at(-1)?.line === 7999,
+    'warning line stays correct without rescanning',
+  );
+  assert(
+    large.elapsedMs < 1500,
+    `large stylesheet sanitize should stay in budget (elapsed ${large.elapsedMs.toFixed(1)}ms)`,
+  );
+  assert(
+    growth < 3.5,
+    `doubling keyframe-heavy input should not show quadratic growth (${growth.toFixed(2)}x)`,
+  );
+}
+
 const tests: Array<[string, () => void]> = [
   ['transform: scale -> zoom', testTransformScaleConverted],
   ['transform: complex -> stripped', testTransformComplexStripped],
@@ -229,6 +266,7 @@ const tests: Array<[string, () => void]> = [
   ['no-op simple', testNoOpSimple],
   ['empty input', testEmptyInput],
   ['integration', testIntegration],
+  ['large stylesheet linear budget', testLargeStylesheetLinearBudget],
 ];
 
 let passed = 0;

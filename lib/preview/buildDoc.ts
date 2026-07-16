@@ -28,6 +28,7 @@ import {
 import { runtimeCss } from './runtime';
 import {
   prepareSheetRenderContract,
+  type PreparedSheetRenderContract,
   type Roll20CompatibilityMode,
 } from './renderContract';
 
@@ -68,6 +69,7 @@ export interface BuildDocOptions {
 
 export interface SheetLivePatch {
   html: string;
+  htmlKey: string;
   styles: Record<string, string>;
   i18n: string;
   darkMode: boolean;
@@ -75,6 +77,17 @@ export interface SheetLivePatch {
   roll20SandboxSanitize: boolean;
   roll20RendererModel: NonNullable<BuildDocOptions['roll20RendererModel']>;
   documentLanguage: string;
+}
+
+export interface SheetRenderBundle {
+  doc: string;
+  livePatch: SheetLivePatch;
+  parts?: SheetRenderParts;
+}
+
+export interface SheetRenderParts {
+  html: string;
+  css: string;
 }
 
 /** 미리보기 iframe 안에서 부모창에 클릭 이벤트 전달하는 ES2015 inline 스크립트. */
@@ -100,6 +113,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var editMoveFrame = 0;
   var pendingEditMove = null;
   var activeEditPointer = null;
+  var lastAppliedHtmlKey = document.body
+    ? document.body.getAttribute('data-r20-html-key') || ''
+    : '';
+  var initialSheetRoot = document.getElementById('charsheet-root');
+  var lastAppliedBlockCount = initialSheetRoot
+    ? initialSheetRoot.querySelectorAll('[data-r20-block-id]').length
+    : 0;
   function blockNodeOf(node) {
     while (node && node !== document.body) {
       if (node.dataset && node.dataset.r20BlockId) return node;
@@ -229,11 +249,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       style.id = id;
       document.head.appendChild(style);
     }
-    style.textContent = css;
+    if (style.textContent !== css) style.textContent = css;
   }
   function applyLivePatch(data) {
     if (!data || !Number.isInteger(data.revision) || data.revision < 1) return;
     if (typeof data.html !== 'string' || data.html.length > 15000000) return;
+    if (typeof data.htmlKey !== 'string' || !/^[a-z0-9-]{1,128}$/.test(data.htmlKey)) return;
     if (!data.styles || typeof data.styles !== 'object') return;
     var allowedStyles = [
       'roll20-base-dark',
@@ -251,9 +272,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (totalCss > 15000000 || typeof data.i18n !== 'string' || data.i18n.length > 5000000) return;
     var root = document.getElementById('charsheet-root');
     if (!root) return;
-    var attrs = collectAttrs();
-    var previousWorkerSource = workerSourceText(root);
-    root.innerHTML = data.html;
+    var htmlChanged = data.htmlKey !== lastAppliedHtmlKey;
+    var attrs = htmlChanged ? collectAttrs() : null;
+    var previousWorkerSource = htmlChanged ? workerSourceText(root) : '';
+    if (htmlChanged) {
+      root.innerHTML = data.html;
+      lastAppliedHtmlKey = data.htmlKey;
+      document.body.setAttribute('data-r20-html-key', data.htmlKey);
+    }
     for (var j = 0; j < allowedStyles.length; j++) {
       ensureStyle(allowedStyles[j], data.styles[allowedStyles[j]]);
     }
@@ -274,17 +300,24 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     root.classList.toggle('sheet-darkmode', data.darkMode === true);
     if (tabContent) tabContent.classList.toggle('sheet-darkmode', data.darkMode === true);
     var i18nNode = document.getElementById('__r20-i18n');
-    if (i18nNode) i18nNode.textContent = JSON.stringify(data.i18n);
-    translations = loadTranslations();
-    applyTranslations();
-    emulateRoll20RepeatingSections();
-    emulateRoll20ButtonClasses();
-    applyRoll20Autocalc();
-    Object.keys(attrs).forEach(function (key) { writeSheetAttr(key, attrs[key]); });
-    var nextWorkerSource = workerSourceText(root);
-    if (nextWorkerSource !== previousWorkerSource) {
-      sheetWorkerHandlers = {};
-      installSheetWorkers();
+    var nextI18n = JSON.stringify(data.i18n);
+    var i18nChanged = Boolean(i18nNode && i18nNode.textContent !== nextI18n);
+    if (i18nNode && i18nChanged) i18nNode.textContent = nextI18n;
+    if (htmlChanged || i18nChanged) {
+      translations = loadTranslations();
+      applyTranslations();
+    }
+    if (htmlChanged) {
+      emulateRoll20RepeatingSections();
+      emulateRoll20ButtonClasses();
+      applyRoll20Autocalc();
+      Object.keys(attrs || {}).forEach(function (key) { writeSheetAttr(key, attrs[key]); });
+      var nextWorkerSource = workerSourceText(root);
+      if (nextWorkerSource !== previousWorkerSource) {
+        sheetWorkerHandlers = {};
+        installSheetWorkers();
+      }
+      lastAppliedBlockCount = root.querySelectorAll('[data-r20-block-id]').length;
     }
     scheduleResize();
     try {
@@ -293,7 +326,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         protocol: 1,
         bridgeId: editBridgeId,
         revision: data.revision,
-        blockCount: root.querySelectorAll('[data-r20-block-id]').length
+        blockCount: lastAppliedBlockCount
       }, '*');
     } catch (e) {}
   }
@@ -1000,6 +1033,17 @@ function jsonScriptText(value: string | undefined): string {
     .replace(/&/g, '\\u0026');
 }
 
+function sheetSourceKey(value: string): string {
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    first = Math.imul(first ^ code, 0x01000193) >>> 0;
+    second = Math.imul(second ^ (code + index), 0x85ebca6b) >>> 0;
+  }
+  return `v1-${value.length.toString(36)}-${first.toString(36)}-${second.toString(36)}`;
+}
+
 function normalizeDocumentLanguage(value: string | undefined): string {
   const language = value?.trim() || 'en';
   return /^[a-z]{2,8}(?:-[a-z0-9]{1,8})*$/i.test(language) ? language : 'en';
@@ -1079,13 +1123,16 @@ ${scope} [data-r20-hovered="1"] {
 /**
  * iframe srcdoc 합성. 결과는 그대로 `<iframe srcDoc>` 에 박는다.
  */
-export function buildSheetDoc(opts: BuildDocOptions): string {
-  const contract = prepareSheetRenderContract(opts);
+function buildSheetDocFromContract(
+  opts: BuildDocOptions,
+  contract: PreparedSheetRenderContract,
+): string {
   const { legacyCssSanitize, roll20SandboxSanitize, previewCss } = contract;
   const roll20RendererModel = opts.roll20RendererModel ?? 'default';
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
   const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
+  const htmlKey = sheetSourceKey(bodyInner);
   const documentLanguage = normalizeDocumentLanguage(opts.documentLanguage);
 
   return `<!doctype html>
@@ -1106,7 +1153,7 @@ ${legacyCssSanitize ? `<style id="roll20-legacy-input-state">${ROLL20_LEGACY_INP
 <style id="r20-renderer-model">${roll20RendererModelCss(roll20RendererModel)}</style>
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
-<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}" data-roll20-sandbox-sanitize="${roll20SandboxSanitize ? '1' : '0'}" data-roll20-renderer-model="${roll20RendererModel}">
+<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}" data-roll20-sandbox-sanitize="${roll20SandboxSanitize ? '1' : '0'}" data-roll20-renderer-model="${roll20RendererModel}" data-r20-html-key="${htmlKey}">
 <div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
@@ -1124,13 +1171,17 @@ ${bodyInner}
 </html>`;
 }
 
-export function buildSheetLivePatch(opts: BuildDocOptions): SheetLivePatch {
-  const contract = prepareSheetRenderContract(opts);
+function buildSheetLivePatchFromContract(
+  opts: BuildDocOptions,
+  contract: PreparedSheetRenderContract,
+): SheetLivePatch {
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
   const roll20RendererModel = opts.roll20RendererModel ?? 'default';
+  const html = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
   return {
-    html: contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER),
+    html,
+    htmlKey: sheetSourceKey(html),
     styles: {
       'roll20-base-dark': darkMode ? roll20DarkmodeIframeCss : '',
       'roll20-legacy-input-state': contract.legacyCssSanitize ? ROLL20_LEGACY_INPUT_STATE_CSS : '',
@@ -1148,6 +1199,31 @@ export function buildSheetLivePatch(opts: BuildDocOptions): SheetLivePatch {
 }
 
 /**
+ * Build the persistent iframe document and its live-patch payload from one
+ * prepared source contract. Large imported sheets otherwise repeat the same
+ * prefix/sanitize/translation work for both outputs on every render toggle.
+ */
+export function buildSheetRenderBundle(
+  opts: BuildDocOptions,
+  config: { includeParts?: boolean } = {},
+): SheetRenderBundle {
+  const contract = prepareSheetRenderContract(opts);
+  return {
+    doc: buildSheetDocFromContract(opts, contract),
+    livePatch: buildSheetLivePatchFromContract(opts, contract),
+    parts: config.includeParts ? buildSheetPartsFromContract(opts, contract) : undefined,
+  };
+}
+
+export function buildSheetDoc(opts: BuildDocOptions): string {
+  return buildSheetDocFromContract(opts, prepareSheetRenderContract(opts));
+}
+
+export function buildSheetLivePatch(opts: BuildDocOptions): SheetLivePatch {
+  return buildSheetLivePatchFromContract(opts, prepareSheetRenderContract(opts));
+}
+
+/**
  * Shadow DOM 모드용 — emit 결과를 (html, css) 두 파츠로 반환.
  * 동일한 sanitize / autoPrefix / runtimeCss / layerFilterCss 합성을 거치되,
  * doctype / body wrapper / postMessage bridge script 는 빼고 순수 인젝션 가능
@@ -1155,8 +1231,10 @@ export function buildSheetLivePatch(opts: BuildDocOptions): SheetLivePatch {
  *
  * iframe 모드의 buildSheetDoc 과 시각 동일성 보장 — 같은 CSS 토큰 사용.
  */
-export function buildSheetParts(opts: BuildDocOptions): { html: string; css: string } {
-  const contract = prepareSheetRenderContract(opts);
+function buildSheetPartsFromContract(
+  opts: BuildDocOptions,
+  contract: PreparedSheetRenderContract,
+): SheetRenderParts {
   const { legacyCssSanitize, previewCss } = contract;
   const roll20RendererModel = opts.roll20RendererModel ?? 'default';
   const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
@@ -1194,4 +1272,8 @@ ${bodyInner}
 </div>`;
 
   return { html, css };
+}
+
+export function buildSheetParts(opts: BuildDocOptions): SheetRenderParts {
+  return buildSheetPartsFromContract(opts, prepareSheetRenderContract(opts));
 }

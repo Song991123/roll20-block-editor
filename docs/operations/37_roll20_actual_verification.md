@@ -12,6 +12,14 @@ This document defines how agents verify that this editor's preview/edit output m
 
 ## Modern And Legacy Are Separate Required Destinations
 
+- Custom Sheet Sandbox is a modern-runtime validation surface. It does not
+  recognize or reproduce the legacy runtime, even when the uploaded package is
+  intended for legacy Roll20.
+- Verify modern output in Custom Sheet Sandbox. Verify legacy sanitization,
+  class prefixing, runtime asset handling, and geometry only in a dedicated
+  legacy-enabled test room.
+- Treat a legacy package observed in Sandbox as a destination mismatch, not as
+  legacy visual evidence and not as a product failure.
 - A modern Sandbox result never passes a legacy test-room gate, and a legacy
   result never passes the modern gate.
 - Measure the same prepared payload independently in both modes. Record root
