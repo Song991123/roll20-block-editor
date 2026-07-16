@@ -13,12 +13,16 @@ Every agent must do this before changing code or claiming status. `AGENTS.md` is
 3. Read `docs/qa/31_active_todo.md`.
 4. Read `docs/qa/34_requirements_gap_matrix.md`.
 5. Read `docs/PROJECT_STRUCTURE.md`.
-6. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-7. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
-8. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-9. Check `git status --short --branch`.
-10. Check for unnecessary local dev servers before starting another one.
-11. Update `docs/qa/31_active_todo.md` after each coherent work batch.
+6. Read `docs/operations/35_agent_progress_log.md`.
+7. Read `docs/operations/36_public_portfolio_and_copyright_rules.md`.
+8. Read `docs/operations/37_roll20_actual_verification.md` for Roll20 actual-screen checks.
+9. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/31_asset_preservation_policy.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
+11. For actual Roll20 sandbox sanitize/prefix behavior, read `docs/spec/30_roll20_actual_sandbox_contract.md` before changing preview/export sanitize, prefix, URL proxy, or allow-list behavior.
+11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+12. Check `git status --short --branch`.
+13. Check for unnecessary local dev/smoke servers before starting another one. Prefer `corepack pnpm run check:server-hygiene`; use `-- --kill-project` only for matching project `node.exe` listeners. Preserve Roll20 CDP `9222` when actual Roll20 verification is active.
+14. Update `docs/qa/31_active_todo.md` after each coherent work batch.
 
 ## 0.1 Source Safety
 
@@ -35,6 +39,16 @@ Allowed workspace-owned places for copied evidence:
 - `test-fixtures/`
 - `reports/`
 - `.tmp/`
+
+These are local-only by default. They are intentionally ignored so real sheets, generated fixture HTML, private screenshots, source-derived report JSON, and third-party reference images do not ship with the public app.
+
+## 0.1.1 Product Copyright and Import Boundary
+
+- Do not ship copyrighted/public Roll20 sheet source, generated sheet fixtures, screenshots, or preview images as in-app samples, seeded examples, docs assets, or public repo material.
+- The app may support users importing their own HTML, CSS, translation/i18n, assets, and later worker JS, and agents may use local ignored fixtures/reports for verification.
+- Any fixture copied from a real sheet must stay local-only and ignored. Public demos must be synthetic, user-authored, or explicitly cleared for publication.
+- Do not optimize for a single sheet family. Renderer, importer, editor layers, and export paths must be universal enough for custom sheets and official-style sheets.
+- Legacy Roll20 support is a product requirement alongside modern Roll20 support. Treat them as separate render contracts, switch preview/edit/HTML/CSS/manifest/verification destination together, and never use evidence from one mode to pass the other. Never describe auto-prefixing as complete legacy sanitization unless actual legacy CSS behavior has been verified.
 
 ## 0.2 Forbidden Claims
 
@@ -82,6 +96,10 @@ For preview/parity work, also run the relevant fixture/report script and record 
 - Run basic verification such as lint, build, browser load, and fixture scripts.
 - Keep unverified items in TODO. Do not silently promote them to done.
 - Do not put agent-only instructions into README files. README files are reserved for human/project presentation and documentation indexes.
+- Keep agent-facing progress and handoff notes in `docs/operations/35_agent_progress_log.md`, not in `README.md`.
+- Keep README as a Korean portfolio landing page: visual first, compact cards, details linked out.
+- Do not put verification tables, generated reports, fixture names, or private sheet details into README.
+- Before committing, confirm the git root is `web-push-main` and do not stage parent-folder material.
 
 ## 2. Sheet Preview Verification
 
@@ -95,6 +113,9 @@ For preview/parity work, also run the relevant fixture/report script and record 
 - Distinguish asset images from reference preview images.
 - Treat decorative/background images as real sheet resources.
 - Treat preview/completion images as visual comparison references.
+- Detect external image/font URLs and Roll20 proxy URLs before making visual parity claims.
+- If diagnostics show the original source asset resolves to a placeholder, keep renderer CSS changes on hold until the user relinks/rehosts the asset or the mismatch is explicitly accepted as placeholder behavior.
+- Do not store, publish, or commit third-party sheet assets while implementing asset replacement or verification helpers.
 - Rendering without errors is not enough. Visual similarity must be measured and explained.
 
 ## 3. Roll20 Environment Reproduction
@@ -106,6 +127,10 @@ For preview/parity work, also run the relevant fixture/report script and record 
 - Make iframe preview, Shadow preview, and EditCanvas share the same Roll20 baseline/runtime/layer CSS conditions.
 - Inspect the actual Roll20 editor when authenticated access is available.
 - Verify the GitHub Pages deployment after push when the change affects deployed behavior.
+- Split Roll20 actual-screen verification into two tracks:
+  - Existing solo rooms are read-only observation targets.
+  - Generated sheet upload/apply checks must use Custom Sheet Sandbox first, or a newly-created test room if sandbox is insufficient.
+- Do not modify existing real rooms, characters, settings, chat, handouts, macros, or sheet code unless the user explicitly authorizes that exact edit.
 
 ## 4. Visual Comparison Pipeline
 

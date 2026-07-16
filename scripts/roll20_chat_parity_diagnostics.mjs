@@ -1,0 +1,781 @@
+#!/usr/bin/env node
+/**
+ * Compare local ChatPane rolltemplate screenshots against actual Roll20 chat.
+ *
+ * Scope: diagnostic only. This is intentionally separate from
+ * roll20_actual_screenshot_diff.mjs because chat screenshots must be compared
+ * against local chat screenshots, not against the sheet preview root.
+ */
+
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { chromium } from 'playwright-core';
+
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== '--');
+const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && rawArgs[index - 1] !== '--out-dir');
+const runDirArg = args[0] ?? '';
+const runDir = path.resolve(runDirArg);
+const localChatDir = path.resolve(args[1] ?? 'reports/rolltemplate-chat-smoke/screenshots');
+const onlyFixture = args[2] ?? '';
+
+if (!runDirArg) {
+  console.error('Usage: node scripts/roll20_chat_parity_diagnostics.mjs reports/roll20-actual-compare/<label> [local-chat-screenshot-dir] [fixture-id] [--out-dir <writable-report-dir>]');
+  process.exit(2);
+}
+
+const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-parity-diagnostics')));
+
+function readOption(name, fallback = '') {
+  const index = rawArgs.indexOf(name);
+  if (index === -1) return fallback;
+  const value = rawArgs[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+async function main() {
+  const baselineDir = path.join(runDir, 'local-baseline');
+  if (!existsSync(baselineDir)) throw new Error(`missing local baseline folder: ${baselineDir}`);
+  if (!existsSync(localChatDir)) throw new Error(`missing local chat screenshot folder: ${localChatDir}`);
+
+  const fixtureIds = (await readFixtureIds(baselineDir)).filter((id) => !onlyFixture || id === onlyFixture);
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage();
+  const fixtures = [];
+  try {
+    for (const fixtureId of fixtureIds) {
+      fixtures.push(await compareFixture(page, fixtureId));
+    }
+  } finally {
+    await browser.close();
+  }
+
+  const compared = fixtures.filter((fixture) => fixture.status === 'DIFFED');
+  const normalizedCompared = compared.filter((fixture) => fixture.compareMode === 'rolltemplate-crop');
+  const highMismatch = compared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
+  const normalizedHighMismatch = normalizedCompared.filter((fixture) => fixture.mismatchRatio !== null && fixture.mismatchRatio > 0.1);
+  const alignedHighMismatch = normalizedCompared.filter((fixture) => fixture.bestAlignedMismatchRatio !== null && fixture.bestAlignedMismatchRatio > 0.1);
+  const actualCropGeometrySuspect = normalizedCompared.filter((fixture) => fixture.actualCropGeometry?.suspect);
+  const actualTemplatePixelSuspect = normalizedCompared.filter((fixture) => fixture.actualTemplatePixels?.suspect);
+  const authoritativeNormalizedHighMismatch = alignedHighMismatch.filter(
+    (fixture) => !fixture.actualCropGeometry?.suspect && !fixture.actualTemplatePixels?.suspect,
+  );
+  const actualChatCssInactive = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES');
+  const actualChatCssScopedMismatch = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH');
+  const actualChatCssUnknown = fixtures.filter((fixture) => fixture.actualChatCss?.classification === 'UNKNOWN');
+  const actualCaptureScaleSuspect = fixtures.filter((fixture) => fixture.status === 'DIFFED' && isActualCaptureScaleSuspect(fixture));
+  const report = {
+    generatedAt: new Date().toISOString(),
+    runDir,
+    localChatDir,
+    scope: 'Local ChatPane screenshot vs actual Roll20 chat screenshot diagnostic; not visual parity by itself',
+    summary: {
+      fixtures: fixtures.length,
+      compared: compared.length,
+      normalizedCompared: normalizedCompared.length,
+      missing: fixtures.filter((fixture) => fixture.status === 'MISSING').length,
+      needsNormalizedCapture: fixtures.filter((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE').length,
+      highMismatch: highMismatch.length,
+      normalizedHighMismatch: normalizedHighMismatch.length,
+      alignedHighMismatch: alignedHighMismatch.length,
+      authoritativeNormalizedHighMismatch: authoritativeNormalizedHighMismatch.length,
+      actualCropGeometrySuspect: actualCropGeometrySuspect.length,
+      actualTemplatePixelSuspect: actualTemplatePixelSuspect.length,
+      actualChatCssInactive: actualChatCssInactive.length,
+      actualChatCssScopedMismatch: actualChatCssScopedMismatch.length,
+      actualChatCssUnknown: actualChatCssUnknown.length,
+      actualCaptureScaleSuspect: actualCaptureScaleSuspect.length,
+      maxMismatchRatio: compared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
+      maxNormalizedMismatchRatio: normalizedCompared.reduce((max, fixture) => Math.max(max, fixture.mismatchRatio ?? 0), 0),
+      maxAlignedMismatchRatio: normalizedCompared.reduce((max, fixture) => Math.max(max, fixture.bestAlignedMismatchRatio ?? 0), 0),
+    },
+    fixtures,
+  };
+
+  await mkdir(outDir, { recursive: true });
+  await writeFile(path.join(outDir, 'chat-parity-diagnostics-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  await writeFile(path.join(outDir, 'chat-parity-diagnostics-results.md'), renderMarkdown(report), 'utf8');
+
+  const needsNormalized = fixtures.some((fixture) => fixture.status === 'NEEDS_NORMALIZED_CAPTURE');
+  const status = actualCropGeometrySuspect.length
+    ? 'NEEDS_AUTHORITATIVE_CAPTURE'
+    : normalizedHighMismatch.length
+    ? 'HIGH_MISMATCH'
+    : needsNormalized
+      ? 'NEEDS_NORMALIZED_CAPTURE'
+      : compared.length === fixtures.length
+        ? 'COMPARED'
+        : 'PARTIAL';
+  console.log(`ROLL20 CHAT PARITY DIAGNOSTIC ${status}`);
+  console.log(`fixtures=${fixtures.length}`);
+  console.log(`compared=${compared.length}`);
+  console.log(`normalizedCompared=${normalizedCompared.length}`);
+  console.log(`highMismatch=${highMismatch.length}`);
+  console.log(`normalizedHighMismatch=${normalizedHighMismatch.length}`);
+  console.log(`alignedHighMismatch=${alignedHighMismatch.length}`);
+  console.log(`authoritativeNormalizedHighMismatch=${authoritativeNormalizedHighMismatch.length}`);
+  console.log(`actualCropGeometrySuspect=${actualCropGeometrySuspect.length}`);
+  console.log(`actualTemplatePixelSuspect=${actualTemplatePixelSuspect.length}`);
+  for (const fixture of fixtures) {
+    if (fixture.status === 'DIFFED') {
+      console.log(`DIFFED ${fixture.fixtureId} mode=${fixture.compareMode} mismatch=${pct(fixture.mismatchRatio)} local=${fixture.localSize.join('x')} actual=${fixture.actualSize.join('x')}`);
+    } else {
+      console.log(`${fixture.status} ${fixture.fixtureId} ${fixture.note}`);
+    }
+  }
+  console.log(`out=${path.relative(process.cwd(), outDir)}`);
+}
+
+function isActualCaptureScaleSuspect(fixture) {
+  if (fixture.actualImageFormat && fixture.actualImageFormat !== 'png') return true;
+  const [scaleX, scaleY] = fixture.actualScreenshotScale ?? [];
+  return Math.abs(Number(scaleX ?? 1) - 1) > 0.01 || Math.abs(Number(scaleY ?? 1) - 1) > 0.01;
+}
+
+async function readFixtureIds(baselineDir) {
+  const { readdir } = await import('node:fs/promises');
+  const entries = await readdir(baselineDir, { withFileTypes: true });
+  return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+}
+
+async function compareFixture(page, fixtureId) {
+  const localTemplate = path.join(localChatDir, `${fixtureId}-chat-template.png`);
+  const local = existsSync(localTemplate)
+    ? localTemplate
+    : path.join(localChatDir, `${fixtureId}-chat.png`);
+  const actual = path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat.png');
+  const sidecar = path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
+  const sidecarJson = await readJsonIfExists(sidecar);
+  if (!existsSync(local) || !existsSync(actual)) {
+    return {
+      fixtureId,
+      status: 'MISSING',
+      local: rel(local),
+      actual: rel(actual),
+      sidecar: rel(sidecar),
+      actualChatCss: summarizeActualChatCss(sidecarJson),
+      note: !existsSync(local) ? 'missing local ChatPane screenshot' : 'missing actual Roll20 chat screenshot',
+    };
+  }
+
+  const foreground = validateChatForeground(sidecarJson);
+  if (!foreground.ok) {
+    return {
+      fixtureId,
+      status: 'NEEDS_NORMALIZED_CAPTURE',
+      local: rel(local),
+      actual: rel(actual),
+      sidecar: rel(sidecar),
+      sidecarRolltemplateCount: Number(sidecarJson?.rolltemplateCount ?? sidecarJson?.rolltemplates?.length ?? 0),
+      actualChatCss: summarizeActualChatCss(sidecarJson),
+      foreground,
+      note: foreground.note,
+    };
+  }
+
+  const actualCrop = buildActualTemplateCrop(sidecarJson);
+  if (!actualCrop && existsSync(localTemplate)) {
+    return {
+      fixtureId,
+      status: 'NEEDS_NORMALIZED_CAPTURE',
+      local: rel(local),
+      actual: rel(actual),
+      sidecar: rel(sidecar),
+      sidecarRolltemplateCount: Number(sidecarJson?.rolltemplateCount ?? sidecarJson?.rolltemplates?.length ?? 0),
+      actualChatCss: summarizeActualChatCss(sidecarJson),
+      note: 'actual Roll20 chat sidecar lacks rolltemplate rect/clip metadata for element-level comparison',
+    };
+  }
+  const diff = await compareImages(page, { local, actual, actualCrop });
+  const actualCropGeometry = classifyActualCropGeometry(sidecarJson, actualCrop);
+  const localImageFormat = await sniffImageFormat(local);
+  const actualImageFormat = await sniffImageFormat(actual);
+  return {
+    fixtureId,
+    status: 'DIFFED',
+    local: rel(local),
+    actual: rel(actual),
+    sidecar: rel(sidecar),
+    sidecarRolltemplateCount: Number(sidecarJson?.rolltemplateCount ?? sidecarJson?.rolltemplates?.length ?? 0),
+    actualChatCss: summarizeActualChatCss(sidecarJson),
+    compareMode: actualCrop ? 'rolltemplate-crop' : 'full-chat-fallback',
+    actualCrop,
+    actualCropGeometry,
+    localSize: diff.localSize,
+    localImageFormat,
+    actualSize: diff.actualSize,
+    actualImageFormat,
+    actualSource: diff.actualSource,
+    actualTemplatePixels: classifyActualTemplatePixels(sidecarJson, diff.actualTemplatePixelStats),
+    actualScreenshotScale: actualCrop?.clip
+      ? [
+          Number((diff.actualSize[0] / actualCrop.clip.width).toFixed(4)),
+          Number((diff.actualSize[1] / actualCrop.clip.height).toFixed(4)),
+        ]
+      : null,
+    comparedSize: diff.comparedSize,
+    widthDeltaPx: actualCrop ? Number((actualCrop.rect.width - diff.localSize[0]).toFixed(3)) : null,
+    heightDeltaPx: actualCrop ? Number((actualCrop.rect.height - diff.localSize[1]).toFixed(3)) : null,
+    mismatchRatio: diff.mismatchRatio,
+    mismatchPct: pct(diff.mismatchRatio),
+    bestAlignedMismatchRatio: diff.bestAlignedMismatchRatio,
+    bestAlignedMismatchPct: pct(diff.bestAlignedMismatchRatio),
+    bestAlignedOffset: diff.bestAlignedOffset,
+    bestAlignedComparedSize: diff.bestAlignedComparedSize,
+    diffBreakdown: diff.diffBreakdown,
+    bestAlignedDiffBreakdown: diff.bestAlignedDiffBreakdown,
+    rmsRgb: diff.rmsRgb,
+    bounds: diff.bounds,
+    note: 'Diagnostic local ChatPane vs actual Roll20 chat comparison. Requires human classification before a parity claim.',
+  };
+}
+
+function classifyActualTemplatePixels(sidecar, stats) {
+  if (!stats) return { suspect: false, reason: '', stats: null };
+  const text = String(sidecar?.latestTemplate?.text ?? '').trim();
+  const hasExpectedText = text.length > 0;
+  const darkRatio = Number(stats.darkRatio ?? 0);
+  const edgeRatio = Number(stats.edgeRatio ?? 0);
+  const nonWhiteRatio = Number(stats.nonWhiteRatio ?? 0);
+  const suspect = hasExpectedText && darkRatio < 0.002 && edgeRatio < 0.005;
+  return {
+    suspect,
+    reason: suspect
+      ? `actual crop has expected template text in DOM but almost no dark/edge pixels (dark=${pct(darkRatio)}, edge=${pct(edgeRatio)}, nonWhite=${pct(nonWhiteRatio)}); likely captured map/grid/background instead of the rolltemplate`
+      : 'actual crop has enough foreground pixels for a rolltemplate screenshot sanity check',
+    stats,
+  };
+}
+
+function classifyActualCropGeometry(sidecar, actualCrop) {
+  if (!actualCrop) return { suspect: false, reason: '' };
+  const captureMethod = String(sidecar?.captureMethod ?? '');
+  const notes = [
+    captureMethod,
+    String(sidecar?.evidenceNote ?? ''),
+    ...(Array.isArray(sidecar?.notes) ? sidecar.notes.map(String) : []),
+  ].join(' ');
+  const relocation = sidecar?.relocation;
+  if (relocation?.applied || /geometry\s+is\s+not\s+authoritative/i.test(notes) || /coordinate\s+calibration/i.test(notes)) {
+    return {
+      suspect: true,
+      reason: relocation?.applied
+        ? 'actual Roll20 chat evidence used temporary sidebar relocation; style crop is useful, but geometry is not authoritative'
+        : /coordinate\s+calibration/i.test(notes)
+          ? 'actual Roll20 chat evidence used manual coordinate calibration; recapture with an element-bound template screenshot before treating this as normalized'
+        : 'actual Roll20 chat sidecar explicitly marks geometry as non-authoritative',
+    };
+  }
+  const dprCorrection = sidecar?.captureDprCorrection;
+  const dprReason = String(dprCorrection?.reason ?? '');
+  const usedCssClipWithoutDprCorrection =
+    dprCorrection &&
+    dprCorrection.applied === false &&
+    /css\s+clip/i.test(dprReason) &&
+    /scale\s*=\s*1/i.test(dprReason);
+  if (usedCssClipWithoutDprCorrection) {
+    return {
+      suspect: true,
+      reason: 'actual Roll20 chat evidence used an uncorrected CSS clip with CDP scale=1; this can capture the Sandbox Tools/VTT area instead of the rolltemplate on high-DPR tabs',
+    };
+  }
+  return { suspect: false, reason: 'actual Roll20 chat crop is treated as geometry-authoritative by this diagnostic' };
+}
+
+function validateChatForeground(sidecar) {
+  const chatSelector = String(sidecar?.chatSelector ?? '');
+  const chatElementSelector = String(sidecar?.chatElementSelector ?? '');
+  const foreground = sidecar?.templateForegroundEvidence;
+  if (!chatElementSelector) {
+    return {
+      ok: false,
+      note: 'actual Roll20 chat sidecar was captured by an older probe without chatElementSelector, so the screenshot may show an overlapping character/dialog panel instead of foreground chat',
+    };
+  }
+  if (chatSelector === '#rightsidebar' && sidecar?.activeRightTab !== 'textchattab') {
+    return {
+      ok: false,
+      note: 'actual Roll20 chat sidecar selected broad #rightsidebar without an active text chat tab marker; recapture #textchat or .textchatcontainer foreground with the current probe',
+    };
+  }
+  if (!foreground) {
+    return {
+      ok: false,
+      note: 'actual Roll20 chat sidecar predates templateForegroundEvidence; recapture so elementFromPoint proves the selected rolltemplate is foreground',
+    };
+  }
+  if (foreground.status !== 'FOREGROUND_TEMPLATE_HIT') {
+    return {
+      ok: false,
+      note: `actual Roll20 chat sidecar foreground proof failed (${foreground.status || 'UNKNOWN'}): ${foreground.note || 'selected rolltemplate is not proven foreground'}`,
+    };
+  }
+  return { ok: true, note: `actual Roll20 chat sidecar selected ${chatSelector || chatElementSelector} and proved foreground rolltemplate hit` };
+}
+
+async function sniffImageFormat(file) {
+  const bytes = await readFile(file);
+  if (bytes.length >= 8 && bytes.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'jpeg';
+  if (bytes.length >= 12 && bytes.slice(0, 4).toString('ascii') === 'RIFF' && bytes.slice(8, 12).toString('ascii') === 'WEBP') return 'webp';
+  return 'unknown';
+}
+
+function summarizeActualChatCss(sidecar) {
+  const evidence = sidecar?.chatCssEvidence;
+  if (!evidence) {
+    return {
+      classification: 'UNKNOWN',
+      note: 'actual Roll20 chat sidecar has no chatCssEvidence field',
+    };
+  }
+  const scopedUnprefixedRules = evidence.scopedUnprefixedRules ?? evidence.scopedUnprefixedRolltemplateRules ?? [];
+  const unprefixedRules = evidence.unprefixedRules ?? evidence.unprefixedRolltemplateRules ?? [];
+  const hasScopedOrUnprefixedMismatch =
+    Boolean(evidence.scopedUnprefixedRulePresent) ||
+    Boolean(evidence.unprefixedRulePresent) ||
+    (Array.isArray(scopedUnprefixedRules) && scopedUnprefixedRules.length > 0) ||
+    (Array.isArray(unprefixedRules) && unprefixedRules.length > 0);
+  const classification =
+    evidence.classification === 'CSS_RULE_MISSING_IN_PAGE_STYLES' && hasScopedOrUnprefixedMismatch
+      ? 'ROLLTEMPLATE_CSS_SCOPED_OR_PREFIX_MISMATCH'
+      : evidence.classification ?? 'UNKNOWN';
+  return {
+    classification,
+    anyExpectedRulePresent: Boolean(evidence.anyExpectedRulePresent),
+    expectedRules: evidence.expectedRules ?? {},
+    scopedUnprefixedRules,
+    unprefixedRules,
+    styleTextLength: Number(evidence.styleTextLength ?? 0),
+    templateCount: Number(evidence.templateCount ?? 0),
+    capturedAt: evidence.capturedAt ?? null,
+    note: evidence.note ?? '',
+  };
+}
+
+function buildActualTemplateCrop(sidecar) {
+  const dprCorrection = sidecar?.captureDprCorrection?.applied
+    ? sidecar.captureDprCorrection
+    : null;
+  const correctedClip = dprCorrection?.cssClip?.width && dprCorrection?.cssClip?.height
+    ? normalizeRect(dprCorrection.cssClip)
+    : null;
+  const clip = correctedClip ?? sidecar?.clip ?? sidecar?.screenshotClipApplied ?? null;
+  const templates = Array.isArray(sidecar?.rolltemplates) ? sidecar.rolltemplates : [];
+  const latest = sidecar?.latestTemplate?.rect?.width && sidecar?.latestTemplate?.rect?.height
+    ? sidecar.latestTemplate
+    : null;
+  const template =
+    (latest && rectIntersectsClip(latest.rect, clip) ? latest : null) ??
+    [...templates].reverse().find((item) => item?.rect?.width && item?.rect?.height && rectIntersectsClip(item.rect, clip)) ??
+    [...templates].reverse().find((item) => item?.rect?.width && item?.rect?.height);
+  if (!template?.rect || !clip?.width || !clip?.height) return null;
+  return {
+    rect: template.rect,
+    clip,
+    clipSource: correctedClip ? 'captureDprCorrection.cssClip' : 'sidecar.clip',
+    captureDprCorrection: dprCorrection
+      ? {
+          applied: true,
+          dpr: Number(dprCorrection.dpr ?? dprCorrection.devicePixelRatio ?? 1),
+          physicalImage: dprCorrection.physicalImage ?? null,
+          cssImage: dprCorrection.cssImage ?? null,
+        }
+      : null,
+    templateIndex: template.index ?? null,
+    templateClassName: template.className ?? '',
+    templateSelection: latest === template ? 'latestTemplate' : 'rolltemplates-reverse',
+    intersectsClip: rectIntersectsClip(template.rect, clip),
+  };
+}
+
+function normalizeRect(rect) {
+  const x = Number(rect.x ?? rect.left ?? 0);
+  const y = Number(rect.y ?? rect.top ?? 0);
+  const width = Number(rect.width ?? 0);
+  const height = Number(rect.height ?? 0);
+  return {
+    ...rect,
+    x,
+    y,
+    left: Number(rect.left ?? x),
+    top: Number(rect.top ?? y),
+    width,
+    height,
+    right: Number(rect.right ?? x + width),
+    bottom: Number(rect.bottom ?? y + height),
+  };
+}
+
+function rectIntersectsClip(rect, clip) {
+  if (!rect?.width || !rect?.height || !clip?.width || !clip?.height) return false;
+  const rectLeft = Number(rect.left ?? rect.x ?? 0);
+  const rectTop = Number(rect.top ?? rect.y ?? 0);
+  const rectRight = Number(rect.right ?? rectLeft + rect.width);
+  const rectBottom = Number(rect.bottom ?? rectTop + rect.height);
+  const clipLeft = Number(clip.left ?? clip.x ?? 0);
+  const clipTop = Number(clip.top ?? clip.y ?? 0);
+  const clipRight = Number(clip.right ?? clipLeft + clip.width);
+  const clipBottom = Number(clip.bottom ?? clipTop + clip.height);
+  return rectRight > clipLeft && rectLeft < clipRight && rectBottom > clipTop && rectTop < clipBottom;
+}
+
+async function compareImages(page, { local, actual, actualCrop = null }) {
+  const [localUrl, actualUrl] = await Promise.all([imageDataUrl(local), imageDataUrl(actual)]);
+  return page.evaluate(
+    async ({ localUrl, actualUrl, actualCrop }) => {
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error(`failed to load ${src.slice(0, 80)}`));
+          image.src = src;
+        });
+      }
+      const [localImage, actualImage] = await Promise.all([loadImage(localUrl), loadImage(actualUrl)]);
+      const actualSource = (() => {
+        if (!actualCrop?.rect || !actualCrop?.clip) {
+          return { x: 0, y: 0, width: actualImage.naturalWidth, height: actualImage.naturalHeight };
+        }
+        const scaleX = actualImage.naturalWidth / actualCrop.clip.width;
+        const scaleY = actualImage.naturalHeight / actualCrop.clip.height;
+        return {
+          x: Math.max(0, Math.round((actualCrop.rect.x - actualCrop.clip.x) * scaleX)),
+          y: Math.max(0, Math.round((actualCrop.rect.y - actualCrop.clip.y) * scaleY)),
+          width: Math.max(1, Math.round(actualCrop.rect.width * scaleX)),
+          height: Math.max(1, Math.round(actualCrop.rect.height * scaleY)),
+        };
+      })();
+      const width = Math.min(localImage.naturalWidth, actualSource.width);
+      const height = Math.min(localImage.naturalHeight, actualSource.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      const draw = (image, source = null) => {
+        ctx.clearRect(0, 0, width, height);
+        const src = source ?? { x: 0, y: 0, width: image.naturalWidth, height: image.naturalHeight };
+        ctx.drawImage(image, src.x, src.y, src.width, src.height, 0, 0, width, height);
+        return ctx.getImageData(0, 0, width, height);
+      };
+      const localData = draw(localImage);
+      const actualData = draw(actualImage, actualSource);
+      const threshold = 60;
+      function createGeometryAccumulator() {
+        return { count: 0, minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity, sumX: 0, sumY: 0 };
+      }
+      function addGeometryPoint(geometry, x, y) {
+        geometry.count += 1;
+        geometry.minX = Math.min(geometry.minX, x);
+        geometry.minY = Math.min(geometry.minY, y);
+        geometry.maxX = Math.max(geometry.maxX, x);
+        geometry.maxY = Math.max(geometry.maxY, y);
+        geometry.sumX += x;
+        geometry.sumY += y;
+      }
+      function summarizeGeometry(geometry) {
+        if (!geometry.count) return { count: 0, bounds: null, centroid: null };
+        return {
+          count: geometry.count,
+          bounds: [geometry.minX, geometry.minY, geometry.maxX - geometry.minX + 1, geometry.maxY - geometry.minY + 1],
+          centroid: [
+            Number((geometry.sumX / geometry.count).toFixed(3)),
+            Number((geometry.sumY / geometry.count).toFixed(3)),
+          ],
+        };
+      }
+      function diffAt(dx, dy) {
+        const localX = Math.max(0, dx);
+        const localY = Math.max(0, dy);
+        const actualX = Math.max(0, -dx);
+        const actualY = Math.max(0, -dy);
+        const w = Math.min(width - localX, width - actualX);
+        const h = Math.min(height - localY, height - actualY);
+        if (w <= 0 || h <= 0) return null;
+        let mismatchPixels = 0;
+        let sumSq = 0;
+        let minX = w;
+        let minY = h;
+        let maxX = -1;
+        let maxY = -1;
+        const rowBands = Array.from({ length: 8 }, (_unused, index) => ({
+          index,
+          y0: Math.round((index * h) / 8),
+          y1: Math.round(((index + 1) * h) / 8),
+          pixels: 0,
+          mismatchPixels: 0,
+        }));
+        const colBands = Array.from({ length: 4 }, (_unused, index) => ({
+          index,
+          x0: Math.round((index * w) / 4),
+          x1: Math.round(((index + 1) * w) / 4),
+          pixels: 0,
+          mismatchPixels: 0,
+        }));
+        const lumaBuckets = {
+          darkBoth: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+          brightEither: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+          midTone: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+        };
+        const masks = {
+          highlightEither: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+          shadowCandidate: { pixels: 0, mismatchPixels: 0, signedLumaDeltaSum: 0 },
+        };
+        const maskGeometry = {
+          highlightLocal: createGeometryAccumulator(),
+          highlightActual: createGeometryAccumulator(),
+          shadowLocal: createGeometryAccumulator(),
+          shadowActual: createGeometryAccumulator(),
+        };
+        for (let y = 0; y < h; y += 1) {
+          for (let x = 0; x < w; x += 1) {
+            const li = ((y + localY) * width + (x + localX)) * 4;
+            const ai = ((y + actualY) * width + (x + actualX)) * 4;
+            const lr = localData.data[li];
+            const lg = localData.data[li + 1];
+            const lb = localData.data[li + 2];
+            const ar = actualData.data[ai];
+            const ag = actualData.data[ai + 1];
+            const ab = actualData.data[ai + 2];
+            const dr = Math.abs(lr - ar);
+            const dg = Math.abs(lg - ag);
+            const db = Math.abs(lb - ab);
+            const localLuma = 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
+            const actualLuma = 0.2126 * ar + 0.7152 * ag + 0.0722 * ab;
+            const isHighlightEither = localLuma > 190 || actualLuma > 190;
+            const isShadowCandidate = (localLuma < 70 || actualLuma < 70) && (localLuma > 25 || actualLuma > 25);
+            if (localLuma > 190) addGeometryPoint(maskGeometry.highlightLocal, x, y);
+            if (actualLuma > 190) addGeometryPoint(maskGeometry.highlightActual, x, y);
+            if (localLuma > 25 && localLuma < 70) addGeometryPoint(maskGeometry.shadowLocal, x, y);
+            if (actualLuma > 25 && actualLuma < 70) addGeometryPoint(maskGeometry.shadowActual, x, y);
+            const bucket = localLuma < 80 && actualLuma < 80
+              ? lumaBuckets.darkBoth
+              : localLuma > 130 || actualLuma > 130
+                ? lumaBuckets.brightEither
+                : lumaBuckets.midTone;
+            bucket.pixels += 1;
+            if (isHighlightEither) masks.highlightEither.pixels += 1;
+            if (isShadowCandidate) masks.shadowCandidate.pixels += 1;
+            const rowBand = rowBands[Math.min(7, Math.floor((y / h) * 8))];
+            const colBand = colBands[Math.min(3, Math.floor((x / w) * 4))];
+            rowBand.pixels += 1;
+            colBand.pixels += 1;
+            sumSq += dr * dr + dg * dg + db * db;
+            if (dr + dg + db > threshold) {
+              mismatchPixels += 1;
+              rowBand.mismatchPixels += 1;
+              colBand.mismatchPixels += 1;
+              bucket.mismatchPixels += 1;
+              bucket.signedLumaDeltaSum += localLuma - actualLuma;
+              if (isHighlightEither) {
+                masks.highlightEither.mismatchPixels += 1;
+                masks.highlightEither.signedLumaDeltaSum += localLuma - actualLuma;
+              }
+              if (isShadowCandidate) {
+                masks.shadowCandidate.mismatchPixels += 1;
+                masks.shadowCandidate.signedLumaDeltaSum += localLuma - actualLuma;
+              }
+              minX = Math.min(minX, x);
+              minY = Math.min(minY, y);
+              maxX = Math.max(maxX, x);
+              maxY = Math.max(maxY, y);
+            }
+          }
+        }
+        const totalPixels = w * h;
+        return {
+          dx,
+          dy,
+          comparedSize: [w, h],
+          mismatchRatio: totalPixels ? mismatchPixels / totalPixels : 1,
+          rmsRgb: totalPixels ? Number(Math.sqrt(sumSq / (totalPixels * 3)).toFixed(3)) : null,
+          bounds: mismatchPixels ? [minX, minY, maxX - minX + 1, maxY - minY + 1] : null,
+          breakdown: {
+            rowBands: rowBands.map((band) => ({
+              index: band.index,
+              yRange: [band.y0, band.y1],
+              mismatchRatio: band.pixels ? band.mismatchPixels / band.pixels : 0,
+            })),
+            colBands: colBands.map((band) => ({
+              index: band.index,
+              xRange: [band.x0, band.x1],
+              mismatchRatio: band.pixels ? band.mismatchPixels / band.pixels : 0,
+            })),
+            lumaBuckets: Object.fromEntries(
+              Object.entries(lumaBuckets).map(([key, bucket]) => [
+                key,
+                {
+                  pixelRatio: totalPixels ? bucket.pixels / totalPixels : 0,
+                  mismatchRatio: bucket.pixels ? bucket.mismatchPixels / bucket.pixels : 0,
+                  mismatchShare: mismatchPixels ? bucket.mismatchPixels / mismatchPixels : 0,
+                  avgSignedLumaDeltaOnMismatch: bucket.mismatchPixels
+                    ? Number((bucket.signedLumaDeltaSum / bucket.mismatchPixels).toFixed(3))
+                    : 0,
+                },
+              ]),
+            ),
+            masks: Object.fromEntries(
+              Object.entries(masks).map(([key, mask]) => [
+                key,
+                {
+                  pixelRatio: totalPixels ? mask.pixels / totalPixels : 0,
+                  mismatchRatio: mask.pixels ? mask.mismatchPixels / mask.pixels : 0,
+                  mismatchShare: mismatchPixels ? mask.mismatchPixels / mismatchPixels : 0,
+                  avgSignedLumaDeltaOnMismatch: mask.mismatchPixels
+                    ? Number((mask.signedLumaDeltaSum / mask.mismatchPixels).toFixed(3))
+                    : 0,
+                },
+              ]),
+            ),
+            maskGeometry: Object.fromEntries(
+              Object.entries(maskGeometry).map(([key, geometry]) => [key, summarizeGeometry(geometry)]),
+            ),
+          },
+        };
+      }
+      function pixelStats(imageData) {
+        let dark = 0;
+        let nonWhite = 0;
+        let edge = 0;
+        const total = width * height;
+        for (let i = 0; i < imageData.data.length; i += 4) {
+          const r = imageData.data[i];
+          const g = imageData.data[i + 1];
+          const b = imageData.data[i + 2];
+          const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          if (luma < 100) dark += 1;
+          if (luma < 245) nonWhite += 1;
+          if (Math.max(r, g, b) - Math.min(r, g, b) > 20) edge += 1;
+        }
+        return {
+          darkRatio: total ? dark / total : 0,
+          nonWhiteRatio: total ? nonWhite / total : 0,
+          edgeRatio: total ? edge / total : 0,
+        };
+      }
+      const raw = diffAt(0, 0);
+      let best = raw;
+      for (let dy = -8; dy <= 8; dy += 1) {
+        for (let dx = -8; dx <= 8; dx += 1) {
+          const candidate = diffAt(dx, dy);
+          if (candidate && (!best || candidate.mismatchRatio < best.mismatchRatio)) best = candidate;
+        }
+      }
+      return {
+        localSize: [localImage.naturalWidth, localImage.naturalHeight],
+        actualSize: [actualImage.naturalWidth, actualImage.naturalHeight],
+        actualSource: [actualSource.x, actualSource.y, actualSource.width, actualSource.height],
+        actualTemplatePixelStats: pixelStats(actualData),
+        comparedSize: [width, height],
+        mismatchRatio: raw?.mismatchRatio ?? 1,
+        rmsRgb: raw?.rmsRgb ?? null,
+        bounds: raw?.bounds ?? null,
+        bestAlignedMismatchRatio: best?.mismatchRatio ?? null,
+        bestAlignedOffset: best ? [best.dx, best.dy] : null,
+        bestAlignedComparedSize: best?.comparedSize ?? null,
+        diffBreakdown: raw?.breakdown ?? null,
+        bestAlignedDiffBreakdown: best?.breakdown ?? null,
+      };
+    },
+    { localUrl, actualUrl, actualCrop },
+  );
+}
+
+async function imageDataUrl(file) {
+  const bytes = await readFile(file);
+  return `data:image/png;base64,${bytes.toString('base64')}`;
+}
+
+async function readJsonIfExists(file) {
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse((await readFile(file, 'utf8')).replace(/^\uFEFF/, ''));
+  } catch {
+    return null;
+  }
+}
+
+function renderMarkdown(report) {
+  const lines = [];
+  lines.push('# Roll20 Chat Parity Diagnostics');
+  lines.push('');
+  lines.push(`Generated: ${report.generatedAt}`);
+  lines.push('');
+  lines.push(report.scope);
+  lines.push('');
+  lines.push(`Compared: ${report.summary.compared}/${report.summary.fixtures}`);
+  lines.push(`Normalized compared: ${report.summary.normalizedCompared}/${report.summary.fixtures}`);
+  lines.push(`Needs normalized capture: ${report.summary.needsNormalizedCapture}`);
+  lines.push(`High mismatch: ${report.summary.highMismatch}`);
+  lines.push(`Normalized high mismatch: ${report.summary.normalizedHighMismatch}`);
+  lines.push(`Aligned high mismatch: ${report.summary.alignedHighMismatch}`);
+  lines.push(`Authoritative normalized high mismatch: ${report.summary.authoritativeNormalizedHighMismatch}`);
+  lines.push(`Actual crop geometry suspect: ${report.summary.actualCropGeometrySuspect}`);
+  lines.push(`Actual template pixel suspect: ${report.summary.actualTemplatePixelSuspect}`);
+  lines.push(`Actual chat CSS inactive: ${report.summary.actualChatCssInactive}`);
+  lines.push(`Actual chat CSS scoped/prefix mismatch: ${report.summary.actualChatCssScopedMismatch}`);
+  lines.push(`Actual chat CSS unknown: ${report.summary.actualChatCssUnknown}`);
+  lines.push(`Actual capture scale/format suspect: ${report.summary.actualCaptureScaleSuspect}`);
+  lines.push(`Max mismatch: ${pct(report.summary.maxMismatchRatio)}`);
+  lines.push(`Max normalized mismatch: ${pct(report.summary.maxNormalizedMismatchRatio)}`);
+  lines.push(`Max aligned mismatch: ${pct(report.summary.maxAlignedMismatchRatio)}`);
+  lines.push('');
+  lines.push('| Fixture | Status | Mode | Actual CSS | Crop geometry | Template pixels | Local | Actual | Rolltemplates | Local size | Actual image | Size delta | Actual scale | Actual source | Compared | Mismatch | Best aligned | Offset | Highlight share | Highlight delta | Bright share | Dark share | Worst row | RMS | Note |');
+  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: | --- | ---: | ---: | --- | ---: | --- |');
+  for (const fixture of report.fixtures) {
+    const cropGeometry = fixture.actualCropGeometry?.suspect ? `SUSPECT: ${fixture.actualCropGeometry.reason}` : 'authoritative';
+    const pixelCheck = fixture.actualTemplatePixels?.suspect ? `SUSPECT: ${fixture.actualTemplatePixels.reason}` : 'foreground ok';
+    const sizeDelta = fixture.widthDeltaPx === null || fixture.widthDeltaPx === undefined
+      ? ''
+      : `${fixture.widthDeltaPx}x${fixture.heightDeltaPx}`;
+    const breakdown = summarizeBreakdown(fixture.bestAlignedDiffBreakdown ?? fixture.diffBreakdown);
+    lines.push(`| \`${fixture.fixtureId}\` | ${fixture.status} | ${fixture.compareMode ?? ''} | ${fixture.actualChatCss?.classification ?? ''} | ${cropGeometry} | ${pixelCheck} | \`${fixture.local}\` | \`${fixture.actual}\` | ${fixture.sidecarRolltemplateCount ?? ''} | ${fixture.localSize?.join('x') ?? ''} ${fixture.localImageFormat ? `(${fixture.localImageFormat})` : ''} | ${fixture.actualSize?.join('x') ?? ''} ${fixture.actualImageFormat ? `(${fixture.actualImageFormat})` : ''} | ${sizeDelta} | ${fixture.actualScreenshotScale?.join('x') ?? ''} | ${fixture.actualSource?.join(',') ?? ''} | ${fixture.comparedSize?.join('x') ?? ''} | ${fixture.mismatchPct ?? ''} | ${fixture.bestAlignedMismatchPct ?? ''} | ${fixture.bestAlignedOffset?.join(',') ?? ''} | ${breakdown.highlightShare} | ${breakdown.highlightDelta} | ${breakdown.brightShare} | ${breakdown.darkShare} | ${breakdown.worstRow} | ${fixture.rmsRgb ?? ''} | ${fixture.note} |`);
+  }
+  lines.push('');
+  lines.push('This report does not replace actual Roll20 sheet-root evidence or human visual classification.');
+  return `${lines.join('\n')}\n`;
+}
+
+function summarizeBreakdown(breakdown) {
+  if (!breakdown) return { brightShare: '', darkShare: '', worstRow: '' };
+  const buckets = breakdown.lumaBuckets ?? {};
+  const masks = breakdown.masks ?? {};
+  const geometry = breakdown.maskGeometry ?? {};
+  const highlight = masks.highlightEither?.mismatchShare;
+  const bright = buckets.brightEither?.mismatchShare;
+  const dark = buckets.darkBoth?.mismatchShare;
+  const worst = [...(breakdown.rowBands ?? [])].sort((a, b) => (b.mismatchRatio ?? 0) - (a.mismatchRatio ?? 0))[0];
+  const highlightDelta = summarizeGeometryDelta(geometry.highlightLocal, geometry.highlightActual);
+  return {
+    highlightShare: typeof highlight === 'number' ? pct(highlight) : '',
+    highlightDelta,
+    brightShare: typeof bright === 'number' ? pct(bright) : '',
+    darkShare: typeof dark === 'number' ? pct(dark) : '',
+    worstRow: worst ? `${worst.index}:${pct(worst.mismatchRatio)}` : '',
+  };
+}
+
+function summarizeGeometryDelta(local, actual) {
+  if (!local?.centroid || !actual?.centroid) return '';
+  const dx = Number((local.centroid[0] - actual.centroid[0]).toFixed(2));
+  const dy = Number((local.centroid[1] - actual.centroid[1]).toFixed(2));
+  const localBounds = local.bounds ?? [];
+  const actualBounds = actual.bounds ?? [];
+  const dw = Number(((localBounds[2] ?? 0) - (actualBounds[2] ?? 0)).toFixed(2));
+  const dh = Number(((localBounds[3] ?? 0) - (actualBounds[3] ?? 0)).toFixed(2));
+  return `c ${dx},${dy}; b ${dw},${dh}`;
+}
+
+function pct(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${Number((value * 100).toFixed(2))}%` : '';
+}
+
+function rel(file) {
+  return path.relative(process.cwd(), file);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

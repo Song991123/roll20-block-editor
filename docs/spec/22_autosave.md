@@ -69,6 +69,18 @@ interface SavedRecord {
 
 `]]>` 가 inner XML 안에 들어있는 경우 `]]]]><![CDATA[>` 로 split (CDATA 종결 방어).
 
+### §3.3 Preview metadata, version 2
+
+`r20-autosave version="2"` preserves non-workspace preview metadata used by the real render/export path. Current metadata:
+
+```xml
+<preview>
+  <asset-replacement-map><![CDATA[old URL => new URL]]></asset-replacement-map>
+</preview>
+```
+
+This stores the user's local-only asset relink map so external/dead sheet assets can be previewed, edited, and exported consistently after reload. The map is restored into `previewStore` by the autosave recovery banner. Version 1 records remain valid; missing preview metadata restores as an empty/undefined map.
+
 ---
 
 ## §4. 저장 흐름

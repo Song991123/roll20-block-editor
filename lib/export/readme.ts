@@ -9,12 +9,17 @@
 import type { SheetMetadata } from './types';
 import { ZIP_FILES } from './types';
 
+export interface ReadmeOptions {
+  includesAssetReplacements?: boolean;
+}
+
 /** 사용자 메타를 반영한 README.txt 텍스트. */
-export function buildReadme(meta: SheetMetadata): string {
+export function buildReadme(meta: SheetMetadata, options: ReadmeOptions = {}): string {
   const name = meta.name.trim() || 'Untitled Sheet';
   const author = meta.author.trim() || 'Anonymous';
   const version = meta.version.trim() || '0.1.0';
   const system = meta.system.trim();
+  const roll20Mode = meta.legacy ? '구버전 무해화' : '신버전';
   const today = new Date().toISOString().slice(0, 10);
 
   const lines: string[] = [];
@@ -25,6 +30,7 @@ export function buildReadme(meta: SheetMetadata): string {
   lines.push(`버전: ${version}`);
   lines.push(`라이선스: ${meta.license}`);
   if (system) lines.push(`시스템: ${system}`);
+  lines.push(`Roll20 모드: ${roll20Mode}`);
   lines.push(`내보낸 날짜: ${today}`);
   lines.push('');
   lines.push('## 1. 압축 해제');
@@ -40,6 +46,11 @@ export function buildReadme(meta: SheetMetadata): string {
   lines.push('');
   lines.push('1) 호스트 권한이 있는 Roll20 게임의 "Settings → Game Settings" 로 이동.');
   lines.push('2) "Character Sheet Template" 항목에서 "Custom" 선택.');
+  lines.push(
+    meta.legacy
+      ? '   이 zip은 구버전용입니다. 게임 설정에서 구 버전 무해화 처리를 켜세요.'
+      : '   이 zip은 신버전용입니다. 게임 설정에서 구 버전 무해화 처리를 끄세요.',
+  );
   lines.push('3) 아래 표대로 각 파일 내용을 복사 → 해당 영역에 붙여넣기:');
   lines.push('');
   lines.push(`     ${ZIP_FILES.HTML.padEnd(18)} → "HTML Layout"`);
@@ -55,7 +66,20 @@ export function buildReadme(meta: SheetMetadata): string {
   lines.push('Roll20 "Custom Sheet Sandbox" 게임을 만든 뒤 위 절차를 따르면 매번 게임을');
   lines.push('새로 만들지 않아도 시트 수정 → 저장 → 새로고침으로 빠른 반복이 가능합니다.');
   lines.push('');
-  lines.push('## 4. 문제 해결');
+  lines.push('## 4. 외부 이미지/폰트 확인');
+  lines.push('');
+  lines.push('이 zip은 HTML/CSS/번역 파일만 묶습니다. 외부 이미지, 웹폰트, Roll20 이미지 프록시,');
+  lines.push('Imgur 페이지 링크의 실제 파일은 zip 안에 포함되지 않습니다.');
+  lines.push('');
+  lines.push('- Roll20에서도 같은 모습이 필요하면 사용자가 소유한 http(s) 이미지/폰트 URL로 바꾼 뒤 등록하세요.');
+  lines.push('- data: URL, 로컬 경로, 임시 파일 경로는 이 앱 미리보기에서는 보일 수 있어도 Roll20 검증용으로는 부족합니다.');
+  lines.push('- imgsrv.roll20.net 프록시나 imgur.com 페이지 링크는 원본이 삭제되면 placeholder 이미지로 보일 수 있습니다.');
+  if (options.includesAssetReplacements) {
+    lines.push('- 이 zip에는 asset-replacements.json 이 들어 있습니다. 어떤 URL이 교체됐는지 확인하고,');
+    lines.push('  Roll20 등록 뒤에는 Sandbox 또는 새 테스트 방에서 다시 스크린샷 비교를 하세요.');
+  }
+  lines.push('');
+  lines.push('## 5. 문제 해결');
   lines.push('');
   lines.push('- "Save Changes" 후에도 시트가 안 보이면 브라우저 캐시를 비우고 새로 고침.');
   lines.push('- 콘솔에 sheet worker 오류가 찍히면 i18n 키 누락 또는 attribute 이름 오타 가능성.');

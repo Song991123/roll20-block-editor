@@ -15,9 +15,10 @@
  */
 
 import type { DomNode } from './dom_walker';
+import type { CompositePackStats } from './composite_matcher';
 import { firstTextContent, allTextContent } from './dom_walker';
 import { parseAttrRefToken } from './expression_parser';
-import { parseSheetWorkerScript, type ParsedBlock } from './script_parser';
+import { parseSheetWorkerScript } from './script_parser';
 
 export interface MatchedBlock {
   /** 130 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
@@ -30,6 +31,8 @@ export interface MatchedBlock {
   valueInputs?: Record<string, MatchedBlock>;
   /** raw fallback 일 때 — 원본 HTML 보존. */
   raw?: string;
+  /** Original sanitized element HTML for optional lossless compaction. */
+  sourceRaw?: string;
   /** 디버깅: 매칭에 사용된 token (어떤 hint 가 매칭 결정했는지). */
   hint?: string;
 }
@@ -52,9 +55,11 @@ export interface MatchContext {
    *   - scriptBlocksMatched: sheet_worker 25 카탈로그로 인식된 inner block 수.
    *   - scriptStatementsRaw: 패턴 매칭 실패해서 raw_worker statement fallback 으로 박은 inner statement 수.
    * htmlMatched / htmlTotal 은 element-level 그대로 유지 — 본 카운터는 별도 보고.
-   */
+  */
   scriptBlocksMatched: number;
   scriptStatementsRaw: number;
+  /** Composite packing diagnostics, filled after `matchTree` by import/index. */
+  compositePackStats?: CompositePackStats;
   warnings: Array<{ code: string; message: string; hint?: string }>;
 }
 
@@ -125,7 +130,10 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
 
   if (result) {
     ctx.matchedCount++;
-    return result;
+    return {
+      ...result,
+      sourceRaw: serializeRawHtml(node),
+    };
   }
 
   // fallback — raw HTML.
@@ -169,7 +177,11 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         blockType: 'r20_i18n_placeholder',
         fields: {
           KEY: a['data-i18n-placeholder'],
-          DEFAULT: a.value || a.placeholder || '',
+          // DEFAULT = placeholder 텍스트, VALUE = 실제 value 속성 — 합치면
+          // placeholder 가 값으로 오염되거나 (구버전 사고) value 가 소실된다.
+          DEFAULT: a.placeholder || '',
+          VALUE: a.value || '',
+          DISABLED: 'disabled' in a ? 'TRUE' : 'FALSE',
           NAME: a.name || '',
           CLASS: a.class || '',
           TYPE: (a.type || 'text').toLowerCase(),
@@ -185,7 +197,13 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (inputType === 'text') {
       return {
         blockType: 'r20_text_input',
-        fields: { NAME: name, CLASS: cls, DEFAULT: a.value || '', STYLE: a.style || '' },
+        fields: {
+          NAME: name, CLASS: cls, DEFAULT: a.value || '',
+          PLACEHOLDER: a.placeholder || '',
+          I18N: a['data-i18n'] || '',
+          DISABLED: 'disabled' in a ? 'TRUE' : 'FALSE',
+          STYLE: a.style || '',
+        },
         children: {},
       };
     }
@@ -196,6 +214,8 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
           NAME: name, CLASS: cls,
           MIN: a.min || '', MAX: a.max || '',
           DEFAULT: a.value || '0',
+          PLACEHOLDER: a.placeholder || '',
+          DISABLED: 'disabled' in a ? 'TRUE' : 'FALSE',
           STYLE: a.style || '',
         },
         children: {},
@@ -227,7 +247,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (inputType === 'hidden') {
       return {
         blockType: 'r20_hidden_input',
-        fields: { NAME: name, DEFAULT: a.value || '0', STYLE: a.style || '' },
+        fields: { NAME: name, DEFAULT: a.value || '0', CLASS: cls, STYLE: a.style || '' },
         children: {},
       };
     }
@@ -269,7 +289,12 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     const text = firstTextContent(node);
     return {
       blockType: 'r20_textarea',
-      fields: { NAME: name, CLASS: cls, ROWS: rows, DEFAULT: text, STYLE: a.style || '' },
+      fields: {
+        NAME: name, CLASS: cls, ROWS: rows, DEFAULT: text,
+        PLACEHOLDER: a.placeholder || '',
+        I18N_PLACEHOLDER: a['data-i18n-placeholder'] || '',
+        STYLE: a.style || '',
+      },
       children: {},
     };
   }
@@ -446,6 +471,35 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
   return null;
 }
 
+/**
+ * script body 의 모든 비어있지 않은 줄이 공유하는 선행 들여쓰기(스페이스/탭)를
+ * 제거한다. HTML emitter 의 pretty-print 가 매 roundtrip 마다 들여쓰기를
+ * 누적시키는 것을 canonical 형태로 수렴시키기 위한 정규화.
+ */
+function dedentCommonIndent(text: string): string {
+  if (!text) return text;
+  const lines = text.split('\n');
+  let common: string | null = null;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const indent = (/^[ \t]*/.exec(line) as RegExpExecArray)[0];
+    if (common === null) {
+      common = indent;
+    } else {
+      let i = 0;
+      while (i < common.length && i < indent.length && common[i] === indent[i]) i += 1;
+      common = common.slice(0, i);
+    }
+    if (!common) return text;
+  }
+  if (!common) return text;
+  const width = common.length;
+  // 공백만 있는 줄은 빈 줄로 수렴 — HTML emitter 의 pretty-print 가 비어있지
+  // 않은 줄에만 indent 를 더하므로, 공백-전용 줄을 그대로 두면 그 줄만 매
+  // roundtrip 마다 indent 가 증식한다 (Les-Oublies L2 FAIL 잔여 원인).
+  return lines.map((line) => (line.trim() ? line.slice(width) : '')).join('\n');
+}
+
 function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   const tag = node.tag;
   if (!tag) return null;
@@ -469,7 +523,19 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       .filter((c) => c.type === 'text' && c.text)
       .map((c) => c.text as string)
       .join('');
-    const body = rawBody;
+    // Roundtrip 멱등성 (browser L2 roundtrip, reports/roundtrip-browser/):
+    // 1) r20_raw_worker emit 은 `<script ...>\n${JS}\n</script>` 로 wrapper
+    //    개행을 추가한다 → import 가 포함시키면 매 라운드 `\n` 1개 증식.
+    //    선두 개행 1개 + 말미 개행 1개(+들여쓰기)를 벗긴다.
+    // 2) HTML emitter 는 중첩 요소 children 을 pretty-print 로 +indent 한다.
+    //    일반 요소 텍스트는 collapse 돼 매번 동일하게 재생성되지만 script
+    //    body 는 raw 보존이라 매 라운드 들여쓰기가 누적 증가 → 공통 선행
+    //    들여쓰기를 dedent 해 canonical 형태로 저장한다 (JS 의미 동일;
+    //    멀티라인 template literal 의 공통 들여쓰기도 함께 줄어드는 trade-off
+    //    는 허용).
+    const body = dedentCommonIndent(
+      rawBody.replace(/^\r?\n/, '').replace(/\r?\n[ \t]*$/, ''),
+    );
     const reporter = matchSheetWorkerReporter(body);
     if (reporter) return reporter;
 
@@ -486,10 +552,13 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
             hint: `matched=${parsed.stats.matched} raw=${parsed.stats.unparsed}`,
           });
         }
+        // Keep parsed worker stats for reports, but preserve source as raw JS.
+        // Parsed children can mix statement/reporter shapes; auto-inserting
+        // them under r20_raw_worker breaks Blockly XML hydration.
         return {
           blockType: 'r20_raw_worker',
           fields: { JS: body },
-          children: { CHILDREN: parsed.blocks.map(parsedToMatched) },
+          children: {},
         };
       }
     }
@@ -506,6 +575,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       fields: {
         LEVEL: tag.slice(1),
         TEXT: allTextContent(node),
+        I18N: a['data-i18n'] || '',
         CLASS: stripSheetPrefix(a.class || ''),
         STYLE: a.style || '',
       },
@@ -622,6 +692,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       blockType: 'r20_table_caption',
       fields: {
         TEXT: allTextContent(node),
+        I18N: a['data-i18n'] || '',
         CLASS: stripSheetPrefix(a.class || ''),
         STYLE: a.style || '',
       },
@@ -715,8 +786,19 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
+    // multi-class guard (row/col 과 동일 원칙): 인식 패턴 외 추가 class 토큰이
+    // 있으면 r20_div 로 떨어뜨려 모든 토큰을 보존한다. 가드가 없으면
+    // `sheet-col small-outline section-oublie` 가 자기 emit 을 재import 할 때
+    // section_wrap 으로 흡수돼 col/small-outline 이 소실됐다 (Les-Oublies
+    // browser L2 roundtrip FAIL 원인).
     const sectionN = /\bsheet-section-(\S+)/.exec(cls);
-    if (sectionN) {
+    if (
+      sectionN &&
+      ((tokens.length === 1 && tokens[0] === `sheet-section-${sectionN[1]}`) ||
+        (tokens.length === 2 &&
+          tokens.includes('sheet-section') &&
+          tokens.includes(`sheet-section-${sectionN[1]}`)))
+    ) {
       return {
         blockType: 'r20_section_wrap',
         fields: { NAME: sectionN[1], STYLE: a.style || '' },
@@ -724,7 +806,13 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       };
     }
     const toggleN = /\bsheet-toggle-(\S+)/.exec(cls);
-    if (toggleN) {
+    if (
+      toggleN &&
+      ((tokens.length === 1 && tokens[0] === `sheet-toggle-${toggleN[1]}`) ||
+        (tokens.length === 2 &&
+          tokens.includes('sheet-toggle') &&
+          tokens.includes(`sheet-toggle-${toggleN[1]}`)))
+    ) {
       return {
         blockType: 'r20_toggle_wrap',
         fields: { NAME: toggleN[1], STYLE: a.style || '' },
@@ -1012,28 +1100,6 @@ function matchSheetWorkerReporter(body: string): MatchedBlock | null {
     };
   }
   return null;
-}
-
-// Stage worker-1: ParsedBlock (script_parser.ts) → MatchedBlock (import).
-// ParsedBlock 의 인터페이스가 MatchedBlock 과 동일한 shape — 재귀 변환만 수행.
-function parsedToMatched(p: ParsedBlock): MatchedBlock {
-  const children: Record<string, MatchedBlock[]> = {};
-  for (const [name, arr] of Object.entries(p.children ?? {})) {
-    children[name] = arr.map(parsedToMatched);
-  }
-  const out: MatchedBlock = {
-    blockType: p.blockType,
-    fields: p.fields,
-    children,
-  };
-  if (p.valueInputs) {
-    const vi: Record<string, MatchedBlock> = {};
-    for (const [name, inner] of Object.entries(p.valueInputs)) {
-      vi[name] = parsedToMatched(inner);
-    }
-    out.valueInputs = vi;
-  }
-  return out;
 }
 
 function rawExpression(expr: string): MatchedBlock {

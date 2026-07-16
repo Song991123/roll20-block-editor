@@ -14,12 +14,31 @@ import {
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlockDef } from '@/lib/blocks/registry';
-import { buildSheetDoc, buildSheetParts } from '@/lib/preview/buildDoc';
+import { buildSheetDoc, buildSheetLivePatch, buildSheetParts } from '@/lib/preview/buildDoc';
+import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import ShadowContextMenu, { type ShadowContextMenuAction } from './ShadowContextMenu';
 import { playSfx } from '@/lib/sfx';
 import PreviewEmptyState from './PreviewEmptyState';
+import {
+  R20_IFRAME_EDIT_PROTOCOL,
+  isTrustedIframeMessage,
+  parseIframeEditBridgeMessage,
+  type IframeEditHitMessage,
+} from '@/lib/preview/iframeEditBridge';
+import {
+  commitIframeFlowDrop,
+  resolveIframeEditDropTarget,
+  resolveIframeFreePlacement,
+  resolveIframeWidgetDropTarget,
+  type IframeEditDropTarget,
+} from '@/lib/editor/iframeDropTarget';
+import { commitManagedDesignPosition } from '@/lib/editor/designPosition';
+import {
+  appendFriendlyWidgetPreset,
+  decodeFriendlyWidgetDrag,
+} from '@/lib/widgets/presets';
 
 /**
  * 미리보기 메인 — iframe srcdoc, sandbox.
@@ -55,9 +74,12 @@ export default function PreviewMain() {
   const appendBlock = useWorkspaceStore((s) => s.appendBlockToActive);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
   const darkMode = usePreviewStore((s) => s.darkMode);
-  const sanitize = usePreviewStore((s) => s.sanitize);
+  const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
+  const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
+  const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
   const sandbox = usePreviewStore((s) => s.iframeSandbox);
   const renderMode = usePreviewStore((s) => s.renderMode);
+  const documentLanguage = usePreviewStore((s) => s.documentLanguage);
   const setRenderMode = usePreviewStore((s) => s.setRenderMode);
   const zoom = useUiStore((s) => s.previewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
@@ -68,6 +90,7 @@ export default function PreviewMain() {
   const selectedWidgetId = useUiStore((s) => s.selectedWidgetId);
   const hoveredWidgetId = useUiStore((s) => s.hoveredWidgetId);
   const editSubmode = useUiStore((s) => s.editSubmode);
+  const mainMode = useUiStore((s) => s.mainMode);
   const sheetWidgetsList = useWorkspaceStore((s) => s.sheetWidgets);
   const rolltemplateWidgetsList = useWorkspaceStore((s) => s.rolltemplateWidgets);
   const [dragOver, setDragOver] = useState(false);
@@ -80,6 +103,18 @@ export default function PreviewMain() {
   } | null>(null);
   const [iframeHeight, setIframeHeight] = useState(900);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [iframeEditBridgeId, setIframeEditBridgeId] = useState<string | null>(null);
+  const iframeEditBridgeIdRef = useRef<string | null>(null);
+  const [iframeEditOverlay, setIframeEditOverlay] = useState<IframeEditHitMessage | null>(null);
+  const [iframeEditDropTarget, setIframeEditDropTarget] = useState<IframeEditDropTarget | null>(null);
+  const [iframeEditDragOrigin, setIframeEditDragOrigin] = useState<IframeEditHitMessage | null>(null);
+  const iframeEditDragOriginRef = useRef<IframeEditHitMessage | null>(null);
+  const applyRevisionRef = useRef(0);
+  const applySourcesRef = useRef(new Map<number, string>());
+  const lastAppliedSourceRef = useRef<string | null>(null);
+  const pendingApplySourceRef = useRef<string | null>(null);
+  const [lastApplyAck, setLastApplyAck] = useState(0);
+  const [pendingApplyRevision, setPendingApplyRevision] = useState(0);
   const autoWidthSizedRef = useRef(false);
   // Phase E — Inspector 활성화에 쓰일 sidebarRightTab/collapse setter.
   // 'attrs' 가 Inspector 패널 (D49).
@@ -89,11 +124,23 @@ export default function PreviewMain() {
 
   const total = htmlCount + cssCount + i18nCount;
   const isEmpty = total === 0;
+  const compatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
+  const previewAssetText = useMemo(
+    () => applyAssetReplacements({ html: emitHtml, css: emitCss }, assetReplacementMap),
+    [emitHtml, emitCss, assetReplacementMap],
+  );
   const fitScale =
     zoom === 'fit' && viewportWidth > 0
       ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / sheetCanvasWidth))
       : 1;
   const scale = zoom === 'fit' ? fitScale : zoom;
+  const iframeEditDragDelta = iframeEditDragOrigin && iframeEditOverlay
+    && (iframeEditOverlay.phase === 'pointermove' || iframeEditOverlay.phase === 'pointerup')
+    ? {
+        x: iframeEditOverlay.pointer.x - iframeEditDragOrigin.pointer.x,
+        y: iframeEditOverlay.pointer.y - iframeEditDragOrigin.pointer.y,
+      }
+    : { x: 0, y: 0 };
 
   useEffect(() => {
     setRenderMode('iframe');
@@ -107,16 +154,33 @@ export default function PreviewMain() {
   const srcdoc = useMemo(
     () =>
       buildSheetDoc({
-        html: emitHtml,
-        css: emitCss,
+        html: previewAssetText.html,
+        css: previewAssetText.css,
         i18n: emitI18n,
-        sanitize,
+        compatibilityMode,
+        roll20SandboxSanitize,
         darkMode,
         previewLayer,
         includeEditorOverlays: false,
+        documentLanguage,
       }),
-    [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer],
+    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
   );
+  const livePatch = useMemo(
+    () => buildSheetLivePatch({
+      html: previewAssetText.html,
+      css: previewAssetText.css,
+      i18n: emitI18n,
+      compatibilityMode,
+      roll20SandboxSanitize,
+      darkMode,
+      previewLayer,
+      includeEditorOverlays: false,
+      documentLanguage,
+    }),
+    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
+  );
+  const [iframeDocumentSrcdoc] = useState(srcdoc);
 
   // spec 21 Phase A — Shadow DOM 모드 mount.
   // host element 에 Shadow Root attach → buildSheetParts(html, css) 인젝션.
@@ -124,8 +188,9 @@ export default function PreviewMain() {
   // Phase A 범위 = 시각만 동일. Phase B+ 의 인터랙션 (select / drag / inline edit) 은 미구현.
   useEffect(() => {
     autoWidthSizedRef.current = false;
+    iframeEditBridgeIdRef.current = null;
     queueMicrotask(() => setIframeHeight(120));
-  }, [srcdoc]);
+  }, [iframeDocumentSrcdoc]);
 
   const previewAreaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -146,15 +211,17 @@ export default function PreviewMain() {
   const parts = useMemo(
     () =>
       buildSheetParts({
-        html: emitHtml,
-        css: emitCss,
+        html: previewAssetText.html,
+        css: previewAssetText.css,
         i18n: emitI18n,
-        sanitize,
+        compatibilityMode,
+        roll20SandboxSanitize,
         darkMode,
         previewLayer,
         includeEditorOverlays: true,
+        documentLanguage,
       }),
-    [emitHtml, emitCss, emitI18n, sanitize, darkMode, previewLayer],
+    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
   );
   useEffect(() => {
     if (renderMode !== 'shadow') return;
@@ -180,6 +247,8 @@ export default function PreviewMain() {
     const { cleanup, setSelected: setShadowSelected } = mountSheetShadow(host, {
       html: parts.html,
       css: parts.css,
+      i18n: emitI18n,
+      includeEditorOverlays: true,
       layer: previewLayer,
       darkMode,
       // Phase B — Shadow 안 element 클릭 → workspaceStore.selectedBlockId 갱신.
@@ -337,7 +406,7 @@ export default function PreviewMain() {
       }
       cleanup();
     };
-  }, [renderMode, parts, previewLayer, darkMode, setSelected]);
+  }, [renderMode, parts, emitI18n, previewLayer, darkMode, setSelected]);
 
   // Phase B — selectedBlockId 변경 → Shadow 안 outline 동기화.
   // iframe 모드 or 미마운트 시 ref.current === null → noop.
@@ -381,7 +450,183 @@ export default function PreviewMain() {
   // 미리보기 → 우측 인스펙터 sync + 굴림 결과 채팅 박음 (postMessage).
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
-      if (e.source !== iframeRef.current?.contentWindow) return;
+      if (!isTrustedIframeMessage(e, iframeRef.current)) return;
+      const editMessage = parseIframeEditBridgeMessage(e.data);
+      if (editMessage?.type === 'r20:edit-ready') {
+        if (iframeEditBridgeIdRef.current !== editMessage.bridgeId) {
+          setIframeEditOverlay(null);
+          setIframeEditDropTarget(null);
+          setIframeEditDragOrigin(null);
+          iframeEditDragOriginRef.current = null;
+        }
+        iframeEditBridgeIdRef.current = editMessage.bridgeId;
+        if (lastAppliedSourceRef.current == null) {
+          lastAppliedSourceRef.current = iframeDocumentSrcdoc;
+        }
+        setIframeEditBridgeId(editMessage.bridgeId);
+        return;
+      }
+      if (editMessage?.type === 'r20:edit-applied') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        const appliedSource = applySourcesRef.current.get(editMessage.revision);
+        if (!appliedSource) return;
+        lastAppliedSourceRef.current = appliedSource;
+        applySourcesRef.current.delete(editMessage.revision);
+        if (pendingApplySourceRef.current === appliedSource) {
+          pendingApplySourceRef.current = null;
+          setPendingApplyRevision(0);
+        }
+        // applyLivePatch schedules its resize for the next animation frame.
+        // Reset here as well so a stale pre-apply resize cannot consume the
+        // one-shot intrinsic-width measurement for the newly applied sheet.
+        autoWidthSizedRef.current = false;
+        setIframeEditDragOrigin(null);
+        iframeEditDragOriginRef.current = null;
+        setIframeEditDropTarget(null);
+        setLastApplyAck(editMessage.revision);
+        const target = iframeRef.current?.contentWindow;
+        target?.postMessage({
+          type: 'r20:edit-mode',
+          protocol: R20_IFRAME_EDIT_PROTOCOL,
+          bridgeId: editMessage.bridgeId,
+          enabled: useUiStore.getState().mainMode === 'edit',
+          selectedBlockId: useWorkspaceStore.getState().selectedBlockId,
+        }, '*');
+        return;
+      }
+      if (editMessage?.type === 'r20:edit-hit') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        if (useUiStore.getState().mainMode !== 'edit') return;
+        const adapter = getBlocklyAdapter();
+        if (!adapter.getBlock('html', editMessage.blockId)) return;
+        if (!editMessage.hitPath.every((item) => adapter.getBlock('html', item.blockId))) return;
+        if (
+          editMessage.subject.offsetParentBlockId
+          && !adapter.getBlock('html', editMessage.subject.offsetParentBlockId)
+        ) return;
+        const nextDropTarget = resolveIframeEditDropTarget(editMessage, {
+          getBlock: (blockId) => adapter.getBlock('html', blockId),
+          canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+        });
+        setIframeEditOverlay(editMessage);
+        setIframeEditDropTarget(nextDropTarget);
+        if (editMessage.phase === 'pointerdown') {
+          iframeEditDragOriginRef.current = editMessage;
+          setIframeEditDragOrigin(editMessage);
+          setSelected(editMessage.blockId, 'preview');
+        } else if (editMessage.phase === 'pointercancel') {
+          iframeEditDragOriginRef.current = null;
+          setIframeEditDragOrigin(null);
+        } else if (editMessage.phase === 'pointerup') {
+          const ui = useUiStore.getState();
+          let moved = false;
+          if (ui.editPlacementMode === 'flow') {
+            moved = commitIframeFlowDrop(editMessage.subject.blockId, nextDropTarget, adapter);
+          } else {
+            const origin = iframeEditDragOriginRef.current;
+            const placement = origin
+              ? resolveIframeFreePlacement(origin, editMessage, {
+                  getBlock: (blockId) => adapter.getBlock('html', blockId),
+                  canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+                }, ui.snapEnabled ? 8 : 1)
+              : null;
+            if (placement) {
+              const committed = commitManagedDesignPosition(adapter, {
+                workspace: 'html',
+                blockId: editMessage.subject.blockId,
+                left: placement.left,
+                top: placement.top,
+                containingBlockId: placement.containingBlockId,
+                containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+              });
+              moved = committed.moved;
+              if (committed.cssBlockCreated) {
+                useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+              }
+            }
+          }
+          if (moved) {
+            const store = useWorkspaceStore.getState();
+            store.bumpStructure('html', adapter.countBlocks('html'));
+            store.setSelectedBlockId(editMessage.subject.blockId, 'preview');
+          } else {
+            iframeEditDragOriginRef.current = null;
+            setIframeEditDragOrigin(null);
+          }
+        }
+        return;
+      }
+      if (editMessage?.type === 'r20:widget-drag') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        if (useUiStore.getState().mainMode !== 'edit') return;
+        if (editMessage.phase === 'dragleave') {
+          setIframeEditDropTarget(null);
+          return;
+        }
+        const adapter = getBlocklyAdapter();
+        if (!editMessage.hitPath.every((item) => adapter.getBlock('html', item.blockId))) return;
+        const nextDropTarget = resolveIframeWidgetDropTarget(editMessage, {
+          getBlock: (blockId) => adapter.getBlock('html', blockId),
+          canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+        });
+        setIframeEditDropTarget(nextDropTarget);
+        if (editMessage.phase !== 'drop' || !editMessage.payload) return;
+        const preset = decodeFriendlyWidgetDrag(editMessage.payload);
+        if (!preset) {
+          setIframeEditDropTarget(null);
+          return;
+        }
+        const ui = useUiStore.getState();
+        const freeInside = ui.editPlacementMode === 'free'
+          && nextDropTarget?.mode === 'inside'
+          && Boolean(nextDropTarget.containerBlockId);
+        const position = freeInside && nextDropTarget
+          ? {
+              left: Math.max(0, Math.round(
+                editMessage.pointer.x
+                - nextDropTarget.geometry.rect.left
+                - nextDropTarget.geometry.clientLeft
+                + nextDropTarget.geometry.scrollLeft,
+              )),
+              top: Math.max(0, Math.round(
+                editMessage.pointer.y
+                - nextDropTarget.geometry.rect.top
+                - nextDropTarget.geometry.clientTop
+                + nextDropTarget.geometry.scrollTop,
+              )),
+            }
+          : {
+              left: Math.max(0, Math.round(editMessage.pointer.x)),
+              top: Math.max(0, Math.round(editMessage.pointer.y)),
+            };
+        const id = appendFriendlyWidgetPreset(preset, position, {
+          mode: freeInside ? 'absolute-in-container' : nextDropTarget ? 'flow' : 'absolute',
+          placement: nextDropTarget?.mode,
+          containerBlockId: nextDropTarget?.containerBlockId ?? nextDropTarget?.blockId ?? null,
+          siblingBlockId: nextDropTarget?.siblingBlockId ?? null,
+        });
+        setIframeEditDropTarget(null);
+        if (id) setSelected(id, 'preview');
+        return;
+      }
+      if (editMessage?.type === 'r20:edit-context-menu') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        if (useUiStore.getState().mainMode !== 'edit') return;
+        const adapter = getBlocklyAdapter();
+        if (!adapter.getBlock('html', editMessage.blockId)) return;
+        const iframe = iframeRef.current;
+        if (!iframe) return;
+        const rect = iframe.getBoundingClientRect();
+        const scaleX = iframe.offsetWidth > 0 ? rect.width / iframe.offsetWidth : 1;
+        const scaleY = iframe.offsetHeight > 0 ? rect.height / iframe.offsetHeight : scaleX;
+        setSelected(editMessage.blockId, 'preview');
+        setContextMenuState({
+          blockId: editMessage.blockId,
+          x: rect.left + editMessage.pointer.x * scaleX,
+          y: rect.top + editMessage.pointer.y * scaleY,
+        });
+        return;
+      }
       const data = e.data;
       if (data?.type === 'r20:select' && typeof data.blockId === 'string') {
         setSelected(data.blockId, 'preview');
@@ -482,7 +727,49 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [setHoveredWidgetId, setSelected, setSelectedWidgetId, setSheetCanvasWidth]);
+  }, [iframeDocumentSrcdoc, setHoveredWidgetId, setSelected, setSelectedWidgetId, setSheetCanvasWidth]);
+
+  useEffect(() => {
+    if (!iframeEditBridgeId) return;
+    if (lastAppliedSourceRef.current === srcdoc || pendingApplySourceRef.current === srcdoc) return;
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+    const revision = applyRevisionRef.current + 1;
+    applyRevisionRef.current = revision;
+    applySourcesRef.current.set(revision, srcdoc);
+    pendingApplySourceRef.current = srcdoc;
+    // A persistent iframe first reports the empty/default document width. Let
+    // each applied sheet source report its own intrinsic width without ever
+    // shrinking a wider user-selected canvas (the resize handler only grows).
+    autoWidthSizedRef.current = false;
+    setPendingApplyRevision(revision);
+    target.postMessage({
+      type: 'r20:edit-apply',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: iframeEditBridgeId,
+      revision,
+      ...livePatch,
+    }, '*');
+  }, [iframeEditBridgeId, lastApplyAck, livePatch, srcdoc]);
+
+  useEffect(() => {
+    if (!iframeEditBridgeId) return;
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+    target.postMessage({
+      type: 'r20:edit-mode',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: iframeEditBridgeId,
+      enabled: mainMode === 'edit',
+      selectedBlockId: selectedId,
+    }, '*');
+  }, [iframeEditBridgeId, mainMode, selectedId, lastApplyAck]);
+
+  useEffect(() => {
+    if (mainMode === 'edit') return;
+    const frame = window.requestAnimationFrame(() => setContextMenuState(null));
+    return () => window.cancelAnimationFrame(frame);
+  }, [mainMode]);
 
   // 선택된 블록 → iframe 안 highlight.
   useEffect(() => {
@@ -490,7 +777,7 @@ export default function PreviewMain() {
     const w = iframeRef.current?.contentWindow;
     if (!w) return;
     w.postMessage({ type: 'r20:highlight', blockId: selectedId }, '*');
-  }, [selectedId, srcdoc]);
+  }, [selectedId, lastApplyAck]);
 
   // Phase E — 컨텍스트 메뉴 액션 디스패치.
   // - inspect: selectedBlockId 갱신 + sidebar right 펼침 + 'attrs' (Inspector) 탭 활성.
@@ -550,7 +837,12 @@ export default function PreviewMain() {
   };
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col">
+    <div
+      className="relative flex h-full min-h-0 flex-col"
+      data-r20-edit-bridge-ready={iframeEditBridgeId ? '1' : '0'}
+      data-r20-apply-pending={pendingApplyRevision || ''}
+      data-r20-apply-acked={lastApplyAck || ''}
+    >
       <div
         ref={previewAreaRef}
         className={`relative flex-1 min-h-0 overflow-auto p-6 ${
@@ -597,7 +889,7 @@ export default function PreviewMain() {
             }}
           >
             <div
-              className={`origin-top ${
+              className={`relative origin-top ${
               renderMode === 'iframe' ? 'bg-transparent' : 'bg-white shadow-lg ring-1 ring-border'
             }`}
             style={{
@@ -610,9 +902,10 @@ export default function PreviewMain() {
             {renderMode === 'iframe' ? (
               <iframe
                 ref={iframeRef}
+                data-testid="preview-iframe"
                 title="시트 미리보기"
                 sandbox={sandbox}
-                srcDoc={srcdoc}
+                srcDoc={iframeDocumentSrcdoc}
                 className="block w-full border-0"
                 style={{ width: `${sheetCanvasWidth}px`, height: `${iframeHeight}px` }}
               />
@@ -623,11 +916,50 @@ export default function PreviewMain() {
                 className="block h-[calc(100vh-220px)] w-full overflow-auto"
               />
             )}
+            {renderMode === 'iframe' && mainMode === 'edit' && iframeEditOverlay && (
+              <div
+                aria-hidden="true"
+                data-testid="iframe-edit-overlay"
+                data-r20-block-id={iframeEditOverlay.blockId}
+                data-r20-edit-phase={iframeEditOverlay.phase}
+                data-r20-pointer-id={iframeEditOverlay.pointerId}
+                data-r20-hit-path-length={iframeEditOverlay.hitPath.length}
+                data-r20-offset-parent-block-id={iframeEditOverlay.subject.offsetParentBlockId ?? ''}
+                className="pointer-events-none absolute z-20 border-2 border-amber-500 bg-amber-400/10"
+                style={{
+                  left: `${iframeEditOverlay.rect.left + iframeEditDragDelta.x}px`,
+                  top: `${iframeEditOverlay.rect.top + iframeEditDragDelta.y}px`,
+                  width: `${iframeEditOverlay.rect.width}px`,
+                  height: `${iframeEditOverlay.rect.height}px`,
+                  boxSizing: 'border-box',
+                }}
+              />
+            )}
+            {renderMode === 'iframe' && mainMode === 'edit' && iframeEditDropTarget && (
+              <div
+                aria-hidden="true"
+                data-testid="iframe-edit-drop-overlay"
+                data-r20-drop-target-id={iframeEditDropTarget.blockId}
+                data-r20-drop-mode={iframeEditDropTarget.mode}
+                className={`pointer-events-none absolute z-30 border-2 ${
+                  iframeEditDropTarget.mode === 'inside'
+                    ? 'border-emerald-500 bg-emerald-400/10'
+                    : 'border-sky-500 bg-sky-400/10'
+                }`}
+                style={{
+                  left: `${iframeEditDropTarget.geometry.rect.left}px`,
+                  top: `${iframeEditDropTarget.geometry.rect.top}px`,
+                  width: `${iframeEditDropTarget.geometry.rect.width}px`,
+                  height: `${iframeEditDropTarget.geometry.rect.height}px`,
+                  boxSizing: 'border-box',
+                }}
+              />
+            )}
             </div>
           </div>
         )}
       </div>
-      {contextMenuState && renderMode === 'shadow' && (
+      {contextMenuState && mainMode === 'edit' && (
         <ShadowContextMenu
           blockId={contextMenuState.blockId}
           x={contextMenuState.x}

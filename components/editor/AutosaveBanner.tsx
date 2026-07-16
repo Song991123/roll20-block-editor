@@ -19,7 +19,8 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import { WORKSPACE_KEYS, useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { usePreviewStore } from '@/lib/stores/previewStore';
 import {
   deleteWorkspace,
   AUTOSAVE_KEY,
@@ -46,8 +47,6 @@ function relativeTime(ts: number): string {
   const day = Math.floor(hr / 24);
   return `${day}일 전`;
 }
-
-const WORKSPACE_KEYS: WorkspaceKey[] = ['html', 'css', 'i18n'];
 
 export default function AutosaveBanner({ xml, meta, onDismiss }: Props) {
   const [busy, setBusy] = useState(false);
@@ -81,6 +80,16 @@ export default function AutosaveBanner({ xml, meta, onDismiss }: Props) {
       // changeListener 가 bumpStructure 호출하지만, 안전을 위해 explicit count 동기화.
       // (Blockly.Events.disable 안에서 hydrate 했으면 listener 가 못 잡았을 수 있음.)
       const store = useWorkspaceStore.getState();
+      const previewStore = usePreviewStore.getState();
+      if (parts.assetReplacementMap !== undefined) {
+        previewStore.setAssetReplacementMap(parts.assetReplacementMap);
+      }
+      if (parts.assetReplacementProfiles !== undefined) {
+        previewStore.setAssetReplacementProfiles(
+          parts.assetReplacementProfiles,
+          parts.activeAssetReplacementProfileId ?? null,
+        );
+      }
       for (const key of WORKSPACE_KEYS) {
         const ws = adapter.getWorkspace(key);
         if (ws) {

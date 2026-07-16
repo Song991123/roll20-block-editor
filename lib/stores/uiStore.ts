@@ -11,14 +11,15 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type SidebarLeftMode = 'blocks';
 export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴림 결과)
-export type CodeSubTab = 'html' | 'css' | 'i18n';
-export type WorkspaceKey = 'html' | 'css' | 'i18n';
+export type CodeSubTab = 'html' | 'css' | 'i18n' | 'worker';
+export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'worker';
 export type PreviewZoom = 'fit' | number;               // D52
 // D26 ②-재재 — 메인 영역 분할 뷰. 'split' default (양쪽 동시), 'assemble'/'preview' = 한쪽만 max.
 export type MainMode = 'split' | 'assemble' | 'preview' | 'edit';
 
 // Phase A — WYSIWYG 모드. 편집 모드일 때 시트 / 굴림틀 sub-tab.
 export type EditSubmode = 'sheet' | 'rolltemplate';
+export type EditPlacementMode = 'flow' | 'free';
 
 // Phase A — 미리보기 9 레이어 (N2).
 export type PreviewLayer =
@@ -81,6 +82,7 @@ export interface UiState {
   rolltemplateCanvasWidth: number; // default 280
   // Phase A — snap 8px on/off.
   snapEnabled: boolean;
+  editPlacementMode: EditPlacementMode;
   // Phase A — 선택된 위젯 (sheet 또는 rolltemplate).
   selectedWidgetId: string | null;
   hoveredWidgetId: string | null;
@@ -114,6 +116,7 @@ export interface UiState {
   setRolltemplateCanvasWidth: (w: number) => void;
   setSnapEnabled: (b: boolean) => void;
   toggleSnapEnabled: () => void;
+  setEditPlacementMode: (m: EditPlacementMode) => void;
   setSelectedWidgetId: (id: string | null) => void;
   setHoveredWidgetId: (id: string | null) => void;
   setSfxEnabled: (b: boolean) => void;
@@ -132,7 +135,7 @@ const DEFAULT_STATE = {
   codeSubTab: 'html' as CodeSubTab,
   treeWorkspaceTab: 'html' as WorkspaceKey,
   blocksSearch: '',
-  blocksExpandedCategories: ['container', 'input', 'display', 'dice', 'i18n'],
+  blocksExpandedCategories: ['container', 'input', 'display', 'dice', 'i18n', 'sheet_worker'],
   blocksAdvancedShown: false,
   treeExpanded: {} as Record<string, boolean>,
   treeSearch: '',
@@ -142,6 +145,7 @@ const DEFAULT_STATE = {
   sheetCanvasWidth: 850,
   rolltemplateCanvasWidth: 280,
   snapEnabled: true,
+  editPlacementMode: 'flow' as EditPlacementMode,
   selectedWidgetId: null as string | null,
   hoveredWidgetId: null as string | null,
   sfxEnabled: true,
@@ -212,6 +216,7 @@ export const useUiStore = create<UiState>()(
         set({ rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))) }),
       setSnapEnabled: (b) => set({ snapEnabled: b }),
       toggleSnapEnabled: () => set((s) => ({ snapEnabled: !s.snapEnabled })),
+      setEditPlacementMode: (m) => set({ editPlacementMode: m }),
       setSelectedWidgetId: (id) => set({ selectedWidgetId: id }),
       setHoveredWidgetId: (id) => set({ hoveredWidgetId: id }),
       setSfxEnabled: (b) => set({ sfxEnabled: b }),
@@ -254,6 +259,7 @@ export const useUiStore = create<UiState>()(
         sheetCanvasWidth: s.sheetCanvasWidth,
         rolltemplateCanvasWidth: s.rolltemplateCanvasWidth,
         snapEnabled: s.snapEnabled,
+        editPlacementMode: s.editPlacementMode,
         previewLayer: s.previewLayer,
         sidebarLeftMode: s.sidebarLeftMode,
         sidebarLeftCollapsed: s.sidebarLeftCollapsed,

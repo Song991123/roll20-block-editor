@@ -10,6 +10,7 @@ const APP_VERSION = 'v0.1.0';
 const WORKSPACE_LABEL = {
   html: 'HTML',
   css: 'CSS',
+  worker: 'Worker',
   i18n: '번역',
 } as const;
 
@@ -26,23 +27,23 @@ export default function Statusbar() {
       style={{ height: 'var(--statusbar-h)' }}
     >
       <span className="tabular-nums">
-        블록 <span className="text-foreground font-medium">{total.toLocaleString()}</span>개
+        블록 <span className="font-medium text-foreground">{total.toLocaleString()}</span>개
       </span>
-      <span className="text-border">·</span>
+      <span className="text-border">|</span>
       <span>
         {dirty ? (
-          <span className="text-warning">저장 안 됨</span>
+          <span className="text-warning">저장 필요</span>
         ) : (
           <span className="text-success">저장됨</span>
         )}
       </span>
-      <span className="text-border">·</span>
-      <span>자동저장 {autosave ? '켜짐' : '꺼짐'}</span>
-      <span className="text-border">·</span>
+      <span className="text-border">|</span>
+      <span>자동 저장 {autosave ? '켜짐' : '꺼짐'}</span>
+      <span className="text-border">|</span>
       <span>작업공간: {WORKSPACE_LABEL[treeTab]}</span>
       <span className="flex-1" />
       <SfxToggle />
-      <span className="text-border">·</span>
+      <span className="text-border">|</span>
       <span className="tabular-nums opacity-70">{APP_VERSION}</span>
     </footer>
   );

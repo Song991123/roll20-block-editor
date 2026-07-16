@@ -230,15 +230,22 @@ export function emitWorkspace(
  */
 export function emitAll(
   workspaces: Partial<Record<WorkspaceKey, Blockly.Workspace | null>>,
-): { html: string; css: string; i18n: string; warnings: EmitWarning[] } {
+): { html: string; css: string; i18n: string; worker: string; warnings: EmitWarning[] } {
   const html = emitWorkspace(workspaces.html ?? null, 'html');
   const css = emitWorkspace(workspaces.css ?? null, 'css');
   const i18n = emitWorkspace(workspaces.i18n ?? null, 'i18n');
+  const worker = emitWorkspace(workspaces.worker ?? null, 'worker');
+  const workerBody = normalizeWorkerBody(worker.code);
+  const htmlCode = stripWorkerScriptsFromHtml(html.code);
+  const htmlWithWorker = workerBody
+    ? `${htmlCode}${htmlCode ? '\n' : ''}<script type="text/worker">\n${workerBody}\n</script>`
+    : htmlCode;
   return {
-    html: html.code,
+    html: htmlWithWorker,
     css: css.code,
     i18n: i18n.code,
-    warnings: [...html.warnings, ...css.warnings, ...i18n.warnings],
+    worker: workerBody,
+    warnings: [...html.warnings, ...css.warnings, ...i18n.warnings, ...worker.warnings],
   };
 }
 
@@ -252,6 +259,37 @@ function escapeAttr(s: string): string {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+function normalizeWorkerBody(code: string): string {
+  const trimmed = code.trim();
+  if (!trimmed) return '';
+  const pieces: string[] = [];
+  const scriptRe = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = scriptRe.exec(trimmed))) {
+    const before = trimmed.slice(last, match.index).trim();
+    if (before) pieces.push(before);
+    pieces.push(match[1].trim());
+    last = match.index + match[0].length;
+  }
+  const rest = trimmed.slice(last).trim();
+  if (rest) pieces.push(rest);
+  return pieces.filter(Boolean).join('\n');
+}
+
+function stripWorkerScriptsFromHtml(html: string): string {
+  if (!html) return '';
+  return html.replace(/<script\b([^>]*)>[\s\S]*?<\/script>/gi, (full, rawAttrs: string) => {
+    const type = getScriptType(rawAttrs);
+    return type === 'text/worker' || type === '' ? '' : full;
+  });
+}
+
+function getScriptType(rawAttrs: string): string {
+  const typeMatch = /\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>/]+))/i.exec(rawAttrs ?? '');
+  return String(typeMatch?.[1] ?? typeMatch?.[2] ?? typeMatch?.[3] ?? '').trim().toLowerCase();
 }
 
 /**

@@ -48,9 +48,9 @@ export default function WidgetGallery() {
   const addPreset = (preset: FriendlyWidgetPreset) => {
     const id = appendFriendlyWidgetPreset(preset);
     if (id) {
-      toast(`${preset.label}을 추가했어요.`, { duration: 1400 });
+      toast(`${preset.label} 추가됨`, { duration: 1400 });
     } else {
-      toast.error('시트 작업공간이 아직 준비되지 않았어요.');
+      toast.error('시트 작업 공간이 아직 준비되지 않았어요.');
     }
   };
 

@@ -1,22 +1,37 @@
 # Reports Index
 
-Date: 2026-06-12
+Date: 2026-06-14
 
-Reports are evidence, but each report has a limited scope. Do not use a report to prove more than it actually checked.
+`reports/` is a local verification output folder. Generated report files are ignored by Git because they may contain real Roll20 sheet names, derived HTML, screenshots, asset URLs, or private fixture details.
 
-| Report Folder | Scope | Does Not Prove |
-| --- | --- | --- |
-| `corpus-static-audit/` | Static inventory of sheet corpus files and risk flags. | Visual parity or import correctness. |
-| `roundtrip-node/` | Node-side import/emit diagnostics for selected fixtures. | Browser behavior, real Roll20 behavior, or pixel parity. |
-| `visual-reference-inventory/` | Candidate reference images and sheet folders. | That any reference is the correct default state. |
-| `visual-fixture-render/` | Fixture HTML rendered through the preview document builder. | Pixel parity with Roll20 or reference images. |
-| `visual-fixture-diff/` | Browser/canvas screenshot diff diagnostics. | Final visual parity until viewport, crop, default state, translation, worker state, and assets are normalized. |
-| `cascade-leak/` | Browser-computed CSS cascade diagnostics for rendered fixture HTML. | Live Next.js edit-mode Shadow DOM leakage or visual parity. |
+Keep this README as the only public index unless the user explicitly approves a sanitized report artifact.
+
+## Local Report Types
+
+| Folder | Local Scope |
+| --- | --- |
+| `corpus-static-audit/` | Static inventory of local source corpora and risk flags. |
+| `roundtrip-node/` | Node-side import/emit diagnostics for selected local fixtures. |
+| `roundtrip-browser/` | Browser-side import/emit roundtrip diagnostics. |
+| `edit-flow-smoke/` | Browser evidence for edit-mode drag/drop behavior. |
+| `imported-edit-sync/` | Local browser smoke for imported fixture object drag, edit/preview sync, and emitted position data. |
+| `mapping-fidelity/` | Source-vs-emit token audits for selected private fixtures. |
+| `visual-reference-inventory/` | Local reference image inventory. |
+| `visual-fixture-render/` | Standalone fixture HTML render output. |
+| `visual-fixture-diff/` | Browser screenshot/pixel-diff diagnostics. |
+| `cascade-leak/` | Standalone preview CSS cascade diagnostics. |
+| `live-shadow-cascade/` | Live app preview/edit Shadow DOM cascade diagnostics. |
+| `preview-edit-visual/` | Local screenshot and pixel diagnostics for imported fixture preview root vs edit root. |
+| `asset-resource-audit/` | Local HTML/CSS asset URL inventory and reachability diagnostics. |
+| `legacy-fixture-visual/` | Local imported-fixture modern/legacy preview screenshots and legacy-risk CSS diagnostics. |
+| `roll20-sandbox-preview-smoke/` | Local browser smoke for the Roll20 Custom Sheet Sandbox expected-render preview toggle. |
+| `rolltemplate-chat-smoke/` | Local preview iframe roll button -> ChatPane rolltemplate rendering smoke. |
+| `roll20-actual-compare/` | Local Roll20 room/sandbox/test-room screenshot comparison and classification notes. |
 
 ## Evidence Rules
 
-- A successful render means the pipeline produced HTML, not that the sheet is visually correct.
-- A pixel diff number is diagnostic until the compared states are proven equivalent.
-- Console errors/warnings must be recorded with browser runs.
+- A local report can support an internal TODO claim, but it should not be published automatically.
+- A successful render means the pipeline produced HTML, not that the sheet is visually identical to Roll20.
+- Pixel diff scores are diagnostic until viewport, crop, default state, assets, and translations are normalized.
 - Legacy CSS sanitize must be reported separately from auto-prefix.
-- GitHub Pages checks must be recorded separately from local checks.
+- If a public artifact is needed, create a sanitized summary without real sheet contents, screenshots, names, or asset URLs.

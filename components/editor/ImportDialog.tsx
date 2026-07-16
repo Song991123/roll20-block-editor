@@ -14,7 +14,7 @@
  * 시스템 specific 토큰 0 — Roll20 시트면 무엇이든 입력 가능.
  */
 
-import { useState, type ChangeEvent } from 'react';
+import { useMemo, useState, type ChangeEvent } from 'react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -27,7 +27,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { importSheet } from '@/lib/import';
+import {
+  analyzeAssetRefs,
+  buildAssetReplacementDraft,
+  type AssetPreflight,
+} from '@/lib/export/asset_refs';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import {
+  moveImportedWorkerBlocksToWorkspace,
+  replaceWorkerWorkspaceFromSourceHtml,
+} from '@/lib/blockly/workerWorkspace';
+import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 
 export interface ImportDialogProps {
@@ -85,7 +95,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const [htmlText, setHtmlText] = useState('');
   const [cssText, setCssText] = useState('');
   const [i18nText, setI18nText] = useState('');
+  const [compactWideRows, setCompactWideRows] = useState(false);
   const [busy, setBusy] = useState(false);
+  const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
+  const setAssetReplacementMap = usePreviewStore((s) => s.setAssetReplacementMap);
   const [report, setReport] = useState<null | {
     coverage: number;
     matched: number;
@@ -94,10 +107,17 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     cssMatched: number;
     cssTotal: number;
     i18nKeys: number;
+    workerBlocks: number;
     warnings: number;
     sanitizeDropped: number;
+    wideRowBundles: number;
+    wideRowCollapsed: number;
   }>(null);
   const [progress, setProgress] = useState<null | { done: number; total: number; pct: number }>(null);
+  const assetPreflight = useMemo(
+    () => analyzeAssetRefs(htmlText, cssText),
+    [htmlText, cssText],
+  );
 
   function handleFile(setter: (v: string) => void) {
     return (e: ChangeEvent<HTMLInputElement>) => {
@@ -121,13 +141,18 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         html: htmlText,
         css: cssText,
         i18n: i18nText,
+      }, {
+        html: { compactWideRows },
       });
       const adapter = getBlocklyAdapter();
       const ws = useWorkspaceStore.getState();
+      const emptyXml = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
       // Reset before hydrate to avoid duplicate top blocks.
       ws.resetWorkspace('html');
       ws.resetWorkspace('css');
       ws.resetWorkspace('i18n');
+      ws.resetWorkspace('worker');
+      adapter.hydrateFromXml('worker', emptyXml);
 
       // html 워크스페이스가 가장 큼 (6K 가능) → chunked. css/i18n 은 보통 작음.
       // top-level 카운트는 chunked 가 자체 측정 → progress callback 으로 수신.
@@ -145,11 +170,14 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           }
         },
       });
+      const workerMove = moveImportedWorkerBlocksToWorkspace();
+      const workerSource = replaceWorkerWorkspaceFromSourceHtml(htmlText);
       adapter.hydrateFromXml('css', result.css);
       adapter.hydrateFromXml('i18n', result.i18n);
       arrangeImportedWorkspace('html');
       arrangeImportedWorkspace('css');
       arrangeImportedWorkspace('i18n');
+      arrangeImportedWorkspace('worker');
       // chunked 토스트 정리.
       if (htmlTotal >= PROGRESS_THRESHOLD) {
         toast.dismiss(PROGRESS_TOAST_ID);
@@ -158,12 +186,15 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       const htmlBlocks = adapter.getWorkspace('html')?.getAllBlocks(false).length ?? 0;
       const cssBlocks = adapter.getWorkspace('css')?.getAllBlocks(false).length ?? 0;
       const i18nBlocks = adapter.getWorkspace('i18n')?.getAllBlocks(false).length ?? 0;
+      const workerBlocks = adapter.getWorkspace('worker')?.getAllBlocks(false).length ?? 0;
       ws.bumpStructure('html', htmlBlocks);
       ws.bumpStructure('css', cssBlocks);
       ws.bumpStructure('i18n', i18nBlocks);
+      ws.bumpStructure('worker', workerBlocks);
       ws.markSaved('html');
       ws.markSaved('css');
       ws.markSaved('i18n');
+      ws.markSaved('worker');
       setReport({
         coverage: result.stats.coverage,
         matched: result.stats.htmlMatched,
@@ -172,8 +203,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         cssMatched: result.stats.cssMatched,
         cssTotal: result.stats.cssTotal,
         i18nKeys: result.stats.i18nKeys,
+        workerBlocks: workerSource.replaced ? workerSource.targetCount : workerMove.targetCount,
         warnings: result.warnings.length,
         sanitizeDropped: result.stats.sanitizeDropped,
+        wideRowBundles: result.stats.wideRowBundles ?? 0,
+        wideRowCollapsed: result.stats.wideRowCollapsed ?? 0,
       });
       if (result.stats.sanitizeDropped > 0) {
         toast.warning(
@@ -200,6 +234,21 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     setCssText('');
     setI18nText('');
     setReport(null);
+  }
+
+  function handleCreateAssetReplacementDraft() {
+    const draft = buildAssetReplacementDraft(assetPreflight, {
+      sourceLabel: 'import preflight',
+    });
+    if (!draft) {
+      toast('교체할 외부 자산 URL이 없습니다.', { duration: 2200 });
+      return;
+    }
+    const next = [assetReplacementMap.trim(), draft].filter(Boolean).join('\n\n');
+    setAssetReplacementMap(next);
+    toast.success('자산 교체 목록 초안을 만들었습니다. 내보내기 창에서 새 URL을 채워 주세요.', {
+      duration: 3500,
+    });
   }
 
   const anyInput = !!(htmlText.trim() || cssText.trim() || i18nText.trim());
@@ -273,6 +322,27 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           </TabsContent>
         </Tabs>
 
+        <ImportAssetPreflight
+          result={assetPreflight}
+          onCreateDraft={handleCreateAssetReplacementDraft}
+        />
+
+        <label className="flex gap-3 rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed">
+          <input
+            type="checkbox"
+            checked={compactWideRows}
+            onChange={(e) => setCompactWideRows(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-primary"
+          />
+          <span>
+            <span className="block font-medium">큰 표 행 빠르게 불러오기</span>
+            <span className="block text-muted-foreground">
+              반복되는 큰 표 행을 묶음으로 보존해 불러오기 시간을 줄입니다. Roll20 출력 HTML은 유지하지만,
+              묶인 행 내부 요소는 나중에 분해하기 전까지 개별 블록으로 편집하기 어렵습니다.
+            </span>
+          </span>
+        </label>
+
         {progress && progress.total > 0 && (
           <div
             className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed"
@@ -310,6 +380,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span>
               {' · '}번역 키 <span className="tabular-nums">{report.i18nKeys}</span>
             </div>
+            {report.wideRowBundles > 0 && (
+              <div className="mt-1 text-sky-500">
+                큰 표 행 묶음 {report.wideRowBundles}개로 약 {report.wideRowCollapsed}개 블록을 줄였습니다.
+              </div>
+            )}
             {report.sanitizeDropped > 0 && (
               <div className="mt-1 text-amber-500" data-testid="import-sanitize-warning">
                 보안을 위해 인라인 이벤트 핸들러(onclick 등) {report.sanitizeDropped}개를 제거했습니다.
@@ -333,6 +408,95 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ImportAssetPreflight({
+  result,
+  onCreateDraft,
+}: {
+  result: AssetPreflight;
+  onCreateDraft: () => void;
+}) {
+  const hasRisk =
+    result.externalRefs > 0 || result.relativeRefs > 0 || result.placeholderRiskRefs > 0;
+  const draftableRefs = result.refs.filter((ref) => ref.kind !== 'data-url').length;
+  return (
+    <section
+      className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px]"
+      data-testid="import-asset-preflight"
+    >
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">불러오기 자산 점검</div>
+          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+            이미지와 폰트 URL은 시트 구조와 별개로 Roll20에서 다시 로드됩니다. 삭제된 Imgur
+            이미지나 Roll20 프록시 URL은 placeholder로 보일 수 있습니다.
+          </p>
+        </div>
+        <span
+          className={`shrink-0 rounded border px-2 py-1 text-[11px] font-medium ${
+            hasRisk
+              ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200'
+              : 'border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
+          }`}
+          data-testid="import-asset-preflight-status"
+        >
+          {hasRisk ? '확인 필요' : '외부 자산 없음'}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <ImportAssetMetric label="외부 URL" value={result.externalRefs} />
+        <ImportAssetMetric label="상대 경로" value={result.relativeRefs} />
+        <ImportAssetMetric label="Roll20 프록시" value={result.roll20ProxyRefs} />
+        <ImportAssetMetric label="Imgur 페이지" value={result.imgurPageRefs} />
+        <ImportAssetMetric label="placeholder 위험" value={result.placeholderRiskRefs} />
+        <ImportAssetMetric label="데이터 URL" value={result.dataRefs} />
+        <ImportAssetMetric label="HTTP URL" value={result.insecureHttpRefs} />
+        <ImportAssetMetric label="직링크 후보" value={result.canonicalDirectRefs} />
+        <ImportAssetMetric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
+      </div>
+      {hasRisk ? (
+        <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-100">
+          실제 Roll20 동일성을 확인하려면 이 자산들이 로드되는지 먼저 봐야 합니다.
+          삭제되었거나 막힌 URL은 export의 자산 URL 교체에서 사용자가 직접 다시 올린 URL로
+          바꿔 주세요.
+          {result.canonicalDirectRefs > 0 ? (
+            <span className="mt-1 block" data-testid="import-asset-canonical-candidates">
+              교체 초안에 {result.canonicalDirectRefs}개의 HTTPS/직링크 후보를 같이 적습니다.
+              후보 URL도 권한과 로딩 상태를 확인한 뒤 사용해야 합니다.
+            </span>
+          ) : null}
+          {result.hosts.length > 0 ? (
+            <span className="mt-1 block text-muted-foreground">
+              감지된 호스트: {result.hosts.slice(0, 5).join(', ')}
+              {result.hosts.length > 5 ? ` 외 ${result.hosts.length - 5}개` : ''}
+            </span>
+          ) : null}
+          {draftableRefs > 0 ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-2 h-7 px-2 text-[11px]"
+              onClick={onCreateDraft}
+              data-testid="import-asset-replacement-draft"
+            >
+              교체 목록 초안 만들기
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function ImportAssetMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2">
+      <div className="text-[10.5px] text-muted-foreground">{label}</div>
+      <div className="mt-0.5 font-mono text-[13px]">{value}</div>
+    </div>
   );
 }
 

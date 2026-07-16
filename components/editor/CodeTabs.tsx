@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,30 @@ import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import { toast } from 'sonner';
 
 const SUB_TABS = [
-  { id: 'html', label: 'HTML' },
-  { id: 'css', label: 'CSS' },
-  { id: 'i18n', label: '번역' },
+  {
+    id: 'html',
+    label: 'HTML',
+    empty: '아직 생성된 HTML이 없어요. 시트 요소를 추가해 보세요.',
+    note: 'Roll20 시트 본문입니다.',
+  },
+  {
+    id: 'css',
+    label: 'CSS',
+    empty: '아직 생성된 CSS가 없어요. 스타일을 추가해 보세요.',
+    note: 'Roll20에 함께 올릴 시트 스타일입니다.',
+  },
+  {
+    id: 'worker',
+    label: 'Worker JS',
+    empty: '아직 Worker JS가 없어요. 가져온 시트의 worker 스크립트는 여기에 보존됩니다.',
+    note: '시트 위에는 표시하지 않고 Roll20 런타임에서 실행되는 코드입니다.',
+  },
+  {
+    id: 'i18n',
+    label: '번역',
+    empty: '아직 번역 JSON이 없어요.',
+    note: 'Roll20 translation.json으로 내보낼 내용입니다.',
+  },
 ] as const;
 
 /**
@@ -26,7 +47,9 @@ export default function CodeTabs() {
   const emit = useWorkspaceStore((s) => s.emitCache);
   const [copied, setCopied] = useState(false);
 
+  const activeTab = SUB_TABS.find((tab) => tab.id === subTab) ?? SUB_TABS[0];
   const content = subTab === 'i18n' ? emit.i18n : emit[subTab];
+  const byteCount = useMemo(() => new TextEncoder().encode(content).length, [content]);
 
   const onCopy = async () => {
     if (!content) {
@@ -48,21 +71,40 @@ export default function CodeTabs() {
         <ToggleGroup
           type="single"
           value={subTab}
-          onValueChange={(v) => v && setSubTab(v as 'html' | 'css' | 'i18n')}
+          onValueChange={(v) => v && setSubTab(v as 'html' | 'css' | 'i18n' | 'worker')}
           size="sm"
           className="w-full"
         >
           {SUB_TABS.map((t) => (
-            <ToggleGroupItem key={t.id} value={t.id} className="flex-1 text-[11px]">
+            <ToggleGroupItem
+              key={t.id}
+              value={t.id}
+              className="flex-1 text-[11px]"
+              data-testid={`code-subtab-${t.id}`}
+            >
               {t.label}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+        <div
+          className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground"
+          data-testid="code-tab-status"
+        >
+          <span className="font-medium text-foreground">{activeTab.label}</span>
+          <span className="mx-1 text-border">|</span>
+          <span>{byteCount.toLocaleString()} B</span>
+          <span className="mx-1 text-border">|</span>
+          <span>{activeTab.note}</span>
+        </div>
       </div>
 
       <ScrollArea className="flex-1 min-h-0">
         <pre className="m-0 p-3 font-mono text-[11px] leading-relaxed text-foreground whitespace-pre-wrap break-all">
-          {content || <span className="text-muted-foreground italic">아직 생성된 코드가 없어요. 블록을 추가해 보세요.</span>}
+          {content || (
+            <span className="text-muted-foreground italic" data-testid="code-tab-empty">
+              {activeTab.empty}
+            </span>
+          )}
         </pre>
       </ScrollArea>
 

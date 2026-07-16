@@ -36,6 +36,20 @@ html, body {
 }
 
 /* preview-only 선택 강조 */
+/* Roll20 actual parity: repeating fieldsets are transformed by Roll20 runtime.
+   Do not add app-only borders or pseudo labels to the sheet render itself. */
+.charsheet fieldset[class^='repeating_'],
+.charsheet fieldset[class*=' repeating_'] {
+  display: none;
+  border: 0;
+  background: transparent;
+}
+.charsheet fieldset[class^='repeating_']::before,
+.charsheet fieldset[class*=' repeating_']::before {
+  content: none;
+  display: none;
+}
+
 .charsheet [data-r20-preview-selected='1'] {
   outline: 2px solid var(--r20-focus, #2f81f7);
   outline-offset: 1px;

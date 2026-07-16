@@ -130,12 +130,15 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('JS')
         .appendField(new Blockly.FieldTextInput(''), 'JS');
+      b.appendStatementInput('CHILDREN').setCheck(null).appendField('분해된 worker 블록');
       setStatementHooks(b);
     }),
-    generator: (block) => {
+    generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const js = String(b.getFieldValue('JS') ?? '');
-      return `<script type="text/worker">\n${safeScriptText(js)}\n</script>`;
+      const children = ctx.statementToCode(block, 'CHILDREN').trim();
+      const body = js.trim() ? js : children;
+      return `<script type="text/worker">\n${safeScriptText(body)}\n</script>`;
     },
     inspectorSchema: [
       {

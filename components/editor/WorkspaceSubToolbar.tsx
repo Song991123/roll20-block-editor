@@ -25,6 +25,7 @@ const TABS: Array<{ key: WorkspaceKey; label: string; color: string }> = [
   { key: 'html', label: 'HTML', color: 'var(--cat-container)' },
   { key: 'css', label: 'CSS', color: 'var(--cat-css)' },
   { key: 'i18n', label: 'i18n', color: 'var(--cat-i18n)' },
+  { key: 'worker', label: 'Worker', color: 'var(--cat-sheetworker)' },
 ];
 
 export default function WorkspaceSubToolbar() {

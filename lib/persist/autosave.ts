@@ -22,14 +22,26 @@
 
 import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import {
+  WORKSPACE_KEYS,
+  useWorkspaceStore,
+  type WorkspaceKey,
+} from '@/lib/stores/workspaceStore';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
-import { AUTOSAVE_KEY, saveWorkspace, type SaveError } from './indexeddb';
-
-const WORKSPACE_KEYS: WorkspaceKey[] = ['html', 'css', 'i18n'];
+import {
+  usePreviewStore,
+  type AssetReplacementProfile,
+} from '@/lib/stores/previewStore';
+import { AUTOSAVE_KEY, saveWorkspace, type SaveError, type SaveResult } from './indexeddb';
 
 /** 복합 XML 형태 — 3 워크스페이스 합본. spec 22 §3.2. */
-const COMBINED_XML_VERSION = 1;
+const COMBINED_XML_VERSION = 2;
+
+export type ParsedCombinedXml = Record<WorkspaceKey, string> & {
+  assetReplacementMap?: string;
+  assetReplacementProfiles?: AssetReplacementProfile[];
+  activeAssetReplacementProfileId?: string | null;
+};
 
 /**
  * 3 워크스페이스 (html/css/i18n) XML 을 하나의 wrapper 로 묶는다.
@@ -37,6 +49,10 @@ const COMBINED_XML_VERSION = 1;
  */
 export function buildCombinedXml(): string {
   const adapter = getBlocklyAdapter();
+  const previewState = usePreviewStore.getState();
+  const assetReplacementMap = previewState.assetReplacementMap;
+  const assetReplacementProfiles = previewState.assetReplacementProfiles;
+  const activeAssetReplacementProfileId = previewState.activeAssetReplacementProfileId;
   const parts: string[] = [];
   parts.push(
     `<r20-autosave version="${COMBINED_XML_VERSION}" ts="${Date.now()}">`,
@@ -47,8 +63,28 @@ export function buildCombinedXml(): string {
     const safe = xml.replace(/\]\]>/g, ']]]]><![CDATA[>');
     parts.push(`<ws key="${key}"><![CDATA[${safe}]]></ws>`);
   }
+  parts.push('<preview>');
+  parts.push(
+    `<asset-replacement-map><![CDATA[${escapeCdata(assetReplacementMap)}]]></asset-replacement-map>`,
+  );
+  parts.push(
+    `<asset-replacement-profiles active-id="${escapeAttr(activeAssetReplacementProfileId ?? '')}"><![CDATA[${escapeCdata(JSON.stringify(assetReplacementProfiles))}]]></asset-replacement-profiles>`,
+  );
+  parts.push('</preview>');
   parts.push('</r20-autosave>');
   return parts.join('');
+}
+
+function escapeCdata(text: string): string {
+  return String(text ?? '').replace(/\]\]>/g, ']]]]><![CDATA[>');
+}
+
+function escapeAttr(text: string): string {
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 /**
@@ -59,7 +95,7 @@ export function buildCombinedXml(): string {
  */
 export function parseCombinedXml(
   xml: string,
-): Record<WorkspaceKey, string> | null {
+): ParsedCombinedXml | null {
   if (typeof DOMParser === 'undefined') return null;
   if (!xml || typeof xml !== 'string') return null;
   try {
@@ -75,13 +111,38 @@ export function parseCombinedXml(
       out[key] = node.textContent ?? '';
     }
     // 3개 모두 있어야 valid (없으면 빈 XML 로 채워줘도 OK 하지만 안전선 = 모두 존재).
+    const previewNode = root.getElementsByTagName('preview')[0] ?? null;
+    const assetMapNode = previewNode?.getElementsByTagName('asset-replacement-map')[0] ?? null;
+    const profileNode = previewNode?.getElementsByTagName('asset-replacement-profiles')[0] ?? null;
     return {
       html: out.html ?? '',
       css: out.css ?? '',
       i18n: out.i18n ?? '',
+      worker: out.worker ?? '',
+      assetReplacementMap: assetMapNode ? assetMapNode.textContent ?? '' : undefined,
+      assetReplacementProfiles: parseAssetReplacementProfiles(profileNode?.textContent ?? ''),
+      activeAssetReplacementProfileId: profileNode?.getAttribute('active-id') || null,
     };
   } catch {
     return null;
+  }
+}
+
+function parseAssetReplacementProfiles(text: string): AssetReplacementProfile[] | undefined {
+  if (!text.trim()) return undefined;
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (!Array.isArray(parsed)) return undefined;
+    return parsed
+      .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+      .map((item) => ({
+        id: String(item.id ?? ''),
+        name: String(item.name ?? ''),
+        text: String(item.text ?? ''),
+        updatedAt: Number(item.updatedAt ?? 0),
+      }));
+  } catch {
+    return undefined;
   }
 }
 
@@ -89,6 +150,7 @@ let installed = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let lastErrorAt = 0;
 let unsubVersion: (() => void) | null = null;
+let unsubPreview: (() => void) | null = null;
 
 /**
  * EditorShell mount 시 1회 호출. 두 번째 호출은 no-op (idempotent).
@@ -114,14 +176,15 @@ export function installAutosave(): () => void {
   // 3 워크스페이스 합산 version — 어느 하나라도 바뀌면 trigger.
   unsubVersion = useWorkspaceStore.subscribe((state, prev) => {
     const sumNow =
-      state.workspaces.html.structureVersion +
-      state.workspaces.css.structureVersion +
-      state.workspaces.i18n.structureVersion;
+      WORKSPACE_KEYS.reduce((sum, key) => sum + state.workspaces[key].structureVersion, 0);
     const sumPrev =
-      prev.workspaces.html.structureVersion +
-      prev.workspaces.css.structureVersion +
-      prev.workspaces.i18n.structureVersion;
+      WORKSPACE_KEYS.reduce((sum, key) => sum + prev.workspaces[key].structureVersion, 0);
     if (sumNow !== sumPrev) trigger();
+  });
+  unsubPreview = usePreviewStore.subscribe((state, prev) => {
+    if (state.assetReplacementMap !== prev.assetReplacementMap) trigger();
+    if (state.assetReplacementProfiles !== prev.assetReplacementProfiles) trigger();
+    if (state.activeAssetReplacementProfileId !== prev.activeAssetReplacementProfileId) trigger();
   });
 
   return () => {
@@ -133,6 +196,10 @@ export function installAutosave(): () => void {
     if (unsubVersion) {
       unsubVersion();
       unsubVersion = null;
+    }
+    if (unsubPreview) {
+      unsubPreview();
+      unsubPreview = null;
     }
   };
 }
@@ -166,36 +233,44 @@ function notifyError(kind: SaveError): void {
   }
 }
 
-async function runSave(): Promise<void> {
+export async function saveCurrentWorkspaceSnapshot(): Promise<SaveResult> {
   try {
     const xml = buildCombinedXml();
     const state = useWorkspaceStore.getState();
     const blockCount =
-      state.workspaces.html.blockCount +
-      state.workspaces.css.blockCount +
-      state.workspaces.i18n.blockCount;
+      WORKSPACE_KEYS.reduce((sum, key) => sum + state.workspaces[key].blockCount, 0);
     const result = await saveWorkspace(AUTOSAVE_KEY, xml, {
       ts: Date.now(),
       blockCount,
     });
     if (!result.ok) {
       notifyError(result.error ?? 'unknown');
+      return result;
     }
+    for (const key of WORKSPACE_KEYS) {
+      useWorkspaceStore.getState().markSaved(key);
+    }
+    return result;
   } catch {
     notifyError('unknown');
+    return { ok: false, error: 'unknown' };
   }
+}
+
+async function runSave(): Promise<void> {
+  await saveCurrentWorkspaceSnapshot();
 }
 
 /**
  * Manual flush — test / 페이지 종료 hook 등에서 즉시 저장하고 싶을 때.
  * pending timer 가 있으면 즉시 실행.
  */
-export async function flushAutosave(): Promise<void> {
+export async function flushAutosave(): Promise<SaveResult | null> {
   if (timer) {
     clearTimeout(timer);
     timer = null;
   }
   const settings = useSettingsStore.getState();
-  if (!settings.autosave) return;
-  await runSave();
+  if (!settings.autosave) return null;
+  return saveCurrentWorkspaceSnapshot();
 }

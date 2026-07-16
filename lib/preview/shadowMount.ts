@@ -50,7 +50,13 @@
  */
 
 /** Drag threshold — pointerdown 이후 이만큼 움직여야 drag 으로 간주 (px). */
+import { roll20ShadowDocumentFontFaceCss } from './roll20_base';
+import { parseTranslationMap } from '../export/payload';
+import { applyAnnotatedRoll20Autocalc } from './autocalc';
+
 const DRAG_THRESHOLD_PX = 3;
+const ROLL20_FONT_STYLE_ID = 'r20-shadow-document-font-faces';
+const ROLL20_REFERRER_META_ID = 'r20-shadow-referrer-policy';
 
 export interface ShadowMountOptions {
   /** 박을 user HTML — 이미 autoPrefix 처리된 상태 가정. */
@@ -61,6 +67,8 @@ export interface ShadowMountOptions {
   layer?: string;
   /** dark mode 토큰. */
   darkMode?: boolean;
+  /** Keep edit-only outlines, drop targets, and manipulation paint separate from sheet rendering. */
+  includeEditorOverlays?: boolean;
   /**
    * Shadow 안 element 가 클릭됐을 때 호출. ancestor 검색으로 가장 가까운
    * `[data-r20-block-id]` element 의 id 를 넘긴다. 없으면 호출 안 됨.
@@ -115,6 +123,8 @@ export interface ShadowMountOptions {
     kind: string;
     canReceiveChildren: boolean;
   } | null;
+  /** translation.json text for sheet worker helpers in Shadow/edit mode. */
+  i18n?: string;
 }
 
 export interface ShadowMountResult {
@@ -144,6 +154,304 @@ export interface ShadowMountResult {
   updateBlock: (blockId: string, newOuterHtml: string) => boolean;
 }
 
+function appendStyleElement(shadow: ShadowRoot, css: string, source: string): void {
+  const styleEl = document.createElement('style');
+  styleEl.setAttribute('data-r20-style-source', source);
+  styleEl.textContent = css;
+  shadow.appendChild(styleEl);
+}
+
+function extractSourceChunk(css: string, source: string): string {
+  const marker = `/* r20-style-source:${source} */`;
+  const start = css.indexOf(marker);
+  if (start < 0) return '';
+  const bodyStart = start + marker.length;
+  const next = css.indexOf('/* r20-style-source:', bodyStart);
+  return css.slice(bodyStart, next < 0 ? undefined : next);
+}
+
+function extractDocumentFontCssFromUserCss(css: string): string {
+  const userCss = extractSourceChunk(css, 'sheet-user-css');
+  if (!userCss.trim()) return '';
+  const imports = userCss.match(/@import\s+[^;]+;/gi) ?? [];
+  const fontFaces = userCss.match(/@font-face\s*{[\s\S]*?}/gi) ?? [];
+  return [...imports, ...fontFaces].join('\n');
+}
+
+function ensureRoll20DocumentFonts(css: string): void {
+  if (typeof document === 'undefined') return;
+  const suppressUserDocumentFonts =
+    window.localStorage.getItem('__r20SuppressUserDocumentFonts') === '1';
+  const documentFontCss = [
+    roll20ShadowDocumentFontFaceCss,
+    suppressUserDocumentFonts ? '' : extractDocumentFontCssFromUserCss(css),
+  ].filter((chunk) => chunk.trim()).join('\n');
+  if (!documentFontCss.trim()) return;
+  const styleEl = document.getElementById(ROLL20_FONT_STYLE_ID) ?? document.createElement('style');
+  styleEl.id = ROLL20_FONT_STYLE_ID;
+  if (styleEl.textContent !== documentFontCss) styleEl.textContent = documentFontCss;
+  if (!styleEl.parentNode) document.head.appendChild(styleEl);
+}
+
+function ensureRoll20DocumentReferrerPolicy(): void {
+  if (typeof document === 'undefined') return;
+  const existing =
+    document.querySelector<HTMLMetaElement>('meta[name="referrer"]') ??
+    document.getElementById(ROLL20_REFERRER_META_ID);
+  const meta = existing instanceof HTMLMetaElement ? existing : document.createElement('meta');
+  meta.id = ROLL20_REFERRER_META_ID;
+  meta.name = 'referrer';
+  meta.content = 'no-referrer';
+  if (!meta.parentNode) document.head.prepend(meta);
+}
+
+function emulateRoll20RepeatingSections(root: ParentNode): void {
+  root.querySelectorAll<HTMLFieldSetElement>('fieldset[class^="repeating_"], fieldset[class*=" repeating_"]').forEach((fieldset) => {
+    if (!/(?:^|\s)repeating_[^\s]+/.test(fieldset.getAttribute('class') || '')) return;
+    let node = fieldset.nextElementSibling;
+    let sawContainer = false;
+    let sawControl = false;
+    while (node) {
+      if (node.classList.contains('repcontainer')) sawContainer = true;
+      if (node.classList.contains('repcontrol')) sawControl = true;
+      if (sawContainer && sawControl) return;
+      if (node.tagName === 'FIELDSET' || !(node.classList.contains('repcontainer') || node.classList.contains('repcontrol'))) break;
+      node = node.nextElementSibling;
+    }
+    const container = document.createElement('div');
+    container.className = 'repcontainer';
+    const control = document.createElement('div');
+    control.className = 'repcontrol';
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'btn repcontrol_edit';
+    edit.textContent = 'Modify';
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'btn repcontrol_add';
+    add.textContent = '+Add';
+    control.append(edit, add);
+    fieldset.after(container, control);
+  });
+}
+
+function emulateRoll20ButtonClasses(root: ParentNode): void {
+  root.querySelectorAll<HTMLButtonElement>('button[type="roll"], button[type="compendium"], .repcontrol button').forEach((button) => {
+    button.classList.add('btn');
+    if (button.matches('button[type="roll"], button[type="compendium"]')) {
+      button.classList.add('ui-draggable');
+    }
+  });
+}
+
+function applyTranslationsToScope(root: ParentNode, i18n?: string): void {
+  const translations = parseTranslationMap(i18n);
+  if (Object.keys(translations).length === 0) return;
+
+  root.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n');
+    if (key && translations[key] != null) el.textContent = translations[key];
+  });
+  root.querySelectorAll<HTMLElement>('[data-i18n-html]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-html');
+    if (key && translations[key] != null) el.innerHTML = translations[key];
+  });
+
+  const attrPairs = [
+    ['data-i18n-title', 'title'],
+    ['data-i18n-alt', 'alt'],
+    ['data-i18n-placeholder', 'placeholder'],
+    ['data-i18n-aria-label', 'aria-label'],
+    ['data-i18n-label', 'label'],
+  ] as const;
+  for (const [source, target] of attrPairs) {
+    root.querySelectorAll<HTMLElement>(`[${source}]`).forEach((el) => {
+      const key = el.getAttribute(source);
+      if (key && translations[key] != null) el.setAttribute(target, translations[key]);
+    });
+  }
+}
+
+function cssEscapeForSelector(value: string): string {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(value);
+  }
+  return String(value).replace(/[^\w-]/g, '\\$&');
+}
+
+function regexEscape(value: string): string {
+  return String(value).replace(/[.*+?^\x24{}()|[\]\\]/g, '\\$&');
+}
+
+function readSheetAttr(scope: ParentNode, name: string): string {
+  const selector = `[name="attr_${cssEscapeForSelector(name)}"]`;
+  const el = scope.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(selector);
+  if (!el) return '';
+  if (el instanceof HTMLInputElement && el.type === 'checkbox') return el.checked ? (el.value || '1') : '0';
+  if (el instanceof HTMLInputElement && el.type === 'radio') return el.checked ? (el.value || '') : '';
+  return el.value == null ? '' : String(el.value);
+}
+
+function writeSheetAttr(scope: ParentNode, name: string, value: unknown): void {
+  const selector = `[name="attr_${cssEscapeForSelector(name)}"]`;
+  const nodes = scope.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(selector);
+  nodes.forEach((el) => {
+    if (el instanceof HTMLInputElement && el.type === 'checkbox') {
+      el.checked = String(value) === String(el.value || '1') || value === true || value === 1 || value === '1';
+      if (el.checked) el.setAttribute('checked', 'checked');
+      else el.removeAttribute('checked');
+      return;
+    }
+    if (el instanceof HTMLInputElement && el.type === 'radio') {
+      el.checked = String(el.value) === String(value);
+      if (el.checked) el.setAttribute('checked', 'checked');
+      else el.removeAttribute('checked');
+      return;
+    }
+    const nextValue = value == null ? '' : String(value);
+    el.value = nextValue;
+    el.setAttribute('value', nextValue);
+  });
+}
+
+function installShadowSheetWorkerRuntime(scope: ParentNode, i18n?: string): void {
+  const handlers: Record<string, Array<(payload?: unknown) => void>> = {};
+  const translations = parseTranslationMap(i18n);
+  let settingAttrs = false;
+
+  const on = (events: string, fn: (payload?: unknown) => void) => {
+    if (typeof fn !== 'function') return;
+    String(events || '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .forEach((eventName) => {
+        handlers[eventName] = handlers[eventName] || [];
+        handlers[eventName].push(fn);
+      });
+  };
+  const trigger = (eventName: string, payload?: unknown) => {
+    const list = handlers[eventName] || [];
+    for (const fn of list) {
+      try {
+        fn(payload ?? { sourceAttribute: eventName.replace(/^change:/, '') });
+      } catch (err) {
+        console.error('[shadow sheet worker]', eventName, err);
+      }
+    }
+  };
+  const getAttrs = (names: string[], cb?: (values: Record<string, string>) => void) => {
+    const out: Record<string, string> = {};
+    (names || []).forEach((name) => {
+      out[name] = readSheetAttr(scope, name);
+    });
+    if (typeof cb === 'function') cb(out);
+  };
+  const setAttrs = (
+    values: Record<string, unknown>,
+    opts?: unknown,
+    cb?: () => void,
+  ) => {
+    if (typeof opts === 'function') {
+      cb = opts as () => void;
+    }
+    settingAttrs = true;
+    Object.keys(values || {}).forEach((name) => writeSheetAttr(scope, name, values[name]));
+    settingAttrs = false;
+    Object.keys(values || {}).forEach((name) => trigger(`change:${name}`, { sourceAttribute: name }));
+    if (typeof cb === 'function') cb();
+  };
+  const getSectionIDs = (section: string, cb?: (ids: string[]) => void) => {
+    const safe = String(section || '').replace(/^repeating_/, '');
+    const ids: Record<string, true> = {};
+    const re = new RegExp(`^repeating_${regexEscape(safe)}_([^_]+)_`);
+    scope
+      .querySelectorAll(`[name^="repeating_${cssEscapeForSelector(safe)}_"]`)
+      .forEach((el) => {
+        const match = re.exec(el.getAttribute('name') || '');
+        if (match?.[1]) ids[match[1]] = true;
+      });
+    if (typeof cb === 'function') cb(Object.keys(ids));
+  };
+  const getTranslationByKey = (key: string) => {
+    const value = translations[key];
+    return value == null ? String(key || '') : String(value);
+  };
+  const getTranslationByLang = (_lang: string, key: string) => getTranslationByKey(key);
+  const getTranslationLanguage = () => 'ko';
+
+  scope.querySelectorAll<HTMLScriptElement>('script[type="text/worker"]').forEach((script) => {
+    const code = script.textContent || '';
+    if (!code.trim()) return;
+    try {
+      const fn = new Function(
+        'on',
+        'getAttrs',
+        'setAttrs',
+        'getSectionIDs',
+        'generateRowID',
+        'removeRepeatingRow',
+        'setDefaultToken',
+        'getTranslationByKey',
+        'getTranslationByLang',
+        'getTranslationLanguage',
+        code,
+      );
+      fn(
+        on,
+        getAttrs,
+        setAttrs,
+        getSectionIDs,
+        () => `row_${Math.random().toString(36).slice(2, 18)}`,
+        () => {},
+        () => {},
+        getTranslationByKey,
+        getTranslationByLang,
+        getTranslationLanguage,
+      );
+    } catch (err) {
+      console.error('[shadow sheet worker install]', err);
+    }
+  });
+
+  const eventScope = scope as ParentNode & EventTarget;
+  eventScope.addEventListener('change', (event) => {
+    if (settingAttrs) return;
+    const target = event.target as Element | null;
+    if (!target?.matches?.('input[name^="attr_"], select[name^="attr_"], textarea[name^="attr_"]')) return;
+    const rawName = target.getAttribute('name') || '';
+    const attr = rawName.slice(5);
+    const sourceValue =
+      target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio')
+        ? target.checked ? (target.value || '1') : ''
+        : target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement
+          ? target.value
+          : '';
+    setAttrs({ [attr]: sourceValue });
+  }, true);
+
+  trigger('sheet:opened', {});
+}
+
+function appendSourceMarkedStyles(shadow: ShadowRoot, css: string): void {
+  const marker = /\/\*\s*r20-style-source:([a-z0-9_-]+)\s*\*\//gi;
+  let lastIndex = 0;
+  let currentSource = 'shadow-combined';
+  let found = false;
+  let match: RegExpExecArray | null;
+
+  while ((match = marker.exec(css)) !== null) {
+    const chunk = css.slice(lastIndex, match.index);
+    if (chunk.trim()) appendStyleElement(shadow, chunk, currentSource);
+    currentSource = match[1] ?? 'shadow-combined';
+    lastIndex = marker.lastIndex;
+    found = true;
+  }
+
+  const tail = css.slice(lastIndex);
+  if (tail.trim()) appendStyleElement(shadow, tail, currentSource);
+  if (!found && !tail.trim()) appendStyleElement(shadow, css, 'shadow-combined');
+}
+
 /**
  * host element 의 Shadow Root 에 user 시트를 박는다.
  *
@@ -156,6 +464,8 @@ export function mountSheetShadow(
   host: HTMLElement,
   opts: ShadowMountOptions,
 ): ShadowMountResult {
+  ensureRoll20DocumentReferrerPolicy();
+  ensureRoll20DocumentFonts(opts.css);
   let shadow = host.shadowRoot;
   if (!shadow) {
     shadow = host.attachShadow({ mode: 'open' });
@@ -163,12 +473,11 @@ export function mountSheetShadow(
   // reset
   shadow.innerHTML = '';
 
-  const styleEl = document.createElement('style');
   // :host reset — outer page CSS 가 새지 않게.
   // contain: layout style — Shadow 안 reflow 가 outer 에 안 새도록.
   // .r20-selected — Phase B 선택 outline (orange #f60 + 2px offset).
   // .r20-dragging — Phase C drag 중 cursor: grabbing + 약한 opacity 로 시각 피드백.
-  styleEl.textContent = `
+  appendStyleElement(shadow, `
 :host {
   /* all: initial — outer page 의 Tailwind / shadcn / global utility 룰이
      host 자체에 박는 색/폰트/박스 모델 등 모든 상속 가능 속성을 reset.
@@ -193,6 +502,9 @@ export function mountSheetShadow(
   color: #e6e6e6;
   background: #1f1f1f;
 }
+`, 'shadow-host-reset');
+  if (opts.includeEditorOverlays !== false) {
+    appendStyleElement(shadow, `
 :host([data-r20-dragging]) {
   cursor: grabbing !important;
 }
@@ -200,7 +512,6 @@ export function mountSheetShadow(
   cursor: grabbing !important;
   user-select: none !important;
 }
-:host *, :host *::before, :host *::after { box-sizing: border-box; }
 [data-r20-block-id].r20-selected {
   outline: 2px solid #f60;
   outline-offset: 2px;
@@ -210,27 +521,42 @@ export function mountSheetShadow(
   outline: 2px dashed #f60;
   outline-offset: 2px;
 }
-[data-r20-can-drop="1"] {
-  outline: 1px dashed rgba(14, 165, 233, 0.35);
-  outline-offset: 2px;
+:host(:not([data-r20-widget-dragging])) [data-r20-can-drop="1"]:not(.r20-selected):not(.r20-drop-target) {
+  outline: 1px dashed rgba(14, 165, 233, 0.34) !important;
+  outline-offset: 2px !important;
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.08);
 }
-[data-r20-layer-role="flow"] {
-  outline-color: rgba(6, 182, 212, 0.45);
+:host(:not([data-r20-widget-dragging])) [data-r20-can-drop="1"][data-r20-layer-role="flow"]:not(.r20-selected):not(.r20-drop-target) {
+  outline-color: rgba(6, 182, 212, 0.38) !important;
+  box-shadow: inset 0 0 0 1px rgba(6, 182, 212, 0.1);
 }
-[data-r20-layer-role="table"] {
-  outline-color: rgba(99, 102, 241, 0.45);
+:host(:not([data-r20-widget-dragging])) [data-r20-can-drop="1"][data-r20-layer-role="table"]:not(.r20-selected):not(.r20-drop-target) {
+  outline-color: rgba(99, 102, 241, 0.4) !important;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.1);
 }
-[data-r20-layer-role="frame"] {
-  outline-color: rgba(14, 165, 233, 0.45);
+:host(:not([data-r20-widget-dragging])) [data-r20-can-drop="1"]:not(.r20-selected):not(.r20-drop-target):hover {
+  outline-color: rgba(14, 165, 233, 0.62) !important;
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.18);
 }
 :host([data-r20-widget-dragging]) [data-r20-can-drop="1"] {
   background-image: linear-gradient(rgba(14, 165, 233, 0.08), rgba(14, 165, 233, 0.08));
+  outline: 2px dashed rgba(14, 165, 233, 0.55);
+  outline-offset: 2px;
   outline-width: 2px;
 }
 [data-r20-block-id].r20-drop-target {
   background-image: linear-gradient(rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.14)) !important;
   outline: 3px solid rgba(34, 197, 94, 0.75) !important;
   outline-offset: 3px !important;
+}
+[data-r20-block-id].r20-drop-target[data-r20-drop-mode="inside"] {
+  box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.55) !important;
+}
+[data-r20-block-id].r20-drop-target[data-r20-drop-mode="before"] {
+  box-shadow: inset 0 4px 0 rgba(59, 130, 246, 0.85) !important;
+}
+[data-r20-block-id].r20-drop-target[data-r20-drop-mode="after"] {
+  box-shadow: inset 0 -4px 0 rgba(59, 130, 246, 0.85) !important;
 }
 [data-r20-block-id] .r20-editing,
 [data-r20-block-id].r20-editing {
@@ -239,15 +565,15 @@ export function mountSheetShadow(
   background: rgba(22, 163, 74, 0.06);
   cursor: text !important;
 }
-${opts.css}
-`;
-  shadow.appendChild(styleEl);
+`, 'edit-shadow-overlay');
+  }
+  appendSourceMarkedStyles(shadow, opts.css);
 
   // spec 25 + isolation fix — wrapper 를 <body class="charsheet"> 로 만들어
   // Roll20 base.css 의 body{} 룰이 정상 매칭되도록. createElement('body') 는
   // HTMLBodyElement 를 반환하지만 shadow 안에서는 일반 flow content 로 동작.
   const container = document.createElement('body');
-  container.className = 'charsheet';
+  container.setAttribute('data-r20-shadow-body', '1');
   container.setAttribute('data-layer', opts.layer ?? 'all');
   if (opts.darkMode) {
     container.setAttribute('data-theme', 'dark');
@@ -256,6 +582,26 @@ ${opts.css}
     host.removeAttribute('data-theme');
   }
   container.innerHTML = opts.html;
+  // buildSheetParts serializes translated HTML before mount. Reapply after
+  // parsing so void elements and every supported Roll20 i18n attribute retain
+  // the same runtime DOM state as the iframe preview.
+  applyTranslationsToScope(container, opts.i18n);
+  emulateRoll20RepeatingSections(container);
+  emulateRoll20ButtonClasses(container);
+  applyAnnotatedRoll20Autocalc(container);
+  // buildSheetParts already emits the real Roll20 .charsheet root. Put layer
+  // state there so Shadow edit mode matches the iframe preview selector shape.
+  const layerRoot =
+    container.querySelector<HTMLElement>('#charsheet-root.charsheet') ??
+    container.querySelector<HTMLElement>('.charactersheet.charsheet') ??
+    container.querySelector<HTMLElement>('.charsheet');
+  layerRoot?.setAttribute('data-layer', opts.layer ?? 'all');
+  // srcdoc preview loads sheet images without the app page as referrer. Match
+  // that in Shadow edit mode so hotlink-sensitive sheet assets resolve the same.
+  container.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+    if (!img.referrerPolicy) img.referrerPolicy = 'no-referrer';
+  });
+  installShadowSheetWorkerRuntime(container, opts.i18n);
   shadow.appendChild(container);
   applyLayerRoleAttrs(container, opts.getLayerRoleForBlock);
 

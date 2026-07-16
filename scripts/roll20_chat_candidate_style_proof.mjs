@@ -1,0 +1,994 @@
+#!/usr/bin/env node
+/**
+ * Check whether numerically promising local ChatPane candidates are supported
+ * by actual Roll20 computed styles. This is diagnostic-only and should be used
+ * to prevent pixel-improving hacks from becoming production renderer CSS.
+ */
+
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+
+const args = process.argv.slice(2).filter((arg) => arg !== '--');
+const optionNamesWithValues = new Set(['--out-dir', '--include-candidates', '--candidate-comparison-dir', '--candidate-smoke']);
+const runDirArg = firstPositionalArg() ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
+const RUN_DIR = path.resolve(runDirArg);
+const rawOutDir = readOption('--out-dir', '');
+const OUT_DIR = rawOutDir ? path.resolve(rawOutDir) : path.join(RUN_DIR, 'chat-candidate-style-proof');
+const INCLUDE_BEST_PER_FIXTURE = args.includes('--include-best-per-fixture');
+const EXPLICIT_CANDIDATES = new Set(
+  readOption('--include-candidates', '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean),
+);
+const rawCandidateComparisonDir = readOption('--candidate-comparison-dir', '');
+const candidateSmokeOverrides = readOptionPairs('--candidate-smoke');
+
+const CANDIDATE_SMOKE = {
+  default: 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json',
+  'no-shadow': 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json',
+  'roll20-chat-shell-width-340': 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/rolltemplate-chat-smoke-results.json',
+  'roll20-sandbox-font-proxy': 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-full-width': 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-width-font-size': 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-width-text-metrics': 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-source-context': 'reports/rolltemplate-chat-smoke-aw2e-message-source-context/rolltemplate-chat-smoke-results.json',
+  'table-scale-x': 'reports/rolltemplate-chat-smoke-table-scale-x/rolltemplate-chat-smoke-results.json',
+  'aw2e-root-width-actual': 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/rolltemplate-chat-smoke-results.json',
+  'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
+  'coc-table-actual-width': 'reports/rolltemplate-chat-smoke-coc-table-actual-width/rolltemplate-chat-smoke-results.json',
+  'coc-overflow-crop-model': 'reports/rolltemplate-chat-smoke-coc-overflow-crop-model/rolltemplate-chat-smoke-results.json',
+  'roll20-break-word': 'reports/rolltemplate-chat-smoke-roll20-break-word/rolltemplate-chat-smoke-results.json',
+  'roll20-intrinsic-spacing': 'reports/rolltemplate-chat-smoke-intrinsic-spacing/rolltemplate-chat-smoke-results.json',
+  'roll20-border-spacing': 'reports/rolltemplate-chat-smoke-border-spacing/rolltemplate-chat-smoke-results.json',
+  'roll20-letter-spacing': 'reports/rolltemplate-chat-smoke-letter-spacing/rolltemplate-chat-smoke-results.json',
+  'aw2e-font-size-only': 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-cell-font-context': 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/rolltemplate-chat-smoke-results.json',
+  'aw2e-message-cell-wrap-context': 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/rolltemplate-chat-smoke-results.json',
+  'yshy-bookk-unavailable': 'reports/rolltemplate-chat-smoke-yshy-bookk-unavailable/rolltemplate-chat-smoke-results.json',
+  'yshy-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-table-font-context/rolltemplate-chat-smoke-results.json',
+  'yshy-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
+  'yshy-bookk-missing-render': 'reports/rolltemplate-chat-smoke-yshy-bookk-missing-render/rolltemplate-chat-smoke-results.json',
+  'yshy-missing-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-missing-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
+  'yshy-roll20-fallback-stack': 'reports/rolltemplate-chat-smoke-yshy-roll20-fallback-stack/rolltemplate-chat-smoke-results.json',
+  'coc-table-intrinsic-clamp': 'reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp/rolltemplate-chat-smoke-results.json',
+  'paint-dim-background': 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json',
+  'paint-dim-brightness': 'reports/rolltemplate-chat-smoke-paint-dim-brightness/rolltemplate-chat-smoke-results.json',
+  'paint-dim-saturate': 'reports/rolltemplate-chat-smoke-paint-dim-saturate/rolltemplate-chat-smoke-results.json',
+  'coc-background-size-actual': 'reports/rolltemplate-chat-smoke-coc-background-size-actual/rolltemplate-chat-smoke-results.json',
+  'text-auto-aa': 'reports/rolltemplate-chat-smoke-text-auto-aa/rolltemplate-chat-smoke-results.json',
+};
+
+const TARGET_RISKS = new Set(['candidate-needs-style-proof', 'single-fixture-only']);
+const COMPARABLE_SELECTORS = [
+  'root',
+  'table',
+  'caption',
+  'td:first',
+  'sheet-template_label:first',
+  'sheet-template_value:first',
+  '.inlinerollresult:first',
+];
+
+function rel(file) {
+  return path.relative(process.cwd(), file);
+}
+
+function readOption(name, fallback = '') {
+  const index = args.indexOf(name);
+  if (index === -1) return fallback;
+  const value = args[index + 1];
+  if (!value || value.startsWith('--')) return fallback;
+  return value;
+}
+
+function firstPositionalArg() {
+  return args.find((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(args[index - 1]));
+}
+
+function readOptionPairs(name) {
+  const out = new Map();
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] !== name) continue;
+    const value = args[index + 1];
+    if (!value || value.startsWith('--')) continue;
+    const separator = value.indexOf('=');
+    if (separator <= 0) continue;
+    out.set(value.slice(0, separator), value.slice(separator + 1));
+  }
+  return out;
+}
+
+async function readJson(file, fallback = null) {
+  try {
+    return JSON.parse(await fs.readFile(file, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+function fixtureById(report, id) {
+  return (report?.fixtures ?? []).find((fixture) => fixture.id === id || fixture.fixtureId === id) ?? null;
+}
+
+function bestCandidateNamesByFixture(comparison) {
+  const byFixture = new Map();
+  for (const candidate of comparison?.candidates ?? []) {
+    if (candidate.name === 'default' || candidate.status !== 'OK') continue;
+    for (const [fixtureKey, rawDelta] of Object.entries(candidate.fixtureAlignedDeltaPct ?? {})) {
+      const deltaPct = numberOrNull(rawDelta);
+      if (typeof deltaPct !== 'number') continue;
+      const item = {
+        name: candidate.name,
+        deltaPct,
+        regressedFixtures: Number(candidate.regressedFixtures ?? 0),
+      };
+      const previous = byFixture.get(fixtureKey);
+      if (!previous || item.deltaPct < previous.deltaPct || (item.deltaPct === previous.deltaPct && item.regressedFixtures < previous.regressedFixtures)) {
+        byFixture.set(fixtureKey, item);
+      }
+    }
+  }
+  return new Set([...byFixture.values()].map((item) => item.name));
+}
+
+function templateOf(smokeFixture) {
+  return smokeFixture?.cardInfo?.templateComputed ?? null;
+}
+
+function childMap(template) {
+  const out = new Map();
+  for (const child of template?.computedChildren ?? []) {
+    if (child?.selector) out.set(child.selector, child);
+  }
+  return out;
+}
+
+function comparableNodes(template) {
+  const children = childMap(template);
+  return COMPARABLE_SELECTORS.map((selector) => ({
+    selector,
+    node: selector === 'root' ? template : children.get(selector) ?? null,
+  })).filter((item) => item.node);
+}
+
+function styleValue(template, selector, key) {
+  if (!template) return null;
+  if (selector === 'root') return template.computedStyle?.[key] ?? null;
+  return childMap(template).get(selector)?.computedStyle?.[key] ?? null;
+}
+
+function actualTemplateFor(runDir, fixtureId) {
+  return path.join(runDir, 'local-baseline', fixtureId, 'screenshots', 'roll20-chat-dom-evidence.json');
+}
+
+function isNone(value) {
+  return value === 'none' || value === '' || value == null;
+}
+
+function sameValue(a, b) {
+  return String(a ?? '') === String(b ?? '');
+}
+
+function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (!candidateTemplate || !actualTemplate) {
+    return {
+      fixtureId,
+      status: 'MISSING_EVIDENCE',
+      finding: 'missing candidate or actual computed template',
+      evidence: [],
+    };
+  }
+  if (candidate.name === 'no-shadow') {
+    return summarizeNoShadow(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (
+    candidate.name === 'aw2e-message-width-font-size' ||
+    candidate.name === 'aw2e-message-width-text-metrics' ||
+    candidate.name === 'aw2e-message-source-context' ||
+    candidate.name === 'aw2e-message-cell-font-context' ||
+    candidate.name === 'aw2e-message-cell-wrap-context'
+  ) {
+    return summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+  }
+  if (candidate.name === 'roll20-chat-shell-width-340' || candidate.name === 'aw2e-message-full-width') {
+    return summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar);
+  }
+  if (candidate.name === 'table-scale-x' || candidate.name === 'coc-table-scale-x') {
+    return summarizeTableScale(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (candidate.name === 'aw2e-root-width-actual') {
+    return summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'root', 1.5);
+  }
+  if (candidate.name === 'coc-table-actual-width' || candidate.name === 'coc-overflow-crop-model') {
+    return summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 1.5);
+  }
+  if (candidate.name === 'roll20-break-word') {
+    return summarizeOverflowWrap(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (
+    candidate.name === 'roll20-intrinsic-spacing' ||
+    candidate.name === 'roll20-border-spacing' ||
+    candidate.name === 'roll20-letter-spacing' ||
+    candidate.name === 'coc-table-intrinsic-clamp'
+  ) {
+    return summarizeIntrinsicSpacing(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (candidate.name === 'aw2e-font-size-only') {
+    return summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (
+    candidate.name === 'yshy-bookk-unavailable' ||
+    candidate.name === 'yshy-table-font-context' ||
+    candidate.name === 'yshy-bookk-table-font-context' ||
+    candidate.name === 'yshy-bookk-missing-render' ||
+    candidate.name === 'yshy-missing-bookk-table-font-context' ||
+    candidate.name === 'yshy-bookk-fallback-only'
+  ) {
+    return summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+  }
+  if (candidate.name === 'yshy-roll20-fallback-stack') {
+    return summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+  }
+  if (candidate.name.startsWith('yshy-coc-table-source-context')) {
+    return summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
+  }
+  if (candidate.name === 'text-auto-aa') {
+    return summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (
+    candidate.name === 'paint-dim-background' ||
+    candidate.name === 'paint-dim-brightness' ||
+    candidate.name === 'paint-dim-saturate'
+  ) {
+    return summarizePaintFilter(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  if (candidate.name === 'coc-background-size-actual') {
+    return summarizeCocBackgroundSize(candidate, fixtureId, candidateTemplate, actualTemplate);
+  }
+  return {
+    fixtureId,
+    status: 'UNKNOWN_CANDIDATE',
+    finding: `no style-proof rule for ${candidate.name}`,
+    evidence: [],
+  };
+}
+
+function summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar) {
+  const localMessageWidth = numberOrNull(candidateFixture?.cardInfo?.latestMessage?.rect?.width ?? candidateFixture?.cardInfo?.width);
+  const actualMessageWidth = numberOrNull(actualSidecar?.latestMessage?.rect?.width);
+  const localChatGroupWidth = numberOrNull(candidateFixture?.cardInfo?.width);
+  const actualChatWidth = numberOrNull(actualSidecar?.chatRect?.width);
+  const messageDelta = delta(localMessageWidth, actualMessageWidth);
+  const chatDelta = delta(localChatGroupWidth, actualChatWidth);
+  const messageMatches = typeof messageDelta === 'number' && Math.abs(messageDelta) <= 1.5;
+  const chatMatches = typeof chatDelta === 'number' && Math.abs(chatDelta) <= 1.5;
+  if (candidate.name === 'aw2e-message-full-width' && fixtureId !== 'official-roll20-AW2E' && messageMatches) {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'scoped message-shell candidate leaves this fixture message width matching actual Roll20',
+      evidence: [
+        { selector: 'chat', key: 'rect.width', localCandidate: localChatGroupWidth, actual: actualChatWidth },
+        { selector: 'message', key: 'rect.width', localCandidate: localMessageWidth, actual: actualMessageWidth },
+      ],
+    };
+  }
+  return {
+    fixtureId,
+    status: messageMatches && chatMatches ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: messageMatches && chatMatches
+      ? 'local ChatPane shell/message width matches actual Roll20 chat evidence'
+      : `local ChatPane shell/message width differs from actual Roll20 (message ${fmtPx(messageDelta)}, chat ${fmtPx(chatDelta)})`,
+    evidence: [
+      { selector: 'chat', key: 'rect.width', localCandidate: localChatGroupWidth, actual: actualChatWidth },
+      { selector: 'message', key: 'rect.width', localCandidate: localMessageWidth, actual: actualMessageWidth },
+    ],
+  };
+}
+
+function summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'official-roll20-AW2E') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'AW2E-scoped candidate does not target this fixture',
+      evidence: [],
+    };
+  }
+  const shell = summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar);
+  const font = summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate);
+  const tableWidth = summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 8);
+  const textCells = summarizeAw2eTextCellWidths(candidate, fixtureId, candidateTemplate, actualTemplate);
+  const parts = [shell, tableWidth, font, textCells];
+  const status = parts.some((part) => part.status === 'CONTRADICTED_BY_ACTUAL_STYLE')
+    ? 'CONTRADICTED_BY_ACTUAL_STYLE'
+    : parts.some((part) => part.status === 'NO_COMPUTED_STYLE_PROOF')
+      ? 'NO_COMPUTED_STYLE_PROOF'
+      : parts.every((part) => part.status === 'STYLE_COMPATIBLE')
+        ? 'STYLE_COMPATIBLE'
+        : 'CONTRADICTED_BY_ACTUAL_STYLE';
+  const compatible = status === 'STYLE_COMPATIBLE';
+  return {
+    fixtureId,
+    status,
+    finding: compatible
+      ? 'AW2E message/content width, table width, text-cell widths, and cell font context match actual Roll20 evidence'
+      : status === 'NO_COMPUTED_STYLE_PROOF'
+        ? 'AW2E text-cell proof needs refreshed Roll20 sidecar fields before this candidate can be style-compatible'
+        : 'AW2E message/content width plus cell font candidate is not fully supported by actual Roll20 table/text-cell style evidence',
+    evidence: [
+      ...shell.evidence.map((item) => ({ ...item, group: 'message-shell' })),
+      ...tableWidth.evidence.map((item) => ({ ...item, group: 'table-width' })),
+      ...textCells.evidence.map((item) => ({ ...item, group: 'text-cell-width' })),
+      ...font.evidence.map((item) => ({ ...item, group: 'font-size' })),
+    ],
+  };
+}
+
+function summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, selector, tolerancePx) {
+  const localWidth = widthOf(candidateTemplate, selector);
+  const actualWidth = widthOf(actualTemplate, selector);
+  const transform = styleValue(candidateTemplate, selector, 'transform');
+  const actualTransform = styleValue(actualTemplate, selector, 'transform');
+  const delta = Number.isFinite(localWidth) && Number.isFinite(actualWidth)
+    ? Number((localWidth - actualWidth).toFixed(3))
+    : null;
+  const transformContradicted = !sameValue(transform, actualTransform);
+  const widthMatches = typeof delta === 'number' && Math.abs(delta) <= tolerancePx;
+  return {
+    fixtureId,
+    status: widthMatches && !transformContradicted ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: widthMatches
+      ? `${selector} width is within ${tolerancePx}px of actual Roll20`
+      : `${selector} width differs from actual Roll20 by ${fmtPx(delta)}`,
+    evidence: [
+      { selector, key: 'rect.width', localCandidate: localWidth, actual: actualWidth },
+      { selector, key: 'transform', localCandidate: transform, actual: actualTransform },
+    ],
+  };
+}
+
+function widthOf(template, selector) {
+  if (!template) return null;
+  const node = selector === 'root' ? template : childMap(template).get(selector);
+  const width = node?.rect?.width ?? node?.boxMetrics?.offsetWidth ?? null;
+  const number = Number(width);
+  return Number.isFinite(number) ? number : null;
+}
+
+function textMeasureSample(fixtureOrSidecar, template, selector) {
+  const evidence = fixtureOrSidecar?.cardInfo?.textMeasureEvidence ??
+    fixtureOrSidecar?.textMeasureEvidence ??
+    template?.textMeasureEvidence ??
+    {};
+  return (evidence.samples ?? []).find((sample) => sample?.selector === selector) ?? null;
+}
+
+function fontCheckValue(fixtureOrSidecar, spec) {
+  const checks = fixtureOrSidecar?.cardInfo?.fontEvidence?.checks ??
+    fixtureOrSidecar?.fontEvidence?.checks ??
+    [];
+  const match = checks.find((check) => check?.spec === spec);
+  return match ? Boolean(match.ok) : null;
+}
+
+function summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const evidence = [
+    ['table', 'fontSize'],
+    ['table', 'letterSpacing'],
+    ['td:first', 'fontSize'],
+    ['td:first', 'letterSpacing'],
+  ].map(([selector, key]) => ({
+    selector,
+    key,
+    localCandidate: styleValue(candidateTemplate, selector, key),
+    actual: styleValue(actualTemplate, selector, key),
+  }));
+  const comparable = evidence.filter((item) => item.localCandidate != null && item.actual != null);
+  const fontSizeMatches = comparable
+    .filter((item) => item.key === 'fontSize')
+    .every((item) => sameValue(item.localCandidate, item.actual));
+  const letterSpacingContradicted = comparable
+    .filter((item) => item.key === 'letterSpacing')
+    .some((item) => !sameValue(item.localCandidate, item.actual));
+  return {
+    fixtureId,
+    status: fontSizeMatches && !letterSpacingContradicted ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: fontSizeMatches
+      ? 'AW2E table font-size matches actual Roll20; letter-spacing decides whether this narrower candidate is enough'
+      : 'AW2E table font-size does not match actual Roll20',
+    evidence,
+  };
+}
+
+function summarizeAw2eTextCellWidths(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const localCells = aw2eTextCells(candidateTemplate);
+  const actualCells = aw2eTextCells(actualTemplate);
+  const maxCells = Math.max(localCells.length, actualCells.length, 3);
+  const evidence = [];
+  for (let index = 0; index < maxCells; index += 1) {
+    const local = localCells[index] ?? null;
+    const actual = actualCells[index] ?? null;
+    evidence.push({
+      selector: `row:1 text-cell:${index}`,
+      key: 'rect.width',
+      localCandidate: numberOrNull(local?.rect?.width),
+      actual: numberOrNull(actual?.rect?.width),
+      localText: local?.text ?? null,
+      actualText: actual?.text ?? null,
+    });
+    evidence.push({
+      selector: `row:1 text-cell:${index}`,
+      key: 'fontSize',
+      localCandidate: local?.computedStyle?.fontSize ?? null,
+      actual: actual?.computedStyle?.fontSize ?? null,
+      localText: local?.text ?? null,
+      actualText: actual?.text ?? null,
+    });
+  }
+  const widthEvidence = evidence.filter((item) => item.key === 'rect.width');
+  const comparableWidths = widthEvidence.filter((item) => typeof item.localCandidate === 'number' && typeof item.actual === 'number');
+  if (comparableWidths.length < 3) {
+    return {
+      fixtureId,
+      status: 'NO_COMPUTED_STYLE_PROOF',
+      finding: 'AW2E text-cell width fields are missing from local or actual Roll20 sidecars',
+      evidence,
+    };
+  }
+  const deltas = comparableWidths.map((item) => Math.abs(item.localCandidate - item.actual));
+  const maxDelta = Math.max(...deltas);
+  return {
+    fixtureId,
+    status: maxDelta <= 8 ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: maxDelta <= 8
+      ? 'AW2E text-cell widths match actual Roll20 within 8px'
+      : `AW2E text-cell widths differ from actual Roll20 by up to ${fmtPx(maxDelta)}`,
+    evidence,
+  };
+}
+
+function aw2eTextCells(template) {
+  const rows = Array.isArray(template?.rowMetrics) ? template.rowMetrics : [];
+  const dataRow = rows.find((row) => (
+    Array.isArray(row?.cells) &&
+    row.cells.filter((cell) => String(cell?.text ?? '').trim()).length >= 3
+  ));
+  return (dataRow?.cells ?? [])
+    .filter((cell) => String(cell?.text ?? '').trim())
+    .slice(0, 3);
+}
+
+function summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'yshy-commission-1bu') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'YSHY/CoC font-context candidate is scoped away from this fixture',
+      evidence: [],
+    };
+  }
+  const tableTargets = [
+    ['root', 'fontFamily'],
+    ['root', 'fontSize'],
+    ['table', 'fontFamily'],
+    ['table', 'fontSize'],
+    ['caption', 'fontFamily'],
+    ['td:first', 'fontFamily'],
+  ];
+  const evidence = tableTargets.map(([selector, key]) => ({
+    selector,
+    key,
+    localCandidate: styleValue(candidateTemplate, selector, key),
+    actual: styleValue(actualTemplate, selector, key),
+  }));
+  const checks = ['12px BookkMyungjo-Bd', '700 12px BookkMyungjo-Bd', '13px "BookkMyungjo-Bd"', '700 13px "BookkMyungjo-Bd"'];
+  const localFontChecks = new Map((candidateFixture?.cardInfo?.fontEvidence?.checks ?? []).map((check) => [check.spec, Boolean(check.ok)]));
+  const actualFontChecks = new Map((actualSidecar?.fontEvidence?.checks ?? []).map((check) => [check.spec, Boolean(check.ok)]));
+  const fontEvidence = checks.map((spec) => ({
+    selector: 'font-check',
+    key: spec,
+    localCandidate: localFontChecks.get(spec) ?? null,
+    actual: actualFontChecks.get(spec) ?? null,
+  }));
+  const tableMatches = evidence
+    .filter((item) => ['root', 'table'].includes(item.selector))
+    .filter((item) => item.localCandidate != null && item.actual != null)
+    .every((item) => sameValue(item.localCandidate, item.actual));
+  const bookkMatches = fontEvidence
+    .filter((item) => item.localCandidate != null && item.actual != null)
+    .every((item) => sameValue(item.localCandidate, item.actual));
+  const expectsBookk = candidate.name === 'yshy-bookk-unavailable' || candidate.name === 'yshy-bookk-table-font-context';
+  const expectsTableFont = candidate.name === 'yshy-table-font-context' || candidate.name === 'yshy-bookk-table-font-context';
+  const compatible = (!expectsBookk || bookkMatches) && (!expectsTableFont || tableMatches);
+  return {
+    fixtureId,
+    status: compatible ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: compatible
+      ? 'YSHY font-context candidate matches the targeted actual Roll20 font checks/styles'
+      : `YSHY font-context candidate mismatch: table=${tableMatches ? 'match' : 'diff'}, Bookk availability=${bookkMatches ? 'match' : 'diff'}`,
+    evidence: [...evidence, ...fontEvidence],
+  };
+}
+
+function summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'yshy-commission-1bu') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'YSHY Roll20 fallback-stack diagnostic is scoped away from this fixture',
+      evidence: [],
+    };
+  }
+  const widthProof = summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 1.5);
+  const styleEvidence = [
+    ['table', 'fontFamily'],
+    ['table', 'fontSize'],
+    ['table', 'letterSpacing'],
+    ['table', 'overflowWrap'],
+    ['caption', 'fontFamily'],
+    ['td:first', 'fontFamily'],
+    ['sheet-template_label:first', 'fontFamily'],
+  ].map(([selector, key]) => ({
+    selector,
+    key,
+    localCandidate: styleValue(candidateTemplate, selector, key),
+    actual: styleValue(actualTemplate, selector, key),
+    group: 'computed-style',
+  }));
+  const metricEvidence = ['table', 'caption', 'td:first', 'sheet-template_label:first'].map((selector) => {
+    const local = textMeasureSample(candidateFixture, candidateTemplate, selector);
+    const actual = textMeasureSample(actualSidecar, actualTemplate, selector);
+    return {
+      selector,
+      key: 'measureText.width',
+      localCandidate: numberOrNull(local?.metrics?.width),
+      actual: numberOrNull(actual?.metrics?.width),
+      localFont: local?.font ?? null,
+      actualFont: actual?.font ?? null,
+      deltaPx: delta(local?.metrics?.width, actual?.metrics?.width),
+      group: 'text-metrics',
+    };
+  });
+  const localBookk = fontCheckValue(candidateFixture, '700 12px "BookkMyungjo-Bd"');
+  const actualBookk = fontCheckValue(actualSidecar, '700 12px "BookkMyungjo-Bd"');
+  const bookkFace = {
+    selector: 'font-face',
+    key: 'BookkMyungjo-Bd active',
+    localCandidate: localBookk,
+    actual: actualBookk,
+    group: 'font-availability',
+  };
+  const comparableStyles = styleEvidence.filter((item) => item.localCandidate != null && item.actual != null);
+  const styleMatches = comparableStyles.filter((item) => sameValue(item.localCandidate, item.actual)).length;
+  const metricComparable = metricEvidence.filter((item) => typeof item.localCandidate === 'number' && typeof item.actual === 'number');
+  const metricMaxDelta = metricComparable.length
+    ? Math.max(...metricComparable.map((item) => Math.abs(item.deltaPx ?? 0)))
+    : null;
+  const tableWidthCompatible = widthProof.status === 'STYLE_COMPATIBLE';
+  const computedStyleCompatible = comparableStyles.length > 0 && styleMatches === comparableStyles.length;
+  const textMetricsCompatible = typeof metricMaxDelta === 'number' && metricMaxDelta <= 1.5;
+  return {
+    fixtureId,
+    status: tableWidthCompatible && computedStyleCompatible && textMetricsCompatible
+      ? 'STYLE_COMPATIBLE'
+      : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: tableWidthCompatible
+      ? `YSHY fallback-stack matches table width but only ${styleMatches}/${comparableStyles.length} computed font/style fields match actual Roll20; max text metric delta ${fmtPx(metricMaxDelta)}`
+      : `YSHY fallback-stack table width differs from actual Roll20; max text metric delta ${fmtPx(metricMaxDelta)}`,
+    evidence: [
+      ...widthProof.evidence.map((item) => ({ ...item, group: 'table-width' })),
+      ...styleEvidence,
+      ...metricEvidence,
+      bookkFace,
+    ],
+  };
+}
+
+function summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
+  if (fixtureId !== 'yshy-commission-1bu') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'YSHY/CoC table source-context candidate is scoped away from this fixture',
+      evidence: [],
+    };
+  }
+  const widthProof = summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 1.5);
+  const fontCandidateName = candidate.name.includes('actual-font')
+    ? 'yshy-table-font-context'
+    : candidate.name.includes('fallback-only')
+      ? 'yshy-bookk-fallback-only'
+    : 'yshy-missing-bookk-table-font-context';
+  const fontProof = summarizeYshyFontContext(
+    { ...candidate, name: fontCandidateName },
+    fixtureId,
+    candidateTemplate,
+    actualTemplate,
+    candidateFixture,
+    actualSidecar,
+  );
+  const widthCompatible = widthProof.status === 'STYLE_COMPATIBLE';
+  const fontCompatible = fontProof.status === 'STYLE_COMPATIBLE';
+  return {
+    fixtureId,
+    status: widthCompatible && fontCompatible ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: widthCompatible && fontCompatible
+      ? 'CoC/YSHY table width and font/source context match actual Roll20 evidence'
+      : `CoC/YSHY source-context candidate mismatch: table width=${widthCompatible ? 'match' : 'diff'}, font/source=${fontCompatible ? 'match' : 'diff'}`,
+    evidence: [
+      ...widthProof.evidence.map((item) => ({ ...item, group: 'table-width' })),
+      ...fontProof.evidence.map((item) => ({ ...item, group: 'font-source-context' })),
+    ],
+  };
+}
+
+function summarizeTextAutoAa(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const keys = ['textRendering', 'webkitFontSmoothing', 'mozOsxFontSmoothing'];
+  const requiredKeys = new Set(['textRendering', 'webkitFontSmoothing']);
+  const evidence = comparableNodes(actualTemplate)
+    .flatMap(({ selector }) => keys.map((key) => ({
+      selector,
+      key,
+      localCandidate: styleValue(candidateTemplate, selector, key),
+      actual: styleValue(actualTemplate, selector, key),
+    })));
+  const requiredEvidence = evidence.filter((item) => requiredKeys.has(item.key));
+  const missingActual = requiredEvidence.filter((item) => item.actual == null).length;
+  const missingLocal = requiredEvidence.filter((item) => item.localCandidate == null).length;
+  if (missingActual || missingLocal) {
+    return {
+      fixtureId,
+      status: 'NO_COMPUTED_STYLE_PROOF',
+      finding: `text-rasterization fields missing from ${missingLocal ? 'local candidate' : ''}${missingLocal && missingActual ? ' and ' : ''}${missingActual ? 'actual Roll20 sidecar' : ''}`,
+      evidence,
+    };
+  }
+  const matches = evidence.filter((item) => sameValue(item.localCandidate, item.actual)).length;
+  return {
+    fixtureId,
+    status: matches === evidence.length ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: `${matches}/${evidence.length} text-rasterization fields match actual Roll20`,
+    evidence,
+  };
+}
+
+function summarizePaintFilter(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const evidence = ['table', 'caption', 'td:first', 'sheet-template_label:first', 'sheet-template_value:first']
+    .map((selector) => ({
+      selector,
+      key: 'filter',
+      localCandidate: styleValue(candidateTemplate, selector, 'filter'),
+      actual: styleValue(actualTemplate, selector, 'filter'),
+    }));
+  const comparable = evidence.filter((item) => item.localCandidate != null && item.actual != null);
+  const matches = comparable.filter((item) => sameValue(item.localCandidate, item.actual)).length;
+  if (!comparable.length) {
+    return {
+      fixtureId,
+      status: 'NO_COMPUTED_STYLE_PROOF',
+      finding: 'filter fields are missing from local or actual computed-style sidecars; recapture before treating paint candidates as style-compatible',
+      evidence,
+    };
+  }
+  const actualHasNoFilter = comparable.every((item) => isNone(item.actual));
+  const candidateUsesFilter = comparable.some((item) => !isNone(item.localCandidate));
+  const status = candidateUsesFilter && actualHasNoFilter
+    ? 'CONTRADICTED_BY_ACTUAL_STYLE'
+    : matches === comparable.length
+      ? 'STYLE_COMPATIBLE'
+      : 'CONTRADICTED_BY_ACTUAL_STYLE';
+  return {
+    fixtureId,
+    status,
+    finding: candidateUsesFilter && actualHasNoFilter
+      ? 'pixel gain comes from a local CSS filter that actual Roll20 does not apply'
+      : `${matches}/${comparable.length} comparable filter fields match actual Roll20`,
+    evidence,
+  };
+}
+
+function summarizeCocBackgroundSize(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  if (fixtureId !== 'yshy-commission-1bu') {
+    return {
+      fixtureId,
+      status: 'STYLE_NEUTRAL',
+      finding: 'CoC background-size diagnostic is scoped away from this fixture',
+      evidence: [],
+    };
+  }
+  const evidence = ['table'].flatMap((selector) => [
+    {
+      selector,
+      key: 'backgroundImage',
+      localCandidate: styleValue(candidateTemplate, selector, 'backgroundImage'),
+      actual: styleValue(actualTemplate, selector, 'backgroundImage'),
+    },
+    {
+      selector,
+      key: 'backgroundSize',
+      localCandidate: styleValue(candidateTemplate, selector, 'backgroundSize'),
+      actual: styleValue(actualTemplate, selector, 'backgroundSize'),
+    },
+    {
+      selector,
+      key: 'backgroundPosition',
+      localCandidate: styleValue(candidateTemplate, selector, 'backgroundPosition'),
+      actual: styleValue(actualTemplate, selector, 'backgroundPosition'),
+    },
+    {
+      selector,
+      key: 'filter',
+      localCandidate: styleValue(candidateTemplate, selector, 'filter'),
+      actual: styleValue(actualTemplate, selector, 'filter'),
+    },
+  ]);
+  const comparable = evidence.filter((item) => item.localCandidate != null && item.actual != null);
+  if (!comparable.length) {
+    return {
+      fixtureId,
+      status: 'NO_COMPUTED_STYLE_PROOF',
+      finding: 'background raster fields are missing from local or actual computed-style sidecars',
+      evidence,
+    };
+  }
+  const backgroundSize = comparable.find((item) => item.key === 'backgroundSize');
+  const filter = comparable.find((item) => item.key === 'filter');
+  const usesNoFilter = !filter || sameValue(filter.localCandidate, filter.actual) || (isNone(filter.localCandidate) && isNone(filter.actual));
+  const sizeMatches = backgroundSize ? sameValue(backgroundSize.localCandidate, backgroundSize.actual) : false;
+  return {
+    fixtureId,
+    status: sizeMatches && usesNoFilter ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: sizeMatches
+      ? 'CoC background-size candidate matches actual Roll20 computed background-size'
+      : 'CoC background-size candidate changes computed background-size away from actual Roll20; diagnostic only',
+    evidence,
+  };
+}
+
+function summarizeNoShadow(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const evidence = comparableNodes(actualTemplate).map(({ selector }) => ({
+    selector,
+    key: 'textShadow',
+    localCandidate: styleValue(candidateTemplate, selector, 'textShadow'),
+    actual: styleValue(actualTemplate, selector, 'textShadow'),
+  }));
+  const actualKeepsShadow = evidence.some((item) => !isNone(item.actual));
+  const candidateRemovesShadow = evidence.some((item) => isNone(item.localCandidate));
+  return {
+    fixtureId,
+    status: actualKeepsShadow && candidateRemovesShadow ? 'CONTRADICTED_BY_ACTUAL_STYLE' : 'STYLE_COMPATIBLE',
+    finding: actualKeepsShadow
+      ? 'actual Roll20 still has text-shadow on comparable rolltemplate nodes'
+      : 'actual Roll20 comparable nodes also have no text-shadow',
+    evidence,
+  };
+}
+
+function summarizeTableScale(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const evidence = [{
+    selector: 'table',
+    key: 'transform',
+    localCandidate: styleValue(candidateTemplate, 'table', 'transform'),
+    actual: styleValue(actualTemplate, 'table', 'transform'),
+  }, {
+    selector: 'table',
+    key: 'transformOrigin',
+    localCandidate: styleValue(candidateTemplate, 'table', 'transformOrigin'),
+    actual: styleValue(actualTemplate, 'table', 'transformOrigin'),
+  }];
+  const transformMatches = sameValue(evidence[0].localCandidate, evidence[0].actual);
+  return {
+    fixtureId,
+    status: transformMatches ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: transformMatches
+      ? 'actual Roll20 table transform matches the candidate'
+      : 'actual Roll20 table transform does not match candidate scaleX',
+    evidence,
+  };
+}
+
+function summarizeOverflowWrap(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const evidence = comparableNodes(actualTemplate).map(({ selector }) => ({
+    selector,
+    key: 'overflowWrap',
+    localCandidate: styleValue(candidateTemplate, selector, 'overflowWrap'),
+    actual: styleValue(actualTemplate, selector, 'overflowWrap'),
+  }));
+  const matches = evidence.filter((item) => sameValue(item.localCandidate, item.actual)).length;
+  return {
+    fixtureId,
+    status: matches >= Math.ceil(evidence.length / 2) ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: `${matches}/${evidence.length} comparable nodes match actual Roll20 overflow-wrap`,
+    evidence,
+  };
+}
+
+function summarizeIntrinsicSpacing(candidate, fixtureId, candidateTemplate, actualTemplate) {
+  const targets = candidate.name === 'roll20-border-spacing'
+    ? [['table', 'borderSpacing']]
+    : candidate.name === 'roll20-letter-spacing'
+      ? [
+          ['table', 'letterSpacing'],
+          ['caption', 'letterSpacing'],
+          ['td:first', 'letterSpacing'],
+          ['sheet-template_label:first', 'letterSpacing'],
+          ['sheet-template_value:first', 'letterSpacing'],
+        ]
+      : [
+          ['table', 'borderSpacing'],
+          ['table', 'letterSpacing'],
+          ['caption', 'letterSpacing'],
+          ['td:first', 'letterSpacing'],
+          ['sheet-template_label:first', 'letterSpacing'],
+          ['sheet-template_value:first', 'letterSpacing'],
+        ];
+  const evidence = targets.map(([selector, key]) => ({
+    selector,
+    key,
+    localCandidate: styleValue(candidateTemplate, selector, key),
+    actual: styleValue(actualTemplate, selector, key),
+  }));
+  const comparable = evidence.filter((item) => item.localCandidate != null && item.actual != null);
+  const matches = comparable.filter((item) => sameValue(item.localCandidate, item.actual)).length;
+  return {
+    fixtureId,
+    status: comparable.length && matches === comparable.length ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
+    finding: `${matches}/${comparable.length} intrinsic spacing fields match actual Roll20`,
+    evidence,
+  };
+}
+
+function candidateStatus(fixtureProofs) {
+  const statuses = fixtureProofs.map((proof) => proof.status);
+  if (statuses.some((status) => status === 'CONTRADICTED_BY_ACTUAL_STYLE')) return 'REJECT_STYLE_CONTRADICTION';
+  if (statuses.some((status) => status === 'NO_COMPUTED_STYLE_PROOF')) return 'NEEDS_NEW_SIDECAR_FIELDS';
+  if (statuses.some((status) => status === 'STYLE_COMPATIBLE') && statuses.every((status) => status === 'STYLE_COMPATIBLE' || status === 'STYLE_NEUTRAL')) return 'STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW';
+  return 'INCOMPLETE_STYLE_PROOF';
+}
+
+function renderMarkdown(report) {
+  const lines = [
+    '# Roll20 Chat Candidate Style Proof',
+    '',
+    `Generated: ${report.generatedAt}`,
+    `Run: \`${rel(RUN_DIR)}\``,
+    '',
+    'Diagnostic-only check that compares promising local ChatPane candidate styles against actual Roll20 computed styles.',
+    '',
+    '## Selection',
+    '',
+    `- Target risks: ${report.selection?.targetRisks?.map((item) => `\`${item}\``).join(', ') || 'none'}`,
+    `- Include best per fixture: ${report.selection?.includeBestPerFixture ? 'yes' : 'no'}`,
+    `- Explicit candidates: ${report.selection?.explicitCandidates?.map((item) => `\`${item}\``).join(', ') || 'none'}`,
+    `- Best-per-fixture candidates: ${report.selection?.bestPerFixtureCandidates?.map((item) => `\`${item}\``).join(', ') || 'none'}`,
+    `- Selected candidates: ${report.selection?.selectedCandidates?.map((item) => `\`${item}\``).join(', ') || 'none'}`,
+    '',
+    '| Candidate | Gate status | Mean delta | Regression count | Style proof status | Fixture statuses |',
+    '| --- | --- | ---: | ---: | --- | --- |',
+  ];
+  for (const candidate of report.candidates) {
+    lines.push(`| \`${candidate.name}\` | ${candidate.promotionRisk} | ${fmtPct(candidate.meanAlignedDeltaPct)} | ${candidate.regressedFixtures} | ${candidate.styleProofStatus} | ${candidate.fixtures.map((fixture) => `${fixture.fixtureId}:${fixture.status}`).join('<br>')} |`);
+  }
+  lines.push('');
+  for (const candidate of report.candidates) {
+    lines.push(`## ${candidate.name}`);
+    lines.push('');
+    lines.push(`- Style proof status: ${candidate.styleProofStatus}`);
+    lines.push(`- Pixel candidate mean delta: ${fmtPct(candidate.meanAlignedDeltaPct)}`);
+    for (const fixture of candidate.fixtures) {
+      lines.push(`- ${fixture.fixtureId}: ${fixture.status} - ${fixture.finding}`);
+      for (const evidence of fixture.evidence.slice(0, 8)) {
+        lines.push(`  - ${evidence.selector}.${evidence.key}: local=${quote(evidence.localCandidate)} actual=${quote(evidence.actual)}`);
+      }
+    }
+    lines.push('');
+  }
+  lines.push('This report does not authorize production CSS changes. A pixel-improving candidate must match actual Roll20 style evidence before promotion.');
+  return `${lines.join('\n')}\n`;
+}
+
+function quote(value) {
+  return `\`${String(value ?? '').replace(/\|/g, '\\|').slice(0, 140)}\``;
+}
+
+function fmtPct(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${Number(value.toFixed(2))}%` : '';
+}
+
+function fmtPx(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${Number(value.toFixed(3))}px` : 'n/a';
+}
+
+function numberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function delta(localValue, actualValue) {
+  const local = Number(localValue);
+  const actual = Number(actualValue);
+  return Number.isFinite(local) && Number.isFinite(actual)
+    ? Number((local - actual).toFixed(3))
+    : null;
+}
+
+async function main() {
+  const comparisonFile = rawCandidateComparisonDir
+    ? path.join(path.resolve(rawCandidateComparisonDir), 'chat-candidate-comparison-results.json')
+    : path.join(RUN_DIR, 'chat-candidate-comparison', 'chat-candidate-comparison-results.json');
+  const comparison = await readJson(comparisonFile);
+  if (!comparison?.candidates) throw new Error(`Missing chat candidate comparison: ${comparisonFile}`);
+  const defaultSmoke = await readJson(CANDIDATE_SMOKE.default);
+  if (!defaultSmoke?.fixtures) throw new Error(`Missing default local chat smoke: ${CANDIDATE_SMOKE.default}`);
+
+  const bestNames = INCLUDE_BEST_PER_FIXTURE ? bestCandidateNamesByFixture(comparison) : new Set();
+  const targetCandidates = comparison.candidates.filter((candidate) => (
+    TARGET_RISKS.has(candidate.promotionRisk) ||
+    EXPLICIT_CANDIDATES.has(candidate.name) ||
+    bestNames.has(candidate.name)
+  ));
+  const candidates = [];
+  for (const candidate of targetCandidates) {
+    const smokePath = candidateSmokeOverrides.get(candidate.name) ?? CANDIDATE_SMOKE[candidate.name];
+    const candidateSmoke = smokePath ? await readJson(smokePath) : null;
+    const fixtures = [];
+    for (const fixtureId of ['official-roll20-AW2E', 'official-roll20-Les-Oublies', 'yshy-commission-1bu']) {
+      const actualSidecar = await readJson(actualTemplateFor(RUN_DIR, fixtureId));
+      const defaultFixture = fixtureById(defaultSmoke, fixtureId);
+      const candidateFixture = fixtureById(candidateSmoke, fixtureId);
+      fixtures.push(summarizeProof(
+        candidate,
+        fixtureId,
+        templateOf(defaultFixture),
+        templateOf(candidateFixture),
+        actualSidecar?.latestTemplate ?? null,
+        candidateFixture,
+        actualSidecar,
+      ));
+    }
+    candidates.push({
+      name: candidate.name,
+      promotionRisk: candidate.promotionRisk,
+      meanAlignedDeltaPct: candidate.meanAlignedDeltaPct ?? null,
+      regressedFixtures: Number(candidate.regressedFixtures ?? 0),
+      fixtureAlignedDeltaPct: candidate.fixtureAlignedDeltaPct ?? {},
+      smokePath: smokePath ? rel(path.resolve(smokePath)) : null,
+      styleProofStatus: candidateStatus(fixtures),
+      fixtures,
+    });
+  }
+
+  const report = {
+    generatedAt: new Date().toISOString(),
+    runDir: rel(RUN_DIR),
+    selection: {
+      candidateComparison: rel(path.resolve(comparisonFile)),
+      targetRisks: [...TARGET_RISKS],
+      includeBestPerFixture: INCLUDE_BEST_PER_FIXTURE,
+      explicitCandidates: [...EXPLICIT_CANDIDATES],
+      candidateSmokeOverrides: Object.fromEntries([...candidateSmokeOverrides.entries()]),
+      bestPerFixtureCandidates: [...bestNames],
+      selectedCandidates: targetCandidates.map((candidate) => candidate.name),
+    },
+    candidates,
+    summary: {
+      candidates: candidates.length,
+      contradicted: candidates.filter((candidate) => candidate.styleProofStatus === 'REJECT_STYLE_CONTRADICTION').length,
+      needsNewSidecarFields: candidates.filter((candidate) => candidate.styleProofStatus === 'NEEDS_NEW_SIDECAR_FIELDS').length,
+      styleCompatible: candidates.filter((candidate) => candidate.styleProofStatus === 'STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW').length,
+    },
+  };
+
+  await fs.mkdir(OUT_DIR, { recursive: true });
+  await fs.writeFile(path.join(OUT_DIR, 'chat-candidate-style-proof-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  await fs.writeFile(path.join(OUT_DIR, 'chat-candidate-style-proof-results.md'), renderMarkdown(report), 'utf8');
+  console.log(`ROLL20 CHAT CANDIDATE STYLE PROOF contradicted=${report.summary.contradicted}/${report.summary.candidates} needsNewSidecar=${report.summary.needsNewSidecarFields}`);
+  console.log(`out=${rel(OUT_DIR)}`);
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

@@ -62,6 +62,10 @@ export interface BlockSnapshot {
   type: string;
   /** 자식 / 다음 블록 chain 의 들여쓰기 깊이. */
   depth: number;
+  childCount: number;
+  layerParentId: string | null;
+  layerPreviousId: string | null;
+  layerRelation: 'root' | 'child' | 'sibling';
   /** 사용자 표시용 한국어 라벨 (블록 정의 label). */
   label: string;
   /** 핵심 필드 미리보기 (예: text_input 의 name 필드 값). */
@@ -150,6 +154,8 @@ export interface BlocklyAdapter {
    */
   moveBlockDown(key: WorkspaceKey, blockId: string): boolean;
   moveBlockBefore(key: WorkspaceKey, blockId: string, targetId: string): boolean;
+  moveBlockAfter(key: WorkspaceKey, blockId: string, targetId: string): boolean;
+  canNestInContainer(key: WorkspaceKey, targetId: string): boolean;
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
@@ -173,24 +179,52 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     if (!ws) return [];
     const out: BlockSnapshot[] = [];
+    const seen = new Set<string>();
     for (const block of ws.getTopBlocks(true)) {
-      this.walk(block, 0, out);
+      this.walk(block, 0, out, seen, null, null, 'root');
     }
     return out;
   }
 
-  private walk(block: Blockly.Block, depth: number, out: BlockSnapshot[]): void {
+  private walk(
+    block: Blockly.Block,
+    depth: number,
+    out: BlockSnapshot[],
+    seen: Set<string>,
+    layerParentId: string | null,
+    layerPreviousId: string | null,
+    layerRelation: BlockSnapshot['layerRelation'],
+  ): void {
+    if (seen.has(block.id)) return;
+    seen.add(block.id);
     const def = getBlockDef(block.type);
+    const directChildren = (block.inputList ?? [])
+      .map((input) => input.connection?.targetBlock() ?? null)
+      .filter((child) => child !== null);
     out.push({
       id: block.id,
       type: block.type,
       depth,
+      childCount: directChildren.length,
+      layerParentId,
+      layerPreviousId,
+      layerRelation,
       label: def?.label ?? block.type,
       preview: this.previewFor(block),
       category: def?.category ?? null,
     });
-    for (const child of block.getChildren(true)) {
-      this.walk(child, depth + 1, out);
+
+    const nextBlock =
+      (block as { getNextBlock?: () => Blockly.Block | null }).getNextBlock?.() ??
+      block.nextConnection?.targetBlock() ??
+      null;
+    for (const child of directChildren) {
+      if (child && child.id !== nextBlock?.id) {
+        this.walk(child, depth + 1, out, seen, block.id, null, 'child');
+      }
+    }
+    if (nextBlock) {
+      this.walk(nextBlock, depth, out, seen, layerParentId, block.id, 'sibling');
     }
   }
 
@@ -213,6 +247,12 @@ class DefaultAdapter implements BlocklyAdapter {
       id: b.id,
       type: b.type,
       depth: 0,
+      childCount: (b.inputList ?? [])
+        .map((input) => input.connection?.targetBlock() ?? null)
+        .filter((child) => child !== null).length,
+      layerParentId: null,
+      layerPreviousId: null,
+      layerRelation: 'root',
       label: def?.label ?? b.type,
       preview: this.previewFor(b),
       category: def?.category ?? null,
@@ -369,11 +409,13 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     if (!ws || !xml) return;
     Blockly.Events.disable();
+    ws.setResizesEnabled(false);
     try {
       ws.clear();
       const dom = Blockly.utils.xml.textToDom(xml);
       Blockly.Xml.domToWorkspace(dom, ws);
     } finally {
+      ws.setResizesEnabled(true);
       Blockly.Events.enable();
     }
   }
@@ -511,12 +553,146 @@ class DefaultAdapter implements BlocklyAdapter {
     const moving = ws?.getBlockById(blockId);
     const target = ws?.getBlockById(targetId);
     if (!ws || !moving || !target || moving === target) return false;
+    if (this.moveNestedBlockBefore(moving, target)) return true;
     if ((moving as { getParent?: () => unknown }).getParent?.()) return false;
     if ((target as { getParent?: () => unknown }).getParent?.()) return false;
     const targetXY = target.getRelativeToSurfaceXY();
     const movingXY = moving.getRelativeToSurfaceXY();
     moving.moveBy(targetXY.x - movingXY.x, targetXY.y - movingXY.y - 24);
     return true;
+  }
+
+  moveBlockAfter(key: WorkspaceKey, blockId: string, targetId: string): boolean {
+    const ws = this.workspaces[key];
+    const moving = ws?.getBlockById(blockId);
+    const target = ws?.getBlockById(targetId);
+    if (!ws || !moving || !target || moving === target) return false;
+    if (this.moveNestedBlockAfter(moving, target)) return true;
+    if ((moving as { getParent?: () => unknown }).getParent?.()) return false;
+    if ((target as { getParent?: () => unknown }).getParent?.()) return false;
+    const targetXY = target.getRelativeToSurfaceXY();
+    const movingXY = moving.getRelativeToSurfaceXY();
+    moving.moveBy(targetXY.x - movingXY.x, targetXY.y - movingXY.y + 24);
+    return true;
+  }
+
+  private moveNestedBlockBefore(movingRaw: Blockly.Block, targetRaw: Blockly.Block): boolean {
+    const moving = movingRaw as Blockly.Block & {
+      previousConnection?: Blockly.Connection | null;
+      nextConnection?: Blockly.Connection | null;
+      unplug?: (healStack?: boolean) => void;
+      initSvg?: () => void;
+      render?: () => void;
+    };
+    const target = targetRaw as Blockly.Block & {
+      previousConnection?: Blockly.Connection | null;
+      nextConnection?: Blockly.Connection | null;
+      initSvg?: () => void;
+      render?: () => void;
+    };
+    if (!moving.previousConnection || !moving.nextConnection || !target.previousConnection) return false;
+    if (this.containsInputDescendant(movingRaw, targetRaw)) return false;
+    try {
+      moving.unplug?.(true);
+      if (!moving.previousConnection || !target.previousConnection) return false;
+      const insertionConnection = target.previousConnection.targetConnection;
+      if (!insertionConnection || moving.previousConnection.isConnected()) return false;
+      insertionConnection.connect(moving.previousConnection);
+      if (!moving.nextConnection || moving.nextConnection.isConnected()) return false;
+      moving.nextConnection.connect(target.previousConnection);
+      moving.initSvg?.();
+      moving.render?.();
+      target.initSvg?.();
+      target.render?.();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private moveNestedBlockAfter(movingRaw: Blockly.Block, targetRaw: Blockly.Block): boolean {
+    const moving = movingRaw as Blockly.Block & {
+      previousConnection?: Blockly.Connection | null;
+      nextConnection?: Blockly.Connection | null;
+      unplug?: (healStack?: boolean) => void;
+      initSvg?: () => void;
+      render?: () => void;
+    };
+    const target = targetRaw as Blockly.Block & {
+      nextConnection?: Blockly.Connection | null;
+      initSvg?: () => void;
+      render?: () => void;
+    };
+    if (!moving.previousConnection || !moving.nextConnection) return false;
+    if (!target.nextConnection) return false;
+    if (this.containsInputDescendant(movingRaw, targetRaw)) return false;
+    let nextBlock: (Blockly.Block & { previousConnection?: Blockly.Connection | null; render?: () => void }) | null = null;
+    let nextConnection: Blockly.Connection | null = null;
+    try {
+      moving.unplug?.(true);
+      if (!target.nextConnection) return false;
+      nextBlock = target.nextConnection.targetBlock() as
+        | (Blockly.Block & {
+            previousConnection?: Blockly.Connection | null;
+            render?: () => void;
+          })
+        | null;
+      nextConnection = nextBlock?.previousConnection ?? null;
+      if (target.nextConnection.isConnected()) {
+        target.nextConnection.disconnect();
+      }
+      if (moving.previousConnection.isConnected()) return false;
+      target.nextConnection.connect(moving.previousConnection);
+      if (nextBlock) {
+        if (!moving.nextConnection || moving.nextConnection.isConnected()) return false;
+        if (!nextConnection) return false;
+        moving.nextConnection.connect(nextConnection);
+      }
+      moving.initSvg?.();
+      moving.render?.();
+      target.initSvg?.();
+      target.render?.();
+      nextBlock?.render?.();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private containsInputDescendant(rootRaw: Blockly.Block, candidate: Blockly.Block): boolean {
+    const root = rootRaw as Blockly.Block & {
+      inputList?: Array<{ connection?: Blockly.Connection | null }>;
+      nextConnection?: Blockly.Connection | null;
+    };
+    const stack = (root.inputList ?? [])
+      .map((input) => input.connection?.targetBlock())
+      .filter((block): block is Blockly.Block => Boolean(block));
+    while (stack.length) {
+      let block: Blockly.Block | null = stack.pop() ?? null;
+      while (block) {
+        if (block === candidate) return true;
+        const childInputs = (block as Blockly.Block & { inputList?: Array<{ connection?: Blockly.Connection | null }> })
+          .inputList ?? [];
+        for (const input of childInputs) {
+          const child = input.connection?.targetBlock();
+          if (child) stack.push(child);
+        }
+        block = (block as Blockly.Block & { nextConnection?: Blockly.Connection | null }).nextConnection?.targetBlock() ?? null;
+      }
+    }
+    return false;
+  }
+
+  canNestInContainer(key: WorkspaceKey, targetId: string): boolean {
+    const ws = this.workspaces[key];
+    const target = ws?.getBlockById(targetId) as
+      | (Blockly.Block & { inputList?: Array<{ connection?: Blockly.Connection | null }> })
+      | null;
+    if (!ws || !target) return false;
+    return (target.inputList ?? []).some((input) => {
+      const connection = input.connection;
+      return Boolean(connection && connection.type === Blockly.ConnectionType.NEXT_STATEMENT);
+    });
   }
 
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {

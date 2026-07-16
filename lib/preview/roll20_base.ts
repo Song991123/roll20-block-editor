@@ -19,11 +19,35 @@
 
 import {
   roll20BaseCss,
-  roll20VttCss,
   roll20CharsheetCss,
   roll20JqueryCss,
   roll20DarkmodeCss,
 } from './roll20_base_inline';
+
+// Keep full VTT/app CSS out of sheet preview/edit. The actual Roll20 character
+// iframe uses sheet-facing base/charactersheet/jquery rules; VTT/chat rules
+// belong in a separate ChatPane baseline so they cannot override sheet CSS.
+
+// Current Roll20 applies these form/runtime defaults after its bundled CSS.
+// Keep them in a separate generic layer so the source snapshots remain intact
+// and user sheet CSS, which is appended later, can still override them.
+const roll20LiveRuntimeParityCss = `
+.charsheet input[type="text"] {
+  height: 26px;
+}
+.charsheet button[type="roll"],
+.charsheet button[type="compendium"] {
+  border-radius: 4px;
+  color: #333;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  vertical-align: middle;
+}
+.charsheet .repcontrol {
+  min-height: 27.6px;
+}
+`;
 
 /**
  * descendant prefix `.ui-dialog ` 제거.
@@ -39,6 +63,13 @@ function stripUiDialogPrefix(css: string): string {
   // (시작 또는 콤마 이후) 공백 후 `.ui-dialog` 다음에 공백/탭 prefix 제거.
   // `.ui-dialog,` (자기 자신만) / `.ui-dialog.foo` (compound) / `.ui-dialog{` 영향 X.
   return css.replace(/(^|,)(\s*)\.ui-dialog(\s+)/g, '$1$2');
+}
+
+function extractRoll20GlyphFontFaces(css: string): string {
+  const blocks = css.match(/@font-face\s*{[\s\S]*?}/g) ?? [];
+  return blocks
+    .filter((block) => /font-family\s*:\s*['"]?(?:dicefontd\d+|pictos|pictos custom|pictos three|fontello)\b/i.test(block))
+    .join('\n');
 }
 
 /**
@@ -67,18 +98,29 @@ function rewriteForShadow(css: string): string {
  */
 export const roll20BaseIframeCss = [
   stripUiDialogPrefix(roll20BaseCss),
-  stripUiDialogPrefix(roll20VttCss),
   stripUiDialogPrefix(roll20CharsheetCss),
   stripUiDialogPrefix(roll20JqueryCss),
+  roll20LiveRuntimeParityCss,
 ].join('\n');
 
 /** Shadow DOM 모드 합성본. */
 export const roll20BaseShadowCss = [
   rewriteForShadow(roll20BaseCss),
-  rewriteForShadow(roll20VttCss),
   rewriteForShadow(roll20CharsheetCss),
   rewriteForShadow(roll20JqueryCss),
+  rewriteForShadow(roll20LiveRuntimeParityCss),
 ].join('\n');
+
+/**
+ * Shadow DOM styles can reference Roll20 glyph fonts, but Chromium does not
+ * reliably register @font-face rules scoped inside a shadow tree for rendering.
+ * Register only Roll20 icon/dice font faces at document level; do not expose
+ * Roll20 selector rules to the app document.
+ */
+export const roll20ShadowDocumentFontFaceCss = [
+  extractRoll20GlyphFontFaces(roll20BaseCss),
+  extractRoll20GlyphFontFaces(roll20CharsheetCss),
+].filter(Boolean).join('\n');
 
 /** Dark mode — iframe / shadow 공용. */
 export const roll20DarkmodeIframeCss = roll20DarkmodeCss;

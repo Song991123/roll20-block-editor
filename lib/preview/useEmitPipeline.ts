@@ -30,15 +30,17 @@ export function useEmitPipeline(): void {
   const htmlV = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const cssV = useWorkspaceStore((s) => s.workspaces.css.structureVersion);
   const i18nV = useWorkspaceStore((s) => s.workspaces.i18n.structureVersion);
+  const workerV = useWorkspaceStore((s) => s.workspaces.worker.structureVersion);
   const htmlCount = useWorkspaceStore((s) => s.workspaces.html.blockCount);
   const cssCount = useWorkspaceStore((s) => s.workspaces.css.blockCount);
   const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
+  const workerCount = useWorkspaceStore((s) => s.workspaces.worker.blockCount);
   const setEmitCache = useWorkspaceStore((s) => s.setEmitCache);
   const setEmitWarnings = useWorkspaceStore((s) => s.setEmitWarnings);
 
   useEffect(() => {
-    if (htmlCount + cssCount + i18nCount === 0) {
-      setEmitCache({ html: '', css: '', i18n: '' });
+    if (htmlCount + cssCount + i18nCount + workerCount === 0) {
+      setEmitCache({ html: '', css: '', i18n: '', worker: '' });
       setEmitWarnings([]);
       return;
     }
@@ -48,9 +50,10 @@ export function useEmitPipeline(): void {
       const liveTotal =
         adapter.countBlocks('html') +
         adapter.countBlocks('css') +
-        adapter.countBlocks('i18n');
+        adapter.countBlocks('i18n') +
+        adapter.countBlocks('worker');
       if (liveTotal === 0) {
-        setEmitCache({ html: '', css: '', i18n: '' });
+        setEmitCache({ html: '', css: '', i18n: '', worker: '' });
         setEmitWarnings([]);
         return;
       }
@@ -59,10 +62,11 @@ export function useEmitPipeline(): void {
         html: adapter.getWorkspace('html'),
         css: adapter.getWorkspace('css'),
         i18n: adapter.getWorkspace('i18n'),
+        worker: adapter.getWorkspace('worker'),
       });
-      setEmitCache({ html: result.html, css: result.css, i18n: result.i18n });
+      setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, worker: result.worker });
       setEmitWarnings(result.warnings);
     }, 120);
     return () => window.clearTimeout(handle);
-  }, [htmlV, cssV, i18nV, htmlCount, cssCount, i18nCount, setEmitCache, setEmitWarnings]);
+  }, [htmlV, cssV, i18nV, workerV, htmlCount, cssCount, i18nCount, workerCount, setEmitCache, setEmitWarnings]);
 }

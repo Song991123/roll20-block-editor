@@ -1,4 +1,5 @@
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { commitManagedDesignPosition } from '@/lib/editor/designPosition';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 
 export const FRIENDLY_WIDGET_MIME = 'application/x-r20-friendly-widget';
@@ -16,13 +17,15 @@ export type FriendlyWidgetPreset = {
 };
 
 export type AppendFriendlyWidgetOptions = {
-  mode?: 'absolute' | 'flow';
+  mode?: 'absolute' | 'flow' | 'absolute-in-container';
   containerBlockId?: string | null;
+  placement?: 'inside' | 'before' | 'after';
+  siblingBlockId?: string | null;
 };
 
 export const FRIENDLY_WIDGET_GROUPS: Record<FriendlyWidgetGroup, string> = {
   layout: '레이아웃',
-  text: '글자',
+  text: '텍스트',
   input: '입력',
   action: '버튼',
   media: '이미지',
@@ -97,7 +100,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     id: 'number-input',
     group: 'input',
     label: '숫자 입력',
-    description: 'HP, 능력치, 수치 값',
+    description: 'HP, 능력치 같은 수치 값',
     blockType: 'r20_number_input',
     preview: 'number',
     fields: {
@@ -126,7 +129,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     id: 'checkbox',
     group: 'input',
     label: '체크박스',
-    description: 'ON/OFF 상태',
+    description: '켜짐/꺼짐 상태',
     blockType: 'r20_checkbox',
     preview: 'checkbox',
     fields: {
@@ -140,7 +143,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     id: 'chat-button',
     group: 'action',
     label: '채팅 버튼',
-    description: '누르면 채팅에 문장이나 매크로 전송',
+    description: '누르면 채팅에 문장이나 매크로를 보냅니다',
     blockType: 'r20_chat_button',
     preview: 'button',
     fields: {
@@ -155,7 +158,7 @@ export const FRIENDLY_WIDGET_PRESETS: FriendlyWidgetPreset[] = [
     id: 'action-button',
     group: 'action',
     label: '액션 버튼',
-    description: '시트 worker clicked 이벤트용 버튼',
+    description: '시트 worker의 clicked 이벤트용 버튼',
     blockType: 'r20_action_button',
     preview: 'button',
     fields: {
@@ -195,7 +198,8 @@ export function appendFriendlyWidgetPreset(
   const state = useWorkspaceStore.getState();
   if (Date.now() - state.lastClearedAt < 1200) return null;
 
-  const requestedFlow = options.mode === 'flow' && Boolean(options.containerBlockId);
+  const requestedFlow = options.mode === 'flow' && Boolean(options.containerBlockId || options.siblingBlockId);
+  const requestedAbsoluteInContainer = options.mode === 'absolute-in-container' && Boolean(options.containerBlockId);
   const targetPosition = requestedFlow ? position : findOpenWidgetPosition(position);
   const id = state.appendBlockToActive(preset.blockType, 'html');
   if (!id) return null;
@@ -208,19 +212,53 @@ export function appendFriendlyWidgetPreset(
 
   const baseStyle = preset.fields.STYLE ?? '';
   let useFlowStyle = false;
-  if (requestedFlow && options.containerBlockId) {
+  let useContainerAbsoluteStyle = false;
+  if (requestedFlow && options.placement === 'before' && options.siblingBlockId) {
+    useFlowStyle = adapter.moveBlockBefore('html', id, options.siblingBlockId);
+    if (useFlowStyle) {
+      state.bumpStructure('html', adapter.countBlocks('html'));
+      state.setSelectedBlockId(id, 'tree');
+    }
+  } else if (requestedFlow && options.placement === 'after' && options.siblingBlockId) {
+    useFlowStyle = adapter.moveBlockAfter('html', id, options.siblingBlockId);
+    if (useFlowStyle) {
+      state.bumpStructure('html', adapter.countBlocks('html'));
+      state.setSelectedBlockId(id, 'tree');
+    }
+  } else if (requestedFlow && options.containerBlockId) {
     useFlowStyle = adapter.nestBlockInContainer('html', id, options.containerBlockId);
     if (useFlowStyle) {
       state.bumpStructure('html', adapter.countBlocks('html'));
       state.setSelectedBlockId(id, 'tree');
     }
+  } else if (requestedAbsoluteInContainer && options.containerBlockId) {
+    useContainerAbsoluteStyle = adapter.nestBlockInContainer('html', id, options.containerBlockId);
+    if (useContainerAbsoluteStyle) {
+      state.bumpStructure('html', adapter.countBlocks('html'));
+      state.setSelectedBlockId(id, 'tree');
+    }
   }
 
-  const style = useFlowStyle
-    ? removeCssDeclarations(baseStyle, ['position', 'left', 'top'])
-    : withAbsolutePosition(baseStyle, targetPosition?.left ?? 24, targetPosition?.top ?? 24);
+  const style = removeCssDeclarations(baseStyle, ['position', 'left', 'top']);
   if (style || adapter.hasBlockField('html', id, 'STYLE')) {
     adapter.setBlockField('html', id, 'STYLE', style);
+  }
+  if (!useFlowStyle) {
+    const containingBlockId = useContainerAbsoluteStyle ? options.containerBlockId ?? null : null;
+    const parentStyle = containingBlockId
+      ? adapter.getBlockField('html', containingBlockId, 'STYLE') ?? ''
+      : '';
+    const committed = commitManagedDesignPosition(adapter, {
+      workspace: 'html',
+      blockId: id,
+      left: useContainerAbsoluteStyle ? position?.left ?? 24 : targetPosition?.left ?? 24,
+      top: useContainerAbsoluteStyle ? position?.top ?? 24 : targetPosition?.top ?? 24,
+      containingBlockId,
+      containingBlockNeedsRelative: Boolean(containingBlockId) && !hasPositionDeclaration(parentStyle),
+    });
+    if (committed.cssBlockCreated) {
+      state.bumpStructure('css', adapter.countBlocks('css'));
+    }
   }
   return id;
 }
@@ -309,23 +347,6 @@ function parseCssPx(style: string, prop: 'left' | 'top'): number | null {
   return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
 }
 
-function withAbsolutePosition(style: string, left: number, top: number): string {
-  const map = new Map<string, string>();
-  for (const chunk of style.split(';')) {
-    const idx = chunk.indexOf(':');
-    if (idx <= 0) continue;
-    const key = chunk.slice(0, idx).trim().toLowerCase();
-    const value = chunk.slice(idx + 1).trim();
-    if (key && value) map.set(key, value);
-  }
-  map.set('position', 'absolute');
-  map.set('left', `${Math.max(0, Math.round(left))}px`);
-  map.set('top', `${Math.max(0, Math.round(top))}px`);
-  return Array.from(map.entries())
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('; ');
-}
-
 function removeCssDeclarations(style: string, props: string[]): string {
   const remove = new Set(props.map((prop) => prop.toLowerCase()));
   const map = new Map<string, string>();
@@ -339,4 +360,8 @@ function removeCssDeclarations(style: string, props: string[]): string {
   return Array.from(map.entries())
     .map(([key, value]) => `${key}: ${value}`)
     .join('; ');
+}
+
+function hasPositionDeclaration(style: string): boolean {
+  return /(?:^|;)\s*position\s*:/i.test(style);
 }

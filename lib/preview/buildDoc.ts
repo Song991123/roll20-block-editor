@@ -18,23 +18,34 @@
  * 시스템 specific 0 — 모든 변환은 일반 규칙.
  */
 
-import { autoPrefixHtmlClasses, autoPrefixCssClasses } from './prefix';
+import { normalizeTranslationForRoll20 } from '../export/payload';
 import {
   roll20BaseIframeCss,
   roll20BaseShadowCss,
   roll20DarkmodeIframeCss,
   roll20DarkmodeShadowCss,
 } from './roll20_base';
-import { roll20BaselineCss } from './roll20_baseline';
 import { runtimeCss } from './runtime';
+import {
+  prepareSheetRenderContract,
+  type Roll20CompatibilityMode,
+} from './renderContract';
 
 export interface BuildDocOptions {
   html: string;
   css: string;
+  /** Atomic product contract. Modern preserves authored classes; legacy prefixes and sanitizes together. */
+  compatibilityMode?: Roll20CompatibilityMode;
   /** translation.json — Phase 2 minimal 에선 미반영 (Phase 3+ data-i18n 치환). */
   i18n?: string;
   /** D4 ① — true 면 user html/css 에 autoPrefix 적용. */
   sanitize?: boolean;
+  /** 구버전 Roll20 CSS 무해화. Auto-prefix와 별개이며 기본값은 OFF. */
+  legacyCssSanitize?: boolean;
+  /** 실제 Roll20 Custom Sheet Sandbox sanitize/prefix 근사치. 진단용 preview 옵션. */
+  roll20SandboxSanitize?: boolean;
+  /** Diagnostic renderer model. Default must stay off until actual Roll20 gates prove it safe. */
+  roll20RendererModel?: 'default' | 'input-flow-27' | 'input-flow-276';
   /** 다크 모드 토큰 부착 — body[data-theme=dark]. */
   darkMode?: boolean;
   /** spec 17 §9 — 9 레이어 필터. 'all' 이면 dim 없음. */
@@ -51,6 +62,19 @@ export interface BuildDocOptions {
   /** spec 17 §8 — 캔버스에서 선택된 위젯 id 와 sync (강조 표시). */
   includeEditorOverlays?: boolean;
   selectedWidgetName?: string | null;
+  /** Roll20 page language used by :lang() selectors and browser fallback fonts. */
+  documentLanguage?: string;
+}
+
+export interface SheetLivePatch {
+  html: string;
+  styles: Record<string, string>;
+  i18n: string;
+  darkMode: boolean;
+  layer: NonNullable<BuildDocOptions['previewLayer']>;
+  roll20SandboxSanitize: boolean;
+  roll20RendererModel: NonNullable<BuildDocOptions['roll20RendererModel']>;
+  documentLanguage: string;
 }
 
 /** 미리보기 iframe 안에서 부모창에 클릭 이벤트 전달하는 ES2015 inline 스크립트. */
@@ -59,6 +83,218 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function postSelect(id) {
     try {
       parent.postMessage({ type: 'r20:select', blockId: id }, '*');
+    } catch (e) {}
+  }
+  var editBridgeEnabled = false;
+  var editBridgeId = (function () {
+    try {
+      var bytes = new Uint32Array(4);
+      window.crypto.getRandomValues(bytes);
+      return 'r20-' + Array.prototype.map.call(bytes, function (value) {
+        return Number(value).toString(36);
+      }).join('-');
+    } catch (e) {
+      return 'r20-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36);
+    }
+  })();
+  var editMoveFrame = 0;
+  var pendingEditMove = null;
+  var activeEditPointer = null;
+  function blockNodeOf(node) {
+    while (node && node !== document.body) {
+      if (node.dataset && node.dataset.r20BlockId) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+  function geometryOf(node) {
+    if (!node || !node.dataset || !node.dataset.r20BlockId) return null;
+    var rect = node.getBoundingClientRect();
+    var offsetParent = node.offsetParent;
+    var offsetParentBlock = blockNodeOf(offsetParent);
+    var offsetParentPosition = '';
+    var position = '';
+    try {
+      offsetParentPosition = offsetParent ? window.getComputedStyle(offsetParent).position : '';
+      position = window.getComputedStyle(node).position;
+    } catch (e) {}
+    return {
+      blockId: node.dataset.r20BlockId,
+      rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      offsetLeft: Number(node.offsetLeft) || 0,
+      offsetTop: Number(node.offsetTop) || 0,
+      scrollLeft: Number(node.scrollLeft) || 0,
+      scrollTop: Number(node.scrollTop) || 0,
+      clientLeft: Number(node.clientLeft) || 0,
+      clientTop: Number(node.clientTop) || 0,
+      position: position,
+      offsetParentBlockId: offsetParentBlock && offsetParentBlock.dataset
+        ? offsetParentBlock.dataset.r20BlockId || null
+        : null,
+      offsetParentPosition: offsetParentPosition
+    };
+  }
+  function hitPathOf(node) {
+    var path = [];
+    var current = node;
+    while (current && current !== document.body && path.length < 64) {
+      if (current.dataset && current.dataset.r20BlockId) {
+        var geometry = geometryOf(current);
+        if (geometry) path.push(geometry);
+      }
+      current = current.parentNode;
+    }
+    return path;
+  }
+  function hitNodeAt(clientX, clientY, fallback) {
+    try {
+      return blockNodeOf(document.elementFromPoint(clientX, clientY)) || blockNodeOf(fallback);
+    } catch (e) {
+      return blockNodeOf(fallback);
+    }
+  }
+  function postEditHit(phase, subjectNode, hitNode, pointer) {
+    if (!editBridgeEnabled) return;
+    var subject = geometryOf(subjectNode);
+    if (!subject) return;
+    try {
+      parent.postMessage({
+        type: 'r20:edit-hit',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        phase: phase,
+        blockId: subject.blockId,
+        rect: subject.rect,
+        pointer: { x: Number(pointer.x) || 0, y: Number(pointer.y) || 0 },
+        pointerId: Number.isInteger(pointer.pointerId) ? pointer.pointerId : -1,
+        button: Number.isInteger(pointer.button) ? pointer.button : -1,
+        buttons: Number.isInteger(pointer.buttons) ? pointer.buttons : 0,
+        subject: subject,
+        hitPath: hitPathOf(hitNode)
+      }, '*');
+    } catch (e) {}
+  }
+  function hasFriendlyWidgetPayload(dataTransfer) {
+    if (!dataTransfer || !dataTransfer.types) return false;
+    for (var i = 0; i < dataTransfer.types.length; i += 1) {
+      if (dataTransfer.types[i] === 'application/x-r20-friendly-widget') return true;
+    }
+    return false;
+  }
+  function postWidgetDrag(phase, event, payload) {
+    if (!editBridgeEnabled) return;
+    var hitNode = hitNodeAt(event.clientX, event.clientY, event.target);
+    try {
+      parent.postMessage({
+        type: 'r20:widget-drag',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        phase: phase,
+        payload: payload || null,
+        pointer: { x: Number(event.clientX) || 0, y: Number(event.clientY) || 0 },
+        hitPath: hitPathOf(hitNode)
+      }, '*');
+    } catch (e) {}
+  }
+  function setEditBridgeEnabled(enabled, selectedBlockId) {
+    editBridgeEnabled = enabled === true;
+    document.body.setAttribute('data-r20-edit-mode', editBridgeEnabled ? '1' : '0');
+    if (!editBridgeEnabled) {
+      if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
+      editMoveFrame = 0;
+      pendingEditMove = null;
+      activeEditPointer = null;
+    }
+    if (!editBridgeEnabled || !selectedBlockId) return;
+    var selected = document.querySelector('[data-r20-block-id="' + cssEscape(selectedBlockId) + '"]');
+    if (selected) postEditHit('measure', selected, selected, {
+      x: 0, y: 0, pointerId: -1, button: -1, buttons: 0
+    });
+  }
+  function workerSourceText(root) {
+    if (!root) return '';
+    var scripts = root.querySelectorAll('script[type="text/worker"]');
+    var out = [];
+    for (var i = 0; i < scripts.length; i++) out.push(scripts[i].textContent || '');
+    return out.join('\n/* r20-worker-boundary */\n');
+  }
+  function ensureStyle(id, css) {
+    var style = document.getElementById(id);
+    if (!css) {
+      if (style) style.remove();
+      return;
+    }
+    if (!style) {
+      style = document.createElement('style');
+      style.id = id;
+      document.head.appendChild(style);
+    }
+    style.textContent = css;
+  }
+  function applyLivePatch(data) {
+    if (!data || !Number.isInteger(data.revision) || data.revision < 1) return;
+    if (typeof data.html !== 'string' || data.html.length > 15000000) return;
+    if (!data.styles || typeof data.styles !== 'object') return;
+    var allowedStyles = [
+      'roll20-base-dark',
+      'roll20-legacy-input-state',
+      'r20-layer-filter',
+      'r20-user',
+      'r20-renderer-model'
+    ];
+    var totalCss = 0;
+    for (var i = 0; i < allowedStyles.length; i++) {
+      var css = data.styles[allowedStyles[i]];
+      if (typeof css !== 'string') return;
+      totalCss += css.length;
+    }
+    if (totalCss > 15000000 || typeof data.i18n !== 'string' || data.i18n.length > 5000000) return;
+    var root = document.getElementById('charsheet-root');
+    if (!root) return;
+    var attrs = collectAttrs();
+    var previousWorkerSource = workerSourceText(root);
+    root.innerHTML = data.html;
+    for (var j = 0; j < allowedStyles.length; j++) {
+      ensureStyle(allowedStyles[j], data.styles[allowedStyles[j]]);
+    }
+    if (data.darkMode === true) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.body.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      document.body.removeAttribute('data-theme');
+    }
+    document.documentElement.lang = typeof data.documentLanguage === 'string'
+      ? data.documentLanguage
+      : 'en';
+    document.body.setAttribute('data-layer', typeof data.layer === 'string' ? data.layer : 'all');
+    document.body.setAttribute('data-roll20-sandbox-sanitize', data.roll20SandboxSanitize === true ? '1' : '0');
+    document.body.setAttribute('data-roll20-renderer-model', String(data.roll20RendererModel || 'default'));
+    var tabContent = document.getElementById('tab-content');
+    root.classList.toggle('sheet-darkmode', data.darkMode === true);
+    if (tabContent) tabContent.classList.toggle('sheet-darkmode', data.darkMode === true);
+    var i18nNode = document.getElementById('__r20-i18n');
+    if (i18nNode) i18nNode.textContent = JSON.stringify(data.i18n);
+    translations = loadTranslations();
+    applyTranslations();
+    emulateRoll20RepeatingSections();
+    emulateRoll20ButtonClasses();
+    applyRoll20Autocalc();
+    Object.keys(attrs).forEach(function (key) { writeSheetAttr(key, attrs[key]); });
+    var nextWorkerSource = workerSourceText(root);
+    if (nextWorkerSource !== previousWorkerSource) {
+      sheetWorkerHandlers = {};
+      installSheetWorkers();
+    }
+    scheduleResize();
+    try {
+      parent.postMessage({
+        type: 'r20:edit-applied',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        revision: data.revision,
+        blockCount: root.querySelectorAll('[data-r20-block-id]').length
+      }, '*');
     } catch (e) {}
   }
   function collectAttrs() {
@@ -159,12 +395,35 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       var el = nodes[i];
       if (el.type === 'checkbox') {
         el.checked = String(value) === String(el.value || '1') || value === true || value === 1 || value === '1';
+        if (el.checked) el.setAttribute('checked', 'checked');
+        else el.removeAttribute('checked');
       } else if (el.type === 'radio') {
         el.checked = String(el.value) === String(value);
+        if (el.checked) el.setAttribute('checked', 'checked');
+        else el.removeAttribute('checked');
       } else {
-        el.value = value == null ? '' : String(value);
+        var nextValue = value == null ? '' : String(value);
+        el.value = nextValue;
+        el.setAttribute('value', nextValue);
       }
     }
+  }
+  function mirrorChangedSheetAttr(el) {
+    if (!el || !el.getAttribute) return;
+    var rawName = el.getAttribute('name') || '';
+    if (rawName.indexOf('attr_') !== 0) return;
+    var key = rawName.substring(5);
+    var value;
+    if (el.tagName === 'INPUT' && (el.type === 'checkbox' || el.type === 'radio')) {
+      value = el.checked ? (el.value || '1') : '';
+    } else {
+      value = el.value == null ? '' : String(el.value);
+    }
+    settingAttrs = true;
+    writeSheetAttr(key, value);
+    settingAttrs = false;
+    triggerSheetWorker('change:' + key, { sourceAttribute: key });
+    scheduleResize();
   }
   function sheetWorkerGetAttrs(names, cb) {
     var out = {};
@@ -221,14 +480,65 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     });
     [
       ['data-i18n-title', 'title'],
+      ['data-i18n-alt', 'alt'],
       ['data-i18n-placeholder', 'placeholder'],
-      ['data-i18n-aria-label', 'aria-label']
+      ['data-i18n-aria-label', 'aria-label'],
+      ['data-i18n-label', 'label']
     ].forEach(function (pair) {
       document.querySelectorAll('[' + pair[0] + ']').forEach(function (el) {
         var key = el.getAttribute(pair[0]);
         if (!key || translations[key] == null) return;
         el.setAttribute(pair[1], String(translations[key]));
       });
+    });
+  }
+  function isRepeatingFieldset(el) {
+    if (!el || el.tagName !== 'FIELDSET') return false;
+    return /(?:^|\s)repeating_[^\\s]+/.test(el.getAttribute('class') || '');
+  }
+  function hasRoll20RepeatingRuntime(el) {
+    var node = el.nextElementSibling;
+    var sawContainer = false;
+    var sawControl = false;
+    while (node) {
+      if (node.classList && node.classList.contains('repcontainer')) sawContainer = true;
+      if (node.classList && node.classList.contains('repcontrol')) sawControl = true;
+      if (sawContainer && sawControl) return true;
+      if (node.tagName === 'FIELDSET' || !(node.classList && (node.classList.contains('repcontainer') || node.classList.contains('repcontrol')))) break;
+      node = node.nextElementSibling;
+    }
+    return false;
+  }
+  function emulateRoll20RepeatingSections() {
+    document.querySelectorAll('fieldset[class^="repeating_"], fieldset[class*=" repeating_"]').forEach(function (fieldset) {
+      if (!isRepeatingFieldset(fieldset) || hasRoll20RepeatingRuntime(fieldset)) return;
+      var container = document.createElement('div');
+      container.className = 'repcontainer';
+      var control = document.createElement('div');
+      control.className = 'repcontrol';
+      var edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'btn repcontrol_edit';
+      edit.textContent = 'Modify';
+      var add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'btn repcontrol_add';
+      add.textContent = '+Add';
+      control.append(edit, add);
+      fieldset.after(container, control);
+    });
+  }
+  function emulateRoll20ButtonClasses() {
+    document.querySelectorAll('button[type="roll"], button[type="compendium"], .repcontrol button').forEach(function (button) {
+      button.classList.add('btn');
+      if (button.matches('button[type="roll"], button[type="compendium"]')) {
+        button.classList.add('ui-draggable');
+      }
+    });
+  }
+  function applyRoll20Autocalc() {
+    document.querySelectorAll('[data-r20-autocalc-value]').forEach(function (input) {
+      input.value = input.getAttribute('data-r20-autocalc-value') || '';
     });
   }
   function sheetWorkerGetSectionIDs(section, cb) {
@@ -271,6 +581,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     triggerSheetWorker('sheet:opened', {});
   }
   document.addEventListener('click', function (e) {
+    if (editBridgeEnabled) {
+      try { e.preventDefault(); } catch (_) {}
+      try { e.stopImmediatePropagation(); } catch (_) {}
+      return false;
+    }
     // spec 17 §8 — name 있는 element 클릭 시 부모에 widget-click 전송 (위젯 강조용)
     var widgetName = widgetNameOf(e.target);
     if (widgetName) {
@@ -310,8 +625,144 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       node = node.parentNode;
     }
   }, false);
+  document.addEventListener('change', function (e) {
+    if (settingAttrs) return;
+    var target = e.target;
+    if (!target || !target.matches || !target.matches('input[name^="attr_"], select[name^="attr_"], textarea[name^="attr_"]')) return;
+    mirrorChangedSheetAttr(target);
+  }, true);
+  document.addEventListener('pointermove', function (e) {
+    if (!editBridgeEnabled) return;
+    if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
+    pendingEditMove = {
+      subjectNode: activeEditPointer.subjectNode,
+      hitNode: hitNodeAt(e.clientX, e.clientY, e.target),
+      pointer: {
+        x: e.clientX,
+        y: e.clientY,
+        pointerId: e.pointerId,
+        button: e.button,
+        buttons: e.buttons
+      }
+    };
+    if (editMoveFrame) return;
+    editMoveFrame = window.requestAnimationFrame(function () {
+      editMoveFrame = 0;
+      var pending = pendingEditMove;
+      pendingEditMove = null;
+      if (pending) {
+        postEditHit('pointermove', pending.subjectNode, pending.hitNode, pending.pointer);
+      }
+    });
+  }, true);
+  document.addEventListener('pointerdown', function (e) {
+    if (!editBridgeEnabled) return;
+    if (e.button !== 0) return;
+    var subjectNode = blockNodeOf(e.target);
+    if (!subjectNode) return;
+    activeEditPointer = { pointerId: e.pointerId, subjectNode: subjectNode };
+    try { subjectNode.setPointerCapture(e.pointerId); } catch (_) {}
+    postEditHit('pointerdown', subjectNode, subjectNode, {
+      x: e.clientX,
+      y: e.clientY,
+      pointerId: e.pointerId,
+      button: e.button,
+      buttons: e.buttons
+    });
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+  }, true);
+  document.addEventListener('pointerup', function (e) {
+    if (!editBridgeEnabled) return;
+    if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
+    var subjectNode = activeEditPointer.subjectNode;
+    if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
+    editMoveFrame = 0;
+    pendingEditMove = null;
+    postEditHit('pointerup', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target), {
+      x: e.clientX,
+      y: e.clientY,
+      pointerId: e.pointerId,
+      button: e.button,
+      buttons: e.buttons
+    });
+    try { subjectNode.releasePointerCapture(e.pointerId); } catch (_) {}
+    activeEditPointer = null;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+  }, true);
+  document.addEventListener('pointercancel', function (e) {
+    if (!editBridgeEnabled) return;
+    if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
+    var subjectNode = activeEditPointer.subjectNode;
+    if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
+    editMoveFrame = 0;
+    pendingEditMove = null;
+    postEditHit('pointercancel', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target), {
+      x: e.clientX,
+      y: e.clientY,
+      pointerId: e.pointerId,
+      button: e.button,
+      buttons: e.buttons
+    });
+    try { subjectNode.releasePointerCapture(e.pointerId); } catch (_) {}
+    activeEditPointer = null;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+  }, true);
+  document.addEventListener('dragover', function (e) {
+    if (!editBridgeEnabled || !hasFriendlyWidgetPayload(e.dataTransfer)) return;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.dataTransfer.dropEffect = 'copy'; } catch (_) {}
+    postWidgetDrag('dragover', e, null);
+  }, true);
+  document.addEventListener('dragleave', function (e) {
+    if (!editBridgeEnabled || !hasFriendlyWidgetPayload(e.dataTransfer)) return;
+    if (e.relatedTarget && document.documentElement.contains(e.relatedTarget)) return;
+    postWidgetDrag('dragleave', e, null);
+  }, true);
+  document.addEventListener('drop', function (e) {
+    if (!editBridgeEnabled || !hasFriendlyWidgetPayload(e.dataTransfer)) return;
+    var payload = '';
+    try { payload = e.dataTransfer.getData('application/x-r20-friendly-widget') || ''; } catch (_) {}
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+    postWidgetDrag('drop', e, payload);
+  }, true);
+  document.addEventListener('contextmenu', function (e) {
+    if (!editBridgeEnabled) return;
+    var node = blockNodeOf(e.target);
+    if (!node || !node.dataset || !node.dataset.r20BlockId) return;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+    try {
+      parent.postMessage({
+        type: 'r20:edit-context-menu',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        blockId: node.dataset.r20BlockId,
+        pointer: { x: Number(e.clientX) || 0, y: Number(e.clientY) || 0 }
+      }, '*');
+    } catch (_) {}
+  }, true);
   window.addEventListener('message', function (e) {
-    if (!e.data) return;
+    if (e.source !== parent || !e.data) return;
+    if (
+      e.data.type === 'r20:edit-mode'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      setEditBridgeEnabled(e.data.enabled, e.data.selectedBlockId || null);
+      return;
+    }
+    if (
+      e.data.type === 'r20:edit-apply'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      applyLivePatch(e.data);
+      return;
+    }
     if (e.data.type === 'r20:highlight') {
       var prev = document.querySelector('[data-r20-preview-selected="1"]');
       if (prev) prev.removeAttribute('data-r20-preview-selected');
@@ -410,8 +861,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     });
   } catch (e) {}
   applyTranslations();
+  emulateRoll20RepeatingSections();
+  emulateRoll20ButtonClasses();
+  applyRoll20Autocalc();
   installSheetWorkers();
   scheduleResize();
+  try {
+    parent.postMessage({ type: 'r20:edit-ready', protocol: 1, bridgeId: editBridgeId }, '*');
+  } catch (e) {}
 })();
 `;
 
@@ -471,18 +928,6 @@ const ROLL20_DIALOG_OPEN_CSS = `
   display: none !important;
 }
 
-.charsheet input[disabled],
-.charsheet input[readonly],
-.charsheet select[disabled] {
-  background-color: rgba(255, 255, 255, 0) !important;
-  color: inherit !important;
-}
-
-.charsheet {
-  background-repeat: no-repeat !important;
-  background-position: top center !important;
-}
-
 rolltemplate,
 script {
   display: none !important;
@@ -496,6 +941,15 @@ script {
   max-height: 0 !important;
   overflow: hidden !important;
   pointer-events: none !important;
+}
+`;
+
+const ROLL20_LEGACY_INPUT_STATE_CSS = `
+.charsheet input[disabled],
+.charsheet input[readonly],
+.charsheet select[disabled] {
+  background-color: rgba(255, 255, 255, 0);
+  color: inherit;
 }
 `;
 
@@ -516,6 +970,29 @@ script {
 }
 `;
 
+function styleSourceChunk(source: string, css: string): string {
+  return `\n/* r20-style-source:${source} */\n${css}\n`;
+}
+
+function roll20RendererModelCss(model: BuildDocOptions['roll20RendererModel']): string {
+  if (model !== 'input-flow-27' && model !== 'input-flow-276') return '';
+  const textInputHeight = model === 'input-flow-276' ? 27.6 : 27;
+  return `
+/* diagnostic Roll20 input/inline-flow renderer model; gated off by default */
+.ui-dialog .charsheet .sheet-2colrow,
+.ui-dialog .charsheet .sheet-3colrow {
+  word-spacing: -0.75px;
+}
+.ui-dialog .charsheet .sheet-2colrow > .sheet-col,
+.ui-dialog .charsheet .sheet-3colrow > .sheet-col {
+  word-spacing: normal;
+}
+.ui-dialog .charsheet input[type="text"] {
+  min-height: ${textInputHeight}px;
+}
+`;
+}
+
 function jsonScriptText(value: string | undefined): string {
   return JSON.stringify(value ?? '')
     .replace(/</g, '\\u003c')
@@ -523,54 +1000,10 @@ function jsonScriptText(value: string | undefined): string {
     .replace(/&/g, '\\u0026');
 }
 
-function parseTranslationMap(i18n: string | undefined): Record<string, string> {
-  if (!i18n?.trim()) return {};
-  try {
-    const parsed = JSON.parse(i18n);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    const out: Record<string, string> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      if (value == null) continue;
-      out[key] = String(value);
-    }
-    return out;
-  } catch {
-    return {};
-  }
+function normalizeDocumentLanguage(value: string | undefined): string {
+  const language = value?.trim() || 'en';
+  return /^[a-z]{2,8}(?:-[a-z0-9]{1,8})*$/i.test(language) ? language : 'en';
 }
-
-function applyTranslationsToHtml(html: string, i18n: string | undefined): string {
-  const translations = parseTranslationMap(i18n);
-  if (Object.keys(translations).length === 0) return html;
-  if (typeof DOMParser === 'undefined') return html;
-
-  const doc = new DOMParser().parseFromString(`<template>${html}</template>`, 'text/html');
-  const template = doc.querySelector('template');
-  if (!template) return html;
-
-  template.content.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
-    const key = el.getAttribute('data-i18n');
-    if (key && translations[key] != null) el.textContent = translations[key];
-  });
-  template.content.querySelectorAll<HTMLElement>('[data-i18n-html]').forEach((el) => {
-    const key = el.getAttribute('data-i18n-html');
-    if (key && translations[key] != null) el.innerHTML = translations[key];
-  });
-  const attrPairs = [
-    ['data-i18n-title', 'title'],
-    ['data-i18n-placeholder', 'placeholder'],
-    ['data-i18n-aria-label', 'aria-label'],
-  ] as const;
-  for (const [source, target] of attrPairs) {
-    template.content.querySelectorAll<HTMLElement>(`[${source}]`).forEach((el) => {
-      const key = el.getAttribute(source);
-      if (key && translations[key] != null) el.setAttribute(target, translations[key]);
-    });
-  }
-
-  return template.innerHTML;
-}
-
 
 /**
  * spec 17 §9 — 9 레이어 CSS 필터.
@@ -647,35 +1080,33 @@ ${scope} [data-r20-hovered="1"] {
  * iframe srcdoc 합성. 결과는 그대로 `<iframe srcDoc>` 에 박는다.
  */
 export function buildSheetDoc(opts: BuildDocOptions): string {
-  const sanitize = opts.sanitize !== false; // default ON
+  const contract = prepareSheetRenderContract(opts);
+  const { legacyCssSanitize, roll20SandboxSanitize, previewCss } = contract;
+  const roll20RendererModel = opts.roll20RendererModel ?? 'default';
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
-
-  const userHtml = (opts.html ?? '').trim();
-  const userCss = (opts.css ?? '').trim();
-
-  const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
-  const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
-
-  const bodyInner = prefixedHtml ? applyTranslationsToHtml(prefixedHtml, opts.i18n) : EMPTY_PLACEHOLDER;
+  const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
+  const documentLanguage = normalizeDocumentLanguage(opts.documentLanguage);
 
   return `<!doctype html>
-<html lang="ko"${darkMode ? ' data-theme="dark"' : ''}>
+<html lang="${documentLanguage}"${darkMode ? ' data-theme="dark"' : ''}>
 <head>
 <meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>시트 미리보기</title>
-<!-- spec 25 + isolation fix: 실 Roll20 sandbox CSS (ground truth) → 우리 보조 baseline → runtime overlay → user CSS -->
+<!-- spec 25 + actual Roll20 probe: 실 Roll20 sandbox CSS (ground truth) → runtime overlay → user CSS -->
 <style id="roll20-base">${roll20BaseIframeCss}</style>${darkMode ? `
 <style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>` : ''}
 <style id="roll20-dialog-open">${ROLL20_DIALOG_OPEN_CSS}</style>
-<style id="r20-baseline-fallback">${roll20BaselineCss}</style>
+${legacyCssSanitize ? `<style id="roll20-legacy-input-state">${ROLL20_LEGACY_INPUT_STATE_CSS}</style>` : ''}
 <style id="r20-runtime">${runtimeCss}</style>
 <style id="r20-layer-filter">${layerFilterCss()}</style>
-<style id="r20-user">${prefixedCss}</style>
+<style id="r20-user">${previewCss}</style>
+<style id="r20-renderer-model">${roll20RendererModelCss(roll20RendererModel)}</style>
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
-<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}">
+<body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}" data-roll20-sandbox-sanitize="${roll20SandboxSanitize ? '1' : '0'}" data-roll20-renderer-model="${roll20RendererModel}">
 <div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
@@ -687,10 +1118,33 @@ ${bodyInner}
 </div>
 </div>
 </div>
-<script type="application/json" id="__r20-i18n">${jsonScriptText(opts.i18n)}</script>
+<script type="application/json" id="__r20-i18n">${jsonScriptText(normalizeTranslationForRoll20(opts.i18n ?? ''))}</script>
 <script>${PREVIEW_BRIDGE_SCRIPT}</script>
 </body>
 </html>`;
+}
+
+export function buildSheetLivePatch(opts: BuildDocOptions): SheetLivePatch {
+  const contract = prepareSheetRenderContract(opts);
+  const darkMode = opts.darkMode === true;
+  const layer = opts.previewLayer ?? 'all';
+  const roll20RendererModel = opts.roll20RendererModel ?? 'default';
+  return {
+    html: contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER),
+    styles: {
+      'roll20-base-dark': darkMode ? roll20DarkmodeIframeCss : '',
+      'roll20-legacy-input-state': contract.legacyCssSanitize ? ROLL20_LEGACY_INPUT_STATE_CSS : '',
+      'r20-layer-filter': layerFilterCss(),
+      'r20-user': contract.previewCss,
+      'r20-renderer-model': roll20RendererModelCss(roll20RendererModel),
+    },
+    i18n: normalizeTranslationForRoll20(opts.i18n ?? ''),
+    darkMode,
+    layer,
+    roll20SandboxSanitize: contract.roll20SandboxSanitize,
+    roll20RendererModel,
+    documentLanguage: normalizeDocumentLanguage(opts.documentLanguage),
+  };
 }
 
 /**
@@ -702,34 +1156,32 @@ ${bodyInner}
  * iframe 모드의 buildSheetDoc 과 시각 동일성 보장 — 같은 CSS 토큰 사용.
  */
 export function buildSheetParts(opts: BuildDocOptions): { html: string; css: string } {
-  const sanitize = opts.sanitize !== false;
-  const userHtml = (opts.html ?? '').trim();
-  const userCss = (opts.css ?? '').trim();
-
-  const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
-  const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
-
-  const bodyInner = prefixedHtml ? applyTranslationsToHtml(prefixedHtml, opts.i18n) : EMPTY_PLACEHOLDER;
+  const contract = prepareSheetRenderContract(opts);
+  const { legacyCssSanitize, previewCss } = contract;
+  const roll20RendererModel = opts.roll20RendererModel ?? 'default';
+  const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
+  const documentLanguage = normalizeDocumentLanguage(opts.documentLanguage);
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
   // layerFilterCss scope = '.charsheet' 로 selector 일관성 유지.
-  // spec 25 + isolation fix — 실 Roll20 sandbox CSS (ground truth, :root→:host
-  // rewrite) 먼저 → 우리 보조 baseline → runtime overlay → user CSS.
+  // spec 25 + actual Roll20 probe: 실 Roll20 sandbox CSS (ground truth, :root→:host
+  // rewrite) 먼저 → runtime overlay → user CSS.
   // user CSS 가 마지막 source order 라 동일 specificity 셀렉터에선 사용자 우선.
   const darkMode = opts.darkMode === true;
   const css = [
-    roll20BaseShadowCss,
-    darkMode ? roll20DarkmodeShadowCss : '',
-    ROLL20_DIALOG_OPEN_CSS,
-    roll20BaselineCss,
-    runtimeCss,
-    layerFilterCss('.charsheet'),
-    prefixedCss,
-    ROLL20_PREVIEW_HIDDEN_CSS,
+    styleSourceChunk('roll20-base', roll20BaseShadowCss),
+    darkMode ? styleSourceChunk('roll20-darkmode', roll20DarkmodeShadowCss) : '',
+    styleSourceChunk('roll20-dialog-context', ROLL20_DIALOG_OPEN_CSS),
+    legacyCssSanitize ? styleSourceChunk('roll20-legacy-input-state', ROLL20_LEGACY_INPUT_STATE_CSS) : '',
+    styleSourceChunk('app-preview-runtime', runtimeCss),
+    styleSourceChunk('app-layer-filter', layerFilterCss('.charsheet')),
+    styleSourceChunk('sheet-user-css', previewCss),
+    styleSourceChunk('roll20-renderer-model', roll20RendererModelCss(roll20RendererModel)),
+    styleSourceChunk('preview-hidden-runtime', ROLL20_PREVIEW_HIDDEN_CSS),
   ].join('\n');
 
   const html = `
-<div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
+<div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog" id="dialog-window" lang="${documentLanguage}" style="position:relative;display:block;width:100%;height:auto;overflow:visible;padding:0;">
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
 <form class="sheetform">

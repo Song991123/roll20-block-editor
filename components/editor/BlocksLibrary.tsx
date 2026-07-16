@@ -33,6 +33,8 @@ import {
 import { cn } from '@/lib/utils/cn';
 import { playSfx } from '@/lib/sfx';
 
+const BLOCKLY_MEDIA_PATH = 'blockly-media/';
+
 /**
  * 좌측 [블록] 모드. Anchor: 08 W2-A + 02 §3 + D26 ②.
  *
@@ -379,6 +381,7 @@ function BlockTile({ def }: { def: BlockDef }) {
       const ws = Blockly.inject(host, {
         readOnly: true,
         renderer,
+        media: BLOCKLY_MEDIA_PATH,
         toolbox: null as unknown as undefined,
         trashcan: false,
         scrollbars: false,

@@ -145,6 +145,9 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField(new Blockly.FieldDropdown(HEADING_LEVELS), 'LEVEL')
         .appendField(new Blockly.FieldTextInput('Heading'), 'TEXT');
       b.appendDummyInput()
+        .appendField('번역 키')
+        .appendField(new Blockly.FieldTextInput(''), 'I18N');
+      b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
@@ -163,7 +166,8 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
           : '1';
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<h${level}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</h${level}>`;
+      const i18n = String(b.getFieldValue('I18N') ?? '');
+      return `<h${level}${sheetClassAttr(cls)}${attr('data-i18n', i18n)}${styleAttr(style)}>${escapeAttr(text)}</h${level}>`;
     },
   },
 
@@ -418,6 +422,9 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField('표 제목')
         .appendField(new Blockly.FieldTextInput('Caption'), 'TEXT');
       b.appendDummyInput()
+        .appendField('번역 키')
+        .appendField(new Blockly.FieldTextInput(''), 'I18N');
+      b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
@@ -430,7 +437,8 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<caption${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</caption>`;
+      const i18n = String(b.getFieldValue('I18N') ?? '');
+      return `<caption${sheetClassAttr(cls)}${attr('data-i18n', i18n)}${styleAttr(style)}>${escapeAttr(text)}</caption>`;
     },
   },
 
