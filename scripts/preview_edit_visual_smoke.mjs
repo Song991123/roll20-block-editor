@@ -3,7 +3,7 @@
  * Preview/Edit visual smoke for prepared fixtures.
  *
  * Imports ignored fixture source through the live app bundle, captures the
- * preview iframe and edit Shadow DOM host, then computes a browser-canvas pixel
+ * persistent preview/edit iframe surface, then computes a browser-canvas pixel
  * diff over their shared crop. Generated screenshots/reports are local-only.
  *
  * Scope: local preview vs local edit in the static Next.js app.
@@ -569,27 +569,16 @@ function summarizeTranslationState(sheetEl, rawI18n) {
   };
 }
 
-function summarizeEditCanvasLayout() {
-  const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-  const shadow = host?.shadowRoot;
-  const root = shadow?.querySelector('#charsheet-root');
-  if (!host || !root) return { status: 'missing' };
-  const hostRect = host.getBoundingClientRect();
-  const rootRect = root.getBoundingClientRect();
-  let contentHeight = Math.max(root.scrollHeight, root.offsetHeight, Math.ceil(rootRect.height));
-  root.querySelectorAll('*').forEach((el) => {
-    const cs = getComputedStyle(el);
-    if (cs.display === 'none' || cs.visibility === 'hidden') return;
-    const rect = el.getBoundingClientRect();
-    if (rect.width <= 0 && rect.height <= 0) return;
-    contentHeight = Math.max(contentHeight, Math.ceil(rect.bottom - rootRect.top + root.scrollTop));
-  });
+async function summarizeEditCanvasLayout(page, iframe, sheet) {
+  const iframeBox = await iframe.boundingBox();
+  const sheetState = await sheet.evaluate(summarizeStableSheetState);
+  if (!iframeBox || !sheetState) return { status: 'missing' };
   return {
     status: 'ok',
-    hostHeight: Math.round(hostRect.height),
-    rootHeight: Math.round(rootRect.height),
-    contentHeight,
-    hostContentDelta: Math.round(hostRect.height - contentHeight),
+    hostHeight: Math.round(iframeBox.height),
+    rootHeight: Math.round(sheetState.rect.height),
+    contentHeight: Math.round(sheetState.contentHeight),
+    hostContentDelta: Math.round(iframeBox.height - sheetState.contentHeight),
   };
 }
 
@@ -629,6 +618,32 @@ function summarizeResourceIssues(issues) {
     map.set(key, item);
   }
   return Array.from(map.values()).sort((a, b) => b.count - a.count || String(a.host).localeCompare(String(b.host)));
+}
+
+function classifyExpectedConsoleErrors(events, compatibilityMode) {
+  if (compatibilityMode !== 'legacy') return { expected: [], unexpected: events };
+  const expected = [];
+  const unexpected = [];
+  for (const event of events || []) {
+    const message = event.text || '';
+    const sourceUrl = event.url || '';
+    if (
+      message.includes("Access to font at 'https://imgsrv.roll20.net/?src=")
+      && message.includes('blocked by CORS policy')
+    ) {
+      expected.push(event);
+      continue;
+    }
+    if (
+      message === 'Failed to load resource: net::ERR_FAILED'
+      && sourceUrl.startsWith('https://imgsrv.roll20.net/?src=')
+    ) {
+      expected.push(event);
+      continue;
+    }
+    unexpected.push(event);
+  }
+  return { expected, unexpected };
 }
 
 async function collectAppOcclusion(page, sheetBox) {
@@ -694,41 +709,34 @@ async function withHiddenAppChrome(page, fn) {
   }
 }
 
-async function withHiddenEditOverlays(host, fn) {
-  await host.evaluate((hostEl) => {
-    const shadow = hostEl.shadowRoot;
-    const style = shadow?.querySelector('style[data-r20-style-source="edit-shadow-overlay"]');
-    if (!style) throw new Error('edit overlay style source missing');
-    hostEl.__r20SmokeOverlayMedia = style.getAttribute('media');
-    style.setAttribute('media', 'not all');
+async function withHiddenEditOverlays(page, fn) {
+  await page.evaluate(() => {
+    document.querySelectorAll('[data-testid="iframe-edit-overlay"], [data-testid="iframe-edit-drop-overlay"]').forEach((el) => {
+      el.setAttribute('data-r20-smoke-overlay-visibility', el.style.visibility || '');
+      el.style.visibility = 'hidden';
+    });
   });
   try {
     return await fn();
   } finally {
-    await host.evaluate((hostEl) => {
-      const style = hostEl.shadowRoot?.querySelector('style[data-r20-style-source="edit-shadow-overlay"]');
-      if (style) {
-        const previous = hostEl.__r20SmokeOverlayMedia;
-        if (previous == null) style.removeAttribute('media');
-        else style.setAttribute('media', previous);
-      }
-      delete hostEl.__r20SmokeOverlayMedia;
+    await page.evaluate(() => {
+      document.querySelectorAll('[data-r20-smoke-overlay-visibility]').forEach((el) => {
+        const previous = el.getAttribute('data-r20-smoke-overlay-visibility') || '';
+        el.style.visibility = previous;
+        el.removeAttribute('data-r20-smoke-overlay-visibility');
+      });
     });
   }
 }
 
-async function summarizeEditOverlay(host) {
-  return host.evaluate((hostEl) => {
-    const shadow = hostEl.shadowRoot;
-    if (!shadow) return { status: 'missing' };
-    return {
-      status: 'ok',
-      droppableCount: shadow.querySelectorAll('[data-r20-can-drop="1"]').length,
-      selectedCount: shadow.querySelectorAll('.r20-selected').length,
-      activeDropTargetCount: shadow.querySelectorAll('.r20-drop-target').length,
-      overlayMarkerCount: shadow.querySelectorAll('[data-r20-edit-overlay], [data-r20-drop-label], .r20-drop-label').length,
-    };
-  });
+async function summarizeEditOverlay(page) {
+  return page.evaluate(() => ({
+    status: 'parent-owned',
+    droppableCount: 0,
+    selectedCount: document.querySelectorAll('[data-testid="iframe-edit-overlay"]').length,
+    activeDropTargetCount: document.querySelectorAll('[data-testid="iframe-edit-drop-overlay"]').length,
+    overlayMarkerCount: document.querySelectorAll('[data-testid="iframe-edit-overlay"], [data-testid="iframe-edit-drop-overlay"]').length,
+  }));
 }
 
 async function capturePreview(page, fixtureId, i18n) {
@@ -767,35 +775,16 @@ async function capturePreview(page, fixtureId, i18n) {
 async function captureEdit(page, fixtureId, i18n) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setMainMode('edit');
   });
-  const host = page.locator('[data-testid="edit-canvas-shadow-host"]').first();
-  await host.waitFor({ state: 'visible', timeout: 30000 });
-  await page.waitForFunction(() => {
-    const hostEl = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    return Boolean(hostEl?.shadowRoot?.querySelector('#charsheet-root'));
-  }, null, { timeout: 30000 });
-  const sheet = page.locator('[data-testid="edit-canvas-shadow-host"] #charsheet-root').first();
+  const iframe = page.locator('[data-testid="preview-iframe"]').first();
+  await iframe.waitFor({ state: 'visible', timeout: 30000 });
+  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  const sheet = frame.locator('#charsheet-root').first();
+  await sheet.waitFor({ state: 'visible', timeout: 30000 });
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-edit.png`);
   const overlayOutput = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-edit-overlay.png`);
-  await page.waitForFunction(() => {
-    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const shadow = host?.shadowRoot;
-    const root = shadow?.querySelector('#charsheet-root');
-    if (!host || !root) return false;
-    const hostRect = host.getBoundingClientRect();
-    const rootRect = root.getBoundingClientRect();
-    let contentHeight = Math.max(root.scrollHeight, root.offsetHeight, Math.ceil(rootRect.height));
-    root.querySelectorAll('*').forEach((el) => {
-      const cs = getComputedStyle(el);
-      if (cs.display === 'none' || cs.visibility === 'hidden') return;
-      const rect = el.getBoundingClientRect();
-      if (rect.width <= 0 && rect.height <= 0) return;
-      contentHeight = Math.max(contentHeight, Math.ceil(rect.bottom - rootRect.top + root.scrollTop));
-    });
-    const delta = Math.round(hostRect.height - contentHeight);
-    return hostRect.height >= contentHeight && Math.abs(delta) <= 24;
-  }, null, { timeout: 30000 });
   const settled = await settleSheetForCapture(page, sheet);
   const box = await sheet.boundingBox();
   const dom = await sheet.evaluate(summarizeSheetElement);
@@ -804,10 +793,13 @@ async function captureEdit(page, fixtureId, i18n) {
   const styles = await sheet.evaluate(summarizeRenderStyles);
   const signature = await sheet.evaluate(summarizeSheetSignature);
   const appOcclusion = await collectAppOcclusion(page, box);
-  const layout = await page.evaluate(summarizeEditCanvasLayout);
-  const overlay = await summarizeEditOverlay(host);
-  await withHiddenAppChrome(page, () => sheet.screenshot({ path: overlayOutput }));
-  await withHiddenEditOverlays(host, () => withHiddenAppChrome(page, () => sheet.screenshot({ path: output })));
+  const layout = await summarizeEditCanvasLayout(page, iframe, sheet);
+  const overlay = await summarizeEditOverlay(page);
+  const iframeBox = await iframe.boundingBox();
+  await withHiddenAppChrome(page, async () => {
+    if (iframeBox) await page.screenshot({ path: overlayOutput, clip: iframeBox });
+  });
+  await withHiddenEditOverlays(page, () => withHiddenAppChrome(page, () => sheet.screenshot({ path: output })));
   return {
     path: output,
     overlayPath: overlayOutput,
@@ -942,7 +934,12 @@ async function main() {
     const pageErrors = [];
     const resourceIssues = [];
     page.on('console', (msg) => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text().slice(0, 500));
+      if (msg.type() === 'error') {
+        consoleErrors.push({
+          text: msg.text().slice(0, 500),
+          url: msg.location().url || '',
+        });
+      }
     });
     page.on('pageerror', (err) => pageErrors.push(String(err).slice(0, 500)));
     page.on('response', (response) => {
@@ -1000,6 +997,9 @@ async function main() {
         entry.computedStyleParity,
         entry.geometryParity,
       );
+      const consoleErrorClassification = classifyExpectedConsoleErrors(consoleErrors, compatibilityMode);
+      entry.expectedConsoleErrors = consoleErrorClassification.expected;
+      entry.unexpectedConsoleErrors = consoleErrorClassification.unexpected;
       entry.pass =
         entry.import?.blockCount > 0 &&
         entry.previewDom.status === 'ok' &&
@@ -1015,7 +1015,7 @@ async function main() {
         entry.pixelParity.pass &&
         entry.previewTranslations.pass &&
         entry.editTranslations.pass &&
-        consoleErrors.length === 0 &&
+        consoleErrorClassification.unexpected.length === 0 &&
         pageErrors.length === 0;
     } catch (err) {
       entry.error = String(err?.stack || err).slice(0, 1200);
@@ -1218,7 +1218,7 @@ function renderMarkdown(report) {
     '',
     `Generated: ${report.finishedAt ?? report.startedAt}`,
     '',
-    'Scope: local static app, real browser import path, preview iframe screenshot, and edit Shadow DOM screenshot. This does not prove actual Roll20 visual parity.',
+    'Scope: local static app, real browser import path, and one persistent preview/edit iframe screenshot. This does not prove actual Roll20 visual parity.',
     '',
     '| Fixture | Mode | Blocks | Preview size | Edit size | Crop | Pixel parity | Mismatch pixels | PPM | Max channel | Bounds | Mean delta | Console errors | Page errors |',
     '| --- | --- | ---: | --- | --- | --- | --- | ---: | ---: | ---: | --- | ---: | ---: | ---: |',
@@ -1232,6 +1232,7 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('Notes:');
   lines.push('- PASS requires stable preview/edit roots, matching DOM signatures, 0 sampled computed-style differences, and 0 visible-geometry differences after edit-only overlays are disabled.');
+  lines.push('- In legacy mode, the known Roll20 font-proxy CORS pair is retained as expected evidence; only unrelated console errors fail the gate.');
   lines.push('- Pixel parity is `EXACT` at 0 mismatched pixels. `RASTER_TOLERANCE` is limited to 10 ppm and max channel delta 16 when style and geometry are exact; the exact pixel count remains visible and is not rounded away.');
   lines.push('- This is a local preview/edit render-unification gate. It is not actual Roll20 visual parity evidence.');
   lines.push('- Bounds and dominant area are coarse triage hints for locating remaining preview/edit differences.');

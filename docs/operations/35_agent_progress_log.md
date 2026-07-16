@@ -4929,3 +4929,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verified: modern/legacy persistent preview smoke, large synthetic smoke, canonical synthetic edit/preview coordinate sync, lint, build, `ci:verify`, and server hygiene passed.
 - Boundary: these checks prove the local renderer contract and synthetic interaction path only. Actual Roll20 parity and broad user-import coverage are still open gates.
 - Privacy: this update records no creator, sheet, source URL, source snippet, asset URL, screenshot, or source-derived measurement. Future progress entries must use the same anonymous convention.
+## 2026-07-17 Canonical Iframe Smoke Repair
+
+- Repaired the preview/edit visual smoke to use the product's persistent iframe in both modes. The old Shadow Canvas selector had caused false 30-second failures after the visible edit surface migration.
+- Added parent-overlay-aware capture: clean edit screenshots hide only parent edit overlays, while a separate overlay capture retains the interaction affordance.
+- Legacy smoke now distinguishes the known Roll20 font-proxy CORS pair from unexpected console errors without hiding unrelated failures.
+- Verified: modern/legacy visual smoke, canonical imported-edit interaction smoke, and roll-button chat smoke passed locally. No external source identity or source-derived evidence was added to this progress entry.
+- Boundary: actual Roll20 screenshot parity, broad worker coverage, and fixtures without roll buttons remain separate gates.

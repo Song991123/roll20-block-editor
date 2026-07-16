@@ -4214,3 +4214,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - TODO: Run modern and legacy actual-runtime checks using only user-provided local imports and ignored evidence; keep source identities and collected payload details out of tracked docs.
 - TODO: Expand canonical iframe interaction coverage to flow-aware before/inside/after insertion and layer-panel operations.
 - TODO: Keep CI/CD deployment verification separate from local implementation proof.
+## 2026-07-17 Canonical Iframe Visual/Interaction Verification
+
+- DONE: `preview_edit_visual_smoke.mjs` now captures the persistent iframe in both preview and edit modes. It no longer waits for the retired Shadow Canvas host.
+- VERIFIED LOCAL: Modern and legacy preview/edit visual smoke passed for the available ignored local corpus. Pixel diff was exact, sampled computed styles and visible geometry matched, and translation checks passed.
+- VERIFIED LOCAL: Canonical imported-edit smoke passed for the available ignored local corpus. A real imported block moved through iframe pointer events, emitted HTML, live apply acknowledgement, and preview return without browser/page errors.
+- VERIFIED LOCAL: Roll-button chat smoke passed for the fixture that exposes a roll control. Fixtures without a roll control remain `SKIP`, not dice-parity evidence.
+- VERIFY: Actual Roll20 modern Sandbox and dedicated legacy-room screenshot parity remain open. Local exactness is not actual Roll20 parity.
+
+### Next Gates
+
+- TODO: Validate the generated export in the permitted modern Sandbox and dedicated legacy test room, keeping all source-derived evidence local and anonymous.
+- TODO: Expand flow-aware layer-panel interaction checks beyond one moved block: before/inside/after, cycle rejection, and absolute-inside-container behavior.
+- TODO: Keep imported mapping fidelity and worker/runtime behavior as separate gates from visual surface parity.
