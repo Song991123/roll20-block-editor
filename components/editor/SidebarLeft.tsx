@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, LayoutPanelLeft } from 'lucide-react';
+import { Box } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useUiStore } from '@/lib/stores/uiStore';
 import WidgetGallery from './WidgetGallery';
@@ -10,23 +10,9 @@ const BlocksLibrary = dynamic(() => import('./BlocksLibrary'), {
   loading: () => null,
 });
 
-export default function SidebarLeft({ collapsed }: { collapsed: boolean }) {
+export default function SidebarLeft() {
   const mainMode = useUiStore((s) => s.mainMode);
   const isEdit = mainMode === 'edit';
-
-  if (collapsed) {
-    return (
-      <div className="flex flex-col items-center gap-2 py-3">
-        <button
-          type="button"
-          aria-label={isEdit ? '위젯 갤러리' : '블록 라이브러리'}
-          className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--bg-active)] text-foreground"
-        >
-          {isEdit ? <LayoutPanelLeft className="h-4 w-4" /> : <Box className="h-4 w-4" />}
-        </button>
-      </div>
-    );
-  }
 
   if (isEdit) {
     return <WidgetGallery />;

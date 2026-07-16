@@ -91,6 +91,33 @@ async function runMode(browser, mode) {
   try {
     await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
     await warmPerfHook(page);
+    const leftSidebar = page.locator('[data-testid="sidebar-left"]');
+    const leftSidebarToggle = page.locator('[data-testid="sidebar-left-toggle"]');
+    const openWidth = await leftSidebar.evaluate((element) => element.getBoundingClientRect().width);
+    await leftSidebarToggle.click();
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="sidebar-left"]')?.getBoundingClientRect().width === 0,
+      null,
+      { timeout: 30000 },
+    );
+    result.leftSidebar = await leftSidebar.evaluate((element, initialWidth) => ({
+      openWidth: initialWidth,
+      collapsedWidth: element.getBoundingClientRect().width,
+      collapsedButtonCount: element.querySelectorAll('button').length,
+      collapsedChildCount: element.childElementCount,
+    }), openWidth);
+    await leftSidebarToggle.click();
+    await page.waitForFunction(
+      (initialWidth) => Math.abs(
+        (document.querySelector('[data-testid="sidebar-left"]')?.getBoundingClientRect().width ?? 0)
+          - initialWidth,
+      ) <= 1,
+      openWidth,
+      { timeout: 30000 },
+    );
+    result.leftSidebar.restoredWidth = await leftSidebar.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
     result.import = await page.evaluate(async () => {
       let imported = null;
       for (let attempt = 0; attempt < 10; attempt += 1) {
@@ -769,6 +796,11 @@ async function runMode(browser, mode) {
       && result.initialApply.ackedRevision > 0
       && result.initialApply.pendingRevision === ''
       && result.initialApply.sourceStayedOutOfSrcdoc === true
+      && result.leftSidebar.openWidth > 0
+      && result.leftSidebar.collapsedWidth === 0
+      && result.leftSidebar.collapsedButtonCount === 0
+      && result.leftSidebar.collapsedChildCount === 0
+      && Math.abs(result.leftSidebar.restoredWidth - result.leftSidebar.openWidth) <= 1
       && result.liveApplyMutation.afterAck > result.liveApplyMutation.beforeAck
       && result.liveApplyMutation.added?.nested === true
       && result.liveApplyMutation.inputValue === `runtime-${mode}`

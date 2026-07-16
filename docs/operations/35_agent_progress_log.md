@@ -4878,3 +4878,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Actual-vs-local claim remains partial. Actual legacy is `896x1917`; local final-table cells are `172.297/177.438px` versus actual `166.075/183.637px`. The remaining intrinsic allocation and height residual stay P0.
 - Verification: `test:blockly-sound-policy`, `test:roll20-render-modes`, lint, production build, `check:server-hygiene`, focused external-resource browser smoke, and `git diff --check` passed.
 - Private fixture source, screenshots, and reports remain ignored and uncommitted.
+
+## 2026-07-17 Capture Stability and Collapsed Sidebar Cleanup
+
+- Windows Event Viewer confirmed that the Codex desktop package itself crashed during the long-running session: `OpenAI.Codex_26.707.9981.0` / `ChatGPT.exe`, exception `0xc06d007f`. The protected WER dump contents were not readable in the current process, so the underlying module/root cause remains unproven. Heavy browser checks are being run sequentially and project listeners are closed after each smoke.
+- Added browser executable/version/user-agent evidence to `smoke:legacy-fixture-visual` and hardened full-sheet capture against its own temporary layout changes. A capture is accepted only when pre/post geometry matches; one bounded retry is allowed after stabilization.
+- Ignored Chrome 150 run `%TEMP%\roll20-legacy-capture-stability-r16` proved the guard works: unstable first modern/fresh attempts were discarded and stable retries were accepted. The run still FAILed overall because 34 external Imgur image requests failed, so its shortened geometry is not used for Roll20 parity claims.
+- The preceding complete-asset Chrome 150 DOM evidence `%TEMP%\roll20-legacy-installed-chrome-r15` put legacy root/table allocation within subpixel distance of actual Roll20 evidence. This makes the older Chromium 148 residual browser/context-sensitive; no renderer CSS compensation was added.
+- Removed the collapsed left sidebar's duplicate no-op button and unused `56px` rail. The real header toggle now collapses the sidebar to `0px` with no mounted child.
+- `%TEMP%\persistent-preview-sidebar-r17` PASSed modern and legacy independently: sidebar `280px -> 0px -> 279.125px`, collapsed button/child count `0`, persistent iframe reload count `0`, console/page errors `0`, and existing worker/rolltemplate/edit interaction assertions intact.
+- Verification: syntax checks, `git diff --check`, lint, production build, and persistent preview surface browser smoke PASSed. Actual Roll20 runtime metadata and a same-asset local/actual recapture remain P0.

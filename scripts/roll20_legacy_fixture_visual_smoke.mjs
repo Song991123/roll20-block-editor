@@ -30,6 +30,7 @@ const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/legacy-fixture-visual'));
 const ONLY = argOf('--only', '');
 const PORT = Number(argOf('--port', '4194'));
+const BROWSER_EXECUTABLE = argOf('--browser-executable', process.env.R20_BROWSER_EXECUTABLE || '');
 const VIEWPORT = { width: 2200, height: 1200 };
 
 const MIME = {
@@ -254,7 +255,7 @@ function captureStops(contentSize, viewportSize, overlap = 96) {
   return Array.from(new Set(stops));
 }
 
-async function captureFullIframeRoot(page, sheet, output) {
+async function captureFullIframeRootOnce(page, sheet, output) {
   const iframe = page.locator('[data-testid="preview-iframe"]').first();
   const initial = await sheet.evaluate((sheetEl) => {
     const view = sheetEl.ownerDocument.defaultView;
@@ -394,16 +395,46 @@ async function captureFullIframeRoot(page, sheet, output) {
   };
 }
 
+function sheetGeometryMatches(left, right) {
+  if (!left || !right) return false;
+  return left.width === right.width
+    && left.height === right.height
+    && Math.abs(left.rectWidth - right.rectWidth) <= 0.01
+    && Math.abs(left.rectHeight - right.rectHeight) <= 0.01;
+}
+
+async function captureFullIframeRoot(page, sheet, output) {
+  const attempts = [];
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const before = await waitForStableSheet(page, sheet);
+    const capture = await captureFullIframeRootOnce(page, sheet, output);
+    const after = await waitForStableSheet(page, sheet);
+    const restored = sheetGeometryMatches(before, after)
+      && capture.width === after.width
+      && capture.height === after.height;
+    attempts.push({ attempt, before, after, restored });
+    if (restored) {
+      return {
+        ...capture,
+        stableGeometry: after,
+        attempts,
+      };
+    }
+  }
+
+  throw new Error(`preview capture changed sheet geometry after bounded retry: ${JSON.stringify(attempts)}`);
+}
+
 async function capturePreviewMode(page, fixtureId, mode, captureLabel = mode) {
   await setCompatibilityMode(page, mode);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
-  const stableGeometry = await waitForStableSheet(page, sheet);
   const style = frame.locator('#r20-user').first();
   const userCss = (await style.textContent({ timeout: 30000 }).catch(() => '')) ?? '';
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-${captureLabel}.png`);
   const capture = await captureFullIframeRoot(page, sheet, output);
+  const stableGeometry = capture.stableGeometry;
   const dom = await sheet.evaluate((sheetEl) => {
     const rect = sheetEl.getBoundingClientRect();
     const elements = Array.from(sheetEl.querySelectorAll('*'));
@@ -1063,10 +1094,20 @@ async function main() {
   }
 
   const server = await startServer();
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(BROWSER_EXECUTABLE
+    ? { executablePath: path.resolve(BROWSER_EXECUTABLE) }
+    : {});
+  const metadataPage = await browser.newPage();
+  const browserUserAgent = await metadataPage.evaluate(() => navigator.userAgent);
+  await metadataPage.close();
   const report = {
     startedAt: new Date().toISOString(),
     scope: 'local static app imported-fixture modern/legacy preview smoke',
+    browser: {
+      version: browser.version(),
+      userAgent: browserUserAgent,
+      executable: BROWSER_EXECUTABLE ? path.resolve(BROWSER_EXECUTABLE) : 'playwright-default',
+    },
     fixtures: [],
   };
 
@@ -1201,6 +1242,8 @@ function renderMarkdown(report) {
     `Generated: ${report.finishedAt ?? report.startedAt}`,
     '',
     'Scope: local static app, ignored imported fixtures, preview iframe only. This verifies local legacy CSS preview plumbing and does not prove actual Roll20 legacy visual parity.',
+    '',
+    `Browser: ${report.browser.version} (${report.browser.executable})`,
     '',
     '| Fixture | Blocks | Modern risk | Legacy risk | Mode effect | CSS changed | Modern size | Legacy size | Fresh legacy | Transition parity | Mismatch | Console errors | Page errors | Status |',
     '| --- | ---: | ---: | ---: | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- |',

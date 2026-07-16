@@ -165,7 +165,7 @@ export default function EditorShell() {
     return () => window.removeEventListener('keydown', onKey);
   }, [toggleLeft, toggleRight, setLeftMode, setRightTab, setMainMode, mainMode]);
 
-  const leftWidth = leftCollapsed ? 'var(--sidebar-left-collapsed)' : 'var(--sidebar-left-w)';
+  const leftWidth = leftCollapsed ? '0px' : 'var(--sidebar-left-w)';
   const rightWidthPx = rightCollapsed ? '0px' : `${rightWidth}px`;
 
   // Keep one canonical Roll20 iframe mounted across preview and edit. In edit
@@ -250,10 +250,11 @@ export default function EditorShell() {
         <aside
           className={cn(
             'flex flex-col border-r border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
-            leftCollapsed && 'items-stretch',
+            leftCollapsed && 'border-r-0',
           )}
+          data-testid="sidebar-left"
         >
-          <SidebarLeft collapsed={leftCollapsed} />
+          {!leftCollapsed && <SidebarLeft />}
         </aside>
 
         <section className="relative flex flex-col min-w-0 min-h-0 bg-[var(--bg-canvas)]">

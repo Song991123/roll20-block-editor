@@ -142,6 +142,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
               className="h-8 w-8"
               onClick={toggleLeft}
               aria-label="왼쪽 패널 열기/닫기 (Cmd+[)"
+              data-testid="sidebar-left-toggle"
             >
               <PanelLeft className="h-4 w-4" />
             </Button>
