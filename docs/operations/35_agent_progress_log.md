@@ -1,3 +1,13 @@
+## 2026-07-16 Roll20 Runtime Control Geometry Alignment
+
+- Live actual Roll20 geometry showed that roll-button box size already matched, but generated Roll20 roll buttons align to the middle while the local baseline used the browser's baseline alignment. This accounted for about `9px` of false height in the HP/wound/SAN region in both modern and legacy modes.
+- Added the measured roll-button alignment and repeating-control minimum height to the shared preview/edit runtime baseline. The declarations are not fixture selectors and remain lower priority than imported user CSS.
+- Expanded `smoke:legacy-fixture-visual` evidence with control state, layout-contributor, and flow-segment diagnostics while keeping all fixture/report output ignored.
+- Latest paired local evidence `.tmp/paired-repcontrol-r8`: modern `1189x1936`, legacy `895x1918`, preview errors `0`, page errors `0`. Actual roots remain modern `1189x1936` and legacy `896x1917`.
+- Best-aligned actual-vs-local channel-delta-60 mismatch improved from `7.61%` to `5.64%` modern and from `9.65%` to `7.28%` legacy. Mean absolute channel difference is `6.33` modern and `9.29` legacy.
+- Modern downstream landmark geometry is now within roughly `0.04px` of the measured actual root. Legacy retains a small bottom-section difference: center position about `-0.37px`, final section height about `+1.58px`.
+- Claim boundary: both destinations improved, but neither mode is declared visually identical. Persisted Roll20 values/focus state, raster/font normalization, broader fixture coverage, and the remaining legacy bottom geometry are still open.
+
 ## 2026-07-16 Paired Full-Root Modern and Legacy Verification
 
 - Persisted ignored actual Roll20 full-root screenshots for the same prepared payload in both dedicated destinations: modern `1189x1936`, legacy `896x1917`. No screenshot, payload, fixture source, or generated report is staged for public Git.

@@ -104,7 +104,8 @@ assertCheck(checks, 'iframe legacy inlines CSS var', includesText(legacyUserCss,
 assertCheck(checks, 'iframe legacy preserves stable CSS', includesText(legacyUserCss, 'padding: 8px') && includesText(legacyUserCss, 'color: red'));
 assertCheck(checks, 'iframe runtime still hides scripts and rolltemplates after user CSS', modernDoc.indexOf('id="r20-preview-hidden"') > modernDoc.indexOf('id="r20-user"'));
 assertCheck(checks, 'iframe base mirrors current Roll20 text input height', /\.charsheet input\[type="text"\]\s*{\s*height:\s*26px;/i.test(modernBaseCss));
-assertCheck(checks, 'iframe base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;/i.test(modernBaseCss));
+assertCheck(checks, 'iframe base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;[\s\S]*?vertical-align:\s*middle;/i.test(modernBaseCss));
+assertCheck(checks, 'iframe base mirrors Roll20 repeating-control height', /\.charsheet \.repcontrol\s*{\s*min-height:\s*27\.6px;/i.test(modernBaseCss));
 
 assertCheck(checks, 'shadow modern preserves authored HTML class', modernParts.html.includes('class="legacy-card"'));
 assertCheck(checks, 'shadow modern does not legacy-prefix HTML class', !modernParts.html.includes('class="sheet-legacy-card"'));
@@ -118,7 +119,8 @@ assertCheck(checks, 'shadow legacy removes keyframes', !/@(?:-[a-z]+-)?keyframes
 assertCheck(checks, 'shadow legacy inlines CSS var', includesText(legacyShadowUserCss, 'color: #c02030'));
 assertCheck(checks, 'shadow legacy preserves stable CSS', includesText(legacyShadowUserCss, 'padding: 8px') && includesText(legacyShadowUserCss, 'color: red'));
 assertCheck(checks, 'shadow base mirrors current Roll20 text input height', /\.charsheet input\[type="text"\]\s*{\s*height:\s*26px;/i.test(modernShadowBaseCss));
-assertCheck(checks, 'shadow base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;/i.test(modernShadowBaseCss));
+assertCheck(checks, 'shadow base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;[\s\S]*?vertical-align:\s*middle;/i.test(modernShadowBaseCss));
+assertCheck(checks, 'shadow base mirrors Roll20 repeating-control height', /\.charsheet \.repcontrol\s*{\s*min-height:\s*27\.6px;/i.test(modernShadowBaseCss));
 
 const mainAreaToolbar = readFileSync(join(REPO_ROOT, 'components/editor/MainAreaToolbar.tsx'), 'utf8');
 const editorShell = readFileSync(join(REPO_ROOT, 'components/editor/EditorShell.tsx'), 'utf8');

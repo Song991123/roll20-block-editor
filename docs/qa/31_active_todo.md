@@ -1,3 +1,14 @@
+## 2026-07-16 Roll20 Runtime Control Geometry Alignment
+
+- ROOT CAUSE: Actual Roll20 gives generated roll buttons runtime behavior equivalent to `vertical-align: middle`; the local shared baseline left them at the browser default `baseline`. The button boxes were already `20x20`, but their inline alignment made the HP/wound/SAN row about `9px` too tall in both render modes.
+- DONE: Added the measured roll-button alignment and repeating-section control minimum height to the shared iframe/Shadow Roll20 runtime layer. User sheet CSS is still appended later and can override these baseline declarations.
+- DONE: Extended the paired ignored-fixture smoke with state/control geometry, bottom layout contributors, and flow-column segment evidence. These diagnostics are generated under ignored `.tmp/` output and do not publish the user fixture.
+- VERIFIED MODERN: Local full root is now `1189x1936`, matching the actual modern Roll20 root size `1189x1936`. The HP row is `200.27px` locally versus `200.24px` actual, and the next skills/center landmarks are within about `0.04px`.
+- VERIFIED LEGACY: Local full root is now `895x1918` versus actual legacy `896x1917`. The HP row is `200.27px` locally versus `200.57px` actual; downstream center position remains about `0.37px` high and the final section is about `1.58px` taller locally.
+- PARTIAL: Best-aligned actual-vs-local full-root mismatch at channel delta `60` improved from `7.61%` to `5.64%` in modern mode and from `9.65%` to `7.28%` in legacy mode. Mean absolute channel difference is now `6.33` modern and `9.29` legacy. This is material improvement, not a parity claim; persisted values, focus state, raster/font noise, and the remaining legacy bottom-section geometry are not normalized.
+- CONTRACT: Modern and legacy remain separate required destinations. This patch is accepted only because the paired smoke improved both; future changes must continue to report both measurements independently.
+- NEXT P0: Normalize the remaining actual/local attribute and focus state, then isolate the legacy final-section `1.58px` height difference without applying fixture-specific CSS.
+
 ## 2026-07-16 Paired Full-Root Modern and Legacy Evidence
 
 - VERIFIED: Captured and persisted ignored full-root evidence for the same prepared user-import payload in both dedicated Roll20 destinations. Modern is `1189x1936`; legacy is `896x1917`. Evidence stays local under `reports/roll20-actual-compare/2026-07-16-modern-legacy-pair/` and is not committed.

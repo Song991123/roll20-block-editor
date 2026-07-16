@@ -435,6 +435,171 @@ async function capturePreviewMode(page, fixtureId, mode) {
         }).filter((element) => element.display !== 'none' && element.height > 0),
       };
     }).filter(Boolean);
+    const round = (value) => Math.round(value * 100) / 100;
+    const layoutContributors = [2, 3].map((index) => {
+      const row = sheetEl.children[index];
+      if (!row) return null;
+      const rowRect = row.getBoundingClientRect();
+      return {
+        index,
+        className: row.className,
+        children: Array.from(row.children).map((child, childIndex) => {
+          const childRect = child.getBoundingClientRect();
+          const childStyle = getComputedStyle(child);
+          const descendants = Array.from(child.querySelectorAll('*')).flatMap((element) => {
+            const style = getComputedStyle(element);
+            const elementRect = element.getBoundingClientRect();
+            if (
+              style.display === 'none' ||
+              style.visibility === 'hidden' ||
+              elementRect.width <= 0 ||
+              elementRect.height <= 0
+            ) return [];
+            return [{
+              tag: element.tagName,
+              className: element.className,
+              name: element.getAttribute('name'),
+              type: element.getAttribute('type'),
+              top: round(elementRect.top - childRect.top),
+              bottom: round(elementRect.bottom - childRect.top),
+              width: round(elementRect.width),
+              height: round(elementRect.height),
+              display: style.display,
+              position: style.position,
+              boxSizing: style.boxSizing,
+              margin: style.margin,
+              padding: style.padding,
+              border: style.border,
+              fontSize: style.fontSize,
+              lineHeight: style.lineHeight,
+              verticalAlign: style.verticalAlign,
+              value: 'value' in element ? String(element.value) : null,
+              checked: 'checked' in element ? Boolean(element.checked) : null,
+              text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60),
+            }];
+          }).sort((a, b) => b.bottom - a.bottom || b.height - a.height);
+          const flowColumns = Array.from(child.querySelectorAll('.sheet-section > div > .sheet-col')).flatMap((column, columnIndex) => {
+            const style = getComputedStyle(column);
+            const columnRect = column.getBoundingClientRect();
+            if (
+              style.display === 'none' ||
+              style.visibility === 'hidden' ||
+              columnRect.width <= 0 ||
+              columnRect.height <= 0
+            ) return [];
+            return [{
+              index: columnIndex,
+              top: round(columnRect.top - childRect.top),
+              width: round(columnRect.width),
+              height: round(columnRect.height),
+              children: Array.from(column.children).flatMap((element, segmentIndex) => {
+                const segmentStyle = getComputedStyle(element);
+                const segmentRect = element.getBoundingClientRect();
+                if (
+                  segmentStyle.display === 'none' ||
+                  segmentStyle.visibility === 'hidden' ||
+                  segmentRect.width <= 0 ||
+                  segmentRect.height <= 0
+                ) return [];
+                return [{
+                  index: segmentIndex,
+                  tag: element.tagName,
+                  className: element.className,
+                  top: round(segmentRect.top - columnRect.top),
+                  bottom: round(segmentRect.bottom - columnRect.top),
+                  width: round(segmentRect.width),
+                  height: round(segmentRect.height),
+                  display: segmentStyle.display,
+                  lineHeight: segmentStyle.lineHeight,
+                  verticalAlign: segmentStyle.verticalAlign,
+                  text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60),
+                }];
+              }),
+            }];
+          });
+          return {
+            index: childIndex,
+            tag: child.tagName,
+            className: child.className,
+            top: round(childRect.top - rowRect.top),
+            width: round(childRect.width),
+            height: round(childRect.height),
+            display: childStyle.display,
+            margin: childStyle.margin,
+            padding: childStyle.padding,
+            bottomContributors: descendants.slice(0, 12),
+            flowColumns,
+          };
+        }).filter((child) => child.display !== 'none' && child.height > 0),
+      };
+    }).filter(Boolean);
+    const controlStates = Array.from(sheetEl.querySelectorAll('input, select, textarea, button')).map((element) => {
+      const style = getComputedStyle(element);
+      const elementRect = element.getBoundingClientRect();
+      const parentRect = element.parentElement?.getBoundingClientRect();
+      const row = element.closest('.sheet-row');
+      const rowRect = row?.getBoundingClientRect();
+      const rowStyle = row ? getComputedStyle(row) : null;
+      return {
+        tag: element.tagName,
+        className: element.className,
+        name: element.getAttribute('name'),
+        type: element.getAttribute('type'),
+        value: 'value' in element ? String(element.value) : null,
+        defaultValue: 'defaultValue' in element ? String(element.defaultValue) : null,
+        checked: 'checked' in element ? Boolean(element.checked) : null,
+        defaultChecked: 'defaultChecked' in element ? Boolean(element.defaultChecked) : null,
+        display: style.display,
+        visible: style.display !== 'none' && style.visibility !== 'hidden' && elementRect.width > 0 && elementRect.height > 0,
+        width: round(elementRect.width),
+        height: round(elementRect.height),
+        boxSizing: style.boxSizing,
+        position: style.position,
+        padding: style.padding,
+        margin: style.margin,
+        border: style.border,
+        fontSize: style.fontSize,
+        lineHeight: style.lineHeight,
+        verticalAlign: style.verticalAlign,
+        appearance: style.appearance,
+        parentHeight: parentRect ? round(parentRect.height) : null,
+        rowHeight: rowRect ? round(rowRect.height) : null,
+        rowMargin: rowStyle?.margin ?? null,
+      };
+    });
+    const stateInputs = controlStates.filter((control) => (
+      control.tag === 'SELECT' || ['hidden', 'checkbox', 'radio'].includes(control.type || '')
+    ));
+    const controlGroupMap = new Map();
+    controlStates.filter((control) => control.visible).forEach((control) => {
+      const key = [
+        control.tag,
+        control.className || '(none)',
+        control.type || '(none)',
+        `${control.width}x${control.height}`,
+        control.verticalAlign,
+        control.parentHeight,
+        control.rowHeight,
+      ].join('|');
+      const current = controlGroupMap.get(key) || {
+        tag: control.tag,
+        className: control.className,
+        type: control.type,
+        width: control.width,
+        height: control.height,
+        verticalAlign: control.verticalAlign,
+        parentHeight: control.parentHeight,
+        rowHeight: control.rowHeight,
+        rowMargin: control.rowMargin,
+        count: 0,
+        names: [],
+      };
+      current.count += 1;
+      if (control.name && current.names.length < 8 && !current.names.includes(control.name)) {
+        current.names.push(control.name);
+      }
+      controlGroupMap.set(key, current);
+    });
     return {
       rect: {
         width: Math.round(rect.width),
@@ -463,6 +628,9 @@ async function capturePreviewMode(page, fixtureId, mode) {
       textInputGroups: Array.from(textInputGroups.values()).sort((a, b) => b.count - a.count),
       landmarks,
       nestedLandmarks,
+      layoutContributors,
+      stateInputs,
+      controlGroups: Array.from(controlGroupMap.values()).sort((a, b) => b.count - a.count),
       visibleRuntimeNodeCount: elements.filter((el) => {
         if (!['SCRIPT', 'ROLLTEMPLATE'].includes(el.tagName)) return false;
         const cs = getComputedStyle(el);

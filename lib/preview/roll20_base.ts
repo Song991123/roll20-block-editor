@@ -42,6 +42,10 @@ const roll20LiveRuntimeParityCss = `
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
+  vertical-align: middle;
+}
+.charsheet .repcontrol {
+  min-height: 27.6px;
 }
 `;
 
