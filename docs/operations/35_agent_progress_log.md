@@ -1,3 +1,11 @@
+## 2026-07-16 Modern and Legacy Recheck and Dead Toolbar Cleanup
+
+- Rechecked one matching prepared payload in the dedicated modern and legacy Roll20 destinations. Modern measured `attr-input` at `210x26px`, root width `850px`, scroll size `1189x1936`; legacy measured `sheet-attr-input` at `52x40px`, root width `850px`, scroll size `896x1917`.
+- Both runtimes retained translation markers and hid source script nodes. The geometry divergence is direct evidence for maintaining two independent compatibility contracts.
+- Removed the unmounted `components/editor/PreviewToolbar.tsx`. Its duplicate controls were not user-facing but kept the static smoke coupled to dead UI.
+- Updated `scripts/roll20_legacy_preview_smoke.mjs` to require the actually mounted `MainAreaToolbar` modern/legacy selector and the atomic store action only. `test:roll20-render-modes` passes.
+- Claim boundary: DOM/runtime evidence is refreshed; full-height normalized modern/legacy screenshots and pixel parity are still unverified.
+
 ## 2026-07-16 Modern and Legacy Runtime Split
 
 - Rechecked the same prepared generated payload in two dedicated Roll20 destinations. The modern Custom Sheet Sandbox preserved `attr-input` at `210x26px` with root `cssWidth=850px`, `scrollWidth=1189`, and `scrollHeight=1936`. The dedicated legacy test room produced `sheet-attr-input` at `52x40px` with root `cssWidth=850px`, `scrollWidth=896`, and `scrollHeight=1917`.

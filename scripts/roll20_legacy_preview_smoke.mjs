@@ -114,12 +114,9 @@ assertCheck(checks, 'shadow legacy removes keyframes', !/@(?:-[a-z]+-)?keyframes
 assertCheck(checks, 'shadow legacy inlines CSS var', includesText(legacyShadowUserCss, 'color: #c02030'));
 assertCheck(checks, 'shadow legacy preserves stable CSS', includesText(legacyShadowUserCss, 'padding: 8px') && includesText(legacyShadowUserCss, 'color: red'));
 
-const previewToolbar = readFileSync(join(REPO_ROOT, 'components/editor/PreviewToolbar.tsx'), 'utf8');
 const mainAreaToolbar = readFileSync(join(REPO_ROOT, 'components/editor/MainAreaToolbar.tsx'), 'utf8');
 const editorShell = readFileSync(join(REPO_ROOT, 'components/editor/EditorShell.tsx'), 'utf8');
 const previewStore = readFileSync(join(REPO_ROOT, 'lib/stores/previewStore.ts'), 'utf8');
-assertCheck(checks, 'toolbar exposes legacy preview toggle', previewToolbar.includes('data-testid="preview-legacy-css-toggle"'));
-assertCheck(checks, 'toolbar switches the complete Roll20 mode', previewToolbar.includes('setRoll20CompatibilityMode'));
 assertCheck(checks, 'mounted main toolbar exposes modern and legacy modes',
   mainAreaToolbar.includes('data-testid="roll20-mode-control"')
     && mainAreaToolbar.includes('data-testid={`roll20-mode-${key}`}')

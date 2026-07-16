@@ -1,3 +1,11 @@
+## 2026-07-16 Modern and Legacy Recheck and Dead Toolbar Cleanup
+
+- VERIFIED: Rechecked the same prepared user-import payload in the dedicated modern Custom Sheet Sandbox and dedicated legacy test room. Modern preserved `attr-input` at `210x26px` with root `cssWidth=850px`, `scrollWidth=1189`, and `scrollHeight=1936`; legacy produced `sheet-attr-input` at `52x40px` with root `cssWidth=850px`, `scrollWidth=896`, and `scrollHeight=1917`.
+- VERIFIED: Both destinations applied the sampled translations and exposed zero source script nodes. This reconfirms that modern and legacy are separate runtime contracts, not a single CSS preference.
+- DONE: Removed the unmounted `PreviewToolbar.tsx` and its duplicate mode/width/zoom controls. Updated the render-mode smoke so it validates only the actually mounted `MainAreaToolbar` atomic `modern|legacy` control.
+- VERIFIED: `test:roll20-render-modes` passes after the cleanup. Product mode selection still switches HTML class handling and legacy CSS sanitization together.
+- VERIFY: The current browser pass captured DOM geometry but the browser surface could not persist full-root images into the ignored report folder. Full-height normalized modern/legacy screenshots and pixel classification remain P0 and are not claimed complete.
+
 ## 2026-07-16 Modern and Legacy Roll20 Render Modes
 
 - DONE: Added one atomic Roll20 compatibility selector. Modern mode preserves authored HTML/CSS class names and writes `"legacy": false`; legacy mode enables HTML class prefixing plus legacy CSS sanitization and writes `"legacy": true`.
