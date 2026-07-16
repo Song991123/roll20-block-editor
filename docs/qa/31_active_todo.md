@@ -1,3 +1,14 @@
+## 2026-07-17 Capture Stability, Browser Runtime, and Collapsed UI
+
+- DONE: `smoke:legacy-fixture-visual` now records the exact browser version, user agent, and executable used for evidence. It rejects a full-sheet capture when temporary ancestor unclipping changes sheet geometry, retries once after stabilization, and fails instead of publishing a second unstable capture.
+- VERIFIED HARNESS: In ignored Chrome 150 evidence `%TEMP%\roll20-legacy-capture-stability-r16`, the first modern and fresh-legacy capture attempts changed after restoration and were discarded. Their bounded second attempts restored exactly; transition legacy restored on its first attempt. This closes a false-evidence path, not renderer parity.
+- VERIFIED ENGINE SENSITIVITY: The earlier complete-asset Chrome 150 run `%TEMP%\roll20-legacy-installed-chrome-r15` measured legacy root `895x1917` and final cells `166.109/183.625px`, close to actual legacy `896x1917` and `166.075/183.637px`. Playwright Chromium 148 produced the previous roughly `6.22px` allocation residual. Do not add a CSS compensation until the actual Roll20 browser/runtime version and same-asset context are captured.
+- BLOCKED EVIDENCE: The latest r16 run correctly FAILed because 34 remote Imgur image requests failed; its shorter `895x1861` legacy geometry is not parity evidence. Asset-complete local and actual captures must be compared under the same browser/runtime before this P0 can close.
+- DONE UI: Removed the collapsed left sidebar's mounted no-op button and the unused `56px` rail. The header toggle is now the sole control; collapsed width is `0px` and no invisible sidebar child remains mounted.
+- VERIFIED UI: `%TEMP%\persistent-preview-sidebar-r17` PASSed modern and legacy independently. Both measured `280px -> 0px -> 279.125px`, zero collapsed buttons/children, one persistent iframe, zero iframe reloads, and zero console/page errors while retaining edit flow/free placement, worker replacement, and rolltemplate chat smoke.
+- VERIFIED GATES: `node --check` for both modified browser smokes, `git diff --check`, lint, and production build PASSed.
+- CURRENT P0: Capture actual Roll20 user agent/runtime metadata and rerun asset-complete local/actual legacy comparison. Keep browser-engine drift, asset loading, and Roll20 runtime/context as separate causes; no fixture-specific or speculative CSS patch.
+
 ## 2026-07-17 Roll20 Document Language and Import SFX Evidence
 
 - DONE: Replaced the preview builder's unconditional `lang="ko"` with a validated BCP-47 document-language contract. The measured Roll20 default is `en`, and users can override it from the mounted main toolbar. Iframe source, persistent live patch, and the Shadow fallback receive the same value.
