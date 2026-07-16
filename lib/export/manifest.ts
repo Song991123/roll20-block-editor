@@ -20,6 +20,7 @@ export const DEFAULT_METADATA: SheetMetadata = {
   license: 'All rights reserved',
   version: '0.1.0',
   system: '',
+  legacy: false,
 };
 
 /** SheetMetadata + ZIP_FILES 를 합쳐 sheet.json 문자열 반환. */
@@ -28,7 +29,7 @@ export function buildManifest(meta: SheetMetadata): string {
     html: ZIP_FILES.HTML,
     css: ZIP_FILES.CSS,
     translations: ZIP_FILES.TRANSLATION,
-    legacy: false,
+    legacy: meta.legacy === true,
     useroptions: [],
     name: meta.name.trim() || 'Untitled Sheet',
     authors: meta.author.trim() || 'Anonymous',

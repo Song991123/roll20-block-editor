@@ -48,7 +48,7 @@ These are local-only by default. They are intentionally ignored so real sheets, 
 - The app may support users importing their own HTML, CSS, translation/i18n, assets, and later worker JS, and agents may use local ignored fixtures/reports for verification.
 - Any fixture copied from a real sheet must stay local-only and ignored. Public demos must be synthetic, user-authored, or explicitly cleared for publication.
 - Do not optimize for a single sheet family. Renderer, importer, editor layers, and export paths must be universal enough for custom sheets and official-style sheets.
-- Legacy Roll20 support is a product requirement. Keep modern and legacy behavior selectable, and never describe auto-prefixing as legacy sanitize unless actual legacy CSS sanitization has been verified.
+- Legacy Roll20 support is a product requirement alongside modern Roll20 support. Treat them as separate render contracts, switch preview/edit/HTML/CSS/manifest/verification destination together, and never use evidence from one mode to pass the other. Never describe auto-prefixing as complete legacy sanitization unless actual legacy CSS behavior has been verified.
 
 ## 0.2 Forbidden Claims
 

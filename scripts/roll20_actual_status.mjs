@@ -986,12 +986,12 @@ function buildNextAction({
     if (missingSandbox.length > 0) {
       const missing = missingSandbox.map((target) => `${target.fixtureId} (${target.kind})`).join(', ');
       if (blockerEvidence.length > 0) {
-        return `Chrome file upload is still blocked in the recorded evidence, and sandbox root evidence is missing or suspect for ${missing}. Enable Allow access to file URLs for the Codex extension or use the documented endpoint/settings fallback in the dedicated Sandbox, capture trustworthy root screenshots, then rerun screenshot diff and this status command.`;
+        return `The recorded browser upload attempt is blocked, and sandbox root evidence is missing or suspect for ${missing}. Use the generated Roll20 file-input snippet or its form-encoded fallback in the dedicated Sandbox/test room, verify that the runtime modern/legacy mode matches the payload, capture trustworthy root screenshots, then rerun screenshot diff and this status command.`;
       }
       return `Sandbox root evidence is missing or suspect for ${missing}. Upload payloads in Roll20 Custom Sheet Sandbox/test room, capture roll20-sandbox-root-full-dpr-corrected.png or roll20-sandbox-root.png with sidecar/manifest proof, then rerun screenshot diff and this status command.`;
     }
     if (blockerEvidence.length > 0) {
-      return 'Chrome file upload is still blocked in the recorded evidence. Enable Allow access to file URLs for the Codex extension, upload payloads in Roll20 Sandbox, capture screenshots, then rerun screenshot diff and this status command.';
+      return 'The recorded browser upload attempt is blocked. Use the generated Roll20 file-input snippet in the dedicated Sandbox/test room, verify the expected modern/legacy runtime mode, capture screenshots, then rerun screenshot diff and this status command.';
     }
     return 'Upload payloads in Roll20 Custom Sheet Sandbox/test room, capture roll20-sandbox-root-full-dpr-corrected.png or roll20-sandbox-root.png plus roll20-chat.png, then rerun screenshot diff and this status command. Existing solo-room screenshots are optional observation evidence, not part of the generated-sheet gate.';
   }

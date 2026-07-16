@@ -98,6 +98,15 @@ function testHtmlClassPrefixAndAllowList(): void {
   assert(r.warnings.some((w) => w.code === 'html-class-prefixed'), 'class warning present');
 }
 
+function testModernHtmlPreservesClasses(): void {
+  const r = sanitizeRoll20SandboxHtml(
+    '<div class="panel sheet-kept attr_hp">ok</div>',
+    { prefixClasses: false },
+  );
+  expectContains(r.html, 'class="panel sheet-kept attr_hp"', 'modern classes preserved');
+  assert(!r.warnings.some((w) => w.code === 'html-class-prefixed'), 'modern mode has no class-prefix warning');
+}
+
 function testHtmlRuntimeAndUrlHandling(): void {
   const r = sanitizeRoll20SandboxHtml(`
     <script type="text/worker">on("change:x", function(){})</script>
@@ -121,6 +130,7 @@ const tests: Array<[string, () => void]> = [
   ['CSS URL rewrite', testCssUrlRewrite],
   ['CSS unsafe rejection', testCssRejectsUnsafeTokens],
   ['HTML allow-list/class prefix', testHtmlClassPrefixAndAllowList],
+  ['HTML modern class preservation', testModernHtmlPreservesClasses],
   ['HTML runtime and URL handling', testHtmlRuntimeAndUrlHandling],
 ];
 

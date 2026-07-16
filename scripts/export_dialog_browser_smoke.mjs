@@ -512,10 +512,11 @@ async function main() {
           state: el.getAttribute('data-state') ?? '',
           text: el.textContent?.trim() ?? '',
         })),
+        legacyChecked: Boolean(document.querySelector('[data-testid="export-legacy-toggle"]')?.checked),
         hasLegacyToggle: dialogText.includes('구버전 Roll20 무해화'),
         hasLocalVsActualCopy: dialogText.includes('실제 Roll20 화면 일치는 Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.'),
-        hasFileAccessCopy: dialogText.includes('Chrome 파일 선택이 막히면 브라우저 파일 접근 권한을 확인하고 다시 업로드하세요.'),
-        hasZipIsNotProofCopy: dialogText.includes('zip 다운로드만으로는 Roll20 실제 표시가 검증된 것이 아닙니다.'),
+        hasFileAccessClutter: dialogText.includes('Chrome 파일 선택이 막히면'),
+        hasModeSyncCopy: dialogText.includes('sheet.json') && dialogText.includes('동시에 반영됩니다.'),
         hasAssetPreflightCopy: dialogText.includes('zip에는 HTML, CSS, translation만 들어갑니다.'),
         hasAssetRiskCopy: dialogText.includes('외부 이미지/폰트는 zip에 포함되지 않습니다.'),
         hasAssetProxyMetric: dialogText.includes('Roll20 프록시'),
@@ -550,6 +551,46 @@ async function main() {
       return sandboxDetails instanceof HTMLDetailsElement ? sandboxDetails.open : false;
     });
 
+    await page.evaluate(() => {
+      document.querySelector('[data-testid="export-legacy-toggle"]')?.click();
+    });
+    await page.waitForFunction(() => Boolean(document.querySelector('[data-testid="export-legacy-toggle"]')?.checked));
+    result.checks.roll20ModeSync = {
+      exportSelectedLegacy: await page.evaluate(() =>
+        Boolean(document.querySelector('[data-testid="export-legacy-toggle"]')?.checked),
+      ),
+    };
+
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('[data-testid="export-roll20-readiness"]', {
+      state: 'detached',
+      timeout: 5000,
+    }).catch(() => {});
+
+    await page.waitForSelector('[data-testid="roll20-mode-control"]', { timeout: 5000 });
+    Object.assign(result.checks.roll20ModeSync, await page.evaluate(() => {
+      const toggle = document.querySelector('[data-testid="roll20-mode-legacy"]');
+      return {
+        previewSawLegacy: toggle?.getAttribute('aria-pressed') === 'true',
+        previewLegacyLabel: toggle?.textContent?.trim() ?? '',
+      };
+    }));
+    await page.click('[data-testid="roll20-mode-modern"]');
+    await page.waitForFunction(() =>
+      document.querySelector('[data-testid="roll20-mode-modern"]')?.getAttribute('aria-pressed') === 'true',
+    );
+    Object.assign(result.checks.roll20ModeSync, await page.evaluate(() => {
+      const toggle = document.querySelector('[data-testid="roll20-mode-modern"]');
+      return {
+        previewReturnedModern: toggle?.getAttribute('aria-pressed') === 'true',
+        previewModernLabel: toggle?.textContent?.trim() ?? '',
+      };
+    }));
+    await page.click('[data-testid="header-export-button"]');
+    await page.waitForSelector('[data-testid="export-legacy-toggle"]', { timeout: 5000 });
+    result.checks.roll20ModeSync.exportSawModern = await page.evaluate(() =>
+      !document.querySelector('[data-testid="export-legacy-toggle"]')?.checked,
+    );
     await page.keyboard.press('Escape');
     await page.waitForSelector('[data-testid="export-roll20-readiness"]', {
       state: 'detached',
@@ -618,7 +659,7 @@ async function main() {
     }
     if (!result.checks.exportDialog.hasTitle) failures.push('export dialog title missing');
     if (!result.checks.exportDialog.hasReadiness) failures.push('export readiness panel missing');
-    if (result.checks.exportDialog.readinessItemCount !== 6) failures.push('export readiness item count mismatch');
+    if (result.checks.exportDialog.readinessItemCount !== 5) failures.push('export readiness item count mismatch');
     if (result.checks.exportDialog.badgeText !== '실제 검증 필요') failures.push('export verification badge mismatch');
     if (!result.checks.exportDialog.hasAssetPreflight) failures.push('export asset preflight panel missing');
     if (!['외부 자산 없음', '확인 필요'].includes(result.checks.exportDialog.assetPreflightStatus)) {
@@ -654,8 +695,17 @@ async function main() {
     }
     if (!result.checks.exportDialog.hasLegacyToggle) failures.push('legacy toggle copy missing');
     if (!result.checks.exportDialog.hasLocalVsActualCopy) failures.push('local-vs-actual verification copy missing');
-    if (!result.checks.exportDialog.hasFileAccessCopy) failures.push('file-access blocker copy missing');
-    if (!result.checks.exportDialog.hasZipIsNotProofCopy) failures.push('zip-is-not-proof copy missing');
+    if (result.checks.exportDialog.hasFileAccessClutter) failures.push('file-access implementation clutter is visible');
+    if (!result.checks.exportDialog.hasModeSyncCopy) failures.push('preview/export mode sync copy missing');
+    if (result.checks.exportDialog.legacyChecked) failures.push('modern mode should be the default export mode');
+    if (!result.checks.roll20ModeSync.exportSelectedLegacy) failures.push('export toggle did not select legacy mode');
+    if (!result.checks.roll20ModeSync.previewSawLegacy || !result.checks.roll20ModeSync.previewLegacyLabel.includes('구버전')) {
+      failures.push('preview toolbar did not receive legacy mode from export dialog');
+    }
+    if (!result.checks.roll20ModeSync.previewReturnedModern || !result.checks.roll20ModeSync.previewModernLabel.includes('신버전')) {
+      failures.push('preview toolbar did not return to modern mode');
+    }
+    if (!result.checks.roll20ModeSync.exportSawModern) failures.push('export dialog did not receive modern mode from preview toolbar');
     if (!result.checks.exportDialog.hasAssetPreflightCopy) failures.push('asset preflight copy missing');
     if (!result.checks.exportDialog.hasAssetProxyMetric) failures.push('asset proxy metric missing');
     if (!result.checks.exportDialog.hasAssetPlaceholderMetric) failures.push('asset placeholder metric missing');

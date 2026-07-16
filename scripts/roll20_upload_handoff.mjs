@@ -2,9 +2,9 @@
 /**
  * Create a local-only Roll20 Custom Sheet Sandbox upload handoff checklist.
  *
- * Use this when browser automation reaches Roll20 but Chrome blocks
- * `fileChooser.setFiles` with `Not allowed`. The output stays under ignored
- * reports and contains exact local payload paths plus screenshot destinations.
+ * Use this to prepare an ignored Roll20 upload and evidence checklist. Native
+ * file chooser automation is optional because the generated snippet dispatches
+ * Roll20's observed delegated file-input handler with browser File objects.
  *
  * Usage:
  *   node scripts/roll20_upload_handoff.mjs \
@@ -57,8 +57,8 @@ async function main() {
     runDir,
     selectedAutomatically: !RUN_DIR_ARG,
     privacy: 'local-only ignored report; do not commit generated evidence',
-    blocker:
-      'Chrome extension file upload is blocked until Allow access to file URLs is enabled for the Codex extension.',
+    uploadContract:
+      'Use the generated browser-File snippet to dispatch Roll20 delegated file-input handlers; require matching runtime activation before screenshots.',
     missingOnly: MISSING_ONLY,
     entries,
   };
@@ -331,26 +331,24 @@ function renderMarkdown(report) {
     '',
     'This folder is local-only and ignored by Git. Do not commit screenshots, copied sheet source, room names, character names, campaign IDs, or generated reports.',
     '',
-    '## Current Blocker',
+    '## Current Upload Path',
     '',
-    'To enable file upload, go to chrome://extensions in Chrome, click Details under the Codex extension, and enable "Allow access to file URLs." See [here](https://developers.openai.com/codex/app/chrome-extension#upload-files) for details.',
-    '',
-    'If file chooser upload remains blocked, generate a Sandbox-only page snippet with:',
+    'Native file chooser automation is optional. Generate a Sandbox-only page snippet that creates browser `File` objects and dispatches Roll20\'s observed delegated upload handler:',
     '',
     `\`corepack pnpm run snippet:roll20-upload -- ${path.relative(process.cwd(), report.runDir)} [fixture-id]\``,
     '',
-    'The generated snippet stays under this ignored handoff folder and embeds source-derived payload text. Run it only in the dedicated Custom Sheet Sandbox editor/settings page, then capture screenshots and rerun the gates below.',
+    'The generated snippet stays under this ignored handoff folder and embeds source-derived payload text. Run it only in the dedicated Custom Sheet Sandbox editor/settings page. The matching activation checker must report `VISIBLE_MATCH` with the expected modern/legacy runtime before screenshots are promoted.',
     '',
     '## Upload Order',
     '',
-    '1. In the kept Roll20 Custom Sheet Sandbox tab, open `Sheet Sandbox Tools`.',
-    '2. Upload `sheet.html` with the `HTML` button.',
-    '3. Upload `sheet.css` with the `CSS` button.',
-    '4. Upload `translation.json` with the `Translation` button, when present.',
-    '5. Run `probe:roll20-sheet-frame` for the fixture and save positive `roll20-sandbox-dom-evidence.json` before trusting root/chat capture.',
+    '1. Open only the dedicated Roll20 Custom Sheet Sandbox/test-room destination.',
+    '2. Confirm the destination runtime matches the export manifest: modern or legacy.',
+    '3. Run the generated upload snippet; do not run both its file-input path and a separate endpoint POST.',
+    '4. Save/reload settings as instructed, then run the matching activation checker.',
+    '5. Require `VISIBLE_MATCH` and a matching runtime mode, then run `probe:roll20-sheet-frame` and save positive `roll20-sandbox-dom-evidence.json`.',
     '6. Capture the loaded sheet viewport as `roll20-sandbox.png` beside the local baseline screenshots.',
     '7. Prefer a DPR-corrected full sheet-root segment capture and stitch it to `roll20-sandbox-root-full-dpr-corrected.png`.',
-    '8. Click a roll button if available and capture chat as `roll20-chat.png` using `capture:roll20-chat-cdp`; it now requires sheet-frame evidence first.',
+    '8. Click a roll button if available and capture chat as `roll20-chat.png` using `capture:roll20-chat-cdp`; it requires sheet-frame evidence first.',
     '9. Run the stitch audit, screenshot diff, and status commands listed below.',
     '',
     '## Payloads',

@@ -22,6 +22,7 @@ export interface DynamicToggle {
  *   - 'iframe' : 레거시 iframe srcdoc — Roll20 환경 시뮬 (sandbox / postMessage bridge).
  */
 export type PreviewRenderMode = 'shadow' | 'iframe';
+export type Roll20CompatibilityMode = 'modern' | 'legacy';
 
 export interface AssetReplacementProfile {
   id: string;
@@ -32,7 +33,7 @@ export interface AssetReplacementProfile {
 
 interface PreviewStore {
   darkMode: boolean;
-  sanitize: boolean;        // D4 ① — default ON
+  sanitize: boolean;        // HTML/CSS class auto-prefix. Actual modern Roll20 keeps this OFF.
   legacyCssSanitize: boolean; // 구버전 Roll20 CSS 무해화 preview/edit toggle.
   roll20SandboxSanitize: boolean; // 실제 Roll20 Custom Sheet Sandbox sanitize/prefix 예상 preview toggle.
   autoRegen: boolean;       // 큰 시트 OFF 권장
@@ -47,6 +48,7 @@ interface PreviewStore {
   setDarkMode: (v: boolean) => void;
   setSanitize: (v: boolean) => void;
   setLegacyCssSanitize: (v: boolean) => void;
+  setRoll20CompatibilityMode: (mode: Roll20CompatibilityMode) => void;
   setRoll20SandboxSanitize: (v: boolean) => void;
   setAutoRegen: (v: boolean) => void;
   setRenderMode: (mode: PreviewRenderMode) => void;
@@ -91,7 +93,7 @@ function sanitizeProfiles(profiles: AssetReplacementProfile[]): AssetReplacement
 
 export const usePreviewStore = create<PreviewStore>((set) => ({
   darkMode: false,
-  sanitize: true,            // D4 ① default ON
+  sanitize: false,
   legacyCssSanitize: false,
   roll20SandboxSanitize: false,
   autoRegen: true,
@@ -105,6 +107,10 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   setDarkMode: (v) => set({ darkMode: v }),
   setSanitize: (v) => set({ sanitize: v }),
   setLegacyCssSanitize: (v) => set({ legacyCssSanitize: v }),
+  setRoll20CompatibilityMode: (mode) => set({
+    sanitize: mode === 'legacy',
+    legacyCssSanitize: mode === 'legacy',
+  }),
   setRoll20SandboxSanitize: (v) => set({ roll20SandboxSanitize: v }),
   setAutoRegen: (v) => set({ autoRegen: v }),
   setRenderMode: (mode) => set({ renderMode: mode }),

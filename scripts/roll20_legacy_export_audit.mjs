@@ -123,7 +123,7 @@ function auditExportDialogStatic(assertions) {
   check(
     assertions,
     'ExportDialog gates sanitizer behind legacyMode',
-    /if\s*\(\s*legacyMode\s*&&\s*emitCache\.css\s*\)/.test(source),
+    /if\s*\(\s*legacyMode\s*&&\s*exportText\.css\s*\)/.test(source),
     { file },
   );
   check(
@@ -136,6 +136,18 @@ function auditExportDialogStatic(assertions) {
     assertions,
     'ExportDialog sends sanitized CSS into buildZip',
     /css:\s*cssForZip/.test(source),
+    { file },
+  );
+  check(
+    assertions,
+    'ExportDialog writes the selected mode into sheet.json metadata',
+    /\{\s*\.\.\.meta,\s*legacy:\s*legacyMode\s*\}/.test(source),
+    { file },
+  );
+  check(
+    assertions,
+    'ExportDialog shares the preview Roll20 compatibility mode',
+    /setRoll20CompatibilityMode/.test(source),
     { file },
   );
 }

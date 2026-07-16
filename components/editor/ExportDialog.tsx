@@ -66,8 +66,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
   const [meta, setMeta] = useState<SheetMetadata>(DEFAULT_METADATA);
   const [busy, setBusy] = useState(false);
-  const [legacyMode, setLegacyMode] = useState(false);
   const [legacyWarnings, setLegacyWarnings] = useState<SanitizeWarning[]>([]);
+  const legacyMode = usePreviewStore((s) => s.legacyCssSanitize);
+  const setRoll20CompatibilityMode = usePreviewStore((s) => s.setRoll20CompatibilityMode);
   const assetReplacementText = usePreviewStore((s) => s.assetReplacementMap);
   const setAssetReplacementText = usePreviewStore((s) => s.setAssetReplacementMap);
   const assetReplacementProfiles = usePreviewStore((s) => s.assetReplacementProfiles);
@@ -141,12 +142,6 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         ok: true,
       },
       {
-        label: '브라우저 업로드 권한',
-        detail: 'Chrome 파일 선택이 막히면 브라우저 파일 접근 권한을 확인하세요',
-        ok: false,
-        pending: true,
-      },
-      {
         label: 'Roll20 실제 검증',
         detail: 'Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 비교해야 합니다',
         ok: false,
@@ -164,7 +159,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
     });
     const cssForSandbox =
       legacyMode && payload.css ? sanitizeForRoll20Legacy(payload.css).sanitized : payload.css;
-    const htmlResult = sanitizeRoll20SandboxHtml(payload.html);
+    const htmlResult = sanitizeRoll20SandboxHtml(payload.html, { prefixClasses: legacyMode });
     const cssResult = sanitizeRoll20SandboxCss(cssForSandbox, { prefixSelectors: false });
     const htmlWarnings = countSandboxWarnings(htmlResult.warnings);
     const cssWarnings = countSandboxWarnings(cssResult.warnings);
@@ -236,7 +231,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           warnings: [],
           extraFiles,
         },
-        meta,
+        { ...meta, legacy: legacyMode },
       );
       triggerDownload(zip);
       const kb = (zip.size / 1024).toFixed(1);
@@ -432,7 +427,6 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                   이 항목은 zip 구성 파일의 로컬 준비 상태입니다. 실제 Roll20 화면 일치는
                   Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.
-                  Chrome 파일 선택이 막히면 브라우저 파일 접근 권한을 확인하고 다시 업로드하세요.
                 </p>
               </div>
               <span
@@ -476,10 +470,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               ))}
             </ul>
             <div className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
-              구버전 시트라면 아래 무해화 옵션을 켠 zip과 끈 zip을 각각 Sandbox에 올려
-              비교하세요. 기존 실제 방은 관찰용으로만 쓰고, 업로드 검증은 Custom Sheet
-              Sandbox나 새 테스트 방에서 진행합니다. zip 다운로드만으로는 Roll20 실제
-              표시가 검증된 것이 아닙니다.
+              시트가 만들어진 Roll20 버전을 아래에서 선택하세요. 이 선택은 미리보기와
+              `sheet.json` 설정에 동시에 반영됩니다. 실제 표시는 Custom Sheet Sandbox나
+              새 테스트 방에 올린 뒤 확인해야 합니다.
             </div>
           </section>
 
@@ -555,7 +548,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <input
                 type="checkbox"
                 checked={legacyMode}
-                onChange={(e) => setLegacyMode(e.target.checked)}
+                onChange={(e) => setRoll20CompatibilityMode(e.target.checked ? 'legacy' : 'modern')}
                 className="mt-[2px] h-4 w-4 accent-[var(--accent-primary)]"
                 data-testid="export-legacy-toggle"
                 aria-label="구버전 Roll20 무해화"
@@ -563,8 +556,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               <span className="flex-1">
                 <span className="font-medium">구버전 Roll20 무해화</span>
                 <span className="ml-1 text-[11px] text-muted-foreground">
-                  끄면 원본 CSS를 그대로 내보냅니다. 켜면 구버전 Roll20에서 막힐 수 있는 CSS를
-                  바꾸거나 제거하고 보고서를 zip에 넣습니다.
+                  끄면 신버전 Roll20 모드로 보고 내보냅니다. 켜면 HTML 클래스 보정과
+                  CSS 무해화를 미리보기에 적용하고 `sheet.json` 역시 legacy로 저장합니다.
                 </span>
               </span>
             </label>

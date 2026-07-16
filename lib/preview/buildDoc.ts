@@ -762,7 +762,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
   const sandboxHtml = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxHtml(userHtml).html
+    ? sanitizeRoll20SandboxHtml(userHtml, { prefixClasses: legacyCssSanitize }).html
     : prefixedHtml;
   const sandboxCss = roll20SandboxSanitize
     ? sanitizeRoll20SandboxCss(userCss, { prefixSelectors: false }).css
@@ -831,7 +831,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
   const sandboxHtml = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxHtml(userHtml).html
+    ? sanitizeRoll20SandboxHtml(userHtml, { prefixClasses: legacyCssSanitize }).html
     : prefixedHtml;
   const sandboxCss = roll20SandboxSanitize
     ? sanitizeRoll20SandboxCss(userCss, { prefixSelectors: false }).css

@@ -37,6 +37,11 @@ export interface Roll20SandboxHtmlResult {
   warnings: Roll20SandboxWarning[];
 }
 
+export interface Roll20SandboxHtmlOptions {
+  /** Legacy Roll20 prefixes non-reserved class names; modern Roll20 preserves them. */
+  prefixClasses?: boolean;
+}
+
 export interface Roll20SandboxCssOptions {
   /**
    * Older settings-preview evidence suggested selector prefixing. The later
@@ -135,7 +140,11 @@ export function sanitizeRoll20SandboxCss(
   return { css: out, warnings };
 }
 
-export function sanitizeRoll20SandboxHtml(html: string): Roll20SandboxHtmlResult {
+export function sanitizeRoll20SandboxHtml(
+  html: string,
+  options: Roll20SandboxHtmlOptions = {},
+): Roll20SandboxHtmlResult {
+  const prefixClasses = options.prefixClasses !== false;
   const warnings: Roll20SandboxWarning[] = [];
   let out = html;
 
@@ -172,8 +181,10 @@ export function sanitizeRoll20SandboxHtml(html: string): Roll20SandboxHtmlResult
 
     const rewrittenAttrs = String(attrs)
       .replace(/\sclass=(["'])(.*?)\1/gi, (_classSource, quote: string, classValue: string) => {
-        const prefixed = prefixRoll20ClassList(classValue, warnings);
-        return ` class=${quote}${prefixed}${quote}`;
+        const normalized = prefixClasses
+          ? prefixRoll20ClassList(classValue, warnings)
+          : classValue.split(/\s+/).filter(Boolean).join(' ');
+        return ` class=${quote}${normalized}${quote}`;
       })
       .replace(/\s(src|href)=(["'])(.*?)\2/gi, (attrSource, attrName: string, quote: string, url: string) => {
         const rewritten = rewriteRoll20Url(url.trim(), warnings, 'html');

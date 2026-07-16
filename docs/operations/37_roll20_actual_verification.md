@@ -709,28 +709,26 @@ captured and diffed.
 ## File Upload Gotcha
 
 Roll20 Custom Sheet Sandbox uploads HTML, CSS, and Translation through browser
-file inputs in the in-editor `Sheet Sandbox Tools` dialog. If Chrome reports
-`fileChooser.setFiles failed: Not allowed`, enable local file access for the
-Codex Chrome extension:
-
-1. Open `chrome://extensions`.
-2. Open Details for the Codex extension.
-3. Enable `Allow access to file URLs`.
-4. Return to the Roll20 sandbox editor and retry the upload.
-
-If the upload remains blocked, generate a local handoff checklist:
+file inputs in the in-editor `Sheet Sandbox Tools` dialog. Browser automation
+may be unable to operate the native chooser, but file-URL extension permission
+is not part of Roll20's upload contract. Generate the local upload helper:
 
 ```bash
-corepack pnpm run handoff:roll20-upload -- [reports/roll20-actual-compare/<label>] [fixture-id]
+corepack pnpm run snippet:roll20-upload -- [reports/roll20-actual-compare/<label>] [fixture-id]
 ```
 
-If the run folder is omitted, the handoff script selects the newest PASS
-pre-upload run. Agents must not try to bypass Chrome's blocked
-`chrome://extensions` automation page; the user must enable file URL access
-manually when that browser policy blocks inspection.
+The snippet creates browser `File` objects and dispatches `change` on Roll20's
+actual inputs. Live inspection on 2026-07-16 confirmed the delegated handler
+uses `FileReader`, sends form-encoded base64 source to
+`/sheetsandbox/savesheetsettings`, and reloads sheet data/open characters. The
+explicit endpoint fallback runs only when the file-input handler did not run.
+Do not submit both paths.
 
-The checklist stays under the ignored run folder and lists exact payload files,
-screenshot destinations, and the diff command to run after screenshots exist.
+The generated source and report stay under the ignored run folder. After save
+and editor reload, run the generated activation checker. Its expected
+`modern|legacy` mode comes from `sheet.json` unless explicitly overridden. A
+`RUNTIME_MODE_MISMATCH`, parse error, missing sheet body, or unproven iframe
+blocks screenshot promotion.
 
 If the dedicated sandbox upload fallback above is used instead of file chooser
 upload, still keep the handoff/checklist and status commands current. Screenshot
@@ -741,10 +739,10 @@ report it as `SUSPECT` and exclude it from generated actual evidence counts.
 DPR-corrected full-root/root captures with their JSON sidecars/manifests remain
 the preferred evidence.
 
-## 2026-06-19 Export Dialog Upload Permission Note
+## 2026-07-16 Export Dialog Runtime Note
 
-- The app export dialog now mirrors this verification rule: zip readiness is local-only, Chrome file chooser upload may require enabling file URL access for the Codex extension, and Roll20 visual parity still requires Sandbox/test-room screenshots.
-- The export dialog browser smoke asserts this text so future UI edits cannot silently collapse local readiness into actual Roll20 proof.
+- The export dialog selects the same modern/legacy compatibility state used by preview/edit and writes it to `sheet.json` plus `README.txt`.
+- The browser smoke rejects the stale file-permission instruction and requires the preview/export mode-sync explanation. Zip readiness remains local-only; Roll20 visual parity still requires matching-runtime Sandbox/test-room screenshots.
 
 ## 2026-06-19 Sandbox Upload Snippet Fallback
 
@@ -752,6 +750,7 @@ the preferred evidence.
 - The helper writes ignored, local-only snippets under `reports/roll20-actual-compare/<label>/roll20-upload-handoff/snippets/`.
 - The generated snippet embeds source-derived payload bytes and must not be committed.
 - Use only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. It creates browser `File` objects and dispatches `change` events on `#sheetHtml`, `#sheetCss`, and `#sheetTranslation`, then fills `customcharsheet_json` when that field exists.
+- The generated upload and activation snippets derive the expected modern/legacy runtime from `sheet.json` by default. `RUNTIME_MODE_MISMATCH` blocks visual capture; use `--expected-runtime-mode modern|legacy` only when intentionally overriding the manifest for diagnosis.
 - The helper also writes a matching `*-activation-check-snippet.js`. After save/reload, run that checker on `https://app.roll20.net/editor`; capture Roll20 root/chat evidence only after it returns `VISIBLE_MATCH` and the visible sheet/chat is clearly the intended fixture. `ROLL20_EDITOR_PARSE_ERROR` and `NOT_PROVEN` both block evidence capture.
 - By default, generated upload snippets are non-submitting helpers. Use `corepack pnpm run snippet:roll20-upload -- <run-dir> <fixture-id> --apply-settings --endpoint-campaign-id <id>` only for the dedicated Sandbox/test room when an agent intentionally needs a snippet that POSTs the endpoint fallback and clicks the settings save button.
 - When filling `customcharsheet_json`, the generated snippet uses the settings-page `{ sheet, userOptions, jsoninfo }` wrapper. The plain exported `sheet.json` text is a known-bad path for the current verified Sandbox settings page because it caused a live `/editor` parse error on 2026-06-21.
@@ -759,4 +758,4 @@ the preferred evidence.
 - Run `corepack pnpm run test:roll20-upload-snippet` after changing upload snippet generation. It fails if the settings-page manifest builder regresses back to the plain exported `sheet.json` shape or if the generated activation checker no longer distinguishes `VISIBLE_MATCH`, `ROLL20_EDITOR_PARSE_ERROR`, and `NOT_PROVEN`.
 - The snippet report validates `translation.json`, `sheet.json`, and the generated settings-page manifest before embedding them. If Roll20 still displays a translation JSON parse warning after a PASS report, treat it as an upload/settings application problem until a fresh Roll20-side sidecar proves otherwise.
 - The snippet runtime logs visible Roll20 Sandbox warning text after dispatching the file changes. Preserve that console result in the local ignored report notes when diagnosing translation/i18n failures.
-- This is a fallback for Chrome file chooser blocking. It is not Roll20 visual parity and still requires fresh sandbox root/chat screenshots plus status/diff gates afterward.
+- This reproduces the observed Roll20 delegated file-input handler without controlling the native chooser. It is not Roll20 visual parity and still requires fresh matching-runtime sandbox root/chat screenshots plus status/diff gates afterward.

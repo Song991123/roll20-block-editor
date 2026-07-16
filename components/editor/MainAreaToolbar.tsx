@@ -1,8 +1,9 @@
 'use client';
 
-import { Blocks, Eye, PanelsLeftRight, PencilRuler, type LucideIcon } from 'lucide-react';
+import { Blocks, Eye, PanelsLeftRight, PencilRuler, ShieldAlert, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useUiStore, type EditSubmode, type MainMode } from '@/lib/stores/uiStore';
+import { usePreviewStore, type Roll20CompatibilityMode } from '@/lib/stores/previewStore';
 import {
   Tooltip,
   TooltipContent,
@@ -33,6 +34,9 @@ export default function MainAreaToolbar() {
   const mainSplit = useUiStore((s) => s.mainSplit);
   const editSubmode = useUiStore((s) => s.editSubmode);
   const setEditSubmode = useUiStore((s) => s.setEditSubmode);
+  const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
+  const setRoll20CompatibilityMode = usePreviewStore((s) => s.setRoll20CompatibilityMode);
+  const roll20Mode: Roll20CompatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -72,6 +76,46 @@ export default function MainAreaToolbar() {
         </div>
 
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground tabular-nums">
+          <div
+            role="group"
+            aria-label="Roll20 렌더 버전"
+            className="inline-flex items-center gap-0.5 rounded-md bg-[var(--bg-elevated-2)] p-0.5"
+            data-testid="roll20-mode-control"
+          >
+            <span className="px-1.5 text-[10px] font-medium text-muted-foreground">Roll20</span>
+            {([
+              { key: 'modern' as const, label: '신버전', Icon: ShieldCheck },
+              { key: 'legacy' as const, label: '구버전', Icon: ShieldAlert },
+            ]).map(({ key, label, Icon }) => {
+              const isActive = roll20Mode === key;
+              return (
+                <Tooltip key={key}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() => setRoll20CompatibilityMode(key)}
+                      className={cn(
+                        'inline-flex h-7 items-center gap-1 rounded px-2 text-[11px] transition-colors',
+                        isActive
+                          ? 'bg-[var(--bg-active)] text-foreground'
+                          : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+                      )}
+                      data-testid={`roll20-mode-${key}`}
+                    >
+                      <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+                      {label}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {key === 'legacy'
+                      ? '구버전 Roll20의 HTML 클래스 보정과 CSS 무해화를 미리 적용합니다.'
+                      : '신버전 Roll20처럼 작성한 HTML과 CSS를 그대로 해석합니다.'}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
           {mainMode === 'edit' && (
             <div
               role="tablist"

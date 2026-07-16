@@ -1,3 +1,18 @@
+## 2026-07-16 Modern and Legacy Roll20 Render Modes
+
+- DONE: Added one atomic Roll20 compatibility selector. Modern mode preserves authored HTML/CSS class names and writes `"legacy": false`; legacy mode enables HTML class prefixing plus legacy CSS sanitization and writes `"legacy": true`.
+- DONE: Preview toolbar and Export dialog now use the same store action, so preview/edit and exported `sheet.json` cannot silently select different Roll20 generations. Exported `README.txt` records the selected mode and the matching Roll20 game-setting instruction.
+- DONE: Added the actual mounted `Roll20 | 신버전 | 구버전` segmented control to the central editor toolbar; the older standalone Preview toolbar is not the product's mounted mode surface.
+- DONE: Updated the generated Sandbox upload helper to dispatch Roll20's real delegated file-input `change` handler. Live handler inspection confirmed that Roll20 uses `FileReader`, form-encoded POSTs to `/sheetsandbox/savesheetsettings`, then calls `reloadSheetData()` and `reloadOpenCharacters()`.
+- DONE: The upload/activation helper now derives the expected `modern|legacy` runtime from `sheet.json` and returns `RUNTIME_MODE_MISMATCH` before visual evidence can be accepted.
+- VERIFIED: Actual modern Custom Sheet Sandbox runtime preserved `attr-input`; the sampled input was `210x26px`, root `cssWidth=850px`, `scrollWidth=1189`, `scrollHeight=1936`, translated markers `name=1`, `strength=2`, and script nodes `0`.
+- VERIFIED: Actual dedicated legacy test room prefixed the same source to `sheet-attr-input`; the sampled input was `52x40px`, root `cssWidth=850px`, `scrollWidth=896`, `scrollHeight=1917`, translated markers `name=1`, `strength=2`, and script nodes `0`.
+- VERIFIED: `test:export-smoke`, `test:roll20-sandbox-sanitize` (7/7), `test:roll20-render-modes`, `test:roll20-upload-snippet`, and `audit:legacy-export` pass. These are contract checks, not pixel parity.
+- VERIFIED: Browser smoke `.tmp/export-dialog-modern-legacy-r5` passed Export legacy -> central toolbar legacy -> central toolbar modern -> Export modern synchronization, with console issues `0`, page errors `0`, failed requests `0`, and external requests `0`.
+- VERIFIED: Final `ci:verify`, lint, build, `git diff --check`, and post-smoke server hygiene pass; no project dev/smoke listener remains.
+- VERIFY: Full-height normalized screenshot/diff evidence for the same generated payload in both modern and legacy Roll20 remains P0. The current local legacy sanitizer is an evidence-backed approximation, not a claim of complete Roll20 sanitizer parity.
+- NEXT P0: Generate matching modern and legacy exports from the same ignored fixture, upload each only to its matching dedicated runtime, capture normalized sheet-root evidence, and classify the remaining wrapper/CSS/state/asset differences.
+
 ## 2026-07-16 Translation Payload and Preview/Edit Runtime Parity
 
 - ROOT CAUSE: The Blockly i18n workspace emits internal `<!-- i18n[ko] "key": "value" -->` comments. Export normalized those comments to Roll20 JSON, but local preview/edit attempted JSON-only parsing. The generated Roll20 payload therefore translated while the local render could remain English.
@@ -6,9 +21,8 @@
 - DONE: Added `test:translation-payload` to `ci:verify` and extended `smoke:preview-edit-visual` to report all and visible translation matches separately.
 - VERIFIED: Ignored local run `.tmp/preview-edit-visual-20260716-r19` passed all 3 prepared fixtures. Translation state was preview/edit `436/436`, `0/0`, and `1148/1148`; visible translation matches were `53/53`, `0/0`, and `93/93`. Computed-style and visible-geometry differences remained `0`; pixel status remained two `EXACT` and one `RASTER_TOLERANCE` at `14` pixels / `8.33 ppm`.
 - VERIFIED: `.tmp/edit-flow-translation-sync-20260716-r1` passed selection, before/inside/after insertion, nested reorder, non-leaf reorder, absolute-in-frame movement, free placement, emitted CSS coordinates, layer synchronization, and canvas-width control with console/page errors `0`.
-- VERIFY: The dedicated Roll20 Sandbox currently renders the generated translated sheet, but the endpoint-applied character iframe has a class-prefix-sensitive horizontal overflow. Normal Roll20 file-picker re-upload is still required before deciding whether this is a product renderer defect or endpoint upload bypass evidence.
-- BLOCKER: Chrome file-chooser control cannot set local files until the ChatGPT Chrome Extension has **Allow access to file URLs** enabled. Do not promote the endpoint-only width/class result to actual Roll20 parity evidence.
-- NEXT P0: Enable the extension permission, upload the same ignored `sheet.html`, `sheet.css`, and `translation.json` through **Sheet Sandbox Tools**, then recapture root width/height/scrollWidth, `attr_pow` class/width, screenshot, and diff.
+- VERIFY: The dedicated modern Sandbox and dedicated legacy test room both render the generated translated sheet, but they intentionally produce different class/geometry results. The upload path is no longer blocked on Chrome file-URL permission; normalized two-mode screenshot/diff evidence is still required.
+- NEXT P0: Re-upload matching modern/legacy exports through the generated delegated-handler snippet, require a matching runtime mode, then recapture root width/height/scrollWidth, sampled attribute classes, screenshots, and diffs.
 
 ## 2026-07-16 Preview/Edit Underlying Paint Separation
 

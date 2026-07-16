@@ -22,7 +22,7 @@ export default function PreviewToolbar() {
   const darkMode = usePreviewStore((s) => s.darkMode);
   const setDarkMode = usePreviewStore((s) => s.setDarkMode);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
-  const setLegacyCssSanitize = usePreviewStore((s) => s.setLegacyCssSanitize);
+  const setRoll20CompatibilityMode = usePreviewStore((s) => s.setRoll20CompatibilityMode);
   const [widthDraft, setWidthDraft] = useState<string | null>(null);
 
   const numericZoom = typeof zoom === 'number' ? zoom : 1;
@@ -165,19 +165,19 @@ export default function PreviewToolbar() {
               variant={legacyCssSanitize ? 'secondary' : 'ghost'}
               size="sm"
               className="h-8 gap-1.5 px-2.5 text-[11px]"
-              onClick={() => setLegacyCssSanitize(!legacyCssSanitize)}
-              aria-label="구버전 Roll20 CSS 무해화"
+              onClick={() => setRoll20CompatibilityMode(legacyCssSanitize ? 'modern' : 'legacy')}
+              aria-label="Roll20 렌더 버전"
               aria-pressed={legacyCssSanitize}
               data-testid="preview-legacy-css-toggle"
             >
               <ShieldAlert className="h-3.5 w-3.5" />
-              <span>구버전 CSS</span>
+              <span>{legacyCssSanitize ? '구버전' : '신버전'}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top">
             {legacyCssSanitize
-              ? '구버전 Roll20 CSS 무해화를 적용 중입니다.'
-              : '신버전 Roll20 기준으로 봅니다.'}
+              ? '구버전 Roll20처럼 HTML 클래스 보정과 CSS 무해화를 적용합니다.'
+              : '신버전 Roll20처럼 작성한 HTML/CSS를 그대로 해석합니다.'}
           </TooltipContent>
         </Tooltip>
       </div>

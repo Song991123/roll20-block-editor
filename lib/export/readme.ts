@@ -19,6 +19,7 @@ export function buildReadme(meta: SheetMetadata, options: ReadmeOptions = {}): s
   const author = meta.author.trim() || 'Anonymous';
   const version = meta.version.trim() || '0.1.0';
   const system = meta.system.trim();
+  const roll20Mode = meta.legacy ? '구버전 무해화' : '신버전';
   const today = new Date().toISOString().slice(0, 10);
 
   const lines: string[] = [];
@@ -29,6 +30,7 @@ export function buildReadme(meta: SheetMetadata, options: ReadmeOptions = {}): s
   lines.push(`버전: ${version}`);
   lines.push(`라이선스: ${meta.license}`);
   if (system) lines.push(`시스템: ${system}`);
+  lines.push(`Roll20 모드: ${roll20Mode}`);
   lines.push(`내보낸 날짜: ${today}`);
   lines.push('');
   lines.push('## 1. 압축 해제');
@@ -44,6 +46,11 @@ export function buildReadme(meta: SheetMetadata, options: ReadmeOptions = {}): s
   lines.push('');
   lines.push('1) 호스트 권한이 있는 Roll20 게임의 "Settings → Game Settings" 로 이동.');
   lines.push('2) "Character Sheet Template" 항목에서 "Custom" 선택.');
+  lines.push(
+    meta.legacy
+      ? '   이 zip은 구버전용입니다. 게임 설정에서 구 버전 무해화 처리를 켜세요.'
+      : '   이 zip은 신버전용입니다. 게임 설정에서 구 버전 무해화 처리를 끄세요.',
+  );
   lines.push('3) 아래 표대로 각 파일 내용을 복사 → 해당 영역에 붙여넣기:');
   lines.push('');
   lines.push(`     ${ZIP_FILES.HTML.padEnd(18)} → "HTML Layout"`);

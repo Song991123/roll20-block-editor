@@ -2,11 +2,10 @@
 /**
  * Generate a local-only browser snippet for Roll20 Custom Sheet Sandbox upload.
  *
- * This is a fallback for Chrome extension file chooser failures. It does not
- * contact Roll20 by itself. The generated snippet must be run only in the
- * dedicated Roll20 Custom Sheet Sandbox editor/settings page, where it creates
- * File objects in the page and dispatches the same change events the Sandbox
- * Tools file inputs listen for.
+ * This avoids browser file-chooser automation without bypassing Roll20's upload
+ * handler. The generated snippet must be run only in the dedicated Roll20
+ * Custom Sheet Sandbox editor/settings page, where it creates File objects and
+ * dispatches the same delegated change handler used by a manual file choice.
  */
 
 import { existsSync } from 'node:fs';
@@ -21,6 +20,7 @@ const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
 const SELF_TEST = args.includes('--self-test');
 const APPLY_SETTINGS = args.includes('--apply-settings');
 const ENDPOINT_CAMPAIGN_ID = readOptionValue(args, '--endpoint-campaign-id') || '';
+const EXPECTED_RUNTIME_MODE = readOptionValue(args, '--expected-runtime-mode') || 'auto';
 
 if (SELF_TEST) {
   runSelfTest();
@@ -68,6 +68,7 @@ async function main() {
     entries.push(await writeFixtureSnippet(runDir, fixtureId, outDir, {
       applySettings: APPLY_SETTINGS,
       endpointCampaignId: ENDPOINT_CAMPAIGN_ID,
+      expectedRuntimeMode: EXPECTED_RUNTIME_MODE,
     }));
   }
 
@@ -86,6 +87,7 @@ async function main() {
     entries: entries.length,
     applySettings: APPLY_SETTINGS,
     endpointCampaignId: ENDPOINT_CAMPAIGN_ID || null,
+    expectedRuntimeMode: EXPECTED_RUNTIME_MODE,
     snippets: entries.map((entry) => entry.snippetRelativePath),
     activationCheckSnippets: entries.map((entry) => entry.activationCheckSnippetRelativePath),
   }, null, 2));
@@ -150,11 +152,25 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir, options = {}) {
   };
   validation.settingsFieldManifest = validateSettingsFieldManifest(sourceTexts.manifest);
   const activationHints = extractActivationHints(sourceTexts);
+  const expectedRuntimeMode = resolveExpectedRuntimeMode(
+    sourceTexts.manifest,
+    options.expectedRuntimeMode,
+  );
 
-  const snippet = renderSnippet({ fixtureId, payload, validation, activationHints, options });
+  const snippet = renderSnippet({
+    fixtureId,
+    payload,
+    validation,
+    activationHints,
+    options: { ...options, expectedRuntimeMode },
+  });
   const snippetFile = path.join(outDir, `${safeName(fixtureId)}-upload-snippet.js`);
   await fs.writeFile(snippetFile, snippet, 'utf8');
-  const activationCheckSnippet = renderActivationCheckSnippet({ fixtureId, activationHints });
+  const activationCheckSnippet = renderActivationCheckSnippet({
+    fixtureId,
+    activationHints,
+    expectedRuntimeMode,
+  });
   const activationCheckFile = path.join(outDir, `${safeName(fixtureId)}-activation-check-snippet.js`);
   await fs.writeFile(activationCheckFile, activationCheckSnippet, 'utf8');
 
@@ -167,12 +183,23 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir, options = {}) {
     options: {
       applySettings: Boolean(options.applySettings),
       endpointCampaignId: options.endpointCampaignId || '',
+      expectedRuntimeMode,
     },
     payloadBytes: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.bytes])),
     payloadSha256: Object.fromEntries(Object.entries(payload).map(([key, item]) => [key, item.sha256])),
     activationHints,
     validation,
   };
+}
+
+function resolveExpectedRuntimeMode(manifestText, requestedMode = 'auto') {
+  if (requestedMode === 'modern' || requestedMode === 'legacy') return requestedMode;
+  if (requestedMode !== 'auto') {
+    throw new Error(`invalid --expected-runtime-mode: ${requestedMode}; use auto, modern, or legacy`);
+  }
+  const parsed = JSON.parse(manifestText);
+  const legacy = parsed?.jsoninfo?.legacy ?? parsed?.legacy;
+  return legacy === true ? 'legacy' : 'modern';
 }
 
 function validateJsonPayload(text, label) {
@@ -313,8 +340,8 @@ function safeTranslationValues(text) {
   }
 }
 
-function renderActivationCheckSnippet({ fixtureId, activationHints }) {
-  const literal = JSON.stringify({ fixtureId, activationHints }, null, 2);
+function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRuntimeMode = 'modern' }) {
+  const literal = JSON.stringify({ fixtureId, activationHints, expectedRuntimeMode }, null, 2);
   return `// Roll20 Custom Sheet Sandbox editor activation checker for ${fixtureId}
 // Local-only generated snippet. Run on https://app.roll20.net/editor after
 // upload/settings save and reload. It does not prove visual parity; it only
@@ -325,6 +352,19 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
   const rollButtonNames = DATA.activationHints.rollButtonNames || [];
   const attrNames = DATA.activationHints.attrNames || [];
   const textTokens = DATA.activationHints.textTokens || [];
+  const readRuntimeMode = () => {
+    const currentSheet = window.CharacterSheetsManagerSingleton?.getCurrentCustomSheet?.();
+    const legacy = currentSheet?.d20?.journal?.legacySanitization
+      ?? window.d20?.journal?.legacySanitization
+      ?? null;
+    const observedMode = legacy === true ? 'legacy' : legacy === false ? 'modern' : 'unknown';
+    return {
+      expectedMode: DATA.expectedRuntimeMode,
+      observedMode,
+      legacySanitization: legacy,
+      matches: observedMode === 'unknown' ? null : observedMode === DATA.expectedRuntimeMode,
+    };
+  };
   const normalize = (value) => String(value || '').replace(/\\s+/g, ' ').trim();
   const isVisible = (el) => {
     if (!el) return false;
@@ -391,8 +431,11 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
   const inaccessibleSheetIframeCount = sheetIframes.filter((frame) => frame.looksLikeSheet && !frame.accessible).length;
   const characterEditorCount = document.querySelectorAll('.charactereditor').length;
   const characterDialogCount = document.querySelectorAll('.characterdialog,.characterviewer').length;
+  const runtime = readRuntimeMode();
   const status = parseError
     ? 'ROLL20_EDITOR_PARSE_ERROR'
+    : runtime.matches === false
+      ? 'RUNTIME_MODE_MISMATCH'
     : sheetHitCount > 0
       ? 'VISIBLE_MATCH'
       : sheetIframeCount > 0
@@ -407,6 +450,7 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
     status,
     href: location.href,
     title: document.title,
+    runtime,
     hitCount,
     sheetHitCount,
     chatTemplateHitCount,
@@ -437,6 +481,8 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
         ? 'Only the chat rolltemplate marker is visible. Do not capture sheet-root parity evidence until sheet body markers such as roll buttons, attrs, or expected text are visible.'
       : status === 'ROLL20_EDITOR_PARSE_ERROR'
         ? 'Do not capture evidence. Restore the sandbox and fix the upload manifest/settings shape.'
+      : status === 'RUNTIME_MODE_MISMATCH'
+        ? 'Do not capture parity evidence. Match the Roll20 legacy sanitization setting to the generated sheet mode, then reload and probe again.'
         : 'Do not capture evidence yet. The editor is reachable, but expected fixture markers are not visible.',
   };
   console.log('Roll20 activation check:', result);
@@ -445,7 +491,14 @@ function renderActivationCheckSnippet({ fixtureId, activationHints }) {
 }
 
 function renderSnippet({ fixtureId, payload, validation, activationHints, options = {} }) {
-  const literal = JSON.stringify({ fixtureId, payload, validation, activationHints }, null, 2);
+  const expectedRuntimeMode = options.expectedRuntimeMode || 'modern';
+  const literal = JSON.stringify({
+    fixtureId,
+    payload,
+    validation,
+    activationHints,
+    expectedRuntimeMode,
+  }, null, 2);
   const applySettings = Boolean(options.applySettings);
   const endpointCampaignId = options.endpointCampaignId || '';
   return `// Roll20 Custom Sheet Sandbox upload helper for ${fixtureId}
@@ -486,11 +539,12 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const campaignid = inferCampaignId();
     if (!campaignid) return { status: 'missing-campaign-id' };
     const postOne = async (key, item) => {
+      const body = new URLSearchParams({ campaignid, [key]: item.base64 });
       const response = await fetch('/sheetsandbox/savesheetsettings', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ campaignid, [key]: item.base64 }),
+        headers: { 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: body.toString(),
       });
       return {
         key,
@@ -499,14 +553,24 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
         text: (await response.text()).slice(0, 500),
       };
     };
+    const results = [
+      await postOne('html', DATA.payload.html),
+      await postOne('css', DATA.payload.css),
+      await postOne('translation', DATA.payload.translation),
+    ];
+    const sheetEditing = window.d20?.journal?.sheetEditing;
+    let reloadTriggered = false;
+    if (results.every((item) => item.ok) && sheetEditing) {
+      sheetEditing.reloadSheetData?.();
+      sheetEditing.reloadOpenCharacters?.();
+      reloadTriggered = true;
+    }
     return {
       status: 'posted',
       campaignid,
-      results: [
-        await postOne('html', DATA.payload.html),
-        await postOne('css', DATA.payload.css),
-        await postOne('translation', DATA.payload.translation),
-      ],
+      transport: 'form-urlencoded-like-jquery-post',
+      reloadTriggered,
+      results,
     };
   };
   const setFileInput = async (selector, item, type) => {
@@ -593,6 +657,19 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     };
   };
   const normalize = (value) => String(value || '').replace(/\\s+/g, ' ').trim();
+  const readRuntimeMode = () => {
+    const currentSheet = window.CharacterSheetsManagerSingleton?.getCurrentCustomSheet?.();
+    const legacy = currentSheet?.d20?.journal?.legacySanitization
+      ?? window.d20?.journal?.legacySanitization
+      ?? null;
+    const observedMode = legacy === true ? 'legacy' : legacy === false ? 'modern' : 'unknown';
+    return {
+      expectedMode: DATA.expectedRuntimeMode,
+      observedMode,
+      legacySanitization: legacy,
+      matches: observedMode === 'unknown' ? null : observedMode === DATA.expectedRuntimeMode,
+    };
+  };
   const isVisible = (el) => {
     if (!el) return false;
     const rect = el.getBoundingClientRect?.();
@@ -660,6 +737,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const inaccessibleSheetIframeCount = sheetIframes.filter((frame) => frame.looksLikeSheet && !frame.accessible).length;
     return {
       phase,
+      runtime: readRuntimeMode(),
       expected: {
         rolltemplateClasses: rolltemplateClasses.slice(0, 16),
         rollButtonNames: rollButtonNames.slice(0, 16),
@@ -703,6 +781,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const allFileInputsDispatched = fileInputs.every((item) => item.status === 'dispatched');
     const status = sandboxMessages?.roll20EditorParseError
       ? 'ROLL20_EDITOR_PARSE_ERROR'
+      : after?.runtime?.matches === false
+        ? 'RUNTIME_MODE_MISMATCH'
       : afterSheetHits > 0 && (addedHitCount > 0 || beforeHits === 0)
       ? 'VISIBLE_MATCH'
       : afterSheetIframeCount > 0
@@ -722,6 +802,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       afterChatTemplateHits,
       addedHits,
       addedHitCount,
+      runtime: after?.runtime ?? null,
       note: status === 'VISIBLE_MATCH'
         ? 'Expected sheet markers are visible after upload; still capture screenshots before claiming parity.'
         : status === 'SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE'
@@ -732,7 +813,9 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
           ? 'Only rolltemplate/chat markers are visible. Do not capture sheet-root parity evidence until the sheet body exposes expected attrs, roll buttons, or text.'
         : status === 'ROLL20_EDITOR_PARSE_ERROR'
           ? 'Roll20 editor returned a parse error after upload/settings save. Do not capture evidence; restore the sandbox and fix the upload manifest/settings shape first.'
-        : 'File-input dispatch alone is not proof that Roll20 applied the uploaded sheet. Use the real file chooser/settings save path or recapture only after visible expected markers appear.',
+        : status === 'RUNTIME_MODE_MISMATCH'
+          ? 'The visible Roll20 runtime mode does not match this payload. Set legacy sanitization to the expected mode, reload, and probe again.'
+        : 'Roll20 file-input handlers ran, but visible activation is not proven. Save/reload settings and use the frame-aware probe before capturing parity evidence.',
     };
   };
   const buildSettingsManifest = (manifestText) => {
@@ -762,7 +845,10 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   results.push(await setFileInput('#sheetHtml', DATA.payload.html, 'text/html'));
   results.push(await setFileInput('#sheetCss', DATA.payload.css, 'text/css'));
   results.push(await setFileInput('#sheetTranslation', DATA.payload.translation, 'application/json'));
-  const endpointFallback = USE_ENDPOINT_FALLBACK ? await postEndpointFallback() : { status: 'disabled' };
+  const fileInputHandlerRan = results.every((item) => item.status === 'dispatched');
+  const endpointFallback = USE_ENDPOINT_FALLBACK && !fileInputHandlerRan
+    ? await postEndpointFallback()
+    : { status: fileInputHandlerRan ? 'not-needed-file-input-handler-dispatched' : 'disabled' };
   const manifest = setManifest();
   let settingsSave = { status: 'disabled' };
   if (SUBMIT_SETTINGS_FORM) {
@@ -787,8 +873,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   console.log('Fixture:', DATA.fixtureId);
   console.log(activation.status === 'VISIBLE_MATCH'
     ? 'Next: capture roll20-sandbox root evidence and roll20-chat.png, then run status/diff gates.'
-    : 'Next: do not capture parity evidence yet; load the sheet through the real file chooser/settings save path or rerun only after visible expected markers appear.');
-  return { fixtureId: DATA.fixtureId, validation: DATA.validation, fileInputs: results, endpointFallback, manifest, settingsSave, sandboxMessages, activationBefore, activationAfter, activation };
+    : 'Next: do not capture parity evidence yet; save/reload the dedicated Sandbox or test room, then run the frame-aware activation probe.');
+  return { fixtureId: DATA.fixtureId, validation: DATA.validation, uploadContract: 'roll20-delegated-file-input-change', fileInputs: results, endpointFallback, manifest, settingsSave, sandboxMessages, activationBefore, activationAfter, activation };
 })();
 `;
 }
@@ -803,19 +889,19 @@ function renderReadme(report) {
     '',
     'Use upload snippets only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
     '',
-    'Default snippets are non-submitting helpers. Pass `--apply-settings --endpoint-campaign-id <sandboxCampaignId>` only for the dedicated Sandbox/test room when you intentionally want the generated snippet to POST the payload endpoint fallback and click the settings save button.',
+    'Default snippets are non-submitting helpers. Pass `--apply-settings --endpoint-campaign-id <sandboxCampaignId>` only for the dedicated Sandbox/test room when you intentionally want the generated snippet to save settings. The endpoint fallback runs only when the Roll20 file-input handler could not run.',
     '',
-    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. It also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. Live Roll20 verification on 2026-06-21 showed that a broad manifest selector could save duplicate JSON objects into `customcharsheet_json` and make `/editor` return a JSON parse error, so generated snippets now avoid writing Ace text-input mirrors as submitted manifest fields. It logs local JSON validation, detects visible Roll20 translation-parse warning text, and compares before/after DOM activation hints such as expected rolltemplate classes, roll button names, attr names, and visible text tokens across the top document and any same-context character-sheet iframe it can access. When an agent explicitly enables `USE_ENDPOINT_FALLBACK`, it additionally POSTs base64 HTML/CSS/translation to the observed dedicated Sandbox endpoint. If the editor URL does not expose a campaign id, set `ENDPOINT_CAMPAIGN_ID` manually for the dedicated verification sandbox. Both paths are storage/application attempts, not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` means a character-sheet iframe exists but top-document JS could not prove its markers, and `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
+    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. A 2026-07-16 live handler inspection confirmed that this invokes the same Roll20 delegated handler as a manual file choice: FileReader reads raw text, the page POSTs base64 source to `/sheetsandbox/savesheetsettings`, then reloads sheet data and open characters. The helper also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. When file inputs are unavailable, the explicit endpoint fallback uses the same form-encoded payload shape and triggers the same reload helpers. Upload execution is still not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` means a character-sheet iframe exists but top-document JS could not prove its markers, and `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
     '',
-    'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH` and a visual check that the visible sheet belongs to the intended fixture. If an iframe-only state is reported, use a frame-aware browser probe before treating activation as failed.',
+    'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `RUNTIME_MODE_MISMATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. The expected modern/legacy mode comes from `sheet.json` unless `--expected-runtime-mode modern|legacy` overrides it. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH`, a matching runtime mode, and a visual check that the visible sheet belongs to the intended fixture.',
     '',
     'After upload, capture Roll20 sandbox root/chat evidence and rerun the status/diff gates.',
     '',
-    '| Fixture | Upload snippet | Activation check | Apply settings | Campaign id | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings field manifest |',
-    '| --- | --- | --- | --- | --- | ---: | ---: | ---: | --- | --- |',
+    '| Fixture | Runtime mode | Upload snippet | Activation check | Apply settings | Campaign id | HTML bytes | CSS bytes | Translation bytes | Translation JSON | Settings field manifest |',
+    '| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | --- | --- |',
   ];
   for (const entry of report.entries) {
-    lines.push(`| ${entry.fixtureId} | \`${entry.snippetRelativePath}\` | \`${entry.activationCheckSnippetRelativePath}\` | ${entry.options?.applySettings ? 'YES' : 'NO'} | ${entry.options?.endpointCampaignId || '-'} | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsFieldManifest.ok ? 'PASS' : 'FAIL'} |`);
+    lines.push(`| ${entry.fixtureId} | ${entry.options?.expectedRuntimeMode || 'modern'} | \`${entry.snippetRelativePath}\` | \`${entry.activationCheckSnippetRelativePath}\` | ${entry.options?.applySettings ? 'YES' : 'NO'} | ${entry.options?.endpointCampaignId || '-'} | ${entry.payloadBytes.html} | ${entry.payloadBytes.css} | ${entry.payloadBytes.translation} | ${entry.validation.translation.ok ? 'PASS' : 'FAIL'} | ${entry.validation.settingsFieldManifest.ok ? 'PASS' : 'FAIL'} |`);
   }
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -876,10 +962,12 @@ function runSelfTest() {
     options: {
       applySettings: true,
       endpointCampaignId: '12345',
+      expectedRuntimeMode: 'legacy',
     },
   });
   const activationCheckSnippet = renderActivationCheckSnippet({
     fixtureId: 'self-test',
+    expectedRuntimeMode: 'legacy',
     activationHints: {
       rolltemplateClasses: ['sheet-rolltemplate-self'],
       rollButtonNames: ['roll_self'],
@@ -893,7 +981,7 @@ function runSelfTest() {
       fixtureId: 'self-test',
       snippetRelativePath: 'reports/self-test.js',
       activationCheckSnippetRelativePath: 'reports/self-test-activation-check-snippet.js',
-      options: { applySettings: true, endpointCampaignId: '12345' },
+      options: { applySettings: true, endpointCampaignId: '12345', expectedRuntimeMode: 'legacy' },
       payloadBytes: { html: 0, css: 0, translation: 2 },
       validation: {
         translation: { ok: true },
@@ -905,17 +993,24 @@ function runSelfTest() {
   if (!settings?.jsoninfo) failures.push('settings manifest missing jsoninfo wrapper');
   if (!settings?.sheet?.long_name) failures.push('settings manifest missing sheet.long_name');
   if (validation.shape !== 'wrapped-jsoninfo') failures.push(`validation shape was ${validation.shape}`);
+  if (resolveExpectedRuntimeMode(manifestText, 'auto') !== 'legacy') failures.push('manifest legacy mode was not resolved');
+  if (resolveExpectedRuntimeMode('{"legacy":false}', 'auto') !== 'modern') failures.push('manifest modern mode was not resolved');
   if (!snippet.includes('const SUBMIT_SETTINGS_FORM = false;')) failures.push('default snippet should not submit settings');
   if (!snippet.includes('const USE_ENDPOINT_FALLBACK = false;')) failures.push('default snippet should not post endpoint fallback');
   if (!applySnippet.includes('const SUBMIT_SETTINGS_FORM = true;')) failures.push('apply snippet missing submit settings flag');
   if (!applySnippet.includes('const USE_ENDPOINT_FALLBACK = true;')) failures.push('apply snippet missing endpoint fallback flag');
   if (!applySnippet.includes('const ENDPOINT_CAMPAIGN_ID = "12345";')) failures.push('apply snippet missing explicit campaign id');
+  if (!applySnippet.includes("application/x-www-form-urlencoded; charset=UTF-8")) failures.push('endpoint fallback does not match jquery form transport');
+  if (!applySnippet.includes('reloadSheetData')) failures.push('endpoint fallback missing sheet data reload');
+  if (!applySnippet.includes("not-needed-file-input-handler-dispatched")) failures.push('endpoint fallback should not duplicate a successful file-input upload');
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
   if (!snippet.includes('input[name="customcharsheet_json"]')) failures.push('generated snippet missing narrow manifest input selector');
   if (snippet.includes('.ace_text-input[name="customcharsheet_json"]')) failures.push('generated snippet still writes Ace text input as a manifest field');
   if (!snippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated snippet missing editor parse-error activation status');
   if (!snippet.includes('roll20EditorParseError')) failures.push('generated snippet missing editor parse-error detector');
   if (!activationCheckSnippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated activation check missing parse-error status');
+  if (!activationCheckSnippet.includes('RUNTIME_MODE_MISMATCH')) failures.push('generated activation check missing runtime-mode mismatch status');
+  if (!activationCheckSnippet.includes('"expectedRuntimeMode": "legacy"')) failures.push('generated activation check missing expected legacy mode');
   if (!activationCheckSnippet.includes('VISIBLE_MATCH')) failures.push('generated activation check missing visible-match status');
   if (!activationCheckSnippet.includes('SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE')) failures.push('generated activation check missing sheet iframe state');
   if (!activationCheckSnippet.includes('CHARACTER_DIALOG_NO_SHEET_BODY')) failures.push('generated activation check missing character dialog state');

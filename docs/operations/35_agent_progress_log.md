@@ -1,3 +1,15 @@
+## 2026-07-16 Modern and Legacy Runtime Split
+
+- Rechecked the same prepared generated payload in two dedicated Roll20 destinations. The modern Custom Sheet Sandbox preserved `attr-input` at `210x26px` with root `cssWidth=850px`, `scrollWidth=1189`, and `scrollHeight=1936`. The dedicated legacy test room produced `sheet-attr-input` at `52x40px` with root `cssWidth=850px`, `scrollWidth=896`, and `scrollHeight=1917`.
+- Both runtimes translated the sampled `name` and `strength` markers and exposed zero source script nodes. This is direct evidence that modern and legacy are separate render contracts, not one CSS-only preference.
+- Added an atomic compatibility action shared by Preview toolbar and Export dialog. Modern preserves authored class names and exports `legacy:false`; legacy enables class prefixing plus legacy CSS sanitization and exports `legacy:true`. Exported `README.txt` records the selected destination mode.
+- Found that the standalone `PreviewToolbar.tsx` is not mounted in the current product tree. Added the actual `Roll20 | 신버전 | 구버전` segmented selector to mounted `MainAreaToolbar` instead of treating dead component code as user-facing coverage.
+- Live-inspected Roll20's delegated Sandbox Tools handler. It reads generated browser `File` objects through `FileReader`, submits form-encoded base64 source to `/sheetsandbox/savesheetsettings`, then reloads sheet data/open characters. The upload helper now follows this path and prevents a duplicate endpoint fallback.
+- Added expected-runtime detection to upload/activation snippets. `RUNTIME_MODE_MISMATCH` blocks evidence capture when `sheet.json` and the actual Roll20 runtime disagree.
+- Verification completed: export smoke PASS, sandbox sanitizer `7/7` PASS, modern/legacy local render contract PASS, upload snippet self-test PASS, legacy export audit PASS, `ci:verify` PASS, lint PASS, and production build PASS.
+- Browser smoke `.tmp/export-dialog-modern-legacy-r5` proved Export legacy -> central toolbar legacy -> central toolbar modern -> Export modern synchronization. It reported console issues `0`, page errors `0`, request failures `0`, and external resource requests `0`. Post-smoke server hygiene found no project listener.
+- Claim boundary: this proves selectable mode wiring and actual Roll20 mode divergence. It does not prove complete legacy sanitizer fidelity or modern/legacy pixel parity.
+
 ## 2026-07-16 Translation Runtime Unification and Roll20 Upload Boundary
 
 - Traced an actual/local language discrepancy to format handling, not CSS: Blockly emitted locale comments, export normalized them to JSON, while preview/edit only parsed JSON.
@@ -5,8 +17,8 @@
 - Added post-parse Shadow translation application and Roll20-supported `data-i18n-alt` / `data-i18n-label` handling. This removed the last hidden-input DOM mismatch between preview and edit.
 - Added `lib/export/__tests__/translation_payload.test.ts`, `test:translation-payload`, CI coverage, and translation counts to `scripts/preview_edit_visual_smoke.mjs`.
 - Verification: `ci:verify`, lint, build, and translation unit tests passed. Ignored `.tmp/preview-edit-visual-20260716-r19` passed 3/3 with all translation matches (`436/436`, `0/0`, `1148/1148`), zero style/geometry differences, two exact pixel matches, and one 14-pixel raster-tolerance match. Ignored `.tmp/edit-flow-translation-sync-20260716-r1` passed with no console/page errors.
-- Actual Roll20: the dedicated Sandbox was reached and its currently rendered translated sheet was observed, but normal file-picker re-upload failed because the Chrome extension lacks local file URL access. Existing endpoint-applied horizontal overflow/class evidence remains diagnostic-only and must not drive production CSS.
-- Next P0: enable **Allow access to file URLs** for the ChatGPT Chrome Extension, re-upload the generated payload through Sheet Sandbox Tools, and recapture class prefix, root scroll width/height, screenshot, and diff before renderer changes.
+- Superseded by the Modern and Legacy Runtime Split above: native chooser automation failed, but live handler inspection proved the generated browser-`File` snippet dispatches Roll20's same delegated upload handler. File URL permission is no longer the active upload blocker.
+- Current P0: re-upload matching modern/legacy exports through that handler, require the expected runtime mode, and recapture normalized root screenshots/diffs before renderer changes.
 - CI maintenance: after the feature-branch run passed, GitHub warned that `actions/checkout@v4` and `actions/setup-node@v4` still target deprecated Node 20. Both CI and Pages workflows now use the official Node 24-based `@v6` actions; the follow-up branch run is the verification gate.
 
 ## 2026-07-16 Preview/Edit Underlying Paint Gate

@@ -84,11 +84,13 @@ Do not conflate these two layers:
 ## Current Evidence Boundary
 
 Actual generated-sheet visual parity is still unproven. Chrome can reach the
-Roll20 Custom Sheet Sandbox. Automated file chooser upload is blocked because
-the Codex Chrome extension cannot currently set local files in the chooser, but
-the dedicated sandbox accepted generated source through the observed
-`/sheetsandbox/savesheetsettings` endpoint after base64 encoding each HTML/CSS/
-translation payload and saving `customcharsheet_json` on the settings page.
+Roll20 Custom Sheet Sandbox. A 2026-07-16 live handler inspection confirmed that
+the in-editor `#sheetHtml`, `#sheetCss`, and `#sheetTranslation` controls use a
+delegated `change` handler: `FileReader` reads the supplied browser `File`, the
+page submits form-encoded base64 source to `/sheetsandbox/savesheetsettings`,
+then invokes `reloadSheetData()` and `reloadOpenCharacters()`. The generated
+upload helper now dispatches that same handler; its direct endpoint fallback is
+allowed only when no file-input handler ran, so it cannot duplicate an upload.
 
 The first generated Les-Oublies Roll20 sandbox screenshot exists locally and
 diffs against the local baseline at `18.81%` mismatch. A real Roll20 roll button
@@ -96,13 +98,25 @@ click produced a `sheet-rolltemplate-classic-roll` chat DOM message, but a
 trustworthy chat-pane screenshot is still missing. Therefore the current state is
 partial actual evidence, not Roll20 visual parity.
 
-2026-07-16 upload-path note: the dedicated Sandbox still exposes hidden
-`#sheetHtml`, `#sheetCss`, and `#sheetTranslation` inputs through Sheet Sandbox
-Tools. The Chrome extension's file chooser cannot set those files unless
-Chrome's extension details page has **Allow access to file URLs** enabled.
-Until the same generated payload is reapplied through those inputs, an
-endpoint-applied class-prefix or width result is diagnostic-only because the
-endpoint route may bypass Roll20's normal HTML preprocessing.
+2026-07-16 runtime-mode note: the current Custom Sheet Sandbox reports a modern
+runtime and preserved an authored `attr-input` class. A dedicated legacy test
+room with legacy sanitization enabled produced `sheet-attr-input` from the same
+source. Therefore modern and legacy evidence are separate contracts. Generated
+activation checks derive the expected mode from `sheet.json` and must return
+`RUNTIME_MODE_MISMATCH` before screenshot evidence when the destination runtime
+does not match. Handler execution and a matching mode still prove only upload
+activation, not visual parity.
+
+Observed geometry for the current prepared payload:
+
+| Runtime | Sample class | Sample size | Root `cssWidth` | Root scroll size |
+| --- | --- | ---: | ---: | ---: |
+| Modern Custom Sheet Sandbox | `attr-input` | `210x26px` | `850px` | `1189x1936` |
+| Dedicated legacy test room | `sheet-attr-input` | `52x40px` | `850px` | `896x1917` |
+
+Both observations found translated `name` and `strength` markers and zero
+source script nodes. These measurements prove mode divergence; they do not prove
+that either local renderer is pixel-identical to Roll20.
 
 Later evidence supersedes the `18.81%` visible-top screenshot as the main
 Les-Oublies generated-sheet comparison: a stitched full-height actual Roll20 root

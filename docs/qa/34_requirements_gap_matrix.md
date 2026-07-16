@@ -37,10 +37,18 @@ parser across preview, edit, worker/chat, and export. Ignored local run
 matches of `436/436`, `0/0`, and `1148/1148`, with visible matches `53/53`,
 `0/0`, and `93/93`. Local computed style/geometry stayed identical and the
 existing exact/raster pixel gate still passed. This closes the local
-English-preview/Korean-export defect. It does not close actual Roll20 parity:
-the normal Sandbox Tools file-picker upload must be repeated after Chrome file
-URL access is enabled, because endpoint-only upload evidence may bypass
-Roll20's HTML class-prefix preprocessing.
+English-preview/Korean-export defect. It does not close actual Roll20 parity.
+
+Current modern/legacy runtime status, 2026-07-16:
+live Roll20 inspection proves the two generations are different render
+contracts. The modern Custom Sheet Sandbox preserved `attr-input` and measured
+the sampled input at `210x26px`; the dedicated legacy test room produced
+`sheet-attr-input` at `52x40px` from the same source. Both translated the
+prepared markers and removed source script nodes. The app now switches HTML
+class handling, legacy CSS sanitization, preview/edit state, export manifest,
+and generated verification expectation together. Automated contract tests pass,
+but normalized modern and legacy screenshot diffs for the same export are still
+P0; neither mode may stand in as proof for the other.
 
 Current product-surface note, 2026-06-20 header usability:
 the header no longer exposes placeholder `설정` / `도움말` controls, and `저장`

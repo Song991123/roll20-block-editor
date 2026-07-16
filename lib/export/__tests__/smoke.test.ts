@@ -186,11 +186,21 @@ function testManifestShape(): void {
   assert(m.authors === 'Anonymous', 'default authors');
   assert(m.version === '0.1.0', 'default version');
   assert(!('system' in m), 'system omitted when empty');
+  assert(m.legacy === false, 'modern manifest defaults legacy false');
+
+  const legacy = JSON.parse(buildManifest({ ...DEFAULT_METADATA, legacy: true }));
+  assert(legacy.legacy === true, 'legacy manifest follows selected mode');
 }
 
 function testReadmeIncludesSystem(): void {
   const r = buildReadme({ ...DEFAULT_METADATA, name: 'X', system: 'PbtA' });
   assert(r.includes('시스템: PbtA'), 'readme system line');
+  assert(r.includes('Roll20 모드: 신버전'), 'readme modern mode line');
+  assert(r.includes('구 버전 무해화 처리를 끄세요'), 'readme modern setup instruction');
+
+  const legacy = buildReadme({ ...DEFAULT_METADATA, name: 'X', legacy: true });
+  assert(legacy.includes('Roll20 모드: 구버전 무해화'), 'readme legacy mode line');
+  assert(legacy.includes('구 버전 무해화 처리를 켜세요'), 'readme legacy setup instruction');
 }
 
 function testReadmeIncludesAssetReplacementNotice(): void {
