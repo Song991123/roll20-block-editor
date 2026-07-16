@@ -85,6 +85,12 @@ const modernDoc = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, sanitize: fa
 const legacyDoc = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, sanitize: true, legacyCssSanitize: true });
 const modernParts = buildSheetParts({ html: HTML, css: CSS, i18n: I18N, sanitize: false, legacyCssSanitize: false });
 const legacyParts = buildSheetParts({ html: HTML, css: CSS, i18n: I18N, sanitize: true, legacyCssSanitize: true });
+const modernAtomicDoc = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern' });
+const legacyAtomicDoc = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy' });
+const modernAtomicParts = buildSheetParts({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern' });
+const legacyAtomicParts = buildSheetParts({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy' });
+const modernAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern', sanitize: true, legacyCssSanitize: true });
+const legacyAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy', sanitize: false, legacyCssSanitize: false });
 
 const modernUserCss = extractStyle(modernDoc, 'r20-user');
 const legacyUserCss = extractStyle(legacyDoc, 'r20-user');
@@ -100,6 +106,12 @@ const modernShadowLegacyInputCss = extractStyleSourceChunk(modernParts.css, 'rol
 const legacyShadowInputCss = extractStyleSourceChunk(legacyParts.css, 'roll20-legacy-input-state');
 const checks = [];
 
+assertCheck(checks, 'atomic modern contract matches the prior paired low-level inputs',
+  modernAtomicDoc === modernDoc && modernAtomicParts.html === modernParts.html && modernAtomicParts.css === modernParts.css);
+assertCheck(checks, 'atomic legacy contract matches the prior paired low-level inputs',
+  legacyAtomicDoc === legacyDoc && legacyAtomicParts.html === legacyParts.html && legacyAtomicParts.css === legacyParts.css);
+assertCheck(checks, 'explicit compatibility mode overrides conflicting low-level booleans',
+  modernAtomicOverride === modernAtomicDoc && legacyAtomicOverride === legacyAtomicDoc);
 assertCheck(checks, 'iframe modern preserves authored HTML class', modernDoc.includes('class="legacy-card"'));
 assertCheck(checks, 'iframe modern does not legacy-prefix HTML class', !modernDoc.includes('class="sheet-legacy-card"'));
 assertCheck(checks, 'iframe legacy prefixes HTML class', legacyDoc.includes('class="sheet-legacy-card"'));
@@ -147,6 +159,9 @@ assertCheck(checks, 'shadow legacy applies overridable disabled input paint', /i
 
 const mainAreaToolbar = readFileSync(join(REPO_ROOT, 'components/editor/MainAreaToolbar.tsx'), 'utf8');
 const editorShell = readFileSync(join(REPO_ROOT, 'components/editor/EditorShell.tsx'), 'utf8');
+const previewMain = readFileSync(join(REPO_ROOT, 'components/editor/PreviewMain.tsx'), 'utf8');
+const editCanvas = readFileSync(join(REPO_ROOT, 'components/editor/EditCanvas.tsx'), 'utf8');
+const renderContract = readFileSync(join(REPO_ROOT, 'lib/preview/renderContract.ts'), 'utf8');
 const previewStore = readFileSync(join(REPO_ROOT, 'lib/stores/previewStore.ts'), 'utf8');
 const perfHook = readFileSync(join(REPO_ROOT, 'lib/perf/hook.ts'), 'utf8');
 assertCheck(checks, 'mounted main toolbar exposes modern and legacy modes',
@@ -159,6 +174,14 @@ assertCheck(checks, 'preview store defaults legacy sanitize off', /legacyCssSani
 assertCheck(checks, 'legacy mode atomically enables prefix and CSS sanitize', /sanitize:\s*mode === 'legacy'[\s\S]*legacyCssSanitize:\s*mode === 'legacy'/.test(previewStore));
 assertCheck(checks, 'preview store exposes no independent compatibility mutators',
   !previewStore.includes('setSanitize:') && !previewStore.includes('setLegacyCssSanitize:'));
+assertCheck(checks, 'preview and edit consume the same atomic render contract input',
+  previewMain.includes('compatibilityMode,')
+    && editCanvas.includes('compatibilityMode,')
+    && !previewMain.includes('const sanitize = usePreviewStore')
+    && !editCanvas.includes('const sanitize = usePreviewStore'));
+assertCheck(checks, 'iframe and Shadow serializers share one prepared render contract',
+  renderContract.includes('export function prepareSheetRenderContract')
+    && (readFileSync(join(REPO_ROOT, 'lib/preview/buildDoc.ts'), 'utf8').match(/prepareSheetRenderContract\(opts\)/g) ?? []).length === 2);
 assertCheck(checks, 'visual smoke hook exposes the same atomic compatibility mode action',
   perfHook.includes('setRoll20CompatibilityMode: (mode: Roll20CompatibilityMode) => void')
     && perfHook.includes('usePreviewStore.getState().setRoll20CompatibilityMode(mode)'));

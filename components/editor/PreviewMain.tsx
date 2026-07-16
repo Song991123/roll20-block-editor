@@ -56,7 +56,6 @@ export default function PreviewMain() {
   const appendBlock = useWorkspaceStore((s) => s.appendBlockToActive);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
   const darkMode = usePreviewStore((s) => s.darkMode);
-  const sanitize = usePreviewStore((s) => s.sanitize);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
   const assetReplacementMap = usePreviewStore((s) => s.assetReplacementMap);
@@ -93,6 +92,7 @@ export default function PreviewMain() {
 
   const total = htmlCount + cssCount + i18nCount;
   const isEmpty = total === 0;
+  const compatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
   const previewAssetText = useMemo(
     () => applyAssetReplacements({ html: emitHtml, css: emitCss }, assetReplacementMap),
     [emitHtml, emitCss, assetReplacementMap],
@@ -118,14 +118,13 @@ export default function PreviewMain() {
         html: previewAssetText.html,
         css: previewAssetText.css,
         i18n: emitI18n,
-        sanitize,
-        legacyCssSanitize,
+        compatibilityMode,
         roll20SandboxSanitize,
         darkMode,
         previewLayer,
         includeEditorOverlays: false,
       }),
-    [previewAssetText.html, previewAssetText.css, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, previewLayer],
+    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer],
   );
 
   // spec 21 Phase A — Shadow DOM 모드 mount.
@@ -159,14 +158,13 @@ export default function PreviewMain() {
         html: previewAssetText.html,
         css: previewAssetText.css,
         i18n: emitI18n,
-        sanitize,
-        legacyCssSanitize,
+        compatibilityMode,
         roll20SandboxSanitize,
         darkMode,
         previewLayer,
         includeEditorOverlays: true,
       }),
-    [previewAssetText.html, previewAssetText.css, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, previewLayer],
+    [previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer],
   );
   useEffect(() => {
     if (renderMode !== 'shadow') return;

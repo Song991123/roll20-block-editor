@@ -178,7 +178,6 @@ export default function EditCanvas() {
   const toggleSnap = useUiStore((s) => s.toggleSnapEnabled);
   const editPlacementMode = useUiStore((s) => s.editPlacementMode);
   const setEditPlacementMode = useUiStore((s) => s.setEditPlacementMode);
-  const sanitize = usePreviewStore((s) => s.sanitize);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
   const darkMode = usePreviewStore((s) => s.darkMode);
@@ -190,6 +189,7 @@ export default function EditCanvas() {
   const [layerSearch, setLayerSearch] = useState('');
 
   const effectiveLayer = editSubmode === 'rolltemplate' ? 'roll' : previewLayer;
+  const compatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
   const effectiveCanvasWidth =
     editSubmode === 'rolltemplate' ? rolltemplateCanvasWidth : sheetCanvasWidth;
   const setEffectiveCanvasWidth =
@@ -215,14 +215,13 @@ export default function EditCanvas() {
         html: editAssetText.html,
         css: editAssetText.css,
         i18n: emitI18n,
-        sanitize,
-        legacyCssSanitize,
+        compatibilityMode,
         roll20SandboxSanitize,
         darkMode,
         previewLayer: effectiveLayer,
         includeEditorOverlays: false,
       }),
-    [editAssetText.html, editAssetText.css, emitI18n, sanitize, legacyCssSanitize, roll20SandboxSanitize, darkMode, effectiveLayer],
+    [editAssetText.html, editAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, effectiveLayer],
   );
 
   const snap = useCallback(

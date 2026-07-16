@@ -1,3 +1,16 @@
+## 2026-07-16 Shared Render Contract and Two-Mode Preview/Edit Gate
+
+- DONE: Added `prepareSheetRenderContract` as the single source transformation path for iframe preview and Shadow edit serialization. Prefixing, expected Sandbox sanitization, legacy CSS sanitization, translation, initial autocalc, and repeating runtime HTML are now prepared once.
+- DONE: Preview and edit now pass one atomic `compatibilityMode` input instead of independently forwarding `sanitize` and `legacyCssSanitize` booleans. Existing low-level callers remain backward-compatible, while product components cannot create a mixed mode.
+- DONE: Added `--compatibility-mode modern|legacy|both` to `smoke:preview-edit-visual`. A `both` run stores separate mode labels and screenshot names for the same fixture instead of treating one mode as evidence for the other.
+- VERIFIED: `test:roll20-render-modes` proves the atomic modern/legacy contract matches the previous paired low-level results for both iframe and Shadow serializers. `ci:verify`, lint, production build, edit-flow smoke `.tmp/edit-flow-render-contract-r21`, and imported edit sync `.tmp/imported-edit-render-contract-r21` PASS.
+- VERIFIED: Full paired fixture smoke `.tmp/paired-shared-contract-r22` PASSes all 3 ignored fixtures in both modes with zero console/page errors. Modern/legacy sizes remain AW2E `850x1290/850x1290`, Les-Oublies `850x1161/850x1161`, and YSHY `1189x1936/895x1919`; the YSHY cross-mode `10.9%` value is diagnostic difference between contracts, not a parity score.
+- VERIFIED MODERN: In `.tmp/preview-edit-both-contract-r19`, Les-Oublies is pixel exact; YSHY has `22` differing pixels (`13.05ppm`, max channel delta `12`); AW2E has `36` differing pixels (`32.83ppm`, max channel delta `33`). All three have zero computed-style and zero visible-geometry differences.
+- VERIFIED LEGACY: In the same paired run, Les-Oublies and YSHY are pixel exact; AW2E has `36` differing pixels (`32.83ppm`, max channel delta `33`). A focused rerun reproduced AW2E at `35-36` pixels in both modes, again with matching styles and geometry.
+- PARTIAL: The strict pixel gate intentionally remains failed for the small reproducible AW2E raster region and the `22` modern YSHY pixels. The threshold was not relaxed. This is direct evidence that two separately rasterized surfaces can differ even when their DOM/style/geometry contracts match.
+- NEXT P0: Make one persistent iframe the canonical visible sheet surface owned by `EditorShell`, then add edit-only overlay/bridge behavior without remounting the iframe or losing optimistic drop placement. Keep the current Shadow edit path until pointer, containing-block, worker, roll/chat, zoom, and both compatibility modes pass on the replacement.
+- COPYRIGHT: All fixture source, screenshots, and generated reports used by this gate remain ignored local evidence and are not staged.
+
 ## 2026-07-16 Modern and Legacy Mode Invariant Hardening
 
 - DONE: Removed the preview store's independent `setSanitize` and `setLegacyCssSanitize` mutation actions. Product code can now change HTML class-prefix behavior and legacy CSS sanitization only through the atomic `modern|legacy` compatibility action.

@@ -12,7 +12,8 @@
  * Usage:
  *   node scripts/preview_edit_visual_smoke.mjs \
  *     --out-dir ./out --base-path /roll20-block-editor \
- *     --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual
+ *     --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual \
+ *     --compatibility-mode modern|legacy|both
  */
 
 import http from 'node:http';
@@ -31,8 +32,16 @@ const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/preview-edit-visual'));
 const ONLY = argOf('--only', '');
+const COMPATIBILITY_MODE = argOf('--compatibility-mode', 'modern');
+const COMPATIBILITY_MODES = COMPATIBILITY_MODE === 'both'
+  ? ['modern', 'legacy']
+  : [COMPATIBILITY_MODE];
 const PORT = Number(argOf('--port', '4186'));
 const VIEWPORT = { width: 2200, height: 1200 };
+
+if (!COMPATIBILITY_MODES.every((mode) => mode === 'modern' || mode === 'legacy')) {
+  throw new Error(`invalid --compatibility-mode: ${COMPATIBILITY_MODE}`);
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -920,9 +929,14 @@ async function main() {
 
   const server = await startServer();
   const browser = await chromium.launch();
-  const report = { startedAt: new Date().toISOString(), fixtures: [] };
+  const report = {
+    startedAt: new Date().toISOString(),
+    compatibilityModes: COMPATIBILITY_MODES,
+    fixtures: [],
+  };
 
   for (const fixture of fixtures) {
+    for (const compatibilityMode of COMPATIBILITY_MODES) {
     const page = await browser.newPage({ viewport: VIEWPORT });
     const consoleErrors = [];
     const pageErrors = [];
@@ -948,12 +962,16 @@ async function main() {
       } catch {}
     });
 
-    const entry = { id: fixture.id, pass: false };
+    const captureId = COMPATIBILITY_MODES.length > 1
+      ? `${fixture.id}-${compatibilityMode}`
+      : fixture.id;
+    const entry = { id: fixture.id, compatibilityMode, pass: false };
     try {
       await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
       await warmPerfHook(page);
       entry.import = await waitForLiveImport(page, fixture);
-      entry.previewCapture = await capturePreview(page, fixture.id, fixture.i18n);
+      await page.evaluate((mode) => window.__perfHook.setRoll20CompatibilityMode(mode), compatibilityMode);
+      entry.previewCapture = await capturePreview(page, captureId, fixture.i18n);
       entry.previewDom = entry.previewCapture.dom;
       entry.previewDiagnostics = entry.previewCapture.diagnostics;
       entry.previewTranslations = entry.previewCapture.translations;
@@ -962,7 +980,7 @@ async function main() {
       entry.previewViewportFit = entry.previewCapture.viewportFit;
       entry.previewSignature = entry.previewCapture.signature;
       entry.previewAppOcclusion = entry.previewCapture.appOcclusion;
-      entry.editCapture = await captureEdit(page, fixture.id, fixture.i18n);
+      entry.editCapture = await captureEdit(page, captureId, fixture.i18n);
       entry.editDom = entry.editCapture.dom;
       entry.editDiagnostics = entry.editCapture.diagnostics;
       entry.editTranslations = entry.editCapture.translations;
@@ -1008,12 +1026,14 @@ async function main() {
     report.fixtures.push(entry);
     console.log(
       `${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} ` +
+      `mode=${compatibilityMode} ` +
       `mismatch=${entry.diff?.mismatchPct ?? 'n/a'}% ` +
       `pixels=${entry.diff?.mismatchPixels ?? 'n/a'} ppm=${entry.diff?.mismatchPpm ?? 'n/a'} ` +
       `parity=${entry.pixelParity?.status ?? 'n/a'} ` +
       `i18n=${entry.previewTranslations?.visibleMatchedCount ?? 'n/a'}/${entry.previewTranslations?.visibleApplicableCount ?? 'n/a'}`,
     );
     await page.close();
+    }
   }
 
   report.finishedAt = new Date().toISOString();
@@ -1200,13 +1220,13 @@ function renderMarkdown(report) {
     '',
     'Scope: local static app, real browser import path, preview iframe screenshot, and edit Shadow DOM screenshot. This does not prove actual Roll20 visual parity.',
     '',
-    '| Fixture | Blocks | Preview size | Edit size | Crop | Pixel parity | Mismatch pixels | PPM | Max channel | Bounds | Mean delta | Console errors | Page errors |',
-    '| --- | ---: | --- | --- | --- | --- | ---: | ---: | ---: | --- | ---: | ---: | ---: |',
+    '| Fixture | Mode | Blocks | Preview size | Edit size | Crop | Pixel parity | Mismatch pixels | PPM | Max channel | Bounds | Mean delta | Console errors | Page errors |',
+    '| --- | --- | ---: | --- | --- | --- | --- | ---: | ---: | ---: | --- | ---: | ---: | ---: |',
   ];
   for (const item of report.fixtures) {
     const d = item.diff ?? {};
     lines.push(
-      `| \`${item.id}\` | ${item.import?.blockCount ?? ''} | ${fmtSize(d.previewSize)} | ${fmtSize(d.editSize)} | ${fmtSize(d.crop)} | ${item.pixelParity?.status ?? ''} | ${d.mismatchPixels ?? ''} | ${d.mismatchPpm ?? ''} | ${d.maxChannelDelta ?? ''} | ${fmtBounds(d.mismatchBounds)} | ${d.meanAbsChannelDelta ?? ''} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`,
+      `| \`${item.id}\` | ${item.compatibilityMode ?? 'modern'} | ${item.import?.blockCount ?? ''} | ${fmtSize(d.previewSize)} | ${fmtSize(d.editSize)} | ${fmtSize(d.crop)} | ${item.pixelParity?.status ?? ''} | ${d.mismatchPixels ?? ''} | ${d.mismatchPpm ?? ''} | ${d.maxChannelDelta ?? ''} | ${fmtBounds(d.mismatchBounds)} | ${d.meanAbsChannelDelta ?? ''} | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} |`,
     );
   }
   lines.push('');

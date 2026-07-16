@@ -1,3 +1,13 @@
+## 2026-07-16 Shared Render Contract and Two-Mode Preview/Edit Gate
+
+- Introduced a shared prepared render contract so iframe and Shadow serializers no longer repeat prefix, Sandbox sanitize, legacy sanitize, translation, autocalc, and repeating-runtime transformations.
+- Updated PreviewMain and EditCanvas to consume the same atomic `modern|legacy` input. This is the safe prerequisite for the persistent single-surface migration; it does not yet claim one live DOM.
+- Extended the preview/edit visual smoke with `modern`, `legacy`, and `both` execution. The paired run now produces six independently labeled results for three ignored fixtures.
+- Paired evidence `.tmp/preview-edit-both-contract-r19`: Les-Oublies exact in both modes; YSHY exact in legacy and `22` pixels different in modern; AW2E `36` pixels different in both. Every case has matching computed styles and visible geometry. Focused AW2E rerun `.tmp/preview-edit-aw2e-both-r20` reproduced `35-36` pixels, so the strict threshold remains unchanged and the result stays failed rather than being rounded into a pass.
+- Edit interaction regressions were not introduced: `.tmp/edit-flow-render-contract-r21` PASSed flow nesting, sibling insertion, absolute-in-frame placement, optimistic lock, and canvas width controls. `.tmp/imported-edit-render-contract-r21` PASSed imported edit-to-preview coordinate synchronization and stable re-import.
+- Full paired fixture smoke `.tmp/paired-shared-contract-r22` also PASSed all three ignored fixtures through modern and legacy with zero console/page errors. `ci:verify`, lint, and production build pass for the shared-contract batch.
+- Next implementation slice: persistent iframe ownership in EditorShell plus an edit overlay/bridge. Do not remove the Shadow path until modern and legacy visual, drag/drop, worker, roll/chat, and nested-coordinate gates all pass independently.
+
 ## 2026-07-16 Modern and Legacy Mode Invariant Hardening
 
 - Audited the current compatibility path after the user reconfirmed that modern and legacy Roll20 are equally required targets.

@@ -18,13 +18,7 @@
  * 시스템 specific 0 — 모든 변환은 일반 규칙.
  */
 
-import { autoPrefixHtmlClasses, autoPrefixCssClasses } from './prefix';
-import {
-  sanitizeRoll20SandboxCss,
-  sanitizeRoll20SandboxHtml,
-} from '../emit/roll20SandboxSanitize';
-import { sanitizeForRoll20Legacy } from '../emit/sanitize';
-import { normalizeTranslationForRoll20, parseTranslationMap } from '../export/payload';
+import { normalizeTranslationForRoll20 } from '../export/payload';
 import {
   roll20BaseIframeCss,
   roll20BaseShadowCss,
@@ -32,11 +26,16 @@ import {
   roll20DarkmodeShadowCss,
 } from './roll20_base';
 import { runtimeCss } from './runtime';
-import { annotateRoll20AutocalcHtml } from './autocalc';
+import {
+  prepareSheetRenderContract,
+  type Roll20CompatibilityMode,
+} from './renderContract';
 
 export interface BuildDocOptions {
   html: string;
   css: string;
+  /** Atomic product contract. Modern preserves authored classes; legacy prefixes and sanitizes together. */
+  compatibilityMode?: Roll20CompatibilityMode;
   /** translation.json — Phase 2 minimal 에선 미반영 (Phase 3+ data-i18n 치환). */
   i18n?: string;
   /** D4 ① — true 면 user html/css 에 autoPrefix 적용. */
@@ -638,55 +637,6 @@ function jsonScriptText(value: string | undefined): string {
     .replace(/&/g, '\\u0026');
 }
 
-function applyTranslationsToHtml(html: string, i18n: string | undefined): string {
-  const translations = parseTranslationMap(i18n);
-  if (Object.keys(translations).length === 0) return html;
-  if (typeof DOMParser === 'undefined') return html;
-
-  const doc = new DOMParser().parseFromString(`<template>${html}</template>`, 'text/html');
-  const template = doc.querySelector('template');
-  if (!template) return html;
-
-  template.content.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
-    const key = el.getAttribute('data-i18n');
-    if (key && translations[key] != null) el.textContent = translations[key];
-  });
-  template.content.querySelectorAll<HTMLElement>('[data-i18n-html]').forEach((el) => {
-    const key = el.getAttribute('data-i18n-html');
-    if (key && translations[key] != null) el.innerHTML = translations[key];
-  });
-  const attrPairs = [
-    ['data-i18n-title', 'title'],
-    ['data-i18n-alt', 'alt'],
-    ['data-i18n-placeholder', 'placeholder'],
-    ['data-i18n-aria-label', 'aria-label'],
-    ['data-i18n-label', 'label'],
-  ] as const;
-  for (const [source, target] of attrPairs) {
-    template.content.querySelectorAll<HTMLElement>(`[${source}]`).forEach((el) => {
-      const key = el.getAttribute(source);
-      if (key && translations[key] != null) el.setAttribute(target, translations[key]);
-    });
-  }
-
-  return template.innerHTML;
-}
-
-function addRoll20RepeatingRuntimeHtml(html: string): string {
-  if (!html || !/repeating_/.test(html)) return html;
-  const runtime = '<div class="repcontainer"></div><div class="repcontrol"><button type="button" class="btn repcontrol_edit">Modify</button><button type="button" class="btn repcontrol_add">+Add</button></div>';
-  return html.replace(/<fieldset\b[^>]*>[\s\S]*?<\/fieldset>/gi, (fieldset, offset, source) => {
-    const startTag = fieldset.match(/^<fieldset\b[^>]*>/i)?.[0] ?? '';
-    if (!/\bclass=(["'])[^"']*\brepeating_[^"']*\1/i.test(startTag)) return fieldset;
-    const after = String(source).slice(offset + fieldset.length);
-    if (/^\s*<div\b[^>]*\bclass=(["'])[^"']*\brepcontainer\b[^"']*\1>\s*<\/div>\s*<div\b[^>]*\bclass=(["'])[^"']*\brepcontrol\b[^"']*\2>/i.test(after)) {
-      return fieldset;
-    }
-    return `${fieldset}${runtime}`;
-  });
-}
-
-
 /**
  * spec 17 §9 — 9 레이어 CSS 필터.
  * 활성 레이어 element 만 정상 / 나머지는 opacity 0.3 + pointer-events none.
@@ -762,33 +712,12 @@ ${scope} [data-r20-hovered="1"] {
  * iframe srcdoc 합성. 결과는 그대로 `<iframe srcDoc>` 에 박는다.
  */
 export function buildSheetDoc(opts: BuildDocOptions): string {
-  const sanitize = opts.sanitize !== false; // default ON
-  const legacyCssSanitize = opts.legacyCssSanitize === true;
-  const roll20SandboxSanitize = opts.roll20SandboxSanitize === true;
+  const contract = prepareSheetRenderContract(opts);
+  const { legacyCssSanitize, roll20SandboxSanitize, previewCss } = contract;
   const roll20RendererModel = opts.roll20RendererModel ?? 'default';
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
-
-  const userHtml = (opts.html ?? '').trim();
-  const userCss = (opts.css ?? '').trim();
-
-  const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
-  const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
-  const sandboxHtml = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxHtml(userHtml, { prefixClasses: legacyCssSanitize }).html
-    : prefixedHtml;
-  const sandboxCss = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxCss(userCss, { prefixSelectors: false }).css
-    : prefixedCss;
-  const previewCss = legacyCssSanitize
-    ? sanitizeForRoll20Legacy(sandboxCss).sanitized
-    : sandboxCss;
-
-  const bodyInner = sandboxHtml
-    ? addRoll20RepeatingRuntimeHtml(annotateRoll20AutocalcHtml(applyTranslationsToHtml(sandboxHtml, opts.i18n)))
-    : userHtml
-      ? ''
-      : EMPTY_PLACEHOLDER;
+  const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
 
   return `<!doctype html>
 <html lang="ko"${darkMode ? ' data-theme="dark"' : ''}>
@@ -835,28 +764,10 @@ ${bodyInner}
  * iframe 모드의 buildSheetDoc 과 시각 동일성 보장 — 같은 CSS 토큰 사용.
  */
 export function buildSheetParts(opts: BuildDocOptions): { html: string; css: string } {
-  const sanitize = opts.sanitize !== false;
-  const legacyCssSanitize = opts.legacyCssSanitize === true;
-  const roll20SandboxSanitize = opts.roll20SandboxSanitize === true;
+  const contract = prepareSheetRenderContract(opts);
+  const { legacyCssSanitize, previewCss } = contract;
   const roll20RendererModel = opts.roll20RendererModel ?? 'default';
-  const userHtml = (opts.html ?? '').trim();
-  const userCss = (opts.css ?? '').trim();
-
-  const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
-  const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
-  const sandboxHtml = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxHtml(userHtml, { prefixClasses: legacyCssSanitize }).html
-    : prefixedHtml;
-  const sandboxCss = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxCss(userCss, { prefixSelectors: false }).css
-    : prefixedCss;
-  const previewCss = legacyCssSanitize
-    ? sanitizeForRoll20Legacy(sandboxCss).sanitized
-    : sandboxCss;
-
-  const bodyInner = sandboxHtml
-    ? addRoll20RepeatingRuntimeHtml(annotateRoll20AutocalcHtml(applyTranslationsToHtml(sandboxHtml, opts.i18n)))
-    : EMPTY_PLACEHOLDER;
+  const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
   // layerFilterCss scope = '.charsheet' 로 selector 일관성 유지.
