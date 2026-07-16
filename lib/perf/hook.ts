@@ -24,7 +24,11 @@ import {
 } from '@/lib/blockly/workerWorkspace';
 import { importSheet as importPipeline } from '@/lib/import';
 import { emitAll } from '@/lib/preview/emit';
-import { usePreviewStore, type PreviewRenderMode } from '@/lib/stores/previewStore';
+import {
+  usePreviewStore,
+  type PreviewRenderMode,
+  type Roll20CompatibilityMode,
+} from '@/lib/stores/previewStore';
 import { useChatStore } from '@/lib/stores/chatStore';
 import { useUiStore, type MainMode, type PreviewZoom } from '@/lib/stores/uiStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
@@ -123,6 +127,7 @@ export interface PerfHook {
   setMainMode: (mode: MainMode) => void;
   setPreviewZoom: (zoom: PreviewZoom) => void;
   setPreviewRenderMode: (mode: PreviewRenderMode) => void;
+  setRoll20CompatibilityMode: (mode: Roll20CompatibilityMode) => void;
   setLegacyCssSanitize: (enabled: boolean) => void;
   setRoll20SandboxSanitize: (enabled: boolean) => void;
   setAssetReplacementMap: (text: string) => void;
@@ -437,6 +442,10 @@ function buildHook(): PerfHook {
 
     setPreviewRenderMode: (mode) => {
       usePreviewStore.getState().setRenderMode(mode);
+    },
+
+    setRoll20CompatibilityMode: (mode) => {
+      usePreviewStore.getState().setRoll20CompatibilityMode(mode);
     },
 
     setLegacyCssSanitize: (enabled) => {

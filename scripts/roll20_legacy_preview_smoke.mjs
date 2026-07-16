@@ -85,8 +85,10 @@ const legacyParts = buildSheetParts({ html: HTML, css: CSS, i18n: I18N, sanitize
 
 const modernUserCss = extractStyle(modernDoc, 'r20-user');
 const legacyUserCss = extractStyle(legacyDoc, 'r20-user');
+const modernBaseCss = extractStyle(modernDoc, 'roll20-base');
 const modernShadowUserCss = extractStyleSourceChunk(modernParts.css, 'sheet-user-css');
 const legacyShadowUserCss = extractStyleSourceChunk(legacyParts.css, 'sheet-user-css');
+const modernShadowBaseCss = extractStyleSourceChunk(modernParts.css, 'roll20-base');
 const checks = [];
 
 assertCheck(checks, 'iframe modern preserves authored HTML class', modernDoc.includes('class="legacy-card"'));
@@ -101,6 +103,8 @@ assertCheck(checks, 'iframe legacy removes keyframes', !/@(?:-[a-z]+-)?keyframes
 assertCheck(checks, 'iframe legacy inlines CSS var', includesText(legacyUserCss, 'color: #c02030'));
 assertCheck(checks, 'iframe legacy preserves stable CSS', includesText(legacyUserCss, 'padding: 8px') && includesText(legacyUserCss, 'color: red'));
 assertCheck(checks, 'iframe runtime still hides scripts and rolltemplates after user CSS', modernDoc.indexOf('id="r20-preview-hidden"') > modernDoc.indexOf('id="r20-user"'));
+assertCheck(checks, 'iframe base mirrors current Roll20 text input height', /\.charsheet input\[type="text"\]\s*{\s*height:\s*26px;/i.test(modernBaseCss));
+assertCheck(checks, 'iframe base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;/i.test(modernBaseCss));
 
 assertCheck(checks, 'shadow modern preserves authored HTML class', modernParts.html.includes('class="legacy-card"'));
 assertCheck(checks, 'shadow modern does not legacy-prefix HTML class', !modernParts.html.includes('class="sheet-legacy-card"'));
@@ -113,10 +117,13 @@ assertCheck(checks, 'shadow legacy removes animation declarations', !/animation(
 assertCheck(checks, 'shadow legacy removes keyframes', !/@(?:-[a-z]+-)?keyframes\b/i.test(legacyShadowUserCss));
 assertCheck(checks, 'shadow legacy inlines CSS var', includesText(legacyShadowUserCss, 'color: #c02030'));
 assertCheck(checks, 'shadow legacy preserves stable CSS', includesText(legacyShadowUserCss, 'padding: 8px') && includesText(legacyShadowUserCss, 'color: red'));
+assertCheck(checks, 'shadow base mirrors current Roll20 text input height', /\.charsheet input\[type="text"\]\s*{\s*height:\s*26px;/i.test(modernShadowBaseCss));
+assertCheck(checks, 'shadow base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;/i.test(modernShadowBaseCss));
 
 const mainAreaToolbar = readFileSync(join(REPO_ROOT, 'components/editor/MainAreaToolbar.tsx'), 'utf8');
 const editorShell = readFileSync(join(REPO_ROOT, 'components/editor/EditorShell.tsx'), 'utf8');
 const previewStore = readFileSync(join(REPO_ROOT, 'lib/stores/previewStore.ts'), 'utf8');
+const perfHook = readFileSync(join(REPO_ROOT, 'lib/perf/hook.ts'), 'utf8');
 assertCheck(checks, 'mounted main toolbar exposes modern and legacy modes',
   mainAreaToolbar.includes('data-testid="roll20-mode-control"')
     && mainAreaToolbar.includes('data-testid={`roll20-mode-${key}`}')
@@ -125,6 +132,9 @@ assertCheck(checks, 'editor shell mounts the main toolbar', editorShell.includes
 assertCheck(checks, 'preview store defaults to modern class handling', /sanitize:\s*false/.test(previewStore));
 assertCheck(checks, 'preview store defaults legacy sanitize off', /legacyCssSanitize:\s*false/.test(previewStore));
 assertCheck(checks, 'legacy mode atomically enables prefix and CSS sanitize', /sanitize:\s*mode === 'legacy'[\s\S]*legacyCssSanitize:\s*mode === 'legacy'/.test(previewStore));
+assertCheck(checks, 'visual smoke hook exposes the same atomic compatibility mode action',
+  perfHook.includes('setRoll20CompatibilityMode: (mode: Roll20CompatibilityMode) => void')
+    && perfHook.includes('usePreviewStore.getState().setRoll20CompatibilityMode(mode)'));
 
 const report = {
   generatedAt: new Date().toISOString(),

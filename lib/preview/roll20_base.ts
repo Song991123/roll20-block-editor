@@ -28,6 +28,23 @@ import {
 // iframe uses sheet-facing base/charactersheet/jquery rules; VTT/chat rules
 // belong in a separate ChatPane baseline so they cannot override sheet CSS.
 
+// Current Roll20 applies these form/runtime defaults after its bundled CSS.
+// Keep them in a separate generic layer so the source snapshots remain intact
+// and user sheet CSS, which is appended later, can still override them.
+const roll20LiveRuntimeParityCss = `
+.charsheet input[type="text"] {
+  height: 26px;
+}
+.charsheet button[type="roll"],
+.charsheet button[type="compendium"] {
+  border-radius: 4px;
+  color: #333;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+`;
+
 /**
  * descendant prefix `.ui-dialog ` 제거.
  *
@@ -79,6 +96,7 @@ export const roll20BaseIframeCss = [
   stripUiDialogPrefix(roll20BaseCss),
   stripUiDialogPrefix(roll20CharsheetCss),
   stripUiDialogPrefix(roll20JqueryCss),
+  roll20LiveRuntimeParityCss,
 ].join('\n');
 
 /** Shadow DOM 모드 합성본. */
@@ -86,6 +104,7 @@ export const roll20BaseShadowCss = [
   rewriteForShadow(roll20BaseCss),
   rewriteForShadow(roll20CharsheetCss),
   rewriteForShadow(roll20JqueryCss),
+  rewriteForShadow(roll20LiveRuntimeParityCss),
 ].join('\n');
 
 /**

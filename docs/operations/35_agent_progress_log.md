@@ -1,3 +1,14 @@
+## 2026-07-16 Paired Full-Root Modern and Legacy Verification
+
+- Persisted ignored actual Roll20 full-root screenshots for the same prepared payload in both dedicated destinations: modern `1189x1936`, legacy `896x1917`. No screenshot, payload, fixture source, or generated report is staged for public Git.
+- Fixed the local visual harness to call the atomic compatibility action. This keeps modern authored-class preservation and legacy HTML prefix plus CSS sanitization from being measured as independent, impossible product states.
+- Replaced long-element screenshot capture with a clipping-safe full-root iframe compositor and added per-mode computed-style, input-height, top-level landmark, and nested landmark evidence.
+- Added a small post-snapshot runtime parity layer for the currently measured Roll20 text-input height and roll-button defaults. It is shared by preview iframe and edit Shadow render, and remains lower priority than user sheet CSS.
+- Local verification on the prepared fixture: import `6530` blocks, worker `1`, warnings `2`; preview/edit underlying paint `EXACT` with `0` mismatched pixels. Final paired smoke `.tmp/paired-modern-legacy-final` passed at modern `1189x1944`, legacy `895x1933`, mode mismatch `9.17%`, console errors `0`, and page errors `0`.
+- Actual-vs-local evidence remains partial: at channel delta `60`, modern full-root mismatch is `7.61%` and legacy is `9.65%`. The comparison still includes stitched-JPEG/font noise and different persisted Roll20 attribute/focus state.
+- Geometry triage localized the remaining height drift to the HP/wound/SAN row and downstream skills content. Top/logo and the first two-column row match closely; modern downstream offset is about `+12px`, legacy about `+18px`.
+- Next P0 is paired state normalization plus nested row/skills diagnosis. Do not claim full modern parity, full legacy sanitizer parity, or all-sheet support from this batch.
+
 ## 2026-07-16 Modern and Legacy Recheck and Dead Toolbar Cleanup
 
 - Rechecked one matching prepared payload in the dedicated modern and legacy Roll20 destinations. Modern measured `attr-input` at `210x26px`, root width `850px`, scroll size `1189x1936`; legacy measured `sheet-attr-input` at `52x40px`, root width `850px`, scroll size `896x1917`.

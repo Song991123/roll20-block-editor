@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Imported-fixture visual smoke for the local legacy CSS preview toggle.
+ * Imported-fixture visual smoke for the local Roll20 compatibility mode.
  *
  * Imports ignored fixture source through the static app, captures the preview
- * iframe with legacy CSS sanitize OFF and ON, and verifies that risky modern
- * CSS is reduced when the legacy mode is enabled. Screenshots and reports are
- * local-only. This does not prove actual Roll20 legacy visual parity.
+ * iframe in modern and legacy modes. The mode switch uses the same atomic
+ * HTML-prefix + CSS-sanitize action as the mounted product UI. Screenshots and
+ * reports are local-only. This does not prove actual Roll20 visual parity.
  *
  * Usage:
  *   node scripts/roll20_legacy_fixture_visual_smoke.mjs \
@@ -178,34 +178,273 @@ function countLegacyRisks(css) {
   };
 }
 
-async function setLegacyMode(page, enabled) {
+async function setCompatibilityMode(page, mode) {
   await page.evaluate((value) => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setMainMode('preview');
-    window.__perfHook.setLegacyCssSanitize(value);
-  }, enabled);
+    window.__perfHook.setRoll20CompatibilityMode(value);
+  }, mode);
   await page.waitForTimeout(900);
 }
 
+function captureStops(contentSize, viewportSize, overlap = 96) {
+  const max = Math.max(0, Math.ceil(contentSize - viewportSize));
+  if (max === 0) return [0];
+  const step = Math.max(1, Math.floor(viewportSize - overlap));
+  const stops = [];
+  for (let value = 0; value < max; value += step) stops.push(value);
+  stops.push(max);
+  return Array.from(new Set(stops));
+}
+
+async function captureFullIframeRoot(page, sheet, output) {
+  const iframe = page.locator('[data-testid="preview-iframe"]').first();
+  const initial = await sheet.evaluate((sheetEl) => {
+    const view = sheetEl.ownerDocument.defaultView;
+    const rect = sheetEl.getBoundingClientRect();
+    return {
+      rootWidth: sheetEl.scrollWidth,
+      rootHeight: sheetEl.scrollHeight,
+      viewportWidth: view.innerWidth,
+      viewportHeight: view.innerHeight,
+      rootLeft: rect.left,
+      rootTop: rect.top,
+    };
+  });
+  const iframeBox = await iframe.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      width: rect.width,
+      height: rect.height,
+      clientLeft: element.clientLeft,
+      clientTop: element.clientTop,
+    };
+  });
+  const marker = `r20-capture-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const restore = await iframe.evaluate((element, input) => {
+    const entries = [];
+    let node = element.parentElement;
+    let index = 0;
+    while (node) {
+      const id = `${input.marker}-${index}`;
+      entries.push({ id, style: node.getAttribute('style') });
+      node.setAttribute('data-r20-capture-unclip', id);
+      node.style.setProperty('overflow', 'visible', 'important');
+      node.style.setProperty('overflow-x', 'visible', 'important');
+      node.style.setProperty('overflow-y', 'visible', 'important');
+      node.style.setProperty('max-height', 'none', 'important');
+      node = node.parentElement;
+      index += 1;
+    }
+    document.body.style.setProperty('min-height', `${input.height + element.offsetTop + 32}px`, 'important');
+    return entries;
+  }, { marker, height: initial.rootHeight });
+
+  const segments = [];
+  try {
+    await page.waitForTimeout(60);
+    for (const scrollX of captureStops(initial.rootWidth, initial.viewportWidth)) {
+      for (const scrollY of captureStops(initial.rootHeight, initial.viewportHeight)) {
+        await sheet.evaluate((sheetEl, point) => {
+          sheetEl.ownerDocument.defaultView.scrollTo(point.x, point.y);
+        }, { x: scrollX, y: scrollY });
+        await page.waitForTimeout(60);
+        const state = await sheet.evaluate((sheetEl) => {
+          const view = sheetEl.ownerDocument.defaultView;
+          const rect = sheetEl.getBoundingClientRect();
+          return {
+            scrollX: view.scrollX,
+            scrollY: view.scrollY,
+            rootLeft: rect.left,
+            rootTop: rect.top,
+            viewportWidth: view.innerWidth,
+            viewportHeight: view.innerHeight,
+          };
+        });
+        const bytes = await iframe.screenshot();
+        segments.push({
+          ...state,
+          image: `data:image/png;base64,${bytes.toString('base64')}`,
+        });
+      }
+    }
+  } finally {
+    await sheet.evaluate((sheetEl) => sheetEl.ownerDocument.defaultView.scrollTo(0, 0));
+    await page.evaluate((entries) => {
+      for (const entry of entries) {
+        const element = document.querySelector(`[data-r20-capture-unclip="${entry.id}"]`);
+        if (!element) continue;
+        if (entry.style == null) element.removeAttribute('style');
+        else element.setAttribute('style', entry.style);
+        element.removeAttribute('data-r20-capture-unclip');
+      }
+    }, restore);
+  }
+
+  const dataUrl = await page.evaluate(async ({ segments: captures, iframeBox: frameBox, outputSize }) => {
+    const loadImage = (src) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = src;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = outputSize.width;
+    canvas.height = outputSize.height;
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    for (const capture of captures) {
+      const image = await loadImage(capture.image);
+      const scaleX = image.naturalWidth / frameBox.width;
+      const scaleY = image.naturalHeight / frameBox.height;
+      const destX = Math.max(0, Math.round(-capture.rootLeft));
+      const destY = Math.max(0, Math.round(-capture.rootTop));
+      const cropX = frameBox.clientLeft + Math.max(0, capture.rootLeft);
+      const cropY = frameBox.clientTop + Math.max(0, capture.rootTop);
+      const width = Math.min(
+        Math.floor(capture.viewportWidth - Math.max(0, capture.rootLeft)),
+        outputSize.width - destX,
+      );
+      const height = Math.min(
+        Math.floor(capture.viewportHeight - Math.max(0, capture.rootTop)),
+        outputSize.height - destY,
+      );
+      if (width <= 0 || height <= 0) continue;
+      context.drawImage(
+        image,
+        Math.round(cropX * scaleX),
+        Math.round(cropY * scaleY),
+        Math.round(width * scaleX),
+        Math.round(height * scaleY),
+        destX,
+        destY,
+        width,
+        height,
+      );
+    }
+    return canvas.toDataURL('image/png');
+  }, {
+    segments,
+    iframeBox,
+    outputSize: { width: initial.rootWidth, height: initial.rootHeight },
+  });
+  await fs.writeFile(output, Buffer.from(dataUrl.split(',')[1], 'base64'));
+  return {
+    width: initial.rootWidth,
+    height: initial.rootHeight,
+    segments: segments.map(({ image, ...segment }) => segment),
+  };
+}
+
 async function capturePreviewMode(page, fixtureId, mode) {
-  await setLegacyMode(page, mode === 'legacy');
+  await setCompatibilityMode(page, mode);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   const style = frame.locator('#r20-user').first();
   const userCss = (await style.textContent({ timeout: 30000 }).catch(() => '')) ?? '';
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-${mode}.png`);
-  await sheet.screenshot({ path: output });
+  const capture = await captureFullIframeRoot(page, sheet, output);
   const dom = await sheet.evaluate((sheetEl) => {
     const rect = sheetEl.getBoundingClientRect();
     const elements = Array.from(sheetEl.querySelectorAll('*'));
+    const sampleStyle = (selector) => {
+      const element = sheetEl.querySelector(selector);
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      const elementRect = element.getBoundingClientRect();
+      return {
+        selector,
+        tag: element.tagName,
+        className: element.className,
+        type: element.getAttribute('type'),
+        rect: { width: elementRect.width, height: elementRect.height },
+        display: style.display,
+        position: style.position,
+        boxSizing: style.boxSizing,
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        border: style.border,
+        borderRadius: style.borderRadius,
+        color: style.color,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        lineHeight: style.lineHeight,
+        padding: style.padding,
+        margin: style.margin,
+        appearance: style.appearance,
+      };
+    };
+    const textInputGroups = new Map();
+    for (const input of sheetEl.querySelectorAll('input[type="text"]')) {
+      const style = getComputedStyle(input);
+      const inputRect = input.getBoundingClientRect();
+      if (style.display === 'none' || style.visibility === 'hidden' || inputRect.width <= 0 || inputRect.height <= 0) continue;
+      const key = `${input.className || '(none)'}|${Math.round(inputRect.width * 100) / 100}x${Math.round(inputRect.height * 100) / 100}|${style.height}`;
+      const group = textInputGroups.get(key) ?? { key, count: 0, names: [] };
+      group.count += 1;
+      if (group.names.length < 8) group.names.push(input.getAttribute('name'));
+      textInputGroups.set(key, group);
+    }
+    const rootRect = sheetEl.getBoundingClientRect();
+    const landmarks = Array.from(sheetEl.children).map((element, index) => {
+      const style = getComputedStyle(element);
+      const elementRect = element.getBoundingClientRect();
+      return {
+        index,
+        tag: element.tagName,
+        className: element.className,
+        id: element.id,
+        display: style.display,
+        top: Math.round((elementRect.top - rootRect.top) * 100) / 100,
+        width: Math.round(elementRect.width * 100) / 100,
+        height: Math.round(elementRect.height * 100) / 100,
+        text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60),
+      };
+    }).filter((element) => element.display !== 'none' && element.height > 0);
+    const nestedLandmarks = [2, 3].map((index) => {
+      const row = sheetEl.children[index];
+      if (!row) return null;
+      const rowRect = row.getBoundingClientRect();
+      return {
+        index,
+        row: {
+          className: row.className,
+          top: Math.round((rowRect.top - rootRect.top) * 100) / 100,
+          height: Math.round(rowRect.height * 100) / 100,
+        },
+        children: Array.from(row.children).map((element, childIndex) => {
+          const style = getComputedStyle(element);
+          const elementRect = element.getBoundingClientRect();
+          return {
+            index: childIndex,
+            tag: element.tagName,
+            className: element.className,
+            display: style.display,
+            top: Math.round((elementRect.top - rowRect.top) * 100) / 100,
+            width: Math.round(elementRect.width * 100) / 100,
+            height: Math.round(elementRect.height * 100) / 100,
+            margin: style.margin,
+            padding: style.padding,
+            fontSize: style.fontSize,
+            lineHeight: style.lineHeight,
+            text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 50),
+          };
+        }).filter((element) => element.display !== 'none' && element.height > 0),
+      };
+    }).filter(Boolean);
     return {
       rect: {
         width: Math.round(rect.width),
         height: Math.round(rect.height),
         left: Math.round(rect.left),
         top: Math.round(rect.top),
+      },
+      scroll: {
+        width: sheetEl.scrollWidth,
+        height: sheetEl.scrollHeight,
       },
       elementCount: elements.length,
       visibleElementCount: elements.filter((el) => {
@@ -214,6 +453,16 @@ async function capturePreviewMode(page, fixtureId, mode) {
         return cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0;
       }).length,
       rollButtonCount: sheetEl.querySelectorAll('button[type="roll"], button.roll').length,
+      sampleStyles: {
+        attrInput: sampleStyle('input.attr-input'),
+        sheetAttrInput: sampleStyle('input.sheet-attr-input'),
+        actionButton: sampleStyle('button[type="action"]'),
+        rollButton: sampleStyle('button[type="roll"]'),
+        select: sampleStyle('select'),
+      },
+      textInputGroups: Array.from(textInputGroups.values()).sort((a, b) => b.count - a.count),
+      landmarks,
+      nestedLandmarks,
       visibleRuntimeNodeCount: elements.filter((el) => {
         if (!['SCRIPT', 'ROLLTEMPLATE'].includes(el.tagName)) return false;
         const cs = getComputedStyle(el);
@@ -229,6 +478,7 @@ async function capturePreviewMode(page, fixtureId, mode) {
     userCss,
     risk: countLegacyRisks(userCss),
     dom,
+    capture,
   };
 }
 

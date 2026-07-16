@@ -1,10 +1,21 @@
+## 2026-07-16 Paired Full-Root Modern and Legacy Evidence
+
+- VERIFIED: Captured and persisted ignored full-root evidence for the same prepared user-import payload in both dedicated Roll20 destinations. Modern is `1189x1936`; legacy is `896x1917`. Evidence stays local under `reports/roll20-actual-compare/2026-07-16-modern-legacy-pair/` and is not committed.
+- DONE: Corrected `smoke:legacy-fixture-visual` so a mode change uses the product's atomic `setRoll20CompatibilityMode` action. The smoke now switches HTML class-prefix behavior and legacy CSS sanitization together instead of toggling CSS alone.
+- DONE: Added clipping-safe full-root iframe capture to the local paired smoke and recorded computed styles, text-input height groups, top-level landmarks, and nested landmarks for each mode.
+- DONE: Added current measured Roll20 text-input and roll-button runtime defaults to the shared iframe/Shadow baseline. User sheet CSS is appended later and can still override these generic defaults.
+- VERIFIED: The prepared import remains structurally matched at `6530` blocks with worker `1` and warnings `2`. Local preview/edit comparison remains `EXACT` at `0` mismatched pixels for this fixture. Final paired smoke `.tmp/paired-modern-legacy-final` passed with modern `1189x1944`, legacy `895x1933`, mode mismatch `9.17%`, console errors `0`, and page errors `0`.
+- PARTIAL: Actual-vs-local full-root diagnostics are not yet Roll20 visual parity. At a channel-delta threshold of `60`, modern mismatch is `7.61%` and legacy mismatch is `9.65%`; stitched JPEG capture, font antialiasing, persisted Roll20 attribute values, and focus state are not normalized.
+- VERIFY P0: Remaining geometry drift is localized rather than global. The HP/wound/SAN row is about `+9px` taller locally in both modes; downstream modern landmarks end about `+12px` lower and legacy landmarks about `+18px` lower. Normalize default attribute/state evidence and isolate these nested row/skills differences before another renderer patch.
+- CONTRACT: Modern and legacy remain separate required targets. A fix is acceptable only when the paired gate shows that it preserves the other mode; neither mode can borrow the other's evidence or be treated as the fallback implementation.
+
 ## 2026-07-16 Modern and Legacy Recheck and Dead Toolbar Cleanup
 
 - VERIFIED: Rechecked the same prepared user-import payload in the dedicated modern Custom Sheet Sandbox and dedicated legacy test room. Modern preserved `attr-input` at `210x26px` with root `cssWidth=850px`, `scrollWidth=1189`, and `scrollHeight=1936`; legacy produced `sheet-attr-input` at `52x40px` with root `cssWidth=850px`, `scrollWidth=896`, and `scrollHeight=1917`.
 - VERIFIED: Both destinations applied the sampled translations and exposed zero source script nodes. This reconfirms that modern and legacy are separate runtime contracts, not a single CSS preference.
 - DONE: Removed the unmounted `PreviewToolbar.tsx` and its duplicate mode/width/zoom controls. Updated the render-mode smoke so it validates only the actually mounted `MainAreaToolbar` atomic `modern|legacy` control.
 - VERIFIED: `test:roll20-render-modes` passes after the cleanup. Product mode selection still switches HTML class handling and legacy CSS sanitization together.
-- VERIFY: The current browser pass captured DOM geometry but the browser surface could not persist full-root images into the ignored report folder. Full-height normalized modern/legacy screenshots and pixel classification remain P0 and are not claimed complete.
+- SUPERSEDED: The paired full-root section above now records persisted ignored screenshots and initial pixel classification. State/font/crop normalization and final visual parity remain P0.
 
 ## 2026-07-16 Modern and Legacy Roll20 Render Modes
 
