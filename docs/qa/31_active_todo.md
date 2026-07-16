@@ -1,3 +1,15 @@
+## 2026-07-17 Persistent Iframe Edit Bridge Phase 2C
+
+- DONE: Pointer capture now preserves the original drag subject while `document.elementFromPoint` resolves the block actually under the pointer. The bridge no longer mistakes the captured subject for every later hit target.
+- DONE: Added a parent-side, pure drop-target resolver for `before` / `inside` / `after`. It uses iframe hit geometry plus live Blockly layer roles, rejects the subject and its descendants as cyclic targets, and requires a real Blockly statement container before returning `inside`.
+- DONE: Added a separate parent-owned candidate overlay. Selection and drop-target rectangles remain iframe siblings; no editor CSS is injected into the Roll20 document.
+- VERIFIED MODERN: `.tmp/persistent-drop-target-r38` modern PASS keeps the card as the stable subject, resolves a different frame under pointermove, selects `inside`, clears the candidate on cancel, preserves runtime/input state, and reloads the iframe `0` times.
+- VERIFIED LEGACY: The same report contains an independent legacy PASS with the same interaction assertions plus the legacy-only runtime style. Modern evidence is not reused.
+- VERIFIED: `test:iframe-drop-target` covers leaf before/after, container inside, subject/descendant cycle rejection, and non-drag phases. `.tmp/edit-flow-drop-target-r39` keeps the Shadow fallback regression green with `0px` drift; `.tmp/preview-edit-drop-target-r39` remains pixel exact in modern and legacy.
+- PARTIAL: The smoke temporarily makes the persistent pane paint-visible to prove the rAF pointermove path. The shipped edit mode still displays the Shadow fallback, and no iframe drop commits Blockly yet.
+- NEXT P0: Expose the persistent iframe in the edit canvas, add optimistic subject translation, commit the resolved target once on pointer-up, and apply emitted HTML/CSS back into the live iframe with acknowledgement. Keep modern and legacy as separate gates.
+- COPYRIGHT: New tests use synthetic source only. Generated reports remain ignored under `.tmp/`.
+
 ## 2026-07-17 Persistent Iframe Edit Bridge Phase 2B
 
 - DONE: Extended the iframe edit contract with a stable pointer subject, `pointerId`/button state, `pointercancel`, ancestor `hitPath`, and offset-parent geometry. The parent rejects every unknown block id before showing the overlay.

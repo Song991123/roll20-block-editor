@@ -94,8 +94,8 @@ async function runMode(browser, mode) {
     result.import = await page.evaluate(async () => {
       window.__perfHook.clearAll();
       return window.__perfHook.importSheet({
-        html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"></div></div>',
-        css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; }',
+        html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"></div><div class="sheet-probe-drop">Drop target</div></div>',
+        css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
       });
     });
     await page.evaluate((compatibilityMode) => {
@@ -210,30 +210,67 @@ async function runMode(browser, mode) {
       result.bridgeDispatch.blockId,
       { timeout: 30000 },
     );
+    await page.evaluate(() => {
+      const pane = document.querySelector('[data-testid="preview-pane"]');
+      if (!(pane instanceof HTMLElement)) return;
+      pane.style.visibility = 'visible';
+      pane.style.width = '720px';
+      pane.style.position = 'absolute';
+      pane.style.inset = '0';
+      pane.style.zIndex = '50';
+    });
     result.pointerSequence = await frame.evaluate(() => {
-      const target = document.querySelector('input[name="attr_probe"]');
-      if (!target) return { dispatched: false, reason: 'missing nested input' };
+      const subject = document.querySelector('.sheet-probe-card');
+      const target = document.querySelector('.sheet-probe-drop');
+      if (!subject || !target) return { dispatched: false, reason: 'missing pointer subject or target' };
       const rect = target.getBoundingClientRect();
-      target.dispatchEvent(new PointerEvent('pointermove', {
+      subject.dispatchEvent(new PointerEvent('pointermove', {
         bubbles: true,
         cancelable: true,
         pointerId: 17,
         buttons: 1,
-        clientX: rect.left + 2,
-        clientY: rect.top + 2,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
       }));
-      target.dispatchEvent(new PointerEvent('pointercancel', {
+      return {
+        dispatched: true,
+        subjectBlockId: subject.getAttribute('data-r20-block-id'),
+        targetBlockId: target.getAttribute('data-r20-block-id'),
+      };
+    });
+    await page.waitForFunction(
+      (targetBlockId) => {
+        const overlay = document.querySelector('[data-testid="iframe-edit-drop-overlay"]');
+        return overlay?.getAttribute('data-r20-drop-target-id') === targetBlockId
+          && overlay?.getAttribute('data-r20-drop-mode') === 'inside';
+      },
+      result.pointerSequence.targetBlockId,
+      { timeout: 30000 },
+    );
+    result.duringPointerMove = await page.evaluate(() => {
+      const selection = document.querySelector('[data-testid="iframe-edit-overlay"]');
+      const drop = document.querySelector('[data-testid="iframe-edit-drop-overlay"]');
+      return {
+        selectionBlockId: selection?.getAttribute('data-r20-block-id'),
+        phase: selection?.getAttribute('data-r20-edit-phase'),
+        hitPathLength: Number(selection?.getAttribute('data-r20-hit-path-length')),
+        dropTargetId: drop?.getAttribute('data-r20-drop-target-id'),
+        dropMode: drop?.getAttribute('data-r20-drop-mode'),
+      };
+    });
+    await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      const target = document.querySelector('.sheet-probe-drop');
+      if (!subject || !target) return;
+      const rect = target.getBoundingClientRect();
+      subject.dispatchEvent(new PointerEvent('pointercancel', {
         bubbles: true,
         cancelable: true,
         pointerId: 17,
         buttons: 0,
-        clientX: rect.left + 2,
-        clientY: rect.top + 2,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
       }));
-      return {
-        dispatched: true,
-        hitBlockId: target.getAttribute('data-r20-block-id'),
-      };
     });
     await page.waitForFunction(
       () => document
@@ -260,12 +297,21 @@ async function runMode(browser, mode) {
         pointerId: Number(overlay?.getAttribute('data-r20-pointer-id')),
         hitPathLength: Number(overlay?.getAttribute('data-r20-hit-path-length')),
         offsetParentBlockId: overlay?.getAttribute('data-r20-offset-parent-block-id'),
+        dropOverlayCount: document.querySelectorAll('[data-testid="iframe-edit-drop-overlay"]').length,
         overlayWidth: Number.parseFloat(overlay?.style.width || '0'),
         overlayHeight: Number.parseFloat(overlay?.style.height || '0'),
       };
     });
     result.hiddenInputValue = await input.inputValue();
     result.hiddenRuntimeToken = await frame.evaluate(() => window.__persistentPreviewRuntimeToken);
+
+    await page.evaluate(() => {
+      const pane = document.querySelector('[data-testid="preview-pane"]');
+      if (!(pane instanceof HTMLElement)) return;
+      pane.style.position = '';
+      pane.style.inset = '';
+      pane.style.zIndex = '';
+    });
 
     await page.evaluate(() => window.__perfHook.setMainMode('preview'));
     await iframe.waitFor({ state: 'visible', timeout: 30000 });
@@ -308,12 +354,20 @@ async function runMode(browser, mode) {
       && result.duringEdit.overlayCount === 1
       && result.duringEdit.overlayBlockId === result.bridgeDispatch.blockId
       && result.pointerSequence.dispatched === true
-      && typeof result.pointerSequence.hitBlockId === 'string'
+      && typeof result.pointerSequence.subjectBlockId === 'string'
+      && typeof result.pointerSequence.targetBlockId === 'string'
+      && result.pointerSequence.subjectBlockId !== result.pointerSequence.targetBlockId
+      && result.duringPointerMove.selectionBlockId === result.pointerSequence.subjectBlockId
+      && result.duringPointerMove.phase === 'pointermove'
+      && result.duringPointerMove.hitPathLength >= 2
+      && result.duringPointerMove.dropTargetId === result.pointerSequence.targetBlockId
+      && result.duringPointerMove.dropMode === 'inside'
       && result.duringEdit.overlayPhase === 'pointercancel'
       && result.duringEdit.pointerId === 17
       && result.duringEdit.hitPathLength >= 2
       && typeof result.duringEdit.offsetParentBlockId === 'string'
       && result.duringEdit.offsetParentBlockId.length > 0
+      && result.duringEdit.dropOverlayCount === 0
       && result.duringEdit.overlayWidth > 0
       && result.duringEdit.overlayHeight > 0
       && result.hiddenInputValue === `runtime-${mode}`

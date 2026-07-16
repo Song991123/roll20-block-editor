@@ -27,6 +27,10 @@ import {
   parseIframeEditBridgeMessage,
   type IframeEditHitMessage,
 } from '@/lib/preview/iframeEditBridge';
+import {
+  resolveIframeEditDropTarget,
+  type IframeEditDropTarget,
+} from '@/lib/editor/iframeDropTarget';
 
 /**
  * 미리보기 메인 — iframe srcdoc, sandbox.
@@ -93,6 +97,7 @@ export default function PreviewMain() {
   const [iframeEditBridgeId, setIframeEditBridgeId] = useState<string | null>(null);
   const iframeEditBridgeIdRef = useRef<string | null>(null);
   const [iframeEditOverlay, setIframeEditOverlay] = useState<IframeEditHitMessage | null>(null);
+  const [iframeEditDropTarget, setIframeEditDropTarget] = useState<IframeEditDropTarget | null>(null);
   const autoWidthSizedRef = useRef(false);
   // Phase E — Inspector 활성화에 쓰일 sidebarRightTab/collapse setter.
   // 'attrs' 가 Inspector 패널 (D49).
@@ -409,6 +414,7 @@ export default function PreviewMain() {
       if (editMessage?.type === 'r20:edit-ready') {
         if (iframeEditBridgeIdRef.current !== editMessage.bridgeId) {
           setIframeEditOverlay(null);
+          setIframeEditDropTarget(null);
         }
         iframeEditBridgeIdRef.current = editMessage.bridgeId;
         setIframeEditBridgeId(editMessage.bridgeId);
@@ -425,6 +431,10 @@ export default function PreviewMain() {
           && !adapter.getBlock('html', editMessage.subject.offsetParentBlockId)
         ) return;
         setIframeEditOverlay(editMessage);
+        setIframeEditDropTarget(resolveIframeEditDropTarget(editMessage, {
+          getBlock: (blockId) => adapter.getBlock('html', blockId),
+          canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+        }));
         if (editMessage.phase === 'pointerdown') {
           setSelected(editMessage.blockId, 'preview');
         }
@@ -703,6 +713,26 @@ export default function PreviewMain() {
                   top: `${iframeEditOverlay.rect.top}px`,
                   width: `${iframeEditOverlay.rect.width}px`,
                   height: `${iframeEditOverlay.rect.height}px`,
+                  boxSizing: 'border-box',
+                }}
+              />
+            )}
+            {renderMode === 'iframe' && mainMode === 'edit' && iframeEditDropTarget && (
+              <div
+                aria-hidden="true"
+                data-testid="iframe-edit-drop-overlay"
+                data-r20-drop-target-id={iframeEditDropTarget.blockId}
+                data-r20-drop-mode={iframeEditDropTarget.mode}
+                className={`pointer-events-none absolute z-30 border-2 ${
+                  iframeEditDropTarget.mode === 'inside'
+                    ? 'border-emerald-500 bg-emerald-400/10'
+                    : 'border-sky-500 bg-sky-400/10'
+                }`}
+                style={{
+                  left: `${iframeEditDropTarget.geometry.rect.left}px`,
+                  top: `${iframeEditDropTarget.geometry.rect.top}px`,
+                  width: `${iframeEditDropTarget.geometry.rect.width}px`,
+                  height: `${iframeEditDropTarget.geometry.rect.height}px`,
                   boxSizing: 'border-box',
                 }}
               />

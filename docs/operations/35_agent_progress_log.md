@@ -1,3 +1,12 @@
+## 2026-07-17 Persistent Iframe Edit Bridge Phase 2C
+
+- Replaced captured-event target lookup with `document.elementFromPoint`, so the original drag subject remains stable while the hit path follows the actual pointer location.
+- Added `lib/editor/iframeDropTarget.ts` and a CI unit test. The resolver combines iframe geometry with live Blockly roles, returns before/inside/after, and excludes the moving subject and its descendants from cyclic drops.
+- `PreviewMain` now renders a separate parent-owned drop candidate rectangle without adding application CSS inside the Roll20 iframe.
+- Browser evidence `.tmp/persistent-drop-target-r38` PASSes independently in modern and legacy. In both rows the subject and target ids differ during a real rAF pointermove, the frame resolves to `inside`, cancel removes the target overlay, input/runtime state survives, reload count stays `0`, and console/page errors stay empty.
+- Regression evidence `.tmp/edit-flow-drop-target-r39` PASSes current Shadow flow/free interactions with zero drift. `.tmp/preview-edit-drop-target-r39` is exact in both modes.
+- The harness temporarily makes the persistent pane paint-visible because Chromium suspends rAF in a hidden iframe. This proves the move path but is not yet the shipped visible iframe editor. Pointer-up commit, optimistic translation, emit/apply acknowledgement, and the final visible-surface switch remain P0.
+
 ## 2026-07-17 Persistent Iframe Edit Bridge Phase 2B
 
 - Extended `r20:edit-hit` with stable pointer identity/button state, `pointercancel`, fixed drag subject geometry, ancestor hit paths, and offset-parent/position evidence.

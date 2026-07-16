@@ -126,6 +126,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return path;
   }
+  function hitNodeAt(clientX, clientY, fallback) {
+    try {
+      return blockNodeOf(document.elementFromPoint(clientX, clientY)) || blockNodeOf(fallback);
+    } catch (e) {
+      return blockNodeOf(fallback);
+    }
+  }
   function postEditHit(phase, subjectNode, hitNode, pointer) {
     if (!editBridgeEnabled) return;
     var subject = geometryOf(subjectNode);
@@ -501,7 +508,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!activeEditPointer || activeEditPointer.pointerId !== e.pointerId) return;
     pendingEditMove = {
       subjectNode: activeEditPointer.subjectNode,
-      hitNode: blockNodeOf(e.target),
+      hitNode: hitNodeAt(e.clientX, e.clientY, e.target),
       pointer: {
         x: e.clientX,
         y: e.clientY,
@@ -543,7 +550,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
     editMoveFrame = 0;
     pendingEditMove = null;
-    postEditHit('pointerup', subjectNode, blockNodeOf(e.target), {
+    postEditHit('pointerup', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target), {
       x: e.clientX,
       y: e.clientY,
       pointerId: e.pointerId,
@@ -562,7 +569,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (editMoveFrame) window.cancelAnimationFrame(editMoveFrame);
     editMoveFrame = 0;
     pendingEditMove = null;
-    postEditHit('pointercancel', subjectNode, blockNodeOf(e.target), {
+    postEditHit('pointercancel', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target), {
       x: e.clientX,
       y: e.clientY,
       pointerId: e.pointerId,
