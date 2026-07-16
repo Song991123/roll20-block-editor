@@ -1,3 +1,15 @@
+## 2026-07-16 Modern and Legacy Mode Invariant Hardening
+
+- DONE: Removed the preview store's independent `setSanitize` and `setLegacyCssSanitize` mutation actions. Product code can now change HTML class-prefix behavior and legacy CSS sanitization only through the atomic `modern|legacy` compatibility action.
+- DONE: Kept the old browser-smoke `setLegacyCssSanitize` alias for compatibility, but routed it through the same atomic mode action so diagnostics cannot create an impossible mixed state.
+- DONE: Extended the paired ignored-fixture diagnostic to include top-level row `6`, which contains the remaining bottom-section geometry difference.
+- VERIFIED: `test:roll20-render-modes` now rejects independent compatibility mutators and passes with the atomic alias. Paired browser smoke `.tmp/paired-mode-invariant-r18` PASSes all 3 ignored fixtures in both modes: AW2E `0%`, Les-Oublies `0%`, and the measured YSHY fixture `9.9%` modern-vs-legacy diagnostic difference, with no fixture failure.
+- VERIFIED: `ci:verify`, lint, and production build PASS. `check:server-hygiene` reports zero project listeners on `3000`, `3001`, `3002`, and `4300-4499` after the browser smoke.
+- VERIFIED MODERN: The current local final row remains `434.30px`; actual modern is about `433.91px`, a roughly `+0.39px` local delta.
+- VERIFIED LEGACY: The current local final row is also `434.30px`; actual legacy is about `432.31px`, a roughly `+1.99px` local delta. This proves the remaining mode-specific behavior is not represented locally yet.
+- VERIFY P0: Read the actual modern and legacy final-row computed styles before changing baseline CSS. The existing Roll20 tabs stayed open, but read-only DOM collection timed out in this pass; no fixture-specific or guessed `-2px` correction was added.
+- CONTRACT: Modern and legacy are both required destinations and must pass independently. A shared implementation is acceptable only for behavior measured as shared; one mode's screenshot, geometry, or sanitizer evidence never passes the other.
+
 ## 2026-07-16 Paired Runtime Paint and Initial Autocalc
 
 - DONE: Removed app-owned dialog CSS that forced `.charsheet` background repeat/position and common disabled-input paint over imported user CSS. Modern mode now keeps native modern disabled control paint; legacy mode receives a separate, overridable legacy input-state layer.

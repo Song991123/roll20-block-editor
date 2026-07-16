@@ -449,7 +449,9 @@ function buildHook(): PerfHook {
     },
 
     setLegacyCssSanitize: (enabled) => {
-      usePreviewStore.getState().setLegacyCssSanitize(enabled);
+      // Backward-compatible smoke hook: legacy CSS cannot be toggled apart
+      // from the matching HTML class-prefix contract.
+      usePreviewStore.getState().setRoll20CompatibilityMode(enabled ? 'legacy' : 'modern');
     },
 
     setRoll20SandboxSanitize: (enabled) => {

@@ -1,3 +1,13 @@
+## 2026-07-16 Modern and Legacy Mode Invariant Hardening
+
+- Audited the current compatibility path after the user reconfirmed that modern and legacy Roll20 are equally required targets.
+- Removed two independent preview-store mutators that could split HTML prefixing from legacy CSS sanitization. The product-facing and verification paths now converge on one atomic `modern|legacy` action.
+- Preserved the legacy-named browser-smoke alias as a compatibility shim, but it now selects the complete legacy or modern contract instead of toggling CSS alone.
+- Expanded final-row layout diagnostics. Local modern and legacy both measure the last row at `434.30px`; actual modern is about `433.91px` and actual legacy about `432.31px`. The larger legacy-only delta remains a real open runtime-model question.
+- Attempted read-only DOM collection from the already-open dedicated Roll20 modern and legacy tabs. Tab discovery succeeded, but the heavy editor tabs timed out before computed-style extraction. No Roll20 room or sheet was changed and no speculative geometry patch was made.
+- Verification passed: `ci:verify`, `test:roll20-render-modes`, lint, production build, `git diff --check`, and paired browser smoke `.tmp/paired-mode-invariant-r18` across all 3 ignored fixtures in both modes. `check:server-hygiene` reported zero project listeners after the browser smoke.
+- Next P0: obtain actual final-row computed-style evidence, then continue the stronger single-live-render-surface edit architecture without weakening either compatibility mode.
+
 ## 2026-07-16 Paired Runtime Paint and Initial Autocalc
 
 - Removed app CSS that overrode imported sheet background repeat/position and split disabled-input paint so modern and legacy remain independent runtime contracts.

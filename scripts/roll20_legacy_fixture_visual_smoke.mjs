@@ -436,7 +436,7 @@ async function capturePreviewMode(page, fixtureId, mode) {
         text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60),
       };
     }).filter((element) => element.display !== 'none' && element.height > 0);
-    const nestedLandmarks = [2, 3].map((index) => {
+    const nestedLandmarks = [2, 3, 6].map((index) => {
       const row = sheetEl.children[index];
       if (!row) return null;
       const rowRect = row.getBoundingClientRect();
@@ -468,7 +468,7 @@ async function capturePreviewMode(page, fixtureId, mode) {
       };
     }).filter(Boolean);
     const round = (value) => Math.round(value * 100) / 100;
-    const layoutContributors = [2, 3].map((index) => {
+    const layoutContributors = [2, 3, 6].map((index) => {
       const row = sheetEl.children[index];
       if (!row) return null;
       const rowRect = row.getBoundingClientRect();

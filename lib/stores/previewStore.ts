@@ -46,8 +46,6 @@ interface PreviewStore {
   dynamicToggles: DynamicToggle[];
 
   setDarkMode: (v: boolean) => void;
-  setSanitize: (v: boolean) => void;
-  setLegacyCssSanitize: (v: boolean) => void;
   setRoll20CompatibilityMode: (mode: Roll20CompatibilityMode) => void;
   setRoll20SandboxSanitize: (v: boolean) => void;
   setAutoRegen: (v: boolean) => void;
@@ -105,8 +103,6 @@ export const usePreviewStore = create<PreviewStore>((set) => ({
   dynamicToggles: [],
 
   setDarkMode: (v) => set({ darkMode: v }),
-  setSanitize: (v) => set({ sanitize: v }),
-  setLegacyCssSanitize: (v) => set({ legacyCssSanitize: v }),
   setRoll20CompatibilityMode: (mode) => set({
     sanitize: mode === 'legacy',
     legacyCssSanitize: mode === 'legacy',

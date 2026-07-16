@@ -157,9 +157,14 @@ assertCheck(checks, 'editor shell mounts the main toolbar', editorShell.includes
 assertCheck(checks, 'preview store defaults to modern class handling', /sanitize:\s*false/.test(previewStore));
 assertCheck(checks, 'preview store defaults legacy sanitize off', /legacyCssSanitize:\s*false/.test(previewStore));
 assertCheck(checks, 'legacy mode atomically enables prefix and CSS sanitize', /sanitize:\s*mode === 'legacy'[\s\S]*legacyCssSanitize:\s*mode === 'legacy'/.test(previewStore));
+assertCheck(checks, 'preview store exposes no independent compatibility mutators',
+  !previewStore.includes('setSanitize:') && !previewStore.includes('setLegacyCssSanitize:'));
 assertCheck(checks, 'visual smoke hook exposes the same atomic compatibility mode action',
   perfHook.includes('setRoll20CompatibilityMode: (mode: Roll20CompatibilityMode) => void')
     && perfHook.includes('usePreviewStore.getState().setRoll20CompatibilityMode(mode)'));
+assertCheck(checks, 'legacy compatibility smoke alias preserves the atomic mode invariant',
+  perfHook.includes("setRoll20CompatibilityMode(enabled ? 'legacy' : 'modern')")
+    && !perfHook.includes('usePreviewStore.getState().setLegacyCssSanitize(enabled)'));
 
 const report = {
   generatedAt: new Date().toISOString(),
