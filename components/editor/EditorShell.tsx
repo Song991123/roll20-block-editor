@@ -164,7 +164,9 @@ export default function EditorShell() {
   const leftWidth = leftCollapsed ? 'var(--sidebar-left-collapsed)' : 'var(--sidebar-left-w)';
   const rightWidthPx = rightCollapsed ? '0px' : `${rightWidth}px`;
 
-  // edit 모드 = workspace/preview 둘 다 hidden, EditCanvas 만 표시.
+  // Keep the canonical preview iframe mounted across mode switches. Hidden
+  // panes retain their live Roll20 runtime state while edit still uses the
+  // transitional Shadow interaction surface.
   const workspaceVisible = mainMode !== 'preview' && mainMode !== 'edit';
   const previewVisible = mainMode !== 'assemble' && mainMode !== 'edit';
 
@@ -189,22 +191,29 @@ export default function EditorShell() {
 
   // edit 모드는 캔버스 자체가 full pane.
   const editVisible = mainMode === 'edit';
+  const hiddenPaneStyle: CSSProperties = {
+    width: 0,
+    flexShrink: 0,
+    overflow: 'hidden',
+    pointerEvents: 'none',
+    visibility: 'hidden',
+  };
   let workspaceStyle: CSSProperties = {};
   let previewStyle: CSSProperties = {};
-  let editStyle: CSSProperties = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+  let editStyle: CSSProperties = hiddenPaneStyle;
   if (mainMode === 'split') {
     workspaceStyle = { width: `${mainSplit.left}%`, flexShrink: 0 };
     previewStyle = { width: `${mainSplit.right}%`, flexShrink: 0 };
   } else if (mainMode === 'assemble') {
     workspaceStyle = { flex: '1 1 auto' };
-    previewStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+    previewStyle = hiddenPaneStyle;
   } else if (mainMode === 'preview') {
-    workspaceStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+    workspaceStyle = hiddenPaneStyle;
     previewStyle = { flex: '1 1 auto' };
   } else {
     // mainMode === 'edit'
-    workspaceStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
-    previewStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+    workspaceStyle = hiddenPaneStyle;
+    previewStyle = hiddenPaneStyle;
     editStyle = { flex: '1 1 auto' };
   }
 
@@ -261,8 +270,10 @@ export default function EditorShell() {
               style={previewStyle}
               data-testid="preview-pane"
               data-visible={previewVisible ? 'true' : 'false'}
+              data-persistent-render-surface="true"
+              aria-hidden={previewVisible ? undefined : true}
             >
-              {previewVisible && <PreviewMain />}
+              <PreviewMain />
             </div>
 
             <div

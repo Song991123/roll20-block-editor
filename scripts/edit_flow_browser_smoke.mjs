@@ -520,6 +520,7 @@ async function main() {
     const rect = targetRow.getBoundingClientRect();
     const dt = new DataTransfer();
     dt.setData('application/x-r20-layer-block', movingId);
+    document.body.dataset.r20LayerDraggingBlock = movingId;
     const init = {
       bubbles: true,
       cancelable: true,
@@ -530,10 +531,13 @@ async function main() {
     Object.defineProperty(over, 'dataTransfer', { value: dt });
     targetRow.dispatchEvent(over);
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    const mode = targetRow.getAttribute('data-r20-layer-drop-mode') || '';
+    const currentTargetRow = document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`,
+    ) || targetRow;
+    const mode = currentTargetRow.getAttribute('data-r20-layer-drop-mode') || '';
     const drop = new DragEvent('drop', init);
     Object.defineProperty(drop, 'dataTransfer', { value: dt });
-    targetRow.dispatchEvent(drop);
+    currentTargetRow.dispatchEvent(drop);
     await new Promise((resolve) => setTimeout(resolve, 300));
     const after = childInputIds();
     return {

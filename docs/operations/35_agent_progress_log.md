@@ -1,3 +1,12 @@
+## 2026-07-16 Persistent Preview Surface Phase 1
+
+- Changed `EditorShell` so `PreviewMain` remains mounted in every main mode. Preview/edit switches now hide the pane without replacing the iframe, which preserves live Roll20 runtime and form state for the future overlay editor.
+- Added `scripts/persistent_preview_surface_smoke.mjs` and the `smoke:persistent-preview-surface` command. The smoke uses synthetic source only and validates modern and legacy independently, including the legacy-only runtime style marker.
+- Final persistent-surface evidence `.tmp/persistent-preview-surface-final-r27`: modern PASS and legacy PASS, iframe count `1`, load count `0`, same DOM element before/during/after edit, and input/runtime token preserved in both modes.
+- Focused ignored-fixture visual evidence `.tmp/preview-edit-persistent-r23`: modern `EXACT`, legacy `EXACT`, console errors `0`, page errors `0` for both rows.
+- During edit-flow regression, found a harness defect: a synthetic layer reorder omitted the body dataset normally set by `dragstart`, then read a row that React could replace after `dragover`. The smoke now mirrors the actual drag state and re-queries the current row. `.tmp/edit-flow-persistent-r26` PASSes with zero position drift and no console/page errors.
+- Claim boundary: the iframe is now persistent, but edit mode still renders the Shadow interaction surface. The next slice is iframe bridge plus overlay; do not remove Shadow or claim preview/edit single-DOM completion until modern and legacy interaction/runtime gates pass separately.
+
 ## 2026-07-16 Shared Render Contract and Two-Mode Preview/Edit Gate
 
 - Introduced a shared prepared render contract so iframe and Shadow serializers no longer repeat prefix, Sandbox sanitize, legacy sanitize, translation, autocalc, and repeating-runtime transformations.

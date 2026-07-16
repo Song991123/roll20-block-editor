@@ -1,3 +1,15 @@
+## 2026-07-16 Persistent Preview Surface Phase 1
+
+- DONE: `EditorShell` now keeps one canonical preview iframe mounted across `preview -> edit -> preview`. Hidden panes use zero width, hidden visibility, and disabled pointer events instead of unmounting the Roll20 runtime.
+- DONE: Added copyright-safe `smoke:persistent-preview-surface`. It runs modern and legacy as separate rows and checks iframe element identity, iframe count, reload count, input value, runtime token, pane visibility, and the mode-specific legacy input-state layer.
+- VERIFIED MODERN: `.tmp/persistent-preview-surface-final-r27` PASS; same iframe node, reload count `0`, input/runtime state preserved, and legacy input-state CSS absent.
+- VERIFIED LEGACY: `.tmp/persistent-preview-surface-final-r27` PASS independently; same iframe node, reload count `0`, input/runtime state preserved, and legacy input-state CSS present.
+- VERIFIED: Focused preview/edit visual regression `.tmp/preview-edit-persistent-r23` is `EXACT` for the measured ignored fixture in both modern and legacy, with console/page errors `0` in both rows.
+- VERIFIED: Edit-flow regression `.tmp/edit-flow-persistent-r26` PASSes flow/free placement, before/inside/after insertion, non-leaf reorder, absolute positioning inside a frame, canvas width controls, and `0px` post-drop drift. The smoke now mirrors the real layer `dragstart` state and re-queries a React-replaced row before reading its drop mode.
+- PARTIAL: Edit mode still displays the transitional Shadow interaction surface while the persistent iframe is hidden. This phase preserves the future canonical runtime but does not yet satisfy the final "preview render plus edit-only overlay" contract.
+- NEXT P0: Add a typed iframe edit bridge and parent-owned overlay for selection, drag preview, flow insertion, and absolute-in-frame coordinates. Keep Shadow as fallback until pointer, worker, roll/chat, zoom, optimistic drop, and modern/legacy gates pass independently.
+- COPYRIGHT: The synthetic persistent-surface input is committed; all real fixture source, screenshots, and generated report files remain ignored local evidence.
+
 ## 2026-07-16 Shared Render Contract and Two-Mode Preview/Edit Gate
 
 - DONE: Added `prepareSheetRenderContract` as the single source transformation path for iframe preview and Shadow edit serialization. Prefixing, expected Sandbox sanitization, legacy CSS sanitization, translation, initial autocalc, and repeating runtime HTML are now prepared once.
