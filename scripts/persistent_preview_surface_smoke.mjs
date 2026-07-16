@@ -97,7 +97,7 @@ async function runMode(browser, mode) {
         window.__perfHook.clearAll();
         if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 150));
         imported = await window.__perfHook.importSheet({
-          html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"></div><div class="sheet-probe-drop">Drop target</div></div>',
+          html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate>',
           css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
         });
         if (imported.blockCount > 0) return imported;
@@ -193,6 +193,54 @@ async function runMode(browser, mode) {
       null,
       { timeout: 30000 },
     );
+    result.layerSelection = await frame.evaluate(() => ({
+      targetBlockId: document
+        .querySelector('.sheet-probe-drop')
+        ?.getAttribute('data-r20-block-id') ?? null,
+    }));
+    result.layerSelection.layerRowClicked = await page.evaluate((blockId) => {
+      const row = Array.from(document.querySelectorAll('[data-testid="edit-layer-row"]'))
+        .find((node) => node.getAttribute('data-r20-block-id') === blockId);
+      if (!(row instanceof HTMLButtonElement)) return false;
+      row.click();
+      return true;
+    }, result.layerSelection.targetBlockId);
+    await frame.waitForFunction(
+      (blockId) => document
+        .querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)
+        ?.getAttribute('data-r20-preview-selected') === '1',
+      result.layerSelection.targetBlockId,
+      { timeout: 30000 },
+    );
+    result.layerSelection.iframeHighlighted = await frame.evaluate(
+      (blockId) => document
+        .querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)
+        ?.getAttribute('data-r20-preview-selected') === '1',
+      result.layerSelection.targetBlockId,
+    );
+    result.zoom = {
+      beforeLoadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
+    };
+    const widthInput = page.locator('[data-testid="edit-canvas-width-input"]');
+    await widthInput.fill('1600');
+    await page.locator('[data-testid="edit-zoom-100"]').click();
+    result.zoom.scale100 = await page.locator('[data-testid="preview-iframe"]')
+      .evaluate((node) => node.parentElement?.style.transform ?? '');
+    await page.locator('[data-testid="edit-zoom-fit"]').click();
+    await page.waitForFunction(() => {
+      const iframe = document.querySelector('[data-testid="preview-iframe"]');
+      const transform = iframe?.parentElement?.style.transform ?? '';
+      const match = transform.match(/scale\(([^)]+)\)/);
+      return Boolean(match && Number(match[1]) > 0 && Number(match[1]) < 1);
+    });
+    result.zoom.scaleFit = await page.locator('[data-testid="preview-iframe"]')
+      .evaluate((node) => node.parentElement?.style.transform ?? '');
+    await widthInput.fill('850');
+    await page.locator('[data-testid="edit-zoom-100"]').click();
+    Object.assign(result.zoom, await page.evaluate(() => ({
+      afterLoadCount: window.__persistentPreviewLoadCount,
+      iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
+    })));
     const overlaySignature = () => page.evaluate(() => {
       const overlay = document.querySelector('[data-testid="iframe-edit-overlay"]');
       return {
@@ -268,6 +316,19 @@ async function runMode(browser, mode) {
         ?.getAttribute('data-r20-preview-selected') === '1',
       result.bridgeDispatch.blockId,
       { timeout: 30000 },
+    );
+    await page.waitForFunction(
+      (blockId) => Array.from(document.querySelectorAll('[data-testid="edit-layer-row"]'))
+        .some((node) => node.getAttribute('data-r20-block-id') === blockId
+          && node.getAttribute('data-r20-layer-selected') === '1'),
+      result.bridgeDispatch.blockId,
+      { timeout: 30000 },
+    );
+    result.layerSelection.layerHighlightedFromIframe = await page.evaluate(
+      (blockId) => Array.from(document.querySelectorAll('[data-testid="edit-layer-row"]'))
+        .some((node) => node.getAttribute('data-r20-block-id') === blockId
+          && node.getAttribute('data-r20-layer-selected') === '1'),
+      result.bridgeDispatch.blockId,
     );
     result.pointerSequence = await frame.evaluate(() => {
       const subject = document.querySelector('.sheet-probe-card');
@@ -582,6 +643,24 @@ async function runMode(browser, mode) {
     });
     result.afterInputValue = await input.inputValue();
     result.afterRuntimeToken = await frame.evaluate(() => window.__persistentPreviewRuntimeToken);
+    result.rollChat = {
+      beforeCards: await page.locator('[data-r20-chat-card]').count(),
+    };
+    await frame.locator('button[type="roll"][name="roll_probe"]').click();
+    await page.locator('[data-testid="chat-list"] [data-r20-chat-rolltemplate="1"]')
+      .waitFor({ state: 'visible', timeout: 30000 });
+    Object.assign(result.rollChat, await page.evaluate(() => {
+      const cards = document.querySelectorAll('[data-r20-chat-card]');
+      const card = cards[0];
+      return {
+        afterCards: cards.length,
+        kind: card?.getAttribute('data-r20-chat-kind') ?? null,
+        rolltemplate: card?.getAttribute('data-r20-chat-rolltemplate') ?? null,
+        hasTemplateBody: Boolean(card?.querySelector('[class*="sheet-rolltemplate-default"]')),
+        iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
+        loadCount: window.__persistentPreviewLoadCount,
+      };
+    }));
     result.consoleErrors = consoleErrors;
     result.pageErrors = pageErrors;
     result.pass =
@@ -610,6 +689,13 @@ async function runMode(browser, mode) {
       && Math.abs(result.duringEdit.toolbarHeight - 36) <= 1
       && result.duringEdit.shadowCount === 1
       && result.duringEdit.loadCount === 0
+      && result.layerSelection.layerRowClicked === true
+      && result.layerSelection.iframeHighlighted === true
+      && result.layerSelection.layerHighlightedFromIframe === true
+      && result.zoom.scale100 === 'scale(1)'
+      && /^scale\(0\.[0-9]+\)$/.test(result.zoom.scaleFit)
+      && result.zoom.afterLoadCount === result.zoom.beforeLoadCount
+      && result.zoom.iframeCount === 1
       && result.staleBridgeRejected === true
       && result.bridgeDispatch.dispatched === true
       && result.bridgeDispatch.defaultPrevented === true
@@ -673,6 +759,12 @@ async function runMode(browser, mode) {
       && result.after.overlayCount === 0
       && result.afterInputValue === `runtime-${mode}`
       && result.afterRuntimeToken === token
+      && result.rollChat.afterCards === result.rollChat.beforeCards + 1
+      && result.rollChat.kind === 'rolltemplate'
+      && result.rollChat.rolltemplate === '1'
+      && result.rollChat.hasTemplateBody === true
+      && result.rollChat.iframeCount === 1
+      && result.rollChat.loadCount === 0
       && consoleErrors.length === 0
       && pageErrors.length === 0;
   } catch (error) {

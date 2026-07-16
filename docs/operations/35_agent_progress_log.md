@@ -4,8 +4,9 @@
 - Added containing-block geometry and managed design CSS commits for free placement. The visible drop position is held optimistically until the live iframe apply acknowledgement, avoiding rollback paint and keeping design coordinates out of authored HTML inline styles.
 - Bridged friendly widget drag/drop through the sandbox boundary. Only the known MIME and registered preset payloads are accepted; flow drops update Blockly topology and free drops use generated CSS classes.
 - Local evidence `.tmp/persistent-widget-drop-r55` PASSes modern and legacy independently. Each row verifies visible iframe geometry, flow and free commits, gallery drop, state preservation, zero iframe reloads, and zero browser errors.
+- Expanded evidence `.tmp/persistent-zoom-roll-r58` verifies layer selection in both directions, fit/100% zoom without iframe replacement, and a real preview roll button rendering a rolltemplate chat card in modern and legacy independently.
 - Static evidence: focused protocol/target/position tests, lint, and production build PASS.
-- Remaining boundary: the hidden Shadow render is still mounted as a transitional fallback, and actual Roll20 visual parity is not claimed. Next is visible-iframe layer/roll/chat/zoom coverage, followed by duplicate Shadow removal and actual Roll20 upload comparison.
+- Remaining boundary: the hidden Shadow render is still mounted as a transitional fallback, and actual Roll20 visual parity is not claimed. Worker-source replacement and context actions still need visible-iframe coverage before duplicate Shadow removal; actual Roll20 upload comparison remains separate.
 
 ## 2026-07-17 Persistent Iframe Edit Bridge Phase 2D
 

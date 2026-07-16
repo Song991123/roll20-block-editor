@@ -6,10 +6,11 @@
 - DONE: Widget gallery absolute placement now uses managed CSS rules. Flow placement still nests/reorders the Blockly topology and removes positional declarations.
 - VERIFIED MODERN: `.tmp/persistent-widget-drop-r55` modern PASS; visible edit iframe, exact layer/toolbar boundary, flow move, snapped free move, gallery drag/drop into a container, live apply acknowledgements, preserved input/runtime state, iframe reload count `0`, and console/page errors `0`.
 - VERIFIED LEGACY: The same report contains an independent legacy PASS with the same interaction/state assertions plus the legacy-only runtime style. Modern evidence is not reused.
+- VERIFIED INTERACTION: `.tmp/persistent-zoom-roll-r58` adds independent modern and legacy proof for layer-panel-to-iframe and iframe-to-layer selection, `100% -> fit -> 100%` zoom without iframe replacement, and a real preview roll button producing one rendered rolltemplate chat card. Both rows keep reload count `0` and browser errors `0`.
 - VERIFIED STATIC: `test:design-position`, `test:iframe-drop-target`, `test:iframe-edit-bridge`, lint, and production build PASS.
-- PARTIAL: `EditCanvas` still mounts the transitional Shadow surface underneath the visible iframe. Remove that duplicate render only after layer-panel selection, widget gallery drag, worker-source replacement, roll/chat, zoom, and context actions have independent modern and legacy browser coverage.
+- PARTIAL: `EditCanvas` still mounts the transitional Shadow surface underneath the visible iframe. Layer selection, gallery drag, roll/chat, and zoom now have two-mode coverage; worker-source replacement and context actions remain before duplicate-render removal.
 - PARTIAL: This proves local edit/preview surface identity and interaction persistence, not visual parity with actual Roll20. Actual Sandbox/test-room upload and strict modern/legacy comparison remain open.
-- NEXT P0: Add browser proof for layer-panel selection roundtrip and roll/chat/zoom on the visible iframe, then stop mounting the duplicate Shadow sheet surface and re-run both mode gates.
+- NEXT P0: Add visible-iframe worker-source replacement and context-action browser proof, then stop mounting the duplicate Shadow sheet surface and re-run both mode gates.
 - COPYRIGHT: Test source is synthetic. Generated reports remain ignored under `.tmp/`; no private sheet source, screenshot, or asset is staged.
 
 ## 2026-07-17 Persistent Iframe Edit Bridge Phase 2D
