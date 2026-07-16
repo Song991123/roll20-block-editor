@@ -32,6 +32,7 @@ import {
   roll20DarkmodeShadowCss,
 } from './roll20_base';
 import { runtimeCss } from './runtime';
+import { annotateRoll20AutocalcHtml } from './autocalc';
 
 export interface BuildDocOptions {
   html: string;
@@ -293,14 +294,27 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       control.className = 'repcontrol';
       var edit = document.createElement('button');
       edit.type = 'button';
-      edit.className = 'repcontrol_edit';
+      edit.className = 'btn repcontrol_edit';
       edit.textContent = 'Modify';
       var add = document.createElement('button');
       add.type = 'button';
-      add.className = 'repcontrol_add';
+      add.className = 'btn repcontrol_add';
       add.textContent = '+Add';
       control.append(edit, add);
       fieldset.after(container, control);
+    });
+  }
+  function emulateRoll20ButtonClasses() {
+    document.querySelectorAll('button[type="roll"], button[type="compendium"], .repcontrol button').forEach(function (button) {
+      button.classList.add('btn');
+      if (button.matches('button[type="roll"], button[type="compendium"]')) {
+        button.classList.add('ui-draggable');
+      }
+    });
+  }
+  function applyRoll20Autocalc() {
+    document.querySelectorAll('[data-r20-autocalc-value]').forEach(function (input) {
+      input.value = input.getAttribute('data-r20-autocalc-value') || '';
     });
   }
   function sheetWorkerGetSectionIDs(section, cb) {
@@ -489,6 +503,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   } catch (e) {}
   applyTranslations();
   emulateRoll20RepeatingSections();
+  emulateRoll20ButtonClasses();
+  applyRoll20Autocalc();
   installSheetWorkers();
   scheduleResize();
 })();
@@ -550,18 +566,6 @@ const ROLL20_DIALOG_OPEN_CSS = `
   display: none !important;
 }
 
-.charsheet input[disabled],
-.charsheet input[readonly],
-.charsheet select[disabled] {
-  background-color: rgba(255, 255, 255, 0) !important;
-  color: inherit !important;
-}
-
-.charsheet {
-  background-repeat: no-repeat !important;
-  background-position: top center !important;
-}
-
 rolltemplate,
 script {
   display: none !important;
@@ -575,6 +579,15 @@ script {
   max-height: 0 !important;
   overflow: hidden !important;
   pointer-events: none !important;
+}
+`;
+
+const ROLL20_LEGACY_INPUT_STATE_CSS = `
+.charsheet input[disabled],
+.charsheet input[readonly],
+.charsheet select[disabled] {
+  background-color: rgba(255, 255, 255, 0);
+  color: inherit;
 }
 `;
 
@@ -661,7 +674,7 @@ function applyTranslationsToHtml(html: string, i18n: string | undefined): string
 
 function addRoll20RepeatingRuntimeHtml(html: string): string {
   if (!html || !/repeating_/.test(html)) return html;
-  const runtime = '<div class="repcontainer"></div><div class="repcontrol"><button type="button" class="repcontrol_edit">Modify</button><button type="button" class="repcontrol_add">+Add</button></div>';
+  const runtime = '<div class="repcontainer"></div><div class="repcontrol"><button type="button" class="btn repcontrol_edit">Modify</button><button type="button" class="btn repcontrol_add">+Add</button></div>';
   return html.replace(/<fieldset\b[^>]*>[\s\S]*?<\/fieldset>/gi, (fieldset, offset, source) => {
     const startTag = fieldset.match(/^<fieldset\b[^>]*>/i)?.[0] ?? '';
     if (!/\bclass=(["'])[^"']*\brepeating_[^"']*\1/i.test(startTag)) return fieldset;
@@ -772,7 +785,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
     : sandboxCss;
 
   const bodyInner = sandboxHtml
-    ? addRoll20RepeatingRuntimeHtml(applyTranslationsToHtml(sandboxHtml, opts.i18n))
+    ? addRoll20RepeatingRuntimeHtml(annotateRoll20AutocalcHtml(applyTranslationsToHtml(sandboxHtml, opts.i18n)))
     : userHtml
       ? ''
       : EMPTY_PLACEHOLDER;
@@ -788,6 +801,7 @@ export function buildSheetDoc(opts: BuildDocOptions): string {
 <style id="roll20-base">${roll20BaseIframeCss}</style>${darkMode ? `
 <style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>` : ''}
 <style id="roll20-dialog-open">${ROLL20_DIALOG_OPEN_CSS}</style>
+${legacyCssSanitize ? `<style id="roll20-legacy-input-state">${ROLL20_LEGACY_INPUT_STATE_CSS}</style>` : ''}
 <style id="r20-runtime">${runtimeCss}</style>
 <style id="r20-layer-filter">${layerFilterCss()}</style>
 <style id="r20-user">${previewCss}</style>
@@ -841,7 +855,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
     : sandboxCss;
 
   const bodyInner = sandboxHtml
-    ? addRoll20RepeatingRuntimeHtml(applyTranslationsToHtml(sandboxHtml, opts.i18n))
+    ? addRoll20RepeatingRuntimeHtml(annotateRoll20AutocalcHtml(applyTranslationsToHtml(sandboxHtml, opts.i18n)))
     : EMPTY_PLACEHOLDER;
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
@@ -854,6 +868,7 @@ export function buildSheetParts(opts: BuildDocOptions): { html: string; css: str
     styleSourceChunk('roll20-base', roll20BaseShadowCss),
     darkMode ? styleSourceChunk('roll20-darkmode', roll20DarkmodeShadowCss) : '',
     styleSourceChunk('roll20-dialog-context', ROLL20_DIALOG_OPEN_CSS),
+    legacyCssSanitize ? styleSourceChunk('roll20-legacy-input-state', ROLL20_LEGACY_INPUT_STATE_CSS) : '',
     styleSourceChunk('app-preview-runtime', runtimeCss),
     styleSourceChunk('app-layer-filter', layerFilterCss('.charsheet')),
     styleSourceChunk('sheet-user-css', previewCss),

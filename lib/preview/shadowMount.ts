@@ -52,6 +52,7 @@
 /** Drag threshold — pointerdown 이후 이만큼 움직여야 drag 으로 간주 (px). */
 import { roll20ShadowDocumentFontFaceCss } from './roll20_base';
 import { parseTranslationMap } from '../export/payload';
+import { applyAnnotatedRoll20Autocalc } from './autocalc';
 
 const DRAG_THRESHOLD_PX = 3;
 const ROLL20_FONT_STYLE_ID = 'r20-shadow-document-font-faces';
@@ -223,14 +224,23 @@ function emulateRoll20RepeatingSections(root: ParentNode): void {
     control.className = 'repcontrol';
     const edit = document.createElement('button');
     edit.type = 'button';
-    edit.className = 'repcontrol_edit';
+    edit.className = 'btn repcontrol_edit';
     edit.textContent = 'Modify';
     const add = document.createElement('button');
     add.type = 'button';
-    add.className = 'repcontrol_add';
+    add.className = 'btn repcontrol_add';
     add.textContent = '+Add';
     control.append(edit, add);
     fieldset.after(container, control);
+  });
+}
+
+function emulateRoll20ButtonClasses(root: ParentNode): void {
+  root.querySelectorAll<HTMLButtonElement>('button[type="roll"], button[type="compendium"], .repcontrol button').forEach((button) => {
+    button.classList.add('btn');
+    if (button.matches('button[type="roll"], button[type="compendium"]')) {
+      button.classList.add('ui-draggable');
+    }
   });
 }
 
@@ -577,6 +587,8 @@ export function mountSheetShadow(
   // the same runtime DOM state as the iframe preview.
   applyTranslationsToScope(container, opts.i18n);
   emulateRoll20RepeatingSections(container);
+  emulateRoll20ButtonClasses(container);
+  applyAnnotatedRoll20Autocalc(container);
   // buildSheetParts already emits the real Roll20 .charsheet root. Put layer
   // state there so Shadow edit mode matches the iframe preview selector shape.
   const layerRoot =

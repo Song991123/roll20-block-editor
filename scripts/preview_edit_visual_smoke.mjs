@@ -235,6 +235,10 @@ function summarizeRenderStyles(sheetEl) {
       letterSpacing: cs.letterSpacing,
       color: cs.color,
       backgroundColor: cs.backgroundColor,
+      backgroundImage: cs.backgroundImage,
+      backgroundRepeat: cs.backgroundRepeat,
+      backgroundPosition: cs.backgroundPosition,
+      backgroundSize: cs.backgroundSize,
       overflow: cs.overflow,
     };
   }
@@ -1090,6 +1094,10 @@ function compareRenderStyles(preview, edit) {
     'letterSpacing',
     'color',
     'backgroundColor',
+    'backgroundImage',
+    'backgroundRepeat',
+    'backgroundPosition',
+    'backgroundSize',
     'overflow',
   ];
 

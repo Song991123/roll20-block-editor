@@ -1,3 +1,15 @@
+## 2026-07-16 Paired Runtime Paint and Initial Autocalc
+
+- DONE: Removed app-owned dialog CSS that forced `.charsheet` background repeat/position and common disabled-input paint over imported user CSS. Modern mode now keeps native modern disabled control paint; legacy mode receives a separate, overridable legacy input-state layer.
+- DONE: Mirrored Roll20-generated runtime classes on roll, compendium, and repeating-section buttons in both iframe preview and Shadow edit mounts. The implementation is generic runtime behavior and contains no fixture selector.
+- DONE: Added deterministic initial Roll20 autocalc for disabled number inputs by reusing the existing dice parser/executor. The preview-only runtime value is stored separately while the original HTML `value` formula remains unchanged for export and block roundtrip.
+- VERIFIED MODERN: The prepared ignored fixture renders at `1189x1936`; `attr_hp_max=10`, `attr_mp_max=10`, and `attr_san_max=99` match the captured actual Roll20 initial state. Actual-vs-local channel-delta-60 mismatch improved from `4.458%` to `4.434%`; mean absolute channel difference improved from `5.357` to `5.318`.
+- VERIFIED LEGACY: The same source renders through the independent legacy contract at `895x1919` versus actual `896x1917`; the same three initial number values resolve to `10`, `10`, and `99`. With the recorded one-pixel vertical alignment, channel-delta-60 mismatch improved from `6.379%` to `6.375%`; mean absolute channel difference is `8.725` versus the prior `8.720` and therefore is not claimed as a uniform pixel improvement.
+- VERIFIED: Full paired smoke `.tmp/paired-all-runtime-r16` PASSes all 3 prepared ignored fixtures in both modes. The measured fixture imported `6530` blocks with worker `1`, warnings `2`, stable geometry, console errors `0`, and page errors `0`. `test:roll20-render-modes`, lint, and production build also PASS.
+- PARTIAL: Current preview/edit browser smoke has identical DOM signatures, computed styles, and visible geometry, but pixel parity is blocked by a private fixture background request returning Imgur `403` only during the Shadow capture. The failed external asset is recorded separately; no copyrighted asset is embedded, cached, or committed as a workaround.
+- CONTRACT: Modern and legacy remain separate required destinations. This batch is accepted only because runtime behavior is shared where Roll20 behavior is shared and mode-specific paint stays isolated; neither mode borrows the other's visual evidence.
+- NEXT P0: Re-run preview/edit pixel parity with a user-owned ignored asset-relink map, then isolate the remaining legacy bottom-section geometry and expand actual Roll20 evidence beyond this prepared fixture.
+
 ## 2026-07-16 Roll20 Runtime Control Geometry Alignment
 
 - ROOT CAUSE: Actual Roll20 gives generated roll buttons runtime behavior equivalent to `vertical-align: middle`; the local shared baseline left them at the browser default `baseline`. The button boxes were already `20x20`, but their inline alignment made the HP/wound/SAN row about `9px` too tall in both render modes.

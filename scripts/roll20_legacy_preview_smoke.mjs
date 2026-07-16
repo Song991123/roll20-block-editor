@@ -32,6 +32,9 @@ const HTML = `
 <div class="legacy-card">
   <button type="roll" name="roll_test" value="/roll 1d20">Roll</button>
   <span data-i18n="hello">hello</span>
+  <input type="number" name="attr_base" value="50">
+  <input type="number" name="attr_total" value="floor(@{base}/5)" disabled>
+  <fieldset class="repeating_items"></fieldset>
 </div>
 `.trim();
 
@@ -86,9 +89,15 @@ const legacyParts = buildSheetParts({ html: HTML, css: CSS, i18n: I18N, sanitize
 const modernUserCss = extractStyle(modernDoc, 'r20-user');
 const legacyUserCss = extractStyle(legacyDoc, 'r20-user');
 const modernBaseCss = extractStyle(modernDoc, 'roll20-base');
+const modernDialogCss = extractStyle(modernDoc, 'roll20-dialog-open');
+const modernLegacyInputCss = extractStyle(modernDoc, 'roll20-legacy-input-state');
+const legacyInputCss = extractStyle(legacyDoc, 'roll20-legacy-input-state');
 const modernShadowUserCss = extractStyleSourceChunk(modernParts.css, 'sheet-user-css');
 const legacyShadowUserCss = extractStyleSourceChunk(legacyParts.css, 'sheet-user-css');
 const modernShadowBaseCss = extractStyleSourceChunk(modernParts.css, 'roll20-base');
+const modernShadowDialogCss = extractStyleSourceChunk(modernParts.css, 'roll20-dialog-context');
+const modernShadowLegacyInputCss = extractStyleSourceChunk(modernParts.css, 'roll20-legacy-input-state');
+const legacyShadowInputCss = extractStyleSourceChunk(legacyParts.css, 'roll20-legacy-input-state');
 const checks = [];
 
 assertCheck(checks, 'iframe modern preserves authored HTML class', modernDoc.includes('class="legacy-card"'));
@@ -103,9 +112,16 @@ assertCheck(checks, 'iframe legacy removes keyframes', !/@(?:-[a-z]+-)?keyframes
 assertCheck(checks, 'iframe legacy inlines CSS var', includesText(legacyUserCss, 'color: #c02030'));
 assertCheck(checks, 'iframe legacy preserves stable CSS', includesText(legacyUserCss, 'padding: 8px') && includesText(legacyUserCss, 'color: red'));
 assertCheck(checks, 'iframe runtime still hides scripts and rolltemplates after user CSS', modernDoc.indexOf('id="r20-preview-hidden"') > modernDoc.indexOf('id="r20-user"'));
+assertCheck(checks, 'iframe dialog context does not override disabled input paint', !/input\[disabled\]|input\[readonly\]|select\[disabled\]/i.test(modernDialogCss));
+assertCheck(checks, 'iframe dialog context does not override sheet backgrounds', !/\.charsheet\s*{[\s\S]*?background-(?:repeat|position)/i.test(modernDialogCss));
+assertCheck(checks, 'iframe modern does not force legacy disabled input paint', modernLegacyInputCss === '');
+assertCheck(checks, 'iframe legacy applies overridable disabled input paint', /input\[disabled\][\s\S]*?background-color:\s*rgba\(255,\s*255,\s*255,\s*0\)/i.test(legacyInputCss) && !/!important/i.test(legacyInputCss));
 assertCheck(checks, 'iframe base mirrors current Roll20 text input height', /\.charsheet input\[type="text"\]\s*{\s*height:\s*26px;/i.test(modernBaseCss));
 assertCheck(checks, 'iframe base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;[\s\S]*?vertical-align:\s*middle;/i.test(modernBaseCss));
 assertCheck(checks, 'iframe base mirrors Roll20 repeating-control height', /\.charsheet \.repcontrol\s*{\s*min-height:\s*27\.6px;/i.test(modernBaseCss));
+assertCheck(checks, 'iframe runtime applies Roll20 button classes', modernDoc.includes("button.classList.add('btn')") && modernDoc.includes("button.classList.add('ui-draggable')"));
+assertCheck(checks, 'iframe runtime applies annotated Roll20 autocalc values', modernDoc.includes('data-r20-autocalc-value') && modernDoc.includes('applyRoll20Autocalc'));
+assertCheck(checks, 'iframe repeating controls use Roll20 btn class', modernDoc.includes('class="btn repcontrol_edit"') && modernDoc.includes('class="btn repcontrol_add"'));
 
 assertCheck(checks, 'shadow modern preserves authored HTML class', modernParts.html.includes('class="legacy-card"'));
 assertCheck(checks, 'shadow modern does not legacy-prefix HTML class', !modernParts.html.includes('class="sheet-legacy-card"'));
@@ -121,6 +137,13 @@ assertCheck(checks, 'shadow legacy preserves stable CSS', includesText(legacySha
 assertCheck(checks, 'shadow base mirrors current Roll20 text input height', /\.charsheet input\[type="text"\]\s*{\s*height:\s*26px;/i.test(modernShadowBaseCss));
 assertCheck(checks, 'shadow base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;[\s\S]*?vertical-align:\s*middle;/i.test(modernShadowBaseCss));
 assertCheck(checks, 'shadow base mirrors Roll20 repeating-control height', /\.charsheet \.repcontrol\s*{\s*min-height:\s*27\.6px;/i.test(modernShadowBaseCss));
+assertCheck(checks, 'shadow repeating controls use Roll20 btn class', modernParts.html.includes('class="btn repcontrol_edit"') && modernParts.html.includes('class="btn repcontrol_add"'));
+assertCheck(checks, 'shadow mount applies Roll20 runtime button classes', readFileSync(join(REPO_ROOT, 'lib/preview/shadowMount.ts'), 'utf8').includes("button.classList.add('ui-draggable')"));
+assertCheck(checks, 'shadow mount applies annotated Roll20 autocalc values', readFileSync(join(REPO_ROOT, 'lib/preview/shadowMount.ts'), 'utf8').includes('applyAnnotatedRoll20Autocalc(container)'));
+assertCheck(checks, 'shadow dialog context does not override disabled input paint', !/input\[disabled\]|input\[readonly\]|select\[disabled\]/i.test(modernShadowDialogCss));
+assertCheck(checks, 'shadow dialog context does not override sheet backgrounds', !/\.charsheet\s*{[\s\S]*?background-(?:repeat|position)/i.test(modernShadowDialogCss));
+assertCheck(checks, 'shadow modern does not force legacy disabled input paint', modernShadowLegacyInputCss === '');
+assertCheck(checks, 'shadow legacy applies overridable disabled input paint', /input\[disabled\][\s\S]*?background-color:\s*rgba\(255,\s*255,\s*255,\s*0\)/i.test(legacyShadowInputCss) && !/!important/i.test(legacyShadowInputCss));
 
 const mainAreaToolbar = readFileSync(join(REPO_ROOT, 'components/editor/MainAreaToolbar.tsx'), 'utf8');
 const editorShell = readFileSync(join(REPO_ROOT, 'components/editor/EditorShell.tsx'), 'utf8');

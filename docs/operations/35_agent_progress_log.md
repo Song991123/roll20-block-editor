@@ -1,3 +1,14 @@
+## 2026-07-16 Paired Runtime Paint and Initial Autocalc
+
+- Removed app CSS that overrode imported sheet background repeat/position and split disabled-input paint so modern and legacy remain independent runtime contracts.
+- Added Roll20 runtime `btn`/`ui-draggable` classes and repeating-control classes to both iframe and Shadow mounts.
+- Added deterministic preview-only autocalc for disabled number controls using the existing parser/executor. The prepared fixture now resolves HP max `10`, MP max `10`, and SAN max `99` in both modes while preserving every original formula in the HTML value attribute.
+- Latest ignored paired smoke `.tmp/paired-all-runtime-r16` PASSes all 3 prepared fixtures in both modes. The measured fixture renders modern `1189x1936` and legacy `895x1919`, with import `6530` blocks, worker `1`, warnings `2`, console errors `0`, and page errors `0`.
+- Actual/local delta-60 results: modern `4.434%` with mean absolute channel delta `5.318`; legacy best-aligned `6.375%` with mean `8.725`. These are partial improvements, not visual parity.
+- Preview/edit DOM signature, computed-style, and visible-geometry parity all PASSed. Pixel comparison is currently `BLOCKED_ASSET`: the ignored private fixture root background returned Imgur `403` in the Shadow capture. The evidence remains local and no external asset bytes were added to the repository.
+- Verification completed in this batch: `test:roll20-render-modes`, lint, production build, paired browser fixture smoke, syntax check, and diff check. Preview/edit pixel PASS remains open until a user-owned ignored relink target is supplied.
+- Next: preserve the two-mode gate, rerun asset-safe preview/edit parity, then diagnose the remaining legacy bottom geometry without fixture-specific CSS.
+
 ## 2026-07-16 Roll20 Runtime Control Geometry Alignment
 
 - Live actual Roll20 geometry showed that roll-button box size already matched, but generated Roll20 roll buttons align to the middle while the local baseline used the browser's baseline alignment. This accounted for about `9px` of false height in the HP/wound/SAN region in both modern and legacy modes.

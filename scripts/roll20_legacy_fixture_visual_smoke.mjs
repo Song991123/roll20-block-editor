@@ -188,6 +188,37 @@ async function setCompatibilityMode(page, mode) {
   await page.waitForTimeout(900);
 }
 
+async function waitForStableSheet(page, sheet) {
+  await sheet.evaluate(async (sheetEl) => {
+    const doc = sheetEl.ownerDocument;
+    if (doc.fonts?.ready) await doc.fonts.ready;
+    const pending = Array.from(sheetEl.querySelectorAll('img')).filter((image) => !image.complete);
+    await Promise.all(pending.map((image) => new Promise((resolve) => {
+      const done = () => resolve();
+      image.addEventListener('load', done, { once: true });
+      image.addEventListener('error', done, { once: true });
+      setTimeout(done, 5000);
+    })));
+  });
+
+  let previous = null;
+  let stableSamples = 0;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const current = await sheet.evaluate((sheetEl) => ({
+      width: sheetEl.scrollWidth,
+      height: sheetEl.scrollHeight,
+      rectWidth: Math.round(sheetEl.getBoundingClientRect().width * 100) / 100,
+      rectHeight: Math.round(sheetEl.getBoundingClientRect().height * 100) / 100,
+    }));
+    const signature = JSON.stringify(current);
+    stableSamples = signature === previous ? stableSamples + 1 : 0;
+    if (stableSamples >= 3) return current;
+    previous = signature;
+    await page.waitForTimeout(150);
+  }
+  throw new Error('preview sheet geometry did not stabilize before capture');
+}
+
 function captureStops(contentSize, viewportSize, overlap = 96) {
   const max = Math.max(0, Math.ceil(contentSize - viewportSize));
   if (max === 0) return [0];
@@ -343,6 +374,7 @@ async function capturePreviewMode(page, fixtureId, mode) {
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
+  const stableGeometry = await waitForStableSheet(page, sheet);
   const style = frame.locator('#r20-user').first();
   const userCss = (await style.textContent({ timeout: 30000 }).catch(() => '')) ?? '';
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-${mode}.png`);
@@ -545,8 +577,12 @@ async function capturePreviewMode(page, fixtureId, mode) {
         className: element.className,
         name: element.getAttribute('name'),
         type: element.getAttribute('type'),
+        disabled: 'disabled' in element ? Boolean(element.disabled) : null,
         value: 'value' in element ? String(element.value) : null,
+        valueAttribute: element.getAttribute('value'),
         defaultValue: 'defaultValue' in element ? String(element.defaultValue) : null,
+        autocalcExpression: element.getAttribute('data-r20-autocalc-expression'),
+        autocalcValue: element.getAttribute('data-r20-autocalc-value'),
         checked: 'checked' in element ? Boolean(element.checked) : null,
         defaultChecked: 'defaultChecked' in element ? Boolean(element.defaultChecked) : null,
         display: style.display,
@@ -568,7 +604,10 @@ async function capturePreviewMode(page, fixtureId, mode) {
       };
     });
     const stateInputs = controlStates.filter((control) => (
-      control.tag === 'SELECT' || ['hidden', 'checkbox', 'radio'].includes(control.type || '')
+      control.tag === 'SELECT' ||
+      control.disabled ||
+      control.autocalcValue !== null ||
+      ['hidden', 'checkbox', 'radio'].includes(control.type || '')
     ));
     const controlGroupMap = new Map();
     controlStates.filter((control) => control.visible).forEach((control) => {
@@ -642,6 +681,7 @@ async function capturePreviewMode(page, fixtureId, mode) {
   return {
     mode,
     path: output,
+    stableGeometry,
     cssLen: userCss.length,
     userCss,
     risk: countLegacyRisks(userCss),
