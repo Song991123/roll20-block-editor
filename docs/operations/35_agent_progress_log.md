@@ -1,3 +1,10 @@
+## 2026-07-17 Matching-Runtime Activation Evidence
+
+- Rechecked the paired actual evidence against later local runs and confirmed that the previously reported shared `+9px` row drift was stale: current modern local root height matches actual at `1936px`, while legacy retains an isolated roughly `2px` final-section difference.
+- Extended `roll20_upload_snippet.mjs` so its generated activation checker returns bounded root/top-level/direct-child geometry and computed styles, focused-control state, and representative attribute values for the visible matching-runtime sheet.
+- Added an explicit ignored output override for locked canonical reports. A real local payload generated under `%TEMP%\roll20-activation-render-evidence-r3`; source and generated activation snippets passed syntax/self-tests.
+- No Roll20 room was modified in this batch. The next actual step remains separate modern Sandbox and legacy test-room activation capture before any renderer CSS change.
+
 ## 2026-07-17 Canonical Iframe Edit Surface Phase 2F
 
 - Connected iframe right click to the existing edit context menu through the validated opaque-origin bridge. Parent coordinates account for iframe scaling, and non-left pointerdown no longer enters drag state.

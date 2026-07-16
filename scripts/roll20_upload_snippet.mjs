@@ -21,6 +21,7 @@ const SELF_TEST = args.includes('--self-test');
 const APPLY_SETTINGS = args.includes('--apply-settings');
 const ENDPOINT_CAMPAIGN_ID = readOptionValue(args, '--endpoint-campaign-id') || '';
 const EXPECTED_RUNTIME_MODE = readOptionValue(args, '--expected-runtime-mode') || 'auto';
+const OUT_DIR_ARG = readOptionValue(args, '--out-dir') || '';
 
 if (SELF_TEST) {
   runSelfTest();
@@ -60,7 +61,9 @@ async function main() {
     .sort((a, b) => a.localeCompare(b));
   if (!fixtureIds.length) throw new Error(`no matching fixture found${ONLY ? `: ${ONLY}` : ''}`);
 
-  const outDir = path.join(runDir, 'roll20-upload-handoff', 'snippets');
+  const outDir = OUT_DIR_ARG
+    ? path.resolve(OUT_DIR_ARG)
+    : path.join(runDir, 'roll20-upload-handoff', 'snippets');
   await fs.mkdir(outDir, { recursive: true });
 
   const entries = [];
@@ -88,6 +91,7 @@ async function main() {
     applySettings: APPLY_SETTINGS,
     endpointCampaignId: ENDPOINT_CAMPAIGN_ID || null,
     expectedRuntimeMode: EXPECTED_RUNTIME_MODE,
+    outputOverride: OUT_DIR_ARG ? outDir : null,
     snippets: entries.map((entry) => entry.snippetRelativePath),
     activationCheckSnippets: entries.map((entry) => entry.activationCheckSnippetRelativePath),
   }, null, 2));
@@ -369,8 +373,98 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
   const isVisible = (el) => {
     if (!el) return false;
     const rect = el.getBoundingClientRect?.();
-    const style = getComputedStyle(el);
+    const style = el.ownerDocument?.defaultView?.getComputedStyle(el);
     return Boolean(rect && rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0');
+  };
+  const round = (value) => Math.round(Number(value || 0) * 1000) / 1000;
+  const summarizeElement = (el, rootRect, index = null) => {
+    if (!el) return null;
+    const rect = el.getBoundingClientRect?.();
+    const style = el.ownerDocument?.defaultView?.getComputedStyle(el);
+    if (!rect || !style) return null;
+    return {
+      index,
+      tag: el.tagName,
+      id: el.id || '',
+      className: typeof el.className === 'string' ? el.className : '',
+      name: el.getAttribute?.('name') || '',
+      type: el.getAttribute?.('type') || '',
+      rect: {
+        left: round(rect.left - rootRect.left),
+        top: round(rect.top - rootRect.top),
+        width: round(rect.width),
+        height: round(rect.height),
+      },
+      style: {
+        display: style.display,
+        position: style.position,
+        boxSizing: style.boxSizing,
+        width: style.width,
+        height: style.height,
+        minHeight: style.minHeight,
+        maxHeight: style.maxHeight,
+        margin: style.margin,
+        padding: style.padding,
+        border: style.border,
+        verticalAlign: style.verticalAlign,
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        lineHeight: style.lineHeight,
+        overflow: style.overflow,
+        overflowX: style.overflowX,
+        overflowY: style.overflowY,
+      },
+    };
+  };
+  const collectRenderEvidence = (doc) => {
+    const roots = Array.from(doc.querySelectorAll('.charactersheet,.charsheet'));
+    const root = roots.find(isVisible) || roots[0] || null;
+    if (!root) return null;
+    const rootRect = root.getBoundingClientRect();
+    const topLevelChildren = Array.from(root.children)
+      .filter(isVisible)
+      .slice(0, 40)
+      .map((el, index) => ({
+        ...summarizeElement(el, rootRect, index),
+        directChildren: Array.from(el.children)
+          .filter(isVisible)
+          .slice(0, 16)
+          .map((child, childIndex) => summarizeElement(child, rootRect, childIndex)),
+      }));
+    const active = doc.activeElement && root.contains(doc.activeElement)
+      ? doc.activeElement
+      : null;
+    const wantedAttrs = new Set(attrNames.slice(0, 80));
+    const attributeState = Array.from(root.querySelectorAll('[name^="attr_"]'))
+      .filter((el) => wantedAttrs.has(el.getAttribute('name')))
+      .slice(0, 80)
+      .map((el) => ({
+        name: el.getAttribute('name') || '',
+        tag: el.tagName,
+        type: el.getAttribute('type') || '',
+        value: 'value' in el ? String(el.value ?? '') : '',
+        defaultValue: 'defaultValue' in el ? String(el.defaultValue ?? '') : '',
+        checked: 'checked' in el ? Boolean(el.checked) : null,
+        defaultChecked: 'defaultChecked' in el ? Boolean(el.defaultChecked) : null,
+        disabled: Boolean(el.disabled),
+      }));
+    return {
+      root: summarizeElement(root, rootRect),
+      rootScroll: {
+        width: root.scrollWidth,
+        height: root.scrollHeight,
+      },
+      topLevelChildren,
+      focusedControl: active ? {
+        ...summarizeElement(active, rootRect),
+        value: 'value' in active ? String(active.value ?? '') : '',
+        defaultValue: 'defaultValue' in active ? String(active.defaultValue ?? '') : '',
+        checked: 'checked' in active ? Boolean(active.checked) : null,
+        defaultChecked: 'defaultChecked' in active ? Boolean(active.defaultChecked) : null,
+        disabled: Boolean(active.disabled),
+      } : null,
+      attributeState,
+    };
   };
   const collectDocumentProbe = (doc, label) => {
     const bodyText = normalize(doc.body?.innerText || doc.body?.textContent || '');
@@ -396,6 +490,7 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
         domRolltemplateClasses: domRolltemplateClasses.slice(-20),
         bodyTextSnippet: bodyText.slice(0, 800),
       },
+      renderEvidence: collectRenderEvidence(doc),
     };
   };
   const inspectSheetIframes = () => Array.from(document.querySelectorAll('iframe')).map((frame, index) => {
@@ -891,6 +986,8 @@ function renderReadme(report) {
     '',
     'Default snippets are non-submitting helpers. Pass `--apply-settings --endpoint-campaign-id <sandboxCampaignId>` only for the dedicated Sandbox/test room when you intentionally want the generated snippet to save settings. The endpoint fallback runs only when the Roll20 file-input handler could not run.',
     '',
+    'If the canonical ignored report folder is locked, pass `--out-dir <ignored-local-folder>` to generate a fresh handoff without overwriting earlier evidence.',
+    '',
     'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. A 2026-07-16 live handler inspection confirmed that this invokes the same Roll20 delegated handler as a manual file choice: FileReader reads raw text, the page POSTs base64 source to `/sheetsandbox/savesheetsettings`, then reloads sheet data and open characters. The helper also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. When file inputs are unavailable, the explicit endpoint fallback uses the same form-encoded payload shape and triggers the same reload helpers. Upload execution is still not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` means a character-sheet iframe exists but top-document JS could not prove its markers, and `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
     '',
     'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `RUNTIME_MODE_MISMATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. The expected modern/legacy mode comes from `sheet.json` unless `--expected-runtime-mode modern|legacy` overrides it. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH`, a matching runtime mode, and a visual check that the visible sheet belongs to the intended fixture.',
@@ -990,6 +1087,13 @@ function runSelfTest() {
     }],
   });
   const failures = [];
+  try {
+    new Function(snippet);
+    new Function(applySnippet);
+    new Function(activationCheckSnippet);
+  } catch (error) {
+    failures.push(`generated snippet syntax error: ${error?.message || error}`);
+  }
   if (!settings?.jsoninfo) failures.push('settings manifest missing jsoninfo wrapper');
   if (!settings?.sheet?.long_name) failures.push('settings manifest missing sheet.long_name');
   if (validation.shape !== 'wrapped-jsoninfo') failures.push(`validation shape was ${validation.shape}`);
@@ -1020,10 +1124,15 @@ function runSelfTest() {
   if (!snippet.includes('CHARACTER_DIALOG_NO_SHEET_BODY')) failures.push('generated upload snippet missing character dialog state');
   if (!applySnippet.includes("save-button-missing")) failures.push('apply snippet should tolerate missing settings save button on editor pages');
   if (!activationCheckSnippet.includes('rollButtonCount')) failures.push('generated activation check missing roll button count');
+  if (!activationCheckSnippet.includes('renderEvidence')) failures.push('generated activation check missing render evidence');
+  if (!activationCheckSnippet.includes('topLevelChildren')) failures.push('generated activation check missing top-level geometry');
+  if (!activationCheckSnippet.includes('focusedControl')) failures.push('generated activation check missing focus state');
+  if (!activationCheckSnippet.includes('attributeState')) failures.push('generated activation check missing attribute state');
   if (!readme.includes('settings-page `{ sheet, userOptions, jsoninfo }` wrapper')) failures.push('generated README text does not describe wrapper');
   if (!readme.includes('Activation check')) failures.push('generated README missing activation check column');
   if (!readme.includes('*-activation-check-snippet.js')) failures.push('generated README missing activation check instruction');
   if (!readme.includes('Apply settings')) failures.push('generated README missing apply settings column');
+  if (!readme.includes('--out-dir <ignored-local-folder>')) failures.push('generated README missing output override instruction');
   if (failures.length) throw new Error(`roll20_upload_snippet self-test failed: ${failures.join(', ')}`);
   console.log('ROLL20 UPLOAD SNIPPET SELF-TEST PASS');
 }

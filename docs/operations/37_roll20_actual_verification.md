@@ -730,6 +730,20 @@ and editor reload, run the generated activation checker. Its expected
 `RUNTIME_MODE_MISMATCH`, parse error, missing sheet body, or unproven iframe
 blocks screenshot promotion.
 
+When an existing ignored report is locked, generate a fresh handoff without
+rewriting it:
+
+```bash
+corepack pnpm run snippet:roll20-upload -- <run-dir> <fixture-id> --out-dir <ignored-local-folder>
+```
+
+The activation checker includes bounded `renderEvidence` for every accessible
+sheet document: root geometry/scroll size, top-level rows and direct-child
+computed styles, focused-control state, and representative attribute values.
+Keep this output local-only. Compare modern and legacy results independently;
+the evidence is intended to separate state/focus differences from real
+mode-specific layout differences before a renderer patch.
+
 If the dedicated sandbox upload fallback above is used instead of file chooser
 upload, still keep the handoff/checklist and status commands current. Screenshot
 evidence remains the gate; endpoint success alone is not Roll20 visual parity.
