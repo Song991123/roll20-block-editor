@@ -64,6 +64,16 @@ export interface BuildDocOptions {
   selectedWidgetName?: string | null;
 }
 
+export interface SheetLivePatch {
+  html: string;
+  styles: Record<string, string>;
+  i18n: string;
+  darkMode: boolean;
+  layer: NonNullable<BuildDocOptions['previewLayer']>;
+  roll20SandboxSanitize: boolean;
+  roll20RendererModel: NonNullable<BuildDocOptions['roll20RendererModel']>;
+}
+
 /** 미리보기 iframe 안에서 부모창에 클릭 이벤트 전달하는 ES2015 inline 스크립트. */
 const PREVIEW_BRIDGE_SCRIPT = String.raw`
 (function () {
@@ -168,6 +178,89 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (selected) postEditHit('measure', selected, selected, {
       x: 0, y: 0, pointerId: -1, button: -1, buttons: 0
     });
+  }
+  function workerSourceText(root) {
+    if (!root) return '';
+    var scripts = root.querySelectorAll('script[type="text/worker"]');
+    var out = [];
+    for (var i = 0; i < scripts.length; i++) out.push(scripts[i].textContent || '');
+    return out.join('\n/* r20-worker-boundary */\n');
+  }
+  function ensureStyle(id, css) {
+    var style = document.getElementById(id);
+    if (!css) {
+      if (style) style.remove();
+      return;
+    }
+    if (!style) {
+      style = document.createElement('style');
+      style.id = id;
+      document.head.appendChild(style);
+    }
+    style.textContent = css;
+  }
+  function applyLivePatch(data) {
+    if (!data || !Number.isInteger(data.revision) || data.revision < 1) return;
+    if (typeof data.html !== 'string' || data.html.length > 15000000) return;
+    if (!data.styles || typeof data.styles !== 'object') return;
+    var allowedStyles = [
+      'roll20-base-dark',
+      'roll20-legacy-input-state',
+      'r20-layer-filter',
+      'r20-user',
+      'r20-renderer-model'
+    ];
+    var totalCss = 0;
+    for (var i = 0; i < allowedStyles.length; i++) {
+      var css = data.styles[allowedStyles[i]];
+      if (typeof css !== 'string') return;
+      totalCss += css.length;
+    }
+    if (totalCss > 15000000 || typeof data.i18n !== 'string' || data.i18n.length > 5000000) return;
+    var root = document.getElementById('charsheet-root');
+    if (!root) return;
+    var attrs = collectAttrs();
+    var previousWorkerSource = workerSourceText(root);
+    root.innerHTML = data.html;
+    for (var j = 0; j < allowedStyles.length; j++) {
+      ensureStyle(allowedStyles[j], data.styles[allowedStyles[j]]);
+    }
+    if (data.darkMode === true) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.body.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      document.body.removeAttribute('data-theme');
+    }
+    document.body.setAttribute('data-layer', typeof data.layer === 'string' ? data.layer : 'all');
+    document.body.setAttribute('data-roll20-sandbox-sanitize', data.roll20SandboxSanitize === true ? '1' : '0');
+    document.body.setAttribute('data-roll20-renderer-model', String(data.roll20RendererModel || 'default'));
+    var tabContent = document.getElementById('tab-content');
+    root.classList.toggle('sheet-darkmode', data.darkMode === true);
+    if (tabContent) tabContent.classList.toggle('sheet-darkmode', data.darkMode === true);
+    var i18nNode = document.getElementById('__r20-i18n');
+    if (i18nNode) i18nNode.textContent = JSON.stringify(data.i18n);
+    translations = loadTranslations();
+    applyTranslations();
+    emulateRoll20RepeatingSections();
+    emulateRoll20ButtonClasses();
+    applyRoll20Autocalc();
+    Object.keys(attrs).forEach(function (key) { writeSheetAttr(key, attrs[key]); });
+    var nextWorkerSource = workerSourceText(root);
+    if (nextWorkerSource !== previousWorkerSource) {
+      sheetWorkerHandlers = {};
+      installSheetWorkers();
+    }
+    scheduleResize();
+    try {
+      parent.postMessage({
+        type: 'r20:edit-applied',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        revision: data.revision,
+        blockCount: root.querySelectorAll('[data-r20-block-id]').length
+      }, '*');
+    } catch (e) {}
   }
   function collectAttrs() {
     var out = {};
@@ -591,6 +684,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       setEditBridgeEnabled(e.data.enabled, e.data.selectedBlockId || null);
       return;
     }
+    if (
+      e.data.type === 'r20:edit-apply'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      applyLivePatch(e.data);
+      return;
+    }
     if (e.data.type === 'r20:highlight') {
       var prev = document.querySelector('[data-r20-preview-selected="1"]');
       if (prev) prev.removeAttribute('data-r20-preview-selected');
@@ -944,6 +1045,28 @@ ${bodyInner}
 <script>${PREVIEW_BRIDGE_SCRIPT}</script>
 </body>
 </html>`;
+}
+
+export function buildSheetLivePatch(opts: BuildDocOptions): SheetLivePatch {
+  const contract = prepareSheetRenderContract(opts);
+  const darkMode = opts.darkMode === true;
+  const layer = opts.previewLayer ?? 'all';
+  const roll20RendererModel = opts.roll20RendererModel ?? 'default';
+  return {
+    html: contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER),
+    styles: {
+      'roll20-base-dark': darkMode ? roll20DarkmodeIframeCss : '',
+      'roll20-legacy-input-state': contract.legacyCssSanitize ? ROLL20_LEGACY_INPUT_STATE_CSS : '',
+      'r20-layer-filter': layerFilterCss(),
+      'r20-user': contract.previewCss,
+      'r20-renderer-model': roll20RendererModelCss(roll20RendererModel),
+    },
+    i18n: normalizeTranslationForRoll20(opts.i18n ?? ''),
+    darkMode,
+    layer,
+    roll20SandboxSanitize: contract.roll20SandboxSanitize,
+    roll20RendererModel,
+  };
 }
 
 /**

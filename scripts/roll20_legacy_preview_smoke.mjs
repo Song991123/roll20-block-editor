@@ -15,7 +15,7 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildSheetDoc, buildSheetParts } from '../lib/preview/buildDoc.ts';
+import { buildSheetDoc, buildSheetLivePatch, buildSheetParts } from '../lib/preview/buildDoc.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..');
@@ -89,8 +89,14 @@ const modernAtomicDoc = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compat
 const legacyAtomicDoc = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy' });
 const modernAtomicParts = buildSheetParts({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern' });
 const legacyAtomicParts = buildSheetParts({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy' });
+const modernPatch = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, sanitize: false, legacyCssSanitize: false });
+const legacyPatch = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, sanitize: true, legacyCssSanitize: true });
+const modernAtomicPatch = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern' });
+const legacyAtomicPatch = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy' });
 const modernAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern', sanitize: true, legacyCssSanitize: true });
 const legacyAtomicOverride = buildSheetDoc({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy', sanitize: false, legacyCssSanitize: false });
+const modernAtomicPatchOverride = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'modern', sanitize: true, legacyCssSanitize: true });
+const legacyAtomicPatchOverride = buildSheetLivePatch({ html: HTML, css: CSS, i18n: I18N, compatibilityMode: 'legacy', sanitize: false, legacyCssSanitize: false });
 
 const modernUserCss = extractStyle(modernDoc, 'r20-user');
 const legacyUserCss = extractStyle(legacyDoc, 'r20-user');
@@ -110,8 +116,14 @@ assertCheck(checks, 'atomic modern contract matches the prior paired low-level i
   modernAtomicDoc === modernDoc && modernAtomicParts.html === modernParts.html && modernAtomicParts.css === modernParts.css);
 assertCheck(checks, 'atomic legacy contract matches the prior paired low-level inputs',
   legacyAtomicDoc === legacyDoc && legacyAtomicParts.html === legacyParts.html && legacyAtomicParts.css === legacyParts.css);
+assertCheck(checks, 'live patch consumes the same atomic modern and legacy contracts',
+  JSON.stringify(modernAtomicPatch) === JSON.stringify(modernPatch)
+    && JSON.stringify(legacyAtomicPatch) === JSON.stringify(legacyPatch));
 assertCheck(checks, 'explicit compatibility mode overrides conflicting low-level booleans',
-  modernAtomicOverride === modernAtomicDoc && legacyAtomicOverride === legacyAtomicDoc);
+  modernAtomicOverride === modernAtomicDoc
+    && legacyAtomicOverride === legacyAtomicDoc
+    && JSON.stringify(modernAtomicPatchOverride) === JSON.stringify(modernAtomicPatch)
+    && JSON.stringify(legacyAtomicPatchOverride) === JSON.stringify(legacyAtomicPatch));
 assertCheck(checks, 'iframe modern preserves authored HTML class', modernDoc.includes('class="legacy-card"'));
 assertCheck(checks, 'iframe modern does not legacy-prefix HTML class', !modernDoc.includes('class="sheet-legacy-card"'));
 assertCheck(checks, 'iframe legacy prefixes HTML class', legacyDoc.includes('class="sheet-legacy-card"'));
@@ -179,9 +191,9 @@ assertCheck(checks, 'preview and edit consume the same atomic render contract in
     && editCanvas.includes('compatibilityMode,')
     && !previewMain.includes('const sanitize = usePreviewStore')
     && !editCanvas.includes('const sanitize = usePreviewStore'));
-assertCheck(checks, 'iframe and Shadow serializers share one prepared render contract',
+assertCheck(checks, 'iframe, live patch, and Shadow serializers share one prepared render contract',
   renderContract.includes('export function prepareSheetRenderContract')
-    && (readFileSync(join(REPO_ROOT, 'lib/preview/buildDoc.ts'), 'utf8').match(/prepareSheetRenderContract\(opts\)/g) ?? []).length === 2);
+    && (readFileSync(join(REPO_ROOT, 'lib/preview/buildDoc.ts'), 'utf8').match(/prepareSheetRenderContract\(opts\)/g) ?? []).length === 3);
 assertCheck(checks, 'visual smoke hook exposes the same atomic compatibility mode action',
   perfHook.includes('setRoll20CompatibilityMode: (mode: Roll20CompatibilityMode) => void')
     && perfHook.includes('usePreviewStore.getState().setRoll20CompatibilityMode(mode)'));

@@ -39,7 +39,18 @@ export type IframeEditHitMessage = {
   hitPath: IframeEditNodeGeometry[];
 };
 
-export type IframeEditBridgeMessage = IframeEditReadyMessage | IframeEditHitMessage;
+export type IframeEditAppliedMessage = {
+  type: 'r20:edit-applied';
+  protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
+  bridgeId: string;
+  revision: number;
+  blockCount: number;
+};
+
+export type IframeEditBridgeMessage =
+  | IframeEditReadyMessage
+  | IframeEditHitMessage
+  | IframeEditAppliedMessage;
 
 export type IframeEditModeCommand = {
   type: 'r20:edit-mode';
@@ -96,6 +107,31 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
       type: 'r20:edit-ready',
       protocol: R20_IFRAME_EDIT_PROTOCOL,
       bridgeId: value.bridgeId,
+    };
+  }
+  if (value.type === 'r20:edit-applied') {
+    if (
+      typeof value.revision !== 'number'
+      || !Number.isInteger(value.revision)
+      || value.revision < 1
+      || value.revision > 1_000_000_000
+    ) {
+      return null;
+    }
+    if (
+      typeof value.blockCount !== 'number'
+      || !Number.isInteger(value.blockCount)
+      || value.blockCount < 0
+      || value.blockCount > 1_000_000
+    ) {
+      return null;
+    }
+    return {
+      type: 'r20:edit-applied',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: value.bridgeId,
+      revision: value.revision,
+      blockCount: value.blockCount,
     };
   }
   if (value.type !== 'r20:edit-hit') return null;

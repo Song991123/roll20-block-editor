@@ -21,6 +21,12 @@ export type IframeDropTargetLookup = {
   canNestInContainer: (blockId: string) => boolean;
 };
 
+export type IframeDropCommitAdapter = {
+  moveBlockBefore: (workspace: 'html', blockId: string, targetId: string) => boolean;
+  moveBlockAfter: (workspace: 'html', blockId: string, targetId: string) => boolean;
+  nestBlockInContainer: (workspace: 'html', blockId: string, targetId: string) => boolean;
+};
+
 function pickDropMode(
   geometry: IframeEditNodeGeometry,
   pointerY: number,
@@ -72,4 +78,22 @@ export function resolveIframeEditDropTarget(
     };
   }
   return null;
+}
+
+export function commitIframeFlowDrop(
+  subjectBlockId: string,
+  target: IframeEditDropTarget | null,
+  adapter: IframeDropCommitAdapter,
+): boolean {
+  if (!target || !subjectBlockId || subjectBlockId === target.blockId) return false;
+  if (target.mode === 'inside' && target.containerBlockId) {
+    return adapter.nestBlockInContainer('html', subjectBlockId, target.containerBlockId);
+  }
+  if (target.mode === 'after' && target.siblingBlockId) {
+    return adapter.moveBlockAfter('html', subjectBlockId, target.siblingBlockId);
+  }
+  if (target.mode === 'before' && target.siblingBlockId) {
+    return adapter.moveBlockBefore('html', subjectBlockId, target.siblingBlockId);
+  }
+  return false;
 }

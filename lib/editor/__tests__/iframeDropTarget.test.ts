@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
-import { resolveIframeEditDropTarget } from '../iframeDropTarget.ts';
+import { commitIframeFlowDrop, resolveIframeEditDropTarget } from '../iframeDropTarget.ts';
 import type { IframeEditHitMessage, IframeEditNodeGeometry } from '@/lib/preview/iframeEditBridge';
 
 const geometry = (
@@ -81,5 +81,31 @@ assert.equal(resolveIframeEditDropTarget(
 
 assert.equal(resolveIframeEditDropTarget(message([geometry('sibling', 100, 40)], 120, 'pointercancel'), lookup), null);
 assert.equal(resolveIframeEditDropTarget(message([], 0), lookup), null);
+
+const calls: string[] = [];
+const commitAdapter = {
+  moveBlockBefore: (_workspace: 'html', blockId: string, targetId: string) => {
+    calls.push(`before:${blockId}:${targetId}`);
+    return true;
+  },
+  moveBlockAfter: (_workspace: 'html', blockId: string, targetId: string) => {
+    calls.push(`after:${blockId}:${targetId}`);
+    return true;
+  },
+  nestBlockInContainer: (_workspace: 'html', blockId: string, targetId: string) => {
+    calls.push(`inside:${blockId}:${targetId}`);
+    return true;
+  },
+};
+assert.equal(commitIframeFlowDrop('subject', {
+  blockId: 'frame', label: 'Frame', mode: 'inside',
+  containerBlockId: 'frame', siblingBlockId: null, geometry: geometry('frame', 0, 200),
+}, commitAdapter), true);
+assert.equal(commitIframeFlowDrop('subject', {
+  blockId: 'sibling', label: 'Sibling', mode: 'before',
+  containerBlockId: null, siblingBlockId: 'sibling', geometry: geometry('sibling', 100, 40),
+}, commitAdapter), true);
+assert.deepEqual(calls, ['inside:subject:frame', 'before:subject:sibling']);
+assert.equal(commitIframeFlowDrop('subject', null, commitAdapter), false);
 
 console.log('iframeDropTarget.test PASS');

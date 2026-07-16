@@ -1,3 +1,18 @@
+## 2026-07-17 Persistent Iframe Edit Bridge Phase 2D
+
+- DONE: Added revisioned `r20:edit-apply` / `r20:edit-applied` live updates. The persistent iframe now replaces emitted sheet HTML and the allow-listed dynamic CSS/i18n/runtime layers without changing `srcdoc` or remounting the document.
+- DONE: Preserved Roll20 form attributes and existing worker handlers when the worker source is unchanged. A changed worker source is deliberately reinstalled and is not claimed to preserve worker-local state.
+- DONE: Flow-mode pointer-up now commits the resolved `before` / `inside` / `after` target once through the Blockly adapter. The parent keeps optimistic drag translation until the matching apply acknowledgement clears it.
+- DONE: Fixed a persistent-iframe width race. Each live source may grow the canvas from its measured intrinsic width, while the existing rule still prevents automatic shrinking of a wider user-selected canvas.
+- VERIFIED MODERN: `.tmp/persistent-flow-commit-r51` modern PASS; initial and subsequent apply acknowledgements increase, the subject is nested in the resolved target, input/runtime state survives, and iframe reload count stays `0`.
+- VERIFIED LEGACY: The same report contains an independent legacy PASS with identical interaction/state assertions plus the legacy-only runtime style. Modern evidence is not reused.
+- VERIFIED REGRESSION: `.tmp/edit-flow-live-apply-r46` PASSes the current Shadow fallback flow/free interactions, layer modes, absolute-in-frame placement, and `0px` post-drop drift with no console/page errors.
+- VISUAL DIAGNOSTIC: Final paired run `.tmp/preview-edit-live-apply-final-r52` restores the established baseline: Les-Oublies is exact in both modes; YSHY is `22` pixels different in modern and exact in legacy; AW2E is `36` pixels different in both. DOM signatures, sampled computed styles, and visible geometry match, but the strict pixel gate correctly remains failed for those three non-exact rows.
+- HARNESS: A one-off legacy startup returned `blockCount=0` before the fixture mounted. The persistent smoke now retries its synthetic clear/import preparation and fails explicitly if no blocks are created; the next clean run passed both modes.
+- PARTIAL: The shipped edit pane still paints the transitional Shadow surface. Iframe flow commit/live apply is verified, but iframe free placement, worker-source-change state, roll/chat, zoom, and the final visible-surface switch remain open.
+- NEXT P0: Make the persistent iframe the visible edit surface, add containing-block-aware free placement commit, then run worker/roll/chat/zoom and actual Roll20 upload checks independently in modern and legacy before removing the Shadow fallback.
+- COPYRIGHT: The committed smoke source is synthetic. Prepared sheet sources, screenshots, and generated reports remain ignored local evidence.
+
 ## 2026-07-17 Persistent Iframe Edit Bridge Phase 2C
 
 - DONE: Pointer capture now preserves the original drag subject while `document.elementFromPoint` resolves the block actually under the pointer. The bridge no longer mistakes the captured subject for every later hit target.

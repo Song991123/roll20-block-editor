@@ -92,12 +92,21 @@ async function runMode(browser, mode) {
     await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
     await warmPerfHook(page);
     result.import = await page.evaluate(async () => {
-      window.__perfHook.clearAll();
-      return window.__perfHook.importSheet({
-        html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"></div><div class="sheet-probe-drop">Drop target</div></div>',
-        css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
-      });
+      let imported = null;
+      for (let attempt = 0; attempt < 10; attempt += 1) {
+        window.__perfHook.clearAll();
+        if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 150));
+        imported = await window.__perfHook.importSheet({
+          html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"></div><div class="sheet-probe-drop">Drop target</div></div>',
+          css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
+        });
+        if (imported.blockCount > 0) return imported;
+      }
+      return imported;
     });
+    if (!result.import || result.import.blockCount <= 0) {
+      throw new Error('synthetic fixture import did not create blocks after retries');
+    }
     await page.evaluate((compatibilityMode) => {
       window.__perfHook.setRoll20CompatibilityMode(compatibilityMode);
       window.__perfHook.setMainMode('preview');
@@ -107,20 +116,25 @@ async function runMode(browser, mode) {
     const iframe = page.locator('[data-testid="preview-iframe"]');
     await iframe.waitFor({ state: 'visible', timeout: 30000 });
     await page.waitForFunction(
-      ({ expectedLegacyStyle }) => {
-        const srcdoc = document
-          .querySelector('[data-testid="preview-iframe"]')
-          ?.getAttribute('srcdoc') ?? '';
-        return srcdoc.includes('class="sheet-probe-card"')
-          && srcdoc.includes('id="roll20-legacy-input-state"') === expectedLegacyStyle;
-      },
-      { expectedLegacyStyle: mode === 'legacy' },
+      () => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > 0,
+      null,
       { timeout: 30000 },
     );
     const handle = await iframe.elementHandle();
     const frame = await handle?.contentFrame();
     if (!frame) throw new Error('preview iframe content frame unavailable');
     await frame.locator(expectedSelector).waitFor({ state: 'visible', timeout: 30000 });
+    result.initialApply = await page.evaluate(() => {
+      const root = document.querySelector('[data-r20-apply-acked]');
+      const srcdoc = document.querySelector('[data-testid="preview-iframe"]')?.getAttribute('srcdoc') ?? '';
+      return {
+        ackedRevision: Number(root?.getAttribute('data-r20-apply-acked')),
+        pendingRevision: root?.getAttribute('data-r20-apply-pending') ?? '',
+        sourceStayedOutOfSrcdoc: !srcdoc.includes('class="sheet-probe-card"'),
+      };
+    });
     const input = frame.locator('input[name="attr_probe"]');
     await input.fill(`runtime-${mode}`);
     const token = `token-${mode}-${Date.now()}`;
@@ -137,9 +151,40 @@ async function runMode(browser, mode) {
       return {
         iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
         paneVisible: document.querySelector('[data-testid="preview-pane"]')?.getAttribute('data-visible'),
-        hasLegacyInputStyle: iframeEl?.getAttribute('srcdoc')?.includes('id="roll20-legacy-input-state"') ?? false,
       };
     });
+    result.before.hasLegacyInputStyle = await frame.evaluate(
+      () => Boolean(document.getElementById('roll20-legacy-input-state')),
+    );
+
+    result.liveApplyMutation = await page.evaluate(() => {
+      const root = document.querySelector('[data-r20-apply-acked]');
+      const beforeAck = Number(root?.getAttribute('data-r20-apply-acked'));
+      const added = window.__perfHook.appendFriendlyWidgetForEditSmoke({ mode: 'flow' });
+      return { beforeAck, added };
+    });
+    await page.waitForFunction(
+      (beforeAck) => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > beforeAck,
+      result.liveApplyMutation.beforeAck,
+      { timeout: 30000 },
+    );
+    await frame.waitForFunction(
+      (expectedValue) => document.querySelector('input[name="attr_probe"]')?.value === expectedValue,
+      `runtime-${mode}`,
+      { timeout: 30000 },
+    );
+    result.liveApplyMutation.afterAck = await page.evaluate(() => Number(document
+      .querySelector('[data-r20-apply-acked]')
+      ?.getAttribute('data-r20-apply-acked')));
+    result.liveApplyMutation.inputValue = await input.inputValue();
+    result.liveApplyMutation.runtimeToken = await frame.evaluate(
+      () => window.__persistentPreviewRuntimeToken,
+    );
+    result.liveApplyMutation.loadCount = await page.evaluate(
+      () => window.__persistentPreviewLoadCount,
+    );
 
     await page.evaluate(() => window.__perfHook.setMainMode('edit'));
     await page.locator('[data-testid="edit-canvas-root"]').waitFor({ state: 'visible', timeout: 30000 });
@@ -148,6 +193,15 @@ async function runMode(browser, mode) {
       null,
       { timeout: 30000 },
     );
+    const overlaySignature = () => page.evaluate(() => {
+      const overlay = document.querySelector('[data-testid="iframe-edit-overlay"]');
+      return {
+        count: document.querySelectorAll('[data-testid="iframe-edit-overlay"]').length,
+        blockId: overlay?.getAttribute('data-r20-block-id') ?? null,
+        phase: overlay?.getAttribute('data-r20-edit-phase') ?? null,
+      };
+    });
+    const beforeStaleOverlay = await overlaySignature();
     await frame.evaluate(() => {
       const target = document.querySelector('.sheet-probe-card');
       const rect = target?.getBoundingClientRect();
@@ -180,7 +234,7 @@ async function runMode(browser, mode) {
       }, '*');
     });
     await page.waitForTimeout(50);
-    result.staleBridgeRejected = await page.locator('[data-testid="iframe-edit-overlay"]').count() === 0;
+    result.staleBridgeRejected = JSON.stringify(await overlaySignature()) === JSON.stringify(beforeStaleOverlay);
     result.bridgeDispatch = await frame.evaluate(() => {
       const target = document.querySelector('.sheet-probe-card');
       if (!target) return { dispatched: false, reason: 'missing probe card' };
@@ -302,6 +356,65 @@ async function runMode(browser, mode) {
         overlayHeight: Number.parseFloat(overlay?.style.height || '0'),
       };
     });
+    result.flowCommit = await page.evaluate(() => ({
+      beforeAck: Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')),
+    }));
+    Object.assign(result.flowCommit, await frame.evaluate(() => {
+      const subject = document.querySelector('.sheet-probe-card');
+      const target = document.querySelector('.sheet-probe-drop');
+      if (!subject || !target) return { dispatched: false };
+      const subjectRect = subject.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const pointerId = 18;
+      subject.dispatchEvent(new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 1,
+        clientX: subjectRect.left + subjectRect.width / 2,
+        clientY: subjectRect.top + subjectRect.height / 2,
+      }));
+      subject.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 0,
+        clientX: targetRect.left + targetRect.width / 2,
+        clientY: targetRect.top + targetRect.height / 2,
+      }));
+      return {
+        dispatched: true,
+        subjectBlockId: subject.getAttribute('data-r20-block-id'),
+        targetBlockId: target.getAttribute('data-r20-block-id'),
+      };
+    }));
+    await page.waitForFunction(
+      (beforeAck) => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > beforeAck,
+      result.flowCommit.beforeAck,
+      { timeout: 30000 },
+    );
+    await frame.waitForFunction(
+      () => Boolean(document.querySelector('.sheet-probe-drop > .sheet-probe-card')),
+      null,
+      { timeout: 30000 },
+    );
+    Object.assign(result.flowCommit, {
+      afterAck: await page.evaluate(() => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked'))),
+      nestedInTarget: await frame.evaluate(
+        () => Boolean(document.querySelector('.sheet-probe-drop > .sheet-probe-card')),
+      ),
+      inputValue: await input.inputValue(),
+      runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
+      loadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
+    });
     result.hiddenInputValue = await input.inputValue();
     result.hiddenRuntimeToken = await frame.evaluate(() => window.__persistentPreviewRuntimeToken);
 
@@ -337,6 +450,14 @@ async function runMode(browser, mode) {
     result.pageErrors = pageErrors;
     result.pass =
       result.import?.blockCount > 0
+      && result.initialApply.ackedRevision > 0
+      && result.initialApply.pendingRevision === ''
+      && result.initialApply.sourceStayedOutOfSrcdoc === true
+      && result.liveApplyMutation.afterAck > result.liveApplyMutation.beforeAck
+      && result.liveApplyMutation.added?.nested === true
+      && result.liveApplyMutation.inputValue === `runtime-${mode}`
+      && result.liveApplyMutation.runtimeToken === token
+      && result.liveApplyMutation.loadCount === 0
       && result.before.iframeCount === 1
       && result.before.paneVisible === 'true'
       && result.before.hasLegacyInputStyle === (mode === 'legacy')
@@ -370,6 +491,12 @@ async function runMode(browser, mode) {
       && result.duringEdit.dropOverlayCount === 0
       && result.duringEdit.overlayWidth > 0
       && result.duringEdit.overlayHeight > 0
+      && result.flowCommit.dispatched === true
+      && result.flowCommit.afterAck > result.flowCommit.beforeAck
+      && result.flowCommit.nestedInTarget === true
+      && result.flowCommit.inputValue === `runtime-${mode}`
+      && result.flowCommit.runtimeToken === token
+      && result.flowCommit.loadCount === 0
       && result.hiddenInputValue === `runtime-${mode}`
       && result.hiddenRuntimeToken === token
       && result.after.sameElement

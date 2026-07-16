@@ -1,3 +1,14 @@
+## 2026-07-17 Persistent Iframe Edit Bridge Phase 2D
+
+- Added revisioned in-frame HTML/CSS/i18n live apply with an explicit acknowledgement. The persistent iframe keeps its document identity and Roll20 form/runtime state instead of reloading `srcdoc` after each emit.
+- Added iframe flow pointer-up commit through the existing Blockly before/inside/after adapter operations. Parent-owned optimistic translation remains visible until the corresponding apply acknowledgement.
+- Fixed the post-import intrinsic-width race by reopening the one-shot grow-only width measurement at apply acknowledgement. This returned the large prepared fixture from `7,233/7,329` preview/edit differing pixels to the established `22/0` modern/legacy baseline.
+- Browser evidence `.tmp/persistent-flow-commit-r51` PASSes independently in modern and legacy: real target nesting, increasing apply revision, preserved input/runtime token, legacy-only style where required, iframe reload count `0`, and no console/page errors.
+- Shadow fallback regression `.tmp/edit-flow-live-apply-r46` PASSes with flow/free placement, layer before/inside/after, absolute-in-frame placement, and zero post-drop drift.
+- Final paired visual evidence `.tmp/preview-edit-live-apply-final-r52` keeps the strict threshold: Les-Oublies exact in both modes; YSHY modern `22` pixels different and legacy exact; AW2E `36` pixels different in both. Style and geometry parity pass, but the three non-exact rows remain failed rather than being rounded into success.
+- Hardened the synthetic persistent smoke against a rare clear/import startup race after one legacy run returned zero blocks. A subsequent clean paired run passed both modes.
+- The visible edit surface is still Shadow-backed. Free placement on the iframe, changed-worker-source state, roll/chat, zoom, final surface exposure, and actual Roll20 upload remain P0 and must pass separately in modern and legacy.
+
 ## 2026-07-17 Persistent Iframe Edit Bridge Phase 2C
 
 - Replaced captured-event target lookup with `document.elementFromPoint`, so the original drag subject remains stable while the hit path follows the actual pointer location.

@@ -38,6 +38,19 @@ const hit = {
 
 assert.deepEqual(parseIframeEditBridgeMessage(hit), hit);
 assert.deepEqual(parseIframeEditBridgeMessage({
+  type: 'r20:edit-applied',
+  protocol: R20_IFRAME_EDIT_PROTOCOL,
+  bridgeId,
+  revision: 3,
+  blockCount: 12,
+}), {
+  type: 'r20:edit-applied',
+  protocol: R20_IFRAME_EDIT_PROTOCOL,
+  bridgeId,
+  revision: 3,
+  blockCount: 12,
+});
+assert.deepEqual(parseIframeEditBridgeMessage({
   type: 'r20:edit-ready',
   protocol: R20_IFRAME_EDIT_PROTOCOL,
   bridgeId,
@@ -51,6 +64,9 @@ assert.equal(parseIframeEditBridgeMessage({ ...hit, protocol: 2 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, bridgeId: 'short' }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, blockId: '' }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, phase: 'drag' }), null);
+assert.equal(parseIframeEditBridgeMessage({
+  type: 'r20:edit-applied', protocol: 1, bridgeId, revision: 0, blockCount: 1,
+}), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, pointerId: 1.5 }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...hit, hitPath: new Array(65).fill(subject) }), null);
 assert.equal(parseIframeEditBridgeMessage({
