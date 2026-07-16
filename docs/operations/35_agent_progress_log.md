@@ -1,3 +1,13 @@
+## 2026-07-16 Persistent Iframe Edit Bridge Phase 2A
+
+- Added `lib/preview/iframeEditBridge.ts` as the typed/validated parent boundary for persistent iframe edit messages.
+- Extended the iframe runtime with a random per-document bridge id, edit-mode command handling, rAF-coalesced pointer geometry, selected-node measurement, native-control interception while edit mode is enabled, and a ready handshake.
+- Hardened the parent listener to require the current iframe source, opaque `null` origin, valid protocol payload, current bridge id, and a live HTML block id before updating selection or overlay state.
+- Added an edit-only parent overlay around the measured iframe block. This is the first bridge slice and remains hidden behind the current Shadow fallback UI; no iframe drag commit is claimed yet.
+- Browser evidence `.tmp/persistent-iframe-edit-bridge-r29`: modern PASS and legacy PASS independently, stale bridge id rejected, overlay selection/measure roundtrip PASS, form/runtime state preserved, and iframe load count `0` in both modes.
+- Regression evidence: `.tmp/preview-edit-iframe-bridge-r30` is exact for the focused ignored fixture in modern and legacy; `.tmp/edit-flow-iframe-bridge-r31` PASSes the current Shadow fallback interactions with zero post-drop drift.
+- Added `test:iframe-edit-bridge` to the common CI suite. Remaining Phase 2 work is pointer identity/cancel, ancestor and containing-block geometry, parent-derived flow targets, optimistic drag overlay, and in-frame apply/ack before the visible canvas can switch safely.
+
 ## 2026-07-16 Persistent Preview Surface Phase 1
 
 - Changed `EditorShell` so `PreviewMain` remains mounted in every main mode. Preview/edit switches now hide the pane without replacing the iframe, which preserves live Roll20 runtime and form state for the future overlay editor.

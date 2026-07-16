@@ -1,3 +1,16 @@
+## 2026-07-16 Persistent Iframe Edit Bridge Phase 2A
+
+- DONE: Added a typed `r20:edit-ready` / `r20:edit-mode` / `r20:edit-hit` protocol for the persistent sandboxed iframe. The iframe now reports block geometry for pointer and selected-node measurement without exposing or reparenting its DOM.
+- DONE SECURITY: Parent acceptance requires the current iframe `WindowProxy`, opaque origin `null`, protocol/schema validation, the current per-document random `bridgeId`, and an existing HTML block id in the Blockly adapter. The child also requires the parent source, protocol, and matching `bridgeId` before enabling edit interception.
+- DONE: `PreviewMain` renders a pointer-transparent selection rectangle as an iframe sibling using iframe CSS-pixel geometry. It is edit-mode-only and does not add app CSS inside the Roll20 document.
+- VERIFIED MODERN: `.tmp/persistent-iframe-edit-bridge-r29` PASS; edit command, stale-token rejection, pointerdown default prevention, parent selection/measure overlay, highlight roundtrip, state preservation, and iframe reload count `0`.
+- VERIFIED LEGACY: The same report has a separate legacy PASS with the same bridge assertions, legacy-only runtime style present, and iframe reload count `0`. Modern evidence is not reused for this row.
+- VERIFIED: Focused preview/edit visual regression `.tmp/preview-edit-iframe-bridge-r30` remains `EXACT` in modern and legacy with console/page errors `0`. Existing Shadow fallback edit regression `.tmp/edit-flow-iframe-bridge-r31` PASSes with `0px` post-drop drift.
+- DONE: Added `test:iframe-edit-bridge` to `ci:verify` for malformed protocol, bridge id, phase, block id, coordinate bounds, source, and origin rejection.
+- PARTIAL: The protocol does not yet commit iframe pointer drags. Stable pointer identity, cancel/pointer-capture, ancestor hit paths, containing-block geometry, flow target calculation, and an in-frame apply/ack path are still required before replacing the Shadow canvas.
+- NEXT P0: Extend the protocol with stable pointer subject, `down/move/up/cancel`, ancestor geometry, and parent-derived before/inside/after targets. Commit Blockly once on pointer-up, keep optimistic overlay paint until emit/apply acknowledgement, and verify modern/legacy independently before switching the visible edit surface.
+- COPYRIGHT: The bridge and tests use synthetic source only. Ignored fixtures, screenshots, and generated reports remain untracked.
+
 ## 2026-07-16 Persistent Preview Surface Phase 1
 
 - DONE: `EditorShell` now keeps one canonical preview iframe mounted across `preview -> edit -> preview`. Hidden panes use zero width, hidden visibility, and disabled pointer events instead of unmounting the Roll20 runtime.

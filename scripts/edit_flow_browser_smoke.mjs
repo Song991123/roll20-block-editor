@@ -530,11 +530,15 @@ async function main() {
     const over = new DragEvent('dragover', init);
     Object.defineProperty(over, 'dataTransfer', { value: dt });
     targetRow.dispatchEvent(over);
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    const currentTargetRow = document.querySelector(
-      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`,
-    ) || targetRow;
-    const mode = currentTargetRow.getAttribute('data-r20-layer-drop-mode') || '';
+    let currentTargetRow = targetRow;
+    let mode = '';
+    for (let attempt = 0; attempt < 10 && !mode; attempt += 1) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      currentTargetRow = document.querySelector(
+        `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`,
+      ) || targetRow;
+      mode = currentTargetRow.getAttribute('data-r20-layer-drop-mode') || '';
+    }
     const drop = new DragEvent('drop', init);
     Object.defineProperty(drop, 'dataTransfer', { value: dt });
     currentTargetRow.dispatchEvent(drop);

@@ -1,0 +1,104 @@
+export const R20_IFRAME_EDIT_PROTOCOL = 1 as const;
+
+export type IframeEditPhase = 'pointermove' | 'pointerdown' | 'pointerup' | 'measure';
+
+export type IframeEditRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+export type IframeEditReadyMessage = {
+  type: 'r20:edit-ready';
+  protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
+  bridgeId: string;
+};
+
+export type IframeEditHitMessage = {
+  type: 'r20:edit-hit';
+  protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
+  bridgeId: string;
+  phase: IframeEditPhase;
+  blockId: string;
+  rect: IframeEditRect;
+  pointer: { x: number; y: number };
+};
+
+export type IframeEditBridgeMessage = IframeEditReadyMessage | IframeEditHitMessage;
+
+export type IframeEditModeCommand = {
+  type: 'r20:edit-mode';
+  protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
+  bridgeId: string;
+  enabled: boolean;
+  selectedBlockId: string | null;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isFiniteCoordinate(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= 10_000_000;
+}
+
+function isBridgeId(value: unknown): value is string {
+  return typeof value === 'string' && value.length >= 8 && value.length <= 128;
+}
+
+function isRect(value: unknown): value is IframeEditRect {
+  if (!isRecord(value)) return false;
+  return isFiniteCoordinate(value.left)
+    && isFiniteCoordinate(value.top)
+    && isFiniteCoordinate(value.width)
+    && isFiniteCoordinate(value.height)
+    && value.width >= 0
+    && value.height >= 0;
+}
+
+export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMessage | null {
+  if (
+    !isRecord(value)
+    || value.protocol !== R20_IFRAME_EDIT_PROTOCOL
+    || !isBridgeId(value.bridgeId)
+  ) return null;
+  if (value.type === 'r20:edit-ready') {
+    return {
+      type: 'r20:edit-ready',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: value.bridgeId,
+    };
+  }
+  if (value.type !== 'r20:edit-hit') return null;
+  if (
+    value.phase !== 'pointermove'
+    && value.phase !== 'pointerdown'
+    && value.phase !== 'pointerup'
+    && value.phase !== 'measure'
+  ) return null;
+  if (typeof value.blockId !== 'string' || value.blockId.length === 0 || value.blockId.length > 256) {
+    return null;
+  }
+  if (!isRect(value.rect) || !isRecord(value.pointer)) return null;
+  if (!isFiniteCoordinate(value.pointer.x) || !isFiniteCoordinate(value.pointer.y)) return null;
+  return {
+    type: 'r20:edit-hit',
+    protocol: R20_IFRAME_EDIT_PROTOCOL,
+    bridgeId: value.bridgeId,
+    phase: value.phase,
+    blockId: value.blockId,
+    rect: value.rect,
+    pointer: { x: value.pointer.x, y: value.pointer.y },
+  };
+}
+
+export function isTrustedIframeMessage(
+  event: MessageEvent,
+  iframe: HTMLIFrameElement | null,
+): boolean {
+  if (!iframe?.contentWindow || event.source !== iframe.contentWindow) return false;
+  // The product iframe is sandboxed with allow-scripts and without
+  // allow-same-origin, so srcdoc messages must have an opaque origin.
+  return event.origin === 'null';
+}

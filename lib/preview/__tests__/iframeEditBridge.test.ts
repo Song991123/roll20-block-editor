@@ -1,0 +1,58 @@
+import { strict as assert } from 'node:assert';
+import {
+  R20_IFRAME_EDIT_PROTOCOL,
+  isTrustedIframeMessage,
+  parseIframeEditBridgeMessage,
+} from '../iframeEditBridge.ts';
+
+const bridgeId = 'r20-test-bridge-123';
+const hit = {
+  type: 'r20:edit-hit',
+  protocol: R20_IFRAME_EDIT_PROTOCOL,
+  bridgeId,
+  phase: 'pointerdown',
+  blockId: 'block-1',
+  rect: { left: 10, top: 20, width: 100, height: 40 },
+  pointer: { x: 12, y: 24 },
+};
+
+assert.deepEqual(parseIframeEditBridgeMessage(hit), hit);
+assert.deepEqual(parseIframeEditBridgeMessage({
+  type: 'r20:edit-ready',
+  protocol: R20_IFRAME_EDIT_PROTOCOL,
+  bridgeId,
+}), {
+  type: 'r20:edit-ready',
+  protocol: R20_IFRAME_EDIT_PROTOCOL,
+  bridgeId,
+});
+
+assert.equal(parseIframeEditBridgeMessage({ ...hit, protocol: 2 }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...hit, bridgeId: 'short' }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...hit, blockId: '' }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...hit, phase: 'drag' }), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  rect: { ...hit.rect, width: Number.POSITIVE_INFINITY },
+}), null);
+assert.equal(parseIframeEditBridgeMessage({
+  ...hit,
+  pointer: { x: 20_000_000, y: 0 },
+}), null);
+
+const frameWindow = {};
+const iframe = { contentWindow: frameWindow } as unknown as HTMLIFrameElement;
+assert.equal(isTrustedIframeMessage({
+  source: frameWindow,
+  origin: 'null',
+} as unknown as MessageEvent, iframe), true);
+assert.equal(isTrustedIframeMessage({
+  source: {},
+  origin: 'null',
+} as unknown as MessageEvent, iframe), false);
+assert.equal(isTrustedIframeMessage({
+  source: frameWindow,
+  origin: 'https://example.test',
+} as unknown as MessageEvent, iframe), false);
+
+console.log('iframeEditBridge.test PASS');

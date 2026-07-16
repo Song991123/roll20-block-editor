@@ -143,8 +143,58 @@ async function runMode(browser, mode) {
 
     await page.evaluate(() => window.__perfHook.setMainMode('edit'));
     await page.locator('[data-testid="edit-canvas-root"]').waitFor({ state: 'visible', timeout: 30000 });
+    await frame.waitForFunction(
+      () => document.body?.getAttribute('data-r20-edit-mode') === '1',
+      null,
+      { timeout: 30000 },
+    );
+    await frame.evaluate(() => {
+      const target = document.querySelector('.sheet-probe-card');
+      const rect = target?.getBoundingClientRect();
+      parent.postMessage({
+        type: 'r20:edit-hit',
+        protocol: 1,
+        bridgeId: 'stale-bridge-token',
+        phase: 'pointerdown',
+        blockId: target?.getAttribute('data-r20-block-id') || 'missing',
+        rect: rect
+          ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+          : { left: 0, top: 0, width: 10, height: 10 },
+        pointer: { x: 1, y: 1 },
+      }, '*');
+    });
+    await page.waitForTimeout(50);
+    result.staleBridgeRejected = await page.locator('[data-testid="iframe-edit-overlay"]').count() === 0;
+    result.bridgeDispatch = await frame.evaluate(() => {
+      const target = document.querySelector('.sheet-probe-card');
+      if (!target) return { dispatched: false, reason: 'missing probe card' };
+      const rect = target.getBoundingClientRect();
+      const event = new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + Math.min(8, rect.width / 2),
+        clientY: rect.top + Math.min(8, rect.height / 2),
+      });
+      const accepted = target.dispatchEvent(event);
+      return {
+        dispatched: true,
+        defaultPrevented: !accepted,
+        blockId: target.getAttribute('data-r20-block-id'),
+        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+      };
+    });
+    await page.locator('[data-testid="iframe-edit-overlay"]').waitFor({ state: 'attached', timeout: 30000 });
+    await frame.waitForFunction(
+      (blockId) => document
+        .querySelector(`[data-r20-block-id="${CSS.escape(blockId)}"]`)
+        ?.getAttribute('data-r20-preview-selected') === '1',
+      result.bridgeDispatch.blockId,
+      { timeout: 30000 },
+    );
     result.duringEdit = await page.evaluate(() => {
       const current = document.querySelector('[data-testid="preview-iframe"]');
+      const bridgeRoot = current?.closest('[data-r20-edit-bridge-ready]');
+      const overlay = document.querySelector('[data-testid="iframe-edit-overlay"]');
       return {
         sameElement: current === window.__persistentPreviewIframeElement,
         connected: Boolean(current?.isConnected),
@@ -152,6 +202,12 @@ async function runMode(browser, mode) {
         paneVisible: document.querySelector('[data-testid="preview-pane"]')?.getAttribute('data-visible'),
         shadowCount: document.querySelectorAll('[data-testid="edit-canvas-shadow-host"]').length,
         loadCount: window.__persistentPreviewLoadCount,
+        bridgeReady: bridgeRoot?.getAttribute('data-r20-edit-bridge-ready'),
+        overlayCount: document.querySelectorAll('[data-testid="iframe-edit-overlay"]').length,
+        overlayBlockId: overlay?.getAttribute('data-r20-block-id'),
+        overlayPhase: overlay?.getAttribute('data-r20-edit-phase'),
+        overlayWidth: Number.parseFloat(overlay?.style.width || '0'),
+        overlayHeight: Number.parseFloat(overlay?.style.height || '0'),
       };
     });
     result.hiddenInputValue = await input.inputValue();
@@ -159,6 +215,11 @@ async function runMode(browser, mode) {
 
     await page.evaluate(() => window.__perfHook.setMainMode('preview'));
     await iframe.waitFor({ state: 'visible', timeout: 30000 });
+    await frame.waitForFunction(
+      () => document.body?.getAttribute('data-r20-edit-mode') === '0',
+      null,
+      { timeout: 30000 },
+    );
     result.after = await page.evaluate(() => {
       const current = document.querySelector('[data-testid="preview-iframe"]');
       return {
@@ -167,6 +228,7 @@ async function runMode(browser, mode) {
         iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
         paneVisible: document.querySelector('[data-testid="preview-pane"]')?.getAttribute('data-visible'),
         loadCount: window.__persistentPreviewLoadCount,
+        overlayCount: document.querySelectorAll('[data-testid="iframe-edit-overlay"]').length,
       };
     });
     result.afterInputValue = await input.inputValue();
@@ -184,6 +246,16 @@ async function runMode(browser, mode) {
       && result.duringEdit.paneVisible === 'false'
       && result.duringEdit.shadowCount === 1
       && result.duringEdit.loadCount === 0
+      && result.staleBridgeRejected === true
+      && result.bridgeDispatch.dispatched === true
+      && result.bridgeDispatch.defaultPrevented === true
+      && typeof result.bridgeDispatch.blockId === 'string'
+      && result.duringEdit.bridgeReady === '1'
+      && result.duringEdit.overlayCount === 1
+      && result.duringEdit.overlayBlockId === result.bridgeDispatch.blockId
+      && result.duringEdit.overlayPhase === 'measure'
+      && result.duringEdit.overlayWidth > 0
+      && result.duringEdit.overlayHeight > 0
       && result.hiddenInputValue === `runtime-${mode}`
       && result.hiddenRuntimeToken === token
       && result.after.sameElement
@@ -191,6 +263,7 @@ async function runMode(browser, mode) {
       && result.after.iframeCount === 1
       && result.after.paneVisible === 'true'
       && result.after.loadCount === 0
+      && result.after.overlayCount === 0
       && result.afterInputValue === `runtime-${mode}`
       && result.afterRuntimeToken === token
       && consoleErrors.length === 0

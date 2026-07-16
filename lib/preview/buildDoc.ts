@@ -72,6 +72,49 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       parent.postMessage({ type: 'r20:select', blockId: id }, '*');
     } catch (e) {}
   }
+  var editBridgeEnabled = false;
+  var editBridgeId = (function () {
+    try {
+      var bytes = new Uint32Array(4);
+      window.crypto.getRandomValues(bytes);
+      return 'r20-' + Array.prototype.map.call(bytes, function (value) {
+        return Number(value).toString(36);
+      }).join('-');
+    } catch (e) {
+      return 'r20-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36);
+    }
+  })();
+  var editMoveFrame = 0;
+  var pendingEditMove = null;
+  function blockNodeOf(node) {
+    while (node && node !== document.body) {
+      if (node.dataset && node.dataset.r20BlockId) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+  function postEditHit(phase, node, clientX, clientY) {
+    if (!editBridgeEnabled || !node || !node.dataset || !node.dataset.r20BlockId) return;
+    var rect = node.getBoundingClientRect();
+    try {
+      parent.postMessage({
+        type: 'r20:edit-hit',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        phase: phase,
+        blockId: node.dataset.r20BlockId,
+        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        pointer: { x: Number(clientX) || 0, y: Number(clientY) || 0 }
+      }, '*');
+    } catch (e) {}
+  }
+  function setEditBridgeEnabled(enabled, selectedBlockId) {
+    editBridgeEnabled = enabled === true;
+    document.body.setAttribute('data-r20-edit-mode', editBridgeEnabled ? '1' : '0');
+    if (!editBridgeEnabled || !selectedBlockId) return;
+    var selected = document.querySelector('[data-r20-block-id="' + cssEscape(selectedBlockId) + '"]');
+    if (selected) postEditHit('measure', selected, 0, 0);
+  }
   function collectAttrs() {
     var out = {};
     var nodes = document.querySelectorAll('input[name^="attr_"], select[name^="attr_"], textarea[name^="attr_"]');
@@ -356,6 +399,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     triggerSheetWorker('sheet:opened', {});
   }
   document.addEventListener('click', function (e) {
+    if (editBridgeEnabled) {
+      try { e.preventDefault(); } catch (_) {}
+      try { e.stopImmediatePropagation(); } catch (_) {}
+      return false;
+    }
     // spec 17 §8 — name 있는 element 클릭 시 부모에 widget-click 전송 (위젯 강조용)
     var widgetName = widgetNameOf(e.target);
     if (widgetName) {
@@ -401,8 +449,39 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!target || !target.matches || !target.matches('input[name^="attr_"], select[name^="attr_"], textarea[name^="attr_"]')) return;
     mirrorChangedSheetAttr(target);
   }, true);
+  document.addEventListener('pointermove', function (e) {
+    if (!editBridgeEnabled) return;
+    pendingEditMove = { node: blockNodeOf(e.target), x: e.clientX, y: e.clientY };
+    if (editMoveFrame) return;
+    editMoveFrame = window.requestAnimationFrame(function () {
+      editMoveFrame = 0;
+      var pending = pendingEditMove;
+      pendingEditMove = null;
+      if (pending) postEditHit('pointermove', pending.node, pending.x, pending.y);
+    });
+  }, true);
+  document.addEventListener('pointerdown', function (e) {
+    if (!editBridgeEnabled) return;
+    postEditHit('pointerdown', blockNodeOf(e.target), e.clientX, e.clientY);
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+  }, true);
+  document.addEventListener('pointerup', function (e) {
+    if (!editBridgeEnabled) return;
+    postEditHit('pointerup', blockNodeOf(e.target), e.clientX, e.clientY);
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+  }, true);
   window.addEventListener('message', function (e) {
-    if (!e.data) return;
+    if (e.source !== parent || !e.data) return;
+    if (
+      e.data.type === 'r20:edit-mode'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      setEditBridgeEnabled(e.data.enabled, e.data.selectedBlockId || null);
+      return;
+    }
     if (e.data.type === 'r20:highlight') {
       var prev = document.querySelector('[data-r20-preview-selected="1"]');
       if (prev) prev.removeAttribute('data-r20-preview-selected');
@@ -506,6 +585,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   applyRoll20Autocalc();
   installSheetWorkers();
   scheduleResize();
+  try {
+    parent.postMessage({ type: 'r20:edit-ready', protocol: 1, bridgeId: editBridgeId }, '*');
+  } catch (e) {}
 })();
 `;
 

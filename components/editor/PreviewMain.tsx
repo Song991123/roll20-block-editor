@@ -21,6 +21,12 @@ import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import ShadowContextMenu, { type ShadowContextMenuAction } from './ShadowContextMenu';
 import { playSfx } from '@/lib/sfx';
 import PreviewEmptyState from './PreviewEmptyState';
+import {
+  R20_IFRAME_EDIT_PROTOCOL,
+  isTrustedIframeMessage,
+  parseIframeEditBridgeMessage,
+  type IframeEditHitMessage,
+} from '@/lib/preview/iframeEditBridge';
 
 /**
  * 미리보기 메인 — iframe srcdoc, sandbox.
@@ -71,6 +77,7 @@ export default function PreviewMain() {
   const selectedWidgetId = useUiStore((s) => s.selectedWidgetId);
   const hoveredWidgetId = useUiStore((s) => s.hoveredWidgetId);
   const editSubmode = useUiStore((s) => s.editSubmode);
+  const mainMode = useUiStore((s) => s.mainMode);
   const sheetWidgetsList = useWorkspaceStore((s) => s.sheetWidgets);
   const rolltemplateWidgetsList = useWorkspaceStore((s) => s.rolltemplateWidgets);
   const [dragOver, setDragOver] = useState(false);
@@ -83,6 +90,9 @@ export default function PreviewMain() {
   } | null>(null);
   const [iframeHeight, setIframeHeight] = useState(900);
   const [viewportWidth, setViewportWidth] = useState(0);
+  const [iframeEditBridgeId, setIframeEditBridgeId] = useState<string | null>(null);
+  const iframeEditBridgeIdRef = useRef<string | null>(null);
+  const [iframeEditOverlay, setIframeEditOverlay] = useState<IframeEditHitMessage | null>(null);
   const autoWidthSizedRef = useRef(false);
   // Phase E — Inspector 활성화에 쓰일 sidebarRightTab/collapse setter.
   // 'attrs' 가 Inspector 패널 (D49).
@@ -133,6 +143,7 @@ export default function PreviewMain() {
   // Phase A 범위 = 시각만 동일. Phase B+ 의 인터랙션 (select / drag / inline edit) 은 미구현.
   useEffect(() => {
     autoWidthSizedRef.current = false;
+    iframeEditBridgeIdRef.current = null;
     queueMicrotask(() => setIframeHeight(120));
   }, [srcdoc]);
 
@@ -393,7 +404,26 @@ export default function PreviewMain() {
   // 미리보기 → 우측 인스펙터 sync + 굴림 결과 채팅 박음 (postMessage).
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
-      if (e.source !== iframeRef.current?.contentWindow) return;
+      if (!isTrustedIframeMessage(e, iframeRef.current)) return;
+      const editMessage = parseIframeEditBridgeMessage(e.data);
+      if (editMessage?.type === 'r20:edit-ready') {
+        if (iframeEditBridgeIdRef.current !== editMessage.bridgeId) {
+          setIframeEditOverlay(null);
+        }
+        iframeEditBridgeIdRef.current = editMessage.bridgeId;
+        setIframeEditBridgeId(editMessage.bridgeId);
+        return;
+      }
+      if (editMessage?.type === 'r20:edit-hit') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        if (useUiStore.getState().mainMode !== 'edit') return;
+        if (!getBlocklyAdapter().getBlock('html', editMessage.blockId)) return;
+        setIframeEditOverlay(editMessage);
+        if (editMessage.phase === 'pointerdown') {
+          setSelected(editMessage.blockId, 'preview');
+        }
+        return;
+      }
       const data = e.data;
       if (data?.type === 'r20:select' && typeof data.blockId === 'string') {
         setSelected(data.blockId, 'preview');
@@ -496,6 +526,19 @@ export default function PreviewMain() {
     return () => window.removeEventListener('message', onMessage);
   }, [setHoveredWidgetId, setSelected, setSelectedWidgetId, setSheetCanvasWidth]);
 
+  useEffect(() => {
+    if (!iframeEditBridgeId) return;
+    const target = iframeRef.current?.contentWindow;
+    if (!target) return;
+    target.postMessage({
+      type: 'r20:edit-mode',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: iframeEditBridgeId,
+      enabled: mainMode === 'edit',
+      selectedBlockId: selectedId,
+    }, '*');
+  }, [iframeEditBridgeId, mainMode, selectedId, srcdoc]);
+
   // 선택된 블록 → iframe 안 highlight.
   useEffect(() => {
     if (!selectedId) return;
@@ -562,7 +605,10 @@ export default function PreviewMain() {
   };
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col">
+    <div
+      className="relative flex h-full min-h-0 flex-col"
+      data-r20-edit-bridge-ready={iframeEditBridgeId ? '1' : '0'}
+    >
       <div
         ref={previewAreaRef}
         className={`relative flex-1 min-h-0 overflow-auto p-6 ${
@@ -609,7 +655,7 @@ export default function PreviewMain() {
             }}
           >
             <div
-              className={`origin-top ${
+              className={`relative origin-top ${
               renderMode === 'iframe' ? 'bg-transparent' : 'bg-white shadow-lg ring-1 ring-border'
             }`}
             style={{
@@ -634,6 +680,22 @@ export default function PreviewMain() {
                 ref={hostRef}
                 data-testid="preview-shadow-host"
                 className="block h-[calc(100vh-220px)] w-full overflow-auto"
+              />
+            )}
+            {renderMode === 'iframe' && mainMode === 'edit' && iframeEditOverlay && (
+              <div
+                aria-hidden="true"
+                data-testid="iframe-edit-overlay"
+                data-r20-block-id={iframeEditOverlay.blockId}
+                data-r20-edit-phase={iframeEditOverlay.phase}
+                className="pointer-events-none absolute z-20 border-2 border-amber-500 bg-amber-400/10"
+                style={{
+                  left: `${iframeEditOverlay.rect.left}px`,
+                  top: `${iframeEditOverlay.rect.top}px`,
+                  width: `${iframeEditOverlay.rect.width}px`,
+                  height: `${iframeEditOverlay.rect.height}px`,
+                  boxSizing: 'border-box',
+                }}
               />
             )}
             </div>
