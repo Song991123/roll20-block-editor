@@ -14,6 +14,7 @@ import { buildManifest, DEFAULT_METADATA } from '../manifest';
 import { buildReadme } from '../readme';
 import JSZip from 'jszip';
 import { hasBlockingError } from '@/lib/stores/workspaceStore';
+import { sanitizeForRoll20Legacy } from '@/lib/emit/sanitize';
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(`Assertion failed: ${msg}`);
@@ -101,6 +102,48 @@ async function testPbtaSmoke(): Promise<void> {
 }
 
 // ── (3) <iframe> 박힌 emit → ERROR 차단 ──────────────────────────────────
+async function testModeSpecificZipBoundary(): Promise<void> {
+  const html = '<div class="sheet-card">Card</div>';
+  const sourceCss = `
+@font-face {
+  font-family: "SyntheticExportFont";
+  src: url("https://fonts.example.test/synthetic-export.woff2") format("woff2");
+}
+.sheet-card { transform: scale(0.9); }
+`.trim();
+  const modernZip = await buildZip(
+    { html, css: sourceCss, translation: '{}', warnings: [] },
+    { ...DEFAULT_METADATA, name: 'Modern Mode Boundary', legacy: false },
+  );
+  const legacyCss = sanitizeForRoll20Legacy(sourceCss).sanitized;
+  const legacyZip = await buildZip(
+    { html, css: legacyCss, translation: '{}', warnings: [] },
+    { ...DEFAULT_METADATA, name: 'Legacy Mode Boundary', legacy: true },
+  );
+  const modernFiles = await JSZip.loadAsync(await modernZip.blob.arrayBuffer());
+  const legacyFiles = await JSZip.loadAsync(await legacyZip.blob.arrayBuffer());
+  const modernManifest = JSON.parse(await modernFiles.file('sheet.json')!.async('string'));
+  const legacyManifest = JSON.parse(await legacyFiles.file('sheet.json')!.async('string'));
+  const modernCss = await modernFiles.file('sheet.css')!.async('string');
+  const exportedLegacyCss = await legacyFiles.file('sheet.css')!.async('string');
+
+  assert(modernManifest.legacy === false, 'modern ZIP manifest stays modern');
+  assert(legacyManifest.legacy === true, 'legacy ZIP manifest stays legacy');
+  assert(modernCss.includes('transform: scale(0.9)'), 'modern ZIP preserves authored transform');
+  assert(!/transform\s*:/i.test(exportedLegacyCss), 'legacy ZIP removes unsupported transform');
+  assert(/zoom\s*:\s*0\.9/i.test(exportedLegacyCss), 'legacy ZIP converts scale to zoom');
+  for (const [mode, css] of [['modern', modernCss], ['legacy', exportedLegacyCss]] as const) {
+    assert(
+      css.includes('https://fonts.example.test/synthetic-export.woff2'),
+      `${mode} ZIP preserves the authored font URL for Roll20 to process`,
+    );
+    assert(
+      !css.includes('https://imgsrv.roll20.net/?src='),
+      `${mode} ZIP does not bake preview-only Roll20 proxy URLs`,
+    );
+  }
+}
+
 function testIframeBlocked(): void {
   const html = `<iframe src="https://evil.example/widget"></iframe>`;
   const warnings = analyzeEmit({ html, css: '', translation: '{}', warnings: [] });
@@ -217,6 +260,8 @@ async function main(): Promise<void> {
   console.log('  ✓ D&D smoke');
   await testPbtaSmoke();
   console.log('  ✓ PbtA smoke');
+  await testModeSpecificZipBoundary();
+  console.log('  ✓ modern/legacy ZIP boundary');
   testIframeBlocked();
   console.log('  ✓ iframe → ERROR');
   testFetchBlocked();

@@ -1,3 +1,14 @@
+## 2026-07-17 Mode-Specific External Font Runtime
+
+- DONE: Added a fixture-agnostic Roll20 runtime font policy. Modern preview/edit/live-patch CSS preserves authored external `@font-face` URLs; legacy preview/edit/live-patch CSS rewrites only external font URLs through `imgsrv.roll20.net`. Background/image URLs and export payload CSS are not changed by this policy.
+- VERIFIED CONTRACT: `test:roll20-render-modes` proves iframe, Shadow serialization, and live patch keep modern-direct and legacy-proxy font URLs separate. `test:export-smoke` proves both ZIPs preserve the authored font URL while modern keeps authored CSS with `sheet.json.legacy=false` and legacy applies the existing CSS compatibility transform with `sheet.json.legacy=true`.
+- VERIFIED ACTUAL CAUSE: Fresh read-only Roll20 evidence shows the same authored font active in modern (`document.fonts.check=true`, direct CDN URL) and inactive in legacy (`false`, `imgsrv.roll20.net` URL). Table collapse, spacing, layout mode, and source `colspan` handling do not explain the mode split.
+- VERIFIED LOCAL MODERN: Ignored browser report `%TEMP%\roll20-legacy-font-policy-r9` remains `1189x1936`, matching actual modern. The final table is `349.73x182.28px` local versus `349.712x182.275px` actual and the custom font is active in both.
+- PARTIAL LOCAL LEGACY: The same report is `898x1918` local versus `896x1917` actual. The final table improved from the previous `182.28px` local height to `181.28px`, versus `180.675px` actual; its final row is now `112.14px` versus `111.537px` actual. This is closer, not parity.
+- CURRENT P0: Legacy final-table column allocation still differs materially: local `178.13/171.61px` versus actual `166.075/183.637px`. Diagnose the remaining generic intrinsic-width/input-allocation or fallback-font rule-order cause before another renderer patch. Do not hardcode the measured table, attribute names, or font family.
+- HARNESS: `smoke:legacy-fixture-visual` now records generic font-face activation and visible table row/cell geometry. A legacy font-proxy CORS pair is retained as expected evidence; only that correlated pair is exempted, while unrelated console errors still fail the smoke.
+- CLAIM BOUNDARY: This closes one measured modern/legacy font-runtime difference for the prepared local fixture. It is not complete legacy sanitization, all-sheet parity, or proof that every non-font asset follows the same URL policy.
+
 ## 2026-07-17 Matching-Runtime Activation Render Evidence
 
 - DONE: Extended the generated post-upload activation checker with generic, fixture-agnostic render evidence: sheet-root rect/scroll size, visible top-level rows, bounded direct-child and final-layout computed styles, table spacing/collapse/layout values, focused-control state, and grouped representative `attr_*` values.

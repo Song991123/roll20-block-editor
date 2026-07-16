@@ -4859,3 +4859,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   - `diagnose:roll20-chat-candidates` with isolated candidate screenshots returned `reject-regresses-fixtures`, mean `+15.25%`, regressions `2`, YSHY aligned delta `+4.7%`.
   - `diagnose:roll20-chat-row-raster-candidates` returned `reject-row-raster-regression`, AW2E weighted `17.93% -> 62%` (`+44.07`) and YSHY weighted `21.41% -> 32.11%` (`+10.7`).
 - Claim boundary: this is negative diagnostic evidence only. It does not change default ChatPane rendering, does not prove visual parity, and should prevent future agents from chasing glyph metric substitution as the production fix.
+
+## 2026-07-17 - External font runtime split from actual Roll20 evidence
+
+- Read-only actual evidence isolated a real mode-specific cause in the prepared sheet: modern kept the direct external `@font-face` URL and activated the font, while legacy rewrote it through `imgsrv.roll20.net` and fell back because the font was inactive. Both runtimes otherwise reported the same table collapse/spacing/layout values.
+- Added `lib/preview/runtimeFontPolicy.ts` and applied it through the shared prepared render contract. The rule is generic and limited to external URLs inside `@font-face`: modern remains authored, legacy uses the Roll20 proxy, already-Roll20-hosted/proxied and non-http URLs are preserved.
+- Export remains a separate boundary. Preview-only proxy URLs are not baked into ZIP CSS; the legacy ZIP still uses the existing compatibility sanitizer and writes `sheet.json.legacy=true`, while modern preserves authored CSS and writes `false`.
+- Synthetic contract and ZIP tests pass. Ignored browser evidence `%TEMP%\roll20-legacy-font-policy-r9` passes with modern `1189x1936`, active direct font, and legacy `898x1918`, inactive proxied font. The legacy final table is now `181.28px` local versus `180.675px` actual, but column allocation remains `178.13/171.61px` local versus `166.075/183.637px` actual.
+- The browser smoke keeps the expected proxy-font CORS messages in evidence and fails only on unrelated console errors. Generated source, screenshots, and reports remain ignored; no Roll20 room/source was modified.
+- Next: diagnose the remaining legacy intrinsic column allocation and 2px root-width/1px height residual using generic computed-style/font metrics. Do not promote a table-, attribute-, or font-family-specific patch.

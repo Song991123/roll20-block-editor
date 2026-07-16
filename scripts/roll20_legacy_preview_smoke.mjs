@@ -39,6 +39,10 @@ const HTML = `
 `.trim();
 
 const CSS = `
+@font-face {
+  font-family: "SyntheticRuntimeFont";
+  src: url("https://fonts.example.test/synthetic-runtime.woff2") format("woff2");
+}
 :root { --accent: #c02030; }
 .sheet-legacy-card {
   position: sticky;
@@ -129,7 +133,12 @@ assertCheck(checks, 'iframe modern does not legacy-prefix HTML class', !modernDo
 assertCheck(checks, 'iframe legacy prefixes HTML class', legacyDoc.includes('class="sheet-legacy-card"'));
 assertCheck(checks, 'iframe modern keeps transform', includesText(modernUserCss, 'transform: scale(0.92)'));
 assertCheck(checks, 'iframe modern keeps animation', includesText(modernUserCss, 'animation: r20-fade'));
+assertCheck(checks, 'iframe modern preserves authored external font URL',
+  modernUserCss.includes('https://fonts.example.test/synthetic-runtime.woff2')
+    && !modernUserCss.includes('https://imgsrv.roll20.net/?src='));
 assertCheck(checks, 'iframe legacy converts scale to zoom', includesText(legacyUserCss, 'zoom: 0.92'));
+assertCheck(checks, 'iframe legacy proxies external font URL through Roll20',
+  legacyUserCss.includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Ffonts.example.test%2Fsynthetic-runtime.woff2'));
 assertCheck(checks, 'iframe legacy removes transform declarations', !/transform\s*:/i.test(legacyUserCss));
 assertCheck(checks, 'iframe legacy removes animation declarations', !/animation(?:-[a-z-]+)?\s*:/i.test(legacyUserCss));
 assertCheck(checks, 'iframe legacy removes keyframes', !/@(?:-[a-z]+-)?keyframes\b/i.test(legacyUserCss));
@@ -152,7 +161,12 @@ assertCheck(checks, 'shadow modern does not legacy-prefix HTML class', !modernPa
 assertCheck(checks, 'shadow legacy prefixes HTML class', legacyParts.html.includes('class="sheet-legacy-card"'));
 assertCheck(checks, 'shadow modern keeps transform', includesText(modernShadowUserCss, 'transform: scale(0.92)'));
 assertCheck(checks, 'shadow modern keeps animation', includesText(modernShadowUserCss, 'animation: r20-fade'));
+assertCheck(checks, 'shadow modern preserves authored external font URL',
+  modernShadowUserCss.includes('https://fonts.example.test/synthetic-runtime.woff2')
+    && !modernShadowUserCss.includes('https://imgsrv.roll20.net/?src='));
 assertCheck(checks, 'shadow legacy converts scale to zoom', includesText(legacyShadowUserCss, 'zoom: 0.92'));
+assertCheck(checks, 'shadow legacy proxies external font URL through Roll20',
+  legacyShadowUserCss.includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Ffonts.example.test%2Fsynthetic-runtime.woff2'));
 assertCheck(checks, 'shadow legacy removes transform declarations', !/transform\s*:/i.test(legacyShadowUserCss));
 assertCheck(checks, 'shadow legacy removes animation declarations', !/animation(?:-[a-z-]+)?\s*:/i.test(legacyShadowUserCss));
 assertCheck(checks, 'shadow legacy removes keyframes', !/@(?:-[a-z]+-)?keyframes\b/i.test(legacyShadowUserCss));
@@ -168,6 +182,10 @@ assertCheck(checks, 'shadow dialog context does not override disabled input pain
 assertCheck(checks, 'shadow dialog context does not override sheet backgrounds', !/\.charsheet\s*{[\s\S]*?background-(?:repeat|position)/i.test(modernShadowDialogCss));
 assertCheck(checks, 'shadow modern does not force legacy disabled input paint', modernShadowLegacyInputCss === '');
 assertCheck(checks, 'shadow legacy applies overridable disabled input paint', /input\[disabled\][\s\S]*?background-color:\s*rgba\(255,\s*255,\s*255,\s*0\)/i.test(legacyShadowInputCss) && !/!important/i.test(legacyShadowInputCss));
+assertCheck(checks, 'live patch keeps modern and legacy font URL policies separate',
+  modernAtomicPatch.styles['r20-user'].includes('https://fonts.example.test/synthetic-runtime.woff2')
+    && !modernAtomicPatch.styles['r20-user'].includes('https://imgsrv.roll20.net/?src=')
+    && legacyAtomicPatch.styles['r20-user'].includes('https://imgsrv.roll20.net/?src=https%3A%2F%2Ffonts.example.test%2Fsynthetic-runtime.woff2'));
 
 const mainAreaToolbar = readFileSync(join(REPO_ROOT, 'components/editor/MainAreaToolbar.tsx'), 'utf8');
 const editorShell = readFileSync(join(REPO_ROOT, 'components/editor/EditorShell.tsx'), 'utf8');

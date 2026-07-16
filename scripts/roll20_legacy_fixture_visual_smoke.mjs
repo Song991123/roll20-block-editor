@@ -159,6 +159,31 @@ function summarizeResourceIssues(issues) {
   return Array.from(map.values()).sort((a, b) => b.count - a.count || String(a.host).localeCompare(String(b.host)));
 }
 
+function classifyLegacyFontProxyConsoleErrors(events) {
+  const expected = [];
+  const unexpected = [];
+  for (const event of events || []) {
+    const message = event.text || '';
+    const sourceUrl = event.url || '';
+    if (
+      message.includes("Access to font at 'https://imgsrv.roll20.net/?src=")
+      && message.includes('blocked by CORS policy')
+    ) {
+      expected.push(event);
+      continue;
+    }
+    if (
+      message === 'Failed to load resource: net::ERR_FAILED'
+      && sourceUrl.startsWith('https://imgsrv.roll20.net/?src=')
+    ) {
+      expected.push(event);
+      continue;
+    }
+    unexpected.push(event);
+  }
+  return { expected, unexpected };
+}
+
 function countMatches(css, re) {
   return css.match(re)?.length ?? 0;
 }
@@ -639,6 +664,61 @@ async function capturePreviewMode(page, fixtureId, mode) {
       }
       controlGroupMap.set(key, current);
     });
+    const fontFaces = [];
+    for (const styleSheet of Array.from(sheetEl.ownerDocument.styleSheets)) {
+      let rules;
+      try {
+        rules = Array.from(styleSheet.cssRules || []);
+      } catch {
+        continue;
+      }
+      for (const rule of rules) {
+        if (rule.type !== CSSRule.FONT_FACE_RULE) continue;
+        const family = rule.style.getPropertyValue('font-family').trim();
+        const src = rule.style.getPropertyValue('src').trim();
+        if (!family || !src) continue;
+        const checkSpec = `12px ${family}`;
+        fontFaces.push({
+          family,
+          src,
+          checkSpec,
+          active: sheetEl.ownerDocument.fonts?.check(checkSpec) ?? null,
+        });
+      }
+    }
+    const tables = Array.from(sheetEl.querySelectorAll('table')).flatMap((table, index) => {
+      const tableStyle = getComputedStyle(table);
+      const tableRect = table.getBoundingClientRect();
+      if (
+        tableStyle.display === 'none'
+        || tableStyle.visibility === 'hidden'
+        || tableRect.width <= 0
+        || tableRect.height <= 0
+      ) return [];
+      return [{
+        index,
+        rect: { width: round(tableRect.width), height: round(tableRect.height) },
+        style: {
+          borderCollapse: tableStyle.borderCollapse,
+          borderSpacing: tableStyle.borderSpacing,
+          tableLayout: tableStyle.tableLayout,
+          fontFamily: tableStyle.fontFamily,
+          fontSize: tableStyle.fontSize,
+          lineHeight: tableStyle.lineHeight,
+        },
+        rows: Array.from(table.rows).map((row) => {
+          const rowRect = row.getBoundingClientRect();
+          return {
+            height: round(rowRect.height),
+            cells: Array.from(row.cells).map((cell) => ({
+              width: round(cell.getBoundingClientRect().width),
+              colSpan: cell.colSpan,
+              text: (cell.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 40),
+            })),
+          };
+        }),
+      }];
+    });
     return {
       rect: {
         width: Math.round(rect.width),
@@ -670,6 +750,8 @@ async function capturePreviewMode(page, fixtureId, mode) {
       layoutContributors,
       stateInputs,
       controlGroups: Array.from(controlGroupMap.values()).sort((a, b) => b.count - a.count),
+      fontFaces,
+      tables,
       visibleRuntimeNodeCount: elements.filter((el) => {
         if (!['SCRIPT', 'ROLLTEMPLATE'].includes(el.tagName)) return false;
         const cs = getComputedStyle(el);
@@ -781,10 +863,14 @@ async function main() {
   for (const fixture of fixtures) {
     const page = await browser.newPage({ viewport: VIEWPORT });
     const consoleErrors = [];
+    const consoleErrorEvents = [];
     const pageErrors = [];
     const resourceIssues = [];
     page.on('console', (msg) => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text().slice(0, 500));
+      if (msg.type() !== 'error') return;
+      const text = msg.text().slice(0, 500);
+      consoleErrors.push(text);
+      consoleErrorEvents.push({ text, url: msg.location().url || '' });
     });
     page.on('pageerror', (err) => pageErrors.push(String(err).slice(0, 500)));
     page.on('response', (response) => {
@@ -809,8 +895,24 @@ async function main() {
       await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
       await warmPerfHook(page);
       entry.import = await waitForLiveImport(page, fixture);
+      const modernConsoleStart = consoleErrors.length;
+      const modernConsoleEventStart = consoleErrorEvents.length;
+      const modernResourceStart = resourceIssues.length;
       entry.modern = await capturePreviewMode(page, fixture.id, 'modern');
+      entry.modern.consoleErrors = consoleErrors.slice(modernConsoleStart);
+      entry.modern.consoleErrorEvents = consoleErrorEvents.slice(modernConsoleEventStart);
+      entry.modern.resourceIssues = summarizeResourceIssues(resourceIssues.slice(modernResourceStart));
+      const legacyConsoleStart = consoleErrors.length;
+      const legacyConsoleEventStart = consoleErrorEvents.length;
+      const legacyResourceStart = resourceIssues.length;
       entry.legacy = await capturePreviewMode(page, fixture.id, 'legacy');
+      entry.legacy.consoleErrors = consoleErrors.slice(legacyConsoleStart);
+      entry.legacy.consoleErrorEvents = consoleErrorEvents.slice(legacyConsoleEventStart);
+      const legacyRawResourceIssues = resourceIssues.slice(legacyResourceStart);
+      entry.legacy.resourceIssues = summarizeResourceIssues(legacyRawResourceIssues);
+      entry.legacy.fontProxyConsole = classifyLegacyFontProxyConsoleErrors(
+        entry.legacy.consoleErrorEvents,
+      );
       entry.cssChanged = entry.modern.userCss !== entry.legacy.userCss;
       delete entry.modern.userCss;
       delete entry.legacy.userCss;
@@ -827,7 +929,8 @@ async function main() {
         entry.legacy.dom.visibleElementCount > 0 &&
         entry.modern.dom.visibleRuntimeNodeCount === 0 &&
         entry.legacy.dom.visibleRuntimeNodeCount === 0 &&
-        consoleErrors.length === 0 &&
+        entry.modern.consoleErrors.length === 0 &&
+        entry.legacy.fontProxyConsole.unexpected.length === 0 &&
         pageErrors.length === 0 &&
         (entry.modern.risk.total === 0 || entry.legacyRiskReduced);
     } catch (err) {
@@ -878,12 +981,13 @@ function renderMarkdown(report) {
   ];
   for (const item of report.fixtures) {
     lines.push(
-      `| \`${item.id}\` | ${item.import?.blockCount ?? ''} | ${item.modern?.risk?.total ?? ''} | ${item.legacy?.risk?.total ?? ''} | ${item.modeEffect ?? ''} | ${item.cssChanged ? 'yes' : 'no'} | ${fmtSize(item.diff?.modernSize)} | ${fmtSize(item.diff?.legacySize)} | ${item.diff?.mismatchPct ?? ''}% | ${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} | ${item.pass ? 'PASS' : 'FAIL'} |`,
+      `| \`${item.id}\` | ${item.import?.blockCount ?? ''} | ${item.modern?.risk?.total ?? ''} | ${item.legacy?.risk?.total ?? ''} | ${item.modeEffect ?? ''} | ${item.cssChanged ? 'yes' : 'no'} | ${fmtSize(item.diff?.modernSize)} | ${fmtSize(item.diff?.legacySize)} | ${item.diff?.mismatchPct ?? ''}% | ${item.legacy?.fontProxyConsole?.unexpected?.length ?? item.consoleErrors?.length ?? 0}/${item.consoleErrors?.length ?? 0} | ${item.pageErrors?.length ?? 0} | ${item.pass ? 'PASS' : 'FAIL'} |`,
     );
   }
   lines.push('');
   lines.push('Notes:');
-  lines.push('- PASS requires both preview roots to render, no visible script/rolltemplate runtime nodes, and zero console/page errors.');
+  lines.push('- PASS requires both preview roots to render, no visible script/rolltemplate runtime nodes, and zero unexpected console/page errors.');
+  lines.push('- The console column is unexpected/total. A legacy Roll20 font-proxy CORS pair is retained as expected evidence and does not hide unrelated console errors.');
   lines.push('- If modern user CSS contains legacy-risk declarations, legacy mode must reduce that risk count.');
   lines.push('- A fixture with no legacy-risk CSS is recorded as `no-risk-css`; it still exercises the import and toggle path.');
   lines.push('- Screenshot mismatch is diagnostic only. Real Roll20 sandbox/test-room parity remains unverified until actual Roll20 screenshots are captured.');

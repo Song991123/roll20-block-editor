@@ -118,6 +118,30 @@ Both observations found translated `name` and `strength` markers and zero
 source script nodes. These measurements prove mode divergence; they do not prove
 that either local renderer is pixel-identical to Roll20.
 
+### 2026-07-17 Mode-Specific External Font Observation
+
+A fresh read-only computed-style/CSSOM capture narrowed one part of that mode
+divergence. For the same uploaded external `@font-face` declaration:
+
+- modern Roll20 retained the direct CDN URL and `document.fonts.check()` was
+  true;
+- legacy Roll20 exposed an `imgsrv.roll20.net` URL and the same font check was
+  false, so intrinsic table sizing used a fallback font.
+
+The local shared render contract now mirrors this measured distinction only for
+external URLs inside user `@font-face` blocks. Modern preview/edit keeps the
+authored URL; legacy preview/edit uses the proxy URL. Exported CSS keeps the
+authored URL in both modes because Roll20 applies its own runtime processing;
+the selected destination remains encoded by `sheet.json.legacy` and the legacy
+CSS compatibility transform. This observation must not be generalized to
+background/image URLs until equivalent modern and legacy evidence is captured.
+
+The focused local result is partial: modern remains `1189x1936`, matching the
+measured actual root, while legacy is `898x1918` versus actual `896x1917`. The
+legacy final table height is within about `0.61px`, but its two intrinsic column
+widths still differ by about `12px`. Do not claim pixel parity or add a
+fixture-specific width rule from this evidence.
+
 Later evidence supersedes the `18.81%` visible-top screenshot as the main
 Les-Oublies generated-sheet comparison: a stitched full-height actual Roll20 root
 image is available locally and currently differs from the local preview by

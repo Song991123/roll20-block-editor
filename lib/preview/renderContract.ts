@@ -6,6 +6,7 @@ import { sanitizeForRoll20Legacy } from '../emit/sanitize';
 import { parseTranslationMap } from '../export/payload';
 import { annotateRoll20AutocalcHtml } from './autocalc';
 import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
+import { applyRoll20RuntimeFontUrlPolicy } from './runtimeFontPolicy';
 
 export type Roll20CompatibilityMode = 'modern' | 'legacy';
 
@@ -56,9 +57,10 @@ export function prepareSheetRenderContract(
   const sandboxCss = roll20SandboxSanitize
     ? sanitizeRoll20SandboxCss(userCss, { prefixSelectors: false }).css
     : prefixedCss;
+  const runtimeCss = applyRoll20RuntimeFontUrlPolicy(sandboxCss, compatibilityMode);
   const previewCss = legacyCssSanitize
-    ? sanitizeForRoll20Legacy(sandboxCss).sanitized
-    : sandboxCss;
+    ? sanitizeForRoll20Legacy(runtimeCss).sanitized
+    : runtimeCss;
   const bodyInner = sandboxHtml
     ? addRoll20RepeatingRuntimeHtml(
         annotateRoll20AutocalcHtml(applyTranslationsToHtml(sandboxHtml, input.i18n)),
