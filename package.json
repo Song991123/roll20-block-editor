@@ -19,6 +19,7 @@
     "audit:legacy-export": "node scripts/roll20_legacy_export_audit.mjs",
     "test:asset-refs": "node --no-warnings lib/export/__tests__/asset_refs.test.ts",
     "test:asset-replacements": "node --no-warnings lib/export/__tests__/asset_replacements.test.ts && node scripts/lib/assetReplacements.test.mjs",
+    "test:translation-payload": "node --no-warnings lib/export/__tests__/translation_payload.test.ts",
     "test:export-readme": "node --no-warnings lib/export/__tests__/readme.test.ts",
     "test:layer-roles": "node --no-warnings lib/editor/__tests__/layerRoles.test.ts",
     "test:server-hygiene": "node scripts/server_hygiene_check.mjs --self-test",

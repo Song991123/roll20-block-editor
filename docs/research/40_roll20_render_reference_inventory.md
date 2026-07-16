@@ -17,6 +17,7 @@ Purpose: keep external Roll20/editor references in one place so render work does
 | Source | Evidence | Use | Caveat |
 | --- | --- | --- | --- |
 | Roll20 official `roll20-character-sheets` GitHub repository | The repository documents expected sheet package files: HTML, CSS, preview image, `sheet.json`, and notes inputs, roll buttons, repeating sections, roll templates, and sheet workers. It also states repository HTML/CSS are MIT licensed. | Use as the broadest pattern corpus for official/community sheet structures, `sheet.json`, worker patterns, translations, repeating sections, roll templates, and preview metadata. | Do not bundle these sheets into the app. Keep reference/fixture use local and ignored unless a deliberately sanitized synthetic fixture is created. |
+| Roll20 Help Center: Character Sheet Translation | Roll20 documents `data-i18n` text replacement, translation JSON, and translated element attributes `title`, `alt`, `aria-label`, `label`, and `placeholder`. | Keep preview, edit, worker `getTranslationByKey`, chat, and export on one translation map and cover every documented attribute. | Documentation explains the contract but does not replace a Sandbox screenshot/runtime comparison. |
 | Roll20 forum permalink `Character Sheet Enhancements!` | Roll20 discussion notes mention the `legacy` field in `sheet.json`, custom sheet setting checkbox behavior, and rolltemplate legacy HTML/CSS behavior. | Treat legacy mode as a real runtime option. Test rolltemplate rendering separately from sheet iframe/preview rendering. | Forum posts are dated. Verify current behavior in Sandbox/CDP before shipping behavior based on the post. |
 | GrapesJS homepage/docs | GrapesJS exposes pages/layers managers, symbols, JSON output, and HTML/CSS/JS export. | Useful architecture reference for layer manager, component model, export pipeline, and visual editing vocabulary. | Not Roll20-aware. Do not drop it in as a replacement for Roll20 sanitizer/runtime mapping. |
 | GrapesJS discussion about external HTML templates | Maintainers/users describe why arbitrary external HTML editing is hard: script execution is blocked, non-componentized HTML needs normalization, CSS can leak, and assets can be messy. | Confirms our need for an import-normalization pipeline, block/layer classification, asset relink checks, and CSS isolation. | It is an editor-framework discussion, not Roll20 behavior evidence. |
@@ -37,6 +38,7 @@ Purpose: keep external Roll20/editor references in one place so render work does
 ## Useful Links
 
 - [Roll20 character sheets repository](https://github.com/Roll20/roll20-character-sheets)
+- [Roll20 Help Center: Character Sheet Translation](https://help.roll20.net/hc/en-us/articles/360037773493-Character-Sheet-Translation)
 - [Roll20 forum permalink: Character Sheet Enhancements](https://app.roll20.net/forum/permalink/9885203/)
 - [GrapesJS](https://grapesjs.com/)
 - [GrapesJS discussion: external HTML templates](https://github.com/GrapesJS/grapesjs/discussions/6732)

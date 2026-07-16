@@ -24,6 +24,7 @@ import {
   sanitizeRoll20SandboxHtml,
 } from '../emit/roll20SandboxSanitize';
 import { sanitizeForRoll20Legacy } from '../emit/sanitize';
+import { normalizeTranslationForRoll20, parseTranslationMap } from '../export/payload';
 import {
   roll20BaseIframeCss,
   roll20BaseShadowCss,
@@ -254,8 +255,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     });
     [
       ['data-i18n-title', 'title'],
+      ['data-i18n-alt', 'alt'],
       ['data-i18n-placeholder', 'placeholder'],
-      ['data-i18n-aria-label', 'aria-label']
+      ['data-i18n-aria-label', 'aria-label'],
+      ['data-i18n-label', 'label']
     ].forEach(function (pair) {
       document.querySelectorAll('[' + pair[0] + ']').forEach(function (el) {
         var key = el.getAttribute(pair[0]);
@@ -622,22 +625,6 @@ function jsonScriptText(value: string | undefined): string {
     .replace(/&/g, '\\u0026');
 }
 
-function parseTranslationMap(i18n: string | undefined): Record<string, string> {
-  if (!i18n?.trim()) return {};
-  try {
-    const parsed = JSON.parse(i18n);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    const out: Record<string, string> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      if (value == null) continue;
-      out[key] = String(value);
-    }
-    return out;
-  } catch {
-    return {};
-  }
-}
-
 function applyTranslationsToHtml(html: string, i18n: string | undefined): string {
   const translations = parseTranslationMap(i18n);
   if (Object.keys(translations).length === 0) return html;
@@ -657,8 +644,10 @@ function applyTranslationsToHtml(html: string, i18n: string | undefined): string
   });
   const attrPairs = [
     ['data-i18n-title', 'title'],
+    ['data-i18n-alt', 'alt'],
     ['data-i18n-placeholder', 'placeholder'],
     ['data-i18n-aria-label', 'aria-label'],
+    ['data-i18n-label', 'label'],
   ] as const;
   for (const [source, target] of attrPairs) {
     template.content.querySelectorAll<HTMLElement>(`[${source}]`).forEach((el) => {
@@ -817,7 +806,7 @@ ${bodyInner}
 </div>
 </div>
 </div>
-<script type="application/json" id="__r20-i18n">${jsonScriptText(opts.i18n)}</script>
+<script type="application/json" id="__r20-i18n">${jsonScriptText(normalizeTranslationForRoll20(opts.i18n ?? ''))}</script>
 <script>${PREVIEW_BRIDGE_SCRIPT}</script>
 </body>
 </html>`;

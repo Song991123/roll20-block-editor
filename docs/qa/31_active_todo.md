@@ -1,3 +1,15 @@
+## 2026-07-16 Translation Payload and Preview/Edit Runtime Parity
+
+- ROOT CAUSE: The Blockly i18n workspace emits internal `<!-- i18n[ko] "key": "value" -->` comments. Export normalized those comments to Roll20 JSON, but local preview/edit attempted JSON-only parsing. The generated Roll20 payload therefore translated while the local render could remain English.
+- DONE: Added one shared `parseTranslationMap` path for Roll20 JSON and the internal locale-comment format. Preview iframe, Shadow edit runtime, sheet-worker translation APIs, chat, and export now consume the same normalized translation map.
+- DONE: Reapplied translations after Shadow DOM parsing so void/hidden elements retain the same runtime DOM state as iframe preview. Added Roll20-documented translated attributes `alt` and `label` alongside `title`, `placeholder`, and `aria-label`.
+- DONE: Added `test:translation-payload` to `ci:verify` and extended `smoke:preview-edit-visual` to report all and visible translation matches separately.
+- VERIFIED: Ignored local run `.tmp/preview-edit-visual-20260716-r19` passed all 3 prepared fixtures. Translation state was preview/edit `436/436`, `0/0`, and `1148/1148`; visible translation matches were `53/53`, `0/0`, and `93/93`. Computed-style and visible-geometry differences remained `0`; pixel status remained two `EXACT` and one `RASTER_TOLERANCE` at `14` pixels / `8.33 ppm`.
+- VERIFIED: `.tmp/edit-flow-translation-sync-20260716-r1` passed selection, before/inside/after insertion, nested reorder, non-leaf reorder, absolute-in-frame movement, free placement, emitted CSS coordinates, layer synchronization, and canvas-width control with console/page errors `0`.
+- VERIFY: The dedicated Roll20 Sandbox currently renders the generated translated sheet, but the endpoint-applied character iframe has a class-prefix-sensitive horizontal overflow. Normal Roll20 file-picker re-upload is still required before deciding whether this is a product renderer defect or endpoint upload bypass evidence.
+- BLOCKER: Chrome file-chooser control cannot set local files until the ChatGPT Chrome Extension has **Allow access to file URLs** enabled. Do not promote the endpoint-only width/class result to actual Roll20 parity evidence.
+- NEXT P0: Enable the extension permission, upload the same ignored `sheet.html`, `sheet.css`, and `translation.json` through **Sheet Sandbox Tools**, then recapture root width/height/scrollWidth, `attr_pow` class/width, screenshot, and diff.
+
 ## 2026-07-16 Preview/Edit Underlying Paint Separation
 
 - ROOT CAUSE: The local visual smoke mixed edit-only container outlines into the preview/edit pixel diff, and long element screenshots crossed the browser viewport boundary. The latter produced a full-width stitched band even when DOM, computed style, and visible geometry were identical.

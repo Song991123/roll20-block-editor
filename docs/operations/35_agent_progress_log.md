@@ -1,3 +1,13 @@
+## 2026-07-16 Translation Runtime Unification and Roll20 Upload Boundary
+
+- Traced an actual/local language discrepancy to format handling, not CSS: Blockly emitted locale comments, export normalized them to JSON, while preview/edit only parsed JSON.
+- Added `parseTranslationMap` in `lib/export/payload.ts` and routed iframe preview, Shadow edit, sheet-worker translation APIs, chat/export normalization, and CI through the shared translation contract.
+- Added post-parse Shadow translation application and Roll20-supported `data-i18n-alt` / `data-i18n-label` handling. This removed the last hidden-input DOM mismatch between preview and edit.
+- Added `lib/export/__tests__/translation_payload.test.ts`, `test:translation-payload`, CI coverage, and translation counts to `scripts/preview_edit_visual_smoke.mjs`.
+- Verification: `ci:verify`, lint, build, and translation unit tests passed. Ignored `.tmp/preview-edit-visual-20260716-r19` passed 3/3 with all translation matches (`436/436`, `0/0`, `1148/1148`), zero style/geometry differences, two exact pixel matches, and one 14-pixel raster-tolerance match. Ignored `.tmp/edit-flow-translation-sync-20260716-r1` passed with no console/page errors.
+- Actual Roll20: the dedicated Sandbox was reached and its currently rendered translated sheet was observed, but normal file-picker re-upload failed because the Chrome extension lacks local file URL access. Existing endpoint-applied horizontal overflow/class evidence remains diagnostic-only and must not drive production CSS.
+- Next P0: enable **Allow access to file URLs** for the ChatGPT Chrome Extension, re-upload the generated payload through Sheet Sandbox Tools, and recapture class prefix, root scroll width/height, screenshot, and diff before renderer changes.
+
 ## 2026-07-16 Preview/Edit Underlying Paint Gate
 
 - Investigated the regression from historical 1-2% local preview/edit mismatch to 5-9%. Direct screenshot inspection showed edit-only layer affordances were being counted as renderer differences.

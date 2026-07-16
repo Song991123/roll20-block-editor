@@ -472,6 +472,90 @@ function summarizeRenderDiagnostics(sheetEl) {
   };
 }
 
+function summarizeTranslationState(sheetEl, rawI18n) {
+  const text = String(rawI18n || '').trim();
+  const translations = {};
+  let parseError = '';
+  if (text) {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        Object.entries(parsed).forEach(([key, value]) => {
+          if (value != null) translations[key] = String(value);
+        });
+      }
+    } catch {
+      const re = /<!--\s*i18n(?:\[[^\]]+\])?\s+("(?:\\.|[^"\\])*")\s*:\s*("(?:\\.|[^"\\])*")\s*-->/g;
+      let match;
+      while ((match = re.exec(text))) {
+        try {
+          translations[JSON.parse(match[1])] = String(JSON.parse(match[2]));
+        } catch {}
+      }
+      if (Object.keys(translations).length === 0) parseError = 'unsupported translation format';
+    }
+  }
+
+  const mismatches = [];
+  const hiddenMismatches = [];
+  let applicableCount = 0;
+  let matchedCount = 0;
+  let visibleApplicableCount = 0;
+  let visibleMatchedCount = 0;
+  let unknownKeyCount = 0;
+  const specs = [
+    ['data-i18n', 'textContent'],
+    ['data-i18n-title', 'title'],
+    ['data-i18n-alt', 'alt'],
+    ['data-i18n-placeholder', 'placeholder'],
+    ['data-i18n-aria-label', 'aria-label'],
+    ['data-i18n-label', 'label'],
+  ];
+  for (const [source, target] of specs) {
+    sheetEl.querySelectorAll(`[${source}]`).forEach((el) => {
+      const key = el.getAttribute(source) || '';
+      if (!(key in translations)) {
+        unknownKeyCount += 1;
+        return;
+      }
+      applicableCount += 1;
+      const cs = getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      const visible = cs.display !== 'none' && cs.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      if (visible) visibleApplicableCount += 1;
+      const actual = target === 'textContent'
+        ? String(el.textContent || '')
+        : String(el.getAttribute(target) || '');
+      const expected = translations[key];
+      if (actual === expected) {
+        matchedCount += 1;
+        if (visible) visibleMatchedCount += 1;
+      } else {
+        const mismatch = { source, target, key, expected, actual: actual.slice(0, 200) };
+        if (visible && mismatches.length < 12) mismatches.push(mismatch);
+        if (!visible && hiddenMismatches.length < 12) hiddenMismatches.push(mismatch);
+      }
+    });
+  }
+  const mismatchCount = applicableCount - matchedCount;
+  const visibleMismatchCount = visibleApplicableCount - visibleMatchedCount;
+  return {
+    sourceBytes: text.length,
+    parsedKeyCount: Object.keys(translations).length,
+    applicableCount,
+    matchedCount,
+    mismatchCount,
+    visibleApplicableCount,
+    visibleMatchedCount,
+    visibleMismatchCount,
+    unknownKeyCount,
+    parseError,
+    mismatches,
+    hiddenMismatches,
+    pass: !parseError && (visibleApplicableCount === 0 || visibleMismatchCount === 0),
+  };
+}
+
 function summarizeEditCanvasLayout() {
   const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
   const shadow = host?.shadowRoot;
@@ -634,7 +718,7 @@ async function summarizeEditOverlay(host) {
   });
 }
 
-async function capturePreview(page, fixtureId) {
+async function capturePreview(page, fixtureId, i18n) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setPreviewRenderMode('iframe');
@@ -648,6 +732,7 @@ async function capturePreview(page, fixtureId) {
   const box = await sheet.boundingBox();
   const dom = await sheet.evaluate(summarizeSheetElement);
   const diagnostics = await sheet.evaluate(summarizeRenderDiagnostics);
+  const translations = await sheet.evaluate(summarizeTranslationState, i18n);
   const styles = await sheet.evaluate(summarizeRenderStyles);
   const signature = await sheet.evaluate(summarizeSheetSignature);
   const appOcclusion = await collectAppOcclusion(page, box);
@@ -657,6 +742,7 @@ async function capturePreview(page, fixtureId) {
     box,
     dom,
     diagnostics,
+    translations,
     styles,
     signature,
     appOcclusion,
@@ -665,7 +751,7 @@ async function capturePreview(page, fixtureId) {
   };
 }
 
-async function captureEdit(page, fixtureId) {
+async function captureEdit(page, fixtureId, i18n) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
@@ -701,6 +787,7 @@ async function captureEdit(page, fixtureId) {
   const box = await sheet.boundingBox();
   const dom = await sheet.evaluate(summarizeSheetElement);
   const diagnostics = await sheet.evaluate(summarizeRenderDiagnostics);
+  const translations = await sheet.evaluate(summarizeTranslationState, i18n);
   const styles = await sheet.evaluate(summarizeRenderStyles);
   const signature = await sheet.evaluate(summarizeSheetSignature);
   const appOcclusion = await collectAppOcclusion(page, box);
@@ -714,6 +801,7 @@ async function captureEdit(page, fixtureId) {
     box,
     dom,
     diagnostics,
+    translations,
     styles,
     signature,
     appOcclusion,
@@ -861,17 +949,19 @@ async function main() {
       await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
       await warmPerfHook(page);
       entry.import = await waitForLiveImport(page, fixture);
-      entry.previewCapture = await capturePreview(page, fixture.id);
+      entry.previewCapture = await capturePreview(page, fixture.id, fixture.i18n);
       entry.previewDom = entry.previewCapture.dom;
       entry.previewDiagnostics = entry.previewCapture.diagnostics;
+      entry.previewTranslations = entry.previewCapture.translations;
       entry.previewStyles = entry.previewCapture.styles;
       entry.previewStability = entry.previewCapture.stability;
       entry.previewViewportFit = entry.previewCapture.viewportFit;
       entry.previewSignature = entry.previewCapture.signature;
       entry.previewAppOcclusion = entry.previewCapture.appOcclusion;
-      entry.editCapture = await captureEdit(page, fixture.id);
+      entry.editCapture = await captureEdit(page, fixture.id, fixture.i18n);
       entry.editDom = entry.editCapture.dom;
       entry.editDiagnostics = entry.editCapture.diagnostics;
+      entry.editTranslations = entry.editCapture.translations;
       entry.editStyles = entry.editCapture.styles;
       entry.editStability = entry.editCapture.stability;
       entry.editViewportFit = entry.editCapture.viewportFit;
@@ -901,6 +991,8 @@ async function main() {
         entry.computedStyleParity.pass &&
         entry.geometryParity.pass &&
         entry.pixelParity.pass &&
+        entry.previewTranslations.pass &&
+        entry.editTranslations.pass &&
         consoleErrors.length === 0 &&
         pageErrors.length === 0;
     } catch (err) {
@@ -914,7 +1006,8 @@ async function main() {
       `${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} ` +
       `mismatch=${entry.diff?.mismatchPct ?? 'n/a'}% ` +
       `pixels=${entry.diff?.mismatchPixels ?? 'n/a'} ppm=${entry.diff?.mismatchPpm ?? 'n/a'} ` +
-      `parity=${entry.pixelParity?.status ?? 'n/a'}`,
+      `parity=${entry.pixelParity?.status ?? 'n/a'} ` +
+      `i18n=${entry.previewTranslations?.visibleMatchedCount ?? 'n/a'}/${entry.previewTranslations?.visibleApplicableCount ?? 'n/a'}`,
     );
     await page.close();
   }

@@ -55,3 +55,23 @@ export function normalizeTranslationForRoll20(translation: string): string {
   if (Object.keys(entries).length === 0) return text;
   return `${JSON.stringify(entries, null, 2)}\n`;
 }
+
+/**
+ * Read either Roll20 translation.json or the editor's locale-block comment
+ * format. Preview, edit, workers, chat, and export must resolve the same map.
+ */
+export function parseTranslationMap(translation: string | undefined): Record<string, string> {
+  const normalized = normalizeTranslationForRoll20(translation ?? '');
+  try {
+    const parsed: unknown = JSON.parse(normalized);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const entries: Record<string, string> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (value == null) continue;
+      entries[key] = String(value);
+    }
+    return entries;
+  } catch {
+    return {};
+  }
+}

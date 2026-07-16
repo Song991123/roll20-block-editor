@@ -96,6 +96,14 @@ click produced a `sheet-rolltemplate-classic-roll` chat DOM message, but a
 trustworthy chat-pane screenshot is still missing. Therefore the current state is
 partial actual evidence, not Roll20 visual parity.
 
+2026-07-16 upload-path note: the dedicated Sandbox still exposes hidden
+`#sheetHtml`, `#sheetCss`, and `#sheetTranslation` inputs through Sheet Sandbox
+Tools. The Chrome extension's file chooser cannot set those files unless
+Chrome's extension details page has **Allow access to file URLs** enabled.
+Until the same generated payload is reapplied through those inputs, an
+endpoint-applied class-prefix or width result is diagnostic-only because the
+endpoint route may bypass Roll20's normal HTML preprocessing.
+
 Later evidence supersedes the `18.81%` visible-top screenshot as the main
 Les-Oublies generated-sheet comparison: a stitched full-height actual Roll20 root
 image is available locally and currently differs from the local preview by

@@ -30,6 +30,18 @@ bands into the diff. This strengthens local equivalence evidence only; actual
 Roll20 parity and the stronger single live render-surface architecture remain
 unverified.
 
+Current translation/runtime status, 2026-07-16:
+the editor's locale-comment output and Roll20 `translation.json` now share one
+parser across preview, edit, worker/chat, and export. Ignored local run
+`.tmp/preview-edit-visual-20260716-r19` records full preview/edit translation
+matches of `436/436`, `0/0`, and `1148/1148`, with visible matches `53/53`,
+`0/0`, and `93/93`. Local computed style/geometry stayed identical and the
+existing exact/raster pixel gate still passed. This closes the local
+English-preview/Korean-export defect. It does not close actual Roll20 parity:
+the normal Sandbox Tools file-picker upload must be repeated after Chrome file
+URL access is enabled, because endpoint-only upload evidence may bypass
+Roll20's HTML class-prefix preprocessing.
+
 Current product-surface note, 2026-06-20 header usability:
 the header no longer exposes placeholder `설정` / `도움말` controls, and `저장`
 now performs a real IndexedDB workspace snapshot save. Browser smoke verified

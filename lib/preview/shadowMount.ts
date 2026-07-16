@@ -51,6 +51,7 @@
 
 /** Drag threshold — pointerdown 이후 이만큼 움직여야 drag 으로 간주 (px). */
 import { roll20ShadowDocumentFontFaceCss } from './roll20_base';
+import { parseTranslationMap } from '../export/payload';
 
 const DRAG_THRESHOLD_PX = 3;
 const ROLL20_FONT_STYLE_ID = 'r20-shadow-document-font-faces';
@@ -233,19 +234,31 @@ function emulateRoll20RepeatingSections(root: ParentNode): void {
   });
 }
 
-function parseTranslationMap(i18n: string | undefined): Record<string, string> {
-  if (!i18n?.trim()) return {};
-  try {
-    const parsed = JSON.parse(i18n);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    const out: Record<string, string> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      if (value == null) continue;
-      out[key] = String(value);
-    }
-    return out;
-  } catch {
-    return {};
+function applyTranslationsToScope(root: ParentNode, i18n?: string): void {
+  const translations = parseTranslationMap(i18n);
+  if (Object.keys(translations).length === 0) return;
+
+  root.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n');
+    if (key && translations[key] != null) el.textContent = translations[key];
+  });
+  root.querySelectorAll<HTMLElement>('[data-i18n-html]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-html');
+    if (key && translations[key] != null) el.innerHTML = translations[key];
+  });
+
+  const attrPairs = [
+    ['data-i18n-title', 'title'],
+    ['data-i18n-alt', 'alt'],
+    ['data-i18n-placeholder', 'placeholder'],
+    ['data-i18n-aria-label', 'aria-label'],
+    ['data-i18n-label', 'label'],
+  ] as const;
+  for (const [source, target] of attrPairs) {
+    root.querySelectorAll<HTMLElement>(`[${source}]`).forEach((el) => {
+      const key = el.getAttribute(source);
+      if (key && translations[key] != null) el.setAttribute(target, translations[key]);
+    });
   }
 }
 
@@ -559,6 +572,10 @@ export function mountSheetShadow(
     host.removeAttribute('data-theme');
   }
   container.innerHTML = opts.html;
+  // buildSheetParts serializes translated HTML before mount. Reapply after
+  // parsing so void elements and every supported Roll20 i18n attribute retain
+  // the same runtime DOM state as the iframe preview.
+  applyTranslationsToScope(container, opts.i18n);
   emulateRoll20RepeatingSections(container);
   // buildSheetParts already emits the real Roll20 .charsheet root. Put layer
   // state there so Shadow edit mode matches the iframe preview selector shape.

@@ -18,6 +18,7 @@ const tasks = [
   'test:server-hygiene',
   'test:asset-refs',
   'test:asset-replacements',
+  'test:translation-payload',
   'test:layer-roles',
   'test:roll20-sandbox-sanitize',
   'test:roll20-upload-snippet',
