@@ -1,3 +1,39 @@
+## 2026-07-16 Legacy/Modern Verification + Doc Consistency (claude/roll20-legacy-verification)
+
+- DONE (doc): Reconciled `docs/spec/30_roll20_actual_sandbox_contract.md` with the shipped
+  code. The sandbox sanitize/prefix module (`lib/emit/roll20SandboxSanitize.ts`) is no longer
+  described as an unimplemented "gap"; the legacy compatibility toggle
+  (`sanitizeForRoll20Legacy`) and Roll20's own `legacySanitization` runtime are called out as
+  three distinct layers.
+- DONE (deliverable 1): Documented that manual file-select upload and the generated
+  auto-upload snippet share one Roll20 contract — both dispatch Roll20's delegated
+  `#sheetHtml`/`#sheetCss`/`#sheetTranslation` `change` handler
+  (`uploadContract: 'roll20-delegated-file-input-change'`); the direct endpoint fallback uses
+  the same form-encoded shape and is gated to run only when the file-input handler could not
+  (`not-needed-file-input-handler-dispatched`). Evidence: `scripts/roll20_upload_snippet.mjs`
+  + the 2026-07-16 live handler inspection recorded in `docs/spec/30`.
+- DONE (deliverable 2): The Custom Sheet Sandbox (modern) vs dedicated test-room (legacy)
+  divergence stays documented in `docs/spec/30` with the observed geometry table
+  (`attr-input` 210x26 vs `sheet-attr-input` 52x40, matching root width 850, differing scroll
+  sizes).
+- DONE (deliverable 3): `legacy_sanitization` state is distinguishable — `sheet.json` `legacy`,
+  the baseline `Legacy` column (`resolveLegacyMode`), and upload/activation
+  `RUNTIME_MODE_MISMATCH` (`resolveExpectedRuntimeMode` reading Roll20 `legacySanitization`).
+- VERIFIED (independent, committed base `94b884d`): `lint`, `build`, `test:roll20-render-modes`,
+  `test:roll20-upload-snippet`, `test:roll20-sandbox-sanitize` (7/7), `audit:legacy-export`,
+  `test:export-smoke`, `test:translation-payload`, `test:layer-roles`, chat renderer-target /
+  template-scope / asset-relink self-tests, and `guard:ui-copy` all PASS. These are contract
+  checks, not pixel parity.
+- NOTE: local `guard:roll20-evidence` fails only its `git root is active app repository` check
+  because this isolated worktree is named `web-claude-legacy`; all substantive safety checks
+  pass and CI (`GITHUB_ACTIONS`, checkout `roll20-block-editor`) is unaffected.
+- NEXT P0 (unchanged, UNVERIFIED): Full-height normalized modern/legacy sheet-root
+  screenshots + pixel diff for the same generated payload in the matching Roll20 runtime.
+  This batch added no new actual-Roll20 evidence.
+- NEXT P1: Surface the per-fixture expected modern/legacy runtime mode in
+  `scripts/roll20_actual_status.mjs` so the run-level summary distinguishes it alongside
+  sandbox/chat rows (currently only guidance text mentions it).
+
 ## 2026-07-16 Modern and Legacy Recheck and Dead Toolbar Cleanup
 
 - VERIFIED: Rechecked the same prepared user-import payload in the dedicated modern Custom Sheet Sandbox and dedicated legacy test room. Modern preserved `attr-input` at `210x26px` with root `cssWidth=850px`, `scrollWidth=1189`, and `scrollHeight=1936`; legacy produced `sheet-attr-input` at `52x40px` with root `cssWidth=850px`, `scrollWidth=896`, and `scrollHeight=1917`.

@@ -1,3 +1,39 @@
+## 2026-07-16 Legacy/Modern Verification Recheck and Doc Consistency (claude/roll20-legacy-verification)
+
+- Scope: independent re-verification of the modern/legacy Roll20 work plus code/doc
+  consistency, done on an isolated worktree branch `claude/roll20-legacy-verification`
+  based on committed `94b884d`. The active `web-push-main` worktree had unrelated
+  uncommitted WIP in the same files; per the parallel-agent rule those files were not
+  touched — only docs were changed here.
+- Independently re-ran the local gates on the committed base: `lint` PASS, `build`
+  (Next 16, static export) PASS, `test:roll20-render-modes` PASS,
+  `test:roll20-upload-snippet` self-test PASS, `test:roll20-sandbox-sanitize` 7/7 PASS,
+  `audit:legacy-export` PASS (10 warnings), `test:export-smoke` / `test:translation-payload`
+  / `test:layer-roles` / chat renderer-target / template-scope / asset-relink self-tests
+  PASS, `guard:ui-copy` PASS.
+- `ci:verify` note: every member task passes; `guard:roll20-evidence` reports FAIL only on
+  its `git root is active app repository` check because the isolated worktree directory is
+  named `web-claude-legacy`, not `web-push-main`. All substantive evidence-safety checks
+  (gitignore, pre-commit hook, no tracked/staged private files, renderer diagnostic-only)
+  PASS, and the guard already allow-lists the CI checkout name `roll20-block-editor` under
+  `GITHUB_ACTIONS`, so GitHub Actions is unaffected. The shared guard was intentionally not
+  edited to accommodate a temporary worktree name.
+- Code/doc consistency: `docs/spec/30_roll20_actual_sandbox_contract.md` still framed the
+  Roll20 sandbox sanitize/prefix module as an unimplemented "implementation gap" and listed
+  "add a dedicated local module" as a TODO, although `lib/emit/roll20SandboxSanitize.ts`
+  now exists and is wired into the Export dialog. Reconciled the "Distinction From Legacy
+  Compatibility" table and "Implementation Implications" with the current code.
+- Consolidated the three assigned deliverables into `docs/spec/30`: an "Upload Path Contract
+  Equivalence" section (manual file-select and generated auto-upload converge on Roll20's
+  same delegated file-input `change` handler; the endpoint fallback shares the shape and is
+  gated to non-duplication), and a "legacy_sanitization State in Verification Tooling"
+  section (state is distinguishable via `sheet.json` `legacy`, the baseline `Legacy` column,
+  and `RUNTIME_MODE_MISMATCH`; the run-level `roll20_actual_status.mjs` summary does not yet
+  surface it — recorded as a NEXT item).
+- Claim boundary: this batch is implementation/contract re-verification and documentation
+  only. It adds no new actual-Roll20 screenshot evidence, so full-height normalized
+  modern/legacy pixel parity remains UNVERIFIED and P0, exactly as recorded below.
+
 ## 2026-07-16 Modern and Legacy Recheck and Dead Toolbar Cleanup
 
 - Rechecked one matching prepared payload in the dedicated modern and legacy Roll20 destinations. Modern measured `attr-input` at `210x26px`, root width `850px`, scroll size `1189x1936`; legacy measured `sheet-attr-input` at `52x40px`, root width `850px`, scroll size `896x1917`.
