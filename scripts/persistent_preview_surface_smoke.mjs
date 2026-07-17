@@ -81,6 +81,8 @@ async function readApplyStats(frame) {
   return frame.evaluate(() => ({
     mode: document.body?.getAttribute('data-r20-last-apply-mode') ?? '',
     rootReplacements: Number(document.body?.getAttribute('data-r20-root-replacements') ?? 0),
+    structuralPatches: Number(document.body?.getAttribute('data-r20-structural-patches') ?? 0),
+    structuralPatchFallbacks: Number(document.body?.getAttribute('data-r20-structural-patch-fallbacks') ?? 0),
     styleOnlyApplies: Number(document.body?.getAttribute('data-r20-style-only-applies') ?? 0),
     optimisticFlowMoves: Number(document.body?.getAttribute('data-r20-optimistic-flow-moves') ?? 0),
     optimisticFlowRollbacks: Number(document.body?.getAttribute('data-r20-optimistic-flow-rollbacks') ?? 0),
@@ -957,8 +959,10 @@ async function runMode(browser, mode) {
       && result.liveApplyMutation.inputValue === `runtime-${mode}`
       && result.liveApplyMutation.runtimeToken === token
       && result.liveApplyMutation.loadCount === 0
-      && result.liveApplyMutation.stats.mode === 'replace'
-      && result.liveApplyMutation.stats.rootReplacements === result.initialApply.stats.rootReplacements + 1
+      && result.liveApplyMutation.stats.mode === 'patch'
+      && result.liveApplyMutation.stats.rootReplacements === result.initialApply.stats.rootReplacements
+      && result.liveApplyMutation.stats.structuralPatches > result.initialApply.stats.structuralPatches
+      && result.liveApplyMutation.stats.structuralPatchFallbacks === 0
       && result.before.iframeCount === 1
       && result.before.paneVisible === 'true'
       && result.before.hasLegacyInputStyle === (mode === 'legacy')
@@ -1023,8 +1027,10 @@ async function runMode(browser, mode) {
       && result.flowCommit.inputValue === `runtime-${mode}`
       && result.flowCommit.runtimeToken === token
       && result.flowCommit.loadCount === 0
-      && result.flowCommit.stats.mode === 'replace'
-      && result.flowCommit.stats.rootReplacements === result.liveApplyMutation.stats.rootReplacements + 1
+      && result.flowCommit.stats.mode === 'patch'
+      && result.flowCommit.stats.rootReplacements === result.liveApplyMutation.stats.rootReplacements
+      && result.flowCommit.stats.structuralPatches > result.liveApplyMutation.stats.structuralPatches
+      && result.flowCommit.stats.structuralPatchFallbacks === 0
       && result.flowCommit.stats.optimisticFlowMoves > result.liveApplyMutation.stats.optimisticFlowMoves
       && result.flowCommit.stats.lastOptimisticAt > 0
       && result.flowCommit.stats.lastOptimisticAt <= result.flowCommit.stats.lastApplyAt
@@ -1046,8 +1052,10 @@ async function runMode(browser, mode) {
       && result.freeCommit.inputValue === `runtime-${mode}`
       && result.freeCommit.runtimeToken === token
       && result.freeCommit.loadCount === 0
-      && result.freeCommit.stats.mode === 'replace'
-      && result.freeCommit.stats.rootReplacements === result.flowCommit.stats.rootReplacements + 1
+      && result.freeCommit.stats.mode === 'patch'
+      && result.freeCommit.stats.rootReplacements === result.flowCommit.stats.rootReplacements
+      && result.freeCommit.stats.structuralPatches > result.flowCommit.stats.structuralPatches
+      && result.freeCommit.stats.structuralPatchFallbacks === 0
       && result.freeRecommit.dispatched === true
       && result.freeRecommit.afterAck > result.freeRecommit.beforeAck
       && result.freeRecommit.computedLeft !== result.freeCommit.computedLeft
@@ -1065,8 +1073,10 @@ async function runMode(browser, mode) {
       && result.widgetDrop.loadCount === 0
       && result.widgetDrop.inputValue === `runtime-${mode}`
       && result.widgetDrop.runtimeToken === token
-      && result.widgetDrop.stats.mode === 'replace'
-      && result.widgetDrop.stats.rootReplacements === result.freeRecommit.stats.rootReplacements + 1
+      && result.widgetDrop.stats.mode === 'patch'
+      && result.widgetDrop.stats.rootReplacements === result.freeRecommit.stats.rootReplacements
+      && result.widgetDrop.stats.structuralPatches > result.freeRecommit.stats.structuralPatches
+      && result.widgetDrop.stats.structuralPatchFallbacks === 0
       && result.hiddenInputValue === `runtime-${mode}`
       && result.hiddenRuntimeToken === token
       && result.after.sameElement
@@ -1092,8 +1102,10 @@ async function runMode(browser, mode) {
       && result.workerChange.sameElement === true
       && result.workerChange.iframeCount === 1
       && result.workerChange.afterLoadCount === result.workerChange.beforeLoadCount
-      && result.workerChange.stats.mode === 'replace'
-      && result.workerChange.stats.rootReplacements === result.widgetDrop.stats.rootReplacements + 1
+      && result.workerChange.stats.mode === 'patch'
+      && result.workerChange.stats.rootReplacements === result.widgetDrop.stats.rootReplacements
+      && result.workerChange.stats.structuralPatches > result.widgetDrop.stats.structuralPatches
+      && result.workerChange.stats.structuralPatchFallbacks === 0
       && consoleErrors.length === 0
       && pageErrors.length === 0;
   } catch (error) {

@@ -121,6 +121,8 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     ? initialSheetRoot.querySelectorAll('[data-r20-block-id]').length
     : 0;
   var rootReplacementCount = 0;
+  var structuralPatchCount = 0;
+  var structuralPatchFallbackCount = 0;
   var styleOnlyApplyCount = 0;
   var optimisticFlowMoveCount = 0;
   var optimisticFlowRollbackCount = 0;
@@ -258,6 +260,83 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       document.head.appendChild(style);
     }
     if (style.textContent !== css) style.textContent = css;
+  }
+  function keyedBlockId(node) {
+    if (!node || node.nodeType !== 1) return '';
+    return node.getAttribute('data-r20-block-id') || '';
+  }
+  function sameShape(current, next) {
+    if (!current || !next || current.nodeType !== next.nodeType) return false;
+    if (current.nodeType !== 1) return true;
+    var currentKey = keyedBlockId(current);
+    var nextKey = keyedBlockId(next);
+    if ((currentKey || nextKey) && currentKey !== nextKey) return false;
+    return current.tagName === next.tagName;
+  }
+  function syncElementAttributes(current, next) {
+    var currentAttrs = current.attributes;
+    for (var i = currentAttrs.length - 1; i >= 0; i -= 1) {
+      var name = currentAttrs[i].name;
+      if (!next.hasAttribute(name)) current.removeAttribute(name);
+    }
+    var nextAttrs = next.attributes;
+    for (var j = 0; j < nextAttrs.length; j += 1) {
+      var attr = nextAttrs[j];
+      if (current.getAttribute(attr.name) !== attr.value) current.setAttribute(attr.name, attr.value);
+    }
+  }
+  function morphNode(current, next) {
+    if (!sameShape(current, next)) return next.cloneNode(true);
+    if (current.nodeType === 1) syncElementAttributes(current, next);
+    reconcileChildren(current, next);
+    return current;
+  }
+  function reconcileChildren(parent, nextParent) {
+    var currentChildren = Array.prototype.slice.call(parent.childNodes);
+    var used = [];
+    var cursor = 0;
+    var nextChildren = Array.prototype.slice.call(nextParent.childNodes);
+    for (var i = 0; i < nextChildren.length; i += 1) {
+      var nextChild = nextChildren[i];
+      var nextKey = keyedBlockId(nextChild);
+      var matchIndex = -1;
+      if (nextKey) {
+        for (var k = 0; k < currentChildren.length; k += 1) {
+          if (used[k]) continue;
+          if (keyedBlockId(currentChildren[k]) === nextKey) {
+            matchIndex = k;
+            break;
+          }
+        }
+      } else {
+        for (var p = cursor; p < currentChildren.length; p += 1) {
+          if (used[p]) continue;
+          if (sameShape(currentChildren[p], nextChild)) {
+            matchIndex = p;
+            break;
+          }
+          if (currentChildren[p].nodeType === nextChild.nodeType) break;
+        }
+      }
+      var currentChild = matchIndex >= 0 ? currentChildren[matchIndex] : null;
+      var nextNode = currentChild ? morphNode(currentChild, nextChild) : nextChild.cloneNode(true);
+      if (matchIndex >= 0) used[matchIndex] = true;
+      parent.insertBefore(nextNode, parent.childNodes[i] || null);
+      cursor = i + 1;
+    }
+    for (var r = currentChildren.length - 1; r >= 0; r -= 1) {
+      if (!used[r] && currentChildren[r].parentNode === parent) currentChildren[r].remove();
+    }
+  }
+  function patchRootHtml(html) {
+    try {
+      var template = document.createElement('template');
+      template.innerHTML = html;
+      reconcileChildren(document.getElementById('charsheet-root'), template.content);
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
   function clearValidatedFlowTarget() {
     validatedFlowTarget = null;
@@ -397,11 +476,18 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var htmlChanged = data.htmlKey !== lastAppliedHtmlKey;
     var attrs = htmlChanged ? collectAttrs() : null;
     var previousWorkerSource = htmlChanged ? workerSourceText(root) : '';
+    var usedStructuralPatch = false;
     if (htmlChanged) {
-      root.innerHTML = data.html;
+      usedStructuralPatch = patchRootHtml(data.html);
+      if (usedStructuralPatch) {
+        structuralPatchCount += 1;
+      } else {
+        root.innerHTML = data.html;
+        structuralPatchFallbackCount += 1;
+        rootReplacementCount += 1;
+      }
       optimisticFlowSnapshot = null;
       clearValidatedFlowTarget();
-      rootReplacementCount += 1;
       lastAppliedHtmlKey = data.htmlKey;
       document.body.setAttribute('data-r20-html-key', data.htmlKey);
     } else {
@@ -446,8 +532,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       }
       lastAppliedBlockCount = root.querySelectorAll('[data-r20-block-id]').length;
     }
-    document.body.setAttribute('data-r20-last-apply-mode', htmlChanged ? 'replace' : 'styles');
+    document.body.setAttribute(
+      'data-r20-last-apply-mode',
+      htmlChanged ? (usedStructuralPatch ? 'patch' : 'replace') : 'styles'
+    );
     document.body.setAttribute('data-r20-root-replacements', String(rootReplacementCount));
+    document.body.setAttribute('data-r20-structural-patches', String(structuralPatchCount));
+    document.body.setAttribute('data-r20-structural-patch-fallbacks', String(structuralPatchFallbackCount));
     document.body.setAttribute('data-r20-style-only-applies', String(styleOnlyApplyCount));
     document.body.setAttribute('data-r20-optimistic-flow-moves', String(optimisticFlowMoveCount));
     document.body.setAttribute('data-r20-optimistic-flow-rollbacks', String(optimisticFlowRollbackCount));

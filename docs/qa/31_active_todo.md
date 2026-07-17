@@ -4243,6 +4243,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFY: Structural edits still use the conservative full-root replacement path; keyed structural apply and mounted latency proof remain P0.
 - VERIFY: Actual Roll20 modern/legacy comparison, broad user-import coverage, and worker runtime behavior remain unverified.
 
+## 2026-07-17 Structural Apply Optimization
+
+- DONE: Persistent iframe structural updates use keyed block-node reuse before the conservative full-root fallback.
+- DONE: Runtime counters and bundle assertions distinguish keyed patches from full replacements.
+- VERIFIED SYNTHETIC: Modern/legacy persistent preview smoke, edit-flow smoke, `ci:verify`, and server hygiene passed.
+- VERIFY: Measure frame/commit latency on a broad anonymous user-import corpus without retaining source identity or source-derived evidence.
+- VERIFY: Actual Roll20 modern Sandbox and dedicated legacy-room visual parity remain open.
+
 ## 2026-07-17 Canonical Edit Flow Smoke and Cycle Guard
 
 - DONE: Replaced the stale Shadow Canvas edit-flow browser smoke with a synthetic-only persistent-iframe smoke. It now verifies flow/free placement, canvas widget drop, layer reorder, cycle rejection, selection sync, and editable canvas width.

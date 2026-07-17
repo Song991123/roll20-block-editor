@@ -4934,6 +4934,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - DONE: Added a privacy self-test to the normal CI safety suite. It fails if a private fixture label or local source path escapes into the generated summary.
 - VERIFIED LOCAL: The privacy self-test, lint, and full `ci:verify` passed. No external sheet identity, source text, asset URL, screenshot, or source-specific report was added.
 - CLAIM BOUNDARY: This protects report output only. It does not make the current local performance metrics proof of Roll20 visual parity or broad import fidelity.
+
+## 2026-07-17 Keyed Structural Apply
+
+- DONE: Structural iframe updates now try a block-keyed DOM patch first, reusing matching nodes and moving only the affected order/structure. The previous full-root replacement remains as a guarded fallback.
+- DONE: Added runtime counters for keyed patches and fallback replacements so a smoke can distinguish the two paths.
+- VERIFIED SYNTHETIC: Persistent preview modern/legacy smoke passed with one iframe, zero reloads, no page/console errors, and zero structural fallback applies in the exercised path.
+- VERIFIED SYNTHETIC: Edit-flow smoke and full `ci:verify` passed after the patch.
+- CLAIM BOUNDARY: This reduces local structural apply churn; mounted latency on a broad user-import corpus and actual Roll20 parity remain unverified.
 ## 2026-07-17 Anonymous Batch Update: Canonical Render and Interaction Smoke
 
 - Implemented: automatic canvas measurement now uses descendant paint bounds instead of the generated wrapper viewport, so narrow imported sheets are not forced to the default width.

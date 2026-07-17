@@ -42,6 +42,8 @@ assert.notEqual(
   'structural HTML updates force the conservative root replacement path',
 );
 assert.match(bundle.doc, /var htmlChanged = data\.htmlKey !== lastAppliedHtmlKey/);
+assert.match(bundle.doc, /function patchRootHtml\(html\)/);
+assert.match(bundle.doc, /data-r20-structural-patches/);
 assert.match(bundle.doc, /if \(style\.textContent !== css\) style\.textContent = css/);
 assert.match(bundle.doc, /r20:edit-flow-target/);
 assert.match(bundle.doc, /r20:edit-optimistic-flow-finalize/);
