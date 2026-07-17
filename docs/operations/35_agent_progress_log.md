@@ -1,3 +1,10 @@
+## 2026-07-18 Composite Attribute Safety Gate
+
+- Implemented a generic fail-safe in `lib/import/composite_matcher.ts`: composite packing now checks the hidden preserved-attribute metadata against the attributes each compact renderer can actually emit. Unsupported attributes keep the atomic `tr/td/input` or header tree instead of being erased by `skill_row`, `attribute_card`, or repeating-header packing.
+- Added `hasPreservedAttributeOutside` to `lib/blocks/preservedAttributes.ts` and regression coverage for input inline style and unknown input attributes.
+- Verified locally with composite Phase 1 `11/11`, Phase 2 `13/13`, high-priority import `20/20`, wrapper preservation `11/11`, basic import `25/25`, preserved-attribute test, and `git diff --check`.
+- Boundary: this is importer safety evidence only. Roll20 upload remains blocked by the browser file-chooser policy (`Not allowed`), so no actual Sandbox render or parity claim is added.
+
 ## 2026-07-17 Direct Text Node Import Contract
 
 - Implemented: `matchChildren()` now turns meaningful direct text nodes into the generic `r20_text_node` block, preserving text around nested inputs and other elements in source order. The emitter escapes the text and emits it without a synthetic wrapper.

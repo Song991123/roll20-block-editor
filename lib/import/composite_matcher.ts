@@ -17,6 +17,10 @@
  */
 
 import type { MatchedBlock } from './block_matcher';
+import {
+  hasPreservedAttributeOutside,
+  PRESERVED_ATTRS_FIELD,
+} from '../blocks/preservedAttributes';
 
 /** packing 통계 — measurement 용. */
 export interface CompositePackStats {
@@ -345,6 +349,10 @@ function tryMatchAttributeCard(
     }
   }
 
+  if (hasUnrepresentableAttributeCardAttrs(chain.slice(idx, idx + consumed))) {
+    return null;
+  }
+
   // 보수적 sanity — label / input 의 의미적 매칭.
   if (labelInfo.i18nKey) {
     const keyPrefix = labelInfo.i18nKey
@@ -421,6 +429,8 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
       return null;
     }
   }
+
+  if (hasUnrepresentableSkillRowAttrs(b, cells)) return null;
 
   // 패턴 분석 — generic Roll20 skill/attribute row:
   //   (checkbox?) (label?|empty?) (input)+ (extra_input?)... (roll?)+
@@ -678,6 +688,13 @@ function tryMatchRepeatingSectionWrapper(
   // packing 시 round-trip 무손실 보장 어려움 → atomic 유지.
   if (!/^[A-Za-z0-9_]+$/.test(sectionName)) return null;
 
+  if (hasPreservedAttributeOutside(
+    b.fields?.[PRESERVED_ATTRS_FIELD] ?? '',
+    new Set(['class', 'name', 'style']),
+  )) {
+    return null;
+  }
+
   const content = b.children?.CONTENT ?? [];
   let absorbed = 1; // section 자체.
   let columnsField = '';
@@ -694,6 +711,7 @@ function tryMatchRepeatingSectionWrapper(
       const tr = theadKids[0];
       const trKids = tr.children?.CONTENT ?? [];
       if (trKids.length > 0 && trKids.every((c) => c.blockType === 'r20_th')) {
+        if (hasUnrepresentableRepeatingHeaderAttrs(thead, tr, trKids)) return null;
         // 각 th 의 자식 텍스트 추출 — i18n_text 우선, 없으면 빈 텍스트.
         const cols: string[] = [];
         let allParseable = true;
@@ -757,6 +775,81 @@ function tryMatchRepeatingSectionWrapper(
     _absorbed: absorbed,
   } as MatchedBlock & { _absorbed: number };
   return { pack, absorbed };
+}
+
+const SKILL_TR_ATTRS = new Set(['class', 'style']);
+const SKILL_TD_ATTRS = new Set(['class']);
+const SKILL_INPUT_ATTRS = new Set(['type', 'name', 'class', 'value', 'checked']);
+const SKILL_LABEL_ATTRS = new Set(['data-i18n', 'class']);
+const SKILL_ROLL_ATTRS = new Set(['type', 'name', 'value', 'class']);
+
+function hasUnsupportedBlockAttributes(
+  block: MatchedBlock,
+  supportedNames: ReadonlySet<string>,
+): boolean {
+  return hasPreservedAttributeOutside(
+    block.fields?.[PRESERVED_ATTRS_FIELD] ?? '',
+    supportedNames,
+  );
+}
+
+function hasUnrepresentableSkillRowAttrs(
+  row: MatchedBlock,
+  cells: Array<{ td: MatchedBlock; inner: MatchedBlock | null }>,
+): boolean {
+  if (hasUnsupportedBlockAttributes(row, SKILL_TR_ATTRS)) return true;
+  for (const { td, inner } of cells) {
+    if (hasUnsupportedBlockAttributes(td, SKILL_TD_ATTRS)) return true;
+    if (!inner) continue;
+    const supported =
+      inner.blockType === 'r20_checkbox' ||
+      inner.blockType === 'r20_text_input' ||
+      inner.blockType === 'r20_number_input'
+        ? SKILL_INPUT_ATTRS
+        : inner.blockType === 'r20_i18n_text' || inner.blockType === 'r20_inline_bold'
+          ? SKILL_LABEL_ATTRS
+          : inner.blockType === 'r20_roll_button'
+            ? SKILL_ROLL_ATTRS
+            : new Set<string>();
+    if (hasUnsupportedBlockAttributes(inner, supported)) return true;
+  }
+  return false;
+}
+
+function hasUnrepresentableAttributeCardAttrs(nodes: MatchedBlock[]): boolean {
+  for (const node of nodes) {
+    if (hasUnsupportedBlockAttributes(node, SKILL_TD_ATTRS)) return true;
+    for (const child of Object.values(node.children ?? {}).flat()) {
+      const supported =
+        child.blockType === 'r20_text_input' || child.blockType === 'r20_number_input'
+          ? SKILL_INPUT_ATTRS
+          : child.blockType === 'r20_i18n_text' || child.blockType === 'r20_inline_bold'
+            ? SKILL_LABEL_ATTRS
+            : child.blockType === 'r20_roll_button'
+              ? SKILL_ROLL_ATTRS
+              : new Set<string>();
+      if (hasUnsupportedBlockAttributes(child, supported)) return true;
+    }
+  }
+  return false;
+}
+
+function hasUnrepresentableRepeatingHeaderAttrs(
+  thead: MatchedBlock,
+  tr: MatchedBlock,
+  ths: MatchedBlock[],
+): boolean {
+  if (hasUnsupportedBlockAttributes(thead, new Set(['class']))) return true;
+  if (hasUnsupportedBlockAttributes(tr, new Set(['class']))) return true;
+  for (const th of ths) {
+    if (hasUnsupportedBlockAttributes(th, new Set(['class']))) return true;
+    for (const child of Object.values(th.children ?? {}).flat()) {
+      const supported =
+        child.blockType === 'r20_i18n_text' ? SKILL_LABEL_ATTRS : new Set<string>();
+      if (hasUnsupportedBlockAttributes(child, supported)) return true;
+    }
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------------------

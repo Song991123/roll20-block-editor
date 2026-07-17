@@ -1,3 +1,10 @@
+## 2026-07-18 Composite Attribute Safety Gate
+
+- DONE: Added a generic preserved-attribute capability check before `attribute_card`, `skill_row`, and repeating-header packing. A composite is now rejected when its compact schema cannot represent an imported attribute; the atomic block tree remains available so `style`, `data-*`, ARIA, form-state, and other attributes are not silently discarded.
+- VERIFIED LOCAL: Composite Phase 1 `11/11`, Phase 2 `13/13`, high-priority import `20/20`, wrapper preservation `11/11`, basic import `25/25`, preserved-attribute test PASS, and `git diff --check` PASS.
+- CLAIM BOUNDARY: This closes a generic lossy-composite path. It does not prove byte-identical HTML/CSS, all-sheet mapping, actual Roll20 parity, or worker/rolltemplate runtime parity.
+- NEXT P0: Complete a permitted user-visible Roll20 Sandbox upload and compare the same modern render; keep legacy verification in the separate legacy-enabled room.
+
 ## 2026-07-17 Direct Text Node Import Contract
 
 - DONE: Imported containers now retain meaningful direct text nodes in source order instead of dropping text around nested controls. The text is represented as a generic editable block and emitted without adding a wrapper element.

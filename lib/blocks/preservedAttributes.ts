@@ -51,6 +51,18 @@ function parsePreservedAttributes(raw: string): Array<[string, string]> {
   }
 }
 
+/**
+ * Return true when a generated block cannot represent one of the imported
+ * attributes. Composite blocks use this as a fail-safe: if packing would
+ * discard an attribute, the importer keeps the smaller atomic block tree.
+ */
+export function hasPreservedAttributeOutside(
+  raw: string,
+  supportedNames: ReadonlySet<string>,
+): boolean {
+  return parsePreservedAttributes(raw).some(([name]) => !supportedNames.has(name.toLowerCase()));
+}
+
 function existingAttributeNames(rawAttributes: string): Set<string> {
   const names = new Set<string>();
   const attrPattern = /(?:^|\s)([A-Za-z_:][A-Za-z0-9:._-]*)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/g;
@@ -77,4 +89,3 @@ export function injectPreservedAttributes(code: string, raw: string): string {
     },
   );
 }
-
