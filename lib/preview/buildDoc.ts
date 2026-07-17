@@ -648,8 +648,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       var el = nodes[i];
       var style = window.getComputedStyle(el);
       if (style.display === 'none' || style.visibility === 'hidden') continue;
+      // Fixed/sticky controls belong to the surrounding Roll20 dialog, not to
+      // the sheet's intrinsic content box. Counting them can create a height
+      // feedback loop where the iframe grows after every resize notification.
+      if (style.position === 'fixed' || style.position === 'sticky') continue;
       var rect = el.getBoundingClientRect();
       if (rect.width <= 0 && rect.height <= 0) continue;
+      if (!isFinite(rect.right) || !isFinite(rect.bottom)) continue;
       maxRight = Math.max(maxRight, rect.right - rootRect.left + root.scrollLeft);
       maxBottom = Math.max(maxBottom, rect.bottom - rootRect.top + root.scrollTop);
     }

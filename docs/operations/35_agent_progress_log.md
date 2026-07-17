@@ -4981,3 +4981,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - VERIFIED STATE: After the retry, all three Sandbox file inputs still had zero selected files and no character-sheet iframe was created. Therefore no Roll20 sheet render screenshot or actual visual-parity result was produced.
 - SAFETY: No existing room was modified. No third-party source identity, source payload, screenshot, asset URL, or derived measurement was added to tracked documentation.
 - NEXT: Retry through a user-visible native file picker or an explicitly permitted browser upload path, then capture the dedicated Sandbox result before updating the actual-parity gate.
+
+## 2026-07-17 Canonical Edit Surface Follow-up
+
+- Updated friendly-widget creation to use deterministic sheet-space slots (`24px` origin with a small grid offset). The previous viewport-center measurement made first insertion positions depend on the surrounding browser layout and added unnecessary synchronous geometry reads.
+- Reduced edit-layer ambiguity by making the Figma-style layer tree HTML-only. CSS and translation remain available through their own editing surfaces; they are not presented as visual DOM layers.
+- Hardened iframe intrinsic sizing: fixed/sticky descendants and non-finite rectangles are excluded from content bounds, preventing surrounding dialog controls from participating in sheet height feedback.
+- Focused verification passed: `test:build-doc-bundle`, `test:iframe-drop-target`, `lint`, and `git diff --check`.
+- Full verification after the patch: `build`, `ci:verify`, `check:server-hygiene`, canonical edit-flow smoke, and persistent modern/legacy iframe smoke passed. Preview/edit visual smoke produced two passing comparisons and one mismatch with zero browser errors; the mismatch remains open.
+- Claim boundary: this is a local interaction/sizing improvement. It is not actual Roll20 parity evidence, not broad import coverage, and not worker/roll-template completion. The modern upload remains tooling-blocked and the legacy destination remains separately unverified.

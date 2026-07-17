@@ -891,8 +891,11 @@ function EditLayerPanel({
   onSearchChange: (value: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const tab = useUiStore((s) => s.treeWorkspaceTab);
-  const setTab = useUiStore((s) => s.setTreeWorkspaceTab);
+  // The Figma-style layer tree represents rendered HTML objects. CSS and
+  // translation remain editable in their dedicated code/block workspaces;
+  // mixing them into this tree made drop targets look like visual layers when
+  // they could never appear on the sheet canvas.
+  const tab: WorkspaceKey = 'html';
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
@@ -950,21 +953,14 @@ function EditLayerPanel({
           {search.trim() ? `${filtered.filter((item) => item.searchMatch).length}+맥락 ${filtered.length}/${nodes.length}` : `${filtered.length}/${nodes.length}`}
         </span>
       </div>
-      <div className="grid grid-cols-3 gap-1 border-b border-border p-2">
-        {(['html', 'css', 'i18n'] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={`rounded px-2 py-1 text-[11px] ${
-              tab === key
-                ? 'bg-[var(--bg-active)] text-foreground'
-                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
-            }`}
-          >
-            {key === 'i18n' ? '번역' : key.toUpperCase()}
-          </button>
-        ))}
+      <div
+        className="flex items-center justify-between border-b border-border px-3 py-2"
+        data-testid="edit-layer-workspace"
+      >
+        <span className="text-[10px] font-medium text-muted-foreground">HTML 구조</span>
+        <span className="rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-200">
+          시트에 표시되는 레이어
+        </span>
       </div>
       <div className="border-b border-border p-2">
         <div className="relative">

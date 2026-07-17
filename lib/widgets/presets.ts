@@ -297,38 +297,15 @@ function findOpenWidgetPosition(position?: { left: number; top: number }): { lef
 }
 
 function defaultWidgetPosition(count: number): { left: number; top: number } {
-  const viewportCenter = getVisibleSheetCenter();
-  if (viewportCenter) {
-    return {
-      left: viewportCenter.left + (Math.max(0, count) % 5) * 24,
-      top: viewportCenter.top + (Math.max(0, count) % 5) * 24,
-    };
-  }
-
+  // Keep creation deterministic in sheet coordinates.  Measuring the visible
+  // editor viewport here made the first widget appear near the screen center
+  // (often around x=350) and forced a layout read on every add/drop.
+  // The sheet canvas is 850px by default, so start inside its upper-left safe
+  // area and use a small grid offset to avoid overlap between new widgets.
   const index = Math.max(0, count);
   return {
     left: 24 + (index % 8) * 28,
     top: 24 + Math.floor(index / 8) * 28,
-  };
-}
-
-function getVisibleSheetCenter(): { left: number; top: number } | null {
-  if (typeof document === 'undefined') return null;
-
-  const scroll = document.querySelector<HTMLElement>('[data-testid="edit-canvas-scroll"]');
-  const host = document.querySelector<HTMLElement>('[data-testid="edit-canvas-shadow-host"]');
-  const anchor = host ?? scroll;
-  if (!scroll || !anchor) return null;
-
-  const scrollRect = scroll.getBoundingClientRect();
-  const anchorRect = anchor.getBoundingClientRect();
-  const scale = anchor.offsetWidth > 0 ? anchorRect.width / anchor.offsetWidth : 1;
-  const visibleCenterX = scrollRect.left + scroll.clientWidth / 2;
-  const visibleCenterY = scrollRect.top + Math.min(scroll.clientHeight, 720) / 2;
-
-  return {
-    left: Math.max(24, Math.round((visibleCenterX - anchorRect.left + scroll.scrollLeft) / Math.max(scale, 0.01) - 160)),
-    top: Math.max(24, Math.round((visibleCenterY - anchorRect.top + scroll.scrollTop) / Math.max(scale, 0.01) - 90)),
   };
 }
 

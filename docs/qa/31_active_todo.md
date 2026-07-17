@@ -4274,3 +4274,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFY/BLOCKED TOOLING: The dedicated modern Sandbox page was reachable, but the current Chrome automation path could not select local files through Roll20's native file inputs.
 - VERIFIED: File inputs remained empty and no sheet iframe was created after the retry. This is not actual Roll20 parity evidence.
 - TODO: Repeat the upload through a user-visible native picker or another approved upload path, then record only anonymous PASS/FAIL state in this board.
+
+## 2026-07-17 Canonical Edit Surface Follow-up
+
+- DONE: New friendly widgets now use deterministic sheet coordinates from the upper-left safe area instead of measuring the visible viewport on every insertion. This keeps the default `850px` canvas contract and avoids the first object appearing around the visual center.
+- DONE: The Figma-style edit layer panel is now HTML-structure-only. CSS and translation remain in their dedicated workspaces instead of appearing as non-rendered layer targets.
+- DONE: Intrinsic iframe measurement ignores fixed/sticky descendants and non-finite geometry so dialog controls cannot feed an unbounded height loop back into the preview surface.
+- VERIFIED LOCAL: `corepack pnpm run test:build-doc-bundle`, `corepack pnpm run test:iframe-drop-target`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run ci:verify`, `corepack pnpm run check:server-hygiene`, and `git diff --check` passed.
+- PARTIAL LOCAL: canonical edit-flow and persistent modern/legacy iframe smoke passed. Preview/edit visual smoke had two passing comparisons and one mismatch with zero browser errors; the mismatch remains a visual investigation item.
+- VERIFY: Actual Roll20 modern Sandbox, dedicated legacy-room behavior, broad user imports, and worker/roll-template parity remain open. No third-party source identity or source-derived evidence is recorded here.
