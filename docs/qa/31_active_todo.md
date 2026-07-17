@@ -1,3 +1,17 @@
+## 2026-07-18 Persistent Preview Synthetic Pointer Smoke Recheck
+
+- VERIFIED LOCAL: Re-ran `smoke:persistent-preview-surface` with the correct
+  static build root (`./out`) and a separate ignored report directory. The
+  failure is now isolated to the synthetic `pointermove` wait at
+  `scripts/persistent_preview_surface_smoke.mjs:492`/`500`; it is not the
+  earlier mistaken 404 caused by passing the report directory as `--out-dir`.
+- CLAIM BOUNDARY: The stale report from the previous run must not be used as
+  current PASS evidence. This does not prove a product regression or actual
+  Roll20 parity; the test harness cannot currently observe the parent drop
+  overlay after its synthetic pointermove.
+- TODO: Reproduce the same path with a real browser pointer sequence or a
+  narrower bridge-level diagnostic before changing product pointer handling.
+
 ## 2026-07-18 Roll20 Upload Reconnect Guard
 
 - DONE: `scripts/roll20_upload_cdp_apply.mjs` now distinguishes a Roll20

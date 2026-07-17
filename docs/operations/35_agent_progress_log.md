@@ -1,3 +1,17 @@
+## 2026-07-18 Persistent Preview Synthetic Pointer Smoke Recheck
+
+- VERIFY: The persistent preview smoke was re-run with `./out` as the static
+  app root and a separate ignored report directory. Sidebar, import, and
+  earlier iframe checks begin, but both modern and legacy runs time out while
+  waiting for the parent drop overlay after the synthetic pointermove.
+- CORRECTION: An earlier failed attempt used the report directory as
+  `--out-dir`, which caused a 404 and was not a valid product result. The
+  corrected run reaches the pointer bridge wait, so the remaining issue is
+  isolated to the synthetic event observation path.
+- BOUNDARY: No product pointer code was changed and no actual Roll20 claim is
+  added. A real-pointer or focused bridge diagnostic is required before any
+  renderer/edit UX change.
+
 ## 2026-07-18 Roll20 Upload Reconnect Guard
 
 - DONE: Hardened `scripts/roll20_upload_cdp_apply.mjs` for the observed Roll20
