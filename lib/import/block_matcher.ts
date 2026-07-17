@@ -871,9 +871,37 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
-  if (tag === 'label') {
-    // text-only label 은 display 가 처리, 자식 있는 label 은 wrap 으로 raw fallback.
-    return null;
+  if (tag === 'label' && node.children.some((child) => child.type === 'element')) {
+    return {
+      blockType: 'r20_label_container',
+      fields: {
+        FOR: a.for || '',
+        CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
+      },
+      children: { CONTENT: matchChildren(node, ctx) },
+    };
+  }
+  if (tag === 'ul' || tag === 'ol') {
+    return {
+      blockType: 'r20_list',
+      fields: {
+        TAG: tag,
+        CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
+      },
+      children: { CONTENT: matchChildren(node, ctx) },
+    };
+  }
+  if (tag === 'li') {
+    return {
+      blockType: 'r20_list_item',
+      fields: {
+        CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
+      },
+      children: { CONTENT: matchChildren(node, ctx) },
+    };
   }
   return null;
 }

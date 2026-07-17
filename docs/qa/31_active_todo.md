@@ -4311,3 +4311,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: `test:roll20-sandbox-sanitize`, `test:translation-payload`, and `test:export-smoke` passed.
 - STALE EVIDENCE: The earlier ignored baseline predates the current export cleanup and still fails its old payload audit. It was not overwritten and is not current product evidence.
 - VERIFY: Actual modern Sandbox upload/render, dedicated legacy-room render, broad imports, and worker/roll-template parity remain open. Browser upload inputs were still empty in the latest attempt.
+
+## 2026-07-17 Universal Structural Import Follow-up
+
+- DONE: Added generic editable blocks for nested `label` controls and `ul`/`ol`/`li` list structure. The importer now preserves association attributes, class/style fields, child order, and nested input/display blocks instead of treating these structures as opaque raw HTML.
+- VERIFIED LOCAL: Import unit suite passes `22/22`, including nested label and list cases; lint remains green.
+- VERIFIED LOCAL: An anonymous local corpus rerun confirms the new structural matcher is active across the prepared inputs. Exact source-derived measurements remain local-only and are not recorded here.
+- CLAIM BOUNDARY: This improves universal mapping coverage for these DOM shapes; it does not establish all-sheet import fidelity, actual Roll20 parity, or worker/runtime completeness.
+- NEXT P0: Continue generic HTML/CSS/i18n/worker coverage and retry modern Sandbox upload only through an approved user-visible upload path. Legacy remains a separate dedicated-room gate.

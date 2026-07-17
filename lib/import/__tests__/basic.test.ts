@@ -44,6 +44,24 @@ function testRepeatingSection(): void {
   assert(r.html.includes('>skills<'), 'name preserved');
 }
 
+function testStructuralLabelContainer(): void {
+  const html = `<label for="attr_name" class="sheet-improvement"><input type="text" name="attr_name"><span>Name</span></label>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_label_container'), 'nested label container block');
+  assert(r.html.includes('r20_text_input'), 'label input child');
+  assert(r.html.includes('>attr_name<'), 'label for preserved');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for nested label');
+}
+
+function testListContainers(): void {
+  const html = `<ul class="sheet-options"><li><hr></li><li><span>Second</span></li></ul>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_list'), 'list container block');
+  assert(r.html.includes('r20_list_item'), 'list item blocks');
+  assert(r.html.includes('r20_hr'), 'list child preserved');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for list structure');
+}
+
 function testCssRule(): void {
   const css = `.sheet-header { color: red; padding: 10px; }`;
   const r = importSheet({ css });
@@ -183,6 +201,8 @@ const tests = [
   ['number input', testNumberInput],
   ['nested div', testNestedDiv],
   ['repeating section', testRepeatingSection],
+  ['structural label container', testStructuralLabelContainer],
+  ['list containers', testListContainers],
   ['css rule', testCssRule],
   ['i18n json', testI18nJson],
   ['i18n flat', testI18nFlat],

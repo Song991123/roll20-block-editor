@@ -5015,3 +5015,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Focused checks passed: sandbox sanitizer test `7/7`, translation payload test, export smoke, and baseline generation.
 - The pre-existing ignored baseline remains stale and failing by design of its old generated payload; it was not overwritten. No source identity, source payload, screenshot, fixture, or report was added to tracked docs.
 - Actual Roll20 upload/render is still unverified because the current browser file-input path rejected local files and the Sandbox sheet iframe was not created. Legacy still requires its dedicated legacy-enabled room.
+
+## 2026-07-17 Universal Structural Import Follow-up
+
+- Implemented: Added generic container blocks for nested control labels and ordered/unordered list structures. Child nodes remain editable and their source order is preserved for layer operations.
+- Verified: Import unit suite `22/22` passed, lint passed, and an anonymous local corpus rerun exercised the new matcher without writing source-derived measurements to the repository.
+- Boundary: This is a focused importer improvement, not a claim of universal 100% mapping, actual Roll20 visual parity, or complete worker support.
+- Blocker: Modern Sandbox upload is still blocked by the current Chrome file-input permission boundary; legacy actual verification still requires a separate legacy-enabled room.

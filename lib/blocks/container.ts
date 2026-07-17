@@ -475,7 +475,93 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 16) section_wrap --------------------------------------------------------
+  // Structural label that contains controls or other child elements.
+  {
+    type: 'r20_label_container',
+    shape: 'c',
+    category: CONTAINER,
+    label: '컨트롤 라벨 그룹',
+    tooltip: '자식 입력 요소를 포함하는 label 컨테이너. for/class/style과 내부 순서를 보존합니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('컨트롤 라벨 그룹')
+          .appendField('for')
+          .appendField(new Blockly.FieldTextInput(''), 'FOR')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const forValue = String(b.getFieldValue('FOR') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(
+        ctx,
+        'label',
+        `${nameAttr('for', forValue)}${sheetUserClassAttr(cls)}${styleAttr(style)}`,
+        content,
+      );
+    },
+  },
+
+  // Structural list container for both unordered and ordered lists.
+  {
+    type: 'r20_list',
+    shape: 'c',
+    category: CONTAINER,
+    label: '목록',
+    tooltip: 'ul/ol 목록 컨테이너. 내부 항목 순서를 보존합니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('목록')
+          .appendField(new Blockly.FieldDropdown([
+            ['순서 없음 (ul)', 'ul'],
+            ['순서 있음 (ol)', 'ol'],
+          ]), 'TAG')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const tag = String(b.getFieldValue('TAG') ?? 'ul') === 'ol' ? 'ol' : 'ul';
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(ctx, tag, `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+    },
+  },
+
+  // Structural list item. Keeping this separate makes layer insertion inside
+  // lists explicit instead of treating every item as an opaque HTML blob.
+  {
+    type: 'r20_list_item',
+    shape: 'c',
+    category: CONTAINER,
+    label: '목록 항목',
+    tooltip: 'ul/ol 내부의 li 항목. 내부 순서와 자식 구조를 보존합니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('목록 항목')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(ctx, 'li', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+    },
+  },
+
+  // 19) section_wrap --------------------------------------------------------
   //
   // 시트의 논리적 섹션 — Roll20 의 sheet-* class 관례 따름.
   {
