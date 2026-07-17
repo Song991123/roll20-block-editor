@@ -4291,3 +4291,5 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: Persistent modern/legacy iframe smoke, edit-flow smoke, `ci:verify`, production build, lint, and server hygiene passed. No project dev/smoke listeners remain.
 - VERIFY: The authenticated dedicated modern Sandbox remains reachable, but both the supported Playwright file chooser and the user-visible native-picker attempt were rejected by the current browser automation boundary. No sheet iframe was created, so actual Roll20 parity is still unverified.
 - VERIFY: Dedicated legacy-room behavior, broad user imports, and worker/roll-template parity remain separate gates.
+- DONE: CI now runs on `main`, `dev`, and `codex/**` pushes; GitHub Pages deployment remains restricted to `main`.
+- VERIFY: The next push must produce a remote Actions run; no remote run was available for the previous push before this workflow adjustment.

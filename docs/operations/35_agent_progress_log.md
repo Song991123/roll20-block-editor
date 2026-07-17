@@ -4998,3 +4998,4 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verified locally: persistent modern/legacy iframe smoke, edit-flow smoke, `ci:verify`, production build, lint, and server hygiene passed. No project listeners remain.
 - Actual Roll20 boundary: the dedicated modern Sandbox remained reachable, but Playwright `filechooser.setFiles` and the native-picker attempt were rejected by the current browser automation boundary. The file inputs remained unconfirmed and no sheet iframe was created; this run is not Roll20 parity evidence.
 - Remaining: dedicated legacy-room verification, broad anonymous import coverage, and worker/roll-template parity. No source identity, payload, screenshot, asset URL, or derived source measurement was recorded.
+- CI/CD: expanded CI push coverage to `main`, `dev`, and `codex/**`; Pages deployment remains `main`-only. Remote Actions proof is still pending the next push.
