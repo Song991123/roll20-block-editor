@@ -1,3 +1,10 @@
+## 2026-07-18 GitHub Actions CI
+
+- VERIFIED REMOTE: CI run `29621836381` for `4718564` completed successfully;
+  safety/unit verification, lint, and production build all passed.
+- BOUNDARY: Remote CI is green, but actual modern Sandbox and legacy-room
+  visual parity remain `VERIFY` and are not promoted by CI alone.
+
 ## 2026-07-18 Pastel UI Reset Slice
 
 - DONE: Updated the app logo accent and layer-role chip palette to the

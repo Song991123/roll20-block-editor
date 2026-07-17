@@ -1,3 +1,10 @@
+## 2026-07-18 GitHub Actions CI
+
+- VERIFIED REMOTE: GitHub Actions run `29621836381` for commit `4718564`
+  passed safety/unit verification, lint, and production build.
+- BOUNDARY: This proves the pushed branch is green. It does not replace the
+  missing live Roll20 Sandbox/legacy-room visual evidence.
+
 ## 2026-07-18 Pastel UI Reset Slice
 
 - DONE: Replaced the editor logo's blue gradient with the app's pink brand
