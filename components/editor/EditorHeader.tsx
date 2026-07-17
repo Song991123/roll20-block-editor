@@ -7,7 +7,6 @@ import {
   Bug,
   FilePlus,
   FolderOpen,
-  Layers,
   PanelLeft,
   PanelRight,
   Save,
@@ -20,21 +19,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, anyDirty } from '@/lib/stores/workspaceStore';
-import {
-  EXAMPLES,
-  loadExampleIntoWorkspaces,
-  type ExampleDescriptor,
-} from '@/lib/examples';
 import { deleteWorkspace, AUTOSAVE_KEY } from '@/lib/persist/indexeddb';
 import { saveCurrentWorkspaceSnapshot } from '@/lib/persist/autosave';
 
@@ -80,7 +66,6 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const hasPublicExamples = EXAMPLES.length > 0;
 
   const handleNewSheet = useCallback(() => {
     if (
@@ -118,20 +103,6 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
     }
   }, [saving]);
 
-  const handleLoadExample = (descriptor: ExampleDescriptor) => async () => {
-    try {
-      const counts = await loadExampleIntoWorkspaces(descriptor);
-      const total = counts.html + counts.css + counts.i18n;
-      toast.success(
-        `${descriptor.shortName} 샘플을 불러왔어요. 블록 ${total}개 (HTML ${counts.html} / CSS ${counts.css} / 번역 ${counts.i18n})`,
-        { duration: 2200 },
-      );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`${descriptor.shortName} 샘플을 불러오지 못했어요: ${msg}`, { duration: 3000 });
-    }
-  };
-
   return (
     <TooltipProvider delayDuration={250}>
       <header className="flex h-[var(--header-h)] shrink-0 items-center gap-2 border-b border-border bg-[var(--bg-elevated)] px-3">
@@ -165,43 +136,6 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
         </div>
 
         <div className="ml-2 flex items-center gap-0.5">
-          {hasPublicExamples ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5"
-                  aria-label="샘플 시트 불러오기"
-                >
-                  <Layers className="h-4 w-4" />
-                  <span className="hidden sm:inline">샘플</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-60">
-                <DropdownMenuLabel>샘플 시트</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {EXAMPLES.map((ex) => (
-                  <DropdownMenuItem
-                    key={ex.id}
-                    onSelect={handleLoadExample(ex)}
-                    data-testid={`example-${ex.id}`}
-                  >
-                    <span className="flex flex-col">
-                      <span className="text-sm">
-                        {ex.icon} {ex.name}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground">
-                        {ex.description}
-                      </span>
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
-
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

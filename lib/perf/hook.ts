@@ -18,6 +18,7 @@
 'use client';
 
 import { getBlocklyAdapter, type BlockSnapshot } from '@/lib/blockly/adapter';
+import { registerAllBlocks } from '@/lib/blocks/registry';
 import {
   moveImportedWorkerBlocksToWorkspace,
   replaceWorkerWorkspaceFromSourceHtml,
@@ -364,6 +365,10 @@ function buildHook(): PerfHook {
         { html, css, i18n },
         { html: { compactWideRows } },
       );
+      // The perf hook can be called before BlocklyModelHost's mount effect.
+      // Register definitions here as well so imported XML never hydrates
+      // against an incomplete block registry.
+      registerAllBlocks();
       const parseEnd = nowMs();
       const adapter = getBlocklyAdapter();
 

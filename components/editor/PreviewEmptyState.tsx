@@ -5,38 +5,14 @@ import {
   Sparkles,
   MousePointerSquareDashed,
   ListTree,
-  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useUiStore } from '@/lib/stores/uiStore';
-import {
-  EXAMPLES,
-  loadExampleIntoWorkspaces,
-} from '@/lib/examples';
 
 export default function PreviewEmptyState() {
   const setSidebarLeftMode = useUiStore((s) => s.setSidebarLeftMode);
   const setBlocksSearch = useUiStore((s) => s.setBlocksSearch);
-  const hasPublicExamples = EXAMPLES.length > 0;
-
-  const handleLoadFirstExample = async () => {
-    const ex = EXAMPLES[0];
-    if (!ex) {
-      toast('아직 공개 예제가 없습니다.', { duration: 1800 });
-      return;
-    }
-    try {
-      const counts = await loadExampleIntoWorkspaces(ex);
-      const total = counts.html + counts.css + counts.i18n;
-      toast.success(`${ex.shortName} 예제를 불러왔어요. 블록 ${total}개`, {
-        duration: 2200,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(`${ex.shortName} 예제를 불러오지 못했어요: ${msg}`, { duration: 3000 });
-    }
-  };
 
   const handleStartBlank = () => {
     setSidebarLeftMode('blocks');
@@ -90,17 +66,6 @@ export default function PreviewEmptyState() {
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
-        {hasPublicExamples ? (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleLoadFirstExample}
-            className="gap-1.5"
-          >
-            예제 시트 보기
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Button>
-        ) : null}
         <Button variant="outline" size="sm" onClick={handleStartBlank}>
           빈 시트로 시작
         </Button>

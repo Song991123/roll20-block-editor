@@ -45,6 +45,12 @@ function addPreservedAttributeField(def: BlockDef): void {
     input.appendField(new Blockly.FieldTextInput(''), PRESERVED_ATTRS_FIELD);
     input.setVisible(false);
   };
+
+  // Registration modules copy the original init function into Blockly.Blocks
+  // before this metadata pass runs. Replace that copied entry as well, or
+  // imported XML will warn that the preservation field does not exist.
+  const blocksMap = Blockly.Blocks as unknown as Record<string, { init: () => void }>;
+  blocksMap[def.type] = { init: def.init as unknown as () => void };
 }
 
 export function registerAllBlocks(): void {

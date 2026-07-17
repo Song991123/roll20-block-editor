@@ -1,3 +1,19 @@
+## 2026-07-18 Public Sample Surface and Hydration Warning Fix
+
+- Removed the public sample-sheet menu and empty-state sample action from the
+  product. The public first-run path is now blank creation or user import;
+  ignored local fixtures remain development-only.
+- Found and fixed the real Blockly warning source: the preserved-attribute
+  initializer was wrapped after registration, so Blockly retained the old
+  function. The registry now replaces the live `Blockly.Blocks` entry too.
+- Corrected the export browser smoke to inspect the persistent iframe frame and
+  to verify placeholder maps preserve the original URL until a valid target is
+  provided.
+- Fresh build + `smoke:export-dialog`: PASS. Console issues `0`, page errors
+  `0`, request failures `0`, external resource requests `0`.
+- Boundary: no actual Roll20 parity claim; modern Sandbox and legacy-room
+  verification remain `VERIFY` until the permitted browser session returns.
+
 ## 2026-07-18 Active Goal Rewrite
 
 The user clarified that the running goal itself needed to be reset, not only
@@ -8,10 +24,9 @@ design, unify the actual preview/edit surface, verify modern and legacy
 Roll20 behavior, and only then deepen Figma-like editing and worker/chat
 support. No copyrighted samples belong in the public product.
 
-The live goal container is still active with its historical objective because
-the available goal mutation interface exposes status only during an active
-run. This is recorded explicitly rather than claiming a mutation that did not
-occur.
+The live goal container was subsequently rewritten in the Codex UI to the
+product-reset objective. This log keeps the repository-side control document
+as the durable source of truth for the same scope.
 
 ## 2026-07-18 Local Render Unification Regression Pass
 

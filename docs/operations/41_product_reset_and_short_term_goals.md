@@ -30,10 +30,9 @@ audit, (2) product/UI reset, (3) shared-render and modern/legacy correctness,
 verification. Every result remains classified as `DONE`, `VERIFY`, `BLOCKED`,
 or `TODO`; implementation alone is not completion evidence.
 
-The Codex goal record remains an active historical container because its
-objective text cannot be edited through the available mid-run goal interface.
-This section is the authoritative replacement for execution, handoff, and
-reporting until that goal is intentionally restarted.
+The Codex goal record has been rewritten to this product-reset objective. This
+document remains the durable repository-side control plane for execution,
+handoff, and reporting.
 
 ## Product North Star
 

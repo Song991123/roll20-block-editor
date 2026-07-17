@@ -1,3 +1,25 @@
+## 2026-07-18 Public Sample Surface Removal and Export Smoke Repair
+
+- DONE: Removed the public sample-sheet menu and empty-state sample CTA. A
+  fresh public workspace now offers blank creation or user import only; local
+  ignored fixtures remain test-only and are not product content.
+- DONE: Registered the preserved-attribute field in Blockly's live block map
+  after wrapping block initializers. This removes the `Ignoring non-existent
+  field __R20_PRESERVED_ATTRS` warnings during import/hydration.
+- DONE: Updated the export smoke to inspect the persistent preview iframe's
+  document rather than its stale initial `srcdoc` attribute. Placeholder
+  replacement guards now prove the original URL stays in the render until a
+  user-owned target is supplied.
+- VERIFIED LOCAL: After a fresh production build, `smoke:export-dialog` passed
+  with no console issues, page errors, request failures, or external-resource
+  requests. The smoke also passed modern/legacy mode synchronization, asset
+  replacement in preview and edit, autosave restore, and absence of public
+  sample UI.
+- CLAIM BOUNDARY: This is local product and harness evidence. It does not
+  close actual Roll20 modern Sandbox or legacy-room visual parity.
+- VERIFY: Reconnect the permitted Roll20 browser session and run the same
+  user-owned payload through modern Sandbox and the dedicated legacy room.
+
 ## 2026-07-18 Active Goal Rewrite Alignment
 
 - DONE: Reframed the active work from incremental feature completion to a

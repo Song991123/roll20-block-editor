@@ -163,35 +163,83 @@ async function verifyAssetReplacementRender(page) {
 
   await page.waitForSelector('[data-testid="preview-iframe"]', { timeout: 15000 });
   await page.waitForFunction(
-    ({ oldNeedle, newNeedle }) => {
-      const iframe = document.querySelector('[data-testid="preview-iframe"]');
-      const srcdoc = iframe?.getAttribute('srcdoc') ?? '';
-      return srcdoc.includes(newNeedle) && !srcdoc.includes(oldNeedle);
+    ({ oldNeedle }) => {
+      const emitted = window.__perfHook?.getEmitContent?.() ?? {};
+      return String(emitted.html ?? '').includes(oldNeedle) || String(emitted.css ?? '').includes(oldNeedle);
     },
-    { oldNeedle: oldUrl, newNeedle: newUrl },
+    { oldNeedle: oldUrl },
     { timeout: 15000 },
   );
+  const previewFrame = page.frames().find((frame) => frame.parentFrame() === page.mainFrame());
+  if (!previewFrame) throw new Error('preview iframe frame was not attached');
+  try {
+    await previewFrame.waitForFunction(
+      ({ oldNeedle, newNeedle }) => {
+        const live = `${document.documentElement?.outerHTML ?? ''}\n${Array.from(document.querySelectorAll('style') ?? [])
+          .map((style) => style.textContent ?? '')
+          .join('\n')}`;
+        return live.includes(newNeedle) && !live.includes(oldNeedle);
+      },
+      { oldNeedle: oldUrl, newNeedle: newUrl },
+      { timeout: 15000 },
+    );
+  } catch (error) {
+    const state = await page.evaluate(({ oldNeedle, newNeedle }) => {
+      const iframe = document.querySelector('[data-testid="preview-iframe"]');
+      const srcdoc = iframe?.getAttribute('srcdoc') ?? '';
+      return {
+        mainMode: document.querySelector('[data-testid="main-mode-preview"]')?.getAttribute('aria-selected'),
+        renderMode: document.querySelector('[data-testid="preview-render-mode"]')?.textContent?.trim() ?? '',
+        iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
+        srcdocLength: srcdoc.length,
+        hasOldUrl: srcdoc.includes(oldNeedle),
+        hasNewUrl: srcdoc.includes(newNeedle),
+        srcdocSnippet: srcdoc.slice(0, 240),
+        assetMap: window.__perfHook?.getAssetReplacementMap?.() ?? '',
+      };
+    }, { oldNeedle: oldUrl, newNeedle: newUrl });
+    const frameState = await previewFrame.evaluate(({ oldNeedle, newNeedle }) => {
+      const live = `${document.documentElement?.outerHTML ?? ''}\n${Array.from(document.querySelectorAll('style') ?? [])
+        .map((style) => style.textContent ?? '')
+        .join('\n')}`;
+      return {
+        liveLength: live.length,
+        liveHasOldUrl: live.includes(oldNeedle),
+        liveHasNewUrl: live.includes(newNeedle),
+        liveSnippet: live.slice(0, 240),
+      };
+    }, { oldNeedle: oldUrl, newNeedle: newUrl });
+    throw new Error(`${error instanceof Error ? error.message : String(error)}; preview asset state=${JSON.stringify({ ...state, ...frameState })}`);
+  }
 
-  const preview = await page.evaluate(({ oldNeedle, newNeedle }) => {
-    const iframe = document.querySelector('[data-testid="preview-iframe"]');
-    const srcdoc = iframe?.getAttribute('srcdoc') ?? '';
+  const preview = await previewFrame.evaluate(({ oldNeedle, newNeedle }) => {
+    const live = `${document.documentElement?.outerHTML ?? ''}\n${Array.from(document.querySelectorAll('style') ?? [])
+      .map((style) => style.textContent ?? '')
+      .join('\n')}`;
     return {
-      hasNewUrl: srcdoc.includes(newNeedle),
-      hasOldUrl: srcdoc.includes(oldNeedle),
-      mapValue: window.__perfHook.getAssetReplacementMap(),
-      profileCount: window.__perfHook.getAssetReplacementProfiles().length,
+      hasNewUrl: live.includes(newNeedle),
+      hasOldUrl: live.includes(oldNeedle),
+      liveLength: live.length,
     };
   }, { oldNeedle: oldUrl, newNeedle: newUrl });
+  const previewStoreState = await page.evaluate(() => ({
+    mapValue: window.__perfHook.getAssetReplacementMap(),
+    profileCount: window.__perfHook.getAssetReplacementProfiles().length,
+  }));
+  Object.assign(preview, previewStoreState);
 
   await page.evaluate(() => window.__perfHook.setMainMode('edit'));
-  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 15000 });
-  await page.waitForFunction(
+  await page.waitForFunction(() =>
+    document.querySelector('[data-testid="main-mode-edit"]')?.getAttribute('aria-selected') === 'true',
+    null,
+    { timeout: 15000 },
+  );
+  await previewFrame.waitForFunction(
     ({ oldNeedle, newNeedle }) => {
-      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-      const styles = Array.from(host?.shadowRoot?.querySelectorAll('style') ?? [])
+      const styles = Array.from(document.querySelectorAll('style'))
         .map((style) => style.textContent ?? '')
         .join('\n');
-      const htmlText = host?.shadowRoot?.innerHTML ?? '';
+      const htmlText = document.documentElement?.outerHTML ?? '';
       const combined = `${styles}\n${htmlText}`;
       return combined.includes(newNeedle) && !combined.includes(oldNeedle);
     },
@@ -199,12 +247,11 @@ async function verifyAssetReplacementRender(page) {
     { timeout: 15000 },
   );
 
-  const edit = await page.evaluate(({ oldNeedle, newNeedle }) => {
-    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const styles = Array.from(host?.shadowRoot?.querySelectorAll('style') ?? [])
+  const edit = await previewFrame.evaluate(({ oldNeedle, newNeedle }) => {
+    const styles = Array.from(document.querySelectorAll('style'))
       .map((style) => style.textContent ?? '')
       .join('\n');
-    const htmlText = host?.shadowRoot?.innerHTML ?? '';
+    const htmlText = document.documentElement?.outerHTML ?? '';
     const combined = `${styles}\n${htmlText}`;
     return {
       hasNewUrl: combined.includes(newNeedle),
@@ -307,15 +354,21 @@ async function verifyAssetReplacementPlaceholderGuard(page) {
   }, { html: `<input type="hidden" name="attr_asset_placeholder_probe" value="${oldUrl}">`, map: mapText });
 
   await page.waitForSelector('[data-testid="preview-iframe"]', { timeout: 15000 });
-  const preview = await page.evaluate(({ oldNeedle, placeholderNeedle }) => {
-    const iframe = document.querySelector('[data-testid="preview-iframe"]');
-    const srcdoc = iframe?.getAttribute('srcdoc') ?? '';
-    return {
-      hasOldUrl: srcdoc.includes(oldNeedle),
-      hasPlaceholderTarget: srcdoc.includes(placeholderNeedle),
-      mapValue: window.__perfHook.getAssetReplacementMap(),
-    };
-  }, { oldNeedle: oldUrl, placeholderNeedle: placeholderTarget });
+  const previewFrame = page.frames().find((frame) => frame.parentFrame() === page.mainFrame());
+  if (!previewFrame) throw new Error('placeholder guard preview iframe frame missing');
+  await previewFrame.waitForFunction(
+    ({ oldNeedle, placeholderNeedle }) => {
+      const html = document.documentElement?.outerHTML ?? '';
+      return html.includes(oldNeedle) && !html.includes(placeholderNeedle);
+    },
+    { oldNeedle: oldUrl, placeholderNeedle: placeholderTarget },
+    { timeout: 15000 },
+  );
+  const preview = await previewFrame.evaluate(({ oldNeedle, placeholderNeedle }) => ({
+    hasOldUrl: (document.documentElement?.outerHTML ?? '').includes(oldNeedle),
+    hasPlaceholderTarget: (document.documentElement?.outerHTML ?? '').includes(placeholderNeedle),
+  }), { oldNeedle: oldUrl, placeholderNeedle: placeholderTarget });
+  preview.mapValue = await page.evaluate(() => window.__perfHook.getAssetReplacementMap());
 
   await page.click('[data-testid="header-export-button"]');
   await page.waitForSelector('[data-testid="export-asset-roll20-readiness"]', { timeout: 15000 });
