@@ -72,6 +72,14 @@ function testDirectTextNodePreserved(): void {
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for direct text');
 }
 
+function testWhitespaceOnlyTextDoesNotInflate(): void {
+  const html = `<div>\n  <label> Name <input name="attr_name"> </label>\n</div>`;
+  const r = importSheet({ html });
+  assert((r.html.match(/r20_text_node/g) || []).length === 1, 'indentation whitespace is ignored');
+  assert(r.html.includes(' Name '), 'meaningful label text remains');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for formatted container');
+}
+
 function testCssRule(): void {
   const css = `.sheet-header { color: red; padding: 10px; }`;
   const r = importSheet({ css });
@@ -214,6 +222,7 @@ const tests = [
   ['structural label container', testStructuralLabelContainer],
   ['list containers', testListContainers],
   ['direct text node', testDirectTextNodePreserved],
+  ['whitespace-only text', testWhitespaceOnlyTextDoesNotInflate],
   ['css rule', testCssRule],
   ['i18n json', testI18nJson],
   ['i18n flat', testI18nFlat],

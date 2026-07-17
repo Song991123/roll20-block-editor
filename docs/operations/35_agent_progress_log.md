@@ -5,6 +5,12 @@
 - Boundary: This is a generic importer structure fix only. It does not claim universal HTML/CSS/attribute fidelity, actual Roll20 parity, worker runtime parity, or rolltemplate/chat parity.
 - Next: Retry the blocked modern Sandbox upload through an explicitly permitted browser file-upload path; keep legacy actual validation separate in a legacy-enabled test room.
 
+## 2026-07-17 Direct Text Whitespace Guard
+
+- Implemented: The direct-text matcher ignores indentation-only nodes in ordinary containers, while preserving whitespace-only content in `pre` and `textarea` parents.
+- Verified: Import unit suite `24/24`, lint, and `git diff --check` passed.
+- Boundary: This is an importer inflation guard only. It does not prove actual Roll20 parity, complete attribute preservation, or all-sheet mapping.
+
 ## 2026-07-17 Target-Specific Canvas Width Contract
 
 - Preview and edit continue to share the persistent iframe; the active edit target now selects the matching canvas width for both surfaces.

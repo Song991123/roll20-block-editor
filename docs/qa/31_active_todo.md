@@ -5,6 +5,12 @@
 - CLAIM BOUNDARY: This closes one generic HTML-structure loss path. It does not prove universal attribute fidelity, all-sheet mapping, actual Roll20 visual parity, worker runtime parity, or rolltemplate/chat parity.
 - NEXT P0: Retry modern Custom Sheet Sandbox upload through an explicitly permitted file-upload path, then verify modern and dedicated legacy-room renders independently.
 
+## 2026-07-17 Direct Text Whitespace Guard
+
+- DONE: Meaningful direct text is preserved without turning normal HTML indentation into imported blocks. Whitespace remains available in `pre` and `textarea` contexts where it is content.
+- VERIFIED LOCAL: Import unit suite `24/24`, lint, and `git diff --check` passed.
+- CLAIM BOUNDARY: This prevents one importer inflation regression; it does not expand actual Roll20 parity or universal attribute fidelity.
+
 ## 2026-07-17 Target-Specific Canvas Width Contract
 
 - DONE: The persistent preview/edit surface now derives its canvas width from the active edit target. Sheet and roll-result widths are independent, and the same width is used for fit scaling, iframe CSS sizing, and the outer layout slot.

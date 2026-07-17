@@ -89,6 +89,13 @@ export function newMatchContext(): MatchContext {
 export function matchTree(root: DomNode, ctx: MatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
   for (const c of root.children) {
+    if (c.type === 'text') {
+      const text = meaningfulText(c.text, root.tag);
+      if (text !== null) {
+        out.push(textNodeBlock(text));
+      }
+      continue;
+    }
     if (c.type !== 'element') continue;
     const m = matchElement(c, ctx);
     if (m) out.push(m);
@@ -1006,17 +1013,27 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function meaningfulText(raw: string | undefined, parentTag = ''): string | null {
+  if (!raw) return null;
+  const text = String(raw);
+  if (text.trim() || parentTag === 'pre' || parentTag === 'textarea') return text;
+  return null;
+}
+
+function textNodeBlock(text: string): MatchedBlock {
+  return {
+    blockType: 'r20_text_node',
+    fields: { TEXT: text },
+    children: {},
+  };
+}
+
 function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
   for (const c of node.children) {
     if (c.type === 'text') {
-      if (c.text) {
-        out.push({
-          blockType: 'r20_text_node',
-          fields: { TEXT: c.text },
-          children: {},
-        });
-      }
+      const text = meaningfulText(c.text, node.tag);
+      if (text !== null) out.push(textNodeBlock(text));
       continue;
     }
     if (c.type !== 'element') continue;
