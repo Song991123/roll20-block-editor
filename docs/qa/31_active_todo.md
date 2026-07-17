@@ -13,6 +13,21 @@
 - NEXT: Continue from the rewritten P0 order; do not report the old broad goal
   as complete from local implementation evidence.
 
+## 2026-07-18 Local Render Unification Regression Pass
+
+- VERIFIED LOCAL: `corepack pnpm run ci:verify` passed, including the Roll20
+  renderer-mode, privacy, import, asset-policy, and UI-copy guards.
+- VERIFIED LOCAL: persistent preview surface passed independently in modern and
+  legacy modes with zero iframe loads; edit-flow smoke passed with no browser
+  errors.
+- VERIFIED LOCAL: paired preview/edit visual smoke passed for the three local
+  comparison fixtures in both modes: `0` mismatched pixels and `0` ppm for each
+  fixture/mode pair.
+- CLAIM BOUNDARY: These are local renderer/fixture results. They do not prove
+  pixel parity with the live Roll20 Sandbox or a legacy-enabled Roll20 room.
+- VERIFY: Reconnect the permitted Roll20 browser session and repeat the same
+  payload comparison in modern Sandbox and the dedicated legacy room.
+
 ## 2026-07-18 Dead Shadow Editor Removal
 
 - DONE: Removed the unmounted `LegacyShadowEditCanvas` implementation and its editor-only drag/emit helpers from `components/editor/EditCanvas.tsx`. The product edit path remains the single persistent Roll20 iframe mounted by `PreviewMain`, with `EditCanvas` limited to toolbar and layer-panel chrome.

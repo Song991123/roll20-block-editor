@@ -50,7 +50,7 @@ The ratings below are evidence maturity, not feature completion percentages.
 
 | Area | Evidence level | Current truth | Next proof |
 | --- | ---: | --- | --- |
-| Shared preview/edit render | 2/4 | One persistent iframe and edit overlay exist locally. | Browser smoke proving identical geometry and state after edits. |
+| Shared preview/edit render | 3/4 | One persistent iframe, edit overlay, edit-flow smoke, and paired local visual smoke are passing. | Same-payload comparison against actual modern and legacy Roll20 destinations. |
 | Modern Roll20 runtime | 2/4 | One anonymous generated payload activated in Custom Sheet Sandbox. | Same-payload normalized screenshot and asset-complete comparison. |
 | Legacy Roll20 runtime | 1/4 | A separate legacy destination and mode-specific policy exist. | Dedicated legacy-room upload, screenshot, and state comparison. |
 | Universal HTML/CSS/translation mapping | 2/4 | Generic atomic/composite paths and preserved-attribute guards exist. | Synthetic corpus expansion and loss report across unsupported structures. |

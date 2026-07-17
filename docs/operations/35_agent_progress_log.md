@@ -13,6 +13,18 @@ the available goal mutation interface exposes status only during an active
 run. This is recorded explicitly rather than claiming a mutation that did not
 occur.
 
+## 2026-07-18 Local Render Unification Regression Pass
+
+`ci:verify`, `smoke:persistent-preview-surface`, and `smoke:edit-flow` all
+passed. The paired local preview/edit visual smoke also passed for all three
+local comparison fixtures in both modern and legacy modes with zero mismatched
+pixels. This raises the shared preview/edit evidence level to `3/4` in the
+control document.
+
+This remains local evidence only. The live Roll20 modern Sandbox and dedicated
+legacy-room comparison are still `VERIFY`; no actual Roll20 parity claim is
+made until the permitted browser session is connected again.
+
 ## 2026-07-18 Dead Shadow Editor Removal
 
 - Removed the unmounted `LegacyShadowEditCanvas` and its obsolete drag/emit helpers. The visible edit experience remains the persistent Roll20 iframe with parent-owned toolbar, layer panel, and interaction overlays.
