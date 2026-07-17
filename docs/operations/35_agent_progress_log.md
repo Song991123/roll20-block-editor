@@ -1,3 +1,9 @@
+## 2026-07-17 Target-Specific Canvas Width Contract
+
+- Preview and edit continue to share the persistent iframe; the active edit target now selects the matching canvas width for both surfaces.
+- Added a synthetic regression for switching from sheet editing to roll-result editing and committing a distinct width. The browser smoke passed after a fresh build with zero console/page errors.
+- No external source data, source identifiers, screenshots, or derived external measurements were added to this record.
+
 ## 2026-07-17 Matching-Runtime Activation Evidence
 
 - Rechecked the paired actual evidence against later local runs and confirmed that the previously reported shared `+9px` row drift was stale: current modern local root height matches actual at `1936px`, while legacy retains an isolated roughly `2px` final-section difference.

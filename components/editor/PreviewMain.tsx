@@ -83,7 +83,11 @@ export default function PreviewMain() {
   const setRenderMode = usePreviewStore((s) => s.setRenderMode);
   const zoom = useUiStore((s) => s.previewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
+  const rolltemplateCanvasWidth = useUiStore((s) => s.rolltemplateCanvasWidth);
+  const sheetCanvasWidthAuto = useUiStore((s) => s.sheetCanvasWidthAuto);
+  const rolltemplateCanvasWidthAuto = useUiStore((s) => s.rolltemplateCanvasWidthAuto);
   const setAutoSheetCanvasWidth = useUiStore((s) => s.setAutoSheetCanvasWidth);
+  const setAutoRolltemplateCanvasWidth = useUiStore((s) => s.setAutoRolltemplateCanvasWidth);
   const previewLayer = useUiStore((s) => s.previewLayer);
   const setHoveredWidgetId = useUiStore((s) => s.setHoveredWidgetId);
   const setSelectedWidgetId = useUiStore((s) => s.setSelectedWidgetId);
@@ -124,6 +128,15 @@ export default function PreviewMain() {
 
   const total = htmlCount + cssCount + i18nCount;
   const isEmpty = total === 0;
+  const canvasWidth = editSubmode === 'rolltemplate'
+    ? rolltemplateCanvasWidth
+    : sheetCanvasWidth;
+  const setAutoCanvasWidth = editSubmode === 'rolltemplate'
+    ? setAutoRolltemplateCanvasWidth
+    : setAutoSheetCanvasWidth;
+  const canvasWidthAuto = editSubmode === 'rolltemplate'
+    ? rolltemplateCanvasWidthAuto
+    : sheetCanvasWidthAuto;
   const compatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
   const previewAssetText = useMemo(
     () => applyAssetReplacements({ html: emitHtml, css: emitCss }, assetReplacementMap),
@@ -131,7 +144,7 @@ export default function PreviewMain() {
   );
   const fitScale =
     zoom === 'fit' && viewportWidth > 0
-      ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / sheetCanvasWidth))
+      ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / canvasWidth))
       : 1;
   const scale = zoom === 'fit' ? fitScale : zoom;
   const iframeEditDragDelta = iframeEditDragOrigin && iframeEditOverlay
@@ -646,14 +659,18 @@ export default function PreviewMain() {
         setIframeHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
         if (
           !autoWidthSizedRef.current
-          && useUiStore.getState().sheetCanvasWidthAuto
+          && canvasWidthAuto
           && typeof data.width === 'number'
         ) {
           autoWidthSizedRef.current = true;
-          const nextWidth = Math.max(320, Math.min(2400, Math.ceil(data.width)));
-          const currentWidth = useUiStore.getState().sheetCanvasWidth;
+          const nextWidth = editSubmode === 'rolltemplate'
+            ? Math.max(200, Math.min(600, Math.ceil(data.width)))
+            : Math.max(320, Math.min(2000, Math.ceil(data.width)));
+          const currentWidth = editSubmode === 'rolltemplate'
+            ? useUiStore.getState().rolltemplateCanvasWidth
+            : useUiStore.getState().sheetCanvasWidth;
           if (Math.abs(nextWidth - currentWidth) > 8) {
-            setAutoSheetCanvasWidth(nextWidth);
+            setAutoCanvasWidth(nextWidth);
           }
         }
         return;
@@ -740,7 +757,7 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [iframeDocumentSrcdoc, setHoveredWidgetId, setSelected, setSelectedWidgetId, setAutoSheetCanvasWidth]);
+  }, [canvasWidthAuto, editSubmode, iframeDocumentSrcdoc, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
@@ -896,7 +913,7 @@ export default function PreviewMain() {
           <div
             className="mx-auto"
             style={{
-              width: `${sheetCanvasWidth * scale}px`,
+              width: `${canvasWidth * scale}px`,
               height: `${iframeHeight * scale}px`,
               maxWidth: 'none',
             }}
@@ -906,7 +923,7 @@ export default function PreviewMain() {
               renderMode === 'iframe' ? 'bg-transparent' : 'bg-white shadow-lg ring-1 ring-border'
             }`}
             style={{
-              width: `${sheetCanvasWidth}px`,
+              width: `${canvasWidth}px`,
               height: `${iframeHeight}px`,
               transform: `scale(${scale})`,
               transformOrigin: 'top left',
@@ -920,7 +937,7 @@ export default function PreviewMain() {
                 sandbox={sandbox}
                 srcDoc={iframeDocumentSrcdoc}
                 className="block w-full border-0"
-                style={{ width: `${sheetCanvasWidth}px`, height: `${iframeHeight}px` }}
+                style={{ width: `${canvasWidth}px`, height: `${iframeHeight}px` }}
               />
             ) : (
               <div

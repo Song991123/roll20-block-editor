@@ -347,6 +347,23 @@ async function main() {
     assert(result.tests.canvasWidth.value === '930', 'canvas width input did not commit');
     assert(result.tests.canvasWidth.iframeCssWidth === 930, 'iframe CSS width did not follow canvas width input');
 
+    const rolltemplateSubmode = page.locator('[data-testid="edit-submode-rolltemplate"]');
+    assert((await rolltemplateSubmode.count()) === 1, 'rolltemplate edit submode control is missing');
+    await rolltemplateSubmode.click();
+    const rolltemplateWidthInput = page.locator('[data-testid="edit-canvas-width-input"]');
+    await rolltemplateWidthInput.fill('410');
+    await rolltemplateWidthInput.press('Enter');
+    await page.waitForTimeout(250);
+    result.tests.rolltemplateCanvasWidth = await page.evaluate(() => ({
+      submode: document.querySelector('[data-testid="edit-canvas-root"]')?.getAttribute('data-edit-submode') ?? null,
+      value: document.querySelector('[data-testid="edit-canvas-width-input"]')?.value ?? null,
+      iframeCssWidth: Math.round(Number.parseFloat(getComputedStyle(document.querySelector('[data-testid="preview-iframe"]')).width || '0')),
+      iframeOffsetWidth: document.querySelector('[data-testid="preview-iframe"]')?.offsetWidth ?? 0,
+    }));
+    assert(result.tests.rolltemplateCanvasWidth.submode === 'rolltemplate', 'rolltemplate edit submode did not activate');
+    assert(result.tests.rolltemplateCanvasWidth.value === '410', 'rolltemplate width input did not commit');
+    assert(result.tests.rolltemplateCanvasWidth.iframeCssWidth === 410, 'iframe CSS width did not follow rolltemplate width input');
+
     result.finishedAt = new Date().toISOString();
     result.pass = consoleErrors.length === 0 && pageErrors.length === 0;
     await fs.writeFile(path.join(REPORT_DIR, 'edit-flow-smoke-results.json'), `${JSON.stringify(result, null, 2)}\n`, 'utf8');
@@ -360,7 +377,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, canvas widget drop, layer reorder, cycle rejection, selection sync, canvas width.',
+        '- Coverage: flow/free placement, canvas widget drop, layer reorder, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
         '',
       ].join('\n'),
       'utf8',

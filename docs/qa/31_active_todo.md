@@ -1,3 +1,10 @@
+## 2026-07-17 Target-Specific Canvas Width Contract
+
+- DONE: The persistent preview/edit surface now derives its canvas width from the active edit target. Sheet and roll-result widths are independent, and the same width is used for fit scaling, iframe CSS sizing, and the outer layout slot.
+- VERIFIED LOCAL: Synthetic edit-flow smoke passed after a fresh production build. Sheet width input committed `930px`; switching targets and entering `410px` produced iframe CSS/offset width `410px`. Console errors and page errors were both `0`.
+- VERIFIED GATES: `corepack pnpm run lint`, `corepack pnpm run ci:verify`, production build, and server-hygiene check passed.
+- CLAIM BOUNDARY: This closes the local target-width synchronization gap only. It does not claim all-sheet visual parity or actual Roll20 parity.
+
 ## 2026-07-17 Mode-Specific Runtime Asset Contract
 
 - VERIFIED DESTINATION RULE: Custom Sheet Sandbox is modern-only and does not reproduce legacy mode. Modern actual checks use Sandbox; legacy sanitization/prefix/runtime checks use the dedicated legacy-enabled test room. Sandbox output must not be counted as legacy PASS or FAIL.
