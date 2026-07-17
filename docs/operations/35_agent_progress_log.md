@@ -1,3 +1,14 @@
+## 2026-07-18 Roll20 Sandbox File Chooser Recheck
+
+- OBSERVED: The logged-in Roll20 editor has `Sheet Sandbox Tools` open with
+  separate HTML, CSS, and Translation inputs. This confirms the intended
+  modern Sandbox entry point and its save/reload contract.
+- VERIFY BLOCKED: Chrome MCP inspected the controls, but both the hidden input
+  locator click and the visible label coordinate click timed out waiting for a
+  native file chooser. The anonymous local payload was not transmitted.
+- BOUNDARY: Do not report this as a Roll20 rendering failure or parity result.
+  The actual modern Sandbox and dedicated legacy-room evidence remain open.
+
 ## 2026-07-18 Real Pointer Edit Smoke
 
 - DONE: Replaced the persistent preview harness's fragile synthetic

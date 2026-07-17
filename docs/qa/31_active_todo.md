@@ -1,3 +1,20 @@
+## 2026-07-18 Roll20 Sandbox File Chooser Recheck
+
+- VERIFIED OBSERVATION: The permitted Chrome session is on the Roll20 editor
+  with the `Sheet Sandbox Tools` dialog open. The dialog exposes the expected
+  `#sheetHtml`, `#sheetCss`, and `#sheetTranslation` inputs and states that a
+  selected file reloads and saves the game sheet.
+- VERIFY BLOCKED: Chrome MCP can inspect the dialog and its visible labels, but
+  the hidden native file input does not emit a `filechooser` event for either
+  locator or coordinate click. No payload was submitted and no Roll20 visual
+  result was claimed.
+- CLAIM BOUNDARY: This is an automation-channel limitation, not evidence that
+  Roll20 rejects the payload. Modern Sandbox activation and legacy-room
+  parity remain open.
+- NEXT P0: use a supported file-chooser/CDP handoff to apply only the ignored
+  anonymous payload, then capture a post-reload activation marker and screenshot
+  before comparing against local preview/edit.
+
 ## 2026-07-18 Real Pointer Edit Smoke
 
 - VERIFIED LOCAL: `smoke:persistent-preview-surface` now drives the iframe
