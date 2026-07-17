@@ -4324,3 +4324,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 
 - VERIFIED REMOTE: Push CI run `29579712566` passed safety/unit verification, lint, and production build for the structural import batch.
 - CLAIM BOUNDARY: CI confirms code integrity only; it does not convert the blocked actual Roll20 Sandbox upload into visual-parity evidence.
+
+## 2026-07-17 Repeating Section Visibility Fix
+
+- FIXED: Removed the app runtime rule that hid every `fieldset.repeating_*` from the sheet render. Repeating sections now remain visible for both modern and legacy local render contracts; Roll20-style runtime controls remain a separate runtime concern.
+- VERIFIED LOCAL: Runtime contract regression test passed, full `ci:verify` passed, production build passed, server hygiene passed, and preview/edit visual smoke passed for both compatibility modes across the anonymous local comparison set with zero pixel mismatch and zero browser/page errors.
+- CLAIM BOUNDARY: This fixes one generic visibility regression. It does not prove actual Roll20 Sandbox/legacy-room parity or complete worker/rolltemplate runtime behavior.
+- NEXT P0: Resume actual modern Sandbox upload through an approved browser file path; then verify legacy in its dedicated legacy-enabled room.

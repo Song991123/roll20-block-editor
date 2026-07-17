@@ -5027,3 +5027,9 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 
 - Verified remotely: CI run `29579712566` passed safety/unit verification, lint, and production build for the pushed structural import batch.
 - Boundary: The remote green build validates the implementation batch only. Actual modern Sandbox rendering and dedicated legacy-room rendering remain unverified.
+
+## 2026-07-17 Repeating Section Visibility Fix
+
+- Implemented: Removed the generic runtime `display:none` rule that was hiding `fieldset.repeating_*` content. App-only repeating hints are no longer visible in the sheet surface.
+- Verified: Runtime contract test, full local CI, production build, server hygiene, and both modern/legacy preview-edit visual smoke passed with no browser/page errors or pixel mismatch in the measured anonymous set.
+- Boundary: This is local renderer evidence only. Actual Roll20 Sandbox upload/render and the separate legacy-room check remain open.

@@ -37,13 +37,13 @@ html, body {
    경우 미리보기에서 "여기 반복 섹션이다" 를 알려주는 우리 표시.) */
 .charsheet fieldset[class^='repeating_'],
 .charsheet fieldset[class*=' repeating_'] {
-  border: 1px dashed var(--r20-border, #d0d7de);
-  background: var(--r20-repeat-bg, rgba(208, 215, 222, 0.08));
+  border: 0;
+  background: transparent;
 }
 .charsheet fieldset[class^='repeating_']::before,
 .charsheet fieldset[class*=' repeating_']::before {
   content: '↻ 반복 섹션';
-  display: block;
+  display: none;
   font-size: 10px;
   color: var(--r20-fg-muted, #57606a);
   margin-bottom: 6px;
@@ -52,20 +52,6 @@ html, body {
 }
 
 /* preview-only 선택 강조 (PreviewMain 이 postMessage 로 highlight) */
-/* Roll20 actual parity: repeating fieldsets are transformed by Roll20 runtime.
-   Do not add app-only borders or pseudo labels to the sheet render itself. */
-.charsheet fieldset[class^='repeating_'],
-.charsheet fieldset[class*=' repeating_'] {
-  display: none;
-  border: 0;
-  background: transparent;
-}
-.charsheet fieldset[class^='repeating_']::before,
-.charsheet fieldset[class*=' repeating_']::before {
-  content: none;
-  display: none;
-}
-
 .charsheet [data-r20-preview-selected='1'] {
   outline: 2px solid var(--r20-focus, #2f81f7);
   outline-offset: 1px;
