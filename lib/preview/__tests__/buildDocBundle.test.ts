@@ -52,6 +52,9 @@ assert.match(bundle.doc, /if \(style\.textContent !== css\) style\.textContent =
 assert.match(bundle.doc, /r20:edit-flow-target/);
 assert.match(bundle.doc, /r20:edit-optimistic-flow-finalize/);
 assert.match(bundle.doc, /rollbackOptimisticFlowMove/);
+assert.match(bundle.doc, /r20:edit-apply-chunk-start/);
+assert.match(bundle.doc, /r20:edit-apply-chunk/);
+assert.match(bundle.doc, /pendingLivePatchChunks/);
 assert.match(bundle.doc, /data-r20-last-optimistic-epoch/);
 assert.match(bundle.doc, /style\.position === 'fixed' \|\| style\.position === 'sticky'/);
 assert.match(bundle.doc, /!isFinite\(rect\.right\) \|\| !isFinite\(rect\.bottom\)/);

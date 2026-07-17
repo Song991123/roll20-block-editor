@@ -123,12 +123,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var rootReplacementCount = 0;
   var structuralPatchCount = 0;
   var structuralPatchFallbackCount = 0;
+  var initialPlaceholderReplacementCount = 0;
   var styleOnlyApplyCount = 0;
   var optimisticFlowMoveCount = 0;
   var optimisticFlowRollbackCount = 0;
   var validatedFlowTarget = null;
   var optimisticFlowSnapshot = null;
   var optimisticEditMove = null;
+  var pendingLivePatchChunks = null;
   function blockNodeOf(node) {
     while (node && node !== document.body) {
       if (node.dataset && node.dataset.r20BlockId) return node;
@@ -511,12 +513,22 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var usedStructuralPatch = false;
     if (htmlChanged) {
       clearOptimisticEditMove();
-      usedStructuralPatch = patchRootHtml(data.html);
+      // The initial iframe contains only the empty-state placeholder. A
+      // keyed morph has no state to preserve there and needlessly walks the
+      // imported tree before replacing it, which is especially costly for
+      // large sheets. Keep morphing for subsequent edits where form/runtime
+      // state preservation matters.
+      var hasEmptyPlaceholder = Boolean(root.querySelector('.r20-empty'));
+      usedStructuralPatch = !hasEmptyPlaceholder && patchRootHtml(data.html);
       if (usedStructuralPatch) {
         structuralPatchCount += 1;
       } else {
         root.innerHTML = data.html;
-        structuralPatchFallbackCount += 1;
+        if (hasEmptyPlaceholder) {
+          initialPlaceholderReplacementCount += 1;
+        } else {
+          structuralPatchFallbackCount += 1;
+        }
         rootReplacementCount += 1;
       }
       optimisticFlowSnapshot = null;
@@ -572,6 +584,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     document.body.setAttribute('data-r20-root-replacements', String(rootReplacementCount));
     document.body.setAttribute('data-r20-structural-patches', String(structuralPatchCount));
     document.body.setAttribute('data-r20-structural-patch-fallbacks', String(structuralPatchFallbackCount));
+    document.body.setAttribute('data-r20-initial-placeholder-replacements', String(initialPlaceholderReplacementCount));
     document.body.setAttribute('data-r20-style-only-applies', String(styleOnlyApplyCount));
     document.body.setAttribute('data-r20-optimistic-flow-moves', String(optimisticFlowMoveCount));
     document.body.setAttribute('data-r20-optimistic-flow-rollbacks', String(optimisticFlowRollbackCount));
@@ -590,6 +603,53 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         blockCount: lastAppliedBlockCount
       }, '*');
     } catch (e) {}
+  }
+  function beginLivePatchChunks(data) {
+    if (!data || !Number.isInteger(data.revision) || data.revision < 1) return;
+    if (!Number.isInteger(data.totalChunks) || data.totalChunks < 1 || data.totalChunks > 256) return;
+    if (!Number.isInteger(data.htmlLength) || data.htmlLength < 0 || data.htmlLength > 15000000) return;
+    if (typeof data.htmlKey !== 'string' || !/^[a-z0-9-]{1,128}$/.test(data.htmlKey)) return;
+    if (!data.styles || typeof data.styles !== 'object' || typeof data.i18n !== 'string') return;
+    pendingLivePatchChunks = {
+      revision: data.revision,
+      htmlKey: data.htmlKey,
+      htmlLength: data.htmlLength,
+      totalChunks: data.totalChunks,
+      styles: data.styles,
+      i18n: data.i18n,
+      darkMode: data.darkMode === true,
+      layer: data.layer,
+      roll20SandboxSanitize: data.roll20SandboxSanitize === true,
+      roll20RendererModel: data.roll20RendererModel,
+      documentLanguage: data.documentLanguage,
+      parts: [],
+      received: 0,
+    };
+  }
+  function receiveLivePatchChunk(data) {
+    var pending = pendingLivePatchChunks;
+    if (!pending || !data || data.revision !== pending.revision) return;
+    if (!Number.isInteger(data.index) || data.index < 0 || data.index >= pending.totalChunks) return;
+    if (typeof data.text !== 'string' || pending.parts[data.index] !== undefined) return;
+    pending.parts[data.index] = data.text;
+    pending.received += 1;
+    if (pending.received !== pending.totalChunks) return;
+    var html = pending.parts.join('');
+    var patch = pending;
+    pendingLivePatchChunks = null;
+    if (html.length !== patch.htmlLength) return;
+    applyLivePatch({
+      revision: patch.revision,
+      html: html,
+      htmlKey: patch.htmlKey,
+      styles: patch.styles,
+      i18n: patch.i18n,
+      darkMode: patch.darkMode,
+      layer: patch.layer,
+      roll20SandboxSanitize: patch.roll20SandboxSanitize,
+      roll20RendererModel: patch.roll20RendererModel,
+      documentLanguage: patch.documentLanguage,
+    });
   }
   function collectAttrs() {
     var out = {};
@@ -1124,6 +1184,22 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       && e.data.bridgeId === editBridgeId
     ) {
       applyLivePatch(e.data);
+      return;
+    }
+    if (
+      e.data.type === 'r20:edit-apply-chunk-start'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      beginLivePatchChunks(e.data);
+      return;
+    }
+    if (
+      e.data.type === 'r20:edit-apply-chunk'
+      && e.data.protocol === 1
+      && e.data.bridgeId === editBridgeId
+    ) {
+      receiveLivePatchChunk(e.data);
       return;
     }
     if (e.data.type === 'r20:highlight') {

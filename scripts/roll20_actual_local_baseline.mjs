@@ -239,6 +239,8 @@ async function importFixture(page, fixture) {
   return page.evaluate(async ({ html, css, i18n, assetReplacementMap }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     window.__perfHook.clearAll();
+    window.__perfHook.setPreviewRenderMode('iframe');
+    window.__perfHook.setMainMode('preview');
     window.__perfHook.setAssetReplacementMap(assetReplacementMap || '');
     await sleep(700);
     let last = null;
@@ -359,6 +361,7 @@ async function capturePreview(page, outFile, stateCandidate) {
     window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setMainMode('preview');
   });
+  await waitForImportedSheet(page);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
@@ -377,11 +380,51 @@ async function captureEdit(page, outFile) {
   // Edit mode keeps the same persistent iframe as preview; only the parent
   // overlay/chrome changes. Capturing the retired Shadow Canvas here made
   // the baseline generator time out even when the visible sheet was healthy.
+  await waitForImportedSheet(page);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   await sheet.screenshot({ path: outFile });
   return sheet.evaluate(summarizeSheetElement);
+}
+
+async function waitForImportedSheet(page) {
+  const iframe = page.locator('[data-testid="preview-iframe"]').first();
+  await iframe.waitFor({ state: 'attached', timeout: 30000 });
+  const handle = await iframe.elementHandle();
+  const frame = await handle?.contentFrame();
+  if (!frame) throw new Error('Persistent preview iframe content frame unavailable');
+  const sheet = frame.locator('#charsheet-root').first();
+  await sheet.waitFor({ state: 'attached', timeout: 30000 });
+  const deadline = Date.now() + 30000;
+  let lastState = null;
+  while (Date.now() < deadline) {
+    lastState = await Promise.all([
+      frame.evaluate(() => {
+        const root = document.querySelector('#charsheet-root');
+        const body = document.body;
+        return {
+          bodyHtmlKey: body?.getAttribute('data-r20-html-key') ?? '',
+          applyMode: body?.getAttribute('data-r20-last-apply-mode') ?? '',
+          applyAt: body?.getAttribute('data-r20-last-apply-at') ?? '',
+          editMode: body?.getAttribute('data-r20-edit-mode') ?? '',
+          placeholderCount: root?.querySelectorAll('.r20-empty').length ?? 0,
+          directElementCount: root ? Array.from(root.children).filter((child) => child.tagName !== 'STYLE' && !child.classList.contains('r20-empty')).length : 0,
+        };
+      }),
+      page.evaluate(() => {
+        const shell = document.querySelector('[data-r20-edit-bridge-ready]');
+        return {
+          bridgeReady: shell?.getAttribute('data-r20-edit-bridge-ready') ?? '',
+          applyPending: shell?.getAttribute('data-r20-apply-pending') ?? '',
+          applyAcked: shell?.getAttribute('data-r20-apply-acked') ?? '',
+        };
+      }),
+    ]).then(([frameState, parentState]) => ({ ...frameState, ...parentState }));
+    if (lastState.directElementCount > 0 && lastState.placeholderCount === 0) return;
+    await page.waitForTimeout(250);
+  }
+  throw new Error(`Imported sheet did not reach the persistent iframe: ${JSON.stringify(lastState)}`);
 }
 
 function summarizeSheetElement(sheetEl) {
@@ -437,6 +480,7 @@ function summarizeSheetElement(sheetEl) {
       top: Math.round(rect.top),
     },
     elementCount: elements.length,
+    placeholderCount: sheetEl.querySelectorAll('.r20-empty').length,
     visibleElementCount: Array.from(elements).filter((el) => {
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();
@@ -713,7 +757,9 @@ async function main() {
           entry.emitBytes.html > 0 &&
           entry.blockingWarnings.length === 0 &&
           entry.previewDom?.elementCount > 0 &&
-          entry.editDom?.elementCount > 0;
+          entry.previewDom?.placeholderCount === 0 &&
+          entry.editDom?.elementCount > 0 &&
+          entry.editDom?.placeholderCount === 0;
       } catch (err) {
         entry.pass = false;
         entry.error = err instanceof Error ? err.stack || err.message : String(err);

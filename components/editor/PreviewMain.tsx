@@ -109,6 +109,7 @@ export default function PreviewMain() {
   const [iframeHeight, setIframeHeight] = useState(900);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [iframeEditBridgeId, setIframeEditBridgeId] = useState<string | null>(null);
+  const [iframeLoadRevision, setIframeLoadRevision] = useState(0);
   const iframeEditBridgeIdRef = useRef<string | null>(null);
   const [iframeEditOverlay, setIframeEditOverlay] = useState<IframeEditHitMessage | null>(null);
   const [iframeEditDropTarget, setIframeEditDropTarget] = useState<IframeEditDropTarget | null>(null);
@@ -785,9 +786,8 @@ export default function PreviewMain() {
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
-    if (lastAppliedSourceRef.current === srcdoc || pendingApplySourceRef.current === srcdoc) return;
-    const target = iframeRef.current?.contentWindow;
-    if (!target) return;
+    if (lastAppliedSourceRef.current === srcdoc) return;
+    if (!iframeRef.current?.contentWindow) return;
     const revision = applyRevisionRef.current + 1;
     applyRevisionRef.current = revision;
     applySourcesRef.current.set(revision, srcdoc);
@@ -797,14 +797,67 @@ export default function PreviewMain() {
     // width input remains authoritative until the user resets automatic sizing.
     autoWidthSizedRef.current = false;
     setPendingApplyRevision(revision);
-    target.postMessage({
-      type: 'r20:edit-apply',
-      protocol: R20_IFRAME_EDIT_PROTOCOL,
-      bridgeId: iframeEditBridgeId,
-      revision,
-      ...livePatch,
-    }, '*');
-  }, [iframeEditBridgeId, lastApplyAck, livePatch, srcdoc]);
+    const chunked = livePatch.html.length > 300000;
+    const messages: Array<Record<string, unknown>> = chunked
+      ? (() => {
+          const chunkSize = 32000;
+          const totalChunks = Math.ceil(livePatch.html.length / chunkSize);
+          const { html, ...metadata } = livePatch;
+          const start = {
+            type: 'r20:edit-apply-chunk-start',
+            protocol: R20_IFRAME_EDIT_PROTOCOL,
+            bridgeId: iframeEditBridgeId,
+            revision,
+            htmlLength: html.length,
+            totalChunks,
+            ...metadata,
+          };
+          const chunks = [];
+          for (let index = 0; index < totalChunks; index += 1) {
+            chunks.push({
+              type: 'r20:edit-apply-chunk',
+              protocol: R20_IFRAME_EDIT_PROTOCOL,
+              bridgeId: iframeEditBridgeId,
+              revision,
+              index,
+              text: html.slice(index * chunkSize, (index + 1) * chunkSize),
+            });
+          }
+          return [start, ...chunks];
+        })()
+      : [{
+          type: 'r20:edit-apply',
+          protocol: R20_IFRAME_EDIT_PROTOCOL,
+          bridgeId: iframeEditBridgeId,
+          revision,
+          ...livePatch,
+        }];
+    let retryTimer: number | null = null;
+    let attempts = 0;
+    const send = () => {
+      const currentFrame = iframeRef.current;
+      const currentTarget = currentFrame?.contentWindow;
+      if (
+        iframeEditBridgeIdRef.current !== iframeEditBridgeId
+        || pendingApplySourceRef.current !== srcdoc
+      ) return;
+      if (!currentTarget) return;
+      try {
+        messages.forEach((message) => currentTarget.postMessage(message, '*'));
+      } catch {
+        setPendingApplyRevision(0);
+        pendingApplySourceRef.current = null;
+        applySourcesRef.current.delete(revision);
+        return;
+      }
+      attempts += 1;
+      if (attempts < (chunked ? 10 : 60)) retryTimer = window.setTimeout(send, 50);
+    };
+    send();
+    return () => {
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+    };
+  }, [iframeEditBridgeId, iframeLoadRevision, lastApplyAck, livePatch, srcdoc]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
@@ -960,6 +1013,7 @@ export default function PreviewMain() {
                 title="시트 미리보기"
                 sandbox={sandbox}
                 srcDoc={iframeDocumentSrcdoc}
+                onLoad={() => setIframeLoadRevision((value) => value + 1)}
                 className="block w-full border-0"
                 style={{ width: `${canvasWidth}px`, height: `${iframeHeight}px` }}
               />

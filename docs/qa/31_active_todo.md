@@ -4385,3 +4385,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: Import structure tests `25/25`, preserved-attribute unit test, `ci:verify`, lint, production build, `git diff --check`, and server-hygiene check passed.
 - CLAIM BOUNDARY: This closes one generic importer/emitter loss path. It does not prove all attributes, all-sheet mapping, actual Roll20 visual parity, worker runtime parity, or rolltemplate/chat parity.
 - NEXT P0: Retry the modern Custom Sheet Sandbox upload through an explicitly permitted browser file-upload path; validate legacy separately in a legacy-enabled test room.
+
+## 2026-07-18 Persistent Iframe Apply Race Fix
+
+- DONE: The persistent iframe apply effect no longer treats an in-flight source as permanently satisfied. If iframe load interrupts the first `postMessage`, the `onLoad`-triggered effect can resend the current source after the bridge is ready.
+- DONE: Large live patches use a bounded chunk transport above `300KB`; the iframe validates revision, chunk count, HTML length, style keys, and completion before applying one structural patch. Small patches retain the normal message path.
+- VERIFIED LOCAL: Fresh production build passed. Persistent preview surface passed in modern and legacy synthetic modes with `10,000` synthetic nodes, `loads=0`, zero console/page errors, worker replacement, rolltemplate chat, flow/free placement, and widget insertion.
+- VERIFIED LOCAL: Fresh ignored local baseline for the anonymous `fixture-A` path passed after importing `7,290` blocks, with emitted HTML `620,409` bytes and upload ZIP `47,395` bytes. The harness now waits for the actual iframe DOM and rejects the old placeholder-only false PASS path; preview/edit capture completed without claiming actual Roll20 pixel parity.
+- VERIFIED LOCAL: `test:build-doc-bundle`, script syntax checks, and `git diff --check` passed. Generated screenshots, payloads, fixtures, and reports remain outside Git in ignored Temp storage.
+- CLAIM BOUNDARY: This closes a generic persistent-iframe delivery race and strengthens local evidence. It does not prove all-sheet mapping, actual Roll20 pixel parity, complete worker JS block coding, or universal asset parity.
+- NEXT P0: Rerun the anonymous modern/legacy visual comparison set and classify remaining differences by wrapper/context, assets/fonts, state, translation, worker, rolltemplate, viewport, and edit overlay. Keep the dedicated legacy-room and modern Sandbox gates separate.

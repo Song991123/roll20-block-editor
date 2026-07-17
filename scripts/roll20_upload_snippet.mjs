@@ -672,8 +672,13 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const okHost = location.hostname === 'app.roll20.net';
     const hasSandboxInputs = Boolean(document.querySelector('#sheetHtml, #sheetCss, #sheetTranslation'));
     const hasManifestTextarea = Boolean(document.querySelector('textarea[name="customcharsheet_json"], [name="customcharsheet_json"]'));
-    if (!okHost || (!hasSandboxInputs && !hasManifestTextarea)) {
-      throw new Error('Open the Roll20 Custom Sheet Sandbox editor/tools or settings page before running this snippet.');
+    const hasCampaignSettingsFields = Boolean(
+      document.querySelector('textarea[name="customcharsheet_layout"]') &&
+      document.querySelector('textarea[name="customcharsheet_style"]') &&
+      document.querySelector('textarea[name="customcharsheet_translation"]'),
+    );
+    if (!okHost || (!hasSandboxInputs && !hasManifestTextarea && !hasCampaignSettingsFields)) {
+      throw new Error('Open the Roll20 Custom Sheet Sandbox editor/tools or campaign settings page before running this snippet.');
     }
   };
   const inferCampaignId = () => {
@@ -1164,6 +1169,9 @@ function runSelfTest() {
   if (!applySnippet.includes("not-needed-file-input-handler-dispatched")) failures.push('endpoint fallback should not duplicate a successful file-input upload');
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
   if (!snippet.includes('input[name="customcharsheet_json"]')) failures.push('generated snippet missing narrow manifest input selector');
+  if (!snippet.includes('textarea[name="customcharsheet_layout"]')) failures.push('generated snippet missing campaign settings layout selector');
+  if (!snippet.includes('textarea[name="customcharsheet_style"]')) failures.push('generated snippet missing campaign settings style selector');
+  if (!snippet.includes('textarea[name="customcharsheet_translation"]')) failures.push('generated snippet missing campaign settings translation selector');
   if (snippet.includes('.ace_text-input[name="customcharsheet_json"]')) failures.push('generated snippet still writes Ace text input as a manifest field');
   if (!snippet.includes('ROLL20_EDITOR_PARSE_ERROR')) failures.push('generated snippet missing editor parse-error activation status');
   if (!snippet.includes('roll20EditorParseError')) failures.push('generated snippet missing editor parse-error detector');

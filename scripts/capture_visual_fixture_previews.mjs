@@ -176,11 +176,18 @@ async function importFixture(page, fixture) {
 async function getPreviewFrame(page) {
   const iframe = page.locator('[data-testid="preview-iframe"]').first();
   await iframe.waitFor({ state: 'visible', timeout: 30000 });
+  await waitForImportedSheet(page);
   const handle = await iframe.elementHandle();
   const frame = await handle?.contentFrame();
   if (!frame) throw new Error('preview iframe contentFrame unavailable');
   await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
   return frame;
+}
+
+async function waitForImportedSheet(page) {
+  const sheet = page.frameLocator('[data-testid="preview-iframe"]').locator('#charsheet-root').first();
+  await sheet.waitFor({ state: 'attached', timeout: 30000 });
+  await sheet.locator(':scope > :not(.r20-empty):not(style)').first().waitFor({ state: 'attached', timeout: 30000 });
 }
 
 async function collectHiddenState(sheet, hiddenAttrs) {
@@ -333,6 +340,7 @@ async function captureFixturePreview(page, fixture, stateCandidate, screenshotPa
         top: Math.round(rect.top),
       },
       elementCount: elements.length,
+      placeholderCount: sheetEl.querySelectorAll('.r20-empty').length,
       visibleElementCount: elements.filter((el) => {
         const cs = getComputedStyle(el);
         const r = el.getBoundingClientRect();
@@ -446,6 +454,7 @@ async function main() {
         entry.pass =
           (entry.import?.blockCount ?? 0) > 0 &&
           entry.capture?.dom?.elementCount > 0 &&
+          entry.capture?.dom?.placeholderCount === 0 &&
           entry.capture?.dom?.visibleRuntimeNodeCount === 0 &&
           consoleErrors.length === 0 &&
           pageErrors.length === 0;

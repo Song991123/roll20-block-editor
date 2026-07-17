@@ -5079,3 +5079,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Read-only browser inspection reached the logged-in Roll20 Sandbox Tools dialog and confirmed the expected upload controls.
 - The supported file chooser rejected the same local payload from both the workspace path and an isolated temporary copy. No upload, iframe creation, room mutation, or parity claim occurred.
 - Next handoff condition: user-visible native picker or another approved upload mechanism. Existing Roll20 rooms remain untouched; legacy validation remains separate from modern Sandbox validation.
+
+## 2026-07-18 Persistent Iframe Apply Race Fix
+
+- Root cause: the first live apply could be posted while the persistent iframe was still transitioning through its load/bridge-ready lifecycle. The cleanup cancelled retries, while the pending-source guard prevented the load-triggered effect from sending again. The iframe stayed on its empty placeholder even though import and emit had succeeded.
+- Implemented: `PreviewMain` now retries against the current iframe ref and permits the `onLoad`-triggered apply effect to resend an unapplied source. Large HTML patches are sent through a bounded `r20:edit-apply-chunk-start` plus `r20:edit-apply-chunk` protocol; the iframe joins and validates the chunks before one apply.
+- Verified: fresh production build; `test:build-doc-bundle`; persistent synthetic modern/legacy smoke at `10,000` nodes with `loads=0`, zero console/page errors, flow/free placement, widget insertion, worker replacement, and rolltemplate chat; fresh ignored local anonymous fixture baseline PASS with actual iframe DOM detection and preview/edit capture.
+- Evidence boundary: the local baseline package and screenshots are ignored Temp artifacts only. The result proves the local persistent-render path and removes a false placeholder PASS; it does not claim actual Roll20 pixel parity or all-sheet support.
+- Cleanup: temporary message probes and diagnostic DOM attributes were removed before the clean rerun. No source-derived fixture, screenshot, payload, report, creator identity, or external asset identity was added to tracked files.

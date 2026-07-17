@@ -83,6 +83,7 @@ async function readApplyStats(frame) {
     rootReplacements: Number(document.body?.getAttribute('data-r20-root-replacements') ?? 0),
     structuralPatches: Number(document.body?.getAttribute('data-r20-structural-patches') ?? 0),
     structuralPatchFallbacks: Number(document.body?.getAttribute('data-r20-structural-patch-fallbacks') ?? 0),
+    initialPlaceholderReplacements: Number(document.body?.getAttribute('data-r20-initial-placeholder-replacements') ?? 0),
     styleOnlyApplies: Number(document.body?.getAttribute('data-r20-style-only-applies') ?? 0),
     optimisticFlowMoves: Number(document.body?.getAttribute('data-r20-optimistic-flow-moves') ?? 0),
     optimisticFlowRollbacks: Number(document.body?.getAttribute('data-r20-optimistic-flow-rollbacks') ?? 0),
