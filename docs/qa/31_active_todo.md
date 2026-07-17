@@ -4428,6 +4428,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: The combined autosave payload contains a bounded CDATA document-language field and remains backward-compatible when older records omit it.
 - FRESH SMOKE NOTE: The local modern/legacy fixture smoke is not a parity gate between the two modes. One prepared input had stable transition geometry; two had expected external-font proxy failures and mode-specific width drift. No CSS correction was promoted from that comparison.
 - NEXT P0: Continue same-payload Roll20 verification independently for modern Sandbox and legacy-enabled room, then expand anonymous generic import/worker/rolltemplate coverage.
+## 2026-07-18 Preview Focus And App Chrome Batch
+
+- DONE: Preview mode now uses a sheet-focused layout: left/right editor panels and the bottom status bar are not mounted, while the persistent Roll20 iframe remains mounted.
+- DONE: Edit mode continues to use the same persistent iframe and edit-only overlay/layer surface; no second sheet renderer was introduced.
+- DONE: Replaced the product header repository link with a bug-report mail action using `mailto:sjh11235678@gmail.com`.
+- DONE: Added an original light-pink/pastel application chrome layer. It is scoped to `.app-shell.pastel`; imported sheet CSS remains inside the iframe render contract.
+- DONE: Updated the persistent browser smoke to assert preview focus, no GitHub link, mailto contact, modern/legacy behavior, local rolltemplate chat in split mode, and same-iframe edit state.
+- VERIFIED LOCAL: `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run ci:verify`, `corepack pnpm run smoke:persistent-preview-surface`, and `corepack pnpm run smoke:edit-flow` passed. The persistent smoke passed modern and legacy with no console/page errors; edit-flow passed with no console/page errors.
+- VERIFY: `corepack pnpm run smoke:preview-edit-visual -- --compatibility-mode both` still reports one anonymous fixture with a modern-only `9.21%` local preview/edit mismatch while its legacy run is exact. This is renderer evidence, not app-chrome evidence, and does not prove Roll20 parity.
+- TODO: Use the Claude design branch to refine the pastel information architecture, plain Korean copy, icon/tooltips, and synthetic action previews without changing the canonical renderer contract.
+- TODO: Continue actual modern Sandbox and dedicated legacy-room screenshot comparison after the browser upload boundary is available.
+
 ## 2026-07-18 Product Goal Reset
 
 - DONE: Reframed the project around one canonical product goal: user-imported or user-authored Roll20 sheets must render as the same sheet in preview and edit, with separate modern and legacy contracts and no public copyrighted samples.

@@ -166,8 +166,9 @@ export default function EditorShell() {
     return () => window.removeEventListener('keydown', onKey);
   }, [toggleLeft, toggleRight, setLeftMode, setRightTab, setMainMode, mainMode]);
 
-  const leftWidth = leftCollapsed ? '0px' : 'var(--sidebar-left-w)';
-  const rightWidthPx = rightCollapsed ? '0px' : `${rightWidth}px`;
+  const previewFocus = mainMode === 'preview';
+  const leftWidth = previewFocus || leftCollapsed ? '0px' : 'var(--sidebar-left-w)';
+  const rightWidthPx = previewFocus || rightCollapsed ? '0px' : `${rightWidth}px`;
 
   // Keep one canonical Roll20 iframe mounted across preview and edit. In edit
   // mode the same pane is placed over the canvas slot while EditCanvas owns
@@ -232,7 +233,10 @@ export default function EditorShell() {
   }
 
   return (
-    <div className="app-shell dark flex h-screen flex-col bg-[var(--bg-app)] text-foreground">
+    <div
+      className="app-shell pastel flex h-screen flex-col bg-[var(--bg-app)] text-foreground"
+      data-preview-focus={previewFocus ? 'true' : 'false'}
+    >
       <EditorHeader onNewSheet={() => {
         resetCanvasWidths();
         setRecovered(null);
@@ -254,11 +258,12 @@ export default function EditorShell() {
         <aside
           className={cn(
             'flex flex-col border-r border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
-            leftCollapsed && 'border-r-0',
+            (leftCollapsed || previewFocus) && 'border-r-0',
           )}
+          aria-hidden={previewFocus}
           data-testid="sidebar-left"
         >
-          {!leftCollapsed && <SidebarLeft />}
+          {!leftCollapsed && !previewFocus && <SidebarLeft />}
         </aside>
 
         <section className="relative flex flex-col min-w-0 min-h-0 bg-[var(--bg-canvas)]">
@@ -309,13 +314,15 @@ export default function EditorShell() {
         <aside
           className={cn(
             'flex flex-col border-l border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
-            rightCollapsed && 'border-l-0',
+            (rightCollapsed || previewFocus) && 'border-l-0',
           )}
+          aria-hidden={previewFocus}
+          data-testid="sidebar-right"
         >
-          {!rightCollapsed && <SidebarRight />}
+          {!rightCollapsed && !previewFocus && <SidebarRight />}
         </aside>
       </main>
-      <Statusbar />
+      {!previewFocus && <Statusbar />}
     </div>
   );
 }

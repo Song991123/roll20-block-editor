@@ -25,6 +25,7 @@ export default function Statusbar() {
     <footer
       className="flex items-center gap-3 border-t border-border bg-[var(--bg-elevated)] px-3 text-[11px] text-muted-foreground"
       style={{ height: 'var(--statusbar-h)' }}
+      data-testid="statusbar"
     >
       <span className="tabular-nums">
         블록 <span className="font-medium text-foreground">{total.toLocaleString()}</span>개

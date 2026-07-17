@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Download,
+  Bug,
   FilePlus,
   FolderOpen,
   Layers,
@@ -73,6 +74,7 @@ interface EditorHeaderProps {
 export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
   const toggleLeft = useUiStore((s) => s.toggleSidebarLeft);
   const toggleRight = useUiStore((s) => s.toggleSidebarRight);
+  const mainMode = useUiStore((s) => s.mainMode);
   const dirty = useWorkspaceStore((s) => anyDirty(s.workspaces));
   const clearAll = useWorkspaceStore((s) => s.clearAll);
   const [importOpen, setImportOpen] = useState(false);
@@ -133,22 +135,24 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
   return (
     <TooltipProvider delayDuration={250}>
       <header className="flex h-[var(--header-h)] shrink-0 items-center gap-2 border-b border-border bg-[var(--bg-elevated)] px-3">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={toggleLeft}
-              aria-label="왼쪽 패널 열기/닫기 (Cmd+[)"
-              data-testid="sidebar-left-toggle"
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">왼쪽 패널 (Cmd+[)</TooltipContent>
-        </Tooltip>
+        {mainMode !== 'preview' && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={toggleLeft}
+                aria-label="왼쪽 패널 열기/닫기 (Cmd+[)"
+                data-testid="sidebar-left-toggle"
+              >
+                <PanelLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">왼쪽 패널 (Cmd+[)</TooltipContent>
+          </Tooltip>
+        )}
 
         <div className="flex items-center gap-2 pl-1">
           <LogoMark className="h-7 w-7" />
@@ -253,7 +257,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 <span className="hidden sm:inline">{saving ? '저장 중' : '저장'}</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>현재 작업 저장</TooltipContent>
+            <TooltipContent>이 브라우저에 현재 작업 저장</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -276,21 +280,23 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
 
           <div className="mx-1 h-5 w-px bg-border" />
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={toggleRight}
-                aria-label="오른쪽 패널 열기/닫기 (Cmd+])"
-              >
-                <PanelRight className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">오른쪽 패널 (Cmd+])</TooltipContent>
-          </Tooltip>
+          {mainMode !== 'preview' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={toggleRight}
+                  aria-label="오른쪽 패널 열기/닫기 (Cmd+])"
+                >
+                  <PanelRight className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">오른쪽 패널 (Cmd+])</TooltipContent>
+            </Tooltip>
+          )}
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -302,23 +308,14 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 asChild
               >
                 <a
-                  href="https://github.com/Song991123/roll20-block-editor"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="GitHub 저장소 열기"
+                  href="mailto:sjh11235678@gmail.com?subject=Roll20%20%EC%8B%9C%ED%8A%B8%20%ED%8E%B8%EC%A7%91%EA%B8%B0%20%EB%B2%84%EA%B7%B8%20%EC%A0%9C%EB%B3%B4"
+                  aria-label="버그 제보 이메일 보내기"
                 >
-                  <svg
-                    viewBox="0 0 16 16"
-                    className="h-4 w-4"
-                    aria-hidden
-                    fill="currentColor"
-                  >
-                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
-                  </svg>
+                  <Bug className="h-4 w-4" aria-hidden="true" />
                 </a>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">GitHub 저장소</TooltipContent>
+            <TooltipContent side="bottom">버그 제보</TooltipContent>
           </Tooltip>
 
           <span className="ml-1 text-[10px] font-medium tracking-wide text-muted-foreground/70 tabular-nums">

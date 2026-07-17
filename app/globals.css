@@ -40,6 +40,62 @@
   all: revert;
 }
 
+/* The application chrome is intentionally independent from Roll20. The
+ * imported sheet keeps its own runtime CSS inside the iframe; these tokens
+ * style only the surrounding editor shell. */
+.app-shell.pastel {
+  --bg-canvas:        #fff7fa;
+  --bg-app:           #fffafb;
+  --bg-elevated:      #ffffff;
+  --bg-elevated-2:    #fff0f4;
+  --bg-hover:         #ffe5ed;
+  --bg-active:        #ffd3e0;
+  --bg-overlay:       rgba(71, 34, 49, 0.28);
+  --text-primary:     #3d2932;
+  --text-secondary:   #6f5560;
+  --text-muted:       #927884;
+  --text-disabled:    #c5adb7;
+  --text-inverse:     #ffffff;
+  --border-default:   #ecd5de;
+  --border-strong:    #d9b5c3;
+  --border-subtle:    #f5e5eb;
+  --primary:          #d45d84;
+  --primary-hover:    #c64d76;
+  --primary-active:   #b63f68;
+  --primary-text:     #ffffff;
+  --success:          #4f9b7c;
+  --warning:          #b8793f;
+  --destructive:      #c85562;
+  --info:             #5c9fbd;
+  --background:       var(--bg-app);
+  --foreground:       var(--text-primary);
+  --card:             var(--bg-elevated);
+  --card-foreground:  var(--text-primary);
+  --popover:          var(--bg-elevated);
+  --popover-foreground: var(--text-primary);
+  --primary-foreground: var(--primary-text);
+  --secondary:        var(--bg-elevated-2);
+  --secondary-foreground: var(--text-primary);
+  --muted:            var(--bg-elevated-2);
+  --muted-foreground: var(--text-muted);
+  --accent:           var(--bg-hover);
+  --accent-foreground: var(--text-primary);
+  --destructive-foreground: #ffffff;
+  --border:           var(--border-default);
+  --input:            var(--border-default);
+  --ring:             var(--primary);
+  --cat-container:    #57b6a2;
+  --cat-input:        #6fa7d9;
+  --cat-display:      #d985ae;
+  --cat-dice:         #e7ad4a;
+  --cat-expression:   #6aafb4;
+  --cat-sheetworker:  #dc7272;
+  --cat-i18n:         #e875a0;
+  --cat-css:          #6fb27c;
+  --cat-advanced:     #8a7d87;
+  --cat-composite:    #c78a6f;
+}
+
 
 /*
  * .app-shell — 우리 앱 UI (Header / Sidebar / Workspace 등) 가 박히는 컨테이너.

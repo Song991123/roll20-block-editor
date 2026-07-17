@@ -5125,3 +5125,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - NEXT: Create the isolated design branch, review its first user-journey batch, then implement the preview-focus and edit-overlay acceptance checks in the lead worktree.
 - DESIGN DIRECTION: The surrounding app UI will use an original light-pink/pastel system, not a Roll20 clone and not a dark blue/purple AI-dashboard palette. Imported sheet styling remains a separate render contract.
 - TRUST SURFACE: Current persistence is local browser autosave/IndexedDB only. A future login/cloud-sync feature is not implemented. The product header still contains a GitHub link and requires a follow-up replacement with `mailto:sjh11235678@gmail.com`.
+
+## 2026-07-18 Preview Focus And App Chrome Batch
+
+- IMPLEMENTED: `EditorShell` now treats preview as a sheet-focused surface. The left/right panels and statusbar are not mounted in preview, while `PreviewMain` keeps the one canonical iframe alive.
+- IMPLEMENTED: The header hides panel toggles in preview, exposes `mailto:sjh11235678@gmail.com` for bug reports, and no longer exposes a GitHub/source link in product chrome.
+- IMPLEMENTED: `.app-shell.pastel` supplies an original pink/pastel shell palette without changing the iframe's Roll20 baseline or user stylesheet.
+- VERIFIED: `smoke:persistent-preview-surface` passed modern and legacy after adding explicit focus assertions. `smoke:edit-flow` passed with zero console/page errors. Local lint, build, and CI verification passed.
+- PARTIAL: The prepared visual smoke still has one modern-only anonymous fixture mismatch at `9.21%`; leave renderer promotion and actual Roll20 parity as VERIFY. This batch did not tune sheet CSS for that result.
+- NEXT: Review the design branch against the reset handoff, then separately address the remaining generic renderer mismatch and actual Sandbox/legacy-room evidence.

@@ -182,6 +182,11 @@ async function runMode(browser, mode) {
     result.autoCanvasWidth = await page.locator('[data-testid="preview-iframe"]').evaluate((node) => ({
       width: Number.parseFloat(node.getAttribute('style')?.match(/width:\s*([\d.]+)px/)?.[1] ?? ''),
     }));
+    result.trustSurface = await page.evaluate(() => ({
+      pastelShell: document.querySelector('.app-shell.pastel') !== null,
+      bugReportHref: document.querySelector('a[href^="mailto:sjh11235678@gmail.com"]')?.getAttribute('href') ?? '',
+      githubLinkCount: document.querySelectorAll('a[href*="github.com"]').length,
+    }));
     result.initialApply = await page.evaluate(() => {
       const root = document.querySelector('[data-r20-apply-acked]');
       const srcdoc = document.querySelector('[data-testid="preview-iframe"]')?.getAttribute('srcdoc') ?? '';
@@ -867,6 +872,14 @@ async function runMode(browser, mode) {
       null,
       { timeout: 30000 },
     );
+    await page.waitForFunction(
+      () => (
+        (document.querySelector('[data-testid="sidebar-left"]')?.getBoundingClientRect().width ?? -1) <= 1
+        && (document.querySelector('[data-testid="sidebar-right"]')?.getBoundingClientRect().width ?? -1) <= 1
+      ),
+      null,
+      { timeout: 30000 },
+    );
     result.after = await page.evaluate(() => {
       const current = document.querySelector('[data-testid="preview-iframe"]');
       return {
@@ -878,8 +891,24 @@ async function runMode(browser, mode) {
         overlayCount: document.querySelectorAll('[data-testid="iframe-edit-overlay"]').length,
       };
     });
+    result.previewFocus = await page.evaluate(() => ({
+      leftWidth: document.querySelector('[data-testid="sidebar-left"]')?.getBoundingClientRect().width ?? -1,
+      rightWidth: document.querySelector('[data-testid="sidebar-right"]')?.getBoundingClientRect().width ?? -1,
+      leftToggleCount: document.querySelectorAll('[data-testid="sidebar-left-toggle"]').length,
+      rightToggleCount: document.querySelectorAll('[aria-label*="오른쪽 패널 열기/닫기"]').length,
+      statusbarCount: document.querySelectorAll('[data-testid="statusbar"]').length,
+      chatListCount: document.querySelectorAll('[data-testid="chat-list"]').length,
+      previewFocus: document.querySelector('[data-preview-focus="true"]') !== null,
+    }));
     result.afterInputValue = await input.inputValue();
     result.afterRuntimeToken = await frame.evaluate(() => window.__persistentPreviewRuntimeToken);
+
+    // Chat is a separate editor tool, not part of the sheet-only preview.
+    // Switch to the split workspace before exercising the local rolltemplate
+    // bridge so the test validates both product surfaces independently.
+    await page.evaluate(() => window.__perfHook.setMainMode('split'));
+    await page.locator('[data-testid="tab-chat"]').click();
+    await page.locator('[data-testid="chat-list"]').waitFor({ state: 'attached', timeout: 30000 });
     result.rollChat = {
       beforeCards: await page.locator('[data-r20-chat-card]').count(),
     };
@@ -984,6 +1013,9 @@ async function runMode(browser, mode) {
       && Number.isFinite(result.autoCanvasWidth.width)
       && result.autoCanvasWidth.width >= 320
       && result.autoCanvasWidth.width < 850
+      && result.trustSurface.pastelShell === true
+      && result.trustSurface.bugReportHref.startsWith('mailto:sjh11235678@gmail.com')
+      && result.trustSurface.githubLinkCount === 0
       && result.manualCanvasWidth.inputValue === '850'
       && result.manualCanvasWidth.iframeStyle.includes('width: 850px')
       && result.layerSelection.layerRowClicked === true
@@ -1090,6 +1122,13 @@ async function runMode(browser, mode) {
       && result.after.paneVisible === 'true'
       && result.after.loadCount === 0
       && result.after.overlayCount === 0
+      && result.previewFocus.leftWidth <= 1
+      && result.previewFocus.rightWidth <= 1
+      && result.previewFocus.leftToggleCount === 0
+      && result.previewFocus.rightToggleCount === 0
+      && result.previewFocus.statusbarCount === 0
+      && result.previewFocus.chatListCount === 0
+      && result.previewFocus.previewFocus === true
       && result.afterInputValue === `runtime-${mode}`
       && result.afterRuntimeToken === token
       && result.rollChat.afterCards === result.rollChat.beforeCards + 1
