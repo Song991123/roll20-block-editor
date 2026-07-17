@@ -4428,3 +4428,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: The combined autosave payload contains a bounded CDATA document-language field and remains backward-compatible when older records omit it.
 - FRESH SMOKE NOTE: The local modern/legacy fixture smoke is not a parity gate between the two modes. One prepared input had stable transition geometry; two had expected external-font proxy failures and mode-specific width drift. No CSS correction was promoted from that comparison.
 - NEXT P0: Continue same-payload Roll20 verification independently for modern Sandbox and legacy-enabled room, then expand anonymous generic import/worker/rolltemplate coverage.
+## 2026-07-18 Product Goal Reset
+
+- DONE: Reframed the project around one canonical product goal: user-imported or user-authored Roll20 sheets must render as the same sheet in preview and edit, with separate modern and legacy contracts and no public copyrighted samples.
+- DONE: Added `docs/operations/41_product_reset_and_short_term_goals.md` as the short-term control plane, with evidence maturity levels, P0/P1 goals, ownership, and acceptance gates.
+- DONE: Added `docs/operations/42_claude_design_reset_handoff.md` for a separate Claude design branch and `docs/operations/43_agent_context_pack.md` for token-efficient first reads.
+- DONE: Added a repository-local `agent/skills/roll20-product-reset/SKILL.md` for bounded, evidence-based reset work.
+- VERIFY: Current implementation remains partial. The shared iframe/local render path, modern activation, generic mapping guards, and CI are evidenced; actual modern/legacy visual parity, all-sheet mapping, worker runtime parity, and complete Figma-like editing are not proven.
+- TODO: Create the isolated Claude design worktree and implement the first user-journey redesign batch.
+- TODO: Run the preview-focus UI smoke after the design branch is reviewed; keep the canonical renderer contract unchanged during the design pass.
+- TODO: Inventory parent-folder legacy/experiment references before any physical folder move.
+- DONE: Added `docs/operations/44_workspace_cleanup_inventory.md`; physical parent-folder moves remain intentionally HOLD until references and worktrees are checked.
+- BLOCKED: Actual generated-sheet upload parity remains blocked by the browser file-input boundary recorded in `docs/operations/37_roll20_actual_verification.md`.
+- TODO: Redesign the surrounding app UI with an original light-pink/pastel visual system; Roll20-compatible styling remains confined to the imported sheet render.
+- TODO: Replace the product-header GitHub/source shortcut with `mailto:sjh11235678@gmail.com` and state clearly that autosave is local-browser only; do not add implied login/cloud sync.
+- TODO: Audit user-facing Korean labels and add icon/tooltips plus synthetic previews for unfamiliar actions.

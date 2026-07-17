@@ -1,6 +1,6 @@
 # Project Structure
 
-Date: 2026-06-12
+Date: 2026-07-18
 
 This file explains where things should live. It is intentionally conservative: do not move existing reports or fixtures unless the scripts that reference them are updated in the same commit.
 
@@ -57,15 +57,16 @@ This file explains where things should live. It is intentionally conservative: d
 - Do not publish generated reports without sanitizing sheet names, snippets, screenshots, asset URLs, and private paths.
 - Never write into external source corpora; copy needed samples into `test-fixtures/`.
 
-## Proposed Next Cleanup
+## Cleanup Policy For The Current Reset
 
 | Status | Task |
 | --- | --- |
-| DONE | Add a `docs/README.md` index that links specs, QA, UX, validation, operations, and reports. |
-| DONE | Add `reports/README.md` to explain which reports are generated and which are evidence snapshots. |
-| DONE | Add `scripts/README.md` with command recipes. |
-| DONE | Move old duplicated QA report files into `docs/qa/archive/` after checking references. |
-| TODO | Keep `.tmp/`, `.next/`, `out/`, and large copied fixtures out of hand-authored documentation. |
+| DONE | Keep indexes for `docs/`, `docs/operations/`, `docs/qa/`, `docs/spec/`, `docs/ux/`, `docs/validation/`, and `reports/`. |
+| DONE | Keep old QA snapshots under `docs/qa/archive/` and generated evidence ignored. |
+| DONE | Add a short context pack so agents do not read the entire reports tree. |
+| TODO | Inventory references before moving any parent-folder legacy or experiment copy. |
+| TODO | Remove or archive only proven-unused root byproducts after checking scripts, CI, and user workflows. |
+| HOLD | Do not rename or move protected source folders, active worktrees, or ignored reports during the product reset. |
 
 ## Parent Folder Context (`영시영 시트 고치기/`)
 

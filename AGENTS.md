@@ -16,10 +16,11 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/31_asset_preservation_policy.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
 11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
 12. For two-host Codex/Claude parallel work, read `docs/operations/39_two_host_agent_prompts.md`; only the lead integration agent merges or pushes the integration branch.
-12. For external render/editor references, read `docs/research/40_roll20_render_reference_inventory.md`.
-13. For parallel Codex/Claude/MacBook work, read `docs/operations/38_multi_agent_render_plan.md`.
-14. Run `git status --short --branch`.
-15. Check for unnecessary local dev servers before starting another one.
+13. For external render/editor references, read `docs/research/40_roll20_render_reference_inventory.md`.
+14. For parallel Codex/Claude/MacBook work, read `docs/operations/38_multi_agent_render_plan.md`.
+15. When the product goal or work allocation is being reset, read `docs/operations/41_product_reset_and_short_term_goals.md` and `docs/operations/43_agent_context_pack.md` before starting a new track.
+16. Run `git status --short --branch`.
+17. Check for unnecessary local dev servers before starting another one.
 
 ## Non-Negotiable Rules
 
@@ -42,6 +43,12 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Existing Roll20 rooms are observation-only unless the user explicitly authorizes a specific edit in that specific room.
 - Optimization and security work must keep render truthfulness first: performance improvements cannot bypass Roll20 wrapper/context, source/intrinsic, legacy/modern, asset, and private-evidence gates.
 - Parallel agents must use separate branches or read-only reports. One lead/integrator owns merges and pushes to shared branches.
+- The active short-term goal document is the control plane. Do not start a broad redesign or folder move outside a named goal, owner, branch, file boundary, and evidence gate.
+- Folder cleanup must be staged: inventory first, documentation/index second, reference or legacy moves only after all script and git references are known.
+- The visual language must be original: light pink/pastel is allowed, but do not imitate Roll20 screens or default to an AI-looking dark blue/purple palette.
+- User-facing UI must prefer plain Korean action language, compact icons with tooltips, and optional visual previews over raw DOM/CSS/worker terminology.
+- Current persistence is local browser autosave/IndexedDB. Do not imply account sync or require login until a real auth/storage service exists and its privacy boundary is documented.
+- The public app must not expose repository/source links as product chrome. Bug reports should use `mailto:sjh11235678@gmail.com` unless the user changes that address.
 
 ## Protected Source Folders
 

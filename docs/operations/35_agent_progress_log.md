@@ -5116,3 +5116,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - A pre-existing verification character opened successfully, but its rendered sheet was not the current local payload. It remains observation-only and is not parity evidence.
 - The fresh supported upload attempt was rejected at `fileChooser.setFiles` with `Not allowed`; no file, sheet settings, or room state was changed.
 - The desktop crash did not reproduce in this retry. Keep the actual modern Sandbox render and dedicated legacy-room render as `VERIFY`, not `DONE`.
+## 2026-07-18 Product Goal Reset
+
+- STATUS: The previous broad goal was too large to steer safely. The active control plane is now `docs/operations/41_product_reset_and_short_term_goals.md`.
+- CURRENT TRUTH: Local shared preview/edit plumbing is implemented, but actual Roll20 visual parity is not proven. Modern Sandbox activation is partial evidence only; legacy requires the separate legacy-enabled destination. Universal mapping, worker/chat behavior, and direct-manipulation UX remain partial.
+- DESIGN HANDOFF: Claude should work only from `docs/operations/42_claude_design_reset_handoff.md` in a separate worktree. The lead retains renderer, import/export, evidence, and shared status ownership.
+- REPOSITORY CLEANUP: No protected source folder, legacy sibling, experiment copy, fixture, screenshot, or generated report was moved in this batch. The repository map and context pack now define the safe cleanup order.
+- NEXT: Create the isolated design branch, review its first user-journey batch, then implement the preview-focus and edit-overlay acceptance checks in the lead worktree.
+- DESIGN DIRECTION: The surrounding app UI will use an original light-pink/pastel system, not a Roll20 clone and not a dark blue/purple AI-dashboard palette. Imported sheet styling remains a separate render contract.
+- TRUST SURFACE: Current persistence is local browser autosave/IndexedDB only. A future login/cloud-sync feature is not implemented. The product header still contains a GitHub link and requires a follow-up replacement with `mailto:sjh11235678@gmail.com`.

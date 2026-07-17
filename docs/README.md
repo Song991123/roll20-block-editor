@@ -11,6 +11,10 @@ This index maps the project documentation set.
 | `docs/operations/33_working_rules_and_requirements.md` | Current operating rules and product requirements. |
 | `docs/operations/36_public_portfolio_and_copyright_rules.md` | Public README, copyright-safe assets, and commit boundary rules. |
 | `docs/operations/37_roll20_actual_verification.md` | Roll20 real-screen verification workflow, sandbox/test-room policy, and evidence boundary. |
+| `docs/operations/41_product_reset_and_short_term_goals.md` | Current product truth, short-term goals, owners, and acceptance gates. |
+| `docs/operations/42_claude_design_reset_handoff.md` | Isolated Claude design-reset scope and handoff contract. |
+| `docs/operations/43_agent_context_pack.md` | Tiered first-read path for low-token agent work. |
+| `docs/operations/44_workspace_cleanup_inventory.md` | Parent-folder cleanup categories and no-move-yet safety boundary. |
 | `docs/qa/31_active_todo.md` | Live TODO board. Do not claim work is done if this still marks it TODO/VERIFY. |
 | `docs/PROJECT_STRUCTURE.md` | Folder map and organization rules. |
 | `docs/ux/32_dom_layer_editing_plan.md` | DOM/layer/Figma-like edit-mode plan. |
@@ -24,7 +28,7 @@ This index maps the project documentation set.
 | Folder | Contents |
 | --- | --- |
 | `docs/spec/` | Product/technical specs such as WYSIWYG mode, Roll20 baseline, composite blocks, and universal mapping contract. |
-| `docs/operations/` | Operating rules and agent handoff contracts. |
+| `docs/operations/` | Operating rules, reset plan, and agent handoff contracts. |
 | `docs/ux/` | DOM/layer editing and interaction plans. |
 | `docs/qa/` | Active TODO, QA checklists, current work plans, and archived QA snapshots. |
 | `docs/validation/` | Validation contracts and stable verification notes. |
