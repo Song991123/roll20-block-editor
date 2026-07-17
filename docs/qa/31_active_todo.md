@@ -1,3 +1,10 @@
+## 2026-07-17 Direct Text Node Import Contract
+
+- DONE: Imported containers now retain meaningful direct text nodes in source order instead of dropping text around nested controls. The text is represented as a generic editable block and emitted without adding a wrapper element.
+- VERIFIED LOCAL: Import unit suite `23/23`, full `ci:verify`, lint, production build, `git diff --check`, and server-hygiene check passed.
+- CLAIM BOUNDARY: This closes one generic HTML-structure loss path. It does not prove universal attribute fidelity, all-sheet mapping, actual Roll20 visual parity, worker runtime parity, or rolltemplate/chat parity.
+- NEXT P0: Retry modern Custom Sheet Sandbox upload through an explicitly permitted file-upload path, then verify modern and dedicated legacy-room renders independently.
+
 ## 2026-07-17 Target-Specific Canvas Width Contract
 
 - DONE: The persistent preview/edit surface now derives its canvas width from the active edit target. Sheet and roll-result widths are independent, and the same width is used for fit scaling, iframe CSS sizing, and the outer layout slot.

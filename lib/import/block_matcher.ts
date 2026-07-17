@@ -1009,6 +1009,16 @@ function escapeRegExp(s: string): string {
 function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
   for (const c of node.children) {
+    if (c.type === 'text') {
+      if (c.text) {
+        out.push({
+          blockType: 'r20_text_node',
+          fields: { TEXT: c.text },
+          children: {},
+        });
+      }
+      continue;
+    }
     if (c.type !== 'element') continue;
     const m = matchElement(c, ctx);
     if (m) out.push(m);

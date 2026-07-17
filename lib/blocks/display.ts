@@ -86,6 +86,13 @@ function escapeAttr(value: string): string {
     .replace(/>/g, '&gt;');
 }
 
+function escapeText(value: string): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 /** ` attr="value"` 또는 빈 문자열 — value 비면 attr 자체 생략. */
 function attr(name: string, value: string): string {
   const v = String(value ?? '').trim();
@@ -132,6 +139,35 @@ function sanitizeSize(raw: string): string {
 // ---------- 7 블록 정의 ----------
 
 export const DISPLAY_BLOCKS: BlockDef[] = [
+  // 0) text node ------------------------------------------------------------
+  // Direct text inside a container is meaningful HTML content. Keep it as a
+  // block so nested labels/rows can be reordered without silently dropping it.
+  {
+    type: 'r20_text_node',
+    shape: 'stack',
+    category: DISPLAY,
+    label: '일반 텍스트 노드',
+    tooltip: '태그 없이 컨테이너 안에 직접 놓인 텍스트를 보존합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('일반 텍스트')
+        .appendField(new Blockly.FieldTextInput('텍스트'), 'TEXT');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      return escapeText(String(b.getFieldValue('TEXT') ?? ''));
+    },
+    inspectorSchema: [
+      {
+        name: 'TEXT',
+        label: '텍스트 내용',
+        kind: 'textarea',
+        description: '부모 요소 안에서 태그 없이 직접 표시되는 텍스트입니다.',
+      },
+    ],
+  },
+
   // 1) heading --------------------------------------------------------------
   {
     type: 'r20_heading',

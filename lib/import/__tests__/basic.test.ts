@@ -62,6 +62,16 @@ function testListContainers(): void {
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for list structure');
 }
 
+function testDirectTextNodePreserved(): void {
+  const html = `<label>Name <input type="text" name="attr_name"> suffix</label>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_label_container'), 'label remains structural');
+  assert((r.html.match(/r20_text_node/g) || []).length === 2, 'both direct text nodes preserved');
+  assert(r.html.includes('Name '), 'leading text preserved');
+  assert(r.html.includes(' suffix'), 'trailing text preserved');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for direct text');
+}
+
 function testCssRule(): void {
   const css = `.sheet-header { color: red; padding: 10px; }`;
   const r = importSheet({ css });
@@ -203,6 +213,7 @@ const tests = [
   ['repeating section', testRepeatingSection],
   ['structural label container', testStructuralLabelContainer],
   ['list containers', testListContainers],
+  ['direct text node', testDirectTextNodePreserved],
   ['css rule', testCssRule],
   ['i18n json', testI18nJson],
   ['i18n flat', testI18nFlat],

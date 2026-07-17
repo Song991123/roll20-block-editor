@@ -1,3 +1,10 @@
+## 2026-07-17 Direct Text Node Import Contract
+
+- Implemented: `matchChildren()` now turns meaningful direct text nodes into the generic `r20_text_node` block, preserving text around nested inputs and other elements in source order. The emitter escapes the text and emits it without a synthetic wrapper.
+- Verified: Import unit suite `23/23`, `ci:verify`, lint, production build, `git diff --check`, and server-hygiene check passed.
+- Boundary: This is a generic importer structure fix only. It does not claim universal HTML/CSS/attribute fidelity, actual Roll20 parity, worker runtime parity, or rolltemplate/chat parity.
+- Next: Retry the blocked modern Sandbox upload through an explicitly permitted browser file-upload path; keep legacy actual validation separate in a legacy-enabled test room.
+
 ## 2026-07-17 Target-Specific Canvas Width Contract
 
 - Preview and edit continue to share the persistent iframe; the active edit target now selects the matching canvas width for both surfaces.
