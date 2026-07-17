@@ -5234,3 +5234,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - VERIFIED: `smoke:persistent-preview-surface` passed modern and legacy after adding explicit focus assertions. `smoke:edit-flow` passed with zero console/page errors. Local lint, build, and CI verification passed.
 - PARTIAL: The prepared visual smoke still has one modern-only anonymous fixture mismatch at `9.21%`; leave renderer promotion and actual Roll20 parity as VERIFY. This batch did not tune sheet CSS for that result.
 - NEXT: Review the design branch against the reset handoff, then separately address the remaining generic renderer mismatch and actual Sandbox/legacy-room evidence.
+## 2026-07-18 Edit Sync Cross-Check
+
+- VERIFIED LOCAL: `corepack pnpm run smoke:edit-flow -- --out-dir ./out
+  --base-path /roll20-block-editor --port 4343` passed. The broader
+  `smoke:imported-edit-sync` also passed for the ignored imported corpus and
+  synthetic non-leaf flow case.
+- INTERPRETATION: The canonical iframe edit surface, nested/flow placement,
+  free positioning, emit acknowledgement, and preview synchronization are
+  currently passing their dedicated browser checks. The separate persistent
+  smoke timeout remains a harness observation issue until a real-pointer or
+  focused bridge diagnostic proves otherwise.
+- BOUNDARY: This is local evidence only; it does not close modern Sandbox or
+  legacy-room visual parity.

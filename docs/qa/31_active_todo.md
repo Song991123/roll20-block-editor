@@ -4551,3 +4551,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - TODO: Redesign the surrounding app UI with an original light-pink/pastel visual system; Roll20-compatible styling remains confined to the imported sheet render.
 - TODO: Replace the product-header GitHub/source shortcut with `mailto:sjh11235678@gmail.com` and state clearly that autosave is local-browser only; do not add implied login/cloud sync.
 - TODO: Audit user-facing Korean labels and add icon/tooltips plus synthetic previews for unfamiliar actions.
+## 2026-07-18 Edit Sync Cross-Check
+
+- VERIFIED LOCAL: With the production `out` build, `smoke:edit-flow` passed
+  and `smoke:imported-edit-sync` passed for the ignored imported corpus plus
+  the synthetic non-leaf flow case. These checks cover the iframe edit bridge,
+  nested/flow insertion, free placement, emit acknowledgement, and preview
+  synchronization without page or console errors.
+- CLAIM BOUNDARY: The persistent-preview synthetic pointer smoke still times
+  out at its parent drop-overlay wait. The passing edit-flow/imported-sync
+  paths keep that failure scoped to the persistent harness observation path;
+  they do not prove actual Roll20 parity.
