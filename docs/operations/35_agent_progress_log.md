@@ -4927,6 +4927,13 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Remaining performance blocker: structural edits still parse and replace the full root. Keyed/partial structural apply plus a stricter interaction budget remain P0.
 - Third-party external validation sources are now ephemeral-only. Their identity, URL, source, media, screenshots, fixtures, and per-sheet reports must not be retained; only generic fixes and synthetic tests may persist.
 - Verification for this batch: focused render/sanitizer/bridge tests, full `ci:verify`, lint, and the production build passed. Browser-mounted performance proof was intentionally not claimed in this batch.
+
+## 2026-07-17 Anonymous Performance Report Privacy Guard
+
+- DONE: Imported-edit performance summaries now always use anonymous fixture labels and a generic local source label. Legacy opt-out arguments cannot restore identifiers or absolute paths.
+- DONE: Added a privacy self-test to the normal CI safety suite. It fails if a private fixture label or local source path escapes into the generated summary.
+- VERIFIED LOCAL: The privacy self-test, lint, and full `ci:verify` passed. No external sheet identity, source text, asset URL, screenshot, or source-specific report was added.
+- CLAIM BOUNDARY: This protects report output only. It does not make the current local performance metrics proof of Roll20 visual parity or broad import fidelity.
 ## 2026-07-17 Anonymous Batch Update: Canonical Render and Interaction Smoke
 
 - Implemented: automatic canvas measurement now uses descendant paint bounds instead of the generated wrapper viewport, so narrow imported sheets are not forced to the default width.

@@ -4235,6 +4235,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - TODO: Expand flow-aware layer-panel interaction checks beyond one moved block: before/inside/after, cycle rejection, and absolute-inside-container behavior.
 - TODO: Keep imported mapping fidelity and worker/runtime behavior as separate gates from visual surface parity.
 
+## 2026-07-17 Privacy-Safe Performance Reporting
+
+- DONE: Performance budget output is forced to anonymous labels and a generic local source name; absolute source paths and imported identifiers are omitted.
+- DONE: CI now runs the privacy invariant self-test.
+- VERIFIED: `corepack pnpm run lint` and `corepack pnpm run ci:verify` passed.
+- VERIFY: Structural edits still use the conservative full-root replacement path; keyed structural apply and mounted latency proof remain P0.
+- VERIFY: Actual Roll20 modern/legacy comparison, broad user-import coverage, and worker runtime behavior remain unverified.
+
 ## 2026-07-17 Canonical Edit Flow Smoke and Cycle Guard
 
 - DONE: Replaced the stale Shadow Canvas edit-flow browser smoke with a synthetic-only persistent-iframe smoke. It now verifies flow/free placement, canvas widget drop, layer reorder, cycle rejection, selection sync, and editable canvas width.

@@ -27,6 +27,7 @@ const tasks = [
   'test:iframe-edit-bridge',
   'test:build-doc-bundle',
   'test:runtime-asset-policy',
+  'test:imported-edit-budget',
   'test:legacy-css-sanitize',
   'test:roll20-sandbox-sanitize',
   'test:roll20-render-modes',
