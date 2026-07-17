@@ -1,3 +1,14 @@
+## 2026-07-18 Modern Sandbox CSS Pair Finding
+
+- VERIFIED ACTUAL MODERN: A local-only generated payload was applied in the dedicated Custom Sheet Sandbox and the fresh character iframe returned `VISIBLE_MATCH` with the expected modern runtime marker. Existing room content was opened for read-only observation only.
+- FOUND P0: The visible sheet structure loaded, but the screenshot was not visually equivalent to the local preview. The uploaded HTML had `sheet-*` class tokens while raw fallback CSS still targeted the unprefixed class names, so the user stylesheet missed its main selectors.
+- IMPLEMENTED LOCAL: The final emit boundary now normalizes HTML and CSS together with an idempotent Roll20 class-prefix contract. This is generic for raw fallback and parsed blocks; it is not a fixture-specific selector patch.
+- VERIFIED LOCAL: `test:emit-contract` passes for raw HTML/CSS, already-canonical classes, and inline-style selectors. Full lint/build/CI and a fresh Sandbox screenshot after the fix remain VERIFY items.
+- VERIFIED ACTUAL MODERN FOLLOW-UP: After applying the class-pair fix and normalized translation JSON, the dedicated Sandbox upload passed local manifest/translation validation and a fresh activation checker returned VISIBLE_MATCH. Roll20 iframe computed styles showed the prefixed sheet selectors, section background images, and 3-column geometry active.
+- REMAINING ACTUAL DIFFERENCE: The external font face reported a Roll20-side load error. This is now separated as asset-loading evidence; full pixel diff and font parity are not claimed.
+- CLAIM BOUNDARY: Modern upload activation and selector application are proven for one anonymous local payload, not visual parity or all-sheet support. Legacy still requires a separate legacy-enabled test room.
+- NEXT P0: Run full lint/build/CI, commit/push this generic fix, then continue with asset-loading classification and dedicated legacy verification.
+
 ## 2026-07-18 Composite Attribute Safety Gate
 
 - DONE: Added a generic preserved-attribute capability check before `attribute_card`, `skill_row`, and repeating-header packing. A composite is now rejected when its compact schema cannot represent an imported attribute; the atomic block tree remains available so `style`, `data-*`, ARIA, form-state, and other attributes are not silently discarded.

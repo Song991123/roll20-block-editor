@@ -1,3 +1,12 @@
+## 2026-07-18 Modern Sandbox CSS Pair Finding
+
+- Used the dedicated Roll20 Custom Sheet Sandbox upload path with a local-only generated payload. The activation checker returned `VISIBLE_MATCH` for the expected modern runtime and a visible character iframe; no existing room settings or sheet source were changed.
+- The first actual screenshot exposed a generic render-contract issue: HTML class tokens had the canonical `sheet-*` prefix while CSS raw fallbacks retained authored unprefixed selectors. The iframe therefore showed the structure but missed most user styling.
+- Added a final `normalizeEmittedRoll20Pair()` boundary in `lib/preview/emit.ts`, applying the same idempotent HTML/CSS prefix mapping to raw and parsed output. Added synthetic regression coverage in `lib/preview/__tests__/emitContract.test.ts` and a package script.
+- Evidence boundary: the actual upload/activation finding is current, but visual parity after this patch is not yet rechecked. Legacy remains a separate test-room destination.
+- Follow-up: regenerated a local-only payload with the shared HTML/CSS class normalization and valid JSON translation, re-applied it to the dedicated Sandbox, and ran a fresh activation checker. It returned VISIBLE_MATCH; iframe computed styles showed prefixed selectors, section background images, translation text, and 3-column landmarks.
+- Remaining evidence: the Roll20 iframe reported one external font face in error state. No font-specific or fixture-specific CSS patch was added; full screenshot diff and asset parity remain VERIFY items.
+
 ## 2026-07-18 Composite Attribute Safety Gate
 
 - Implemented a generic fail-safe in `lib/import/composite_matcher.ts`: composite packing now checks the hidden preserved-attribute metadata against the attributes each compact renderer can actually emit. Unsupported attributes keep the atomic `tr/td/input` or header tree instead of being erased by `skill_row`, `attribute_card`, or repeating-header packing.

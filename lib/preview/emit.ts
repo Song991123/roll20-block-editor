@@ -31,6 +31,7 @@ import type {
 } from '@/lib/stores/workspaceStore';
 import { ORDER } from '@/lib/blocks/types';
 import { injectPreservedAttributes, PRESERVED_ATTRS_FIELD } from '@/lib/blocks/preservedAttributes';
+import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
 
 export interface EmitResult {
   code: string;
@@ -243,12 +244,32 @@ export function emitAll(
   const htmlWithWorker = workerBody
     ? `${htmlCode}${htmlCode ? '\n' : ''}<script type="text/worker">\n${workerBody}\n</script>`
     : htmlCode;
+  const normalized = normalizeEmittedRoll20Pair(htmlWithWorker, css.code);
   return {
-    html: htmlWithWorker,
-    css: css.code,
+    html: normalized.html,
+    css: normalized.css,
     i18n: i18n.code,
     worker: workerBody,
     warnings: [...html.warnings, ...css.warnings, ...i18n.warnings, ...worker.warnings],
+  };
+}
+
+/**
+ * Keep the emitted HTML/CSS class contract coherent at the final boundary.
+ *
+ * Imported HTML blocks normalize user classes before generation and therefore
+ * already emit `sheet-*`. Raw HTML/CSS fallbacks do not pass through those
+ * block generators, so normalizing only one side can make a valid imported
+ * sheet render as unstyled HTML. The prefix helpers are idempotent for
+ * Roll20-reserved tokens, which makes this safe for both paths.
+ */
+export function normalizeEmittedRoll20Pair(
+  html: string,
+  css: string,
+): { html: string; css: string } {
+  return {
+    html: autoPrefixHtmlClasses(html),
+    css: autoPrefixCssClasses(css),
   };
 }
 
