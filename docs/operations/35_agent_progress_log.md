@@ -4973,3 +4973,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - VERIFIED SYNTHETIC: Modern and legacy persistent preview smoke passed with zero iframe reloads, zero console/page errors, live flow nesting, free placement, re-commit, widget insertion, worker change, and rolltemplate/chat checks.
 - VERIFIED SYNTHETIC: Edit-flow smoke, preview/edit visual smoke, iframe drop-target tests, build-doc bundle tests, lint, production build, and full `ci:verify` passed.
 - VERIFY: Actual Roll20 modern Sandbox and dedicated legacy-room parity remain open. Local exactness is not actual Roll20 parity; external source identity, source payload, screenshots, and derived per-sheet evidence remain untracked.
+
+## 2026-07-17 Actual Roll20 Sandbox Retry
+
+- OBSERVED: The authenticated dedicated verification room loaded successfully in Chrome and exposed the modern Custom Sheet Sandbox controls.
+- BLOCKED TOOLING: Both Playwright file-chooser selection and the browser's isolated page-evaluation path were unable to provide files to Roll20. The file chooser rejected local paths, while the isolated evaluator did not expose the browser `File` constructor needed to dispatch the same change event.
+- VERIFIED STATE: After the retry, all three Sandbox file inputs still had zero selected files and no character-sheet iframe was created. Therefore no Roll20 sheet render screenshot or actual visual-parity result was produced.
+- SAFETY: No existing room was modified. No third-party source identity, source payload, screenshot, asset URL, or derived measurement was added to tracked documentation.
+- NEXT: Retry through a user-visible native file picker or an explicitly permitted browser upload path, then capture the dedicated Sandbox result before updating the actual-parity gate.

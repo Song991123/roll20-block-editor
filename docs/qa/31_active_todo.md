@@ -4268,3 +4268,9 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFY: Run the permitted legacy actual runtime check in the separate legacy destination; do not use the modern Sandbox as legacy evidence.
 - VERIFY: Expand the anonymous import corpus and keep broad mapping fidelity, source-specific worker behavior, and actual visual parity as separate claims.
 - VERIFY: Keep deployment status and GitHub Pages freshness as a separate CI/CD gate from local renderer verification.
+
+### Actual Roll20 Retry Status
+
+- VERIFY/BLOCKED TOOLING: The dedicated modern Sandbox page was reachable, but the current Chrome automation path could not select local files through Roll20's native file inputs.
+- VERIFIED: File inputs remained empty and no sheet iframe was created after the retry. This is not actual Roll20 parity evidence.
+- TODO: Repeat the upload through a user-visible native picker or another approved upload path, then record only anonymous PASS/FAIL state in this board.
