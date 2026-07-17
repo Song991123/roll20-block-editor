@@ -4293,3 +4293,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFY: Dedicated legacy-room behavior, broad user imports, and worker/roll-template parity remain separate gates.
 - DONE: CI now runs on `main`, `dev`, and `codex/**` pushes; GitHub Pages deployment remains restricted to `main`.
 - VERIFIED REMOTE: Actions run `29577253344` passed on `codex/iframe-structural-patch` with `ci:verify`, lint, and build all green.
+
+## 2026-07-17 Post-Update Stability Recheck
+
+- VERIFIED LOCAL: After the desktop update, `ci:verify` passed, including modern/legacy render-mode smoke, iframe edit bridge/drop target/layer-role tests, privacy guards, upload-snippet self-test, and chat-template scope checks.
+- VERIFIED LOCAL: Preview/edit visual smoke passed for both compatibility modes across the available anonymous local fixtures: pixel mismatch `0`, translation checks passed, and no browser/page errors were reported.
+- VERIFIED LOCAL: Persistent preview surface reported `loads=0` for modern and legacy; edit-flow smoke passed.
+- BLOCKED TOOLING: Three standalone local audit commands still hit Windows `EPERM` while reusing old ignored report/build directories. This is an evidence-folder/process cleanup issue, not a renderer PASS; rerun them in a fresh short-path local evidence root before using their reports.
+- VERIFY: Actual modern Sandbox render, dedicated legacy-room render, broad user imports, and worker/roll-template parity remain open.

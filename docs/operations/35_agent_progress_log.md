@@ -4999,3 +4999,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Actual Roll20 boundary: the dedicated modern Sandbox remained reachable, but Playwright `filechooser.setFiles` and the native-picker attempt were rejected by the current browser automation boundary. The file inputs remained unconfirmed and no sheet iframe was created; this run is not Roll20 parity evidence.
 - Remaining: dedicated legacy-room verification, broad anonymous import coverage, and worker/roll-template parity. No source identity, payload, screenshot, asset URL, or derived source measurement was recorded.
 - CI/CD: expanded CI push coverage to `main`, `dev`, and `codex/**`; Pages deployment remains `main`-only. Remote Actions run `29577253344` passed with `ci:verify`, lint, and build.
+
+## 2026-07-17 Post-Update Stability Recheck
+
+- Verified locally after the desktop update: `ci:verify` passed, including modern/legacy render modes, iframe edit bridge/drop target/layer-role tests, privacy guards, upload-snippet self-test, and chat-template scope checks.
+- Verified locally: preview/edit visual smoke passed for both compatibility modes across the available anonymous local fixtures with pixel mismatch `0`, translation checks passing, and no browser/page errors.
+- Verified locally: persistent preview surface reported `loads=0` for modern and legacy; edit-flow smoke passed.
+- Tooling note: three standalone local audits hit Windows `EPERM` while reusing old ignored report/build directories. This is an evidence-folder/process cleanup issue, not renderer evidence; rerun in a fresh short-path local root before promoting those reports.
+- Claim boundary: actual modern Sandbox render, dedicated legacy-room render, broad user imports, and worker/roll-template parity remain open.
