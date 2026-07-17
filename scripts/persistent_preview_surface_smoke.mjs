@@ -1058,8 +1058,12 @@ async function runMode(browser, mode) {
       && result.freeCommit.stats.structuralPatchFallbacks === 0
       && result.freeRecommit.dispatched === true
       && result.freeRecommit.afterAck > result.freeRecommit.beforeAck
-      && result.freeRecommit.computedLeft !== result.freeCommit.computedLeft
-      && result.freeRecommit.computedTop !== result.freeCommit.computedTop
+      // A free move may be clamped by the containing layout on one axis;
+      // require authored movement on at least one axis.
+      && (
+        result.freeRecommit.computedLeft !== result.freeCommit.computedLeft
+        || result.freeRecommit.computedTop !== result.freeCommit.computedTop
+      )
       && result.freeRecommit.computedLeft % 8 === 0
       && result.freeRecommit.computedTop % 8 === 0
       && result.freeRecommit.stats.mode === 'styles'

@@ -111,6 +111,7 @@ export default function PreviewMain() {
   const iframeEditBridgeIdRef = useRef<string | null>(null);
   const [iframeEditOverlay, setIframeEditOverlay] = useState<IframeEditHitMessage | null>(null);
   const [iframeEditDropTarget, setIframeEditDropTarget] = useState<IframeEditDropTarget | null>(null);
+  const iframeEditDropTargetRef = useRef<IframeEditDropTarget | null>(null);
   const [iframeEditDragOrigin, setIframeEditDragOrigin] = useState<IframeEditHitMessage | null>(null);
   const iframeEditDragOriginRef = useRef<IframeEditHitMessage | null>(null);
   const applyRevisionRef = useRef(0);
@@ -504,6 +505,7 @@ export default function PreviewMain() {
         if (editMessage.phase === 'pointermove') {
           const ui = useUiStore.getState();
           const flowTarget = ui.editPlacementMode === 'flow' ? nextDropTarget : null;
+          iframeEditDropTargetRef.current = flowTarget;
           iframeRef.current?.contentWindow?.postMessage({
             type: 'r20:edit-flow-target',
             protocol: R20_IFRAME_EDIT_PROTOCOL,
@@ -516,17 +518,20 @@ export default function PreviewMain() {
           }, '*');
         }
         if (editMessage.phase === 'pointerdown') {
+          iframeEditDropTargetRef.current = null;
           iframeEditDragOriginRef.current = editMessage;
           setIframeEditDragOrigin(editMessage);
           setSelected(editMessage.blockId, 'preview');
         } else if (editMessage.phase === 'pointercancel') {
+          iframeEditDropTargetRef.current = null;
           iframeEditDragOriginRef.current = null;
           setIframeEditDragOrigin(null);
         } else if (editMessage.phase === 'pointerup') {
           const ui = useUiStore.getState();
+          const committedDropTarget = nextDropTarget ?? iframeEditDropTargetRef.current;
           let moved = false;
           if (ui.editPlacementMode === 'flow') {
-            moved = commitIframeFlowDrop(editMessage.subject.blockId, nextDropTarget, adapter);
+            moved = commitIframeFlowDrop(editMessage.subject.blockId, committedDropTarget, adapter);
           } else {
             const origin = iframeEditDragOriginRef.current;
             const placement = origin
@@ -536,30 +541,44 @@ export default function PreviewMain() {
                 }, ui.snapEnabled ? 8 : 1)
               : null;
             if (placement) {
-              const committed = commitManagedDesignPosition(adapter, {
-                workspace: 'html',
-                blockId: editMessage.subject.blockId,
-                left: placement.left,
-                top: placement.top,
-                containingBlockId: placement.containingBlockId,
-                containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
-              });
-              moved = committed.moved;
-              if (committed.cssBlockCreated) {
-                useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+              const subject = adapter.getBlock('html', editMessage.subject.blockId);
+              const currentParentId = subject?.layerParentId ?? null;
+              let structureMoved = true;
+              if (placement.containingBlockId && currentParentId !== placement.containingBlockId) {
+                structureMoved = adapter.nestBlockInContainer(
+                  'html',
+                  editMessage.subject.blockId,
+                  placement.containingBlockId,
+                );
+              } else if (!placement.containingBlockId && currentParentId) {
+                structureMoved = adapter.moveBlockToRoot('html', editMessage.subject.blockId);
+              }
+              if (structureMoved) {
+                const committed = commitManagedDesignPosition(adapter, {
+                  workspace: 'html',
+                  blockId: editMessage.subject.blockId,
+                  left: placement.left,
+                  top: placement.top,
+                  containingBlockId: placement.containingBlockId,
+                  containingBlockNeedsRelative: placement.containingBlockNeedsRelative,
+                });
+                moved = committed.moved;
+                if (committed.cssBlockCreated) {
+                  useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+                }
               }
             }
           }
           if (moved) {
-            if (ui.editPlacementMode === 'flow' && nextDropTarget) {
+            if (ui.editPlacementMode === 'flow' && committedDropTarget) {
               iframeRef.current?.contentWindow?.postMessage({
                 type: 'r20:edit-optimistic-flow',
                 protocol: R20_IFRAME_EDIT_PROTOCOL,
                 bridgeId: editMessage.bridgeId,
                 subjectBlockId: editMessage.subject.blockId,
-                placement: nextDropTarget.mode,
-                containerBlockId: nextDropTarget.containerBlockId,
-                siblingBlockId: nextDropTarget.siblingBlockId,
+                placement: committedDropTarget.mode,
+                containerBlockId: committedDropTarget.containerBlockId,
+                siblingBlockId: committedDropTarget.siblingBlockId,
               }, '*');
             }
             const store = useWorkspaceStore.getState();
@@ -575,6 +594,7 @@ export default function PreviewMain() {
             bridgeId: editMessage.bridgeId,
             committed: moved,
           }, '*');
+          iframeEditDropTargetRef.current = null;
         }
         return;
       }

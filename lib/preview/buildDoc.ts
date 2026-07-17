@@ -128,6 +128,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var optimisticFlowRollbackCount = 0;
   var validatedFlowTarget = null;
   var optimisticFlowSnapshot = null;
+  var optimisticEditMove = null;
   function blockNodeOf(node) {
     while (node && node !== document.body) {
       if (node.dataset && node.dataset.r20BlockId) return node;
@@ -174,11 +175,20 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return path;
   }
-  function hitNodeAt(clientX, clientY, fallback) {
+  function hitNodeAt(clientX, clientY, fallback, ignoredNode) {
+    var previousPointerEvents = null;
     try {
+      if (ignoredNode && ignoredNode.style) {
+        previousPointerEvents = ignoredNode.style.pointerEvents;
+        ignoredNode.style.pointerEvents = 'none';
+      }
       return blockNodeOf(document.elementFromPoint(clientX, clientY)) || blockNodeOf(fallback);
     } catch (e) {
       return blockNodeOf(fallback);
+    } finally {
+      if (ignoredNode && ignoredNode.style && previousPointerEvents !== null) {
+        ignoredNode.style.pointerEvents = previousPointerEvents;
+      }
     }
   }
   function postEditHit(phase, subjectNode, hitNode, pointer) {
@@ -232,6 +242,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       editMoveFrame = 0;
       pendingEditMove = null;
       activeEditPointer = null;
+      clearOptimisticEditMove();
       rollbackOptimisticFlowMove();
       clearValidatedFlowTarget();
     }
@@ -388,11 +399,32 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       return false;
     }
   }
+  function clearOptimisticEditMove() {
+    var move = optimisticEditMove;
+    optimisticEditMove = null;
+    if (!move || !move.subjectNode || !move.subjectNode.isConnected) return false;
+    move.subjectNode.style.transform = move.originTransform;
+    move.subjectNode.style.transition = move.originTransition;
+    move.subjectNode.style.willChange = move.originWillChange;
+    return true;
+  }
+  function applyOptimisticEditMove(pointer) {
+    var move = optimisticEditMove;
+    if (!move || !move.subjectNode || !pointer) return false;
+    var dx = Number(pointer.x) - move.originX;
+    var dy = Number(pointer.y) - move.originY;
+    var base = move.originTransform && move.originTransform !== 'none'
+      ? move.originTransform + ' '
+      : '';
+    move.subjectNode.style.transform = base + 'translate3d(' + dx + 'px, ' + dy + 'px, 0)';
+    return true;
+  }
   function finalizeOptimisticFlowMove(data) {
     if (data && data.committed === true) {
       optimisticFlowSnapshot = null;
     } else {
       rollbackOptimisticFlowMove();
+      clearOptimisticEditMove();
     }
     clearValidatedFlowTarget();
   }
@@ -478,6 +510,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var previousWorkerSource = htmlChanged ? workerSourceText(root) : '';
     var usedStructuralPatch = false;
     if (htmlChanged) {
+      clearOptimisticEditMove();
       usedStructuralPatch = patchRootHtml(data.html);
       if (usedStructuralPatch) {
         structuralPatchCount += 1;
@@ -919,7 +952,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       var pending = pendingEditMove;
       pendingEditMove = null;
       if (pending) {
-        postEditHit('pointermove', pending.subjectNode, pending.hitNode, pending.pointer);
+        applyOptimisticEditMove(pending.pointer);
+        postEditHit(
+          'pointermove',
+          pending.subjectNode,
+          hitNodeAt(pending.pointer.x, pending.pointer.y, pending.hitNode, pending.subjectNode),
+          pending.pointer,
+        );
       }
     });
   }, true);
@@ -930,7 +969,18 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (!subjectNode) return;
     rollbackOptimisticFlowMove();
     clearValidatedFlowTarget();
-    activeEditPointer = { pointerId: e.pointerId, subjectNode: subjectNode };
+    activeEditPointer = {
+      pointerId: e.pointerId,
+      subjectNode: subjectNode,
+      originX: e.clientX,
+      originY: e.clientY,
+      originTransform: subjectNode.style.transform,
+      originTransition: subjectNode.style.transition,
+      originWillChange: subjectNode.style.willChange
+    };
+    optimisticEditMove = activeEditPointer;
+    subjectNode.style.transition = 'none';
+    subjectNode.style.willChange = 'transform';
     try { subjectNode.setPointerCapture(e.pointerId); } catch (_) {}
     postEditHit('pointerdown', subjectNode, subjectNode, {
       x: e.clientX,
@@ -950,7 +1000,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     editMoveFrame = 0;
     pendingEditMove = null;
     var flowTarget = validatedFlowTarget;
-    postEditHit('pointerup', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target), {
+    postEditHit('pointerup', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target, subjectNode), {
       x: e.clientX,
       y: e.clientY,
       pointerId: e.pointerId,
@@ -980,6 +1030,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     editMoveFrame = 0;
     pendingEditMove = null;
     rollbackOptimisticFlowMove();
+    clearOptimisticEditMove();
     clearValidatedFlowTarget();
     postEditHit('pointercancel', subjectNode, hitNodeAt(e.clientX, e.clientY, e.target), {
       x: e.clientX,
@@ -1204,6 +1255,29 @@ const ROLL20_DIALOG_OPEN_CSS = `
 .charactersheet.tab-pane.charsheet {
   display: block !important;
   visibility: visible !important;
+}
+
+#dialog-window.r20-preview-dialog {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+#dialog-window.r20-preview-dialog > .dialog,
+#dialog-window.r20-preview-dialog > .dialog > .tab-content,
+#dialog-window.r20-preview-dialog > .dialog > .tab-content > .sheetform,
+#dialog-window.r20-preview-dialog #charsheet-root {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
 }
 
 #dialog-window,

@@ -5,6 +5,7 @@ import {
   buildSheetParts,
   buildSheetRenderBundle,
 } from '../buildDoc.ts';
+import { roll20BaseIframeCss, roll20BaseShadowCss } from '../roll20_base.ts';
 
 const options = {
   html: '<section class="card"><span data-i18n="name">Name</span></section>',
@@ -42,6 +43,9 @@ assert.notEqual(
   'structural HTML updates force the conservative root replacement path',
 );
 assert.match(bundle.doc, /var htmlChanged = data\.htmlKey !== lastAppliedHtmlKey/);
+assert.match(roll20BaseIframeCss, /\.ui-dialog\s+\.charsheet/);
+assert.ok(roll20BaseShadowCss.length > 0, 'Shadow baseline is generated');
+assert.match(bundle.doc, /#dialog-window\.r20-preview-dialog/);
 assert.match(bundle.doc, /function patchRootHtml\(html\)/);
 assert.match(bundle.doc, /data-r20-structural-patches/);
 assert.match(bundle.doc, /if \(style\.textContent !== css\) style\.textContent = css/);

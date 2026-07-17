@@ -164,6 +164,10 @@ assert.deepEqual(resolveIframeFreePlacement(freeOrigin, freeEnd, lookup, 8), {
   containingBlockId: 'frame',
   containingBlockNeedsRelative: true,
 });
+assert.equal(resolveIframeFreePlacement(freeOrigin, {
+  ...freeEnd,
+  pointer: { x: 300, y: 80 },
+}, lookup, 8)?.containingBlockId, null);
 assert.equal(resolveIframeFreePlacement(freeEnd, freeEnd, lookup, 8), null);
 
 console.log('iframeDropTarget.test PASS');

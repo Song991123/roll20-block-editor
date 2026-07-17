@@ -155,6 +155,7 @@ export interface BlocklyAdapter {
   moveBlockDown(key: WorkspaceKey, blockId: string): boolean;
   moveBlockBefore(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   moveBlockAfter(key: WorkspaceKey, blockId: string, targetId: string): boolean;
+  moveBlockToRoot(key: WorkspaceKey, blockId: string): boolean;
   canNestInContainer(key: WorkspaceKey, targetId: string): boolean;
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   onChange(key: WorkspaceKey, listener: () => void): () => void;
@@ -574,6 +575,21 @@ class DefaultAdapter implements BlocklyAdapter {
     const movingXY = moving.getRelativeToSurfaceXY();
     moving.moveBy(targetXY.x - movingXY.x, targetXY.y - movingXY.y + 24);
     return true;
+  }
+
+  moveBlockToRoot(key: WorkspaceKey, blockId: string): boolean {
+    const ws = this.workspaces[key];
+    const block = ws?.getBlockById(blockId) as
+      | (Blockly.Block & { unplug?: (healStack?: boolean) => void; getParent?: () => Blockly.Block | null })
+      | null;
+    if (!ws || !block) return false;
+    if (!block.getParent?.()) return true;
+    try {
+      block.unplug?.(true);
+      return !block.getParent?.();
+    } catch {
+      return false;
+    }
   }
 
   private moveNestedBlockBefore(movingRaw: Blockly.Block, targetRaw: Blockly.Block): boolean {

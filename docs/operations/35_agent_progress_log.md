@@ -4964,3 +4964,12 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Added a final cycle invariant in the Blockly adapter and shared layer-tree helper so ancestor-to-descendant nesting is rejected even if a caller bypasses the panel guard.
 - Verified locally with zero console/page errors; no external sheet source, identifier, screenshot, or derived measurement was added to this entry.
 - Boundary: this proves the local interaction contract only. Actual Roll20 Sandbox/legacy-room behavior and broad imported-sheet coverage remain VERIFY.
+## 2026-07-17 Canonical Roll20 Context and Immediate Edit Placement
+
+- DONE: The persistent iframe keeps the actual Roll20 dialog selector context in its baseline CSS. Shadow fallback continues to use its isolated selector rewrite; the contracts are not conflated.
+- DONE: Added an explicit preview dialog wrapper contract for `ui-dialog`, `dialog`, `tab-content`, `sheetform`, and `charsheet-root`. The wrapper remains visually chrome-free while preserving authored Roll20 selector context.
+- DONE: Edit dragging applies a transient transform to the existing iframe node during pointer movement. Pointer updates are coalesced by `requestAnimationFrame`, and the transform is cleared when the live patch is acknowledged or the move is rejected.
+- DONE: Drop hit testing ignores the transiently moved subject, preserves a current flow container while the pointer remains on the subject, and allows a deliberate background drop to move the block back to root. Absolute children use parent-relative rendered geometry for subsequent moves.
+- VERIFIED SYNTHETIC: Modern and legacy persistent preview smoke passed with zero iframe reloads, zero console/page errors, live flow nesting, free placement, re-commit, widget insertion, worker change, and rolltemplate/chat checks.
+- VERIFIED SYNTHETIC: Edit-flow smoke, preview/edit visual smoke, iframe drop-target tests, build-doc bundle tests, lint, production build, and full `ci:verify` passed.
+- VERIFY: Actual Roll20 modern Sandbox and dedicated legacy-room parity remain open. Local exactness is not actual Roll20 parity; external source identity, source payload, screenshots, and derived per-sheet evidence remain untracked.

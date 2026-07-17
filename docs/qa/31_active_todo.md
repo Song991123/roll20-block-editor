@@ -4258,3 +4258,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: `node scripts/edit_flow_browser_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --report-dir .tmp/edit-flow-current-iframe3 --port 4432` passed with zero console/page errors and all three layer drop zones observed.
 - VERIFIED LOCAL: `corepack pnpm run test:layer-roles` and `corepack pnpm run lint` passed.
 - VERIFY: Actual Roll20 modern Sandbox and dedicated legacy-room parity, broad user-import coverage, and worker runtime coverage remain open. This batch records no external source identity or derived payload.
+## 2026-07-17 Current Verification Board
+
+- DONE: Common preview/edit render surface uses one persistent iframe and preserves the Roll20 dialog selector context in the iframe baseline.
+- DONE: Immediate edit feedback uses a transient transform; authored HTML/CSS is committed after drop and the transform is cleared on acknowledgement or rollback.
+- DONE: Flow-aware nesting, absolute-inside-container placement, root escape, layer drop targets, cycle rejection, widget insertion, worker mutation, and rolltemplate/chat smoke paths are covered by local synthetic checks.
+- DONE: Modern and legacy local contracts pass the persistent preview, edit-flow, visual, bundle, lint, build, and `ci:verify` gates.
+- VERIFY: Run the permitted modern actual runtime check with the user-provided import in an ignored local evidence directory.
+- VERIFY: Run the permitted legacy actual runtime check in the separate legacy destination; do not use the modern Sandbox as legacy evidence.
+- VERIFY: Expand the anonymous import corpus and keep broad mapping fidelity, source-specific worker behavior, and actual visual parity as separate claims.
+- VERIFY: Keep deployment status and GitHub Pages freshness as a separate CI/CD gate from local renderer verification.

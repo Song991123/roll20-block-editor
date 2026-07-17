@@ -139,21 +139,41 @@ export function resolveIframeFreePlacement(
   if (origin.subject.blockId !== end.subject.blockId) return null;
   if (!lookup.getBlock(origin.subject.blockId)) return null;
 
-  const containingGeometry = origin.hitPath.find((geometry) => {
+  const currentParentGeometry = origin.hitPath.slice(1).find((geometry) => {
+    const block = lookup.getBlock(geometry.blockId);
+    return Boolean(block && canReceiveChildren(block.type) && lookup.canNestInContainer(block.id));
+  }) ?? null;
+  const pointerInsideOriginSubject = end.pointer.x >= origin.subject.rect.left
+    && end.pointer.x <= origin.subject.rect.left + origin.subject.rect.width
+    && end.pointer.y >= origin.subject.rect.top
+    && end.pointer.y <= origin.subject.rect.top + origin.subject.rect.height;
+  const containingGeometry = pointerInsideOriginSubject && currentParentGeometry
+    ? currentParentGeometry
+    : end.hitPath.find((geometry) => {
     if (geometry.blockId === origin.subject.blockId) return false;
     const block = lookup.getBlock(geometry.blockId);
     return Boolean(
       block
       && canReceiveChildren(block.type)
-      && lookup.canNestInContainer(block.id),
+      && lookup.canNestInContainer(block.id)
+      && end.pointer.x >= geometry.rect.left
+      && end.pointer.x <= geometry.rect.left + geometry.rect.width
+      && end.pointer.y >= geometry.rect.top
+      && end.pointer.y <= geometry.rect.top + geometry.rect.height,
     );
-  }) ?? null;
+    }) ?? null;
   const deltaX = end.pointer.x - origin.pointer.x;
   const deltaY = end.pointer.y - origin.pointer.y;
   let baseLeft = origin.subject.offsetLeft;
   let baseTop = origin.subject.offsetTop;
 
-  if (containingGeometry && origin.subject.offsetParentBlockId !== containingGeometry.blockId) {
+  if (
+    containingGeometry
+    && (
+      origin.subject.offsetParentBlockId !== containingGeometry.blockId
+      || origin.subject.position === 'absolute'
+    )
+  ) {
     baseLeft = origin.subject.rect.left
       - containingGeometry.rect.left
       - containingGeometry.clientLeft

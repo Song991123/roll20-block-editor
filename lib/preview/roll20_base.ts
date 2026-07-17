@@ -97,9 +97,9 @@ function rewriteForShadow(css: string): string {
  * 시트 상단에 의미 없는 바/테두리가 새므로, 컨텍스트 클래스는 시각화하지 않는다.
  */
 export const roll20BaseIframeCss = [
-  stripUiDialogPrefix(roll20BaseCss),
-  stripUiDialogPrefix(roll20CharsheetCss),
-  stripUiDialogPrefix(roll20JqueryCss),
+  roll20BaseCss,
+  roll20CharsheetCss,
+  roll20JqueryCss,
   roll20LiveRuntimeParityCss,
 ].join('\n');
 
