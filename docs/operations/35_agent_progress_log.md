@@ -6,6 +6,7 @@
 - Evidence boundary: the actual upload/activation finding is current, but visual parity after this patch is not yet rechecked. Legacy remains a separate test-room destination.
 - Follow-up: regenerated a local-only payload with the shared HTML/CSS class normalization and valid JSON translation, re-applied it to the dedicated Sandbox, and ran a fresh activation checker. It returned VISIBLE_MATCH; iframe computed styles showed prefixed selectors, section background images, translation text, and 3-column landmarks.
 - Remaining evidence: the Roll20 iframe reported one external font face in error state. No font-specific or fixture-specific CSS patch was added; full screenshot diff and asset parity remain VERIFY items.
+- Gates: local lint/build/ci:verify/server hygiene passed; remote CI run 29598910200 passed safety/unit verification, lint, and build.
 
 ## 2026-07-18 Composite Attribute Safety Gate
 

@@ -7,7 +7,8 @@
 - VERIFIED ACTUAL MODERN FOLLOW-UP: After applying the class-pair fix and normalized translation JSON, the dedicated Sandbox upload passed local manifest/translation validation and a fresh activation checker returned VISIBLE_MATCH. Roll20 iframe computed styles showed the prefixed sheet selectors, section background images, and 3-column geometry active.
 - REMAINING ACTUAL DIFFERENCE: The external font face reported a Roll20-side load error. This is now separated as asset-loading evidence; full pixel diff and font parity are not claimed.
 - CLAIM BOUNDARY: Modern upload activation and selector application are proven for one anonymous local payload, not visual parity or all-sheet support. Legacy still requires a separate legacy-enabled test room.
-- NEXT P0: Run full lint/build/CI, commit/push this generic fix, then continue with asset-loading classification and dedicated legacy verification.
+- VERIFIED GATES: Local lint, production build, ci:verify, server hygiene, and remote CI run 29598910200 all passed.
+- NEXT P0: Continue asset-loading classification and dedicated legacy verification; do not promote this modern result to visual parity.
 
 ## 2026-07-18 Composite Attribute Safety Gate
 
