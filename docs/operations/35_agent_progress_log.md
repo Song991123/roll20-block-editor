@@ -5109,3 +5109,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - This is generic state preservation, not a fixture-specific language guess and not a claim that modern and legacy use the same font/asset policy.
 - Fresh local legacy fixture smoke was recorded as diagnostic only: one input had equivalent transition geometry, while two exposed external Roll20 font-proxy failures and mode-specific width differences. No speculative renderer CSS was added.
 - Verification passed: `ci:verify`, lint, production build, `git diff --check`, and `check:server-hygiene`.
+
+## 2026-07-18 Post-Update Browser Stability Recheck
+
+- Roll20 browser tooling recovered after the desktop update: the logged-in editor and Sandbox Tools surface were reachable and the expected three source controls were present.
+- A pre-existing verification character opened successfully, but its rendered sheet was not the current local payload. It remains observation-only and is not parity evidence.
+- The fresh supported upload attempt was rejected at `fileChooser.setFiles` with `Not allowed`; no file, sheet settings, or room state was changed.
+- The desktop crash did not reproduce in this retry. Keep the actual modern Sandbox render and dedicated legacy-room render as `VERIFY`, not `DONE`.

@@ -4378,6 +4378,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CLAIM BOUNDARY: This is a tooling boundary, not a Roll20 render failure and not parity evidence. No Roll20 room settings or sheet source were modified.
 - NEXT P0: Use a user-visible native picker handoff or another explicitly supported upload path, then capture only anonymous modern PASS/FAIL state. Keep legacy validation in its separate legacy-enabled destination.
 
+## 2026-07-18 Post-Update Browser Stability Recheck
+
+- VERIFIED TOOLING: After the desktop update, the logged-in Roll20 campaign/editor tab responded normally again. The Sandbox Tools dialog and the three expected HTML/CSS/translation controls were readable.
+- VERIFIED OBSERVATION: Opening the pre-existing verification character showed a sheet unrelated to the current local payload. This confirms that the existing room state must not be treated as same-payload evidence.
+- BLOCKED UPLOAD: A fresh supported file-chooser attempt reached the chooser but `fileChooser.setFiles` was rejected with browser-policy `Not allowed`. No file was attached and no Roll20 room or sheet settings were changed.
+- CLAIM BOUNDARY: The Codex desktop crash did not reproduce in this browser retry. The upload failure is an automation capability boundary, not proof of a renderer failure and not Roll20 visual-parity evidence.
+- NEXT P0: Obtain a user-visible native-picker handoff or another approved upload path for the modern Sandbox, then run the same-payload screenshot check. Keep legacy validation in its separate legacy-enabled destination.
+
 ## 2026-07-17 Drop Commit Emit Flush
 
 - DONE: Committed iframe drops and friendly-widget inserts now flush the current Blockly emit immediately. Pointer-move updates remain debounced, so the editor does not emit a full sheet on every drag frame while the dropped result does not wait for the normal debounce window.
