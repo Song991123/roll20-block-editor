@@ -8,6 +8,33 @@ finished editor. It is the short-term control plane for the next work batches.
 It describes what is currently evidenced, what is only implemented locally,
 and what must be proven before a feature is called complete.
 
+## Rewritten Active Objective
+
+The active objective is now a product reset, not a continuation of the old
+"the editor is nearly finished" task:
+
+> Build a usable, general-purpose Roll20 custom-sheet editor where a user can
+> import or author HTML/CSS/translation and later worker behavior, see the
+> imported sheet under the correct modern or legacy Roll20 runtime rules, and
+> edit that same rendered surface with visual-tool interactions. Preview and
+> edit must remain the same document surface with an overlay, not two renders.
+> The app UI must be original, calm, light pink/pastel, and easy to understand;
+> it must not ship copyrighted example sheets or pretend that local autosave is
+> account/cloud storage. The next priority is to establish honest current
+> evidence and then make the first-run workflow and visual language coherent
+> before expanding editing features.
+
+This rewrite changes the order of work to: (1) current-state and user-task
+audit, (2) product/UI reset, (3) shared-render and modern/legacy correctness,
+(4) flow-aware visual editing, and (5) worker/rolltemplate and broader
+verification. Every result remains classified as `DONE`, `VERIFY`, `BLOCKED`,
+or `TODO`; implementation alone is not completion evidence.
+
+The Codex goal record remains an active historical container because its
+objective text cannot be edited through the available mid-run goal interface.
+This section is the authoritative replacement for execution, handoff, and
+reporting until that goal is intentionally restarted.
+
 ## Product North Star
 
 Users import or author a Roll20 sheet from HTML, CSS, translation/i18n, and

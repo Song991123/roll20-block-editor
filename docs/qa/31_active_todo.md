@@ -1,3 +1,18 @@
+## 2026-07-18 Active Goal Rewrite Alignment
+
+- DONE: Reframed the active work from incremental feature completion to a
+  product reset: current-state audit, user-facing design reset, shared
+  preview/edit rendering, modern/legacy runtime correctness, flow-aware visual
+  editing, and only then worker/rolltemplate expansion.
+- DONE: Made `docs/operations/41_product_reset_and_short_term_goals.md` the
+  authoritative short-term objective and evidence boundary. The old live goal
+  container remains active for continuity, but its text cannot be edited by
+  the available mid-run goal interface.
+- VERIFY: The actual Roll20 Sandbox upload/render comparison is still separate
+  evidence and is not closed by this objective rewrite.
+- NEXT: Continue from the rewritten P0 order; do not report the old broad goal
+  as complete from local implementation evidence.
+
 ## 2026-07-18 Dead Shadow Editor Removal
 
 - DONE: Removed the unmounted `LegacyShadowEditCanvas` implementation and its editor-only drag/emit helpers from `components/editor/EditCanvas.tsx`. The product edit path remains the single persistent Roll20 iframe mounted by `PreviewMain`, with `EditCanvas` limited to toolbar and layer-panel chrome.

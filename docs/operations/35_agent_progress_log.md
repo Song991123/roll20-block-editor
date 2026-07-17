@@ -1,3 +1,18 @@
+## 2026-07-18 Active Goal Rewrite
+
+The user clarified that the running goal itself needed to be reset, not only
+the implementation notes. The canonical objective is now the product-reset
+statement in `docs/operations/41_product_reset_and_short_term_goals.md`:
+first establish the real current state and user workflow, then reset the app
+design, unify the actual preview/edit surface, verify modern and legacy
+Roll20 behavior, and only then deepen Figma-like editing and worker/chat
+support. No copyrighted samples belong in the public product.
+
+The live goal container is still active with its historical objective because
+the available goal mutation interface exposes status only during an active
+run. This is recorded explicitly rather than claiming a mutation that did not
+occur.
+
 ## 2026-07-18 Dead Shadow Editor Removal
 
 - Removed the unmounted `LegacyShadowEditCanvas` and its obsolete drag/emit helpers. The visible edit experience remains the persistent Roll20 iframe with parent-owned toolbar, layer panel, and interaction overlays.
