@@ -14,6 +14,23 @@
 - Boundary: no actual Roll20 parity claim; modern Sandbox and legacy-room
   verification remain `VERIFY` until the permitted browser session returns.
 
+## 2026-07-18 Roll20 Sandbox Reconnect Attempt
+
+- PREPARED LOCAL: `.tmp/roll20-actual-synthetic/` contains only an anonymous,
+  development-only HTML/CSS/translation payload for a narrow modern Sandbox
+  smoke. It contains no copied sheet source, reference image, or public sample.
+- OBSERVED: The signed-in one-member Roll20 room still exposes the dedicated
+  `Sheet Sandbox Tools` controls and the expected HTML/CSS/Translation file
+  inputs. Existing character dialogs remained observation-only.
+- VERIFY: A browser file selection caused Roll20 to recreate the sheet iframe
+  and briefly detach the automation connection. The follow-up iframe still
+  showed the pre-existing room sheet, so this attempt provides no new positive
+  activation or visual-parity evidence. It is not promoted to `DONE`.
+- NEXT P0: Reconnect the Sandbox with a page-reload-tolerant upload path, prove
+  the anonymous payload marker inside a fresh sheet iframe, then capture the
+  normalized root and asset state. Legacy must still be tested separately in a
+  dedicated legacy-enabled room.
+
 ## 2026-07-18 Active Goal Rewrite
 
 The user clarified that the running goal itself needed to be reset, not only

@@ -27,9 +27,9 @@
   preview/edit rendering, modern/legacy runtime correctness, flow-aware visual
   editing, and only then worker/rolltemplate expansion.
 - DONE: Made `docs/operations/41_product_reset_and_short_term_goals.md` the
-  authoritative short-term objective and evidence boundary. The old live goal
-  container remains active for continuity, but its text cannot be edited by
-  the available mid-run goal interface.
+  authoritative short-term objective and evidence boundary. The active Codex
+  goal was subsequently rewritten in the Codex UI to the same product-reset
+  objective; this repository document remains the durable execution record.
 - VERIFY: The actual Roll20 Sandbox upload/render comparison is still separate
   evidence and is not closed by this objective rewrite.
 - NEXT: Continue from the rewritten P0 order; do not report the old broad goal
