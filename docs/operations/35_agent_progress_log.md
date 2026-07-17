@@ -5088,3 +5088,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verified remotely: GitHub Actions CI run `29610986192` passed safety/unit verification, lint, and production build for commit `7ec25e8`.
 - Evidence boundary: the local baseline package and screenshots are ignored Temp artifacts only. The result proves the local persistent-render path and removes a false placeholder PASS; it does not claim actual Roll20 pixel parity or all-sheet support.
 - Cleanup: temporary message probes and diagnostic DOM attributes were removed before the clean rerun. No source-derived fixture, screenshot, payload, report, creator identity, or external asset identity was added to tracked files.
+## 2026-07-18 Canonical Iframe Recheck
+
+- Re-read the active editor path after the desktop update. `EditorShell` mounts `PreviewMain` as the persistent render surface; `EditCanvas` supplies the toolbar and HTML layer panel while edit overlays are drawn over that iframe.
+- Re-ran the anonymous local imported edit-sync smoke: PASS, preview/edit coordinates remained synchronized, and browser/page errors were zero.
+- Re-ran anonymous local preview/edit visual smoke for modern and legacy modes: all three available inputs PASS with zero measured mismatch and zero browser/page errors.
+- This does not change the actual Roll20 gate. The current logged-in modern Sandbox and separate legacy room were only read-only shape observations in this pass; no same-payload Roll20 parity claim is made.
+- The old `LegacyShadowEditCanvas` function is not mounted by `EditorShell`; it remains an explicit cleanup candidate and must not be confused with the current edit renderer.

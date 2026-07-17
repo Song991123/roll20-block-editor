@@ -4396,3 +4396,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED REMOTE: GitHub Actions CI run `29610986192` passed safety/unit verification, lint, and production build for commit `7ec25e8`.
 - CLAIM BOUNDARY: This closes a generic persistent-iframe delivery race and strengthens local evidence. It does not prove all-sheet mapping, actual Roll20 pixel parity, complete worker JS block coding, or universal asset parity.
 - NEXT P0: Rerun the anonymous modern/legacy visual comparison set and classify remaining differences by wrapper/context, assets/fonts, state, translation, worker, rolltemplate, viewport, and edit overlay. Keep the dedicated legacy-room and modern Sandbox gates separate.
+## 2026-07-18 Canonical Iframe Recheck
+
+- VERIFIED LOCAL: The active edit route is the same persistent Roll20 iframe used by preview; the edit layer panel and selection/drop overlays are outside that render surface.
+- VERIFIED LOCAL: Imported edit-sync smoke passed for one anonymous local fixture. The moved block kept matching coordinates in edit and preview, with no browser/page errors.
+- VERIFIED LOCAL: Preview/edit visual smoke passed for the three available anonymous local inputs in both modern and legacy compatibility modes with zero measured pixel mismatch and zero browser/page errors.
+- CLAIM BOUNDARY: These are local renderer and interaction checks. They do not prove that the same exported payload matches an actual Roll20 Sandbox or dedicated legacy-room screenshot.
+- VERIFY: The unused legacy Shadow Canvas implementation remains in source for a separate cleanup batch; it is not mounted by the active editor route. Do not use it as evidence for the current edit surface.
+- NEXT P0: Complete an approved modern Sandbox upload/render check, then repeat the same evidence flow in the separate legacy-enabled destination. Keep third-party sources and generated evidence local-only.
