@@ -4319,3 +4319,8 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: An anonymous local corpus rerun confirms the new structural matcher is active across the prepared inputs. Exact source-derived measurements remain local-only and are not recorded here.
 - CLAIM BOUNDARY: This improves universal mapping coverage for these DOM shapes; it does not establish all-sheet import fidelity, actual Roll20 parity, or worker/runtime completeness.
 - NEXT P0: Continue generic HTML/CSS/i18n/worker coverage and retry modern Sandbox upload only through an approved user-visible upload path. Legacy remains a separate dedicated-room gate.
+
+## 2026-07-17 Structural Import CI Confirmation
+
+- VERIFIED REMOTE: Push CI run `29579712566` passed safety/unit verification, lint, and production build for the structural import batch.
+- CLAIM BOUNDARY: CI confirms code integrity only; it does not convert the blocked actual Roll20 Sandbox upload into visual-parity evidence.

@@ -5022,3 +5022,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Verified: Import unit suite `22/22` passed, lint passed, and an anonymous local corpus rerun exercised the new matcher without writing source-derived measurements to the repository.
 - Boundary: This is a focused importer improvement, not a claim of universal 100% mapping, actual Roll20 visual parity, or complete worker support.
 - Blocker: Modern Sandbox upload is still blocked by the current Chrome file-input permission boundary; legacy actual verification still requires a separate legacy-enabled room.
+
+## 2026-07-17 Structural Import CI Confirmation
+
+- Verified remotely: CI run `29579712566` passed safety/unit verification, lint, and production build for the pushed structural import batch.
+- Boundary: The remote green build validates the implementation batch only. Actual modern Sandbox rendering and dedicated legacy-room rendering remain unverified.
