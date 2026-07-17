@@ -45,8 +45,8 @@ function LogoMark({ className }: { className?: string }) {
       />
       <defs>
         <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32">
-          <stop stopColor="#5CB1D6" />
-          <stop offset="1" stopColor="#2F81F7" />
+          <stop stopColor="#F6A6BE" />
+          <stop offset="1" stopColor="#D45D84" />
         </linearGradient>
       </defs>
     </svg>

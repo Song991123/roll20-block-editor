@@ -1,3 +1,13 @@
+## 2026-07-18 Pastel UI Reset Slice
+
+- DONE: Updated the app logo accent and layer-role chip palette to the
+  requested pink/pastel direction without changing the Roll20 iframe render
+  contract or sheet source handling.
+- VERIFIED LOCAL: Layer-role test, full `ci:verify`, lint, and server hygiene
+  pass. No public fixture, source-derived asset, or report was added.
+- BOUNDARY: This is a narrow visual-system slice. The larger Claude design
+  reset handoff and screenshot-based UX acceptance review remain open.
+
 ## 2026-07-18 Roll20 Sandbox File Chooser Recheck
 
 - OBSERVED: The logged-in Roll20 editor has `Sheet Sandbox Tools` open with

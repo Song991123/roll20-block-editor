@@ -24,21 +24,21 @@ const ROLE_STYLES: Record<LayerRoleKind, Omit<LayerRole, 'kind'>> = {
   frame: {
     label: '프레임',
     icon: 'F',
-    className: 'border-sky-500/60 bg-sky-500/15 text-sky-200',
+    className: 'border-rose-400/70 bg-rose-400/15 text-rose-100',
     canReceiveChildren: true,
     defaultDropMode: 'flow',
   },
   flow: {
     label: '흐름',
     icon: 'FL',
-    className: 'border-cyan-500/60 bg-cyan-500/15 text-cyan-200',
+    className: 'border-teal-400/70 bg-teal-400/15 text-teal-100',
     canReceiveChildren: true,
     defaultDropMode: 'flow',
   },
   table: {
     label: '표',
     icon: 'T',
-    className: 'border-indigo-500/60 bg-indigo-500/15 text-indigo-200',
+    className: 'border-amber-400/70 bg-amber-400/15 text-amber-100',
     canReceiveChildren: true,
     defaultDropMode: 'flow',
   },
@@ -59,7 +59,7 @@ const ROLE_STYLES: Record<LayerRoleKind, Omit<LayerRole, 'kind'>> = {
   text: {
     label: '텍스트',
     icon: 'A',
-    className: 'border-violet-500/60 bg-violet-500/15 text-violet-200',
+    className: 'border-pink-400/70 bg-pink-400/15 text-pink-100',
     canReceiveChildren: false,
     defaultDropMode: 'absolute',
   },

@@ -1,3 +1,15 @@
+## 2026-07-18 Pastel UI Reset Slice
+
+- DONE: Replaced the editor logo's blue gradient with the app's pink brand
+  accent and moved frame/flow/table/text layer-role chips away from the old
+  blue/indigo/violet emphasis to rose/teal/amber/pink role colors.
+- VERIFIED LOCAL: `test:layer-roles`, `ci:verify`, `lint`, and
+  `check:server-hygiene` pass. No Roll20 render contract, imported sheet CSS,
+  or local-only fixture was changed.
+- CLAIM BOUNDARY: This is one small app-chrome design slice, not completion of
+  the full UI reset. Preview/edit usability, responsive shell review, and
+  screenshot-based visual review remain P2/VERIFY items.
+
 ## 2026-07-18 Roll20 Sandbox File Chooser Recheck
 
 - VERIFIED OBSERVATION: The permitted Chrome session is on the Roll20 editor
