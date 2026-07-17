@@ -7,6 +7,7 @@
  *   = 130 블록 등록.
  */
 
+import * as Blockly from 'blockly';
 import {
   CATEGORIES,
   CATEGORY_ORDER,
@@ -28,11 +29,23 @@ import { registerCompositeAttributeCardBlocks } from './composite_attribute_card
 import { registerCompositeSkillRowBlocks } from './composite_skill_row';
 import { registerCompositeRepeatingSectionWrapperBlocks } from './composite_repeating_section_wrapper';
 import { registerConditionalViewBlocks } from './conditional_view';
+import { PRESERVED_ATTRS_FIELD } from './preservedAttributes';
 
 const ALL_BLOCKS: BlockDef[] = [];
 let registered = false;
 let registeredVersion = 0;
 const subs = new Set<() => void>();
+
+function addPreservedAttributeField(def: BlockDef): void {
+  const originalInit = def.init;
+  def.init = function (this: Blockly.Block): void {
+    originalInit?.call(this, this);
+    if (this.getField(PRESERVED_ATTRS_FIELD)) return;
+    const input = this.appendDummyInput('__r20_preserved_attrs_input');
+    input.appendField(new Blockly.FieldTextInput(''), PRESERVED_ATTRS_FIELD);
+    input.setVisible(false);
+  };
+}
 
 export function registerAllBlocks(): void {
   if (registered) return;
@@ -51,6 +64,7 @@ export function registerAllBlocks(): void {
   registerCompositeSkillRowBlocks(ALL_BLOCKS);
   registerCompositeRepeatingSectionWrapperBlocks(ALL_BLOCKS);
   registerConditionalViewBlocks(ALL_BLOCKS);
+  for (const def of ALL_BLOCKS) addPreservedAttributeField(def);
   registered = true;
   registeredVersion += 1;
   for (const cb of subs) cb();

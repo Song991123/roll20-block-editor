@@ -28,6 +28,7 @@ const tasks = [
   'test:build-doc-bundle',
   'test:runtime-asset-policy',
   'test:runtime-contract',
+  'test:import-structure',
   'test:imported-edit-budget',
   'test:legacy-css-sanitize',
   'test:roll20-sandbox-sanitize',

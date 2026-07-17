@@ -4344,3 +4344,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: Runtime contract regression test passed, full `ci:verify` passed, production build passed, server hygiene passed, and preview/edit visual smoke passed for both compatibility modes across the anonymous local comparison set with zero pixel mismatch and zero browser/page errors.
 - CLAIM BOUNDARY: This fixes one generic visibility regression. It does not prove actual Roll20 Sandbox/legacy-room parity or complete worker/rolltemplate runtime behavior.
 - NEXT P0: Resume actual modern Sandbox upload through an approved browser file path; then verify legacy in its dedicated legacy-enabled room.
+## 2026-07-17 Preserved Attribute Metadata Contract
+
+- DONE: Matched generic blocks now retain safe, previously unmapped HTML attributes in hidden Blockly metadata and re-emit them without replacing generator-owned attributes.
+- DONE: Event-handler attributes, `srcdoc`, and the internal `data-r20-block-id` are excluded from the preserved metadata path.
+- VERIFIED LOCAL: Import structure tests `25/25`, preserved-attribute unit test, `ci:verify`, lint, production build, `git diff --check`, and server-hygiene check passed.
+- CLAIM BOUNDARY: This closes one generic importer/emitter loss path. It does not prove all attributes, all-sheet mapping, actual Roll20 visual parity, worker runtime parity, or rolltemplate/chat parity.
+- NEXT P0: Retry the modern Custom Sheet Sandbox upload through an explicitly permitted browser file-upload path; validate legacy separately in a legacy-enabled test room.

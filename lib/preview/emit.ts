@@ -30,6 +30,7 @@ import type {
   WorkspaceKey,
 } from '@/lib/stores/workspaceStore';
 import { ORDER } from '@/lib/blocks/types';
+import { injectPreservedAttributes, PRESERVED_ATTRS_FIELD } from '@/lib/blocks/preservedAttributes';
 
 export interface EmitResult {
   code: string;
@@ -115,6 +116,8 @@ class EmitEngine implements GeneratorContext {
     try {
       const raw = def.generator(block, this);
       const normalized = normalizeGen(raw);
+      const preserved = String(block.getFieldValue(PRESERVED_ATTRS_FIELD) ?? '');
+      normalized.code = injectPreservedAttributes(normalized.code, preserved);
       // Phase B coverage 확대 — element 를 emit 하는 모든 block (stack / c /
       //   cap / hat / e) 의 첫 opening tag 에 `data-r20-block-id` 주입.
       //   top-level 만이 아니라 statementToCode / valueToCode 경유 nested

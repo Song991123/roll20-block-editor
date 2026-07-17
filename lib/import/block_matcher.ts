@@ -15,6 +15,7 @@
  */
 
 import type { DomNode } from './dom_walker';
+import { serializePreservedAttributes, PRESERVED_ATTRS_FIELD } from '../blocks/preservedAttributes';
 import type { CompositePackStats } from './composite_matcher';
 import { firstTextContent, allTextContent } from './dom_walker';
 import { parseAttrRefToken } from './expression_parser';
@@ -137,8 +138,12 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
 
   if (result) {
     ctx.matchedCount++;
+    const preservedAttrs = serializePreservedAttributes(node.attrs ?? {});
     return {
       ...result,
+      fields: preservedAttrs
+        ? { ...result.fields, [PRESERVED_ATTRS_FIELD]: preservedAttrs }
+        : result.fields,
       sourceRaw: serializeRawHtml(node),
     };
   }

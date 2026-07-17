@@ -30,6 +30,7 @@
     "test:build-doc-bundle": "tsx lib/preview/__tests__/buildDocBundle.test.ts",
     "test:runtime-asset-policy": "tsx lib/preview/__tests__/runtimeAssetPolicy.test.ts",
     "test:runtime-contract": "tsx lib/preview/__tests__/runtimeContract.test.ts",
+    "test:import-structure": "tsx lib/import/__tests__/basic.test.ts && tsx lib/blocks/__tests__/preservedAttributes.test.ts",
     "test:server-hygiene": "node scripts/server_hygiene_check.mjs --self-test",
     "check:server-hygiene": "node scripts/server_hygiene_check.mjs",
     "test:legacy-css-sanitize": "tsx lib/emit/__tests__/sanitize.test.ts",

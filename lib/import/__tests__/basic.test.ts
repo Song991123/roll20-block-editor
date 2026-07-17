@@ -80,6 +80,17 @@ function testWhitespaceOnlyTextDoesNotInflate(): void {
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for formatted container');
 }
 
+function testUnknownAttributesSurviveMatchedBlocks(): void {
+  const html = `<div id="frame" data-layout="grid" aria-label="Frame"><input type="text" name="attr_name" title="Name" data-hook="field"></div>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('__R20_PRESERVED_ATTRS'), 'preserved attribute field exists');
+  assert(r.html.includes('data-layout'), 'container data attribute is captured');
+  assert(r.html.includes('aria-label'), 'ARIA attribute is captured');
+  assert(r.html.includes('data-hook'), 'input data attribute is captured');
+  assert(r.html.includes('title'), 'input title attribute is captured');
+  assert(r.stats.htmlRawFallback === 0, 'matched nodes do not fall back to raw HTML');
+}
+
 function testCssRule(): void {
   const css = `.sheet-header { color: red; padding: 10px; }`;
   const r = importSheet({ css });
@@ -223,6 +234,7 @@ const tests = [
   ['list containers', testListContainers],
   ['direct text node', testDirectTextNodePreserved],
   ['whitespace-only text', testWhitespaceOnlyTextDoesNotInflate],
+  ['unknown attributes', testUnknownAttributesSurviveMatchedBlocks],
   ['css rule', testCssRule],
   ['i18n json', testI18nJson],
   ['i18n flat', testI18nFlat],
