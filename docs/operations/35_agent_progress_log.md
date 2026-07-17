@@ -1,3 +1,15 @@
+## 2026-07-18 Roll20 Upload Reconnect Guard
+
+- DONE: Hardened `scripts/roll20_upload_cdp_apply.mjs` for the observed Roll20
+  behavior where submitting a Sandbox file recreates the document context.
+  A navigation-related evaluation error is now recorded as
+  `reloadDuringSubmit=true` only when the page returns to Roll20 and the
+  Sandbox inputs are present; unrelated evaluation failures remain blocking.
+- VERIFIED LOCAL: CDP helper self-test, syntax check, diff check, and the full
+  `corepack pnpm run ci:verify` gate pass.
+- VERIFY: The guard still requires a post-reload activation probe and cannot
+  promote a Sandbox submission to visual parity by itself.
+
 ## 2026-07-18 Public Sample Surface and Hydration Warning Fix
 
 - Removed the public sample-sheet menu and empty-state sample action from the

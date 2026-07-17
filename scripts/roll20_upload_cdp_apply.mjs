@@ -159,7 +159,10 @@ async function main() {
     };
     await writeFile(outPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
-    if (evaluateError) {
+    const reloadDuringSubmit = isReloadDuringSubmit(evaluateError, after);
+    report.reloadDuringSubmit = reloadDuringSubmit;
+    await writeFile(outPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    if (evaluateError && !reloadDuringSubmit) {
       throw new Error([
         'ROLL20 UPLOAD CDP BLOCKED_EVALUATE_FAILED',
         `error=${evaluateError}`,
@@ -169,6 +172,10 @@ async function main() {
     }
 
     const status = result?.activation?.status || 'UNKNOWN';
+    if (reloadDuringSubmit) {
+      printResult('APPLY_CONTEXT_RELOADED_NEEDS_ACTIVATION_PROBE', report, outPath);
+      return;
+    }
     printResult(status === 'VISIBLE_MATCH' ? 'PASS_VISIBLE_MATCH' : `APPLY_${status}`, report, outPath);
   } finally {
     await browser.close();
@@ -253,7 +260,32 @@ function runSelfTest() {
     console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL settings campaign id parse');
     process.exit(1);
   }
+  const reloadedAfterSubmit = isReloadDuringSubmit(
+    'Execution context was destroyed, most likely because of a navigation.',
+    { host: 'app.roll20.net', hasSandboxInputs: true },
+  );
+  const unrelatedFailure = isReloadDuringSubmit(
+    'ReferenceError: missingFunction is not defined',
+    { host: 'app.roll20.net', hasSandboxInputs: true },
+  );
+  const wrongPage = isReloadDuringSubmit(
+    'Execution context was destroyed, most likely because of a navigation.',
+    { host: 'example.invalid', hasSandboxInputs: true },
+  );
+  if (!reloadedAfterSubmit || unrelatedFailure || wrongPage) {
+    console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL reload-after-submit classification');
+    process.exit(1);
+  }
   console.log('ROLL20 UPLOAD CDP SELF_TEST PASS');
+}
+
+function isReloadDuringSubmit(evaluateError, after) {
+  return Boolean(
+    evaluateError &&
+    /execution context was destroyed|target closed|frame was detached|navigation/i.test(evaluateError) &&
+    after?.host === 'app.roll20.net' &&
+    after?.hasSandboxInputs,
+  );
 }
 
 function readOption(name, fallback = '') {

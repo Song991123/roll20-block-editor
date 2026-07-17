@@ -1,3 +1,16 @@
+## 2026-07-18 Roll20 Upload Reconnect Guard
+
+- DONE: `scripts/roll20_upload_cdp_apply.mjs` now distinguishes a Roll20
+  document reload during Sandbox submission from an ordinary JavaScript or
+  wrong-page failure. It writes `reloadDuringSubmit` to the ignored local
+  result and returns `APPLY_CONTEXT_RELOADED_NEEDS_ACTIVATION_PROBE` so a
+  fresh iframe marker check is still mandatory.
+- VERIFIED LOCAL: `node scripts/roll20_upload_cdp_apply.mjs --self-test`,
+  `node --check scripts/roll20_upload_cdp_apply.mjs`, `git diff --check`, and
+  `corepack pnpm run ci:verify` pass.
+- CLAIM BOUNDARY: This improves the upload harness only. It does not create
+  Roll20 visual evidence or close modern/legacy parity.
+
 ## 2026-07-18 Public Sample Surface Removal and Export Smoke Repair
 
 - DONE: Removed the public sample-sheet menu and empty-state sample CTA. A
