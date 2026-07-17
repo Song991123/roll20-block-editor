@@ -4936,3 +4936,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Legacy smoke now distinguishes the known Roll20 font-proxy CORS pair from unexpected console errors without hiding unrelated failures.
 - Verified: modern/legacy visual smoke, canonical imported-edit interaction smoke, and roll-button chat smoke passed locally. No external source identity or source-derived evidence was added to this progress entry.
 - Boundary: actual Roll20 screenshot parity, broad worker coverage, and fixtures without roll buttons remain separate gates.
+
+## 2026-07-17 Canonical Edit Flow Smoke and Cycle Guard
+
+- Replaced the old Shadow Canvas browser smoke with a synthetic-only test against the persistent preview/edit iframe. The test covers flow/free placement, canvas widget insertion, layer before/inside/after dispatch, selection synchronization, width input, and cycle rejection.
+- Added a final cycle invariant in the Blockly adapter and shared layer-tree helper so ancestor-to-descendant nesting is rejected even if a caller bypasses the panel guard.
+- Verified locally with zero console/page errors; no external sheet source, identifier, screenshot, or derived measurement was added to this entry.
+- Boundary: this proves the local interaction contract only. Actual Roll20 Sandbox/legacy-room behavior and broad imported-sheet coverage remain VERIFY.

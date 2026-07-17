@@ -4227,3 +4227,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - TODO: Validate the generated export in the permitted modern Sandbox and dedicated legacy test room, keeping all source-derived evidence local and anonymous.
 - TODO: Expand flow-aware layer-panel interaction checks beyond one moved block: before/inside/after, cycle rejection, and absolute-inside-container behavior.
 - TODO: Keep imported mapping fidelity and worker/runtime behavior as separate gates from visual surface parity.
+
+## 2026-07-17 Canonical Edit Flow Smoke and Cycle Guard
+
+- DONE: Replaced the stale Shadow Canvas edit-flow browser smoke with a synthetic-only persistent-iframe smoke. It now verifies flow/free placement, canvas widget drop, layer reorder, cycle rejection, selection sync, and editable canvas width.
+- DONE: Added a layer-tree cycle invariant to the UI drop path and Blockly nesting adapter. An ancestor cannot be inserted into its own descendant through either the layer panel or the iframe path.
+- VERIFIED LOCAL: `node scripts/edit_flow_browser_smoke.mjs --out-dir ./out --base-path /roll20-block-editor --report-dir .tmp/edit-flow-current-iframe3 --port 4432` passed with zero console/page errors and all three layer drop zones observed.
+- VERIFIED LOCAL: `corepack pnpm run test:layer-roles` and `corepack pnpm run lint` passed.
+- VERIFY: Actual Roll20 modern Sandbox and dedicated legacy-room parity, broad user-import coverage, and worker runtime coverage remain open. This batch records no external source identity or derived payload.

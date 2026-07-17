@@ -711,6 +711,10 @@ class DefaultAdapter implements BlocklyAdapter {
       | null;
     if (!ws || !moving || !target || moving === target) return false;
     if (!moving.previousConnection) return false;
+    // A layer drop can originate from the panel instead of the iframe bridge.
+    // Reject ancestor -> descendant nesting here as the final invariant so a
+    // UI caller cannot create a cyclic DOM/Blockly hierarchy.
+    if (this.containsInputDescendant(moving, target)) return false;
 
     const statementConnection = (target.inputList ?? [])
       .map((input) => input.connection)

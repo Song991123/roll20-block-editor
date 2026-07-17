@@ -6,7 +6,7 @@ import { Layers, Search } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
-import { canReceiveChildren, getLayerRole } from '@/lib/editor/layerRoles';
+import { canReceiveChildren, getLayerRole, wouldCreateLayerCycle } from '@/lib/editor/layerRoles';
 import { EDIT_SURFACE_LAYER_PANEL_WIDTH_PX } from '@/lib/editor/editSurfaceLayout';
 import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { buildSheetParts } from '@/lib/preview/buildDoc';
@@ -923,6 +923,7 @@ function EditLayerPanel({
   const moveLayer = useCallback(
     (draggedId: string, targetId: string, mode: LayerDropMode) => {
       if (draggedId === targetId) return;
+      if (wouldCreateLayerCycle(nodes, draggedId, targetId)) return;
       const adapter = getBlocklyAdapter();
       const moved =
         mode === 'inside'
@@ -934,7 +935,7 @@ function EditLayerPanel({
       bumpStructure(tab, adapter.countBlocks(tab));
       setSelected(draggedId, 'tree');
     },
-    [bumpStructure, setSelected, tab],
+    [bumpStructure, nodes, setSelected, tab],
   );
 
   return (

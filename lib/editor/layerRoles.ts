@@ -1,3 +1,5 @@
+import type { BlockSnapshot } from '../blockly/adapter';
+
 export type LayerRoleKind =
   | 'frame'
   | 'flow'
@@ -91,6 +93,24 @@ export function getLayerRole(type: string): LayerRole {
 
 export function canReceiveChildren(type: string): boolean {
   return getLayerRole(type).canReceiveChildren;
+}
+
+/** Reject ancestor -> descendant layer drops before they reach Blockly. */
+export function wouldCreateLayerCycle(
+  nodes: Pick<BlockSnapshot, 'id' | 'layerParentId'>[],
+  draggedId: string,
+  targetId: string,
+): boolean {
+  if (!draggedId || !targetId || draggedId === targetId) return true;
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  let current = byId.get(targetId);
+  const seen = new Set<string>();
+  while (current && !seen.has(current.id)) {
+    if (current.id === draggedId) return true;
+    seen.add(current.id);
+    current = current.layerParentId ? byId.get(current.layerParentId) : undefined;
+  }
+  return false;
 }
 
 export function classifyLayerRole(type: string): LayerRoleKind {

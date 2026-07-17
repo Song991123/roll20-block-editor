@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { classifyLayerRole, getLayerRole } from '../layerRoles.ts';
+import { classifyLayerRole, getLayerRole, wouldCreateLayerCycle } from '../layerRoles.ts';
 
 assert.equal(classifyLayerRole('r20_table'), 'table');
 assert.equal(classifyLayerRole('r20_thead'), 'table');
@@ -34,5 +34,14 @@ assert.equal(getLayerRole('r20_i18n_text').label, '텍스트');
 assert.equal(getLayerRole('r20_image').label, '이미지');
 assert.equal(getLayerRole('r20_worker_script').label, '스크립트');
 assert.equal(getLayerRole('unknown_block').label, '노드');
+
+const layerTree = [
+  { id: 'root', layerParentId: null },
+  { id: 'child', layerParentId: 'root' },
+  { id: 'leaf', layerParentId: 'child' },
+];
+assert.equal(wouldCreateLayerCycle(layerTree, 'root', 'leaf'), true);
+assert.equal(wouldCreateLayerCycle(layerTree, 'leaf', 'root'), false);
+assert.equal(wouldCreateLayerCycle(layerTree, 'root', 'root'), true);
 
 console.log('layerRoles.test PASS');
