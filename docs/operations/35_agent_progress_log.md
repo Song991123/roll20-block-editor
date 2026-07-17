@@ -1,3 +1,16 @@
+## 2026-07-18 Real Pointer Edit Smoke
+
+- DONE: Replaced the persistent preview harness's fragile synthetic
+  `pointermove` observation with a real Playwright mouse sequence and a
+  pointer-safe subject hit point. The fixture now avoids overlap introduced
+  by the test-only widget setup.
+- VERIFIED LOCAL: Modern and legacy persistent-preview runs pass with
+  `page.mouse` input, inside flow drop, free absolute placement, widget
+  insertion, worker/chat checks, one persistent iframe, zero reloads, and
+  zero console/page errors.
+- BOUNDARY: This strengthens local edit interaction evidence only. Live
+  Roll20 modern/legacy visual parity remains `VERIFY`.
+
 ## 2026-07-18 Persistent Preview Synthetic Pointer Smoke Recheck
 
 - VERIFY: The persistent preview smoke was re-run with `./out` as the static

@@ -151,7 +151,7 @@ async function runMode(browser, mode) {
         if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 150));
         imported = await window.__perfHook.importSheet({
           html: `<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div><div class="sheet-probe-load">${filler}</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "A" }); }); on("change:probe", function () { setAttrs({ worker_probe: "A-OLD" }); });</script>`,
-          css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; } .sheet-probe-load { display: flex; flex-wrap: wrap; width: 320px; } .sheet-probe-filler { display: block; width: 4px; height: 4px; overflow: hidden; }',
+          css: '.sheet-probe-frame { position: relative; width: 360px; margin-left: 420px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; } .sheet-probe-load { display: flex; flex-wrap: wrap; width: 320px; } .sheet-probe-filler { display: block; width: 4px; height: 4px; overflow: hidden; }',
         });
         if (imported.blockCount > 0) return imported;
       }
@@ -466,25 +466,65 @@ async function runMode(browser, mode) {
           && node.getAttribute('data-r20-layer-selected') === '1'),
       result.bridgeDispatch.blockId,
     );
-    result.pointerSequence = await frame.evaluate(() => {
+    const pointerTargets = await frame.evaluate(() => {
       const subject = document.querySelector('.sheet-probe-card');
       const target = document.querySelector('.sheet-probe-drop');
       if (!subject || !target) return { dispatched: false, reason: 'missing pointer subject or target' };
-      const rect = target.getBoundingClientRect();
-      subject.dispatchEvent(new PointerEvent('pointermove', {
-        bubbles: true,
-        cancelable: true,
-        pointerId: 17,
-        buttons: 1,
-        clientX: rect.left + rect.width / 2,
-        clientY: rect.top + rect.height / 2,
-      }));
+      const subjectRect = subject.getBoundingClientRect();
+      const candidates = [
+        { x: subjectRect.left + 8, y: subjectRect.top + 8 },
+        { x: subjectRect.right - 8, y: subjectRect.bottom - 8 },
+        { x: subjectRect.left + subjectRect.width / 2, y: subjectRect.bottom - 6 },
+      ];
+      const subjectPoint = candidates.find((point) => {
+        const hit = document.elementFromPoint(point.x, point.y);
+        return hit?.closest?.('[data-r20-block-id]') === subject;
+      }) ?? candidates[0];
       return {
-        dispatched: true,
+        dispatched: false,
         subjectBlockId: subject.getAttribute('data-r20-block-id'),
         targetBlockId: target.getAttribute('data-r20-block-id'),
+        subjectPoint,
+        subjectRect: {
+          left: subjectRect.left,
+          top: subjectRect.top,
+        },
       };
     });
+    if (!pointerTargets.dispatched) {
+      const subjectBox = await frame.locator('.sheet-probe-card').boundingBox();
+      const targetBox = await frame.locator('.sheet-probe-drop').boundingBox();
+      if (!subjectBox || !targetBox) throw new Error('pointer subject or target box unavailable');
+      await frame.evaluate(() => {
+        window.__r20SmokeActivePointerId = null;
+        document.addEventListener('pointerdown', (event) => {
+          window.__r20SmokeActivePointerId = event.pointerId;
+        }, { capture: true, once: true });
+      });
+      const subjectPoint = pointerTargets.subjectPoint ?? {
+        x: subjectBox.x + subjectBox.width / 2,
+        y: subjectBox.y + subjectBox.height / 2,
+      };
+      const subjectOffset = {
+        x: subjectPoint.x - (pointerTargets.subjectRect?.left ?? 0),
+        y: subjectPoint.y - (pointerTargets.subjectRect?.top ?? 0),
+      };
+      await page.mouse.move(subjectBox.x + subjectOffset.x, subjectBox.y + subjectOffset.y);
+      await page.mouse.down();
+      await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 2 });
+      result.pointerSequence = {
+        dispatched: true,
+        inputMethod: 'page.mouse',
+        subjectBlockId: pointerTargets.subjectBlockId,
+        targetBlockId: pointerTargets.targetBlockId,
+        pointerId: await frame.evaluate(() => window.__r20SmokeActivePointerId),
+        subjectBox,
+        targetBox,
+        iframeBox: await page.locator('[data-testid="preview-iframe"]').boundingBox(),
+      };
+    } else {
+      result.pointerSequence = pointerTargets;
+    }
     await page.waitForFunction(
       (targetBlockId) => {
         const overlay = document.querySelector('[data-testid="iframe-edit-drop-overlay"]');
@@ -505,7 +545,15 @@ async function runMode(browser, mode) {
         dropMode: drop?.getAttribute('data-r20-drop-mode'),
       };
     });
-    await frame.evaluate(() => {
+    const observedPointerId = await page.evaluate(() => Number(
+      document.querySelector('[data-testid="iframe-edit-overlay"]')
+        ?.getAttribute('data-r20-pointer-id') ?? NaN,
+    ));
+    result.pointerSequence.pointerId = Number.isInteger(observedPointerId)
+      ? observedPointerId
+      : (result.pointerSequence.pointerId ?? 17);
+    const activePointerId = result.pointerSequence.pointerId;
+    await frame.evaluate((pointerId) => {
       const subject = document.querySelector('.sheet-probe-card');
       const target = document.querySelector('.sheet-probe-drop');
       if (!subject || !target) return;
@@ -513,12 +561,13 @@ async function runMode(browser, mode) {
       subject.dispatchEvent(new PointerEvent('pointercancel', {
         bubbles: true,
         cancelable: true,
-        pointerId: 17,
+        pointerId,
         buttons: 0,
         clientX: rect.left + rect.width / 2,
         clientY: rect.top + rect.height / 2,
       }));
-    });
+    }, activePointerId);
+    await page.mouse.up();
     await page.waitForFunction(
       () => document
         .querySelector('[data-testid="iframe-edit-overlay"]')
@@ -938,7 +987,7 @@ async function runMode(browser, mode) {
       .inputValue();
     result.workerChange.import = await page.evaluate(async () => window.__perfHook.importSheet({
       html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "B" }); });</script>',
-      css: '.sheet-probe-frame { position: relative; width: 360px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
+      css: '.sheet-probe-frame { position: relative; width: 360px; margin-left: 420px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
     }));
     await page.waitForFunction(
       (beforeAck) => Number(document
@@ -1047,7 +1096,7 @@ async function runMode(browser, mode) {
       && result.duringPointerMove.dropTargetId === result.pointerSequence.targetBlockId
       && result.duringPointerMove.dropMode === 'inside'
       && result.duringEdit.overlayPhase === 'pointercancel'
-      && result.duringEdit.pointerId === 17
+      && result.duringEdit.pointerId === result.pointerSequence.pointerId
       && result.duringEdit.hitPathLength >= 2
       && typeof result.duringEdit.offsetParentBlockId === 'string'
       && result.duringEdit.offsetParentBlockId.length > 0

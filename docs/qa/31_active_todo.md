@@ -1,3 +1,21 @@
+## 2026-07-18 Real Pointer Edit Smoke
+
+- VERIFIED LOCAL: `smoke:persistent-preview-surface` now drives the iframe
+  edit path with Playwright `page.mouse` input instead of a synthetic
+  `pointermove` dispatched on the subject node. The fixture selects a safe
+  point on the subject so overlapping test-only widgets cannot steal the
+  pointer target.
+- VERIFIED LOCAL: Modern and legacy runs both pass. Each run observed the
+  same subject selection, an `inside` drop target, flow nesting, absolute
+  in-container placement, widget drop, worker update, rolltemplate/chat
+  output, zero iframe reloads, and zero console/page errors.
+- CLAIM BOUNDARY: This is anonymous local synthetic evidence for the editor
+  bridge. It does not prove visual parity with live Roll20 Sandbox or a
+  legacy-enabled room.
+- NEXT P0: reconnect the permitted Roll20 session and capture positive
+  modern Sandbox evidence, then run the same user-owned payload in the
+  dedicated legacy room.
+
 ## 2026-07-18 Persistent Preview Synthetic Pointer Smoke Recheck
 
 - VERIFIED LOCAL: Re-ran `smoke:persistent-preview-surface` with the correct
