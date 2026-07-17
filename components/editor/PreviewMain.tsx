@@ -676,7 +676,9 @@ export default function PreviewMain() {
       }
       if (data?.type === 'r20:resize' && typeof data.height === 'number') {
         const nextHeight = Math.max(120, Math.min(60000, Math.ceil(data.height)));
-        setIframeHeight((prev) => (Math.abs(prev - nextHeight) > 8 ? nextHeight : prev));
+        // Keep the iframe host at least as tall as the sheet. A wide threshold
+        // hides small but real content growth and can clip the final rows.
+        setIframeHeight((prev) => (Math.abs(prev - nextHeight) >= 1 ? nextHeight : prev));
         if (
           !autoWidthSizedRef.current
           && canvasWidthAuto

@@ -4990,3 +4990,11 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Focused verification passed: `test:build-doc-bundle`, `test:iframe-drop-target`, `lint`, and `git diff --check`.
 - Full verification after the patch: `build`, `ci:verify`, `check:server-hygiene`, canonical edit-flow smoke, and persistent modern/legacy iframe smoke passed. Preview/edit visual smoke produced two passing comparisons and one mismatch with zero browser errors; the mismatch remains open.
 - Claim boundary: this is a local interaction/sizing improvement. It is not actual Roll20 parity evidence, not broad import coverage, and not worker/roll-template completion. The modern upload remains tooling-blocked and the legacy destination remains separately unverified.
+
+## 2026-07-17 Height Contract and Roll20 Upload Retry
+
+- Implemented: iframe host height updates now commit one-pixel changes instead of ignoring every change below `8px`; this prevents small content growth from being clipped at the bottom.
+- Verified locally: all three available anonymous preview/edit comparisons reached exact pixel parity, with matching DOM/style/geometry and zero browser/page errors.
+- Verified locally: persistent modern/legacy iframe smoke, edit-flow smoke, `ci:verify`, production build, lint, and server hygiene passed. No project listeners remain.
+- Actual Roll20 boundary: the dedicated modern Sandbox remained reachable, but Playwright `filechooser.setFiles` and the native-picker attempt were rejected by the current browser automation boundary. The file inputs remained unconfirmed and no sheet iframe was created; this run is not Roll20 parity evidence.
+- Remaining: dedicated legacy-room verification, broad anonymous import coverage, and worker/roll-template parity. No source identity, payload, screenshot, asset URL, or derived source measurement was recorded.

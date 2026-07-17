@@ -4283,3 +4283,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: `corepack pnpm run test:build-doc-bundle`, `corepack pnpm run test:iframe-drop-target`, `corepack pnpm run lint`, `corepack pnpm run build`, `corepack pnpm run ci:verify`, `corepack pnpm run check:server-hygiene`, and `git diff --check` passed.
 - PARTIAL LOCAL: canonical edit-flow and persistent modern/legacy iframe smoke passed. Preview/edit visual smoke had two passing comparisons and one mismatch with zero browser errors; the mismatch remains a visual investigation item.
 - VERIFY: Actual Roll20 modern Sandbox, dedicated legacy-room behavior, broad user imports, and worker/roll-template parity remain open. No third-party source identity or source-derived evidence is recorded here.
+
+## 2026-07-17 Height Contract and Roll20 Upload Retry
+
+- DONE: The iframe resize handler now accepts real sub-8px content growth. The previous threshold could leave the host a few pixels shorter than the sheet and clip the final rows.
+- VERIFIED LOCAL: Preview/edit visual smoke passed for all three available anonymous local comparisons with exact pixels, matching geometry/styles, translation checks, and zero browser/page errors.
+- VERIFIED LOCAL: Persistent modern/legacy iframe smoke, edit-flow smoke, `ci:verify`, production build, lint, and server hygiene passed. No project dev/smoke listeners remain.
+- VERIFY: The authenticated dedicated modern Sandbox remains reachable, but both the supported Playwright file chooser and the user-visible native-picker attempt were rejected by the current browser automation boundary. No sheet iframe was created, so actual Roll20 parity is still unverified.
+- VERIFY: Dedicated legacy-room behavior, broad user imports, and worker/roll-template parity remain separate gates.
