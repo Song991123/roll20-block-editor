@@ -4344,6 +4344,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: Runtime contract regression test passed, full `ci:verify` passed, production build passed, server hygiene passed, and preview/edit visual smoke passed for both compatibility modes across the anonymous local comparison set with zero pixel mismatch and zero browser/page errors.
 - CLAIM BOUNDARY: This fixes one generic visibility regression. It does not prove actual Roll20 Sandbox/legacy-room parity or complete worker/rolltemplate runtime behavior.
 - NEXT P0: Resume actual modern Sandbox upload through an approved browser file path; then verify legacy in its dedicated legacy-enabled room.
+## 2026-07-18 Roll20 Sandbox Upload Retry
+
+- VERIFIED TOOLING: The logged-in Roll20 editor and dedicated Sandbox Tools surface were reachable. The three expected HTML/CSS/translation file inputs were present and empty before upload.
+- BLOCKED UPLOAD: The supported browser file-chooser path rejected both the workspace payload path and an equivalent `C:\tmp` copy with a browser-policy `Not allowed` response. No file was attached and no Sandbox sheet iframe was created.
+- CLAIM BOUNDARY: This is a tooling boundary, not a Roll20 render failure and not parity evidence. No Roll20 room settings or sheet source were modified.
+- NEXT P0: Use a user-visible native picker handoff or another explicitly supported upload path, then capture only anonymous modern PASS/FAIL state. Keep legacy validation in its separate legacy-enabled destination.
+
 ## 2026-07-17 Drop Commit Emit Flush
 
 - DONE: Committed iframe drops and friendly-widget inserts now flush the current Blockly emit immediately. Pointer-move updates remain debounced, so the editor does not emit a full sheet on every drag frame while the dropped result does not wait for the normal debounce window.

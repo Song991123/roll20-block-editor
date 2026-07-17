@@ -5057,3 +5057,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Implemented an immediate emit path for completed iframe drops and friendly-widget inserts. Continuous pointer movement still uses the existing debounce; the drop result is published immediately and cancels the pending duplicate callback.
 - Synthetic `6000`-block modern/legacy smoke passed after a production build. Optimistic placement remained under the `75ms` budget in both modes, structural patch fallback stayed at `0`, iframe reloads stayed at `0`, and browser/page errors stayed at `0`.
 - The measured acknowledgement is local synthetic evidence only. Actual Roll20 modern Sandbox and dedicated legacy-room visual checks remain open.
+## 2026-07-18 Roll20 Sandbox Upload Retry
+
+- Read-only browser inspection reached the logged-in Roll20 Sandbox Tools dialog and confirmed the expected upload controls.
+- The supported file chooser rejected the same local payload from both the workspace path and an isolated temporary copy. No upload, iframe creation, room mutation, or parity claim occurred.
+- Next handoff condition: user-visible native picker or another approved upload mechanism. Existing Roll20 rooms remain untouched; legacy validation remains separate from modern Sandbox validation.
