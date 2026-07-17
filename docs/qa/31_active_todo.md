@@ -4301,3 +4301,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: Persistent preview surface reported `loads=0` for modern and legacy; edit-flow smoke passed.
 - BLOCKED TOOLING: Three standalone local audit commands still hit Windows `EPERM` while reusing old ignored report/build directories. This is an evidence-folder/process cleanup issue, not a renderer PASS; rerun them in a fresh short-path local evidence root before using their reports.
 - VERIFY: Actual modern Sandbox render, dedicated legacy-room render, broad user imports, and worker/roll-template parity remain open.
+
+## 2026-07-17 Local Payload Audit Recovery
+
+- DONE: Standalone local Roll20 audits now use short user Temp output by default when old ignored folders are locked; explicit `--report-dir` and sandbox `--build-dir` remain supported.
+- DONE: Local baseline edit capture now targets the canonical persistent iframe instead of the retired Shadow Canvas selector.
+- VERIFIED LOCAL: Fresh anonymous local baseline completed `3/3 PASS`; each fixture produced preview/edit captures and a Roll20 payload ZIP.
+- VERIFIED LOCAL: Fresh payload audit completed `3/3 PASS`; upload HTML had no internal editor IDs or app markers, translations were valid JSON, and required ZIP files matched the payload folder.
+- VERIFIED LOCAL: `test:roll20-sandbox-sanitize`, `test:translation-payload`, and `test:export-smoke` passed.
+- STALE EVIDENCE: The earlier ignored baseline predates the current export cleanup and still fails its old payload audit. It was not overwritten and is not current product evidence.
+- VERIFY: Actual modern Sandbox upload/render, dedicated legacy-room render, broad imports, and worker/roll-template parity remain open. Browser upload inputs were still empty in the latest attempt.

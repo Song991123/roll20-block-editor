@@ -9,13 +9,14 @@
  */
 
 import { promises as fs } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import JSZip from 'jszip';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const positional = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--report-dir');
 const runDir = path.resolve(positional[0] ?? 'reports/roll20-actual-compare/2026-06-18-actual-diff-ready');
-const reportDir = path.resolve(argOf('--report-dir', path.join(runDir, 'payload-audit')));
+const requestedReportDir = path.resolve(argOf('--report-dir', path.join(runDir, 'payload-audit')));
 
 function argOf(name, fallback) {
   const i = args.indexOf(name);
@@ -194,15 +195,28 @@ function formatIssues(issues) {
   return issues.map((issue) => `${issue.severity}:${issue.code}${issue.count ? `(${issue.count})` : ''}`).join('<br>');
 }
 
+async function prepareReportDir() {
+  try {
+    await fs.mkdir(requestedReportDir, { recursive: true });
+    return requestedReportDir;
+  } catch (error) {
+    const fallback = path.join(tmpdir(), `roll20-payload-audit-${Date.now()}`);
+    await fs.mkdir(fallback, { recursive: true });
+    console.warn(`report directory unavailable; using temporary output: ${fallback}`);
+    return fallback;
+  }
+}
+
 async function main() {
   if (!(await exists(path.join(runDir, 'local-baseline')))) {
     throw new Error(`missing local-baseline under ${runDir}`);
   }
-  await fs.mkdir(reportDir, { recursive: true });
+  const reportDir = await prepareReportDir();
   const fixtures = await listFixtures();
   const report = {
     startedAt: new Date().toISOString(),
     runDir,
+    reportDir,
     fixtures: [],
   };
   for (const fixture of fixtures) {

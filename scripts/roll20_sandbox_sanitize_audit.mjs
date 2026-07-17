@@ -19,6 +19,7 @@ import {
 } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import path, { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,9 +28,12 @@ const REPO_ROOT = resolve(HERE, '..');
 const require = createRequire(import.meta.url);
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const positional = args.filter((arg, index) => !arg.startsWith('--') && args[index - 1] !== '--report-dir');
+const positional = args.filter((arg, index) => (
+  !arg.startsWith('--') && !['--report-dir', '--build-dir'].includes(args[index - 1])
+));
 const runDir = resolve(positional[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1');
-const reportDir = resolve(argOf('--report-dir', join(runDir, 'sandbox-sanitize-audit')));
+const requestedReportDir = resolve(argOf('--report-dir', join(runDir, 'sandbox-sanitize-audit')));
+const requestedBuildDir = resolve(argOf('--build-dir', join(tmpdir(), `roll20-sandbox-sanitize-audit-build-${process.pid}`)));
 
 function argOf(name, fallback) {
   const index = args.indexOf(name);
@@ -37,7 +41,7 @@ function argOf(name, fallback) {
 }
 
 function compileSandboxSanitizerModule() {
-  const outRoot = join(REPO_ROOT, '.tmp/roll20-sandbox-sanitize-audit-build');
+  const outRoot = requestedBuildDir;
   const compiled = join(outRoot, 'lib/emit/roll20SandboxSanitize.js');
   const tsPath = join(REPO_ROOT, 'lib/emit/roll20SandboxSanitize.ts');
   const tscJs = join(REPO_ROOT, 'node_modules/typescript/lib/tsc.js');
@@ -183,6 +187,18 @@ function formatIssues(issues) {
   return issues.length ? issues.map((issue) => `${issue.severity}:${issue.code}`).join('<br>') : 'none';
 }
 
+async function prepareReportDir() {
+  try {
+    await fs.mkdir(requestedReportDir, { recursive: true });
+    return requestedReportDir;
+  } catch (error) {
+    const fallback = join(tmpdir(), `roll20-sandbox-sanitize-audit-${Date.now()}`);
+    await fs.mkdir(fallback, { recursive: true });
+    console.warn(`report directory unavailable; using temporary output: ${fallback}`);
+    return fallback;
+  }
+}
+
 async function main() {
   if (!(await exists(join(runDir, 'local-baseline')))) {
     throw new Error(`missing local-baseline under ${runDir}`);
@@ -195,10 +211,11 @@ async function main() {
     throw new Error('compiled sandbox sanitizer exports are missing');
   }
 
-  await fs.mkdir(reportDir, { recursive: true });
+  const reportDir = await prepareReportDir();
   const report = {
     startedAt: new Date().toISOString(),
     runDir,
+    reportDir,
     scope: 'local sandbox sanitize diagnostic; not Roll20 visual parity',
     fixtures: [],
   };

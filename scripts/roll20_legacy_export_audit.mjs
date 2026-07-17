@@ -18,6 +18,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -26,7 +27,8 @@ const REPO_ROOT = resolve(HERE, '..');
 const require = createRequire(import.meta.url);
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const reportDir = resolve(argOf('--report-dir', 'reports/legacy-export-audit'));
+const requestedReportDir = resolve(argOf('--report-dir', 'reports/legacy-export-audit'));
+const requestedBuildDir = resolve(argOf('--build-dir', join(tmpdir(), `legacy-export-audit-build-${process.pid}`)));
 
 function argOf(name, fallback) {
   const index = args.indexOf(name);
@@ -65,7 +67,7 @@ const SYNTHETIC_MODERN_CSS = `
 `.trim();
 
 function compileSanitizerModule() {
-  const outRoot = join(REPO_ROOT, '.tmp/legacy-export-audit-build');
+  const outRoot = requestedBuildDir;
   const compiled = join(outRoot, 'lib/emit/sanitize.js');
   const tsPath = join(REPO_ROOT, 'lib/emit/sanitize.ts');
   const tscJs = join(REPO_ROOT, 'node_modules/typescript/lib/tsc.js');
@@ -254,8 +256,21 @@ function renderMarkdown(report) {
   return `${lines.join('\n')}\n`;
 }
 
-mkdirSync(reportDir, { recursive: true });
+function prepareReportDir() {
+  try {
+    mkdirSync(requestedReportDir, { recursive: true });
+    return requestedReportDir;
+  } catch (error) {
+    const fallback = join(tmpdir(), `legacy-export-audit-${Date.now()}`);
+    mkdirSync(fallback, { recursive: true });
+    console.warn(`report directory unavailable; using temporary output: ${fallback}`);
+    return fallback;
+  }
+}
+
+const reportDir = prepareReportDir();
 const report = runAudit();
+report.reportDir = reportDir;
 writeFileSync(join(reportDir, 'legacy-export-audit-results.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 writeFileSync(join(reportDir, 'legacy-export-audit-results.md'), renderMarkdown(report), 'utf8');
 

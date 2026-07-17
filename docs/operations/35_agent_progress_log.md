@@ -5001,9 +5001,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - CI/CD: expanded CI push coverage to `main`, `dev`, and `codex/**`; Pages deployment remains `main`-only. Remote Actions run `29577253344` passed with `ci:verify`, lint, and build.
 
 ## 2026-07-17 Post-Update Stability Recheck
-
 - Verified locally after the desktop update: `ci:verify` passed, including modern/legacy render modes, iframe edit bridge/drop target/layer-role tests, privacy guards, upload-snippet self-test, and chat-template scope checks.
 - Verified locally: preview/edit visual smoke passed for both compatibility modes across the available anonymous local fixtures with pixel mismatch `0`, translation checks passing, and no browser/page errors.
 - Verified locally: persistent preview surface reported `loads=0` for modern and legacy; edit-flow smoke passed.
 - Tooling note: three standalone local audits hit Windows `EPERM` while reusing old ignored report/build directories. This is an evidence-folder/process cleanup issue, not renderer evidence; rerun in a fresh short-path local root before promoting those reports.
 - Claim boundary: actual modern Sandbox render, dedicated legacy-room render, broad user imports, and worker/roll-template parity remain open.
+
+## 2026-07-17 Local Payload Audit Recovery
+
+- Repaired the local audit path without touching protected corpus folders: default reports/builds use short user Temp paths when old ignored folders are locked, while explicit output arguments remain available.
+- Repaired the local baseline edit capture to use the same persistent iframe as preview. The prior Shadow Canvas selector caused false timeouts after the visible edit surface migration.
+- Fresh local evidence (ignored Temp only) passed `3/3` baseline packages and `3/3` payload audits. The package boundary removed internal editor IDs, normalized comment-style translations to JSON, and preserved the required ZIP files.
+- Focused checks passed: sandbox sanitizer test `7/7`, translation payload test, export smoke, and baseline generation.
+- The pre-existing ignored baseline remains stale and failing by design of its old generated payload; it was not overwritten. No source identity, source payload, screenshot, fixture, or report was added to tracked docs.
+- Actual Roll20 upload/render is still unverified because the current browser file-input path rejected local files and the Sandbox sheet iframe was not created. Legacy still requires its dedicated legacy-enabled room.

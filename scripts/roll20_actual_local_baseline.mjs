@@ -374,7 +374,11 @@ async function captureEdit(page, outFile) {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
   });
-  const sheet = page.locator('[data-testid="edit-canvas-shadow-host"] #charsheet-root').first();
+  // Edit mode keeps the same persistent iframe as preview; only the parent
+  // overlay/chrome changes. Capturing the retired Shadow Canvas here made
+  // the baseline generator time out even when the visible sheet was healthy.
+  const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
+  const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   await sheet.screenshot({ path: outFile });
   return sheet.evaluate(summarizeSheetElement);
