@@ -1,3 +1,11 @@
+## 2026-07-18 Dead Shadow Editor Removal
+
+- DONE: Removed the unmounted `LegacyShadowEditCanvas` implementation and its editor-only drag/emit helpers from `components/editor/EditCanvas.tsx`. The product edit path remains the single persistent Roll20 iframe mounted by `PreviewMain`, with `EditCanvas` limited to toolbar and layer-panel chrome.
+- DONE: Removed now-unused renderer/widget imports and updated `test:roll20-render-modes` so the contract checks the actual shared iframe surface instead of requiring the inactive editor to prepare a second render.
+- VERIFIED LOCAL: lint, production build, `test:roll20-render-modes`, and `git diff --check` passed. The full `ci:verify` command was rerun before the contract update and failed only at the stale Shadow-oriented assertion; rerun the full gate after this entry is committed.
+- CLAIM BOUNDARY: This removes duplicate inactive code and prevents accidental reintroduction of a second editor renderer. It does not close actual Roll20 visual parity, legacy-room parity, or all-sheet import coverage.
+- NEXT P0: Rerun full CI and the persistent iframe/edit-flow browser smoke, then continue same-payload modern Sandbox and dedicated legacy-room evidence.
+
 ## 2026-07-18 Modern Sandbox CSS Pair Finding
 
 - VERIFIED ACTUAL MODERN: A local-only generated payload was applied in the dedicated Custom Sheet Sandbox and the fresh character iframe returned `VISIBLE_MATCH` with the expected modern runtime marker. Existing room content was opened for read-only observation only.

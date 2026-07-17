@@ -267,11 +267,13 @@ assertCheck(checks, 'preview store defaults legacy sanitize off', /legacyCssSani
 assertCheck(checks, 'legacy mode atomically enables prefix and CSS sanitize', /sanitize:\s*mode === 'legacy'[\s\S]*legacyCssSanitize:\s*mode === 'legacy'/.test(previewStore));
 assertCheck(checks, 'preview store exposes no independent compatibility mutators',
   !previewStore.includes('setSanitize:') && !previewStore.includes('setLegacyCssSanitize:'));
-assertCheck(checks, 'preview and edit consume the same atomic render contract input',
+assertCheck(checks, 'preview and edit share the mounted iframe render surface',
   previewMain.includes('compatibilityMode,')
-    && editCanvas.includes('compatibilityMode,')
+    && editorShell.includes('data-persistent-render-surface="true"')
+    && editorShell.includes('data-edit-render-surface={mainMode === \'edit\' ? \'iframe\' : undefined}')
     && !previewMain.includes('const sanitize = usePreviewStore')
-    && !editCanvas.includes('const sanitize = usePreviewStore'));
+    && !editCanvas.includes('buildSheetParts(')
+    && !editCanvas.includes('mountSheetShadow('));
 assertCheck(checks, 'iframe, live patch, and Shadow serializers share one prepared render contract',
   renderContract.includes('export function prepareSheetRenderContract')
     && previewMain.includes('buildSheetRenderBundle(')

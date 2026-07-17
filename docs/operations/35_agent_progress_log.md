@@ -1,3 +1,10 @@
+## 2026-07-18 Dead Shadow Editor Removal
+
+- Removed the unmounted `LegacyShadowEditCanvas` and its obsolete drag/emit helpers. The visible edit experience remains the persistent Roll20 iframe with parent-owned toolbar, layer panel, and interaction overlays.
+- Removed renderer/widget imports left behind by that inactive implementation.
+- Updated the render-mode smoke to assert one shared iframe render surface between preview and edit; it now passes with the active architecture.
+- Local lint and production build pass. Full `ci:verify` must be rerun after this source/test cleanup; no actual Roll20 parity claim is added.
+
 ## 2026-07-18 Modern Sandbox CSS Pair Finding
 
 - Used the dedicated Roll20 Custom Sheet Sandbox upload path with a local-only generated payload. The activation checker returned `VISIBLE_MATCH` for the expected modern runtime and a visible character iframe; no existing room settings or sheet source were changed.
