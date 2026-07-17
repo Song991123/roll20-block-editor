@@ -884,6 +884,29 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     };
   }
   if (tag === 'label' && node.children.some((child) => child.type === 'element')) {
+    // The radio block owns its Roll20 label wrapper. Collapse the common
+    // authored form `<label><input type="radio">Text</label>` into one radio
+    // block so a roundtrip does not emit a second nested <label>.
+    const radioChildren = node.children.filter(
+      (child) => child.type === 'element' && child.tag === 'input' && (child.attrs?.type || '').toLowerCase() === 'radio',
+    );
+    const hasOnlyRadioAndText = node.children.every(
+      (child) =>
+        child.type === 'text' ||
+        child.type === 'comment' ||
+        (child.type === 'element' && child.tag === 'input' && (child.attrs?.type || '').toLowerCase() === 'radio'),
+    );
+    if (radioChildren.length === 1 && hasOnlyRadioAndText) {
+      const radio = matchElement(radioChildren[0], ctx);
+      if (radio?.blockType === 'r20_radio') {
+        const labelText = node.children
+          .filter((child) => child.type === 'text')
+          .map((child) => child.text || '')
+          .join('');
+        radio.fields.LABEL = meaningfulText(labelText, tag) ?? '';
+        return radio;
+      }
+    }
     return {
       blockType: 'r20_label_container',
       fields: {
@@ -1021,8 +1044,20 @@ function escapeRegExp(s: string): string {
 function meaningfulText(raw: string | undefined, parentTag = ''): string | null {
   if (!raw) return null;
   const text = String(raw);
-  if (text.trim() || parentTag === 'pre' || parentTag === 'textarea') return text;
-  return null;
+  if (!text.trim() && parentTag !== 'pre' && parentTag !== 'textarea') return null;
+
+  // Ordinary HTML collapses runs of whitespace during layout. Keep the raw
+  // payload for pre/textarea, but canonicalize formatted text nodes elsewhere
+  // so importer -> emitter -> importer does not accumulate pretty-print
+  // indentation around punctuation or inline controls.
+  if (parentTag !== 'pre' && parentTag !== 'textarea') {
+    const normalized = text
+      .replace(/^[ \t]*\r?\n[ \t]*/, '')
+      .replace(/[ \t]*\r?\n[ \t]*$/, '')
+      .replace(/[ \t\r\n]+/g, ' ');
+    return normalized.trim() || null;
+  }
+  return text;
 }
 
 function textNodeBlock(text: string): MatchedBlock {

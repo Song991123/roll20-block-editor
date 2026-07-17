@@ -28,6 +28,23 @@
 - VERIFY: Reconnect the permitted Roll20 browser session and repeat the same
   payload comparison in modern Sandbox and the dedicated legacy room.
 
+## 2026-07-18 Generic HTML Roundtrip Stabilization
+
+- DONE: Normalized ordinary direct text nodes at import boundaries so browser
+  pretty-print whitespace does not accumulate across import -> emit -> import.
+  `pre` and `textarea` content remains raw.
+- DONE: Collapsed the authored radio-label pattern into the radio block that
+  owns its Roll20 `<label>` wrapper, preventing nested labels on re-emit.
+- VERIFIED LOCAL: Browser roundtrip passed for all three ignored local
+  comparison fixtures with stable HTML/CSS/i18n/worker outputs and zero page or
+  console errors. No fixture source or report is tracked.
+- VERIFIED LOCAL: `test:import-structure` passed `27/27`, production build,
+  `ci:verify`, and modern/legacy preview-edit visual smoke all passed.
+- CLAIM BOUNDARY: This improves the measured local corpus only. It does not
+  prove all arbitrary HTML structures or actual Roll20 visual parity.
+- VERIFY: Expand the synthetic structure corpus and compare the same payload
+  against live modern Sandbox and legacy-room output.
+
 ## 2026-07-18 Dead Shadow Editor Removal
 
 - DONE: Removed the unmounted `LegacyShadowEditCanvas` implementation and its editor-only drag/emit helpers from `components/editor/EditCanvas.tsx`. The product edit path remains the single persistent Roll20 iframe mounted by `PreviewMain`, with `EditCanvas` limited to toolbar and layer-panel chrome.

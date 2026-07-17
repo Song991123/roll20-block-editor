@@ -25,6 +25,21 @@ This remains local evidence only. The live Roll20 modern Sandbox and dedicated
 legacy-room comparison are still `VERIFY`; no actual Roll20 parity claim is
 made until the permitted browser session is connected again.
 
+## 2026-07-18 Generic HTML Roundtrip Stabilization
+
+The browser roundtrip harness initially exposed three generic instability paths:
+formatted direct text accumulated indentation, radio controls re-emitted a
+nested label, and punctuation between controls drifted by one space. The
+importer now canonicalizes ordinary text-node layout whitespace while keeping
+`pre`/`textarea` raw, and it collapses the common authored radio-label wrapper
+into the radio block's native output shape.
+
+After a fresh production build, all three ignored local comparison fixtures
+passed import -> emit -> import with stable HTML/CSS/i18n/worker outputs. The
+focused import suite is `27/27`, full `ci:verify` passes, and the paired
+modern/legacy visual smoke remains exact. This is local generic-corpus evidence;
+live Roll20 parity and all-sheet coverage remain open.
+
 ## 2026-07-18 Dead Shadow Editor Removal
 
 - Removed the unmounted `LegacyShadowEditCanvas` and its obsolete drag/emit helpers. The visible edit experience remains the persistent Roll20 iframe with parent-owned toolbar, layer panel, and interaction overlays.
