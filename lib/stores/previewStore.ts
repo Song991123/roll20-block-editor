@@ -18,8 +18,8 @@ export interface DynamicToggle {
 
 /**
  * spec 21 — WYSIWYG Phase A. 미리보기 렌더 모드.
- *   - 'shadow' : Shadow DOM 컨테이너 (기본). DOM 직접 인스펙터/편집 가능, Phase B+ 의 select/drag/inline edit 기반.
- *   - 'iframe' : 레거시 iframe srcdoc — Roll20 환경 시뮬 (sandbox / postMessage bridge).
+ *   - 'shadow' : 유지 중인 직렬화/회귀 경로. 현재 제품의 편집 화면에는 마운트하지 않는다.
+ *   - 'iframe' : preview와 edit가 공유하는 Roll20 sandbox iframe (기본).
  */
 export type PreviewRenderMode = 'shadow' | 'iframe';
 export type Roll20CompatibilityMode = 'modern' | 'legacy';
@@ -38,7 +38,7 @@ interface PreviewStore {
   roll20SandboxSanitize: boolean; // 실제 Roll20 Custom Sheet Sandbox sanitize/prefix 예상 preview toggle.
   autoRegen: boolean;       // 큰 시트 OFF 권장
   iframeSandbox: string;    // allow-scripts only — 사용자 시트 안 script 는 unique origin 안에서만 실행 (parent 접근 X). preview bridge script 동작 필요.
-  renderMode: PreviewRenderMode;   // Roll20 sandbox parity default; Shadow DOM is edit mode.
+  renderMode: PreviewRenderMode;   // Roll20 parity default; active product surface is iframe.
   documentLanguage: string;        // Roll20 page language for :lang() and fallback-font parity.
   assetReplacementMap: string;     // Local-only URL replacement map used by preview/edit/export.
   assetReplacementProfiles: AssetReplacementProfile[]; // Local-only named relink maps for repeated sheet verification.

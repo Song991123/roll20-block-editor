@@ -4404,3 +4404,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CLAIM BOUNDARY: These are local renderer and interaction checks. They do not prove that the same exported payload matches an actual Roll20 Sandbox or dedicated legacy-room screenshot.
 - VERIFY: The unused legacy Shadow Canvas implementation remains in source for a separate cleanup batch; it is not mounted by the active editor route. Do not use it as evidence for the current edit surface.
 - NEXT P0: Complete an approved modern Sandbox upload/render check, then repeat the same evidence flow in the separate legacy-enabled destination. Keep third-party sources and generated evidence local-only.
+## 2026-07-18 Autosave Render-Context Preservation
+
+- DONE: Autosave now stores and restores the selected document language together with workspace XML and asset-replacement settings. This keeps `:lang()` selectors and fallback-font metrics stable after recovery.
+- DONE: Preview-store language changes now trigger the existing autosave debounce instead of waiting for an unrelated Blockly edit.
+- VERIFIED LOCAL: `ci:verify`, lint, production build, `git diff --check`, and server hygiene passed.
+- VERIFIED LOCAL: The combined autosave payload contains a bounded CDATA document-language field and remains backward-compatible when older records omit it.
+- FRESH SMOKE NOTE: The local modern/legacy fixture smoke is not a parity gate between the two modes. One prepared input had stable transition geometry; two had expected external-font proxy failures and mode-specific width drift. No CSS correction was promoted from that comparison.
+- NEXT P0: Continue same-payload Roll20 verification independently for modern Sandbox and legacy-enabled room, then expand anonymous generic import/worker/rolltemplate coverage.

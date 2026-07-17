@@ -41,6 +41,7 @@ export type ParsedCombinedXml = Record<WorkspaceKey, string> & {
   assetReplacementMap?: string;
   assetReplacementProfiles?: AssetReplacementProfile[];
   activeAssetReplacementProfileId?: string | null;
+  documentLanguage?: string;
 };
 
 /**
@@ -53,6 +54,7 @@ export function buildCombinedXml(): string {
   const assetReplacementMap = previewState.assetReplacementMap;
   const assetReplacementProfiles = previewState.assetReplacementProfiles;
   const activeAssetReplacementProfileId = previewState.activeAssetReplacementProfileId;
+  const documentLanguage = previewState.documentLanguage;
   const parts: string[] = [];
   parts.push(
     `<r20-autosave version="${COMBINED_XML_VERSION}" ts="${Date.now()}">`,
@@ -69,6 +71,9 @@ export function buildCombinedXml(): string {
   );
   parts.push(
     `<asset-replacement-profiles active-id="${escapeAttr(activeAssetReplacementProfileId ?? '')}"><![CDATA[${escapeCdata(JSON.stringify(assetReplacementProfiles))}]]></asset-replacement-profiles>`,
+  );
+  parts.push(
+    `<document-language><![CDATA[${escapeCdata(documentLanguage)}]]></document-language>`,
   );
   parts.push('</preview>');
   parts.push('</r20-autosave>');
@@ -114,6 +119,7 @@ export function parseCombinedXml(
     const previewNode = root.getElementsByTagName('preview')[0] ?? null;
     const assetMapNode = previewNode?.getElementsByTagName('asset-replacement-map')[0] ?? null;
     const profileNode = previewNode?.getElementsByTagName('asset-replacement-profiles')[0] ?? null;
+    const languageNode = previewNode?.getElementsByTagName('document-language')[0] ?? null;
     return {
       html: out.html ?? '',
       css: out.css ?? '',
@@ -122,6 +128,7 @@ export function parseCombinedXml(
       assetReplacementMap: assetMapNode ? assetMapNode.textContent ?? '' : undefined,
       assetReplacementProfiles: parseAssetReplacementProfiles(profileNode?.textContent ?? ''),
       activeAssetReplacementProfileId: profileNode?.getAttribute('active-id') || null,
+      documentLanguage: languageNode ? languageNode.textContent ?? '' : undefined,
     };
   } catch {
     return null;
@@ -185,6 +192,7 @@ export function installAutosave(): () => void {
     if (state.assetReplacementMap !== prev.assetReplacementMap) trigger();
     if (state.assetReplacementProfiles !== prev.assetReplacementProfiles) trigger();
     if (state.activeAssetReplacementProfileId !== prev.activeAssetReplacementProfileId) trigger();
+    if (state.documentLanguage !== prev.documentLanguage) trigger();
   });
 
   return () => {

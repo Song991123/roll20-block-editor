@@ -5095,3 +5095,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Re-ran anonymous local preview/edit visual smoke for modern and legacy modes: all three available inputs PASS with zero measured mismatch and zero browser/page errors.
 - This does not change the actual Roll20 gate. The current logged-in modern Sandbox and separate legacy room were only read-only shape observations in this pass; no same-payload Roll20 parity claim is made.
 - The old `LegacyShadowEditCanvas` function is not mounted by `EditorShell`; it remains an explicit cleanup candidate and must not be confused with the current edit renderer.
+## 2026-07-18 Autosave Render-Context Preservation
+
+- Added `documentLanguage` to the preview section of the combined autosave XML. The parser treats the field as optional so older autosaves still restore normally.
+- Autosave now subscribes to language changes; restoring a snapshot reapplies the value before the next render contract is built.
+- This is generic state preservation, not a fixture-specific language guess and not a claim that modern and legacy use the same font/asset policy.
+- Fresh local legacy fixture smoke was recorded as diagnostic only: one input had equivalent transition geometry, while two exposed external Roll20 font-proxy failures and mode-specific width differences. No speculative renderer CSS was added.
+- Verification passed: `ci:verify`, lint, production build, `git diff --check`, and `check:server-hygiene`.

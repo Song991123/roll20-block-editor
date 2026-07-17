@@ -90,6 +90,9 @@ export default function AutosaveBanner({ xml, meta, onDismiss }: Props) {
           parts.activeAssetReplacementProfileId ?? null,
         );
       }
+      if (parts.documentLanguage !== undefined && parts.documentLanguage.trim()) {
+        previewStore.setDocumentLanguage(parts.documentLanguage);
+      }
       for (const key of WORKSPACE_KEYS) {
         const ws = adapter.getWorkspace(key);
         if (ws) {
