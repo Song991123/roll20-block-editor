@@ -5052,3 +5052,8 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - Security boundary: event-handler attributes, `srcdoc`, and the internal block id are rejected. No raw sheet source or external identity was added to the repository.
 - Verification: focused import/attribute tests, `ci:verify`, lint, production build, diff check, and server-hygiene passed locally.
 - Still open: actual modern Sandbox upload/render and separate legacy-room validation. This batch is local importer/emitter evidence, not Roll20 parity evidence.
+## 2026-07-17 Drop Commit Emit Flush
+
+- Implemented an immediate emit path for completed iframe drops and friendly-widget inserts. Continuous pointer movement still uses the existing debounce; the drop result is published immediately and cancels the pending duplicate callback.
+- Synthetic `6000`-block modern/legacy smoke passed after a production build. Optimistic placement remained under the `75ms` budget in both modes, structural patch fallback stayed at `0`, iframe reloads stayed at `0`, and browser/page errors stayed at `0`.
+- The measured acknowledgement is local synthetic evidence only. Actual Roll20 modern Sandbox and dedicated legacy-room visual checks remain open.

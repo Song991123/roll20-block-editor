@@ -1,6 +1,7 @@
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import { commitManagedDesignPosition } from '@/lib/editor/designPosition';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 
 export const FRIENDLY_WIDGET_MIME = 'application/x-r20-friendly-widget';
 
@@ -260,6 +261,7 @@ export function appendFriendlyWidgetPreset(
       state.bumpStructure('css', adapter.countBlocks('css'));
     }
   }
+  flushEmitPipeline();
   return id;
 }
 

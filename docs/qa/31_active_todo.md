@@ -4344,6 +4344,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: Runtime contract regression test passed, full `ci:verify` passed, production build passed, server hygiene passed, and preview/edit visual smoke passed for both compatibility modes across the anonymous local comparison set with zero pixel mismatch and zero browser/page errors.
 - CLAIM BOUNDARY: This fixes one generic visibility regression. It does not prove actual Roll20 Sandbox/legacy-room parity or complete worker/rolltemplate runtime behavior.
 - NEXT P0: Resume actual modern Sandbox upload through an approved browser file path; then verify legacy in its dedicated legacy-enabled room.
+## 2026-07-17 Drop Commit Emit Flush
+
+- DONE: Committed iframe drops and friendly-widget inserts now flush the current Blockly emit immediately. Pointer-move updates remain debounced, so the editor does not emit a full sheet on every drag frame while the dropped result does not wait for the normal debounce window.
+- DONE: A flush invalidates the pending debounce callback, preventing a redundant second emit for the same commit.
+- VERIFIED SYNTHETIC: Modern and legacy persistent-surface smoke with `6000` synthetic blocks passed in an isolated local evidence path. Optimistic placement was `33ms` modern / `26.4ms` legacy, flow acknowledgement was `149.2ms` / `143.1ms`, style-only acknowledgement was about `43ms`, structural patch fallbacks were `0`, iframe reloads were `0`, and console/page errors were `0`.
+- CLAIM BOUNDARY: These are anonymous synthetic local interaction measurements. They do not prove actual Roll20 visual parity, all-sheet performance, or worker runtime parity.
+- NEXT P0: Repeat the same latency gate on a broader anonymous imported corpus and complete the permitted modern Sandbox plus dedicated legacy-room checks.
+
 ## 2026-07-17 Preserved Attribute Metadata Contract
 
 - DONE: Matched generic blocks now retain safe, previously unmapped HTML attributes in hidden Blockly metadata and re-emit them without replacing generator-owned attributes.

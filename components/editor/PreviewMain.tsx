@@ -15,6 +15,7 @@ import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlockDef } from '@/lib/blocks/registry';
 import { buildSheetRenderBundle } from '@/lib/preview/buildDoc';
+import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
@@ -583,6 +584,7 @@ export default function PreviewMain() {
             }
             const store = useWorkspaceStore.getState();
             store.bumpStructure('html', adapter.countBlocks('html'));
+            flushEmitPipeline();
             store.setSelectedBlockId(editMessage.subject.blockId, 'preview');
           } else {
             iframeEditDragOriginRef.current = null;

@@ -22,8 +22,36 @@
 
 import { useEffect } from 'react';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { useWorkspaceStore, WORKSPACE_KEYS } from '@/lib/stores/workspaceStore';
 import { emitAll } from './emit';
+
+let flushVersion = 0;
+
+/**
+ * Publish a committed edit immediately. Pointer-move events stay debounced;
+ * a completed drop should not wait for that debounce window before the live
+ * iframe receives the authored HTML/CSS.
+ */
+export function flushEmitPipeline(): void {
+  flushVersion += 1;
+  const state = useWorkspaceStore.getState();
+  const counts = WORKSPACE_KEYS.map((key) => state.workspaces[key].blockCount);
+  if (counts.every((count) => count === 0)) {
+    state.setEmitCache({ html: '', css: '', i18n: '', worker: '' });
+    state.setEmitWarnings([]);
+    return;
+  }
+
+  const adapter = getBlocklyAdapter();
+  const result = emitAll({
+    html: adapter.getWorkspace('html'),
+    css: adapter.getWorkspace('css'),
+    i18n: adapter.getWorkspace('i18n'),
+    worker: adapter.getWorkspace('worker'),
+  });
+  state.setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, worker: result.worker });
+  state.setEmitWarnings(result.warnings);
+}
 
 export function useEmitPipeline(): void {
   // Perf hot path #3: structureVersion replaces xmlCache string.
@@ -45,7 +73,9 @@ export function useEmitPipeline(): void {
       return;
     }
 
+    const scheduledFlushVersion = flushVersion;
     const handle = window.setTimeout(() => {
+      if (scheduledFlushVersion !== flushVersion) return;
       const adapter = getBlocklyAdapter();
       const liveTotal =
         adapter.countBlocks('html') +
