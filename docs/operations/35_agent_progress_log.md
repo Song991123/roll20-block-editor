@@ -6088,3 +6088,13 @@ Verification: `smoke:edit-flow` passed with zero console/page errors. Lint,
 production build, `ci:verify`, and strict imported edit synchronization also
 passed. This is local product evidence only and does not change the actual
 Roll20 user-sheet capture count, which remains `0`.
+
+### 2026-07-19 - Sheet.json route check
+
+Read-only navigation to the dedicated Roll20 Sandbox settings page confirmed
+that the existing `Sheet.json` area is an Ace-backed editor. A temporary local
+manifest edit was visible in the editor and was discarded by navigating away;
+the save link was not activated. The page has no equivalent inline HTML/CSS/
+translation editor, so this is not an upload bypass: the three source files
+still require the blocked file-input handoff. No user-sheet activation or
+visual evidence count changed.

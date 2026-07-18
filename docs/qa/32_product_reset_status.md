@@ -9,7 +9,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 
 | Area | Current evidence | State | Boundary |
 | --- | --- | --- | --- |
-| HTML/CSS/i18n structural import | 27/27 contract cases | VERIFIED LOCAL | Does not prove arbitrary sheet fidelity |
+| HTML/CSS/i18n structural import | 30/30 contract cases | VERIFIED LOCAL | Does not prove arbitrary sheet fidelity |
 | Legacy CSS compatibility | 16/16 sanitizer cases | VERIFIED LOCAL | Does not prove a legacy Roll20 room |
 | Modern Sandbox safety boundary | 7/7 contract cases | VERIFIED LOCAL | Does not prove a user upload |
 | Preview/edit render surface | 6/6 local modern/legacy comparisons at 0% mismatch | VERIFIED LOCAL | Same local surface only |
@@ -23,11 +23,11 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Legacy-room visual parity | No dedicated legacy-room capture | VERIFY | Sandbox is modern-only |
 | UI product reset | Pastel/pink shell, light root/portal baseline, and core Korean product copy slice | PARTIAL | Full information architecture and visual UX reset remain |
 | Public copyright boundary | CI evidence guard, ignored local fixtures/reports, no tracked private corpus | VERIFIED LOCAL | Recheck before every public release |
-| CI/CD | GitHub Actions run `29657697204` passed for `3373d59` | VERIFIED REMOTE | Deployment smoke remains separate |
+| CI/CD | GitHub Actions run `29658982131` passed for `bea1eea` | VERIFIED REMOTE | Deployment smoke remains separate |
 
 ## Current Counts
 
-- Local contract groups passed: `27/27`, `16/16`, `7/7`, and `6/6` visual
+- Local contract groups passed: `30/30`, `16/16`, `7/7`, and `6/6` visual
   comparisons.
 - Imported edit round-trip: `4/4` anonymous local fixtures passed the canonical
   iframe sync path and stable re-import check; the largest fixture remained
@@ -148,6 +148,15 @@ local gate is not evidence of visual equality in a live Roll20 room.
   APIs for the generated File-event snippet. No upload occurred.
 - CURRENT COUNTS: authorized user-sheet captures `0`; dedicated legacy-room
   captures `0`; commit `89d57c9` remote CI run `29658829415` is `success`.
+
+## Sheet.json Route Check
+
+- VERIFIED EXTERNAL PRIVATE: the dedicated Sandbox settings page exposes an
+  Ace-backed `Sheet.json` editor and the existing manifest can be edited in
+  the visible editor surface.
+- BOUNDARY: this route edits only the manifest. HTML/CSS/translation still
+  require the three source-file inputs, so the manifest was not saved after
+  testing. No user-sheet upload or activation evidence was created.
 
 ## Reporting Rule
 
