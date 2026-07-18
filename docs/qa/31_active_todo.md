@@ -4995,3 +4995,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: This covers application chrome only. Roll20 iframe, sheet CSS,
   Roll20 dark/light runtime tokens, and actual sheet visual parity are
   intentionally unchanged.
+
+## 2026-07-19 Roll20 Chrome Session Observation
+
+- VERIFIED EXTERNAL: The logged-in Chrome session opened `https://app.roll20.net/editor`
+  successfully and rendered the Roll20 editor shell, journal tab, chat tab, and
+  campaign content.
+- EXCLUDED: The opened campaign showed active chat history and multiple PC/NPC
+  journal entries. It was not a permitted one-player observation target, so no
+  sheet settings, source, chat, assets, or room state were changed.
+- NOT VERIFIED: The observed editor shell exposed no `.charactersheet` root or
+  authored sheet iframe. This run therefore proves login/editor reachability
+  only; it does not prove Roll20 sheet visual parity or wrapper measurements.
+- HOLD: Keep `rendererAction=HOLD_PRODUCTION_RENDERER_PATCH` and the actual-room
+  evidence count at `roomObservationScreenshots=0/3` until a qualifying solo
+  room or sandbox capture is available.
+- NEXT: Inspect the campaign list read-only, identify only rooms with one user,
+  then capture the sheet wrapper/root in that room. Use Custom Sheet Sandbox or
+  a newly created test room for any upload or mutation.

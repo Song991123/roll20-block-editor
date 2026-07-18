@@ -5645,3 +5645,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   is not treated as a product error.
 - LIMIT: This is application chrome polish, not a redesign of the rendered
   Roll20 sheet or a claim of full user-facing design completion.
+
+## 2026-07-19 Roll20 Chrome Session Observation
+
+- VERIFIED: The authenticated Chrome session reached `https://app.roll20.net/editor`
+  and loaded the Roll20 editor shell. Journal and chat surfaces were visible.
+- SAFETY BOUNDARY: The opened campaign contained live chat history and multiple
+  character entries, so it was treated as a non-solo room. Codex performed no
+  setting changes, source edits, uploads, chat sends, asset changes, or room
+  mutations.
+- LIMIT: No authored `.charactersheet` root or sheet iframe was exposed in this
+  observation. The result is editor reachability evidence, not actual sheet
+  parity evidence. Keep room observation at 0/3 and the renderer gate on HOLD.
+- NEXT: Read-only campaign-list inspection for qualifying solo rooms; sandbox or
+  a fresh test room for any export upload and post-upload screenshot.
