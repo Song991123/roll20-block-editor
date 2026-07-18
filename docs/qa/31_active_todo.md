@@ -5390,8 +5390,8 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   the generated File-event snippet. No payload was uploaded and no Roll20
   result was inferred.
 - CURRENT TRUTH: actual Roll20 user-sheet captures remain `0`; dedicated
-  legacy-room captures remain `0`. Remote CI run `29659133822` for commit
-  `16ba38c` is green, but external upload evidence is still missing.
+  legacy-room captures remain `0`. Remote CI run `29659504257` for commit
+  `aaffcf2` is green, but external upload evidence is still missing.
 
 ## 2026-07-19 Guarded Worker Block Mapping
 

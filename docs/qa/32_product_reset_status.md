@@ -24,7 +24,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Legacy-room visual parity | No dedicated legacy-room capture | VERIFY | Sandbox is modern-only |
 | UI product reset | Pastel/pink shell, light root/portal baseline, and core Korean product copy slice | PARTIAL | Full information architecture and visual UX reset remain |
 | Public copyright boundary | CI evidence guard, ignored local fixtures/reports, no tracked private corpus | VERIFIED LOCAL | Recheck before every public release |
-| CI/CD | GitHub Actions run `29659133822` passed for `16ba38c` | VERIFIED REMOTE | Deployment smoke remains separate |
+| CI/CD | GitHub Actions run `29659504257` passed for `aaffcf2` | VERIFIED REMOTE | Deployment smoke remains separate |
 
 ## Current Counts
 
@@ -152,7 +152,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
   `Not allowed`, and the isolated page-evaluation surface lacks DOM creation
   APIs for the generated File-event snippet. No upload occurred.
 - CURRENT COUNTS: authorized user-sheet captures `0`; dedicated legacy-room
-  captures `0`; commit `16ba38c` remote CI run `29659133822` is `success`.
+  captures `0`; commit `aaffcf2` remote CI run `29659504257` is `success`.
 
 ## Sheet.json Route Check
 
