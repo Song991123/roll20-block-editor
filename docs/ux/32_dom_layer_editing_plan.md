@@ -1,56 +1,61 @@
-# 32. DOM Layer Editing Plan
+# DOM Layer Editing Plan
 
-Date: 2026-06-02
+Updated: 2026-07-19
 
-Goal: make edit mode feel like a visual editor while preserving actual Roll20 HTML/CSS behavior. Users should be able to drag objects directly, but when they drop into a structured container, the child should participate in that container's normal flow instead of always becoming absolute-positioned.
+This document defines how imported Roll20 DOM structures are represented in
+the editor. It is a product contract for the layer panel and the shared iframe
+edit surface, not a promise that every arbitrary HTML pattern is editable.
 
-## Current Problem
+## Role Map
 
-| Area | Current behavior | UX problem | Product risk |
-| --- | --- | --- | --- |
-| Canvas drag | Existing DOM nodes are visually moved with `translate3d`, then committed as `position:absolute; left/top`. | Feels close to free canvas movement, but not like editing inside real layout containers. | Moving an input out of a row/frame can change preview vs edit behavior. |
-| Widget drop | Gallery presets always get absolute positioning. | Dropping into a flex/table/section still creates a free-floating object. | Users cannot build normal Roll20 form rows by direct manipulation. |
-| Layer panel | Lists Blockly blocks and can call nest/move operations. | It does not clearly communicate droppable frames or flow containers. | Users see a tree but do not understand where elements can safely go. |
-| Frame highlighting | Layer icons use color, but the canvas itself does not show persistent container affordances. | A Figma-like "put this into that frame" action lacks visual confirmation. | Mis-drops create absolute layout clutter. |
-| Data model | Visual DOM, Blockly tree, and widget helper presets are partially separate concepts. | User actions feel delayed or inconsistent when emit cache catches up. | Hard to claim edit screen equals preview screen. |
+| DOM signal | Editor role | Can contain children | Default insertion | User-facing meaning |
+| --- | --- | --- | --- | --- |
+| `div`, `section`, `fieldset`, `form`, `group`, `container`, `wrapper` | Frame | Yes | Flow | A visual frame that can hold other layers |
+| `row`, `col`, `grid`, `flex` | Flow | Yes | Flow | Children follow the container's layout order |
+| `table`, `thead`, `tbody`, `tfoot`, `tr`, `td`, `th` | Table | Yes | Flow | A table structure whose order must be preserved |
+| `input`, `select`, `textarea`, `checkbox`, `attr` | Input | No | Free | A form control that can be positioned as an object |
+| `button`, `roll`, `action` | Button | No | Free | A clickable action or roll control |
+| `text`, `label`, `heading`, `i18n` | Text | No | Free | Visible copy or translated text |
+| `image`, `img`, `media` | Image | No | Free | A visual asset |
+| `script`, `worker`, `rolltemplate` | Sheet action | No | None | Runtime code, kept out of the visual preview |
 
-## DOM Role Classification
+The classifier lives in `lib/editor/layerRoles.ts`. Each layer row exposes the
+same semantic information through `data-r20-layer-role` and
+`data-r20-can-drop`, so the visual layer panel and iframe drop overlay do not
+invent separate DOM models.
 
-| DOM/block role | Examples | Default edit behavior | Drop behavior |
-| --- | --- | --- | --- |
-| Frame | `r20_div`, `r20_section`, `r20_fieldset`, group-like boxes | Highlight as blue container; can receive children. | Drop child into statement/children slot, remove absolute positioning unless user explicitly chooses free placement. |
-| Flow row | `r20_row`, flex-like divs, table rows when supported by matcher | Highlight as cyan/teal ordered container. | Insert before/after nearest child; preserve flow order. |
-| Table container | `table`, `tbody`, `tr`, `td`, `th` blocks | Highlight with table color and stricter insertion rules. | Only allow valid child types when importer/generator can represent them. |
-| Absolute object | Images, labels, inputs, buttons with explicit `position:absolute` | Show orange/free-placement marker. | Drag updates left/top relative to nearest positioned containing block. |
-| Inline/control object | text, input, button, checkbox, select | Normally participates in parent flow. | If dropped into frame/row, remove absolute positioning and nest; if dropped on canvas background, use absolute. |
-| Non-canvas runtime | `script`, `script[type="text/worker"]`, `rolltemplate` | Hidden from canvas; represented in worker/chat workspaces later. | Not droppable as visible sheet elements. |
+## Drop Rules
 
-## Editing Rules
+1. `inside` is offered only for a role that can receive children.
+2. `before` and `after` preserve sibling order in the same parent.
+3. A flow or table container keeps the dropped child in document order; it
+   must not silently become absolute-positioned.
+4. Free placement inside a container is explicit. It records the container as
+   the offset parent and writes generated layout CSS, while the HTML remains
+   free of editor-only inline layout declarations.
+5. A drop that would put an ancestor inside its descendant is rejected before
+   Blockly is changed.
+6. The iframe overlay and layer panel clear their target state after drop or
+   pointer cancellation.
 
-1. Canvas background drop creates an absolute object at sheet coordinates.
-2. Container drop creates a flow child: nest the block under the container and strip `position`, `left`, and `top`.
-3. Existing object drag inside the same structured container should reorder when dropped near siblings.
-4. Existing object drag onto canvas background should become absolute.
-5. If a user wants absolute positioning inside a frame, the frame becomes `position:relative` and the child gets left/top relative to that frame.
-6. The layer panel and canvas must use the same container classification.
-7. Script and rolltemplate nodes must stay hidden from the visual canvas and be exposed through worker/chat tooling, not as visible objects.
+## Visual Language
 
-## First Implementation Slice
+- Frame: rose
+- Flow: teal
+- Table: amber
+- Input: green
+- Button: gold
+- Text: pink
+- Image: fuchsia
+- Sheet action: slate
 
-| Step | Files | Expected outcome |
-| --- | --- | --- |
-| Add shared layer role helpers | `lib/editor/layerRoles.ts` | One source of truth for frame/flow/table/free object classification and color labels. |
-| Make friendly widget positioning optional | `lib/widgets/presets.ts` | Widgets can be created as absolute canvas objects or flow children. |
-| Container-aware gallery drop | `components/editor/EditCanvas.tsx` | Dropping a widget over a frame-like DOM node nests the block and strips absolute style. |
-| Canvas affordance CSS | `lib/preview/buildDoc.ts` or edit-only CSS injection | Frame-like nodes visibly show droppable outlines only in edit mode. |
-| Report evidence | `docs/qa/31_active_todo.md` | Track what is implemented vs still TODO. |
+These colors describe editability and structure, not the imported sheet's
+actual styling. They must never enter the Roll20 iframe stylesheet.
 
-## Verification
+## Verification Boundary
 
-- Create or import a sheet with a section/row container.
-- Drag a text input from the widget gallery onto the container.
-- Confirm the new block is nested under the container in the layer panel.
-- Confirm generated HTML puts the input inside the container.
-- Confirm the input has no `position:absolute` when dropped into flow mode.
-- Drag/drop on the sheet background and confirm absolute positioning still works.
-- Compare edit canvas and preview after both actions.
+Local tests cover classification, cycle protection, before/inside/after layer
+operations, flow versus free placement, and selection synchronization. A
+future browser acceptance test must additionally prove that the same imported
+HTML surface is visible in preview and edit after a nested drop, with no
+rollback frame and with the generated CSS output stable after re-import.

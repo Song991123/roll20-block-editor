@@ -13,7 +13,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Legacy CSS compatibility | 16/16 sanitizer cases | VERIFIED LOCAL | Does not prove a legacy Roll20 room |
 | Modern Sandbox safety boundary | 7/7 contract cases | VERIFIED LOCAL | Does not prove a user upload |
 | Preview/edit render surface | 6/6 local modern/legacy comparisons at 0% mismatch | VERIFIED LOCAL | Same local surface only |
-| Layer and placement interaction | edit-flow smoke, layer before/inside/after, flow/free placement, cycle guard | VERIFIED LOCAL | Figma-level usability still needs visual review |
+| Layer and placement interaction | edit-flow smoke, layer before/inside/after, flow/free placement, cycle guard, role palette | VERIFIED LOCAL | Figma-level usability still needs visual review |
 | Generated layout CSS | authored position block emits paired class + CSS rule | VERIFIED LOCAL | Imported source inline styles remain loss-aware |
 | Live Roll20 modern | 1 anonymous synthetic root capture; 1.6458% root-only mismatch | VERIFIED DIAGNOSTIC | Not a general parity result |
 | Authorized user-sheet Sandbox upload | No successful browser file handoff | VERIFY | Must be completed in the dedicated Sandbox |
@@ -46,6 +46,15 @@ local gate is not evidence of visual equality in a live Roll20 room.
    design-scoped branch after the renderer baseline is frozen.
 5. Re-run local gates, copyright guard, deployment check, and browser smoke
    before calling any product-reset item complete.
+
+## DOM Role Plan Slice
+
+- DOCUMENTED: `docs/ux/32_dom_layer_editing_plan.md` maps imported DOM signals
+  to frame, flow, table, input, button, text, image, and sheet-action roles.
+- FIXED: role labels and role colors now use readable Korean and light pastel
+  contrast in `lib/editor/layerRoles.ts`.
+- VERIFIED LOCAL: role classification, cycle protection, and iframe drop target
+  tests passed. Full nested browser acceptance remains open.
 
 ## Reporting Rule
 

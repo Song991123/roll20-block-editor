@@ -5935,3 +5935,13 @@ renderer, imported sheet payloads, and iframe/edit bridge.
 Verification: lint, production build, `ci:verify`, and `smoke:edit-flow` passed.
 This is the second small UI reset slice; the full information architecture and
 visual guidance remain open.
+
+### 2026-07-19 - DOM role and layer palette slice
+
+Added `docs/ux/32_dom_layer_editing_plan.md` as the role/drop contract for the
+Figma-like layer surface. Normalized the role labels and light pastel role
+colors in `lib/editor/layerRoles.ts`; the visual role colors remain app chrome
+only and are not included in the Roll20 iframe stylesheet.
+
+Verification: `layerRoles.test.ts`, `iframeDropTarget.test.ts`, and lint passed.
+Full nested browser acceptance remains VERIFY.

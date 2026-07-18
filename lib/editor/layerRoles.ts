@@ -24,63 +24,63 @@ const ROLE_STYLES: Record<LayerRoleKind, Omit<LayerRole, 'kind'>> = {
   frame: {
     label: '프레임',
     icon: 'F',
-    className: 'border-rose-400/70 bg-rose-400/15 text-rose-100',
+    className: 'border-rose-300/90 bg-rose-100/80 text-rose-800',
     canReceiveChildren: true,
     defaultDropMode: 'flow',
   },
   flow: {
     label: '흐름',
     icon: 'FL',
-    className: 'border-teal-400/70 bg-teal-400/15 text-teal-100',
+    className: 'border-teal-300/90 bg-teal-100/80 text-teal-800',
     canReceiveChildren: true,
     defaultDropMode: 'flow',
   },
   table: {
     label: '표',
     icon: 'T',
-    className: 'border-amber-400/70 bg-amber-400/15 text-amber-100',
+    className: 'border-amber-300/90 bg-amber-100/80 text-amber-800',
     canReceiveChildren: true,
     defaultDropMode: 'flow',
   },
   control: {
     label: '입력',
     icon: 'I',
-    className: 'border-emerald-500/60 bg-emerald-500/15 text-emerald-200',
+    className: 'border-emerald-300/90 bg-emerald-100/80 text-emerald-800',
     canReceiveChildren: false,
     defaultDropMode: 'absolute',
   },
   action: {
     label: '버튼',
     icon: 'B',
-    className: 'border-amber-500/60 bg-amber-500/15 text-amber-200',
+    className: 'border-amber-300/90 bg-amber-100/80 text-amber-800',
     canReceiveChildren: false,
     defaultDropMode: 'absolute',
   },
   text: {
     label: '텍스트',
     icon: 'A',
-    className: 'border-pink-400/70 bg-pink-400/15 text-pink-100',
+    className: 'border-pink-300/90 bg-pink-100/80 text-pink-800',
     canReceiveChildren: false,
     defaultDropMode: 'absolute',
   },
   media: {
     label: '이미지',
     icon: 'M',
-    className: 'border-rose-500/60 bg-rose-500/15 text-rose-200',
+    className: 'border-fuchsia-300/90 bg-fuchsia-100/80 text-fuchsia-800',
     canReceiveChildren: false,
     defaultDropMode: 'absolute',
   },
   runtime: {
-    label: '스크립트',
+    label: '시트 동작',
     icon: 'JS',
-    className: 'border-zinc-500/60 bg-zinc-500/10 text-zinc-300',
+    className: 'border-slate-300/90 bg-slate-100/80 text-slate-700',
     canReceiveChildren: false,
     defaultDropMode: 'none',
   },
   other: {
-    label: '노드',
+    label: '기타',
     icon: 'N',
-    className: 'border-zinc-500/60 bg-zinc-500/15 text-zinc-200',
+    className: 'border-slate-300/90 bg-slate-100/80 text-slate-700',
     canReceiveChildren: false,
     defaultDropMode: 'absolute',
   },
@@ -119,9 +119,7 @@ export function classifyLayerRole(type: string): LayerRoleKind {
   if (hasAnyToken(tokens, ['script', 'worker', 'rolltemplate'])) return 'runtime';
   if (hasAnyToken(tokens, ['table', 'tbody', 'thead', 'tfoot', 'tr', 'td', 'th'])) return 'table';
   if (hasAnyToken(tokens, ['row', 'col', 'colrow', 'grid', 'flex'])) return 'flow';
-  if (
-    hasAnyToken(tokens, ['div', 'span', 'section', 'fieldset', 'form', 'group', 'container', 'wrapper'])
-  ) {
+  if (hasAnyToken(tokens, ['div', 'span', 'section', 'fieldset', 'form', 'group', 'container', 'wrapper'])) {
     return 'frame';
   }
   if (hasAnyToken(tokens, ['input', 'select', 'checkbox', 'textarea', 'attr', 'attribute'])) return 'control';

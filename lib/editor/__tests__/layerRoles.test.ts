@@ -32,8 +32,8 @@ assert.equal(getLayerRole('r20_text_input').label, '입력');
 assert.equal(getLayerRole('r20_roll_button').label, '버튼');
 assert.equal(getLayerRole('r20_i18n_text').label, '텍스트');
 assert.equal(getLayerRole('r20_image').label, '이미지');
-assert.equal(getLayerRole('r20_worker_script').label, '스크립트');
-assert.equal(getLayerRole('unknown_block').label, '노드');
+assert.equal(getLayerRole('r20_worker_script').label, '시트 동작');
+assert.equal(getLayerRole('unknown_block').label, '기타');
 
 const layerTree = [
   { id: 'root', layerParentId: null },
