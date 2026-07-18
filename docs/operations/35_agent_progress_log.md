@@ -5531,6 +5531,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   mismatch at `8.26%` for an anonymous prepared fixture; a following
   modern-only run was exact for all three. Reproduce the paired instability
   before treating it as a renderer defect.
+
+## 2026-07-18 Fresh Roll20 Loader Hold
+
+- OBSERVED: A fresh logged-in tab could read the Roll20 account home and a
+  zero-player observation candidate, but editor entry stayed on Roll20's
+  loading shell in both attempted rooms.
+- SAFETY: The attempt was observation-only. No room settings, sheet payload,
+  character values, chat, or assets were edited or uploaded; the temporary
+  agent tab was closed afterward.
+- OPEN: No `.charactersheet` iframe or authored canvas was available, so no
+  actual `sheetCanvas` sidecar was generated and no parity claim changed.
 ## 2026-07-18 Modern Sandbox Synthetic Smoke
 
 - DONE/VERIFIED ACTUAL: Applied the ignored synthetic HTML/CSS/translation

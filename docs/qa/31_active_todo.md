@@ -4885,3 +4885,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   each destination and populate only anonymous local evidence. Keep the
   production renderer on HOLD until wrapper, content canvas, crop, and state
   all compare under the same payload.
+
+## 2026-07-18 Fresh Roll20 Browser Loader Check
+
+- VERIFIED OBSERVATION: A fresh logged-in Roll20 tab loaded the account home
+  page and showed a candidate observation room with `0 players`. No existing
+  room settings, sheet source, character data, chat, or assets were changed.
+- VERIFY BLOCKED: Entering both the dedicated observation room and the empty
+  candidate room remained on Roll20's own `loading` screen; no iframe,
+  `.charactersheet`, or authored canvas became available for measurement.
+- DIAGNOSTIC: The browser console exposed extension-side asynchronous channel
+  warnings and Roll20/JQMigrate warnings, but no reliable sheet-root evidence.
+  This is an external browser/session loading hold, not a renderer result.
+- NEXT P0: Retry with a stable Roll20 editor session or a user-reloaded tab;
+  do not infer `sheetCanvas` from the loading shell and do not promote parity.
