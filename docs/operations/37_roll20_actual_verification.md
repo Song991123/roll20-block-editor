@@ -843,3 +843,18 @@ the preferred evidence.
 - LIMIT: This proves modern Sandbox activation and chat runtime smoke for one
   anonymous payload. It does not prove visual parity for arbitrary imports,
   asset/worker parity, or legacy support. Those remain separate gates.
+
+## 2026-07-19 Local Root Contract Cross-Check
+
+- VERIFIED: The local `buildSheetDoc` render of the same anonymous payload
+  matched the external Sandbox root metrics: `900px` iframe width, `850px`
+  authored width, `260px` authored height, static positioning, visible
+  overflow, two controls, and one roll button.
+- CLASSIFIED: Full Roll20 viewer height is larger because its nav/tab chrome is
+  present. The local product preview hides that chrome by design, so comparison
+  must crop to the authored sheet root instead of treating outer dialog height
+  as parity evidence.
+- EVIDENCE: The local result is stored in the ignored
+  `sandbox-local-compare.json` sidecar in the synthetic-modern evidence folder.
+- LIMIT: Root geometry agreement is not pixel parity. Asset decoding, complete
+  CSS paint, worker behavior, and legacy-room comparison remain unverified.

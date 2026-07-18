@@ -5778,3 +5778,19 @@ change, while actual Sandbox/legacy-room parity remains open.
 - NEXT: Generate matching local preview/edit captures and normalize them
   against the measured Roll20 wrapper/root contract; then repeat the upload
   path with an authorized legacy-enabled test room.
+
+## 2026-07-19 Local/External Root Contract Comparison
+
+- VERIFIED: Re-rendered the same ignored anonymous synthetic payload through
+  `buildSheetDoc` and compared it with the fresh Sandbox metrics. The local
+  contract matched the external root axes: iframe/dialog width `900px`, sheet
+  width `850px`, sheet height `260px`, `position: static`, visible overflow,
+  `2` controls, and `1` roll button. The translated heading also matched.
+- CLASSIFIED: The local wrapper height is `280px`; Roll20's full character
+  viewer was about `365.6px` because it includes the actual nav/tab chrome.
+  The product preview intentionally hides that chrome, so this is a crop policy
+  difference rather than a sheet-root mismatch. No renderer CSS patch was made.
+- PRIVATE EVIDENCE: `sandbox-local-compare.json` is ignored beside the
+  Sandbox screenshot/metrics under the synthetic-modern evidence directory.
+- NEXT: Build the root-only screenshot crop and pixel-diff step. Keep wrapper
+  chrome, authored sheet, and chat output as independent comparison axes.

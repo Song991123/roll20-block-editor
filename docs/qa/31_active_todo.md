@@ -5126,3 +5126,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   separate legacy-room check remain open.
 - NEXT P0: Capture a normalized local preview and edit surface for the same
   anonymous payload, then compare it with the Sandbox root/wrapper contract.
+
+## 2026-07-19 Local vs Modern Sandbox Root Contract
+
+- VERIFIED LOCAL + EXTERNAL: The same anonymous payload rendered through the
+  local `buildSheetDoc` contract matches the Sandbox root contract: `900px`
+  iframe/dialog width, `850px` authored sheet width, `260px` sheet height,
+  `static` positioning, visible overflow, `2` controls, and `1` roll button.
+- VERIFIED LOCAL: The translated title is preserved as `합성 Roll20 시트`.
+  The comparison script returned `pass: true` and writes only an ignored local
+  sidecar under the synthetic-modern evidence directory.
+- CLASSIFIED: Local dialog height is `280px`, while the real Roll20 viewer
+  measured about `365.6px`. The difference is the Roll20 nav/tab chrome that
+  the product preview intentionally hides; it is not included in the authored
+  sheet crop and must not be used as a sheet parity score.
+- NEXT P0: Capture root-only local and Sandbox screenshots under the same crop
+  and viewport, then run pixel diff. Keep dialog chrome and chat as separate
+  evidence axes.
