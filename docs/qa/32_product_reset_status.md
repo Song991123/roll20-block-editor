@@ -15,18 +15,22 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Preview/edit render surface | 6/6 local modern/legacy comparisons at 0% mismatch | VERIFIED LOCAL | Same local surface only |
 | Layer and placement interaction | edit-flow smoke, layer before/inside/after, flow/free placement, cycle guard, role palette | VERIFIED LOCAL | Figma-level usability still needs visual review |
 | Generated layout CSS | authored position block emits paired class + CSS rule | VERIFIED LOCAL | Imported source inline styles remain loss-aware |
-| Live Roll20 modern | 1 anonymous synthetic root capture; 1.6458% root-only mismatch | VERIFIED DIAGNOSTIC | Not a general parity result |
+| Live Roll20 modern Sandbox | 1 anonymous synthetic payload activated in a real sheet iframe; rolltemplate chat observed; 1.6458% root-only mismatch | VERIFIED EXTERNAL DIAGNOSTIC | Not a general parity result |
+| Live Roll20 solo-room wrapper | Modern and legacy rooms observed read-only: 900px iframe, modern 850px root, legacy 860px root | VERIFIED EXTERNAL PRIVATE | Wrapper contract only; not our export parity |
 | Authorized user-sheet Sandbox upload | No successful browser file handoff | VERIFY | Must be completed in the dedicated Sandbox |
 | Legacy-room visual parity | No dedicated legacy-room capture | VERIFY | Sandbox is modern-only |
 | UI product reset | Pastel/pink shell, light root/portal baseline, and core Korean product copy slice | PARTIAL | Full information architecture and visual UX reset remain |
 | Public copyright boundary | CI evidence guard, ignored local fixtures/reports, no tracked private corpus | VERIFIED LOCAL | Recheck before every public release |
-| CI/CD | GitHub Actions run `29655601442` passed for `28075c6` | VERIFIED REMOTE | Deployment smoke remains separate |
+| CI/CD | GitHub Actions run `29656047951` passed for `664fa53` | VERIFIED REMOTE | Deployment smoke remains separate |
 
 ## Current Counts
 
 - Local contract groups passed: `27/27`, `16/16`, `7/7`, and `6/6` visual
   comparisons.
-- Live Roll20 diagnostic captures: `1` synthetic modern root.
+- Live Roll20 synthetic Sandbox activations: `1` with real iframe and rolltemplate chat evidence.
+- Live Roll20 solo-room wrapper observations: `2` (modern and legacy, read-only).
+- Live Roll20 diagnostic root captures: `1` synthetic modern root at `1.6458%`
+  root-only mismatch.
 - Live Roll20 user-owned sheet captures: `0`.
 - Live Roll20 legacy-room captures: `0`.
 - Full product UI reset slices: `3` small shell/palette, core-copy, and layer-role slices; this is not
@@ -46,6 +50,21 @@ local gate is not evidence of visual equality in a live Roll20 room.
    design-scoped branch after the renderer baseline is frozen.
 5. Re-run local gates, copyright guard, deployment check, and browser smoke
    before calling any product-reset item complete.
+
+## Actual Roll20 Evidence Rebaseline
+
+- VERIFIED EXTERNAL PRIVATE: the dedicated Sandbox activated one anonymous
+  synthetic payload in a real sheet iframe. The authored root was `850 x 260`
+  inside a `900px` iframe; one input, one roll button, translated text, and a
+  real default rolltemplate chat result were observed.
+- VERIFIED EXTERNAL PRIVATE: read-only observation of one solo modern room and
+  one solo legacy room measured the shared `900px` iframe wrapper, with modern
+  `850px` and legacy `860px` authored roots. No existing room was edited.
+- DIAGNOSTIC: same-root synthetic local-vs-Roll20 capture measured `1.6458%`
+  mismatch after crop alignment. This is a renderer diagnostic, not a general
+  parity score.
+- VERIFY: an authorized user-imported sheet still needs a fresh activation
+  probe and normalized root screenshot before it can count as user-sheet parity.
 
 ## DOM Role Plan Slice
 

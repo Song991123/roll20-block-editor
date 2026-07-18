@@ -5936,6 +5936,21 @@ Verification: lint, production build, `ci:verify`, and `smoke:edit-flow` passed.
 This is the second small UI reset slice; the full information architecture and
 visual guidance remain open.
 
+### 2026-07-19 - Actual Roll20 evidence rebaseline
+
+Reconciled the ignored live evidence with the product-reset ledger. The
+dedicated Sandbox has one external synthetic activation proof: a real sheet
+iframe, authored `850 x 260` root in a `900px` iframe, one input, one roll
+button, translated text, and a real default rolltemplate chat result. A
+separate read-only observation captured one solo modern and one solo legacy
+room wrapper, measuring the shared `900px` iframe and the modern/legacy root
+widths without editing those rooms.
+
+The root-only synthetic local-vs-Roll20 PNG diagnostic remains `1.6458%`
+mismatch. This does not prove arbitrary or user-imported sheet parity. The
+status ledger was updated to keep external activation, wrapper observation,
+and user-sheet parity as separate evidence levels.
+
 ### 2026-07-19 - DOM role and layer palette slice
 
 Added `docs/ux/32_dom_layer_editing_plan.md` as the role/drop contract for the
