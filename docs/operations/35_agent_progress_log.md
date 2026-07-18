@@ -5572,3 +5572,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - OPEN: Actual modern/legacy authored `sheetCanvas` measurements are still
   unavailable because the fresh Roll20 editor session remained on the loading
   shell. Keep the parity gate on HOLD.
+
+## 2026-07-18 Pointermove Overlay Coalescing
+
+- IMPLEMENTED: `PreviewMain` now batches parent selection/drop overlay state
+  from iframe `pointermove` messages with one `requestAnimationFrame` callback.
+  Commit-like phases flush synchronously so the final drop or rollback does
+  not wait for a pending frame.
+- VERIFIED LOCAL: Persistent preview surface and edit-flow browser smoke,
+  iframe bridge/drop/design-position tests, imported-edit budget self-test,
+  lint, and production build all passed.
+- LIMIT: This is an interaction scheduling improvement, not proof of a fixed
+  latency budget on the large real-world sheet corpus. Actual Roll20 canvas
+  parity remains a separate HOLD.

@@ -4914,3 +4914,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Reconnect a stable Roll20 editor session and measure modern and
   legacy authored canvas geometry under the same anonymous payload before any
   renderer CSS change.
+
+## 2026-07-18 Pointermove Overlay Coalescing
+
+- DONE: Parent-side iframe selection/drop overlay updates are now coalesced
+  with `requestAnimationFrame`; pointerup, pointercancel, and bridge reset
+  still flush immediately.
+- VERIFIED LOCAL: `smoke:persistent-preview-surface`, `smoke:edit-flow`,
+  iframe bridge/drop/design-position tests, imported-edit budget self-test,
+  lint, and production build passed after the change.
+- CLAIM BOUNDARY: This removes one avoidable React state-update path during
+  drag. A user-perceived latency improvement number has not been measured on
+  a representative large imported sheet yet.
+- NEXT P1: Add a large anonymous fixture drag benchmark that compares pointer
+  event rate, overlay frame count, and drop-to-commit latency without keeping
+  any source-identifying sheet data.

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { useChatStore } from '@/lib/stores/chatStore';
@@ -113,6 +113,11 @@ export default function PreviewMain() {
   const iframeEditBridgeIdRef = useRef<string | null>(null);
   const [iframeEditOverlay, setIframeEditOverlay] = useState<IframeEditHitMessage | null>(null);
   const [iframeEditDropTarget, setIframeEditDropTarget] = useState<IframeEditDropTarget | null>(null);
+  const iframeEditOverlayFrameRef = useRef<number | null>(null);
+  const pendingIframeEditStateRef = useRef<{
+    overlay: IframeEditHitMessage;
+    dropTarget: IframeEditDropTarget | null;
+  } | null>(null);
   const iframeEditDropTargetRef = useRef<IframeEditDropTarget | null>(null);
   const [iframeEditDragOrigin, setIframeEditDragOrigin] = useState<IframeEditHitMessage | null>(null);
   const iframeEditDragOriginRef = useRef<IframeEditHitMessage | null>(null);
@@ -128,6 +133,47 @@ export default function PreviewMain() {
   const setSidebarRightTab = useUiStore((s) => s.setSidebarRightTab);
   const sidebarRightCollapsed = useUiStore((s) => s.sidebarRightCollapsed);
   const toggleSidebarRight = useUiStore((s) => s.toggleSidebarRight);
+
+  // Pointer events inside the iframe are already coalesced there. Coalesce the
+  // matching parent overlay state too, so a large sheet does not re-render the
+  // whole editor shell once per pointermove. Commit-like phases still flush
+  // immediately so pointerup/cancel cannot display stale drop geometry.
+  const flushIframeEditState = useCallback(
+    (overlay: IframeEditHitMessage | null, dropTarget: IframeEditDropTarget | null) => {
+      if (iframeEditOverlayFrameRef.current != null) {
+        window.cancelAnimationFrame(iframeEditOverlayFrameRef.current);
+        iframeEditOverlayFrameRef.current = null;
+      }
+      pendingIframeEditStateRef.current = null;
+      setIframeEditOverlay(overlay);
+      setIframeEditDropTarget(dropTarget);
+    },
+    [],
+  );
+
+  const queueIframeEditState = useCallback(
+    (overlay: IframeEditHitMessage, dropTarget: IframeEditDropTarget | null) => {
+      pendingIframeEditStateRef.current = { overlay, dropTarget };
+      if (iframeEditOverlayFrameRef.current != null) return;
+      iframeEditOverlayFrameRef.current = window.requestAnimationFrame(() => {
+        iframeEditOverlayFrameRef.current = null;
+        const pending = pendingIframeEditStateRef.current;
+        pendingIframeEditStateRef.current = null;
+        if (!pending) return;
+        setIframeEditOverlay(pending.overlay);
+        setIframeEditDropTarget(pending.dropTarget);
+      });
+    },
+    [],
+  );
+
+  useEffect(() => () => {
+    if (iframeEditOverlayFrameRef.current != null) {
+      window.cancelAnimationFrame(iframeEditOverlayFrameRef.current);
+      iframeEditOverlayFrameRef.current = null;
+    }
+    pendingIframeEditStateRef.current = null;
+  }, []);
 
   const total = htmlCount + cssCount + i18nCount;
   const isEmpty = total === 0;
@@ -448,8 +494,7 @@ export default function PreviewMain() {
       const editMessage = parseIframeEditBridgeMessage(e.data);
       if (editMessage?.type === 'r20:edit-ready') {
         if (iframeEditBridgeIdRef.current !== editMessage.bridgeId) {
-          setIframeEditOverlay(null);
-          setIframeEditDropTarget(null);
+          flushIframeEditState(null, null);
           setIframeEditDragOrigin(null);
           iframeEditDragOriginRef.current = null;
         }
@@ -502,8 +547,11 @@ export default function PreviewMain() {
           getBlock: (blockId) => adapter.getBlock('html', blockId),
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
         });
-        setIframeEditOverlay(editMessage);
-        setIframeEditDropTarget(nextDropTarget);
+        if (editMessage.phase === 'pointermove') {
+          queueIframeEditState(editMessage, nextDropTarget);
+        } else {
+          flushIframeEditState(editMessage, nextDropTarget);
+        }
         if (editMessage.phase === 'pointermove') {
           const ui = useUiStore.getState();
           const flowTarget = ui.editPlacementMode === 'flow' ? nextDropTarget : null;
@@ -782,7 +830,7 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [canvasWidthAuto, editSubmode, iframeDocumentSrcdoc, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
+  }, [canvasWidthAuto, editSubmode, flushIframeEditState, iframeDocumentSrcdoc, queueIframeEditState, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
