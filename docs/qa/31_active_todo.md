@@ -5462,3 +5462,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: this proves the local alternate Shadow interaction path only. The
   persistent iframe remains the default product surface; actual Roll20
   user-sheet and dedicated legacy-room evidence remain `0` and `0`.
+
+## 2026-07-19 Payload Roundtrip Mode and Capture Stability
+
+- FIXED: local payload roundtrip now reads the generated `sheet.json` manifest
+  and applies its modern/legacy compatibility mode before import and capture.
+- FIXED: local baseline generation applies the same manifest mode instead of
+  recording legacy metadata while always rendering with the default mode.
+- FIXED: baseline and roundtrip captures wait for document fonts, images, and
+  repeated stable root geometry before taking screenshots. This removes a
+  timing-dependent height mismatch between otherwise identical captures.
+- FIXED: the local gate classifies only the known legacy Roll20 font-proxy CORS
+  pair as expected. Unrelated console, page, and resource errors still fail.
+- VERIFIED LOCAL: the latest anonymous three-fixture run passed all seven
+  pre-upload checks. The mode-aware roundtrip stayed within the 2% mismatch
+  threshold, with the latest three captures reporting 0.00% mismatch.
+- BOUNDARY: this proves local payload readiness and capture stability only. It
+  does not prove an authorized user sheet has been activated in Roll20, and it
+  does not add any actual sheet source or screenshot to the public repository.

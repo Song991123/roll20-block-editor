@@ -236,9 +236,10 @@ async function warmPerfHook(page) {
 }
 
 async function importFixture(page, fixture) {
-  return page.evaluate(async ({ html, css, i18n, assetReplacementMap }) => {
+  return page.evaluate(async ({ html, css, i18n, assetReplacementMap, compatibilityMode }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     window.__perfHook.clearAll();
+    window.__perfHook.setRoll20CompatibilityMode(compatibilityMode);
     window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setMainMode('preview');
     window.__perfHook.setAssetReplacementMap(assetReplacementMap || '');
@@ -254,7 +255,10 @@ async function importFixture(page, fixture) {
       emit: window.__perfHook.getEmitContent(),
       workspace: window.__perfHook.getWorkspace(),
     };
-  }, fixture);
+  }, {
+    ...fixture,
+    compatibilityMode: fixture.legacyMode?.legacy ? 'legacy' : 'modern',
+  });
 }
 
 async function collectHiddenState(sheet, hiddenAttrs) {
@@ -365,6 +369,7 @@ async function capturePreview(page, outFile, stateCandidate) {
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
+  await waitForVisualStability(page, sheet);
   const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);
   await sheet.screenshot({ path: outFile });
   const summary = await sheet.evaluate(summarizeSheetElement);
@@ -384,8 +389,45 @@ async function captureEdit(page, outFile) {
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
+  await waitForVisualStability(page, sheet);
   await sheet.screenshot({ path: outFile });
   return sheet.evaluate(summarizeSheetElement);
+}
+
+async function waitForVisualStability(page, sheet) {
+  await sheet.evaluate(async (root) => {
+    if (document.fonts?.ready) await document.fonts.ready.catch(() => {});
+    const images = Array.from(root.querySelectorAll('img'));
+    await Promise.all(images.map((image) => {
+      if (image.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', resolve, { once: true });
+      });
+    }));
+  });
+
+  let previous = null;
+  let stableSamples = 0;
+  const deadline = Date.now() + 8000;
+  while (Date.now() < deadline) {
+    const metrics = await sheet.evaluate((root) => {
+      const rect = root.getBoundingClientRect();
+      return [
+        Math.round(rect.width * 100) / 100,
+        Math.round(rect.height * 100) / 100,
+        root.scrollWidth,
+        root.scrollHeight,
+        root.querySelectorAll('*').length,
+      ];
+    });
+    if (JSON.stringify(metrics) === JSON.stringify(previous)) stableSamples += 1;
+    else stableSamples = 0;
+    if (stableSamples >= 2) return;
+    previous = metrics;
+    await page.waitForTimeout(250);
+  }
+  throw new Error('Preview root geometry did not stabilize before capture');
 }
 
 async function waitForImportedSheet(page) {

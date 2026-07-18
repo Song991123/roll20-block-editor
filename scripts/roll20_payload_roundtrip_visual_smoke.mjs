@@ -78,9 +78,20 @@ async function listPayloadFixtures() {
       dir: path.join(localRoot, entry.name),
       payloadDir: path.join(localRoot, entry.name, 'payload'),
       baselineScreenshot: path.join(localRoot, entry.name, 'screenshots', 'local-preview.png'),
+      manifestFile: path.join(localRoot, entry.name, 'payload', 'sheet.json'),
     }))
     .filter((entry) => existsSync(path.join(entry.payloadDir, 'sheet.html')) && existsSync(entry.baselineScreenshot))
     .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+async function resolveCompatibilityMode(fixture) {
+  if (!existsSync(fixture.manifestFile)) return 'modern';
+  try {
+    const manifest = JSON.parse(await readText(fixture.manifestFile));
+    return manifest?.legacy === true ? 'legacy' : 'modern';
+  } catch {
+    return 'modern';
+  }
 }
 
 async function loadStateMap() {
@@ -132,15 +143,16 @@ async function warmPerfHook(page) {
   );
 }
 
-async function importPayload(page, fixture) {
+async function importPayload(page, fixture, compatibilityMode) {
   const payload = {
     html: await readText(path.join(fixture.payloadDir, 'sheet.html')),
     css: await readText(path.join(fixture.payloadDir, 'sheet.css')),
     i18n: await readText(path.join(fixture.payloadDir, 'translation.json')),
   };
-  return page.evaluate(async ({ html, css, i18n }) => {
+  return page.evaluate(async ({ html, css, i18n, compatibilityMode: mode }) => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     window.__perfHook.clearAll();
+    window.__perfHook.setRoll20CompatibilityMode(mode);
     await sleep(700);
     let last = null;
     for (let i = 0; i < 40; i += 1) {
@@ -152,7 +164,7 @@ async function importPayload(page, fixture) {
       result: last,
       emit: window.__perfHook.getEmitContent(),
     };
-  }, payload);
+  }, { ...payload, compatibilityMode });
 }
 
 async function collectHiddenState(sheet, hiddenAttrs) {
@@ -252,20 +264,58 @@ async function applyPreviewStateCandidate(page, frame, sheet, candidate) {
   return result;
 }
 
-async function capturePayloadPreview(page, outFile, stateCandidate) {
+async function capturePayloadPreview(page, outFile, stateCandidate, compatibilityMode) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setPreviewRenderMode('iframe');
     window.__perfHook.setMainMode('preview');
   });
+  await page.evaluate((mode) => window.__perfHook.setRoll20CompatibilityMode(mode), compatibilityMode);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const sheet = frame.locator('#charsheet-root').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
+  await waitForVisualStability(page, sheet);
   const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);
   await sheet.screenshot({ path: outFile });
   const summary = await sheet.evaluate(summarizeSheetElement);
   summary.stateCandidate = stateCandidateResult;
   return summary;
+}
+
+async function waitForVisualStability(page, sheet) {
+  await sheet.evaluate(async (root) => {
+    if (document.fonts?.ready) await document.fonts.ready.catch(() => {});
+    const images = Array.from(root.querySelectorAll('img'));
+    await Promise.all(images.map((image) => {
+      if (image.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', resolve, { once: true });
+      });
+    }));
+  });
+
+  let previous = null;
+  let stableSamples = 0;
+  const deadline = Date.now() + 8000;
+  while (Date.now() < deadline) {
+    const metrics = await sheet.evaluate((root) => {
+      const rect = root.getBoundingClientRect();
+      return [
+        Math.round(rect.width * 100) / 100,
+        Math.round(rect.height * 100) / 100,
+        root.scrollWidth,
+        root.scrollHeight,
+        root.querySelectorAll('*').length,
+      ];
+    });
+    if (JSON.stringify(metrics) === JSON.stringify(previous)) stableSamples += 1;
+    else stableSamples = 0;
+    if (stableSamples >= 2) return;
+    previous = metrics;
+    await page.waitForTimeout(250);
+  }
+  throw new Error('Payload preview root geometry did not stabilize before capture');
 }
 
 function summarizeSheetElement(sheetEl) {
@@ -487,6 +537,39 @@ function summarizeResourceIssues(issues) {
   return Array.from(map.values()).sort((a, b) => b.count - a.count || String(a.host).localeCompare(String(b.host)));
 }
 
+function classifyExpectedConsoleErrors(events, compatibilityMode) {
+  if (compatibilityMode !== 'legacy') return { expected: [], unexpected: events };
+  const expected = [];
+  const unexpected = [];
+  for (const event of events || []) {
+    const message = event.text || '';
+    const sourceUrl = event.url || '';
+    if (
+      message.includes("Access to font at 'https://imgsrv.roll20.net/?src=")
+      && message.includes('blocked by CORS policy')
+    ) {
+      expected.push(event);
+      continue;
+    }
+    if (
+      message === 'Failed to load resource: net::ERR_FAILED'
+      && sourceUrl.startsWith('https://imgsrv.roll20.net/?src=')
+    ) {
+      expected.push(event);
+      continue;
+    }
+    unexpected.push(event);
+  }
+  return { expected, unexpected };
+}
+
+function isExpectedLegacyProxyResource(issue, compatibilityMode) {
+  return compatibilityMode === 'legacy'
+    && issue.kind === 'failed'
+    && issue.resourceType === 'font'
+    && issue.host === 'imgsrv.roll20.net';
+}
+
 function renderMarkdown(report) {
   const lines = [];
   lines.push('# Roll20 Payload Roundtrip Visual Smoke');
@@ -497,17 +580,17 @@ function renderMarkdown(report) {
   lines.push('Scope: local cleaned-payload re-import check. This does not prove actual Roll20 visual parity.');
   if (report.stateMapPath) lines.push(`State map: \`${report.stateMapPath}\``);
   lines.push('');
-  lines.push('| Fixture | Status | Blocks | Baseline size | Payload size | Preview state | Mismatch | Bounds | Roll buttons | Visible runtime nodes | Console/Page errors | Resources |');
-  lines.push('| --- | --- | ---: | --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: |');
+  lines.push('| Fixture | Mode | Status | Blocks | Baseline size | Payload size | Preview state | Mismatch | Bounds | Roll buttons | Visible runtime nodes | Unexpected errors | Expected proxy issues |');
+  lines.push('| --- | --- | --- | ---: | --- | --- | --- | ---: | --- | ---: | ---: | ---: | ---: |');
   for (const item of report.fixtures) {
     const d = item.diff ?? {};
     const best = d.best ?? {};
     lines.push(
-      `| \`${item.id}\` | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.result?.blockCount ?? 0} | ${fmtSize(d.baselineSize)} | ${fmtSize(d.payloadSize)} | ${fmtStateCandidate(item.previewDom?.stateCandidate)} | ${best.mismatchPct ?? ''}% | ${fmtBounds(best.mismatchBounds)} | ${item.previewDom?.rollButtonCount ?? 0} | ${item.previewDom?.visibleScriptCount ?? 0} | ${(item.consoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0)} | ${sumResourceIssues(item.resourceIssues)} |`,
+      `| \`${item.id}\` | ${item.compatibilityMode ?? 'modern'} | ${item.pass ? 'PASS' : 'FAIL'} | ${item.import?.result?.blockCount ?? 0} | ${fmtSize(d.baselineSize)} | ${fmtSize(d.payloadSize)} | ${fmtStateCandidate(item.previewDom?.stateCandidate)} | ${best.mismatchPct ?? ''}% | ${fmtBounds(best.mismatchBounds)} | ${item.previewDom?.rollButtonCount ?? 0} | ${item.previewDom?.visibleScriptCount ?? 0} | ${(item.unexpectedConsoleErrors?.length ?? 0) + (item.pageErrors?.length ?? 0) + sumResourceIssues(item.unexpectedResourceIssues)} | ${(item.expectedConsoleErrors?.length ?? 0) + sumResourceIssues(item.expectedResourceIssues)} |`,
     );
   }
   lines.push('');
-  lines.push(`Gate: mismatch must be <= ${report.mismatchThresholdPct}% and no page/console errors. Script/rolltemplate nodes must remain visually hidden.`);
+  lines.push(`Gate: mismatch must be <= ${report.mismatchThresholdPct}% and no unexpected page/console/resource errors. The known legacy Roll20 font-proxy CORS pair is reported separately. Script/rolltemplate nodes must remain visually hidden.`);
   lines.push('Optional `--state-map` applies local preview action-state hints before the payload screenshot only. It does not change payload files.');
   lines.push('');
   lines.push('If this fails, fix export cleanup or import roundtrip before uploading the payload to Roll20.');
@@ -566,7 +649,9 @@ async function main() {
       const pageErrors = [];
       const resourceIssues = [];
       page.on('console', (msg) => {
-        if (msg.type() === 'error') consoleErrors.push(msg.text().slice(0, 500));
+        if (msg.type() === 'error') {
+          consoleErrors.push({ text: msg.text().slice(0, 500), url: msg.location().url || '' });
+        }
       });
       page.on('pageerror', (err) => pageErrors.push(String(err).slice(0, 500)));
       page.on('response', (response) => {
@@ -590,24 +675,50 @@ async function main() {
       try {
         await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
         await warmPerfHook(page);
-        entry.import = await importPayload(page, fixture);
+        entry.compatibilityMode = await resolveCompatibilityMode(fixture);
+        entry.import = await importPayload(page, fixture, entry.compatibilityMode);
         entry.payloadScreenshot = path.join(REPORT_DIR, 'screenshots', `${fixture.id}-payload-preview.png`);
         entry.previewStateCandidate = sanitizeStateCandidate(stateMap.fixtures[fixture.id]);
-        entry.previewDom = await capturePayloadPreview(page, entry.payloadScreenshot, entry.previewStateCandidate);
+        entry.previewDom = await capturePayloadPreview(
+          page,
+          entry.payloadScreenshot,
+          entry.previewStateCandidate,
+          entry.compatibilityMode,
+        );
         entry.diff = await diffImages(page, fixture.baselineScreenshot, entry.payloadScreenshot);
+        entry.consoleClassification = classifyExpectedConsoleErrors(consoleErrors, entry.compatibilityMode);
+        entry.expectedConsoleErrors = entry.consoleClassification.expected;
+        entry.unexpectedConsoleErrors = entry.consoleClassification.unexpected;
+        const allResourceIssues = summarizeResourceIssues(resourceIssues);
+        entry.expectedResourceIssues = allResourceIssues.filter((issue) =>
+          isExpectedLegacyProxyResource(issue, entry.compatibilityMode),
+        );
+        entry.unexpectedResourceIssues = allResourceIssues.filter((issue) =>
+          !isExpectedLegacyProxyResource(issue, entry.compatibilityMode),
+        );
         entry.pass =
           (entry.import?.result?.blockCount ?? 0) > 0 &&
           entry.previewDom?.elementCount > 0 &&
           entry.previewDom?.visibleScriptCount === 0 &&
           (entry.diff?.best?.mismatchPct ?? 100) <= MISMATCH_THRESHOLD_PCT &&
-          consoleErrors.length === 0 &&
-          pageErrors.length === 0;
+          entry.unexpectedConsoleErrors.length === 0 &&
+          pageErrors.length === 0 &&
+          sumResourceIssues(entry.unexpectedResourceIssues) === 0;
       } catch (err) {
         entry.error = String(err?.stack || err).slice(0, 1200);
       }
       entry.consoleErrors = consoleErrors;
       entry.pageErrors = pageErrors;
       entry.resourceIssues = summarizeResourceIssues(resourceIssues);
+      entry.consoleClassification ??= classifyExpectedConsoleErrors(consoleErrors, entry.compatibilityMode);
+      entry.expectedConsoleErrors ??= entry.consoleClassification.expected;
+      entry.unexpectedConsoleErrors ??= entry.consoleClassification.unexpected;
+      entry.expectedResourceIssues ??= entry.resourceIssues.filter((issue) =>
+        isExpectedLegacyProxyResource(issue, entry.compatibilityMode),
+      );
+      entry.unexpectedResourceIssues ??= entry.resourceIssues.filter((issue) =>
+        !isExpectedLegacyProxyResource(issue, entry.compatibilityMode),
+      );
       report.fixtures.push(entry);
       console.log(`${entry.pass ? 'PASS' : 'FAIL'} ${fixture.id} mismatch=${entry.diff?.best?.mismatchPct ?? 'n/a'}%`);
       await page.close();

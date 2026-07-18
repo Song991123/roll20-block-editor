@@ -226,3 +226,14 @@ Every future progress report must label each item as `DONE`, `VERIFIED LOCAL`,
 `VERIFIED REMOTE`, `DIAGNOSTIC`, `PARTIAL`, `VERIFY`, or `BLOCKED`. The words
 "100%", "Roll20과 동일", and "완료" require evidence at the same scope as the
 claim.
+
+## Current Verification Delta
+
+- VERIFIED LOCAL: the pre-upload pipeline now applies each payload manifest's
+  modern/legacy mode consistently in both baseline and roundtrip captures.
+- VERIFIED LOCAL: font/image readiness and repeated root-geometry stability
+  checks prevent intermittent screenshot height drift. The latest anonymous
+  three-fixture run passed all seven local pre-upload gates; the latest
+  roundtrip captures reported 0.00% mismatch.
+- VERIFY: actual Roll20 Sandbox activation for a user-provided payload and a
+  separate legacy-room capture are still required for external parity.

@@ -6163,3 +6163,22 @@ commit, and zero console/page errors.
 Verification: the smoke passed. This raises confidence in the alternate Shadow
 drag path only; the default persistent iframe and live Roll20 external evidence
 remain separate gates.
+
+### 2026-07-19 - Manifest-aware pre-upload roundtrip
+
+The local Roll20 payload pipeline had two related measurement defects. The
+baseline generator recorded the payload's legacy flag but did not apply that
+mode while rendering. The roundtrip verifier also ignored `sheet.json`, so
+legacy payloads could be compared against a different renderer mode. Both
+paths now use the manifest mode explicitly.
+
+The baseline and roundtrip capture paths also wait for document fonts/images
+and repeated stable root geometry. The roundtrip gate keeps the known legacy
+Roll20 font-proxy CORS pair as expected evidence while failing on unrelated
+console/page/resource issues.
+
+Verification: the latest anonymous three-fixture run passed local baseline,
+payload audit, Sandbox sanitize audit, mode-aware visual roundtrip, state
+selector audit, asset audit, and evidence guard. The latest roundtrip captures
+reported 0.00% mismatch. This remains local pre-upload evidence; no external Roll20 upload
+or public fixture/report was created.
