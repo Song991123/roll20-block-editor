@@ -5676,3 +5676,28 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - LIMIT: This repairs a local verification regression and strengthens the
   same-surface evidence. It does not prove actual Roll20 room or Sandbox
   parity, which remains open.
+
+## 2026-07-19 Solo Roll20 room wrapper measurements
+
+I used the authenticated Chrome session in read-only mode and selected only
+rooms showing `0 players`. The dedicated `Codex Roll20 Legacy Verify` room and
+the `[3팀]아무도 없는 섬 Copy` room were both observed without changing room
+settings, source, chat, assets, or uploads. Opening one character viewer in each
+room produced real Roll20 sheet iframe evidence.
+
+- Legacy: sheet root `860 x 280`; iframe content width `900px`; outer dialog
+  `906.8px` wide and `429.8px` high; root `position: static`,
+  `overflow: visible`; `2` controls and `1` roll button.
+- Modern: sheet root `850 x 1992.16`; iframe content width `900px`; outer
+  dialog `906.8px` wide and `379.8px` high; root `position: relative`,
+  `overflow: hidden`; `431` controls and `159` roll buttons.
+- Both runtimes loaded Roll20's jquery-ui baseline, `base.css`,
+  `charsheet.css`, and inline sheet CSS. The actual captures and the metric
+  sidecar are private ignored evidence under
+  `reports/roll20-actual-compare/live-browser/2026-07-19-solo-room-observation/`.
+
+This advances the evidence tier from editor-shell reachability to actual
+modern/legacy wrapper and authored-root measurement. It does not yet authorize
+a production renderer CSS patch or claim export parity: the anonymous export
+still must be applied in Sandbox or a dedicated test room and compared under a
+normalized viewport/state contract.

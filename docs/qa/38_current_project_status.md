@@ -1,6 +1,6 @@
 # 38. Current Project Status and ETA
 
-Date: 2026-07-18
+Date: 2026-07-19
 
 This is a compact status snapshot for handoff and planning. It must not be used to claim full Roll20 visual parity. Generated reports and private sheet evidence remain local-only and ignored.
 
@@ -36,13 +36,34 @@ This is a compact status snapshot for handoff and planning. It must not be used 
 - INTERPRETATION: The synthetic runtime contract is active, but the renderer
   still has a concrete crop/width mismatch. No visual parity claim is allowed.
 
+### Live Solo Room Geometry: 2026-07-19
+
+- ACTUAL LEGACY OBSERVATION: In the dedicated `Codex Roll20 Legacy Verify`
+  room (`0 players`), a real character viewer exposed a sheet root of
+  `860x280` inside a `900px` iframe. The outer Roll20 dialog measured
+  `906.8x429.8px`; the root was `position: static` and `overflow: visible`.
+- ACTUAL MODERN OBSERVATION: In the solo `[3팀]아무도 없는 섬 Copy` room
+  (`0 players`), a real character viewer exposed a sheet root of
+  `850x1992.16` inside a `900px` iframe. The outer dialog measured
+  `906.8x379.8px`; the root was `position: relative` and `overflow: hidden`.
+- ACTUAL BASELINE: Both live iframes loaded Roll20 jquery-ui, `base.css`,
+  `charsheet.css`, and inline sheet CSS. This confirms that the local renderer
+  contract needs both wrapper geometry and the baseline CSS family, not only a
+  copied sheet stylesheet.
+- PRIVATE EVIDENCE: Screenshots and metrics are stored only under the ignored
+  `reports/roll20-actual-compare/live-browser/2026-07-19-solo-room-observation/`.
+- LIMIT: These observations measure Roll20's real runtime and sheet roots; they
+  do not yet prove that our exported payload matches either sheet. Sandbox or
+  dedicated-room anonymous export upload plus normalized screenshot diff is
+  still required.
+
 ## Current Status Summary
 
 | Area | Status | Current Evidence | Meaning |
 | --- | --- | --- | --- |
 | Local import/export baseline | VERIFY/PARTIAL | Existing local baseline/preupload reports pass for the active `2026-06-18-state-map-v1` run. | Prepared fixtures can be imported, emitted, packaged, and checked locally. This is not actual Roll20 parity. |
 | Local preview vs edit | VERIFY/GOOD_LOCAL | `smoke:preview-edit-visual` PASS on 2026-07-13: AW2E `1.86%`, Les-Oublies `2.07%`, YSHY `1.02%`. `smoke:imported-edit-sync` also passes for the prepared fixtures. | Preview/edit share enough local rendering behavior to keep improving edit UX, but exact Roll20 parity is still unproven. |
-| Actual Roll20 sheet root | VERIFY/PARTIAL | Existing prepared-fixture root evidence remains separate from the new anonymous synthetic smoke. Modern/legacy synthetic iframe and wrapper measurements are recorded locally. | Runtime activation is proven for one synthetic payload per mode; normalized visual parity and broad sheet coverage remain open. |
+| Actual Roll20 sheet root | VERIFY/PARTIAL | Live solo-room observation now measures both a modern root (`850x1992.16`) and legacy root (`860x280`) inside `900px` iframes, with `906.8px` outer dialogs. | Real wrapper/root contracts are known for two rooms, but our anonymous export has not yet been applied and diffed in Roll20. |
 | Actual Roll20 chat/rolltemplate | VERIFY/SYNTHETIC_ONLY | The modern and legacy synthetic roll control produced real scoped chat entries with resolved results. Existing prepared-fixture mismatch reports remain historical/fixture-specific evidence. | Chat runtime plumbing works for the synthetic contract; actual template-by-template visual parity remains unproven. |
 | Renderer promotion | BLOCKED | `gate:roll20-renderer-action`: `HOLD_PRODUCTION_RENDERER_PATCH`, `rendererBlockers=8`, `rendererReady=NO`. The gate also reports asset-relink blockers for AW2E/YSHY and split template scopes `.sheet-rolltemplate-aw` vs `.sheet-rolltemplate-coc`. | No production Roll20 renderer CSS/chat patch should be promoted yet. Global ChatPane tweaks are specifically unsafe. |
 | Asset relink / browser paint | BLOCKED_BY_USER_ASSET_URLS | `plan:roll20-asset-relink` reports `RELINK_MAP_REQUIRED`: AW2E and YSHY are `MISSING_RELINK`. `plan:roll20-chat-browser-paint` reports `BROWSER_PAINT_BLOCKED_BY_RELINK`. Import/export can generate commented relink drafts, export smoke verifies the draft path, and placeholder targets are now rejected/count as `미입력` instead of being applied. The CLI relink plan also keeps placeholder maps at `MISSING_RELINK` with `mapEntries=0`. | The product can guide users toward the needed map and avoids false relink readiness, but it still needs real user-owned HTTP(S) replacement URLs before background/paint pixels can be judged or renderer CSS promoted for those fixtures. |
@@ -59,7 +80,7 @@ These percentages are coarse planning estimates based on current gates, not comp
 | --- | ---: | ---: | --- |
 | Local edit/drop UX | 20% | 58-68% | Flow drop, absolute drop, before/inside/after layer modes, frame-relative free placement, layer structure visibility, and direct canvas width controls now pass smoke checks. |
 | Local preview/edit visual sync | 20-30% | ~70% | Current fixture smoke is `1.02-2.07%` mismatch, enough for continued UX work but not actual Roll20 parity. |
-| Actual Roll20 sheet-root reproduction | 0-10% | 60-70% | Trusted/reliable full-root evidence is `3/3`, but AW2E still relies on diagnostic scroll-metrics replacement for safe interpretation. |
+| Actual Roll20 sheet-root reproduction | 0-10% | 65-75% | Live modern and legacy authored roots are now measured from solo rooms; export application and normalized parity against those roots remain open. |
 | Actual Roll20 chat/rolltemplate reproduction | 0-5% | 40-50% | Capture quality improved to authoritative `6/6` generated screenshots/diffs with `3/3` normalized chat comparisons, but AW2E/YSHY still mismatch visually and renderer remains held. |
 | Whole user-ready product goal | 10-15% | 45-55% | Evidence plumbing and local editing are much stronger, but actual Roll20 renderer promotion, asset relink, broader sheet coverage, legacy mode proof, and Figma-like polish are still incomplete. |
 

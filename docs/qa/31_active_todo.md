@@ -5029,3 +5029,32 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   also pass.
 - BOUNDARY: These are local/synthetic and comparison-fixture results. They do
   not replace the missing qualifying solo-room or Sandbox actual Roll20 proof.
+
+## 2026-07-19 Solo Roll20 Room Observation: Modern + Legacy Geometry
+
+- VERIFIED EXTERNAL, PRIVATE: Read-only authenticated Chrome observation reached
+  two rooms showing `0 players`: `Codex Roll20 Legacy Verify` and `[3팀]아무도
+  없는 섬 Copy`. No room settings, sheet source, chat messages, assets, or
+  uploads were changed.
+- VERIFIED EXTERNAL: The legacy room character viewer exposed a real Roll20
+  sheet root at `860 x 280`, with an iframe content width of `900px`. Its
+  surrounding dialog measured `906.8px` wide; the sheet root was static and
+  overflow-visible.
+- VERIFIED EXTERNAL: The modern room character viewer exposed a real Roll20
+  sheet root at `850 x 1992.16`, with an iframe content width of `900px`. Its
+  surrounding dialog measured `906.8px` wide; the sheet root was relative and
+  overflow-hidden.
+- VERIFIED EXTERNAL: Both iframe runtimes loaded the same Roll20 baseline
+  family (`jquery-ui`, `base.css`, `charsheet.css`) plus inline sheet CSS. The
+  modern sample exposed `431` form controls and `159` roll buttons; the legacy
+  sample exposed `2` controls and `1` roll button.
+- PRIVATE EVIDENCE: Actual captures and metrics are under the ignored local
+  directory `reports/roll20-actual-compare/live-browser/2026-07-19-solo-room-observation/`.
+  They are intentionally excluded from public commits.
+- BOUNDARY: This is authoritative wrapper/root observation, not proof that our
+  export renders identically in Roll20. The generated renderer status sidecars
+  remain unchanged and the production renderer gate stays HOLD until an
+  anonymous export is applied in Sandbox or a dedicated test room and the
+  resulting screenshot is normalized and diffed.
+- NEXT P0: Use these measured wrapper contracts to normalize the local modern /
+  legacy comparison harness, then run the dedicated anonymous export check.
