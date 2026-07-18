@@ -318,7 +318,7 @@ function EditLayerPanel({
         data-testid="edit-layer-workspace"
       >
         <span className="text-[10px] font-medium text-muted-foreground">HTML 구조</span>
-        <span className="rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-200">
+        <span className="rounded border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-200">
           시트에 표시되는 레이어
         </span>
       </div>
@@ -336,7 +336,7 @@ function EditLayerPanel({
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
           <span className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-sm bg-sky-400/80" />
+            <span className="h-2 w-2 rounded-sm bg-rose-400/80" />
             담기 가능
           </span>
           <span className="inline-flex items-center gap-1">
@@ -523,7 +523,7 @@ const EditLayerRow = memo(function EditLayerRow({
             : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
       } ${
         dropMode === 'inside'
-          ? 'ring-1 ring-sky-400/80'
+          ? 'ring-1 ring-rose-400/80'
           : dropMode === 'before'
             ? 'shadow-[inset_0_2px_0_rgba(96,165,250,0.95)]'
             : dropMode === 'after'
@@ -545,13 +545,13 @@ const EditLayerRow = memo(function EditLayerRow({
         data-testid="edit-layer-role-rail"
         className={cn(
           'pointer-events-none absolute bottom-1 left-0 top-1 w-1 rounded-r',
-          role.canReceiveChildren ? 'bg-sky-400/70' : 'bg-zinc-500/45',
+          role.canReceiveChildren ? 'bg-rose-400/70' : 'bg-zinc-500/45',
           node.layerRelation === 'child' && 'bg-emerald-400/70',
           selected && 'bg-orange-400',
         )}
       />
       {dropMode && (
-        <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 rounded bg-sky-500 px-1.5 py-0.5 text-[9px] font-medium text-white">
+        <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 rounded bg-rose-500 px-1.5 py-0.5 text-[9px] font-medium text-white">
           {formatDropModeLabel(dropMode)}
         </span>
       )}
@@ -589,7 +589,7 @@ const EditLayerRow = memo(function EditLayerRow({
             </span>
           )}
           {role.canReceiveChildren && (
-            <span className="shrink-0 rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-200">
+            <span className="shrink-0 rounded border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-200">
               담기 가능
             </span>
           )}
@@ -646,7 +646,7 @@ function LayerMiniMap({
         selected
           ? 'border-orange-400/80 bg-orange-400/15'
           : canReceiveChildren
-            ? 'border-sky-400/60 bg-sky-400/10'
+          ? 'border-rose-400/60 bg-rose-400/10'
             : 'border-border/70 bg-[var(--bg-elevated-2)]',
       )}
     >
@@ -654,10 +654,10 @@ function LayerMiniMap({
         className={cn(
           'relative block h-3 rounded-[3px] border',
           isContainer
-            ? 'border-sky-300/70 bg-sky-400/10'
+            ? 'border-rose-300/70 bg-rose-400/10'
             : 'border-zinc-500/50 bg-zinc-500/15',
-          roleKind === 'table' && 'border-indigo-300/80 bg-indigo-400/10',
-          roleKind === 'flow' && 'border-cyan-300/80 bg-cyan-400/10',
+          roleKind === 'table' && 'border-amber-300/80 bg-amber-400/10',
+          roleKind === 'flow' && 'border-teal-300/80 bg-teal-400/10',
         )}
       >
         <span
@@ -671,7 +671,7 @@ function LayerMiniMap({
             key={idx}
             className={cn(
               'absolute bottom-[2px] top-[2px] rounded-[1px]',
-              canReceiveChildren ? 'bg-sky-200/85' : 'bg-zinc-300/55',
+              canReceiveChildren ? 'bg-rose-200/85' : 'bg-zinc-300/55',
             )}
             style={{
               left: `${9 + idx * 5}px`,
@@ -680,7 +680,7 @@ function LayerMiniMap({
           />
         ))}
         {childCount > LAYER_MINI_CHILD_SLOTS && (
-          <span className="absolute right-[2px] top-[1px] h-[2px] w-[2px] rounded-full bg-sky-100/90" />
+          <span className="absolute right-[2px] top-[1px] h-[2px] w-[2px] rounded-full bg-rose-100/90" />
         )}
       </span>
     </span>

@@ -47,6 +47,16 @@
 - CLAIM BOUNDARY: This is app-chrome readability work, not Roll20 visual
   parity evidence.
 
+## 2026-07-18 Layer Palette Alignment
+
+- DONE: Aligned edit-layer drop indicators and mini-map accents with the
+  existing pastel role palette: frame/container rose, flow teal, table amber,
+  and neutral runtime/other states. No iframe sheet CSS was changed.
+- VERIFIED LOCAL: fresh-sheet, edit-flow, modern/legacy persistent-preview,
+  lint, build, `ci:verify`, and server hygiene all pass.
+- CLAIM BOUNDARY: This improves app-shell visual language only; it does not
+  change or prove Roll20 renderer parity.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: GitHub Actions run `29621836381` for commit `4718564`

@@ -43,6 +43,17 @@
   smokes, and server hygiene pass. This does not promote any renderer or chat
   candidate.
 
+## 2026-07-18 Layer Palette Alignment
+
+- DONE: Replaced the remaining blue/indigo/cyan accents in the edit-layer
+  drop indicators and mini-map with the established rose/teal/amber pastel
+  role colors. Imported sheet rendering and Roll20 baseline CSS were not
+  touched.
+- VERIFIED LOCAL: fresh-sheet, edit-flow, modern/legacy persistent-preview,
+  lint, build, `ci:verify`, and server hygiene pass.
+- BOUNDARY: This is app-shell styling evidence only; actual Roll20 parity and
+  renderer/chat candidate promotion remain `VERIFY`/`HOLD`.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: CI run `29621836381` for `4718564` completed successfully;
