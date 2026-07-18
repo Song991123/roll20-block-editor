@@ -4982,3 +4982,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   absolute positioning, or non-statement/custom Blockly connections.
 - NEXT P1: Extend the anonymous browser smoke to compare the post-eject
   preview/edit geometry and emitted HTML/CSS, not only the Blockly layer graph.
+
+## 2026-07-19 Application Chrome Pastel Baseline
+
+- IMPLEMENTED: The browser theme color, initial toast surface, toast text, and
+  toast border now match the existing pastel application shell instead of
+  flashing or reverting to the old charcoal chrome.
+- VERIFIED LOCAL: The running app shell reported `app-shell pastel`,
+  `--bg-app=#fffafb`, and `--primary=#d45d84` in a real browser capture. The
+  captured shell had no application page errors; the dev-only HMR websocket
+  warning is excluded from the product claim.
+- BOUNDARY: This covers application chrome only. Roll20 iframe, sheet CSS,
+  Roll20 dark/light runtime tokens, and actual sheet visual parity are
+  intentionally unchanged.

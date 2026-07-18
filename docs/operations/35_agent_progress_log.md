@@ -5633,3 +5633,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   preview/edit geometry diff after eject. The operation is limited to
   statement-connected HTML blocks. Actual Roll20 parity and full Figma
   grouping remain open.
+
+## 2026-07-19 Application Chrome Pastel Baseline
+
+- IMPLEMENTED: Updated `app/layout.tsx` so the browser theme color and
+  Sonner toast surface use the existing pastel shell tokens rather than the
+  old dark fallback values.
+- VERIFIED LOCAL: A browser capture of the current app shell reported
+  `app-shell pastel`, `--bg-app=#fffafb`, and `--primary=#d45d84`; no product
+  page errors were observed in that capture. The dev-only HMR websocket warning
+  is not treated as a product error.
+- LIMIT: This is application chrome polish, not a redesign of the rendered
+  Roll20 sheet or a claim of full user-facing design completion.

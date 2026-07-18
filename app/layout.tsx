@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#1A1A1A',
+  themeColor: '#fffafb',
   width: 'device-width',
   initialScale: 1,
 };
@@ -25,14 +25,14 @@ export default function RootLayout({
         {children}
         <Toaster
           position="top-center"
-          theme="dark"
+          theme="light"
           richColors
           closeButton
           toastOptions={{
             style: {
-              background: '#262626',
-              color: '#ECECEC',
-              border: '1px solid #303030',
+              background: '#ffffff',
+              color: '#3d2932',
+              border: '1px solid #ecd5de',
             },
           }}
         />
