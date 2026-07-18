@@ -5999,3 +5999,11 @@ fixtures. All four had stable normalized HTML, canonical CSS, i18n, and a
 positive second import count, with no page errors or final resource failures.
 This is stronger local synchronization evidence only; actual user-owned
 Sandbox parity remains VERIFY.
+
+### 2026-07-19 - Roll20 upload handoff refresh
+
+Rebuilt the missing-only local handoff and modern-runtime browser snippets from
+the latest PASS pre-upload payload for one user-owned local fixture. The
+handoff includes an upload snippet and a separate activation-check snippet.
+No browser file handoff or Roll20 activation was performed; generated snippets
+remain ignored local evidence and do not change the external parity count.

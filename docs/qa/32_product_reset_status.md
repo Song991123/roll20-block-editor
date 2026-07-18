@@ -69,6 +69,9 @@ local gate is not evidence of visual equality in a live Roll20 room.
   parity score.
 - VERIFY: an authorized user-imported sheet still needs a fresh activation
   probe and normalized root screenshot before it can count as user-sheet parity.
+- PREPARED LOCAL: the latest PASS pre-upload run now has a missing-only handoff
+  and modern-runtime browser upload/activation snippets for one user-owned
+  local fixture. No snippet has been executed in Roll20 yet.
 
 ## DOM Role Plan Slice
 

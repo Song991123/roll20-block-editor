@@ -5316,3 +5316,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   or failed final resources.
 - BOUNDARY: local round-trip stability is not live Roll20 visual parity and
   does not replace the missing authorized user-sheet Sandbox upload evidence.
+
+## 2026-07-19 Roll20 Upload Handoff Refresh
+
+- PREPARED LOCAL: regenerated the missing-only Roll20 handoff and a
+  modern-runtime upload plus activation-check snippet from the latest ignored
+  pre-upload payload for one user-owned local fixture.
+- VERIFY: no browser file handoff or Roll20 activation occurred in this step;
+  do not count the generated snippet as external evidence.
