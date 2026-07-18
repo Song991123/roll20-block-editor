@@ -54,6 +54,16 @@ export function parseCss(css: string, ctx: CssMatchContext): MatchedBlock[] {
         continue;
       }
       // 그 외 at-rule — raw_css fallback.
+      if (/^@import\b/i.test(headTrim)) {
+        const source = headTrim.replace(/^@import\s+/i, '').trim();
+        out.push({
+          blockType: 'r20_css_import',
+          fields: { SOURCE: source },
+          children: {},
+        });
+        ctx.matched++;
+        continue;
+      }
       out.push(rawCssBlock(`${r.head}{${r.body}}`));
       ctx.rawFallback++;
       ctx.warnings.push({

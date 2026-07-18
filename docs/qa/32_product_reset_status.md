@@ -32,11 +32,11 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - Imported edit round-trip: `4/4` anonymous local fixtures passed the canonical
   iframe sync path and stable re-import check; the largest fixture remained
   below the current import/inject budgets.
-- Semantic inline coverage: the new generic inline-container matcher passed
-  the nested-translation contract and raised the affected anonymous fixture to
-  `1839/1839` HTML elements, `103/103` CSS rules, and `0` raw HTML fallbacks.
-  The remaining legacy fixture is `631/633` HTML and `108/109` CSS in the
-  local diagnostic, so arbitrary-source fidelity is not complete.
+- Semantic and table coverage: generic inline, table-column, and CSS import
+  matchers pass their local contracts. The affected anonymous fixture is
+  `1839/1839` HTML and `103/103` CSS; the remaining legacy diagnostic is now
+  `637/637` HTML and `109/109` CSS with `0` raw fallbacks. Worker JavaScript
+  partials remain and arbitrary-source fidelity is not complete.
 - Live Roll20 synthetic Sandbox activations: `1` with real iframe and rolltemplate chat evidence.
 - Live Roll20 solo-room wrapper observations: `2` (modern and legacy, read-only).
 - Live Roll20 diagnostic root captures: `1` synthetic modern root at `1.6458%`
@@ -110,6 +110,20 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - BOUNDARY: this is a general importer improvement, not a claim that every
   arbitrary HTML/CSS construct is mapped. The remaining legacy fixture has
   two HTML and one CSS residual fallback and stays open for the next slice.
+
+## Import and Capture Stability Recheck
+
+- VERIFIED LOCAL: generic inline, table-column, and CSS import matchers now
+  pass `test:import-structure` at `30/30`. The direct legacy diagnostic is
+  `637/637` HTML and `109/109` CSS with zero raw fallbacks; worker JavaScript
+  partials remain a separate axis.
+- FIXED: the visual harness waits for computed CSS `background-image`,
+  `mask-image`, and `list-style-image` resources in addition to `<img>` and
+  fonts before taking comparison captures.
+- VERIFIED LOCAL: two complete modern/legacy runs passed all six local cases at
+  `0%` preview/edit pixel mismatch on both runs.
+- BOUNDARY: this is local importer/render evidence only. Authorized user-sheet
+  upload remains `0`, and dedicated legacy-room visual parity remains `VERIFY`.
 
 ## Reporting Rule
 

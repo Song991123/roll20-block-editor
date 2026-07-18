@@ -288,6 +288,68 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
 
   // 8) thead ----------------------------------------------------------------
   {
+    type: 'r20_colgroup',
+    shape: 'c',
+    category: CONTAINER,
+    label: '표 열 묶음',
+    tooltip: 'table 안의 열 정의를 묶습니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('표 열 묶음')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS')
+          .appendField('열 수')
+          .appendField(new Blockly.FieldNumber(0, 0, 99999, 1), 'SPAN');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const span = Number(b.getFieldValue('SPAN') ?? 0);
+      const spanAttr = Number.isFinite(span) && span > 0 ? ` span="${Math.floor(span)}"` : '';
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(ctx, 'colgroup', `${sheetUserClassAttr(cls)}${spanAttr}${styleAttr(style)}`, content);
+    },
+  },
+
+  // table col ---------------------------------------------------------------
+  {
+    type: 'r20_table_col',
+    shape: 'stack',
+    category: CONTAINER,
+    label: '표 열',
+    tooltip: 'table 열 하나의 크기와 클래스를 지정합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('표 열')
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('열 수')
+        .appendField(new Blockly.FieldNumber(0, 0, 99999, 1), 'SPAN')
+        .appendField('너비')
+        .appendField(new Blockly.FieldTextInput(''), 'WIDTH');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const span = Number(b.getFieldValue('SPAN') ?? 0);
+      const spanAttr = Number.isFinite(span) && span > 0 ? ` span="${Math.floor(span)}"` : '';
+      const width = String(b.getFieldValue('WIDTH') ?? '').trim();
+      const widthAttr = width ? ` width="${escapeAttr(width)}"` : '';
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      return `<col${sheetUserClassAttr(cls)}${spanAttr}${widthAttr}${styleAttr(style)}>`;
+    },
+  },
+
+  // table head --------------------------------------------------------------
+  {
     type: 'r20_thead',
     shape: 'c',
     category: CONTAINER,

@@ -212,6 +212,26 @@ export const CSS_BLOCKS: BlockDef[] = [
 
   // 2) selector class ------------------------------------------------------
   {
+    type: 'r20_css_import',
+    shape: 'stack',
+    category: CSS,
+    label: '외부 스타일 불러오기',
+    tooltip: '@import 뒤의 URL과 media 조건을 보존합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('@import')
+        .appendField(new Blockly.FieldTextInput('url("https://example.com/style.css")'), 'SOURCE');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const source = safeCss(String(b.getFieldValue('SOURCE') ?? ''));
+      return source ? `@import ${source};` : '';
+    },
+  },
+
+  // 3) selector class ------------------------------------------------------
+  {
     type: 'r20_selector_class',
     shape: 'reporter',
     category: CSS,

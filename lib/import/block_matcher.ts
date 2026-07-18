@@ -888,6 +888,29 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       children: { CONTENT: matchChildren(node, ctx) },
     };
   }
+  if (tag === 'colgroup') {
+    return {
+      blockType: 'r20_colgroup',
+      fields: {
+        CLASS: stripSheetPrefix(a.class || ''),
+        SPAN: a.span || '0',
+        STYLE: a.style || '',
+      },
+      children: { CONTENT: matchChildren(node, ctx) },
+    };
+  }
+  if (tag === 'col') {
+    return {
+      blockType: 'r20_table_col',
+      fields: {
+        CLASS: stripSheetPrefix(a.class || ''),
+        SPAN: a.span || '0',
+        WIDTH: a.width || '',
+        STYLE: a.style || '',
+      },
+      children: {},
+    };
+  }
   if (tag === 'thead' || tag === 'tbody' || tag === 'tr' || tag === 'th' || tag === 'td') {
     return {
       blockType: `r20_${tag}`,

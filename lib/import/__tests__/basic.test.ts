@@ -212,6 +212,23 @@ function testCssFontFace(): void {
   assert(r.css.includes('>MyFont<'), 'FAMILY field carried');
 }
 
+function testTableColumnStructure(): void {
+  const html = `<table><colgroup><col style="width: 50%;"><col style="width: 50%;"></colgroup><tr><td>A</td></tr></table>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_colgroup'), 'colgroup block');
+  assert((r.html.match(/r20_table_col/g) || []).length === 2, 'col blocks');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for table columns');
+}
+
+function testCssImport(): void {
+  const css = `@import url('https://fonts.googleapis.com/css?family=Example&display=swap');`;
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 1, '@import matched');
+  assert(r.stats.cssRawFallback === 0, 'no raw fallback for @import');
+  assert(r.css.includes('r20_css_import'), 'css_import block');
+  assert(r.css.includes('fonts.googleapis.com'), 'import source carried');
+}
+
 function testCssSelectorComplexFallback(): void {
   // 매우 복잡한 selector (parser 가 분해 못함) — r20_selector_complex 로 100% 보존.
   const css = `body > .foo + .bar:not(:first-child) ~ [data-x="1"] { color: red; }`;
@@ -274,6 +291,8 @@ const tests = [
   ['table caption', testTableCaption],
   ['inline break <br>', testInlineBreak],
   ['css @font-face', testCssFontFace],
+  ['table column structure', testTableColumnStructure],
+  ['css @import', testCssImport],
   ['css selector_complex fallback', testCssSelectorComplexFallback],
   ['css compound selector', testCssCompoundSelector],
   ['css pseudo-element ::-webkit-*', testCssPseudoElementWebkit],

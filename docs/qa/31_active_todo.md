@@ -5345,3 +5345,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   passed safety/unit verification, lint, and production build.
 - STILL OPEN: deployment smoke is separate from this branch CI, and actual
   Roll20 user-sheet/legacy-room evidence remains VERIFY.
+
+## 2026-07-19 Generic Table/CSS Import Mapping
+
+- FIXED: generic HTML `<colgroup>`/`<col>` nodes now map to dedicated blocks
+  and preserve class, span, width, style, and child order. Generic CSS
+  `@import` statements now map to an editable CSS block instead of raw CSS.
+- VERIFIED LOCAL: `test:import-structure` passed `30/30`; the direct legacy
+  diagnostic now reports `637/637` HTML and `109/109` CSS with zero raw
+  fallbacks. Worker JavaScript partials remain a separate axis.
+- FIXED: visual smoke now waits for CSS `background-image`, `mask-image`, and
+  `list-style-image` resources in addition to `<img>` and fonts before taking
+  the comparison capture.
+- VERIFIED LOCAL: two full modern/legacy runs passed all six fixture cases at
+  `0%` preview/edit mismatch. This improves capture stability only; it does
+  not increase the live Roll20 user-sheet evidence count.
+- NEXT P0: retry the authorized modern Sandbox upload through a supported
+  visible file handoff, then perform the separate legacy-room check.

@@ -6028,3 +6028,26 @@ No private source, screenshot, or fixture was added to tracked files.
 Commit `3373d59` was pushed on `codex/product-reset-ui`. GitHub Actions run
 `29657697204` passed safety/unit verification, lint, and production build.
 Deployment smoke and live Roll20 user-sheet evidence remain separate gates.
+
+### 2026-07-19 - Generic table/CSS import and visual capture stability
+
+Added generic `r20_colgroup` and `r20_table_col` blocks for HTML table column
+structure, preserving class, span, width, style, and nesting. Added a generic
+`r20_css_import` block so CSS `@import` is editable and emitted rather than
+falling back to raw CSS. These are source-agnostic mappings and do not contain
+any private fixture content.
+
+Verification: `test:import-structure` passed `30/30`; build and lint passed. The
+direct legacy diagnostic reached `637/637` HTML and `109/109` CSS with zero raw
+fallbacks. Worker JavaScript partials remain a separate partial axis and were
+not folded into the HTML/CSS metric.
+
+The preview/edit visual harness now waits for computed CSS `background-image`,
+`mask-image`, and `list-style-image` resources as well as `<img>` and fonts.
+Two complete modern/legacy runs passed all six local cases at `0%` mismatch.
+This removes a local capture race; it does not prove live Roll20 parity.
+
+Actual Roll20 evidence is unchanged: authorized user-sheet captures remain
+`0`, and dedicated legacy-room visual captures remain `0`. The next external
+step is still the supported visible file handoff in the modern Sandbox,
+followed by a separate legacy-enabled room check.

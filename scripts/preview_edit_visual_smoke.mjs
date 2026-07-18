@@ -337,6 +337,22 @@ async function waitForSheetAssets(sheet, timeoutMs = 8000) {
   return sheet.evaluate(async (sheetEl, limit) => {
     const startedAt = performance.now();
     const doc = sheetEl.ownerDocument;
+    const cssImageUrls = new Set();
+    const cssImagePattern = /url\(\s*(['"]?)(.*?)\1\s*\)/g;
+    const addCssImageUrls = (value) => {
+      if (!value || value === 'none') return;
+      cssImagePattern.lastIndex = 0;
+      for (const match of value.matchAll(cssImagePattern)) {
+        const source = String(match[2] || '').trim();
+        if (source && !source.startsWith('data:')) cssImageUrls.add(source);
+      }
+    };
+    for (const el of [sheetEl, ...sheetEl.querySelectorAll('*')]) {
+      const style = getComputedStyle(el);
+      addCssImageUrls(style.backgroundImage);
+      addCssImageUrls(style.maskImage);
+      addCssImageUrls(style.listStyleImage);
+    }
     const imagePromises = Array.from(sheetEl.querySelectorAll('img')).map((img) => {
       if (img.complete) return img.decode?.().catch(() => undefined) ?? Promise.resolve();
       return new Promise((resolve) => {
@@ -344,9 +360,16 @@ async function waitForSheetAssets(sheet, timeoutMs = 8000) {
         img.addEventListener('error', resolve, { once: true });
       });
     });
+    const cssImagePromises = Array.from(cssImageUrls, (source) => new Promise((resolve) => {
+      const img = new Image();
+      img.addEventListener('load', resolve, { once: true });
+      img.addEventListener('error', resolve, { once: true });
+      img.src = source;
+    }));
     const ready = Promise.all([
       doc.fonts?.ready?.catch?.(() => undefined) ?? Promise.resolve(),
       ...imagePromises,
+      ...cssImagePromises,
     ]).then(() => 'ready');
     const timeout = new Promise((resolve) => setTimeout(() => resolve('timeout'), limit));
     const status = await Promise.race([ready, timeout]);
@@ -356,6 +379,7 @@ async function waitForSheetAssets(sheet, timeoutMs = 8000) {
       waitedMs: Math.round(performance.now() - startedAt),
       fontStatus: doc.fonts?.status ?? 'unsupported',
       pendingImageCount: Array.from(sheetEl.querySelectorAll('img')).filter((img) => !img.complete).length,
+      cssImageCount: cssImageUrls.size,
     };
   }, timeoutMs);
 }
