@@ -4686,3 +4686,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   out at its parent drop-overlay wait. The passing edit-flow/imported-sync
   paths keep that failure scoped to the persistent harness observation path;
   they do not prove actual Roll20 parity.
+
+## 2026-07-18 Iframe Drop Overlay Palette
+
+- DONE: The canonical iframe edit overlay now uses rose for an `inside` drop
+  target and teal for `before`/`after` placement, matching the pastel layer
+  role palette used by the edit surface.
+- VERIFIED LOCAL: `corepack pnpm run lint`, `corepack pnpm run build`,
+  `node scripts/edit_flow_browser_smoke.mjs`,
+  `node scripts/persistent_preview_surface_smoke.mjs`, `corepack pnpm run
+  ci:verify`, and `corepack pnpm run check:server-hygiene` passed.
+- CLAIM BOUNDARY: This changes only the editor's overlay affordance. It does
+  not change imported Roll20 CSS, iframe cascade, sheet geometry, or actual
+  modern Sandbox/legacy-room parity.

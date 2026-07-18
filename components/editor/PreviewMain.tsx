@@ -1051,8 +1051,8 @@ export default function PreviewMain() {
                 data-r20-drop-mode={iframeEditDropTarget.mode}
                 className={`pointer-events-none absolute z-30 border-2 ${
                   iframeEditDropTarget.mode === 'inside'
-                    ? 'border-emerald-500 bg-emerald-400/10'
-                    : 'border-sky-500 bg-sky-400/10'
+                    ? 'border-rose-500 bg-rose-400/10'
+                    : 'border-teal-500 bg-teal-400/10'
                 }`}
                 style={{
                   left: `${iframeEditDropTarget.geometry.rect.left}px`,

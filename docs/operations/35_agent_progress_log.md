@@ -5353,3 +5353,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   focused bridge diagnostic proves otherwise.
 - BOUNDARY: This is local evidence only; it does not close modern Sandbox or
   legacy-room visual parity.
+
+## 2026-07-18 Iframe Drop Overlay Palette
+
+- IMPLEMENTED: `PreviewMain` now renders the iframe drop target with the
+  same original pastel role colors as the edit layer panel: rose for inside
+  insertion and teal for before/after insertion.
+- SCOPE: App editing affordance only. The imported sheet stylesheet and the
+  Roll20-compatible iframe baseline were left unchanged.
+- VERIFIED LOCAL: Lint, production build, edit-flow smoke,
+  persistent-preview smoke in modern/legacy modes, `ci:verify`, and
+  server-hygiene passed. Actual Roll20 parity remains a separate open gate.
