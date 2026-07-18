@@ -910,6 +910,21 @@ async function main() {
         localStorage.removeItem('__r20ChatPaintPolicy');
       }
     }, CHAT_PAINT_POLICY);
+    await page.evaluate(({ font, text, shadow, geometry, typography, paint }) => {
+      const diagnosticValues = [font, text, shadow, geometry, typography, paint];
+      if (diagnosticValues.some((value) => value && value !== 'default')) {
+        localStorage.setItem('__r20ChatDiagnostics', '1');
+      } else {
+        localStorage.removeItem('__r20ChatDiagnostics');
+      }
+    }, {
+      font: CHAT_FONT_POLICY,
+      text: CHAT_TEXT_POLICY,
+      shadow: CHAT_SHADOW_POLICY,
+      geometry: CHAT_GEOMETRY_POLICY,
+      typography: CHAT_TYPOGRAPHY_POLICY,
+      paint: CHAT_PAINT_POLICY,
+    });
     await page.reload({ waitUntil: 'networkidle' });
     await warmPerfHook(page);
 

@@ -82,8 +82,14 @@ type ChatPaintPolicy =
   | 'roll20-edge-shadow'
   | 'coc-background-size-actual';
 
+const CHAT_DIAGNOSTICS_STORAGE_KEY = '__r20ChatDiagnostics';
+
+function isChatDiagnosticMode(): boolean {
+  return typeof window !== 'undefined' && window.localStorage.getItem(CHAT_DIAGNOSTICS_STORAGE_KEY) === '1';
+}
+
 function currentChatFontPolicy(): ChatFontPolicy {
-  if (typeof window === 'undefined') return 'default';
+  if (!isChatDiagnosticMode()) return 'default';
   const value = window.localStorage.getItem('__r20ChatFontPolicy');
   if (
     value === 'roll20-chat-fallback' ||
@@ -94,21 +100,21 @@ function currentChatFontPolicy(): ChatFontPolicy {
 }
 
 function currentChatTextPolicy(): ChatTextPolicy {
-  if (typeof window === 'undefined') return 'default';
+  if (!isChatDiagnosticMode()) return 'default';
   return window.localStorage.getItem('__r20ChatTextPolicy') === 'roll20-auto-aa'
     ? 'roll20-auto-aa'
     : 'default';
 }
 
 function currentChatShadowPolicy(): ChatShadowPolicy {
-  if (typeof window === 'undefined') return 'default';
+  if (!isChatDiagnosticMode()) return 'default';
   return window.localStorage.getItem('__r20ChatShadowPolicy') === 'no-template-shadow'
     ? 'no-template-shadow'
     : 'default';
 }
 
 function currentChatGeometryPolicy(): ChatGeometryPolicy {
-  if (typeof window === 'undefined') return 'default';
+  if (!isChatDiagnosticMode()) return 'default';
   const value = window.localStorage.getItem('__r20ChatGeometryPolicy');
   if (
     value === 'tight-cell-spacing' ||
@@ -132,7 +138,7 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
 }
 
 function currentChatTypographyPolicy(): ChatTypographyPolicy {
-  if (typeof window === 'undefined') return 'default';
+  if (!isChatDiagnosticMode()) return 'default';
   const value = window.localStorage.getItem('__r20ChatTypographyPolicy');
   if (
     value === 'roll20-shell-typography' ||
@@ -154,7 +160,7 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
 }
 
 function currentChatPaintPolicy(): ChatPaintPolicy {
-  if (typeof window === 'undefined') return 'default';
+  if (!isChatDiagnosticMode()) return 'default';
   const value = window.localStorage.getItem('__r20ChatPaintPolicy');
   if (
     value === 'roll20-dim-background' ||
@@ -846,6 +852,7 @@ export default function ChatPane() {
   const chatGeometryPolicy = currentChatGeometryPolicy();
   const chatTypographyPolicy = currentChatTypographyPolicy();
   const chatPaintPolicy = currentChatPaintPolicy();
+  const chatDiagnosticsEnabled = isChatDiagnosticMode();
   const rolltemplateCss = useMemo(
     () => extractRolltemplateCss(emittedCss, chatFontPolicy),
     [emittedCss, chatFontPolicy],
@@ -868,7 +875,9 @@ export default function ChatPane() {
           dangerouslySetInnerHTML={{ __html: rolltemplateCss }}
         />
       )}
-      <style data-r20-chat-diagnostic-css dangerouslySetInnerHTML={{ __html: roll20ChatDiagnosticOverrideCss }} />
+      {chatDiagnosticsEnabled && (
+        <style data-r20-chat-diagnostic-css dangerouslySetInnerHTML={{ __html: roll20ChatDiagnosticOverrideCss }} />
+      )}
       <div className="h-9 shrink-0 border-b border-border px-3 flex items-center justify-between">
         <div className="text-[11px] font-medium text-[var(--fg-muted)]">
           채팅 ({rolls.length})

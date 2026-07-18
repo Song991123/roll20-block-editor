@@ -4929,3 +4929,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P1: Add a large anonymous fixture drag benchmark that compares pointer
   event rate, overlay frame count, and drop-to-commit latency without keeping
   any source-identifying sheet data.
+
+## 2026-07-18 Chat Diagnostic Isolation
+
+- IMPLEMENTED: ChatPane now ignores persisted chat geometry, typography,
+  paint, text, shadow, and font policies unless the explicit local diagnostic
+  switch `__r20ChatDiagnostics=1` is present.
+- IMPLEMENTED: The rolltemplate chat smoke enables that switch only when a
+  non-default diagnostic policy was requested, so diagnostic candidate runs
+  keep their evidence path without changing ordinary user rendering.
+- VERIFIED LOCAL: Chat template-scope and targeted-renderer-plan self-tests
+  passed, and the ChatPane file passed ESLint.
+- BOUNDARY: This isolates experimental diagnostics; it does not promote any
+  template-specific CSS, prove chat pixel parity, or remove the renderer HOLD.
+- VERIFY NOTE: A local chat smoke attempt imported successfully but its
+  selected fixture exposed no actionable visible roll button, so no chat card
+  evidence was produced. This is an unverified fixture-state result, not a
+  parity pass or a regression finding.
+- NEXT P0: Obtain stable modern and legacy actual canvas/chat sidecars before
+  considering any scoped renderer change.

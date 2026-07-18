@@ -5585,3 +5585,20 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - LIMIT: This is an interaction scheduling improvement, not proof of a fixed
   latency budget on the large real-world sheet corpus. Actual Roll20 canvas
   parity remains a separate HOLD.
+
+## 2026-07-18 Chat Diagnostic Isolation
+
+- IMPLEMENTED: `ChatPane` now treats persisted chat policy keys as inert
+  unless the explicit local diagnostic switch `__r20ChatDiagnostics=1` is set.
+  Ordinary users therefore receive the generic chat shell and authored
+  rolltemplate CSS without stale experiment state affecting geometry.
+- IMPLEMENTED: `rolltemplate_chat_smoke.mjs` sets the switch only for runs
+  that request a non-default diagnostic policy.
+- VERIFIED LOCAL: Chat template-scope and targeted-renderer-plan self-tests
+  passed; the changed ChatPane file passed ESLint.
+- BOUNDARY: The change isolates experiments and is not a chat parity claim.
+  The renderer gate remains HOLD until actual Roll20 template CSS and canvas
+  sidecars are available.
+- VERIFY NOTE: A local chat smoke imported a fixture successfully but found no
+  actionable visible roll button, so it produced no chat-card evidence. Keep
+  this as fixture-state VERIFY, not as a parity result.
