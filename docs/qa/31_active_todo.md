@@ -5244,7 +5244,7 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 
 ## 2026-07-19 Product Reset Evidence Rebaseline
 
-- VERIFIED REMOTE: GitHub Actions run `29655022844` for `bb86a67` passed
+- VERIFIED REMOTE: GitHub Actions run `29655601442` for `28075c6` passed
   safety/unit verification, lint, and production build.
 - VERIFIED LOCAL: `ci:verify` passed structural import `27/27`, legacy
   sanitize `16/16`, Sandbox sanitize `7/7`, the copyright/evidence guard, and

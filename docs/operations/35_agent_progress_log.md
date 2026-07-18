@@ -5901,7 +5901,7 @@ unverified.
 ### 2026-07-19 - Product reset evidence rebaseline
 
 Rechecked the current branch and remote state before the next product phase.
-GitHub Actions run `29655022844` for `bb86a67` passed. The local `ci:verify`
+GitHub Actions run `29655601442` for `28075c6` passed. The local `ci:verify`
 gate passed structural import `27/27`, legacy sanitize `16/16`, Sandbox
 sanitize `7/7`, the copyright/evidence guard, and the UI-copy guard. The
 existing local preview/edit matrix remains `6/6` at `0%` mismatch, which proves
