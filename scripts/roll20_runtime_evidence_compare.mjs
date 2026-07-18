@@ -49,6 +49,18 @@ function runSelfTest() {
   assert(report.modes.legacy.rootGeometry === 'NOT_COMPARABLE', 'legacy root hold');
   assert(report.modes.modern.parityPromotion === 'HOLD', 'modern promotion hold');
   assert(report.modes.legacy.parityPromotion === 'HOLD', 'legacy promotion hold');
+
+  const mismatch = compareEvidence({
+    local: {
+      fixtures: [localFixture('modern'), localFixture('legacy')],
+    },
+    actualByMode: {
+      modern: actualFixture('modern'),
+      legacy: { ...actualFixture('legacy'), sheetRoot: { width: 860, height: 280 } },
+    },
+  });
+  assert(mismatch.status === 'FAIL', 'root mismatch is a failure');
+  assert(mismatch.modes.legacy.rootGeometry === 'FAIL', 'legacy root mismatch');
   console.log('roll20_runtime_evidence_compare self-test PASS');
 }
 
