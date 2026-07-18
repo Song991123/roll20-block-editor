@@ -5832,3 +5832,8 @@ cycle protection, and emitted HTML/CSS updates. Full `ci:verify`, lint, and
 production build passed; GitHub Actions run `29653273588` is green for commit
 `0b4403e`. This change is not a visual parity claim and does not close the
 user-import or legacy-room evidence gaps.
+
+The same turn reran `smoke:preview-edit-visual` for the three local comparison
+fixtures in both modern and legacy modes. All six preview/edit comparisons
+reported `0%` mismatch. This proves the local shared-surface contract only;
+it does not promote the result to actual Roll20 parity.

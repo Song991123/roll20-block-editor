@@ -5176,5 +5176,7 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   `smoke:edit-flow` pass. The smoke covers persistent iframe ownership,
   flow-container insertion, free placement, before/inside/after layer drops,
   cycle protection, and emitted HTML/CSS updates.
+- VERIFIED LOCAL: the modern/legacy `smoke:preview-edit-visual` matrix passed
+  for all three local comparison fixtures with `0%` mismatch in both modes.
 - BOUNDARY: This is a structural/edit-path fix. It does not yet prove Figma
   interaction quality, arbitrary imported-sheet parity, or legacy-room parity.
