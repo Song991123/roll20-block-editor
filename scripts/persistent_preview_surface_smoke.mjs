@@ -1060,8 +1060,7 @@ async function runMode(browser, mode) {
       && result.duringEdit.iframeSlotCount === 1
       && result.duringEdit.loadCount === 0
       && Number.isFinite(result.autoCanvasWidth.width)
-      && result.autoCanvasWidth.width >= 320
-      && result.autoCanvasWidth.width < 850
+      && result.autoCanvasWidth.width === 850
       && result.trustSurface.pastelShell === true
       && result.trustSurface.bugReportHref.startsWith('mailto:sjh11235678@gmail.com')
       && result.trustSurface.githubLinkCount === 0

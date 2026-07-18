@@ -1,3 +1,18 @@
+## 2026-07-18 Fresh Sheet Canvas Baseline
+
+- DONE: Changed the blank-workspace canvas policy so a new sheet keeps the
+  850px default instead of auto-shrinking to a small intrinsic widget width.
+  Import flow turns intrinsic sizing back on for user-owned imported content.
+- DONE: Added `scripts/fresh_sheet_browser_smoke.mjs` and the
+  `smoke:fresh-sheet` command. The smoke is synthetic-only and checks no ghost
+  starter section, zero blocks after clear, first-widget creation, 850px
+  default, one iframe, and edit-mode iframe identity.
+- VERIFIED LOCAL: build, lint, `ci:verify`, `smoke:fresh-sheet`,
+  `smoke:edit-flow`, and modern/legacy `smoke:persistent-preview-surface`
+  pass with zero console/page errors in the browser smokes.
+- BOUNDARY: Actual Roll20 Sandbox/legacy-room screenshot parity remains
+  `VERIFY`; this change does not use or publish any real sheet source.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: CI run `29621836381` for `4718564` completed successfully;

@@ -149,8 +149,10 @@ const DEFAULT_STATE = {
   editSubmode: 'sheet' as EditSubmode,
   sheetCanvasWidth: 850,
   rolltemplateCanvasWidth: 280,
-  sheetCanvasWidthAuto: true,
-  rolltemplateCanvasWidthAuto: true,
+  // Blank workspaces keep the documented fixed canvas defaults. Import
+  // explicitly enables intrinsic sizing after user content is available.
+  sheetCanvasWidthAuto: false,
+  rolltemplateCanvasWidthAuto: false,
   snapEnabled: true,
   editPlacementMode: 'flow' as EditPlacementMode,
   selectedWidgetId: null as string | null,
@@ -241,8 +243,10 @@ export const useUiStore = create<UiState>()(
         set({
           sheetCanvasWidth: DEFAULT_STATE.sheetCanvasWidth,
           rolltemplateCanvasWidth: DEFAULT_STATE.rolltemplateCanvasWidth,
-          sheetCanvasWidthAuto: true,
-          rolltemplateCanvasWidthAuto: true,
+          // A new sheet starts at the documented 850px canvas. Imported
+          // sheets opt into intrinsic-width measurement explicitly.
+          sheetCanvasWidthAuto: false,
+          rolltemplateCanvasWidthAuto: false,
         }),
       setSnapEnabled: (b) => set({ snapEnabled: b }),
       toggleSnapEnabled: () => set((s) => ({ snapEnabled: !s.snapEnabled })),

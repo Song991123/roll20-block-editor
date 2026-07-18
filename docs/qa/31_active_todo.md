@@ -1,3 +1,20 @@
+## 2026-07-18 Fresh Sheet Canvas Baseline
+
+- DONE: Blank workspaces now start with automatic intrinsic-width measurement
+  disabled, so the documented 850px sheet canvas is not replaced by the first
+  widget's smaller content width. Imported files explicitly opt into the
+  existing intrinsic-width path after their HTML/CSS/translation payload is
+  accepted.
+- VERIFIED LOCAL: `smoke:fresh-sheet` passes with zero HTML/CSS/i18n blocks after
+  clear, no emitted ghost `sheet-section`, first widget creation, one persistent
+  iframe, and edit-mode reuse of that iframe. `smoke:edit-flow`,
+  `smoke:persistent-preview-surface` modern/legacy, build, lint, and
+  `ci:verify` also pass.
+- CLAIM BOUNDARY: This proves the local first-run/canvas contract only. It does
+  not promote modern Sandbox or legacy-room visual parity beyond `VERIFY`.
+- NEXT P0: reconnect the permitted Roll20 session and apply the ignored
+  anonymous payload through the supported CDP/file handoff.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: GitHub Actions run `29621836381` for commit `4718564`

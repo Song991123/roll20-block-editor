@@ -38,6 +38,7 @@ import {
   replaceWorkerWorkspaceFromSourceHtml,
 } from '@/lib/blockly/workerWorkspace';
 import { usePreviewStore } from '@/lib/stores/previewStore';
+import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 
 export interface ImportDialogProps {
@@ -146,6 +147,12 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       });
       const adapter = getBlocklyAdapter();
       const ws = useWorkspaceStore.getState();
+      const ui = useUiStore.getState();
+      // Imported sheets may declare their own intrinsic width. Keep the
+      // blank-sheet default fixed at 850px, but let imported content opt into
+      // the existing measurement path.
+      ui.setAutoSheetCanvasWidth(ui.sheetCanvasWidth);
+      ui.setAutoRolltemplateCanvasWidth(ui.rolltemplateCanvasWidth);
       const emptyXml = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
       // Reset before hydrate to avoid duplicate top blocks.
       ws.resetWorkspace('html');
