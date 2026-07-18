@@ -5376,3 +5376,21 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   `--` as a positional argument and silently serve the wrong output directory.
 - BOUNDARY: This removes a local verification false-timeout path; it does not
   create modern Sandbox or legacy-room parity evidence.
+
+## 2026-07-18 Renderer Gate Refresh
+
+- VERIFIED DIAGNOSTIC: Refreshed actual status, renderer-action, blocker,
+  chat-scope, source/intrinsic, width-reconciliation, asset-preservation, and
+  residual reports. The renderer remains
+  `HOLD_PRODUCTION_RENDERER_PATCH`; same-structure chat mismatch is `2/3`,
+  max aligned mismatch `20.68%`.
+- DECISION: Keep the global ChatPane and imported Roll20 CSS unchanged. AW2E
+  requires a `.sheet-rolltemplate-aw` message/content-width model, while
+  CoC/YSHY requires a `.sheet-rolltemplate-coc` sanitize/order/table-intrinsic
+  model. The evidence explicitly rejects a uniform width/font/padding patch.
+- DECISION: AW2E and YSHY remain behind the user-owned asset relink gate. The
+  current local and actual proxy bytes match a removed/placeholder image, so
+  pixel parity cannot be judged as an original-sheet renderer result yet.
+- VERIFIED EXTERNAL STATE: Chrome shows the Roll20 tab but safe tab claiming
+  times out; the in-app fallback reaches `https://app.roll20.net/login`.
+  No upload, room mutation, or source transmission occurred.

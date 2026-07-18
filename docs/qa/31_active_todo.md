@@ -4710,3 +4710,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   upload or room mutation.
 - VERIFY: Modern Sandbox and dedicated legacy-room parity remain open because
   the logged-in Chrome Roll20 tab timed out during safe tab claiming.
+
+## 2026-07-18 Renderer Gate Refresh
+
+- VERIFIED DIAGNOSTIC: The current actual evidence remains
+  `HOLD_PRODUCTION_RENDERER_PATCH`, with same-structure chat mismatch in `2/3`
+  fixtures and a maximum aligned mismatch of `20.68%`.
+- VERIFIED DIAGNOSTIC: AW2E needs a `.sheet-rolltemplate-aw` message/content
+  width model; CoC/YSHY needs a `.sheet-rolltemplate-coc` sanitize/intrinsic
+  table model. A single global ChatPane width, font, or padding patch is not
+  safe across the three fixtures.
+- VERIFIED DIAGNOSTIC: AW2E and YSHY still require user-owned HTTP(S) asset
+  relinks before original-sheet parity can be judged. Current proxy bytes are
+  placeholder assets, not a renderer CSS defect that can be guessed away.
+- VERIFY: Actual modern Sandbox and dedicated legacy-room captures remain
+  unproven. The in-app browser currently reaches Roll20 login, while the
+  existing Chrome Roll20 tab cannot be safely claimed for inspection.
