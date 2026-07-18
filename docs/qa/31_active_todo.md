@@ -5143,3 +5143,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Capture root-only local and Sandbox screenshots under the same crop
   and viewport, then run pixel diff. Keep dialog chrome and chat as separate
   evidence axes.
+
+## 2026-07-19 Root-Only PNG Diff Recheck
+
+- VERIFIED EXTERNAL, PRIVATE: Reopened the dedicated Sandbox character viewer
+  and captured the authored root through supported tab-scoped CDP as a true PNG.
+  The capture used the live iframe geometry, browser zoom `1.25`, a physical
+  `1063 x 325` crop, and a recorded one-pixel crop alignment correction.
+- VERIFIED LOCAL + EXTERNAL: The same anonymous payload was captured locally at
+  the same `1.25` device scale. Root-only comparison measured `5,686 / 345,475`
+  pixels above RGB threshold `60` (`1.6458%` mismatch, RMS RGB `10.654`).
+- CLASSIFIED: This is a diagnostic score for one anonymous synthetic `850 x
+  260` root. It is not a general all-sheet Roll20 parity claim. Viewer chrome,
+  chat, assets, worker behavior, and legacy-room parity remain separate axes.
+- EVIDENCE: PNGs, crop provenance, and the diff JSON remain ignored under
+  `reports/roll20-actual-compare/live-browser/2026-07-19-synthetic-modern/`.
+- NEXT P0: Repeat the root-only capture with an authorized user-imported sheet
+  fixture, then establish the same normalized contract for the legacy-enabled
+  room before changing renderer CSS.

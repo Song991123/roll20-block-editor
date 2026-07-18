@@ -5794,3 +5794,20 @@ change, while actual Sandbox/legacy-room parity remains open.
   Sandbox screenshot/metrics under the synthetic-modern evidence directory.
 - NEXT: Build the root-only screenshot crop and pixel-diff step. Keep wrapper
   chrome, authored sheet, and chat output as independent comparison axes.
+
+## 2026-07-19 Root-Only PNG Diff Recheck
+
+- VERIFIED EXTERNAL, PRIVATE: The dedicated Sandbox character viewer was
+  reopened and the authored root was captured through supported tab-scoped CDP
+  as a true PNG. The capture records browser zoom `1.25`, physical crop
+  `1063 x 325`, live iframe/root geometry, and a one-pixel alignment correction.
+- VERIFIED LOCAL + EXTERNAL: Local and live captures used the same `1.25`
+  physical scale. The anonymous synthetic root diff is `5,686 / 345,475`
+  pixels above threshold `60`, or `1.6458%`, with RMS RGB `10.654`.
+- CLAIM BOUNDARY: This is one root-only diagnostic, not arbitrary-import or
+  all-sheet parity. It does not prove assets, worker JS, chat paint, legacy
+  room behavior, or edit overlay equivalence.
+- PRIVATE EVIDENCE: PNGs and JSON sidecars remain ignored under
+  `reports/roll20-actual-compare/live-browser/2026-07-19-synthetic-modern/`.
+- NEXT: Repeat the capture for a user-owned import fixture and establish the
+  same normalized root contract in the dedicated legacy-enabled room.

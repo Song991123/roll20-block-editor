@@ -858,3 +858,22 @@ the preferred evidence.
   `sandbox-local-compare.json` sidecar in the synthetic-modern evidence folder.
 - LIMIT: Root geometry agreement is not pixel parity. Asset decoding, complete
   CSS paint, worker behavior, and legacy-room comparison remain unverified.
+
+## 2026-07-19 Root-Only PNG Capture and Diff
+
+The first trustworthy root-only image comparison for the anonymous modern
+Sandbox payload was completed. The character iframe was measured at `900px`,
+the authored root at `850 x 260`, and the browser zoom at `1.25`. CDP captured
+the root as a true PNG at physical `1063 x 325`; the local render used the same
+device scale. The capture metadata records a one-pixel x/y crop alignment
+correction caused by the browser zoom coordinate space.
+
+The normalized diagnostic result is `5,686 / 345,475` pixels above RGB
+threshold `60`, `1.6458%` mismatch, RMS RGB `10.654`. This is evidence for the
+anonymous synthetic root only. It must not be promoted to arbitrary sheet
+parity: Roll20 viewer chrome, chat/rolltemplate paint, asset loading, worker
+runtime, user-imported sources, and the legacy-enabled room still require
+independent evidence.
+
+All images and sidecars remain ignored under
+`reports/roll20-actual-compare/live-browser/2026-07-19-synthetic-modern/`.
