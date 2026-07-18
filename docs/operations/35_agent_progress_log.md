@@ -5826,6 +5826,9 @@ revision and passes it to edit/widget drop resolution. This keeps the same
 DOM-to-layer contract while reducing repeated Blockly traversal during drag.
 
 Local focused verification passed: layer operations, iframe drop-target tests,
-lint, and diff-check. Full CI is the promotion gate. This change is not a
-visual parity claim and does not close the user-import or legacy-room evidence
-gaps.
+lint, and diff-check. Browser `smoke:edit-flow` also passed for persistent
+iframe ownership, flow/free placement, layer before/inside/after targets,
+cycle protection, and emitted HTML/CSS updates. Full `ci:verify`, lint, and
+production build passed; GitHub Actions run `29653273588` is green for commit
+`0b4403e`. This change is not a visual parity claim and does not close the
+user-import or legacy-room evidence gaps.

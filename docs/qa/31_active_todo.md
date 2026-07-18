@@ -5171,7 +5171,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - OPTIMIZED: The iframe edit bridge now builds one HTML layer map per Blockly
   structure revision and reuses it for pointermove/drop resolution. It no
   longer reconstructs a full layer snapshot for every pointer event.
-- VERIFIED LOCAL: blockly layer operations, iframe drop-target tests, lint, and
-  diff-check pass. Full CI verification is the next gate for this patch.
+- VERIFIED LOCAL: blockly layer operations, iframe drop-target tests, lint,
+  diff-check, full `ci:verify`, production build, and the browser
+  `smoke:edit-flow` pass. The smoke covers persistent iframe ownership,
+  flow-container insertion, free placement, before/inside/after layer drops,
+  cycle protection, and emitted HTML/CSS updates.
 - BOUNDARY: This is a structural/edit-path fix. It does not yet prove Figma
   interaction quality, arbitrary imported-sheet parity, or legacy-room parity.
