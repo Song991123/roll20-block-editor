@@ -5602,3 +5602,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - VERIFY NOTE: A local chat smoke imported a fixture successfully but found no
   actionable visible roll button, so it produced no chat-card evidence. Keep
   this as fixture-state VERIFY, not as a parity result.
+
+## 2026-07-18 Edit History Controls
+
+- IMPLEMENTED: Added undo/redo methods to the Blockly adapter instead of
+  creating a second history model. EditCanvas exposes the controls with
+  `Undo2`/`Redo2` icons and keyboard shortcuts.
+- VERIFIED LOCAL: Adapter history test, edit-flow smoke, lint, production
+  build, and full CI safety verification passed.
+- LIMIT: The current browser smoke proves the edit surface still loads and
+  synchronizes, but does not click through every undo/redo state. Full Figma
+  history semantics across future worker/assets remain open.

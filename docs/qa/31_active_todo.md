@@ -4948,3 +4948,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   parity pass or a regression finding.
 - NEXT P0: Obtain stable modern and legacy actual canvas/chat sidecars before
   considering any scoped renderer change.
+
+## 2026-07-18 Edit History Controls
+
+- IMPLEMENTED: The Blockly adapter now exposes `canUndo`, `canRedo`, `undo`,
+  and `redo` through the existing workspace boundary.
+- IMPLEMENTED: Edit mode has icon-only undo/redo controls with plain Korean
+  tooltips and Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, and Ctrl/Cmd+Y shortcuts. A
+  deleted selected layer is cleared after history navigation.
+- VERIFIED LOCAL: The adapter history test, edit-flow smoke, lint, build, and
+  full `ci:verify` passed. The browser smoke did not exercise every history
+  button state, so detailed UI history interaction remains VERIFY.
+- BOUNDARY: This adds reversible Blockly structure edits; it does not yet
+  provide a separate multi-surface history for future worker/assets or prove
+  full Figma parity.

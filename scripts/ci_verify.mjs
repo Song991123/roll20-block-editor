@@ -21,6 +21,7 @@ const tasks = [
   'test:translation-payload',
   'test:export-smoke',
   'test:layer-roles',
+  'test:blockly-history',
   'test:design-position',
   'test:iframe-drop-target',
   'test:blockly-sound-policy',

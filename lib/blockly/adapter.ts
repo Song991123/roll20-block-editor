@@ -158,6 +158,10 @@ export interface BlocklyAdapter {
   moveBlockToRoot(key: WorkspaceKey, blockId: string): boolean;
   canNestInContainer(key: WorkspaceKey, targetId: string): boolean;
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
+  canUndo(key: WorkspaceKey): boolean;
+  canRedo(key: WorkspaceKey): boolean;
+  undo(key: WorkspaceKey): boolean;
+  redo(key: WorkspaceKey): boolean;
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
 
@@ -756,6 +760,28 @@ class DefaultAdapter implements BlocklyAdapter {
     } catch {
       return false;
     }
+  }
+
+  canUndo(key: WorkspaceKey): boolean {
+    return (this.workspaces[key]?.getUndoStack().length ?? 0) > 0;
+  }
+
+  canRedo(key: WorkspaceKey): boolean {
+    return (this.workspaces[key]?.getRedoStack().length ?? 0) > 0;
+  }
+
+  undo(key: WorkspaceKey): boolean {
+    const ws = this.workspaces[key];
+    if (!ws || !this.canUndo(key)) return false;
+    ws.undo(false);
+    return true;
+  }
+
+  redo(key: WorkspaceKey): boolean {
+    const ws = this.workspaces[key];
+    if (!ws || !this.canRedo(key)) return false;
+    ws.undo(true);
+    return true;
   }
 
   onChange(key: WorkspaceKey, listener: () => void): () => void {

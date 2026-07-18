@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
-import { Layers, Search } from 'lucide-react';
+import { Layers, Redo2, Search, Undo2 } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
@@ -108,6 +108,44 @@ export default function EditCanvas() {
     : setSheetCanvasWidth;
   const minWidth = editSubmode === 'rolltemplate' ? 200 : 320;
   const maxWidth = editSubmode === 'rolltemplate' ? 600 : 2000;
+  const structureVersion = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
+  const adapter = getBlocklyAdapter();
+  const canUndo = useMemo(() => {
+    void structureVersion;
+    return adapter.canUndo('html');
+  }, [adapter, structureVersion]);
+  const canRedo = useMemo(() => {
+    void structureVersion;
+    return adapter.canRedo('html');
+  }, [adapter, structureVersion]);
+  const runHistoryAction = useCallback((action: 'undo' | 'redo') => {
+    const changed = action === 'undo' ? adapter.undo('html') : adapter.redo('html');
+    if (!changed) return;
+    const selectedId = useWorkspaceStore.getState().selectedBlockId;
+    if (selectedId && !adapter.getBlock('html', selectedId)) {
+      useWorkspaceStore.getState().setSelectedBlockId(null, 'tree');
+    }
+  }, [adapter]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT') return;
+      if (event.key.toLowerCase() === 'z' && event.shiftKey) {
+        event.preventDefault();
+        runHistoryAction('redo');
+      } else if (event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        runHistoryAction('undo');
+      } else if (event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        runHistoryAction('redo');
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [runHistoryAction]);
 
   return (
     <div
@@ -123,6 +161,30 @@ export default function EditCanvas() {
         <span className="font-medium text-foreground">
           {editSubmode === 'rolltemplate' ? '굴림 결과 편집' : '시트 편집'}
         </span>
+        <div className="ml-auto flex items-center gap-1" role="group" aria-label="편집 기록">
+          <button
+            type="button"
+            onClick={() => runHistoryAction('undo')}
+            disabled={!canUndo}
+            className="grid h-6 w-6 place-items-center rounded border border-border text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            title="되돌리기 (Ctrl/Cmd+Z)"
+            aria-label="되돌리기"
+            data-testid="edit-history-undo"
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => runHistoryAction('redo')}
+            disabled={!canRedo}
+            className="grid h-6 w-6 place-items-center rounded border border-border text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            title="다시 실행 (Ctrl/Cmd+Shift+Z)"
+            aria-label="다시 실행"
+            data-testid="edit-history-redo"
+          >
+            <Redo2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
         <button
           type="button"
           onClick={toggleSnap}
