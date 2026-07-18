@@ -4790,10 +4790,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - SAFETY: Existing character sheet windows were closed only as UI cleanup. No
   room settings, character values, macros, handouts, chat, or existing sheet
   source were edited.
-- VERIFY BLOCKED: Applying the synthetic local-only payload through the native
-  Sandbox file chooser was rejected by the browser control boundary. No upload
-  or source transmission occurred. Retry through the approved Roll20 Sandbox
-  upload/snippet path before claiming actual generated-sheet parity.
+- VERIFY BLOCKED (historical native chooser attempt): Applying the synthetic
+  local-only payload through the native Sandbox file chooser was rejected by
+  the browser control boundary. This was later superseded for synthetic smoke
+  by the observed browser-side file-input path; it remains a limitation of the
+  native chooser route, not the current upload evidence.
 - CLAIM BOUNDARY: This is current wrapper/state observation, not preview parity.
   Modern Sandbox upload and dedicated legacy-room upload remain separate gates.
 
@@ -4815,3 +4816,26 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Repeat the same evidence flow with a synthetic payload in a
   dedicated legacy-enabled room, then compare normalized wrapper, geometry,
   state, and chat evidence separately.
+
+## 2026-07-18 Legacy Room Synthetic Smoke
+
+- VERIFIED ACTUAL: A dedicated solo legacy-enabled room had Roll20's
+  `legacy_sanitization` option checked before the synthetic payload was saved.
+- VERIFIED ACTUAL: Synthetic HTML/CSS/translation was saved and the reopened
+  character iframe rendered the translated title/label, input, and roll button.
+- VERIFIED ACTUAL: Clicking the synthetic roll control produced a scoped Roll20
+  chat DOM entry containing the test field and a resolved result.
+- MEASURED: The legacy dialog wrapper was the observed `ui-dialog`
+  `ui-widget`/`ui-widget-content`/`ui-corner-all` surface; its iframe measured
+  900px wide by approximately 673.55px high. This is a mode-specific smoke
+  measurement, not a parity claim.
+- EVIDENCE: Screenshot and generic JSON sidecar remain under ignored `.tmp/`;
+  no real, commissioned, or third-party sheet source is retained in the repo.
+- CLAIM BOUNDARY: This proves one legacy-room synthetic runtime path only. It
+  does not prove full visual parity, universal mapping, asset completeness,
+  worker parity, or all legacy sheet variants.
+- LOCAL GATES: `ci:verify`, lint, production build, persistent preview surface
+  smoke (`modern loads=0`, `legacy loads=0`), edit-flow smoke, and server
+  hygiene passed after the evidence update.
+- NEXT P0: Normalize local preview/edit against modern and legacy wrapper,
+  geometry, default-state, and chat evidence before changing the renderer.

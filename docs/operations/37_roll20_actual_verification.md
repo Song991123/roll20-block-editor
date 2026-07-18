@@ -810,3 +810,17 @@ the preferred evidence.
 - This is modern Sandbox runtime evidence for one anonymous synthetic payload.
   It does not prove full visual parity, asset completeness, worker parity, or
   the separate legacy-room contract. Keep the screenshot/payload ignored.
+
+## 2026-07-18 Legacy Room Synthetic Smoke
+
+- The dedicated solo legacy verification room had Roll20's legacy sanitization
+  option checked before saving the synthetic payload.
+- After saving synthetic HTML/CSS/translation, the reopened character iframe
+  rendered the translated title/label, an input, and a roll button.
+- Clicking the roll button produced a scoped chat DOM entry with the expected
+  test field and a resolved result.
+- The observed dialog wrapper used Roll20's `ui-dialog` widget classes; the
+  iframe measured 900px by approximately 673.55px in this legacy mode.
+- Screenshot and JSON sidecar remain local ignored evidence only. This smoke
+  proves a legacy runtime path, not full visual parity, universal mapping,
+  worker parity, or asset completeness.

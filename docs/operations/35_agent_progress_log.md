@@ -5460,6 +5460,26 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   snippet or another supported Sandbox upload path.
 - BOUNDARY: Wrapper observation is not actual generated-sheet visual parity;
   modern Sandbox and legacy-room results remain independent gates.
+
+## 2026-07-18 Legacy Room Synthetic Smoke
+
+- IMPLEMENTED/VERIFIED: In a dedicated solo legacy-enabled room, the legacy
+  sanitization checkbox was already on, the synthetic HTML/CSS/translation
+  payload was saved, and the reopened character iframe rendered translated
+  text, an input, and a roll control.
+- VERIFIED EXTERNAL SIDE EFFECT: Clicking the synthetic roll control created a
+  scoped Roll20 chat entry with the expected test field and a resolved result.
+- MEASURED: The Roll20 dialog used the observed `ui-dialog` widget wrapper; the
+  iframe measured 900px wide and approximately 673.55px high.
+- PRIVACY: Only generic synthetic evidence was kept in ignored `.tmp/`; no
+  real or third-party sheet source, room identifier, or screenshot was added
+  to the public repository.
+- BOUNDARY: This is one legacy runtime smoke, not visual parity or universal
+  import fidelity. The next comparison must normalize viewport/crop,
+  wrapper, geometry, default state, assets, and chat separately.
+- LOCAL GATES: `ci:verify`, lint, production build, persistent preview surface
+  smoke (`modern loads=0`, `legacy loads=0`), edit-flow smoke, and server
+  hygiene all passed after this evidence batch.
 ## 2026-07-18 Modern Sandbox Synthetic Smoke
 
 - DONE/VERIFIED ACTUAL: Applied the ignored synthetic HTML/CSS/translation
