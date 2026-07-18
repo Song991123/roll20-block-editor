@@ -29,7 +29,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - Live Roll20 diagnostic captures: `1` synthetic modern root.
 - Live Roll20 user-owned sheet captures: `0`.
 - Live Roll20 legacy-room captures: `0`.
-- Full product UI reset slices: `2` small shell/palette and core-copy slices; this is not
+- Full product UI reset slices: `3` small shell/palette, core-copy, and layer-role slices; this is not
   completion of the redesign.
 - Root UI baseline: forced `html.dark` removed; the app and portals now default
   to the pastel/light token set, while explicit `.dark` remains opt-in.
