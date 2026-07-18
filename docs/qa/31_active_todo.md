@@ -5059,14 +5059,37 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Use these measured wrapper contracts to normalize the local modern /
   legacy comparison harness, then run the dedicated anonymous export check.
 
-## 2026-07-19 Legacy Fixture Matrix Timeout
+## 2026-07-19 Legacy Fixture Matrix Recheck
 
-- VERIFY GAP: The full 3-fixture legacy visual matrix was attempted after the
-  intrinsic-root change but exceeded the 124-second command limit while
-  processing large imported fixtures. The focused Les-Oublies run passed;
-  AW2E/YSHY full-matrix completion remains unverified.
-- NEXT P1: Rerun the matrix with a bounded per-fixture or per-capture-segment
-  strategy so a large fixture cannot hide a timeout.
+- DONE LOCAL: The full three-fixture legacy visual matrix completed in one run
+  on port `4410` in `95.9s`. `official-roll20-AW2E`,
+  `official-roll20-Les-Oublies`, and `yshy-commission-1bu` all returned
+  `LEGACY FIXTURE VISUAL SMOKE PASS`.
+- VERIFIED LOCAL: Every fixture rendered modern, transition-legacy, and
+  fresh-legacy captures; transition/fresh geometry parity was true for all
+  three. Diagnostic modern/legacy image mismatch was `16.90%`, `0.04%`, and
+  `35.73%` respectively. These values are mode-difference diagnostics, not
+  actual Roll20 parity scores.
+- CLOSED GAP: The earlier timeout was an invocation-limit boundary, not a
+  fixture failure. No per-fixture timeout patch is required at this point.
+- NEXT P1: Keep the matrix command available as a bounded evidence run and
+  move the parity gate back to actual Roll20 Sandbox/legacy-room comparison.
+
+## 2026-07-19 Roll20 Sandbox Reconnect Boundary
+
+- OBSERVED: The authenticated settings surface at
+  `https://app.roll20.net/sheetsandbox/settings/<campaignId>` was reachable
+  and exposed the Sheet.json editor. The current settings contained a prior
+  local verification payload, but this turn did not upload or save anything.
+- VERIFY BLOCKED: The corresponding guessed `/editor/<campaignId>` route
+  returned Roll20's not-found page, so no active character iframe or new
+  screenshot was captured in this turn.
+- SAFETY: No room settings, source, chat, assets, uploads, or external
+  evidence were changed. Existing ignored actual reports remain the only
+  actual-render evidence.
+- NEXT P0: Reconnect through the known dedicated Sandbox editor route or a
+  user-visible native file handoff, then require a positive iframe/root
+  activation probe before any new screenshot is counted.
 
 ## 2026-07-19 Authored Root Intrinsic Width Contract
 

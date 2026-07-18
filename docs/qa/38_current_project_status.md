@@ -126,6 +126,20 @@ corepack pnpm run plan:roll20-chat-browser-paint -- reports\roll20-actual-compar
 => YSHY BLOCKED_BY_ASSET_RELINK
 => Les-Oublies PAINT_SECONDARY_NO_BACKGROUND_IMAGE
 
+corepack pnpm run smoke:legacy-fixture-visual -- --port 4410
+=> 95.9s
+=> PASS official-roll20-AW2E risk=0->0 diff=16.90%
+=> PASS official-roll20-Les-Oublies risk=1->0 diff=0.04%
+=> PASS yshy-commission-1bu risk=0->0 diff=35.73%
+=> LEGACY FIXTURE VISUAL SMOKE PASS
+=> diagnostic modern/legacy diff only; not actual Roll20 parity
+
+corepack pnpm run diagnose:roll20-chat-renderer-policy -- reports\roll20-actual-compare\2026-06-18-state-map-v1
+=> HOLD_GLOBAL_CHAT_RENDERER_PATCH
+=> AW2E NEEDS_NEW_DIAGNOSTIC_MODEL
+=> YSHY NEEDS_NARROW_TEMPLATE_MODEL
+=> global candidate promotion remains rejected
+
 corepack pnpm run smoke:preview-edit-visual -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual --port 4336
 => PASS official-roll20-AW2E mismatch=1.86%
 => PASS official-roll20-Les-Oublies mismatch=2.07%

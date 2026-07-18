@@ -5724,7 +5724,35 @@ diagnostic `17.22%` modern/legacy pixel difference, so this change does not
 claim actual Roll20 visual parity.
 
 The full three-fixture legacy visual matrix was attempted separately but hit
-the 124-second command limit while processing the large imported fixtures. It
-is intentionally recorded as unverified rather than inferred from the focused
-pass. The next performance task is to make that matrix bounded per fixture or
-per capture segment so AW2E/YSHY can complete without hiding a timeout.
+the 124-second command limit while processing the large imported fixtures. A
+fresh full rerun on port `4410` completed in `95.9s`: AW2E, Les-Oublies, and
+YSHY all returned `LEGACY FIXTURE VISUAL SMOKE PASS`, including transition vs
+fresh legacy geometry parity. The run's diagnostic modern/legacy image
+mismatches were `16.90%`, `0.04%`, and `35.73%`; these are not actual Roll20
+parity scores. The timeout boundary is therefore closed without a script
+change, while actual Sandbox/legacy-room parity remains open.
+
+## 2026-07-19 Legacy Matrix and Sandbox Reconnect Follow-up
+
+- Re-ran the complete local legacy fixture matrix after the authored-root width
+  fix. It completed in `95.9s` on port `4410` with `3/3` fixture PASS and no
+  fixture timeout. The generated screenshots/reports remain ignored local
+  evidence.
+- Re-ran `status:roll20-actual` for the existing state-map evidence. The
+  current sidecar still reports `generatedActualScreenshots=6/6`,
+  `generatedDiffed=6/6`, `trustedFullRoot=3/3`,
+  `chatSameStructureHighMismatch=2/3`,
+  `chatSameStructureMaxAlignedMismatch=20.68%`, and
+  `HOLD_PRODUCTION_RENDERER_PATCH`. This does not promote the renderer.
+- Read-only browser reconnect reached the dedicated Sandbox settings page and
+  confirmed the Sheet.json editor plus a prior local verification payload.
+  The guessed `/editor/<campaignId>` route returned Roll20's not-found page,
+  so no upload, save, active iframe, or new screenshot was counted.
+- Ran `test:roll20-chat-renderer-targets`,
+  `test:roll20-chat-template-scope`, and
+  `diagnose:roll20-chat-renderer-policy`. The policy remains
+  `HOLD_GLOBAL_CHAT_RENDERER_PATCH`: AW2E needs a new diagnostic model, YSHY
+  needs a narrow template model, and no global candidate passed style-proof
+  and regression criteria.
+- No source, fixture, screenshot, payload, room setting, or external evidence
+  was added to tracked files. Temporary browser tabs were closed.
