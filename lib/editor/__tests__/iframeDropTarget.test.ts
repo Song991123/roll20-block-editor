@@ -165,6 +165,12 @@ assert.deepEqual(resolveIframeFreePlacement(freeOrigin, freeEnd, lookup, 8), {
   containingBlockNeedsRelative: true,
 });
 assert.equal(resolveIframeFreePlacement(freeOrigin, {
+  ...freeOrigin,
+  phase: 'pointerup' as const,
+  pointer: { x: freeOrigin.pointer.x + 1, y: freeOrigin.pointer.y + 1 },
+  buttons: 0,
+}, lookup, 8), null);
+assert.equal(resolveIframeFreePlacement(freeOrigin, {
   ...freeEnd,
   pointer: { x: 300, y: 80 },
 }, lookup, 8)?.containingBlockId, null);

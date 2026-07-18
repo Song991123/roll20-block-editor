@@ -35,6 +35,10 @@ export type IframeFreePlacement = {
   containingBlockNeedsRelative: boolean;
 };
 
+// A click in edit mode selects an object; only a real pointer movement should
+// convert a flow node into an explicitly positioned design node.
+const MIN_FREE_DRAG_DISTANCE = 3;
+
 function pickDropMode(
   geometry: IframeEditNodeGeometry,
   pointerY: number,
@@ -164,6 +168,7 @@ export function resolveIframeFreePlacement(
     }) ?? null;
   const deltaX = end.pointer.x - origin.pointer.x;
   const deltaY = end.pointer.y - origin.pointer.y;
+  if (Math.hypot(deltaX, deltaY) < MIN_FREE_DRAG_DISTANCE) return null;
   let baseLeft = origin.subject.offsetLeft;
   let baseTop = origin.subject.offsetTop;
 

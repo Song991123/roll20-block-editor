@@ -5850,3 +5850,17 @@ Verification: the new prefix test passed, the high-priority block suite passed
 `20/20`, production build passed, and the rebuilt ignored YSHY baseline passed
 `verify:roll20-preupload` across all seven gates. The result is still a local
 payload/export proof; authenticated YSHY visual parity in Roll20 remains open.
+
+### 2026-07-19 - Prevent click-to-absolute regression
+
+The iframe free-placement resolver now rejects pointer movement below three
+pixels. Previously, a plain click in free mode could be interpreted as a
+placement commit and convert a normal flow node into a managed absolute node.
+This preserves Figma-like selection semantics while keeping actual drags
+optimistic and responsive.
+
+Verification: `iframeDropTarget.test.ts` passed; `smoke:edit-flow` passed with
+zero console/page errors and retained flow insertion, free placement, layer
+before/inside/after, cycle protection, selection sync, and canvas-width checks.
+This is an editor interaction fix only; it does not establish all-sheet or
+actual Roll20 legacy-room visual parity.

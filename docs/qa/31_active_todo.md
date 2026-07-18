@@ -5199,3 +5199,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: This closes an export-payload defect. It does not yet prove the
   imported YSHY sheet is visually identical in an actual Roll20 iframe, and
   the authenticated user-file upload remains a separate manual/browser step.
+
+## 2026-07-19 Free Placement Click Guard
+
+- FIXED: A free-placement pointerdown/pointerup with no meaningful movement
+  could convert a flow element into managed absolute positioning. A minimum
+  three-pixel drag threshold now keeps a click as selection-only behavior.
+- VERIFIED LOCAL: `iframeDropTarget.test.ts` covers the no-movement guard, and
+  `smoke:edit-flow` passed with no console or page errors. The smoke still
+  covers flow widget insertion, free placement, layer before/inside/after,
+  cycle protection, selection sync, and canvas widths.
+- BOUNDARY: This protects the editor interaction contract; it does not prove
+  arbitrary imported-sheet visual parity or actual Roll20 legacy-room parity.
