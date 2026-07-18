@@ -5161,3 +5161,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Repeat the root-only capture with an authorized user-imported sheet
   fixture, then establish the same normalized contract for the legacy-enabled
   room before changing renderer CSS.
+
+## 2026-07-19 Layer Metadata and Drag-Lag Fix
+
+- FIXED: `BlocklyAdapter.getBlock()` now returns the same parent/relation
+  metadata as `listAllBlocks()` instead of reporting every block as a root.
+  This restores correct cycle checks, containing-frame detection, and
+  free-placement reparenting for nested layers.
+- OPTIMIZED: The iframe edit bridge now builds one HTML layer map per Blockly
+  structure revision and reuses it for pointermove/drop resolution. It no
+  longer reconstructs a full layer snapshot for every pointer event.
+- VERIFIED LOCAL: blockly layer operations, iframe drop-target tests, lint, and
+  diff-check pass. Full CI verification is the next gate for this patch.
+- BOUNDARY: This is a structural/edit-path fix. It does not yet prove Figma
+  interaction quality, arbitrary imported-sheet parity, or legacy-room parity.

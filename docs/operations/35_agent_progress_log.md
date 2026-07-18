@@ -5811,3 +5811,21 @@ change, while actual Sandbox/legacy-room parity remains open.
   `reports/roll20-actual-compare/live-browser/2026-07-19-synthetic-modern/`.
 - NEXT: Repeat the capture for a user-owned import fixture and establish the
   same normalized root contract in the dedicated legacy-enabled room.
+
+### 2026-07-19 — Preserve nested layer metadata during iframe editing
+
+Code inspection found that `BlocklyAdapter.getBlock()` returned a synthetic
+root snapshot even when the requested block was nested. The iframe drop
+resolver therefore received incomplete parent/relation data and could make
+wrong decisions about cycles, containing frames, and reparenting. The adapter
+now returns the authoritative snapshot from `listAllBlocks()`.
+
+The live iframe pointer path also used that lookup repeatedly during every
+pointermove. `PreviewMain` now creates an HTML layer map once per structure
+revision and passes it to edit/widget drop resolution. This keeps the same
+DOM-to-layer contract while reducing repeated Blockly traversal during drag.
+
+Local focused verification passed: layer operations, iframe drop-target tests,
+lint, and diff-check. Full CI is the promotion gate. This change is not a
+visual parity claim and does not close the user-import or legacy-room evidence
+gaps.

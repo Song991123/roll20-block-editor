@@ -36,6 +36,9 @@ try {
       [first.id, null, 'sibling'],
     ],
   );
+  assert.equal(adapter.getBlock('html', following.id)?.layerParentId, container.id);
+  assert.equal(adapter.getBlock('html', following.id)?.layerRelation, 'child');
+  assert.equal(adapter.getBlock('html', first.id)?.layerParentId, null);
   assert.equal(container.nextConnection!.targetBlock()?.id, first.id);
   assert.equal(container.getInput('BODY')!.connection!.targetBlock()?.id, following.id);
   assert.equal(first.nextConnection!.targetBlock(), null);

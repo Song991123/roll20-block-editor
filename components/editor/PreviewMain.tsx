@@ -66,6 +66,7 @@ export default function PreviewMain() {
   const htmlCount = useWorkspaceStore((s) => s.workspaces.html.blockCount);
   const cssCount = useWorkspaceStore((s) => s.workspaces.css.blockCount);
   const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
+  const htmlStructureVersion = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const activeWs = useWorkspaceStore((s) => s.activeWorkspace);
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   // Phase F (spec 17 §13) — origin === 'tree' 면 preview 안 element 가
@@ -187,6 +188,15 @@ export default function PreviewMain() {
     ? rolltemplateCanvasWidthAuto
     : sheetCanvasWidthAuto;
   const compatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
+  // Resolve iframe hit paths against one layer snapshot per structural change.
+  // Rebuilding Blockly snapshots for every pointermove was a major source of
+  // drag lag, especially on imported sheets with many blocks.
+  const htmlLayerMap = useMemo(() => {
+    void htmlStructureVersion;
+    return new Map(
+      getBlocklyAdapter().listAllBlocks('html').map((block) => [block.id, block]),
+    );
+  }, [htmlStructureVersion]);
   const previewAssetText = useMemo(
     () => applyAssetReplacements({ html: emitHtml, css: emitCss }, assetReplacementMap),
     [emitHtml, emitCss, assetReplacementMap],
@@ -537,14 +547,14 @@ export default function PreviewMain() {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         if (useUiStore.getState().mainMode !== 'edit') return;
         const adapter = getBlocklyAdapter();
-        if (!adapter.getBlock('html', editMessage.blockId)) return;
-        if (!editMessage.hitPath.every((item) => adapter.getBlock('html', item.blockId))) return;
+        if (!htmlLayerMap.has(editMessage.blockId)) return;
+        if (!editMessage.hitPath.every((item) => htmlLayerMap.has(item.blockId))) return;
         if (
           editMessage.subject.offsetParentBlockId
-          && !adapter.getBlock('html', editMessage.subject.offsetParentBlockId)
+          && !htmlLayerMap.has(editMessage.subject.offsetParentBlockId)
         ) return;
         const nextDropTarget = resolveIframeEditDropTarget(editMessage, {
-          getBlock: (blockId) => adapter.getBlock('html', blockId),
+          getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
         });
         if (editMessage.phase === 'pointermove') {
@@ -586,12 +596,12 @@ export default function PreviewMain() {
             const origin = iframeEditDragOriginRef.current;
             const placement = origin
               ? resolveIframeFreePlacement(origin, editMessage, {
-                  getBlock: (blockId) => adapter.getBlock('html', blockId),
+                  getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
                   canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
                 }, ui.snapEnabled ? 8 : 1)
               : null;
             if (placement) {
-              const subject = adapter.getBlock('html', editMessage.subject.blockId);
+              const subject = htmlLayerMap.get(editMessage.subject.blockId) ?? null;
               const currentParentId = subject?.layerParentId ?? null;
               let structureMoved = true;
               if (placement.containingBlockId && currentParentId !== placement.containingBlockId) {
@@ -657,9 +667,9 @@ export default function PreviewMain() {
           return;
         }
         const adapter = getBlocklyAdapter();
-        if (!editMessage.hitPath.every((item) => adapter.getBlock('html', item.blockId))) return;
+        if (!editMessage.hitPath.every((item) => htmlLayerMap.has(item.blockId))) return;
         const nextDropTarget = resolveIframeWidgetDropTarget(editMessage, {
-          getBlock: (blockId) => adapter.getBlock('html', blockId),
+          getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
         });
         setIframeEditDropTarget(nextDropTarget);
@@ -830,7 +840,7 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [canvasWidthAuto, editSubmode, flushIframeEditState, iframeDocumentSrcdoc, queueIframeEditState, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
+  }, [canvasWidthAuto, editSubmode, flushIframeEditState, htmlLayerMap, iframeDocumentSrcdoc, queueIframeEditState, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;

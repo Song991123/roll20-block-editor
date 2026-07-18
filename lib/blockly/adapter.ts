@@ -245,25 +245,10 @@ class DefaultAdapter implements BlocklyAdapter {
   }
 
   getBlock(key: WorkspaceKey, id: string): BlockSnapshot | null {
-    const ws = this.workspaces[key];
-    if (!ws) return null;
-    const b = ws.getBlockById(id);
-    if (!b) return null;
-    const def = getBlockDef(b.type);
-    return {
-      id: b.id,
-      type: b.type,
-      depth: 0,
-      childCount: (b.inputList ?? [])
-        .map((input) => input.connection?.targetBlock() ?? null)
-        .filter((child) => child !== null).length,
-      layerParentId: null,
-      layerPreviousId: null,
-      layerRelation: 'root',
-      label: def?.label ?? b.type,
-      preview: this.previewFor(b),
-      category: def?.category ?? null,
-    };
+    // Keep the layer metadata returned by listAllBlocks. Returning every
+    // block as a root made iframe drop resolution lose the real container
+    // relationship after a block was nested.
+    return this.listAllBlocks(key).find((block) => block.id === id) ?? null;
   }
 
   getBlockFields(key: WorkspaceKey, blockId: string): BlockFieldInfo[] {
