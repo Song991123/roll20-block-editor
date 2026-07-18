@@ -6182,3 +6182,11 @@ payload audit, Sandbox sanitize audit, mode-aware visual roundtrip, state
 selector audit, asset audit, and evidence guard. The latest roundtrip captures
 reported 0.00% mismatch. This remains local pre-upload evidence; no external Roll20 upload
 or public fixture/report was created.
+
+### 2026-07-19 - Roll20 browser recheck boundary
+
+The authenticated editor tab was discoverable and was left open for handoff.
+Only lightweight tab metadata could be read reliably in this pass; the heavy
+editor's DOM snapshot, page evaluation, and screenshot surfaces timed out.
+No upload, activation, chat smoke, or external screenshot was counted. Keep
+this as VERIFY, separate from the local pre-upload PASS.

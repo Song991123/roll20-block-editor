@@ -5480,3 +5480,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: this proves local payload readiness and capture stability only. It
   does not prove an authorized user sheet has been activated in Roll20, and it
   does not add any actual sheet source or screenshot to the public repository.
+
+## 2026-07-19 Roll20 Browser Recheck
+
+- VERIFY: the authenticated Roll20 editor tab was found and left open for
+  handoff. Lightweight URL/title discovery worked, but DOM snapshot, page
+  evaluation, and screenshot operations timed out on the heavy editor page.
+- CURRENT TRUTH: no upload, activation, chat smoke, or external screenshot was
+  counted in this recheck. Local pre-upload PASS remains separate from actual
+  Roll20 parity evidence.
