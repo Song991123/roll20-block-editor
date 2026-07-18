@@ -5522,3 +5522,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   smoke, lint, build, and `ci:verify` passed.
 - BOUNDARY: this corrects the local editing affordance; it does not change or
   claim actual Roll20 Sandbox/legacy-room evidence.
+
+## 2026-07-19 Preview Chat Surface and Autocalc Warning Fix
+
+- FIXED: preview focus keeps the ChatPane visible after a roll result instead
+  of hiding the entire right sidebar. The sheet remains on the same persistent
+  preview surface while the user-facing roll result appears beside it.
+- FIXED: disabled numeric controls containing Roll20 formulas no longer pass
+  formula text through the native number-input setter. The source expression
+  is retained in `data-r20-autocalc-expression`, and the runtime applies only
+  a computed numeric value when one is available.
+- VERIFIED LOCAL: `lint`, production `build`, `rolltemplate_chat_smoke`, and
+  `verify:runtime-visibility` pass. The runtime report contains no console
+  issues or page errors, all three anonymous local fixtures produce a
+  rolltemplate chat card, and preview/edit visual parity remains `0%` for the
+  measured local cases.
+- BOUNDARY: this is local runtime evidence only. Actual Roll20 Sandbox chat
+  and dedicated legacy-room behavior are still `VERIFY`; no external upload or
+  screenshot was counted.

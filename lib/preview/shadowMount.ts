@@ -309,6 +309,10 @@ function writeSheetAttr(scope: ParentNode, name: string, value: unknown): void {
       return;
     }
     const nextValue = value == null ? '' : String(value);
+    if (el instanceof HTMLInputElement && el.type === 'number' && nextValue.trim() !== '') {
+      const isAutocalcExpression = el.dataset.r20AutocalcExpression === nextValue;
+      if (isAutocalcExpression || !Number.isFinite(Number(nextValue))) return;
+    }
     el.value = nextValue;
     el.setAttribute('value', nextValue);
   });

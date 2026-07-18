@@ -6222,3 +6222,25 @@ Verification: iframe drop-target unit coverage, real persistent-iframe edit
 flow smoke, modern/legacy preview-edit visual smoke, Shadow drag smoke, lint,
 build, and `ci:verify` passed. Actual Roll20 upload and room evidence remain
 `VERIFY`.
+
+### 2026-07-19 - Preview chat surface and numeric autocalc warning fix
+
+Preview focus previously hid the entire right sidebar, so local roll controls
+could emit a roll event without leaving a visible ChatPane. The shell now keeps
+that one user-facing surface visible after a result exists, while the sheet
+continues to use the same persistent render surface.
+
+The preview contract also had a concrete browser warning source: disabled
+`input[type=number]` controls from Roll20 commonly carry formula strings such
+as `floor(@{pow}/5)` in their source value. Render preparation now preserves the
+expression in `data-r20-autocalc-expression` and clears the native numeric value
+before the browser parses it; attribute writes skip the same formula or any
+non-finite number rather than calling the native setter with invalid text.
+Export/source preservation is unchanged; this is a render-runtime boundary.
+
+Verification: `lint`, production `build`, direct rolltemplate chat smoke, and
+`verify:runtime-visibility` passed. The three local fixtures produced visible
+rolltemplate cards; the runtime report recorded `consoleIssues: []` and
+`pageErrors: []`; local preview/edit visual smoke remained `0%` mismatch.
+Actual Roll20 Sandbox/legacy-room upload, chat, and screenshot evidence remain
+`VERIFY` and are not implied by these local results.

@@ -43,7 +43,15 @@ export function annotateRoll20Autocalc(root: ParentNode): Roll20AutocalcResult {
       control.type === 'number'
     ) {
       const expression = control.getAttribute('value')?.trim() ?? '';
-      if (expression) formulas.push({ element: control, name, expression });
+      if (expression) {
+        formulas.push({ element: control, name, expression });
+        // Keep Roll20's source expression in data, not in the native number
+        // value attribute. The browser parses the latter before our runtime
+        // can evaluate it and emits an invalid-value warning for expressions
+        // such as `floor(@{pow}/5)`.
+        control.dataset.r20AutocalcExpression = expression;
+        control.setAttribute('value', '');
+      }
       continue;
     }
     if (control instanceof HTMLInputElement && ['checkbox', 'radio'].includes(control.type) && !control.checked) continue;

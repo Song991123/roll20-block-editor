@@ -769,6 +769,10 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         else el.removeAttribute('checked');
       } else {
         var nextValue = value == null ? '' : String(value);
+        if (el.type === 'number' && nextValue.trim() !== '') {
+          var isAutocalcExpression = el.getAttribute('data-r20-autocalc-expression') === nextValue;
+          if (isAutocalcExpression || !isFinite(Number(nextValue))) continue;
+        }
         el.value = nextValue;
         el.setAttribute('value', nextValue);
       }

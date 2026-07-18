@@ -22,6 +22,7 @@ import {
 import { installAutosave } from '@/lib/persist/autosave';
 import { loadWorkspace, AUTOSAVE_KEY, type SavedRecord } from '@/lib/persist/indexeddb';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
+import { useChatStore } from '@/lib/stores/chatStore';
 
 /**
  * 새 UX 셸 — Preview-first 3-zone grid + 메인 영역 분할 뷰 (D26 ②-재재).
@@ -130,6 +131,8 @@ export default function EditorShell() {
   const leftCollapsed = useUiStore((s) => s.sidebarLeftCollapsed);
   const rightCollapsed = useUiStore((s) => s.sidebarRightCollapsed);
   const rightWidth = useUiStore((s) => s.sidebarRightWidth);
+  const rightTab = useUiStore((s) => s.sidebarRightTab);
+  const chatCount = useChatStore((s) => s.rolls.length);
   const toggleLeft = useUiStore((s) => s.toggleSidebarLeft);
   const toggleRight = useUiStore((s) => s.toggleSidebarRight);
   const setLeftMode = useUiStore((s) => s.setSidebarLeftMode);
@@ -167,8 +170,13 @@ export default function EditorShell() {
   }, [toggleLeft, toggleRight, setLeftMode, setRightTab, setMainMode, mainMode]);
 
   const previewFocus = mainMode === 'preview';
+  // Preview hides editor chrome until a roll exists. Once ChatPane has a
+  // result, keep that one user-facing surface visible beside the same sheet.
+  const previewChatVisible = previewFocus && rightTab === 'chat' && chatCount > 0;
   const leftWidth = previewFocus || leftCollapsed ? '0px' : 'var(--sidebar-left-w)';
-  const rightWidthPx = previewFocus || rightCollapsed ? '0px' : `${rightWidth}px`;
+  const rightWidthPx = (previewFocus && !previewChatVisible) || rightCollapsed
+    ? '0px'
+    : `${rightWidth}px`;
 
   // Keep one canonical Roll20 iframe mounted across preview and edit. In edit
   // mode the same pane is placed over the canvas slot while EditCanvas owns
@@ -316,10 +324,10 @@ export default function EditorShell() {
             'flex flex-col border-l border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
             (rightCollapsed || previewFocus) && 'border-l-0',
           )}
-          aria-hidden={previewFocus}
+          aria-hidden={previewFocus && !previewChatVisible}
           data-testid="sidebar-right"
         >
-          {!rightCollapsed && !previewFocus && <SidebarRight />}
+          {!rightCollapsed && (!previewFocus || previewChatVisible) && <SidebarRight />}
         </aside>
       </main>
       {!previewFocus && <Statusbar />}
