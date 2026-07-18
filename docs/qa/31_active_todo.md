@@ -4839,3 +4839,23 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   hygiene passed after the evidence update.
 - NEXT P0: Normalize local preview/edit against modern and legacy wrapper,
   geometry, default-state, and chat evidence before changing the renderer.
+
+## 2026-07-18 Legacy Sheet-Root Geometry Recheck
+
+- VERIFIED ACTUAL: In the dedicated legacy synthetic runtime, the visible
+  `.charactersheet` root measured `860x280` inside a `900px` iframe. Its
+  scroll dimensions were also `860x280`, so the observed inner canvas had no
+  vertical overflow in this smoke.
+- VERIFIED LOCAL: The matching anonymous synthetic local preview/edit root is
+  `870x280` with exact local preview/edit pixel and style parity.
+- FAILING GATE: The normalized runtime comparison now reports `legacy
+  rootGeometry=FAIL` for the 10px width difference. This is an intentional
+  blocker, not a Roll20 parity pass.
+- TOOLING FIXED: `roll20_runtime_evidence_compare.mjs` now returns `FAIL` for
+  contradictory root/wrapper/runtime evidence instead of downgrading a root
+  mismatch to `PASS_WITH_OPEN_PARITY_GAP`.
+- VERIFY: Modern actual `sheetRoot` geometry is still missing, so modern
+  promotion remains `NOT_COMPARABLE`/`HOLD`.
+- NEXT P0: Identify whether the 10px difference comes from the local iframe
+  canvas wrapper, Roll20 inner padding, or synthetic payload CSS, then rerun
+  both modes with the same crop contract.

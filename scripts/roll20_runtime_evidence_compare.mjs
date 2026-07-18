@@ -87,8 +87,14 @@ function compareEvidence({ local, actualByMode }) {
   }
   const allRuntimePass = Object.values(modes).every((mode) => mode.localPreviewEdit === 'PASS' && mode.actualRuntime === 'PASS');
   const allComparable = Object.values(modes).every((mode) => mode.rootGeometry === 'PASS');
+  const hasContradiction = Object.values(modes).some((mode) =>
+    mode.localPreviewEdit === 'FAIL' ||
+    mode.actualRuntime === 'FAIL' ||
+    mode.wrapper === 'FAIL' ||
+    mode.rootGeometry === 'FAIL',
+  );
   return {
-    status: allRuntimePass && allComparable ? 'PASS' : allRuntimePass ? 'PASS_WITH_OPEN_PARITY_GAP' : 'FAIL',
+    status: hasContradiction ? 'FAIL' : allRuntimePass && allComparable ? 'PASS' : 'PASS_WITH_OPEN_PARITY_GAP',
     scope: 'anonymous synthetic runtime smoke plus local preview/edit; not universal visual parity',
     modes,
   };

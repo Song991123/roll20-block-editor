@@ -5493,6 +5493,23 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   import support.
 - NEXT P0: Add a normalized sidecar comparison for local, modern actual, and
   legacy actual wrapper/iframe/root/state/asset/chat fields.
+
+## 2026-07-18 Legacy Sheet-Root Measurement and Gate Correction
+
+- MEASURED ACTUAL: The dedicated legacy synthetic sheet's `.charactersheet`
+  root is `860x280`, with `scrollWidth=860` and `scrollHeight=280`, inside a
+  `900px` iframe. The containing dialog measured approximately `906.8x756.8`.
+- MEASURED LOCAL: The same anonymous payload's local preview/edit root is
+  `870x280`, with local pixel/style/geometry parity still exact.
+- RESULT: The comparison report now exposes `legacy rootGeometry=FAIL` for
+  the 10px width mismatch; `modern rootGeometry` remains
+  `NOT_COMPARABLE` because its actual root sidecar is not measured yet.
+- IMPLEMENTED: The comparison script now promotes any root/wrapper/runtime
+  contradiction to `FAIL`, preventing a false open-gap status from hiding a
+  measured mismatch. Its self-test still passes.
+- NEXT: Trace the 10px difference to the local wrapper or Roll20 crop/padding
+  contract before changing renderer CSS. Do not promote parity from this
+  synthetic result.
 ## 2026-07-18 Modern Sandbox Synthetic Smoke
 
 - DONE/VERIFIED ACTUAL: Applied the ignored synthetic HTML/CSS/translation

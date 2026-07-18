@@ -23,6 +23,19 @@ This is a compact status snapshot for handoff and planning. It must not be used 
 - EVIDENCE LOCATION: Screenshots, payloads, and JSON sidecars stay under
   ignored `.tmp/`; no real or third-party sheet source is public.
 
+### Root Geometry Recheck
+
+- ACTUAL LEGACY: The dedicated legacy synthetic `.charactersheet` root was
+  measured at `860x280` inside a `900px` iframe, with no scroll overflow.
+- LOCAL: The matching preview/edit root is `870x280`; local preview/edit
+  remains exact against itself, but it is 10px wider than the actual legacy
+  inner root.
+- GATE: The normalized comparison now correctly reports
+  `legacy rootGeometry=FAIL`, while modern remains
+  `rootGeometry=NOT_COMPARABLE` until its inner root is measured.
+- INTERPRETATION: The synthetic runtime contract is active, but the renderer
+  still has a concrete crop/width mismatch. No visual parity claim is allowed.
+
 ## Current Status Summary
 
 | Area | Status | Current Evidence | Meaning |

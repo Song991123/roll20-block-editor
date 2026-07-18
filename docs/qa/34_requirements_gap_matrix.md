@@ -17,6 +17,17 @@ Date: 2026-06-12
 - Next P0 is a normalized local-vs-modern-vs-legacy evidence comparison with
   explicit wrapper, iframe, sheet-root, state, asset, and chat fields.
 
+Follow-up measurement, 2026-07-18:
+- The dedicated legacy synthetic `.charactersheet` root measured `860x280`
+  inside a `900px` iframe, while the matching local preview/edit root measured
+  `870x280`. The local pair is exact against itself, but the cross-runtime
+  root comparison is `FAIL` for the 10px width difference.
+- Modern actual sheet-root geometry is still `NOT_COMPARABLE` because its
+  inner-root sidecar has not been captured yet.
+- The comparison tool now treats any measured root/wrapper/runtime
+  contradiction as `FAIL`; `PASS_WITH_OPEN_PARITY_GAP` is reserved for missing
+  evidence without a contradiction.
+
 This matrix breaks the operating requirements into actionable work. Use it with `docs/qa/31_active_todo.md`.
 
 Current superseding status, 2026-07-13:
