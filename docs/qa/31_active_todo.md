@@ -5275,3 +5275,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: `lint`, `build`, `ci:verify`, and `smoke:edit-flow` passed.
 - BOUNDARY: This changes app-shell copy only; imported Roll20 HTML/CSS and the
   shared iframe render surface were not rewritten.
+
+## 2026-07-19 Goal Card Scope Reconciliation
+
+- SCOPE SYNC: The active goal, `41_product_reset_and_short_term_goals.md`,
+  `43_agent_context_pack.md`, and the shared agent bridge now carry the same
+  product-reset scope: original pastel/pink UI, plain Korean actions, no public
+  copyrighted examples, explicit local-storage boundary, modern/legacy render
+  contracts, shared preview/edit surface, and future JS/worker extensibility.
+- VERIFIED EXTERNAL PRIVATE: The dedicated Custom Sheet Sandbox manifest was
+  edited through the visible Sheet.json editor and saved with `legacy:false`.
+  The dedicated editor route then loaded successfully.
+- VERIFY: This proves the modern destination configuration and editor load only;
+  it does not prove the sheet iframe root rendered, user-owned upload parity, or
+  general Roll20 visual equality. Existing rooms were not edited.

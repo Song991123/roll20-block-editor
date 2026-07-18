@@ -5960,3 +5960,16 @@ only and are not included in the Roll20 iframe stylesheet.
 
 Verification: `layerRoles.test.ts`, `iframeDropTarget.test.ts`, and lint passed.
 Full nested browser acceptance remains VERIFY.
+
+### 2026-07-19 - Goal card scope reconciliation and modern Sandbox mode
+
+The active goal was re-read and reconciled with the product-reset control plane
+and shared agent bridge. The durable scope is now explicit: original
+pastel/pink product UI, plain Korean user language, no public copyrighted
+examples, local-storage honesty, modern and legacy Roll20 contracts, one shared
+preview/edit render surface, and a future worker/JS workspace.
+
+In the dedicated Custom Sheet Sandbox only, the visible Sheet.json editor was
+updated and saved with `legacy:false`; the dedicated editor route loaded after
+save. No existing room was modified. The iframe/root screenshot is still
+missing, so modern visual parity remains VERIFY rather than DONE.
