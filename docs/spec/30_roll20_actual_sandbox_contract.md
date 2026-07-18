@@ -78,8 +78,8 @@ Do not conflate these two layers:
 
 | Layer | Purpose | Current Local Status |
 | --- | --- | --- |
-| Roll20 sandbox sanitize/prefix | Actual Roll20 custom sheet preview behavior for HTML/CSS source before rendering. | Observed and documented here; implementation gap remains. |
-| Legacy CSS compatibility toggle | Optional export/preview transform for older Roll20 CSS support, such as transform/keyframes/var/position handling. | Existing local sanitizer covers part of this but is not the actual sandbox prefix/sanitize contract. |
+| Roll20 sandbox sanitize/prefix | Actual Roll20 custom sheet preview behavior for HTML/CSS source before rendering. | Modeled in `lib/emit/roll20SandboxSanitize.ts` and surfaced in the Export dialog "Roll20 Sandbox 고급 진단" panel. This is an evidence-backed approximation of the observed sandbox behavior, not proven pixel parity. |
+| Legacy CSS compatibility toggle | Optional export/preview transform for older Roll20 CSS support, such as transform/keyframes/var/position handling. | Implemented separately in `lib/emit/sanitize.ts` (`sanitizeForRoll20Legacy`). It is intentionally distinct from the sandbox sanitize/prefix model above and from Roll20's own `legacySanitization` runtime class-prefixing. |
 
 ## Current Evidence Boundary
 
@@ -248,11 +248,16 @@ that source/state-dominant sheets are not harmed.
 
 ## Implementation Implications
 
-- Add a dedicated local module for Roll20 sandbox sanitize/prefix behavior,
-  separate from `sanitizeForRoll20Legacy`.
-- Preview/edit/export should be able to report which layer was applied:
-  source-preserving mode, Roll20 sandbox sanitize/prefix, and legacy
-  compatibility mode.
+- DONE: The dedicated local module for Roll20 sandbox sanitize/prefix behavior
+  exists at `lib/emit/roll20SandboxSanitize.ts`, separate from
+  `sanitizeForRoll20Legacy` (`lib/emit/sanitize.ts`). Its contract is covered by
+  `test:roll20-sandbox-sanitize` (7/7).
+- DONE (partial): The Export dialog reports which layers were applied — the
+  "Roll20 Sandbox 고급 진단" panel shows the sandbox sanitize/prefix diff, and
+  the legacy toggle reports `sanitizeForRoll20Legacy` warnings. The run-level
+  status summary (`scripts/roll20_actual_status.mjs`) does not yet surface the
+  per-fixture modern/legacy runtime mode; that is tracked as a NEXT item under
+  the legacy_sanitization tooling note below.
 - For the actual generated character iframe path, do not blanket-prefix CSS
   selectors until another probe proves that Roll20 does so in that path. The
   current implementation uses `sanitizeRoll20SandboxCss(css, {
@@ -264,3 +269,60 @@ that source/state-dominant sheets are not harmed.
 - Translation remains unverified in this observed UI path. Treat translation
   application as a separate evidence item until the actual upload path is
   completed.
+
+## Upload Path Contract Equivalence
+
+Question: does the manual file-selection upload and the generated auto-upload
+snippet reach Roll20 through the same contract?
+
+Answer from code + the 2026-07-16 live handler inspection: yes, they converge on
+the same Roll20 delegated file-input `change` handler.
+
+- Manual path: a person opens `Sheet Sandbox Tools` and selects files for
+  `#sheetHtml`, `#sheetCss`, `#sheetTranslation`. Roll20's delegated `change`
+  handler reads each `File` with `FileReader`, POSTs form-encoded base64 source
+  to `/sheetsandbox/savesheetsettings`, then calls `reloadSheetData()` and
+  `reloadOpenCharacters()`.
+- Auto path: `scripts/roll20_upload_snippet.mjs` builds browser `File` objects
+  from the local baseline payload and dispatches `input`/`change` on the same
+  three inputs, invoking the identical delegated handler
+  (`uploadContract: 'roll20-delegated-file-input-change'`). It does not
+  hand-build or POST a bypass request as the primary path.
+- Fallback only: the snippet's direct POST to `/sheetsandbox/savesheetsettings`
+  uses the same form-encoded base64 shape and the same reload helpers, and it is
+  gated to run only when the file-input handler could not run
+  (`not-needed-file-input-handler-dispatched`). So the fallback cannot diverge
+  from, or duplicate, a successful file-input upload.
+
+Equivalence boundary: this establishes an equal *upload contract*. Upload
+execution is not render proof. Both paths still require the activation probe to
+report `VISIBLE_MATCH` with a matching runtime mode, then fresh sheet-root and
+chat screenshots, before any visual-parity claim.
+
+## legacy_sanitization State in Verification Tooling
+
+Roll20 exposes a `legacySanitization` runtime flag (modern = `false`, legacy =
+`true`), driven by the sheet's `sheet.json` `legacy` metadata. Distinguishing it
+is required so a legacy payload is never validated against a modern runtime (or
+vice versa).
+
+Where the state is already distinguishable:
+
+- `sheet.json` carries `legacy` (`lib/export/manifest.ts` / `lib/export/types.ts`);
+  the Export dialog and preview store select it through one atomic
+  modern/legacy control (`setRoll20CompatibilityMode`).
+- `scripts/roll20_actual_local_baseline.mjs` resolves the per-fixture legacy
+  mode (`resolveLegacyMode`), writes it into the emitted `sheet.json`, and prints
+  a `Legacy` column in the baseline results table.
+- `scripts/roll20_upload_snippet.mjs` derives the expected `modern|legacy`
+  runtime from `sheet.json` (`resolveExpectedRuntimeMode`) and both the upload
+  and activation snippets read Roll20's `legacySanitization` at runtime,
+  returning `RUNTIME_MODE_MISMATCH` before any evidence is accepted when the
+  observed runtime does not match the payload. This is exercised by
+  `test:roll20-upload-snippet`.
+
+Known gap (NEXT): the run-level `scripts/roll20_actual_status.mjs` summary does
+not yet surface the per-fixture expected runtime mode alongside its sandbox/chat
+evidence rows. Until it does, the authoritative per-run mode signals are the
+baseline `Legacy` column and the upload/activation snippet
+`RUNTIME_MODE_MISMATCH` result.
