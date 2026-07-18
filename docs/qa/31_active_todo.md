@@ -4726,3 +4726,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFY: Actual modern Sandbox and dedicated legacy-room captures remain
   unproven. The in-app browser currently reaches Roll20 login, while the
   existing Chrome Roll20 tab cannot be safely claimed for inspection.
+
+## 2026-07-18 Parallel Branch Contract Review
+
+- REVIEWED: `origin/claude/edit-ui-fable-editor-system-20260715` contains a
+  substantial modular editor redesign, but its `EditCanvas` mounts a separate
+  Shadow render surface. That violates the active P0 requirement that edit be
+  the canonical preview iframe plus overlays, so it is not safe to merge as-is.
+- REVIEWED: `origin/codex/roll20-mapping-fidelity-smoke` and
+  `origin/claude/roll20-legacy-verification` do not provide a small, isolated
+  change that can be merged without replacing current renderer/evidence
+  contracts. The current branch already contains the relevant large-sheet
+  render and legacy-policy work.
+- DECISION: Keep the branches separate. Reuse design ideas only after they are
+  reimplemented against the existing persistent iframe contract.

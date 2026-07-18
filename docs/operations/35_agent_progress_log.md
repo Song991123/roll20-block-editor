@@ -5394,3 +5394,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - VERIFIED EXTERNAL STATE: Chrome shows the Roll20 tab but safe tab claiming
   times out; the in-app fallback reaches `https://app.roll20.net/login`.
   No upload, room mutation, or source transmission occurred.
+
+## 2026-07-18 Parallel Branch Contract Review
+
+- REVIEWED: Claude design commit `a2879a3` introduces modular editor surfaces,
+  but the new `EditCanvas` mounts `mountSheetShadow` as a separate render
+  surface. That conflicts with the active canonical iframe preview/edit
+  contract, so the branch was not merged.
+- REVIEWED: The later design parent-info commit `268be55` depends on that
+  unmerged surface and is not independently useful to cherry-pick. Mapping and
+  legacy branches were also reviewed; no isolated, contract-safe patch was
+  found for this lead branch.
+- DECISION: Preserve the current iframe/layer implementation and port only
+  UX ideas into it later. Do not replace the render surface to obtain the
+  design branch's UI wholesale.
