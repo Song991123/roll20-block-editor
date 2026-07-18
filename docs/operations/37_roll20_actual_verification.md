@@ -797,3 +797,16 @@ the preferred evidence.
 - The snippet report validates `translation.json`, `sheet.json`, and the generated settings-page manifest before embedding them. If Roll20 still displays a translation JSON parse warning after a PASS report, treat it as an upload/settings application problem until a fresh Roll20-side sidecar proves otherwise.
 - The snippet runtime logs visible Roll20 Sandbox warning text after dispatching the file changes. Preserve that console result in the local ignored report notes when diagnosing translation/i18n failures.
 - This reproduces the observed Roll20 delegated file-input handler without controlling the native chooser. It is not Roll20 visual parity and still requires fresh matching-runtime sandbox root/chat screenshots plus status/diff gates afterward.
+
+## 2026-07-18 Browser-Side Synthetic Upload Confirmation
+
+- The native chooser remained unavailable to the browser control surface, so a
+  local-only synthetic payload was applied through the observed file-input
+  handler path in the dedicated solo verification room.
+- Fresh evidence confirmed the Roll20 character-sheet iframe rendered the
+  translated synthetic title/label, input, and roll button. Clicking the roll
+  button produced a real chat entry with the expected template fields and a
+  resolved result.
+- This is modern Sandbox runtime evidence for one anonymous synthetic payload.
+  It does not prove full visual parity, asset completeness, worker parity, or
+  the separate legacy-room contract. Keep the screenshot/payload ignored.

@@ -4796,3 +4796,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   upload/snippet path before claiming actual generated-sheet parity.
 - CLAIM BOUNDARY: This is current wrapper/state observation, not preview parity.
   Modern Sandbox upload and dedicated legacy-room upload remain separate gates.
+
+## 2026-07-18 Modern Sandbox Synthetic Smoke
+
+- VERIFIED ACTUAL: In the logged-in solo verification room, the local-only
+  synthetic HTML/CSS/translation payload was applied through the browser-side
+  Sandbox input path. The Roll20 character-sheet iframe rendered the translated
+  title and label, an input control, and one roll button.
+- VERIFIED ACTUAL: The synthetic roll button produced a real Roll20 chat entry
+  with the expected template fields (`Test` and a resolved `Result` value).
+- EVIDENCE: Private screenshot and payload remain under ignored `.tmp/` only;
+  no real or third-party sheet source was transmitted or committed.
+- CLAIM BOUNDARY: This proves one anonymous modern Sandbox upload/runtime path,
+  not visual parity for every sheet, asset completeness, worker parity, or the
+  separate legacy-room contract.
+- DONE FOR THIS BATCH: The native file chooser boundary is no longer the only
+  route; the browser-side synthetic Sandbox path is confirmed.
+- NEXT P0: Repeat the same evidence flow with a synthetic payload in a
+  dedicated legacy-enabled room, then compare normalized wrapper, geometry,
+  state, and chat evidence separately.

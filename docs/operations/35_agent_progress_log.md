@@ -5460,3 +5460,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   snippet or another supported Sandbox upload path.
 - BOUNDARY: Wrapper observation is not actual generated-sheet visual parity;
   modern Sandbox and legacy-room results remain independent gates.
+## 2026-07-18 Modern Sandbox Synthetic Smoke
+
+- DONE/VERIFIED ACTUAL: Applied the ignored synthetic HTML/CSS/translation
+  payload through the logged-in Roll20 Sandbox controls using the browser-side
+  file-input path. The character-sheet iframe rendered translated text,
+  input, and roll control.
+- DONE/VERIFIED ACTUAL: Clicking the synthetic roll control created a Roll20
+  chat message with the expected template fields and a resolved result.
+- PRIVACY: The payload and screenshot are local ignored evidence only. No
+  protected or third-party sheet source was transmitted, retained in docs, or
+  committed.
+- BOUNDARY: Modern generated-sheet runtime smoke is confirmed for one
+  synthetic payload. Full modern visual parity, universal mapping, and the
+  separate legacy-room contract remain VERIFY/TODO.
+- NEXT: Run the equivalent synthetic smoke in a dedicated legacy-enabled room
+  and compare wrapper/geometry/state/chat evidence without mixing modes.
