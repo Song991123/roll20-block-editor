@@ -5558,3 +5558,17 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   separate legacy-room contract remain VERIFY/TODO.
 - NEXT: Run the equivalent synthetic smoke in a dedicated legacy-enabled room
   and compare wrapper/geometry/state/chat evidence without mixing modes.
+
+## 2026-07-18 Edit Surface Interaction Recheck
+
+- VERIFIED LOCAL: Layer-role classification, design-position calculation,
+  iframe drop targeting, iframe edit bridge, and runtime-contract tests passed.
+- VERIFIED LOCAL: Browser smoke passed for edit flow, persistent preview/edit
+  surface, and fresh blank-sheet creation. The persistent surface smoke passed
+  both modern and legacy modes with `loads=0`.
+- INTERPRETATION: The active branch still satisfies the local contract that
+  edit mode keeps the canonical preview surface mounted while the edit chrome
+  is layered over its canvas slot. This is not an actual Roll20 parity result.
+- OPEN: Actual modern/legacy authored `sheetCanvas` measurements are still
+  unavailable because the fresh Roll20 editor session remained on the loading
+  shell. Keep the parity gate on HOLD.

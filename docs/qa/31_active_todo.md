@@ -4899,3 +4899,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   This is an external browser/session loading hold, not a renderer result.
 - NEXT P0: Retry with a stable Roll20 editor session or a user-reloaded tab;
   do not infer `sheetCanvas` from the loading shell and do not promote parity.
+
+## 2026-07-18 Edit Surface Interaction Recheck
+
+- VERIFIED LOCAL: `test:layer-roles`, `test:design-position`,
+  `test:iframe-drop-target`, `test:iframe-edit-bridge`, and
+  `test:runtime-contract` all passed on the active integration branch.
+- VERIFIED LOCAL: `smoke:edit-flow`, `smoke:persistent-preview-surface`, and
+  `smoke:fresh-sheet` passed. Persistent preview reported modern and legacy
+  `loads=0`, and the fresh-sheet smoke kept the blank canvas contract.
+- CLAIM BOUNDARY: These checks prove local interaction and shared-surface
+  contracts only. They do not prove actual Roll20 visual parity, universal
+  import fidelity, or the missing actual `sheetCanvas` sidecars.
+- NEXT P0: Reconnect a stable Roll20 editor session and measure modern and
+  legacy authored canvas geometry under the same anonymous payload before any
+  renderer CSS change.
