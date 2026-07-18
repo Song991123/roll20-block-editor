@@ -149,6 +149,7 @@
     "smoke:roll20-sandbox-preview": "node scripts/roll20_sandbox_preview_smoke.mjs",
     "smoke:roll20-sandbox-preview:all": "node scripts/roll20_sandbox_preview_smoke.mjs --all",
     "smoke:edit-flow": "node scripts/edit_flow_browser_smoke.mjs",
+    "smoke:shadow-drag": "node scripts/shadow_drag_browser_smoke.mjs",
     "smoke:fresh-sheet": "node scripts/fresh_sheet_browser_smoke.mjs",
     "smoke:export-dialog": "node scripts/export_dialog_browser_smoke.mjs",
     "smoke:imported-edit-sync": "node scripts/imported_edit_sync_smoke.mjs",

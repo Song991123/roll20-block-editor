@@ -5450,3 +5450,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   covers the alternate Shadow drag implementation and does not claim live
   Roll20 parity. Authorized user-sheet captures remain `0`, and dedicated
   legacy-room captures remain `0`.
+
+## 2026-07-19 Shadow Drag Browser Smoke
+
+- DONE: added the local-only `smoke:shadow-drag` command using an anonymous
+  synthetic sheet. It exercises a real pointer drag against the live Shadow
+  DOM node rather than calling the adapter directly.
+- VERIFIED LOCAL: the generic node started as `position: static` without
+  position fields and ended with `position: absolute`, managed CSS `left/top`,
+  no leaked temporary transform, and zero console/page errors.
+- BOUNDARY: this proves the local alternate Shadow interaction path only. The
+  persistent iframe remains the default product surface; actual Roll20
+  user-sheet and dedicated legacy-room evidence remain `0` and `0`.

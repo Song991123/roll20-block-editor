@@ -210,6 +210,16 @@ local gate is not evidence of visual equality in a live Roll20 room.
   the persistent iframe, and external Roll20 upload plus dedicated legacy-room
   evidence remain `VERIFY` with counts `0` and `0`.
 
+## Shadow Drag Browser Smoke
+
+- DONE: `smoke:shadow-drag` now covers the previously untested generic Shadow
+  pointer path with a synthetic sheet and a real Playwright mouse gesture.
+- VERIFIED LOCAL: the target moved from static flow into managed absolute CSS;
+  the emitted rule contained `left/top`, the temporary transform was cleared,
+  and console/page error counts were zero.
+- BOUNDARY: this is not live Roll20 visual parity and does not change the
+  external capture counts.
+
 ## Reporting Rule
 
 Every future progress report must label each item as `DONE`, `VERIFIED LOCAL`,

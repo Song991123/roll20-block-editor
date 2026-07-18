@@ -6151,3 +6151,15 @@ strict imported edit synchronization, and the modern/legacy preview/edit visual
 smoke all passed. Six local visual cases stayed at `0%` mismatch. This does not
 change the external evidence counters: authorized user-sheet captures `0` and
 dedicated legacy-room captures `0`.
+
+### 2026-07-19 - Shadow drag browser acceptance
+
+Added `smoke:shadow-drag`, a local-only Playwright smoke over an anonymous
+synthetic sheet. It uses the live Shadow DOM preview and real mouse events to
+drag a generic block that starts without `LEFT_PX`/`TOP_PX`. The assertion
+requires managed absolute CSS with `left/top`, no temporary transform after
+commit, and zero console/page errors.
+
+Verification: the smoke passed. This raises confidence in the alternate Shadow
+drag path only; the default persistent iframe and live Roll20 external evidence
+remain separate gates.
