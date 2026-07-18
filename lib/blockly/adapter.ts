@@ -155,6 +155,8 @@ export interface BlocklyAdapter {
   moveBlockDown(key: WorkspaceKey, blockId: string): boolean;
   moveBlockBefore(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   moveBlockAfter(key: WorkspaceKey, blockId: string, targetId: string): boolean;
+  /** Move a nested block out of its current container, preserving sibling order when possible. */
+  moveBlockOutOfContainer(key: WorkspaceKey, blockId: string): boolean;
   moveBlockToRoot(key: WorkspaceKey, blockId: string): boolean;
   canNestInContainer(key: WorkspaceKey, targetId: string): boolean;
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
@@ -591,6 +593,56 @@ class DefaultAdapter implements BlocklyAdapter {
     try {
       block.unplug?.(true);
       return !block.getParent?.();
+    } catch {
+      return false;
+    }
+  }
+
+  moveBlockOutOfContainer(key: WorkspaceKey, blockId: string): boolean {
+    const ws = this.workspaces[key];
+    const block = ws?.getBlockById(blockId) as
+      | (Blockly.Block & {
+          previousConnection?: Blockly.Connection | null;
+          nextConnection?: Blockly.Connection | null;
+          getParent?: () => Blockly.Block | null;
+          getSurroundParent?: () => Blockly.Block | null;
+          initSvg?: () => void;
+          render?: () => void;
+        })
+      | null;
+    // getParent() points at the previous statement in a chain. The surround
+    // parent is the actual frame/table/flow container that owns the layer.
+    const parent = block?.getSurroundParent?.() ?? null;
+    if (!ws || !block || !parent) return false;
+
+    const previous = block.previousConnection;
+    const next = block.nextConnection;
+    const outerNext = parent.nextConnection;
+    if (!previous || !outerNext) return false;
+
+    // Preserve both chains before disconnecting the selected block. Blockly's
+    // unplug(true) is useful for ordinary moves, but here it can heal the
+    // nested chain into the workspace root before we have inserted the layer
+    // after its container.
+    const innerPrevious = previous.targetConnection;
+    const innerNext = next?.targetConnection ?? null;
+    const followingOuter = outerNext.targetConnection;
+    if (followingOuter && !next) return false;
+
+    try {
+      if (previous.isConnected()) previous.disconnect();
+      if (next?.isConnected()) next.disconnect();
+      if (outerNext.isConnected()) outerNext.disconnect();
+
+      if (innerPrevious && innerNext) innerPrevious.connect(innerNext);
+      outerNext.connect(previous);
+      if (followingOuter && next) next.connect(followingOuter);
+
+      block.initSvg?.();
+      block.render?.();
+      parent.initSvg?.();
+      parent.render?.();
+      return true;
     } catch {
       return false;
     }

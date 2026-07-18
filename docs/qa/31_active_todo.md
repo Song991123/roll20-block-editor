@@ -4962,3 +4962,23 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: This adds reversible Blockly structure edits; it does not yet
   provide a separate multi-surface history for future worker/assets or prove
   full Figma parity.
+
+## 2026-07-19 Layer Eject / One-Level Outward Move
+
+- IMPLEMENTED: The layer panel now exposes an explicit eject action for
+  nested HTML blocks. It moves the selected statement after its current
+  container while preserving the remaining inner chain and the container's
+  outer following sibling.
+- IMPLEMENTED: Layer rows are now accessible draggable regions instead of a
+  button containing another button. Enter/Space selects a row, and the eject
+  control has a separate tooltip and test id.
+- VERIFIED LOCAL: A headless Blockly connection test covers nested first-child
+  removal, inner sibling preservation, outer order, and the new adapter path;
+  the browser edit-flow smoke also clicked the eject action and reported
+  `movingParent=null`, `remainingParent=<frame>`, and `framePresent=true` with
+  zero console/page errors. ESLint passed.
+- BOUNDARY: This is one-level statement-container extraction. It does not yet
+  prove full Figma group/ungroup semantics for tables, repeating sections,
+  absolute positioning, or non-statement/custom Blockly connections.
+- NEXT P1: Extend the anonymous browser smoke to compare the post-eject
+  preview/edit geometry and emitted HTML/CSS, not only the Blockly layer graph.

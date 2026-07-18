@@ -5613,3 +5613,23 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - LIMIT: The current browser smoke proves the edit surface still loads and
   synchronizes, but does not click through every undo/redo state. Full Figma
   history semantics across future worker/assets remain open.
+
+## 2026-07-19 Layer Eject / One-Level Outward Move
+
+- IMPLEMENTED: Added `moveBlockOutOfContainer` to the existing Blockly adapter
+  boundary. The operation captures the selected block's inner previous/next
+  connections and the container's outer next connection before rewiring, so
+  moving a nested layer outward does not leak its former following sibling to
+  the workspace root.
+- IMPLEMENTED: Added the layer-panel eject action and changed layer rows to
+  accessible draggable `div` regions so the action is not an invalid nested
+  button.
+- VERIFIED LOCAL: `test:blockly-layer-operations`, `build`, and `lint` passed.
+  `smoke:edit-flow` clicked the real layer-panel eject control and reported
+  `movingParent=null`, `remainingParent=<frame>`, `framePresent=true`, with
+  zero console/page errors. The headless test proves container root ->
+  remaining child chain -> extracted sibling order.
+- LIMIT: The browser smoke currently verifies the layer graph, not a captured
+  preview/edit geometry diff after eject. The operation is limited to
+  statement-connected HTML blocks. Actual Roll20 parity and full Figma
+  grouping remain open.

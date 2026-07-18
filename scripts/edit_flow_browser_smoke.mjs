@@ -293,6 +293,28 @@ async function main() {
     assert(result.tests.layerReorder.moved, 'layer reorder did not dispatch');
     assert(['before', 'after', 'inside'].includes(result.tests.layerReorder.mode), 'layer reorder has no drop mode');
 
+    result.tests.layerEject = await page.evaluate(async ({ movingId, remainingId, frameId }) => {
+      const button = document.querySelector(
+        `[data-testid="edit-layer-eject"][data-r20-block-id="${CSS.escape(movingId)}"]`,
+      );
+      if (!button) return { clicked: false, reason: 'missing eject action for nested layer' };
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const moving = graph.find((node) => node.id === movingId);
+      const remaining = graph.find((node) => node.id === remainingId);
+      return {
+        clicked: true,
+        movingParent: moving?.layerParentId ?? null,
+        remainingParent: remaining?.layerParentId ?? null,
+        framePresent: Boolean(graph.find((node) => node.id === frameId)),
+      };
+    }, { movingId: ids.rowAId, remainingId: ids.rowBId, frameId: ids.frameId });
+    assert(result.tests.layerEject.clicked, `layer eject action missing: ${JSON.stringify(result.tests.layerEject)}`);
+    assert(result.tests.layerEject.movingParent === null, 'layer eject did not move the layer outward');
+    assert(result.tests.layerEject.remainingParent === ids.frameId, 'layer eject disturbed the remaining inner layer');
+    assert(result.tests.layerEject.framePresent, 'layer eject removed the frame');
+
     result.tests.cycleProtection = await page.evaluate(async ({ movingId, targetId }) => {
       const before = window.__perfHook.getLayerSnapshot('html');
       const target = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`);
@@ -320,7 +342,7 @@ async function main() {
         beforeParent: beforeMoving?.layerParentId ?? null,
         afterParent: afterMoving?.layerParentId ?? null,
       };
-    }, { movingId: ids.frameId, targetId: ids.rowAId });
+    }, { movingId: ids.frameId, targetId: ids.rowBId });
     assert(result.tests.cycleProtection.rejected, 'cycle-producing layer drop was accepted');
 
     result.tests.selectionSync = await page.evaluate(async (targetId) => {
@@ -377,7 +399,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, canvas widget drop, layer reorder, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
+        '- Coverage: flow/free placement, canvas widget drop, layer reorder/eject, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
         '',
       ].join('\n'),
       'utf8',

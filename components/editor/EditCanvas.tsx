@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
-import { Layers, Redo2, Search, Undo2 } from 'lucide-react';
+import { Layers, Redo2, Search, Undo2, Ungroup } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
@@ -363,6 +363,16 @@ function EditLayerPanel({
     [bumpStructure, nodes, setSelected, tab],
   );
 
+  const ejectLayer = useCallback(
+    (blockId: string) => {
+      const adapter = getBlocklyAdapter();
+      if (!adapter.moveBlockOutOfContainer(tab, blockId)) return;
+      bumpStructure(tab, adapter.countBlocks(tab));
+      setSelected(blockId, 'tree');
+    },
+    [bumpStructure, setSelected, tab],
+  );
+
   return (
     <aside
       className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]"
@@ -474,6 +484,7 @@ function EditLayerPanel({
                     contextOnly={item.contextOnly}
                     onSelect={() => setSelected(node.id, 'tree')}
                     onMove={moveLayer}
+                    onEject={ejectLayer}
                   />
                 </div>
               );
@@ -493,6 +504,7 @@ const EditLayerRow = memo(function EditLayerRow({
   contextOnly,
   onSelect,
   onMove,
+  onEject,
 }: {
   node: BlockSnapshot;
   workspace: WorkspaceKey;
@@ -501,6 +513,7 @@ const EditLayerRow = memo(function EditLayerRow({
   contextOnly: boolean;
   onSelect: () => void;
   onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
+  onEject: (blockId: string) => void;
 }) {
   const [dropMode, setDropMode] = useState<LayerDropMode | null>(null);
   const role = useMemo(() => {
@@ -522,9 +535,10 @@ const EditLayerRow = memo(function EditLayerRow({
     [role.canReceiveChildren],
   );
   return (
-    <button
-      type="button"
+    <div
       draggable
+      role="button"
+      tabIndex={0}
       data-testid="edit-layer-row"
       data-r20-block-id={node.id}
       data-r20-layer-role-kind={role.kind}
@@ -539,6 +553,12 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-layer-context-only={contextOnly ? '1' : '0'}
       data-r20-layer-selected={selected ? '1' : '0'}
       aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       onClick={onSelect}
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-layer-block', node.id);
@@ -673,7 +693,24 @@ const EditLayerRow = memo(function EditLayerRow({
           <span className="block truncate text-[10px] opacity-70">- {node.preview}</span>
         )}
       </span>
-    </button>
+      {node.layerParentId && (
+        <button
+          type="button"
+          className="grid h-6 w-6 shrink-0 place-items-center rounded border border-border/80 text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground"
+          title="한 단계 바깥으로 꺼내기"
+          aria-label="한 단계 바깥으로 꺼내기"
+          data-testid="edit-layer-eject"
+          data-r20-block-id={node.id}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onEject(node.id);
+          }}
+        >
+          <Ungroup className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
   );
 });
 

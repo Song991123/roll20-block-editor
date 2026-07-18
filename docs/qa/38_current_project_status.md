@@ -132,6 +132,8 @@ corepack pnpm run verify:runtime-visibility -- --out-dir ./out --base-path /roll
 - If a placeholder target is uncommented by mistake, the app warns and refuses to apply it as a replacement URL.
 - Edit mode has working foundations for direct manipulation, layer rows with compact structure mini-maps, flow/free placement, and before/inside/after insertion.
 - Edit mode exposes fixed-canvas controls: sheet width starts at 850px, rolltemplate width starts at 280px, and users can switch between fit zoom and 100%.
+- The layer panel now supports one-level outward extraction for nested
+  statement blocks, preserving the remaining inner chain and outer order.
 - Worker scripts and rolltemplates are separated from visible sheet nodes in local pipelines, and `verify:runtime-visibility` now checks that path in one command.
 
 ## What Is Not Yet Safe To Claim
@@ -168,4 +170,5 @@ These are planning estimates, not promises. They assume focused work and no new 
    - clearer layer target visualization,
    - less delayed-feeling drag commits,
    - stronger imported-sheet direct manipulation smoke,
-   - better frame/container affordances for users who do not understand DOM trees.
+   - better frame/container affordances for users who do not understand DOM trees,
+   - browser-level smoke for layer insertion followed by outward extraction.
