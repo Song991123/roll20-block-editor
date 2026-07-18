@@ -5877,3 +5877,23 @@ fidelity; this change is scoped to editor-authored position-block layout.
 Verification: emit contract, design-position, and iframe drop tests passed.
 The full browser and CI gates remain the next verification step for this
 emitter contract change.
+
+### 2026-07-19 - Active goal revised to product reset
+
+The active scope was widened and reordered. The product must support both
+modern and legacy Roll20 inputs without shipping copyrighted sample sheets,
+keep preview and edit on one real HTML render surface with an edit overlay,
+and provide a user-facing Figma-like layer/container workflow that stays in
+sync with HTML/CSS and the future JS model.
+
+The next product phase also includes an original pastel/pink UI reset, plain
+Korean labels, visual guidance for unfamiliar controls, and removal of
+developer-facing wording. This redesign is intentionally sequenced after the
+renderer/evidence rebaseline and must use a separate design-scoped branch so
+it cannot silently invalidate parity checks.
+
+The goal card itself cannot be edited through the available goal-status API
+while it is active; the shared project goal and this repository log are the
+authoritative revised scope. This entry is a scope update, not a completion
+claim. User-owned upload evidence and dedicated legacy-room parity remain
+unverified.

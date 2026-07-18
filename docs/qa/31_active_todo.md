@@ -5224,3 +5224,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: Imported source inline styles remain loss-aware for visual fidelity;
   this change covers editor-authored position-block output, not a blanket
   rewrite of every source inline style.
+
+## 2026-07-19 Product Reset Goal Revision
+
+- SCOPE: The active product goal now includes a controlled UI reset after the
+  renderer contract is stable: original pastel/pink product UI, plain Korean
+  labels, visual affordances, and a Figma-like layer/container workflow.
+- ORDER: Re-audit current implementation and evidence first; finish the
+  shared preview/edit render surface and modern/legacy Roll20 verification;
+  then execute the visual redesign on a separate design-scoped branch.
+- PRIVACY: User-imported sheets, third-party sources, screenshots, fixtures,
+  and derived reports stay local/ignored. The public app must ship no sample
+  sheet content or source identity. Bug reports use
+  `sjh11235678@gmail.com`.
+- STATUS: This is a revised scope and sequencing decision, not a completion
+  claim. Actual user-sheet upload and legacy-room parity remain VERIFY.
+- NEXT P0: Rebaseline implemented/verified/unverified counts, then continue
+  the actual Roll20 modern Sandbox and dedicated legacy-room checks.
