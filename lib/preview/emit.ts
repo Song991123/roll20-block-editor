@@ -36,6 +36,7 @@ import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
 export interface EmitResult {
   code: string;
   warnings: EmitWarning[];
+  generatedCss: string;
 }
 
 /** generator 의 반환값 정규화. reporter = [code, order], stack = string. */
@@ -49,6 +50,7 @@ function normalizeGen(
 
 class EmitEngine implements GeneratorContext {
   readonly warnings: EmitWarning[] = [];
+  readonly generatedCss: string[] = [];
 
   constructor(private readonly kind: WorkspaceKey) {}
 
@@ -88,6 +90,12 @@ class EmitEngine implements GeneratorContext {
       .split('\n')
       .map((line) => (line ? pad + line : line))
       .join('\n');
+  }
+
+  addGeneratedCss(css: string): void {
+    if (this.kind !== 'html') return;
+    const value = String(css ?? '').trim();
+    if (value) this.generatedCss.push(value);
   }
 
   warn(
@@ -206,7 +214,7 @@ export function emitWorkspace(
   ws: Blockly.Workspace | null,
   kind: WorkspaceKey,
 ): EmitResult {
-  if (!ws) return { code: '', warnings: [] };
+  if (!ws) return { code: '', warnings: [], generatedCss: '' };
   const engine = new EmitEngine(kind);
   const pieces: string[] = [];
   for (const block of ws.getTopBlocks(true)) {
@@ -226,7 +234,11 @@ export function emitWorkspace(
       cur = cur.getNextBlock();
     }
   }
-  return { code: pieces.join('\n'), warnings: engine.warnings };
+  return {
+    code: pieces.join('\n'),
+    warnings: engine.warnings,
+    generatedCss: engine.generatedCss.join('\n'),
+  };
 }
 
 /**
@@ -244,7 +256,10 @@ export function emitAll(
   const htmlWithWorker = workerBody
     ? `${htmlCode}${htmlCode ? '\n' : ''}<script type="text/worker">\n${workerBody}\n</script>`
     : htmlCode;
-  const normalized = normalizeEmittedRoll20Pair(htmlWithWorker, css.code);
+  // Generated HTML layout rules are appended after user CSS to preserve the
+  // old block's inline-style precedence while keeping the emitted HTML clean.
+  const cssCode = [css.code, html.generatedCss].filter(Boolean).join('\n');
+  const normalized = normalizeEmittedRoll20Pair(htmlWithWorker, cssCode);
   return {
     html: normalized.html,
     css: normalized.css,

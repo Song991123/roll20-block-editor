@@ -88,6 +88,13 @@ function sheetUserClassAttr(value: string): string {
   return ` class="${escapeAttr(out)}"`;
 }
 
+function generatedPositionClass(blockId: string): string {
+  const safe = String(blockId || 'position')
+    .replace(/[^a-zA-Z0-9_-]/g, (char) => `_${char.charCodeAt(0).toString(36)}_`)
+    .slice(0, 80);
+  return `sheet-r20-position-${safe || 'position'}`;
+}
+
 /** ` name="..."` (Roll20 attribute name 등). */
 function nameAttr(attrName: string, value: string): string {
   const v = value.trim();
@@ -687,6 +694,14 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const h = Number(b.getFieldValue('HEIGHT_PX') ?? 60);
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
+      const positionClass = generatedPositionClass(b.id);
+      const generatedRule = `.${positionClass} { position: absolute; left: ${left}px; top: ${top}px; width: ${w}px; height: ${h}px;${userStyle ? ` ${userStyle}` : ''} }`;
+      if (ctx.addGeneratedCss) {
+        ctx.addGeneratedCss(generatedRule);
+        return wrapTag(ctx, 'div', sheetUserClassAttr(`${cls} ${positionClass}`), content);
+      }
+      // Keep direct generator consumers backwards-compatible. The production
+      // emitter always provides addGeneratedCss, so normal output stays clean.
       const builtinStyle = `position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${h}px;`;
       const mergedStyle = mergeStyle(userStyle, builtinStyle);
       return wrapTag(ctx, 'div', `${sheetUserClassAttr(cls)}${mergedStyle}`, content);

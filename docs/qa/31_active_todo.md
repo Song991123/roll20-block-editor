@@ -5211,3 +5211,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   cycle protection, selection sync, and canvas widths.
 - BOUNDARY: This protects the editor interaction contract; it does not prove
   arbitrary imported-sheet visual parity or actual Roll20 legacy-room parity.
+
+## 2026-07-19 Generated Position CSS Separation
+
+- FIXED: The authored `r20_pos_div` block no longer emits generated layout as
+  inline HTML style. It emits a stable `sheet-r20-position-*` class, while
+  position, size, and the block's generated style are appended to CSS output.
+- VERIFIED LOCAL: emit contract coverage confirms HTML/CSS class pairing,
+  absence of generated `position:absolute` inline output, and preserved left,
+  top, width, height, and user style values. Existing design-position and
+  iframe drop tests remain green.
+- BOUNDARY: Imported source inline styles remain loss-aware for visual fidelity;
+  this change covers editor-authored position-block output, not a blanket
+  rewrite of every source inline style.

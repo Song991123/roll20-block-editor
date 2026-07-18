@@ -1,4 +1,6 @@
-import { normalizeEmittedRoll20Pair } from '../emit';
+import * as Blockly from 'blockly';
+import { registerAllBlocks } from '@/lib/blocks/registry';
+import { emitAll, emitWorkspace, normalizeEmittedRoll20Pair } from '../emit';
 
 function assert(condition: unknown, message: string): void {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
@@ -42,7 +44,31 @@ function testInlineStylePair(): void {
   assert(result.css.includes('.sheet-panel .sheet-title'), 'external CSS is prefixed');
 }
 
+function testGeneratedPositionCss(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const block = workspace.newBlock('r20_pos_div');
+  block.setFieldValue('32', 'LEFT_PX');
+  block.setFieldValue('48', 'TOP_PX');
+  block.setFieldValue('240', 'WIDTH_PX');
+  block.setFieldValue('120', 'HEIGHT_PX');
+  block.setFieldValue('positioned', 'CLASS');
+  block.setFieldValue('border: 1px solid red', 'STYLE');
+
+  const htmlResult = emitWorkspace(workspace, 'html');
+  assert(htmlResult.code.includes('sheet-r20-position-'), 'position block has a stable generated class');
+  assert(!htmlResult.code.includes('position:absolute'), 'position block does not put layout in HTML style');
+  assert(htmlResult.generatedCss.includes('position: absolute'), 'position layout is registered as generated CSS');
+  assert(htmlResult.generatedCss.includes('border: 1px solid red'), 'position block user style moves with generated CSS');
+
+  const pair = emitAll({ html: workspace });
+  assert(pair.css.includes('.sheet-r20-position-'), 'generated position CSS is part of CSS output');
+  assert(pair.css.includes('left: 32px'), 'generated position left is preserved');
+  workspace.dispose();
+}
+
 testRawFallbackPair();
 testAlreadyCanonicalPair();
 testInlineStylePair();
+testGeneratedPositionCss();
 console.log('Emit Roll20 class-pair tests passed.');

@@ -5864,3 +5864,16 @@ zero console/page errors and retained flow insertion, free placement, layer
 before/inside/after, cycle protection, selection sync, and canvas-width checks.
 This is an editor interaction fix only; it does not establish all-sheet or
 actual Roll20 legacy-room visual parity.
+
+### 2026-07-19 - Separate generated position CSS from HTML
+
+The authored `r20_pos_div` generator now registers its position and size rule
+with the HTML emit engine's generated-CSS channel. The HTML output retains a
+stable `sheet-r20-position-*` class, and `emitAll` appends the generated rule to
+the CSS workspace output after user CSS so the old inline-style precedence is
+preserved. Imported source inline styles are intentionally still preserved for
+fidelity; this change is scoped to editor-authored position-block layout.
+
+Verification: emit contract, design-position, and iframe drop tests passed.
+The full browser and CI gates remain the next verification step for this
+emitter contract change.
