@@ -6074,7 +6074,7 @@ surface also did not expose DOM construction APIs needed for the generated
 File-event snippet. No payload was uploaded and no Roll20 result was counted.
 
 Actual user-sheet captures remain `0`; dedicated legacy-room captures remain
-`0`. Commit `0aa4f14` passed the remote CI run, but this does not replace the
+`0`. Commit `89d57c9` passed remote CI run `29658829415`, but this does not replace the
 missing external upload evidence.
 
 ### 2026-07-19 - Layer collapse acceptance coverage

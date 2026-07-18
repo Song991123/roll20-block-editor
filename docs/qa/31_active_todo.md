@@ -5389,5 +5389,6 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   page-evaluation surface also does not expose DOM construction APIs needed by
   the generated File-event snippet. No payload was uploaded and no Roll20
   result was inferred.
-- CURRENT TRUTH: actual Roll20 user-sheet captures remain `0`; the latest CI
-  for commit `0aa4f14` is green, but external upload evidence is still missing.
+- CURRENT TRUTH: actual Roll20 user-sheet captures remain `0`; dedicated
+  legacy-room captures remain `0`. Remote CI run `29658829415` for commit
+  `89d57c9` is green, but external upload evidence is still missing.

@@ -147,7 +147,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
   `Not allowed`, and the isolated page-evaluation surface lacks DOM creation
   APIs for the generated File-event snippet. No upload occurred.
 - CURRENT COUNTS: authorized user-sheet captures `0`; dedicated legacy-room
-  captures `0`; commit `0aa4f14` CI `success`.
+  captures `0`; commit `89d57c9` remote CI run `29658829415` is `success`.
 
 ## Reporting Rule
 
