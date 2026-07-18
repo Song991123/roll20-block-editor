@@ -47,6 +47,8 @@ function runSelfTest() {
   assert(report.modes.legacy.actualRuntime === 'PASS', 'legacy actual gate');
   assert(report.modes.modern.rootGeometry === 'NOT_COMPARABLE', 'modern root hold');
   assert(report.modes.legacy.rootGeometry === 'NOT_COMPARABLE', 'legacy root hold');
+  assert(report.modes.modern.contentGeometry === 'PASS', 'modern content canvas');
+  assert(report.modes.legacy.contentGeometry === 'PASS', 'legacy content canvas');
   assert(report.modes.modern.parityPromotion === 'HOLD', 'modern promotion hold');
   assert(report.modes.legacy.parityPromotion === 'HOLD', 'legacy promotion hold');
 
@@ -61,6 +63,18 @@ function runSelfTest() {
   });
   assert(mismatch.status === 'FAIL', 'root mismatch is a failure');
   assert(mismatch.modes.legacy.rootGeometry === 'FAIL', 'legacy root mismatch');
+
+  const canvasMismatch = compareEvidence({
+    local: {
+      fixtures: [localFixture('modern'), localFixture('legacy')],
+    },
+    actualByMode: {
+      modern: actualFixture('modern'),
+      legacy: { ...actualFixture('legacy'), sheetCanvas: { rectWidth: 840, rectHeight: 260 } },
+    },
+  });
+  assert(canvasMismatch.status === 'FAIL', 'content canvas mismatch is a failure');
+  assert(canvasMismatch.modes.legacy.contentGeometry === 'FAIL', 'legacy content canvas mismatch');
   console.log('roll20_runtime_evidence_compare self-test PASS');
 }
 
@@ -98,12 +112,13 @@ function compareEvidence({ local, actualByMode }) {
     modes[mode] = compareMode(mode, localItem, actual);
   }
   const allRuntimePass = Object.values(modes).every((mode) => mode.localPreviewEdit === 'PASS' && mode.actualRuntime === 'PASS');
-  const allComparable = Object.values(modes).every((mode) => mode.rootGeometry === 'PASS');
+  const allComparable = Object.values(modes).every((mode) => mode.rootGeometry === 'PASS' && mode.contentGeometry === 'PASS');
   const hasContradiction = Object.values(modes).some((mode) =>
     mode.localPreviewEdit === 'FAIL' ||
     mode.actualRuntime === 'FAIL' ||
     mode.wrapper === 'FAIL' ||
-    mode.rootGeometry === 'FAIL',
+    mode.rootGeometry === 'FAIL' ||
+    mode.contentGeometry === 'FAIL',
   );
   return {
     status: hasContradiction ? 'FAIL' : allRuntimePass && allComparable ? 'PASS' : 'PASS_WITH_OPEN_PARITY_GAP',
@@ -136,8 +151,20 @@ function compareMode(mode, local, actual) {
   const rootGeometry = actualRoot && root.rectWidth != null && root.rectHeight != null
     ? numbersClose(root.rectWidth, actualRoot.width) && numbersClose(root.rectHeight, actualRoot.height) ? 'PASS' : 'FAIL'
     : 'NOT_COMPARABLE';
+  const localContentRoot = local?.previewCapture?.styles?.targets?.contentBox
+    ?? local?.previewCapture?.styles?.targets?.contentRoot
+    ?? {};
+  const actualCanvas = actual.sheetCanvas;
+  const contentGeometry = actualCanvas && localContentRoot.rectWidth != null && localContentRoot.rectHeight != null
+    ? numbersClose(localContentRoot.rectWidth, actualCanvas.rectWidth) && numbersClose(localContentRoot.rectHeight, actualCanvas.rectHeight)
+      ? 'PASS'
+      : 'FAIL'
+    : 'NOT_COMPARABLE';
   const rootReason = rootGeometry === 'NOT_COMPARABLE'
     ? 'Roll20 sidecar has iframe geometry only; sheet-root/crop geometry is required before parity can be judged.'
+    : '';
+  const contentReason = contentGeometry === 'NOT_COMPARABLE'
+    ? 'Roll20 sidecar has no authored content-canvas geometry yet; wrapper geometry must not be treated as the sheet canvas.'
     : '';
   return {
     mode,
@@ -150,6 +177,7 @@ function compareMode(mode, local, actual) {
       preview: local?.previewDom?.rect ?? null,
       edit: local?.editDom?.rect ?? null,
       root: { width: root.rectWidth ?? null, height: root.rectHeight ?? null },
+      contentBox: { width: localContentRoot.rectWidth ?? null, height: localContentRoot.rectHeight ?? null },
       visibleRuntimeNodes: local?.previewCapture?.signature?.visibleRuntimeNodeCount ?? null,
       translations: local?.previewCapture?.translations?.matchedCount ?? null,
     },
@@ -158,8 +186,11 @@ function compareMode(mode, local, actual) {
       legacySanitization: actual.legacySanitization ?? null,
       rendered: [...rendered],
       chat: actual.chat ?? null,
+      sheetCanvas: actual.sheetCanvas ?? null,
     },
-    parityPromotion: localPreviewEdit === 'PASS' && actualRuntime === 'PASS' && rootGeometry === 'PASS' ? 'READY' : 'HOLD',
+    parityPromotion: localPreviewEdit === 'PASS' && actualRuntime === 'PASS' && rootGeometry === 'PASS' && contentGeometry === 'PASS' ? 'READY' : 'HOLD',
+    contentGeometry,
+    contentReason,
   };
 }
 
@@ -189,6 +220,7 @@ function localFixture(mode) {
       styles: {
         targets: {
           root: { rectWidth: 870, rectHeight: 280 },
+          contentBox: { rectWidth: 850, rectHeight: 260 },
           dialog: { className: 'ui-dialog r20-preview-dialog' },
         },
       },
@@ -204,6 +236,7 @@ function actualFixture(mode) {
     legacySanitization: mode === 'legacy',
     wrapper: 'ui-dialog ui-widget ui-widget-content ui-corner-all ui-draggable ui-resizable',
     iframe: { width: 900, height: mode === 'legacy' ? 673.55 : 675.69 },
+    sheetCanvas: { rectWidth: 850, rectHeight: 260 },
     rendered: ['translated title', 'translated label', 'input', 'roll button'],
     chat: { templateFields: true, resolvedResult: true },
   };
@@ -217,13 +250,14 @@ function renderMarkdown(report) {
     '',
     report.scope,
     '',
-    '| Mode | Local preview/edit | Actual runtime | Wrapper | Root geometry | Promotion |',
-    '| --- | --- | --- | --- | --- | --- |',
+    '| Mode | Local preview/edit | Actual runtime | Wrapper | Root geometry | Content canvas | Promotion |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const mode of ['modern', 'legacy']) {
     const item = report.modes[mode];
-    lines.push(`| ${mode} | ${item.localPreviewEdit} | ${item.actualRuntime} | ${item.wrapper} | ${item.rootGeometry} | ${item.parityPromotion} |`);
+    lines.push(`| ${mode} | ${item.localPreviewEdit} | ${item.actualRuntime} | ${item.wrapper} | ${item.rootGeometry} | ${item.contentGeometry} | ${item.parityPromotion} |`);
     if (item.rootReason) lines.push(`|  |  |  |  | ${item.rootReason} |  |`);
+    if (item.contentReason) lines.push(`|  |  |  |  |  | ${item.contentReason} |  |`);
   }
   lines.push('', '- A `HOLD` promotion is intentional when Roll20 sheet-root/crop evidence is missing.', '- Screenshots and source payloads remain local-only ignored evidence.');
   return `${lines.join('\n')}\n`;

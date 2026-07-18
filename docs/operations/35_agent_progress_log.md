@@ -5510,6 +5510,23 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - NEXT: Trace the 10px difference to the local wrapper or Roll20 crop/padding
   contract before changing renderer CSS. Do not promote parity from this
   synthetic result.
+
+## 2026-07-18 Content-Canvas Measurement Contract
+
+- IMPLEMENTED: Local visual evidence now records the wrapper's measured
+  `contentBox`, in addition to the outer `.charactersheet`-style wrapper.
+  The first visible authored child remains a nested-layout diagnostic, not a
+  universal canvas assumption. Runtime comparison accepts an optional
+  `sheetCanvas` sidecar and reports `contentGeometry` independently.
+- VERIFIED LOCAL: Anonymous ignored visual smoke passed all three prepared
+  local fixtures with exact preview/edit pixels, and the comparator self-test
+  covers both wrapper-root and authored-canvas mismatch failures.
+- REASON: The measured legacy wrapper width difference cannot be interpreted
+  safely until the authored canvas is measured separately. This avoids
+  forcing a renderer CSS patch from a crop/padding mismatch.
+- OPEN: Actual modern and legacy sidecars still lack `sheetCanvas`; browser
+  DOM extraction timed out on the current heavy Roll20 tab, so no actual
+  parity claim was made.
 ## 2026-07-18 Modern Sandbox Synthetic Smoke
 
 - DONE/VERIFIED ACTUAL: Applied the ignored synthetic HTML/CSS/translation

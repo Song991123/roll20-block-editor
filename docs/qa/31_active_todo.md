@@ -4859,3 +4859,25 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Identify whether the 10px difference comes from the local iframe
   canvas wrapper, Roll20 inner padding, or synthetic payload CSS, then rerun
   both modes with the same crop contract.
+
+## 2026-07-18 Local Content-Canvas Evidence Split
+
+- DONE: `smoke:preview-edit-visual` now records a generic `contentBox`
+  target for the Roll20 sheet wrapper's content area, while retaining the
+  first visible authored child as a nested-layout diagnostic. Runtime-only
+  `script`, `style`, and `template` nodes are excluded from that diagnostic.
+- DONE: The runtime comparator accepts an optional actual `sheetCanvas`
+  sidecar and reports it separately from `sheetRoot`, so wrapper padding or
+  crop cannot be mistaken for authored canvas geometry.
+- VERIFIED LOCAL: The three anonymous ignored visual fixtures passed the
+  preview/edit smoke in modern mode with `mismatch=0`, `EXACT` pixel parity,
+  and content-box measurements present. The anonymous synthetic fixture also
+  passed modern and legacy on the same gate. The comparator self-test passes
+  for both root and content-canvas mismatch failures.
+- VERIFY: No actual modern or legacy sidecar currently contains
+  `sheetCanvas`; this change creates the measurement contract but does not
+  claim Roll20 visual parity.
+- NEXT P0: When browser access is stable, measure the first authored child in
+  each destination and populate only anonymous local evidence. Keep the
+  production renderer on HOLD until wrapper, content canvas, crop, and state
+  all compare under the same payload.

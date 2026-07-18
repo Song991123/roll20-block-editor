@@ -219,6 +219,14 @@ function summarizeRenderStyles(sheetEl) {
     return Array.from(sheetEl.querySelectorAll(selector)).find(isVisible) ?? null;
   }
 
+  function firstVisibleContentRoot() {
+    return Array.from(sheetEl.children).find((el) => {
+      if (!isVisible(el)) return false;
+      const tag = el.tagName.toLowerCase();
+      return tag !== 'script' && tag !== 'style' && tag !== 'template';
+    }) ?? null;
+  }
+
   function summarize(el) {
     if (!el) return null;
     const cs = getComputedStyle(el);
@@ -249,6 +257,26 @@ function summarizeRenderStyles(sheetEl) {
       backgroundPosition: cs.backgroundPosition,
       backgroundSize: cs.backgroundSize,
       overflow: cs.overflow,
+    };
+  }
+
+  function summarizeContentBox(el) {
+    if (!el) return null;
+    const cs = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    const borderX = parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+    const borderY = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+    const paddingX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const paddingY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    return {
+      tag: el.tagName.toLowerCase(),
+      boxSizing: cs.boxSizing,
+      cssWidth: cs.width,
+      cssHeight: cs.height,
+      rectWidth: Math.round(Math.max(0, rect.width - borderX - paddingX) * 100) / 100,
+      rectHeight: Math.round(Math.max(0, rect.height - borderY - paddingY) * 100) / 100,
+      borderWidth: cs.borderWidth,
+      padding: cs.padding,
     };
   }
 
@@ -287,6 +315,11 @@ function summarizeRenderStyles(sheetEl) {
   return {
     targets: {
       root: summarize(sheetEl),
+      // Keep the Roll20 wrapper, its content box, and the first authored child
+      // measurable as separate layers. The content box is the stable generic
+      // canvas candidate; the child is diagnostic only for nested layouts.
+      contentBox: summarizeContentBox(sheetEl),
+      contentRoot: summarize(firstVisibleContentRoot()),
       dialog: summarize(sheetEl.closest('#dialog-window')),
       sheetform: summarize(sheetEl.closest('form.sheetform')),
       bodyContainer: summarize(bodyContainer),
