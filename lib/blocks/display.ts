@@ -128,6 +128,12 @@ function sheetClassAttrWithBase(base: string, cls: string): string {
 }
 
 /** 숫자 크기 → 양의 정수 문자열 또는 ''. */
+/** Preserve nested statement indentation for semantic inline containers. */
+function wrapTag(ctx: GeneratorContext, tag: string, attrs: string, content: string): string {
+  if (!content || !content.trim()) return `<${tag}${attrs}></${tag}>`;
+  return `<${tag}${attrs}>\n${ctx.indent(content)}\n</${tag}>`;
+}
+
 function sanitizeSize(raw: string): string {
   const s = String(raw ?? '').trim();
   if (!s) return '';
@@ -446,7 +452,59 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 10) table caption -------------------------------------------------------
+  // 10) semantic inline container ------------------------------------------
+  // Preserve inline semantics and nested blocks such as data-i18n children.
+  {
+    type: 'r20_inline_container',
+    shape: 'c',
+    category: DISPLAY,
+    label: '인라인 묶음',
+    tooltip: 'small, u, sub, sup 태그와 내부 요소를 보존합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('인라인 묶음')
+        .appendField(new Blockly.FieldDropdown([
+          ['small', 'small'],
+          ['u', 'u'],
+          ['sub', 'sub'],
+          ['sup', 'sup'],
+        ]), 'TAG');
+      b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
+      b.appendStatementInput('CONTENT').setCheck(null);
+      setStatementHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const tagRaw = String(b.getFieldValue('TAG') ?? 'small');
+      const tag = new Set(['small', 'u', 'sub', 'sup']).has(tagRaw) ? tagRaw : 'small';
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(ctx, tag, `${sheetClassAttr(cls)}${styleAttr(style)}`, content);
+    },
+    inspectorSchema: [
+      {
+        name: 'TAG',
+        label: '태그',
+        kind: 'select',
+        options: [
+          { value: 'small', label: 'small' },
+          { value: 'u', label: 'u' },
+          { value: 'sub', label: 'sub' },
+          { value: 'sup', label: 'sup' },
+        ],
+      },
+      { name: 'CLASS', label: '클래스', kind: 'text' },
+      { name: 'STYLE', label: '스타일', kind: 'text' },
+    ],
+  },
+
+  // 11) table caption -------------------------------------------------------
   {
     type: 'r20_table_caption',
     shape: 'stack',
@@ -478,7 +536,7 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 11) inline break --------------------------------------------------------
+  // 12) inline break --------------------------------------------------------
   {
     type: 'r20_inline_break',
     shape: 'stack',

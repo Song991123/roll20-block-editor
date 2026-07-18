@@ -6007,3 +6007,18 @@ the latest PASS pre-upload payload for one user-owned local fixture. The
 handoff includes an upload snippet and a separate activation-check snippet.
 No browser file handoff or Roll20 activation was performed; generated snippets
 remain ignored local evidence and do not change the external parity count.
+
+### 2026-07-19 - Generic semantic inline mapping
+
+The importer previously flattened `small`/`u` text-only nodes and sent a
+`small` wrapper containing a `data-i18n` child to raw HTML. Added the generic
+`r20_inline_container` display block for `small`, `u`, `sub`, and `sup`. The
+block preserves tag, class, style, and editable child order; the matcher uses
+the existing child matcher so nested translation blocks remain first-class.
+
+Verification: import structure tests passed `28/28`; strict imported edit sync,
+modern/legacy preview-edit visual smoke, and render-mode smoke passed. A local
+diagnostic recheck reached `1839/1839` HTML and `103/103` CSS with zero raw
+fallbacks for the affected anonymous fixture. One legacy fixture still has two
+HTML and one CSS residual fallbacks, so arbitrary source fidelity remains open.
+No private source, screenshot, or fixture was added to tracked files.

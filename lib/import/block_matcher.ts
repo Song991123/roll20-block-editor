@@ -679,7 +679,19 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     };
   }
   // <small>, <u> — text-only (또는 nested-inline-only) inline emphasis (legacy) → static_text.
-  if (['small','u'].includes(tag) && hasOnlyTextOrInline(node) && !a['data-i18n']) {
+  if (['small', 'u', 'sub', 'sup'].includes(tag) && !a['data-i18n']) {
+    return {
+      blockType: 'r20_inline_container',
+      fields: {
+        TAG: tag,
+        CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
+      },
+      children: { CONTENT: matchChildren(node, ctx) },
+    };
+  }
+  // Compatibility fallback for older serialized block trees.
+  if (['small', 'u'].includes(tag) && hasOnlyTextOrInline(node) && !a['data-i18n']) {
     return {
       blockType: 'r20_static_text',
       fields: {

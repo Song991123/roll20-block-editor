@@ -179,6 +179,15 @@ function testInlineItalicI(): void {
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback');
 }
 
+function testSemanticInlineContainerKeepsNestedI18n(): void {
+  const html = `<small class="sheet-help"><span data-i18n="help-key">Help</span></small>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_inline_container'), 'semantic inline container block');
+  assert(r.html.includes('r20_i18n_text'), 'nested translation block preserved');
+  assert(r.html.includes('help-key'), 'translation key preserved');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for nested inline translation');
+}
+
 function testTableCaption(): void {
   const html = `<caption>Title</caption>`;
   const r = importSheet({ html });
@@ -261,6 +270,7 @@ const tests = [
   ['inline bold <strong>', testInlineBoldStrong],
   ['inline italic <em>', testInlineItalicEm],
   ['inline italic <i>', testInlineItalicI],
+  ['semantic inline container with nested i18n', testSemanticInlineContainerKeepsNestedI18n],
   ['table caption', testTableCaption],
   ['inline break <br>', testInlineBreak],
   ['css @font-face', testCssFontFace],

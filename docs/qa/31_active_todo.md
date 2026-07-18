@@ -5324,3 +5324,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   pre-upload payload for one user-owned local fixture.
 - VERIFY: no browser file handoff or Roll20 activation occurred in this step;
   do not count the generated snippet as external evidence.
+
+## 2026-07-19 Semantic Inline Mapping
+
+- FIXED: added the generic `r20_inline_container` mapping for `small`, `u`,
+  `sub`, and `sup`, including nested translation children and editable class/
+  style fields.
+- VERIFIED LOCAL: `test:import-structure` passed `28/28`; imported edit sync,
+  preview/edit visual smoke in modern and legacy modes, and render-mode smoke
+  passed. The affected anonymous fixture now reports `1839/1839` HTML and
+  `103/103` CSS with zero raw HTML fallback.
+- VERIFY NEXT: inspect the remaining `2` HTML and `1` CSS legacy residuals,
+  then repeat the same generic mapping audit on another non-user-owned fixture.
+- STILL OPEN: authorized user upload in Roll20 Sandbox and dedicated legacy
+  room capture remain unverified; no external parity count changed.

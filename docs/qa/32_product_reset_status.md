@@ -15,6 +15,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Preview/edit render surface | 6/6 local modern/legacy comparisons at 0% mismatch | VERIFIED LOCAL | Same local surface only |
 | Layer and placement interaction | edit-flow smoke, layer before/inside/after, flow/free placement, cycle guard, role palette | VERIFIED LOCAL | Figma-level usability still needs visual review |
 | Imported preview/edit round-trip | 4/4 anonymous fixtures: shared iframe edit sync and edited HTML/CSS/i18n re-import stable | VERIFIED LOCAL | Does not prove live Roll20 parity or arbitrary source fidelity |
+| Semantic inline import coverage | 3/3 local fixture imports keep small/u/sub/sup containers and nested translation blocks editable; one fixture reaches 100% HTML/CSS match | VERIFIED LOCAL | One legacy fixture still has 2 HTML and 1 CSS residual fallback |
 | Generated layout CSS | authored position block emits paired class + CSS rule | VERIFIED LOCAL | Imported source inline styles remain loss-aware |
 | Live Roll20 modern Sandbox | 1 anonymous synthetic payload activated in a real sheet iframe; rolltemplate chat observed; 1.6458% root-only mismatch | VERIFIED EXTERNAL DIAGNOSTIC | Not a general parity result |
 | Live Roll20 solo-room wrapper | Modern and legacy rooms observed read-only: 900px iframe, modern 850px root, legacy 860px root | VERIFIED EXTERNAL PRIVATE | Wrapper contract only; not our export parity |
@@ -31,6 +32,11 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - Imported edit round-trip: `4/4` anonymous local fixtures passed the canonical
   iframe sync path and stable re-import check; the largest fixture remained
   below the current import/inject budgets.
+- Semantic inline coverage: the new generic inline-container matcher passed
+  the nested-translation contract and raised the affected anonymous fixture to
+  `1839/1839` HTML elements, `103/103` CSS rules, and `0` raw HTML fallbacks.
+  The remaining legacy fixture is `631/633` HTML and `108/109` CSS in the
+  local diagnostic, so arbitrary-source fidelity is not complete.
 - Live Roll20 synthetic Sandbox activations: `1` with real iframe and rolltemplate chat evidence.
 - Live Roll20 solo-room wrapper observations: `2` (modern and legacy, read-only).
 - Live Roll20 diagnostic root captures: `1` synthetic modern root at `1.6458%`
@@ -92,6 +98,18 @@ local gate is not evidence of visual equality in a live Roll20 room.
   canonical CSS, stable i18n, and a positive second import block count.
 - BOUNDARY: this strengthens local synchronization evidence only. It does not
   increase the live Roll20 user-sheet capture count, which remains `0`.
+
+## Semantic Inline Mapping Gate
+
+- FIXED: generic `small`, `u`, `sub`, and `sup` elements now map to a
+  `r20_inline_container` block with a statement slot. Nested `data-i18n`
+  elements remain individual translation blocks instead of forcing raw HTML.
+- VERIFIED LOCAL: import structure tests passed `28/28`; the affected local
+  fixture reached `100%` HTML/CSS coverage, and imported preview/edit sync plus
+  modern/legacy visual smoke still pass.
+- BOUNDARY: this is a general importer improvement, not a claim that every
+  arbitrary HTML/CSS construct is mapped. The remaining legacy fixture has
+  two HTML and one CSS residual fallback and stays open for the next slice.
 
 ## Reporting Rule
 
