@@ -197,6 +197,19 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - BOUNDARY: the preview keeps page scripts inert and hidden; this change does
   not claim arbitrary JavaScript execution or worker runtime parity.
 
+## Generic Shadow Drag Commit
+
+- FIXED: generic rendered nodes without explicit position fields now remain on
+  the visible drag surface during pointer movement and receive their managed
+  CSS/parent-relative position only after drop. This removes the old
+  `hasPos=false` drag no-op and avoids Blockly/emit work on every pointermove.
+- VERIFIED LOCAL: `ci:verify`, lint, build, edit-flow smoke, strict imported
+  edit synchronization, and modern/legacy visual comparison passed. All six
+  local preview/edit visual cases reported exact `0%` mismatch.
+- BOUNDARY: this is local renderer/edit evidence. The active default is still
+  the persistent iframe, and external Roll20 upload plus dedicated legacy-room
+  evidence remain `VERIFY` with counts `0` and `0`.
+
 ## Reporting Rule
 
 Every future progress report must label each item as `DONE`, `VERIFIED LOCAL`,

@@ -6136,3 +6136,18 @@ attributes for export while the preview baseline keeps script nodes inert.
 Verification: high-priority import `21/21`, import structure `30/30`, export
 contract, and `git diff --check` passed. This is a source-preservation fix, not
 arbitrary page-JS execution or live Roll20 runtime parity.
+
+### 2026-07-19 - Generic Shadow drag latency fix
+
+The alternate Shadow render drag path previously returned immediately for any
+block without `LEFT_PX` and `TOP_PX`. It now measures the rendered element and
+its offset parent, applies a requestAnimationFrame-coalesced temporary
+transform while dragging, and calls the managed design-position commit once on
+pointerup. That commit either updates position fields or creates/updates the
+managed CSS rule and parent-relative container class.
+
+Verification: lint, build, `ci:verify`, design-position test, edit-flow smoke,
+strict imported edit synchronization, and the modern/legacy preview/edit visual
+smoke all passed. Six local visual cases stayed at `0%` mismatch. This does not
+change the external evidence counters: authorized user-sheet captures `0` and
+dedicated legacy-room captures `0`.

@@ -288,11 +288,38 @@ export default function PreviewMain() {
       ws: WorkspaceKey;
       scale: number;
       hasPos: boolean;
+      element: HTMLElement | null;
+      baseTransform: string;
+      containingBlockId: string | null;
+      containingBlockNeedsRelative: boolean;
+      lastDx: number;
+      lastDy: number;
     } | null = null;
     // Phase C — pending setFieldValue (rAF 합치기). pointermove 가 frame 보다
     // 빠를 때 (touch 일부 환경) 마지막 값만 commit.
-    let dragOriginPending: { ws: WorkspaceKey; blockId: string; left: number; top: number } | null = null;
-    let dragOriginRaf: number | null = null;
+    let dragVisualPending: { element: HTMLElement; transform: string } | null = null;
+    let dragVisualRaf: number | null = null;
+
+    const findShadowBlockElement = (blockId: string): HTMLElement | null => {
+      const root = host.shadowRoot;
+      if (!root) return null;
+      for (const element of Array.from(root.querySelectorAll<HTMLElement>('[data-r20-block-id]'))) {
+        if (element.dataset.r20BlockId === blockId) return element;
+      }
+      return null;
+    };
+
+    const queueDragVisual = (element: HTMLElement, transform: string) => {
+      dragVisualPending = { element, transform };
+      if (dragVisualRaf != null) return;
+      dragVisualRaf = window.requestAnimationFrame(() => {
+        dragVisualRaf = null;
+        const pending = dragVisualPending;
+        dragVisualPending = null;
+        if (!pending || !pending.element.isConnected) return;
+        pending.element.style.transform = pending.transform;
+      });
+    };
 
     const { cleanup, setSelected: setShadowSelected } = mountSheetShadow(host, {
       html: parts.html,
@@ -339,54 +366,82 @@ export default function PreviewMain() {
         // zoom 보정 — host CSS scale 이 있으면 (transform: scale()) viewport px
         // → sheet px 변환 필요. 현재 시트 wrapper 는 width 조정으로 zoom 처리하므로
         // scale 은 (rendered width / intrinsic width).
+        const element = findShadowBlockElement(blockId);
+        const offsetParent = element?.offsetParent instanceof HTMLElement
+          ? element.offsetParent
+          : null;
+        const containingBlockId = offsetParent?.dataset.r20BlockId ?? null;
+        const containingBlockNeedsRelative = Boolean(
+          containingBlockId
+          && offsetParent
+          && window.getComputedStyle(offsetParent).position === 'static',
+        );
+        const measuredLeft = element ? Math.round(element.offsetLeft) : 0;
+        const measuredTop = element ? Math.round(element.offsetTop) : 0;
         const rect = host.getBoundingClientRect();
         const scale = host.offsetWidth > 0 ? rect.width / host.offsetWidth : 1;
-        dragOrigin = { blockId, origLeft, origTop, ws, scale, hasPos };
-        if (!hasPos) {
-          // 위치 필드 없는 블록 — drag 무시 + 사용자에 한 번 통보 (toast).
-          // sonner toast 는 정의되어 있으나 너무 시끄러울 수 있어 console.debug 로 대체.
-          // 추후 W3 UX 가 결정.
-           
-          console.debug('[wysiwyg] block has no LEFT_PX/TOP_PX — drag ignored:', blockId);
-        }
+        dragOrigin = {
+          blockId,
+          origLeft: hasPos ? origLeft : measuredLeft,
+          origTop: hasPos ? origTop : measuredTop,
+          ws,
+          scale,
+          hasPos,
+          element,
+          baseTransform: element?.style.transform ?? '',
+          containingBlockId,
+          containingBlockNeedsRelative,
+          lastDx: 0,
+          lastDy: 0,
+        };
       },
       onDragMove: (blockId, dx, dy) => {
         if (!dragOrigin || dragOrigin.blockId !== blockId) return;
-        if (!dragOrigin.hasPos) return;
+        dragOrigin.lastDx = dx;
+        dragOrigin.lastDy = dy;
         // rAF coalesce — pointermove 는 60-120Hz, setFieldValue 는 BLOCK_CHANGE
         // event + bumpStructure 트리거. 60Hz 면 충분, 더 빠르면 emit 디바운스가
         // 흡수 못 함. rAF 안에서만 호출.
         const s = dragOrigin.scale || 1;
-        dragOriginPending = {
-          ws: dragOrigin.ws,
-          blockId,
-          left: Math.max(0, Math.round(dragOrigin.origLeft + dx / s)),
-          top: Math.max(0, Math.round(dragOrigin.origTop + dy / s)),
-        };
-        if (dragOriginRaf == null) {
-          dragOriginRaf = window.requestAnimationFrame(() => {
-            dragOriginRaf = null;
-            const pend = dragOriginPending;
-            dragOriginPending = null;
-            if (!pend) return;
-            const adapter = getBlocklyAdapter();
-            adapter.setBlockField(pend.ws, pend.blockId, 'LEFT_PX', String(pend.left));
-            adapter.setBlockField(pend.ws, pend.blockId, 'TOP_PX', String(pend.top));
-          });
+        if (dragOrigin.element) {
+          const base = dragOrigin.baseTransform && dragOrigin.baseTransform !== 'none'
+            ? `${dragOrigin.baseTransform} `
+            : '';
+          queueDragVisual(
+            dragOrigin.element,
+            `${base}translate(${dx / s}px, ${dy / s}px)`,
+          );
         }
       },
       onDragEnd: () => {
         // pending flush — rAF 한 프레임 남은 갱신 commit.
-        if (dragOriginRaf != null) {
-          window.cancelAnimationFrame(dragOriginRaf);
-          dragOriginRaf = null;
+        const origin = dragOrigin;
+        if (!origin) return;
+        if (dragVisualRaf != null) {
+          window.cancelAnimationFrame(dragVisualRaf);
+          dragVisualRaf = null;
         }
-        const pend = dragOriginPending;
-        dragOriginPending = null;
-        if (pend) {
-          const adapter = getBlocklyAdapter();
-          adapter.setBlockField(pend.ws, pend.blockId, 'LEFT_PX', String(pend.left));
-          adapter.setBlockField(pend.ws, pend.blockId, 'TOP_PX', String(pend.top));
+        dragVisualPending = null;
+        const scale = origin.scale || 1;
+        const adapter = getBlocklyAdapter();
+        const committed = commitManagedDesignPosition(adapter, {
+          workspace: origin.ws,
+          blockId: origin.blockId,
+          left: Math.max(0, Math.round(origin.origLeft + origin.lastDx / scale)),
+          top: Math.max(0, Math.round(origin.origTop + origin.lastDy / scale)),
+          containingBlockId: origin.containingBlockId,
+          containingBlockNeedsRelative: origin.containingBlockNeedsRelative,
+        });
+        if (committed.moved) {
+          const store = useWorkspaceStore.getState();
+          store.bumpStructure(origin.ws, adapter.countBlocks(origin.ws));
+          if (committed.reason === 'managed-css') {
+            store.bumpStructure('css', adapter.countBlocks('css'));
+          }
+          flushEmitPipeline();
+          store.setSelectedBlockId(origin.blockId, 'preview');
+        } else if (origin.element) {
+          origin.element.style.transform = origin.baseTransform;
         }
         dragOrigin = null;
       },
@@ -449,10 +504,10 @@ export default function PreviewMain() {
     return () => {
       shadowSetSelectedRef.current = null;
       dragOrigin = null;
-      dragOriginPending = null;
-      if (dragOriginRaf != null) {
-        window.cancelAnimationFrame(dragOriginRaf);
-        dragOriginRaf = null;
+      dragVisualPending = null;
+      if (dragVisualRaf != null) {
+        window.cancelAnimationFrame(dragVisualRaf);
+        dragVisualRaf = null;
       }
       cleanup();
     };

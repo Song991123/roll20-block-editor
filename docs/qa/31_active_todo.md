@@ -5434,3 +5434,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: this preserves page-script source; it does not execute arbitrary
   page JavaScript in the editor preview. Worker parsing/runtime parity remains
   a separate partial axis.
+
+## 2026-07-19 Generic Shadow Drag Commit
+
+- FIXED: the Shadow render drag path no longer ignores blocks without
+  `LEFT_PX`/`TOP_PX`. It now moves the actual rendered node with a coalesced
+  temporary transform and commits one parent-relative design position on
+  pointerup. Existing position-field blocks use the same no-rerender drag
+  behavior.
+- VERIFIED LOCAL: lint, production build, `ci:verify`, design-position test,
+  edit-flow smoke, strict imported edit synchronization, and modern/legacy
+  preview/edit visual smoke all passed. The six local visual cases remained at
+  `0%` preview/edit mismatch.
+- BOUNDARY: the default product surface is the persistent iframe; this change
+  covers the alternate Shadow drag implementation and does not claim live
+  Roll20 parity. Authorized user-sheet captures remain `0`, and dedicated
+  legacy-room captures remain `0`.
