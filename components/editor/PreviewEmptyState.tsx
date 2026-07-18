@@ -5,6 +5,7 @@ import {
   Sparkles,
   MousePointerSquareDashed,
   ListTree,
+  FolderOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -22,14 +23,14 @@ export default function PreviewEmptyState() {
     });
   };
 
+  const handleImport = () => {
+    window.dispatchEvent(new Event('r20:open-import'));
+  };
+
   return (
     <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center px-6 text-center">
       <div
-        className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl text-primary ring-1 ring-primary/25"
-        style={{
-          background:
-            'radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 70%), var(--bg-elevated)',
-        }}
+        className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,_var(--primary)_14%,_var(--bg-elevated))] text-primary ring-1 ring-primary/25"
       >
         <Sparkles className="h-7 w-7" />
       </div>
@@ -68,6 +69,15 @@ export default function PreviewEmptyState() {
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Button variant="outline" size="sm" onClick={handleStartBlank}>
           빈 시트로 시작
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={handleImport}
+          data-testid="empty-import-button"
+        >
+          <FolderOpen className="h-4 w-4" aria-hidden="true" />
+          파일 가져오기
         </Button>
       </div>
     </div>

@@ -5408,3 +5408,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - DECISION: Preserve the current iframe/layer implementation and port only
   UX ideas into it later. Do not replace the render surface to obtain the
   design branch's UI wholesale.
+
+## 2026-07-18 First-Run Import Entry
+
+- IMPLEMENTED: `PreviewEmptyState` now offers a direct file-import action
+  beside blank-sheet creation. It dispatches `r20:open-import`, which the
+  existing `EditorHeader` consumes to open the single ImportDialog instance.
+- UX BOUNDARY: No renderer, iframe, workspace model, or import semantics were
+  duplicated. The empty-state icon background was flattened to a pastel fill
+  rather than adding another decorative gradient.
+- VERIFIED: Forwarded-argument fresh-sheet, edit-flow, and persistent-preview
+  smokes passed; `ci:verify`, lint, build, and server hygiene passed. The
+  fresh-sheet smoke explicitly opens/closes the import dialog.

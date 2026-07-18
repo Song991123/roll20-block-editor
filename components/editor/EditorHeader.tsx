@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Download,
@@ -66,6 +66,12 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
   const [importOpen, setImportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const handleOpenImport = () => setImportOpen(true);
+    window.addEventListener('r20:open-import', handleOpenImport);
+    return () => window.removeEventListener('r20:open-import', handleOpenImport);
+  }, []);
 
   const handleNewSheet = useCallback(() => {
     if (

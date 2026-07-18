@@ -262,7 +262,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl text-foreground">
+      <DialogContent className="max-w-3xl text-foreground" data-testid="import-dialog">
         <DialogHeader>
           <DialogTitle>외부 시트 불러오기</DialogTitle>
           <DialogDescription>

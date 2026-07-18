@@ -4740,3 +4740,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   render and legacy-policy work.
 - DECISION: Keep the branches separate. Reuse design ideas only after they are
   reimplemented against the existing persistent iframe contract.
+
+## 2026-07-18 First-Run Import Entry
+
+- DONE: The empty sheet surface now exposes both `빈 시트로 시작` and
+  `파일 가져오기` actions, so a first-time user can choose the two primary
+  entry paths without hunting through the header.
+- DONE: The empty-state import action opens the existing ImportDialog through
+  a small window event; no second import state or render surface was added.
+- VERIFIED LOCAL: Fresh-sheet smoke opened and closed the import dialog,
+  then passed blank-sheet, widget-gallery, edit-flow, and modern/legacy
+  persistent-iframe checks. Lint, `ci:verify`, and server hygiene passed.
+- CLAIM BOUNDARY: This closes a first-run UI affordance gap only. It does not
+  prove actual Roll20 Sandbox/legacy-room parity or universal mapping.

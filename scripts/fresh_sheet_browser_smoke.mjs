@@ -12,7 +12,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(2).filter((arg) => arg !== '--');
 function argOf(name, fallback) {
   const index = args.indexOf(name);
   return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
@@ -103,6 +103,11 @@ async function main() {
     assert(blank.workspace.blockCount.html === 0, 'fresh sheet has HTML blocks');
     assert(blank.layerIds.length === 0, 'fresh sheet has layer entries');
     assert(!blank.hasGhostSection, 'fresh sheet emitted a ghost sheet-section');
+
+    await page.waitForSelector('[data-testid="empty-import-button"]', { state: 'visible', timeout: 15000 });
+    await page.click('[data-testid="empty-import-button"]');
+    await page.waitForSelector('[data-testid="import-dialog"]', { state: 'visible', timeout: 15000 });
+    await page.keyboard.press('Escape');
 
     let appended = null;
     for (let attempt = 0; attempt < 20; attempt += 1) {
