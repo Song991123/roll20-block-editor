@@ -435,6 +435,19 @@ async function main() {
     }, ids.rowBId);
     assert(result.tests.selectionSync.rowSelected, 'layer row selection did not update');
 
+    result.tests.editInspector = await page.evaluate(async () => {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const panel = document.querySelector('[data-testid="edit-inspector"]');
+      return {
+        visible: Boolean(panel),
+        role: panel?.querySelector('[data-testid="edit-inspector-role"]')?.textContent?.trim() || null,
+        context: Boolean(panel?.querySelector('[data-testid="edit-inspector-context"]')),
+      };
+    });
+    assert(result.tests.editInspector.visible, 'edit inspector did not replace the widget inspector');
+    assert(result.tests.editInspector.role, 'edit inspector did not show the selected layer role');
+    assert(result.tests.editInspector.context, 'edit inspector did not show layer context');
+
     const widthInput = page.locator('[data-testid="edit-canvas-width-input"]');
     await widthInput.fill('930');
     await widthInput.press('Enter');

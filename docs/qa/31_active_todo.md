@@ -5540,3 +5540,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: this is local runtime evidence only. Actual Roll20 Sandbox chat
   and dedicated legacy-room behavior are still `VERIFY`; no external upload or
   screenshot was counted.
+
+## 2026-07-19 Edit Inspector Integration
+
+- FIXED: edit mode no longer routes the right `속성` tab to the legacy widget
+  inspector. It now shows the selected HTML/CSS/i18n/worker block's role,
+  workspace, parent relationship, child count, editable geometry fields, and
+  schema fields through the Blockly adapter.
+- FIXED: duplicate and delete actions in the edit inspector use the adapter and
+  workspace structure signal, so the same rendered preview/edit surface and
+  layer panel receive the mutation. Numeric block values use text input with a
+  decimal input hint so Roll20 expressions are not rejected by native number
+  controls.
+- VERIFIED LOCAL: `smoke:edit-flow` now asserts that a real layer selection
+  opens the block inspector and exposes role/context metadata. Strict imported
+  edit sync passed for four anonymous fixtures, and modern/legacy preview-edit
+  visual smoke passed all six cases at `0%` mismatch.
+- BOUNDARY: this closes the local inspector wiring gap; it does not prove
+  Figma-level resize handles, arbitrary DOM mapping, or external Roll20 parity.

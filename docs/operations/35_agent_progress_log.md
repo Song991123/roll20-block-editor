@@ -6244,3 +6244,21 @@ rolltemplate cards; the runtime report recorded `consoleIssues: []` and
 `pageErrors: []`; local preview/edit visual smoke remained `0%` mismatch.
 Actual Roll20 Sandbox/legacy-room upload, chat, and screenshot evidence remain
 `VERIFY` and are not implied by these local results.
+
+### 2026-07-19 - Edit inspector integration
+
+The edit-mode right `속성` tab was still rendering the old widget-instance
+inspector even though selection came from the imported HTML layer tree and the
+shared preview iframe. Added `components/editor/EditInspector.tsx` and routed
+edit mode through it. The panel resolves the selected block across all
+workspaces, shows its role and parent/child context, edits available geometry
+and schema fields through `BlocklyAdapter`, and exposes adapter-backed duplicate
+and delete actions. It does not create a parallel DOM model or mutate source
+HTML directly.
+
+Verification: `smoke:edit-flow` now selects a real layer and asserts the block
+inspector role/context surface. `smoke:imported-edit-sync:strict` passed for
+AW2E, Les-Oublies, a synthetic non-leaf case, and YSHY 1BU. Modern and legacy
+preview/edit visual smoke passed all six cases at `0%` mismatch. This is local
+editor evidence; resize-handle UX, arbitrary DOM coverage, and actual Roll20
+Sandbox/legacy-room parity remain open.

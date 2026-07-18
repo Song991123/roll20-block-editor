@@ -5,7 +5,7 @@ import { MousePointerSquareDashed } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { WORKSPACE_KEYS, useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { useUiStore } from '@/lib/stores/uiStore';
-import WidgetInspector from './WidgetInspector';
+import EditInspector from './EditInspector';
 import {
   getBlocklyAdapter,
   type BlockSnapshot,
@@ -26,7 +26,7 @@ import { CATEGORIES } from '@/lib/blocks/types';
 export default function Inspector() {
   const mainMode = useUiStore((s) => s.mainMode);
   if (mainMode === 'edit') {
-    return <WidgetInspector />;
+    return <EditInspector />;
   }
   return <BlockInspector />;
 }

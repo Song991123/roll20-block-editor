@@ -5,6 +5,10 @@ Updated: 2026-07-19
 This is the current evidence ledger for the active product-reset goal. A green
 local gate is not evidence of visual equality in a live Roll20 room.
 
+Latest local UI slice: edit-mode layer selection now opens the selected-block
+inspector, not the legacy widget-instance inspector. This remains local editor
+evidence and does not promote Figma-level usability or live Roll20 parity.
+
 ## Evidence Snapshot
 
 | Area | Current evidence | State | Boundary |
