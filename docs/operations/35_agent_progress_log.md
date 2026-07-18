@@ -5756,3 +5756,25 @@ change, while actual Sandbox/legacy-room parity remains open.
   and regression criteria.
 - No source, fixture, screenshot, payload, room setting, or external evidence
   was added to tracked files. Temporary browser tabs were closed.
+
+## 2026-07-19 Modern Sandbox Upload and Roll Smoke
+
+- VERIFIED EXTERNAL, PRIVATE: The dedicated Roll20 Custom Sheet Sandbox now
+  has a positive activation result for an anonymous synthetic modern payload.
+  A real character viewer iframe rendered the translated title/label, input,
+  and roll button; the native chooser limitation was bypassed only through the
+  already documented local file-input handler path.
+- VERIFIED EXTERNAL: Measured iframe content width was `900px`; the authored
+  synthetic sheet was `850 x 260`, static, overflow-visible, with `2` controls
+  and `1` roll button. The roll button produced a real chat entry using the
+  default template with `Test` and resolved `Result 5`.
+- PRIVATE EVIDENCE: The screenshot and metrics sidecar are ignored under
+  `reports/roll20-actual-compare/live-browser/2026-07-19-synthetic-modern/`.
+  Existing Sandbox content was opened read-only; no existing room source was
+  edited and no copyrighted sheet was retained.
+- STATUS: This advances the external evidence tier from editor reachability to
+  modern Sandbox activation and roll/chat runtime smoke. It does not authorize
+  a production renderer patch or claim full visual parity.
+- NEXT: Generate matching local preview/edit captures and normalize them
+  against the measured Roll20 wrapper/root contract; then repeat the upload
+  path with an authorized legacy-enabled test room.

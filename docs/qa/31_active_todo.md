@@ -5107,3 +5107,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - LIMIT: The legacy fixture visual smoke remains diagnostic and reported a
   `17.22%` modern/legacy pixel difference for Les-Oublies; that is not treated
   as a parity pass. Actual Roll20 export upload and normalized diff remain open.
+
+## 2026-07-19 Modern Sandbox Activation Proof
+
+- VERIFIED EXTERNAL, PRIVATE: An anonymous synthetic modern payload was applied
+  through the dedicated Roll20 Custom Sheet Sandbox editor and opened in a real
+  character-sheet iframe. The iframe content width was `900px`; the authored
+  sheet surface was `850 x 260`, `position: static`, and `overflow: visible`.
+- VERIFIED EXTERNAL: The live iframe exposed the translated title and label,
+  one input, and one `type="roll"` button. Clicking the button produced a real
+  Roll20 chat entry with the default rolltemplate fields (`Test` / resolved
+  `Result 5`). This is a runtime smoke proof, not a full visual-parity score.
+- PRIVATE EVIDENCE: Screenshot and JSON metrics remain under the ignored local
+  directory `reports/roll20-actual-compare/live-browser/2026-07-19-synthetic-modern/`.
+  No public fixture, sheet source, or identifying sample was added.
+- BOUNDARY: This closes the modern Sandbox activation prerequisite only. Full
+  export-vs-Roll20 screenshot normalization, worker/asset parity, and the
+  separate legacy-room check remain open.
+- NEXT P0: Capture a normalized local preview and edit surface for the same
+  anonymous payload, then compare it with the Sandbox root/wrapper contract.

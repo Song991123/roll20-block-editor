@@ -824,3 +824,22 @@ the preferred evidence.
 - Screenshot and JSON sidecar remain local ignored evidence only. This smoke
   proves a legacy runtime path, not full visual parity, universal mapping,
   worker parity, or asset completeness.
+
+## 2026-07-19 Modern Sandbox Activation Recheck
+
+- VERIFIED: A fresh anonymous synthetic modern payload was opened in the
+  dedicated Sandbox character viewer. The real iframe exposed the translated
+  sheet title/label, input, and `type="roll"` control.
+- VERIFIED: The live authored surface measured `850 x 260` inside the `900px`
+  Roll20 iframe. The surrounding `#dialog-window` used the Roll20 viewer
+  wrapper and measured `900px` wide by approximately `365.6px` high in this
+  synthetic state.
+- VERIFIED: Clicking the roll control produced a real chat entry using the
+  default rolltemplate, with `Test` and a resolved `Result 5` observed in the
+  chat DOM.
+- EVIDENCE: Keep the screenshot and metrics in the ignored local directory
+  `reports/roll20-actual-compare/live-browser/2026-07-19-synthetic-modern/`.
+  Do not promote them to tracked or public assets.
+- LIMIT: This proves modern Sandbox activation and chat runtime smoke for one
+  anonymous payload. It does not prove visual parity for arbitrary imports,
+  asset/worker parity, or legacy support. Those remain separate gates.
