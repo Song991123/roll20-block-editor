@@ -13,6 +13,17 @@
 - BOUNDARY: Actual Roll20 Sandbox/legacy-room screenshot parity remains
   `VERIFY`; this change does not use or publish any real sheet source.
 
+## 2026-07-18 Widget Gallery Direct Creation
+
+- DONE: The fresh-sheet browser smoke now uses the user-facing edit-mode
+  gallery card, not only the internal test hook, to create a widget.
+- VERIFIED LOCAL: `widget-card-text-input` created one additional HTML layer,
+  emitted its `data-r20-block-id` into the HTML output, advanced apply ack
+  `1 -> 2`, preserved the persistent iframe, and passed with no console/page
+  errors.
+- BOUNDARY: This is synthetic local interaction evidence. Gallery drag/drop,
+  actual Roll20 rendering, and modern/legacy visual parity remain `VERIFY`.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: CI run `29621836381` for `4718564` completed successfully;

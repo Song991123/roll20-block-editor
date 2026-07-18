@@ -167,6 +167,43 @@ async function main() {
     assert(edit.sameIframe && edit.editOwner === 'persistent-iframe', 'edit mode mounted a different render surface');
     assert(edit.widthInput === '850', `edit canvas width default drifted: ${edit.widthInput}`);
 
+    const galleryBefore = await page.evaluate(() => ({
+      workspace: window.__perfHook.getWorkspace(),
+      layerIds: window.__perfHook.getLayerSnapshot('html').map((node) => node.id),
+      applyAck: Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') ?? 0),
+    }));
+    await page.waitForSelector('[data-testid="widget-card-text-input"]', { state: 'visible', timeout: 15000 });
+    await page.locator('[data-testid="widget-card-text-input"]').click();
+    await page.waitForFunction(
+      (beforeCount) => window.__perfHook.getWorkspace().blockCount.html > beforeCount,
+      galleryBefore.workspace.blockCount.html,
+      { timeout: 15000 },
+    );
+    await page.waitForFunction(
+      (beforeAck) => Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') ?? 0) > beforeAck,
+      galleryBefore.applyAck,
+      { timeout: 20000 },
+    );
+    const galleryAfter = await page.evaluate((before) => {
+      const layerIds = window.__perfHook.getLayerSnapshot('html').map((node) => node.id);
+      const addedIds = layerIds.filter((id) => !before.layerIds.includes(id));
+      const content = window.__perfHook.getEmitContent();
+      return {
+        workspace: window.__perfHook.getWorkspace(),
+        addedIds,
+        addedInHtml: addedIds.every((id) => content.html.includes(`data-r20-block-id="${id}"`)),
+        iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
+        applyAck: Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') ?? 0),
+      };
+    }, galleryBefore);
+    const galleryIframePreserved = await page.evaluate(
+      (sameElement) => sameElement === document.querySelector('[data-testid="preview-iframe"]'),
+      editIframeElement,
+    );
+    assert(galleryAfter.addedIds.length === 1, `gallery click added ${galleryAfter.addedIds.length} layer entries`);
+    assert(galleryAfter.addedInHtml, 'gallery-created widget was not emitted into HTML');
+    assert(galleryIframePreserved && galleryAfter.iframeCount === 1, 'gallery click remounted the render surface');
+
     const result = {
       status: consoleErrors.length === 0 && pageErrors.length === 0 ? 'PASS' : 'FAIL',
       url,
@@ -174,6 +211,7 @@ async function main() {
       appended,
       firstWidget,
       edit,
+      gallery: { before: galleryBefore, after: galleryAfter, iframePreserved: galleryIframePreserved },
       consoleErrors,
       pageErrors,
       finishedAt: new Date().toISOString(),

@@ -30,9 +30,10 @@ audit, (2) product/UI reset, (3) shared-render and modern/legacy correctness,
 verification. Every result remains classified as `DONE`, `VERIFY`, `BLOCKED`,
 or `TODO`; implementation alone is not completion evidence.
 
-The Codex goal record has been rewritten to this product-reset objective. This
+The shared project context is aligned to this product-reset objective. This
 document remains the durable repository-side control plane for execution,
-handoff, and reporting.
+handoff, and reporting; the Codex goal card itself is controlled by the app UI
+and is not treated as changed by repository edits.
 
 ## Product North Star
 

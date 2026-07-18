@@ -15,6 +15,16 @@
 - NEXT P0: reconnect the permitted Roll20 session and apply the ignored
   anonymous payload through the supported CDP/file handoff.
 
+## 2026-07-18 Widget Gallery Direct Creation
+
+- DONE: Extended `scripts/fresh_sheet_browser_smoke.mjs` to click the real
+  `widget-card-text-input` control in edit mode after the blank-sheet setup.
+- VERIFIED LOCAL: The click increased HTML blocks from `2` to `3`, added one
+  layer to emitted HTML, advanced the iframe apply acknowledgement from `1` to
+  `2`, preserved one iframe, and produced zero console/page errors.
+- CLAIM BOUNDARY: This proves the local gallery-click path only. Dragging from
+  the gallery and live Roll20 visual parity remain `VERIFY`.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: GitHub Actions run `29621836381` for commit `4718564`
