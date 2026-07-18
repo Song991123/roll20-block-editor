@@ -6074,8 +6074,16 @@ surface also did not expose DOM construction APIs needed for the generated
 File-event snippet. No payload was uploaded and no Roll20 result was counted.
 
 Actual user-sheet captures remain `0`; dedicated legacy-room captures remain
-`0`. Commit `aaffcf2` passed remote CI run `29659504257`, but this does not replace the
-missing external upload evidence.
+`0`. The latest documentation commit `7ec880a` passed remote CI run
+`29659555283`, but this does not replace the missing external upload evidence.
+
+### 2026-07-19 - Roll20 Sandbox retry boundary
+
+The authenticated Roll20 Sandbox tab was reclaimed for a fresh DOM snapshot,
+but the browser-control connection timed out while reading the heavy editor
+surface and reset its kernel. No file handoff, activation, screenshot, or
+user-sheet result was produced. The external evidence counters therefore stay
+at `0`; this is a retry boundary, not a failed parity measurement.
 
 ### 2026-07-19 - Layer collapse acceptance coverage
 

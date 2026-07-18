@@ -24,7 +24,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Legacy-room visual parity | No dedicated legacy-room capture | VERIFY | Sandbox is modern-only |
 | UI product reset | Pastel/pink shell, light root/portal baseline, and core Korean product copy slice | PARTIAL | Full information architecture and visual UX reset remain |
 | Public copyright boundary | CI evidence guard, ignored local fixtures/reports, no tracked private corpus | VERIFIED LOCAL | Recheck before every public release |
-| CI/CD | GitHub Actions run `29659504257` passed for `aaffcf2` | VERIFIED REMOTE | Deployment smoke remains separate |
+| CI/CD | GitHub Actions run `29659555283` passed for `7ec880a` | VERIFIED REMOTE | Deployment smoke remains separate |
 
 ## Current Counts
 
@@ -152,7 +152,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
   `Not allowed`, and the isolated page-evaluation surface lacks DOM creation
   APIs for the generated File-event snippet. No upload occurred.
 - CURRENT COUNTS: authorized user-sheet captures `0`; dedicated legacy-room
-  captures `0`; commit `aaffcf2` remote CI run `29659504257` is `success`.
+  captures `0`; commit `7ec880a` remote CI run `29659555283` is `success`.
 
 ## Sheet.json Route Check
 
@@ -177,6 +177,16 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - BOUNDARY: this is a guarded first JS-block slice, not universal JavaScript
   parsing or actual Roll20 worker-runtime parity. Raw fallback remains the
   truthful path for unsupported syntax.
+
+## Pre-upload verification recheck
+
+- VERIFIED LOCAL: `verify:roll20-preupload` passed all seven gates for the
+  current anonymous local payload.
+- VERIFY BLOCKED: the authenticated Roll20 Sandbox browser-control retry
+  timed out while reading the heavy editor DOM; no upload or activation was
+  counted.
+- CURRENT COUNTS: user-sheet captures `0`; dedicated legacy-room captures
+  `0`. Latest remote CI remains `7ec880a` / `29659555283`.
 
 ## Reporting Rule
 

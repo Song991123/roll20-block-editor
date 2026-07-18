@@ -5390,8 +5390,9 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   the generated File-event snippet. No payload was uploaded and no Roll20
   result was inferred.
 - CURRENT TRUTH: actual Roll20 user-sheet captures remain `0`; dedicated
-  legacy-room captures remain `0`. Remote CI run `29659504257` for commit
-  `aaffcf2` is green, but external upload evidence is still missing.
+  legacy-room captures remain `0`. The latest remote CI run `29659555283`
+  for commit `7ec880a` is green, but external upload evidence is still
+  missing.
 
 ## 2026-07-19 Guarded Worker Block Mapping
 
@@ -5407,3 +5408,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: this is a guarded first JS-block slice. It does not claim
   universal JavaScript parsing or live Roll20 worker-runtime parity. Actual
   user-sheet upload and legacy-room evidence remain VERIFY.
+
+## 2026-07-19 Pre-upload verification recheck
+
+- VERIFIED LOCAL: `corepack pnpm run verify:roll20-preupload` passed all seven
+  gates: local baseline, payload audit, Sandbox sanitize, payload round-trip,
+  state selectors, asset policy, and evidence guard.
+- VERIFY BLOCKED: a fresh authenticated Roll20 Sandbox DOM snapshot timed out
+  in the browser-control connection and reset its kernel. No file handoff,
+  activation, screenshot, or external parity result was produced.
+- CURRENT TRUTH: authorized user-sheet captures remain `0`; dedicated
+  legacy-room captures remain `0`. The latest remote CI evidence is
+  `7ec880a` / run `29659555283` and is separate from Roll20 runtime proof.
