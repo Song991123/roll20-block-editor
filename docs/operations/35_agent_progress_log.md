@@ -5973,3 +5973,16 @@ In the dedicated Custom Sheet Sandbox only, the visible Sheet.json editor was
 updated and saved with `legacy:false`; the dedicated editor route loaded after
 save. No existing room was modified. The iframe/root screenshot is still
 missing, so modern visual parity remains VERIFY rather than DONE.
+
+### 2026-07-19 - Goal card replacement scope
+
+The user requested changing the registered active goal itself to reflect the
+product reset, not only updating repository notes. The available goal-status
+interface does not expose objective editing while a goal is active; it only
+allows truthful completion or blocking transitions. Neither applies here.
+
+The revised objective was synchronized to the shared agent bridge and the
+control documents. The exact replacement text is recorded in
+`docs/operations/41_product_reset_and_short_term_goals.md` for one UI edit in
+the goal card. Until that edit is visible, the card remains `VERIFY` and the
+repository/bridge scope is the working source of truth.

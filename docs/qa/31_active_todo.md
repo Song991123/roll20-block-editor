@@ -5289,3 +5289,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFY: This proves the modern destination configuration and editor load only;
   it does not prove the sheet iframe root rendered, user-owned upload parity, or
   general Roll20 visual equality. Existing rooms were not edited.
+
+## 2026-07-19 Goal Card Replacement Text
+
+- CONTROL: The active Codex goal card is still unchanged because the available
+  goal API can only mark an active goal complete or blocked. Neither status is
+  truthful for this unfinished product reset, so no false status transition was
+  made.
+- SYNCED: The shared agent bridge and product-reset control document now carry
+  the revised scope: general modern/legacy support, same preview/edit render
+  surface, Figma-like layer editing, plain Korean pastel UI, no public sample
+  sheets, local-storage honesty, bug reporting, CI/CD, and real Sandbox/legacy
+  verification.
+- ACTION: Edit the goal card in the Codex UI with the replacement text recorded
+  in `docs/operations/41_product_reset_and_short_term_goals.md`.
+- STATUS: VERIFY until the card UI visibly shows the replacement objective;
+  repository and bridge scope are already synchronized.

@@ -35,6 +35,27 @@ document remains the durable repository-side control plane for execution,
 handoff, and reporting; the Codex goal card itself is controlled by the app UI
 and is not treated as changed by repository edits.
 
+## Goal Card Reconciliation
+
+The current active goal card cannot be rewritten by the available goal-status
+interface while it is active; that interface only exposes completion/blocking
+status. The shared agent bridge and this document therefore carry the current
+scope until the card is edited in the Codex UI. Use this replacement text when
+editing the card:
+
+> 저작권 샘플을 배포하지 않는 범용 Roll20 커스텀시트 제작기를 완성한다.
+> 사용자가 HTML/CSS/번역과 향후 JS를 직접 불러오거나 작성하면 현대·구버전
+> Roll20 환경을 각각 재현해 같은 렌더 결과를 검증하고, 미리보기와 편집은
+> 동일한 실제 렌더 표면 위에서 동작하게 한다. 편집은 Figma처럼 직관적인
+> 레이어·컨테이너·flow/absolute 배치와 빠른 동기화를 제공한다. 제품 UI는
+> 사용자에게 쉬운 한국어와 분홍·파스텔 계열로 정리하고, 불필요한 개발자
+> 용어/샘플/출처 노출을 제거하며, 로컬 저장과 버그 제보, CI/CD 및 실제
+> Sandbox/구버전 테스트방 검증을 정직한 증거와 함께 운영한다.
+
+Until that UI edit is made, do not claim that the goal card itself changed;
+the bridge, this control document, and the progress ledger are the authoritative
+working scope.
+
 ## Product North Star
 
 Users import or author a Roll20 sheet from HTML, CSS, translation/i18n, and
