@@ -5489,3 +5489,25 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CURRENT TRUTH: no upload, activation, chat smoke, or external screenshot was
   counted in this recheck. Local pre-upload PASS remains separate from actual
   Roll20 parity evidence.
+
+## 2026-07-19 Worker workspace multi-handler fix
+
+- FIXED: imported Roll20 worker event handlers are emitted as separate Blockly
+  hat roots. Chaining one hat after another produced invalid Blockly XML
+  because hat blocks do not have previous-statement connections.
+- FIXED: parsed-worker stability comparison now ignores only formatting-only
+  differences such as trailing spaces and repeated blank lines. Semantic
+  source differences still fall back to a raw worker block.
+- FIXED: the worker browser smoke now counts top-level nodes through the actual
+  `parentId` graph field and covers both attribute-change and button-click
+  handlers.
+- VERIFIED LOCAL: `corepack pnpm run build`, `corepack pnpm run lint`,
+  `corepack pnpm run ci:verify`, `corepack pnpm run smoke:worker`,
+  `corepack pnpm run smoke:persistent-preview-surface`,
+  `corepack pnpm run smoke:preview-edit-visual -- --compatibility-mode both`,
+  `corepack pnpm run smoke:edit-flow`, and
+  `corepack pnpm run smoke:shadow-drag` passed. The visual smoke reported
+  `0%` mismatch for all six local modern/legacy fixture cases.
+- BOUNDARY: this improves generic worker mapping and local render/edit
+  confidence. It does not count as external Roll20 upload, chat, Sandbox, or
+  dedicated legacy-room proof; those remain `VERIFY`.

@@ -6190,3 +6190,22 @@ Only lightweight tab metadata could be read reliably in this pass; the heavy
 editor's DOM snapshot, page evaluation, and screenshot surfaces timed out.
 No upload, activation, chat smoke, or external screenshot was counted. Keep
 this as VERIFY, separate from the local pre-upload PASS.
+
+### 2026-07-19 - Worker workspace multi-handler correction
+
+The worker importer now preserves multiple supported Roll20 event handlers as
+independent Blockly hat roots. The previous serializer attempted to connect
+top-level hats through `<next>`, which Blockly correctly rejected because hats
+do not expose a previous-statement connection. Nested statement chains still
+use `<next>`.
+
+The source-stability guard also now treats trailing whitespace and repeated
+blank lines as formatting-only. It continues to use the raw worker fallback
+when the generated code changes meaningful source text. The browser smoke now
+asserts both hat types and counts top-level worker nodes through `parentId`.
+
+Verification: `build`, `lint`, `ci:verify`, worker workspace smoke, persistent
+preview smoke, modern/legacy preview-edit visual smoke, edit-flow smoke, and
+real pointer Shadow drag smoke all passed. Six local visual cases reported
+`0%` mismatch. No external Roll20 evidence was added; the authorized upload,
+Sandbox, chat, and legacy-room gates remain `VERIFY`.

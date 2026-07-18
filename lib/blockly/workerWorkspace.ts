@@ -175,22 +175,20 @@ export function replaceWorkerWorkspaceFromSourceHtml(html: string): {
 
 function buildParsedWorkerXml(blocks: ParsedBlock[]): string {
   const ids = { next: 0 };
-  const body = serializeBlockChain(blocks, ids);
+  // Roll20 event handlers are hat blocks. They must remain separate roots;
+  // chaining one hat after another produces invalid Blockly XML because hats
+  // intentionally have no previous statement connection.
+  const body = blocks.map((block) => serializeParsedBlock(block, ids)).join('');
   return `<xml xmlns="https://developers.google.com/blockly/xml">${body}</xml>`;
 }
 
 function serializeBlockChain(blocks: ParsedBlock[], ids: { next: number }): string {
-  return blocks
-    .map((block, index) => {
-      const current = serializeParsedBlock(block, ids);
-      if (index === blocks.length - 1) return current;
-      const next = serializeBlockChain(blocks.slice(index + 1), ids);
-      return current.replace(/<\/block>$/, `<next>${next}</next></block>`);
-    })
-    .join('');
+  const [first, ...rest] = blocks;
+  if (!first) return '';
+  return serializeParsedBlock(first, ids, rest.length > 0 ? serializeBlockChain(rest, ids) : '');
 }
 
-function serializeParsedBlock(block: ParsedBlock, ids: { next: number }): string {
+function serializeParsedBlock(block: ParsedBlock, ids: { next: number }, nextXml = ''): string {
   const id = `imported_worker_${ids.next++}`;
   const fields = Object.entries(block.fields ?? {})
     .map(([name, value]) => `<field name="${escapeXml(name)}">${escapeXml(value)}</field>`)
@@ -201,7 +199,8 @@ function serializeParsedBlock(block: ParsedBlock, ids: { next: number }): string
   const statements = Object.entries(block.children ?? {})
     .map(([name, children]) => `<statement name="${escapeXml(name)}">${serializeBlockChain(children, ids)}</statement>`)
     .join('');
-  return `<block type="${escapeXml(block.blockType)}" id="${id}">${fields}${values}${statements}</block>`;
+  const next = nextXml ? `<next>${nextXml}</next>` : '';
+  return `<block type="${escapeXml(block.blockType)}" id="${id}">${fields}${values}${statements}${next}</block>`;
 }
 
 export function extractRoll20WorkerScripts(html: string): Array<{ type: string; body: string }> {
@@ -266,7 +265,12 @@ function canonicalWorkerBody(text: string): string {
       .replace(/\r\n?/g, '\n')
       .replace(/^\n+/, '')
       .replace(/\n+[ \t]*$/g, ''),
-  ).trim();
+  )
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+$/g, ''))
+    .join('\n')
+    .replace(/\n[ \t]*\n+/g, '\n')
+    .trim();
 }
 
 function normalizeSourceWorkerBody(body: string): string {

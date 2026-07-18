@@ -116,6 +116,9 @@ async function main() {
           on('change:hp', () => {
             setAttrs({ 'hp': 10 });
           });
+          on('clicked:roll', () => {
+            setAttrs({ 'hp': 11 });
+          });
         </script>
       `;
       const parsedImported = await window.__perfHook.importSheet({ html: parsedHtml, css: '', i18n: '{}' });
@@ -133,6 +136,7 @@ async function main() {
         emitHtmlLen: emit.html.length,
         parsedImported,
         parsedWorkerTypes: parsedWorkerGraph.map((b) => b.type),
+        parsedWorkerTopLevelCount: parsedWorkerGraph.filter((b) => !b.parentId).length,
         parsedEmitWorkerScriptCount: (parsedEmit.html.match(/<script\s+type=["']text\/worker["']>/gi) ?? []).length,
         parsedEmitWorker: parsedEmit.worker,
       };
@@ -148,6 +152,8 @@ async function main() {
       result.emitWorkerScriptCount === 1 &&
       result.parsedWorkerTypes.includes('r20_on_attr_change') &&
       result.parsedWorkerTypes.includes('r20_set_attrs') &&
+      result.parsedWorkerTypes.includes('r20_on_button_click') &&
+      result.parsedWorkerTopLevelCount === 2 &&
       result.parsedEmitWorkerScriptCount === 1 &&
       result.parsedEmitWorker.includes("setAttrs({ 'hp': 10 });") &&
       consoleErrors.length === 0;

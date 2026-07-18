@@ -199,6 +199,13 @@ legacy test-room evidence remain separate.
 Acceptance: a synthetic roll control produces a deterministic local chat result;
 actual Roll20 smoke is recorded as VERIFY until both destinations are tested.
 
+Current status (2026-07-19): local worker mapping now keeps multiple supported
+event hats separate, preserves nested statement order, and falls back to raw
+source only when generated code is semantically different. Local preview/edit
+visual smoke is `0%` mismatch for the six modern/legacy fixture cases. Actual
+Roll20 Sandbox upload, chat, and dedicated legacy-room verification remain
+`VERIFY` and are not implied by local PASS results.
+
 ### P1-3: Repository and delivery cleanup
 
 Keep product code under `app/`, `components/`, `lib/`, and `scripts/`. Keep
