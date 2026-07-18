@@ -5659,3 +5659,20 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   parity evidence. Keep room observation at 0/3 and the renderer gate on HOLD.
 - NEXT: Read-only campaign-list inspection for qualifying solo rooms; sandbox or
   a fresh test room for any export upload and post-upload screenshot.
+
+## 2026-07-19 Persistent Preview Smoke Contract Repair
+
+- FIXED: Updated `persistent_preview_surface_smoke.mjs` to select an edit layer
+  by its stable test id and accessible `role="button"` contract. The previous
+  assertion required `HTMLButtonElement` even though the layer row is an
+  accessible draggable `div` with a separate eject button.
+- EVIDENCE: The failed run imported and patched both modern and legacy sheets,
+  kept one iframe, and reported zero console/page errors; it timed out only
+  after `layerRowClicked=false`.
+- VERIFIED: The repaired persistent-preview smoke passes in modern and legacy
+  modes with `loads=0`; fresh-sheet passes; preview/edit visual smoke reports
+  `mismatch=0%` for all 3 local comparison fixtures; full `ci:verify`, lint,
+  build, diff-check, and server hygiene pass.
+- LIMIT: This repairs a local verification regression and strengthens the
+  same-surface evidence. It does not prove actual Roll20 room or Sandbox
+  parity, which remains open.

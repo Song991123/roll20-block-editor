@@ -5013,3 +5013,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT: Inspect the campaign list read-only, identify only rooms with one user,
   then capture the sheet wrapper/root in that room. Use Custom Sheet Sandbox or
   a newly created test room for any upload or mutation.
+
+## 2026-07-19 Persistent Preview Smoke Contract Repair
+
+- FIXED: The browser smoke no longer assumes an edit-layer row is an HTML
+  `button`. It now verifies the implemented accessible contract,
+  `data-testid="edit-layer-row"` plus `role="button"`, before clicking it.
+- EVIDENCE: The previous run reached the imported persistent iframe and live
+  patch checks in both modern and legacy modes, then failed because the row
+  type check returned false. No console or page errors were present.
+- VERIFIED: `smoke:persistent-preview-surface` now passes in modern and legacy
+  modes with `loads=0`; `smoke:fresh-sheet` passes with no ghost section;
+  `smoke:preview-edit-visual` passes for all 3 local comparison fixtures at
+  `mismatch=0%`. Full `ci:verify`, lint, build, diff-check, and server hygiene
+  also pass.
+- BOUNDARY: These are local/synthetic and comparison-fixture results. They do
+  not replace the missing qualifying solo-room or Sandbox actual Roll20 proof.
