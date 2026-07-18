@@ -34,6 +34,15 @@
   browser path in this batch. Continue local work while the actual modern
   Sandbox and dedicated legacy-room checks remain `VERIFY`.
 
+## 2026-07-18 App Chrome Typography
+
+- DONE: Changed the surrounding app shell from `letter-spacing: -0.01em` to
+  `letter-spacing: 0` to keep the user-facing pastel UI readable and within
+  the product design rule. Roll20 iframe baseline/user CSS was not changed.
+- VERIFIED LOCAL: lint, build, `ci:verify`, fresh/edit/persistent browser
+  smokes, and server hygiene pass. This does not promote any renderer or chat
+  candidate.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: CI run `29621836381` for `4718564` completed successfully;

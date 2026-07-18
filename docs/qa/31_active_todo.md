@@ -36,6 +36,17 @@
   Sandbox activation, legacy-room parity, and visual comparison as `VERIFY`
   until a stable browser/file handoff is available.
 
+## 2026-07-18 App Chrome Typography
+
+- DONE: Removed the app-shell's negative letter-spacing override. The product
+  chrome now uses neutral `letter-spacing: 0`; imported Roll20 sheet CSS and
+  chat diagnostic styling were left untouched.
+- VERIFIED LOCAL: lint, build, `ci:verify`, `smoke:fresh-sheet`,
+  `smoke:edit-flow`, both modern/legacy persistent-preview runs, and server
+  hygiene all pass after this CSS-only shell change.
+- CLAIM BOUNDARY: This is app-chrome readability work, not Roll20 visual
+  parity evidence.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: GitHub Actions run `29621836381` for commit `4718564`
