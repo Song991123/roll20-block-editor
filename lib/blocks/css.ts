@@ -136,10 +136,23 @@ const ROLL20_RESERVED_CLASS_PATTERNS: RegExp[] = [
   /^repeating_/,
 ];
 
+// Roll20 adds these classes to resolved inline rolls in the chat renderer.
+// They are runtime classes, not author sheet classes, so they must not gain
+// the sheet- namespace during CSS block generation.
+const ROLL20_RUNTIME_CLASS_TOKENS = new Set([
+  'inlinerollresult',
+  'fullcrit',
+  'fullfail',
+  'importantroll',
+]);
+
 function emitRoll20ClassSelector(name: string): string {
   const clean = sanitizeIdent(name);
   if (!clean) return '';
-  if (ROLL20_RESERVED_CLASS_PATTERNS.some((re) => re.test(clean))) {
+  if (
+    ROLL20_RESERVED_CLASS_PATTERNS.some((re) => re.test(clean)) ||
+    ROLL20_RUNTIME_CLASS_TOKENS.has(clean)
+  ) {
     return `.${clean}`;
   }
   return `.sheet-${clean}`;

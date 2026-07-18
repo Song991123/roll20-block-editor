@@ -5180,3 +5180,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   for all three local comparison fixtures with `0%` mismatch in both modes.
 - BOUNDARY: This is a structural/edit-path fix. It does not yet prove Figma
   interaction quality, arbitrary imported-sheet parity, or legacy-room parity.
+
+## 2026-07-19 Roll20 Runtime Class Payload Fix
+
+- FIXED: Roll20 chat runtime classes `inlinerollresult`, `fullcrit`,
+  `fullfail`, and `importantroll` are now preserved in CSS selector blocks,
+  final HTML/CSS auto-prefixing, and HTML class attributes. Author classes
+  and ordinary IDs remain sheet-scoped.
+- VERIFIED LOCAL: the dedicated preview-prefix test passed, the high-priority
+  block test passed `20/20`, and production build passed.
+- VERIFIED LOCAL: the rebuilt ignored YSHY baseline emitted unprefixed runtime
+  selectors, and `verify:roll20-preupload` passed every gate: local baseline,
+  payload audit, Sandbox sanitize audit, payload roundtrip, state selectors,
+  asset audit, and evidence guard.
+- EVIDENCE: the run is local-only under
+  `reports/roll20-actual-compare/2026-07-19-yshy-runtime-class-fix-built/`;
+  fixtures, payloads, screenshots, and reports remain ignored.
+- BOUNDARY: This closes an export-payload defect. It does not yet prove the
+  imported YSHY sheet is visually identical in an actual Roll20 iframe, and
+  the authenticated user-file upload remains a separate manual/browser step.

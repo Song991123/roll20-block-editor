@@ -5837,3 +5837,16 @@ The same turn reran `smoke:preview-edit-visual` for the three local comparison
 fixtures in both modern and legacy modes. All six preview/edit comparisons
 reported `0%` mismatch. This proves the local shared-surface contract only;
 it does not promote the result to actual Roll20 parity.
+
+### 2026-07-19 - Roll20 runtime class payload fix
+
+The pre-upload gate exposed a real export defect: CSS block generation and the
+final auto-prefix boundary were turning Roll20 chat runtime selectors such as
+`.inlinerollresult.fullcrit` into `.sheet-inlinerollresult.sheet-fullcrit`.
+That selector cannot match Roll20's chat DOM. The fix keeps those four runtime
+classes canonical while continuing to scope author classes and ordinary IDs.
+
+Verification: the new prefix test passed, the high-priority block suite passed
+`20/20`, production build passed, and the rebuilt ignored YSHY baseline passed
+`verify:roll20-preupload` across all seven gates. The result is still a local
+payload/export proof; authenticated YSHY visual parity in Roll20 remains open.

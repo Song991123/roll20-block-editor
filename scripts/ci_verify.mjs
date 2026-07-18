@@ -31,6 +31,7 @@ const tasks = [
   'test:runtime-asset-policy',
   'test:runtime-contract',
   'test:emit-contract',
+  'test:preview-prefix',
   'test:import-structure',
   'test:imported-edit-budget',
   'test:legacy-css-sanitize',
