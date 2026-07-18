@@ -5305,3 +5305,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   in `docs/operations/41_product_reset_and_short_term_goals.md`.
 - STATUS: VERIFY until the card UI visibly shows the replacement objective;
   repository and bridge scope are already synchronized.
+
+## 2026-07-19 Canonical Imported Round-Trip Gate
+
+- FIXED: the default iframe-based imported edit smoke now performs the edited
+  emit -> re-import -> re-emit stability check. It no longer reports that
+  metric as an unmeasured false value on the production render path.
+- VERIFIED LOCAL: four anonymous fixtures passed strict imported edit sync;
+  HTML/CSS/i18n round-trip stability is true for all four, with no page errors
+  or failed final resources.
+- BOUNDARY: local round-trip stability is not live Roll20 visual parity and
+  does not replace the missing authorized user-sheet Sandbox upload evidence.

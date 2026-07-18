@@ -5986,3 +5986,16 @@ control documents. The exact replacement text is recorded in
 `docs/operations/41_product_reset_and_short_term_goals.md` for one UI edit in
 the goal card. Until that edit is visible, the card remains `VERIFY` and the
 repository/bridge scope is the working source of truth.
+
+### 2026-07-19 - Canonical imported round-trip gate
+
+The default production iframe path in `imported_edit_sync_smoke.mjs` now runs
+the edited emit through a second import/emit cycle. Previously that path
+skipped the round-trip check while the performance report displayed the metric
+as false, which made a missing measurement look like a result.
+
+Verification: strict imported edit sync passed for four anonymous local
+fixtures. All four had stable normalized HTML, canonical CSS, i18n, and a
+positive second import count, with no page errors or final resource failures.
+This is stronger local synchronization evidence only; actual user-owned
+Sandbox parity remains VERIFY.

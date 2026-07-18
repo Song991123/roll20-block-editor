@@ -14,6 +14,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Modern Sandbox safety boundary | 7/7 contract cases | VERIFIED LOCAL | Does not prove a user upload |
 | Preview/edit render surface | 6/6 local modern/legacy comparisons at 0% mismatch | VERIFIED LOCAL | Same local surface only |
 | Layer and placement interaction | edit-flow smoke, layer before/inside/after, flow/free placement, cycle guard, role palette | VERIFIED LOCAL | Figma-level usability still needs visual review |
+| Imported preview/edit round-trip | 4/4 anonymous fixtures: shared iframe edit sync and edited HTML/CSS/i18n re-import stable | VERIFIED LOCAL | Does not prove live Roll20 parity or arbitrary source fidelity |
 | Generated layout CSS | authored position block emits paired class + CSS rule | VERIFIED LOCAL | Imported source inline styles remain loss-aware |
 | Live Roll20 modern Sandbox | 1 anonymous synthetic payload activated in a real sheet iframe; rolltemplate chat observed; 1.6458% root-only mismatch | VERIFIED EXTERNAL DIAGNOSTIC | Not a general parity result |
 | Live Roll20 solo-room wrapper | Modern and legacy rooms observed read-only: 900px iframe, modern 850px root, legacy 860px root | VERIFIED EXTERNAL PRIVATE | Wrapper contract only; not our export parity |
@@ -27,6 +28,9 @@ local gate is not evidence of visual equality in a live Roll20 room.
 
 - Local contract groups passed: `27/27`, `16/16`, `7/7`, and `6/6` visual
   comparisons.
+- Imported edit round-trip: `4/4` anonymous local fixtures passed the canonical
+  iframe sync path and stable re-import check; the largest fixture remained
+  below the current import/inject budgets.
 - Live Roll20 synthetic Sandbox activations: `1` with real iframe and rolltemplate chat evidence.
 - Live Roll20 solo-room wrapper observations: `2` (modern and legacy, read-only).
 - Live Roll20 diagnostic root captures: `1` synthetic modern root at `1.6458%`
@@ -74,6 +78,17 @@ local gate is not evidence of visual equality in a live Roll20 room.
   contrast in `lib/editor/layerRoles.ts`.
 - VERIFIED LOCAL: role classification, cycle protection, and iframe drop target
   tests passed. Full nested browser acceptance remains open.
+
+## Imported Round-Trip Gate
+
+- FIXED: the canonical iframe preview/edit smoke now runs the same edited
+  payload through import -> emit a second time instead of silently skipping the
+  round-trip assertion on the production render path.
+- VERIFIED LOCAL: `smoke:imported-edit-sync:strict` passed for four anonymous
+  fixtures; each reported stable HTML after block-id normalization, stable
+  canonical CSS, stable i18n, and a positive second import block count.
+- BOUNDARY: this strengthens local synchronization evidence only. It does not
+  increase the live Roll20 user-sheet capture count, which remains `0`.
 
 ## Reporting Rule
 

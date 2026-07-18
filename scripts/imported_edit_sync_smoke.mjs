@@ -2650,7 +2650,13 @@ async function main() {
         );
         if (CANONICAL_IFRAME) {
           entry.canonicalEditSync = await runCanonicalIframeEditSync(page);
+          // The canonical iframe path is the production preview/edit surface.
+          // Keep its round-trip claim honest too: an edit is not fully synced
+          // until the emitted payload can be imported and emitted again
+          // without structural drift.
+          entry.reimport = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
           entry.interactionPass = entry.canonicalEditSync.pass === true;
+          entry.interactionPass = entry.interactionPass && isStableReimport(entry.reimport);
           entry.pass = entry.interactionPass;
         } else {
         await page.waitForTimeout(1300);
