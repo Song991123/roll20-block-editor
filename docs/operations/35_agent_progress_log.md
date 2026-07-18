@@ -6022,3 +6022,9 @@ diagnostic recheck reached `1839/1839` HTML and `103/103` CSS with zero raw
 fallbacks for the affected anonymous fixture. One legacy fixture still has two
 HTML and one CSS residual fallbacks, so arbitrary source fidelity remains open.
 No private source, screenshot, or fixture was added to tracked files.
+
+### 2026-07-19 - Remote CI for semantic inline mapping
+
+Commit `3373d59` was pushed on `codex/product-reset-ui`. GitHub Actions run
+`29657697204` passed safety/unit verification, lint, and production build.
+Deployment smoke and live Roll20 user-sheet evidence remain separate gates.

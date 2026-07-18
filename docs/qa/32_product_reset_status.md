@@ -23,7 +23,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Legacy-room visual parity | No dedicated legacy-room capture | VERIFY | Sandbox is modern-only |
 | UI product reset | Pastel/pink shell, light root/portal baseline, and core Korean product copy slice | PARTIAL | Full information architecture and visual UX reset remain |
 | Public copyright boundary | CI evidence guard, ignored local fixtures/reports, no tracked private corpus | VERIFIED LOCAL | Recheck before every public release |
-| CI/CD | GitHub Actions run `29656047951` passed for `664fa53` | VERIFIED REMOTE | Deployment smoke remains separate |
+| CI/CD | GitHub Actions run `29657697204` passed for `3373d59` | VERIFIED REMOTE | Deployment smoke remains separate |
 
 ## Current Counts
 

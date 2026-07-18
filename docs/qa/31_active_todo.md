@@ -5338,3 +5338,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   then repeat the same generic mapping audit on another non-user-owned fixture.
 - STILL OPEN: authorized user upload in Roll20 Sandbox and dedicated legacy
   room capture remain unverified; no external parity count changed.
+
+## 2026-07-19 Remote CI Recheck
+
+- VERIFIED REMOTE: GitHub Actions run `29657697204` for commit `3373d59`
+  passed safety/unit verification, lint, and production build.
+- STILL OPEN: deployment smoke is separate from this branch CI, and actual
+  Roll20 user-sheet/legacy-room evidence remains VERIFY.
