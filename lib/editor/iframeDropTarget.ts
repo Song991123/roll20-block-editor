@@ -7,6 +7,7 @@ import type {
 } from '@/lib/preview/iframeEditBridge';
 
 export type IframeDropMode = 'before' | 'inside' | 'after';
+export type IframePlacementMode = 'flow' | 'free';
 
 export type IframeEditDropTarget = {
   blockId: string;
@@ -21,6 +22,20 @@ export type IframeDropTargetLookup = {
   getBlock: (blockId: string) => BlockSnapshot | null;
   canNestInContainer: (blockId: string) => boolean;
 };
+
+/**
+ * Flow mode exposes before/inside/after insertion targets. Free mode only
+ * exposes an inside container target so the overlay matches absolute
+ * placement instead of promising a sibling reorder.
+ */
+export function filterDropTargetForPlacement(
+  target: IframeEditDropTarget | null,
+  placement: IframePlacementMode,
+): IframeEditDropTarget | null {
+  if (!target) return null;
+  if (placement === 'flow' || target.mode === 'inside') return target;
+  return null;
+}
 
 export type IframeDropCommitAdapter = {
   moveBlockBefore: (workspace: 'html', blockId: string, targetId: string) => boolean;

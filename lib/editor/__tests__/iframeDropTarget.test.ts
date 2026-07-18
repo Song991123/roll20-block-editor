@@ -2,6 +2,7 @@ import { strict as assert } from 'node:assert';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
 import {
   commitIframeFlowDrop,
+  filterDropTargetForPlacement,
   resolveIframeEditDropTarget,
   resolveIframeFreePlacement,
   resolveIframeWidgetDropTarget,
@@ -94,6 +95,18 @@ assert.equal(resolveIframeEditDropTarget(
 
 assert.equal(resolveIframeEditDropTarget(message([geometry('sibling', 100, 40)], 120, 'pointercancel'), lookup), null);
 assert.equal(resolveIframeEditDropTarget(message([], 0), lookup), null);
+
+const siblingTarget = {
+  blockId: 'sibling', label: 'Sibling', mode: 'after' as const,
+  containerBlockId: null, siblingBlockId: 'sibling', geometry: geometry('sibling', 100, 40),
+};
+const insideTarget = {
+  blockId: 'frame', label: 'Frame', mode: 'inside' as const,
+  containerBlockId: 'frame', siblingBlockId: null, geometry: geometry('frame', 0, 200),
+};
+assert.equal(filterDropTargetForPlacement(siblingTarget, 'flow'), siblingTarget);
+assert.equal(filterDropTargetForPlacement(siblingTarget, 'free'), null);
+assert.equal(filterDropTargetForPlacement(insideTarget, 'free'), insideTarget);
 
 const widgetTarget = resolveIframeWidgetDropTarget({
   type: 'r20:widget-drag',

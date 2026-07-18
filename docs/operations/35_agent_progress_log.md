@@ -6209,3 +6209,16 @@ preview smoke, modern/legacy preview-edit visual smoke, edit-flow smoke, and
 real pointer Shadow drag smoke all passed. Six local visual cases reported
 `0%` mismatch. No external Roll20 evidence was added; the authorized upload,
 Sandbox, chat, and legacy-room gates remain `VERIFY`.
+
+### 2026-07-19 - Free placement drop feedback
+
+Free/absolute placement used the same visual drop target as flow placement,
+which could show a before/after sibling insertion outline even though the
+drop commit would calculate a parent-relative absolute position. Added one
+shared filter at the drop-target boundary: flow keeps all three insertion
+modes, while free keeps only a valid inside-container target.
+
+Verification: iframe drop-target unit coverage, real persistent-iframe edit
+flow smoke, modern/legacy preview-edit visual smoke, Shadow drag smoke, lint,
+build, and `ci:verify` passed. Actual Roll20 upload and room evidence remain
+`VERIFY`.

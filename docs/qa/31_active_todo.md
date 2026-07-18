@@ -5511,3 +5511,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: this improves generic worker mapping and local render/edit
   confidence. It does not count as external Roll20 upload, chat, Sandbox, or
   dedicated legacy-room proof; those remain `VERIFY`.
+
+## 2026-07-19 Free-placement drop feedback
+
+- FIXED: free/absolute placement no longer shows before/after flow insertion
+  overlays. It still highlights a valid inside-container target so the user
+  can see where an absolutely positioned object will be owned.
+- VERIFIED LOCAL: iframe drop-target unit coverage, real persistent-iframe
+  pointer drag smoke, modern/legacy preview-edit visual smoke, Shadow drag
+  smoke, lint, build, and `ci:verify` passed.
+- BOUNDARY: this corrects the local editing affordance; it does not change or
+  claim actual Roll20 Sandbox/legacy-room evidence.

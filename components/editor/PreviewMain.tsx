@@ -30,6 +30,7 @@ import {
 } from '@/lib/preview/iframeEditBridge';
 import {
   commitIframeFlowDrop,
+  filterDropTargetForPlacement,
   resolveIframeEditDropTarget,
   resolveIframeFreePlacement,
   resolveIframeWidgetDropTarget,
@@ -612,14 +613,16 @@ export default function PreviewMain() {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
         });
+        const placement = useUiStore.getState().editPlacementMode;
+        const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
         if (editMessage.phase === 'pointermove') {
-          queueIframeEditState(editMessage, nextDropTarget);
+          queueIframeEditState(editMessage, visibleDropTarget);
         } else {
-          flushIframeEditState(editMessage, nextDropTarget);
+          flushIframeEditState(editMessage, visibleDropTarget);
         }
         if (editMessage.phase === 'pointermove') {
           const ui = useUiStore.getState();
-          const flowTarget = ui.editPlacementMode === 'flow' ? nextDropTarget : null;
+          const flowTarget = ui.editPlacementMode === 'flow' ? visibleDropTarget : null;
           iframeEditDropTargetRef.current = flowTarget;
           iframeRef.current?.contentWindow?.postMessage({
             type: 'r20:edit-flow-target',
@@ -727,7 +730,9 @@ export default function PreviewMain() {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
         });
-        setIframeEditDropTarget(nextDropTarget);
+        const placement = useUiStore.getState().editPlacementMode;
+        const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
+        setIframeEditDropTarget(visibleDropTarget);
         if (editMessage.phase !== 'drop' || !editMessage.payload) return;
         const preset = decodeFriendlyWidgetDrag(editMessage.payload);
         if (!preset) {

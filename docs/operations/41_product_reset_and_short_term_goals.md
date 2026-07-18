@@ -206,6 +206,11 @@ visual smoke is `0%` mismatch for the six modern/legacy fixture cases. Actual
 Roll20 Sandbox upload, chat, and dedicated legacy-room verification remain
 `VERIFY` and are not implied by local PASS results.
 
+Free-placement status (2026-07-19): the edit overlay now distinguishes free
+absolute placement from flow insertion. Only a valid inside-container target is
+shown in free mode; before/after sibling guides remain flow-only. This keeps
+the visible affordance aligned with the emitted parent-relative CSS behavior.
+
 ### P1-3: Repository and delivery cleanup
 
 Keep product code under `app/`, `components/`, `lib/`, and `scripts/`. Keep
