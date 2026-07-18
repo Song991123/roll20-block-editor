@@ -25,6 +25,17 @@
 - CLAIM BOUNDARY: This proves the local gallery-click path only. Dragging from
   the gallery and live Roll20 visual parity remain `VERIFY`.
 
+## 2026-07-18 Roll20 Reconnect Boundary
+
+- OBSERVED: Chrome MCP rediscovered the permitted Roll20 editor tab and its
+  logged-in tab list.
+- VERIFY BLOCKED: The first DOM snapshot after claiming the Roll20 tab timed
+  out and reset the browser kernel. No HTML/CSS/translation payload was sent,
+  and no Sandbox or legacy-room screenshot was captured.
+- DECISION: Stop repeating the same browser call in this batch. Keep modern
+  Sandbox activation, legacy-room parity, and visual comparison as `VERIFY`
+  until a stable browser/file handoff is available.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: GitHub Actions run `29621836381` for commit `4718564`

@@ -24,6 +24,16 @@
 - BOUNDARY: This is synthetic local interaction evidence. Gallery drag/drop,
   actual Roll20 rendering, and modern/legacy visual parity remain `VERIFY`.
 
+## 2026-07-18 Roll20 Reconnect Boundary
+
+- OBSERVED: Chrome MCP found the user-authorized Roll20 editor tab again.
+- VERIFY BLOCKED: Claiming the tab and requesting its DOM snapshot timed out;
+  the browser kernel reset before any file input operation. There is no new
+  Roll20 upload, activation marker, or screenshot evidence.
+- DECISION: Do not claim parity and do not keep retrying the same failing
+  browser path in this batch. Continue local work while the actual modern
+  Sandbox and dedicated legacy-room checks remain `VERIFY`.
+
 ## 2026-07-18 GitHub Actions CI
 
 - VERIFIED REMOTE: CI run `29621836381` for `4718564` completed successfully;
