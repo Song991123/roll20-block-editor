@@ -5241,3 +5241,29 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   claim. Actual user-sheet upload and legacy-room parity remain VERIFY.
 - NEXT P0: Rebaseline implemented/verified/unverified counts, then continue
   the actual Roll20 modern Sandbox and dedicated legacy-room checks.
+
+## 2026-07-19 Product Reset Evidence Rebaseline
+
+- VERIFIED REMOTE: GitHub Actions run `29655022844` for `bb86a67` passed
+  safety/unit verification, lint, and production build.
+- VERIFIED LOCAL: `ci:verify` passed structural import `27/27`, legacy
+  sanitize `16/16`, Sandbox sanitize `7/7`, the copyright/evidence guard, and
+  the UI-copy guard. The local preview/edit matrix remains `6/6` at `0%`
+  mismatch.
+- DIAGNOSTIC: one anonymous modern Roll20 root capture measured `1.6458%`
+  root-only mismatch. This is not a general parity claim.
+- VERIFY: authorized user-sheet upload remains `0` successful browser
+  handoffs; dedicated legacy-room capture remains `0`.
+- DOC: the full evidence ledger is in
+  `docs/qa/32_product_reset_status.md`.
+
+## 2026-07-19 Pastel Root Theme Slice
+
+- FIXED: removed the forced `html.dark` class so app portals and shell tokens
+  default to the pastel/light product palette. Explicit `.dark` remains an
+  opt-in scope. Roll20 iframe and Shadow DOM styles were not changed.
+- VERIFIED LOCAL: `lint`, `build`, `ci:verify`, and `smoke:edit-flow` passed.
+  The smoke now asserts the root class, pastel shell presence, root `--bg-app`,
+  and pastel `--primary` token.
+- BOUNDARY: This is the first product UI reset slice, not the full information
+  architecture or interaction redesign.

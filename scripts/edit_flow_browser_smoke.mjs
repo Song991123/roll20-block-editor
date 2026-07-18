@@ -96,6 +96,24 @@ async function main() {
       pageErrors,
     };
 
+    result.tests.lightShell = await page.evaluate(() => {
+      const root = document.documentElement;
+      const shell = document.querySelector('.app-shell.pastel');
+      const rootStyle = getComputedStyle(root);
+      const shellStyle = shell ? getComputedStyle(shell) : null;
+      return {
+        rootHasDarkClass: root.classList.contains('dark'),
+        shellPresent: Boolean(shell),
+        rootAppBackground: rootStyle.getPropertyValue('--bg-app').trim(),
+        shellAppBackground: shellStyle?.getPropertyValue('--bg-app').trim() ?? '',
+        shellPrimary: shellStyle?.getPropertyValue('--primary').trim() ?? '',
+      };
+    });
+    assert(!result.tests.lightShell.rootHasDarkClass, 'root dark class is still forced');
+    assert(result.tests.lightShell.shellPresent, 'pastel app shell is missing');
+    assert(result.tests.lightShell.rootAppBackground === '#fffafb', 'root light palette is not active');
+    assert(result.tests.lightShell.shellPrimary === '#d45d84', 'pastel primary token is not active');
+
     async function waitForIframe() {
       const iframe = page.locator('[data-testid="preview-iframe"]').first();
       await iframe.waitFor({ state: 'visible', timeout: 20000 });

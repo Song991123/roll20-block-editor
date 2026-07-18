@@ -5897,3 +5897,30 @@ while it is active; the shared project goal and this repository log are the
 authoritative revised scope. This entry is a scope update, not a completion
 claim. User-owned upload evidence and dedicated legacy-room parity remain
 unverified.
+
+### 2026-07-19 - Product reset evidence rebaseline
+
+Rechecked the current branch and remote state before the next product phase.
+GitHub Actions run `29655022844` for `bb86a67` passed. The local `ci:verify`
+gate passed structural import `27/27`, legacy sanitize `16/16`, Sandbox
+sanitize `7/7`, the copyright/evidence guard, and the UI-copy guard. The
+existing local preview/edit matrix remains `6/6` at `0%` mismatch, which proves
+the shared local surface only.
+
+The evidence boundary is explicit: one anonymous modern Roll20 root capture
+is diagnostic at `1.6458%` root-only mismatch; successful authorized user-sheet
+uploads are `0`, and dedicated legacy-room captures are `0`. The full ledger
+is in `docs/qa/32_product_reset_status.md`. Browser upload failure was not
+converted into a parity claim.
+
+### 2026-07-19 - Pastel root theme slice
+
+On the separate `codex/product-reset-ui` branch, removed the forced
+`html.dark` class and made the app root/portal token baseline pastel/light.
+Explicit `.dark` remains opt-in, and no imported Roll20 iframe or Shadow DOM
+stylesheet was changed. The edit-flow browser smoke now asserts the light root
+class and pastel tokens.
+
+Verification: lint, production build, `ci:verify`, and `smoke:edit-flow`
+passed. This is a partial product UI reset; the full information architecture,
+visual guidance, and Figma-like usability review remain open.

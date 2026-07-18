@@ -20,7 +20,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="ko" className="dark h-full" suppressHydrationWarning>
+    <html lang="ko" className="h-full" suppressHydrationWarning>
       <body className="h-full">
         {children}
         <Toaster
