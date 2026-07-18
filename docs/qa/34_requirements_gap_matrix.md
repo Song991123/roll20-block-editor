@@ -2,6 +2,21 @@
 
 Date: 2026-06-12
 
+## Superseding Evidence: 2026-07-18
+
+- A browser-side anonymous synthetic payload has now rendered in both a modern
+  solo Roll20 Sandbox room and a dedicated legacy-enabled solo room. Both
+  showed translated text, an input, and a roll button; both produced a scoped
+  Roll20 chat result. The legacy room had `legacy_sanitization` enabled.
+- The same payload passed local preview/edit in both compatibility modes with
+  exact pixel equality, zero computed-style/geometry differences, translation
+  `2/2`, and zero visible runtime nodes.
+- This supersedes only the earlier native file-chooser blockage for the
+  synthetic smoke route. It does not supersede the broader prepared-fixture
+  visual-diff reports and is not a claim of universal Roll20 parity.
+- Next P0 is a normalized local-vs-modern-vs-legacy evidence comparison with
+  explicit wrapper, iframe, sheet-root, state, asset, and chat fields.
+
 This matrix breaks the operating requirements into actionable work. Use it with `docs/qa/31_active_todo.md`.
 
 Current superseding status, 2026-07-13:

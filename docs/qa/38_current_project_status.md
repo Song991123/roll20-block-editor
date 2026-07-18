@@ -1,8 +1,27 @@
 # 38. Current Project Status and ETA
 
-Date: 2026-07-13
+Date: 2026-07-18
 
 This is a compact status snapshot for handoff and planning. It must not be used to claim full Roll20 visual parity. Generated reports and private sheet evidence remain local-only and ignored.
+
+## Superseding Evidence: 2026-07-18
+
+- ACTUAL ROLL20 SYNTHETIC: A browser-side synthetic HTML/CSS/translation
+  payload rendered in both a modern solo Sandbox room and a dedicated
+  legacy-enabled solo room. Both rendered the translated title/label, input,
+  and roll control; both produced a scoped Roll20 chat entry with a resolved
+  result. The legacy room had `legacy_sanitization` checked before save.
+- LOCAL SYNTHETIC PREVIEW/EDIT: The same anonymous payload passed the live app
+  smoke in both `modern` and `legacy` modes with `870x280` preview/edit roots,
+  exact pixel diff (`0` mismatched pixels), `0` computed-style differences,
+  `0` visible-geometry differences, translation `2/2`, and visible runtime
+  nodes `0`.
+- CLAIM BOUNDARY: These are synthetic runtime and local synchronization gates,
+  not full visual parity. They do not prove every official/custom sheet,
+  asset loading, worker parity, rolltemplate parity, or normalized screenshot
+  equivalence against Roll20.
+- EVIDENCE LOCATION: Screenshots, payloads, and JSON sidecars stay under
+  ignored `.tmp/`; no real or third-party sheet source is public.
 
 ## Current Status Summary
 
@@ -10,8 +29,8 @@ This is a compact status snapshot for handoff and planning. It must not be used 
 | --- | --- | --- | --- |
 | Local import/export baseline | VERIFY/PARTIAL | Existing local baseline/preupload reports pass for the active `2026-06-18-state-map-v1` run. | Prepared fixtures can be imported, emitted, packaged, and checked locally. This is not actual Roll20 parity. |
 | Local preview vs edit | VERIFY/GOOD_LOCAL | `smoke:preview-edit-visual` PASS on 2026-07-13: AW2E `1.86%`, Les-Oublies `2.07%`, YSHY `1.02%`. `smoke:imported-edit-sync` also passes for the prepared fixtures. | Preview/edit share enough local rendering behavior to keep improving edit UX, but exact Roll20 parity is still unproven. |
-| Actual Roll20 sheet root | VERIFY/PARTIAL | `status:roll20-actual`: `trustedFullRoot=3/3`, `reliableTrustedFullRoot=3/3`, but AW2E still has a high root-cutoff risk superseded only by diagnostic scroll-metrics evidence. | Sheet-root evidence exists for the prepared fixtures, but renderer promotion still needs cautious cross-fixture interpretation. |
-| Actual Roll20 chat/rolltemplate | DOING/HIGH_MISMATCH | `status:roll20-actual` now reports `generatedActualScreenshots=6/6`, `generatedDiffed=6/6`, `generatedAuthoritative=YES`, `chatCaptureSuspects=0`, `chatNormalizedCompared=3/3`, and `chatNeedsNormalizedCapture=0`. However, same-structure high mismatch remains `2/3`, max aligned mismatch `20.68%`. | Capture/evidence plumbing is no longer the main blocker. The current blocker is renderer/model parity for AW2E and YSHY chat templates. |
+| Actual Roll20 sheet root | VERIFY/PARTIAL | Existing prepared-fixture root evidence remains separate from the new anonymous synthetic smoke. Modern/legacy synthetic iframe and wrapper measurements are recorded locally. | Runtime activation is proven for one synthetic payload per mode; normalized visual parity and broad sheet coverage remain open. |
+| Actual Roll20 chat/rolltemplate | VERIFY/SYNTHETIC_ONLY | The modern and legacy synthetic roll control produced real scoped chat entries with resolved results. Existing prepared-fixture mismatch reports remain historical/fixture-specific evidence. | Chat runtime plumbing works for the synthetic contract; actual template-by-template visual parity remains unproven. |
 | Renderer promotion | BLOCKED | `gate:roll20-renderer-action`: `HOLD_PRODUCTION_RENDERER_PATCH`, `rendererBlockers=8`, `rendererReady=NO`. The gate also reports asset-relink blockers for AW2E/YSHY and split template scopes `.sheet-rolltemplate-aw` vs `.sheet-rolltemplate-coc`. | No production Roll20 renderer CSS/chat patch should be promoted yet. Global ChatPane tweaks are specifically unsafe. |
 | Asset relink / browser paint | BLOCKED_BY_USER_ASSET_URLS | `plan:roll20-asset-relink` reports `RELINK_MAP_REQUIRED`: AW2E and YSHY are `MISSING_RELINK`. `plan:roll20-chat-browser-paint` reports `BROWSER_PAINT_BLOCKED_BY_RELINK`. Import/export can generate commented relink drafts, export smoke verifies the draft path, and placeholder targets are now rejected/count as `미입력` instead of being applied. The CLI relink plan also keeps placeholder maps at `MISSING_RELINK` with `mapEntries=0`. | The product can guide users toward the needed map and avoids false relink readiness, but it still needs real user-owned HTTP(S) replacement URLs before background/paint pixels can be judged or renderer CSS promoted for those fixtures. |
 | Roll20 CDP readiness | VERIFY/READY_NO_CAPTURE_PLANNED | `preflight:roll20-cdp` on 2026-07-13 reports `READY`, `targets=8`, `roll20Targets=2`, `plannedFixtures=0`, and writes to ignored temp fallback when the canonical report folder is read-only. | Browser/CDP plumbing is reachable, but the current capture plan has no missing/stale fixtures. Do not recapture blindly; continue renderer/template/asset diagnostics unless a fresh live capture is explicitly needed. |
@@ -109,7 +128,8 @@ corepack pnpm run verify:runtime-visibility -- --out-dir ./out --base-path /roll
 - Do not claim Roll20 chat/rolltemplate parity.
 - Do not claim the production renderer is ready.
 - Do not claim edit mode is fully Figma-like.
-- Do not claim legacy Roll20 mode is proven in actual Roll20.
+- Do not claim full legacy Roll20 visual parity. Only the dedicated synthetic
+  legacy runtime path is currently proven.
 
 ## Realistic ETA
 

@@ -5480,6 +5480,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - LOCAL GATES: `ci:verify`, lint, production build, persistent preview surface
   smoke (`modern loads=0`, `legacy loads=0`), edit-flow smoke, and server
   hygiene all passed after this evidence batch.
+
+## 2026-07-18 Synthetic Local Preview/Edit Normalization
+
+- VERIFIED LOCAL: The same anonymous synthetic HTML/CSS/translation payload
+  passed `smoke:preview-edit-visual` in both modern and legacy modes.
+- MEASURED LOCAL: Preview and edit roots were `870x280`; pixel mismatch was
+  `0`, computed-style differences `0`, visible-geometry differences `0`,
+  translations `2/2`, and visible runtime nodes `0` in each mode.
+- BOUNDARY: This closes a local synchronization gate only. It does not turn
+  the Roll20 synthetic runtime smoke into full visual parity or universal
+  import support.
+- NEXT P0: Add a normalized sidecar comparison for local, modern actual, and
+  legacy actual wrapper/iframe/root/state/asset/chat fields.
 ## 2026-07-18 Modern Sandbox Synthetic Smoke
 
 - DONE/VERIFIED ACTUAL: Applied the ignored synthetic HTML/CSS/translation
