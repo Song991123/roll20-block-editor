@@ -22,7 +22,22 @@ const RESERVED_TOKEN_PATTERNS: RegExp[] = [
   /^repeating_/,
 ];
 
+/** Roll20 adds these classes to resolved inline rolls at runtime. */
+const ROLL20_RUNTIME_CLASS_TOKENS = new Set([
+  'inlinerollresult',
+  'fullcrit',
+  'fullfail',
+  'importantroll',
+]);
+
 function isReservedClassToken(token: string): boolean {
+  return (
+    RESERVED_TOKEN_PATTERNS.some((re) => re.test(token)) ||
+    ROLL20_RUNTIME_CLASS_TOKENS.has(token)
+  );
+}
+
+function isReservedIdToken(token: string): boolean {
   return RESERVED_TOKEN_PATTERNS.some((re) => re.test(token));
 }
 
@@ -60,7 +75,7 @@ export function autoPrefixHtmlClasses(html: string): string {
   out = out.replace(ID_ATTR_RE, (_full, quote: string, value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return `id=${quote}${quote}`;
-    const next = isReservedClassToken(trimmed) ? trimmed : `sheet-${trimmed}`;
+    const next = isReservedIdToken(trimmed) ? trimmed : `sheet-${trimmed}`;
     return `id=${quote}${next}${quote}`;
   });
 
@@ -218,7 +233,9 @@ function prefixSingleSelector(selector: string): string {
         i = i + 1;
         continue;
       }
-      out += c + (isReservedClassToken(ident) ? ident : `sheet-${ident}`);
+      const keepUnprefixed =
+        c === '.' ? isReservedClassToken(ident) : isReservedIdToken(ident);
+      out += c + (keepUnprefixed ? ident : `sheet-${ident}`);
       i = j;
       continue;
     }
@@ -294,6 +311,7 @@ function findClosing(
 
 export const __internals = {
   isReservedClassToken,
+  isReservedIdToken,
   prefixSelectorList,
   prefixSingleSelector,
   splitTopLevel,

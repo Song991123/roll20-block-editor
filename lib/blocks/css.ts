@@ -65,7 +65,22 @@ const PSEUDOS: Array<[string, string]> = [
   ['focus', 'focus'],
   ['checked', 'checked'],
   ['disabled', 'disabled'],
+  ['not', 'not'],
+  ['active', 'active'],
+  ['visited', 'visited'],
+  ['required', 'required'],
+  ['optional', 'optional'],
+  ['valid', 'valid'],
+  ['invalid', 'invalid'],
+  ['empty', 'empty'],
+  ['first-child', 'first-child'],
+  ['last-child', 'last-child'],
   ['nth-child', 'nth-child'],
+  ['nth-last-child', 'nth-last-child'],
+  ['first-of-type', 'first-of-type'],
+  ['last-of-type', 'last-of-type'],
+  ['nth-of-type', 'nth-of-type'],
+  ['nth-last-of-type', 'nth-last-of-type'],
 ];
 
 /** 의사 요소 (::pseudo-element) — Roll20 시트에서 자주 쓰는 8 종. */
@@ -113,6 +128,34 @@ function sanitizeIdent(raw: string): string {
   const s = String(raw ?? '').trim();
   if (!s) return '';
   return s.replace(/[^A-Za-z0-9_-]/g, '');
+}
+
+const ROLL20_RESERVED_CLASS_PATTERNS: RegExp[] = [
+  /^sheet-/,
+  /^charsheet$/,
+  /^repeating_/,
+];
+
+// Roll20 adds these classes to resolved inline rolls in the chat renderer.
+// They are runtime classes, not author sheet classes, so they must not gain
+// the sheet- namespace during CSS block generation.
+const ROLL20_RUNTIME_CLASS_TOKENS = new Set([
+  'inlinerollresult',
+  'fullcrit',
+  'fullfail',
+  'importantroll',
+]);
+
+function emitRoll20ClassSelector(name: string): string {
+  const clean = sanitizeIdent(name);
+  if (!clean) return '';
+  if (
+    ROLL20_RESERVED_CLASS_PATTERNS.some((re) => re.test(clean)) ||
+    ROLL20_RUNTIME_CLASS_TOKENS.has(clean)
+  ) {
+    return `.${clean}`;
+  }
+  return `.sheet-${clean}`;
 }
 
 /** dropdown 값 화이트리스트 검증 — 미허용 시 fallback. */
@@ -169,6 +212,26 @@ export const CSS_BLOCKS: BlockDef[] = [
 
   // 2) selector class ------------------------------------------------------
   {
+    type: 'r20_css_import',
+    shape: 'stack',
+    category: CSS,
+    label: '외부 스타일 불러오기',
+    tooltip: '@import 뒤의 URL과 media 조건을 보존합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('@import')
+        .appendField(new Blockly.FieldTextInput('url("https://example.com/style.css")'), 'SOURCE');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const source = safeCss(String(b.getFieldValue('SOURCE') ?? ''));
+      return source ? `@import ${source};` : '';
+    },
+  },
+
+  // 3) selector class ------------------------------------------------------
+  {
     type: 'r20_selector_class',
     shape: 'reporter',
     category: CSS,
@@ -182,8 +245,7 @@ export const CSS_BLOCKS: BlockDef[] = [
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
-      const name = sanitizeIdent(String(b.getFieldValue('NAME') ?? ''));
-      return [name ? `.${name}` : '', ORDER.ATOMIC];
+      return [emitRoll20ClassSelector(String(b.getFieldValue('NAME') ?? '')), ORDER.ATOMIC];
     },
   },
 
@@ -414,7 +476,27 @@ export const CSS_BLOCKS: BlockDef[] = [
     generator: (block, ctx) => {
       const bb = block as Blockly.Block;
       const base = (ctx.valueToCode(block, 'BASE', ORDER.NONE) || '').trim();
-      const tail = String(bb.getFieldValue('TAIL') ?? '').replace(/[{}\r\n\s]/g, '').trim();
+      // 공백 제거는 따옴표 밖에서만 — [class="repcontainer editmode"] 같은
+      // attribute selector 의 quoted value 안 공백을 지우면 selector 가
+      // 통째로 깨진다 (YSHY CSS 검증에서 발견).
+      const rawTail = String(bb.getFieldValue('TAIL') ?? '');
+      let tail = '';
+      let quote: string | null = null;
+      for (const ch of rawTail) {
+        if (quote) {
+          if (ch === '{' || ch === '}' || ch === '\r' || ch === '\n') continue;
+          tail += ch;
+          if (ch === quote) quote = null;
+        } else if (ch === '"' || ch === "'") {
+          quote = ch;
+          tail += ch;
+        } else if (/[{}\r\n\s]/.test(ch)) {
+          continue;
+        } else {
+          tail += ch;
+        }
+      }
+      tail = tail.trim();
       if (!base) return [tail, ORDER.ATOMIC];
       if (!tail) return [base, ORDER.ATOMIC];
       return [`${base}${tail}`, ORDER.ATOMIC];

@@ -9,11 +9,18 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 3. Read `docs/qa/31_active_todo.md`.
 4. Read `docs/qa/34_requirements_gap_matrix.md`.
 5. Read `docs/PROJECT_STRUCTURE.md`.
-6. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
-7. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `reports/README.md`, and the relevant report under `reports/`.
-8. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
-9. Run `git status --short --branch`.
-10. Check for unnecessary local dev servers before starting another one.
+6. Read `docs/operations/35_agent_progress_log.md`.
+7. Read `docs/operations/36_public_portfolio_and_copyright_rules.md`.
+8. For Roll20 actual-screen verification, read `docs/operations/37_roll20_actual_verification.md`.
+9. For edit-mode work, read `docs/ux/32_dom_layer_editing_plan.md` and inspect `lib/editor/layerRoles.ts`.
+10. For Roll20 preview/parity work, read `docs/spec/25_roll20_baseline.md`, `docs/spec/29_universal_roll20_mapping_contract.md`, `docs/spec/31_asset_preservation_policy.md`, `reports/README.md`, and the relevant local report under `reports/` when present.
+11. For branch/deploy work, read `docs/operations/34_branch_and_deployment_plan.md` and `.github/workflows/`.
+12. For two-host Codex/Claude parallel work, read `docs/operations/39_two_host_agent_prompts.md`; only the lead integration agent merges or pushes the integration branch.
+13. For external render/editor references, read `docs/research/40_roll20_render_reference_inventory.md`.
+14. For parallel Codex/Claude/MacBook work, read `docs/operations/38_multi_agent_render_plan.md`.
+15. When the product goal or work allocation is being reset, read `docs/operations/41_product_reset_and_short_term_goals.md` and `docs/operations/43_agent_context_pack.md` before starting a new track.
+16. Run `git status --short --branch`.
+17. Check for unnecessary local dev servers before starting another one.
 
 ## Non-Negotiable Rules
 
@@ -23,6 +30,25 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Keep unverified work as `TODO`, `VERIFY`, or `BLOCKED`.
 - Do not mark visual parity, full import/export, or all-sheet support as complete without exact current evidence.
 - Do not put agent-only instructions into README files. README files are human/project presentation material.
+- Record agent-facing progress in `docs/operations/35_agent_progress_log.md` and task status in `docs/qa/31_active_todo.md`, not in `README.md`.
+- Keep README as a Korean portfolio landing page: visual first, compact cards, details linked out.
+- Do not commit real or derived Roll20 sheet assets, public examples, local fixtures, generated reports, source screenshots, or third-party reference images.
+- Do not bundle copyrighted/public Roll20 sheets as in-app samples or seeded demo content. The product must support user import, user-authored sheets, and local ignored verification fixtures instead.
+- Third-party sheets fetched for external validation must be ephemeral. Do not retain their source identity, URLs, code, media, screenshots, fixtures, or derived per-sheet reports in Git, docs, logs, portfolio material, or permanent local reports. Remove temporary copies after extracting a generic fix; keep only synthetic regression tests that cannot identify the source.
+- Do not record source-identifying details in TODOs, progress logs, handoffs, or chat summaries either. Use anonymous labels such as `fixture-A` and generic behavior findings; never preserve creator names, sheet names, source URLs, distinctive markup, image/font URLs, or source-derived measurements.
+- Roll20 preview/edit/export must support both modern and legacy Roll20 paths as separate render contracts. Keep the legacy sanitizer distinct from modern authored-class preservation, switch preview/edit/HTML/CSS/manifest/verification destination together, and never use evidence from one mode to pass the other.
+- The product goal is universal mapping: imported HTML, CSS, translation/i18n, and future worker JS must map to editable blocks/layers without hard-coding one commissioned sheet or one official sheet family.
+- Commit only from the active Next/React worktree (`web-push-main/`). Confirm with `git rev-parse --show-toplevel` before committing.
+- Roll20 actual-screen verification has generation-specific destinations: Custom Sheet Sandbox is modern-only; legacy mode must be applied and verified in a dedicated legacy-enabled test room. Existing solo rooms remain read-only observation targets.
+- Existing Roll20 rooms are observation-only unless the user explicitly authorizes a specific edit in that specific room.
+- Optimization and security work must keep render truthfulness first: performance improvements cannot bypass Roll20 wrapper/context, source/intrinsic, legacy/modern, asset, and private-evidence gates.
+- Parallel agents must use separate branches or read-only reports. One lead/integrator owns merges and pushes to shared branches.
+- The active short-term goal document is the control plane. Do not start a broad redesign or folder move outside a named goal, owner, branch, file boundary, and evidence gate.
+- Folder cleanup must be staged: inventory first, documentation/index second, reference or legacy moves only after all script and git references are known.
+- The visual language must be original: light pink/pastel is allowed, but do not imitate Roll20 screens or default to an AI-looking dark blue/purple palette.
+- User-facing UI must prefer plain Korean action language, compact icons with tooltips, and optional visual previews over raw DOM/CSS/worker terminology.
+- Current persistence is local browser autosave/IndexedDB. Do not imply account sync or require login until a real auth/storage service exists and its privacy boundary is documented.
+- The public app must not expose repository/source links as product chrome. Bug reports should use `mailto:sjh11235678@gmail.com` unless the user changes that address.
 
 ## Protected Source Folders
 
@@ -37,6 +63,8 @@ Allowed workspace-owned places for copied evidence:
 - `test-fixtures/`
 - `reports/`
 - `.tmp/`
+
+These places are local-only by default. Do not publish their generated contents unless the user explicitly approves a sanitized artifact.
 
 ## Forbidden Claims
 

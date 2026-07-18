@@ -301,7 +301,8 @@ export function renderSkillRowHtml(
   let tdClasses: string[];
   if (layoutStr) {
     layout = layoutStr.split(',');
-    tdClasses = tdClassesStr.split('');
+    // \u0001 는 구버전 구분자 호환 (XML 불법 문자라 탭으로 교체됨).
+    tdClasses = tdClassesStr.split(/[\t\u0001]/);
   } else {
     // Default order — new-block UI fallback. spacer 안 넣음.
     layout = [];

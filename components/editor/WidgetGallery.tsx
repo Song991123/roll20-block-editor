@@ -48,9 +48,9 @@ export default function WidgetGallery() {
   const addPreset = (preset: FriendlyWidgetPreset) => {
     const id = appendFriendlyWidgetPreset(preset);
     if (id) {
-      toast(`${preset.label}을 추가했어요.`, { duration: 1400 });
+      toast(`${preset.label} 추가됨`, { duration: 1400 });
     } else {
-      toast.error('시트 작업공간이 아직 준비되지 않았어요.');
+      toast.error('시트 작업 공간이 아직 준비되지 않았어요.');
     }
   };
 
@@ -71,7 +71,7 @@ export default function WidgetGallery() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="요소 검색"
-            className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] py-1.5 pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-[var(--color-primary,#2563eb)]"
+            className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] py-1.5 pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-[var(--primary)]"
             data-testid="widget-gallery-search"
           />
         </div>
@@ -119,7 +119,7 @@ function WidgetPresetCard({
       onClick={onClick}
       className={cn(
         'group flex w-full items-center gap-2 rounded-md border border-border bg-[var(--bg-elevated-2)] p-2 text-left',
-        'transition-colors hover:border-[var(--color-primary,#2563eb)] hover:bg-[var(--bg-hover)]',
+        'transition-colors hover:border-[var(--primary)] hover:bg-[var(--bg-hover)]',
         'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
       )}
       data-widget-type={preset.id}
@@ -186,7 +186,7 @@ function PreviewShape({ preset }: { preset: FriendlyWidgetPreset }) {
     case 'image':
       return <ImageIcon className="h-7 w-7 text-[#6b7280]" />;
     case 'button':
-      return <div className="h-6 w-12 rounded bg-[#2563eb]" />;
+      return <div className="h-6 w-12 rounded bg-[var(--primary)]" />;
     default:
       return null;
   }

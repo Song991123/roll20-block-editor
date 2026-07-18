@@ -54,6 +54,16 @@ export function parseCss(css: string, ctx: CssMatchContext): MatchedBlock[] {
         continue;
       }
       // 그 외 at-rule — raw_css fallback.
+      if (/^@import\b/i.test(headTrim)) {
+        const source = headTrim.replace(/^@import\s+/i, '').trim();
+        out.push({
+          blockType: 'r20_css_import',
+          fields: { SOURCE: source },
+          children: {},
+        });
+        ctx.matched++;
+        continue;
+      }
       out.push(rawCssBlock(`${r.head}{${r.body}}`));
       ctx.rawFallback++;
       ctx.warnings.push({
@@ -256,6 +266,13 @@ const PSEUDO_ELEMENTS_ALLOWED = new Set([
   '-webkit-input-placeholder',
 ]);
 
+const ROLL20_RUNTIME_CLASS_TOKENS = new Set([
+  'inlinerollresult',
+  'fullcrit',
+  'fullfail',
+  'importantroll',
+]);
+
 function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
   const trimmed = sel.trim();
   if (!trimmed) {
@@ -404,9 +421,17 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
 
   // 7. Simple class / id / element.
   if (/^\.[\w-]+$/.test(trimmed)) {
+    const className = trimmed.slice(1);
+    if (ROLL20_RUNTIME_CLASS_TOKENS.has(className)) {
+      return {
+        blockType: 'r20_selector_complex',
+        fields: { TEXT: trimmed },
+        children: {},
+      };
+    }
     return {
       blockType: 'r20_selector_class',
-      fields: { NAME: trimmed.slice(1).replace(/^sheet-/, '') },
+      fields: { NAME: className.replace(/^sheet-/, '') },
       children: {},
     };
   }

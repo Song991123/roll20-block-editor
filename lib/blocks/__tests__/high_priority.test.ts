@@ -331,6 +331,39 @@ function testCssVarDeclStripsDashPrefix(): void {
   expectEq(code, `--accent: red;`, 'auto-strips -- prefix');
 }
 
+function testCssClassSelectorRestoresRoll20SheetPrefix(): void {
+  const def = findBlock(CSS_BLOCKS as Array<{ type: string }>, 'r20_selector_class');
+  const b = new FakeBlock({
+    type: 'r20_selector_class',
+    fields: { NAME: 'rolltemplate-aw' },
+  });
+  const out = def.generator!(b, makeCtx());
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, '.sheet-rolltemplate-aw', 'Roll20 export class selector restores sheet- prefix');
+}
+
+function testCssClassSelectorDoesNotDoublePrefix(): void {
+  const def = findBlock(CSS_BLOCKS as Array<{ type: string }>, 'r20_selector_class');
+  const b = new FakeBlock({
+    type: 'r20_selector_class',
+    fields: { NAME: 'sheet-header' },
+  });
+  const out = def.generator!(b, makeCtx());
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, '.sheet-header', 'already-prefixed class selector stays stable');
+}
+
+function testCssClassSelectorPreservesRoll20RuntimeClass(): void {
+  const def = findBlock(CSS_BLOCKS as Array<{ type: string }>, 'r20_selector_class');
+  const b = new FakeBlock({
+    type: 'r20_selector_class',
+    fields: { NAME: 'inlinerollresult' },
+  });
+  const out = def.generator!(b, makeCtx());
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, '.inlinerollresult', 'Roll20 inline-roll runtime class stays unprefixed');
+}
+
 // ---------- 4) r20_value_switch_panel -------------------------------------
 
 function testValueSwitchEmptyAttr(): void {
@@ -487,6 +520,9 @@ const tests: Array<[string, () => void]> = [
   ['css var decl with slot', testCssVarDeclWithSlot],
   ['css var decl with text fallback', testCssVarDeclWithTextFallback],
   ['css var decl strips dash prefix', testCssVarDeclStripsDashPrefix],
+  ['css class selector restores Roll20 sheet prefix', testCssClassSelectorRestoresRoll20SheetPrefix],
+  ['css class selector does not double prefix', testCssClassSelectorDoesNotDoublePrefix],
+  ['css class selector preserves Roll20 runtime class', testCssClassSelectorPreservesRoll20RuntimeClass],
   ['value switch empty attr', testValueSwitchEmptyAttr],
   ['value switch two cases', testValueSwitchTwoCases],
   ['value switch dedupes duplicate values', testValueSwitchDedupesDuplicateValues],

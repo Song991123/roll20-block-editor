@@ -30,10 +30,13 @@ import type {
   WorkspaceKey,
 } from '@/lib/stores/workspaceStore';
 import { ORDER } from '@/lib/blocks/types';
+import { injectPreservedAttributes, PRESERVED_ATTRS_FIELD } from '@/lib/blocks/preservedAttributes';
+import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
 
 export interface EmitResult {
   code: string;
   warnings: EmitWarning[];
+  generatedCss: string;
 }
 
 /** generator 의 반환값 정규화. reporter = [code, order], stack = string. */
@@ -47,6 +50,7 @@ function normalizeGen(
 
 class EmitEngine implements GeneratorContext {
   readonly warnings: EmitWarning[] = [];
+  readonly generatedCss: string[] = [];
 
   constructor(private readonly kind: WorkspaceKey) {}
 
@@ -88,6 +92,12 @@ class EmitEngine implements GeneratorContext {
       .join('\n');
   }
 
+  addGeneratedCss(css: string): void {
+    if (this.kind !== 'html') return;
+    const value = String(css ?? '').trim();
+    if (value) this.generatedCss.push(value);
+  }
+
   warn(
     blockId: string,
     code: string,
@@ -115,6 +125,8 @@ class EmitEngine implements GeneratorContext {
     try {
       const raw = def.generator(block, this);
       const normalized = normalizeGen(raw);
+      const preserved = String(block.getFieldValue(PRESERVED_ATTRS_FIELD) ?? '');
+      normalized.code = injectPreservedAttributes(normalized.code, preserved);
       // Phase B coverage 확대 — element 를 emit 하는 모든 block (stack / c /
       //   cap / hat / e) 의 첫 opening tag 에 `data-r20-block-id` 주입.
       //   top-level 만이 아니라 statementToCode / valueToCode 경유 nested
@@ -202,7 +214,7 @@ export function emitWorkspace(
   ws: Blockly.Workspace | null,
   kind: WorkspaceKey,
 ): EmitResult {
-  if (!ws) return { code: '', warnings: [] };
+  if (!ws) return { code: '', warnings: [], generatedCss: '' };
   const engine = new EmitEngine(kind);
   const pieces: string[] = [];
   for (const block of ws.getTopBlocks(true)) {
@@ -222,7 +234,11 @@ export function emitWorkspace(
       cur = cur.getNextBlock();
     }
   }
-  return { code: pieces.join('\n'), warnings: engine.warnings };
+  return {
+    code: pieces.join('\n'),
+    warnings: engine.warnings,
+    generatedCss: engine.generatedCss.join('\n'),
+  };
 }
 
 /**
@@ -230,15 +246,45 @@ export function emitWorkspace(
  */
 export function emitAll(
   workspaces: Partial<Record<WorkspaceKey, Blockly.Workspace | null>>,
-): { html: string; css: string; i18n: string; warnings: EmitWarning[] } {
+): { html: string; css: string; i18n: string; worker: string; warnings: EmitWarning[] } {
   const html = emitWorkspace(workspaces.html ?? null, 'html');
   const css = emitWorkspace(workspaces.css ?? null, 'css');
   const i18n = emitWorkspace(workspaces.i18n ?? null, 'i18n');
+  const worker = emitWorkspace(workspaces.worker ?? null, 'worker');
+  const workerBody = normalizeWorkerBody(worker.code);
+  const htmlCode = stripWorkerScriptsFromHtml(html.code);
+  const htmlWithWorker = workerBody
+    ? `${htmlCode}${htmlCode ? '\n' : ''}<script type="text/worker">\n${workerBody}\n</script>`
+    : htmlCode;
+  // Generated HTML layout rules are appended after user CSS to preserve the
+  // old block's inline-style precedence while keeping the emitted HTML clean.
+  const cssCode = [css.code, html.generatedCss].filter(Boolean).join('\n');
+  const normalized = normalizeEmittedRoll20Pair(htmlWithWorker, cssCode);
   return {
-    html: html.code,
-    css: css.code,
+    html: normalized.html,
+    css: normalized.css,
     i18n: i18n.code,
-    warnings: [...html.warnings, ...css.warnings, ...i18n.warnings],
+    worker: workerBody,
+    warnings: [...html.warnings, ...css.warnings, ...i18n.warnings, ...worker.warnings],
+  };
+}
+
+/**
+ * Keep the emitted HTML/CSS class contract coherent at the final boundary.
+ *
+ * Imported HTML blocks normalize user classes before generation and therefore
+ * already emit `sheet-*`. Raw HTML/CSS fallbacks do not pass through those
+ * block generators, so normalizing only one side can make a valid imported
+ * sheet render as unstyled HTML. The prefix helpers are idempotent for
+ * Roll20-reserved tokens, which makes this safe for both paths.
+ */
+export function normalizeEmittedRoll20Pair(
+  html: string,
+  css: string,
+): { html: string; css: string } {
+  return {
+    html: autoPrefixHtmlClasses(html),
+    css: autoPrefixCssClasses(css),
   };
 }
 
@@ -252,6 +298,37 @@ function escapeAttr(s: string): string {
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+function normalizeWorkerBody(code: string): string {
+  const trimmed = code.trim();
+  if (!trimmed) return '';
+  const pieces: string[] = [];
+  const scriptRe = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = scriptRe.exec(trimmed))) {
+    const before = trimmed.slice(last, match.index).trim();
+    if (before) pieces.push(before);
+    pieces.push(match[1].trim());
+    last = match.index + match[0].length;
+  }
+  const rest = trimmed.slice(last).trim();
+  if (rest) pieces.push(rest);
+  return pieces.filter(Boolean).join('\n');
+}
+
+function stripWorkerScriptsFromHtml(html: string): string {
+  if (!html) return '';
+  return html.replace(/<script\b([^>]*)>[\s\S]*?<\/script>/gi, (full, rawAttrs: string) => {
+    const type = getScriptType(rawAttrs);
+    return type === 'text/worker' || type === '' ? '' : full;
+  });
+}
+
+function getScriptType(rawAttrs: string): string {
+  const typeMatch = /\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>/]+))/i.exec(rawAttrs ?? '');
+  return String(typeMatch?.[1] ?? typeMatch?.[2] ?? typeMatch?.[3] ?? '').trim().toLowerCase();
 }
 
 /**

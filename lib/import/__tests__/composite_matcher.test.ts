@@ -278,6 +278,56 @@ function testMixedChainPartialPack(): void {
   assert(packed[1].blockType === 'r20_td');
 }
 
+function checkbox(name: string): MatchedBlock {
+  return {
+    blockType: 'r20_checkbox',
+    fields: { NAME: name, CLASS: '', VALUE: '1', CHECKED: 'FALSE' },
+    children: {},
+  };
+}
+
+function wideRawRow(index: number): MatchedBlock {
+  const cells = Array.from({ length: 6 }, (_, cell) => td(`cell-${cell}`, [checkbox(`flag_${index}_${cell}`)]));
+  return {
+    blockType: 'r20_tr',
+    fields: { CLASS: 'wide-row' },
+    children: { CONTENT: cells },
+    sourceRaw: `<tr class="wide-row" data-row="${index}">${cells.map((_, cell) => `<td class="cell-${cell}"><input type="checkbox" name="attr_flag_${index}_${cell}" value="1"></td>`).join('')}</tr>`,
+  };
+}
+
+function testWideRowCompactionIsOptInAndGlobal(): void {
+  const chain: MatchedBlock[] = [0, 1, 2].map((index) => ({
+    blockType: 'r20_div',
+    fields: { CLASS: `group-${index}` },
+    children: { CONTENT: [wideRawRow(index)] },
+  }));
+
+  const offStats = newPackStats();
+  const off = packComposites(chain, offStats, {
+    wideRowMinRepeats: 3,
+    wideRowMinDescendants: 6,
+  });
+  assert(offStats.wideRowBundles === 0, `option off should not bundle rows`);
+  assert(
+    off.every((block) => block.children?.CONTENT?.[0]?.blockType === 'r20_tr'),
+    `option off should keep nested tr blocks`,
+  );
+
+  const onStats = newPackStats();
+  const on = packComposites(chain, onStats, {
+    compactWideRows: true,
+    wideRowMinRepeats: 3,
+    wideRowMinDescendants: 6,
+  });
+  assert(onStats.wideRowBundles === 3, `expected 3 row bundles, got ${onStats.wideRowBundles}`);
+  assert(onStats.wideRowCollapsed > 0, `expected collapsed row descendants`);
+  assert(
+    on.every((block) => block.children?.CONTENT?.[0]?.blockType === 'r20_raw_html'),
+    `option on should bundle repeated rows even under different parents`,
+  );
+}
+
 const tests = [
   ['standard i18n attribute card', testStandardI18nAttributeCard],
   ['label-only (no roll) attribute card', testLabelOnlyAttributeCard],
@@ -289,6 +339,7 @@ const tests = [
   ['multiple sibling cards', testMultipleSiblingCards],
   ['nested chain packing via tr', testNestedChainPackingViaTr],
   ['mixed chain partial pack', testMixedChainPartialPack],
+  ['wide row compaction is opt-in and global', testWideRowCompactionIsOptInAndGlobal],
 ] as const;
 
 let passed = 0;

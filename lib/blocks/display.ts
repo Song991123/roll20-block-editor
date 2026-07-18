@@ -86,6 +86,13 @@ function escapeAttr(value: string): string {
     .replace(/>/g, '&gt;');
 }
 
+function escapeText(value: string): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 /** ` attr="value"` 또는 빈 문자열 — value 비면 attr 자체 생략. */
 function attr(name: string, value: string): string {
   const v = String(value ?? '').trim();
@@ -121,6 +128,12 @@ function sheetClassAttrWithBase(base: string, cls: string): string {
 }
 
 /** 숫자 크기 → 양의 정수 문자열 또는 ''. */
+/** Preserve nested statement indentation for semantic inline containers. */
+function wrapTag(ctx: GeneratorContext, tag: string, attrs: string, content: string): string {
+  if (!content || !content.trim()) return `<${tag}${attrs}></${tag}>`;
+  return `<${tag}${attrs}>\n${ctx.indent(content)}\n</${tag}>`;
+}
+
 function sanitizeSize(raw: string): string {
   const s = String(raw ?? '').trim();
   if (!s) return '';
@@ -132,6 +145,35 @@ function sanitizeSize(raw: string): string {
 // ---------- 7 블록 정의 ----------
 
 export const DISPLAY_BLOCKS: BlockDef[] = [
+  // 0) text node ------------------------------------------------------------
+  // Direct text inside a container is meaningful HTML content. Keep it as a
+  // block so nested labels/rows can be reordered without silently dropping it.
+  {
+    type: 'r20_text_node',
+    shape: 'stack',
+    category: DISPLAY,
+    label: '일반 텍스트 노드',
+    tooltip: '태그 없이 컨테이너 안에 직접 놓인 텍스트를 보존합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('일반 텍스트')
+        .appendField(new Blockly.FieldTextInput('텍스트'), 'TEXT');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      return escapeText(String(b.getFieldValue('TEXT') ?? ''));
+    },
+    inspectorSchema: [
+      {
+        name: 'TEXT',
+        label: '텍스트 내용',
+        kind: 'textarea',
+        description: '부모 요소 안에서 태그 없이 직접 표시되는 텍스트입니다.',
+      },
+    ],
+  },
+
   // 1) heading --------------------------------------------------------------
   {
     type: 'r20_heading',
@@ -144,6 +186,9 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField('제목')
         .appendField(new Blockly.FieldDropdown(HEADING_LEVELS), 'LEVEL')
         .appendField(new Blockly.FieldTextInput('Heading'), 'TEXT');
+      b.appendDummyInput()
+        .appendField('번역 키')
+        .appendField(new Blockly.FieldTextInput(''), 'I18N');
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
@@ -163,7 +208,8 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
           : '1';
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<h${level}${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</h${level}>`;
+      const i18n = String(b.getFieldValue('I18N') ?? '');
+      return `<h${level}${sheetClassAttr(cls)}${attr('data-i18n', i18n)}${styleAttr(style)}>${escapeAttr(text)}</h${level}>`;
     },
   },
 
@@ -406,7 +452,59 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 10) table caption -------------------------------------------------------
+  // 10) semantic inline container ------------------------------------------
+  // Preserve inline semantics and nested blocks such as data-i18n children.
+  {
+    type: 'r20_inline_container',
+    shape: 'c',
+    category: DISPLAY,
+    label: '인라인 묶음',
+    tooltip: 'small, u, sub, sup 태그와 내부 요소를 보존합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('인라인 묶음')
+        .appendField(new Blockly.FieldDropdown([
+          ['small', 'small'],
+          ['u', 'u'],
+          ['sub', 'sub'],
+          ['sup', 'sup'],
+        ]), 'TAG');
+      b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
+      b.appendStatementInput('CONTENT').setCheck(null);
+      setStatementHooks(b);
+    }),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const tagRaw = String(b.getFieldValue('TAG') ?? 'small');
+      const tag = new Set(['small', 'u', 'sub', 'sup']).has(tagRaw) ? tagRaw : 'small';
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(ctx, tag, `${sheetClassAttr(cls)}${styleAttr(style)}`, content);
+    },
+    inspectorSchema: [
+      {
+        name: 'TAG',
+        label: '태그',
+        kind: 'select',
+        options: [
+          { value: 'small', label: 'small' },
+          { value: 'u', label: 'u' },
+          { value: 'sub', label: 'sub' },
+          { value: 'sup', label: 'sup' },
+        ],
+      },
+      { name: 'CLASS', label: '클래스', kind: 'text' },
+      { name: 'STYLE', label: '스타일', kind: 'text' },
+    ],
+  },
+
+  // 11) table caption -------------------------------------------------------
   {
     type: 'r20_table_caption',
     shape: 'stack',
@@ -417,6 +515,9 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('표 제목')
         .appendField(new Blockly.FieldTextInput('Caption'), 'TEXT');
+      b.appendDummyInput()
+        .appendField('번역 키')
+        .appendField(new Blockly.FieldTextInput(''), 'I18N');
       b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
@@ -430,11 +531,12 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
-      return `<caption${sheetClassAttr(cls)}${styleAttr(style)}>${escapeAttr(text)}</caption>`;
+      const i18n = String(b.getFieldValue('I18N') ?? '');
+      return `<caption${sheetClassAttr(cls)}${attr('data-i18n', i18n)}${styleAttr(style)}>${escapeAttr(text)}</caption>`;
     },
   },
 
-  // 11) inline break --------------------------------------------------------
+  // 12) inline break --------------------------------------------------------
   {
     type: 'r20_inline_break',
     shape: 'stack',

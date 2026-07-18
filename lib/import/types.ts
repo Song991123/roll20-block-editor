@@ -60,6 +60,22 @@ export interface ImportStats {
    */
   scriptBlocksMatched: number;
   scriptStatementsRaw: number;
+  /** Composite packing diagnostics. Structural counts only; no source text. */
+  compositeAtomicTotal?: number;
+  compositeAfterPackTotal?: number;
+  compositeCollapsed?: number;
+  compositePackedByType?: Record<string, number>;
+  wideRowBundles?: number;
+  wideRowCollapsed?: number;
+}
+
+export interface ImportHtmlOptions {
+  /**
+   * Experimental speed path for very large sheets: repeated wide `<tr>`
+   * structures may be represented as raw row bundles. This preserves rendered
+   * HTML but limits direct block editing inside the bundled row.
+   */
+  compactWideRows?: boolean;
 }
 
 export interface ImportInput {

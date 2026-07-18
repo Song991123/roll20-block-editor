@@ -32,13 +32,18 @@ export function escapeHtml(s: string): string {
 export function extractRolltemplateBody(html: string, name: string): string | null {
   if (!name) return null;
   const safe = name.replace(/[^A-Za-z0-9_-]/g, '');
-  const re = new RegExp(
-    `<rolltemplate[^>]*class=["'][^"']*sheet-rolltemplate-${safe}\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/rolltemplate>`,
-    'i',
-  );
-  const m = html.match(re);
-  if (!m) return null;
-  return m[1] ?? null;
+  const expectedClass = `sheet-rolltemplate-${safe}`;
+  const re = /<rolltemplate\b([^>]*)>([\s\S]*?)<\/rolltemplate>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html))) {
+    const attrs = m[1] ?? '';
+    const cls = attrs.match(/\bclass\s*=\s*(["'])(.*?)\1/i)?.[2] ?? '';
+    const classTokens = cls.split(/\s+/).filter(Boolean);
+    if (classTokens.includes(expectedClass)) {
+      return m[2] ?? null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -49,12 +54,14 @@ export function renderTemplateBody(
   body: string,
   fields: RolltemplateFieldResult[],
   flags: { anyCrit: boolean; anyFumble: boolean },
+  translations: Record<string, string> = {},
 ): string {
   const map = new Map<string, RolltemplateFieldResult>();
   for (const f of fields) map.set(f.key, f);
+  const sectionRendered = prefixRolltemplateClasses(renderRolltemplateSections(body, map, flags));
 
   // Mustache `{{ key }}` 토큰 (식별자 only) 치환.
-  return body.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (full, raw) => {
+  const rendered = sectionRendered.replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (full, raw) => {
     const expr = String(raw).trim();
     // helper: 무지원 ones — empty.
     if (expr.endsWith(')')) {
@@ -73,8 +80,131 @@ export function renderTemplateBody(
       const trailing = diceText ? ` <span class="rt-dice">${escapeHtml(diceText)}</span>` : '';
       return `<span class="rt-total">${escapeHtml(String(det.total))}</span>${trailing}`;
     }
-    return escapeHtml(f.text);
+    return escapeHtml(translateText(f.text, translations));
   });
+  return applyDataI18n(rendered, translations);
+}
+
+const ROLL20_UNPREFIXED_RUNTIME_CLASSES = new Set([
+  'inlinerollresult',
+  'fullcrit',
+  'fullfail',
+  'importantroll',
+]);
+
+function prefixRolltemplateClasses(html: string): string {
+  return html.replace(/\bclass\s*=\s*(["'])(.*?)\1/gi, (full, quote, rawClass) => {
+    const prefixed = String(rawClass)
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => {
+        if (token.startsWith('sheet-')) return token;
+        if (ROLL20_UNPREFIXED_RUNTIME_CLASSES.has(token)) return token;
+        return `sheet-${token}`;
+      })
+      .join(' ');
+    return `class=${quote}${prefixed}${quote}`;
+  });
+}
+
+function translateText(text: string, translations: Record<string, string>): string {
+  return translations[text] ?? text;
+}
+
+function applyDataI18n(html: string, translations: Record<string, string>): string {
+  if (!Object.keys(translations).length) return html;
+  return html.replace(
+    /(<([a-zA-Z][\w:-]*)(?=[^>]*\bdata-i18n=(["'])([^"']+)\3)[^>]*>)([\s\S]*?)(<\/\2>)/g,
+    (full, open, _tag, _quote, key, inner, close) => {
+      const translated = translations[key];
+      if (!translated || /<[^>]+>/.test(inner)) return full;
+      return `${open}${escapeHtml(translated)}${close}`;
+    },
+  );
+}
+
+function renderRolltemplateSections(
+  body: string,
+  fields: Map<string, RolltemplateFieldResult>,
+  flags: { anyCrit: boolean; anyFumble: boolean },
+): string {
+  const sectionTag = /\{\{\s*([#/])\s*([A-Za-z][A-Za-z0-9_]*)\s*\(\s*\)\s*([^{}]*?)\s*\}\}/g;
+
+  function renderUntil(start: number, close?: { helper: string; args: string }): { text: string; pos: number } {
+    let pos = start;
+    let out = '';
+    sectionTag.lastIndex = start;
+    while (true) {
+      const m = sectionTag.exec(body);
+      if (!m) {
+        out += body.slice(pos);
+        return { text: out, pos: body.length };
+      }
+      const token = m[0];
+      const marker = m[1] ?? '';
+      const helper = m[2] ?? '';
+      const args = normalizeSectionArgs(m[3] ?? '');
+      const tokenStart = m.index;
+      const tokenEnd = tokenStart + token.length;
+      out += body.slice(pos, tokenStart);
+      pos = tokenEnd;
+
+      if (marker === '/') {
+        if (!close || helper !== close.helper || args !== close.args) {
+          out += token;
+          continue;
+        }
+        return { text: out, pos: tokenEnd };
+      }
+
+      const inner = renderUntil(tokenEnd, { helper, args });
+      pos = inner.pos;
+      sectionTag.lastIndex = pos;
+      if (evalRolltemplateSection(helper, args, fields, flags)) {
+        out += inner.text;
+      }
+    }
+  }
+
+  return renderUntil(0).text;
+}
+
+function normalizeSectionArgs(args: string): string {
+  return args.trim().replace(/\s+/g, ' ');
+}
+
+function evalRolltemplateSection(
+  helper: string,
+  args: string,
+  fields: Map<string, RolltemplateFieldResult>,
+  flags: { anyCrit: boolean; anyFumble: boolean },
+): boolean {
+  const parts = args ? args.split(/\s+/) : [];
+  const value = (token: string): number => {
+    const numeric = Number(token);
+    if (Number.isFinite(numeric)) return numeric;
+    const f = fields.get(token);
+    if (f?.detail) return f.detail.total;
+    const textNumber = Number(f?.text ?? '');
+    return Number.isFinite(textNumber) ? textNumber : 0;
+  };
+
+  switch (helper) {
+    case 'rollTotal':
+      return parts.length >= 2 && value(parts[0]!) === value(parts[1]!);
+    case 'rollLess':
+      return parts.length >= 2 && value(parts[0]!) < value(parts[1]!);
+    case 'rollGreater':
+      return parts.length >= 2 && value(parts[0]!) > value(parts[1]!);
+    case 'rollBetween':
+      return parts.length >= 3 && value(parts[0]!) >= value(parts[1]!) && value(parts[0]!) <= value(parts[2]!);
+    case 'rollWasCrit':
+      return flags.anyCrit;
+    case 'rollWasFumble':
+      return flags.anyFumble;
+    default:
+      return false;
+  }
 }
 
 /**

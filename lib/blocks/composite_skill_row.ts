@@ -230,6 +230,93 @@ export const COMPOSITE_SKILL_ROW: BlockDef = {
     b.appendDummyInput()
       .appendField('굴림 td class')
       .appendField(new Blockly.FieldTextInput(''), 'ROLL_TD_CLASS');
+    // ── 둘째 값 input (영시영 커스텀 스킬 행: 이름 input + 값 input) ────
+    // 주의: composite_matcher 가 이 필드들을 쓰는데 블록 정의에 없으면
+    // Blockly 가 hydrate 때 "Ignoring non-existent field" 로 조용히 버려서
+    // 스킬 % 입력칸/둘째 굴림 버튼이 통째로 소실된다 (YSHY 49행 사고).
+    b.appendDummyInput()
+      .appendField('값2 사용')
+      .appendField(
+        new Blockly.FieldDropdown([
+          ['아니오', 'FALSE'],
+          ['예', 'TRUE'],
+        ]),
+        'HAS_INPUT2',
+      );
+    b.appendDummyInput()
+      .appendField('값2 NAME')
+      .appendField(new Blockly.FieldTextInput(''), 'INPUT2_NAME');
+    b.appendDummyInput()
+      .appendField('값2 type')
+      .appendField(new Blockly.FieldTextInput('text'), 'INPUT2_TYPE');
+    b.appendDummyInput()
+      .appendField('값2 기본')
+      .appendField(new Blockly.FieldTextInput(''), 'INPUT2_VALUE');
+    b.appendDummyInput()
+      .appendField('값2 class')
+      .appendField(new Blockly.FieldTextInput(''), 'INPUT2_CLASS');
+    b.appendDummyInput()
+      .appendField('값2 td class')
+      .appendField(new Blockly.FieldTextInput(''), 'INPUT2_TD_CLASS');
+    // ── 둘째/셋째 굴림 버튼 (dual-roll: old-roll + new-roll) ──────────
+    b.appendDummyInput()
+      .appendField('굴림2 사용')
+      .appendField(
+        new Blockly.FieldDropdown([
+          ['아니오', 'FALSE'],
+          ['예', 'TRUE'],
+        ]),
+        'HAS_ROLL2',
+      );
+    b.appendDummyInput()
+      .appendField('굴림2 NAME')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL2_NAME');
+    b.appendDummyInput()
+      .appendField('굴림2 label')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL2_LABEL');
+    b.appendDummyInput()
+      .appendField('굴림2 EXPR')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL2_EXPR');
+    b.appendDummyInput()
+      .appendField('굴림2 class')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL2_CLASS');
+    b.appendDummyInput()
+      .appendField('굴림2 td class')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL2_TD_CLASS');
+    b.appendDummyInput()
+      .appendField('굴림3 사용')
+      .appendField(
+        new Blockly.FieldDropdown([
+          ['아니오', 'FALSE'],
+          ['예', 'TRUE'],
+        ]),
+        'HAS_ROLL3',
+      );
+    b.appendDummyInput()
+      .appendField('굴림3 NAME')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL3_NAME');
+    b.appendDummyInput()
+      .appendField('굴림3 label')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL3_LABEL');
+    b.appendDummyInput()
+      .appendField('굴림3 EXPR')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL3_EXPR');
+    b.appendDummyInput()
+      .appendField('굴림3 class')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL3_CLASS');
+    b.appendDummyInput()
+      .appendField('굴림3 td class')
+      .appendField(new Blockly.FieldTextInput(''), 'ROLL3_TD_CLASS');
+    // ── cell layout 직렬화 (round-trip 시 empty/spacer td 보존) ────────
+    b.appendDummyInput()
+      .appendField('칸 수')
+      .appendField(new Blockly.FieldTextInput(''), 'CELL_COUNT');
+    b.appendDummyInput()
+      .appendField('칸 배치')
+      .appendField(new Blockly.FieldTextInput(''), 'CELL_LAYOUT');
+    b.appendDummyInput()
+      .appendField('칸 td class 목록')
+      .appendField(new Blockly.FieldTextInput(''), 'CELL_TD_CLASSES');
     setStatementHooks(b);
   }),
   generator: (block, ctx) => emitSkillRow(block, ctx),
@@ -300,6 +387,51 @@ export const COMPOSITE_SKILL_ROW: BlockDef = {
     { name: 'ROLL_EXPR', label: '굴림 식', kind: 'textarea' },
     { name: 'ROLL_CLASS', label: '굴림 class', kind: 'text' },
     { name: 'ROLL_TD_CLASS', label: '굴림 td class', kind: 'text' },
+    {
+      name: 'HAS_INPUT2',
+      label: '값2 사용',
+      kind: 'select',
+      options: [
+        { value: 'FALSE', label: '아니오' },
+        { value: 'TRUE', label: '예' },
+      ],
+    },
+    { name: 'INPUT2_NAME', label: '값2 NAME', kind: 'text', description: '`attr_NAME` 으로 emit.' },
+    { name: 'INPUT2_TYPE', label: '값2 type', kind: 'text', placeholder: 'text' },
+    { name: 'INPUT2_VALUE', label: '값2 기본', kind: 'text' },
+    { name: 'INPUT2_CLASS', label: '값2 class', kind: 'text' },
+    { name: 'INPUT2_TD_CLASS', label: '값2 td class', kind: 'text' },
+    {
+      name: 'HAS_ROLL2',
+      label: '굴림2 사용',
+      kind: 'select',
+      options: [
+        { value: 'FALSE', label: '아니오' },
+        { value: 'TRUE', label: '예' },
+      ],
+    },
+    { name: 'ROLL2_NAME', label: '굴림2 NAME', kind: 'text' },
+    { name: 'ROLL2_LABEL', label: '굴림2 label', kind: 'text' },
+    { name: 'ROLL2_EXPR', label: '굴림2 식', kind: 'textarea' },
+    { name: 'ROLL2_CLASS', label: '굴림2 class', kind: 'text' },
+    { name: 'ROLL2_TD_CLASS', label: '굴림2 td class', kind: 'text' },
+    {
+      name: 'HAS_ROLL3',
+      label: '굴림3 사용',
+      kind: 'select',
+      options: [
+        { value: 'FALSE', label: '아니오' },
+        { value: 'TRUE', label: '예' },
+      ],
+    },
+    { name: 'ROLL3_NAME', label: '굴림3 NAME', kind: 'text' },
+    { name: 'ROLL3_LABEL', label: '굴림3 label', kind: 'text' },
+    { name: 'ROLL3_EXPR', label: '굴림3 식', kind: 'textarea' },
+    { name: 'ROLL3_CLASS', label: '굴림3 class', kind: 'text' },
+    { name: 'ROLL3_TD_CLASS', label: '굴림3 td class', kind: 'text' },
+    { name: 'CELL_COUNT', label: '칸 수', kind: 'text', description: 'import 가 기록한 td 칸 수 (비면 기본 배치).' },
+    { name: 'CELL_LAYOUT', label: '칸 배치', kind: 'text', description: '예: checkbox,input,input2,roll,roll2 / spacer 포함.' },
+    { name: 'CELL_TD_CLASSES', label: '칸 td class 목록', kind: 'text', description: '탭 구분 — 칸별 td class.' },
   ],
 };
 

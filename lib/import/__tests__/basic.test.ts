@@ -44,6 +44,68 @@ function testRepeatingSection(): void {
   assert(r.html.includes('>skills<'), 'name preserved');
 }
 
+function testStructuralLabelContainer(): void {
+  const html = `<label for="attr_name" class="sheet-improvement"><input type="text" name="attr_name"><span>Name</span></label>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_label_container'), 'nested label container block');
+  assert(r.html.includes('r20_text_input'), 'label input child');
+  assert(r.html.includes('>attr_name<'), 'label for preserved');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for nested label');
+}
+
+function testListContainers(): void {
+  const html = `<ul class="sheet-options"><li><hr></li><li><span>Second</span></li></ul>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_list'), 'list container block');
+  assert(r.html.includes('r20_list_item'), 'list item blocks');
+  assert(r.html.includes('r20_hr'), 'list child preserved');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for list structure');
+}
+
+function testDirectTextNodePreserved(): void {
+  const html = `<label>Name <input type="text" name="attr_name"> suffix</label>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_label_container'), 'label remains structural');
+  assert((r.html.match(/r20_text_node/g) || []).length === 2, 'both direct text nodes preserved');
+  assert(r.html.includes('>Name<'), 'leading text preserved');
+  assert(r.html.includes('>suffix<'), 'trailing text preserved');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for direct text');
+}
+
+function testWhitespaceOnlyTextDoesNotInflate(): void {
+  const html = `<div>\n  <label> Name <input name="attr_name"> </label>\n</div>`;
+  const r = importSheet({ html });
+  assert((r.html.match(/r20_text_node/g) || []).length === 1, 'indentation whitespace is ignored');
+  assert(r.html.includes('>Name<'), 'meaningful label text remains');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for formatted container');
+}
+
+function testFormattedDirectTextHasStableWhitespace(): void {
+  const html = `<div><span>Name</span>\n          :\n        <input name="attr_name"></div>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('<field name="TEXT">:</field>'), 'formatted punctuation text trims layout edges');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for formatted inline text');
+}
+
+function testRadioLabelDoesNotNestOnEmit(): void {
+  const html = `<label><input type="radio" name="attr_mode" value="a">Alpha</label>`;
+  const r = importSheet({ html });
+  assert((r.html.match(/r20_radio/g) || []).length === 1, 'radio wrapper is one block');
+  assert(!r.html.includes('r20_label_container'), 'radio does not become a nested label container');
+  assert(r.html.includes('>Alpha<'), 'radio label text is preserved');
+}
+
+function testUnknownAttributesSurviveMatchedBlocks(): void {
+  const html = `<div id="frame" data-layout="grid" aria-label="Frame"><input type="text" name="attr_name" title="Name" data-hook="field"></div>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('__R20_PRESERVED_ATTRS'), 'preserved attribute field exists');
+  assert(r.html.includes('data-layout'), 'container data attribute is captured');
+  assert(r.html.includes('aria-label'), 'ARIA attribute is captured');
+  assert(r.html.includes('data-hook'), 'input data attribute is captured');
+  assert(r.html.includes('title'), 'input title attribute is captured');
+  assert(r.stats.htmlRawFallback === 0, 'matched nodes do not fall back to raw HTML');
+}
+
 function testCssRule(): void {
   const css = `.sheet-header { color: red; padding: 10px; }`;
   const r = importSheet({ css });
@@ -117,6 +179,15 @@ function testInlineItalicI(): void {
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback');
 }
 
+function testSemanticInlineContainerKeepsNestedI18n(): void {
+  const html = `<small class="sheet-help"><span data-i18n="help-key">Help</span></small>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_inline_container'), 'semantic inline container block');
+  assert(r.html.includes('r20_i18n_text'), 'nested translation block preserved');
+  assert(r.html.includes('help-key'), 'translation key preserved');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for nested inline translation');
+}
+
 function testTableCaption(): void {
   const html = `<caption>Title</caption>`;
   const r = importSheet({ html });
@@ -139,6 +210,23 @@ function testCssFontFace(): void {
   assert(r.stats.cssRawFallback === 0, 'no css raw fallback');
   assert(r.css.includes('r20_css_font_face'), 'font_face block emitted');
   assert(r.css.includes('>MyFont<'), 'FAMILY field carried');
+}
+
+function testTableColumnStructure(): void {
+  const html = `<table><colgroup><col style="width: 50%;"><col style="width: 50%;"></colgroup><tr><td>A</td></tr></table>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_colgroup'), 'colgroup block');
+  assert((r.html.match(/r20_table_col/g) || []).length === 2, 'col blocks');
+  assert(r.stats.htmlRawFallback === 0, 'no raw fallback for table columns');
+}
+
+function testCssImport(): void {
+  const css = `@import url('https://fonts.googleapis.com/css?family=Example&display=swap');`;
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 1, '@import matched');
+  assert(r.stats.cssRawFallback === 0, 'no raw fallback for @import');
+  assert(r.css.includes('r20_css_import'), 'css_import block');
+  assert(r.css.includes('fonts.googleapis.com'), 'import source carried');
 }
 
 function testCssSelectorComplexFallback(): void {
@@ -183,6 +271,13 @@ const tests = [
   ['number input', testNumberInput],
   ['nested div', testNestedDiv],
   ['repeating section', testRepeatingSection],
+  ['structural label container', testStructuralLabelContainer],
+  ['list containers', testListContainers],
+  ['direct text node', testDirectTextNodePreserved],
+  ['whitespace-only text', testWhitespaceOnlyTextDoesNotInflate],
+  ['stable formatted text', testFormattedDirectTextHasStableWhitespace],
+  ['radio label wrapper', testRadioLabelDoesNotNestOnEmit],
+  ['unknown attributes', testUnknownAttributesSurviveMatchedBlocks],
   ['css rule', testCssRule],
   ['i18n json', testI18nJson],
   ['i18n flat', testI18nFlat],
@@ -192,9 +287,12 @@ const tests = [
   ['inline bold <strong>', testInlineBoldStrong],
   ['inline italic <em>', testInlineItalicEm],
   ['inline italic <i>', testInlineItalicI],
+  ['semantic inline container with nested i18n', testSemanticInlineContainerKeepsNestedI18n],
   ['table caption', testTableCaption],
   ['inline break <br>', testInlineBreak],
   ['css @font-face', testCssFontFace],
+  ['table column structure', testTableColumnStructure],
+  ['css @import', testCssImport],
   ['css selector_complex fallback', testCssSelectorComplexFallback],
   ['css compound selector', testCssCompoundSelector],
   ['css pseudo-element ::-webkit-*', testCssPseudoElementWebkit],

@@ -24,6 +24,8 @@ export interface SheetMetadata {
   version: string;
   /** 자유 입력 시스템 이름 (D&D 5e, PbtA, …) — 비어 있어도 무방. */
   system: string;
+  /** Roll20 구버전 무해화 런타임으로 등록할지 여부. */
+  legacy?: boolean;
 }
 
 /** Roll20 권장 라이선스 dropdown 옵션. */

@@ -19,6 +19,7 @@
 
 import type { MatchedBlock } from '../block_matcher.ts';
 import { packComposites, newPackStats } from '../composite_matcher.ts';
+import { serializePreservedAttributes, PRESERVED_ATTRS_FIELD } from '../../blocks/preservedAttributes.ts';
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(`Assertion failed: ${msg}`);
@@ -109,6 +110,16 @@ function rollButton(name: string, expr: string): MatchedBlock {
 
 function fieldOf(b: MatchedBlock, k: string): string {
   return b.fields?.[k] ?? '';
+}
+
+function withAttrs(block: MatchedBlock, attrs: Record<string, string>): MatchedBlock {
+  return {
+    ...block,
+    fields: {
+      ...block.fields,
+      [PRESERVED_ATTRS_FIELD]: serializePreservedAttributes(attrs),
+    },
+  };
 }
 
 // ---------- Skill row tests ----------
@@ -206,6 +217,24 @@ function testNumberInput(): void {
   assert(fieldOf(packed[0], 'INPUT_TYPE') === 'number');
 }
 
+function testSkillRowKeepsInputStyleAtomic(): void {
+  const trBlock = tr('', [
+    td('', [i18nText('hp', 'HP')]),
+    td('', [withAttrs(textInput('hp', '', '0'), { type: 'text', name: 'attr_hp', style: 'width: 40px' })]),
+  ]);
+  const packed = packComposites([trBlock]);
+  assert(packed[0].blockType === 'r20_tr', 'input style must block lossy skill-row packing');
+}
+
+function testSkillRowKeepsUnknownInputAttributeAtomic(): void {
+  const trBlock = tr('', [
+    td('', [i18nText('hp', 'HP')]),
+    td('', [withAttrs(textInput('hp', '', '0'), { type: 'text', name: 'attr_hp', 'data-hook': 'field' })]),
+  ]);
+  const packed = packComposites([trBlock]);
+  assert(packed[0].blockType === 'r20_tr', 'unknown input attributes must survive atomically');
+}
+
 // ---------- Repeating section wrapper tests ----------
 
 function testRepeatingWrapperWithHeader(): void {
@@ -287,6 +316,8 @@ const tests = [
   ['skill_row multiple', testMultipleSkillRows],
   ['skill_row unknown child → atomic', testUnknownChildDoesNotPack],
   ['skill_row number input', testNumberInput],
+  ['skill_row input style stays atomic', testSkillRowKeepsInputStyleAtomic],
+  ['skill_row unknown input attr stays atomic', testSkillRowKeepsUnknownInputAttributeAtomic],
   ['repeating wrapper with header', testRepeatingWrapperWithHeader],
   ['repeating wrapper no header', testRepeatingWrapperNoHeader],
   ['repeating wrapper invalid name → atomic', testRepeatingWrapperInvalidName],

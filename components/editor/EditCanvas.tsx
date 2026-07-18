@@ -1,475 +1,309 @@
 'use client';
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Layers, Search } from 'lucide-react';
+import type { DragEvent as ReactDragEvent } from 'react';
+import { ChevronDown, ChevronRight, Layers, Redo2, Search, Undo2, Ungroup } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
-import { canReceiveChildren, getLayerRole } from '@/lib/editor/layerRoles';
-import { buildSheetParts } from '@/lib/preview/buildDoc';
-import { mountSheetShadow } from '@/lib/preview/shadowMount';
-import { usePreviewStore } from '@/lib/stores/previewStore';
+import { getLayerRole, wouldCreateLayerCycle } from '@/lib/editor/layerRoles';
+import { EDIT_SURFACE_LAYER_PANEL_WIDTH_PX } from '@/lib/editor/editSurfaceLayout';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { cn } from '@/lib/utils/cn';
-import {
-  FRIENDLY_WIDGET_MIME,
-  appendFriendlyWidgetPreset,
-  decodeFriendlyWidgetDrag,
-} from '@/lib/widgets/presets';
-import PreviewToolbar from './PreviewToolbar';
 
-const WORKSPACE_ORDER: WorkspaceKey[] = ['html', 'css', 'i18n'];
+type LayerDropMode = 'before' | 'inside' | 'after';
 
-type DragOrigin = {
-  blockId: string;
-  ws: WorkspaceKey;
-  kind: 'position-fields' | 'style-field';
-  origLeft: number;
-  origTop: number;
-  origStyle: string;
-  containingBlockEl: HTMLElement | null;
-  containingBlockId: string | null;
-  containingBlockStyle: string;
-  containingBlockNeedsRelative: boolean;
-  scale: number;
-  el: HTMLElement;
-  origTransform: string;
-  origTransition: string;
-  origWillChange: string;
-  origPosition: string;
-  origStyleLeft: string;
-  origStyleTop: string;
-  origContainingBlockPosition: string;
-};
+function formatDropModeLabel(mode: LayerDropMode): string {
+  if (mode === 'inside') return '안에 넣기';
+  if (mode === 'before') return '앞에 넣기';
+  return '뒤에 넣기';
+}
 
-type PendingMove = {
-  ws: WorkspaceKey;
-  blockId: string;
-  kind: DragOrigin['kind'];
-  left: number;
-  top: number;
-  origStyle: string;
-  containingBlockId: string | null;
-  containingBlockStyle: string;
-  containingBlockNeedsRelative: boolean;
-};
+function formatLayerRelationLabel(relation: BlockSnapshot['layerRelation']): string {
+  if (relation === 'child') return '하위';
+  if (relation === 'sibling') return '흐름 형제';
+  return '루트';
+}
 
-type OptimisticMove = {
-  left: number;
-  top: number;
-  containingBlockId: string | null;
-  containingBlockStyle: string;
-  containingBlockNeedsRelative: boolean;
-};
+function matchesLayerSearch(node: BlockSnapshot, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return (
+    node.id.toLowerCase().includes(q) ||
+    node.type.toLowerCase().includes(q) ||
+    node.label.toLowerCase().includes(q) ||
+    node.preview.toLowerCase().includes(q)
+  );
+}
 
-const DESIGN_CSS_MARKER = 'r20-design-css:managed';
+function filterLayersWithAncestors(
+  nodes: BlockSnapshot[],
+  query: string,
+): Array<{ node: BlockSnapshot; searchMatch: boolean; contextOnly: boolean }> {
+  const q = query.trim().toLowerCase();
+  if (!q) return nodes.map((node) => ({ node, searchMatch: true, contextOnly: false }));
+
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const matched = new Set<string>();
+  const visible = new Set<string>();
+
+  for (const node of nodes) {
+    if (!matchesLayerSearch(node, q)) continue;
+    matched.add(node.id);
+    visible.add(node.id);
+    let parentId = node.layerParentId;
+    const seen = new Set<string>([node.id]);
+    while (parentId && !seen.has(parentId)) {
+      seen.add(parentId);
+      visible.add(parentId);
+      parentId = byId.get(parentId)?.layerParentId ?? null;
+    }
+  }
+
+  return nodes
+    .filter((node) => visible.has(node.id))
+    .map((node) => ({
+      node,
+      searchMatch: matched.has(node.id),
+      contextOnly: !matched.has(node.id),
+    }));
+}
+
+function buildLayerPath(nodes: BlockSnapshot[], selectedId: string | null): BlockSnapshot[] {
+  if (!selectedId) return [];
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const selected = byId.get(selectedId);
+  if (!selected) return [];
+
+  const path: BlockSnapshot[] = [];
+  const seen = new Set<string>();
+  let current: BlockSnapshot | undefined = selected;
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    path.push(current);
+    current = current.layerParentId ? byId.get(current.layerParentId) : undefined;
+  }
+  return path.reverse();
+}
+
+const LAYER_MINI_CHILD_SLOTS = 4;
 
 export default function EditCanvas() {
-  const hostRef = useRef<HTMLDivElement | null>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const setShadowSelectedRef = useRef<((id: string | null) => void) | null>(null);
-  const dragOriginRef = useRef<DragOrigin | null>(null);
-  const pendingMoveRef = useRef<PendingMove | null>(null);
-  const visualRafRef = useRef<number | null>(null);
-  const commitTimerRef = useRef<number | null>(null);
-
-  const emitHtml = useWorkspaceStore((s) => s.emitCache.html);
-  const emitCss = useWorkspaceStore((s) => s.emitCache.css);
-  const emitI18n = useWorkspaceStore((s) => s.emitCache.i18n);
-  const htmlCount = useWorkspaceStore((s) => s.workspaces.html.blockCount);
-  const cssCount = useWorkspaceStore((s) => s.workspaces.css.blockCount);
-  const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
   const editSubmode = useUiStore((s) => s.editSubmode);
-  const previewLayer = useUiStore((s) => s.previewLayer);
   const zoom = useUiStore((s) => s.previewZoom);
+  const setPreviewZoom = useUiStore((s) => s.setPreviewZoom);
   const sheetCanvasWidth = useUiStore((s) => s.sheetCanvasWidth);
+  const setSheetCanvasWidth = useUiStore((s) => s.setSheetCanvasWidth);
+  const rolltemplateCanvasWidth = useUiStore((s) => s.rolltemplateCanvasWidth);
+  const setRolltemplateCanvasWidth = useUiStore((s) => s.setRolltemplateCanvasWidth);
   const snapEnabled = useUiStore((s) => s.snapEnabled);
   const toggleSnap = useUiStore((s) => s.toggleSnapEnabled);
-  const sanitize = usePreviewStore((s) => s.sanitize);
-  const darkMode = usePreviewStore((s) => s.darkMode);
-  const [lastMove, setLastMove] = useState<string | null>(null);
-  const [viewportWidth, setViewportWidth] = useState(0);
-  const [optimisticMoves, setOptimisticMoves] = useState<Record<string, OptimisticMove>>({});
+  const editPlacementMode = useUiStore((s) => s.editPlacementMode);
+  const setEditPlacementMode = useUiStore((s) => s.setEditPlacementMode);
   const [layerSearch, setLayerSearch] = useState('');
-
-  const effectiveLayer = editSubmode === 'rolltemplate' ? 'roll' : previewLayer;
-  const isEmpty = htmlCount + cssCount + i18nCount === 0;
-  const fitScale =
-    zoom === 'fit' && viewportWidth > 0
-      ? Math.min(1, Math.max(0.25, (viewportWidth - 48) / sheetCanvasWidth))
-      : 1;
-  const scale = zoom === 'fit' ? fitScale : zoom;
-  const optimisticHtml = useMemo(
-    () => applyOptimisticPositions(emitHtml, optimisticMoves),
-    [emitHtml, optimisticMoves],
-  );
-
-  const parts = useMemo(
-    () =>
-      buildSheetParts({
-        html: optimisticHtml,
-        css: emitCss,
-        i18n: emitI18n,
-        sanitize,
-        darkMode,
-        previewLayer: effectiveLayer,
-        includeEditorOverlays: false,
-      }),
-    [optimisticHtml, emitCss, emitI18n, sanitize, darkMode, effectiveLayer],
-  );
-
-  const snap = useCallback(
-    (value: number) => {
-      const px = Math.max(0, Math.round(value));
-      return snapEnabled ? Math.round(px / 8) * 8 : px;
-    },
-    [snapEnabled],
-  );
+  const canvasWidth = editSubmode === 'rolltemplate' ? rolltemplateCanvasWidth : sheetCanvasWidth;
+  const setCanvasWidth = editSubmode === 'rolltemplate'
+    ? setRolltemplateCanvasWidth
+    : setSheetCanvasWidth;
+  const minWidth = editSubmode === 'rolltemplate' ? 200 : 320;
+  const maxWidth = editSubmode === 'rolltemplate' ? 600 : 2000;
+  const structureVersion = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
+  const adapter = getBlocklyAdapter();
+  const canUndo = useMemo(() => {
+    void structureVersion;
+    return adapter.canUndo('html');
+  }, [adapter, structureVersion]);
+  const canRedo = useMemo(() => {
+    void structureVersion;
+    return adapter.canRedo('html');
+  }, [adapter, structureVersion]);
+  const runHistoryAction = useCallback((action: 'undo' | 'redo') => {
+    const changed = action === 'undo' ? adapter.undo('html') : adapter.redo('html');
+    if (!changed) return;
+    const selectedId = useWorkspaceStore.getState().selectedBlockId;
+    if (selectedId && !adapter.getBlock('html', selectedId)) {
+      useWorkspaceStore.getState().setSelectedBlockId(null, 'tree');
+    }
+  }, [adapter]);
 
   useEffect(() => {
-    const node = scrollRef.current;
-    if (!node) return;
-    const update = () => setViewportWidth(node.clientWidth);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(node);
-    return () => ro.disconnect();
-  }, []);
-
-  const cleanupDragVisual = useCallback(() => {
-    const origin = dragOriginRef.current;
-    if (!origin) return;
-    origin.el.style.transform = origin.origTransform;
-    origin.el.style.transition = origin.origTransition;
-    origin.el.style.willChange = origin.origWillChange;
-    origin.el.style.position = origin.origPosition;
-    origin.el.style.left = origin.origStyleLeft;
-    origin.el.style.top = origin.origStyleTop;
-    if (origin.containingBlockEl) {
-      origin.containingBlockEl.style.position = origin.origContainingBlockPosition;
-    }
-  }, []);
-
-  const lockVisualAtDrop = useCallback((origin: DragOrigin, pending: PendingMove) => {
-    if (origin.containingBlockEl && origin.containingBlockNeedsRelative) {
-      origin.containingBlockEl.style.position = 'relative';
-    }
-    origin.el.style.transition = origin.origTransition;
-    origin.el.style.willChange = origin.origWillChange;
-    origin.el.style.transform = origin.origTransform;
-    origin.el.style.position = 'absolute';
-    origin.el.style.left = `${pending.left}px`;
-    origin.el.style.top = `${pending.top}px`;
-  }, []);
-
-  const commitMoveLater = useCallback((pending: PendingMove) => {
-    pendingMoveRef.current = null;
-    if (commitTimerRef.current != null) window.clearTimeout(commitTimerRef.current);
-    commitTimerRef.current = window.setTimeout(() => {
-      commitTimerRef.current = null;
-      commitMove(pending);
-    }, 0);
-  }, []);
-
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes(FRIENDLY_WIDGET_MIME)) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-    }
-  }, []);
-
-  const onDrop = useCallback((e: React.DragEvent) => {
-    const payload = e.dataTransfer.getData(FRIENDLY_WIDGET_MIME);
-    if (!payload) return;
-    const preset = decodeFriendlyWidgetDrag(payload);
-    if (!preset) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
-    const container = findDropContainer(hostRef.current, e.clientX, e.clientY);
-    markDropContainer(hostRef.current, null);
-    const id = appendFriendlyWidgetPreset(preset, pos, {
-      mode: container ? 'flow' : 'absolute',
-      containerBlockId: container?.blockId ?? null,
-    });
-    if (id) {
-      setLastMove(
-        container
-          ? `${preset.label} inserted into ${container.label}`
-          : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
-      );
-    }
-  }, []);
-
-  const handleNativeDragLeave = useCallback((event: Event) => {
-    const e = event as DragEvent;
-    const host = hostRef.current;
-    if (!host) return;
-    const related = e.relatedTarget as Node | null;
-    if (related && (host === related || host.contains(related))) return;
-    markDropContainer(host, null);
-  }, []);
-
-  const handleNativeDragOver = useCallback((event: Event) => {
-    const e = event as DragEvent;
-    if (!hasFriendlyWidgetPayload(e.dataTransfer)) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-    markDropContainer(hostRef.current, findDropContainer(hostRef.current, e.clientX, e.clientY)?.blockId ?? null);
-  }, []);
-
-  const handleNativeDrop = useCallback((event: Event) => {
-    const e = event as DragEvent;
-    const payload = e.dataTransfer?.getData(FRIENDLY_WIDGET_MIME) ?? '';
-    if (!payload) return;
-    const preset = decodeFriendlyWidgetDrag(payload);
-    if (!preset) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    const pos = measureDropPosition(hostRef.current, scrollRef.current, e.clientX, e.clientY);
-    const container = findDropContainer(hostRef.current, e.clientX, e.clientY);
-    markDropContainer(hostRef.current, null);
-    const id = appendFriendlyWidgetPreset(preset, pos, {
-      mode: container ? 'flow' : 'absolute',
-      containerBlockId: container?.blockId ?? null,
-    });
-    if (id) {
-      setLastMove(
-        container
-          ? `${preset.label} inserted into ${container.label}`
-          : `${preset.label} added: ${Math.round(pos.left)}px, ${Math.round(pos.top)}px`,
-      );
-    }
-  }, []);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-
-    const mounted = mountSheetShadow(host, {
-      html: parts.html,
-      css: parts.css,
-      layer: effectiveLayer,
-      darkMode,
-      disableNativeControls: true,
-      disableInlineTextEdit: true,
-      disableContextMenu: true,
-      getLayerRoleForBlock: (blockId) => {
-        const block = getBlocklyAdapter().getBlock('html', blockId);
-        return block ? getLayerRole(block.type) : null;
-      },
-      onSelect: (blockId) => setShadowSelectedRef.current?.(blockId),
-      onDragStart: (blockId) => {
-        const origin = resolveDragOrigin(host, blockId);
-        dragOriginRef.current = origin;
-        pendingMoveRef.current = null;
-        if (!origin) {
-          setLastMove('이 블록은 위치 값을 저장할 필드가 없어 움직일 수 없어요.');
-          return;
-        }
-        origin.el.style.transition = 'none';
-        origin.el.style.willChange = 'transform';
-      },
-      onDragMove: (blockId, dx, dy) => {
-        const origin = dragOriginRef.current;
-        if (!origin || origin.blockId !== blockId) return;
-        const scale = origin.scale || 1;
-        pendingMoveRef.current = {
-          ws: origin.ws,
-          blockId,
-          kind: origin.kind,
-          left: snap(origin.origLeft + dx / scale),
-          top: snap(origin.origTop + dy / scale),
-          origStyle: origin.origStyle,
-          containingBlockId: origin.containingBlockId,
-          containingBlockStyle: origin.containingBlockStyle,
-          containingBlockNeedsRelative: origin.containingBlockNeedsRelative,
-        };
-        if (visualRafRef.current == null) {
-          visualRafRef.current = window.requestAnimationFrame(() => {
-            visualRafRef.current = null;
-            const current = dragOriginRef.current;
-            const pending = pendingMoveRef.current;
-            if (!current || !pending || current.blockId !== pending.blockId) return;
-            const tx = pending.left - current.origLeft;
-            const ty = pending.top - current.origTop;
-            current.el.style.transform = `${current.origTransform ? `${current.origTransform} ` : ''}translate3d(${tx}px, ${ty}px, 0)`;
-          });
-        }
-      },
-      onDragEnd: () => {
-        if (visualRafRef.current != null) {
-          window.cancelAnimationFrame(visualRafRef.current);
-          visualRafRef.current = null;
-        }
-        const origin = dragOriginRef.current;
-        const pending = pendingMoveRef.current;
-        if (origin && pending) {
-          lockVisualAtDrop(origin, pending);
-          setOptimisticMoves((moves) => ({
-            ...moves,
-            [pending.blockId]: {
-              left: pending.left,
-              top: pending.top,
-              containingBlockId: pending.containingBlockId,
-              containingBlockStyle: pending.containingBlockStyle,
-              containingBlockNeedsRelative: pending.containingBlockNeedsRelative,
-            },
-          }));
-          setLastMove(`${pending.left}px, ${pending.top}px`);
-          commitMoveLater(pending);
-        } else {
-          cleanupDragVisual();
-          pendingMoveRef.current = null;
-        }
-        dragOriginRef.current = null;
-      },
-    });
-
-    setShadowSelectedRef.current = mounted.setSelected;
-    const shadowBody = mounted.shadow.querySelector<HTMLElement>('body.charsheet');
-    host.addEventListener('dragover', handleNativeDragOver);
-    host.addEventListener('drop', handleNativeDrop);
-    host.addEventListener('dragleave', handleNativeDragLeave);
-    mounted.shadow.addEventListener('dragover', handleNativeDragOver);
-    mounted.shadow.addEventListener('drop', handleNativeDrop);
-    mounted.shadow.addEventListener('dragleave', handleNativeDragLeave);
-    shadowBody?.addEventListener('dragover', handleNativeDragOver);
-    shadowBody?.addEventListener('drop', handleNativeDrop);
-    shadowBody?.addEventListener('dragleave', handleNativeDragLeave);
-    return () => {
-      if (visualRafRef.current != null) window.cancelAnimationFrame(visualRafRef.current);
-      if (commitTimerRef.current != null) window.clearTimeout(commitTimerRef.current);
-      cleanupDragVisual();
-      pendingMoveRef.current = null;
-      dragOriginRef.current = null;
-      setShadowSelectedRef.current = null;
-      host.removeEventListener('dragover', handleNativeDragOver);
-      host.removeEventListener('drop', handleNativeDrop);
-      host.removeEventListener('dragleave', handleNativeDragLeave);
-      mounted.shadow.removeEventListener('dragover', handleNativeDragOver);
-      mounted.shadow.removeEventListener('drop', handleNativeDrop);
-      mounted.shadow.removeEventListener('dragleave', handleNativeDragLeave);
-      shadowBody?.removeEventListener('dragover', handleNativeDragOver);
-      shadowBody?.removeEventListener('drop', handleNativeDrop);
-      shadowBody?.removeEventListener('dragleave', handleNativeDragLeave);
-      mounted.cleanup();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.isContentEditable || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT') return;
+      if (event.key.toLowerCase() === 'z' && event.shiftKey) {
+        event.preventDefault();
+        runHistoryAction('redo');
+      } else if (event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        runHistoryAction('undo');
+      } else if (event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        runHistoryAction('redo');
+      }
     };
-  }, [
-    parts,
-    effectiveLayer,
-    darkMode,
-    snap,
-    handleNativeDragOver,
-    handleNativeDrop,
-    handleNativeDragLeave,
-    cleanupDragVisual,
-    lockVisualAtDrop,
-    commitMoveLater,
-  ]);
-
-  useEffect(() => {
-    const handle = window.setTimeout(() => {
-      setOptimisticMoves((moves) => {
-        let changed = false;
-        const next = { ...moves };
-        for (const [blockId, move] of Object.entries(moves)) {
-          if (htmlOrCssHasPosition(emitHtml, emitCss, blockId, move.left, move.top)) {
-            delete next[blockId];
-            changed = true;
-          }
-        }
-        return changed ? next : moves;
-      });
-    }, 0);
-    return () => window.clearTimeout(handle);
-  }, [emitHtml, emitCss]);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [runHistoryAction]);
 
   return (
     <div
       className="flex flex-1 min-h-0 flex-col bg-[var(--bg-canvas)]"
       data-testid="edit-canvas-root"
       data-edit-submode={editSubmode}
+      data-edit-render-owner="persistent-iframe"
     >
-      <div className="flex h-9 shrink-0 items-center gap-3 border-b border-border bg-[var(--bg-elevated)] px-3 text-xs">
+      <div
+        className="flex h-9 shrink-0 items-center gap-3 border-b border-border bg-[var(--bg-elevated)] px-3 text-xs"
+        data-testid="edit-surface-toolbar"
+      >
         <span className="font-medium text-foreground">
           {editSubmode === 'rolltemplate' ? '굴림 결과 편집' : '시트 편집'}
         </span>
+        <div className="ml-auto flex items-center gap-1" role="group" aria-label="편집 기록">
+          <button
+            type="button"
+            onClick={() => runHistoryAction('undo')}
+            disabled={!canUndo}
+            className="grid h-6 w-6 place-items-center rounded border border-border text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            title="되돌리기 (Ctrl/Cmd+Z)"
+            aria-label="되돌리기"
+            data-testid="edit-history-undo"
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => runHistoryAction('redo')}
+            disabled={!canRedo}
+            className="grid h-6 w-6 place-items-center rounded border border-border text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            title="다시 실행 (Ctrl/Cmd+Shift+Z)"
+            aria-label="다시 실행"
+            data-testid="edit-history-redo"
+          >
+            <Redo2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
         <button
           type="button"
           onClick={toggleSnap}
           className={cn(
             'rounded border px-2 py-0.5 text-xs',
             snapEnabled
-              ? 'border-[var(--color-primary,#2563eb)] bg-[var(--color-primary,#2563eb)] text-white'
+              ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
               : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
           )}
-          title="8px 단위로 맞추기"
+          title="8px 격자에 맞추기"
           data-testid="edit-canvas-snap-toggle"
         >
-          snap {snapEnabled ? '8px' : 'off'}
+          격자 {snapEnabled ? '8px' : '끔'}
         </button>
-        <div className="ml-auto text-[10px] text-muted-foreground tabular-nums">
-          {lastMove ?? '요소를 끌어 옮기면 HTML/CSS 위치 값에 반영돼요.'}
+        <div
+          className="flex items-center overflow-hidden rounded border border-border bg-[var(--bg-elevated-2)]"
+          data-testid="edit-placement-mode"
+        >
+          <button
+            type="button"
+            onClick={() => setEditPlacementMode('flow')}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              editPlacementMode === 'flow'
+                ? 'bg-[var(--primary)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="틀의 배치 규칙에 따라 주변 요소와 함께 정렬합니다."
+            data-testid="edit-placement-flow"
+          >
+            흐름
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditPlacementMode('free')}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              editPlacementMode === 'free'
+                ? 'bg-[var(--primary)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="선택한 틀을 기준으로 원하는 위치에 배치합니다."
+            data-testid="edit-placement-free"
+          >
+            자유
+          </button>
+        </div>
+        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          너비
+          <input
+            key={`${editSubmode}-${canvasWidth}`}
+            type="number"
+            min={minWidth}
+            max={maxWidth}
+            step={10}
+            defaultValue={canvasWidth}
+            onBlur={(event) => {
+              const next = Number(event.currentTarget.value);
+              if (Number.isFinite(next)) setCanvasWidth(next);
+              else event.currentTarget.value = String(canvasWidth);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+            className="h-6 w-[76px] rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-right text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+            aria-label={editSubmode === 'rolltemplate' ? '굴림 결과 캔버스 폭' : '시트 캔버스 폭'}
+            data-testid="edit-canvas-width-input"
+          />
+          px
+        </label>
+        <div
+          className="flex items-center overflow-hidden rounded border border-border bg-[var(--bg-elevated-2)]"
+          data-testid="edit-zoom-control"
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewZoom('fit')}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              zoom === 'fit'
+                ? 'bg-[var(--primary)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="전체 시트를 작업 영역에 맞춥니다."
+            data-testid="edit-zoom-fit"
+          >
+            맞춤
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewZoom(1)}
+            className={cn(
+              'px-2 py-0.5 text-xs',
+              zoom === 1
+                ? 'bg-[var(--primary)] text-white'
+                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+            )}
+            title="Roll20 시트 크기 그대로 봅니다."
+            data-testid="edit-zoom-100"
+          >
+            100%
+          </button>
         </div>
       </div>
-
       <div
         className="grid flex-1 min-h-0"
-        style={{ gridTemplateColumns: '248px minmax(0, 1fr)' }}
+        style={{ gridTemplateColumns: `${EDIT_SURFACE_LAYER_PANEL_WIDTH_PX}px minmax(0, 1fr)` }}
       >
         <EditLayerPanel search={layerSearch} onSearchChange={setLayerSearch} />
         <div
-          ref={scrollRef}
-          className="min-h-0 overflow-auto p-5"
-          data-testid="edit-canvas-scroll"
-          onDragOver={onDragOver}
-          onDrop={onDrop}
-        >
-          {isEmpty ? (
-            <div
-              className="flex min-h-[420px] items-center justify-center rounded border border-dashed border-border bg-[var(--bg-elevated)] text-sm text-muted-foreground"
-              data-testid="edit-canvas-empty"
-            >
-              HTML/CSS를 불러오거나 요소를 놓으면 여기에서 바로 편집할 수 있어요.
-            </div>
-          ) : (
-            <div
-              className="mx-auto"
-              style={{
-                width: `${sheetCanvasWidth * scale}px`,
-                minHeight: `${Math.max(600, 900 * scale)}px`,
-                maxWidth: 'none',
-              }}
-            >
-              <div
-                style={{
-                  width: `${sheetCanvasWidth}px`,
-                  minHeight: '900px',
-                  transform: `scale(${scale})`,
-                  transformOrigin: 'top left',
-                }}
-              >
-                <div
-                  ref={hostRef}
-                  data-testid="edit-canvas-shadow-host"
-                  className="block min-h-[900px] overflow-visible bg-white"
-                  style={{ width: `${sheetCanvasWidth}px` }}
-                  onDragOver={onDragOver}
-                  onDrop={onDrop}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+          className="min-h-0 bg-[var(--bg-canvas)]"
+          data-testid="edit-canvas-iframe-slot"
+          aria-hidden="true"
+        />
       </div>
-      <PreviewToolbar />
     </div>
   );
 }
+
 
 function EditLayerPanel({
   search,
@@ -479,70 +313,132 @@ function EditLayerPanel({
   onSearchChange: (value: string) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const tab = useUiStore((s) => s.treeWorkspaceTab);
-  const setTab = useUiStore((s) => s.setTreeWorkspaceTab);
+  // The Figma-style layer tree represents rendered HTML objects. CSS and
+  // translation remain editable in their dedicated code/block workspaces;
+  // mixing them into this tree made drop targets look like visual layers when
+  // they could never appear on the sheet canvas.
+  const tab: WorkspaceKey = 'html';
   const selectedId = useWorkspaceStore((s) => s.selectedBlockId);
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
   const structureVersion = useWorkspaceStore((s) => s.workspaces[tab].structureVersion);
+  const [collapsedLayerIds, setCollapsedLayerIds] = useState<Set<string>>(() => new Set());
 
   const nodes = useMemo(() => {
     void structureVersion;
     return getBlocklyAdapter().listAllBlocks(tab);
   }, [tab, structureVersion]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return nodes;
-    return nodes.filter(
-      (node) =>
-        node.type.toLowerCase().includes(q) ||
-        node.label.toLowerCase().includes(q) ||
-        node.preview.toLowerCase().includes(q),
-    );
-  }, [nodes, search]);
+  const filtered = useMemo(() => filterLayersWithAncestors(nodes, search), [nodes, search]);
+  const selectedPath = useMemo(() => buildLayerPath(nodes, selectedId), [nodes, selectedId]);
+  const visibleNodes = useMemo(() => {
+    if (search.trim()) return filtered;
+    const nodeById = new Map(nodes.map((item) => [item.id, item]));
+    return filtered.filter(({ node }) => {
+      let parentId = node.layerParentId;
+      const seen = new Set<string>();
+      while (parentId && !seen.has(parentId)) {
+        if (collapsedLayerIds.has(parentId)) return false;
+        seen.add(parentId);
+        parentId = nodeById.get(parentId)?.layerParentId ?? null;
+      }
+      return true;
+    });
+  }, [collapsedLayerIds, filtered, nodes, search]);
+
+  useEffect(() => {
+    const validIds = new Set(nodes.filter((node) => node.childCount > 0).map((node) => node.id));
+    setCollapsedLayerIds((current) => {
+      const next = new Set(Array.from(current).filter((id) => validIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [nodes]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const parentIds = selectedPath.slice(0, -1).map((node) => node.id);
+    if (parentIds.length === 0) return;
+    setCollapsedLayerIds((current) => {
+      const next = new Set(current);
+      let changed = false;
+      for (const parentId of parentIds) {
+        if (next.delete(parentId)) changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [selectedId, selectedPath]);
 
   const virtualizer = useVirtualizer({
-    count: filtered.length,
+    count: visibleNodes.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 30,
+    estimateSize: () => 42,
     overscan: 10,
   });
 
+  useEffect(() => {
+    if (!selectedId) return;
+    const index = visibleNodes.findIndex((item) => item.node.id === selectedId);
+    if (index < 0) return;
+    virtualizer.scrollToIndex(index, { align: 'center' });
+  }, [selectedId, visibleNodes, virtualizer]);
+
+  const toggleLayer = useCallback((blockId: string) => {
+    setCollapsedLayerIds((current) => {
+      const next = new Set(current);
+      if (next.has(blockId)) next.delete(blockId);
+      else next.add(blockId);
+      return next;
+    });
+  }, []);
+
   const moveLayer = useCallback(
-    (draggedId: string, targetId: string) => {
+    (draggedId: string, targetId: string, mode: LayerDropMode) => {
       if (draggedId === targetId) return;
+      if (wouldCreateLayerCycle(nodes, draggedId, targetId)) return;
       const adapter = getBlocklyAdapter();
-      const nested = adapter.nestBlockInContainer(tab, draggedId, targetId);
-      const moved = nested || adapter.moveBlockBefore(tab, draggedId, targetId);
+      const moved =
+        mode === 'inside'
+          ? adapter.nestBlockInContainer(tab, draggedId, targetId)
+          : mode === 'after'
+            ? adapter.moveBlockAfter(tab, draggedId, targetId)
+            : adapter.moveBlockBefore(tab, draggedId, targetId);
       if (!moved) return;
       bumpStructure(tab, adapter.countBlocks(tab));
       setSelected(draggedId, 'tree');
+    },
+    [bumpStructure, nodes, setSelected, tab],
+  );
+
+  const ejectLayer = useCallback(
+    (blockId: string) => {
+      const adapter = getBlocklyAdapter();
+      if (!adapter.moveBlockOutOfContainer(tab, blockId)) return;
+      bumpStructure(tab, adapter.countBlocks(tab));
+      setSelected(blockId, 'tree');
     },
     [bumpStructure, setSelected, tab],
   );
 
   return (
-    <aside className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]">
+    <aside
+      className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]"
+      data-testid="edit-layer-panel"
+    >
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3 text-xs font-medium text-foreground">
         <Layers className="h-3.5 w-3.5" />
-        레이어
+        <span>레이어</span>
+        <span className="ml-auto rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
+          {search.trim() ? `${visibleNodes.filter((item) => item.searchMatch).length}+맥락 ${visibleNodes.length}/${nodes.length}` : `${visibleNodes.length}/${nodes.length}`}
+        </span>
       </div>
-      <div className="grid grid-cols-3 gap-1 border-b border-border p-2">
-        {(['html', 'css', 'i18n'] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={`rounded px-2 py-1 text-[11px] ${
-              tab === key
-                ? 'bg-[var(--bg-active)] text-foreground'
-                : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
-            }`}
-          >
-            {key === 'i18n' ? '번역' : key.toUpperCase()}
-          </button>
-        ))}
+      <div
+        className="flex items-center justify-between border-b border-border px-3 py-2"
+        data-testid="edit-layer-workspace"
+      >
+        <span className="text-[10px] font-medium text-muted-foreground">HTML 구조</span>
+        <span className="rounded border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-200">
+          시트에 표시되는 레이어
+        </span>
       </div>
       <div className="border-b border-border p-2">
         <div className="relative">
@@ -553,11 +449,61 @@ function EditLayerPanel({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="레이어 검색"
             className="h-7 w-full rounded border border-border bg-[var(--bg-elevated-2)] pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-ring"
+            data-testid="edit-layer-search"
           />
         </div>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-sm bg-rose-400/80" />
+            담기 가능
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-sm bg-emerald-400/80" />
+            하위 요소
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-sm bg-zinc-500/70" />
+            단일 요소
+          </span>
+        </div>
       </div>
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
-        {filtered.length === 0 ? (
+      {selectedPath.length > 0 && (
+        <div
+          className="border-b border-border px-2 py-2"
+          data-testid="edit-layer-selection-path"
+          data-r20-layer-path-depth={selectedPath.length}
+        >
+          <div className="text-[10px] font-medium text-muted-foreground">선택 위치</div>
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            {selectedPath.map((node, index) => {
+              const role = getLayerRole(node.type);
+              const isCurrent = index === selectedPath.length - 1;
+              return (
+                <button
+                  key={node.id}
+                  type="button"
+                  onClick={() => setSelected(node.id, 'tree')}
+                  data-testid="edit-layer-path-item"
+                  data-r20-block-id={node.id}
+                  data-r20-layer-role-kind={role.kind}
+                  data-r20-layer-path-current={isCurrent ? '1' : '0'}
+                  className={cn(
+                    'max-w-full truncate rounded border px-1.5 py-0.5 text-[10px]',
+                    isCurrent
+                      ? 'border-orange-400/70 bg-orange-500/15 text-orange-100'
+                      : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
+                  )}
+                  title={`${node.label} (${node.type})${node.preview ? ` - ${node.preview}` : ''}`}
+                >
+                  {node.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto" data-testid="edit-layer-scroll">
+        {visibleNodes.length === 0 ? (
           <div className="px-3 py-8 text-center text-[11px] leading-relaxed text-muted-foreground">
             표시할 레이어가 없습니다.
           </div>
@@ -567,8 +513,9 @@ function EditLayerPanel({
             style={{ height: `${virtualizer.getTotalSize() + 8}px` }}
           >
             {virtualizer.getVirtualItems().map((row) => {
-              const node = filtered[row.index];
-              if (!node) return null;
+              const item = visibleNodes[row.index];
+              if (!item) return null;
+              const { node } = item;
               return (
                 <div
                   key={node.id}
@@ -577,9 +524,15 @@ function EditLayerPanel({
                 >
                   <EditLayerRow
                     node={node}
+                    workspace={tab}
                     selected={node.id === selectedId}
+                    searchMatch={item.searchMatch}
+                    contextOnly={item.contextOnly}
                     onSelect={() => setSelected(node.id, 'tree')}
                     onMove={moveLayer}
+                    onEject={ejectLayer}
+                    collapsed={collapsedLayerIds.has(node.id)}
+                    onToggleCollapse={toggleLayer}
                   />
                 </div>
               );
@@ -593,607 +546,314 @@ function EditLayerPanel({
 
 const EditLayerRow = memo(function EditLayerRow({
   node,
+  workspace,
   selected,
+  searchMatch,
+  contextOnly,
   onSelect,
   onMove,
+  onEject,
+  collapsed,
+  onToggleCollapse,
 }: {
   node: BlockSnapshot;
+  workspace: WorkspaceKey;
   selected: boolean;
+  searchMatch: boolean;
+  contextOnly: boolean;
   onSelect: () => void;
-  onMove: (draggedId: string, targetId: string) => void;
+  onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
+  onEject: (blockId: string) => void;
+  collapsed: boolean;
+  onToggleCollapse: (blockId: string) => void;
 }) {
-  const role = getLayerRole(node.type);
+  const [dropMode, setDropMode] = useState<LayerDropMode | null>(null);
+  const role = useMemo(() => {
+    const base = getLayerRole(node.type);
+    return {
+      ...base,
+      canReceiveChildren:
+        base.canReceiveChildren && getBlocklyAdapter().canNestInContainer(workspace, node.id),
+    };
+  }, [node.id, node.type, workspace]);
+  const pickMode = useCallback(
+    (e: ReactDragEvent<HTMLElement>): LayerDropMode => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5;
+      if (y < 0.28) return 'before';
+      if (y > 0.72) return 'after';
+      return role.canReceiveChildren ? 'inside' : y < 0.5 ? 'before' : 'after';
+    },
+    [role.canReceiveChildren],
+  );
   return (
-    <button
-      type="button"
+    <div
       draggable
+      role="button"
+      tabIndex={0}
+      data-testid="edit-layer-row"
+      data-r20-block-id={node.id}
+      data-r20-layer-role-kind={role.kind}
+      data-r20-can-drop={role.canReceiveChildren ? '1' : '0'}
+      data-r20-default-drop-mode={role.defaultDropMode}
+      data-r20-layer-drop-mode={dropMode ?? ''}
+      data-r20-layer-parent-id={node.layerParentId ?? ''}
+      data-r20-layer-previous-id={node.layerPreviousId ?? ''}
+      data-r20-layer-relation={node.layerRelation}
+      data-r20-layer-child-count={node.childCount}
+      data-r20-layer-search-match={searchMatch ? '1' : '0'}
+      data-r20-layer-context-only={contextOnly ? '1' : '0'}
+      data-r20-layer-selected={selected ? '1' : '0'}
+      aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
       onClick={onSelect}
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-layer-block', node.id);
         e.dataTransfer.effectAllowed = 'move';
+        document.body.dataset.r20LayerDraggingBlock = node.id;
+      }}
+      onDragLeave={() => setDropMode(null)}
+      onDragEnd={() => {
+        setDropMode(null);
+        delete document.body.dataset.r20LayerDraggingBlock;
       }}
       onDragOver={(e) => {
+        e.currentTarget.setAttribute('data-r20-layer-drop-mode', '');
+        setDropMode(null);
         if (!e.dataTransfer.types.includes('application/x-r20-layer-block')) return;
+        const draggedId =
+          document.body.dataset.r20LayerDraggingBlock ||
+          e.dataTransfer.getData('application/x-r20-layer-block');
+        if (draggedId === node.id) {
+          e.dataTransfer.dropEffect = 'none';
+          return;
+        }
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
+        setDropMode(pickMode(e));
       }}
       onDrop={(e) => {
-        const draggedId = e.dataTransfer.getData('application/x-r20-layer-block');
+        const draggedId =
+          document.body.dataset.r20LayerDraggingBlock ||
+          e.dataTransfer.getData('application/x-r20-layer-block');
         if (!draggedId) return;
         e.preventDefault();
         e.stopPropagation();
-        onMove(draggedId, node.id);
+        const mode = pickMode(e);
+        setDropMode(null);
+        delete document.body.dataset.r20LayerDraggingBlock;
+        onMove(draggedId, node.id, mode);
       }}
-      className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs ${
+      className={`relative flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs ${
         selected
           ? 'bg-orange-500/20 text-foreground ring-1 ring-orange-500/60'
-          : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
+          : contextOnly
+            ? 'text-muted-foreground/70 hover:bg-[var(--bg-hover)] hover:text-muted-foreground'
+            : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
+      } ${
+        dropMode === 'inside'
+          ? 'ring-1 ring-rose-400/80'
+          : dropMode === 'before'
+            ? 'shadow-[inset_0_2px_0_rgba(96,165,250,0.95)]'
+            : dropMode === 'after'
+              ? 'shadow-[inset_0_-2px_0_rgba(96,165,250,0.95)]'
+              : ''
       }`}
       style={{ paddingLeft: `${8 + node.depth * 12}px` }}
     >
+      {node.depth > 0 && (
+        <span
+          aria-hidden
+          data-testid="edit-layer-depth-guide"
+          className="pointer-events-none absolute bottom-1 top-1 border-l border-border/70"
+          style={{ left: `${8 + (node.depth - 1) * 12}px` }}
+        />
+      )}
       <span
         aria-hidden
-        title={role.canReceiveChildren ? `${role.label} container` : role.label}
+        data-testid="edit-layer-role-rail"
+        className={cn(
+          'pointer-events-none absolute bottom-1 left-0 top-1 w-1 rounded-r',
+          role.canReceiveChildren ? 'bg-rose-400/70' : 'bg-zinc-500/45',
+          node.layerRelation === 'child' && 'bg-emerald-400/70',
+          selected && 'bg-orange-400',
+        )}
+      />
+      {dropMode && (
+        <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 rounded bg-rose-500 px-1.5 py-0.5 text-[9px] font-medium text-white">
+          {formatDropModeLabel(dropMode)}
+        </span>
+      )}
+      <span
+        aria-hidden
+        title={role.canReceiveChildren ? `${role.label} 컨테이너` : role.label}
         className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[9px] ${role.className}`}
       >
         {role.icon}
       </span>
-      <span className="truncate font-mono text-[10.5px]">{node.type}</span>
-      {node.preview && <span className="truncate text-[10px] opacity-70">· {node.preview}</span>}
-    </button>
+      {node.childCount > 0 ? (
+        <button
+          type="button"
+          className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground"
+          aria-label={collapsed ? '하위 레이어 펼치기' : '하위 레이어 접기'}
+          title={collapsed ? '하위 레이어 펼치기' : '하위 레이어 접기'}
+          data-testid="edit-layer-collapse-toggle"
+          data-r20-block-id={node.id}
+          data-r20-layer-collapsed={collapsed ? '1' : '0'}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleCollapse(node.id);
+          }}
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+        </button>
+      ) : (
+        <span aria-hidden className="h-5 w-5 shrink-0" />
+      )}
+      <LayerMiniMap
+        roleKind={role.kind}
+        canReceiveChildren={role.canReceiveChildren}
+        childCount={node.childCount}
+        relation={node.layerRelation}
+        selected={selected}
+        defaultDropMode={role.defaultDropMode}
+      />
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate font-mono text-[10.5px]">{node.type}</span>
+          <span className="shrink-0 rounded border border-border/80 bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
+            {formatLayerRelationLabel(node.layerRelation)}
+          </span>
+          <span className="shrink-0 rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
+            {role.label}
+          </span>
+          {node.childCount > 0 && (
+            <span
+              data-testid="edit-layer-child-count"
+              title={`하위 요소 ${node.childCount}개`}
+              className="shrink-0 rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] text-emerald-200"
+            >
+              {node.childCount}
+            </span>
+          )}
+          {role.canReceiveChildren && (
+            <span className="shrink-0 rounded border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-200">
+              담기 가능
+            </span>
+          )}
+          {contextOnly && (
+            <span
+              data-testid="edit-layer-context-badge"
+              className="shrink-0 rounded border border-border/80 bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground"
+            >
+              상위 맥락
+            </span>
+          )}
+          {role.defaultDropMode !== 'none' && (
+            <span className="shrink-0 rounded border border-border/80 bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
+              {role.defaultDropMode === 'flow' ? '흐름' : '자유'}
+            </span>
+          )}
+        </span>
+        {node.preview && (
+          <span className="block truncate text-[10px] opacity-70">- {node.preview}</span>
+        )}
+      </span>
+      {node.layerParentId && (
+        <button
+          type="button"
+          className="grid h-6 w-6 shrink-0 place-items-center rounded border border-border/80 text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground"
+          title="한 단계 바깥으로 꺼내기"
+          aria-label="한 단계 바깥으로 꺼내기"
+          data-testid="edit-layer-eject"
+          data-r20-block-id={node.id}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onEject(node.id);
+          }}
+        >
+          <Ungroup className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
   );
 });
 
-function commitMove(pending: PendingMove): void {
-  const adapter = getBlocklyAdapter();
-  let parentClass: string | null = null;
-  if (
-    pending.containingBlockId &&
-    pending.containingBlockNeedsRelative &&
-    adapter.hasBlockField(pending.ws, pending.containingBlockId, 'STYLE')
-  ) {
-    parentClass = ensureDesignClass(adapter, pending.ws, pending.containingBlockId);
-    if (parentClass) {
-      adapter.setBlockField(
-        pending.ws,
-        pending.containingBlockId,
-        'STYLE',
-        removeCssDeclarations(pending.containingBlockStyle, ['position']),
-      );
-      upsertDesignCssRule(parentClass, { position: 'relative' });
-    } else {
-      adapter.setBlockField(
-        pending.ws,
-        pending.containingBlockId,
-        'STYLE',
-        upsertCssDeclarations(pending.containingBlockStyle, { position: 'relative' }),
-      );
-    }
-  }
-  if (pending.kind === 'position-fields') {
-    adapter.setBlockField(pending.ws, pending.blockId, 'LEFT_PX', String(pending.left));
-    adapter.setBlockField(pending.ws, pending.blockId, 'TOP_PX', String(pending.top));
-    patchEmitCacheAfterMove(pending);
-    return;
-  }
-  const designClass = ensureDesignClass(adapter, pending.ws, pending.blockId);
-  if (designClass) {
-    adapter.setBlockField(
-      pending.ws,
-      pending.blockId,
-      'STYLE',
-      removeCssDeclarations(pending.origStyle, ['position', 'left', 'top']),
-    );
-    upsertDesignCssRule(designClass, {
-      position: 'absolute',
-      left: `${pending.left}px`,
-      top: `${pending.top}px`,
-    });
-    patchEmitCacheAfterCssMove(pending, designClass, parentClass);
-    return;
-  }
-  adapter.setBlockField(
-    pending.ws,
-    pending.blockId,
-    'STYLE',
-    upsertCssDeclarations(pending.origStyle, {
-      position: 'absolute',
-      left: `${pending.left}px`,
-      top: `${pending.top}px`,
-    }),
+function LayerMiniMap({
+  roleKind,
+  canReceiveChildren,
+  childCount,
+  relation,
+  selected,
+  defaultDropMode,
+}: {
+  roleKind: ReturnType<typeof getLayerRole>['kind'];
+  canReceiveChildren: boolean;
+  childCount: number;
+  relation: BlockSnapshot['layerRelation'];
+  selected: boolean;
+  defaultDropMode: ReturnType<typeof getLayerRole>['defaultDropMode'];
+}) {
+  const visibleSlots = Math.min(LAYER_MINI_CHILD_SLOTS, Math.max(0, childCount));
+  const isContainer = canReceiveChildren || roleKind === 'frame' || roleKind === 'flow' || roleKind === 'table';
+  return (
+    <span
+      aria-hidden
+      data-testid="edit-layer-mini-map"
+      data-r20-layer-mini-role={roleKind}
+      data-r20-layer-mini-can-drop={canReceiveChildren ? '1' : '0'}
+      data-r20-layer-mini-child-count={childCount}
+      data-r20-layer-mini-relation={relation}
+      data-r20-layer-mini-drop-mode={defaultDropMode}
+      className={cn(
+        'grid h-5 w-9 shrink-0 items-center rounded border px-1',
+        selected
+          ? 'border-orange-400/80 bg-orange-400/15'
+          : canReceiveChildren
+          ? 'border-rose-400/60 bg-rose-400/10'
+            : 'border-border/70 bg-[var(--bg-elevated-2)]',
+      )}
+    >
+      <span
+        className={cn(
+          'relative block h-3 rounded-[3px] border',
+          isContainer
+            ? 'border-rose-300/70 bg-rose-400/10'
+            : 'border-zinc-500/50 bg-zinc-500/15',
+          roleKind === 'table' && 'border-amber-300/80 bg-amber-400/10',
+          roleKind === 'flow' && 'border-teal-300/80 bg-teal-400/10',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute bottom-[2px] top-[2px] w-[2px] rounded-full',
+            relation === 'child' ? 'left-[2px] bg-emerald-300/90' : 'left-1/2 bg-zinc-400/70',
+          )}
+        />
+        {Array.from({ length: visibleSlots }).map((_, idx) => (
+          <span
+            key={idx}
+            className={cn(
+              'absolute bottom-[2px] top-[2px] rounded-[1px]',
+              canReceiveChildren ? 'bg-rose-200/85' : 'bg-zinc-300/55',
+            )}
+            style={{
+              left: `${9 + idx * 5}px`,
+              width: childCount > LAYER_MINI_CHILD_SLOTS && idx === LAYER_MINI_CHILD_SLOTS - 1 ? '5px' : '3px',
+            }}
+          />
+        ))}
+        {childCount > LAYER_MINI_CHILD_SLOTS && (
+          <span className="absolute right-[2px] top-[1px] h-[2px] w-[2px] rounded-full bg-rose-100/90" />
+        )}
+      </span>
+    </span>
   );
-  patchEmitCacheAfterMove(pending);
-}
-
-function ensureDesignClass(
-  adapter: ReturnType<typeof getBlocklyAdapter>,
-  ws: WorkspaceKey,
-  blockId: string,
-): string | null {
-  if (!adapter.hasBlockField(ws, blockId, 'CLASS')) return null;
-  const token = designClassForBlock(blockId);
-  const current = adapter.getBlockField(ws, blockId, 'CLASS') ?? '';
-  const parts = current.split(/\s+/).filter(Boolean);
-  if (!parts.includes(token)) {
-    adapter.setBlockField(ws, blockId, 'CLASS', [...parts, token].join(' '));
-  }
-  return token;
-}
-
-function upsertDesignCssRule(className: string, declarations: Record<string, string>): void {
-  const adapter = getBlocklyAdapter();
-  const rawBlockId = findOrCreateDesignCssBlock(adapter);
-  if (!rawBlockId) return;
-  const current = adapter.getBlockField('css', rawBlockId, 'CSS') ?? '';
-  adapter.setBlockField('css', rawBlockId, 'CSS', upsertCssRule(current, className, declarations));
-}
-
-function findOrCreateDesignCssBlock(adapter: ReturnType<typeof getBlocklyAdapter>): string | null {
-  const existing = adapter
-    .listAllBlocks('css')
-    .find((block) => block.type === 'r20_raw_css' && (adapter.getBlockField('css', block.id, 'CSS') ?? '').includes(DESIGN_CSS_MARKER));
-  if (existing) return existing.id;
-  const id = adapter.appendBlockToWorkspace('css', 'r20_raw_css');
-  if (!id) return null;
-  adapter.setBlockField('css', id, 'CSS', `/* ${DESIGN_CSS_MARKER} */`);
-  return id;
-}
-
-function upsertCssRule(
-  css: string,
-  className: string,
-  declarations: Record<string, string>,
-): string {
-  const selector = `.${className}`;
-  const rule = `${selector} { ${formatCssDeclarations(declarations)} }`;
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(`${escaped}\\s*\\{[^}]*\\}`, 'm');
-  const base = css.trim() || `/* ${DESIGN_CSS_MARKER} */`;
-  if (re.test(base)) return base.replace(re, rule);
-  return `${base}\n${rule}`;
-}
-
-function formatCssDeclarations(declarations: Record<string, string>): string {
-  return Object.entries(declarations)
-    .map(([key, value]) => `${key}: ${value};`)
-    .join(' ');
-}
-
-function patchEmitCacheAfterCssMove(
-  pending: PendingMove,
-  designClass: string,
-  parentClass: string | null,
-): void {
-  if (pending.ws !== 'html') return;
-  const store = useWorkspaceStore.getState();
-  let html = store.emitCache.html;
-  let css = store.emitCache.css;
-  if (!html) return;
-  if (pending.containingBlockId && pending.containingBlockNeedsRelative && parentClass) {
-    html = addClassToBlockTag(html, pending.containingBlockId, parentClass);
-    html = removeStyleDeclarationsFromBlockTag(html, pending.containingBlockId, ['position']);
-    css = upsertCssRule(css, parentClass, { position: 'relative' });
-  }
-  html = addClassToBlockTag(html, pending.blockId, designClass);
-  html = removeStyleDeclarationsFromBlockTag(html, pending.blockId, ['position', 'left', 'top']);
-  css = upsertCssRule(css, designClass, {
-    position: 'absolute',
-    left: `${pending.left}px`,
-    top: `${pending.top}px`,
-  });
-  store.setEmitCache({ html, css });
-}
-
-function patchEmitCacheAfterMove(pending: PendingMove): void {
-  if (pending.ws !== 'html') return;
-  const store = useWorkspaceStore.getState();
-  let html = store.emitCache.html;
-  if (!html) return;
-  if (pending.containingBlockId && pending.containingBlockNeedsRelative) {
-    html = applyOptimisticPositionDeclaration(
-      html,
-      pending.containingBlockId,
-      pending.containingBlockStyle,
-    );
-  }
-  html = applyOptimisticPosition(html, pending.blockId, pending.left, pending.top);
-  store.setEmitCache({ html });
-}
-
-function applyOptimisticPositions(
-  html: string,
-  moves: Record<string, OptimisticMove>,
-): string {
-  if (!html || Object.keys(moves).length === 0) return html;
-  let out = html;
-  for (const [blockId, move] of Object.entries(moves)) {
-    if (move.containingBlockId && move.containingBlockNeedsRelative) {
-      out = applyOptimisticPositionDeclaration(
-        out,
-        move.containingBlockId,
-        move.containingBlockStyle,
-      );
-    }
-    out = applyOptimisticPosition(out, blockId, move.left, move.top);
-  }
-  return out;
-}
-
-function applyOptimisticPositionDeclaration(
-  html: string,
-  blockId: string,
-  fallbackStyle: string,
-): string {
-  const tag = findBlockOpeningTag(html, blockId);
-  if (!tag) return html;
-  const styleMatch = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i);
-  const nextStyle = upsertCssDeclarations(styleMatch?.[2] ?? fallbackStyle, {
-    position: 'relative',
-  });
-  const nextTag = styleMatch
-    ? tag.text.replace(styleMatch[0], ` style=${styleMatch[1]}${escapeHtmlAttr(nextStyle)}${styleMatch[1]}`)
-    : tag.text.replace(/>$/, ` style="${escapeHtmlAttr(nextStyle)}">`);
-  return html.slice(0, tag.start) + nextTag + html.slice(tag.end);
-}
-
-function applyOptimisticPosition(
-  html: string,
-  blockId: string,
-  left: number,
-  top: number,
-): string {
-  const tag = findBlockOpeningTag(html, blockId);
-  if (!tag) return html;
-  const styleMatch = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i);
-  const nextStyle = upsertCssDeclarations(styleMatch?.[2] ?? '', {
-    position: 'absolute',
-    left: `${left}px`,
-    top: `${top}px`,
-  });
-  const nextTag = styleMatch
-    ? tag.text.replace(styleMatch[0], ` style=${styleMatch[1]}${escapeHtmlAttr(nextStyle)}${styleMatch[1]}`)
-    : tag.text.replace(/>$/, ` style="${escapeHtmlAttr(nextStyle)}">`);
-  return html.slice(0, tag.start) + nextTag + html.slice(tag.end);
-}
-
-function htmlOrCssHasPosition(
-  html: string,
-  css: string,
-  blockId: string,
-  left: number,
-  top: number,
-): boolean {
-  const tag = findBlockOpeningTag(html, blockId);
-  if (!tag) return false;
-  const style = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
-  if (parseCssPx(style, 'left') === left && parseCssPx(style, 'top') === top) return true;
-  const className = designClassForBlock(blockId);
-  if (!tagHasClass(tag.text, className)) return false;
-  const declarations = readCssRuleDeclarations(css, className);
-  return parseCssPx(declarations, 'left') === left && parseCssPx(declarations, 'top') === top;
-}
-
-function findBlockOpeningTag(html: string, blockId: string): { start: number; end: number; text: string } | null {
-  const marker = `data-r20-block-id="${blockId}"`;
-  let markerIndex = html.indexOf(marker);
-  if (markerIndex < 0) {
-    markerIndex = html.indexOf(`data-r20-block-id='${blockId}'`);
-  }
-  if (markerIndex < 0) return null;
-  const start = html.lastIndexOf('<', markerIndex);
-  const end = html.indexOf('>', markerIndex);
-  if (start < 0 || end < 0 || start > markerIndex) return null;
-  return { start, end: end + 1, text: html.slice(start, end + 1) };
-}
-
-function addClassToBlockTag(html: string, blockId: string, className: string): string {
-  const tag = findBlockOpeningTag(html, blockId);
-  if (!tag || tagHasClass(tag.text, className)) return html;
-  const classMatch = tag.text.match(/\sclass=(["'])([\s\S]*?)\1/i);
-  const nextTag = classMatch
-    ? tag.text.replace(
-        classMatch[0],
-        ` class=${classMatch[1]}${escapeHtmlAttr(`${classMatch[2]} ${className}`.trim())}${classMatch[1]}`,
-      )
-    : tag.text.replace(/>$/, ` class="${escapeHtmlAttr(className)}">`);
-  return html.slice(0, tag.start) + nextTag + html.slice(tag.end);
-}
-
-function removeStyleDeclarationsFromBlockTag(html: string, blockId: string, props: string[]): string {
-  const tag = findBlockOpeningTag(html, blockId);
-  if (!tag) return html;
-  const styleMatch = tag.text.match(/\sstyle=(["'])([\s\S]*?)\1/i);
-  if (!styleMatch) return html;
-  const nextStyle = removeCssDeclarations(styleMatch[2], props);
-  const nextTag = nextStyle
-    ? tag.text.replace(styleMatch[0], ` style=${styleMatch[1]}${escapeHtmlAttr(nextStyle)}${styleMatch[1]}`)
-    : tag.text.replace(styleMatch[0], '');
-  return html.slice(0, tag.start) + nextTag + html.slice(tag.end);
-}
-
-function tagHasClass(tag: string, className: string): boolean {
-  const cls = tag.match(/\sclass=(["'])([\s\S]*?)\1/i)?.[2] ?? '';
-  return cls.split(/\s+/).includes(className);
-}
-
-function designClassForBlock(blockId: string): string {
-  const safe = blockId.replace(/[^a-zA-Z0-9_-]/g, (ch) => ch.charCodeAt(0).toString(36));
-  return `r20-node-${safe.slice(0, 32)}`;
-}
-
-function readCssRuleDeclarations(css: string, className: string): string {
-  const selector = `.${className}`;
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, 'm'));
-  return match?.[1] ?? '';
-}
-
-function measureDropPosition(
-  host: HTMLElement | null,
-  fallback: HTMLElement | null,
-  clientX: number,
-  clientY: number,
-): { left: number; top: number } {
-  const shadow = host?.shadowRoot;
-  const root =
-    shadow?.querySelector<HTMLElement>('body.charsheet') ??
-    shadow?.querySelector<HTMLElement>('.charsheet');
-  const target = root ?? host ?? fallback;
-  if (!target) return { left: 24, top: 24 };
-  const rect = target.getBoundingClientRect();
-  return {
-    left: Math.max(0, Math.round(clientX - rect.left + target.scrollLeft)),
-    top: Math.max(0, Math.round(clientY - rect.top + target.scrollTop)),
-  };
-}
-
-function findDropContainer(
-  host: HTMLElement | null,
-  clientX: number,
-  clientY: number,
-): { blockId: string; label: string } | null {
-  const shadow = host?.shadowRoot;
-  if (!shadow) return null;
-  const start = shadow.elementFromPoint(clientX, clientY) as HTMLElement | null;
-  if (!start) return null;
-
-  const adapter = getBlocklyAdapter();
-  let cur: HTMLElement | null = start;
-  while (cur) {
-    const blockId = cur.dataset.r20BlockId;
-    if (blockId) {
-      const block = adapter.getBlock('html', blockId);
-      if (block && canReceiveChildren(block.type)) {
-        return { blockId, label: block.label || block.type };
-      }
-    }
-    cur = cur.parentElement;
-  }
-  return null;
-}
-
-function markDropContainer(host: HTMLElement | null, blockId: string | null): void {
-  const shadow = host?.shadowRoot;
-  if (!host || !shadow) return;
-  shadow.querySelectorAll<HTMLElement>('.r20-drop-target').forEach((el) => {
-    el.classList.remove('r20-drop-target');
-  });
-  if (!blockId) {
-    host.removeAttribute('data-r20-widget-dragging');
-    return;
-  }
-  host.setAttribute('data-r20-widget-dragging', '1');
-  const escaped = escapeAttr(blockId);
-  shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`)?.classList.add('r20-drop-target');
-}
-
-function hasFriendlyWidgetPayload(dataTransfer: DataTransfer | null): boolean {
-  if (!dataTransfer) return false;
-  for (let i = 0; i < dataTransfer.types.length; i += 1) {
-    if (dataTransfer.types[i] === FRIENDLY_WIDGET_MIME) return true;
-  }
-  return false;
-}
-
-function resolveDragOrigin(host: HTMLElement, blockId: string): DragOrigin | null {
-  const adapter = getBlocklyAdapter();
-  const el = getShadowBlockElement(host, blockId);
-  if (!el) return null;
-  const active = useWorkspaceStore.getState().activeWorkspace;
-  const order = [active, ...WORKSPACE_ORDER].filter(
-    (ws, idx, arr): ws is WorkspaceKey => !!ws && arr.indexOf(ws) === idx,
-  );
-
-  for (const ws of order) {
-    if (!adapter.getBlock(ws, blockId)) continue;
-    const hasLeft = adapter.hasBlockField(ws, blockId, 'LEFT_PX');
-    const hasTop = adapter.hasBlockField(ws, blockId, 'TOP_PX');
-    const style = adapter.getBlockField(ws, blockId, 'STYLE') ?? '';
-    const scale = getHostScale(host);
-    const common = {
-      el,
-      origTransform: el.style.transform,
-      origTransition: el.style.transition,
-      origWillChange: el.style.willChange,
-      origPosition: el.style.position,
-      origStyleLeft: el.style.left,
-      origStyleTop: el.style.top,
-      origContainingBlockPosition: '',
-    };
-
-    if (hasLeft && hasTop) {
-      return {
-        blockId,
-        ws,
-        kind: 'position-fields',
-        origLeft: parsePx(adapter.getBlockField(ws, blockId, 'LEFT_PX')),
-        origTop: parsePx(adapter.getBlockField(ws, blockId, 'TOP_PX')),
-        origStyle: style,
-        containingBlockEl: null,
-        containingBlockId: null,
-        containingBlockStyle: '',
-        containingBlockNeedsRelative: false,
-        scale,
-        ...common,
-      };
-    }
-
-    if (adapter.hasBlockField(ws, blockId, 'STYLE')) {
-      const measured = measureBlockPosition(host, blockId, ws);
-      return {
-        blockId,
-        ws,
-        kind: 'style-field',
-        origLeft: measured.containingBlockId ? measured.left : parseCssPx(style, 'left') ?? measured.left,
-        origTop: measured.containingBlockId ? measured.top : parseCssPx(style, 'top') ?? measured.top,
-        origStyle: style,
-        containingBlockEl: measured.containingBlockEl,
-        containingBlockId: measured.containingBlockId,
-        containingBlockStyle: measured.containingBlockStyle,
-        containingBlockNeedsRelative: measured.containingBlockNeedsRelative,
-        scale,
-        ...common,
-        origContainingBlockPosition: measured.containingBlockEl?.style.position ?? '',
-      };
-    }
-  }
-
-  return null;
-}
-
-function getShadowBlockElement(host: HTMLElement, blockId: string): HTMLElement | null {
-  const shadow = host.shadowRoot;
-  if (!shadow) return null;
-  const escaped = escapeAttr(blockId);
-  return shadow.querySelector<HTMLElement>(`[data-r20-block-id="${escaped}"]`);
-}
-
-function getHostScale(host: HTMLElement): number {
-  const rect = host.getBoundingClientRect();
-  return host.offsetWidth > 0 ? rect.width / host.offsetWidth : 1;
-}
-
-function measureBlockPosition(
-  host: HTMLElement,
-  blockId: string,
-  ws: WorkspaceKey,
-): {
-  left: number;
-  top: number;
-  containingBlockEl: HTMLElement | null;
-  containingBlockId: string | null;
-  containingBlockStyle: string;
-  containingBlockNeedsRelative: boolean;
-} {
-  const el = getShadowBlockElement(host, blockId);
-  const root =
-    host.shadowRoot?.querySelector<HTMLElement>('body.charsheet') ??
-    host.shadowRoot?.querySelector<HTMLElement>('.charsheet');
-  if (!el || !root) {
-    return {
-      left: 0,
-      top: 0,
-      containingBlockEl: null,
-      containingBlockId: null,
-      containingBlockStyle: '',
-      containingBlockNeedsRelative: false,
-    };
-  }
-  const adapter = getBlocklyAdapter();
-  const container = findEditableContainingBlock(el, blockId, ws);
-  const frame = container?.el ?? root;
-  const elRect = el.getBoundingClientRect();
-  const frameRect = frame.getBoundingClientRect();
-  return {
-    left: Math.max(0, Math.round(elRect.left - frameRect.left + frame.scrollLeft)),
-    top: Math.max(0, Math.round(elRect.top - frameRect.top + frame.scrollTop)),
-    containingBlockEl: container?.el ?? null,
-    containingBlockId: container?.blockId ?? null,
-    containingBlockStyle: container?.style ?? '',
-    containingBlockNeedsRelative: container
-      ? !hasPositionDeclaration(container.style) &&
-        getComputedStyle(container.el).position === 'static' &&
-        adapter.hasBlockField(ws, container.blockId, 'STYLE')
-      : false,
-  };
-}
-
-function findEditableContainingBlock(
-  el: HTMLElement,
-  blockId: string,
-  ws: WorkspaceKey,
-): { el: HTMLElement; blockId: string; style: string } | null {
-  const adapter = getBlocklyAdapter();
-  let cur = el.parentElement;
-  while (cur) {
-    const id = cur.dataset.r20BlockId;
-    if (id && id !== blockId && adapter.getBlock(ws, id) && adapter.hasBlockField(ws, id, 'STYLE')) {
-      return {
-        el: cur,
-        blockId: id,
-        style: adapter.getBlockField(ws, id, 'STYLE') ?? '',
-      };
-    }
-    cur = cur.parentElement;
-  }
-  return null;
-}
-
-function hasPositionDeclaration(style: string): boolean {
-  return /(?:^|;)\s*position\s*:/i.test(style);
-}
-
-function parsePx(value: string | null): number {
-  const n = Number.parseFloat(value ?? '0');
-  return Number.isFinite(n) ? n : 0;
-}
-
-function parseCssPx(style: string, prop: 'left' | 'top'): number | null {
-  const re = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)px\\s*(?:;|$)`, 'i');
-  const match = style.match(re);
-  if (!match) return null;
-  const n = Number.parseFloat(match[1]);
-  return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
-}
-
-function upsertCssDeclarations(style: string, declarations: Record<string, string>): string {
-  const map = new Map<string, string>();
-  for (const chunk of style.split(';')) {
-    const idx = chunk.indexOf(':');
-    if (idx <= 0) continue;
-    const key = chunk.slice(0, idx).trim().toLowerCase();
-    const value = chunk.slice(idx + 1).trim();
-    if (key && value) map.set(key, value);
-  }
-  for (const [key, value] of Object.entries(declarations)) {
-    map.set(key.toLowerCase(), value);
-  }
-  return Array.from(map.entries())
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('; ');
-}
-
-function removeCssDeclarations(style: string, props: string[]): string {
-  const remove = new Set(props.map((prop) => prop.toLowerCase()));
-  const map = new Map<string, string>();
-  for (const chunk of style.split(';')) {
-    const idx = chunk.indexOf(':');
-    if (idx <= 0) continue;
-    const key = chunk.slice(0, idx).trim().toLowerCase();
-    const value = chunk.slice(idx + 1).trim();
-    if (key && value && !remove.has(key)) map.set(key, value);
-  }
-  return Array.from(map.entries())
-    .map(([key, value]) => `${key}: ${value}`)
-    .join('; ');
-}
-
-function escapeAttr(raw: string): string {
-  return typeof CSS !== 'undefined' && CSS.escape
-    ? CSS.escape(raw)
-    : raw.replace(/(["\\])/g, '\\$1');
-}
-
-function escapeHtmlAttr(raw: string): string {
-  return raw.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }

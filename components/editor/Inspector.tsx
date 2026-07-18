@@ -3,9 +3,9 @@
 import { useCallback, useMemo } from 'react';
 import { MousePointerSquareDashed } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import { WORKSPACE_KEYS, useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { useUiStore } from '@/lib/stores/uiStore';
-import WidgetInspector from './WidgetInspector';
+import EditInspector from './EditInspector';
 import {
   getBlocklyAdapter,
   type BlockSnapshot,
@@ -26,7 +26,7 @@ import { CATEGORIES } from '@/lib/blocks/types';
 export default function Inspector() {
   const mainMode = useUiStore((s) => s.mainMode);
   if (mainMode === 'edit') {
-    return <WidgetInspector />;
+    return <EditInspector />;
   }
   return <BlockInspector />;
 }
@@ -37,23 +37,24 @@ function BlockInspector() {
   const htmlV = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const cssV = useWorkspaceStore((s) => s.workspaces.css.structureVersion);
   const i18nV = useWorkspaceStore((s) => s.workspaces.i18n.structureVersion);
+  const workerV = useWorkspaceStore((s) => s.workspaces.worker.structureVersion);
 
   const { snap, key }: { snap: BlockSnapshot | null; key: WorkspaceKey | null } = useMemo(() => {
     if (!selectedId) return { snap: null, key: null };
     const adapter = getBlocklyAdapter();
-    for (const k of ['html', 'css', 'i18n'] as WorkspaceKey[]) {
+    for (const k of WORKSPACE_KEYS) {
       const s = adapter.getBlock(k, selectedId);
       if (s) return { snap: s, key: k };
     }
     return { snap: null, key: null };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, htmlV, cssV, i18nV]);
+  }, [selectedId, htmlV, cssV, i18nV, workerV]);
 
   const fields: BlockFieldInfo[] = useMemo(() => {
     if (!selectedId || !key) return [];
     return getBlocklyAdapter().getBlockFields(key, selectedId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, key, htmlV, cssV, i18nV]);
+  }, [selectedId, key, htmlV, cssV, i18nV, workerV]);
 
   const onFieldChange = useCallback(
     (name: string, value: string) => {

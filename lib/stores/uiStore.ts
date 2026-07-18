@@ -11,14 +11,15 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type SidebarLeftMode = 'blocks';
 export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴림 결과)
-export type CodeSubTab = 'html' | 'css' | 'i18n';
-export type WorkspaceKey = 'html' | 'css' | 'i18n';
+export type CodeSubTab = 'html' | 'css' | 'i18n' | 'worker';
+export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'worker';
 export type PreviewZoom = 'fit' | number;               // D52
 // D26 ②-재재 — 메인 영역 분할 뷰. 'split' default (양쪽 동시), 'assemble'/'preview' = 한쪽만 max.
 export type MainMode = 'split' | 'assemble' | 'preview' | 'edit';
 
 // Phase A — WYSIWYG 모드. 편집 모드일 때 시트 / 굴림틀 sub-tab.
 export type EditSubmode = 'sheet' | 'rolltemplate';
+export type EditPlacementMode = 'flow' | 'free';
 
 // Phase A — 미리보기 9 레이어 (N2).
 export type PreviewLayer =
@@ -79,8 +80,11 @@ export interface UiState {
   // Phase A — 캔버스 폭 (시트 / 굴림틀 별도).
   sheetCanvasWidth: number;       // default 850
   rolltemplateCanvasWidth: number; // default 280
+  sheetCanvasWidthAuto: boolean;
+  rolltemplateCanvasWidthAuto: boolean;
   // Phase A — snap 8px on/off.
   snapEnabled: boolean;
+  editPlacementMode: EditPlacementMode;
   // Phase A — 선택된 위젯 (sheet 또는 rolltemplate).
   selectedWidgetId: string | null;
   hoveredWidgetId: string | null;
@@ -112,8 +116,12 @@ export interface UiState {
   setEditSubmode: (m: EditSubmode) => void;
   setSheetCanvasWidth: (w: number) => void;
   setRolltemplateCanvasWidth: (w: number) => void;
+  setAutoSheetCanvasWidth: (w: number) => void;
+  setAutoRolltemplateCanvasWidth: (w: number) => void;
+  resetCanvasWidths: () => void;
   setSnapEnabled: (b: boolean) => void;
   toggleSnapEnabled: () => void;
+  setEditPlacementMode: (m: EditPlacementMode) => void;
   setSelectedWidgetId: (id: string | null) => void;
   setHoveredWidgetId: (id: string | null) => void;
   setSfxEnabled: (b: boolean) => void;
@@ -132,7 +140,7 @@ const DEFAULT_STATE = {
   codeSubTab: 'html' as CodeSubTab,
   treeWorkspaceTab: 'html' as WorkspaceKey,
   blocksSearch: '',
-  blocksExpandedCategories: ['container', 'input', 'display', 'dice', 'i18n'],
+  blocksExpandedCategories: ['container', 'input', 'display', 'dice', 'i18n', 'sheet_worker'],
   blocksAdvancedShown: false,
   treeExpanded: {} as Record<string, boolean>,
   treeSearch: '',
@@ -141,7 +149,12 @@ const DEFAULT_STATE = {
   editSubmode: 'sheet' as EditSubmode,
   sheetCanvasWidth: 850,
   rolltemplateCanvasWidth: 280,
+  // Blank workspaces keep the documented fixed canvas defaults. Import
+  // explicitly enables intrinsic sizing after user content is available.
+  sheetCanvasWidthAuto: false,
+  rolltemplateCanvasWidthAuto: false,
   snapEnabled: true,
+  editPlacementMode: 'flow' as EditPlacementMode,
   selectedWidgetId: null as string | null,
   hoveredWidgetId: null as string | null,
   sfxEnabled: true,
@@ -207,11 +220,37 @@ export const useUiStore = create<UiState>()(
       setPreviewLayer: (l) => set({ previewLayer: l }),
       setEditSubmode: (m) => set({ editSubmode: m }),
       setSheetCanvasWidth: (w) =>
-        set({ sheetCanvasWidth: Math.max(320, Math.min(2000, Math.round(w))) }),
+        set({
+          sheetCanvasWidth: Math.max(320, Math.min(2000, Math.round(w))),
+          sheetCanvasWidthAuto: false,
+        }),
       setRolltemplateCanvasWidth: (w) =>
-        set({ rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))) }),
+        set({
+          rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))),
+          rolltemplateCanvasWidthAuto: false,
+        }),
+      setAutoSheetCanvasWidth: (w) =>
+        set({
+          sheetCanvasWidth: Math.max(320, Math.min(2000, Math.round(w))),
+          sheetCanvasWidthAuto: true,
+        }),
+      setAutoRolltemplateCanvasWidth: (w) =>
+        set({
+          rolltemplateCanvasWidth: Math.max(200, Math.min(600, Math.round(w))),
+          rolltemplateCanvasWidthAuto: true,
+        }),
+      resetCanvasWidths: () =>
+        set({
+          sheetCanvasWidth: DEFAULT_STATE.sheetCanvasWidth,
+          rolltemplateCanvasWidth: DEFAULT_STATE.rolltemplateCanvasWidth,
+          // A new sheet starts at the documented 850px canvas. Imported
+          // sheets opt into intrinsic-width measurement explicitly.
+          sheetCanvasWidthAuto: false,
+          rolltemplateCanvasWidthAuto: false,
+        }),
       setSnapEnabled: (b) => set({ snapEnabled: b }),
       toggleSnapEnabled: () => set((s) => ({ snapEnabled: !s.snapEnabled })),
+      setEditPlacementMode: (m) => set({ editPlacementMode: m }),
       setSelectedWidgetId: (id) => set({ selectedWidgetId: id }),
       setHoveredWidgetId: (id) => set({ hoveredWidgetId: id }),
       setSfxEnabled: (b) => set({ sfxEnabled: b }),
@@ -253,7 +292,10 @@ export const useUiStore = create<UiState>()(
         editSubmode: s.editSubmode,
         sheetCanvasWidth: s.sheetCanvasWidth,
         rolltemplateCanvasWidth: s.rolltemplateCanvasWidth,
+        sheetCanvasWidthAuto: s.sheetCanvasWidthAuto,
+        rolltemplateCanvasWidthAuto: s.rolltemplateCanvasWidthAuto,
         snapEnabled: s.snapEnabled,
+        editPlacementMode: s.editPlacementMode,
         previewLayer: s.previewLayer,
         sidebarLeftMode: s.sidebarLeftMode,
         sidebarLeftCollapsed: s.sidebarLeftCollapsed,

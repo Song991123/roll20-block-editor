@@ -289,6 +289,12 @@ function exprText(expr: Expr): string {
   }
 }
 
+function attrOnlyName(expr: Expr): string | null {
+  if (expr.kind === 'attr') return expr.name;
+  if (expr.kind === 'inline' || expr.kind === 'group') return attrOnlyName(expr.arg);
+  return null;
+}
+
 function detectCritFumble(detail: RollDetail): void {
   for (const d of detail.dice) {
     if (d.sides === 20) {
@@ -330,6 +336,13 @@ export function executeRolltemplate(
     (f: RolltemplateField): RolltemplateFieldResult => {
       if (!f.expr) {
         return { key: f.key, raw: f.raw, detail: null, text: f.literal ?? f.raw };
+      }
+      const attrOnly = attrOnlyName(f.expr);
+      if (attrOnly) {
+        const rawAttr = opts.attr?.(attrOnly);
+        if (typeof rawAttr === 'string' && !Number.isFinite(Number(rawAttr.trim()))) {
+          return { key: f.key, raw: f.raw, detail: null, text: rawAttr };
+        }
       }
       const det = executeExpression(f.expr, opts);
       return {

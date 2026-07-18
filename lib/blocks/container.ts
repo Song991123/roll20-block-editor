@@ -88,6 +88,13 @@ function sheetUserClassAttr(value: string): string {
   return ` class="${escapeAttr(out)}"`;
 }
 
+function generatedPositionClass(blockId: string): string {
+  const safe = String(blockId || 'position')
+    .replace(/[^a-zA-Z0-9_-]/g, (char) => `_${char.charCodeAt(0).toString(36)}_`)
+    .slice(0, 80);
+  return `sheet-r20-position-${safe || 'position'}`;
+}
+
 /** ` name="..."` (Roll20 attribute name 등). */
 function nameAttr(attrName: string, value: string): string {
   const v = value.trim();
@@ -280,6 +287,68 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
   },
 
   // 8) thead ----------------------------------------------------------------
+  {
+    type: 'r20_colgroup',
+    shape: 'c',
+    category: CONTAINER,
+    label: '표 열 묶음',
+    tooltip: 'table 안의 열 정의를 묶습니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('표 열 묶음')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS')
+          .appendField('열 수')
+          .appendField(new Blockly.FieldNumber(0, 0, 99999, 1), 'SPAN');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const span = Number(b.getFieldValue('SPAN') ?? 0);
+      const spanAttr = Number.isFinite(span) && span > 0 ? ` span="${Math.floor(span)}"` : '';
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(ctx, 'colgroup', `${sheetUserClassAttr(cls)}${spanAttr}${styleAttr(style)}`, content);
+    },
+  },
+
+  // table col ---------------------------------------------------------------
+  {
+    type: 'r20_table_col',
+    shape: 'stack',
+    category: CONTAINER,
+    label: '표 열',
+    tooltip: 'table 열 하나의 크기와 클래스를 지정합니다.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('표 열')
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
+        .appendField('열 수')
+        .appendField(new Blockly.FieldNumber(0, 0, 99999, 1), 'SPAN')
+        .appendField('너비')
+        .appendField(new Blockly.FieldTextInput(''), 'WIDTH');
+      b.appendDummyInput()
+        .appendField('스타일')
+        .appendField(new Blockly.FieldTextInput(''), 'STYLE');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const span = Number(b.getFieldValue('SPAN') ?? 0);
+      const spanAttr = Number.isFinite(span) && span > 0 ? ` span="${Math.floor(span)}"` : '';
+      const width = String(b.getFieldValue('WIDTH') ?? '').trim();
+      const widthAttr = width ? ` width="${escapeAttr(width)}"` : '';
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      return `<col${sheetUserClassAttr(cls)}${spanAttr}${widthAttr}${styleAttr(style)}>`;
+    },
+  },
+
+  // table head --------------------------------------------------------------
   {
     type: 'r20_thead',
     shape: 'c',
@@ -475,7 +544,93 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 16) section_wrap --------------------------------------------------------
+  // Structural label that contains controls or other child elements.
+  {
+    type: 'r20_label_container',
+    shape: 'c',
+    category: CONTAINER,
+    label: '컨트롤 라벨 그룹',
+    tooltip: '자식 입력 요소를 포함하는 label 컨테이너. for/class/style과 내부 순서를 보존합니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('컨트롤 라벨 그룹')
+          .appendField('for')
+          .appendField(new Blockly.FieldTextInput(''), 'FOR')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const forValue = String(b.getFieldValue('FOR') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(
+        ctx,
+        'label',
+        `${nameAttr('for', forValue)}${sheetUserClassAttr(cls)}${styleAttr(style)}`,
+        content,
+      );
+    },
+  },
+
+  // Structural list container for both unordered and ordered lists.
+  {
+    type: 'r20_list',
+    shape: 'c',
+    category: CONTAINER,
+    label: '목록',
+    tooltip: 'ul/ol 목록 컨테이너. 내부 항목 순서를 보존합니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('목록')
+          .appendField(new Blockly.FieldDropdown([
+            ['순서 없음 (ul)', 'ul'],
+            ['순서 있음 (ol)', 'ol'],
+          ]), 'TAG')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const tag = String(b.getFieldValue('TAG') ?? 'ul') === 'ol' ? 'ol' : 'ul';
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(ctx, tag, `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+    },
+  },
+
+  // Structural list item. Keeping this separate makes layer insertion inside
+  // lists explicit instead of treating every item as an opaque HTML blob.
+  {
+    type: 'r20_list_item',
+    shape: 'c',
+    category: CONTAINER,
+    label: '목록 항목',
+    tooltip: 'ul/ol 내부의 li 항목. 내부 순서와 자식 구조를 보존합니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('목록 항목')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(ctx, 'li', `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+    },
+  },
+
+  // 19) section_wrap --------------------------------------------------------
   //
   // 시트의 논리적 섹션 — Roll20 의 sheet-* class 관례 따름.
   {
@@ -601,6 +756,14 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const h = Number(b.getFieldValue('HEIGHT_PX') ?? 60);
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
+      const positionClass = generatedPositionClass(b.id);
+      const generatedRule = `.${positionClass} { position: absolute; left: ${left}px; top: ${top}px; width: ${w}px; height: ${h}px;${userStyle ? ` ${userStyle}` : ''} }`;
+      if (ctx.addGeneratedCss) {
+        ctx.addGeneratedCss(generatedRule);
+        return wrapTag(ctx, 'div', sheetUserClassAttr(`${cls} ${positionClass}`), content);
+      }
+      // Keep direct generator consumers backwards-compatible. The production
+      // emitter always provides addGeneratedCss, so normal output stays clean.
       const builtinStyle = `position:absolute;left:${left}px;top:${top}px;width:${w}px;height:${h}px;`;
       const mergedStyle = mergeStyle(userStyle, builtinStyle);
       return wrapTag(ctx, 'div', `${sheetUserClassAttr(cls)}${mergedStyle}`, content);

@@ -15,9 +15,14 @@ import { useEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { installPerfHook } from '@/lib/perf/hook';
 import MainAreaToolbar from './MainAreaToolbar';
 import WorkspaceSubToolbar from './WorkspaceSubToolbar';
+import {
+  EDIT_SURFACE_LAYER_PANEL_WIDTH_PX,
+  EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
+} from '@/lib/editor/editSurfaceLayout';
 import { installAutosave } from '@/lib/persist/autosave';
 import { loadWorkspace, AUTOSAVE_KEY, type SavedRecord } from '@/lib/persist/indexeddb';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
+import { useChatStore } from '@/lib/stores/chatStore';
 
 /**
  * 새 UX 셸 — Preview-first 3-zone grid + 메인 영역 분할 뷰 (D26 ②-재재).
@@ -126,10 +131,13 @@ export default function EditorShell() {
   const leftCollapsed = useUiStore((s) => s.sidebarLeftCollapsed);
   const rightCollapsed = useUiStore((s) => s.sidebarRightCollapsed);
   const rightWidth = useUiStore((s) => s.sidebarRightWidth);
+  const rightTab = useUiStore((s) => s.sidebarRightTab);
+  const chatCount = useChatStore((s) => s.rolls.length);
   const toggleLeft = useUiStore((s) => s.toggleSidebarLeft);
   const toggleRight = useUiStore((s) => s.toggleSidebarRight);
   const setLeftMode = useUiStore((s) => s.setSidebarLeftMode);
   const setRightTab = useUiStore((s) => s.setSidebarRightTab);
+  const resetCanvasWidths = useUiStore((s) => s.resetCanvasWidths);
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
 
@@ -161,12 +169,20 @@ export default function EditorShell() {
     return () => window.removeEventListener('keydown', onKey);
   }, [toggleLeft, toggleRight, setLeftMode, setRightTab, setMainMode, mainMode]);
 
-  const leftWidth = leftCollapsed ? 'var(--sidebar-left-collapsed)' : 'var(--sidebar-left-w)';
-  const rightWidthPx = rightCollapsed ? '0px' : `${rightWidth}px`;
+  const previewFocus = mainMode === 'preview';
+  // Preview hides editor chrome until a roll exists. Once ChatPane has a
+  // result, keep that one user-facing surface visible beside the same sheet.
+  const previewChatVisible = previewFocus && rightTab === 'chat' && chatCount > 0;
+  const leftWidth = previewFocus || leftCollapsed ? '0px' : 'var(--sidebar-left-w)';
+  const rightWidthPx = (previewFocus && !previewChatVisible) || rightCollapsed
+    ? '0px'
+    : `${rightWidth}px`;
 
-  // edit 모드 = workspace/preview 둘 다 hidden, EditCanvas 만 표시.
+  // Keep one canonical Roll20 iframe mounted across preview and edit. In edit
+  // mode the same pane is placed over the canvas slot while EditCanvas owns
+  // only the toolbar/layer chrome beneath it.
   const workspaceVisible = mainMode !== 'preview' && mainMode !== 'edit';
-  const previewVisible = mainMode !== 'assemble' && mainMode !== 'edit';
+  const previewVisible = mainMode !== 'assemble';
 
   // onResize: store getState() 로 fresh 읽기 — deps 가 [setMainSplit] 만 → stable callback.
   // 이전: deps=[mainSplit.left] → mousemove 다발 발생 시 closure stale → 한 drag 가 ~20px 한계.
@@ -189,28 +205,50 @@ export default function EditorShell() {
 
   // edit 모드는 캔버스 자체가 full pane.
   const editVisible = mainMode === 'edit';
+  const hiddenPaneStyle: CSSProperties = {
+    width: 0,
+    flexShrink: 0,
+    overflow: 'hidden',
+    pointerEvents: 'none',
+    visibility: 'hidden',
+  };
   let workspaceStyle: CSSProperties = {};
   let previewStyle: CSSProperties = {};
-  let editStyle: CSSProperties = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+  let editStyle: CSSProperties = hiddenPaneStyle;
   if (mainMode === 'split') {
     workspaceStyle = { width: `${mainSplit.left}%`, flexShrink: 0 };
     previewStyle = { width: `${mainSplit.right}%`, flexShrink: 0 };
   } else if (mainMode === 'assemble') {
     workspaceStyle = { flex: '1 1 auto' };
-    previewStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+    previewStyle = hiddenPaneStyle;
   } else if (mainMode === 'preview') {
-    workspaceStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+    workspaceStyle = hiddenPaneStyle;
     previewStyle = { flex: '1 1 auto' };
   } else {
     // mainMode === 'edit'
-    workspaceStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
-    previewStyle = { width: 0, flexShrink: 0, overflow: 'hidden', pointerEvents: 'none' };
+    workspaceStyle = hiddenPaneStyle;
+    previewStyle = {
+      position: 'absolute',
+      left: EDIT_SURFACE_LAYER_PANEL_WIDTH_PX,
+      top: EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
+      right: 0,
+      bottom: 0,
+      zIndex: 20,
+      minWidth: 0,
+      background: 'var(--bg-canvas)',
+    };
     editStyle = { flex: '1 1 auto' };
   }
 
   return (
-    <div className="app-shell dark flex h-screen flex-col bg-[var(--bg-app)] text-foreground">
-      <EditorHeader onNewSheet={() => setRecovered(null)} />
+    <div
+      className="app-shell pastel flex h-screen flex-col bg-[var(--bg-app)] text-foreground"
+      data-preview-focus={previewFocus ? 'true' : 'false'}
+    >
+      <EditorHeader onNewSheet={() => {
+        resetCanvasWidths();
+        setRecovered(null);
+      }} />
       {recovered && (
         <AutosaveBanner
           xml={recovered.xml}
@@ -228,10 +266,12 @@ export default function EditorShell() {
         <aside
           className={cn(
             'flex flex-col border-r border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
-            leftCollapsed && 'items-stretch',
+            (leftCollapsed || previewFocus) && 'border-r-0',
           )}
+          aria-hidden={previewFocus}
+          data-testid="sidebar-left"
         >
-          <SidebarLeft collapsed={leftCollapsed} />
+          {!leftCollapsed && !previewFocus && <SidebarLeft />}
         </aside>
 
         <section className="relative flex flex-col min-w-0 min-h-0 bg-[var(--bg-canvas)]">
@@ -261,8 +301,11 @@ export default function EditorShell() {
               style={previewStyle}
               data-testid="preview-pane"
               data-visible={previewVisible ? 'true' : 'false'}
+              data-persistent-render-surface="true"
+              data-edit-render-surface={mainMode === 'edit' ? 'iframe' : undefined}
+              aria-hidden={previewVisible ? undefined : true}
             >
-              {previewVisible && <PreviewMain />}
+              <PreviewMain />
             </div>
 
             <div
@@ -279,13 +322,15 @@ export default function EditorShell() {
         <aside
           className={cn(
             'flex flex-col border-l border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
-            rightCollapsed && 'border-l-0',
+            (rightCollapsed || previewFocus) && 'border-l-0',
           )}
+          aria-hidden={previewFocus && !previewChatVisible}
+          data-testid="sidebar-right"
         >
-          {!rightCollapsed && <SidebarRight />}
+          {!rightCollapsed && (!previewFocus || previewChatVisible) && <SidebarRight />}
         </aside>
       </main>
-      <Statusbar />
+      {!previewFocus && <Statusbar />}
     </div>
   );
 }

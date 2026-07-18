@@ -22,35 +22,68 @@
 
 import { useEffect } from 'react';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
-import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { useWorkspaceStore, WORKSPACE_KEYS } from '@/lib/stores/workspaceStore';
 import { emitAll } from './emit';
+
+let flushVersion = 0;
+
+/**
+ * Publish a committed edit immediately. Pointer-move events stay debounced;
+ * a completed drop should not wait for that debounce window before the live
+ * iframe receives the authored HTML/CSS.
+ */
+export function flushEmitPipeline(): void {
+  flushVersion += 1;
+  const state = useWorkspaceStore.getState();
+  const counts = WORKSPACE_KEYS.map((key) => state.workspaces[key].blockCount);
+  if (counts.every((count) => count === 0)) {
+    state.setEmitCache({ html: '', css: '', i18n: '', worker: '' });
+    state.setEmitWarnings([]);
+    return;
+  }
+
+  const adapter = getBlocklyAdapter();
+  const result = emitAll({
+    html: adapter.getWorkspace('html'),
+    css: adapter.getWorkspace('css'),
+    i18n: adapter.getWorkspace('i18n'),
+    worker: adapter.getWorkspace('worker'),
+  });
+  state.setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, worker: result.worker });
+  state.setEmitWarnings(result.warnings);
+}
 
 export function useEmitPipeline(): void {
   // Perf hot path #3: structureVersion replaces xmlCache string.
   const htmlV = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const cssV = useWorkspaceStore((s) => s.workspaces.css.structureVersion);
   const i18nV = useWorkspaceStore((s) => s.workspaces.i18n.structureVersion);
+  const workerV = useWorkspaceStore((s) => s.workspaces.worker.structureVersion);
   const htmlCount = useWorkspaceStore((s) => s.workspaces.html.blockCount);
   const cssCount = useWorkspaceStore((s) => s.workspaces.css.blockCount);
   const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
+  const workerCount = useWorkspaceStore((s) => s.workspaces.worker.blockCount);
   const setEmitCache = useWorkspaceStore((s) => s.setEmitCache);
   const setEmitWarnings = useWorkspaceStore((s) => s.setEmitWarnings);
 
   useEffect(() => {
-    if (htmlCount + cssCount + i18nCount === 0) {
-      setEmitCache({ html: '', css: '', i18n: '' });
+    if (htmlCount + cssCount + i18nCount + workerCount === 0) {
+      setEmitCache({ html: '', css: '', i18n: '', worker: '' });
       setEmitWarnings([]);
       return;
     }
 
+    const scheduledFlushVersion = flushVersion;
     const handle = window.setTimeout(() => {
+      if (scheduledFlushVersion !== flushVersion) return;
       const adapter = getBlocklyAdapter();
       const liveTotal =
         adapter.countBlocks('html') +
         adapter.countBlocks('css') +
-        adapter.countBlocks('i18n');
+        adapter.countBlocks('i18n') +
+        adapter.countBlocks('worker');
       if (liveTotal === 0) {
-        setEmitCache({ html: '', css: '', i18n: '' });
+        setEmitCache({ html: '', css: '', i18n: '', worker: '' });
         setEmitWarnings([]);
         return;
       }
@@ -59,10 +92,11 @@ export function useEmitPipeline(): void {
         html: adapter.getWorkspace('html'),
         css: adapter.getWorkspace('css'),
         i18n: adapter.getWorkspace('i18n'),
+        worker: adapter.getWorkspace('worker'),
       });
-      setEmitCache({ html: result.html, css: result.css, i18n: result.i18n });
+      setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, worker: result.worker });
       setEmitWarnings(result.warnings);
     }, 120);
     return () => window.clearTimeout(handle);
-  }, [htmlV, cssV, i18nV, htmlCount, cssCount, i18nCount, setEmitCache, setEmitWarnings]);
+  }, [htmlV, cssV, i18nV, workerV, htmlCount, cssCount, i18nCount, workerCount, setEmitCache, setEmitWarnings]);
 }

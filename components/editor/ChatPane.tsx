@@ -1,29 +1,13 @@
 'use client';
 
-/**
- * ChatPane — Roll20 채팅 패널 시뮬레이션 (우측 사이드 [채팅] 탭).
- *
- * Anchor:
- *   - docs/spec/08_wireframes.md W2-D
- *   - lib/stores/chatStore.ts (rolls)
- *   - lib/dice/executor.ts (RollResult)
- *
- * 동작:
- *   - chatStore.rolls 를 최신 카드 위로 렌더 (max 50)
- *   - 카드 = 발신자 / 표현식 / 결과 (총합 + dice breakdown) / 타임스탬프
- *   - rolltemplate 결과는 사용자 정의 rolltemplate body 안 `{{key}}` 치환
- *   - d20=20 → crit 강조 (배경 초록), d20=1 → fumble 강조 (배경 적색)
- *   - "지우기" 버튼 — 전체 history clear
- *
- * 굴림 발생은 lib/dice 의 executor 가 담당. 본 컴포넌트는 read-only 뷰.
- */
-
 import { useMemo } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { normalizeTranslationForRoll20 } from '@/lib/export/payload';
 import { useChatStore, type ChatRoll } from '@/lib/stores/chatStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { autoPrefixCssClasses } from '@/lib/preview/prefix';
 import type {
   ChatTextResult,
   ErrorResult,
@@ -49,10 +33,611 @@ function safeRolltemplateClass(name: string): string {
   return `sheet-rolltemplate-${safe || 'default'}`;
 }
 
-function extractRolltemplateCss(css: string): string {
-  const matches = css.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
-  return matches ? matches.join('\n') : '';
+type ChatFontPolicy =
+  | 'default'
+  | 'roll20-chat-fallback'
+  | 'roll20-sandbox-font-proxy'
+  | 'yshy-bookk-unavailable';
+type ChatTextPolicy = 'default' | 'roll20-auto-aa';
+type ChatShadowPolicy = 'default' | 'no-template-shadow';
+type ChatGeometryPolicy =
+  | 'default'
+  | 'tight-cell-spacing'
+  | 'roll20-chat-shell-width-340'
+  | 'aw2e-message-full-width'
+  | 'table-scale-x'
+  | 'aw2e-root-width-actual'
+  | 'coc-table-scale-x'
+  | 'coc-table-intrinsic-clamp'
+  | 'coc-table-actual-width'
+  | 'coc-crop-origin-y20'
+  | 'coc-overflow-crop-model'
+  | 'coc-overflow-crop-origin-y20'
+  | 'roll20-message-padding'
+  | 'roll20-break-word'
+  | 'roll20-intrinsic-spacing'
+  | 'roll20-border-spacing'
+  | 'roll20-letter-spacing';
+type ChatTypographyPolicy =
+  | 'default'
+  | 'roll20-shell-typography'
+  | 'roll20-template-typography'
+  | 'roll20-cell-metrics'
+  | 'aw2e-font-size-only'
+  | 'aw2e-text-metrics'
+  | 'aw2e-message-cell-font-context'
+  | 'aw2e-message-cell-wrap-context'
+  | 'yshy-table-font-context'
+  | 'yshy-bookk-missing-render'
+  | 'yshy-missing-bookk-table-font-context'
+  | 'yshy-sanitize-typography'
+  | 'yshy-bookk-fallback-only'
+  | 'yshy-korean-glyph-metrics'
+  | 'yshy-roll20-fallback-stack';
+type ChatPaintPolicy =
+  | 'default'
+  | 'roll20-dim-background'
+  | 'roll20-dim-brightness'
+  | 'roll20-dim-saturate'
+  | 'roll20-edge-shadow'
+  | 'coc-background-size-actual';
+
+const CHAT_DIAGNOSTICS_STORAGE_KEY = '__r20ChatDiagnostics';
+
+function isChatDiagnosticMode(): boolean {
+  return typeof window !== 'undefined' && window.localStorage.getItem(CHAT_DIAGNOSTICS_STORAGE_KEY) === '1';
 }
+
+function currentChatFontPolicy(): ChatFontPolicy {
+  if (!isChatDiagnosticMode()) return 'default';
+  const value = window.localStorage.getItem('__r20ChatFontPolicy');
+  if (
+    value === 'roll20-chat-fallback' ||
+    value === 'roll20-sandbox-font-proxy' ||
+    value === 'yshy-bookk-unavailable'
+  ) return value;
+  return 'default';
+}
+
+function currentChatTextPolicy(): ChatTextPolicy {
+  if (!isChatDiagnosticMode()) return 'default';
+  return window.localStorage.getItem('__r20ChatTextPolicy') === 'roll20-auto-aa'
+    ? 'roll20-auto-aa'
+    : 'default';
+}
+
+function currentChatShadowPolicy(): ChatShadowPolicy {
+  if (!isChatDiagnosticMode()) return 'default';
+  return window.localStorage.getItem('__r20ChatShadowPolicy') === 'no-template-shadow'
+    ? 'no-template-shadow'
+    : 'default';
+}
+
+function currentChatGeometryPolicy(): ChatGeometryPolicy {
+  if (!isChatDiagnosticMode()) return 'default';
+  const value = window.localStorage.getItem('__r20ChatGeometryPolicy');
+  if (
+    value === 'tight-cell-spacing' ||
+    value === 'roll20-chat-shell-width-340' ||
+    value === 'aw2e-message-full-width' ||
+    value === 'table-scale-x' ||
+    value === 'aw2e-root-width-actual' ||
+    value === 'coc-table-scale-x' ||
+    value === 'coc-table-intrinsic-clamp' ||
+    value === 'coc-table-actual-width' ||
+    value === 'coc-crop-origin-y20' ||
+    value === 'coc-overflow-crop-model' ||
+    value === 'coc-overflow-crop-origin-y20' ||
+    value === 'roll20-message-padding' ||
+    value === 'roll20-break-word' ||
+    value === 'roll20-intrinsic-spacing' ||
+    value === 'roll20-border-spacing' ||
+    value === 'roll20-letter-spacing'
+  ) return value;
+  return 'default';
+}
+
+function currentChatTypographyPolicy(): ChatTypographyPolicy {
+  if (!isChatDiagnosticMode()) return 'default';
+  const value = window.localStorage.getItem('__r20ChatTypographyPolicy');
+  if (
+    value === 'roll20-shell-typography' ||
+    value === 'roll20-template-typography' ||
+    value === 'roll20-cell-metrics' ||
+    value === 'aw2e-font-size-only' ||
+    value === 'aw2e-text-metrics' ||
+    value === 'aw2e-message-cell-font-context' ||
+    value === 'aw2e-message-cell-wrap-context' ||
+    value === 'yshy-table-font-context' ||
+    value === 'yshy-bookk-missing-render' ||
+    value === 'yshy-missing-bookk-table-font-context' ||
+    value === 'yshy-sanitize-typography' ||
+    value === 'yshy-bookk-fallback-only' ||
+    value === 'yshy-korean-glyph-metrics' ||
+    value === 'yshy-roll20-fallback-stack'
+  ) return value;
+  return 'default';
+}
+
+function currentChatPaintPolicy(): ChatPaintPolicy {
+  if (!isChatDiagnosticMode()) return 'default';
+  const value = window.localStorage.getItem('__r20ChatPaintPolicy');
+  if (
+    value === 'roll20-dim-background' ||
+    value === 'roll20-dim-brightness' ||
+    value === 'roll20-dim-saturate' ||
+    value === 'roll20-edge-shadow' ||
+    value === 'coc-background-size-actual'
+  ) return value;
+  return 'default';
+}
+
+function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'default'): string {
+  const prefixedCss = autoPrefixCssClasses(css);
+  const rawFontFaces = prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
+  const fontFaces = fontPolicy === 'roll20-chat-fallback'
+    ? []
+    : fontPolicy === 'yshy-bookk-unavailable'
+      ? rawFontFaces.filter((fontFace) => !/font-family\s*:\s*["']?BookkMyungjo-Bd["']?/i.test(fontFace))
+      : rawFontFaces;
+  const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
+  const rolltemplateCss = rewriteRoll20AssetUrls([...fontFaces, ...(matches ?? [])].join('\n'), {
+    proxyFontUrls: fontPolicy === 'roll20-sandbox-font-proxy',
+  });
+  return rolltemplateCss.trim() ? rolltemplateCss : '';
+}
+
+function rewriteRoll20AssetUrls(css: string, opts: { proxyFontUrls?: boolean } = {}): string {
+  return css.replace(/url\s*\(([^)]+)\)/gi, (_full, rawUrl: string) => {
+    const normalized = String(rawUrl).trim().replace(/^["']|["']$/g, '');
+    if (!/^https?:\/\//i.test(normalized)) return '';
+    if (!opts.proxyFontUrls && /\.(?:woff2?|ttf|otf|eot)(?:[?#].*)?$/i.test(normalized)) {
+      return `url("${normalized}")`;
+    }
+    if (
+      normalized.startsWith('https://imgsrv.roll20.net/') ||
+      normalized.startsWith('https://s3.amazonaws.com/files.d20.io') ||
+      normalized.startsWith('https://files.d20.io') ||
+      normalized.startsWith('https://app.roll20.net/images/')
+    ) {
+      return `url("${normalized}")`;
+    }
+    return `url("https://imgsrv.roll20.net/?src=${encodeURIComponent(normalized)}")`;
+  });
+}
+
+function parseTranslations(raw: string): Record<string, string> {
+  const text = normalizeTranslationForRoll20(String(raw ?? '')).trim();
+  if (!text) return {};
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter(
+        (entry): entry is [string, string] => typeof entry[1] === 'string',
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
+const roll20ChatShellCss = `
+.r20-chat-pane {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.r20-chat-pane .textchatcontainer {
+  font-synthesis: style;
+  text-rendering: optimizeSpeed;
+  padding: 0;
+  gap: 0;
+}
+.r20-chat-pane[data-r20-chat-text-policy="roll20-auto-aa"] .textchatcontainer {
+  text-rendering: auto;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-shadow-policy="no-template-shadow"] [class*="sheet-rolltemplate-"],
+.r20-chat-pane[data-r20-chat-shadow-policy="no-template-shadow"] [class*="sheet-rolltemplate-"] * {
+  text-shadow: none !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="tight-cell-spacing"] [class*="sheet-rolltemplate-"] td,
+.r20-chat-pane[data-r20-chat-geometry-policy="tight-cell-spacing"] [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-geometry-policy="tight-cell-spacing"] [class*="sheet-rolltemplate-"] .inlinerollresult {
+  letter-spacing: -0.075px !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-chat-shell-width-340"] .r20-chat-card-group,
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-chat-shell-width-340"] .r20-chat-card-group .message {
+  width: 340px;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="aw2e-message-full-width"] .r20-chat-card-group:has(.sheet-rolltemplate-aw),
+.r20-chat-pane[data-r20-chat-geometry-policy="aw2e-message-full-width"] .r20-chat-card-group .message:has(.sheet-rolltemplate-aw) {
+  width: 340px;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="table-scale-x"] [class*="sheet-rolltemplate-"] table {
+  transform: scaleX(0.981);
+  transform-origin: left top;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="aw2e-root-width-actual"] .sheet-rolltemplate-aw {
+  width: 279px;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-scale-x"] .sheet-rolltemplate-coc table {
+  transform: scaleX(0.981);
+  transform-origin: left top;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-intrinsic-clamp"] .sheet-rolltemplate-coc table {
+  border-spacing: 0 !important;
+  max-width: 1249px;
+  overflow-wrap: break-word;
+  width: max-content;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-actual-width"] .sheet-rolltemplate-coc table {
+  border-spacing: 0 !important;
+  overflow-wrap: break-word;
+  width: 1248.55px !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-crop-origin-y20"] .sheet-rolltemplate-coc table {
+  margin-top: 20px !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-message-padding"] .r20-chat-card-group .message {
+  padding-right: 28px;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-break-word"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-break-word"] .r20-chat-card-group [class*="sheet-rolltemplate-"] * {
+  overflow-wrap: break-word !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-intrinsic-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
+  border-spacing: 0 !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-border-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
+  border-spacing: 0 !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-intrinsic-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-intrinsic-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-intrinsic-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  letter-spacing: normal !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-letter-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-letter-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-geometry-policy="roll20-letter-spacing"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  letter-spacing: normal !important;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-shell-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-template-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"],
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-template-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-template-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-template-typography"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  color: rgb(64, 64, 64);
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-cell-metrics"] .r20-chat-card-group [class*="sheet-rolltemplate-"] {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-cell-metrics"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-cell-metrics"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-typography-policy="roll20-cell-metrics"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw table,
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw td {
+  font-size: 13.65px;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw table,
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw td {
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw table {
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw td {
+  font-size: 27.3px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw,
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw table {
+  color: rgb(64, 64, 64);
+  font-size: 13.65px;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
+.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw td {
+  color: rgb(64, 64, 64);
+  font-size: 27.3px;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
+  font-family: "__r20_missing_BookkMyungjo_Bd__", sans-serif !important;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc td {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
+  font-family: "Noto Sans KR", sans-serif !important;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc td {
+  font-family: "Noto Sans KR", sans-serif;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  font-size: 13.65px;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Noto Sans KR", sans-serif;
+  font-size: 13.65px;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
+  font-family: "BookkMyungjo-Bd", "Noto Sans KR", sans-serif;
+  letter-spacing: normal;
+  overflow-wrap: break-word;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0;
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  filter: brightness(0.965) saturate(0.985);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-brightness"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-brightness"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-brightness"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  filter: brightness(0.965);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-saturate"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-saturate"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-saturate"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  filter: saturate(0.985);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table {
+  box-shadow:
+    inset 1px 0 0 rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(0, 0, 0, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
+.r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
+  box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.08);
+}
+.r20-chat-pane[data-r20-chat-paint-policy="coc-background-size-actual"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  background-size: 1248.55px auto !important;
+}
+.r20-chat-pane .textchatcontainer .content {
+  line-height: 1.25em;
+  font-size: 1.05em;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+}
+.r20-chat-pane .textchatcontainer .tstamp {
+  display: none;
+  font-size: 0.8em;
+  color: #666;
+  padding: 0;
+  margin: -4px 0 2px;
+  position: relative;
+  left: -5px;
+  line-height: 1em;
+}
+.r20-chat-pane .textchatcontainer.withtimestamps .message .tstamp {
+  display: block;
+}
+.r20-chat-pane .textchatcontainer .by {
+  font-weight: 700;
+  position: relative;
+  left: -5px;
+}
+.r20-chat-pane .textchatcontainer .avatar {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  width: 28px;
+  height: 28px;
+}
+.r20-chat-pane .textchatcontainer .avatar::before {
+  content: "";
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 2px;
+  background: #c8c8c8;
+}
+.r20-chat-pane .textchatcontainer .message {
+  position: relative;
+  margin: 0;
+  padding-left: 45px;
+  padding-right: 16px;
+  padding-bottom: 7px;
+  background: #f1f1f1;
+  color: #333;
+  font-size: 13px;
+  line-height: 18px;
+}
+.r20-chat-pane .textchatcontainer.withoutavatars .message {
+  padding-left: 15px;
+}
+.r20-chat-pane .textchatcontainer .message.you {
+  background: #d3e5f5;
+}
+.r20-chat-pane .textchatcontainer .message.error {
+  background: #ffbaba;
+  color: #333;
+}
+.r20-chat-pane .textchatcontainer .message .spacer {
+  height: 2px;
+  margin-left: -45px;
+  margin-right: -15px;
+  margin-bottom: 7px;
+  background: #d7d7d7;
+}
+.r20-chat-pane .textchatcontainer.withoutavatars .message .spacer {
+  margin-left: -15px;
+}
+.r20-chat-pane .textchatcontainer .message.you .spacer {
+  background: #b1d9fa;
+}
+.r20-chat-pane .r20-chat-card-group {
+  display: block;
+  width: 328px;
+  min-width: 0;
+}
+.r20-chat-pane .r20-chat-card-group .message + .message {
+  margin-top: 0;
+}
+.r20-chat-pane .r20-chat-card-group .message {
+  box-sizing: border-box;
+  width: 328px;
+  min-width: 0;
+}
+.r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] {
+  box-sizing: content-box;
+  line-height: 17.0625px;
+}
+.r20-chat-pane .r20-chat-card-group [class*="sheet-rolltemplate-"] * {
+  box-sizing: content-box;
+}
+.r20-chat-pane .textchatcontainer .inlinerollresult {
+  background-color: #fef68e;
+  border: 2px solid #fef68e;
+  padding: 0 3px;
+  font-weight: 700;
+  cursor: help;
+  font-size: 1.1em;
+}
+.r20-chat-pane .textchatcontainer .inlinerollresult.fullcrit {
+  border-color: #3fb315;
+}
+.r20-chat-pane .textchatcontainer .inlinerollresult.fullfail {
+  border-color: #b31515;
+}
+.r20-chat-pane .sheet-rolltemplate-default table {
+  width: 100%;
+  background-color: #fff;
+  border: 1px solid rgba(112, 32, 130, 1);
+}
+.r20-chat-pane .sheet-rolltemplate-default caption {
+  background-color: rgba(112, 32, 130, 1);
+  color: #fff;
+  font-family: "Helvetica Neue", Helvetica, sans-serif;
+  font-weight: 300;
+  font-size: 1.1em;
+  padding: 5px;
+}
+.r20-chat-pane .sheet-rolltemplate-default td {
+  padding: 5px;
+  line-height: 1.4em;
+  vertical-align: top;
+}
+.r20-chat-pane .sheet-rolltemplate-default td:first-child {
+  font-weight: 700;
+  text-align: right;
+  min-width: 50px;
+  padding-right: 10px;
+}
+.r20-chat-pane .sheet-rolltemplate-default tr:nth-child(even) {
+  background-color: #eee;
+}
+`;
+
+const roll20ChatDiagnosticOverrideCss = `
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-actual-width"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0 !important;
+  max-width: 1248.55px !important;
+  overflow-wrap: break-word !important;
+  width: 1248.55px !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-model"] .r20-chat-card-group .message:has(.sheet-rolltemplate-coc) {
+  overflow: hidden;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-model"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0 !important;
+  max-width: 1248.55px !important;
+  overflow-wrap: break-word !important;
+  width: 1248.55px !important;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-origin-y20"] .r20-chat-card-group .message:has(.sheet-rolltemplate-coc) {
+  overflow: hidden;
+}
+.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-origin-y20"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+  border-spacing: 0 !important;
+  margin-top: 20px !important;
+  max-width: 1248.55px !important;
+  overflow-wrap: break-word !important;
+  width: 1248.55px !important;
+}
+`;
 
 function DiceBreakdown({ detail }: { detail: RollDetail }) {
   if (!detail.dice.length) {
@@ -112,17 +697,17 @@ function CardExpr({ detail, expression }: { detail: RollDetail; expression: stri
       <DiceBreakdown detail={detail} />
       {missing.length > 0 && (
         <div className="mt-1.5 text-[11px] text-amber-400">
-          ❓ 미정의 attr: {missing.map((m) => `@{${m}}`).join(', ')}
+          아직 값이 없는 attr: {missing.map((m) => `@{${m}}`).join(', ')}
         </div>
       )}
       {detail.isCrit && (
         <div className="mt-1.5 text-[11px] font-semibold text-green-400">
-          ✨ 크리티컬 (d20 = 20)
+          크리티컬 (d20 = 20)
         </div>
       )}
       {detail.isFumble && (
         <div className="mt-1.5 text-[11px] font-semibold text-red-400">
-          💥 펌블 (d20 = 1)
+          펌블 (d20 = 1)
         </div>
       )}
     </>
@@ -132,9 +717,11 @@ function CardExpr({ detail, expression }: { detail: RollDetail; expression: stri
 function CardRolltemplate({
   result,
   emittedHtml,
+  translations,
 }: {
   result: RolltemplateResult;
   emittedHtml: string;
+  translations: Record<string, string>;
 }) {
   const customBody = useMemo(
     () => extractRolltemplateBody(emittedHtml, result.templateName),
@@ -144,30 +731,30 @@ function CardRolltemplate({
     ? renderTemplateBody(customBody, result.fields, {
         anyCrit: result.anyCrit,
         anyFumble: result.anyFumble,
-      })
+      }, translations)
     : defaultRolltemplateBody(result);
+  const rolltemplateClassName = customBody
+    ? safeRolltemplateClass(result.templateName)
+    : [
+        'rt-card text-xs',
+        safeRolltemplateClass(result.templateName),
+        'rounded border border-[#c8c8c8] bg-white p-2 text-[#222]',
+      ].join(' ');
 
   return (
     <div>
-      <div className="text-[11px] text-[var(--fg-muted)] mb-1.5">
-        🎲 rolltemplate:{result.templateName}
-      </div>
       <div
-        className={[
-          'rt-card text-xs',
-          safeRolltemplateClass(result.templateName),
-          customBody ? '' : 'rounded border border-border bg-[var(--bg-elevated-2)] p-2',
-        ].join(' ')}
+        className={rolltemplateClassName}
         dangerouslySetInnerHTML={{ __html: innerHtml }}
       />
       {result.anyCrit && (
-        <div className="mt-1.5 text-[11px] font-semibold text-green-400">
-          ✨ 크리티컬 포함
+        <div className="mt-1.5 text-[11px] font-semibold text-green-600">
+          크리티컬 포함
         </div>
       )}
       {result.anyFumble && (
-        <div className="mt-1.5 text-[11px] font-semibold text-red-400">
-          💥 펌블 포함
+        <div className="mt-1.5 text-[11px] font-semibold text-red-600">
+          펌블 포함
         </div>
       )}
     </div>
@@ -177,7 +764,7 @@ function CardRolltemplate({
 function CardError({ error }: { error: ErrorResult }) {
   return (
     <div className="rounded border border-red-500/40 bg-red-500/5 p-2 text-xs text-red-400">
-      <div className="font-semibold mb-1">⚠ 굴림 실패</div>
+      <div className="font-semibold mb-1">굴림 실패</div>
       <div>{error.message}</div>
       {error.raw && (
         <div className="mt-1 font-mono text-[10px] text-[var(--fg-muted)]">{error.raw}</div>
@@ -190,37 +777,65 @@ function CardChat({ chat }: { chat: ChatTextResult }) {
   return <div className="text-xs text-foreground">{chat.text}</div>;
 }
 
-function RollCard({ card, emittedHtml }: { card: ChatRoll; emittedHtml: string }) {
+function RollCard({
+  card,
+  emittedHtml,
+  translations,
+}: {
+  card: ChatRoll;
+  emittedHtml: string;
+  translations: Record<string, string>;
+}) {
   const r = card.result;
+  const isRolltemplate = r.kind === 'rolltemplate';
+  if (isRolltemplate) {
+    return (
+      <div
+        data-r20-chat-card
+        data-r20-chat-kind={r.kind}
+        data-r20-chat-rolltemplate="1"
+        className="r20-chat-card-group"
+      >
+        <div className="message general you">
+          <div className="spacer" aria-hidden="true" />
+          <div className="avatar" aria-hidden="true" />
+          <time className="tstamp">{formatTime(card.ts)}</time>
+          <span className="by">{card.sender || 'Sheet'}:</span>
+        </div>
+        <div className="message general you">
+          <CardRolltemplate result={r} emittedHtml={emittedHtml} translations={translations} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       data-r20-chat-card
       data-r20-chat-kind={r.kind}
+      data-r20-chat-rolltemplate={isRolltemplate ? '1' : undefined}
       data-r20-chat-crit={r.kind === 'expr' && r.isCrit ? '1' : undefined}
       data-r20-chat-fumble={r.kind === 'expr' && r.isFumble ? '1' : undefined}
       className={[
-        'rounded border bg-[var(--bg-elevated)] p-2.5',
-        r.kind === 'expr' && r.isCrit
-          ? 'border-green-500/40 bg-green-500/5'
-          : r.kind === 'expr' && r.isFumble
-            ? 'border-red-500/40 bg-red-500/5'
-            : 'border-border',
-      ].join(' ')}
+        'message general',
+        isRolltemplate ? 'text-[#222]' : 'rounded border bg-[var(--bg-elevated)]',
+        !isRolltemplate &&
+          (r.kind === 'expr' && r.isCrit
+            ? 'border-green-500/40 bg-green-500/5'
+            : r.kind === 'expr' && r.isFumble
+              ? 'border-red-500/40 bg-red-500/5'
+              : 'border-border'),
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="text-[11px] font-semibold text-foreground/80">
-          {card.sender || 'Sheet'}
-        </div>
-        <time className="text-[10px] text-[var(--fg-muted)] font-mono">
-          {formatTime(card.ts)}
-        </time>
+      <div className="spacer" aria-hidden="true" />
+      <time className="tstamp">{formatTime(card.ts)}</time>
+      <div className="by">{card.sender || 'Sheet'}:</div>
+      <div className="content">
+        {r.kind === 'expr' && <CardExpr detail={r} expression={card.expression} />}
+        {r.kind === 'error' && <CardError error={r} />}
+        {r.kind === 'chat' && <CardChat chat={r} />}
       </div>
-      {r.kind === 'expr' && <CardExpr detail={r} expression={card.expression} />}
-      {r.kind === 'rolltemplate' && (
-        <CardRolltemplate result={r} emittedHtml={emittedHtml} />
-      )}
-      {r.kind === 'error' && <CardError error={r} />}
-      {r.kind === 'chat' && <CardChat chat={r} />}
     </div>
   );
 }
@@ -230,15 +845,38 @@ export default function ChatPane() {
   const clear = useChatStore((s) => s.clear);
   const emittedHtml = useWorkspaceStore((s) => s.emitCache.html);
   const emittedCss = useWorkspaceStore((s) => s.emitCache.css);
-  const rolltemplateCss = useMemo(() => extractRolltemplateCss(emittedCss), [emittedCss]);
+  const emittedI18n = useWorkspaceStore((s) => s.emitCache.i18n);
+  const chatFontPolicy = currentChatFontPolicy();
+  const chatTextPolicy = currentChatTextPolicy();
+  const chatShadowPolicy = currentChatShadowPolicy();
+  const chatGeometryPolicy = currentChatGeometryPolicy();
+  const chatTypographyPolicy = currentChatTypographyPolicy();
+  const chatPaintPolicy = currentChatPaintPolicy();
+  const chatDiagnosticsEnabled = isChatDiagnosticMode();
+  const rolltemplateCss = useMemo(
+    () => extractRolltemplateCss(emittedCss, chatFontPolicy),
+    [emittedCss, chatFontPolicy],
+  );
+  const translations = useMemo(() => parseTranslations(emittedI18n), [emittedI18n]);
 
   return (
-    <div className="flex h-full flex-col min-h-0">
+    <div
+      className="r20-chat-pane flex h-full flex-col min-h-0"
+      data-r20-chat-text-policy={chatTextPolicy}
+      data-r20-chat-shadow-policy={chatShadowPolicy}
+      data-r20-chat-geometry-policy={chatGeometryPolicy}
+      data-r20-chat-typography-policy={chatTypographyPolicy}
+      data-r20-chat-paint-policy={chatPaintPolicy}
+    >
+      <style data-r20-chat-shell-css dangerouslySetInnerHTML={{ __html: roll20ChatShellCss }} />
       {rolltemplateCss.trim() && (
         <style
           data-r20-chat-user-css
           dangerouslySetInnerHTML={{ __html: rolltemplateCss }}
         />
+      )}
+      {chatDiagnosticsEnabled && (
+        <style data-r20-chat-diagnostic-css dangerouslySetInnerHTML={{ __html: roll20ChatDiagnosticOverrideCss }} />
       )}
       <div className="h-9 shrink-0 border-b border-border px-3 flex items-center justify-between">
         <div className="text-[11px] font-medium text-[var(--fg-muted)]">
@@ -258,18 +896,26 @@ export default function ChatPane() {
         </Button>
       </div>
       <ScrollArea className="flex-1 min-h-0">
-        <div className="p-2 flex flex-col gap-2" data-testid="chat-list">
+        <div
+          className="textchatcontainer flex flex-col"
+          data-testid="chat-list"
+        >
           {rolls.length === 0 ? (
             <div className="text-center text-[11px] text-[var(--fg-muted)] py-8">
-              굴림 버튼을 클릭하면 결과가 여기에 표시됩니다.
+              미리보기에서 굴림 버튼을 누르면 결과가 여기에 표시됩니다.
               <br />
               <span className="text-[10px] opacity-70">
-                미리보기 모드에서 시트의 <code>type=&quot;roll&quot;</code> 버튼을 클릭하세요.
+                시트의 <code>type=&quot;roll&quot;</code> 버튼을 눌러보세요.
               </span>
             </div>
           ) : (
             rolls.map((card) => (
-              <RollCard key={card.id} card={card} emittedHtml={emittedHtml} />
+              <RollCard
+                key={card.id}
+                card={card}
+                emittedHtml={emittedHtml}
+                translations={translations}
+              />
             ))
           )}
         </div>

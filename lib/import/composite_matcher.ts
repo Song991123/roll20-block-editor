@@ -17,6 +17,10 @@
  */
 
 import type { MatchedBlock } from './block_matcher';
+import {
+  hasPreservedAttributeOutside,
+  PRESERVED_ATTRS_FIELD,
+} from '../blocks/preservedAttributes';
 
 /** packing 통계 — measurement 용. */
 export interface CompositePackStats {
@@ -28,6 +32,19 @@ export interface CompositePackStats {
   collapsed: number;
   /** packing 으로 새로 생긴 composite 수 (type 별). */
   packedByType: Record<string, number>;
+  wideRowBundles: number;
+  wideRowCollapsed: number;
+}
+
+export interface CompositePackOptions {
+  compactWideRows?: boolean;
+  wideRowMinRepeats?: number;
+  wideRowMinDescendants?: number;
+}
+
+interface WideRowInfo {
+  signature: string;
+  descendantBlocks: number;
 }
 
 export function newPackStats(): CompositePackStats {
@@ -36,6 +53,8 @@ export function newPackStats(): CompositePackStats {
     afterPackTotal: 0,
     collapsed: 0,
     packedByType: {},
+    wideRowBundles: 0,
+    wideRowCollapsed: 0,
   };
 }
 
@@ -55,8 +74,12 @@ export function newPackStats(): CompositePackStats {
 export function packComposites(
   chain: MatchedBlock[],
   stats?: CompositePackStats,
+  options: CompositePackOptions = {},
 ): MatchedBlock[] {
   if (!chain || chain.length === 0) return chain;
+  const childOptions = options.compactWideRows
+    ? { ...options, compactWideRows: false }
+    : options;
 
   if (stats) {
     stats.atomicTotal += chain.length;
@@ -78,7 +101,7 @@ export function packComposites(
       const rw = tryMatchRepeatingSectionWrapper(b);
       if (rw) {
         const innerContent = rw.pack.children?.CONTENT ?? [];
-        const recursedInner = packComposites(innerContent, stats);
+        const recursedInner = packComposites(innerContent, stats, childOptions);
         return {
           ...rw.pack,
           children: { CONTENT: recursedInner },
@@ -86,14 +109,17 @@ export function packComposites(
       }
     }
     // 그 외 — 자식 recurse only.
-    return recursePack(b, stats);
+    return recursePack(b, stats, childOptions);
   });
 
   // window-based packing — chain-level (attribute_card 등).
+  const compacted = options.compactWideRows
+    ? compactRepeatedWideRowsDeep(preprocessed, stats, options)
+    : preprocessed;
   const out: MatchedBlock[] = [];
   let i = 0;
-  while (i < preprocessed.length) {
-    const cur = preprocessed[i];
+  while (i < compacted.length) {
+    const cur = compacted[i];
     // top-down 에서 이미 변환된 composite 는 건너뜀.
     if (
       cur.blockType === 'r20_skill_row' ||
@@ -120,7 +146,7 @@ export function packComposites(
       continue;
     }
     // attribute_card (td 시퀀스 chain-level matching).
-    const attrCard = tryMatchAttributeCard(preprocessed, i);
+    const attrCard = tryMatchAttributeCard(compacted, i);
     if (attrCard) {
       out.push(attrCard.pack);
       if (stats) {
@@ -141,12 +167,16 @@ export function packComposites(
   return out;
 }
 
-function recursePack(b: MatchedBlock, stats?: CompositePackStats): MatchedBlock {
+function recursePack(
+  b: MatchedBlock,
+  stats?: CompositePackStats,
+  options: CompositePackOptions = {},
+): MatchedBlock {
   let newChildren: Record<string, MatchedBlock[]> | undefined;
   if (b.children) {
     const entries: Array<[string, MatchedBlock[]]> = [];
     for (const [k, v] of Object.entries(b.children)) {
-      entries.push([k, packComposites(v, stats)]);
+      entries.push([k, packComposites(v, stats, options)]);
     }
     if (entries.length) newChildren = Object.fromEntries(entries);
   }
@@ -154,7 +184,7 @@ function recursePack(b: MatchedBlock, stats?: CompositePackStats): MatchedBlock 
   if (b.valueInputs) {
     const entries: Array<[string, MatchedBlock]> = [];
     for (const [k, v] of Object.entries(b.valueInputs)) {
-      entries.push([k, recursePack(v, stats)]);
+      entries.push([k, recursePack(v, stats, options)]);
     }
     if (entries.length) newValueInputs = Object.fromEntries(entries);
   }
@@ -181,6 +211,99 @@ function recursePack(b: MatchedBlock, stats?: CompositePackStats): MatchedBlock 
  *
  * 위 조건 모두 부합하면 r20_attribute_card 1 개로 packing. 아니면 atomic 유지.
  */
+function compactRepeatedWideRowsDeep(
+  chain: MatchedBlock[],
+  stats: CompositePackStats | undefined,
+  options: CompositePackOptions,
+): MatchedBlock[] {
+  const minRepeats = options.wideRowMinRepeats ?? 4;
+  const minDescendants = options.wideRowMinDescendants ?? 40;
+  const buckets = new Map<string, Array<{ block: MatchedBlock; info: WideRowInfo }>>();
+  const collect = (block: MatchedBlock) => {
+    const info = describeWideRow(block);
+    if (info && info.descendantBlocks >= minDescendants && block.sourceRaw) {
+      const bucket = buckets.get(info.signature) || [];
+      bucket.push({ block, info });
+      buckets.set(info.signature, bucket);
+    }
+    for (const child of Object.values(block.children ?? {}).flat()) collect(child);
+    for (const child of Object.values(block.valueInputs ?? {})) collect(child);
+  };
+  for (const block of chain) {
+    collect(block);
+  }
+  if (buckets.size === 0) return chain;
+
+  const eligible = new Set<string>();
+  for (const [signature, bucket] of buckets.entries()) {
+    if (bucket.length >= minRepeats) eligible.add(signature);
+  }
+  if (eligible.size === 0) return chain;
+
+  const replace = (block: MatchedBlock): MatchedBlock => {
+    const info = describeWideRow(block);
+    const raw = block.sourceRaw || block.raw || '';
+    if (info && raw && eligible.has(info.signature)) {
+      const collapsed = Math.max(0, info.descendantBlocks - 1);
+      if (stats) {
+        stats.packedByType.r20_wide_row_bundle = (stats.packedByType.r20_wide_row_bundle || 0) + 1;
+        stats.collapsed += collapsed;
+        stats.wideRowBundles += 1;
+        stats.wideRowCollapsed += collapsed;
+      }
+      return {
+        blockType: 'r20_raw_html',
+        fields: { HTML: raw },
+        children: {},
+        raw,
+        sourceRaw: raw,
+        hint: `composite:wide_row_bundle:${info.signature}`,
+      };
+    }
+
+    let children: Record<string, MatchedBlock[]> | undefined;
+    if (block.children) {
+      children = Object.fromEntries(
+        Object.entries(block.children).map(([key, value]) => [key, value.map(replace)]),
+      );
+    }
+    let valueInputs: Record<string, MatchedBlock> | undefined;
+    if (block.valueInputs) {
+      valueInputs = Object.fromEntries(
+        Object.entries(block.valueInputs).map(([key, value]) => [key, replace(value)]),
+      );
+    }
+    return {
+      ...block,
+      ...(children ? { children } : {}),
+      ...(valueInputs ? { valueInputs } : {}),
+    };
+  };
+
+  return chain.map(replace);
+}
+
+function describeWideRow(block: MatchedBlock): WideRowInfo | null {
+  if (block.blockType !== 'r20_tr') return null;
+  const typeCounts = new Map<string, number>();
+  let total = 0;
+  const visit = (node: MatchedBlock) => {
+    total += 1;
+    typeCounts.set(node.blockType, (typeCounts.get(node.blockType) || 0) + 1);
+    for (const child of Object.values(node.children ?? {}).flat()) visit(child);
+    for (const child of Object.values(node.valueInputs ?? {})) visit(child);
+  };
+  for (const child of Object.values(block.children ?? {}).flat()) visit(child);
+  for (const child of Object.values(block.valueInputs ?? {})) visit(child);
+  if (total === 0) return null;
+  const signature = Array.from(typeCounts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 8)
+    .map(([type, count]) => `${type}:${count}`)
+    .join('|');
+  return { signature, descendantBlocks: total };
+}
+
 function tryMatchAttributeCard(
   chain: MatchedBlock[],
   idx: number,
@@ -224,6 +347,10 @@ function tryMatchAttributeCard(
       rollExpr = rollInfo.expr;
       consumed += 1;
     }
+  }
+
+  if (hasUnrepresentableAttributeCardAttrs(chain.slice(idx, idx + consumed))) {
+    return null;
   }
 
   // 보수적 sanity — label / input 의 의미적 매칭.
@@ -302,6 +429,8 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
       return null;
     }
   }
+
+  if (hasUnrepresentableSkillRowAttrs(b, cells)) return null;
 
   // 패턴 분석 — generic Roll20 skill/attribute row:
   //   (checkbox?) (label?|empty?) (input)+ (extra_input?)... (roll?)+
@@ -396,7 +525,9 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
   // empty cells (kind === 'empty') 는 그대로 'spacer' (slot 미할당).
   fields.CELL_LAYOUT = slotByIdx.join(',');
   // 각 cell 의 td.CLASS 직렬화 (round-trip 시 빈 td 의 class 보존).
-  fields.CELL_TD_CLASSES = cells.map((c) => c.td.fields?.CLASS ?? '').join('\u0001');
+  // 구분자는 탭 — \u0001 은 XML 1.0 불법 문자라 workspace XML 직렬화
+  // (autosave/export/hydrate) 를 깨뜨린다.
+  fields.CELL_TD_CLASSES = cells.map((c) => c.td.fields?.CLASS ?? '').join('\t');
 
   if (checkboxIdx >= 0) {
     const cb = cells[checkboxIdx].inner!;
@@ -557,6 +688,13 @@ function tryMatchRepeatingSectionWrapper(
   // packing 시 round-trip 무손실 보장 어려움 → atomic 유지.
   if (!/^[A-Za-z0-9_]+$/.test(sectionName)) return null;
 
+  if (hasPreservedAttributeOutside(
+    b.fields?.[PRESERVED_ATTRS_FIELD] ?? '',
+    new Set(['class', 'name', 'style']),
+  )) {
+    return null;
+  }
+
   const content = b.children?.CONTENT ?? [];
   let absorbed = 1; // section 자체.
   let columnsField = '';
@@ -573,6 +711,7 @@ function tryMatchRepeatingSectionWrapper(
       const tr = theadKids[0];
       const trKids = tr.children?.CONTENT ?? [];
       if (trKids.length > 0 && trKids.every((c) => c.blockType === 'r20_th')) {
+        if (hasUnrepresentableRepeatingHeaderAttrs(thead, tr, trKids)) return null;
         // 각 th 의 자식 텍스트 추출 — i18n_text 우선, 없으면 빈 텍스트.
         const cols: string[] = [];
         let allParseable = true;
@@ -636,6 +775,81 @@ function tryMatchRepeatingSectionWrapper(
     _absorbed: absorbed,
   } as MatchedBlock & { _absorbed: number };
   return { pack, absorbed };
+}
+
+const SKILL_TR_ATTRS = new Set(['class', 'style']);
+const SKILL_TD_ATTRS = new Set(['class']);
+const SKILL_INPUT_ATTRS = new Set(['type', 'name', 'class', 'value', 'checked']);
+const SKILL_LABEL_ATTRS = new Set(['data-i18n', 'class']);
+const SKILL_ROLL_ATTRS = new Set(['type', 'name', 'value', 'class']);
+
+function hasUnsupportedBlockAttributes(
+  block: MatchedBlock,
+  supportedNames: ReadonlySet<string>,
+): boolean {
+  return hasPreservedAttributeOutside(
+    block.fields?.[PRESERVED_ATTRS_FIELD] ?? '',
+    supportedNames,
+  );
+}
+
+function hasUnrepresentableSkillRowAttrs(
+  row: MatchedBlock,
+  cells: Array<{ td: MatchedBlock; inner: MatchedBlock | null }>,
+): boolean {
+  if (hasUnsupportedBlockAttributes(row, SKILL_TR_ATTRS)) return true;
+  for (const { td, inner } of cells) {
+    if (hasUnsupportedBlockAttributes(td, SKILL_TD_ATTRS)) return true;
+    if (!inner) continue;
+    const supported =
+      inner.blockType === 'r20_checkbox' ||
+      inner.blockType === 'r20_text_input' ||
+      inner.blockType === 'r20_number_input'
+        ? SKILL_INPUT_ATTRS
+        : inner.blockType === 'r20_i18n_text' || inner.blockType === 'r20_inline_bold'
+          ? SKILL_LABEL_ATTRS
+          : inner.blockType === 'r20_roll_button'
+            ? SKILL_ROLL_ATTRS
+            : new Set<string>();
+    if (hasUnsupportedBlockAttributes(inner, supported)) return true;
+  }
+  return false;
+}
+
+function hasUnrepresentableAttributeCardAttrs(nodes: MatchedBlock[]): boolean {
+  for (const node of nodes) {
+    if (hasUnsupportedBlockAttributes(node, SKILL_TD_ATTRS)) return true;
+    for (const child of Object.values(node.children ?? {}).flat()) {
+      const supported =
+        child.blockType === 'r20_text_input' || child.blockType === 'r20_number_input'
+          ? SKILL_INPUT_ATTRS
+          : child.blockType === 'r20_i18n_text' || child.blockType === 'r20_inline_bold'
+            ? SKILL_LABEL_ATTRS
+            : child.blockType === 'r20_roll_button'
+              ? SKILL_ROLL_ATTRS
+              : new Set<string>();
+      if (hasUnsupportedBlockAttributes(child, supported)) return true;
+    }
+  }
+  return false;
+}
+
+function hasUnrepresentableRepeatingHeaderAttrs(
+  thead: MatchedBlock,
+  tr: MatchedBlock,
+  ths: MatchedBlock[],
+): boolean {
+  if (hasUnsupportedBlockAttributes(thead, new Set(['class']))) return true;
+  if (hasUnsupportedBlockAttributes(tr, new Set(['class']))) return true;
+  for (const th of ths) {
+    if (hasUnsupportedBlockAttributes(th, new Set(['class']))) return true;
+    for (const child of Object.values(th.children ?? {}).flat()) {
+      const supported =
+        child.blockType === 'r20_i18n_text' ? SKILL_LABEL_ATTRS : new Set<string>();
+      if (hasUnsupportedBlockAttributes(child, supported)) return true;
+    }
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------------------
