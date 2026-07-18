@@ -5362,3 +5362,28 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   not increase the live Roll20 user-sheet evidence count.
 - NEXT P0: retry the authorized modern Sandbox upload through a supported
   visible file handoff, then perform the separate legacy-room check.
+
+## 2026-07-19 Figma Layer Tree Interaction
+
+- FIXED: the edit-mode layer surface now supports collapsing and expanding
+  container layers. The visible list hides descendants without changing the
+  underlying Blockly structure; search temporarily reveals matching descendants
+  so a collapsed parent cannot hide a search result.
+- FIXED: selecting a nested object from the shared iframe automatically opens
+  its ancestor layers before scrolling the selected row into view.
+- VERIFIED LOCAL: TypeScript build, lint, and `smoke:edit-flow` passed after the
+  layer-tree change. This verifies the local edit flow, not live Roll20 parity.
+- VERIFY: nested browser acceptance still needs a real click/drag assertion on
+  the collapse control and a before/inside/after reorder smoke.
+
+## 2026-07-19 Modern Sandbox Handoff Recheck
+
+- PREPARED LOCAL: generated a fresh modern-mode-only handoff by cloning the
+  ignored current payload and setting its local verification manifest to
+  `legacy:false`. No protected source folder or tracked file was changed.
+- VERIFY BLOCKED: Chrome `filechooser.setFiles` returned `Not allowed`; the
+  page-evaluation surface also does not expose DOM construction APIs needed by
+  the generated File-event snippet. No payload was uploaded and no Roll20
+  result was inferred.
+- CURRENT TRUTH: actual Roll20 user-sheet captures remain `0`; the latest CI
+  for commit `0aa4f14` is green, but external upload evidence is still missing.

@@ -6051,3 +6051,28 @@ Actual Roll20 evidence is unchanged: authorized user-sheet captures remain
 `0`, and dedicated legacy-room visual captures remain `0`. The next external
 step is still the supported visible file handoff in the modern Sandbox,
 followed by a separate legacy-enabled room check.
+
+### 2026-07-19 - Figma layer tree collapse interaction
+
+The edit-mode layer panel previously rendered a flat depth-indented list. It
+now supports collapsible container rows with Lucide expand/collapse controls.
+The underlying Blockly hierarchy is unchanged; only the layer surface's
+visibility changes. Search bypasses collapsed visibility so matching descendants
+remain discoverable, and selecting a nested iframe object expands its ancestor
+path before the panel scrolls to it.
+
+Verification: lint, production build, and `smoke:edit-flow` passed. Full browser
+drag/reorder acceptance remains VERIFY.
+
+### 2026-07-19 - Modern Sandbox handoff recheck
+
+Generated a fresh ignored modern-only handoff from the current local payload by
+using a separate local manifest with `legacy:false`. The protected source
+folders and tracked files were untouched. Chrome's supported file chooser still
+returned `Not allowed` from `filechooser.setFiles`; the isolated page-evaluation
+surface also did not expose DOM construction APIs needed for the generated
+File-event snippet. No payload was uploaded and no Roll20 result was counted.
+
+Actual user-sheet captures remain `0`; dedicated legacy-room captures remain
+`0`. Commit `0aa4f14` passed the remote CI run, but this does not replace the
+missing external upload evidence.

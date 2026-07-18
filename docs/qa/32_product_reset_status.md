@@ -125,6 +125,25 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - BOUNDARY: this is local importer/render evidence only. Authorized user-sheet
   upload remains `0`, and dedicated legacy-room visual parity remains `VERIFY`.
 
+## Layer Tree Interaction Slice
+
+- VERIFIED LOCAL: the edit-mode layer panel now has collapsible container rows
+  and automatically expands the selected object's ancestor path. Search keeps
+  matching descendants visible even when a parent was collapsed.
+- VERIFIED LOCAL: lint, production build, and `smoke:edit-flow` passed.
+- BOUNDARY: this proves the local layer interaction path only. Full browser
+  drag/reorder acceptance and live Roll20 visual parity remain `VERIFY`.
+
+## Modern Sandbox Handoff Recheck
+
+- PREPARED LOCAL: a fresh ignored modern-mode handoff was generated from the
+  current local payload with `legacy:false`.
+- VERIFY BLOCKED: the supported Chrome file chooser rejected `setFiles` with
+  `Not allowed`, and the isolated page-evaluation surface lacks DOM creation
+  APIs for the generated File-event snippet. No upload occurred.
+- CURRENT COUNTS: authorized user-sheet captures `0`; dedicated legacy-room
+  captures `0`; commit `0aa4f14` CI `success`.
+
 ## Reporting Rule
 
 Every future progress report must label each item as `DONE`, `VERIFIED LOCAL`,

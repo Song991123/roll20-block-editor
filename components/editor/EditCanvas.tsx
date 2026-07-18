@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent } from 'react';
-import { Layers, Redo2, Search, Undo2, Ungroup } from 'lucide-react';
+import { ChevronDown, ChevronRight, Layers, Redo2, Search, Undo2, Ungroup } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
@@ -322,6 +322,7 @@ function EditLayerPanel({
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
   const structureVersion = useWorkspaceStore((s) => s.workspaces[tab].structureVersion);
+  const [collapsedLayerIds, setCollapsedLayerIds] = useState<Set<string>>(() => new Set());
 
   const nodes = useMemo(() => {
     void structureVersion;
@@ -330,9 +331,45 @@ function EditLayerPanel({
 
   const filtered = useMemo(() => filterLayersWithAncestors(nodes, search), [nodes, search]);
   const selectedPath = useMemo(() => buildLayerPath(nodes, selectedId), [nodes, selectedId]);
+  const visibleNodes = useMemo(() => {
+    if (search.trim()) return filtered;
+    const nodeById = new Map(nodes.map((item) => [item.id, item]));
+    return filtered.filter(({ node }) => {
+      let parentId = node.layerParentId;
+      const seen = new Set<string>();
+      while (parentId && !seen.has(parentId)) {
+        if (collapsedLayerIds.has(parentId)) return false;
+        seen.add(parentId);
+        parentId = nodeById.get(parentId)?.layerParentId ?? null;
+      }
+      return true;
+    });
+  }, [collapsedLayerIds, filtered, nodes, search]);
+
+  useEffect(() => {
+    const validIds = new Set(nodes.filter((node) => node.childCount > 0).map((node) => node.id));
+    setCollapsedLayerIds((current) => {
+      const next = new Set(Array.from(current).filter((id) => validIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [nodes]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const parentIds = selectedPath.slice(0, -1).map((node) => node.id);
+    if (parentIds.length === 0) return;
+    setCollapsedLayerIds((current) => {
+      const next = new Set(current);
+      let changed = false;
+      for (const parentId of parentIds) {
+        if (next.delete(parentId)) changed = true;
+      }
+      return changed ? next : current;
+    });
+  }, [selectedId, selectedPath]);
 
   const virtualizer = useVirtualizer({
-    count: filtered.length,
+    count: visibleNodes.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => 42,
     overscan: 10,
@@ -340,10 +377,19 @@ function EditLayerPanel({
 
   useEffect(() => {
     if (!selectedId) return;
-    const index = filtered.findIndex((item) => item.node.id === selectedId);
+    const index = visibleNodes.findIndex((item) => item.node.id === selectedId);
     if (index < 0) return;
     virtualizer.scrollToIndex(index, { align: 'center' });
-  }, [filtered, selectedId, virtualizer]);
+  }, [selectedId, visibleNodes, virtualizer]);
+
+  const toggleLayer = useCallback((blockId: string) => {
+    setCollapsedLayerIds((current) => {
+      const next = new Set(current);
+      if (next.has(blockId)) next.delete(blockId);
+      else next.add(blockId);
+      return next;
+    });
+  }, []);
 
   const moveLayer = useCallback(
     (draggedId: string, targetId: string, mode: LayerDropMode) => {
@@ -382,7 +428,7 @@ function EditLayerPanel({
         <Layers className="h-3.5 w-3.5" />
         <span>레이어</span>
         <span className="ml-auto rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
-          {search.trim() ? `${filtered.filter((item) => item.searchMatch).length}+맥락 ${filtered.length}/${nodes.length}` : `${filtered.length}/${nodes.length}`}
+          {search.trim() ? `${visibleNodes.filter((item) => item.searchMatch).length}+맥락 ${visibleNodes.length}/${nodes.length}` : `${visibleNodes.length}/${nodes.length}`}
         </span>
       </div>
       <div
@@ -457,7 +503,7 @@ function EditLayerPanel({
         </div>
       )}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto" data-testid="edit-layer-scroll">
-        {filtered.length === 0 ? (
+        {visibleNodes.length === 0 ? (
           <div className="px-3 py-8 text-center text-[11px] leading-relaxed text-muted-foreground">
             표시할 레이어가 없습니다.
           </div>
@@ -467,7 +513,7 @@ function EditLayerPanel({
             style={{ height: `${virtualizer.getTotalSize() + 8}px` }}
           >
             {virtualizer.getVirtualItems().map((row) => {
-              const item = filtered[row.index];
+              const item = visibleNodes[row.index];
               if (!item) return null;
               const { node } = item;
               return (
@@ -485,6 +531,8 @@ function EditLayerPanel({
                     onSelect={() => setSelected(node.id, 'tree')}
                     onMove={moveLayer}
                     onEject={ejectLayer}
+                    collapsed={collapsedLayerIds.has(node.id)}
+                    onToggleCollapse={toggleLayer}
                   />
                 </div>
               );
@@ -505,6 +553,8 @@ const EditLayerRow = memo(function EditLayerRow({
   onSelect,
   onMove,
   onEject,
+  collapsed,
+  onToggleCollapse,
 }: {
   node: BlockSnapshot;
   workspace: WorkspaceKey;
@@ -514,6 +564,8 @@ const EditLayerRow = memo(function EditLayerRow({
   onSelect: () => void;
   onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
   onEject: (blockId: string) => void;
+  collapsed: boolean;
+  onToggleCollapse: (blockId: string) => void;
 }) {
   const [dropMode, setDropMode] = useState<LayerDropMode | null>(null);
   const role = useMemo(() => {
@@ -644,6 +696,26 @@ const EditLayerRow = memo(function EditLayerRow({
       >
         {role.icon}
       </span>
+      {node.childCount > 0 ? (
+        <button
+          type="button"
+          className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground"
+          aria-label={collapsed ? '하위 레이어 펼치기' : '하위 레이어 접기'}
+          title={collapsed ? '하위 레이어 펼치기' : '하위 레이어 접기'}
+          data-testid="edit-layer-collapse-toggle"
+          data-r20-block-id={node.id}
+          data-r20-layer-collapsed={collapsed ? '1' : '0'}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleCollapse(node.id);
+          }}
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+        </button>
+      ) : (
+        <span aria-hidden className="h-5 w-5 shrink-0" />
+      )}
       <LayerMiniMap
         roleKind={role.kind}
         canReceiveChildren={role.canReceiveChildren}
