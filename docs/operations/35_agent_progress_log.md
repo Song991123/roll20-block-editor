@@ -5924,3 +5924,14 @@ class and pastel tokens.
 Verification: lint, production build, `ci:verify`, and `smoke:edit-flow`
 passed. This is a partial product UI reset; the full information architecture,
 visual guidance, and Figma-like usability review remain open.
+
+### 2026-07-19 - Core product copy slice
+
+Normalized the visible app-shell copy in `EditorHeader`, `SidebarLeft`,
+`SidebarRight`, and `WorkspaceSubToolbar`. The change replaces damaged or
+developer-facing labels with readable Korean actions while preserving the
+renderer, imported sheet payloads, and iframe/edit bridge.
+
+Verification: lint, production build, `ci:verify`, and `smoke:edit-flow` passed.
+This is the second small UI reset slice; the full information architecture and
+visual guidance remain open.

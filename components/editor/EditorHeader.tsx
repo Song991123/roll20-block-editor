@@ -121,13 +121,13 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 size="icon"
                 className="h-8 w-8"
                 onClick={toggleLeft}
-                aria-label="왼쪽 패널 열기/닫기 (Cmd+[)"
+                aria-label="왼쪽 패널 열기/닫기"
                 data-testid="sidebar-left-toggle"
               >
                 <PanelLeft className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">왼쪽 패널 (Cmd+[)</TooltipContent>
+            <TooltipContent side="bottom">왼쪽 패널</TooltipContent>
           </Tooltip>
         )}
 
@@ -174,7 +174,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 <span className="hidden sm:inline">불러오기</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>HTML/CSS 또는 저장 파일 가져오기</TooltipContent>
+            <TooltipContent>HTML, CSS, 번역 파일 불러오기</TooltipContent>
           </Tooltip>
         </div>
 
@@ -197,7 +197,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 <span className="hidden sm:inline">{saving ? '저장 중' : '저장'}</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>이 브라우저에 현재 작업 저장</TooltipContent>
+            <TooltipContent>현재 작업을 브라우저에 저장</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -215,7 +215,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 <span className="hidden sm:inline">내보내기</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Roll20 등록용 zip 내보내기</TooltipContent>
+            <TooltipContent>Roll20 등록용 ZIP 내보내기</TooltipContent>
           </Tooltip>
 
           <div className="mx-1 h-5 w-px bg-border" />
@@ -229,24 +229,18 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                   size="icon"
                   className="h-8 w-8"
                   onClick={toggleRight}
-                  aria-label="오른쪽 패널 열기/닫기 (Cmd+])"
+                  aria-label="오른쪽 패널 열기/닫기"
                 >
                   <PanelRight className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">오른쪽 패널 (Cmd+])</TooltipContent>
+              <TooltipContent side="bottom">오른쪽 패널</TooltipContent>
             </Tooltip>
           )}
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                asChild
-              >
+              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" asChild>
                 <a
                   href="mailto:sjh11235678@gmail.com?subject=Roll20%20%EC%8B%9C%ED%8A%B8%20%ED%8E%B8%EC%A7%91%EA%B8%B0%20%EB%B2%84%EA%B7%B8%20%EC%A0%9C%EB%B3%B4"
                   aria-label="버그 제보 이메일 보내기"

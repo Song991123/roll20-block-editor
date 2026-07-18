@@ -19,8 +19,8 @@ export default function SidebarRight() {
       onValueChange={(v) => setTab(v as 'attrs' | 'code' | 'chat')}
       className="flex h-full flex-col"
     >
-      <div className="h-10 shrink-0 border-b border-border px-3 flex items-center">
-        <TabsList className="h-7 bg-[var(--bg-elevated-2)] w-full">
+      <div className="flex h-10 shrink-0 items-center border-b border-border px-3">
+        <TabsList className="h-7 w-full bg-[var(--bg-elevated-2)]">
           <TabsTrigger value="attrs" className="flex-1 gap-1.5 text-xs" data-testid="tab-attrs">
             <Settings2 className="h-3.5 w-3.5" />
             속성
@@ -29,11 +29,7 @@ export default function SidebarRight() {
             <CodeXml className="h-3.5 w-3.5" />
             코드
           </TabsTrigger>
-          <TabsTrigger
-            value="chat"
-            className="flex-1 gap-1.5 text-xs"
-            data-testid="tab-chat"
-          >
+          <TabsTrigger value="chat" className="flex-1 gap-1.5 text-xs" data-testid="tab-chat">
             <MessageSquare className="h-3.5 w-3.5" />
             채팅
             {chatCount > 0 && (
@@ -44,13 +40,13 @@ export default function SidebarRight() {
           </TabsTrigger>
         </TabsList>
       </div>
-      <TabsContent value="attrs" className="flex-1 m-0 min-h-0 overflow-hidden">
+      <TabsContent value="attrs" className="m-0 min-h-0 flex-1 overflow-hidden">
         <Inspector />
       </TabsContent>
-      <TabsContent value="code" className="flex-1 m-0 min-h-0 overflow-hidden">
+      <TabsContent value="code" className="m-0 min-h-0 flex-1 overflow-hidden">
         <CodeTabs />
       </TabsContent>
-      <TabsContent value="chat" className="flex-1 m-0 min-h-0 overflow-hidden">
+      <TabsContent value="chat" className="m-0 min-h-0 flex-1 overflow-hidden">
         <ChatPane />
       </TabsContent>
     </Tabs>

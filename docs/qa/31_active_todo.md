@@ -5267,3 +5267,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   and pastel `--primary` token.
 - BOUNDARY: This is the first product UI reset slice, not the full information
   architecture or interaction redesign.
+
+## 2026-07-19 Core Product Copy Slice
+
+- FIXED: normalized the visible header, import/export/save actions, panel tabs,
+  block workspace tabs, and tooltips to readable Korean product language.
+- VERIFIED LOCAL: `lint`, `build`, `ci:verify`, and `smoke:edit-flow` passed.
+- BOUNDARY: This changes app-shell copy only; imported Roll20 HTML/CSS and the
+  shared iframe render surface were not rewritten.

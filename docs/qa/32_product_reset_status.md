@@ -18,7 +18,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Live Roll20 modern | 1 anonymous synthetic root capture; 1.6458% root-only mismatch | VERIFIED DIAGNOSTIC | Not a general parity result |
 | Authorized user-sheet Sandbox upload | No successful browser file handoff | VERIFY | Must be completed in the dedicated Sandbox |
 | Legacy-room visual parity | No dedicated legacy-room capture | VERIFY | Sandbox is modern-only |
-| UI product reset | Pastel/pink shell, role palette, and light root/portal baseline slice | PARTIAL | Full information architecture and visual UX reset remain |
+| UI product reset | Pastel/pink shell, light root/portal baseline, and core Korean product copy slice | PARTIAL | Full information architecture and visual UX reset remain |
 | Public copyright boundary | CI evidence guard, ignored local fixtures/reports, no tracked private corpus | VERIFIED LOCAL | Recheck before every public release |
 | CI/CD | GitHub Actions run `29655601442` passed for `28075c6` | VERIFIED REMOTE | Deployment smoke remains separate |
 
@@ -29,7 +29,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - Live Roll20 diagnostic captures: `1` synthetic modern root.
 - Live Roll20 user-owned sheet captures: `0`.
 - Live Roll20 legacy-room captures: `0`.
-- Full product UI reset slices: `1` small shell/palette slice; this is not
+- Full product UI reset slices: `2` small shell/palette and core-copy slices; this is not
   completion of the redesign.
 - Root UI baseline: forced `html.dark` removed; the app and portals now default
   to the pastel/light token set, while explicit `.dark` remains opt-in.
