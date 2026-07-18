@@ -5364,3 +5364,15 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - VERIFIED LOCAL: Lint, production build, edit-flow smoke,
   persistent-preview smoke in modern/legacy modes, `ci:verify`, and
   server-hygiene passed. Actual Roll20 parity remains a separate open gate.
+
+## 2026-07-18 Roll20 Parity Retry And Smoke Argument Guard
+
+- VERIFIED EXTERNAL STATE: The logged-in Roll20 tab was visible in Chrome, but
+  the browser connection timed out while claiming that tab for DOM inspection.
+  No existing room, Sandbox setting, upload, or sheet source was changed.
+- IMPLEMENTED: The edit-flow and persistent-preview browser smokes now ignore
+  the package-manager separator argument. Commands such as
+  `pnpm run smoke:edit-flow -- --out-dir ...` no longer interpret the extra
+  `--` as a positional argument and silently serve the wrong output directory.
+- BOUNDARY: This removes a local verification false-timeout path; it does not
+  create modern Sandbox or legacy-room parity evidence.

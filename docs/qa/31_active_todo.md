@@ -4699,3 +4699,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CLAIM BOUNDARY: This changes only the editor's overlay affordance. It does
   not change imported Roll20 CSS, iframe cascade, sheet geometry, or actual
   modern Sandbox/legacy-room parity.
+
+## 2026-07-18 Roll20 Parity Retry And Smoke Argument Guard
+
+- DONE: Forwarded package-manager arguments are now normalized by the edit-flow
+  and persistent-preview smoke scripts, so an extra `--` cannot redirect the
+  harness to the wrong output directory.
+- VERIFIED LOCAL: Both package commands passed with forwarded `--out-dir`,
+  and the Roll20 CDP preflight recorded `CDP_CLOSED` without attempting an
+  upload or room mutation.
+- VERIFY: Modern Sandbox and dedicated legacy-room parity remain open because
+  the logged-in Chrome Roll20 tab timed out during safe tab claiming.
