@@ -704,7 +704,7 @@ async function main() {
     if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');
     if (!result.checks.codeTabs.hasCodeTab) failures.push('code tab missing');
     if (!result.checks.codeTabs.workerSelected) failures.push('worker code tab did not become active');
-    if (!result.checks.codeTabs.statusText.includes('시트 위에는 표시하지 않고 Roll20 런타임에서 실행되는 코드입니다.')) {
+    if (!result.checks.codeTabs.statusText.includes('시트 위에는 표시하지 않고 Roll20에서 실행되는 코드입니다.')) {
       failures.push('worker code tab runtime boundary copy missing');
     }
     if (!result.checks.codeTabs.emptyText.includes('worker 스크립트는 여기에 보존됩니다.')) {

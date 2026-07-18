@@ -24,9 +24,9 @@ const SUB_TABS = [
   },
   {
     id: 'worker',
-    label: 'Worker JS',
-    empty: '아직 Worker JS가 없어요. 가져온 시트의 worker 스크립트는 여기에 보존됩니다.',
-    note: '시트 위에는 표시하지 않고 Roll20 런타임에서 실행되는 코드입니다.',
+    label: '시트 동작',
+    empty: '아직 시트 동작 코드가 없어요. 가져온 시트의 worker 스크립트는 여기에 보존됩니다.',
+    note: '시트 위에는 표시하지 않고 Roll20에서 실행되는 코드입니다.',
   },
   {
     id: 'i18n',

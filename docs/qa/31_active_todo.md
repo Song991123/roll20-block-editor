@@ -4769,3 +4769,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - TODO: Continue the user-task UI reset with bounded copy/tooltip and synthetic
   action-preview work, without importing the separate Shadow-render design
   branch or changing the canonical iframe contract.
+
+## 2026-07-18 User-Facing Workspace Labels
+
+- DONE: Internal `i18n` and `worker` workspace keys remain unchanged, while the
+  visible labels now read `번역` and `시트 동작`. Tooltips explain that the
+  latter is Roll20 runtime code and never a visible sheet object.
+- VERIFIED LOCAL: Export-dialog browser smoke, lint, and production build pass;
+  the smoke now checks the intentional plain-language runtime boundary copy.
+- CLAIM BOUNDARY: This improves navigation copy only. It does not implement
+  worker JS block editing or prove actual Roll20 worker/runtime parity.

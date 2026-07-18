@@ -5433,3 +5433,14 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - BOUNDARY: This is a small visual-system correction, not completion of the
   full design reset or Roll20 parity. Actual Sandbox/legacy-room evidence and
   broader user-task review remain open.
+
+## 2026-07-18 User-Facing Workspace Labels
+
+- IMPLEMENTED: Visible workspace labels now use `번역` and `시트 동작` while
+  preserving the internal `i18n` and `worker` identifiers. The workspace
+  tooltip explains that sheet-action code is hidden from the visual sheet and
+  runs only in Roll20.
+- VERIFIED LOCAL: The export-dialog browser smoke, lint, and production build
+  pass after updating its boundary-copy assertion.
+- BOUNDARY: Worker block editing and actual Roll20 worker/runtime parity remain
+  open; this batch changes labels and guidance only.

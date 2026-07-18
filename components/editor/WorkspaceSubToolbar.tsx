@@ -21,11 +21,11 @@ import { getBlocklyAdapter } from '@/lib/blockly/adapter';
  * 우측: [축소] [확대] [정리] — Blockly 워크스페이스 줌/cleanUp 통합.
  */
 
-const TABS: Array<{ key: WorkspaceKey; label: string; color: string }> = [
-  { key: 'html', label: 'HTML', color: 'var(--cat-container)' },
-  { key: 'css', label: 'CSS', color: 'var(--cat-css)' },
-  { key: 'i18n', label: 'i18n', color: 'var(--cat-i18n)' },
-  { key: 'worker', label: 'Worker', color: 'var(--cat-sheetworker)' },
+const TABS: Array<{ key: WorkspaceKey; label: string; tooltip: string; color: string }> = [
+  { key: 'html', label: 'HTML', tooltip: '시트의 구조와 화면 요소를 편집합니다.', color: 'var(--cat-container)' },
+  { key: 'css', label: 'CSS', tooltip: '시트의 색, 크기, 간격과 배치를 편집합니다.', color: 'var(--cat-css)' },
+  { key: 'i18n', label: '번역', tooltip: 'data-i18n에 연결되는 문구를 편집합니다.', color: 'var(--cat-i18n)' },
+  { key: 'worker', label: '시트 동작', tooltip: '시트에는 보이지 않고 Roll20에서 실행되는 동작 코드를 다룹니다.', color: 'var(--cat-sheetworker)' },
 ];
 
 export default function WorkspaceSubToolbar() {
@@ -81,7 +81,7 @@ export default function WorkspaceSubToolbar() {
                     {tab.label}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>{tab.label} 작업공간</TooltipContent>
+                <TooltipContent>{tab.tooltip}</TooltipContent>
               </Tooltip>
             );
           })}
