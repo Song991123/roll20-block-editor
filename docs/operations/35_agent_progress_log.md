@@ -6074,7 +6074,7 @@ surface also did not expose DOM construction APIs needed for the generated
 File-event snippet. No payload was uploaded and no Roll20 result was counted.
 
 Actual user-sheet captures remain `0`; dedicated legacy-room captures remain
-`0`. Commit `89d57c9` passed remote CI run `29658829415`, but this does not replace the
+`0`. Commit `16ba38c` passed remote CI run `29659133822`, but this does not replace the
 missing external upload evidence.
 
 ### 2026-07-19 - Layer collapse acceptance coverage
@@ -6098,3 +6098,19 @@ the save link was not activated. The page has no equivalent inline HTML/CSS/
 translation editor, so this is not an upload bypass: the three source files
 still require the blocked file-input handoff. No user-sheet activation or
 visual evidence count changed.
+
+### 2026-07-19 - Guarded worker JS block mapping
+
+Worker import now builds nested Blockly XML for fully recognized worker
+statements, but accepts that representation only when the generated body is
+canonically identical to the source. Unsupported or formatting-sensitive
+scripts retain the original body in `r20_raw_worker`, preserving the truthful
+export path.
+
+Verification: `smoke:worker` passed with zero console/page errors. The parsed
+generic sample produced `r20_on_attr_change`, `r20_set_attrs`, and
+`r20_literal_string`, then emitted one worker script. `audit:worker` passed
+`3/3` prepared anonymous fixtures with exact canonical source preservation.
+This is a first guarded JS-block slice; it is not universal JavaScript parsing
+or live Roll20 worker-runtime parity. User-sheet upload and legacy-room
+evidence remain VERIFY.

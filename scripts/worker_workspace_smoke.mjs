@@ -110,6 +110,18 @@ async function main() {
       const htmlGraph = window.__perfHook.getBlockGraph('html');
       const workerGraph = window.__perfHook.getBlockGraph('worker');
       const emit = window.__perfHook.getEmitContent();
+      const parsedHtml = `
+        <div class="sheet-main"><input type="text" name="attr_hp"></div>
+        <script type="text/worker">
+          on('change:hp', () => {
+            setAttrs({ 'hp': 10 });
+          });
+        </script>
+      `;
+      const parsedImported = await window.__perfHook.importSheet({ html: parsedHtml, css: '', i18n: '{}' });
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      const parsedWorkerGraph = window.__perfHook.getBlockGraph('worker');
+      const parsedEmit = window.__perfHook.getEmitContent();
       return {
         imported,
         workspace,
@@ -119,6 +131,10 @@ async function main() {
         emitWorkerBodyLen: emit.worker.length,
         emitWorkerScriptCount: (emit.html.match(/<script\s+type=["']text\/worker["']>/gi) ?? []).length,
         emitHtmlLen: emit.html.length,
+        parsedImported,
+        parsedWorkerTypes: parsedWorkerGraph.map((b) => b.type),
+        parsedEmitWorkerScriptCount: (parsedEmit.html.match(/<script\s+type=["']text\/worker["']>/gi) ?? []).length,
+        parsedEmitWorker: parsedEmit.worker,
       };
     });
 
@@ -130,6 +146,10 @@ async function main() {
       result.emitHasWorkerScript &&
       result.emitWorkerBodyLen > 0 &&
       result.emitWorkerScriptCount === 1 &&
+      result.parsedWorkerTypes.includes('r20_on_attr_change') &&
+      result.parsedWorkerTypes.includes('r20_set_attrs') &&
+      result.parsedEmitWorkerScriptCount === 1 &&
+      result.parsedEmitWorker.includes("setAttrs({ 'hp': 10 });") &&
       consoleErrors.length === 0;
 
     const report = {
@@ -153,6 +173,8 @@ async function main() {
         `- Worker blocks: ${result.workspace.blockCount.worker}`,
         `- HTML worker blocks remaining: ${result.htmlWorkerTypes.length}`,
         `- Emitted worker script count: ${result.emitWorkerScriptCount}`,
+        `- Parsed worker blocks: ${result.parsedWorkerTypes.join(', ')}`,
+        `- Parsed worker script count: ${result.parsedEmitWorkerScriptCount}`,
         `- Console errors: ${consoleErrors.length}`,
         '',
       ].join('\n'),

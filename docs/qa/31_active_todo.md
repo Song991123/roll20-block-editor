@@ -5390,5 +5390,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   the generated File-event snippet. No payload was uploaded and no Roll20
   result was inferred.
 - CURRENT TRUTH: actual Roll20 user-sheet captures remain `0`; dedicated
-  legacy-room captures remain `0`. Remote CI run `29658829415` for commit
-  `89d57c9` is green, but external upload evidence is still missing.
+  legacy-room captures remain `0`. Remote CI run `29659133822` for commit
+  `16ba38c` is green, but external upload evidence is still missing.
+
+## 2026-07-19 Guarded Worker Block Mapping
+
+- DONE: Worker import now attempts nested Blockly XML only for fully
+  recognized scripts. It compares the generated worker body against the
+  normalized source before accepting the parsed workspace; any mismatch keeps
+  the original source in `r20_raw_worker` blocks.
+- VERIFIED LOCAL: `smoke:worker` passed with zero console/page errors. The
+  generic parsed sample produced `r20_on_attr_change`, `r20_set_attrs`, and
+  `r20_literal_string`, and emitted exactly one worker script. `audit:worker`
+  passed `3/3` prepared anonymous fixtures with exact canonical source
+  preservation.
+- BOUNDARY: this is a guarded first JS-block slice. It does not claim
+  universal JavaScript parsing or live Roll20 worker-runtime parity. Actual
+  user-sheet upload and legacy-room evidence remain VERIFY.

@@ -1,6 +1,8 @@
 import * as Blockly from 'blockly';
 import { getBlocklyAdapter } from './adapter';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
+import { emitWorkspace } from '@/lib/preview/emit';
+import { parseSheetWorkerScript, type ParsedBlock } from '@/lib/import/script_parser';
 
 const WORKER_BLOCK_TYPES = new Set([
   'r20_raw_worker',
@@ -144,12 +146,62 @@ export function replaceWorkerWorkspaceFromSourceHtml(html: string): {
     };
   }
   const adapter = getBlocklyAdapter();
-  adapter.hydrateFromXml('worker', buildRawWorkerXml(scripts.map((script) => script.body)));
+  const sourceBodies = scripts.map((script) => script.body);
+  const parsed = scripts.map((script) => parseSheetWorkerScript(script.body));
+  const parsedXml =
+    parsed.length > 0 && parsed.every((result) => result.blocks.length > 0 && result.stats.unparsed === 0)
+      ? buildParsedWorkerXml(parsed.flatMap((result) => result.blocks))
+      : null;
+
+  // Use parsed worker blocks only when their generated source is byte-stable
+  // after the same whitespace normalization used by the preview emitter.
+  // Otherwise keep the original source as a raw block: visual/import fidelity
+  // is more important than pretending an incomplete JS mapping is editable.
+  if (parsedXml) {
+    adapter.hydrateFromXml('worker', parsedXml);
+    const emitted = emitWorkspace(adapter.getWorkspace('worker'), 'worker').code;
+    if (canonicalWorkerBody(emitted) !== canonicalWorkerBody(sourceBodies.join('\n'))) {
+      adapter.hydrateFromXml('worker', buildRawWorkerXml(sourceBodies));
+    }
+  } else {
+    adapter.hydrateFromXml('worker', buildRawWorkerXml(sourceBodies));
+  }
   return {
     replaced: true,
     scriptCount: scripts.length,
     targetCount: adapter.countBlocks('worker'),
   };
+}
+
+function buildParsedWorkerXml(blocks: ParsedBlock[]): string {
+  const ids = { next: 0 };
+  const body = serializeBlockChain(blocks, ids);
+  return `<xml xmlns="https://developers.google.com/blockly/xml">${body}</xml>`;
+}
+
+function serializeBlockChain(blocks: ParsedBlock[], ids: { next: number }): string {
+  return blocks
+    .map((block, index) => {
+      const current = serializeParsedBlock(block, ids);
+      if (index === blocks.length - 1) return current;
+      const next = serializeBlockChain(blocks.slice(index + 1), ids);
+      return current.replace(/<\/block>$/, `<next>${next}</next></block>`);
+    })
+    .join('');
+}
+
+function serializeParsedBlock(block: ParsedBlock, ids: { next: number }): string {
+  const id = `imported_worker_${ids.next++}`;
+  const fields = Object.entries(block.fields ?? {})
+    .map(([name, value]) => `<field name="${escapeXml(name)}">${escapeXml(value)}</field>`)
+    .join('');
+  const values = Object.entries(block.valueInputs ?? {})
+    .map(([name, value]) => `<value name="${escapeXml(name)}">${serializeParsedBlock(value, ids)}</value>`)
+    .join('');
+  const statements = Object.entries(block.children ?? {})
+    .map(([name, children]) => `<statement name="${escapeXml(name)}">${serializeBlockChain(children, ids)}</statement>`)
+    .join('');
+  return `<block type="${escapeXml(block.blockType)}" id="${id}">${fields}${values}${statements}</block>`;
 }
 
 export function extractRoll20WorkerScripts(html: string): Array<{ type: string; body: string }> {
@@ -205,6 +257,16 @@ function buildRawWorkerXml(bodies: string[]): string {
     return `<block type="r20_raw_worker" id="${id}" x="24" y="${24 + index * 120}"><field name="JS">${escapeXml(body)}</field></block>`;
   });
   return `<xml xmlns="https://developers.google.com/blockly/xml">${blocks.join('')}</xml>`;
+}
+
+function canonicalWorkerBody(text: string): string {
+  return dedentCommonIndent(
+    String(text ?? '')
+      .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, '$1')
+      .replace(/\r\n?/g, '\n')
+      .replace(/^\n+/, '')
+      .replace(/\n+[ \t]*$/g, ''),
+  ).trim();
 }
 
 function normalizeSourceWorkerBody(body: string): string {

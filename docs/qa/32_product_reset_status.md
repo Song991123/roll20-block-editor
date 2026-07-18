@@ -14,6 +14,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Modern Sandbox safety boundary | 7/7 contract cases | VERIFIED LOCAL | Does not prove a user upload |
 | Preview/edit render surface | 6/6 local modern/legacy comparisons at 0% mismatch | VERIFIED LOCAL | Same local surface only |
 | Layer and placement interaction | edit-flow smoke, layer before/inside/after, flow/free placement, cycle guard, role palette | VERIFIED LOCAL | Figma-level usability still needs visual review |
+| Worker JS import/export | Parsed worker blocks are used only when the generated body is canonically source-stable; three prepared fixtures remain exact through the raw-source fallback | VERIFIED LOCAL | Broad JS block coverage and live Roll20 worker runtime parity remain open |
 | Imported preview/edit round-trip | 4/4 anonymous fixtures: shared iframe edit sync and edited HTML/CSS/i18n re-import stable | VERIFIED LOCAL | Does not prove live Roll20 parity or arbitrary source fidelity |
 | Semantic inline import coverage | 3/3 local fixture imports keep small/u/sub/sup containers and nested translation blocks editable; one fixture reaches 100% HTML/CSS match | VERIFIED LOCAL | One legacy fixture still has 2 HTML and 1 CSS residual fallback |
 | Generated layout CSS | authored position block emits paired class + CSS rule | VERIFIED LOCAL | Imported source inline styles remain loss-aware |
@@ -23,7 +24,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
 | Legacy-room visual parity | No dedicated legacy-room capture | VERIFY | Sandbox is modern-only |
 | UI product reset | Pastel/pink shell, light root/portal baseline, and core Korean product copy slice | PARTIAL | Full information architecture and visual UX reset remain |
 | Public copyright boundary | CI evidence guard, ignored local fixtures/reports, no tracked private corpus | VERIFIED LOCAL | Recheck before every public release |
-| CI/CD | GitHub Actions run `29658982131` passed for `bea1eea` | VERIFIED REMOTE | Deployment smoke remains separate |
+| CI/CD | GitHub Actions run `29659133822` passed for `16ba38c` | VERIFIED REMOTE | Deployment smoke remains separate |
 
 ## Current Counts
 
@@ -43,6 +44,10 @@ local gate is not evidence of visual equality in a live Roll20 room.
   root-only mismatch.
 - Live Roll20 user-owned sheet captures: `0`.
 - Live Roll20 legacy-room captures: `0`.
+- Worker source audit: `3/3` prepared anonymous fixtures preserved exact
+  canonical worker source; the smoke also proves a fully matched generic worker
+  sample becomes `r20_on_attr_change` + `r20_set_attrs` blocks and emits one
+  worker script.
 - Full product UI reset slices: `3` small shell/palette, core-copy, and layer-role slices; this is not
   completion of the redesign.
 - Root UI baseline: forced `html.dark` removed; the app and portals now default
@@ -147,7 +152,7 @@ local gate is not evidence of visual equality in a live Roll20 room.
   `Not allowed`, and the isolated page-evaluation surface lacks DOM creation
   APIs for the generated File-event snippet. No upload occurred.
 - CURRENT COUNTS: authorized user-sheet captures `0`; dedicated legacy-room
-  captures `0`; commit `89d57c9` remote CI run `29658829415` is `success`.
+  captures `0`; commit `16ba38c` remote CI run `29659133822` is `success`.
 
 ## Sheet.json Route Check
 
@@ -157,6 +162,21 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - BOUNDARY: this route edits only the manifest. HTML/CSS/translation still
   require the three source-file inputs, so the manifest was not saved after
   testing. No user-sheet upload or activation evidence was created.
+
+## Worker JS Mapping Slice
+
+- DONE: `replaceWorkerWorkspaceFromSourceHtml` now parses a worker script into
+  nested Blockly XML only when every statement is recognized and the emitted
+  worker body remains canonically identical to the source. Unsupported or
+  formatting-sensitive scripts fall back to the existing raw worker block.
+- VERIFIED LOCAL: `smoke:worker` passed with zero console/page errors. Its
+  generic parsed sample produced `r20_on_attr_change`, `r20_set_attrs`, and
+  `r20_literal_string`, then emitted exactly one `<script type="text/worker">`.
+  `audit:worker` passed `3/3` prepared anonymous fixtures with exact canonical
+  source preservation.
+- BOUNDARY: this is a guarded first JS-block slice, not universal JavaScript
+  parsing or actual Roll20 worker-runtime parity. Raw fallback remains the
+  truthful path for unsupported syntax.
 
 ## Reporting Rule
 
