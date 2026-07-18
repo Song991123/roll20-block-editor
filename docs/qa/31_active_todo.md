@@ -36,6 +36,17 @@
   Sandbox activation, legacy-room parity, and visual comparison as `VERIFY`
   until a stable browser/file handoff is available.
 
+## 2026-07-18 Roll20 CDP Handoff Check
+
+- VERIFIED TOOLING: `node scripts/roll20_upload_cdp_apply.mjs --self-test`
+  passes, and the ignored synthetic payload remains available locally.
+- VERIFY BLOCKED: No process is listening on CDP port `9222`; the latest
+  preflight is `CDP_CLOSED`. No upload request was made and no Roll20 result
+  was inferred from the script self-test.
+- DECISION: Keep actual modern Sandbox activation and legacy-room parity at
+  `VERIFY`; a future run needs a logged-in CDP-enabled browser or a stable
+  browser file handoff.
+
 ## 2026-07-18 App Chrome Typography
 
 - DONE: Removed the app-shell's negative letter-spacing override. The product

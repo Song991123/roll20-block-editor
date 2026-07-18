@@ -34,6 +34,15 @@
   browser path in this batch. Continue local work while the actual modern
   Sandbox and dedicated legacy-room checks remain `VERIFY`.
 
+## 2026-07-18 Roll20 CDP Handoff Check
+
+- VERIFIED TOOLING: The CDP upload helper self-test passes and the anonymous
+  synthetic payload is still local-only.
+- VERIFY BLOCKED: Port `9222` has no listener and the preflight result is
+  `CDP_CLOSED`; no upload or visual result was claimed.
+- BOUNDARY: This distinguishes a closed automation channel from a Roll20
+  rejection. Modern Sandbox activation and legacy-room parity remain open.
+
 ## 2026-07-18 App Chrome Typography
 
 - DONE: Changed the surrounding app shell from `letter-spacing: -0.01em` to
