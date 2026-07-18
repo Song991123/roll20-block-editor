@@ -6076,3 +6076,15 @@ File-event snippet. No payload was uploaded and no Roll20 result was counted.
 Actual user-sheet captures remain `0`; dedicated legacy-room captures remain
 `0`. Commit `0aa4f14` passed the remote CI run, but this does not replace the
 missing external upload evidence.
+
+### 2026-07-19 - Layer collapse acceptance coverage
+
+The canonical edit-flow browser smoke now exercises the layer tree's collapse
+button instead of only checking that the control exists. A nested synthetic
+HTML layer collapses to its container row, expands again when its child is
+selected in the persistent preview iframe, and keeps the child row selected.
+
+Verification: `smoke:edit-flow` passed with zero console/page errors. Lint,
+production build, `ci:verify`, and strict imported edit synchronization also
+passed. This is local product evidence only and does not change the actual
+Roll20 user-sheet capture count, which remains `0`.

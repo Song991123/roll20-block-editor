@@ -218,6 +218,67 @@ async function main() {
     assert(result.tests.canvasWidgetDrop.created.nested, 'widget did not enter the frame');
     assert(!result.tests.canvasWidgetDrop.created.nestedAbsolute, 'flow widget unexpectedly became absolute');
 
+    const frameCollapseToggle = page.locator(
+      `[data-testid="edit-layer-collapse-toggle"][data-r20-block-id="${ids.frameId}"]`,
+    );
+    assert((await frameCollapseToggle.count()) === 1, 'container layer collapse toggle is missing');
+    result.tests.layerCollapse = await page.evaluate(({ frameId, childId }) => ({
+      beforeRows: document.querySelectorAll('[data-testid="edit-layer-row"]').length,
+      frameId,
+      childId,
+    }), { frameId: ids.frameId, childId: ids.rowAId });
+    await frameCollapseToggle.click();
+    await page.waitForTimeout(150);
+    result.tests.layerCollapse.collapsed = await page.evaluate(({ frameId, childId }) => {
+      const toggle = document.querySelector(
+        `[data-testid="edit-layer-collapse-toggle"][data-r20-block-id="${CSS.escape(frameId)}"]`,
+      );
+      const childRow = document.querySelector(
+        `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(childId)}"]`,
+      );
+      return {
+        state: toggle?.getAttribute('data-r20-layer-collapsed') ?? null,
+        visibleRows: document.querySelectorAll('[data-testid="edit-layer-row"]').length,
+        childVisible: Boolean(childRow),
+      };
+    }, { frameId: ids.frameId, childId: ids.rowAId });
+    assert(result.tests.layerCollapse.collapsed.state === '1', 'container layer did not collapse');
+    assert(
+      result.tests.layerCollapse.collapsed.visibleRows < result.tests.layerCollapse.beforeRows,
+      'collapsing a container did not hide descendant layer rows',
+    );
+    assert(!result.tests.layerCollapse.collapsed.childVisible, 'collapsed descendant layer is still visible');
+
+    const childInIframe = frame.locator(`[data-r20-block-id="${ids.rowAId}"]`).first();
+    await childInIframe.click();
+    await page.waitForTimeout(200);
+    result.tests.layerCollapse.autoExpandedOnSelection = await page.evaluate(({ frameId, childId }) => {
+      const toggle = document.querySelector(
+        `[data-testid="edit-layer-collapse-toggle"][data-r20-block-id="${CSS.escape(frameId)}"]`,
+      );
+      const childRow = document.querySelector(
+        `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(childId)}"]`,
+      );
+      return {
+        state: toggle?.getAttribute('data-r20-layer-collapsed') ?? null,
+        childVisible: Boolean(childRow),
+        childSelected: childRow?.getAttribute('data-r20-layer-selected') === '1',
+        storeSelected: window.__perfHook.getSelectedBlockId?.() ?? null,
+      };
+    }, { frameId: ids.frameId, childId: ids.rowAId });
+    assert(
+      result.tests.layerCollapse.autoExpandedOnSelection.state === '0',
+      'selecting a hidden iframe child did not expand its ancestor layer',
+    );
+    assert(
+      result.tests.layerCollapse.autoExpandedOnSelection.childVisible,
+      'selected iframe child did not return to the layer tree',
+    );
+    assert(
+      result.tests.layerCollapse.autoExpandedOnSelection.childSelected,
+      'selected iframe child did not sync to the layer row',
+    );
+
     await page.click('[data-testid="edit-placement-free"]');
     const freeTarget = await frame.locator('.sheet-row-a').boundingBox();
     assert(freeTarget, 'free placement target missing');
@@ -417,7 +478,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, canvas widget drop, layer reorder/eject, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
+        '- Coverage: flow/free placement, canvas widget drop, layer collapse/expand, layer reorder/eject, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
         '',
       ].join('\n'),
       'utf8',

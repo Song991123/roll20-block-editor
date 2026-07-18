@@ -130,7 +130,12 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - VERIFIED LOCAL: the edit-mode layer panel now has collapsible container rows
   and automatically expands the selected object's ancestor path. Search keeps
   matching descendants visible even when a parent was collapsed.
-- VERIFIED LOCAL: lint, production build, and `smoke:edit-flow` passed.
+- VERIFIED LOCAL: `smoke:edit-flow` clicked a real collapse toggle, verified
+  that the nested layer disappeared and returned, then selected the nested
+  object through the shared iframe and verified automatic ancestor expansion
+  plus row selection. Console and page error counts were both zero.
+- VERIFIED LOCAL: lint, production build, `ci:verify`, and strict imported
+  edit-sync passed after adding this acceptance coverage.
 - BOUNDARY: this proves the local layer interaction path only. Full browser
   drag/reorder acceptance and live Roll20 visual parity remain `VERIFY`.
 

@@ -5371,10 +5371,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   so a collapsed parent cannot hide a search result.
 - FIXED: selecting a nested object from the shared iframe automatically opens
   its ancestor layers before scrolling the selected row into view.
-- VERIFIED LOCAL: TypeScript build, lint, and `smoke:edit-flow` passed after the
-  layer-tree change. This verifies the local edit flow, not live Roll20 parity.
-- VERIFY: nested browser acceptance still needs a real click/drag assertion on
-  the collapse control and a before/inside/after reorder smoke.
+- VERIFIED LOCAL: `smoke:edit-flow` now clicks the collapse control, confirms
+  descendant rows disappear and return, then selects the hidden child in the
+  shared iframe and confirms the ancestor re-opens and the child row is
+  selected. The smoke reported zero console/page errors.
+- VERIFIED LOCAL: lint, production build, `ci:verify`, and strict imported
+  edit-sync passed after the acceptance coverage was added.
+- BOUNDARY: this verifies the local edit flow, not live Roll20 parity. The
+  separate before/inside/after reorder assertions remain synthetic events.
 
 ## 2026-07-19 Modern Sandbox Handoff Recheck
 
