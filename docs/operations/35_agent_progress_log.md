@@ -6122,3 +6122,17 @@ generic sample produced `r20_on_attr_change`, `r20_set_attrs`, and
 This is a first guarded JS-block slice; it is not universal JavaScript parsing
 or live Roll20 worker-runtime parity. User-sheet upload and legacy-room
 evidence remain VERIFY.
+
+### 2026-07-19 - Typed page-script preservation
+
+The importer previously treated every script with a missing or non-worker type
+as worker-compatible after the reporter check. That could move an explicitly
+typed page script into the worker workspace and export it as
+`<script type="text/worker">`. The matcher now restricts worker parsing to the
+Roll20 worker type plus the existing legacy untyped compatibility path. Other
+typed scripts fall through to the raw HTML preservation path, retaining their
+attributes for export while the preview baseline keeps script nodes inert.
+
+Verification: high-priority import `21/21`, import structure `30/30`, export
+contract, and `git diff --check` passed. This is a source-preservation fix, not
+arbitrary page-JS execution or live Roll20 runtime parity.

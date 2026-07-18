@@ -82,6 +82,14 @@ function testTranslationByLang(): void {
   expectContains(r.html, '>strength<', 'KEY carried');
 }
 
+function testTypedPageScriptStaysHtml(): void {
+  const html = `<script type="text/javascript" src="sheet-runtime.js">window.sheetReady = true;</script>`;
+  const r = importSheet({ html });
+  expectContains(r.html, 'r20_raw_html', 'typed page script stays in HTML');
+  expectNotContains(r.html, 'r20_raw_worker', 'typed page script is not a worker');
+  expectNotContains(r.html, 'r20_get_translation', 'typed page script is not a worker reporter');
+}
+
 // --- 3) r20_css_var_decl --------------------------------------------------
 
 function testCssVarDecl(): void {
@@ -242,6 +250,7 @@ const tests = [
   ['complex worker stays raw', testCompendiumComplexWorkerStaysRaw],
   ['translation by key', testTranslationByKey],
   ['translation by lang', testTranslationByLang],
+  ['typed page script stays HTML', testTypedPageScriptStaysHtml],
   ['css var decl basic', testCssVarDecl],
   ['css var decl with spaces', testCssVarDeclWithSpaces],
   ['css regular prop not var decl', testCssRegularPropNotVarDecl],

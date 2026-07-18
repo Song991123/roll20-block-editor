@@ -5420,3 +5420,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CURRENT TRUTH: authorized user-sheet captures remain `0`; dedicated
   legacy-room captures remain `0`. The latest remote CI evidence is
   `7ec880a` / run `29659555283` and is separate from Roll20 runtime proof.
+
+## 2026-07-19 Typed page-script preservation
+
+- FIXED: explicitly typed non-worker `<script>` elements are no longer
+  classified as Roll20 worker code. They remain raw HTML with their original
+  type/src attributes, stay hidden by the preview script policy, and remain
+  available to the export path. The existing Roll20 `text/worker` and legacy
+  untyped worker-compatible paths are unchanged.
+- VERIFIED LOCAL: high-priority importer tests passed `21/21`, import structure
+  remained `30/30`, and the export contract confirms typed page scripts are
+  not rewritten as `text/worker`.
+- BOUNDARY: this preserves page-script source; it does not execute arbitrary
+  page JavaScript in the editor preview. Worker parsing/runtime parity remains
+  a separate partial axis.

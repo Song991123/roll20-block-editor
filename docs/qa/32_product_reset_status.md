@@ -188,6 +188,15 @@ local gate is not evidence of visual equality in a live Roll20 room.
 - CURRENT COUNTS: user-sheet captures `0`; dedicated legacy-room captures
   `0`. Latest remote CI remains `7ec880a` / `29659555283`.
 
+## Typed page-script preservation
+
+- FIXED: typed non-worker scripts now remain raw HTML instead of being moved
+  into the worker workspace or rewritten as `text/worker`.
+- VERIFIED LOCAL: importer high-priority tests `21/21`, import structure
+  `30/30`, and the export contract passed.
+- BOUNDARY: the preview keeps page scripts inert and hidden; this change does
+  not claim arbitrary JavaScript execution or worker runtime parity.
+
 ## Reporting Rule
 
 Every future progress report must label each item as `DONE`, `VERIFIED LOCAL`,

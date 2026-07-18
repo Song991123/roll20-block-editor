@@ -67,8 +67,25 @@ function testGeneratedPositionCss(): void {
   workspace.dispose();
 }
 
+function testTypedPageScriptExportPreserved(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const block = workspace.newBlock('r20_raw_html');
+  block.setFieldValue(
+    '<script type="text/javascript" src="sheet-runtime.js">window.sheetReady = true;</script>',
+    'HTML',
+  );
+
+  const result = emitAll({ html: workspace });
+  assert(result.html.includes('type="text/javascript"'), 'typed script type is preserved');
+  assert(result.html.includes('src="sheet-runtime.js"'), 'typed script src is preserved');
+  assert(!result.html.includes('type="text/worker"'), 'typed page script is not rewritten as worker');
+  workspace.dispose();
+}
+
 testRawFallbackPair();
 testAlreadyCanonicalPair();
 testInlineStylePair();
 testGeneratedPositionCss();
+testTypedPageScriptExportPreserved();
 console.log('Emit Roll20 class-pair tests passed.');

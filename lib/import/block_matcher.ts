@@ -548,11 +548,13 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     const body = dedentCommonIndent(
       rawBody.replace(/^\r?\n/, '').replace(/\r?\n[ \t]*$/, ''),
     );
-    const reporter = matchSheetWorkerReporter(body);
-    if (reporter) return reporter;
-
     const scriptType = (a.type || '').toLowerCase();
+    // Only Roll20 worker scripts belong in the worker workspace. Typed page
+    // scripts must stay as raw HTML so export keeps their original tag while
+    // the preview baseline hides the inert script node.
     if (scriptType === 'text/worker' || scriptType === '') {
+      const reporter = matchSheetWorkerReporter(body);
+      if (reporter) return reporter;
       const parsed = parseSheetWorkerScript(body);
       if (parsed.blocks.length > 0 && parsed.stats.matched > 0) {
         ctx.scriptBlocksMatched += parsed.stats.matched;
@@ -574,6 +576,10 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         };
       }
     }
+
+    // Returning null lets the caller preserve the complete script element as
+    // r20_raw_html, including non-worker type/src attributes.
+    if (scriptType !== 'text/worker' && scriptType !== '') return null;
 
     return {
       blockType: 'r20_raw_worker',
