@@ -5527,6 +5527,10 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - OPEN: Actual modern and legacy sidecars still lack `sheetCanvas`; browser
   DOM extraction timed out on the current heavy Roll20 tab, so no actual
   parity claim was made.
+- VERIFY NOTE: The paired local modern/legacy smoke had one modern pixel
+  mismatch at `8.26%` for an anonymous prepared fixture; a following
+  modern-only run was exact for all three. Reproduce the paired instability
+  before treating it as a renderer defect.
 ## 2026-07-18 Modern Sandbox Synthetic Smoke
 
 - DONE/VERIFIED ACTUAL: Applied the ignored synthetic HTML/CSS/translation

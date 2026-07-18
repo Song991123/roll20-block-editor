@@ -4874,6 +4874,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   and content-box measurements present. The anonymous synthetic fixture also
   passed modern and legacy on the same gate. The comparator self-test passes
   for both root and content-canvas mismatch failures.
+- VERIFY NOTE: A paired modern/legacy run exposed one transient modern pixel
+  mismatch (`8.26%`) for an anonymous prepared fixture, while the subsequent
+  modern-only rerun was exact for all three. Treat this as unstable evidence
+  to reproduce, not as a parity pass or a renderer regression verdict.
 - VERIFY: No actual modern or legacy sidecar currently contains
   `sheetCanvas`; this change creates the measurement contract but does not
   claim Roll20 visual parity.
