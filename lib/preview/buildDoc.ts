@@ -1351,9 +1351,21 @@ const ROLL20_DIALOG_OPEN_CSS = `
 
 #dialog-window.r20-preview-dialog > .dialog,
 #dialog-window.r20-preview-dialog > .dialog > .tab-content,
-#dialog-window.r20-preview-dialog > .dialog > .tab-content > .sheetform,
-#dialog-window.r20-preview-dialog #charsheet-root {
+#dialog-window.r20-preview-dialog > .dialog > .tab-content > .sheetform {
   width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+/* Roll20 keeps the iframe/form at its dialog width but lets the authored
+ * .charactersheet root choose its own intrinsic width (for example 850px in
+ * the modern live sheet and 860px in the legacy live sheet). Do not turn that
+ * root into a viewport-sized app panel. */
+#dialog-window.r20-preview-dialog #charsheet-root {
+  width: auto !important;
   min-width: 0 !important;
   max-width: none !important;
   height: auto !important;

@@ -5058,3 +5058,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   resulting screenshot is normalized and diffed.
 - NEXT P0: Use these measured wrapper contracts to normalize the local modern /
   legacy comparison harness, then run the dedicated anonymous export check.
+
+## 2026-07-19 Authored Root Intrinsic Width Contract
+
+- FIXED: `ROLL20_DIALOG_OPEN_CSS` no longer forces `#charsheet-root` to the
+  iframe width. The dialog, content, and `form.sheetform` still fill the
+  `900px` Roll20 content frame, while the authored `.charactersheet` root can
+  follow its own sheet CSS width.
+- WHY: Live Roll20 measured modern `850px` and legacy `860px` roots inside the
+  same `900px` iframe. The old local rule made imported roots `870px` wide and
+  could overwrite a sheet's intrinsic layout contract.
+- VERIFIED LOCAL: buildDoc bundle test, lint, production build, fresh-sheet,
+  persistent-preview modern/legacy (`loads=0`), preview/edit visual smoke for
+  all 3 local comparison fixtures, legacy preview contract smoke, and one
+  legacy fixture visual smoke all passed after the change.
+- LIMIT: The legacy fixture visual smoke remains diagnostic and reported a
+  `17.22%` modern/legacy pixel difference for Les-Oublies; that is not treated
+  as a parity pass. Actual Roll20 export upload and normalized diff remain open.

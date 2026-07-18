@@ -46,6 +46,16 @@ assert.match(bundle.doc, /var htmlChanged = data\.htmlKey !== lastAppliedHtmlKey
 assert.match(roll20BaseIframeCss, /\.ui-dialog\s+\.charsheet/);
 assert.ok(roll20BaseShadowCss.length > 0, 'Shadow baseline is generated');
 assert.match(bundle.doc, /#dialog-window\.r20-preview-dialog/);
+assert.match(
+  bundle.doc,
+  /#dialog-window\.r20-preview-dialog > \.dialog > \.tab-content > \.sheetform[\s\S]*?width: 100% !important/,
+  'Roll20 form keeps the iframe/dialog width',
+);
+assert.match(
+  bundle.doc,
+  /#dialog-window\.r20-preview-dialog #charsheet-root[\s\S]*?width: auto !important/,
+  'authored sheet root keeps its intrinsic width',
+);
 assert.match(bundle.doc, /function patchRootHtml\(html\)/);
 assert.match(bundle.doc, /data-r20-structural-patches/);
 assert.match(bundle.doc, /if \(style\.textContent !== css\) style\.textContent = css/);

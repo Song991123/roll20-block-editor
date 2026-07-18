@@ -5701,3 +5701,24 @@ modern/legacy wrapper and authored-root measurement. It does not yet authorize
 a production renderer CSS patch or claim export parity: the anonymous export
 still must be applied in Sandbox or a dedicated test room and compared under a
 normalized viewport/state contract.
+
+### 2026-07-19 — Preserve authored sheet intrinsic width
+
+The live room measurements exposed a concrete local renderer defect: the
+dialog/form should remain `900px`, but the authored `.charactersheet` root is
+not a viewport panel. Roll20's observed roots were `850px` in the modern room
+and `860px` in the legacy room. `ROLL20_DIALOG_OPEN_CSS` previously applied
+`width: 100%` to `#charsheet-root`, which produced an `870px` local root for
+imported sheets.
+
+The rule now leaves the root at `width: auto` while retaining the dialog/form
+wrapper contract. This keeps sheet-owned CSS and intrinsic layout in control
+without weakening the surrounding Roll20 context. The buildDoc contract test
+now guards both halves of the rule.
+
+Verification after the change: buildDoc bundle test, lint, production build,
+fresh-sheet, persistent preview in modern/legacy, preview/edit visual smoke for
+all three comparison fixtures, legacy preview contract smoke, and the focused
+legacy fixture visual smoke all passed. The focused fixture still reports a
+diagnostic `17.22%` modern/legacy pixel difference, so this change does not
+claim actual Roll20 visual parity.
