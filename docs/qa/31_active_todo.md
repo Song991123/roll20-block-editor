@@ -5059,6 +5059,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Use these measured wrapper contracts to normalize the local modern /
   legacy comparison harness, then run the dedicated anonymous export check.
 
+## 2026-07-19 Legacy Fixture Matrix Timeout
+
+- VERIFY GAP: The full 3-fixture legacy visual matrix was attempted after the
+  intrinsic-root change but exceeded the 124-second command limit while
+  processing large imported fixtures. The focused Les-Oublies run passed;
+  AW2E/YSHY full-matrix completion remains unverified.
+- NEXT P1: Rerun the matrix with a bounded per-fixture or per-capture-segment
+  strategy so a large fixture cannot hide a timeout.
+
 ## 2026-07-19 Authored Root Intrinsic Width Contract
 
 - FIXED: `ROLL20_DIALOG_OPEN_CSS` no longer forces `#charsheet-root` to the

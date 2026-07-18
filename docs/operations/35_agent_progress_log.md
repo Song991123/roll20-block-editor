@@ -5722,3 +5722,9 @@ all three comparison fixtures, legacy preview contract smoke, and the focused
 legacy fixture visual smoke all passed. The focused fixture still reports a
 diagnostic `17.22%` modern/legacy pixel difference, so this change does not
 claim actual Roll20 visual parity.
+
+The full three-fixture legacy visual matrix was attempted separately but hit
+the 124-second command limit while processing the large imported fixtures. It
+is intentionally recorded as unverified rather than inferred from the focused
+pass. The next performance task is to make that matrix bounded per fixture or
+per capture segment so AW2E/YSHY can complete without hiding a timeout.
