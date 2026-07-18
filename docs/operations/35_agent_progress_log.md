@@ -5444,3 +5444,19 @@ This file is for Codex, Claude, and future agents. Do not move this content into
   pass after updating its boundary-copy assertion.
 - BOUNDARY: Worker block editing and actual Roll20 worker/runtime parity remain
   open; this batch changes labels and guidance only.
+
+## 2026-07-18 Roll20 Room View Check
+
+- VERIFIED OBSERVATION: Chrome connected to the logged-in solo verification
+  room. The current sheet view measured a Roll20 `ui-dialog` wrapper and a
+  `characterdialog` iframe surface at approximately 900px wide, with a
+  separate Sheet Sandbox Tools dialog exposing HTML/CSS/Translation controls.
+- SAFETY: Existing character viewers were closed as display cleanup only. No
+  room settings, character data, macros, handouts, chat, or existing sheet
+  source was changed.
+- VERIFY BLOCKED: The browser's native file-chooser control rejected the
+  synthetic local-only upload attempt. No file was transmitted and no Sandbox
+  settings changed. The next approved step is the generated Roll20 upload
+  snippet or another supported Sandbox upload path.
+- BOUNDARY: Wrapper observation is not actual generated-sheet visual parity;
+  modern Sandbox and legacy-room results remain independent gates.

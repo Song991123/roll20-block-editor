@@ -4779,3 +4779,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   the smoke now checks the intentional plain-language runtime boundary copy.
 - CLAIM BOUNDARY: This improves navigation copy only. It does not implement
   worker JS block editing or prove actual Roll20 worker/runtime parity.
+
+## 2026-07-18 Roll20 Room View Check
+
+- VERIFIED OBSERVATION: The logged-in Chrome Roll20 verification room was a
+  solo room view. The visible sheet surface used the observed Roll20 wrapper
+  classes `ui-dialog ui-widget ui-widget-content ui-corner-all` and a
+  `characterdialog` content wrapper with a 900px iframe viewport. A separate
+  Sheet Sandbox Tools dialog exposed HTML, CSS, and Translation file controls.
+- SAFETY: Existing character sheet windows were closed only as UI cleanup. No
+  room settings, character values, macros, handouts, chat, or existing sheet
+  source were edited.
+- VERIFY BLOCKED: Applying the synthetic local-only payload through the native
+  Sandbox file chooser was rejected by the browser control boundary. No upload
+  or source transmission occurred. Retry through the approved Roll20 Sandbox
+  upload/snippet path before claiming actual generated-sheet parity.
+- CLAIM BOUNDARY: This is current wrapper/state observation, not preview parity.
+  Modern Sandbox upload and dedicated legacy-room upload remain separate gates.
