@@ -4753,3 +4753,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   persistent-iframe checks. Lint, `ci:verify`, and server hygiene passed.
 - CLAIM BOUNDARY: This closes a first-run UI affordance gap only. It does not
   prove actual Roll20 Sandbox/legacy-room parity or universal mapping.
+
+## 2026-07-18 App Accent Token Consistency
+
+- DONE: Editor-only selection, placement, focus, and widget-preview accents now
+  use the surrounding app's `--primary` token instead of a hard-coded blue
+  fallback. Imported Roll20 CSS and iframe baseline files were not changed.
+- VERIFIED LOCAL: Production build, `smoke:edit-flow`,
+  `smoke:persistent-preview-surface` in modern/legacy modes, lint, and
+  `git diff --check` passed. Persistent iframe loads remained `0` in both
+  compatibility modes.
+- CLAIM BOUNDARY: This is an app-chrome design-token correction. It does not
+  prove the full pastel information-architecture reset, actual Roll20 visual
+  parity, or universal mapping.
+- TODO: Continue the user-task UI reset with bounded copy/tooltip and synthetic
+  action-preview work, without importing the separate Shadow-render design
+  branch or changing the canonical iframe contract.

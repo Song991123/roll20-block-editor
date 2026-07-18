@@ -165,7 +165,7 @@ export function WidgetRender({ type, attrs = {}, mini = false }: RenderProps) {
           style={{
             ...inputStyle,
             cursor: mini ? 'inherit' : 'pointer',
-            background: 'var(--color-primary, #2563eb)',
+            background: 'var(--primary)',
             color: '#fff',
             fontWeight: 600,
           }}
@@ -284,7 +284,7 @@ export function WidgetRender({ type, attrs = {}, mini = false }: RenderProps) {
             justifyContent: 'center',
             fontWeight: 700,
             fontSize: 16,
-            background: 'var(--color-primary, #2563eb)',
+            background: 'var(--primary)',
             color: '#fff',
             borderRadius: 4,
           }}

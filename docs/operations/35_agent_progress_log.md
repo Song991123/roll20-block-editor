@@ -5420,3 +5420,16 @@ This file is for Codex, Claude, and future agents. Do not move this content into
 - VERIFIED: Forwarded-argument fresh-sheet, edit-flow, and persistent-preview
   smokes passed; `ci:verify`, lint, build, and server hygiene passed. The
   fresh-sheet smoke explicitly opens/closes the import dialog.
+
+## 2026-07-18 App Accent Token Consistency
+
+- IMPLEMENTED: Editor-only selection/placement states, widget gallery button
+  previews, and widget inspector focus borders now consume the app shell's
+  `--primary` token rather than falling back to `#2563eb`. The Roll20 iframe
+  baseline and imported user CSS remain isolated and unchanged.
+- VERIFIED LOCAL: Production build, lint, `git diff --check`,
+  `smoke:edit-flow`, and `smoke:persistent-preview-surface` passed. Modern and
+  legacy persistent-preview runs reported `loads=0`.
+- BOUNDARY: This is a small visual-system correction, not completion of the
+  full design reset or Roll20 parity. Actual Sandbox/legacy-room evidence and
+  broader user-task review remain open.

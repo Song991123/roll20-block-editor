@@ -129,7 +129,7 @@ export default function EditCanvas() {
           className={cn(
             'rounded border px-2 py-0.5 text-xs',
             snapEnabled
-              ? 'border-[var(--color-primary,#2563eb)] bg-[var(--color-primary,#2563eb)] text-white'
+              ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
               : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
           )}
           title="8px 격자에 맞추기"
@@ -147,7 +147,7 @@ export default function EditCanvas() {
             className={cn(
               'px-2 py-0.5 text-xs',
               editPlacementMode === 'flow'
-                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                ? 'bg-[var(--primary)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
             title="틀의 배치 규칙에 따라 주변 요소와 함께 정렬합니다."
@@ -161,7 +161,7 @@ export default function EditCanvas() {
             className={cn(
               'px-2 py-0.5 text-xs',
               editPlacementMode === 'free'
-                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                ? 'bg-[var(--primary)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
             title="선택한 틀을 기준으로 원하는 위치에 배치합니다."
@@ -203,7 +203,7 @@ export default function EditCanvas() {
             className={cn(
               'px-2 py-0.5 text-xs',
               zoom === 'fit'
-                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                ? 'bg-[var(--primary)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
             title="전체 시트를 작업 영역에 맞춥니다."
@@ -217,7 +217,7 @@ export default function EditCanvas() {
             className={cn(
               'px-2 py-0.5 text-xs',
               zoom === 1
-                ? 'bg-[var(--color-primary,#2563eb)] text-white'
+                ? 'bg-[var(--primary)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
             title="Roll20 시트 크기 그대로 봅니다."
