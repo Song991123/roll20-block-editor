@@ -17,6 +17,7 @@
  */
 
 import { useState } from 'react';
+import { History } from 'lucide-react';
 import { toast } from 'sonner';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import { WORKSPACE_KEYS, useWorkspaceStore } from '@/lib/stores/workspaceStore';
@@ -129,36 +130,37 @@ export default function AutosaveBanner({ xml, meta, onDismiss }: Props) {
       role="status"
       aria-live="polite"
       data-testid="autosave-banner"
-      className="flex items-center gap-3 border-b border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-100"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color-mix(in_srgb,var(--warning)_35%,transparent)] bg-[var(--warning-soft)] px-4 py-2.5 text-sm text-foreground"
     >
-      <span className="font-medium">자동 저장된 작업이 있습니다.</span>
-      <span className="text-amber-200/80">
-        {relativeTime(meta.ts)} · {meta.blockCount}개 블록
+      <History className="h-[18px] w-[18px] shrink-0 text-[var(--warning)]" aria-hidden="true" />
+      <span className="font-semibold">이 브라우저에 저장해 둔 작업이 있어요.</span>
+      <span className="text-[var(--text-secondary)]">
+        {relativeTime(meta.ts)} · 블록 {meta.blockCount}개
       </span>
       <div className="ml-auto flex items-center gap-2">
         <button
           type="button"
           disabled={busy}
           onClick={onRestore}
-          className="rounded bg-amber-500/80 px-3 py-1 text-xs font-medium text-amber-950 hover:bg-amber-400 disabled:opacity-50"
+          className="rounded-full bg-[var(--primary-strong)] px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--primary-strong-hover)] active:scale-[0.97] disabled:opacity-50"
           data-testid="autosave-restore"
         >
-          복구
+          이어서 하기
         </button>
         <button
           type="button"
           disabled={busy}
           onClick={onIgnore}
-          className="rounded border border-amber-400/40 px-3 py-1 text-xs hover:bg-amber-500/20 disabled:opacity-50"
+          className="rounded-full border-[1.5px] border-[var(--border-strong)] px-4 py-1.5 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground active:scale-[0.97] disabled:opacity-50"
           data-testid="autosave-ignore"
         >
-          무시
+          지우기
         </button>
         <button
           type="button"
-          aria-label="배너 닫기"
+          aria-label="알림 닫기"
           onClick={onDismiss}
-          className="ml-1 rounded px-1 text-base text-amber-200/70 hover:text-amber-100"
+          className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground"
           data-testid="autosave-close"
         >
           ×

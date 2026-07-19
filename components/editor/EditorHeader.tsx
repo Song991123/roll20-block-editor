@@ -38,15 +38,15 @@ const APP_VERSION = 'v0.1.0';
 function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden>
-      <rect width="32" height="32" rx="9" fill="url(#logoGrad)" />
+      <rect width="32" height="32" rx="10" fill="url(#logoGrad)" />
       <path
         d="M9 11h5.5c1.7 0 3 1 3 2.4 0 1.2-.8 2-1.8 2.3 1.3.2 2.3 1.2 2.3 2.5 0 1.7-1.5 2.8-3.4 2.8H9V11Zm2.4 4.1h2.7c.9 0 1.5-.5 1.5-1.2 0-.7-.5-1.1-1.4-1.1h-2.8v2.3Zm0 4.1h3c1.1 0 1.8-.5 1.8-1.3 0-.8-.6-1.3-1.7-1.3h-3.1V19.2Z"
-        fill="#1A1A1A"
+        fill="#FFFFFF"
       />
       <defs>
         <linearGradient id="logoGrad" x1="0" y1="0" x2="32" y2="32">
-          <stop stopColor="#F6A6BE" />
-          <stop offset="1" stopColor="#D45D84" />
+          <stop stopColor="#F49CB9" />
+          <stop offset="1" stopColor="#C74B74" />
         </linearGradient>
       </defs>
     </svg>
@@ -76,7 +76,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
   const handleNewSheet = useCallback(() => {
     if (
       typeof window !== 'undefined' &&
-      !window.confirm('현재 시트의 HTML, CSS, 번역 작업을 모두 비울까요?')
+      !window.confirm('지금 만들던 시트를 모두 비우고 새로 시작할까요? (이 브라우저에 저장된 기록도 함께 지워져요)')
     ) {
       return;
     }
@@ -100,9 +100,9 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
     try {
       const result = await saveCurrentWorkspaceSnapshot();
       if (result.ok) {
-        toast.success('현재 작업을 저장했어요.', { duration: 1800 });
+        toast.success('지금까지의 작업을 이 브라우저에 저장했어요.', { duration: 1800 });
       } else {
-        toast.error('저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.', { duration: 2600 });
+        toast.error('저장하지 못했어요. 브라우저 저장 공간이 가득 찼는지 확인해 주세요.', { duration: 2600 });
       }
     } finally {
       setSaving(false);
@@ -111,7 +111,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
 
   return (
     <TooltipProvider delayDuration={250}>
-      <header className="flex h-[var(--header-h)] shrink-0 items-center gap-2 border-b border-border bg-[var(--bg-elevated)] px-3">
+      <header className="flex h-[var(--header-h)] shrink-0 items-center gap-2 border-b border-border bg-[var(--bg-elevated)] px-3 shadow-[0_1px_0_var(--border-subtle)]">
         {mainMode !== 'preview' && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -119,44 +119,43 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
                 onClick={toggleLeft}
-                aria-label="왼쪽 패널 열기/닫기"
+                aria-label="블록 꾸러미 열기/닫기"
                 data-testid="sidebar-left-toggle"
               >
-                <PanelLeft className="h-4 w-4" />
+                <PanelLeft aria-hidden="true" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">왼쪽 패널</TooltipContent>
+            <TooltipContent side="bottom">왼쪽 블록 꾸러미를 열거나 닫아요</TooltipContent>
           </Tooltip>
         )}
 
-        <div className="flex items-center gap-2 pl-1">
-          <LogoMark className="h-7 w-7" />
-          <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-tight">Roll20 시트 편집기</div>
-            <div className="hidden text-[10.5px] text-muted-foreground md:block">
-              블록과 캔버스로 만드는 캐릭터 시트
+        <div className="flex min-w-0 items-center gap-2.5 pl-1">
+          <LogoMark className="h-9 w-9 shrink-0" />
+          <div className="r20-header-title leading-tight">
+            <div className="whitespace-nowrap text-base font-bold tracking-tight">Roll20 시트 편집기</div>
+            <div className="hidden whitespace-nowrap text-xs text-muted-foreground lg:block">
+              코드 없이 만드는 캐릭터 시트
             </div>
           </div>
         </div>
 
-        <div className="ml-2 flex items-center gap-0.5">
+        <div className="ml-3 flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 gap-1.5"
+                className="gap-1.5"
                 onClick={handleNewSheet}
                 aria-label="새 시트 만들기"
               >
-                <FilePlus className="h-4 w-4" />
+                <FilePlus aria-hidden="true" />
                 <span className="hidden sm:inline">새 시트</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>빈 시트 만들기</TooltipContent>
+            <TooltipContent>빈 시트에서 새로 시작해요</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -165,39 +164,49 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 gap-1.5"
+                className="gap-1.5"
                 onClick={() => setImportOpen(true)}
-                aria-label="파일에서 불러오기"
+                aria-label="시트 파일 불러오기"
                 data-testid="header-import-button"
               >
-                <FolderOpen className="h-4 w-4" />
+                <FolderOpen aria-hidden="true" />
                 <span className="hidden sm:inline">불러오기</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>HTML, CSS, 번역 파일 불러오기</TooltipContent>
+            <TooltipContent>가지고 있는 시트 파일(HTML·CSS·번역)을 열어요</TooltipContent>
           </Tooltip>
         </div>
 
         <div className="flex-1" />
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 type="button"
-                variant={dirty ? 'default' : 'ghost'}
+                variant={dirty ? 'default' : 'secondary'}
                 size="sm"
-                className="h-8 gap-1.5"
+                className="gap-1.5"
                 onClick={handleSave}
                 disabled={saving}
                 aria-label="현재 시트 저장"
                 data-testid="header-save-button"
               >
-                <Save className="h-4 w-4" />
-                <span className="hidden sm:inline">{saving ? '저장 중' : '저장'}</span>
+                <Save aria-hidden="true" />
+                <span className="hidden sm:inline">{saving ? '저장 중…' : '저장'}</span>
+                {dirty && !saving && (
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full bg-white/90 shadow-[0_0_0_2px_rgba(255,255,255,0.35)]"
+                    aria-hidden="true"
+                  />
+                )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>현재 작업을 브라우저에 저장</TooltipContent>
+            <TooltipContent>
+              {dirty
+                ? '아직 저장 안 된 변경이 있어요 — 이 브라우저에 저장해요'
+                : '지금까지의 작업을 이 브라우저에 저장해요'}
+            </TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -206,19 +215,19 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                 type="button"
                 variant="default"
                 size="sm"
-                className="h-8 gap-1.5"
+                className="gap-1.5"
                 onClick={() => setExportOpen(true)}
                 aria-label="Roll20용 파일 내보내기"
                 data-testid="header-export-button"
               >
-                <Download className="h-4 w-4" />
+                <Download aria-hidden="true" />
                 <span className="hidden sm:inline">내보내기</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Roll20 등록용 ZIP 내보내기</TooltipContent>
+            <TooltipContent>Roll20에 올릴 수 있는 파일 묶음(ZIP)을 만들어요</TooltipContent>
           </Tooltip>
 
-          <div className="mx-1 h-5 w-px bg-border" />
+          <div className="mx-1 h-6 w-px bg-border" aria-hidden="true" />
 
           {mainMode !== 'preview' && (
             <Tooltip>
@@ -227,32 +236,31 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
                   onClick={toggleRight}
-                  aria-label="오른쪽 패널 열기/닫기"
+                  aria-label="속성 패널 열기/닫기"
                 >
-                  <PanelRight className="h-4 w-4" />
+                  <PanelRight aria-hidden="true" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">오른쪽 패널</TooltipContent>
+              <TooltipContent side="bottom">오른쪽 속성 패널을 열거나 닫아요</TooltipContent>
             </Tooltip>
           )}
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button type="button" variant="ghost" size="icon" className="h-8 w-8" asChild>
+              <Button type="button" variant="ghost" size="icon" asChild>
                 <a
                   href="mailto:sjh11235678@gmail.com?subject=Roll20%20%EC%8B%9C%ED%8A%B8%20%ED%8E%B8%EC%A7%91%EA%B8%B0%20%EB%B2%84%EA%B7%B8%20%EC%A0%9C%EB%B3%B4"
                   aria-label="버그 제보 이메일 보내기"
                 >
-                  <Bug className="h-4 w-4" aria-hidden="true" />
+                  <Bug aria-hidden="true" />
                 </a>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">버그 제보</TooltipContent>
+            <TooltipContent side="bottom">이상한 점을 발견했다면 메일로 알려주세요</TooltipContent>
           </Tooltip>
 
-          <span className="ml-1 text-[10px] font-medium tracking-wide text-muted-foreground/70 tabular-nums">
+          <span className="ml-1 hidden text-xs font-medium tracking-wide text-muted-foreground tabular-nums md:inline">
             {APP_VERSION}
           </span>
         </div>

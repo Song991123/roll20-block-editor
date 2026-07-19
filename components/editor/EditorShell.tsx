@@ -23,6 +23,7 @@ import { installAutosave } from '@/lib/persist/autosave';
 import { loadWorkspace, AUTOSAVE_KEY, type SavedRecord } from '@/lib/persist/indexeddb';
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { useChatStore } from '@/lib/stores/chatStore';
+import { useIsMobile } from './useIsMobile';
 
 /**
  * 새 UX 셸 — Preview-first 3-zone grid + 메인 영역 분할 뷰 (D26 ②-재재).
@@ -138,6 +139,17 @@ export default function EditorShell() {
   const setLeftMode = useUiStore((s) => s.setSidebarLeftMode);
   const setRightTab = useUiStore((s) => s.setSidebarRightTab);
   const resetCanvasWidths = useUiStore((s) => s.resetCanvasWidths);
+
+  // 반응형 셸 (design-reset) — 920px 이하에서는 사이드바가 서랍(드로어)이 된다.
+  // 모바일 진입 시 열려 있던 사이드바를 접어 시트가 화면을 가리지 않게 한다.
+  // (기존 uiStore 토글 액션만 사용 — 상태 구조/기능 변경 없음.)
+  const isMobile = useIsMobile();
+  useEffect(() => {
+    if (!isMobile) return;
+    const st = useUiStore.getState();
+    if (!st.sidebarLeftCollapsed) st.toggleSidebarLeft();
+    if (!st.sidebarRightCollapsed) st.toggleSidebarRight();
+  }, [isMobile]);
 
   const splitContainerRef = useRef<HTMLDivElement>(null);
 
@@ -257,7 +269,7 @@ export default function EditorShell() {
         />
       )}
       <main
-        className="grid flex-1 min-h-0"
+        className="editor-main grid flex-1 min-h-0"
         style={{
           gridTemplateColumns: `${leftWidth} 1fr ${rightWidthPx}`,
           transition: 'grid-template-columns 180ms ease',
@@ -269,6 +281,7 @@ export default function EditorShell() {
             (leftCollapsed || previewFocus) && 'border-r-0',
           )}
           aria-hidden={previewFocus}
+          data-open={!leftCollapsed && !previewFocus ? 'true' : 'false'}
           data-testid="sidebar-left"
         >
           {!leftCollapsed && !previewFocus && <SidebarLeft />}
@@ -325,11 +338,25 @@ export default function EditorShell() {
             (rightCollapsed || previewFocus) && 'border-l-0',
           )}
           aria-hidden={previewFocus && !previewChatVisible}
+          data-open={!rightCollapsed && (!previewFocus || previewChatVisible) ? 'true' : 'false'}
           data-testid="sidebar-right"
         >
           {!rightCollapsed && (!previewFocus || previewChatVisible) && <SidebarRight />}
         </aside>
       </main>
+      {isMobile
+        && ((!leftCollapsed && !previewFocus)
+          || (!rightCollapsed && (!previewFocus || previewChatVisible))) && (
+        <div
+          className="r20-mobile-scrim"
+          aria-hidden="true"
+          onClick={() => {
+            const st = useUiStore.getState();
+            if (!st.sidebarLeftCollapsed) st.toggleSidebarLeft();
+            if (!st.sidebarRightCollapsed) st.toggleSidebarRight();
+          }}
+        />
+      )}
       {!previewFocus && <Statusbar />}
     </div>
   );

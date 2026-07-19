@@ -20,6 +20,14 @@
  *      가 없어 dead — 단, 미래에 iframe srcdoc 외에 light DOM 에 .charsheet
  *      를 박는 경로가 생기면 그 때 발화하도록 symbolic 으로 남겨둠.
  *
+ * design-reset (claude/design-reset):
+ *   - "포근한 문구·다이어리" 파스텔 시각 시스템으로 앱 크롬 전면 리디자인.
+ *   - 스모크 계약 유지: `.app-shell.pastel` 클래스, `--bg-app: #fffafb`,
+ *     `--primary: #d45d84` 값은 절대 변경 금지 (edit_flow_browser_smoke.mjs).
+ *   - 글자 크기 접근성: Tailwind text-xs/sm 스케일을 14px/15px 로 상향 재정의.
+ *     앱 크롬의 최소 글자 크기는 14px (노안 대응, 사용자 요구).
+ *   - Roll20 시트 렌더 영역(iframe/Shadow DOM 내부) CSS 는 여기서 다루지 않음.
+ *
  * Anchor: docs/spec/09_design_system.md §1 + docs/spec/25_roll20_baseline.md §9.
  */
 
@@ -42,31 +50,47 @@
 
 /* The application chrome is intentionally independent from Roll20. The
  * imported sheet keeps its own runtime CSS inside the iframe; these tokens
- * style only the surrounding editor shell. */
+ * style only the surrounding editor shell.
+ *
+ * 팔레트 노트 (문구·다이어리 파스텔):
+ *   - 종이 위 크림·연분홍 표면 + 장미색 포인트. 텍스트/상태색은 WCAG AA
+ *     (일반 텍스트 4.5:1) 이상을 목표로 어둡게 보정.
+ *   - 채도 있는 solid 버튼은 --primary-strong (흰 글자 5.3:1) 사용.
+ *   - --cat-* 블록 카테고리 색은 Blockly 블록 본체 색과 짝이므로 유지.
+ */
 .app-shell.pastel {
-  --bg-canvas:        #fff7fa;
+  --bg-canvas:        #fdf1f6;
   --bg-app:           #fffafb;
   --bg-elevated:      #ffffff;
-  --bg-elevated-2:    #fff0f4;
-  --bg-hover:         #ffe5ed;
-  --bg-active:        #ffd3e0;
-  --bg-overlay:       rgba(71, 34, 49, 0.28);
-  --text-primary:     #3d2932;
-  --text-secondary:   #6f5560;
-  --text-muted:       #927884;
-  --text-disabled:    #c5adb7;
+  --bg-elevated-2:    #fdeef4;
+  --bg-hover:         #fce3ee;
+  --bg-active:        #f9d2e2;
+  --bg-overlay:       rgba(73, 34, 52, 0.34);
+  --text-primary:     #3b222c;
+  --text-secondary:   #6d4a58;
+  --text-muted:       #8a6274;
+  --text-disabled:    #c3a4b1;
   --text-inverse:     #ffffff;
-  --border-default:   #ecd5de;
-  --border-strong:    #d9b5c3;
-  --border-subtle:    #f5e5eb;
+  --border-default:   #f0d4e0;
+  --border-strong:    #c07796;
+  --border-subtle:    #f8e7ee;
   --primary:          #d45d84;
-  --primary-hover:    #c64d76;
-  --primary-active:   #b63f68;
+  --primary-hover:    #c74b74;
+  --primary-active:   #b13d63;
+  --primary-strong:   #b83f68;
+  --primary-strong-hover: #a83059;
+  --primary-soft:     #fbe3ec;
+  --primary-soft-border: #f1b7cd;
   --primary-text:     #ffffff;
-  --success:          #4f9b7c;
-  --warning:          #b8793f;
-  --destructive:      #c85562;
-  --info:             #5c9fbd;
+  --success:          #256b4d;
+  --success-soft:     #e2f2ea;
+  --warning:          #8f5a1b;
+  --warning-soft:     #fdeeda;
+  --destructive:      #b32e46;
+  --destructive-soft: #fbe3e7;
+  --info:             #33708f;
+  --info-soft:        #e3eff5;
+  --shadow-tint:      178, 84, 122;
   --background:       var(--bg-app);
   --foreground:       var(--text-primary);
   --card:             var(--bg-elevated);
@@ -101,35 +125,46 @@
  * .app-shell — 우리 앱 UI (Header / Sidebar / Workspace 등) 가 박히는 컨테이너.
  * Shadow DOM 의 시트 영역은 EditorShell 트리 안에 있긴 하나 inherited 속성은
  * 여기까지만. 시각적으로 보이는 모든 우리 앱 element 는 이 scope 안.
+ *
+ * 다크 = 야간 다이어리 톤 (opt-in). 파란 형광 대신 따뜻한 장미·자정색.
  */
 .dark,
 .app-shell.dark {
-  --bg-canvas:        #161616;
-  --bg-app:           #1A1A1A;
-  --bg-elevated:      #202020;
-  --bg-elevated-2:    #262626;
-  --bg-hover:         #2C2C2C;
-  --bg-active:        #333333;
-  --bg-overlay:       rgba(0, 0, 0, 0.55);
+  --bg-canvas:        #221a1f;
+  --bg-app:           #251d22;
+  --bg-elevated:      #2c2229;
+  --bg-elevated-2:    #342832;
+  --bg-hover:         #3d2e3a;
+  --bg-active:        #483644;
+  --bg-overlay:       rgba(0, 0, 0, 0.6);
 
-  --text-primary:     #ECECEC;
-  --text-secondary:   #B5B5B5;
-  --text-muted:       #8E8E8E;
-  --text-disabled:    #5A5A5A;
-  --text-inverse:     #1A1A1A;
+  --text-primary:     #f4e8ee;
+  --text-secondary:   #cfb5c2;
+  --text-muted:       #a98d9b;
+  --text-disabled:    #6f5a65;
+  --text-inverse:     #251d22;
 
-  --border-default:   #303030;
-  --border-strong:    #404040;
-  --border-subtle:    #242424;
+  --border-default:   #40313c;
+  --border-strong:    #5a4553;
+  --border-subtle:    #352a32;
 
-  --primary:          #2F81F7;
-  --primary-hover:    #388BFD;
-  --primary-active:   #1F6FEB;
-  --primary-text:     #FFFFFF;
-  --success:          #3FB950;
-  --warning:          #D29922;
-  --destructive:      #F85149;
-  --info:             #58A6FF;
+  --primary:          #e57a9e;
+  --primary-hover:    #ec8cab;
+  --primary-active:   #d9698f;
+  --primary-strong:   #e57a9e;
+  --primary-strong-hover: #ec8cab;
+  --primary-soft:     #43303c;
+  --primary-soft-border: #6b4a5c;
+  --primary-text:     #2b1a22;
+  --success:          #6fc39a;
+  --success-soft:     #253830;
+  --warning:          #d9a05e;
+  --warning-soft:     #3b3025;
+  --destructive:      #e0788a;
+  --destructive-soft: #3e272c;
+  --info:             #7ab8d6;
+  --info-soft:        #253540;
+  --shadow-tint:      0, 0, 0;
 
   --background:           var(--bg-app);
   --foreground:           var(--text-primary);
@@ -144,7 +179,7 @@
   --muted-foreground:     var(--text-muted);
   --accent:               var(--bg-hover);
   --accent-foreground:    var(--text-primary);
-  --destructive-foreground: #FFFFFF;
+  --destructive-foreground: #2b1a22;
   --border:               var(--border-default);
   --input:                var(--border-default);
   --ring:                 var(--primary);
@@ -160,18 +195,18 @@
   --cat-advanced:     #7C7F86;
   --cat-composite:    #6E5494;
 
-  --radius:    0.5rem;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.625rem;
-  --radius-xl: 1rem;
+  --radius:    0.625rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
 
-  --sidebar-left-w:         280px;
-  --sidebar-right-w:        320px;
-  --sidebar-right-min:      280px;
-  --sidebar-right-max:      480px;
-  --header-h:               56px;
-  --statusbar-h:            32px;
+  --sidebar-left-w:         316px;
+  --sidebar-right-w:        344px;
+  --sidebar-right-min:      300px;
+  --sidebar-right-max:      520px;
+  --header-h:               64px;
+  --statusbar-h:            40px;
 }
 
 .light,
@@ -200,29 +235,38 @@
  * opt-in through `.dark`; Roll20 sheet CSS remains isolated in its iframe. */
 :root:not(.dark),
 .app-shell:not(.dark) {
-  --bg-canvas:        #fff7fa;
+  --bg-canvas:        #fdf1f6;
   --bg-app:           #fffafb;
   --bg-elevated:      #ffffff;
-  --bg-elevated-2:    #fff0f4;
-  --bg-hover:         #ffe5ed;
-  --bg-active:        #ffd3e0;
-  --bg-overlay:       rgba(71, 34, 49, 0.28);
-  --text-primary:     #3d2932;
-  --text-secondary:   #6f5560;
-  --text-muted:       #927884;
-  --text-disabled:    #c5adb7;
+  --bg-elevated-2:    #fdeef4;
+  --bg-hover:         #fce3ee;
+  --bg-active:        #f9d2e2;
+  --bg-overlay:       rgba(73, 34, 52, 0.34);
+  --text-primary:     #3b222c;
+  --text-secondary:   #6d4a58;
+  --text-muted:       #8a6274;
+  --text-disabled:    #c3a4b1;
   --text-inverse:     #ffffff;
-  --border-default:   #ecd5de;
-  --border-strong:    #d9b5c3;
-  --border-subtle:    #f5e5eb;
+  --border-default:   #f0d4e0;
+  --border-strong:    #c07796;
+  --border-subtle:    #f8e7ee;
   --primary:          #d45d84;
-  --primary-hover:    #c64d76;
-  --primary-active:   #b63f68;
+  --primary-hover:    #c74b74;
+  --primary-active:   #b13d63;
+  --primary-strong:   #b83f68;
+  --primary-strong-hover: #a83059;
+  --primary-soft:     #fbe3ec;
+  --primary-soft-border: #f1b7cd;
   --primary-text:     #ffffff;
-  --success:          #4f9b7c;
-  --warning:          #b8793f;
-  --destructive:      #c85562;
-  --info:             #5c9fbd;
+  --success:          #256b4d;
+  --success-soft:     #e2f2ea;
+  --warning:          #8f5a1b;
+  --warning-soft:     #fdeeda;
+  --destructive:      #b32e46;
+  --destructive-soft: #fbe3e7;
+  --info:             #33708f;
+  --info-soft:        #e3eff5;
+  --shadow-tint:      178, 84, 122;
   --background:       var(--bg-app);
   --foreground:       var(--text-primary);
   --card:             var(--bg-elevated);
@@ -250,17 +294,17 @@
   --cat-css:          #6fb27c;
   --cat-advanced:     #8a7d87;
   --cat-composite:    #c78a6f;
-  --radius:           0.5rem;
-  --radius-sm:        0.25rem;
-  --radius-md:        0.375rem;
-  --radius-lg:        0.625rem;
-  --radius-xl:        1rem;
-  --sidebar-left-w:   280px;
-  --sidebar-right-w:  320px;
-  --sidebar-right-min: 280px;
-  --sidebar-right-max: 480px;
-  --header-h:         56px;
-  --statusbar-h:      32px;
+  --radius:           0.625rem;
+  --radius-sm:        0.375rem;
+  --radius-md:        0.5rem;
+  --radius-lg:        0.875rem;
+  --radius-xl:        1.125rem;
+  --sidebar-left-w:   316px;
+  --sidebar-right-w:  344px;
+  --sidebar-right-min: 300px;
+  --sidebar-right-max: 520px;
+  --header-h:         64px;
+  --statusbar-h:      40px;
 }
 
 @theme inline {
@@ -283,6 +327,30 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  /*
+   * 접근성 글자 스케일 (노안 대응) — Tailwind 기본 text-xs(12px)/text-sm(14px)
+   * 를 상향 재정의. 앱 크롬 어디에도 14px 미만 글자가 나오지 않게 하는 바닥.
+   */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1rem;
+  --text-base--line-height: 1.55;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.3125rem;
+  --text-xl--line-height: 1.4;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.35;
+
+  /* 종이 위에 뜬 카드 느낌의 장미빛 그림자. */
+  --shadow-soft: 0 1px 2px rgba(var(--shadow-tint), 0.07), 0 4px 14px rgba(var(--shadow-tint), 0.09);
+  --shadow-pop: 0 2px 6px rgba(var(--shadow-tint), 0.1), 0 10px 28px rgba(var(--shadow-tint), 0.16);
 
   --font-sans: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic',
     -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -308,12 +376,14 @@ body {
  *   - box-sizing: border-box — 디자인 토큰 기반 spacing 가정.
  *   - border: 0 solid — Tailwind utility 의 `border` modifier 만 박을 때 1px.
  *   - font-family / color / background — 우리 앱 baseline.
+ *   - font-size 16px — 접근성 기본 글자 크기 (rem 스케일의 기준).
  */
 .app-shell {
   box-sizing: border-box;
   font-family: var(--font-sans);
+  font-size: 16px;
   font-feature-settings: 'ss03', 'cv11';
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg-app);
@@ -330,23 +400,28 @@ body {
 }
 
 .app-shell *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 .app-shell *::-webkit-scrollbar-track {
   background: transparent;
 }
 .app-shell *::-webkit-scrollbar-thumb {
-  background: var(--border-default);
-  border-radius: 4px;
+  background: var(--bg-active);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 .app-shell *::-webkit-scrollbar-thumb:hover {
   background: var(--border-strong);
+  background-clip: padding-box;
+  border: 2px solid transparent;
 }
 
 .app-shell :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 4px var(--primary);
+  box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 5px var(--primary);
+  border-radius: var(--radius-sm);
 }
 
 /*
@@ -401,7 +476,7 @@ body {
   inset: 0;
   pointer-events: none;
   border: 2px solid var(--primary);
-  box-shadow: inset 0 0 0 1px rgba(47, 129, 247, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(212, 93, 132, 0.25);
   z-index: 10;
 }
 
@@ -431,10 +506,10 @@ body {
   display: none;
 }
 
-/* spec 09 §8 — Blockly Zelos */
+/* spec 09 §8 — Blockly Zelos. 글자 크기 접근성 상향 (13px → 14px). */
 .blocklyText {
   font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   fill: #ffffff;
 }
 .blocklyEditableText > .blocklyText {
@@ -448,12 +523,12 @@ body {
 /* D26 ②-재재 — 메인 영역 분할 뷰 resizer. */
 .main-resizer {
   flex-shrink: 0;
-  width: 6px;
+  width: 8px;
   cursor: col-resize;
-  background: var(--border-default);
+  background: var(--border-subtle);
   position: relative;
   z-index: 5;
-  transition: background-color 120ms ease;
+  transition: background-color 140ms ease;
   user-select: none;
 }
 .main-resizer:hover,
@@ -468,9 +543,289 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 2px;
-  height: 28px;
+  height: 32px;
   background: var(--bg-elevated);
-  border-radius: 1px;
-  opacity: 0.6;
+  border-radius: 2px;
+  opacity: 0.8;
   pointer-events: none;
+}
+
+/* ============================================================
+ * design-reset 컴포넌트 클래스 — 앱 크롬 전용 (시트 렌더 영역과 무관).
+ * 반복되는 패턴(알약 탭, 패널 머리, 칩, 입력칸)을 한 곳에서 관리.
+ * ============================================================ */
+@layer components {
+  /* 알약형 모드 전환 묶음 — 다이어리 탭 느낌. */
+  .r20-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-subtle);
+  }
+  .r20-seg-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.9375rem;
+    line-height: 1.2;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 80ms ease;
+  }
+  .r20-seg-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .r20-seg-btn:active {
+    transform: scale(0.97);
+  }
+  .r20-seg-btn[aria-selected='true'],
+  .r20-seg-btn[aria-pressed='true'],
+  .r20-seg-btn[data-active='true'] {
+    background: var(--bg-elevated);
+    color: var(--primary-active);
+    font-weight: 650;
+    box-shadow: 0 1px 3px rgba(var(--shadow-tint), 0.16), inset 0 0 0 1px var(--primary-soft-border);
+  }
+
+  /* 작은 알약 (좁은 툴바용) */
+  .r20-seg--compact .r20-seg-btn {
+    padding: 4px 10px;
+    font-size: 0.875rem;
+  }
+
+  /* 패널 머리 — 아이콘 + 제목 + 설명 버튼 자리. */
+  .r20-panel-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 0 14px;
+    height: 46px;
+    border-bottom: 1px solid var(--border-default);
+    background: var(--bg-elevated);
+    font-size: 0.9375rem;
+    font-weight: 650;
+    color: var(--text-primary);
+  }
+
+  /* 정보 칩 — 상태·개수 표시. 색은 항상 텍스트/아이콘과 함께. */
+  .r20-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default);
+    background: var(--bg-elevated-2);
+    padding: 2px 9px;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .r20-chip--primary {
+    border-color: var(--primary-soft-border);
+    background: var(--primary-soft);
+    color: var(--primary-active);
+  }
+  .r20-chip--success {
+    border-color: color-mix(in srgb, var(--success) 35%, transparent);
+    background: var(--success-soft);
+    color: var(--success);
+  }
+  .r20-chip--warning {
+    border-color: color-mix(in srgb, var(--warning) 35%, transparent);
+    background: var(--warning-soft);
+    color: var(--warning);
+  }
+  .r20-chip--info {
+    border-color: color-mix(in srgb, var(--info) 35%, transparent);
+    background: var(--info-soft);
+    color: var(--info);
+  }
+  .r20-chip--destructive {
+    border-color: color-mix(in srgb, var(--destructive) 35%, transparent);
+    background: var(--destructive-soft);
+    color: var(--destructive);
+  }
+
+  /* 입력칸 공통 — 큰 글자 + 뚜렷한 테두리 + 부드러운 포커스. */
+  .r20-input {
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border-strong);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+  }
+  .r20-input::placeholder {
+    color: var(--text-muted);
+  }
+  .r20-input:hover {
+    border-color: color-mix(in srgb, var(--border-strong) 70%, var(--primary));
+  }
+  .r20-input:focus,
+  .r20-input:focus-visible {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+  }
+  .r20-input[aria-invalid='true'] {
+    border-color: var(--destructive);
+    box-shadow: 0 0 0 3px var(--destructive-soft);
+  }
+
+  /* 필드 라벨 */
+  .r20-field-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  /* 폼 섹션 카드 — 속성 패널의 묶음 단위. */
+  .r20-form-card {
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-elevated);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    box-shadow: 0 1px 2px rgba(var(--shadow-tint), 0.05);
+  }
+
+  /* 살짝 떠오르는 카드 — 은은한 마이크로 모션. */
+  .r20-lift {
+    transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background-color 140ms ease;
+  }
+  .r20-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(var(--shadow-tint), 0.1), 0 10px 28px rgba(var(--shadow-tint), 0.16);
+  }
+  .r20-lift:active {
+    transform: translateY(0) scale(0.985);
+    box-shadow: 0 1px 2px rgba(var(--shadow-tint), 0.07);
+  }
+
+  /* 넘치는 툴바는 항상 가로 스크롤 — 패널 위로 삐져나오지 않게. */
+  .r20-scroll-x {
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-width: 0;
+    scrollbar-width: thin;
+  }
+  .r20-scroll-x::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  /* 도움말 물음표 버튼 */
+  .r20-help-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border-default);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
+  }
+  .r20-help-dot:hover {
+    color: var(--primary-active);
+    border-color: var(--primary-soft-border);
+    background: var(--primary-soft);
+  }
+}
+
+/* ============================================================
+ * 반응형 셸 — 920px 이하에서 사이드바를 서랍(드로어)으로 전환.
+ * 데스크톱(>920px)의 DOM/레이아웃은 그대로 유지 (스모크 계약 보존).
+ * ============================================================ */
+@media (max-width: 920px) {
+  /* 3열 그리드를 1열로 — 인라인 스타일보다 우선해야 하므로 !important. */
+  .app-shell main.editor-main {
+    grid-template-columns: 0 minmax(0, 1fr) 0 !important;
+  }
+
+  /* 사이드바 = 화면 위로 뜨는 서랍. 열림/닫힘은 기존 상태(자식 mount)와 동일. */
+  .app-shell aside[data-testid='sidebar-left'],
+  .app-shell aside[data-testid='sidebar-right'] {
+    position: fixed;
+    top: var(--header-h);
+    bottom: 0;
+    z-index: 60;
+    width: min(88vw, 360px);
+    box-shadow: 0 2px 6px rgba(var(--shadow-tint), 0.1), 0 10px 28px rgba(var(--shadow-tint), 0.2);
+    transition: transform 200ms ease, visibility 200ms;
+  }
+  .app-shell aside[data-testid='sidebar-left'] {
+    left: 0;
+    border-right: 1px solid var(--border-default);
+    transform: translateX(-104%);
+    visibility: hidden;
+  }
+  .app-shell aside[data-testid='sidebar-right'] {
+    right: 0;
+    border-left: 1px solid var(--border-default);
+    transform: translateX(104%);
+    visibility: hidden;
+  }
+  .app-shell aside[data-testid='sidebar-left'][data-open='true'],
+  .app-shell aside[data-testid='sidebar-right'][data-open='true'] {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  /* 서랍 뒤 어둡게 — JSX 의 .r20-mobile-scrim 이 모바일에서만 보임. */
+  .r20-mobile-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: var(--bg-overlay);
+    backdrop-filter: blur(1.5px);
+  }
+
+  /* 좁은 화면 터치 타깃 — 주요 버튼 최소 44px. */
+  .app-shell .r20-seg-btn,
+  .app-shell header button,
+  .app-shell header a {
+    min-height: 44px;
+  }
+  .app-shell .r20-seg--compact .r20-seg-btn {
+    min-height: 38px;
+  }
+
+  /* 좁은 화면 — 헤더의 제품 이름 글줄 숨김 (아이콘·버튼 우선). */
+  .r20-header-title {
+    display: none;
+  }
+}
+
+@media (min-width: 920.01px) {
+  .r20-mobile-scrim {
+    display: none;
+  }
+}
+
+/* 은은한 모션 존중 — 시스템이 모션 축소를 원하면 전부 끔. */
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *,
+  .app-shell *::before,
+  .app-shell *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

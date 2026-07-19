@@ -40,12 +40,12 @@ export default function SfxToggle() {
       aria-label={enabled ? '효과음 끄기' : '효과음 켜기'}
       title={enabled ? '효과음 켜짐 — 클릭하여 끄기' : '효과음 꺼짐 — 클릭하여 켜기'}
       data-testid="sfx-toggle"
-      className="inline-flex h-5 w-5 items-center justify-center rounded text-[11px] text-muted-foreground hover:text-foreground hover:bg-[var(--bg-hover)] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-[var(--bg-hover)] transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {enabled ? (
-        <Volume2 className="h-3.5 w-3.5" aria-hidden />
+        <Volume2 className="h-[17px] w-[17px]" aria-hidden />
       ) : (
-        <VolumeX className="h-3.5 w-3.5 opacity-60" aria-hidden />
+        <VolumeX className="h-[17px] w-[17px] opacity-60" aria-hidden />
       )}
     </button>
   );

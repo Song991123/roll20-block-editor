@@ -12,6 +12,7 @@ import {
   type BlockFieldInfo,
 } from '@/lib/blockly/adapter';
 import { CATEGORIES } from '@/lib/blocks/types';
+import { fieldDisplayLabel } from './fieldLabels';
 
 /**
  * Inspector — 선택된 블록의 schema 기반 자동 폼.
@@ -77,12 +78,12 @@ function BlockInspector() {
   if (!selectedId || !snap) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center">
-        <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-elevated-2)] text-muted-foreground">
-          <MousePointerSquareDashed className="h-5 w-5" />
+        <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--bg-elevated-2)] text-muted-foreground">
+          <MousePointerSquareDashed className="h-6 w-6" aria-hidden="true" />
         </div>
-        <p className="text-sm font-medium text-foreground">선택한 블록이 없어요</p>
-        <p className="mt-1 max-w-[240px] text-[11px] leading-relaxed text-muted-foreground">
-          왼쪽 트리에서 블록을 고르거나 시트 화면에서 원하는 요소를 클릭해 보세요.
+        <p className="text-base font-semibold text-foreground">아직 고른 블록이 없어요</p>
+        <p className="mt-1.5 max-w-[260px] text-sm leading-relaxed text-[var(--text-secondary)]">
+          작업 공간에서 블록을 클릭하거나, 시트 화면에서 원하는 요소를 눌러보세요.
         </p>
       </div>
     );
@@ -92,31 +93,41 @@ function BlockInspector() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="space-y-4 p-3">
-        <div>
-          <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground">블록</div>
-          <div className="mt-0.5 flex items-center gap-2">
+      <div className="space-y-4 p-3.5">
+        <div className="r20-form-card">
+          <div className="text-xs font-semibold text-muted-foreground">고른 블록</div>
+          <div className="mt-1.5 flex items-center gap-2">
             {catMeta && (
               <span
-                className="inline-block h-2 w-2 rounded-full"
+                className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-inset ring-black/10"
                 style={{ backgroundColor: catMeta.swatchVar }}
                 aria-hidden
               />
             )}
-            <span className="text-sm font-medium text-foreground">{snap.label}</span>
+            <span className="text-base font-semibold text-foreground">{snap.label}</span>
           </div>
-          <div className="mt-0.5 font-mono text-[10.5px] text-muted-foreground">{snap.type}</div>
-          <div className="mt-0.5 font-mono text-[10px] text-muted-foreground/70">id: {snap.id}</div>
+          {catMeta && (
+            <div className="mt-1 text-sm text-[var(--text-secondary)]">{catMeta.label} 종류</div>
+          )}
+          <details className="mt-2 group">
+            <summary className="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground">
+              자세한 정보 보기
+            </summary>
+            <div className="mt-1.5 rounded-lg bg-[var(--bg-elevated-2)] px-2.5 py-2 font-mono text-xs leading-relaxed text-muted-foreground">
+              <div>{snap.type}</div>
+              <div className="opacity-80">id: {snap.id}</div>
+            </div>
+          </details>
         </div>
 
         {fields.length === 0 ? (
-          <div className="rounded-md border border-dashed border-border bg-[var(--bg-elevated-2)] p-3 text-[11px] text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--bg-elevated-2)] p-3.5 text-sm leading-relaxed text-[var(--text-secondary)]">
             이 블록에는 여기서 바꿀 수 있는 값이 없어요.
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground">
-              필드
+            <div className="text-sm font-semibold text-[var(--text-secondary)]">
+              바꿀 수 있는 값
             </div>
             {fields.map((f) => (
               <FieldRow key={f.name} field={f} onChange={onFieldChange} />
@@ -135,15 +146,15 @@ function FieldRow({
   field: BlockFieldInfo;
   onChange: (name: string, value: string) => void;
 }) {
-  const labelText = field.name;
+  const labelText = fieldDisplayLabel(field.name);
   if (field.kind === 'dropdown') {
     return (
-      <label className="block space-y-1">
-        <span className="block text-[10.5px] font-medium text-muted-foreground">{labelText}</span>
+      <label className="block">
+        <span className="r20-field-label">{labelText}</span>
         <select
           value={field.value}
           onChange={(e) => onChange(field.name, e.target.value)}
-          className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          className="r20-input"
         >
           {(field.options ?? []).map((o) => (
             <option key={o.value} value={o.value}>
@@ -156,38 +167,38 @@ function FieldRow({
   }
   if (field.kind === 'number') {
     return (
-      <label className="block space-y-1">
-        <span className="block text-[10.5px] font-medium text-muted-foreground">{labelText}</span>
+      <label className="block">
+        <span className="r20-field-label">{labelText}</span>
         <input
           type="number"
           value={field.value}
           onChange={(e) => onChange(field.name, e.target.value)}
-          className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          className="r20-input tabular-nums"
         />
       </label>
     );
   }
   if (field.kind === 'checkbox') {
     return (
-      <label className="flex items-center gap-2">
+      <label className="flex items-center gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2.5 text-sm font-medium">
         <input
           type="checkbox"
           checked={field.value === 'TRUE' || field.value === 'true'}
           onChange={(e) => onChange(field.name, e.target.checked ? 'TRUE' : 'FALSE')}
-          className="h-3.5 w-3.5"
+          className="h-[18px] w-[18px] accent-[var(--primary)]"
         />
-        <span className="text-xs text-foreground">{labelText}</span>
+        <span className="text-foreground">{labelText}</span>
       </label>
     );
   }
   return (
-    <label className="block space-y-1">
-      <span className="block text-[10.5px] font-medium text-muted-foreground">{labelText}</span>
+    <label className="block">
+      <span className="r20-field-label">{labelText}</span>
       <input
         type="text"
         value={field.value}
         onChange={(e) => onChange(field.name, e.target.value)}
-        className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        className="r20-input"
       />
     </label>
   );

@@ -878,20 +878,20 @@ export default function ChatPane() {
       {chatDiagnosticsEnabled && (
         <style data-r20-chat-diagnostic-css dangerouslySetInnerHTML={{ __html: roll20ChatDiagnosticOverrideCss }} />
       )}
-      <div className="h-9 shrink-0 border-b border-border px-3 flex items-center justify-between">
-        <div className="text-[11px] font-medium text-[var(--fg-muted)]">
-          채팅 ({rolls.length})
+      <div className="h-11 shrink-0 border-b border-border px-3 flex items-center justify-between">
+        <div className="text-sm font-semibold text-foreground">
+          굴림 기록 <span className="font-normal text-muted-foreground">({rolls.length})</span>
         </div>
         <Button
           size="sm"
           variant="ghost"
-          className="h-6 px-2 text-[10px]"
+          className="h-8 px-2.5 text-xs"
           disabled={rolls.length === 0}
           onClick={() => clear()}
-          aria-label="채팅 지우기"
+          aria-label="굴림 기록 지우기"
           data-testid="chat-clear"
         >
-          <Trash2 className="h-3 w-3 mr-1" />
+          <Trash2 className="h-3.5 w-3.5 mr-1" />
           지우기
         </Button>
       </div>
@@ -901,12 +901,12 @@ export default function ChatPane() {
           data-testid="chat-list"
         >
           {rolls.length === 0 ? (
-            <div className="text-center text-[11px] text-[var(--fg-muted)] py-8">
-              미리보기에서 굴림 버튼을 누르면 결과가 여기에 표시됩니다.
+            <div className="px-4 py-10 text-center text-sm leading-relaxed text-muted-foreground">
+              아직 굴린 기록이 없어요.
               <br />
-              <span className="text-[10px] opacity-70">
-                시트의 <code>type=&quot;roll&quot;</code> 버튼을 눌러보세요.
-              </span>
+              미리보기 화면에서 시트의 굴림 버튼을 누르면
+              <br />
+              결과 말풍선이 여기에 차곡차곡 쌓여요.
             </div>
           ) : (
             rolls.map((card) => (

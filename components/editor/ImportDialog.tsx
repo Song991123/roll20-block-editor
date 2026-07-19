@@ -48,9 +48,10 @@ export interface ImportDialogProps {
 
 type Tab = 'html' | 'css' | 'i18n';
 
-const inputClassName = 'text-xs text-foreground file:text-foreground';
+const inputClassName =
+  'text-sm text-foreground file:mr-3 file:rounded-full file:border-0 file:bg-[var(--bg-elevated-2)] file:px-4 file:py-1.5 file:text-sm file:font-semibold file:text-foreground hover:file:bg-[var(--bg-hover)]';
 const textareaClassName =
-  'h-56 w-full resize-y rounded border border-border bg-[var(--bg-elevated)] p-2 font-mono text-[12px] text-foreground caret-foreground placeholder:text-muted-foreground';
+  'h-56 w-full resize-y rounded-xl border-[1.5px] border-border bg-[var(--bg-elevated)] p-3 font-mono text-sm text-foreground caret-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]';
 
 function arrangeImportedWorkspace(key: WorkspaceKey) {
   const workspace = getBlocklyAdapter().getWorkspace(key);
@@ -264,9 +265,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl text-foreground" data-testid="import-dialog">
         <DialogHeader>
-          <DialogTitle>외부 시트 불러오기</DialogTitle>
+          <DialogTitle>시트 파일 불러오기</DialogTitle>
           <DialogDescription>
-            HTML, CSS, translation 파일을 넣으면 블록으로 자동 변환합니다. 아직 지원하지 않는 구조는 원본 블록으로 보존해요.
+            가지고 있는 시트 파일(HTML·CSS·번역)을 넣으면 블록으로 자동 변환돼요.
+            아직 변환하지 못하는 부분은 원본 그대로 안전하게 보존해요.
           </DialogDescription>
         </DialogHeader>
 
@@ -334,25 +336,25 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
           onCreateDraft={handleCreateAssetReplacementDraft}
         />
 
-        <label className="flex gap-3 rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed">
+        <label className="flex gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm leading-relaxed">
           <input
             type="checkbox"
             checked={compactWideRows}
             onChange={(e) => setCompactWideRows(e.target.checked)}
-            className="mt-0.5 h-4 w-4 accent-primary"
+            className="mt-0.5 h-[18px] w-[18px] accent-[var(--primary)]"
           />
           <span>
-            <span className="block font-medium">큰 표 행 빠르게 불러오기</span>
+            <span className="block font-semibold">큰 표를 빠르게 불러오기</span>
             <span className="block text-muted-foreground">
-              반복되는 큰 표 행을 묶음으로 보존해 불러오기 시간을 줄입니다. Roll20 출력 HTML은 유지하지만,
-              묶인 행 내부 요소는 나중에 분해하기 전까지 개별 블록으로 편집하기 어렵습니다.
+              반복되는 큰 표 줄을 묶음으로 보존해서 불러오는 시간을 줄여요. 내보내는 내용은 똑같지만,
+              묶인 줄 안쪽은 나중에 풀기 전까지 낱개로 고치기 어려워요.
             </span>
           </span>
         </label>
 
         {progress && progress.total > 0 && (
           <div
-            className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed"
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm leading-relaxed"
             role="status"
             aria-live="polite"
             data-testid="import-progress"
@@ -363,21 +365,21 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 {progress.done.toLocaleString()} / {progress.total.toLocaleString()} 블록 · {progress.pct}%
               </span>
             </div>
-            <div className="h-1.5 w-full rounded bg-[var(--bg-muted)] overflow-hidden">
+            <div className="h-2 w-full rounded-full bg-[var(--bg-elevated-2)] overflow-hidden">
               <div
-                className="h-full bg-primary transition-[width] duration-150"
+                className="h-full rounded-full bg-[var(--primary)] transition-[width] duration-150"
                 style={{ width: `${progress.pct}%` }}
               />
             </div>
-            <div className="mt-1 text-muted-foreground text-[11px]">
-              큰 시트는 잠깐 느려질 수 있어요. 변환은 계속 진행됩니다.
+            <div className="mt-1.5 text-muted-foreground text-xs">
+              큰 시트는 잠깐 느려질 수 있어요. 변환은 계속 진행되고 있어요.
             </div>
           </div>
         )}
 
         {report && (
-          <div className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px] leading-relaxed">
-            <div className="font-medium mb-1">매칭 결과</div>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm leading-relaxed">
+            <div className="font-semibold mb-1">변환 결과</div>
             <div>
               HTML 매칭: <span className="tabular-nums">{report.matched}/{report.total}</span>
               {' '}({report.coverage}%)
@@ -410,7 +412,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             지우기
           </Button>
           <Button onClick={handleImport} disabled={busy || !anyInput}>
-            {busy ? (progress ? `${progress.pct}% 불러오는 중…` : '변환 중…') : '불러오기'}
+            {busy ? (progress ? `${progress.pct}% 불러오는 중…` : '변환 중…') : '블록으로 변환하기'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -430,22 +432,22 @@ function ImportAssetPreflight({
   const draftableRefs = result.refs.filter((ref) => ref.kind !== 'data-url').length;
   return (
     <section
-      className="rounded border border-border bg-[var(--bg-elevated)] p-3 text-[12px]"
+      className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5 text-sm"
       data-testid="import-asset-preflight"
     >
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
-          <div className="text-sm font-medium">불러오기 자산 점검</div>
-          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            이미지와 폰트 URL은 시트 구조와 별개로 Roll20에서 다시 로드됩니다. 삭제된 Imgur
-            이미지나 Roll20 프록시 URL은 placeholder로 보일 수 있습니다.
+          <div className="text-sm font-semibold">그림·글꼴 미리 점검</div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            시트에 쓰인 그림·글꼴 주소는 Roll20에서 다시 불러와요. 지워진 Imgur
+            그림이나 Roll20 프록시 URL은 placeholder 그림으로 보일 수 있어요.
           </p>
         </div>
         <span
-          className={`shrink-0 rounded border px-2 py-1 text-[11px] font-medium ${
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
             hasRisk
-              ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200'
-              : 'border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
+              ? 'border-[color-mix(in_srgb,var(--warning)_35%,transparent)] bg-[var(--warning-soft)] text-[var(--warning)]'
+              : 'border-[color-mix(in_srgb,var(--success)_35%,transparent)] bg-[var(--success-soft)] text-[var(--success)]'
           }`}
           data-testid="import-asset-preflight-status"
         >
@@ -464,7 +466,7 @@ function ImportAssetPreflight({
         <ImportAssetMetric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
       </div>
       {hasRisk ? (
-        <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-100">
+        <div className="mt-2 rounded-lg border border-[color-mix(in_srgb,var(--warning)_30%,transparent)] bg-[var(--warning-soft)] px-3 py-2.5 text-xs leading-relaxed text-foreground">
           실제 Roll20 동일성을 확인하려면 이 자산들이 로드되는지 먼저 봐야 합니다.
           삭제되었거나 막힌 URL은 export의 자산 URL 교체에서 사용자가 직접 다시 올린 URL로
           바꿔 주세요.
@@ -485,7 +487,7 @@ function ImportAssetPreflight({
               type="button"
               variant="outline"
               size="sm"
-              className="mt-2 h-7 px-2 text-[11px]"
+              className="mt-2 h-8 px-3 text-xs"
               onClick={onCreateDraft}
               data-testid="import-asset-replacement-draft"
             >
@@ -500,9 +502,9 @@ function ImportAssetPreflight({
 
 function ImportAssetMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2">
-      <div className="text-[10.5px] text-muted-foreground">{label}</div>
-      <div className="mt-0.5 font-mono text-[13px]">{value}</div>
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-2.5 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-0.5 font-mono text-sm tabular-nums">{value}</div>
     </div>
   );
 }

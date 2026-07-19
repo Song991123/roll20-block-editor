@@ -20,12 +20,6 @@ function formatDropModeLabel(mode: LayerDropMode): string {
   return '뒤에 넣기';
 }
 
-function formatLayerRelationLabel(relation: BlockSnapshot['layerRelation']): string {
-  if (relation === 'child') return '하위';
-  if (relation === 'sibling') return '흐름 형제';
-  return '루트';
-}
-
 function matchesLayerSearch(node: BlockSnapshot, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
@@ -158,7 +152,7 @@ export default function EditCanvas() {
         className="flex h-9 shrink-0 items-center gap-3 border-b border-border bg-[var(--bg-elevated)] px-3 text-xs"
         data-testid="edit-surface-toolbar"
       >
-        <span className="font-medium text-foreground">
+        <span className="font-semibold text-foreground">
           {editSubmode === 'rolltemplate' ? '굴림 결과 편집' : '시트 편집'}
         </span>
         <div className="ml-auto flex items-center gap-1" role="group" aria-label="편집 기록">
@@ -166,73 +160,73 @@ export default function EditCanvas() {
             type="button"
             onClick={() => runHistoryAction('undo')}
             disabled={!canUndo}
-            className="grid h-6 w-6 place-items-center rounded border border-border text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            className="grid h-7 w-7 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-35"
             title="되돌리기 (Ctrl/Cmd+Z)"
             aria-label="되돌리기"
             data-testid="edit-history-undo"
           >
-            <Undo2 className="h-3.5 w-3.5" />
+            <Undo2 className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={() => runHistoryAction('redo')}
             disabled={!canRedo}
-            className="grid h-6 w-6 place-items-center rounded border border-border text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            className="grid h-7 w-7 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-35"
             title="다시 실행 (Ctrl/Cmd+Shift+Z)"
             aria-label="다시 실행"
             data-testid="edit-history-redo"
           >
-            <Redo2 className="h-3.5 w-3.5" />
+            <Redo2 className="h-4 w-4" />
           </button>
         </div>
         <button
           type="button"
           onClick={toggleSnap}
           className={cn(
-            'rounded border px-2 py-0.5 text-xs',
+            'rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors active:scale-95',
             snapEnabled
-              ? 'border-[var(--primary)] bg-[var(--primary)] text-white'
+              ? 'border-[var(--primary-strong)] bg-[var(--primary-strong)] text-white'
               : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)]',
           )}
-          title="8px 격자에 맞추기"
+          title="움직일 때 8px 격자 칸에 착 붙게 맞춰요"
           data-testid="edit-canvas-snap-toggle"
         >
-          격자 {snapEnabled ? '8px' : '끔'}
+          격자 {snapEnabled ? '켬' : '끔'}
         </button>
         <div
-          className="flex items-center overflow-hidden rounded border border-border bg-[var(--bg-elevated-2)]"
+          className="flex items-center overflow-hidden rounded-full border border-border bg-[var(--bg-elevated-2)]"
           data-testid="edit-placement-mode"
         >
           <button
             type="button"
             onClick={() => setEditPlacementMode('flow')}
             className={cn(
-              'px-2 py-0.5 text-xs',
+              'px-2.5 py-0.5 text-xs font-medium transition-colors',
               editPlacementMode === 'flow'
-                ? 'bg-[var(--primary)] text-white'
+                ? 'bg-[var(--primary-strong)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
-            title="틀의 배치 규칙에 따라 주변 요소와 함께 정렬합니다."
+            title="줄 맞춰 놓기 — 주변 요소와 나란히 정렬돼요."
             data-testid="edit-placement-flow"
           >
-            흐름
+            줄 맞춰
           </button>
           <button
             type="button"
             onClick={() => setEditPlacementMode('free')}
             className={cn(
-              'px-2 py-0.5 text-xs',
+              'px-2.5 py-0.5 text-xs font-medium transition-colors',
               editPlacementMode === 'free'
-                ? 'bg-[var(--primary)] text-white'
+                ? 'bg-[var(--primary-strong)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
-            title="선택한 틀을 기준으로 원하는 위치에 배치합니다."
+            title="자유롭게 놓기 — 원하는 자리에 그대로 놓여요."
             data-testid="edit-placement-free"
           >
-            자유
+            자유롭게
           </button>
         </div>
-        <label className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           너비
           <input
             key={`${editSubmode}-${canvasWidth}`}
@@ -249,26 +243,26 @@ export default function EditCanvas() {
             onKeyDown={(event) => {
               if (event.key === 'Enter') event.currentTarget.blur();
             }}
-            className="h-6 w-[76px] rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-right text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+            className="h-7 w-[84px] rounded-full border border-border bg-[var(--bg-elevated-2)] px-2.5 text-right text-xs text-foreground outline-none tabular-nums focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
             aria-label={editSubmode === 'rolltemplate' ? '굴림 결과 캔버스 폭' : '시트 캔버스 폭'}
             data-testid="edit-canvas-width-input"
           />
           px
         </label>
         <div
-          className="flex items-center overflow-hidden rounded border border-border bg-[var(--bg-elevated-2)]"
+          className="flex items-center overflow-hidden rounded-full border border-border bg-[var(--bg-elevated-2)]"
           data-testid="edit-zoom-control"
         >
           <button
             type="button"
             onClick={() => setPreviewZoom('fit')}
             className={cn(
-              'px-2 py-0.5 text-xs',
+              'px-2.5 py-0.5 text-xs font-medium transition-colors',
               zoom === 'fit'
-                ? 'bg-[var(--primary)] text-white'
+                ? 'bg-[var(--primary-strong)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
-            title="전체 시트를 작업 영역에 맞춥니다."
+            title="시트 전체가 한눈에 들어오게 맞춰요."
             data-testid="edit-zoom-fit"
           >
             맞춤
@@ -277,12 +271,12 @@ export default function EditCanvas() {
             type="button"
             onClick={() => setPreviewZoom(1)}
             className={cn(
-              'px-2 py-0.5 text-xs',
+              'px-2.5 py-0.5 text-xs font-medium transition-colors',
               zoom === 1
-                ? 'bg-[var(--primary)] text-white'
+                ? 'bg-[var(--primary-strong)] text-white'
                 : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
             )}
-            title="Roll20 시트 크기 그대로 봅니다."
+            title="실제 Roll20 크기 그대로 봐요."
             data-testid="edit-zoom-100"
           >
             100%
@@ -371,7 +365,9 @@ function EditLayerPanel({
   const virtualizer = useVirtualizer({
     count: visibleNodes.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 42,
+    // design-reset: 글자 확대(14px 바닥)에 맞춘 행 높이. 행 내용은 라벨 1줄 +
+    // 미리보기 1줄(truncate)로 고정되므로 52px 안에 항상 들어온다.
+    estimateSize: () => 52,
     overscan: 10,
   });
 
@@ -424,46 +420,47 @@ function EditLayerPanel({
       className="flex min-h-0 flex-col border-r border-border bg-[var(--bg-elevated)]"
       data-testid="edit-layer-panel"
     >
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3 text-xs font-medium text-foreground">
-        <Layers className="h-3.5 w-3.5" />
+      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-3 text-sm font-semibold text-foreground">
+        <Layers className="h-[17px] w-[17px] text-[var(--primary)]" />
         <span>레이어</span>
-        <span className="ml-auto rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
+        <span className="ml-auto rounded-full border border-border bg-[var(--bg-elevated-2)] px-2 py-0.5 text-xs font-normal tabular-nums text-muted-foreground">
           {search.trim() ? `${visibleNodes.filter((item) => item.searchMatch).length}+맥락 ${visibleNodes.length}/${nodes.length}` : `${visibleNodes.length}/${nodes.length}`}
         </span>
       </div>
       <div
-        className="flex items-center justify-between border-b border-border px-3 py-2"
+        className="flex items-center justify-between gap-1.5 border-b border-border px-3 py-1.5"
         data-testid="edit-layer-workspace"
       >
-        <span className="text-[10px] font-medium text-muted-foreground">HTML 구조</span>
-        <span className="rounded border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-200">
-          시트에 표시되는 레이어
+        <span className="text-xs font-semibold text-muted-foreground">시트 짜임새</span>
+        <span className="rounded-full border border-[var(--primary-soft-border)] bg-[var(--primary-soft)] px-2 py-0.5 text-xs text-[var(--primary-active)]">
+          화면에 보이는 것
         </span>
       </div>
       <div className="border-b border-border p-2">
         <div className="relative">
-          <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <input
             type="search"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="레이어 검색"
-            className="h-7 w-full rounded border border-border bg-[var(--bg-elevated-2)] pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-ring"
+            placeholder="레이어 찾기"
+            aria-label="레이어 검색"
+            className="h-9 w-full rounded-lg border-[1.5px] border-border bg-[var(--bg-elevated)] pl-8 pr-2 text-sm outline-none transition-colors focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
             data-testid="edit-layer-search"
           />
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+        <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[var(--text-secondary)]" title="색 띠의 뜻 — 왼쪽 세로 띠 색으로 요소의 성격을 알 수 있어요">
           <span className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-sm bg-rose-400/80" />
-            담기 가능
+            <span className="h-2.5 w-2.5 rounded-sm bg-rose-400" />
+            담는 틀
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-sm bg-emerald-400/80" />
-            하위 요소
+            <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" />
+            틀 안에 있음
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="h-2 w-2 rounded-sm bg-zinc-500/70" />
-            단일 요소
+            <span className="h-2.5 w-2.5 rounded-sm bg-zinc-400" />
+            낱개
           </span>
         </div>
       </div>
@@ -473,7 +470,7 @@ function EditLayerPanel({
           data-testid="edit-layer-selection-path"
           data-r20-layer-path-depth={selectedPath.length}
         >
-          <div className="text-[10px] font-medium text-muted-foreground">선택 위치</div>
+          <div className="text-xs font-semibold text-muted-foreground">지금 고른 자리</div>
           <div className="mt-1 flex flex-wrap items-center gap-1">
             {selectedPath.map((node, index) => {
               const role = getLayerRole(node.type);
@@ -488,12 +485,12 @@ function EditLayerPanel({
                   data-r20-layer-role-kind={role.kind}
                   data-r20-layer-path-current={isCurrent ? '1' : '0'}
                   className={cn(
-                    'max-w-full truncate rounded border px-1.5 py-0.5 text-[10px]',
+                    'max-w-full truncate rounded-full border px-2 py-0.5 text-xs transition-colors',
                     isCurrent
-                      ? 'border-orange-400/70 bg-orange-500/15 text-orange-100'
+                      ? 'border-[var(--primary)] bg-[var(--primary-soft)] font-semibold text-[var(--primary-active)]'
                       : 'border-border bg-[var(--bg-elevated-2)] text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground',
                   )}
-                  title={`${node.label} (${node.type})${node.preview ? ` - ${node.preview}` : ''}`}
+                  title={`${node.label}${node.preview ? ` - ${node.preview}` : ''}`}
                 >
                   {node.label}
                 </button>
@@ -504,8 +501,10 @@ function EditLayerPanel({
       )}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto" data-testid="edit-layer-scroll">
         {visibleNodes.length === 0 ? (
-          <div className="px-3 py-8 text-center text-[11px] leading-relaxed text-muted-foreground">
-            표시할 레이어가 없습니다.
+          <div className="px-3 py-8 text-center text-sm leading-relaxed text-muted-foreground">
+            아직 보여줄 레이어가 없어요.
+            <br />
+            시트에 요소를 올리면 여기에 차곡차곡 쌓여요.
           </div>
         ) : (
           <div
@@ -649,19 +648,19 @@ const EditLayerRow = memo(function EditLayerRow({
         delete document.body.dataset.r20LayerDraggingBlock;
         onMove(draggedId, node.id, mode);
       }}
-      className={`relative flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs ${
+      className={`relative flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors ${
         selected
-          ? 'bg-orange-500/20 text-foreground ring-1 ring-orange-500/60'
+          ? 'bg-[var(--primary-soft)] text-foreground ring-[1.5px] ring-[var(--primary)]'
           : contextOnly
             ? 'text-muted-foreground/70 hover:bg-[var(--bg-hover)] hover:text-muted-foreground'
-            : 'text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground'
+            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-foreground'
       } ${
         dropMode === 'inside'
-          ? 'ring-1 ring-rose-400/80'
+          ? 'ring-[1.5px] ring-rose-500'
           : dropMode === 'before'
-            ? 'shadow-[inset_0_2px_0_rgba(96,165,250,0.95)]'
+            ? 'shadow-[inset_0_3px_0_var(--info)]'
             : dropMode === 'after'
-              ? 'shadow-[inset_0_-2px_0_rgba(96,165,250,0.95)]'
+              ? 'shadow-[inset_0_-3px_0_var(--info)]'
               : ''
       }`}
       style={{ paddingLeft: `${8 + node.depth * 12}px` }}
@@ -679,29 +678,29 @@ const EditLayerRow = memo(function EditLayerRow({
         data-testid="edit-layer-role-rail"
         className={cn(
           'pointer-events-none absolute bottom-1 left-0 top-1 w-1 rounded-r',
-          role.canReceiveChildren ? 'bg-rose-400/70' : 'bg-zinc-500/45',
-          node.layerRelation === 'child' && 'bg-emerald-400/70',
-          selected && 'bg-orange-400',
+          role.canReceiveChildren ? 'bg-rose-400' : 'bg-zinc-400',
+          node.layerRelation === 'child' && 'bg-emerald-500',
+          selected && 'bg-[var(--primary)]',
         )}
       />
       {dropMode && (
-        <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 rounded bg-rose-500 px-1.5 py-0.5 text-[9px] font-medium text-white">
+        <span className="pointer-events-none absolute right-1 top-1/2 z-[1] -translate-y-1/2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
           {formatDropModeLabel(dropMode)}
         </span>
       )}
       <span
         aria-hidden
-        title={role.canReceiveChildren ? `${role.label} 컨테이너` : role.label}
-        className={`grid h-4 w-4 shrink-0 place-items-center rounded border text-[9px] ${role.className}`}
+        title={role.canReceiveChildren ? `${role.label} — 다른 요소를 담을 수 있어요` : role.label}
+        className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border text-[10px] font-bold ${role.className}`}
       >
         {role.icon}
       </span>
       {node.childCount > 0 ? (
         <button
           type="button"
-          className="grid h-5 w-5 shrink-0 place-items-center rounded text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground"
-          aria-label={collapsed ? '하위 레이어 펼치기' : '하위 레이어 접기'}
-          title={collapsed ? '하위 레이어 펼치기' : '하위 레이어 접기'}
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground"
+          aria-label={collapsed ? '안에 든 것 펼치기' : '안에 든 것 접기'}
+          title={collapsed ? '안에 든 것 펼치기' : '안에 든 것 접기'}
           data-testid="edit-layer-collapse-toggle"
           data-r20-block-id={node.id}
           data-r20-layer-collapsed={collapsed ? '1' : '0'}
@@ -711,10 +710,10 @@ const EditLayerRow = memo(function EditLayerRow({
             onToggleCollapse(node.id);
           }}
         >
-          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
       ) : (
-        <span aria-hidden className="h-5 w-5 shrink-0" />
+        <span aria-hidden className="h-6 w-6 shrink-0" />
       )}
       <LayerMiniMap
         roleKind={role.kind}
@@ -724,52 +723,47 @@ const EditLayerRow = memo(function EditLayerRow({
         selected={selected}
         defaultDropMode={role.defaultDropMode}
       />
-      <span className="min-w-0 flex-1">
+      <span className="min-w-0 flex-1" title={node.preview ? `${node.label} — ${node.preview}` : node.label}>
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate font-mono text-[10.5px]">{node.type}</span>
-          <span className="shrink-0 rounded border border-border/80 bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
-            {formatLayerRelationLabel(node.layerRelation)}
-          </span>
-          <span className="shrink-0 rounded border border-border bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
-            {role.label}
+          <span className={cn('truncate text-sm leading-tight', selected ? 'font-semibold text-foreground' : 'font-medium')}>
+            {node.label}
           </span>
           {node.childCount > 0 && (
             <span
               data-testid="edit-layer-child-count"
-              title={`하위 요소 ${node.childCount}개`}
-              className="shrink-0 rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] text-emerald-200"
+              title={`안에 ${node.childCount}개가 들어있어요`}
+              className="shrink-0 rounded-full border border-emerald-600/40 bg-emerald-50 px-1.5 py-px text-xs font-medium tabular-nums text-emerald-700"
             >
               {node.childCount}
             </span>
           )}
           {role.canReceiveChildren && (
-            <span className="shrink-0 rounded border border-rose-500/40 bg-rose-500/10 px-1.5 py-0.5 text-[9px] text-rose-200">
-              담기 가능
+            <span
+              title="이 안에 다른 요소를 끌어다 담을 수 있어요"
+              className="shrink-0 rounded-full border border-rose-400/50 bg-rose-50 px-1.5 py-px text-xs font-medium text-rose-700"
+            >
+              담는 틀
             </span>
           )}
           {contextOnly && (
             <span
               data-testid="edit-layer-context-badge"
-              className="shrink-0 rounded border border-border/80 bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground"
+              title="검색어와 직접 맞지는 않지만, 맞는 요소를 담고 있어요"
+              className="shrink-0 rounded-full border border-border bg-[var(--bg-elevated-2)] px-1.5 py-px text-xs text-muted-foreground"
             >
-              상위 맥락
-            </span>
-          )}
-          {role.defaultDropMode !== 'none' && (
-            <span className="shrink-0 rounded border border-border/80 bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[9px] text-muted-foreground">
-              {role.defaultDropMode === 'flow' ? '흐름' : '자유'}
+              상위
             </span>
           )}
         </span>
         {node.preview && (
-          <span className="block truncate text-[10px] opacity-70">- {node.preview}</span>
+          <span className="block truncate text-xs leading-tight opacity-75">{node.preview}</span>
         )}
       </span>
       {node.layerParentId && (
         <button
           type="button"
-          className="grid h-6 w-6 shrink-0 place-items-center rounded border border-border/80 text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground"
-          title="한 단계 바깥으로 꺼내기"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground active:scale-95"
+          title="틀 밖으로 한 단계 꺼내요"
           aria-label="한 단계 바깥으로 꺼내기"
           data-testid="edit-layer-eject"
           data-r20-block-id={node.id}

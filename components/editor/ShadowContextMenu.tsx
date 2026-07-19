@@ -29,6 +29,7 @@
  */
 
 import { useEffect, useRef } from 'react';
+import { ArrowDown, ArrowUp, Copy, Settings2, Trash2, type LucideIcon } from 'lucide-react';
 
 export type ShadowContextMenuAction =
   | 'inspect'
@@ -45,12 +46,12 @@ interface Props {
   onClose: () => void;
 }
 
-const ITEMS: Array<{ id: ShadowContextMenuAction; label: string; danger?: boolean }> = [
-  { id: 'inspect', label: '속성' },
-  { id: 'duplicate', label: '복사' },
-  { id: 'moveUp', label: '위로 이동' },
-  { id: 'moveDown', label: '아래로 이동' },
-  { id: 'delete', label: '삭제', danger: true },
+const ITEMS: Array<{ id: ShadowContextMenuAction; label: string; Icon: LucideIcon; danger?: boolean }> = [
+  { id: 'inspect', label: '속성 보기', Icon: Settings2 },
+  { id: 'duplicate', label: '복제', Icon: Copy },
+  { id: 'moveUp', label: '위로 옮기기', Icon: ArrowUp },
+  { id: 'moveDown', label: '아래로 옮기기', Icon: ArrowDown },
+  { id: 'delete', label: '삭제', Icon: Trash2, danger: true },
 ];
 
 export default function ShadowContextMenu({ blockId, x, y, onAction, onClose }: Props) {
@@ -83,8 +84,8 @@ export default function ShadowContextMenu({ blockId, x, y, onAction, onClose }: 
 
   // viewport 경계 보정 — 메뉴가 화면 밖으로 나가지 않게 clamp.
   // 메뉴 크기 추정 (실측 후 보정도 가능하나 first paint 에 단순화).
-  const W = 160;
-  const H = ITEMS.length * 32 + 8;
+  const W = 200;
+  const H = ITEMS.length * 40 + 10;
   const left = typeof window !== 'undefined' ? Math.min(x, window.innerWidth - W - 4) : x;
   const top = typeof window !== 'undefined' ? Math.min(y, window.innerHeight - H - 4) : y;
 
@@ -101,29 +102,33 @@ export default function ShadowContextMenu({ blockId, x, y, onAction, onClose }: 
         zIndex: 9999,
         width: `${W}px`,
       }}
-      className="rounded-md border border-border bg-popover py-1 text-popover-foreground shadow-lg"
+      className="rounded-xl border border-[var(--border-subtle)] bg-popover py-1.5 text-popover-foreground shadow-[0_2px_6px_rgba(var(--shadow-tint),0.1),0_10px_28px_rgba(var(--shadow-tint),0.2)]"
       onContextMenu={(e) => {
         // 메뉴 자체 우클릭은 native 차단 (메뉴 안 native 메뉴 중첩 방지).
         e.preventDefault();
       }}
     >
-      {ITEMS.map((it) => (
-        <button
-          key={it.id}
-          type="button"
-          role="menuitem"
-          onClick={() => {
-            onAction(it.id);
-            onClose();
-          }}
-          className={
-            'flex w-full items-center px-3 py-1.5 text-left text-[12px] hover:bg-accent hover:text-accent-foreground ' +
-            (it.danger ? 'text-destructive' : '')
-          }
-        >
-          {it.label}
-        </button>
-      ))}
+      {ITEMS.map((it) => {
+        const Icon = it.Icon;
+        return (
+          <button
+            key={it.id}
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              onAction(it.id);
+              onClose();
+            }}
+            className={
+              'flex w-full items-center gap-2.5 px-3.5 py-2 text-left text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground ' +
+              (it.danger ? 'text-destructive hover:bg-[var(--destructive-soft)] hover:text-destructive' : '')
+            }
+          >
+            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {it.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -6,11 +6,17 @@ import {
   MousePointerSquareDashed,
   ListTree,
   FolderOpen,
+  FilePlus,
+  Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useUiStore } from '@/lib/stores/uiStore';
 
+/**
+ * 첫 화면 빈 상태 (design-reset).
+ * 문구 구조: 이곳이 무엇인지 → 왜 비어 있는지 → 무엇부터 하면 되는지.
+ */
 export default function PreviewEmptyState() {
   const setSidebarLeftMode = useUiStore((s) => s.setSidebarLeftMode);
   const setBlocksSearch = useUiStore((s) => s.setBlocksSearch);
@@ -18,7 +24,7 @@ export default function PreviewEmptyState() {
   const handleStartBlank = () => {
     setSidebarLeftMode('blocks');
     setBlocksSearch('');
-    toast('왼쪽 블록 패널에서 필요한 요소를 끌어다 놓아보세요.', {
+    toast('왼쪽 블록 꾸러미에서 원하는 조각을 끌어다 놓아보세요.', {
       duration: 2400,
     });
   };
@@ -28,58 +34,61 @@ export default function PreviewEmptyState() {
   };
 
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center px-6 text-center">
-      <div
-        className="mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,_var(--primary)_14%,_var(--bg-elevated))] text-primary ring-1 ring-primary/25"
-      >
-        <Sparkles className="h-7 w-7" />
+    <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center px-6 py-8 text-center">
+      <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--primary-soft)] text-[var(--primary-active)] shadow-[0_1px_2px_rgba(var(--shadow-tint),0.07),0_4px_14px_rgba(var(--shadow-tint),0.09)] ring-1 ring-[var(--primary-soft-border)]">
+        <Sparkles className="h-9 w-9" aria-hidden="true" />
       </div>
-      <h2 className="mb-2 text-[22px] font-semibold tracking-tight text-foreground">
-        새 Roll20 시트를 만들어볼까요?
+      <h2 className="mb-3 text-2xl font-bold tracking-tight text-foreground">
+        캐릭터 시트, 여기서 만들어요
       </h2>
-      <p className="mb-7 max-w-md text-[13px] leading-relaxed text-muted-foreground">
-        이 화면은 Roll20 형식 시트를 로컬에서 미리 보는 자리입니다. 실제 Roll20 적용 결과는
-        Sandbox나 테스트 방 검증을 거쳐야 확정할 수 있어요.
+      <p className="mb-8 max-w-md text-base leading-relaxed text-[var(--text-secondary)]">
+        빈 시트로 시작하거나, 가지고 있는 시트 파일을 불러와서 이어서 꾸밀 수 있어요.
+        작업 내용은 이 브라우저에 자동 저장돼요.
       </p>
 
-      <div className="mb-7 grid w-full max-w-md gap-2">
+      <div className="mb-8 grid w-full max-w-md gap-2.5">
         <Hint
           step={1}
           accent="var(--cat-container)"
-          icon={<ListTree className="h-4 w-4" />}
-          title="구조 만들기"
-          body="구역, 입력칸, 버튼 같은 기본 요소를 시트 위에 배치합니다."
+          icon={<ListTree className="h-5 w-5" />}
+          title="조각 올리기"
+          body="칸, 글자, 버튼 같은 조각을 시트 위에 올려요."
         />
         <Hint
           step={2}
           accent="var(--cat-display)"
-          icon={<MousePointerSquareDashed className="h-4 w-4" />}
-          title="화면에서 바로 선택"
-          body="시트 요소를 선택하면 레이어와 속성 패널에서 연결된 설정을 볼 수 있습니다."
+          icon={<MousePointerSquareDashed className="h-5 w-5" />}
+          title="바로 고치기"
+          body="시트에서 요소를 클릭하면 오른쪽 속성 패널에서 이름과 값을 바꿀 수 있어요."
         />
         <Hint
           step={3}
           accent="var(--cat-dice)"
-          icon={<Sparkles className="h-4 w-4" />}
-          title="Roll20용으로 내보내기"
-          body="sheet.html, sheet.css, translation.json을 포함한 zip으로 내보낼 수 있습니다."
+          icon={<Download className="h-5 w-5" />}
+          title="Roll20에 올리기"
+          body="완성되면 Roll20에 올릴 수 있는 파일 묶음(ZIP)으로 내보내요."
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <Button variant="outline" size="sm" onClick={handleStartBlank}>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Button variant="outline" size="lg" onClick={handleStartBlank} className="gap-2">
+          <FilePlus aria-hidden="true" />
           빈 시트로 시작
         </Button>
         <Button
           variant="default"
-          size="sm"
+          size="lg"
           onClick={handleImport}
+          className="gap-2"
           data-testid="empty-import-button"
         >
-          <FolderOpen className="h-4 w-4" aria-hidden="true" />
-          파일 가져오기
+          <FolderOpen aria-hidden="true" />
+          시트 파일 불러오기
         </Button>
       </div>
+      <p className="mt-5 text-sm text-muted-foreground">
+        여기 보이는 화면은 미리보기예요. 실제 Roll20 화면과는 조금 다를 수 있어요.
+      </p>
     </div>
   );
 }
@@ -98,26 +107,26 @@ function Hint({
   body: string;
 }) {
   return (
-    <div className="group flex items-start gap-3 rounded-lg border border-border bg-[var(--bg-elevated)] p-3 text-left transition-colors hover:border-[color-mix(in_srgb,_var(--primary)_40%,_transparent)] hover:bg-[var(--bg-elevated-2)]">
+    <div className="r20-lift group flex items-start gap-3.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-4 text-left shadow-[0_1px_2px_rgba(var(--shadow-tint),0.05)]">
       <div
-        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-foreground"
-        style={{ background: `color-mix(in srgb, ${accent} 20%, var(--bg-elevated-2))` }}
+        className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-foreground"
+        style={{ background: `color-mix(in srgb, ${accent} 22%, var(--bg-elevated-2))` }}
         aria-hidden
       >
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-1.5">
+        <div className="flex items-baseline gap-2">
           <span
-            className="font-mono text-[10px] tabular-nums"
+            className="text-sm font-bold tabular-nums"
             style={{ color: accent }}
             aria-hidden
           >
-            {String(step).padStart(2, '0')}
+            {step}
           </span>
-          <span className="text-xs font-medium text-foreground">{title}</span>
+          <span className="text-base font-semibold text-foreground">{title}</span>
         </div>
-        <div className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+        <div className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
           {body}
         </div>
       </div>

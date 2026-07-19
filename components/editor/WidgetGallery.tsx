@@ -8,12 +8,14 @@ import {
   Hash,
   Heading1,
   Image as ImageIcon,
+  LayoutGrid,
   MessageSquare,
   MousePointerClick,
   Search,
   Type,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   FRIENDLY_WIDGET_GROUPS,
   FRIENDLY_WIDGET_MIME,
@@ -24,6 +26,7 @@ import {
   type FriendlyWidgetPreset,
 } from '@/lib/widgets/presets';
 import { cn } from '@/lib/utils/cn';
+import HelpTip from './HelpTip';
 
 const GROUP_ORDER: FriendlyWidgetGroup[] = ['layout', 'text', 'input', 'action', 'media'];
 
@@ -48,61 +51,69 @@ export default function WidgetGallery() {
   const addPreset = (preset: FriendlyWidgetPreset) => {
     const id = appendFriendlyWidgetPreset(preset);
     if (id) {
-      toast(`${preset.label} 추가됨`, { duration: 1400 });
+      toast(`'${preset.label}'을(를) 시트에 올렸어요.`, { duration: 1400 });
     } else {
-      toast.error('시트 작업 공간이 아직 준비되지 않았어요.');
+      toast.error('시트 작업 공간이 아직 준비되지 않았어요. 잠시 뒤 다시 시도해 주세요.');
     }
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border px-3 text-xs">
-        <span className="font-semibold">요소 갤러리</span>
-        <span className="ml-auto rounded bg-[var(--bg-elevated-2)] px-1.5 py-0.5 text-[10px] text-muted-foreground">
-          시트에 추가
-        </span>
-      </div>
+    <TooltipProvider delayDuration={250}>
+      <div className="flex h-full flex-col">
+        <div className="r20-panel-head">
+          <LayoutGrid className="h-[18px] w-[18px] text-[var(--primary)]" aria-hidden="true" />
+          <span>자주 쓰는 조각</span>
+          <span className="flex-1" />
+          <HelpTip label="자주 쓰는 조각 도움말" side="right">
+            시트에 자주 올리는 조각들이에요. 눌러서 추가하거나,
+            시트 화면 위로 끌어다 놓으면 그 자리에 들어가요.
+          </HelpTip>
+        </div>
 
-      <div className="border-b border-border px-3 py-2">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="요소 검색"
-            className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] py-1.5 pl-7 pr-2 text-xs outline-none focus:ring-1 focus:ring-[var(--primary)]"
-            data-testid="widget-gallery-search"
-          />
+        <div className="border-b border-border px-3 py-2.5">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="조각 찾기 — 예: 글자, 버튼"
+              aria-label="조각 검색"
+              className="r20-input pl-9"
+              data-testid="widget-gallery-search"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto px-2.5 py-2.5" data-testid="widget-gallery-scroll">
+          {grouped.length === 0 ? (
+            <div className="px-2 py-8 text-center text-sm leading-relaxed text-muted-foreground">
+              {`'${search}'에 맞는 조각이 없어요.`}
+              <br />
+              다른 말로 찾아보세요.
+            </div>
+          ) : (
+            grouped.map(({ group, items }) => (
+              <section key={group} className="mb-4" data-testid={`widget-cat-${group}`}>
+                <div className="mb-1.5 flex items-center gap-1.5 px-1 text-sm font-semibold text-[var(--text-secondary)]">
+                  {FRIENDLY_WIDGET_GROUPS[group]}
+                  <span className="ml-auto text-xs font-medium text-muted-foreground">{items.length}개</span>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {items.map((preset) => (
+                    <WidgetPresetCard
+                      key={preset.id}
+                      preset={preset}
+                      onClick={() => addPreset(preset)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
         </div>
       </div>
-
-      <div className="flex-1 overflow-auto px-2 py-2" data-testid="widget-gallery-scroll">
-        {grouped.length === 0 ? (
-          <div className="px-2 py-6 text-center text-xs text-muted-foreground">
-            맞는 요소가 없어요.
-          </div>
-        ) : (
-          grouped.map(({ group, items }) => (
-            <section key={group} className="mb-3" data-testid={`widget-cat-${group}`}>
-              <div className="mb-1 flex items-center gap-1.5 px-1 text-[11px] font-semibold text-muted-foreground">
-                {FRIENDLY_WIDGET_GROUPS[group]}
-                <span className="ml-auto text-[10px] font-normal">{items.length}</span>
-              </div>
-              <div className="grid grid-cols-1 gap-1.5">
-                {items.map((preset) => (
-                  <WidgetPresetCard
-                    key={preset.id}
-                    preset={preset}
-                    onClick={() => addPreset(preset)}
-                  />
-                ))}
-              </div>
-            </section>
-          ))
-        )}
-      </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
@@ -118,9 +129,10 @@ function WidgetPresetCard({
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex w-full items-center gap-2 rounded-md border border-border bg-[var(--bg-elevated-2)] p-2 text-left',
-        'transition-colors hover:border-[var(--primary)] hover:bg-[var(--bg-hover)]',
-        'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+        'r20-lift group flex w-full items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-2.5 text-left shadow-[0_1px_2px_rgba(var(--shadow-tint),0.05)]',
+        'hover:border-[var(--primary-soft-border)] hover:bg-[var(--primary-soft)]/40',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'cursor-grab active:cursor-grabbing',
       )}
       data-widget-type={preset.id}
       data-block-type={preset.blockType}
@@ -138,10 +150,11 @@ function WidgetPresetCard({
           ghost.style.top = '-1000px';
           ghost.style.width = `${e.currentTarget.getBoundingClientRect().width}px`;
           ghost.style.pointerEvents = 'none';
-          ghost.style.opacity = '0.92';
+          ghost.style.opacity = '0.94';
           ghost.style.transform = 'scale(0.98)';
-          ghost.style.boxShadow = '0 14px 32px rgba(0,0,0,0.28)';
+          ghost.style.boxShadow = '0 14px 32px rgba(178, 84, 122, 0.28)';
           ghost.style.background = '#ffffff';
+          ghost.style.borderRadius = '12px';
           document.body.appendChild(ghost);
           e.dataTransfer.setDragImage(ghost, 34, 24);
           window.setTimeout(() => ghost.remove(), 0);
@@ -151,15 +164,15 @@ function WidgetPresetCard({
       }}
       title={`${preset.label}\n${preset.description}`}
     >
-      <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded border border-border bg-white">
+      <div className="flex h-14 w-[72px] shrink-0 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-white">
         <PreviewShape preset={preset} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           {renderPresetIcon(preset)}
-          <span className="truncate text-xs font-medium text-foreground">{preset.label}</span>
+          <span className="truncate text-sm font-semibold text-foreground">{preset.label}</span>
         </div>
-        <div className="mt-0.5 line-clamp-2 text-[10.5px] leading-snug text-muted-foreground">
+        <div className="mt-0.5 line-clamp-2 text-xs leading-snug text-[var(--text-secondary)]">
           {preset.description}
         </div>
       </div>
@@ -170,30 +183,30 @@ function WidgetPresetCard({
 function PreviewShape({ preset }: { preset: FriendlyWidgetPreset }) {
   switch (preset.preview) {
     case 'box':
-      return <div className="h-8 w-12 rounded-sm border border-[#9ca3af] bg-[#f8fafc]" />;
+      return <div className="h-9 w-14 rounded border border-[#9ca3af] bg-[#f8fafc]" />;
     case 'heading':
-      return <div className="h-4 w-12 rounded-sm bg-[#111827]" />;
+      return <div className="h-4 w-14 rounded bg-[#111827]" />;
     case 'label':
-      return <div className="h-2 w-10 rounded-sm bg-[#4b5563]" />;
+      return <div className="h-2.5 w-11 rounded bg-[#4b5563]" />;
     case 'text':
-      return <div className="h-6 w-12 rounded border border-[#9ca3af] bg-white" />;
+      return <div className="h-7 w-14 rounded border border-[#9ca3af] bg-white" />;
     case 'number':
-      return <div className="h-6 w-9 rounded border border-[#9ca3af] bg-white text-center text-[10px] leading-6 text-[#4b5563]">0</div>;
+      return <div className="h-7 w-10 rounded border border-[#9ca3af] bg-white text-center text-xs leading-7 text-[#4b5563]">0</div>;
     case 'textarea':
-      return <div className="h-8 w-12 rounded border border-[#9ca3af] bg-white" />;
+      return <div className="h-9 w-14 rounded border border-[#9ca3af] bg-white" />;
     case 'checkbox':
-      return <div className="h-4 w-4 rounded border border-[#6b7280] bg-white" />;
+      return <div className="h-5 w-5 rounded border-2 border-[#6b7280] bg-white" />;
     case 'image':
-      return <ImageIcon className="h-7 w-7 text-[#6b7280]" />;
+      return <ImageIcon className="h-8 w-8 text-[#6b7280]" />;
     case 'button':
-      return <div className="h-6 w-12 rounded bg-[var(--primary)]" />;
+      return <div className="h-7 w-14 rounded-full bg-[var(--primary)]" />;
     default:
       return null;
   }
 }
 
 function renderPresetIcon(preset: FriendlyWidgetPreset) {
-  const className = 'h-3.5 w-3.5 shrink-0 text-muted-foreground';
+  const className = 'h-4 w-4 shrink-0 text-muted-foreground';
   switch (preset.preview) {
     case 'heading':
       return <Heading1 className={className} />;
