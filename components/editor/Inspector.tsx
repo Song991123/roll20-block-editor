@@ -12,7 +12,7 @@ import {
   type BlockFieldInfo,
 } from '@/lib/blockly/adapter';
 import { CATEGORIES } from '@/lib/blocks/types';
-import { fieldDisplayLabel } from './fieldLabels';
+import { categoryDisplayLabel, fieldDisplayLabel } from './fieldLabels';
 
 /**
  * Inspector — 선택된 블록의 schema 기반 자동 폼.
@@ -106,8 +106,10 @@ function BlockInspector() {
             )}
             <span className="text-base font-semibold text-foreground">{snap.label}</span>
           </div>
-          {catMeta && (
-            <div className="mt-1 text-sm text-[var(--text-secondary)]">{catMeta.label} 종류</div>
+          {catMeta && snap.category && (
+            <div className="mt-1 text-sm text-[var(--text-secondary)]">
+              {categoryDisplayLabel(snap.category, catMeta.label)} 종류
+            </div>
           )}
           <details className="mt-2 group">
             <summary className="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground">

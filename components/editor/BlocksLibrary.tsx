@@ -9,7 +9,11 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Search, ChevronDown, ChevronRight, Sparkles, X, Star } from 'lucide-react';
+import {
+  Search, ChevronDown, ChevronRight, Sparkles, X, Star,
+  Boxes, TextCursorInput, Type, Dices, Languages, Calculator, Zap, Palette, Wrench, Package,
+  type LucideIcon,
+} from 'lucide-react';
 import * as Blockly from 'blockly';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -32,8 +36,23 @@ import {
 } from '@/lib/blocks/registry';
 import { cn } from '@/lib/utils/cn';
 import { playSfx } from '@/lib/sfx';
+import { categoryDisplayLabel } from './fieldLabels';
 
 const BLOCKLY_MEDIA_PATH = 'blockly-media/';
+
+/** 카테고리 아이콘 (표시 전용) — 색과 함께 종류를 이중으로 알려줘 색약에도 안전. */
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  container: Boxes,
+  input: TextCursorInput,
+  display: Type,
+  dice: Dices,
+  i18n: Languages,
+  expression: Calculator,
+  sheet_worker: Zap,
+  css: Palette,
+  advanced: Wrench,
+  composite: Package,
+};
 
 /**
  * 좌측 [블록] 모드. Anchor: 08 W2-A + 02 §3 + D26 ②.
@@ -143,6 +162,7 @@ export default function BlocksLibrary() {
                 <div className="space-y-2">
                   {searchResultsByCategory.map(({ catId, blocks }) => {
                     const meta = CATEGORIES[catId];
+                    const CatIcon = CATEGORY_ICONS[catId] ?? Package;
                     return (
                       <div key={catId} className="relative">
                         {/* 검색 결과 안 카테고리 헤더 — 본 카테고리 헤더와 동일 sticky/색 스킴 + 펼침 토글 없음 (항상 열림). */}
@@ -153,16 +173,16 @@ export default function BlocksLibrary() {
                             background: `color-mix(in srgb, ${meta.swatchVar} 12%, var(--bg-elevated))`,
                           }}
                         >
-                          <span
-                            className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-inset ring-white/10 shadow-[0_0_0_2px_rgba(0,0,0,0.15)]"
-                            style={{ backgroundColor: meta.swatchVar }}
+                          <CatIcon
+                            className="h-[17px] w-[17px] shrink-0"
+                            style={{ color: `color-mix(in srgb, ${meta.swatchVar} 72%, var(--text-primary))` }}
                             aria-hidden
                           />
-                          <span className="flex-1 truncate">{meta.label}</span>
-                          <Badge variant="secondary" className="font-mono">{blocks.length}</Badge>
+                          <span className="flex-1 truncate">{categoryDisplayLabel(catId, meta.label)}</span>
+                          <Badge variant="secondary" className="tabular-nums">{blocks.length}</Badge>
                         </div>
                         <div
-                          className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
+                          className="mt-1.5 space-y-1.5 border-l border-l-[1.5px] pl-2 ml-[7px]"
                           style={{ borderColor: `color-mix(in srgb, ${meta.swatchVar} 60%, transparent)` }}
                         >
                           {blocks.map((b) => <BlockTile key={b.type} def={b} />)}
@@ -224,6 +244,7 @@ export default function BlocksLibrary() {
               )}
               {visibleCategories.map((catId) => {
                 const meta = CATEGORIES[catId];
+                const CatIcon = CATEGORY_ICONS[catId] ?? Package;
                 const isOpen = expanded.includes(catId);
                 const blocks = blocksByCategory(catId);
                 return (
@@ -246,13 +267,13 @@ export default function BlocksLibrary() {
                       ) : (
                         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                       )}
-                      <span
-                        className="inline-block h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-inset ring-black/10 shadow-[0_0_0_2px_rgba(255,255,255,0.6)]"
-                        style={{ backgroundColor: meta.swatchVar }}
+                      <CatIcon
+                        className="h-[17px] w-[17px] shrink-0"
+                        style={{ color: `color-mix(in srgb, ${meta.swatchVar} 72%, var(--text-primary))` }}
                         aria-hidden
                       />
-                      <span className="flex-1 truncate">{meta.label}</span>
-                      <Badge variant="secondary" className="font-mono">{blocks.length}</Badge>
+                      <span className="flex-1 truncate">{categoryDisplayLabel(catId, meta.label)}</span>
+                      <Badge variant="secondary" className="tabular-nums">{blocks.length}</Badge>
                     </button>
 
                     {/*
@@ -272,7 +293,7 @@ export default function BlocksLibrary() {
                     >
                       <div className="min-h-0 overflow-hidden">
                         <div
-                          className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
+                          className="mt-1.5 space-y-1.5 border-l border-l-[1.5px] pl-2 ml-[7px]"
                           style={{ borderColor: `color-mix(in srgb, ${meta.swatchVar} 60%, transparent)` }}
                         >
                           {blocks.length === 0 ? (
@@ -435,15 +456,14 @@ function BlockTile({ def }: { def: BlockDef }) {
   return (
     <div
       className={cn(
-        'group relative rounded-md border border-transparent bg-[var(--bg-elevated)]/40 pl-2 pr-1 py-0',
-        'transition-all duration-150 ease-out',
-        'hover:bg-[color-mix(in_srgb,var(--swatch)_10%,var(--bg-hover))]',
-        'hover:ring-1 hover:ring-inset hover:ring-[color-mix(in_srgb,var(--swatch)_35%,transparent)]',
-        'active:translate-y-px active:bg-[color-mix(in_srgb,var(--swatch)_18%,var(--bg-hover))]',
+        'group relative overflow-hidden rounded-xl border border-[var(--border-subtle)] border-l-4 bg-[var(--bg-elevated)]',
+        'shadow-[0_1px_2px_rgba(var(--shadow-tint),0.05)] transition-all duration-150 ease-out',
+        'hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--swatch)_40%,var(--border-subtle))] hover:bg-[color-mix(in_srgb,var(--swatch)_6%,var(--bg-elevated))] hover:shadow-[0_2px_6px_rgba(var(--shadow-tint),0.1),0_10px_24px_rgba(var(--shadow-tint),0.14)]',
+        'active:translate-y-0 active:scale-[0.99]',
         'focus-within:ring-2 focus-within:ring-inset focus-within:ring-[var(--swatch)]/60',
       )}
       style={{
-        boxShadow: `inset 3px 0 0 ${meta.swatchVar}`,
+        borderLeftColor: meta.swatchVar,
         ['--swatch' as string]: meta.swatchVar,
       } as React.CSSProperties}
       draggable
@@ -470,12 +490,15 @@ function BlockTile({ def }: { def: BlockDef }) {
       <button
         type="button"
         onClick={handleAdd}
-        className="flex w-full items-stretch gap-2 rounded-sm text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-grab active:cursor-grabbing"
+        className="flex w-full flex-col items-start gap-1 rounded-xl px-3 pb-2 pt-2.5 text-left focus-visible:outline-none cursor-grab active:cursor-grabbing"
         aria-label={`${def.label} 블록 추가`}
       >
+        <span className="flex w-full min-w-0 items-center gap-1.5 pr-7">
+          <span className="truncate text-sm font-semibold leading-tight text-foreground">{def.label}</span>
+        </span>
         <div
           ref={previewHostRef}
-          className="blocks-library-preview relative shrink-0 overflow-hidden rounded-sm"
+          className="blocks-library-preview relative mt-0.5 shrink-0 overflow-hidden rounded-md"
           style={{
             width: previewSize.w,
             height: previewSize.h,
@@ -483,14 +506,6 @@ function BlockTile({ def }: { def: BlockDef }) {
           }}
           aria-hidden
         />
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 py-0.5">
-          <span
-            className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-inset ring-black/10"
-            style={{ backgroundColor: meta.swatchVar }}
-            aria-hidden
-          />
-          <span className="truncate text-sm leading-tight text-foreground">{def.label}</span>
-        </div>
       </button>
       {/* 별 아이콘 — 우상단 overlay. 클릭 시 즐겨찾기 토글. 외부 <button> 안에 nested 하지 않으려 sibling 으로. */}
       <button
@@ -504,7 +519,7 @@ function BlockTile({ def }: { def: BlockDef }) {
         aria-label={isFavorite ? `${def.label} 즐겨찾기 해제` : `${def.label} 즐겨찾기 추가`}
         title={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
         className={cn(
-          'absolute right-1 top-1 z-[1] flex h-7 w-7 items-center justify-center rounded-full',
+          'absolute right-1.5 top-1.5 z-[1] flex h-7 w-7 items-center justify-center rounded-full',
           'opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100',
           'hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           isFavorite && 'opacity-100',

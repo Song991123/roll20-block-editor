@@ -15,6 +15,7 @@ import { useEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { installPerfHook } from '@/lib/perf/hook';
 import MainAreaToolbar from './MainAreaToolbar';
 import WorkspaceSubToolbar from './WorkspaceSubToolbar';
+import EmptyCanvasHint from './EmptyCanvasHint';
 import {
   EDIT_SURFACE_LAYER_PANEL_WIDTH_PX,
   EDIT_SURFACE_TOOLBAR_HEIGHT_PX,
@@ -304,6 +305,7 @@ export default function EditorShell() {
               {workspaceVisible && <WorkspaceSubToolbar />}
               <div className="relative flex-1 min-h-0">
                 <BlocklyModelHost visible={workspaceVisible} />
+                {workspaceVisible && <EmptyCanvasHint />}
               </div>
             </div>
 

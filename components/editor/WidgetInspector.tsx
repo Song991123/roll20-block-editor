@@ -10,6 +10,7 @@ import {
   type WidgetTarget,
 } from '@/lib/stores/workspaceStore';
 import { getWidget } from '@/lib/widgets/registry';
+import { widgetTypeDisplayLabel } from './fieldLabels';
 
 /**
  * WidgetInspector — 선택된 위젯의 위치/크기/이름/클래스/기본값 폼.
@@ -100,7 +101,7 @@ export default function WidgetInspector() {
               고른 요소
             </div>
             <div className="mt-0.5 truncate text-base font-semibold text-foreground">
-              {def?.label ?? widget.type}
+              {widgetTypeDisplayLabel(widget.type, def?.label ?? widget.type)}
             </div>
           </div>
           <button

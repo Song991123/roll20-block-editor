@@ -426,6 +426,14 @@ function EditLayerPanel({
         <span className="ml-auto rounded-full border border-border bg-[var(--bg-elevated-2)] px-2 py-0.5 text-xs font-normal tabular-nums text-muted-foreground">
           {search.trim() ? `${visibleNodes.filter((item) => item.searchMatch).length}+맥락 ${visibleNodes.length}/${nodes.length}` : `${visibleNodes.length}/${nodes.length}`}
         </span>
+        <span
+          className="r20-help-dot"
+          role="img"
+          aria-label="레이어 색 띠 설명"
+          title={'왼쪽 세로 색 띠의 뜻\n· 분홍: 다른 요소를 담을 수 있는 틀\n· 초록: 틀 안에 들어있는 요소\n· 회색: 낱개 요소\n행을 끌어 순서를 바꾸거나 틀 안에 넣을 수 있어요.'}
+        >
+          ?
+        </span>
       </div>
       <div
         className="flex items-center justify-between gap-1.5 border-b border-border px-3 py-1.5"
@@ -448,20 +456,6 @@ function EditLayerPanel({
             className="h-9 w-full rounded-lg border-[1.5px] border-border bg-[var(--bg-elevated)] pl-8 pr-2 text-sm outline-none transition-colors focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
             data-testid="edit-layer-search"
           />
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-[var(--text-secondary)]" title="색 띠의 뜻 — 왼쪽 세로 띠 색으로 요소의 성격을 알 수 있어요">
-          <span className="inline-flex items-center gap-1">
-            <span className="h-2.5 w-2.5 rounded-sm bg-rose-400" />
-            담는 틀
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" />
-            틀 안에 있음
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="h-2.5 w-2.5 rounded-sm bg-zinc-400" />
-            낱개
-          </span>
         </div>
       </div>
       {selectedPath.length > 0 && (

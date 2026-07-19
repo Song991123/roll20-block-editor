@@ -551,6 +551,106 @@ body {
 }
 
 /* ============================================================
+ * Blockly 작업 공간 디테일 파스텔화 (design-reset 2차).
+ * 전부 시각 전용 — 블록 스키마/어댑터/드래그 로직 무변경.
+ * 이 선택자들은 앱 문서(light DOM)에만 닿고 시트 iframe 안엔 도달하지 않음.
+ * ============================================================ */
+
+/* 캔버스 배경 + 점 격자 — 다이어리 모눈 느낌의 연분홍. */
+.blockly-model-host .blocklyMainBackground {
+  fill: var(--bg-canvas);
+}
+pattern[id^='blocklyGridPattern'] line {
+  stroke: #eec3d8;
+}
+
+/* 블록 톤 보정 — 원색 블록을 살짝 파스텔로 (캔버스 레이어 1회 필터라 가벼움). */
+.blockly-model-host.is-visible .blocklyBlockCanvas,
+.blockly-model-host.is-visible .blocklyBlockDragSurface > g,
+.blocks-library-preview .blocklyBlockCanvas {
+  filter: saturate(0.86) brightness(1.02);
+}
+
+/* 스크롤바 — 앱 스크롤바와 같은 연분홍. */
+.blockly-model-host .blocklyScrollbarHandle {
+  fill: #f0c9db;
+}
+.blockly-model-host .blocklyScrollbarHandle:hover {
+  fill: var(--border-strong);
+}
+
+/* 휴지통·줌 버튼 — 평소엔 은은하게, 다가가면 또렷하게. */
+.blockly-model-host .blocklyTrash,
+.blockly-model-host .blocklyZoom {
+  opacity: 0.45;
+  transition: opacity 140ms ease;
+}
+.blockly-model-host .blocklyTrash:hover,
+.blockly-model-host .blocklyZoom:hover {
+  opacity: 0.95;
+}
+
+/* 연결 하이라이트·끼움 예고 표식 — 장미색으로 통일. */
+.blocklyHighlightedConnectionPath {
+  stroke: var(--primary);
+  stroke-width: 3px;
+}
+.blocklyInsertionMarker > .blocklyPath {
+  fill: var(--primary);
+  fill-opacity: 0.22;
+  stroke: none;
+}
+
+/* Blockly 팝업류(드롭다운·우클릭 메뉴·입력 편집기·툴팁) — body 직속 요소라
+ * .app-shell 밖에서 매칭. 앱과 같은 파스텔 카드 스타일로. */
+.blocklyDropDownDiv {
+  border-radius: 14px !important;
+  border: 1px solid var(--border-default) !important;
+  background-color: var(--bg-elevated) !important;
+  box-shadow: 0 2px 6px rgba(178, 84, 122, 0.1), 0 10px 28px rgba(178, 84, 122, 0.2) !important;
+}
+.blocklyWidgetDiv .blocklyMenu,
+.blocklyDropDownDiv .blocklyMenu {
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  padding: 5px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+.blocklyWidgetDiv .blocklyMenuItem,
+.blocklyDropDownDiv .blocklyMenuItem {
+  border-radius: 9px;
+  padding: 7px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+.blocklyWidgetDiv .blocklyMenuItemHighlight,
+.blocklyDropDownDiv .blocklyMenuItemHighlight {
+  background-color: var(--bg-hover);
+}
+.blocklyWidgetDiv .blocklyMenuItemDisabled {
+  color: var(--text-disabled);
+}
+.blocklyWidgetDiv .blocklyHtmlInput {
+  font-family: var(--font-sans) !important;
+  font-size: 14px !important;
+  border-radius: 8px;
+}
+.blocklyTooltipDiv {
+  background-color: #3b222c !important;
+  color: #fff7fa !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+  opacity: 0.97 !important;
+  box-shadow: 0 10px 28px rgba(59, 34, 44, 0.3);
+}
+
+/* ============================================================
  * design-reset 컴포넌트 클래스 — 앱 크롬 전용 (시트 렌더 영역과 무관).
  * 반복되는 패턴(알약 탭, 패널 머리, 칩, 입력칸)을 한 곳에서 관리.
  * ============================================================ */

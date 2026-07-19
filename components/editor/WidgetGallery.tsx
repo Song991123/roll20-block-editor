@@ -27,8 +27,17 @@ import {
 } from '@/lib/widgets/presets';
 import { cn } from '@/lib/utils/cn';
 import HelpTip from './HelpTip';
+import { WIDGET_DISPLAY, WIDGET_GROUP_DISPLAY } from './fieldLabels';
 
 const GROUP_ORDER: FriendlyWidgetGroup[] = ['layout', 'text', 'input', 'action', 'media'];
+
+/** 표시 전용 이름/설명 — 데이터(presets)는 그대로 두고 화면 글자만 쉬운 말로. */
+function displayName(preset: FriendlyWidgetPreset): string {
+  return WIDGET_DISPLAY[preset.id]?.name ?? preset.label;
+}
+function displayDesc(preset: FriendlyWidgetPreset): string {
+  return WIDGET_DISPLAY[preset.id]?.desc ?? preset.description;
+}
 
 export default function WidgetGallery() {
   const [search, setSearch] = useState('');
@@ -39,6 +48,8 @@ export default function WidgetGallery() {
       const items = FRIENDLY_WIDGET_PRESETS.filter((preset) => preset.group === group).filter((preset) => {
         if (!q) return true;
         return (
+          displayName(preset).toLowerCase().includes(q) ||
+          displayDesc(preset).toLowerCase().includes(q) ||
           preset.label.toLowerCase().includes(q) ||
           preset.description.toLowerCase().includes(q) ||
           preset.blockType.toLowerCase().includes(q)
@@ -51,7 +62,7 @@ export default function WidgetGallery() {
   const addPreset = (preset: FriendlyWidgetPreset) => {
     const id = appendFriendlyWidgetPreset(preset);
     if (id) {
-      toast(`'${preset.label}'을(를) 시트에 올렸어요.`, { duration: 1400 });
+      toast(`'${displayName(preset)}'을(를) 시트에 올렸어요.`, { duration: 1400 });
     } else {
       toast.error('시트 작업 공간이 아직 준비되지 않았어요. 잠시 뒤 다시 시도해 주세요.');
     }
@@ -96,7 +107,7 @@ export default function WidgetGallery() {
             grouped.map(({ group, items }) => (
               <section key={group} className="mb-4" data-testid={`widget-cat-${group}`}>
                 <div className="mb-1.5 flex items-center gap-1.5 px-1 text-sm font-semibold text-[var(--text-secondary)]">
-                  {FRIENDLY_WIDGET_GROUPS[group]}
+                  {WIDGET_GROUP_DISPLAY[group] ?? FRIENDLY_WIDGET_GROUPS[group]}
                   <span className="ml-auto text-xs font-medium text-muted-foreground">{items.length}개</span>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
@@ -162,18 +173,18 @@ function WidgetPresetCard({
           /* default drag image is fine if the browser blocks custom images. */
         }
       }}
-      title={`${preset.label}\n${preset.description}`}
+      title={`${displayName(preset)}\n${displayDesc(preset)}`}
     >
-      <div className="flex h-14 w-[72px] shrink-0 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-white">
+      <div className="flex h-14 w-[72px] shrink-0 items-center justify-center rounded-lg border border-[var(--primary-soft-border)]/60 bg-[var(--primary-soft)]/35">
         <PreviewShape preset={preset} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           {renderPresetIcon(preset)}
-          <span className="truncate text-sm font-semibold text-foreground">{preset.label}</span>
+          <span className="truncate text-sm font-semibold text-foreground">{displayName(preset)}</span>
         </div>
         <div className="mt-0.5 line-clamp-2 text-xs leading-snug text-[var(--text-secondary)]">
-          {preset.description}
+          {displayDesc(preset)}
         </div>
       </div>
     </button>
@@ -183,23 +194,23 @@ function WidgetPresetCard({
 function PreviewShape({ preset }: { preset: FriendlyWidgetPreset }) {
   switch (preset.preview) {
     case 'box':
-      return <div className="h-9 w-14 rounded border border-[#9ca3af] bg-[#f8fafc]" />;
+      return <div className="h-9 w-14 rounded-md border-[1.5px] border-dashed border-[var(--border-strong)] bg-white/80" />;
     case 'heading':
-      return <div className="h-4 w-14 rounded bg-[#111827]" />;
+      return <div className="h-4 w-14 rounded-sm bg-[var(--text-primary)]" />;
     case 'label':
-      return <div className="h-2.5 w-11 rounded bg-[#4b5563]" />;
+      return <div className="h-2.5 w-11 rounded-sm bg-[var(--text-muted)]" />;
     case 'text':
-      return <div className="h-7 w-14 rounded border border-[#9ca3af] bg-white" />;
+      return <div className="h-7 w-14 rounded-md border-[1.5px] border-[var(--border-strong)] bg-white" />;
     case 'number':
-      return <div className="h-7 w-10 rounded border border-[#9ca3af] bg-white text-center text-xs leading-7 text-[#4b5563]">0</div>;
+      return <div className="h-7 w-10 rounded-md border-[1.5px] border-[var(--border-strong)] bg-white text-center text-xs leading-6 text-[var(--text-secondary)]">0</div>;
     case 'textarea':
-      return <div className="h-9 w-14 rounded border border-[#9ca3af] bg-white" />;
+      return <div className="h-9 w-14 rounded-md border-[1.5px] border-[var(--border-strong)] bg-white" />;
     case 'checkbox':
-      return <div className="h-5 w-5 rounded border-2 border-[#6b7280] bg-white" />;
+      return <div className="grid h-5 w-5 place-items-center rounded-md border-2 border-[var(--primary)] bg-white text-xs font-bold text-[var(--primary-active)]">✓</div>;
     case 'image':
-      return <ImageIcon className="h-8 w-8 text-[#6b7280]" />;
+      return <ImageIcon className="h-8 w-8 text-[var(--text-muted)]" />;
     case 'button':
-      return <div className="h-7 w-14 rounded-full bg-[var(--primary)]" />;
+      return <div className="h-7 w-14 rounded-full bg-[var(--primary)] shadow-[0_2px_4px_rgba(var(--shadow-tint),0.3)]" />;
     default:
       return null;
   }

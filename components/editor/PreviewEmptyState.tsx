@@ -34,7 +34,8 @@ export default function PreviewEmptyState() {
   };
 
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center px-6 py-8 text-center">
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto flex min-h-full max-w-2xl flex-col items-center justify-center px-6 py-8 text-center">
       <div className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--primary-soft)] text-[var(--primary-active)] shadow-[0_1px_2px_rgba(var(--shadow-tint),0.07),0_4px_14px_rgba(var(--shadow-tint),0.09)] ring-1 ring-[var(--primary-soft-border)]">
         <Sparkles className="h-9 w-9" aria-hidden="true" />
       </div>
@@ -89,6 +90,7 @@ export default function PreviewEmptyState() {
       <p className="mt-5 text-sm text-muted-foreground">
         여기 보이는 화면은 미리보기예요. 실제 Roll20 화면과는 조금 다를 수 있어요.
       </p>
+      </div>
     </div>
   );
 }

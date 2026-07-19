@@ -46,7 +46,7 @@ export default function MainAreaToolbar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="r20-scroll-x flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-[var(--bg-elevated)] px-3">
+      <div className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-border bg-[var(--bg-elevated)] px-3 py-1.5">
         <div role="tablist" aria-label="화면 모드" className="r20-seg shrink-0">
           {MODES.map((mode) => {
             const isActive = mainMode === mode.key;
