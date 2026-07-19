@@ -41,7 +41,7 @@ export default function WorkspaceSubToolbar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 border-b border-border bg-[var(--bg-elevated)] px-2.5 py-1">
+      <div className="r20-strip flex min-h-12 shrink-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 border-b border-[var(--border-subtle)] px-2.5 py-1">
         <div role="tablist" aria-label="작업 영역" className="r20-seg r20-seg--compact">
           {TABS.map((tab) => {
             const isActive = activeWorkspace === tab.key;

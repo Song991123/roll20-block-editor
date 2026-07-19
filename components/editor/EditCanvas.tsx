@@ -149,7 +149,7 @@ export default function EditCanvas() {
       data-edit-render-owner="persistent-iframe"
     >
       <div
-        className="flex h-9 shrink-0 items-center gap-3 border-b border-border bg-[var(--bg-elevated)] px-3 text-xs"
+        className="r20-strip flex h-9 shrink-0 items-center gap-3 border-b border-[var(--border-subtle)] px-3 text-xs"
         data-testid="edit-surface-toolbar"
       >
         <span className="font-semibold text-foreground">

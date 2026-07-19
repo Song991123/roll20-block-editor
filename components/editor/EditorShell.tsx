@@ -270,7 +270,7 @@ export default function EditorShell() {
         />
       )}
       <main
-        className="editor-main grid flex-1 min-h-0"
+        className="editor-main grid flex-1 min-h-0 gap-2.5 p-2.5"
         style={{
           gridTemplateColumns: `${leftWidth} 1fr ${rightWidthPx}`,
           transition: 'grid-template-columns 180ms ease',
@@ -278,8 +278,8 @@ export default function EditorShell() {
       >
         <aside
           className={cn(
-            'flex flex-col border-r border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
-            (leftCollapsed || previewFocus) && 'border-r-0',
+            'r20-shell-card flex flex-col min-h-0 overflow-hidden',
+            (leftCollapsed || previewFocus) && 'border-0 shadow-none',
           )}
           aria-hidden={previewFocus}
           data-open={!leftCollapsed && !previewFocus ? 'true' : 'false'}
@@ -288,7 +288,7 @@ export default function EditorShell() {
           {!leftCollapsed && !previewFocus && <SidebarLeft />}
         </aside>
 
-        <section className="relative flex flex-col min-w-0 min-h-0 bg-[var(--bg-canvas)]">
+        <section className="r20-shell-card relative flex flex-col min-w-0 min-h-0 overflow-hidden bg-[var(--bg-canvas)]">
           <MainAreaToolbar />
           <div
             ref={splitContainerRef}
@@ -336,8 +336,8 @@ export default function EditorShell() {
 
         <aside
           className={cn(
-            'flex flex-col border-l border-border bg-[var(--bg-elevated)] min-h-0 overflow-hidden',
-            (rightCollapsed || previewFocus) && 'border-l-0',
+            'r20-shell-card flex flex-col min-h-0 overflow-hidden',
+            (rightCollapsed || (previewFocus && !previewChatVisible)) && 'border-0 shadow-none',
           )}
           aria-hidden={previewFocus && !previewChatVisible}
           data-open={!rightCollapsed && (!previewFocus || previewChatVisible) ? 'true' : 'false'}

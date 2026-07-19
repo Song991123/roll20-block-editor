@@ -111,7 +111,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
 
   return (
     <TooltipProvider delayDuration={250}>
-      <header className="flex h-[var(--header-h)] shrink-0 items-center gap-2 border-b border-border bg-[var(--bg-elevated)] px-3 shadow-[0_1px_0_var(--border-subtle)]">
+      <header className="r20-shell-card mx-2.5 mt-2.5 flex h-[var(--header-h)] shrink-0 items-center gap-2 px-3">
         {mainMode !== 'preview' && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -131,7 +131,7 @@ export default function EditorHeader({ onNewSheet }: EditorHeaderProps) {
         )}
 
         <div className="flex min-w-0 items-center gap-2.5 pl-1">
-          <LogoMark className="h-9 w-9 shrink-0" />
+          <LogoMark className="h-9 w-9 shrink-0 -rotate-3 drop-shadow-[0_2px_4px_rgba(178,84,122,0.3)] transition-transform duration-200 hover:rotate-0" />
           <div className="r20-header-title leading-tight">
             <div className="whitespace-nowrap text-base font-bold tracking-tight">Roll20 시트 편집기</div>
             <div className="hidden whitespace-nowrap text-xs text-muted-foreground lg:block">

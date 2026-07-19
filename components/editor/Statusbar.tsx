@@ -31,7 +31,7 @@ export default function Statusbar() {
   return (
     <TooltipProvider delayDuration={300}>
       <footer
-        className="flex items-center gap-2 border-t border-border bg-[var(--bg-elevated)] px-3 text-xs text-muted-foreground"
+        className="r20-shell-card mx-2.5 mb-2.5 flex shrink-0 items-center gap-2 px-3 text-xs text-muted-foreground"
         style={{ height: 'var(--statusbar-h)' }}
         data-testid="statusbar"
       >
