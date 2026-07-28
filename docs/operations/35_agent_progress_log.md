@@ -6288,3 +6288,9 @@ text were discarded because the panel contained unrelated prior content; the
 ignored sidecar retains only anonymous marker presence. Modern Sandbox runtime
 is therefore `VERIFIED_PARTIAL`; the separate legacy-room contract remains
 `VERIFY`.
+
+Post-run repository checks: `lint`, `build`, `ci:verify`, `git diff --check`, and the
+server-hygiene check passed. The pushed `claude/design-reset` CI run also passed all
+verification, lint, and build jobs. No project dev/smoke or CDP listener remains active.
+This records tooling and evidence health only; it does not upgrade the modern result to
+visual parity and does not validate the legacy room.
