@@ -1,3 +1,19 @@
+## 2026-07-29 Roll20 Room Safety And Design PR Boundary
+
+- DONE: Added a mandatory participant preflight. Existing rooms are excluded
+  when the current visible member count is unknown or greater than one; they
+  are never upload, save, chat, or settings destinations.
+- VERIFIED: The design-reset branch is pushed as draft PR #7 and its GitHub CI
+  check is green. This is a separate UI candidate and is not yet merged into
+  production.
+- VERIFY: No new external sheet upload or screenshot was counted in this
+  batch. The discovered existing room was not used because its participant
+  state was non-solo, and the Sandbox-only browser path did not reach an
+  authenticated Sandbox surface.
+- NEXT P0: Open only the Roll20 home/Sandbox flow after authentication is
+  available, verify the destination is isolated, then upload the ignored
+  anonymous modern payload. Keep legacy verification in a dedicated test room.
+
 ## 2026-07-18 Fresh Sheet Canvas Baseline
 
 - DONE: Blank workspaces now start with automatic intrinsic-width measurement

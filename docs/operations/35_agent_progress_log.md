@@ -1,3 +1,16 @@
+## 2026-07-29 - Existing-Room Participant Preflight
+
+- FIXED: Added an explicit preflight requiring a current visible participant
+  count before an existing Roll20 room can even be observed.
+- SAFETY: Unknown participant state and any count greater than one exclude the
+  room from all interaction. Generated sheets may only be applied in Custom
+  Sheet Sandbox or a newly created dedicated test room.
+- VERIFIED: The current design branch is preserved remotely in draft PR #7;
+  CI is green. No existing-room upload, save, chat, or settings mutation was
+  performed. No external screenshot was counted.
+- BOUNDARY: Actual modern Sandbox activation and dedicated legacy-room evidence
+  remain `VERIFY`; local fixture evidence must not be reported as Roll20 parity.
+
 ## 2026-07-18 Fresh Sheet Canvas Baseline
 
 - DONE: Changed the blank-workspace canvas policy so a new sheet keeps the

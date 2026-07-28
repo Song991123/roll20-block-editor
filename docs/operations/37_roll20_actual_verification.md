@@ -10,6 +10,27 @@ This document defines how agents verify that this editor's preview/edit output m
 - Separate observation of existing rooms from applying our generated sheet.
 - Keep all real room screenshots, uploaded sheet source, exports, and generated reports local-only.
 
+## Existing-Room Participant Preflight
+
+This check is mandatory before opening an existing room for observation or any
+other browser interaction.
+
+1. Read the current visible participant/member count from the room page.
+2. If the count is missing, stale, or cannot be verified, stop and do not use
+   the room.
+3. If the count is greater than one, exclude the room entirely. Do not upload,
+   save, send chat, change settings, open character editors, or otherwise
+   interact with that room.
+4. Do not infer solitude from a room name, old chat history, or a previously
+   observed count. Recheck immediately before any observation.
+5. Use Custom Sheet Sandbox for modern generated-sheet interaction. Use a newly
+   created dedicated test room for legacy interaction. Existing rooms are
+   observation-only and never an upload destination.
+
+The participant preflight is a safety gate, not a visual-parity measurement.
+When it fails, record `ROOM_EXCLUDED_PARTICIPANT_STATE_UNKNOWN_OR_NONSOLO` and
+continue only with local evidence or an isolated Sandbox/test room.
+
 ## Modern And Legacy Are Separate Required Destinations
 
 - Custom Sheet Sandbox is a modern-runtime validation surface. It does not

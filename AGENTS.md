@@ -41,6 +41,8 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Commit only from the active Next/React worktree (`web-push-main/`). Confirm with `git rev-parse --show-toplevel` before committing.
 - Roll20 actual-screen verification has generation-specific destinations: Custom Sheet Sandbox is modern-only; legacy mode must be applied and verified in a dedicated legacy-enabled test room. Existing solo rooms remain read-only observation targets.
 - Existing Roll20 rooms are observation-only unless the user explicitly authorizes a specific edit in that specific room.
+- Before using any existing Roll20 room, perform a participant preflight from the current visible room state. If the participant/member count cannot be read reliably, do not use the room. If any other user is present, exclude the room from all verification and never upload, save, send chat, or change settings there. A room name or stale chat history is not evidence of solitude.
+- Generated-sheet interaction is allowed only in Custom Sheet Sandbox or a newly created dedicated test room. When a room's participant state changes or becomes ambiguous, stop the run and return to the Sandbox/new-room path.
 - Optimization and security work must keep render truthfulness first: performance improvements cannot bypass Roll20 wrapper/context, source/intrinsic, legacy/modern, asset, and private-evidence gates.
 - Parallel agents must use separate branches or read-only reports. One lead/integrator owns merges and pushes to shared branches.
 - The active short-term goal document is the control plane. Do not start a broad redesign or folder move outside a named goal, owner, branch, file boundary, and evidence gate.
