@@ -5558,3 +5558,28 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   visual smoke passed all six cases at `0%` mismatch.
 - BOUNDARY: this closes the local inspector wiring gap; it does not prove
   Figma-level resize handles, arbitrary DOM mapping, or external Roll20 parity.
+
+## 2026-07-29 Modern Sandbox Synthetic Verification
+
+- VERIFIED EXTERNAL (anonymous synthetic only): the dedicated Custom Sheet
+  Sandbox showed one visible member before use. No existing room was opened or
+  modified.
+- VERIFIED EXTERNAL: the modern payload rendered a translated heading, text
+  input, and Roll20 roll button inside the character-sheet iframe. The authored
+  root measured `850x220px`; the Roll20 `.charactersheet` wrapper measured
+  `860x240px`. A roll interaction produced the synthetic result marker in the
+  Roll20 chat log.
+- VERIFIED LOCAL: the same anonymous payload imported at `100%` token match;
+  local preview/edit baseline captured `850x240px`; payload audit, Sandbox
+  sanitize audit, cleaned-payload roundtrip (`0%`), and evidence guard passed.
+- FIXED: the actual screenshot path now uses CDP physical coordinates when the
+  browser is zoomed, and the local diff uses a matching authored-root crop.
+- VERIFY: the normalized root comparison reports `2.88%` mismatch with
+  `1062x275` actual pixels versus `1063x275` local pixels. This is improved
+  measurement, not a visual-parity claim; the remaining difference needs
+  human classification (font rasterization, wrapper, or base CSS).
+- BOUNDARY: no chat screenshot is retained because the full chat panel
+  contained unrelated prior content; only anonymous marker existence remains.
+- NEXT P0: classify the remaining synthetic root delta, then repeat with a
+  user-authorized modern payload and a separately configured legacy test room.
+  Keep both destinations separate.

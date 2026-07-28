@@ -6262,3 +6262,29 @@ AW2E, Les-Oublies, a synthetic non-leaf case, and YSHY 1BU. Modern and legacy
 preview/edit visual smoke passed all six cases at `0%` mismatch. This is local
 editor evidence; resize-handle UX, arbitrary DOM coverage, and actual Roll20
 Sandbox/legacy-room parity remain open.
+
+### 2026-07-29 - Modern Sandbox synthetic verification
+
+The dedicated Custom Sheet Sandbox was opened from the authenticated home page
+and showed one visible member before verification. Existing rooms were not
+opened, selected, or modified. A local-only anonymous `synthetic-modern`
+payload was applied through the Sandbox editor and rendered in the character
+sheet iframe with its translated heading, input, roll button, and hidden
+rolltemplate source.
+
+External measurements: authored root `850x220px`; Roll20 `.charactersheet`
+wrapper `860x240px`; the roll button produced the synthetic result marker in
+the Roll20 chat log. The local counterpart imported at `100%` token match and
+passed payload hygiene, Sandbox sanitize, cleaned-payload roundtrip (`0%`),
+and evidence-guard checks.
+
+The first screenshot path used a CSS crop with the browser's `1.25` zoom and
+produced a misleading `680x176` image. The diff helper now accepts an authored
+root crop, and the browser evidence path uses CDP physical coordinates. The
+normalized root comparison is `2.88%` (`1062x275` actual versus `1063x275`
+local). This is better measurement, not visual-parity evidence; the remaining
+delta still needs human classification. Full chat screenshots and raw chat
+text were discarded because the panel contained unrelated prior content; the
+ignored sidecar retains only anonymous marker presence. Modern Sandbox runtime
+is therefore `VERIFIED_PARTIAL`; the separate legacy-room contract remains
+`VERIFY`.
