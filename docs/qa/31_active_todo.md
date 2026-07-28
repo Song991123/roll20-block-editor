@@ -5583,3 +5583,23 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: classify the remaining synthetic root delta, then repeat with a
   user-authorized modern payload and a separately configured legacy test room.
   Keep both destinations separate.
+
+## 2026-07-29 Persistent Render Sync and Inspector Tab Fix
+
+- FIXED: keyed structural patching now updates text and comment node values as
+  well as element attributes. A same-node text edit can no longer leave stale
+  text in the persistent iframe until a full root replacement.
+- FIXED: the right-sidebar tooltip wrapper no longer overwrites Radix Tabs'
+  active-state attribute. The inspector action from the iframe context menu
+  now opens the attributes tab with its active visual state intact.
+- VERIFIED LOCAL: production build, lint, `ci:verify`, persistent preview
+  surface smoke for modern and legacy, preview/edit visual smoke for both
+  modes, edit-flow smoke, and direct Shadow drag smoke all passed. The
+  persistent surface retained one iframe with zero reloads during the tested
+  edit flow.
+- BOUNDARY: this is local synchronization and interaction evidence. The
+  anonymous external Sandbox root remains a `2.88%` diagnostic delta; modern
+  user-payload parity and dedicated legacy-room parity remain `VERIFY`.
+- NEXT P0: repeat the normalized actual-screen check with an authorized
+  modern payload, then run the separate legacy-enabled test-room check. Do
+  not combine their evidence.

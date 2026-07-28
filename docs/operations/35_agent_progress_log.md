@@ -6294,3 +6294,22 @@ server-hygiene check passed. The pushed `claude/design-reset` CI run also passed
 verification, lint, and build jobs. No project dev/smoke or CDP listener remains active.
 This records tooling and evidence health only; it does not upgrade the modern result to
 visual parity and does not validate the legacy room.
+
+### 2026-07-29 - Persistent sync and inspector tab regression fix
+
+The persistent iframe's keyed structural morph now explicitly updates text and
+comment node values. This closes a stale-text path where an edited block kept
+the old visible text even though its keyed element and attributes were reused.
+
+The edit context menu also exposed a UI regression: `TooltipTrigger asChild`
+wrapped around `TabsTrigger` replaced the tab's active `data-state` with the
+tooltip's `closed` state. Tooltip triggers now sit on a non-tab wrapper, so
+Radix tab state and active styling remain truthful while the tooltip remains
+available.
+
+Verification: production build, lint, `ci:verify`, persistent modern/legacy
+preview smoke, both-mode preview/edit visual smoke, edit-flow smoke, and
+direct Shadow drag smoke passed. The persistent smoke retained one iframe and
+reported zero reloads through the tested edit flow. This is local behavior
+evidence only; the external Sandbox diagnostic and dedicated legacy-room
+verification remain open.

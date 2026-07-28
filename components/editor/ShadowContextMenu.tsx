@@ -115,6 +115,7 @@ export default function ShadowContextMenu({ blockId, x, y, onAction, onClose }: 
             key={it.id}
             type="button"
             role="menuitem"
+            data-r20-context-action={it.id}
             onClick={() => {
               onAction(it.id);
               onClose();

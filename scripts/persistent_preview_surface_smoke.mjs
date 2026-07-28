@@ -367,7 +367,7 @@ async function runMode(browser, mode) {
         ),
       };
     }));
-    await contextMenu.locator('[role="menuitem"]').first().click();
+    await contextMenu.locator('[data-r20-context-action="inspect"]').click();
     await page.locator('[data-testid="tab-attrs"][data-state="active"]')
       .waitFor({ state: 'visible', timeout: 30000 });
     result.contextMenu.inspectActivated = await page.evaluate((blockId) => {

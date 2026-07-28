@@ -30,33 +30,39 @@ export default function SidebarRight() {
           <TabsList className="h-11 w-full">
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="attrs" className="flex-1" data-testid="tab-attrs">
-                  <Settings2 className="h-[17px] w-[17px]" aria-hidden="true" />
-                  속성
-                </TabsTrigger>
+                <span className="flex flex-1">
+                  <TabsTrigger value="attrs" className="flex-1" data-testid="tab-attrs">
+                    <Settings2 className="h-[17px] w-[17px]" aria-hidden="true" />
+                    속성
+                  </TabsTrigger>
+                </span>
               </TooltipTrigger>
               <TooltipContent side="bottom">선택한 요소의 이름·값·크기를 바꿔요</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="code" className="flex-1" data-testid="tab-code">
-                  <CodeXml className="h-[17px] w-[17px]" aria-hidden="true" />
-                  코드
-                </TabsTrigger>
+                <span className="flex flex-1">
+                  <TabsTrigger value="code" className="flex-1" data-testid="tab-code">
+                    <CodeXml className="h-[17px] w-[17px]" aria-hidden="true" />
+                    코드
+                  </TabsTrigger>
+                </span>
               </TooltipTrigger>
               <TooltipContent side="bottom">내보낼 실제 코드를 보는 고급 화면이에요. 몰라도 괜찮아요!</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="chat" className="flex-1" data-testid="tab-chat">
-                  <Dices className="h-[17px] w-[17px]" aria-hidden="true" />
-                  굴림
-                  {chatCount > 0 && (
-                    <span className="ml-0.5 inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-[var(--primary-strong)] px-1.5 text-xs font-semibold leading-none text-primary-foreground">
-                      {chatCount}
-                    </span>
-                  )}
-                </TabsTrigger>
+                <span className="flex flex-1">
+                  <TabsTrigger value="chat" className="flex-1" data-testid="tab-chat">
+                    <Dices className="h-[17px] w-[17px]" aria-hidden="true" />
+                    굴림
+                    {chatCount > 0 && (
+                      <span className="ml-0.5 inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-[var(--primary-strong)] px-1.5 text-xs font-semibold leading-none text-primary-foreground">
+                        {chatCount}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </span>
               </TooltipTrigger>
               <TooltipContent side="bottom">주사위를 굴려 결과 말풍선을 미리 봐요</TooltipContent>
             </Tooltip>
