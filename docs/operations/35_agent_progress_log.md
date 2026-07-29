@@ -7355,3 +7355,14 @@ visibility verification passed. No external room was opened or modified.
 - NEXT P0: Run the ignored local-only upload snippet through a user-visible
   browser console/manual file choice, then require activation/root/screenshot
   and chat evidence before comparing parity.
+
+## 2026-07-30 - Production chat diagnostic boundary
+
+- DONE: Rolltemplate candidate diagnostics are now gated out of production
+  builds. A stale `__r20ChatDiagnostics` localStorage flag can no longer turn
+  on measurement-only overrides in the deployed app.
+- VERIFIED: `corepack pnpm run lint`, `corepack pnpm run build`, and
+  `corepack pnpm run ci:verify` passed. The generic user CSS and Roll20 shell
+  path remain unchanged.
+- NOT CLAIMED: This is a production-safety boundary, not actual Roll20 visual
+  parity. Modern Sandbox upload/root/screenshot/chat evidence remains open.

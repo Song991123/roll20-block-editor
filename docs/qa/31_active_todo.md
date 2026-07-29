@@ -6566,3 +6566,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   `tsconfig.tsbuildinfo` after confirming no project listener was active. The
   host rejected the guarded deletion before execution; no cleanup completion
   is claimed and no deletion workaround was used.
+
+## 2026-07-30 Production chat diagnostic boundary
+
+- DONE LOCAL: Rolltemplate candidate overrides are disabled in production even
+  when a stale `__r20ChatDiagnostics` localStorage flag exists. User-authored
+  rolltemplate CSS and the common Roll20 chat shell remain the default path.
+- VERIFIED: lint, production build, and `ci:verify` all pass.
+- CLAIM BOUNDARY: This prevents fixture-specific diagnostic CSS from affecting
+  deployed users; it does not prove modern Sandbox or legacy-room visual parity.
