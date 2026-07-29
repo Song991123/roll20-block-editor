@@ -1,3 +1,25 @@
+## 2026-07-29 Actual Legacy Room Participant Gate And Render
+
+- VERIFIED ACTUAL SAFETY: Immediately before opening settings, before saving,
+  and after reloading the dedicated legacy test room, the visible participant
+  indicator was exactly `1 구성원`. No room with zero, unknown, or multiple
+  visible participants was used.
+- VERIFIED ACTUAL LEGACY: The dedicated room's campaign settings showed
+  `Custom` and the legacy sanitization checkbox enabled. The generated local
+  HTML/CSS/translation payload was saved through the visible Roll20 settings
+  editors, and the existing character sheet reopened with a live iframe.
+- VERIFIED ACTUAL RENDER: The live iframe exposed translated sheet text,
+  `135` inputs, and `66` roll-capable controls. The visible viewport was
+  `900px` wide with a scrollable sheet root measured at `852px` wide and
+  `1174px` tall. A screenshot and metrics remain in ignored local evidence.
+- CLAIM BOUNDARY: This proves the dedicated legacy room accepted and rendered
+  the generated payload under the checked legacy mode. It does not yet prove
+  pixel parity against local preview/edit, modern Sandbox parity, or all-sheet
+  coverage.
+- NEXT P0: Reconnect the permitted modern Sandbox path, apply the same
+  generated payload, capture its iframe, and classify local-versus-Roll20
+  differences without reusing legacy evidence.
+
 ## 2026-07-29 Layer Drop Safety And Room Eligibility
 
 - DONE: Layer-panel drag feedback now survives pointer movement over nested

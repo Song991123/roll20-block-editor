@@ -1,3 +1,24 @@
+## 2026-07-29 - Dedicated Legacy Room Render Confirmed
+
+- VERIFIED ACTUAL SAFETY: The dedicated legacy test room reported exactly
+  `1 구성원` immediately before settings access, immediately before save, and
+  after returning to the editor. Other-user rooms were not opened or used.
+- VERIFIED ACTUAL CONFIGURATION: The room settings exposed the `Custom` sheet
+  type with legacy sanitization enabled. The local generated HTML/CSS/
+  translation payload was entered through the visible Roll20 editors and
+  saved in that dedicated room only.
+- VERIFIED ACTUAL RENDER: The existing character reopened with a live sheet
+  iframe. Translated labels were visible, with `135` inputs and `66` roll
+  controls. The iframe viewport was `900px` wide; the sheet root measured
+  `852px` wide by `1174px` tall and remained vertically scrollable. The local
+  screenshot/metrics are ignored evidence under the active compare report.
+- NOT PROVEN: This is not a pixel-diff PASS. Modern Sandbox upload/visible
+  match remains separate, and local preview/edit versus live Roll20 geometry,
+  assets, chat, and all-sheet coverage still need independent comparison.
+- NEXT P0: Use only a fresh one-member preflight for the modern Sandbox, then
+  capture the same payload's live frame and classify differences by runtime
+  mode.
+
 ## 2026-07-29 - Sandbox Upload Handler Recheck And Runtime Boundary
 
 - VERIFIED ACTUAL SAFETY: Immediately before the operation, the dedicated
