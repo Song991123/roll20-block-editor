@@ -7315,3 +7315,18 @@ visibility verification passed. No external room was opened or modified.
 - CLAIM BOUNDARY: No generated actual-sheet root, screenshot, or chat result is
   counted until the Sandbox accepts the payload. The temporary payload remains
   ignored for a possible manual handoff and must be removed after use.
+
+## 2026-07-30 - Generic table layer preservation
+
+- DONE: Prevented input-only table rows from being falsely packed into the
+  semantic skill-row composite. Generic `td` and input blocks now remain
+  independently selectable for universal layer mapping.
+- VERIFIED: Focused importer/composite/table tests passed (`38/38`, `13/13`,
+  `8/8`), followed by lint, production build, `ci:verify`, and edit-flow
+  browser smoke.
+- CLEANUP RETRY: The user-authorized removal of stale ignored `.tmp` evidence
+  was rejected by the host before execution, including the explicit-file
+  retry. No temporary evidence was deleted by this attempt; current build
+  output is also disposable and remains uncommitted.
+- PRESERVED: Protected source roots, active dependencies, both worktrees, and
+  the anonymous Sandbox handoff payload remain outside the deletion set.

@@ -254,3 +254,17 @@ directories that had been recreated by the local build.
   tracked README, and project listeners remain stopped.
 - REBUILD RULE: future external-sheet verification must copy only an anonymous
   minimum fixture into an ignored temporary path and remove it after the run.
+
+## 2026-07-30 user-authorized stale evidence retry
+
+- RECHECKED: The earlier nine generated/stale cleanup targets remain absent.
+  The current ignored `.tmp/` contains 66 local evidence files totaling
+  33,122,245 bytes, including a retained anonymous Sandbox handoff payload.
+- ATTEMPTED: The user-authorized explicit deletion was rejected by the host
+  before execution, including the follow-up exact-file deletion command.
+- NOT DELETED: No `.tmp` evidence was removed in this retry. No recursive or
+  alternate-shell safety bypass was used.
+- PRESERVED: `web-push-main/node_modules/`, source roots, both Git worktrees,
+  protected external material, and user-authored files remain intact. The
+  newly recreated `.next/` and `out/` are untracked build output and remain
+  disposable until the host permits their removal.

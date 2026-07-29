@@ -260,6 +260,14 @@ function testTableColumnStructure(): void {
   assert(r.stats.htmlRawFallback === 0, 'no raw fallback for table columns');
 }
 
+function testGenericInputTableDoesNotCollapseToSkillRow(): void {
+  const html = `<table><tbody><tr><td><input type="text" name="attr_left" value="A"></td><td><input type="text" name="attr_right" value="B"></td></tr></tbody></table>`;
+  const r = importSheet({ html });
+  assert(!r.html.includes('r20_skill_row'), 'generic input table stays atomic');
+  assert((r.html.match(/r20_td/g) || []).length === 2, 'both table cells remain blocks');
+  assert((r.html.match(/r20_text_input/g) || []).length === 2, 'both inputs remain blocks');
+}
+
 function testCssImport(): void {
   const css = `@import url('https://fonts.googleapis.com/css?family=Example&display=swap');`;
   const r = importSheet({ css });
@@ -385,6 +393,7 @@ const tests = [
   ['inline break <br>', testInlineBreak],
   ['css @font-face', testCssFontFace],
   ['table column structure', testTableColumnStructure],
+  ['generic input table stays atomic', testGenericInputTableDoesNotCollapseToSkillRow],
   ['css @import', testCssImport],
   ['css bare at-rule preservation', testCssBareAtRulePreservation],
   ['css @media structure', testCssMediaQueryStructure],

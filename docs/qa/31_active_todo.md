@@ -6528,3 +6528,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   screenshot or chat evidence exists yet.
 - NEXT P0: Complete the user-visible Sandbox file selection, then capture fresh
   root DOM, screenshot, and roll/chat evidence before comparing to local output.
+
+## 2026-07-30 Generic table mapping regression
+
+- DONE: Generic input-only table rows no longer collapse into `skill_row`; the
+  original cell and input layers remain available to the editor.
+- VERIFIED: Focused import tests, full lint/build/CI verification, and the edit
+  flow browser smoke all pass.
+- VERIFY: Actual modern Sandbox upload is still blocked by the browser file
+  chooser boundary; no Roll20-generated screenshot or chat evidence exists.
+- VERIFY: Legacy mode still requires the separate dedicated test-room path.
+- CLEANUP: The user-authorized stale `.tmp` evidence purge was attempted again
+  but the host rejected the explicit deletion command before execution. The
+  disposable evidence remains local and uncommitted.

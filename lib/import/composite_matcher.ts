@@ -504,6 +504,11 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
   const rollIdx2 = rollIdxs[1] ?? -1;
   const rollIdx3 = rollIdxs[2] ?? -1;
 
+  // A plain input-only table row is generic layout, not a semantic skill row.
+  // Keep its td and input blocks atomic so each original DOM object remains
+  // selectable and movable in the layer editor.
+  if (labelIdx < 0 && checkboxIdx < 0 && rollIdxs.length === 0) return null;
+
   // ── fields 빌드 ──────────────────────────────────────────────────────
   const fields: Record<string, string> = { ...emptySkillRowFields() };
   fields.TR_CLASS = b.fields?.CLASS ?? '';
