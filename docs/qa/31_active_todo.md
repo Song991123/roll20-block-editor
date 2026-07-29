@@ -5747,3 +5747,7 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Reconnect the exact one-member Roll20 test room, clear/identify the
   Sandbox translation error, then apply one ignored fixture and capture fresh
   actual sheet + chat evidence. Keep modern and legacy results separate.
+- BLOCKED ACTION: The exact room was reopened and still showed `1 구성원`, but
+  the browser file chooser returned `Not allowed` and raw CDP reported the file
+  input command as unsupported. No fixture was selected or uploaded. The
+  unrelated `7팀` Chrome window was not inspected or used.

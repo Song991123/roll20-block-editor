@@ -20,6 +20,15 @@
 - VERIFIED LOCAL: Translation payload tests, export smoke, lint, fresh local
   Roll20 payload generation, and the payload audit passed for all three ignored
   development fixtures. The local audit is not external Roll20 proof.
+- BLOCKED ACTION / NOT GOAL-BLOCKED: The exact one-member test room was
+  reopened and rechecked. Browser file selection returned `Not allowed`, while
+  raw CDP explicitly reported that `DOM.setFileInputFiles` is unsupported.
+  The development fixture was not selected or uploaded, and no room state was
+  changed. The unrelated `7팀` room window was not inspected or used.
+- NEXT P0: Use a supported user-visible file-picker handoff or a stable CDP
+  upload bridge for this same one-member test room. Recheck the participant
+  count immediately before any upload and record actual fixture evidence only
+  after the upload completes.
 
 ## 2026-07-29 - Layer Drop Feedback And Room Safety Clarification
 
