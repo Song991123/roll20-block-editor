@@ -8,6 +8,10 @@ import { normalizeTranslationForRoll20 } from '@/lib/export/payload';
 import { useChatStore, type ChatRoll } from '@/lib/stores/chatStore';
 import { useWorkspaceStore } from '@/lib/stores/workspaceStore';
 import { autoPrefixCssClasses } from '@/lib/preview/prefix';
+import {
+  canEnableChatDiagnostics,
+  CHAT_DIAGNOSTICS_STORAGE_KEY,
+} from '@/lib/dice/chatDiagnostics';
 import type {
   ChatTextResult,
   ErrorResult,
@@ -82,14 +86,14 @@ type ChatPaintPolicy =
   | 'roll20-edge-shadow'
   | 'coc-background-size-actual';
 
-const CHAT_DIAGNOSTICS_STORAGE_KEY = '__r20ChatDiagnostics';
-
 function isChatDiagnosticMode(): boolean {
   // Candidate CSS is useful while measuring Roll20, but must never become a
   // user-facing production override through a stale localStorage key.
-  return process.env.NODE_ENV !== 'production'
-    && typeof window !== 'undefined'
-    && window.localStorage.getItem(CHAT_DIAGNOSTICS_STORAGE_KEY) === '1';
+  return typeof window !== 'undefined'
+    && canEnableChatDiagnostics(
+      process.env.NODE_ENV,
+      window.localStorage.getItem(CHAT_DIAGNOSTICS_STORAGE_KEY),
+    );
 }
 
 function currentChatFontPolicy(): ChatFontPolicy {

@@ -281,3 +281,17 @@ directories that had been recreated by the local build.
   per-file workaround, or safety bypass was used.
 - PRESERVED: `node_modules/`, `reports/README.md`, source code, Git metadata,
   both worktrees, and all external sheet/source roots remain untouched.
+
+## 2026-07-30 twelfth-pass cleanup retry
+
+- RECHECKED: the same five canonical-worktree generated targets remain
+  present: `.next/`, `out/`, `reports/edit-flow-smoke/`,
+  `tsconfig.tsbuildinfo`, and `.tmp/`. All are below `web-push-main/` and no
+  project listener is active.
+- ATTEMPTED: the user explicitly authorized deletion again. The guarded
+  `Remove-Item -LiteralPath ... -Recurse -Force` operation was rejected by the
+  host policy before PowerShell execution.
+- NOT DELETED: no target changed. No .NET, `cmd`, alternate shell, native API,
+  per-file workaround, or other safety bypass was used.
+- PRESERVED: `node_modules/`, `reports/README.md`, source code, Git metadata,
+  both worktrees, and all external sheet/source roots remain untouched.

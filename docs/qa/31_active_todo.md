@@ -6575,3 +6575,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: lint, production build, and `ci:verify` all pass.
 - CLAIM BOUNDARY: This prevents fixture-specific diagnostic CSS from affecting
   deployed users; it does not prove modern Sandbox or legacy-room visual parity.
+
+## 2026-07-30 Cleanup retry boundary
+
+- CLEANUP BLOCKED: The user authorized another retry for the five verified
+  generated targets under `web-push-main/`, but the host rejected the guarded
+  recursive deletion before execution. No target was removed and no safety
+  bypass was used.
+- VERIFY: the targets remain local-only disposable output; source roots,
+  `node_modules/`, Git worktrees, and user-authored inputs were preserved.
