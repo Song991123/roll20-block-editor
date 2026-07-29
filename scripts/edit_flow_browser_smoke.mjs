@@ -168,6 +168,7 @@ async function main() {
       '  <div class="row-a" style="padding:8px"><input type="text" name="attr_a" value="A"></div>',
       '  <div class="row-b" style="padding:8px"><input type="text" name="attr_b" value="B"></div>',
       '</div>',
+      '<div class="outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
     ].join('\n');
     await page.evaluate((html) => window.__perfHook.importSheet({ html, css: '', i18n: '{}' }), syntheticHtml);
     await page.waitForTimeout(500);
@@ -177,13 +178,15 @@ async function main() {
       const frameNode = document.querySelector('.sheet-frame');
       const rowA = document.querySelector('.sheet-row-a');
       const rowB = document.querySelector('.sheet-row-b');
+      const outside = document.querySelector('.sheet-outside');
       return {
         frameId: frameNode?.getAttribute('data-r20-block-id') ?? null,
         rowAId: rowA?.getAttribute('data-r20-block-id') ?? null,
         rowBId: rowB?.getAttribute('data-r20-block-id') ?? null,
+        outsideId: outside?.getAttribute('data-r20-block-id') ?? null,
       };
     });
-    assert(ids.frameId && ids.rowAId && ids.rowBId, 'synthetic frame IDs were not emitted');
+    assert(ids.frameId && ids.rowAId && ids.rowBId && ids.outsideId, 'synthetic frame IDs were not emitted');
 
     // This is the user-facing path: move a real rendered node over another
     // rendered node, let the iframe show the optimistic order immediately,
@@ -278,6 +281,81 @@ async function main() {
       result.tests.iframeFlowReparent.authoritative.renderedAfter,
       `persistent iframe order did not match emitted flow order: ${JSON.stringify(result.tests.iframeFlowReparent.authoritative)}`,
     );
+
+    const outsideBox = await frame.locator('.sheet-outside').boundingBox();
+    const rowBBoxAfterFlow = await frame.locator('.sheet-row-b').boundingBox();
+    assert(outsideBox && rowBBoxAfterFlow, 'synthetic extraction targets are missing');
+    await page.mouse.move(rowBBoxAfterFlow.x + rowBBoxAfterFlow.width / 2, rowBBoxAfterFlow.y + rowBBoxAfterFlow.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(outsideBox.x + outsideBox.width / 2, outsideBox.y + outsideBox.height * 0.92, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForTimeout(700);
+    result.tests.iframeFlowExtraction = await page.evaluate(({ rowBId, outsideId, frameId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const moving = graph.find((node) => node.id === rowBId);
+      const outside = graph.find((node) => node.id === outsideId);
+      const frame = graph.find((node) => node.id === frameId);
+      return {
+        movingParent: moving?.layerParentId ?? null,
+        movingPrevious: moving?.layerPreviousId ?? null,
+        outsideParent: outside?.layerParentId ?? null,
+        frameChildCount: frame?.childCount ?? null,
+        emittedOutsideIndex: window.__perfHook.getEmitContent().html.indexOf(`data-r20-block-id="${outsideId}"`),
+        emittedRowBIndex: window.__perfHook.getEmitContent().html.indexOf(`data-r20-block-id="${rowBId}"`),
+      };
+    }, ids);
+    assert(result.tests.iframeFlowExtraction.movingParent === null, 'iframe flow extraction did not move the child to root');
+    assert(result.tests.iframeFlowExtraction.movingPrevious === ids.outsideId, 'iframe flow extraction did not preserve root order');
+    assert(result.tests.iframeFlowExtraction.outsideParent === null, 'extraction target unexpectedly became nested');
+    assert(
+      result.tests.iframeFlowExtraction.emittedRowBIndex > result.tests.iframeFlowExtraction.emittedOutsideIndex,
+      'emitted HTML did not preserve extracted root order',
+    );
+
+    await page.click('[data-testid="edit-placement-free"]');
+    const frameBoxForFreeDrop = await frame.locator('.sheet-frame').boundingBox();
+    const rowBBoxForFreeDrop = await frame.locator('.sheet-row-b').boundingBox();
+    assert(frameBoxForFreeDrop && rowBBoxForFreeDrop, 'synthetic free-placement targets are missing');
+    await page.mouse.move(rowBBoxForFreeDrop.x + rowBBoxForFreeDrop.width / 2, rowBBoxForFreeDrop.y + rowBBoxForFreeDrop.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(
+      frameBoxForFreeDrop.x + frameBoxForFreeDrop.width * 0.78,
+      frameBoxForFreeDrop.y + frameBoxForFreeDrop.height * 0.78,
+      { steps: 6 },
+    );
+    await page.mouse.up();
+    await page.waitForTimeout(700);
+    result.tests.iframeFreeReparent = await frame.evaluate(({ rowBId, frameId }) => {
+      const row = document.querySelector(`[data-r20-block-id="${CSS.escape(rowBId)}"]`);
+      const parent = document.querySelector(`[data-r20-block-id="${CSS.escape(frameId)}"]`);
+      const parentStyle = parent ? getComputedStyle(parent) : null;
+      const rowStyle = row ? getComputedStyle(row) : null;
+      const className = row?.getAttribute('class') || '';
+      return {
+        parentId: row?.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
+        position: rowStyle?.position ?? null,
+        left: rowStyle ? Number.parseFloat(rowStyle.left) : null,
+        top: rowStyle ? Number.parseFloat(rowStyle.top) : null,
+        parentPosition: parentStyle?.position ?? null,
+        className,
+        hasBlock: Boolean(row),
+        hasParent: Boolean(parent),
+      };
+    }, { rowBId: ids.rowBId, frameId: ids.frameId });
+    result.tests.iframeFreeReparent.emitted = await page.evaluate(({ rowBId, frameId, className }) => {
+      const emit = window.__perfHook.getEmitContent();
+      const rowIndex = emit.html.indexOf(`data-r20-block-id="${rowBId}"`);
+      const parentIndex = emit.html.indexOf(`data-r20-block-id="${frameId}"`);
+      const escaped = className.split(/\s+/).filter(Boolean).map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      const cssHasAbsolute = escaped.some((name) => new RegExp(`\\.${name}\\s*\\{[^}]*position\\s*:\\s*absolute`, 'i').test(emit.css));
+      return { rowIndex, parentIndex, cssHasAbsolute, htmlNested: rowIndex > parentIndex };
+    }, { rowBId: ids.rowBId, frameId: ids.frameId, className: result.tests.iframeFreeReparent.className });
+    assert(result.tests.iframeFreeReparent.hasBlock, 'iframe free placement lost the moved node');
+    assert(result.tests.iframeFreeReparent.parentId === ids.frameId, 'iframe free placement did not nest in the target frame');
+    assert(result.tests.iframeFreeReparent.position === 'absolute', 'iframe free placement did not become absolute');
+    assert(['relative', 'absolute', 'fixed', 'sticky'].includes(result.tests.iframeFreeReparent.parentPosition), 'iframe free placement parent is not a containing block');
+    assert(result.tests.iframeFreeReparent.emitted.htmlNested, 'iframe free placement emitted the wrong DOM order');
+    assert(result.tests.iframeFreeReparent.emitted.cssHasAbsolute, 'iframe free placement emitted no managed absolute CSS');
 
     result.tests.canvasWidgetDrop = await frame.evaluate(() => {
       const target = document.querySelector('.sheet-frame');

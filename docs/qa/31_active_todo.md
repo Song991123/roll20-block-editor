@@ -6120,3 +6120,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P1: Extend the same direct iframe acceptance coverage to parent-relative
   free placement and nested-container extraction on imported structures, then
   compare the resulting normalized state against isolated Roll20 destinations.
+## 2026-07-29 Parent-relative placement update
+
+- DONE LOCAL: Direct iframe acceptance now covers nested-child extraction to a
+  root sibling and re-entry into a frame with free placement. It verifies
+  layer order, parent-relative containing-block behavior, computed absolute
+  position, emitted managed CSS, and HTML nesting.
+- VERIFY: This does not yet prove every imported DOM structure or actual
+  Roll20 modern/legacy parity. Continue with imported nested-container cases
+  and isolated Sandbox/dedicated legacy-room evidence when CDP is available.

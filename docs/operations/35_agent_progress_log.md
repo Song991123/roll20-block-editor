@@ -6800,3 +6800,17 @@ visibility verification passed. No external room was opened or modified.
   path for the synthetic flow case. It does not prove universal imported DOM
   coverage or actual modern/legacy Roll20 screenshot parity. No Roll20 room was
   opened or modified; the current CDP preflight had zero targets.
+## 2026-07-29 - Parent-relative free placement and direct extraction acceptance
+
+- DONE LOCAL: Extended the persistent-iframe browser smoke with direct pointer
+  movement from a nested child to a root-level sibling, then back into a frame
+  using free placement. The check records root extraction order, preserved
+  layer parent/previous relations, containing-block promotion, computed
+  absolute coordinates, emitted managed CSS, and HTML nesting.
+- VERIFIED LOCAL: The synthetic run passed with the extracted child at root,
+  the target sibling immediately before it, and the reinserted child computed
+  as `position:absolute` inside a `position:relative` frame. No console or
+  page errors were reported, and server hygiene was clean afterward.
+- CLAIM BOUNDARY: This is direct-manipulation evidence for the synthetic
+  structure. Imported structures and actual Roll20 modern/legacy screenshots
+  still require separate verification; no external room was opened or changed.

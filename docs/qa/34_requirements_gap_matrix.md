@@ -381,3 +381,10 @@ and a dedicated legacy-enabled test-room comparison require a supported CDP
 session. Existing rooms remain observation-only and are eligible only after a
 fresh visible participant count of exactly one; no existing room was used in
 this batch.
+## Local Direct-Manipulation Follow-up - 2026-07-29
+
+The persistent iframe acceptance path now covers both flow extraction and
+parent-relative free placement on a synthetic nested structure. This narrows
+the local UX gap but does not close universal imported DOM support or actual
+Roll20 modern/legacy parity. Those remain `VERIFY` until imported cases and
+isolated external destinations produce matching evidence.
