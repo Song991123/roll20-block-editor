@@ -1399,14 +1399,16 @@ const ROLL20_DIALOG_OPEN_CSS = `
 /* Roll20 keeps the iframe/form at its dialog width but lets the authored
  * .charactersheet root choose its own intrinsic width (for example 850px in
  * the modern live sheet and 860px in the legacy live sheet). Do not turn that
- * root into a viewport-sized app panel. */
+ * root into a viewport-sized app panel. These declarations deliberately stay
+ * non-important: the imported sheet's own class/style must be able to set its
+ * real width, height, min-size, or overflow just as it can in Roll20. */
 #dialog-window.r20-preview-dialog > .dialog > .tab-content > .sheetform > .charactersheet.charsheet {
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  height: auto !important;
-  min-height: 0 !important;
-  overflow: visible !important;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
 }
 
 #dialog-window,

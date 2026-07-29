@@ -104,8 +104,13 @@ assert.match(
 );
 assert.match(
   bundle.doc,
+  /#dialog-window\.r20-preview-dialog > \.dialog > \.tab-content > \.sheetform > \.charactersheet\.charsheet[\s\S]*?width: auto;[\s\S]*?height: auto;/,
+  'authored sheet root keeps its intrinsic dimensions',
+);
+assert.doesNotMatch(
+  bundle.doc,
   /#dialog-window\.r20-preview-dialog > \.dialog > \.tab-content > \.sheetform > \.charactersheet\.charsheet[\s\S]*?width: auto !important/,
-  'authored sheet root keeps its intrinsic width',
+  'app baseline must not override an authored sheet width',
 );
 assert.match(
   bundle.doc,

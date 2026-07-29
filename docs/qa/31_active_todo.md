@@ -1,3 +1,24 @@
+## 2026-07-29 Render Surface Dimension Contract
+
+- FIXED LOCAL: The authored `form.sheetform > .charactersheet.charsheet`
+  root is no longer forced by editor-owned `!important` dimensions. Imported
+  sheet CSS and inline width/height/min-size/overflow can now determine the
+  sheet canvas as they do in Roll20; the app still owns the surrounding
+  dialog/form shell.
+- VERIFIED LOCAL: The build-document regression asserts the root dimension
+  declarations stay non-important. Full prepared-fixture preview/edit smoke
+  passed `3 fixtures x 2 modes` with `0` mismatched pixels and `EXACT` parity
+  in modern and legacy modes. The first run had a transient modern external
+  background-asset timing mismatch (`2.21%`); the repeat and full run were
+  exact, so external asset readiness remains a diagnostic risk rather than a
+  claimed Roll20 result.
+- CLAIM BOUNDARY: This proves local render-surface parity and preserves
+  authored dimensions. It does not prove actual Roll20 Sandbox pixel parity,
+  live worker behavior, or universal sheet compatibility.
+- NEXT P0: Capture normalized modern Sandbox and isolated legacy-room evidence
+  after a supported CDP browser session is available. Keep existing rooms
+  read-only and require a fresh visible participant count of exactly one.
+
 ## 2026-07-29 Current gate update
 
 - DONE LOCAL: Keyed structural iframe patches now use a per-parent keyed

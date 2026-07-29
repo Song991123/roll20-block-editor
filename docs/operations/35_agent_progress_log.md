@@ -6965,6 +6965,19 @@ visibility verification passed. No external room was opened or modified.
 - DIAGNOSTICS: timing markers are opt-in through localStorage `__perfOn=1` and
   are not retained in ordinary user sessions.
 
+## 2026-07-29 Render Surface Dimension Contract
+
+- Changed `lib/preview/buildDoc.ts` so the app's Roll20-shaped dialog shell
+  does not override authored sheet-root dimensions with `!important`.
+- Added a build-document regression proving the root rule remains explicit but
+  non-important, allowing generic imported sheets to retain their own canvas
+  width/height and overflow behavior.
+- Local browser evidence: the prepared anonymous fixture corpus (`AW2E`,
+  `Les-Oublies`, and `yshy-commission-1bu`) passed preview/edit visual smoke in
+  both modern and legacy compatibility modes with `0` mismatch pixels. This
+  is local evidence only; actual Roll20 Sandbox and dedicated legacy-room
+  screenshots are still VERIFY.
+
 ## 2026-07-29 Workspace Cleanup
 
 - DONE LOCAL: The parent workspace now has four navigation zones:
