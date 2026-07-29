@@ -6740,3 +6740,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - SAFETY: No existing room or sheet settings outside the dedicated Sandbox
   were changed. Leave the Sandbox tab available for a user-visible manual
   file selection handoff.
+
+## 2026-07-30 Retired Shadow smoke guard
+
+- DONE LOCAL: `scripts/imported_edit_sync_smoke.mjs` now rejects the obsolete
+  `--canonical-iframe=false` branch instead of allowing a retired Shadow edit
+  surface to produce a misleading pass.
+- VERIFIED LOCAL: `node --check scripts/imported_edit_sync_smoke.mjs` and
+  `corepack pnpm lint` pass. The rejected branch exits with the explicit
+  retired-surface error before starting a server or writing a report.
+- VERIFY OPEN: `audit:worker` was not run because the protected private
+  `test-fixtures/visual` input is absent after generated/private-fixture
+  cleanup; the anonymous `smoke:worker` contract passed instead.
+- CLAIM BOUNDARY: This only hardens the local verification target. It does not
+  prove generic page-JS block editing or actual Roll20 modern/legacy parity.

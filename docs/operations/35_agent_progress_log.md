@@ -7506,3 +7506,17 @@ visibility verification passed. No external room was opened or modified.
 - Result remains `VERIFY/BLOCKED_EXTERNAL`: no actual Roll20 sheet root,
   screenshot, rolltemplate, or chat evidence is counted. The Sandbox tab was
   left as a user handoff and no existing room was modified.
+
+## 2026-07-30 - Retired Shadow smoke guard
+
+- DONE LOCAL: `scripts/imported_edit_sync_smoke.mjs` rejects the obsolete
+  `--canonical-iframe=false` branch so a retired Shadow editor cannot be used
+  as a passing substitute for the canonical persistent iframe.
+- VERIFIED: `node --check scripts/imported_edit_sync_smoke.mjs` and
+  `corepack pnpm lint` pass; the rejected branch fails before opening a server
+  or writing report output.
+- VERIFY OPEN: `audit:worker` could not start because the protected private
+  `test-fixtures/visual` input is absent after cleanup. The anonymous
+  `smoke:worker` contract passed, but it is not a broad imported-fixture audit.
+- CLAIM BOUNDARY: This is a verification-boundary fix only. Generic page-JS
+  block editing and actual Roll20 modern/legacy parity remain open.

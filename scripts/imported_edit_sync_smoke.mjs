@@ -41,6 +41,13 @@ const VIEWPORT = { width: 2200, height: 1200 };
 const DRAG_DELTA = { x: Number(argOf('--dx', '80')), y: Number(argOf('--dy', '48')) };
 const FAIL_ON_RESOURCE_ISSUES = argOf('--fail-on-resource-issues', 'false') === 'true';
 const COMPACT_WIDE_ROWS = argOf('--compact-wide-rows', 'false') === 'true';
+
+if (!CANONICAL_IFRAME) {
+  throw new Error(
+    'The retired Shadow edit surface is no longer a supported verification target. ' +
+      'Run imported_edit_sync_smoke with the canonical persistent iframe path.',
+  );
+}
 const NONLEAF_VISUAL_MISMATCH_LIMIT_PCT = Number(argOf('--nonleaf-visual-limit-pct', '2'));
 const SHEET_VISUAL_MISMATCH_LIMIT_PCT = Number(argOf('--sheet-visual-limit-pct', '2'));
 const REQUIRE_NONLEAF_VISUAL_SYNC = argOf('--require-nonleaf-visual-sync', 'false') === 'true';
