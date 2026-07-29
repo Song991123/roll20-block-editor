@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   images: { unoptimized: true },
   reactStrictMode: true,
+  // The in-app browser commonly opens the local editor at 127.0.0.1 while
+  // Next serves the dev page from localhost. Allow that HMR origin explicitly.
+  allowedDevOrigins: ['127.0.0.1'],
 };
 
 const withBundleAnalyzer = bundleAnalyzer({

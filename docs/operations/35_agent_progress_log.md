@@ -7210,3 +7210,25 @@ visibility verification passed. No external room was opened or modified.
 - NEXT: Stabilize the browser smoke and replace the notice-only large mode
   with a virtualized block browser. This guard does not yet equal full
   large-sheet Blockly canvas editing.
+
+## 2026-07-30 - Local origin hydration and Blockly mount verification
+
+- FIXED: Added the explicit `127.0.0.1` development origin allowance so the
+  in-app browser can hydrate the local Next page while keeping the dynamic
+  Blockly chunk split.
+- FIXED: Added non-visual `pending`/`ready`/`error` mount telemetry to
+  `BlocklyModelHost`; initialization errors are caught and the existing
+  workspace cleanup path remains active.
+- VERIFIED: Local `127.0.0.1` browser run reached `ready`, mounted four slots
+  and 28 SVG nodes, switched from split to assemble, and recorded zero
+  console errors.
+- VERIFIED: lint, build, `ci:verify`, persistent preview modern/legacy, and
+  six anonymous modern/legacy preview-edit visual comparisons passed with
+  zero mismatch.
+- VERIFY: Strict imported-edit sync is 4/5. One large anonymous case has
+  `canonicalEditSync`, preview sync, and resources passing but fails the
+  reimport stability gate due to emitted HTML order drift. This remains an
+  active importer determinism issue, not a parity pass.
+- NEXT: Keep actual Roll20 Sandbox/legacy-room verification separate, then
+  investigate the deterministic reimport drift before claiming broad import
+  completion.

@@ -50,15 +50,21 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace);
   const appendBlock = useWorkspaceStore((s) => s.appendBlockToActive);
   const [dragOver, setDragOver] = useState(false);
+  const [mountState, setMountState] = useState<'pending' | 'ready' | 'error'>('pending');
+  const [mountError, setMountError] = useState<string | null>(null);
 
   // Blockly inject — 한 번만, renderer 변경 시 재mount.
   useEffect(() => {
     if (!hostRef.current) return;
-    registerAllBlocks();
+    setMountState('pending');
+    setMountError(null);
     const adapter = getBlocklyAdapter();
     const serializedStore = serializedRef.current;
 
-    for (const key of WORKSPACE_KEYS) {
+    try {
+      registerAllBlocks();
+
+      for (const key of WORKSPACE_KEYS) {
       const mountId = `bl-host-${key}`;
       const mountPoint = hostRef.current.querySelector<HTMLDivElement>(`#${mountId}`);
       if (renderSvg && !mountPoint) continue;
@@ -155,7 +161,16 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
           }
         });
       };
-      ws.addChangeListener(listener);
+        ws.addChangeListener(listener);
+      }
+      queueMicrotask(() => setMountState('ready'));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('[blockly] workspace mount failed', error);
+      queueMicrotask(() => {
+        setMountError(message);
+        setMountState('error');
+      });
     }
 
     const cleanupRef = wsRef.current;
@@ -231,6 +246,8 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
       }`}
       aria-hidden={!visible}
       data-testid="blockly-model-host"
+      data-r20-mount-state={mountState}
+      data-r20-mount-error={mountError ?? undefined}
       data-r20-render-mode={visible ? (renderSvg ? 'svg' : 'headless-large') : 'headless'}
       onDragOver={
         visible

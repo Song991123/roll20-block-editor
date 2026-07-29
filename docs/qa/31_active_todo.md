@@ -6425,3 +6425,27 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `emit-contract`, `ci:verify`, lint, build, and server hygiene pass.
 - CLAIM BOUNDARY: This protects local source/export behavior; it is not actual
   Roll20 visual parity or generic JS block-workspace support.
+
+## 2026-07-30 Local Blockly mount and renderer smoke refresh
+
+- FIXED LOCAL: `next.config.ts` now explicitly allows the local `127.0.0.1`
+  development origin. The in-app browser no longer renders only the SSR shell
+  without hydrating the Blockly surface.
+- FIXED LOCAL: `BlocklyModelHost` exposes a non-visual mount state for browser
+  diagnostics and reports initialization failures without changing the sheet
+  render contract. The dynamic Blockly split remains in place.
+- VERIFIED LOCAL: At `127.0.0.1`, the host reached `ready`, mounted four
+  workspace slots and 28 SVG nodes, switched into block-assembly mode, and
+  produced zero browser console errors.
+- VERIFIED LOCAL: lint, production build, `ci:verify`, persistent preview
+  surface for modern/legacy, and the six-case anonymous preview/edit visual
+  matrix all passed. The visual matrix reported `0%` mismatch for every case.
+- PARTIAL: Strict imported-edit synchronization passed 4 of 5 anonymous
+  cases. The remaining large case passed initial import, pointer edit,
+  preview synchronization, and resource checks, but failed the reimport
+  stability gate because emitted HTML order drifted after reimport. Keep this
+  as VERIFY; it is not a universal import/edit completion claim.
+- NEXT P0: Obtain positive modern Sandbox root/DOM/screenshot/chat evidence and
+  separate legacy dedicated-room evidence.
+- NEXT P1: Trace the remaining deterministic reimport HTML-order drift in the
+  large anonymous fixture before widening the import/edit completion claim.
