@@ -6518,3 +6518,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   for a new report; no previous screenshot or payload is treated as current.
 - PRESERVED: source code, active dependencies, protected external sources,
   Git worktrees, and the report README.
+
+## 2026-07-30 Modern Sandbox upload continuation
+
+- VERIFIED LOCAL: One anonymous modern payload was regenerated under ignored
+  `.tmp/` storage and passed the local baseline.
+- VERIFY/BLOCKED: Roll20 file input still rejects both supported chooser
+  assignment and visible file-picker typing. No actual generated-sheet
+  screenshot or chat evidence exists yet.
+- NEXT P0: Complete the user-visible Sandbox file selection, then capture fresh
+  root DOM, screenshot, and roll/chat evidence before comparing to local output.

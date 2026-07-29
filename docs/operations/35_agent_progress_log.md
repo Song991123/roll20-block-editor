@@ -7303,3 +7303,15 @@ visibility verification passed. No external room was opened or modified.
   regenerate an anonymous fixture into an ignored temporary path.
 - CLAIM BOUNDARY: prior local evidence files are no longer on disk, so any
   future parity claim must be backed by a fresh run.
+
+## 2026-07-30 - Modern Sandbox upload continuation
+
+- VERIFIED LOCAL: Recreated one anonymous modern payload in ignored `.tmp/`
+  storage and passed the local import/export baseline (`html=290`, `zip=1265`).
+- VERIFIED READ-ONLY: The logged-in Sandbox tab still shows exactly one visible
+  participant and the separate HTML/CSS/Translation controls.
+- BLOCKED: The supported file chooser and the visible file-picker interaction
+  both refused the local file assignment; no payload reached Roll20.
+- CLAIM BOUNDARY: No generated actual-sheet root, screenshot, or chat result is
+  counted until the Sandbox accepts the payload. The temporary payload remains
+  ignored for a possible manual handoff and must be removed after use.
