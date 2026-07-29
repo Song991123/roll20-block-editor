@@ -17,3 +17,7 @@
   the Sandbox chooser rejected local file assignment.
 - Recorded the cleanup retry as host-policy blocked. No deletion bypass was
   used and no protected source folder was touched.
+- Rejected two browser-render optimization experiments after live testing:
+  the public `rendered` flag caused a headless-workspace error, while SVG hook
+  suppression did not finish the large smoke within three minutes. Both code
+  experiments were fully reverted; the large import remains an open P0.

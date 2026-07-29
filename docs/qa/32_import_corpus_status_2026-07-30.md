@@ -35,6 +35,21 @@
 - No alternate shell or deletion bypass was used. The explicitly listed
   generated targets remain pending a supported cleanup mechanism.
 
+## 2026-07-30 Performance Experiment Boundary
+
+- REJECTED: Setting `WorkspaceSvg.rendered=false` during XML hydration makes
+  Blockly 12.5.1 treat the SVG workspace as headless and throws before the
+  large fixture can be imported. No code change was retained.
+- REJECTED: Temporarily suppressing `BlockSvg.initSvg`/`queueRender` and
+  replaying one render pass did not finish the large browser smoke within
+  three minutes. It is not counted as a performance improvement and was
+  fully reverted.
+- CURRENT BASELINE: Pure HTML matching remains approximately `0.55s` with
+  `100%` structural coverage; the large browser path still has approximately
+  `36,436` HTML blocks and remains an open render/import bottleneck.
+- SAFETY: The failed experiments did not alter source fixtures or public
+  assets. The generated local smoke report remains ignored evidence only.
+
 ## Next P0
 
 Keep the malformed-tag regression test in the emit contract and continue the
