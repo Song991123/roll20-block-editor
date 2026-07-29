@@ -251,6 +251,7 @@ function matchInput(node: DomNode, ctx: MatchContext): MatchedBlock | null {
         blockType: 'r20_radio',
         fields: {
           NAME: name, VALUE: a.value || '', CLASS: cls,
+          CHECKED: 'checked' in a || a.checked != null ? 'TRUE' : 'FALSE',
           LABEL: '',
           STYLE: a.style || '',
         },
@@ -325,6 +326,7 @@ function matchOption(node: DomNode, _ctx: MatchContext): MatchedBlock {
         KEY: a['data-i18n'],
         DEFAULT: label,
         VALUE: a.value || '',
+        SELECTED: 'selected' in a || a.selected != null ? 'TRUE' : 'FALSE',
         STYLE: a.style || '',
       },
       children: {},
@@ -332,7 +334,12 @@ function matchOption(node: DomNode, _ctx: MatchContext): MatchedBlock {
   }
   return {
     blockType: 'r20_select_option',
-    fields: { VALUE: a.value || '', LABEL: label, STYLE: a.style || '' },
+    fields: {
+      VALUE: a.value || '',
+      LABEL: label,
+      SELECTED: 'selected' in a || a.selected != null ? 'TRUE' : 'FALSE',
+      STYLE: a.style || '',
+    },
     children: {},
   };
 }

@@ -278,6 +278,9 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('라벨')
         .appendField(new Blockly.FieldTextInput('Option'), 'LABEL');
       b.appendDummyInput()
+        .appendField('기본 선택')
+        .appendField(new Blockly.FieldCheckbox('FALSE'), 'SELECTED');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       b.setPreviousStatement(true, 'SelectOption');
@@ -288,7 +291,11 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const value = String(b.getFieldValue('VALUE') ?? '');
       const label = String(b.getFieldValue('LABEL') ?? '');
-      return `<option${attr('value', value)}${styleAttr(style)}>${escapeAttr(label)}</option>`;
+      const selected = String(b.getFieldValue('SELECTED') ?? 'FALSE') === 'TRUE';
+      return (
+        `<option${attr('value', value)}${selected ? ' selected="selected"' : ''}` +
+        `${styleAttr(style)}>${escapeAttr(label)}</option>`
+      );
     },
   },
 
@@ -359,6 +366,9 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
+        .appendField('기본 선택')
+        .appendField(new Blockly.FieldCheckbox('FALSE'), 'CHECKED');
+      b.appendDummyInput()
         .appendField('라벨')
         .appendField(new Blockly.FieldTextInput('Option'), 'LABEL');
       b.appendDummyInput()
@@ -373,9 +383,11 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const value = String(b.getFieldValue('VALUE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const label = String(b.getFieldValue('LABEL') ?? '');
+      const checked = String(b.getFieldValue('CHECKED') ?? 'FALSE') === 'TRUE';
       return (
         `<label><input type="radio"${sheetClassAttr(cls)}${nameAttr(name)}` +
-        `${attr('value', value)}${styleAttr(style)}>${escapeAttr(label)}</label>`
+        `${attr('value', value)}${checked ? ' checked="checked"' : ''}${styleAttr(style)}>` +
+        `${escapeAttr(label)}</label>`
       );
     },
   },

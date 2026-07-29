@@ -1,3 +1,15 @@
+## 2026-07-29 - Default form-state block mapping
+
+- Imported radio `checked` and select-option `selected` states are now
+  explicit editable fields on their corresponding blocks, including the
+  translated option block. New blocks can emit the same default states.
+- This keeps default-view controls meaningful for custom sheets instead of
+  relying only on hidden preserved-attribute metadata.
+- Added generic import coverage for checked radios and selected options;
+  existing attribute-preservation injection remains in place as a safety net.
+- This is local structure/emit coverage. It does not replace modern or legacy
+  Roll20 screenshot verification.
+
 ## 2026-07-29 - Participant-gated external verification status
 
 - Re-ran the read-only Roll20 room preflight after the locale change. The

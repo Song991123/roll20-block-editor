@@ -1,3 +1,14 @@
+## 2026-07-29 Default Form-State Mapping
+
+- DONE LOCAL: `checked` radio inputs and `selected` select options now map to
+  editable block fields and emit back to HTML. `data-i18n` options use the
+  same selected-state field.
+- VERIFIED LOCAL: Generic import suite passes `33/33`; lint and attribute
+  preservation tests pass.
+- CLAIM BOUNDARY: This proves local block/emit state preservation only. The
+  actual Roll20 default tab/era rendering still requires isolated Sandbox or
+  dedicated legacy-room evidence.
+
 ## 2026-07-29 External Roll20 Verification Gate
 
 - VERIFY: Read-only participant preflight could not connect to the CDP

@@ -95,6 +95,17 @@ function testRadioLabelDoesNotNestOnEmit(): void {
   assert(r.html.includes('>Alpha<'), 'radio label text is preserved');
 }
 
+function testDefaultControlStateIsEditable(): void {
+  const html = [
+    '<label><input type="radio" name="attr_mode" value="a" checked="checked">Alpha</label>',
+    '<select name="attr_style"><option value="dark" selected="selected">Dark</option></select>',
+  ].join('');
+  const r = importSheet({ html });
+  assert(r.html.includes('<field name="CHECKED">TRUE</field>'), 'radio checked state becomes a block field');
+  assert(r.html.includes('<field name="SELECTED">TRUE</field>'), 'option selected state becomes a block field');
+  assert(r.stats.htmlRawFallback === 0, 'default state controls stay structured');
+}
+
 function testUnknownAttributesSurviveMatchedBlocks(): void {
   const html = `<div id="frame" data-layout="grid" aria-label="Frame"><input type="text" name="attr_name" title="Name" data-hook="field"></div>`;
   const r = importSheet({ html });
@@ -303,6 +314,7 @@ const tests = [
   ['whitespace-only text', testWhitespaceOnlyTextDoesNotInflate],
   ['stable formatted text', testFormattedDirectTextHasStableWhitespace],
   ['radio label wrapper', testRadioLabelDoesNotNestOnEmit],
+  ['default control state', testDefaultControlStateIsEditable],
   ['unknown attributes', testUnknownAttributesSurviveMatchedBlocks],
   ['css rule', testCssRule],
   ['i18n json', testI18nJson],

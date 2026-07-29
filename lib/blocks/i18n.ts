@@ -439,6 +439,9 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('값')
         .appendField(new Blockly.FieldTextInput('value'), 'VALUE');
       b.appendDummyInput()
+        .appendField('기본 선택')
+        .appendField(new Blockly.FieldCheckbox('FALSE'), 'SELECTED');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -449,8 +452,10 @@ export const I18N_BLOCKS: BlockDef[] = [
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const value = String(b.getFieldValue('VALUE') ?? '');
+      const selected = String(b.getFieldValue('SELECTED') ?? 'FALSE') === 'TRUE';
       return (
-        `<option${attr('value', value)}${attr('data-i18n', key)}${styleAttr(style)}>` +
+        `<option${attr('value', value)}${attr('data-i18n', key)}` +
+        `${selected ? ' selected="selected"' : ''}${styleAttr(style)}>` +
         `${escapeAttr(def)}</option>`
       );
     },
