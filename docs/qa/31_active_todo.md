@@ -1,5 +1,19 @@
 ## 2026-07-29 Roll20 Room Safety And Design PR Boundary
 
+- VERIFIED LOCAL: Extended `smoke:persistent-preview-surface` with a same-iframe
+  `modern -> legacy -> modern` compatibility roundtrip. The mode-specific
+  legacy layer appeared/disappeared, a synthetic non-reserved compatibility
+  probe changed `fixed -> absolute -> fixed`, input state and runtime token
+  survived, iframe load count stayed `0`, and both modes had zero console/page
+  errors. This proves local live-patch synchronization, not Roll20 visual
+  parity.
+- CLAIM BOUNDARY: The fixture is synthetic and the imported emitter already
+  normalizes authored class tokens to the `sheet-*` Roll20 contract. It does
+  not prove every legacy sanitizer rule or any actual-room screenshot result.
+- NEXT P0: Keep the participant preflight ahead of any real-room action, then
+  collect fresh modern Sandbox evidence and legacy evidence only in a
+  dedicated one-member test room.
+
 - DONE: Added a mandatory participant preflight. Existing rooms are excluded
   when the current visible member count is unknown or greater than one; they
   are never upload, save, chat, or settings destinations.

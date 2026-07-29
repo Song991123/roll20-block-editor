@@ -150,8 +150,8 @@ async function runMode(browser, mode) {
         window.__perfHook.clearAll();
         if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 150));
         imported = await window.__perfHook.importSheet({
-          html: `<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div><div class="sheet-probe-load">${filler}</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "A" }); }); on("change:probe", function () { setAttrs({ worker_probe: "A-OLD" }); });</script>`,
-          css: '.sheet-probe-frame { position: relative; width: 360px; margin-left: 420px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; } .sheet-probe-load { display: flex; flex-wrap: wrap; width: 320px; } .sheet-probe-filler { display: block; width: 4px; height: 4px; overflow: hidden; }',
+          html: `<div class="sheet-probe-frame"><div class="sheet-probe-card"><span class="compatibility-probe">Mode probe</span><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div><div class="sheet-probe-load">${filler}</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "A" }); }); on("change:probe", function () { setAttrs({ worker_probe: "A-OLD" }); });</script>`,
+          css: '.sheet-probe-frame { position: relative; width: 360px; margin-left: 420px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .compatibility-probe { position: fixed; left: -9999px; top: -9999px; pointer-events: none; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; } .sheet-probe-load { display: flex; flex-wrap: wrap; width: 320px; } .sheet-probe-filler { display: block; width: 4px; height: 4px; overflow: hidden; }',
         });
         if (imported.blockCount > 0) return imported;
       }
@@ -229,6 +229,91 @@ async function runMode(browser, mode) {
     result.before.hasLegacyInputStyle = await frame.evaluate(
       () => Boolean(document.getElementById('roll20-legacy-input-state')),
     );
+
+    // Exercise the real compatibility toggle on the already-mounted iframe.
+    // The product must replace the mode-specific HTML/CSS contract through
+    // the live bridge without reloading the iframe or losing sheet state.
+    const alternateMode = mode === 'modern' ? 'legacy' : 'modern';
+    result.compatibilityToggle = {
+      initialMode: mode,
+      alternateMode,
+      beforeAck: await page.evaluate(() => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked'))),
+      beforeLoadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
+    };
+    await page.evaluate((nextMode) => {
+      window.__perfHook.setRoll20CompatibilityMode(nextMode);
+    }, alternateMode);
+    await page.waitForFunction(
+      (beforeAck) => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > beforeAck,
+      result.compatibilityToggle.beforeAck,
+      { timeout: 30000 },
+    );
+    await frame.waitForFunction(
+      (expectLegacy) => Boolean(document.getElementById('roll20-legacy-input-state')) === expectLegacy,
+      alternateMode === 'legacy',
+      { timeout: 30000 },
+    );
+    result.compatibilityToggle.alternate = {
+      modeStylePresent: await frame.evaluate(
+        () => Boolean(document.getElementById('roll20-legacy-input-state')),
+      ),
+      probe: await frame.evaluate(() => {
+        const node = document.querySelector('[class*="compatibility-probe"]');
+        return {
+          className: node?.className ?? '',
+          position: node ? getComputedStyle(node).position : '',
+        };
+      }),
+      inputValue: await frame.locator('input[name="attr_probe"]').inputValue(),
+      runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
+      iframeCount: await page.locator('[data-testid="preview-iframe"]').count(),
+      loadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
+      ack: await page.evaluate(() => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked'))),
+      stats: await readApplyStats(frame),
+    };
+    await page.evaluate((nextMode) => {
+      window.__perfHook.setRoll20CompatibilityMode(nextMode);
+    }, mode);
+    await page.waitForFunction(
+      (beforeAck) => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > beforeAck,
+      result.compatibilityToggle.alternate.ack,
+      { timeout: 30000 },
+    );
+    await frame.waitForFunction(
+      (expectLegacy) => Boolean(document.getElementById('roll20-legacy-input-state')) === expectLegacy,
+      mode === 'legacy',
+      { timeout: 30000 },
+    );
+    Object.assign(result.compatibilityToggle, {
+      restored: {
+        modeStylePresent: await frame.evaluate(
+          () => Boolean(document.getElementById('roll20-legacy-input-state')),
+        ),
+        probe: await frame.evaluate(() => {
+          const node = document.querySelector('[class*="compatibility-probe"]');
+          return {
+            className: node?.className ?? '',
+            position: node ? getComputedStyle(node).position : '',
+          };
+        }),
+        inputValue: await frame.locator('input[name="attr_probe"]').inputValue(),
+        runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
+        iframeCount: await page.locator('[data-testid="preview-iframe"]').count(),
+        loadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
+        ack: await page.evaluate(() => Number(document
+          .querySelector('[data-r20-apply-acked]')
+          ?.getAttribute('data-r20-apply-acked'))),
+        stats: await readApplyStats(frame),
+      },
+    });
 
     result.liveApplyMutation = await page.evaluate(() => {
       const root = document.querySelector('[data-r20-apply-acked]');
@@ -986,8 +1071,8 @@ async function runMode(browser, mode) {
       .locator('input[name="attr_worker_probe"]')
       .inputValue();
     result.workerChange.import = await page.evaluate(async () => window.__perfHook.importSheet({
-      html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "B" }); });</script>',
-      css: '.sheet-probe-frame { position: relative; width: 360px; margin-left: 420px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
+      html: '<div class="sheet-probe-frame"><div class="sheet-probe-card"><span class="compatibility-probe">Mode probe</span><input type="text" name="attr_probe" value="initial"><input type="text" name="attr_worker_probe" value=""><button type="roll" name="roll_probe" value="&amp;{template:default} {{name=Probe}} {{result=[[1d20]]}}">Roll</button></div><div class="sheet-probe-drop">Drop target</div></div><rolltemplate class="sheet-rolltemplate-default"><div>{{name}}</div><div>{{result}}</div></rolltemplate><script type="text/worker">on("sheet:opened", function () { setAttrs({ worker_probe: "B" }); });</script>',
+      css: '.sheet-probe-frame { position: relative; width: 360px; margin-left: 420px; padding: 10px; } .sheet-probe-card { width: 320px; min-height: 80px; padding: 12px; } .compatibility-probe { position: fixed; left: -9999px; top: -9999px; pointer-events: none; } .sheet-probe-drop { width: 320px; min-height: 40px; margin-top: 12px; padding: 12px; }',
     }));
     await page.waitForFunction(
       (beforeAck) => Number(document
@@ -1042,6 +1127,30 @@ async function runMode(browser, mode) {
       && result.liveApplyMutation.stats.rootReplacements === result.initialApply.stats.rootReplacements
       && result.liveApplyMutation.stats.structuralPatches > result.initialApply.stats.structuralPatches
       && result.liveApplyMutation.stats.structuralPatchFallbacks === 0
+      && result.compatibilityToggle.alternate.modeStylePresent === (result.compatibilityToggle.alternateMode === 'legacy')
+      && result.compatibilityToggle.alternate.probe.className.includes('sheet-compatibility-probe')
+      && result.compatibilityToggle.alternate.probe.position === (
+        result.compatibilityToggle.alternateMode === 'legacy' ? 'absolute' : 'fixed'
+      )
+      && result.compatibilityToggle.alternate.inputValue === `runtime-${mode}`
+      && result.compatibilityToggle.alternate.runtimeToken === token
+      && result.compatibilityToggle.alternate.iframeCount === 1
+      && result.compatibilityToggle.alternate.loadCount === result.compatibilityToggle.beforeLoadCount
+      && result.compatibilityToggle.alternate.ack > result.compatibilityToggle.beforeAck
+      && (result.compatibilityToggle.alternate.stats.mode === 'styles'
+        || result.compatibilityToggle.alternate.stats.mode === 'patch')
+      && result.compatibilityToggle.alternate.stats.structuralPatchFallbacks === 0
+      && result.compatibilityToggle.restored.modeStylePresent === (mode === 'legacy')
+      && result.compatibilityToggle.restored.probe.className.includes('sheet-compatibility-probe')
+      && result.compatibilityToggle.restored.probe.position === (mode === 'legacy' ? 'absolute' : 'fixed')
+      && result.compatibilityToggle.restored.inputValue === `runtime-${mode}`
+      && result.compatibilityToggle.restored.runtimeToken === token
+      && result.compatibilityToggle.restored.iframeCount === 1
+      && result.compatibilityToggle.restored.loadCount === result.compatibilityToggle.beforeLoadCount
+      && result.compatibilityToggle.restored.ack > result.compatibilityToggle.alternate.ack
+      && (result.compatibilityToggle.restored.stats.mode === 'styles'
+        || result.compatibilityToggle.restored.stats.mode === 'patch')
+      && result.compatibilityToggle.restored.stats.structuralPatchFallbacks === 0
       && result.before.iframeCount === 1
       && result.before.paneVisible === 'true'
       && result.before.hasLegacyInputStyle === (mode === 'legacy')

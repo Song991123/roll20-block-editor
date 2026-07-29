@@ -31,6 +31,17 @@ The participant preflight is a safety gate, not a visual-parity measurement.
 When it fails, record `ROOM_EXCLUDED_PARTICIPANT_STATE_UNKNOWN_OR_NONSOLO` and
 continue only with local evidence or an isolated Sandbox/test room.
 
+## Local Render-Surface Gate
+
+Before treating a local compatibility change as ready for Roll20 comparison,
+run the persistent iframe smoke in both starting modes. The required local
+roundtrip is `modern -> legacy -> modern` and `legacy -> modern -> legacy` on
+the same iframe. It must retain form/runtime state, apply/remove the
+mode-specific legacy layer, keep iframe load count at zero, and report no
+unexpected console/page errors. This gate proves preview/edit synchronization
+only; it cannot substitute for modern Sandbox or dedicated legacy-room visual
+evidence.
+
 ## Modern And Legacy Are Separate Required Destinations
 
 - Custom Sheet Sandbox is a modern-runtime validation surface. It does not

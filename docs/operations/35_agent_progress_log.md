@@ -1,5 +1,15 @@
 ## 2026-07-29 - Existing-Room Participant Preflight
 
+- VERIFIED LOCAL: Same persistent preview iframe now has a browser smoke for
+  `modern -> legacy -> modern` switching. The live bridge removed/restored the
+  legacy style layer and changed a legacy-sanitized `position: fixed` probe to
+  `absolute` and back without an iframe reload; input value, runtime token,
+  iframe count, and console/page error checks remained stable in both starting
+  modes.
+- EVIDENCE SCOPE: `reports/persistent-preview-surface/mode-toggle-v5` is
+  ignored local evidence. The result is a local render-contract/synchronization
+  proof only, not actual Roll20 parity.
+
 - FIXED: Added an explicit preflight requiring a current visible participant
   count before an existing Roll20 room can even be observed.
 - SAFETY: Unknown participant state and any count greater than one exclude the
