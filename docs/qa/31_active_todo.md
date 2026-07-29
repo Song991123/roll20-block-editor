@@ -6382,3 +6382,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFY: Strict resource gating can still be blocked by a transient external
   development-fixture asset request; this is tracked separately from the
   interaction result. Actual Roll20 modern/legacy parity remains open.
+## 2026-07-29 Local fresh-sheet and edit-flow regression refresh
+
+- VERIFIED LOCAL: A new workspace starts without the ghost `sheet-section`;
+  the first widget placement smoke also passed.
+- VERIFIED LOCAL: The browser edit-flow smoke passed.
+- VERIFIED LOCAL: Preview/edit visual smoke passed for three anonymous fixtures
+  in modern and legacy modes; all six comparisons were `0%` / `EXACT`.
+- CLAIM BOUNDARY: These are local renderer and interaction gates only. They do
+  not prove actual Roll20 Sandbox or legacy-room parity.
+- NEXT P0: Keep the Roll20 upload gate separate and obtain actual root,
+  screenshot, and chat evidence through the isolated Sandbox.

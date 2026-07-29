@@ -7127,3 +7127,14 @@ visibility verification passed. No external room was opened or modified.
   browser session was blocked at the login/Cloudflare page, so no room was
   opened; any existing-room run still requires a fresh visible participant
   count of exactly one.
+## 2026-07-29 - Local fresh-sheet and edit-flow regression refresh
+
+- VERIFIED LOCAL: The fresh-sheet browser smoke passed; a new workspace has no
+  ghost `sheet-section`, and the first widget placement path passed.
+- VERIFIED LOCAL: The browser edit-flow smoke passed.
+- VERIFIED LOCAL: Preview/edit visual smoke passed for three anonymous fixtures
+  in both modern and legacy modes with six `0%` / `EXACT` comparisons.
+- CLAIM BOUNDARY: This is local renderer and interaction evidence only, not
+  actual Roll20 Sandbox or legacy-room parity evidence.
+- NEXT P0: Continue the isolated Roll20 upload path and require root DOM,
+  screenshot, and same-action chat evidence before parity claims.
