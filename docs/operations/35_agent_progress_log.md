@@ -1,3 +1,15 @@
+## 2026-07-29 - Form-state browser regression recheck
+
+- After exposing radio/option default-state fields, the strict imported edit
+  sync smoke passed for all prepared local fixtures, including the synthetic
+  non-leaf flow case.
+- The preview/edit visual smoke passed in both modern and legacy local
+  compatibility modes with `0%` mismatch for all prepared local fixtures and
+  translation state intact where present.
+- Post-smoke server hygiene reported no project listeners and no CDP listener.
+- These are local render/edit regression results; they do not upgrade the
+  external Roll20 parity claim.
+
 ## 2026-07-29 - Default form-state block mapping
 
 - Imported radio `checked` and select-option `selected` states are now

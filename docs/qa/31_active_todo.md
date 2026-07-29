@@ -1,3 +1,15 @@
+## 2026-07-29 Form-State Browser Regression
+
+- VERIFIED LOCAL: `smoke:imported-edit-sync:strict` passed for all prepared
+  local fixtures and the synthetic non-leaf flow case after default-state
+  mapping changes.
+- VERIFIED LOCAL: `smoke:preview-edit-visual -- --compatibility-mode both`
+  passed modern and legacy local preview/edit comparisons with `0%` mismatch
+  across the prepared local fixtures.
+- VERIFIED HYGIENE: post-smoke server check found no project or CDP listener.
+- CLAIM BOUNDARY: local `0%` mismatch is not an actual Roll20 screenshot or
+  Sandbox parity result.
+
 ## 2026-07-29 Default Form-State Mapping
 
 - DONE LOCAL: `checked` radio inputs and `selected` select options now map to
