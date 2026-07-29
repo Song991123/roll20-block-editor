@@ -1,3 +1,15 @@
+## 2026-07-29 External Roll20 Verification Gate
+
+- VERIFY: Read-only participant preflight could not connect to the CDP
+  endpoint in this run. No existing room was opened, changed, or used as
+  evidence.
+- RULE: Before any existing-room observation, read the fresh visible member
+  indicator. Exactly one visible member is required; any other, missing, or
+  ambiguous state blocks the room.
+- REMAINING: Run modern Sandbox comparison and dedicated legacy-room
+  comparison only after a supported CDP browser is available. Do not mark
+  actual parity complete from local CI or synthetic screenshots.
+
 ## 2026-07-29 Generic Locale Preservation
 
 - DONE: Translation comment parsing and the locale-value block now accept

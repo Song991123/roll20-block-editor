@@ -1,3 +1,15 @@
+## 2026-07-29 - Participant-gated external verification status
+
+- Re-ran the read-only Roll20 room preflight after the locale change. The
+  CDP endpoint was unavailable, so no room page or participant state could be
+  read and no existing room was opened or modified.
+- The safety rule remains unchanged: an existing room is eligible only after
+  a fresh visible participant count proves exactly one member; all other or
+  unreadable states are excluded. Sandbox and a dedicated test room remain
+  the only generated-write destinations.
+- External modern Sandbox and dedicated legacy-room parity therefore remain
+  `VERIFY`, not `DONE`.
+
 ## 2026-07-29 - Generic locale preservation
 
 - Expanded the internal translation comment importer and locale-value block
