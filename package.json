@@ -159,6 +159,7 @@
     "smoke:shadow-drag": "node scripts/shadow_drag_browser_smoke.mjs",
     "smoke:fresh-sheet": "node scripts/fresh_sheet_browser_smoke.mjs",
     "smoke:export-dialog": "node scripts/export_dialog_browser_smoke.mjs",
+    "smoke:import-dialog": "node scripts/import_dialog_browser_smoke.mjs",
     "smoke:imported-edit-sync": "node scripts/imported_edit_sync_smoke.mjs",
     "smoke:imported-edit-sync:strict": "node scripts/imported_edit_sync_smoke.mjs --fail-on-resource-issues true",
     "budget:imported-edit": "node scripts/imported_edit_perf_budget.mjs",

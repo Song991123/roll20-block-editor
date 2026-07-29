@@ -178,10 +178,18 @@ function extractDocumentFontCssFromUserCss(css: string): string {
   return [...imports, ...fontFaces].join('\n');
 }
 
+function readLocalStorageFlag(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === '1';
+  } catch {
+    // Sandboxed preview documents may not have an origin-backed storage area.
+    return false;
+  }
+}
+
 function ensureRoll20DocumentFonts(css: string): void {
   if (typeof document === 'undefined') return;
-  const suppressUserDocumentFonts =
-    window.localStorage.getItem('__r20SuppressUserDocumentFonts') === '1';
+  const suppressUserDocumentFonts = readLocalStorageFlag('__r20SuppressUserDocumentFonts');
   const documentFontCss = [
     roll20ShadowDocumentFontFaceCss,
     suppressUserDocumentFonts ? '' : extractDocumentFontCssFromUserCss(css),

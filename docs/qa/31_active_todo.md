@@ -6620,3 +6620,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   `tsconfig.tsbuildinfo` remain local-only disposable output.
 - SAFETY: no deletion workaround was used; source roots, `node_modules/`, Git
   worktrees, and user-authored inputs remain preserved.
+
+## 2026-07-30 User-facing import smoke
+
+- DONE: Normal-sized imports now use synchronous hydration while large imports
+  retain chunked hydration and progress feedback. The dialog registers blocks
+  before hydration and its action buttons are explicit non-submit controls.
+- VERIFIED: `pnpm run smoke:import-dialog` passed with 3 HTML blocks, preserved
+  class/attribute output, one preview iframe, zero console errors, and zero
+  page errors. `pnpm run ci:verify` also passed.
+- VERIFY/BLOCKED: Real Roll20 Sandbox upload/root/screenshot/chat evidence is
+  still absent because the browser file chooser has not accepted the payload.
+- NEXT P0: Complete a supported user-visible Sandbox upload, then capture
+  positive activation, root DOM, screenshot, and roll/chat evidence. Legacy
+  mode still needs its isolated dedicated-room check.

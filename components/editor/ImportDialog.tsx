@@ -33,6 +33,7 @@ import {
   type AssetPreflight,
 } from '@/lib/export/asset_refs';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { registerAllBlocks } from '@/lib/blocks/registry';
 import {
   moveImportedWorkerBlocksToWorkspace,
   replaceWorkerWorkspaceFromSourceHtml,
@@ -148,6 +149,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         html: { compactWideRows },
       });
       const adapter = getBlocklyAdapter();
+      // Keep the import boundary safe when the dialog wins the race against
+      // BlocklyModelHost's registration effect.
+      registerAllBlocks();
       const ws = useWorkspaceStore.getState();
       const ui = useUiStore.getState();
       // Dispose visible SVG workspaces before hydrating a large import.
@@ -179,8 +183,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
       // html 워크스페이스가 가장 큼 (6K 가능) → chunked. css/i18n 은 보통 작음.
       // top-level 카운트는 chunked 가 자체 측정 → progress callback 으로 수신.
-      let htmlTotal = 0;
-      await adapter.hydrateFromXmlChunked('html', result.html, {
+      let htmlTotal = result.stats.htmlTotal;
+      await (result.stats.htmlTotal >= PROGRESS_THRESHOLD
+        ? adapter.hydrateFromXmlChunked('html', result.html, {
         chunkSize: 500,
         onProgress: (done, total) => {
           htmlTotal = total;
@@ -192,7 +197,8 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             });
           }
         },
-      });
+        })
+        : Promise.resolve(adapter.hydrateFromXml('html', result.html)));
       const workerMove = moveImportedWorkerBlocksToWorkspace();
       const workerSource = replaceWorkerWorkspaceFromSourceHtml(htmlText);
       adapter.hydrateFromXml('css', result.css);
@@ -423,10 +429,10 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         )}
 
         <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={handleReset} disabled={busy}>
+          <Button type="button" variant="ghost" onClick={handleReset} disabled={busy}>
             지우기
           </Button>
-          <Button onClick={handleImport} disabled={busy || !anyInput}>
+          <Button type="button" onClick={handleImport} disabled={busy || !anyInput}>
             {busy ? (progress ? `${progress.pct}% 불러오는 중…` : '변환 중…') : '블록으로 변환하기'}
           </Button>
         </DialogFooter>

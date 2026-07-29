@@ -7394,3 +7394,20 @@ visibility verification passed. No external room was opened or modified.
   root/screenshot/chat evidence was created, and no existing room was changed.
 - NEXT: A user-visible manual file selection or a supported CDP file-input
   handoff is still required before actual parity can be measured.
+
+## 2026-07-30 - User-facing import hydration boundary
+
+- DONE: The import dialog now registers the complete block catalog at its own
+  boundary and uses one synchronous hydration pass for normal-sized sheets.
+  Chunked hydration remains reserved for imports at or above the progress
+  threshold, preserving the large-sheet performance path.
+- DONE: Import action buttons now have explicit non-submit types. Sandbox-safe
+  local-storage flag reads were also added for isolated preview documents.
+- VERIFIED LOCAL: The new `smoke:import-dialog` browser check typed an
+  anonymous HTML snippet into the visible dialog and observed 3 HTML blocks,
+  preserved `sheet-root` and `attr_character_name` in emitted HTML, one
+  persistent preview iframe, zero console errors, and zero page errors.
+- VERIFIED: lint, production build, `ci:verify`, and the focused UI import
+  smoke pass.
+- CLAIM BOUNDARY: This proves the local user import path only. It does not
+  establish actual Roll20 Sandbox acceptance or modern/legacy visual parity.
