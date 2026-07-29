@@ -125,3 +125,13 @@ The host safety policy rejected both the explicit multi-target command and a
 single-target absolute-path recursive command before execution. No target was
 deleted, and no safety bypass, alternate shell, or per-file workaround was
 used. All eight targets remain **not deleted**.
+
+## 2026-07-30 sixth-pass user-authorized retry
+
+The user authorized a further retry after the fifth-pass rejection. The same
+eight absolute targets were revalidated as generated or stale, untracked, and
+outside protected source ownership, with no matching project process or
+development listener. The host rejected the native `Remove-Item -Recurse`
+operation before execution again. No target was deleted, and no alternate
+shell, per-file deletion, or safety bypass was used. All eight targets remain
+**not deleted**.
