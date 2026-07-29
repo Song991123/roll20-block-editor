@@ -276,10 +276,12 @@ assertCheck(checks, 'preview and edit share the mounted iframe render surface',
     && !editCanvas.includes('mountSheetShadow('));
 assertCheck(checks, 'iframe, live patch, and Shadow serializers share one prepared render contract',
   renderContract.includes('export function prepareSheetRenderContract')
-    && previewMain.includes('buildSheetRenderBundle(')
+    && previewMain.includes('buildSheetLiveBundle(')
+    && previewMain.includes('buildSheetDoc(renderOptions)')
     && !previewMain.includes('buildSheetDoc({')
     && !previewMain.includes('buildSheetLivePatch({')
     && !previewMain.includes('buildSheetParts({')
+    && readFileSync(join(REPO_ROOT, 'lib/preview/buildDoc.ts'), 'utf8').includes('buildSheetLiveBundle')
     && previewMain.includes("renderMode === 'shadow'")
     && readFileSync(join(REPO_ROOT, 'lib/preview/buildDoc.ts'), 'utf8').includes('buildSheetPartsFromContract(opts, contract)'));
 assertCheck(checks, 'visual smoke hook exposes the same atomic compatibility mode action',

@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import {
   buildSheetDoc,
+  buildSheetLiveBundle,
   buildSheetLivePatch,
   buildSheetParts,
   buildSheetRenderBundle,
@@ -17,6 +18,7 @@ const options = {
 
 const bundle = buildSheetRenderBundle(options);
 const bundleWithParts = buildSheetRenderBundle(options, { includeParts: true });
+const liveBundle = buildSheetLiveBundle(options, { includeParts: true });
 const cssOnlyChange = buildSheetRenderBundle({ ...options, css: '.card { color: red; }' });
 const htmlChange = buildSheetRenderBundle({ ...options, html: '<section class="card">Changed</section>' });
 const scriptBundle = buildSheetRenderBundle({
@@ -39,6 +41,8 @@ assert.deepEqual(
   buildSheetParts(options),
   'optional Shadow parts match the standalone builder without preparing twice',
 );
+assert.deepEqual(liveBundle.livePatch, bundleWithParts.livePatch, 'live bundle keeps the shared live patch contract');
+assert.deepEqual(liveBundle.parts, bundleWithParts.parts, 'live bundle keeps the shared Shadow parts contract');
 assert.match(bundle.doc, new RegExp(`data-r20-html-key="${bundle.livePatch.htmlKey}"`));
 assert.equal(
   cssOnlyChange.livePatch.htmlKey,
@@ -46,9 +50,18 @@ assert.equal(
   'CSS-only updates preserve the HTML key and can skip root replacement',
 );
 assert.notEqual(
+  cssOnlyChange.livePatch.sourceKey,
+  bundle.livePatch.sourceKey,
+  'CSS-only updates still produce a distinct content identity for the live bridge',
+);
+assert.notEqual(
   htmlChange.livePatch.htmlKey,
   bundle.livePatch.htmlKey,
   'structural HTML updates force the conservative root replacement path',
+);
+assert.ok(
+  bundle.livePatch.sourceKey.length < 2000,
+  'live bridge identity does not embed the rendered document payload',
 );
 assert.doesNotMatch(
   scriptBundle.doc,

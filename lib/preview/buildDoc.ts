@@ -71,6 +71,8 @@ export interface BuildDocOptions {
 export interface SheetLivePatch {
   html: string;
   htmlKey: string;
+  /** Content identity used by the parent bridge; never contains the payload itself. */
+  sourceKey: string;
   styles: Record<string, string>;
   i18n: string;
   darkMode: boolean;
@@ -82,6 +84,11 @@ export interface SheetLivePatch {
 
 export interface SheetRenderBundle {
   doc: string;
+  livePatch: SheetLivePatch;
+  parts?: SheetRenderParts;
+}
+
+export interface SheetLiveBundle {
   livePatch: SheetLivePatch;
   parts?: SheetRenderParts;
 }
@@ -1658,17 +1665,31 @@ function buildSheetLivePatchFromContract(
   const html = stripExecutablePageScripts(
     contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER),
   );
+  const htmlKey = sheetSourceKey(html);
+  const styles = {
+    'roll20-base-dark': darkMode ? roll20DarkmodeIframeCss : '',
+    'roll20-legacy-input-state': contract.legacyCssSanitize ? ROLL20_LEGACY_INPUT_STATE_CSS : '',
+    'r20-layer-filter': layerFilterCss(),
+    'r20-user': contract.previewCss,
+    'r20-renderer-model': roll20RendererModelCss(roll20RendererModel),
+  };
+  const i18n = normalizeTranslationForRoll20(opts.i18n ?? '');
   return {
     html,
-    htmlKey: sheetSourceKey(html),
-    styles: {
-      'roll20-base-dark': darkMode ? roll20DarkmodeIframeCss : '',
-      'roll20-legacy-input-state': contract.legacyCssSanitize ? ROLL20_LEGACY_INPUT_STATE_CSS : '',
-      'r20-layer-filter': layerFilterCss(),
-      'r20-user': contract.previewCss,
-      'r20-renderer-model': roll20RendererModelCss(roll20RendererModel),
-    },
-    i18n: normalizeTranslationForRoll20(opts.i18n ?? ''),
+    htmlKey,
+    sourceKey: [
+      'r20-source-v2',
+      htmlKey,
+      ...Object.entries(styles).map(([name, value]) => `${name}:${sheetSourceKey(value)}`),
+      `i18n:${sheetSourceKey(i18n)}`,
+      darkMode ? 'dark' : 'light',
+      layer,
+      contract.roll20SandboxSanitize ? 'sandbox' : 'local',
+      roll20RendererModel,
+      normalizeDocumentLanguage(opts.documentLanguage),
+    ].join('|'),
+    styles,
+    i18n,
     darkMode,
     layer,
     roll20SandboxSanitize: contract.roll20SandboxSanitize,
@@ -1689,6 +1710,21 @@ export function buildSheetRenderBundle(
   const contract = prepareSheetRenderContract(opts);
   return {
     doc: buildSheetDocFromContract(opts, contract),
+    livePatch: buildSheetLivePatchFromContract(opts, contract),
+    parts: config.includeParts ? buildSheetPartsFromContract(opts, contract) : undefined,
+  };
+}
+
+/**
+ * Build the persistent live-patch payload and optional Shadow parts from one
+ * prepared contract without rebuilding the unused iframe document string.
+ */
+export function buildSheetLiveBundle(
+  opts: BuildDocOptions,
+  config: { includeParts?: boolean } = {},
+): SheetLiveBundle {
+  const contract = prepareSheetRenderContract(opts);
+  return {
     livePatch: buildSheetLivePatchFromContract(opts, contract),
     parts: config.includeParts ? buildSheetPartsFromContract(opts, contract) : undefined,
   };

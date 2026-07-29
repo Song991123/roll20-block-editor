@@ -14,7 +14,11 @@ import {
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { getBlockDef } from '@/lib/blocks/registry';
-import { buildSheetRenderBundle } from '@/lib/preview/buildDoc';
+import {
+  buildSheetDoc,
+  buildSheetLiveBundle,
+  type BuildDocOptions,
+} from '@/lib/preview/buildDoc';
 import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
@@ -224,27 +228,30 @@ export default function PreviewMain() {
   // tick 에 setSrcdoc → React 가 srcDoc prop 갱신, 하지만 iframe 이 reload 안 함 (Chrome
   // 의 srcdoc 속성 변경 quirk). useMemo 로 바꿔 첫 렌더부터 올바른 값으로 렌더 →
   // 모드 전환 후에도 즉시 컨텐츠 표시.
-  const renderBundle = useMemo(
-    () =>
-      buildSheetRenderBundle(
-        {
-          html: previewAssetText.html,
-          css: previewAssetText.css,
-          i18n: emitI18n,
-          compatibilityMode,
-          roll20SandboxSanitize,
-          darkMode,
-          previewLayer,
-          includeEditorOverlays: renderMode === 'shadow',
-          documentLanguage,
-        },
-        { includeParts: renderMode === 'shadow' },
-      ),
+  const renderOptions = useMemo<BuildDocOptions>(
+    () => ({
+      html: previewAssetText.html,
+      css: previewAssetText.css,
+      i18n: emitI18n,
+      compatibilityMode,
+      roll20SandboxSanitize,
+      darkMode,
+      previewLayer,
+      includeEditorOverlays: renderMode === 'shadow',
+      documentLanguage,
+    }),
     [renderMode, previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
   );
-  const srcdoc = renderBundle.doc;
-  const livePatch = renderBundle.livePatch;
-  const [iframeDocumentSrcdoc] = useState(srcdoc);
+  const liveBundle = useMemo(
+    () => buildSheetLiveBundle(renderOptions, { includeParts: renderMode === 'shadow' }),
+    [renderMode, renderOptions],
+  );
+  const livePatch = liveBundle.livePatch;
+  const parts = liveBundle.parts ?? null;
+  const [iframeDocumentSrcdoc] = useState(() => buildSheetDoc(renderOptions));
+  // The bridge only needs a content identity to suppress duplicate applies;
+  // keep the large full-document string out of this dependency path.
+  const renderSourceKey = livePatch.sourceKey;
 
   // spec 21 Phase A — Shadow DOM 모드 mount.
   // host element 에 Shadow Root attach → buildSheetParts(html, css) 인젝션.
@@ -272,7 +279,6 @@ export default function PreviewMain() {
   // selectedBlockId 변경 effect 에서 호출. mount 사이클 (parts 변경) 마다 새 ref
   // 발급 — cleanup 단계에서 null 로 비워 stale 호출 방지.
   const shadowSetSelectedRef = useRef<((id: string | null, opts?: { scrollIntoView?: boolean }) => void) | null>(null);
-  const parts = renderBundle.parts ?? null;
   useEffect(() => {
     if (renderMode !== 'shadow') return;
     if (!parts) return;
@@ -551,7 +557,7 @@ export default function PreviewMain() {
     editSubmode,
     sheetWidgetsList,
     rolltemplateWidgetsList,
-    srcdoc,
+    renderSourceKey,
     setHoveredWidgetId,
     setSelectedWidgetId,
   ]);
@@ -909,12 +915,12 @@ export default function PreviewMain() {
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
-    if (lastAppliedSourceRef.current === srcdoc) return;
+    if (lastAppliedSourceRef.current === renderSourceKey) return;
     if (!iframeRef.current?.contentWindow) return;
     const revision = applyRevisionRef.current + 1;
     applyRevisionRef.current = revision;
-    applySourcesRef.current.set(revision, srcdoc);
-    pendingApplySourceRef.current = srcdoc;
+    applySourcesRef.current.set(revision, renderSourceKey);
+    pendingApplySourceRef.current = renderSourceKey;
     // A persistent iframe first reports the empty/default document width. Let
     // each applied sheet source report its own intrinsic width while manual
     // width input remains authoritative until the user resets automatic sizing.
@@ -962,7 +968,7 @@ export default function PreviewMain() {
       const currentTarget = currentFrame?.contentWindow;
       if (
         iframeEditBridgeIdRef.current !== iframeEditBridgeId
-        || pendingApplySourceRef.current !== srcdoc
+        || pendingApplySourceRef.current !== renderSourceKey
       ) return;
       if (!currentTarget) return;
       try {
@@ -980,7 +986,7 @@ export default function PreviewMain() {
     return () => {
       if (retryTimer !== null) window.clearTimeout(retryTimer);
     };
-  }, [iframeEditBridgeId, iframeLoadRevision, lastApplyAck, livePatch, srcdoc]);
+  }, [iframeEditBridgeId, iframeLoadRevision, lastApplyAck, livePatch, renderSourceKey]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;

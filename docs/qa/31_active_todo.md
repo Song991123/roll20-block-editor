@@ -17,6 +17,10 @@
 - DONE LOCAL: Drag commits now queue the immediate emit after Blockly's
   coalesced mutation microtask, preventing the parent bump and listener bump
   from scheduling two full emit passes for one drop.
+- DONE LOCAL: The persistent iframe now builds its initial document once and
+  uses a content-derived live-patch identity for later updates. A raw Blockly
+  version no longer causes a stale live patch to apply before the emit cache is
+  ready. The modern/legacy persistent smoke remains green after this split.
 - DONE LOCAL: Synchronous committed-drop emits now mark the exact workspace
   snapshot they published, so the following structure-version effect skips a
   duplicate delayed emit. Ordinary non-committed edits still use the debounce

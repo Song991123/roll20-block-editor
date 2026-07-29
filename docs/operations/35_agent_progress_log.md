@@ -6914,6 +6914,24 @@ visibility verification passed. No external room was opened or modified.
   `47.0ms` legacy in the latest run. This supports the duplicate-emit fix but
   does not replace the pointer-to-ack gate.
 
+## 2026-07-29 Persistent Render Bundle Split
+
+- FIXED LOCAL: The persistent iframe path now builds the initial `srcDoc` once
+  and builds only the live patch after subsequent workspace updates. Shadow
+  parts are built only while Shadow rendering is active; the unused full
+  document is no longer regenerated for every emit.
+- FIXED LOCAL: Live-bridge source identity is derived from the actual emitted
+  HTML/CSS/i18n payload hashes and render contract, not raw Blockly versions.
+  This prevents a stale pre-emit source from being applied when a mutation
+  version bumps before the emit cache is published.
+- VERIFIED LOCAL: The 6000-synthetic-node persistent smoke passed in modern and
+  legacy modes after the split. Flow remained on the structural `patch` path;
+  free recommit remained on the `styles` path; reloads, fallbacks, and browser
+  errors were zero.
+- CLAIM BOUNDARY: The latest pointer-to-ack observation was `180.8ms` modern /
+  `167.8ms` legacy, so this batch is an architectural work reduction and not a
+  proven end-to-end latency win. Keep the latency P0 open.
+
 ## 2026-07-29 Mounted Large-Sheet Latency Gate
 
 - VERIFIED LOCAL: The mounted persistent iframe smoke with `6000` synthetic
