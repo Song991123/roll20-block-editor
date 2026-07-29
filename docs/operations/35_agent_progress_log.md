@@ -7150,3 +7150,15 @@ visibility verification passed. No external room was opened or modified.
   implemented by this documentation change.
 - NEXT P1: Create a script-record model and browser roundtrip tests before
   exposing generic JS blocks.
+## 2026-07-29 - Roll20 Sandbox chooser retry
+
+- VERIFIED READ-ONLY: The logged-in Roll20 editor exposed Sheet Sandbox Tools
+  and the visible participant count was exactly one. No room content or
+  settings were changed during the attempt.
+- BLOCKED: Clicking the visible HTML upload label opened the supported chooser,
+  but local file assignment returned `Not allowed`. No payload was sent and no
+  actual screenshot was promoted.
+- CURRENT: Generated actual evidence remains `0/6`; room observation remains
+  `0/3`.
+- NEXT P0: Continue from the open Sandbox handoff with user-visible file
+  selection, then capture root DOM, full-sheet screenshot, and chat evidence.

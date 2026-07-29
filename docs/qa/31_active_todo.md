@@ -6405,3 +6405,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   generic JS block workspace or arbitrary page-JS sandbox exists yet.
 - NEXT P1: Design a script-record model and roundtrip tests before implementing
   generic JS blocks.
+## 2026-07-29 Roll20 Sandbox chooser retry
+
+- VERIFIED READ-ONLY: The logged-in Roll20 editor showed the isolated Sheet
+  Sandbox Tools surface and a visible `1 구성원` participant count. The room
+  was not otherwise edited.
+- BLOCKED: The supported file chooser opened from the visible HTML label, but
+  assigning the local HTML file was rejected with `Not allowed`. No HTML, CSS,
+  or translation payload was transmitted and no screenshot was counted.
+- CURRENT EVIDENCE: Generated actual remains `0/6`; room observation remains
+  `0/3`.
+- NEXT P0: Use the open Sandbox handoff with a user-visible file selection,
+  then capture positive root DOM/screenshot evidence before chat or diff.
