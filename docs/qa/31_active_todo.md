@@ -6492,3 +6492,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P1: Add a browser acceptance case that drags valid and invalid table
   children through the visible layer panel and confirms the target highlight
   matches the final mutation.
+
+## 2026-07-30 Roll20 Sandbox read-only baseline retry
+
+- VERIFIED READ-ONLY: A fresh Roll20 editor tab loaded the visible Sandbox
+  tools with exactly `1` participant. The dialog exposes separate `.html`,
+  `.css`, and `.json` file inputs, and the room chat shows Roll20 table-based
+  roll output with inline dice markup.
+- VERIFIED LOCAL: An anonymous synthetic fixture was imported and exported
+  through the product's local baseline path; its generated HTML/CSS/translation
+  payload is ready in ignored local evidence.
+- BLOCKED: The browser file chooser rejected both Playwright file assignment
+  and the visible file-picker path attempt with `Not allowed`. No generated
+  payload was transmitted to Roll20 and no actual generated-sheet screenshot
+  or chat result is counted.
+- NEXT P0: Complete the Sandbox upload through a user-visible file selection
+  or an approved browser upload path, then capture positive root, screenshot,
+  and chat evidence. Keep legacy verification in a separate dedicated room.

@@ -184,3 +184,11 @@ after the transient `jsdom-*` entry was no longer held. `.next/` and `out/`
 are absent again; active dependencies, fixtures, canonical reports, source
 roots, and worktrees remain preserved. Project ports `3000`, `4197`, `4198`,
 and `4199` have no listeners.
+
+## 2026-07-30 post-Sandbox-baseline cleanup completion
+
+The local build output used to prepare the anonymous Sandbox payload was
+removed after the transient lock cleared. `.next/` and `out/` are absent; the
+ignored payload and synthetic fixture remain for the explicitly authorized
+Sandbox handoff. Source roots, active dependencies, canonical reports, and
+worktrees were preserved.

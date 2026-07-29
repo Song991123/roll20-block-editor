@@ -7278,3 +7278,17 @@ visibility verification passed. No external room was opened or modified.
 - NEXT: Add a visible browser acceptance case for valid/invalid table-child
   highlighting; keep actual Roll20 modern Sandbox and isolated legacy-room
   evidence separate from this local UX result.
+
+## 2026-07-30 - Roll20 Sandbox read-only baseline retry
+
+- VERIFIED READ-ONLY: A fresh editor tab showed exactly one visible participant,
+  the `Sheet Sandbox Tools` dialog, separate HTML/CSS/Translation controls,
+  and chat rows rendered with Roll20's table-based roll output and inline dice
+  markup.
+- VERIFIED LOCAL: The anonymous synthetic fixture completed the real local
+  import/export baseline and produced an ignored HTML/CSS/translation payload.
+- BLOCKED: Browser file assignment was rejected with `Not allowed` for both
+  the supported file-chooser API and a visible path-entry attempt. Nothing was
+  uploaded or saved in Roll20, so no generated actual-sheet evidence exists.
+- NEXT: Obtain a user-visible or otherwise approved file-selection path for
+  the isolated Sandbox; do not use an existing room for generated writes.

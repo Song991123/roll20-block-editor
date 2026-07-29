@@ -232,3 +232,13 @@ directories that had been recreated by the local build.
   `3000`, `4197`, `4198`, or `4199`.
 - PRESERVED: source roots, active dependencies, local fixtures, canonical
   reports, and both Git worktrees.
+
+## 2026-07-30 post-Sandbox-baseline cleanup completion
+
+- DELETED: the `.next/` and `out/` directories recreated for the anonymous
+  local export baseline.
+- VERIFIED: both build paths are absent after the transient build entry was
+  released; the ignored anonymous payload remains available for the approved
+  Sandbox handoff.
+- PRESERVED: source roots, active dependencies, fixtures, canonical reports,
+  and worktrees.
