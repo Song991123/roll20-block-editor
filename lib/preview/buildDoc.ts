@@ -814,7 +814,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var sheet = document.querySelector('form.sheetform > .charactersheet.charsheet') || document.getElementById('dialog-window');
     if (!sheet) return 480;
     var box = measureContentBox(sheet);
-    return Math.max(120, Math.ceil(box.height + 24));
+    // Use the authored root height when normal flow already accounts for its
+    // padding/content. Keep the descendant bound as a floor for absolutely
+    // positioned or transformed children that extend beyond that root. The
+    // previous unconditional +24px made every sheet surface taller than the
+    // Roll20 root and accumulated as visible blank space below short sheets.
+    var rootHeight = Number(sheet.getBoundingClientRect().height) || 0;
+    return Math.max(120, Math.ceil(Math.max(rootHeight, box.height)));
   }
   function measureWidth() {
     var sheet = document.querySelector('form.sheetform > .charactersheet.charsheet') || document.getElementById('dialog-window');

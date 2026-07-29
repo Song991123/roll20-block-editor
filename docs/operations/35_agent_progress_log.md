@@ -7656,3 +7656,22 @@ visibility verification passed. No external room was opened or modified.
 - COPYRIGHT: Screenshot and JSON evidence were written only to ignored local
   `.tmp/roll20-sandbox-modern-legacy-proof/` during verification and were
   purged afterward; no private sheet source was retained in tracked files.
+
+## 2026-07-30 - Root-height reconciliation
+
+- Changed the shared iframe resize runtime in `lib/preview/buildDoc.ts` so
+  sheet height is the larger of the authored root's measured height and the
+  descendant paint bound. This removes the unconditional `24px` tail that
+  made short sheets visibly taller than their rendered Roll20 root while
+  retaining overflow from absolute/transformed descendants.
+- Rebuilt and reran anonymous local evidence. Modern and legacy preview/edit
+  both measured a `850 x 200px` root, `0px` host/content delta, exact pixel
+  parity, and no console/page/resource errors. Edit-flow and persistent
+  preview-surface smokes passed, including the 6,500-block synthetic run.
+- `lint`, `build`, focused renderer tests, and full `ci:verify` passed. The
+  CI-generated legacy audit output stayed ignored and was not retained as a
+  public artifact.
+- The external anonymous Roll20 probe remains a separate contract: its root
+  measured `860 x 200px` inside a `900px` iframe versus the product's default
+  `850px` user canvas. Relative child geometry matched, but wrapper/root
+  normalization remains VERIFY and no universal parity claim is made.

@@ -30,6 +30,15 @@ Follow-up measurement, 2026-07-18:
 
 This matrix breaks the operating requirements into actionable work. Use it with `docs/qa/31_active_todo.md`.
 
+Latest local root-height evidence, 2026-07-30:
+the shared preview/edit iframe resize path now reconciles the authored
+`.charactersheet` root height with descendant paint bounds instead of adding a
+fixed `24px` tail. Anonymous modern/legacy local preview/edit smoke reports
+exact pixel/style/geometry parity and a `0px` host/content delta for the
+`850 x 200px` default surface. This closes only the local extra-tail defect;
+the actual Roll20 synthetic probe still uses a `900px` iframe and an
+`860 x 200px` root, so wrapper/root normalization remains VERIFY.
+
 Current superseding status, 2026-07-13:
 `corepack pnpm run status:roll20-actual -- reports\roll20-actual-compare\2026-06-18-state-map-v1`
 now reports `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, generated screenshots/diffs

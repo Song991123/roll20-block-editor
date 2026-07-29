@@ -150,6 +150,16 @@ assert.match(
 );
 assert.match(bundle.doc, /data-r20-structural-patches/);
 assert.match(bundle.doc, /if \(style\.textContent !== css\) style\.textContent = css/);
+assert.match(
+  bundle.doc,
+  /var rootHeight = Number\(sheet\.getBoundingClientRect\(\)\.height\) \|\| 0;[\s\S]*?Math\.max\(rootHeight, box\.height\)/,
+  'iframe height uses the authored root or overflowing descendant bound',
+);
+assert.doesNotMatch(
+  bundle.doc,
+  /box\.height \+ 24/,
+  'iframe height does not add a fixed blank tail to every sheet',
+);
 assert.match(bundle.doc, /r20:edit-flow-target/);
 assert.match(bundle.doc, /r20:edit-optimistic-flow-finalize/);
 assert.match(bundle.doc, /rollbackOptimisticFlowMove/);

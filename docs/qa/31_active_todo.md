@@ -6903,3 +6903,25 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Compare the local preview/edit surface against this external
   synthetic contract, then run a user-provided local fixture through the same
   ignored-only pipeline without publishing its source or evidence.
+
+## 2026-07-30 Roll20 root-height reconciliation
+
+- DONE LOCAL: The shared iframe resize runtime now uses the larger of the
+  authored `.charactersheet` root height and the measured descendant paint
+  bounds. It no longer adds an unconditional `24px` tail to every sheet;
+  absolutely positioned or transformed descendants that extend beyond the
+  root remain included.
+- VERIFIED LOCAL: Anonymous synthetic preview/edit smoke passes in both
+  modern and legacy modes with `0` mismatched pixels, exact DOM/style/geometry
+  parity, a `850 x 200px` root, and `0px` edit host/content height delta.
+  Edit-flow and persistent-surface smokes also pass for both modes; the
+  6,500-block synthetic persistent run remains within its acceptance gate.
+- VERIFIED GATES: `lint`, `build`, focused renderer tests, and `ci:verify`
+  pass. The generated legacy audit report was local-only and is disposable.
+- CLAIM BOUNDARY: The actual Roll20 synthetic probe measured an `860 x 200px`
+  root inside a `900px` iframe, while the product's user-facing default canvas
+  remains `850px`. Relative proof geometry matched, but viewport/root
+  normalization is still open; this is not a universal visual-parity claim.
+- NEXT P0: Define the normalized wrapper-versus-sheet comparison contract,
+  then rerun one user-provided fixture only in ignored local evidence before
+  changing generic width or Roll20 baseline rules.
