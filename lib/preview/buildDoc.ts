@@ -611,10 +611,6 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var attrs = htmlChanged && !usedOptimisticFlowPatch ? collectAttrs() : null;
     var previousWorkerSource = htmlChanged && !usedOptimisticFlowPatch ? workerSourceText(root) : '';
     var usedStructuralPatch = false;
-    // The drag transform is only a visual preview of the pending edit. CSS-only
-    // updates keep the same HTML key, so clearing it only inside the structural
-    // patch branch can leave the committed position permanently offset.
-    clearOptimisticEditMove();
     if (htmlChanged) {
       if (usedOptimisticFlowPatch) {
         // The iframe already performed and validated this exact DOM move on
@@ -694,6 +690,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       }
       lastAppliedBlockCount = root.querySelectorAll('[data-r20-block-id]').length;
     }
+    // Keep the pointer transform in place while the authoritative HTML and
+    // styles are being applied. Clearing it before the patch paints the old
+    // position for one frame, which looks like a rollback during a drag. A
+    // style-only patch must leave it alone so an active pointer move remains
+    // fully optimistic until its structural commit arrives.
+    if (htmlChanged) clearOptimisticEditMove();
     document.body.setAttribute(
       'data-r20-last-apply-mode',
       htmlChanged ? (usedOptimisticFlowPatch || usedStructuralPatch ? 'patch' : 'replace') : 'styles'

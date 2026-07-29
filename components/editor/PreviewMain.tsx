@@ -821,22 +821,26 @@ export default function PreviewMain() {
           return;
         }
         const ui = useUiStore.getState();
+        // The visible target is also the authoritative commit target. In free
+        // placement, before/after targets are intentionally filtered out; do
+        // not let the hidden structural target turn a drop back into flow.
+        const committedWidgetTarget = visibleDropTarget;
         const freeInside = ui.editPlacementMode === 'free'
-          && nextDropTarget?.mode === 'inside'
-          && Boolean(nextDropTarget.containerBlockId);
-        const position = freeInside && nextDropTarget
+          && committedWidgetTarget?.mode === 'inside'
+          && Boolean(committedWidgetTarget.containerBlockId);
+        const position = freeInside && committedWidgetTarget
           ? {
               left: Math.max(0, Math.round(
                 editMessage.pointer.x
-                - nextDropTarget.geometry.rect.left
-                - nextDropTarget.geometry.clientLeft
-                + nextDropTarget.geometry.scrollLeft,
+                - committedWidgetTarget.geometry.rect.left
+                - committedWidgetTarget.geometry.clientLeft
+                + committedWidgetTarget.geometry.scrollLeft,
               )),
               top: Math.max(0, Math.round(
                 editMessage.pointer.y
-                - nextDropTarget.geometry.rect.top
-                - nextDropTarget.geometry.clientTop
-                + nextDropTarget.geometry.scrollTop,
+                - committedWidgetTarget.geometry.rect.top
+                - committedWidgetTarget.geometry.clientTop
+                + committedWidgetTarget.geometry.scrollTop,
               )),
             }
           : {
@@ -844,10 +848,10 @@ export default function PreviewMain() {
               top: Math.max(0, Math.round(editMessage.pointer.y)),
             };
         const id = appendFriendlyWidgetPreset(preset, position, {
-          mode: freeInside ? 'absolute-in-container' : nextDropTarget ? 'flow' : 'absolute',
-          placement: nextDropTarget?.mode,
-          containerBlockId: nextDropTarget?.containerBlockId ?? nextDropTarget?.blockId ?? null,
-          siblingBlockId: nextDropTarget?.siblingBlockId ?? null,
+          mode: freeInside ? 'absolute-in-container' : committedWidgetTarget ? 'flow' : 'absolute',
+          placement: committedWidgetTarget?.mode,
+          containerBlockId: committedWidgetTarget?.containerBlockId ?? committedWidgetTarget?.blockId ?? null,
+          siblingBlockId: committedWidgetTarget?.siblingBlockId ?? null,
         });
         setIframeEditDropTarget(null);
         if (id) setSelected(id, 'preview');

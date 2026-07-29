@@ -408,6 +408,52 @@ async function main() {
     assert(result.tests.canvasWidgetDrop.created.nested, 'widget did not enter the frame');
     assert(!result.tests.canvasWidgetDrop.created.nestedAbsolute, 'flow widget unexpectedly became absolute');
 
+    // Free placement must honor the visible target filter. Hover the top edge
+    // of a flow row, where the structural resolver would normally say
+    // "before"; in free mode that hidden target must create a root absolute
+    // widget instead of silently reordering the row.
+    await page.click('[data-testid="edit-placement-free"]');
+    const freeWidgetTarget = await frame.locator('.sheet-row-a').boundingBox();
+    assert(freeWidgetTarget, 'free widget target missing');
+    const freeWidgetBefore = await frame.evaluate(() => [...new Set(
+      [...document.querySelectorAll('input[data-r20-block-id]')]
+        .map((node) => node.getAttribute('data-r20-block-id'))
+        .filter(Boolean),
+    )]);
+    await frame.evaluate(({ x, y }) => {
+      const target = document.querySelector('.sheet-row-a');
+      if (!target) return;
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('application/x-r20-friendly-widget', JSON.stringify({ id: 'text-input' }));
+      const init = { bubbles: true, cancelable: true, clientX: x, clientY: y };
+      const dragover = new DragEvent('dragover', init);
+      Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(dragover);
+      const drop = new DragEvent('drop', init);
+      Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(drop);
+    }, {
+      x: freeWidgetTarget.x + freeWidgetTarget.width / 2,
+      y: freeWidgetTarget.y + 1,
+    });
+    await page.waitForTimeout(500);
+    result.tests.freeCanvasWidgetDrop = await frame.evaluate((beforeIds) => {
+      const created = [...document.querySelectorAll('input[data-r20-block-id]')]
+        .find((node) => !beforeIds.includes(node.getAttribute('data-r20-block-id')));
+      if (!created) return { created: false };
+      const block = created.closest('[data-r20-block-id]') ?? created;
+      return {
+        created: true,
+        position: getComputedStyle(block).position,
+        parentBlockId: block.parentElement?.getAttribute('data-r20-block-id') ?? null,
+        hasLeft: Boolean(block.style.left),
+        hasTop: Boolean(block.style.top),
+      };
+    }, freeWidgetBefore);
+    assert(result.tests.freeCanvasWidgetDrop.created, 'free placement widget was not created');
+    assert(result.tests.freeCanvasWidgetDrop.position === 'absolute', 'free placement widget became flow content');
+    assert(result.tests.freeCanvasWidgetDrop.parentBlockId === null, 'free placement widget silently entered a hidden structural target');
+
     const frameCollapseToggle = page.locator(
       `[data-testid="edit-layer-collapse-toggle"][data-r20-block-id="${ids.frameId}"]`,
     );

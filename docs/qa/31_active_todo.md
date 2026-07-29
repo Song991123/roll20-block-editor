@@ -6647,3 +6647,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Obtain a supported CDP endpoint or complete a user-visible manual
   file selection; then run activation, sheet-frame, screenshot, and chat
   probes. Legacy mode must be checked only in an isolated dedicated room.
+
+## 2026-07-30 Direct manipulation follow-up
+
+- DONE LOCAL: The persistent iframe now keeps the optimistic pointer transform
+  through the authoritative HTML/style patch and clears it only after the
+  patch is applied. CSS-only updates no longer cancel an active drag preview
+  and briefly paint the old position.
+- DONE LOCAL: Gallery drops now commit the same target that is visibly offered.
+  In free placement, hidden before/after flow targets cannot silently become
+  structural inserts; only a visible inside target can create an
+  absolute-in-container widget.
+- VERIFIED LOCAL: `test:build-doc-bundle`, `test:iframe-drop-target`,
+  `smoke:edit-flow` (including the free gallery-drop regression),
+  `smoke:imported-edit-sync`, and
+  `smoke:persistent-preview-surface` pass.
+- CLAIM BOUNDARY: This narrows local drag flicker and free-drop behavior only;
+  actual Roll20 modern/legacy parity and Sandbox upload evidence remain open.

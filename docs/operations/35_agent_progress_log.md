@@ -7427,3 +7427,17 @@ visibility verification passed. No external room was opened or modified.
   renderer/synchronization checks, not actual Roll20 parity evidence.
 - NEXT P0: Use a supported CDP endpoint or a user-visible manual file choice,
   then capture positive Sandbox activation/root/screenshot/chat evidence.
+
+## 2026-07-30 - Direct manipulation follow-up
+
+- FIXED LOCAL: `buildDoc` now applies the authoritative HTML/styles before
+  clearing the temporary drag transform. A style-only patch leaves an active
+  pointer preview intact, removing the visible rollback frame during edits.
+- FIXED LOCAL: Gallery widget commit now uses the filtered visible drop target.
+  Free placement therefore cannot commit a hidden before/after target as flow;
+  only an offered inside target creates an absolute child of a container.
+- VERIFIED: build-doc bundle, iframe drop-target unit test, edit-flow smoke
+  (including the free gallery-drop regression), imported edit-sync smoke, and
+  persistent preview surface smoke all pass.
+- REMAINING: The live Roll20 Sandbox chooser still has no accepted payload,
+  so no actual root/screenshot/chat parity claim is made.
