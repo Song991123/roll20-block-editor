@@ -8,8 +8,8 @@
   One isolated roll produced visible Roll20 chat results using the `Test`
   rolltemplate with results `5`, `7`, and `11` in the chat log.
 - BOUNDARY: This is actual Roll20 runtime/chat evidence for the synthetic test
-  sheet. It does not prove pixel parity for the ignored official/commission
-  fixtures or the legacy compatibility path.
+  sheet. It does not prove pixel parity for the ignored development fixtures or
+  the legacy compatibility path.
 - FINDING: The visible Sheet Sandbox Tools dialog showed a translation JSON
   parse error before a new fixture upload was accepted. No fixture upload was
   counted after that failure, and no existing room was changed.

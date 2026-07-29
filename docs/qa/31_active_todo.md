@@ -5735,13 +5735,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   unreadable-participant room was opened, edited, uploaded to, or used for
   chat verification.
 - FINDING: Roll20's visible Sheet Sandbox Tools dialog currently shows a
-  translation JSON parse error. The attempted AW2E file selection did not
-  complete, so no real fixture upload or parity claim is recorded.
+  translation JSON parse error. The attempted development-fixture file
+  selection did not complete, so no real fixture upload or parity claim is
+  recorded.
 - DONE: Export translation normalization now emits only a flat string map and
   turns unsupported/malformed input into an empty safe map. Export warnings and
   the local payload audit cover this boundary.
 - VERIFIED LOCAL: Translation payload tests, export smoke, lint, fresh local
-  payload generation, and payload audit pass for AW2E, Les-Oublies, and YSHY
+  payload generation, and payload audit pass for the three ignored
   development fixtures.
 - NEXT P0: Reconnect the exact one-member Roll20 test room, clear/identify the
   Sandbox translation error, then apply one ignored fixture and capture fresh
