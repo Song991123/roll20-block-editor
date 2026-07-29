@@ -289,7 +289,14 @@ class DefaultAdapter implements BlocklyAdapter {
 
   private previewFor(block: Blockly.Block): string {
     const fields = block.inputList.flatMap((input) => input.fieldRow);
-    for (const f of fields) {
+    // Prefer authored values over Blockly's static labels (for example the
+    // input block label "글자"). This keeps layer/search previews useful for
+    // imported sheets without changing the emitted source.
+    const editableFields = fields.filter(
+      (field) =>
+        (field as { isCurrentlyEditable?: () => boolean }).isCurrentlyEditable?.() ?? false,
+    );
+    for (const f of [...editableFields, ...fields]) {
       const v = f.getValue?.();
       if (typeof v === 'string' && v && v !== 'undefined') return String(v).slice(0, 40);
     }

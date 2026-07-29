@@ -6664,3 +6664,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   `smoke:persistent-preview-surface` pass.
 - CLAIM BOUNDARY: This narrows local drag flicker and free-drop behavior only;
   actual Roll20 modern/legacy parity and Sandbox upload evidence remain open.
+
+## 2026-07-30 Large workspace structure browser
+
+- DONE LOCAL: Large imports keep the Blockly model headless instead of creating
+  one SVG node per block. A virtualized structure browser now shows the active
+  workspace hierarchy, category color, authored preview value, and total count.
+- DONE LOCAL: Selecting a row uses the existing `tree` selection origin, so the
+  normal Inspector can edit the selected block without creating a second model
+  or render surface. Search now prefers authored field values over Blockly's
+  static field labels.
+- VERIFIED: `corepack pnpm run smoke:large-workspace-browser` passed with a
+  synthetic 5,200-input import: `headless-large`, 5,200 model blocks, 17
+  visible virtual rows, 0 SVG blocks, search of the last item, one selected
+  row, and 0 console/page errors. `lint` and `build` also pass.
+- CLAIM BOUNDARY: This proves the large-workspace navigation/selection guard,
+  not full virtualized Blockly drag editing or actual Roll20 parity. The
+  modern Sandbox upload and isolated legacy-room checks remain open.
+- NEXT P0: Add real imported large-sheet subtree movement coverage to the
+  lightweight browser, then resume supported Roll20 Sandbox upload evidence.

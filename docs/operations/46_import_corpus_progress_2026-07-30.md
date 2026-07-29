@@ -45,11 +45,13 @@
   or external sheet state was changed.
 - Added a `5,000`-block SVG render guard. Large imports now switch the UI and
   diagnostic hook to preview before hydration, and visible assemble/split
-  keeps the model headless with a user-facing notice.
-- Verified the guard boundary with the render-policy unit test plus lint,
-  build, and the full local CI suite. A fresh browser mode-transition smoke
-  timed out twice, so the new threshold path remains browser-VERIFY rather
-  than DONE; test-only server/browser processes were cleaned up.
-- Next: stabilize that browser smoke, then build a virtualized block browser
-  for large workspaces. Do not report the headless guard as full large-sheet
-  Blockly editing or as Roll20 parity.
+  keeps the model headless.
+- Added a virtualized large-workspace structure browser and authored-value
+  previews. It preserves the model/Inspector path without creating thousands
+  of SVG nodes.
+- Verified `smoke:large-workspace-browser` with a synthetic 5,200-input import:
+  `headless-large`, 5,200 blocks, 17 visible rows, 0 SVG blocks, search and
+  selection pass, and 0 console/page errors. Lint and build pass.
+- Boundary: this is navigation/selection evidence, not full virtualized block
+  drag editing or Roll20 parity. Actual modern Sandbox upload and isolated
+  legacy-room evidence remain separate.

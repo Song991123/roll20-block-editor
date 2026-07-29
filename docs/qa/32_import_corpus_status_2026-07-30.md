@@ -76,23 +76,25 @@
 ## 2026-07-30 Large Workspace Guard
 
 - IMPLEMENTED: Workspaces above `5,000` blocks now stay headless even when
-  assemble/split is visible. A visible notice directs the user to the shared
-  sheet-shaped preview/edit surface instead of creating one SVG node per
-  block.
+  assemble/split is visible. The visible surface now includes a virtualized
+  structure browser instead of leaving the user with only a passive notice.
 - IMPLEMENTED: The UI import dialog and diagnostic perf hook both switch to
   preview and wait for the mode transition before hydrating a large import.
+- IMPLEMENTED: Structure rows use the same selected-block state as the normal
+  Inspector. Authored field values are preferred over static Blockly labels so
+  imported names remain searchable.
 - VERIFIED STATIC: `lint`, TypeScript build, `ci:verify`, the headless adapter
   test, and the render-policy boundary test pass.
-- VERIFY OPEN: Two fresh Playwright browser runs timed out before producing a
-  reliable mode-transition result. Their test-only server and headless
-  browser processes were stopped. No browser success is claimed for the new
-  threshold path yet.
-- CLAIM BOUNDARY: This is a freeze-prevention guard, not a virtualized block
-  browser. Full large-sheet block-canvas editing remains open.
+- VERIFIED BROWSER: `smoke:large-workspace-browser` passed with a synthetic
+  5,200-input import: `headless-large`, 5,200 model blocks, 17 visible rows,
+  zero SVG blocks, last-item search, one selected row, and zero console/page
+  errors.
+- CLAIM BOUNDARY: The virtualized browser proves navigation and selection, not
+  full large-sheet block drag/reparenting or actual Roll20 parity.
 
 ## Next P0
 
-Keep the malformed-tag regression test in the emit contract, add a reliable
-browser mode-transition smoke for the large-workspace guard, and design the
-virtualized block browser. Actual Roll20 upload evidence remains separate from
+Keep the malformed-tag regression test in the emit contract, add imported
+large-sheet subtree movement coverage to the virtualized browser, and resume
+supported Roll20 upload evidence. Actual Roll20 results remain separate from
 local renderer results.

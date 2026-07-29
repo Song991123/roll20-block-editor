@@ -31,6 +31,7 @@ import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { registerAllBlocks, getBlockDef } from '@/lib/blocks/registry';
 import { playSfx } from '@/lib/sfx';
 import { shouldPlayBlockSnap } from '@/lib/editor/blocklySoundPolicy';
+import HeadlessBlockBrowser from './HeadlessBlockBrowser';
 
 const BLOCKLY_MEDIA_PATH = 'blockly-media/';
 
@@ -310,18 +311,7 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
         style={{ width: 480, height: 360 }}
       />
       {visible && !renderSvg && (
-        <div
-          className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg-canvas)]/92 p-8 text-center"
-          data-testid="large-workspace-notice"
-        >
-          <div className="max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-6 py-5 shadow-sm">
-            <p className="font-semibold text-foreground">대형 시트는 시트 모양 위에서 편집하세요</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              블록을 모두 그리는 대신 같은 모델을 유지해 브라우저가 멈추지 않도록 했어요.
-              시트 모양 위에서 위치와 속성을 편집할 수 있습니다.
-            </p>
-          </div>
-        </div>
+        <HeadlessBlockBrowser workspace={activeWorkspace} mountState={mountState} />
       )}
     </div>
   );

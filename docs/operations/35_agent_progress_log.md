@@ -7441,3 +7441,19 @@ visibility verification passed. No external room was opened or modified.
   persistent preview surface smoke all pass.
 - REMAINING: The live Roll20 Sandbox chooser still has no accepted payload,
   so no actual root/screenshot/chat parity claim is made.
+
+## 2026-07-30 - Large workspace structure browser
+
+- IMPLEMENTED: Added `HeadlessBlockBrowser` for workspaces over the 5,000-block
+  SVG threshold. It virtualizes the visible structure rows, preserves the
+  active Blockly model, and routes row selection into the existing Inspector.
+- IMPLEMENTED: `BlocklyAdapter.previewFor` now prefers editable authored field
+  values over static Blockly labels, making imported names searchable in both
+  the large browser and ordinary layer previews.
+- VERIFIED: The anonymous `smoke:large-workspace-browser` imported 5,200 text
+  inputs and observed `headless-large`, 5,200 model blocks, 17 rendered rows,
+  zero SVG blocks, successful search/selection, and zero console/page errors.
+  Lint and production build pass.
+- CLAIM BOUNDARY: This is a large-workspace navigation and selection slice. It
+  does not prove full virtualized block drag/reparenting, Roll20 modern/legacy
+  visual parity, or Sandbox upload acceptance.
