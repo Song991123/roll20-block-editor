@@ -1,3 +1,30 @@
+## 2026-07-29 - Modern Sandbox Fresh Payload Render Confirmed
+
+- VERIFIED ACTUAL SAFETY: The dedicated Sandbox showed exactly
+  `1 구성원` immediately before the write and again before reopening the
+  character. No unrelated or multi-member room was used.
+- VERIFIED ACTUAL UPLOAD: The generated HTML/CSS/translation payload reached
+  the Sandbox save path with HTTP 200 responses. A full editor reload and
+  character reopen then exposed the fresh payload in the live iframe.
+- VERIFIED ACTUAL RENDER: The live frame measured `852px` wide by `1148.44px`
+  tall, with `207` form controls, `40` roll controls, no inline `on*`
+  attributes, and no visible inline frame script error. The local baseline measured
+  `850px` by `1185px` with the same `40` roll controls.
+- VERIFIED ACTUAL ROLL/CHAT: Clicking the visible initiative control produced
+  a chat message containing the sheet rolltemplate and container classes. The
+  sandbox also emitted the expected warning about having no selected token for
+  turn tracking; this is not counted as a sheet failure.
+- VERIFIED ACTUAL CONSOLE FINDING: The run is not console-clean. Existing chat
+  history referenced unavailable `aw`, `coc`, and `synthetic` templates, and a
+  Roll20 runtime `jqote` `toString` TypeError appeared after the roll. The
+  errors remain isolated runtime findings until a clean Sandbox is tested.
+- NOT PROVEN: This is a successful modern Sandbox upload/render check, not a
+  pixel-parity PASS. Wrapper/crop geometry, computed CSS provenance, hidden
+  rolltemplate accounting, worker behavior, chat output, and local edit parity
+  remain separate verification items.
+- NEXT P0: Build the normalized crop/computed-style comparison and then run a
+  roll/chat smoke check in the dedicated Sandbox only.
+
 ## 2026-07-29 - Dedicated Legacy Room Render Confirmed
 
 - VERIFIED ACTUAL SAFETY: The dedicated legacy test room reported exactly

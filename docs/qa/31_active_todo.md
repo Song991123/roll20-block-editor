@@ -1,3 +1,34 @@
+## 2026-07-29 Modern Sandbox Fresh Payload Render
+
+- VERIFIED ACTUAL SAFETY: Immediately before the modern Sandbox write and
+  again before reopening the character, the visible participant indicator was
+  exactly `1 구성원`. No unrelated or multi-member room was used.
+- VERIFIED ACTUAL UPLOAD: The generated HTML, CSS, and translation payload was
+  dispatched through the Sandbox path, the save requests returned HTTP 200,
+  and a full reload plus character reopen made the fresh payload visible in the
+  live iframe.
+- VERIFIED ACTUAL RENDER: The live iframe exposed `40` roll-capable controls,
+  `207` form controls, no inline `on*` attributes, and a sheet root measuring
+  `852px` wide by `1148.44px` tall. The local baseline exposed the same `40`
+  roll-capable controls, but measured `850px` by `1185px`.
+- VERIFIED ACTUAL ROLL/CHAT: Clicking the visible initiative control produced a
+  live chat message with the sheet's `sheet-rolltemplate-initiative-roll` and
+  `sheet-template-container` classes. The expected no-token turn-tracker
+  warning also appeared; it is a sandbox-state warning, not a sheet render
+  failure.
+- VERIFIED ACTUAL CONSOLE FINDING: The run is not console-clean. Existing chat
+  history referenced unavailable `aw`, `coc`, and `synthetic` templates, and a
+  Roll20 runtime `jqote` `toString` TypeError appeared after the roll. These
+  are recorded as separate runtime issues and are not attributed to local
+  CSS without further isolation.
+- CLAIM BOUNDARY: The upload and same-payload render are now proven for this
+  modern Sandbox run. Pixel parity is still NOT DONE: the iframe wrapper,
+  viewport crop, root geometry, hidden template accounting, and chat/worker
+  behavior still need normalized comparison against local preview/edit.
+- NEXT P0: Isolate the runtime console errors, then normalize the local
+  preview, edit, and live iframe crop; compare computed CSS and bottom
+  geometry across the cleanest available state.
+
 ## 2026-07-29 Actual Legacy Room Participant Gate And Render
 
 - VERIFIED ACTUAL SAFETY: Immediately before opening settings, before saving,
