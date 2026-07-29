@@ -7340,3 +7340,18 @@ visibility verification passed. No external room was opened or modified.
   invalid drop keeps the blocked mode and leaves the moving layer at root.
 - VERIFIED: `corepack pnpm run smoke:edit-flow` passed with zero console/page
   errors. This remains synthetic local evidence, not Roll20 room evidence.
+
+## 2026-07-30 - Sandbox upload route retry
+
+- VERIFIED READ-ONLY: The dedicated Sandbox still exposed a fresh visible
+  participant count of exactly one and the three expected upload controls.
+- BLOCKED: Native chooser assignment remains rejected by the browser control
+  boundary. The restricted page-evaluation surface also does not expose the
+  native `File`, `DataTransfer`, or `fetch` objects needed by the generated
+  upload helper; the visible address-bar execution attempt was not confirmed.
+- CLAIM BOUNDARY: No payload acceptance, generated sheet root, screenshot, or
+  chat result is counted. The Sandbox tab was left in handoff state for a
+  user-visible upload or a CDP-enabled browser path.
+- NEXT P0: Run the ignored local-only upload snippet through a user-visible
+  browser console/manual file choice, then require activation/root/screenshot
+  and chat evidence before comparing parity.

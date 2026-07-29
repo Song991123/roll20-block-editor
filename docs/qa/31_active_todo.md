@@ -6549,3 +6549,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED: `smoke:edit-flow` passes with no console/page errors.
 - CLAIM BOUNDARY: This validates local layer-panel behavior only; actual modern
   Sandbox and isolated legacy-room parity remain open.
+
+## 2026-07-30 Sandbox upload route retry
+
+- VERIFY/BLOCKED: The Sandbox participant preflight remains exactly one, but
+  native file assignment and the restricted browser evaluation route cannot
+  submit the local payload. No actual generated-sheet root, screenshot, or
+  chat evidence is counted.
+- NEXT P0: Complete a user-visible upload or CDP-enabled browser handoff, then
+  capture activation, root DOM, screenshot, and roll/chat evidence.
