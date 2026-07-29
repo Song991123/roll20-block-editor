@@ -10,8 +10,16 @@ import {
 } from '@/lib/blockly/adapter';
 import { getLayerRole } from '@/lib/editor/layerRoles';
 import { useWorkspaceStore, WORKSPACE_KEYS, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import { fieldDisplayLabel } from './fieldLabels';
 
 const GEOMETRY_FIELDS = new Set(['LEFT_PX', 'TOP_PX', 'WIDTH_PX', 'HEIGHT_PX']);
+
+const WORKSPACE_DISPLAY: Record<WorkspaceKey, string> = {
+  html: '화면 구성',
+  css: '꾸미기',
+  i18n: '번역',
+  worker: '자동 동작',
+};
 
 function resolveSelectedBlock(blockId: string | null): {
   snapshot: BlockSnapshot | null;
@@ -77,12 +85,12 @@ export default function EditInspector() {
   if (!snapshot || !workspace) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center" data-testid="edit-inspector-empty">
-        <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-elevated-2)] text-muted-foreground">
-          <MousePointerSquareDashed className="h-5 w-5" />
+        <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[var(--bg-elevated-2)] text-muted-foreground">
+          <MousePointerSquareDashed className="h-6 w-6" aria-hidden="true" />
         </div>
-        <p className="text-sm font-medium text-foreground">선택한 요소가 없어요</p>
-        <p className="mt-1 max-w-[240px] text-[11px] leading-relaxed text-muted-foreground">
-          시트에서 요소를 클릭하거나 레이어에서 선택하면 속성을 바꿀 수 있어요.
+        <p className="text-base font-semibold text-foreground">아직 고른 요소가 없어요</p>
+        <p className="mt-1.5 max-w-[260px] text-sm leading-relaxed text-[var(--text-secondary)]">
+          시트에서 요소를 클릭하거나, 왼쪽 레이어 목록에서 골라보세요.
         </p>
       </div>
     );
@@ -97,23 +105,30 @@ export default function EditInspector() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="space-y-4 p-3" data-testid="edit-inspector">
-        <header className="flex items-start gap-2">
+      <div className="space-y-4 p-3.5" data-testid="edit-inspector">
+        <header className="r20-form-card flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">선택한 요소</div>
-            <div className="mt-1 truncate text-sm font-semibold text-foreground">{snapshot.label}</div>
-            <div className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">{snapshot.type}</div>
+            <div className="text-xs font-semibold text-muted-foreground">고른 요소</div>
+            <div className="mt-1 truncate text-base font-semibold text-foreground">{snapshot.label}</div>
+            <details className="mt-1.5">
+              <summary className="cursor-pointer select-none text-xs font-medium text-muted-foreground hover:text-foreground">
+                자세한 정보 보기
+              </summary>
+              <div className="mt-1 rounded-lg bg-[var(--bg-elevated-2)] px-2.5 py-1.5 font-mono text-xs text-muted-foreground">
+                {snapshot.type}
+              </div>
+            </details>
           </div>
-          <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] ${role.className}`} data-testid="edit-inspector-role">
+          <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${role.className}`} data-testid="edit-inspector-role">
             {role.label}
           </span>
         </header>
 
-        <div className="grid grid-cols-2 gap-2 text-[10px]" data-testid="edit-inspector-context">
-          <ContextItem label="작업 공간" value={workspace.toUpperCase()} />
-          <ContextItem label="관계" value={snapshot.layerRelation === 'child' ? '하위 요소' : snapshot.layerRelation === 'sibling' ? '같은 단계' : '최상위'} />
-          <ContextItem label="부모 틀" value={parent?.label ?? '없음'} />
-          <ContextItem label="자식" value={`${snapshot.childCount}개`} />
+        <div className="grid grid-cols-2 gap-2 text-xs" data-testid="edit-inspector-context">
+          <ContextItem label="작업 종류" value={WORKSPACE_DISPLAY[workspace]} />
+          <ContextItem label="자리" value={snapshot.layerRelation === 'child' ? '틀 안에 있음' : snapshot.layerRelation === 'sibling' ? '나란히 있음' : '맨 바깥'} />
+          <ContextItem label="담고 있는 틀" value={parent?.label ?? '없음'} />
+          <ContextItem label="안에 든 것" value={`${snapshot.childCount}개`} />
         </div>
 
         {geometry.length > 0 && (
@@ -127,8 +142,8 @@ export default function EditInspector() {
         )}
 
         {editable.length > 0 && (
-          <Section title="연결된 속성">
-            <div className="space-y-2">
+          <Section title="바꿀 수 있는 값">
+            <div className="space-y-2.5">
               {editable.map((field) => (
                 <FieldEditor key={field.name} field={field} onChange={commitField} />
               ))}
@@ -137,17 +152,17 @@ export default function EditInspector() {
         )}
 
         {editable.length === 0 && geometry.length === 0 && (
-          <p className="rounded border border-dashed border-border bg-[var(--bg-elevated-2)] p-3 text-[11px] leading-relaxed text-muted-foreground">
-            이 요소는 바로 바꿀 수 있는 블록 속성이 없어요. 시트 위에서 끌어 위치를 바꿀 수 있습니다.
+          <p className="rounded-xl border border-dashed border-[var(--border-strong)] bg-[var(--bg-elevated-2)] p-3.5 text-sm leading-relaxed text-[var(--text-secondary)]">
+            이 요소는 여기서 바꿀 값이 없어요. 시트 위에서 끌어서 자리를 옮길 수 있어요.
           </p>
         )}
 
-        <div className="flex gap-2 border-t border-border pt-3">
-          <button type="button" onClick={duplicateSelected} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1.5 text-xs text-muted-foreground hover:bg-[var(--bg-hover)] hover:text-foreground" data-testid="edit-inspector-duplicate">
-            <Copy className="h-3.5 w-3.5" aria-hidden="true" /> 복제
+        <div className="flex gap-2 border-t border-border pt-3.5">
+          <button type="button" onClick={duplicateSelected} className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border-[1.5px] border-[var(--border-strong)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground active:scale-[0.98]" data-testid="edit-inspector-duplicate">
+            <Copy className="h-4 w-4" aria-hidden="true" /> 복제
           </button>
-          <button type="button" onClick={deleteSelected} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded border border-red-500/30 bg-red-500/5 px-2 py-1.5 text-xs text-red-600 hover:bg-red-500/10" data-testid="edit-inspector-delete">
-            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> 삭제
+          <button type="button" onClick={deleteSelected} className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full border-[1.5px] border-[color-mix(in_srgb,var(--destructive)_40%,transparent)] bg-[var(--destructive-soft)] px-3 text-sm font-semibold text-[var(--destructive)] transition-colors hover:bg-[color-mix(in_srgb,var(--destructive)_16%,white)] active:scale-[0.98]" data-testid="edit-inspector-delete">
+            <Trash2 className="h-4 w-4" aria-hidden="true" /> 삭제
           </button>
         </div>
       </div>
@@ -157,9 +172,9 @@ export default function EditInspector() {
 
 function ContextItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1.5">
-      <div className="text-[9px] text-muted-foreground">{label}</div>
-      <div className="mt-0.5 truncate font-medium text-foreground">{value}</div>
+    <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2.5 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-0.5 truncate text-sm font-semibold text-foreground">{value}</div>
     </div>
   );
 }
@@ -167,36 +182,36 @@ function ContextItem({ label, value }: { label: string; value: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="mb-1.5 text-[10px] font-semibold text-muted-foreground">{title}</h3>
+      <h3 className="mb-2 text-sm font-semibold text-[var(--text-secondary)]">{title}</h3>
       {children}
     </section>
   );
 }
 
 function FieldEditor({ field, onChange }: { field: BlockFieldInfo; onChange: (name: string, value: string) => void }) {
-  const label = field.name.replaceAll('_', ' ').toLowerCase();
+  const label = fieldDisplayLabel(field.name);
   if (field.kind === 'checkbox') {
     return (
-      <label className="flex items-center gap-2 rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1.5 text-xs">
-        <input type="checkbox" checked={field.value === 'TRUE' || field.value === 'true' || field.value === '1'} onChange={(event) => onChange(field.name, event.target.checked ? 'TRUE' : 'FALSE')} />
-        <span className="truncate">{label}</span>
+      <label className="flex items-center gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2.5 text-sm font-medium">
+        <input type="checkbox" className="h-[18px] w-[18px] accent-[var(--primary)]" checked={field.value === 'TRUE' || field.value === 'true' || field.value === '1'} onChange={(event) => onChange(field.name, event.target.checked ? 'TRUE' : 'FALSE')} />
+        <span className="truncate text-foreground">{label}</span>
       </label>
     );
   }
   if (field.kind === 'dropdown') {
     return (
-      <label className="block space-y-1">
-        <span className="block text-[10px] text-muted-foreground">{label}</span>
-        <select value={field.value} onChange={(event) => onChange(field.name, event.target.value)} className="h-8 w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring">
+      <label className="block">
+        <span className="r20-field-label">{label}</span>
+        <select value={field.value} onChange={(event) => onChange(field.name, event.target.value)} className="r20-input">
           {(field.options ?? []).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
       </label>
     );
   }
   return (
-    <label className="block space-y-1">
-      <span className="block text-[10px] text-muted-foreground">{label}</span>
-      <input type="text" inputMode={field.kind === 'number' ? 'decimal' : undefined} value={field.value} onChange={(event) => onChange(field.name, event.target.value)} className="h-8 w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring" data-testid={`edit-inspector-field-${field.name.toLowerCase()}`} />
+    <label className="block">
+      <span className="r20-field-label">{label}</span>
+      <input type="text" inputMode={field.kind === 'number' ? 'decimal' : undefined} value={field.value} onChange={(event) => onChange(field.name, event.target.value)} className="r20-input tabular-nums" data-testid={`edit-inspector-field-${field.name.toLowerCase()}`} />
     </label>
   );
 }

@@ -9,7 +9,11 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Search, ChevronDown, ChevronRight, Sparkles, X, Star } from 'lucide-react';
+import {
+  Search, ChevronDown, ChevronRight, Sparkles, X, Star,
+  Boxes, TextCursorInput, Type, Dices, Languages, Calculator, Zap, Palette, Wrench, Package,
+  type LucideIcon,
+} from 'lucide-react';
 import * as Blockly from 'blockly';
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -32,8 +36,23 @@ import {
 } from '@/lib/blocks/registry';
 import { cn } from '@/lib/utils/cn';
 import { playSfx } from '@/lib/sfx';
+import { categoryDisplayLabel } from './fieldLabels';
 
 const BLOCKLY_MEDIA_PATH = 'blockly-media/';
+
+/** 카테고리 아이콘 (표시 전용) — 색과 함께 종류를 이중으로 알려줘 색약에도 안전. */
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  container: Boxes,
+  input: TextCursorInput,
+  display: Type,
+  dice: Dices,
+  i18n: Languages,
+  expression: Calculator,
+  sheet_worker: Zap,
+  css: Palette,
+  advanced: Wrench,
+  composite: Package,
+};
 
 /**
  * 좌측 [블록] 모드. Anchor: 08 W2-A + 02 §3 + D26 ②.
@@ -103,14 +122,15 @@ export default function BlocksLibrary() {
     <div className="flex h-full flex-col">
       <div className="shrink-0 border-b border-border p-3">
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <input
             ref={searchInputRef}
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="블록 검색 — 예: 텍스트, 굴림, 자동합"
-            className="h-8 w-full rounded-md border border-border bg-[var(--bg-elevated-2)] pl-8 pr-7 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="블록 찾기 — 예: 글자, 굴림"
+            aria-label="블록 검색"
+            className="r20-input pl-9 pr-9"
           />
           {search.length > 0 && (
             <button
@@ -121,9 +141,9 @@ export default function BlocksLibrary() {
                 requestAnimationFrame(() => searchInputRef.current?.focus());
               }}
               aria-label="검색어 지우기"
-              className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-4 w-4" />
             </button>
           )}
         </div>
@@ -133,35 +153,36 @@ export default function BlocksLibrary() {
         <div className="p-2">
           {search.trim() && (
             <div className="space-y-1 pb-2">
-              <div className="px-2 py-1 text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground">
-                검색 결과 ({searchResults.length})
+              <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">
+                검색 결과 {searchResults.length}개
               </div>
               {searchResults.length === 0 ? (
-                <div className="px-2 py-3 text-xs text-muted-foreground">매칭되는 블록이 없어요.</div>
+                <div className="px-2 py-3 text-sm leading-relaxed text-muted-foreground">맞는 블록이 없어요. 다른 말로 찾아보세요.</div>
               ) : (
                 <div className="space-y-2">
                   {searchResultsByCategory.map(({ catId, blocks }) => {
                     const meta = CATEGORIES[catId];
+                    const CatIcon = CATEGORY_ICONS[catId] ?? Package;
                     return (
                       <div key={catId} className="relative">
                         {/* 검색 결과 안 카테고리 헤더 — 본 카테고리 헤더와 동일 sticky/색 스킴 + 펼침 토글 없음 (항상 열림). */}
                         <div
-                          className="blocks-cat-header sticky top-0 z-[5] flex w-full items-center gap-2 rounded-md px-2 py-1.5 pl-3 text-left text-xs font-medium text-foreground backdrop-blur-sm"
+                          className="blocks-cat-header sticky top-0 z-[5] flex w-full items-center gap-2 rounded-lg px-2 py-2 pl-3 text-left text-sm font-semibold text-foreground backdrop-blur-sm"
                           style={{
                             borderLeft: `4px solid ${meta.swatchVar}`,
                             background: `color-mix(in srgb, ${meta.swatchVar} 12%, var(--bg-elevated))`,
                           }}
                         >
-                          <span
-                            className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-inset ring-white/10 shadow-[0_0_0_2px_rgba(0,0,0,0.15)]"
-                            style={{ backgroundColor: meta.swatchVar }}
+                          <CatIcon
+                            className="h-[17px] w-[17px] shrink-0"
+                            style={{ color: `color-mix(in srgb, ${meta.swatchVar} 72%, var(--text-primary))` }}
                             aria-hidden
                           />
-                          <span className="flex-1 truncate">{meta.label}</span>
-                          <Badge variant="secondary" className="font-mono">{blocks.length}</Badge>
+                          <span className="flex-1 truncate">{categoryDisplayLabel(catId, meta.label)}</span>
+                          <Badge variant="secondary" className="tabular-nums">{blocks.length}</Badge>
                         </div>
                         <div
-                          className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
+                          className="mt-1.5 space-y-1.5 border-l border-l-[1.5px] pl-2 ml-[7px]"
                           style={{ borderColor: `color-mix(in srgb, ${meta.swatchVar} 60%, transparent)` }}
                         >
                           {blocks.map((b) => <BlockTile key={b.type} def={b} />)}
@@ -184,7 +205,7 @@ export default function BlocksLibrary() {
                     onClick={() => toggleCat('__favorites__')}
                     aria-expanded={isFavoritesOpen}
                     aria-controls="block-category-__favorites__"
-                    className="blocks-cat-header sticky top-0 z-[5] flex w-full items-center gap-2 rounded-md px-2 py-1.5 pl-3 text-left text-xs font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-[color-mix(in_srgb,var(--bg-hover)_70%,transparent)]"
+                    className="blocks-cat-header sticky top-0 z-[5] flex w-full items-center gap-2 rounded-lg px-2 py-2 pl-3 text-left text-sm font-semibold text-foreground backdrop-blur-sm transition-colors hover:bg-[color-mix(in_srgb,var(--bg-hover)_70%,transparent)]"
                     style={{
                       borderLeft: `4px solid #FFC857`,
                       background: isFavoritesOpen
@@ -193,11 +214,11 @@ export default function BlocksLibrary() {
                     }}
                   >
                     {isFavoritesOpen ? (
-                      <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                     ) : (
-                      <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     )}
-                    <Star className="h-3 w-3 shrink-0 fill-[#FFC857] text-[#FFC857]" />
+                    <Star className="h-4 w-4 shrink-0 fill-[#FFC857] text-[#FFC857]" />
                     <span className="flex-1 truncate">즐겨찾기</span>
                     <Badge variant="secondary" className="font-mono">{favoriteBlocks.length}</Badge>
                   </button>
@@ -223,6 +244,7 @@ export default function BlocksLibrary() {
               )}
               {visibleCategories.map((catId) => {
                 const meta = CATEGORIES[catId];
+                const CatIcon = CATEGORY_ICONS[catId] ?? Package;
                 const isOpen = expanded.includes(catId);
                 const blocks = blocksByCategory(catId);
                 return (
@@ -232,7 +254,7 @@ export default function BlocksLibrary() {
                       onClick={() => toggleCat(catId)}
                       aria-expanded={isOpen}
                       aria-controls={`block-category-${catId}`}
-                      className="blocks-cat-header sticky top-0 z-[5] flex w-full items-center gap-2 rounded-md px-2 py-1.5 pl-3 text-left text-xs font-medium text-foreground backdrop-blur-sm transition-colors hover:bg-[color-mix(in_srgb,var(--bg-hover)_70%,transparent)]"
+                      className="blocks-cat-header sticky top-0 z-[5] flex w-full items-center gap-2 rounded-lg px-2 py-2 pl-3 text-left text-sm font-semibold text-foreground backdrop-blur-sm transition-colors hover:bg-[color-mix(in_srgb,var(--bg-hover)_70%,transparent)]"
                       style={{
                         borderLeft: `4px solid ${meta.swatchVar}`,
                         background: isOpen
@@ -241,17 +263,17 @@ export default function BlocksLibrary() {
                       }}
                     >
                       {isOpen ? (
-                        <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                       ) : (
-                        <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                       )}
-                      <span
-                        className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-inset ring-white/10 shadow-[0_0_0_2px_rgba(0,0,0,0.15)]"
-                        style={{ backgroundColor: meta.swatchVar }}
+                      <CatIcon
+                        className="h-[17px] w-[17px] shrink-0"
+                        style={{ color: `color-mix(in srgb, ${meta.swatchVar} 72%, var(--text-primary))` }}
                         aria-hidden
                       />
-                      <span className="flex-1 truncate">{meta.label}</span>
-                      <Badge variant="secondary" className="font-mono">{blocks.length}</Badge>
+                      <span className="flex-1 truncate">{categoryDisplayLabel(catId, meta.label)}</span>
+                      <Badge variant="secondary" className="tabular-nums">{blocks.length}</Badge>
                     </button>
 
                     {/*
@@ -271,11 +293,11 @@ export default function BlocksLibrary() {
                     >
                       <div className="min-h-0 overflow-hidden">
                         <div
-                          className="mt-1 space-y-1 border-l border-l-[1.5px] pl-2 ml-[7px]"
+                          className="mt-1.5 space-y-1.5 border-l border-l-[1.5px] pl-2 ml-[7px]"
                           style={{ borderColor: `color-mix(in srgb, ${meta.swatchVar} 60%, transparent)` }}
                         >
                           {blocks.length === 0 ? (
-                            <div className="py-1.5 pl-2 text-[10.5px] italic text-muted-foreground">카탈로그 작성 중…</div>
+                            <div className="py-1.5 pl-2 text-xs italic text-muted-foreground">블록 준비 중이에요…</div>
                           ) : (
                             blocks.map((b) => <BlockTile key={b.type} def={b} />)
                           )}
@@ -293,19 +315,19 @@ export default function BlocksLibrary() {
                   <button
                     type="button"
                     onClick={() => setAdvShown(!advShown)}
-                    className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground"
+                    className="flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-[var(--bg-hover)] hover:text-foreground"
                     aria-expanded={advShown}
                   >
-                    <Sparkles className="h-3 w-3 shrink-0" />
+                    <Sparkles className="h-4 w-4 shrink-0" />
                     {advShown ? (
                       <>
-                        <ChevronDown className="h-3 w-3 shrink-0" />
-                        <span>고급 블록 접기</span>
+                        <ChevronDown className="h-4 w-4 shrink-0" />
+                        <span>능숙한 사람용 블록 접기</span>
                       </>
                     ) : (
                       <>
-                        <ChevronRight className="h-3 w-3 shrink-0" />
-                        <span>고급 블록 더 보기 ({advancedCategoryCount}종)</span>
+                        <ChevronRight className="h-4 w-4 shrink-0" />
+                        <span>능숙한 사람용 블록 더 보기 ({advancedCategoryCount}종)</span>
                       </>
                     )}
                   </button>
@@ -434,15 +456,14 @@ function BlockTile({ def }: { def: BlockDef }) {
   return (
     <div
       className={cn(
-        'group relative rounded-md border border-transparent bg-[var(--bg-elevated)]/40 pl-2 pr-1 py-0',
-        'transition-all duration-150 ease-out',
-        'hover:bg-[color-mix(in_srgb,var(--swatch)_10%,var(--bg-hover))]',
-        'hover:ring-1 hover:ring-inset hover:ring-[color-mix(in_srgb,var(--swatch)_35%,transparent)]',
-        'active:translate-y-px active:bg-[color-mix(in_srgb,var(--swatch)_18%,var(--bg-hover))]',
+        'group relative overflow-hidden rounded-xl border border-[var(--border-subtle)] border-l-4 bg-[var(--bg-elevated)]',
+        'shadow-[0_1px_2px_rgba(var(--shadow-tint),0.05)] transition-all duration-150 ease-out',
+        'hover:-translate-y-px hover:border-[color-mix(in_srgb,var(--swatch)_40%,var(--border-subtle))] hover:bg-[color-mix(in_srgb,var(--swatch)_6%,var(--bg-elevated))] hover:shadow-[0_2px_6px_rgba(var(--shadow-tint),0.1),0_10px_24px_rgba(var(--shadow-tint),0.14)]',
+        'active:translate-y-0 active:scale-[0.99]',
         'focus-within:ring-2 focus-within:ring-inset focus-within:ring-[var(--swatch)]/60',
       )}
       style={{
-        boxShadow: `inset 3px 0 0 ${meta.swatchVar}`,
+        borderLeftColor: meta.swatchVar,
         ['--swatch' as string]: meta.swatchVar,
       } as React.CSSProperties}
       draggable
@@ -455,25 +476,29 @@ function BlockTile({ def }: { def: BlockDef }) {
           const ghost = document.createElement('div');
           ghost.textContent = def.label;
           ghost.style.cssText =
-            'position:fixed;top:-9999px;left:-9999px;padding:4px 10px;border-radius:6px;' +
-            'background:#262626;color:#ECECEC;font:12px/1.2 Pretendard,system-ui,sans-serif;' +
-            'border:1px solid #404040;white-space:nowrap;pointer-events:none;';
+            'position:fixed;top:-9999px;left:-9999px;padding:6px 14px;border-radius:999px;' +
+            'background:#ffffff;color:#3b222c;font:600 14px/1.2 Pretendard,system-ui,sans-serif;' +
+            'border:1.5px solid #f1b7cd;box-shadow:0 8px 20px rgba(178,84,122,0.25);' +
+            'white-space:nowrap;pointer-events:none;';
           document.body.appendChild(ghost);
           e.dataTransfer.setDragImage(ghost, 8, 12);
           setTimeout(() => ghost.remove(), 0);
         } catch { /* setDragImage 미지원 환경 — fallback to default */ }
       }}
-      title={`${def.label}\n${def.tooltip}\n[${def.type}]`}
+      title={`${def.label}\n${def.tooltip}`}
     >
       <button
         type="button"
         onClick={handleAdd}
-        className="flex w-full items-stretch gap-2 rounded-sm text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-grab active:cursor-grabbing"
+        className="flex w-full flex-col items-start gap-1 rounded-xl px-3 pb-2 pt-2.5 text-left focus-visible:outline-none cursor-grab active:cursor-grabbing"
         aria-label={`${def.label} 블록 추가`}
       >
+        <span className="flex w-full min-w-0 items-center gap-1.5 pr-7">
+          <span className="truncate text-sm font-semibold leading-tight text-foreground">{def.label}</span>
+        </span>
         <div
           ref={previewHostRef}
-          className="blocks-library-preview relative shrink-0 overflow-hidden rounded-sm"
+          className="blocks-library-preview relative mt-0.5 shrink-0 overflow-hidden rounded-md"
           style={{
             width: previewSize.w,
             height: previewSize.h,
@@ -481,14 +506,6 @@ function BlockTile({ def }: { def: BlockDef }) {
           }}
           aria-hidden
         />
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 py-0.5">
-          <span
-            className="inline-block h-2 w-2 shrink-0 rounded-full ring-1 ring-inset ring-white/10"
-            style={{ backgroundColor: meta.swatchVar }}
-            aria-hidden
-          />
-          <span className="truncate text-[12px] leading-tight text-foreground">{def.label}</span>
-        </div>
       </button>
       {/* 별 아이콘 — 우상단 overlay. 클릭 시 즐겨찾기 토글. 외부 <button> 안에 nested 하지 않으려 sibling 으로. */}
       <button
@@ -502,16 +519,16 @@ function BlockTile({ def }: { def: BlockDef }) {
         aria-label={isFavorite ? `${def.label} 즐겨찾기 해제` : `${def.label} 즐겨찾기 추가`}
         title={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
         className={cn(
-          'absolute right-1 top-1 z-[1] flex h-5 w-5 items-center justify-center rounded-sm',
+          'absolute right-1.5 top-1.5 z-[1] flex h-7 w-7 items-center justify-center rounded-full',
           'opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100',
-          'hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+          'hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           isFavorite && 'opacity-100',
         )}
       >
         <Star
           className={cn(
-            'h-3 w-3',
-            isFavorite ? 'fill-[#FFC857] text-[#FFC857]' : 'text-muted-foreground',
+            'h-4 w-4',
+            isFavorite ? 'fill-[#FFC857] text-[#B8860B]' : 'text-muted-foreground',
           )}
         />
       </button>

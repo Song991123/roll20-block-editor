@@ -56,7 +56,17 @@ assert.match(
   /#dialog-window\.r20-preview-dialog #charsheet-root[\s\S]*?width: auto !important/,
   'authored sheet root keeps its intrinsic width',
 );
+assert.match(
+  bundle.doc,
+  /#dialog-window \.dialog\.largedialog[\s\S]*?padding: 0 20px !important/,
+  'Roll20 dialog keeps the measured horizontal content inset',
+);
 assert.match(bundle.doc, /function patchRootHtml\(html\)/);
+assert.match(
+  bundle.doc,
+  /current\.nodeType === 3 \|\| current\.nodeType === 8[\s\S]*?current\.nodeValue !== next\.nodeValue[\s\S]*?current\.nodeValue = next\.nodeValue/,
+  'keyed morph updates text and comment node values',
+);
 assert.match(bundle.doc, /data-r20-structural-patches/);
 assert.match(bundle.doc, /if \(style\.textContent !== css\) style\.textContent = css/);
 assert.match(bundle.doc, /r20:edit-flow-target/);

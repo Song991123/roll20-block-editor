@@ -60,6 +60,8 @@ async function listFixtureDirs() {
 
 function actualTargets(fixtureDir) {
   const shots = path.join(fixtureDir, 'screenshots');
+  const localPreview = path.join(shots, 'local-preview.png');
+  const localAuthoredRoot = path.join(shots, 'local-authored-root.png');
   const sandboxRootFullDprCorrected = path.join(shots, 'roll20-sandbox-root-full-dpr-corrected.png');
   const sandboxRootFull = path.join(shots, 'roll20-sandbox-root-full.png');
   const sandboxRoot = path.join(shots, 'roll20-sandbox-root.png');
@@ -76,10 +78,13 @@ function actualTargets(fixtureDir) {
   const sandboxSelected = sandboxCandidates.find((candidate) => existsSync(candidate.screenshot)) ?? sandboxCandidates.at(-1);
   const sandboxActual = sandboxSelected.screenshot;
   const sandboxActualMeta = sandboxSelected.meta && existsSync(sandboxSelected.meta) ? sandboxSelected.meta : null;
+  const sandboxLocal = existsSync(localAuthoredRoot) && path.basename(sandboxActual).includes('root')
+    ? localAuthoredRoot
+    : localPreview;
   return [
     {
       name: 'sandbox',
-      local: path.join(shots, 'local-preview.png'),
+      local: sandboxLocal,
       actual: sandboxActual,
       actualMeta: sandboxActualMeta,
       validation: validateSandboxEvidence(shots, sandboxSelected, sandboxFallback),
@@ -88,13 +93,13 @@ function actualTargets(fixtureDir) {
     },
     {
       name: 'room',
-      local: path.join(shots, 'local-preview.png'),
+      local: localPreview,
       actual: path.join(shots, 'roll20-room.png'),
       purpose: 'Local preview vs existing solo-room observation.',
     },
     {
       name: 'chat',
-      local: path.join(shots, 'local-preview.png'),
+      local: localPreview,
       actual: path.join(shots, 'roll20-chat.png'),
       validation: validateChatEvidence(shots),
       purpose: 'Roll20 chat/rolltemplate screenshot presence marker; visual diff is diagnostic only.',

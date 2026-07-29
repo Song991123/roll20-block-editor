@@ -6275,3 +6275,73 @@ AW2E, Les-Oublies, a synthetic non-leaf case, and YSHY 1BU. Modern and legacy
 preview/edit visual smoke passed all six cases at `0%` mismatch. This is local
 editor evidence; resize-handle UX, arbitrary DOM coverage, and actual Roll20
 Sandbox/legacy-room parity remain open.
+
+### 2026-07-29 - Modern Sandbox synthetic verification
+
+The dedicated Custom Sheet Sandbox was opened from the authenticated home page
+and showed one visible member before verification. Existing rooms were not
+opened, selected, or modified. A local-only anonymous `synthetic-modern`
+payload was applied through the Sandbox editor and rendered in the character
+sheet iframe with its translated heading, input, roll button, and hidden
+rolltemplate source.
+
+External measurements: authored root `850x220px`; Roll20 `.charactersheet`
+wrapper `860x240px`; the roll button produced the synthetic result marker in
+the Roll20 chat log. The local counterpart imported at `100%` token match and
+passed payload hygiene, Sandbox sanitize, cleaned-payload roundtrip (`0%`),
+and evidence-guard checks.
+
+The first screenshot path used a CSS crop with the browser's `1.25` zoom and
+produced a misleading `680x176` image. The diff helper now accepts an authored
+root crop, and the browser evidence path uses CDP physical coordinates. The
+normalized root comparison is `2.88%` (`1062x275` actual versus `1063x275`
+local). This is better measurement, not visual-parity evidence; the remaining
+delta still needs human classification. Full chat screenshots and raw chat
+text were discarded because the panel contained unrelated prior content; the
+ignored sidecar retains only anonymous marker presence. Modern Sandbox runtime
+is therefore `VERIFIED_PARTIAL`; the separate legacy-room contract remains
+`VERIFY`.
+
+Post-run repository checks: `lint`, `build`, `ci:verify`, `git diff --check`, and the
+server-hygiene check passed. The pushed `claude/design-reset` CI run also passed all
+verification, lint, and build jobs. No project dev/smoke or CDP listener remains active.
+This records tooling and evidence health only; it does not upgrade the modern result to
+visual parity and does not validate the legacy room.
+
+### 2026-07-29 - Persistent sync and inspector tab regression fix
+
+The persistent iframe's keyed structural morph now explicitly updates text and
+comment node values. This closes a stale-text path where an edited block kept
+the old visible text even though its keyed element and attributes were reused.
+
+The edit context menu also exposed a UI regression: `TooltipTrigger asChild`
+wrapped around `TabsTrigger` replaced the tab's active `data-state` with the
+tooltip's `closed` state. Tooltip triggers now sit on a non-tab wrapper, so
+Radix tab state and active styling remain truthful while the tooltip remains
+available.
+
+Verification: production build, lint, `ci:verify`, persistent modern/legacy
+preview smoke, both-mode preview/edit visual smoke, edit-flow smoke, and
+direct Shadow drag smoke passed. The persistent smoke retained one iframe and
+reported zero reloads through the tested edit flow. This is local behavior
+evidence only; the external Sandbox diagnostic and dedicated legacy-room
+verification remain open.
+
+### 2026-07-29 - Roll20 dialog inset alignment
+
+Live Sandbox geometry showed the real viewer keeps a `20px` left/right inset
+on `.dialog.largedialog` around an authored `850px` sheet root. The local
+Roll20 dialog CSS had removed that inset together with the titlebar chrome.
+The renderer now hides the chrome but keeps `padding: 0 20px`, leaving the
+authored root intrinsic width unchanged.
+
+Verification: `test:build-doc-bundle`, `lint`, production `build`, `ci:verify`,
+both-mode preview/edit visual smoke, strict imported-edit sync, persistent
+preview smoke, and edit-flow smoke passed. The external result remains
+`VERIFIED_PARTIAL`: one anonymous synthetic payload activated in the dedicated
+Sandbox, while the DPR-normalized root diff is still a diagnostic `2.88%`.
+
+Safety boundary: only the dedicated Sandbox with a fresh visible `1`-member
+preflight was used. Existing rooms are observation-only and are excluded when
+the member count is greater than one or cannot be read. No existing room was
+opened, uploaded to, saved, or otherwise modified in this run.

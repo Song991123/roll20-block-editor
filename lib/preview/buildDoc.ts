@@ -300,6 +300,14 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function morphNode(current, next) {
     if (!sameShape(current, next)) return next.cloneNode(true);
+    // Element identity is keyed so form/runtime state survives a structural
+    // patch. Text and comment nodes have no children to reconcile, so update
+    // their value explicitly or an inline text edit can leave stale pixels in
+    // the persistent iframe until a full replacement occurs.
+    if (current.nodeType === 3 || current.nodeType === 8) {
+      if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+      return current;
+    }
     if (current.nodeType === 1) syncElementAttributes(current, next);
     reconcileChildren(current, next);
     return current;
@@ -1378,7 +1386,6 @@ const ROLL20_DIALOG_OPEN_CSS = `
 }
 
 #dialog-window,
-#dialog-window .dialog.largedialog,
 #dialog-window .characterviewer,
 #dialog-window .tab-content,
 #dialog-window .sheetform {
@@ -1389,6 +1396,12 @@ const ROLL20_DIALOG_OPEN_CSS = `
   margin: 0 !important;
   outline: 0 !important;
   padding: 0 !important;
+}
+
+/* Roll20's visible sheet dialog keeps the 20px horizontal content inset even
+ * when its title bar and button pane are not part of the sheet surface. */
+#dialog-window .dialog.largedialog {
+  padding: 0 20px !important;
 }
 
 #dialog-window::before,

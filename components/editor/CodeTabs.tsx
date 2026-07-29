@@ -13,26 +13,26 @@ const SUB_TABS = [
   {
     id: 'html',
     label: 'HTML',
-    empty: '아직 생성된 HTML이 없어요. 시트 요소를 추가해 보세요.',
-    note: 'Roll20 시트 본문입니다.',
+    empty: '아직 만들어진 HTML이 없어요. 시트에 요소를 올리면 여기에 코드가 생겨요.',
+    note: 'Roll20 시트 본문이에요.',
   },
   {
     id: 'css',
     label: 'CSS',
-    empty: '아직 생성된 CSS가 없어요. 스타일을 추가해 보세요.',
-    note: 'Roll20에 함께 올릴 시트 스타일입니다.',
+    empty: '아직 만들어진 CSS가 없어요. 꾸미기 블록을 쓰면 여기에 코드가 생겨요.',
+    note: 'Roll20에 함께 올릴 시트 스타일이에요.',
   },
   {
     id: 'worker',
-    label: '시트 동작',
-    empty: '아직 시트 동작 코드가 없어요. 가져온 시트의 worker 스크립트는 여기에 보존됩니다.',
-    note: '시트 위에는 표시하지 않고 Roll20에서 실행되는 코드입니다.',
+    label: '자동 동작',
+    empty: '아직 자동 동작 코드가 없어요. 불러온 시트의 자동 동작은 여기에 그대로 보존돼요.',
+    note: '화면에는 보이지 않고 Roll20 안에서 실행되는 코드예요.',
   },
   {
     id: 'i18n',
     label: '번역',
-    empty: '아직 번역 JSON이 없어요.',
-    note: 'Roll20 translation.json으로 내보낼 내용입니다.',
+    empty: '아직 번역 내용이 없어요.',
+    note: 'Roll20 translation.json으로 내보낼 내용이에요.',
   },
 ] as const;
 
@@ -79,7 +79,7 @@ export default function CodeTabs() {
             <ToggleGroupItem
               key={t.id}
               value={t.id}
-              className="flex-1 text-[11px]"
+              className="flex-1 text-xs"
               data-testid={`code-subtab-${t.id}`}
             >
               {t.label}
@@ -87,19 +87,19 @@ export default function CodeTabs() {
           ))}
         </ToggleGroup>
         <div
-          className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground"
+          className="mt-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-3 py-2 text-xs leading-relaxed text-muted-foreground"
           data-testid="code-tab-status"
         >
-          <span className="font-medium text-foreground">{activeTab.label}</span>
-          <span className="mx-1 text-border">|</span>
-          <span>{byteCount.toLocaleString()} B</span>
-          <span className="mx-1 text-border">|</span>
+          <span className="font-semibold text-foreground">{activeTab.label}</span>
+          <span className="mx-1.5 text-border">|</span>
+          <span className="tabular-nums">{byteCount.toLocaleString()} B</span>
+          <span className="mx-1.5 text-border">|</span>
           <span>{activeTab.note}</span>
         </div>
       </div>
 
       <ScrollArea className="flex-1 min-h-0">
-        <pre className="m-0 p-3 font-mono text-[11px] leading-relaxed text-foreground whitespace-pre-wrap break-all">
+        <pre className="m-0 p-3 font-mono text-xs leading-relaxed text-foreground whitespace-pre-wrap break-all">
           {content || (
             <span className="text-muted-foreground italic" data-testid="code-tab-empty">
               {activeTab.empty}
@@ -108,21 +108,21 @@ export default function CodeTabs() {
         </pre>
       </ScrollArea>
 
-      <div className="shrink-0 border-t border-border p-2">
+      <div className="shrink-0 border-t border-border p-2.5">
         <Button
           type="button"
-          variant="ghost"
+          variant="secondary"
           size="sm"
-          className="w-full justify-center gap-1.5 text-xs"
+          className="w-full justify-center gap-1.5"
           onClick={onCopy}
         >
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5" /> 복사됨
+              <Check className="h-4 w-4 text-[var(--success)]" /> 복사했어요
             </>
           ) : (
             <>
-              <Copy className="h-3.5 w-3.5" /> 클립보드에 복사
+              <Copy className="h-4 w-4" /> 코드 전체 복사
             </>
           )}
         </Button>

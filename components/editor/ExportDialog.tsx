@@ -267,12 +267,12 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileArchive className="h-5 w-5" />
-            Roll20 zip 내보내기
+            <FileArchive className="h-6 w-6 text-[var(--primary)]" />
+            Roll20에 올릴 파일 만들기
           </DialogTitle>
           <DialogDescription>
-            Roll20 Custom Sheet Sandbox에 올릴 `sheet.html`, `sheet.css`,
-            `translation.json`, `sheet.json`, `README.txt`를 zip으로 묶습니다.
+            Roll20에 올릴 파일들(sheet.html, sheet.css, translation.json 등)을
+            ZIP 하나로 묶어드려요. 올리는 순서는 함께 들어가는 README.txt에 적혀 있어요.
           </DialogDescription>
         </DialogHeader>
 
@@ -284,7 +284,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 value={meta.name}
                 onChange={(e) => setMeta({ ...meta, name: e.target.value })}
                 placeholder="예: 나만의 캐릭터 시트"
-                className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 text-sm"
+                className="r20-input"
                 data-testid="export-meta-name"
               />
             </Field>
@@ -294,7 +294,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 value={meta.author}
                 onChange={(e) => setMeta({ ...meta, author: e.target.value })}
                 placeholder="예: JeongHyun"
-                className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 text-sm"
+                className="r20-input"
                 data-testid="export-meta-author"
               />
             </Field>
@@ -304,7 +304,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 value={meta.version}
                 onChange={(e) => setMeta({ ...meta, version: e.target.value })}
                 placeholder="0.1.0"
-                className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 font-mono text-sm"
+                className="r20-input font-mono"
                 data-testid="export-meta-version"
               />
             </Field>
@@ -317,7 +317,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                     license: e.target.value as SheetMetadata['license'],
                   })
                 }
-                className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 text-sm"
+                className="r20-input"
                 data-testid="export-meta-license"
               >
                 {SHEET_LICENSES.map((l) => (
@@ -333,19 +333,19 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 value={meta.system}
                 onChange={(e) => setMeta({ ...meta, system: e.target.value })}
                 placeholder="예: Call of Cthulhu 7th"
-                className="w-full rounded border border-border bg-[var(--bg-elevated)] px-2 py-1.5 text-sm"
+                className="r20-input"
                 data-testid="export-meta-system"
               />
             </Field>
           </section>
 
           <section
-            className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5"
             data-testid="export-warnings"
           >
             <div className="mb-2 flex items-center justify-between">
               <div className="text-sm font-medium">내보내기 전 확인</div>
-              <div className="flex items-center gap-3 text-[11px] tabular-nums">
+              <div className="flex items-center gap-3 text-xs tabular-nums">
                 <span className="text-red-500">오류 {counts.error}</span>
                 <span className="text-amber-500">경고 {counts.warning}</span>
                 <span className="text-muted-foreground">정보 {counts.info}</span>
@@ -353,7 +353,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             </div>
 
             {combinedWarnings.length === 0 ? (
-              <div className="text-[12px] text-muted-foreground">
+              <div className="text-sm text-muted-foreground">
                 감지된 문제가 없습니다. 바로 내보낼 수 있습니다.
               </div>
             ) : (
@@ -361,7 +361,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 {combinedWarnings.map((w, i) => (
                   <li
                     key={`${w.code}-${i}`}
-                    className="flex items-start gap-2 text-[12px] leading-relaxed"
+                    className="flex items-start gap-2 text-sm leading-relaxed"
                     data-severity={w.severity}
                   >
                     <SeverityIcon severity={w.severity} />
@@ -369,7 +369,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                       <span className={severityLabelClass(w.severity)}>
                         [{severityLabel(w.severity)}]
                       </span>{' '}
-                      <span className="font-mono text-[11px] text-muted-foreground">
+                      <span className="font-mono text-xs text-muted-foreground">
                         {w.code}
                       </span>{' '}
                       {w.message}
@@ -381,7 +381,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
 
             {blocked && (
               <div
-                className="mt-3 rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-[12px] text-red-600 dark:text-red-300"
+                className="mt-3 rounded border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300"
                 role="alert"
                 data-testid="export-blocked-banner"
               >
@@ -418,19 +418,19 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           />
 
           <section
-            className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5"
             data-testid="export-roll20-readiness"
           >
             <div className="mb-2 flex items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-medium">Roll20 업로드 준비 상태</div>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   이 항목은 zip 구성 파일의 로컬 준비 상태입니다. 실제 Roll20 화면 일치는
                   Sandbox나 새 테스트 방에 올린 뒤 스크린샷으로 다시 확인해야 합니다.
                 </p>
               </div>
               <span
-                className="shrink-0 rounded border border-amber-500/35 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-200"
+                className="shrink-0 rounded border border-amber-500/35 bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-200"
                 data-testid="export-roll20-verification-badge"
               >
                 실제 검증 필요
@@ -440,7 +440,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
               {uploadReadiness.map((item) => (
                 <li
                   key={item.label}
-                  className="flex items-start gap-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[12px]"
+                  className="flex items-start gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-2.5 py-2 text-sm"
                   data-testid="export-roll20-readiness-item"
                   data-state={item.pending ? 'pending' : item.ok ? 'ready' : 'missing'}
                 >
@@ -462,14 +462,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                   )}
                   <span>
                     <span className="font-medium">{item.label}</span>
-                    <span className="block text-[11px] text-muted-foreground">
+                    <span className="block text-xs text-muted-foreground">
                       {item.detail}
                     </span>
                   </span>
                 </li>
               ))}
             </ul>
-            <div className="mt-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
+            <div className="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-2.5 py-2 text-xs leading-relaxed text-muted-foreground">
               시트가 만들어진 Roll20 버전을 아래에서 선택하세요. 이 선택은 미리보기와
               `sheet.json` 설정에 동시에 반영됩니다. 실제 표시는 Custom Sheet Sandbox나
               새 테스트 방에 올린 뒤 확인해야 합니다.
@@ -477,19 +477,19 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           </section>
 
           <details
-            className="group rounded border border-border bg-[var(--bg-elevated)]"
+            className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]"
             data-testid="export-roll20-sandbox-diagnostics"
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3 [&::-webkit-details-marker]:hidden">
               <div>
                 <div className="text-sm font-medium">Roll20 Sandbox 고급 진단</div>
-                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   Roll20 Custom Sheet Sandbox가 업로드 때 적용하는 HTML/CSS 정리 규칙을
                   로컬에서 미리 계산한 값입니다. 필요할 때만 펼쳐 보세요.
                 </p>
               </div>
               <span
-                className={`shrink-0 rounded border px-2 py-1 text-[11px] font-medium ${
+                className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
                   sandboxDiagnostics.fatal
                     ? 'border-red-500/35 bg-red-500/10 text-red-700 dark:text-red-200'
                     : 'border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
@@ -541,21 +541,21 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           </details>
 
           <section
-            className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5"
             data-testid="export-legacy-section"
           >
-            <label className="flex cursor-pointer select-none items-start gap-2 text-[12px]">
+            <label className="flex cursor-pointer select-none items-start gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={legacyMode}
                 onChange={(e) => setRoll20CompatibilityMode(e.target.checked ? 'legacy' : 'modern')}
-                className="mt-[2px] h-4 w-4 accent-[var(--accent-primary)]"
+                className="mt-[2px] h-[18px] w-[18px] accent-[var(--primary)]"
                 data-testid="export-legacy-toggle"
                 aria-label="구버전 Roll20 무해화"
               />
               <span className="flex-1">
                 <span className="font-medium">구버전 Roll20 무해화</span>
-                <span className="ml-1 text-[11px] text-muted-foreground">
+                <span className="ml-1 text-xs text-muted-foreground">
                   끄면 신버전 Roll20 모드로 보고 내보냅니다. 켜면 HTML 클래스 보정과
                   CSS 무해화를 미리보기에 적용하고 `sheet.json` 역시 legacy로 저장합니다.
                 </span>
@@ -563,14 +563,14 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             </label>
             {legacyMode && legacyWarnings.length > 0 && (
               <div
-                className="mt-2 text-[11px] text-muted-foreground"
+                className="mt-2 text-xs text-muted-foreground"
                 data-testid="export-legacy-warnings"
               >
                 최근 무해화 결과: {legacyWarnings.length}건. 자세한 내용은 sanitize-warnings.json에 저장됩니다.
               </div>
             )}
             {legacyMode && legacyWarnings.length === 0 && (
-              <div className="mt-2 text-[11px] text-muted-foreground">
+              <div className="mt-2 text-xs text-muted-foreground">
                 내보내기 때 CSS를 검사하고 sanitize-warnings.json을 함께 생성합니다.
               </div>
             )}
@@ -593,8 +593,8 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
             disabled={blocked || busy}
             data-testid="export-download-button"
           >
-            <FileArchive className="mr-1.5 h-4 w-4" />
-            {busy ? '묶는 중...' : '내보내기 (.zip)'}
+            <FileArchive className="mr-1.5 h-[18px] w-[18px]" />
+            {busy ? '파일 묶는 중…' : 'ZIP 파일 만들기'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -607,19 +607,19 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
     result.externalRefs > 0 || result.relativeRefs > 0 || result.placeholderRiskRefs > 0;
   return (
     <section
-      className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+      className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5"
       data-testid="export-asset-preflight"
     >
       <div className="mb-2 flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-medium">외부 자산 점검</div>
-          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             zip에는 HTML, CSS, translation만 들어갑니다. 이미지와 폰트 URL은 Roll20에서
             다시 불러오기 때문에 원본처럼 보이려면 링크가 살아 있어야 합니다.
           </p>
         </div>
         <span
-          className={`shrink-0 rounded border px-2 py-1 text-[11px] font-medium ${
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
             hasRisk
               ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200'
               : 'border-emerald-500/35 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200'
@@ -629,7 +629,7 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
           {hasRisk ? '확인 필요' : '외부 자산 없음'}
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-2 text-[12px] sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
         <Metric label="전체 참조" value={result.totalRefs} />
         <Metric label="외부 URL" value={result.externalRefs} />
         <Metric label="상대 경로" value={result.relativeRefs} />
@@ -641,7 +641,7 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
         <Metric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
       </div>
       {hasRisk ? (
-        <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-[11px] leading-relaxed text-amber-900 dark:text-amber-100">
+        <div className="mt-2 rounded border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-xs leading-relaxed text-amber-900 dark:text-amber-100">
           외부 이미지/폰트는 zip에 포함되지 않습니다. Roll20 프록시, Imgur, 원본 서버가
           이미지를 placeholder로 바꾸면 실제 화면이 달라질 수 있습니다. 배포 전에 직접
           보는 URL로 교체하거나 Roll20 Sandbox에서 자산 로딩을 확인하세요.
@@ -666,7 +666,7 @@ function AssetPreflightPanel({ result }: { result: AssetPreflight }) {
           ) : null}
         </div>
       ) : (
-        <div className="mt-2 text-[11px] text-muted-foreground">
+        <div className="mt-2 text-xs text-muted-foreground">
           현재 내보내기 기준으로 외부 이미지나 폰트 참조가 감지되지 않았습니다.
         </div>
       )}
@@ -736,19 +736,19 @@ function AssetReplacementPanel({
   }
   return (
     <section
-      className="rounded border border-border bg-[var(--bg-elevated)] p-3"
+      className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5"
       data-testid="export-asset-replacement-map"
     >
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-medium">자산 URL 교체</div>
-          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             삭제된 이미지나 폰트를 사용자가 다시 올린 URL로 바꾼 뒤 zip을 만들 수 있습니다.
             실제 파일은 저장하지 않고, HTML/CSS 안의 URL 문자만 교체합니다.
           </p>
         </div>
         <span
-          className={`shrink-0 rounded border px-2 py-1 text-[11px] font-medium ${
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
             active
               ? warnings.length
                 ? 'border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200'
@@ -768,7 +768,7 @@ function AssetReplacementPanel({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={'https://old.example/image.png => https://new.example/image.png'}
-        className="min-h-20 w-full resize-y rounded border border-border bg-[var(--bg-elevated-2)] px-2.5 py-2 font-mono text-[11px] leading-relaxed"
+        className="min-h-20 w-full resize-y rounded-lg border-[1.5px] border-border bg-[var(--bg-elevated)] px-3 py-2.5 font-mono text-xs leading-relaxed outline-none transition-colors focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
         data-testid="export-asset-replacement-input"
       />
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -783,30 +783,30 @@ function AssetReplacementPanel({
         >
           교체 목록 초안 만들기
         </Button>
-        <span className="text-[10.5px] leading-relaxed text-muted-foreground">
+        <span className="text-xs leading-relaxed text-muted-foreground">
           현재 내보내기 HTML/CSS에서 감지한 외부 URL과 상대 경로를 commented map으로 넣습니다.
           실제 Roll20 검증에는 사용자가 다시 올린 http(s) URL이 필요합니다.
         </span>
       </div>
       <div
-        className="mt-2 grid grid-cols-1 gap-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] p-2 sm:grid-cols-[minmax(0,1fr)_auto]"
+        className="mt-2 grid grid-cols-1 gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] p-2 sm:grid-cols-[minmax(0,1fr)_auto]"
         data-testid="export-asset-replacement-profiles"
       >
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
-            <span className="text-[10.5px] font-medium text-muted-foreground">
+            <span className="text-xs font-medium text-muted-foreground">
               교체 묶음 이름
             </span>
             <input
               value={profileName}
               onChange={(event) => setProfileName(event.target.value)}
               placeholder="예: 영시영 1부 이미지"
-              className="h-8 rounded border border-border bg-[var(--bg-elevated)] px-2 text-[12px]"
+              className="h-8 rounded border border-border bg-[var(--bg-elevated)] px-2 text-sm"
               data-testid="export-asset-profile-name"
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-[10.5px] font-medium text-muted-foreground">
+            <span className="text-xs font-medium text-muted-foreground">
               저장된 묶음
             </span>
             <select
@@ -814,7 +814,7 @@ function AssetReplacementPanel({
               onChange={(event) => {
                 if (event.target.value) onLoadProfile(event.target.value);
               }}
-              className="h-8 rounded border border-border bg-[var(--bg-elevated)] px-2 text-[12px]"
+              className="h-8 rounded border border-border bg-[var(--bg-elevated)] px-2 text-sm"
               data-testid="export-asset-profile-select"
             >
               <option value="">선택 안 함</option>
@@ -880,7 +880,7 @@ function AssetReplacementPanel({
             txt 저장
           </Button>
           <span
-            className="text-[10.5px] leading-relaxed text-muted-foreground"
+            className="text-xs leading-relaxed text-muted-foreground"
             data-testid="export-asset-map-cli-hint"
           >
             저장한 txt는 `plan:roll20-asset-relink --map-file` 검증에 그대로 사용할 수 있습니다.
@@ -888,7 +888,7 @@ function AssetReplacementPanel({
         </div>
         {active ? (
           <div
-            className={`rounded border px-2 py-1.5 text-[10.5px] leading-relaxed sm:col-span-2 ${
+            className={`rounded border px-2 py-1.5 text-xs leading-relaxed sm:col-span-2 ${
               readiness.hasPlaceholderTargets || readiness.hasLocalOnlyTargets
                 || readiness.hasRiskyRoll20Targets
                 ? 'border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-100'
@@ -925,18 +925,18 @@ function AssetReplacementPanel({
           </div>
         ) : null}
         {profiles.length > 0 ? (
-          <div className="text-[10.5px] leading-relaxed text-muted-foreground sm:col-span-2">
+          <div className="text-xs leading-relaxed text-muted-foreground sm:col-span-2">
             {profiles.length}개 묶음이 이 브라우저 작업공간에 저장되어 있습니다. 실제 이미지 파일은
             저장하지 않고 URL 교체 규칙만 보관합니다.
           </div>
         ) : null}
       </div>
-      <div className="mt-1 text-[10.5px] leading-relaxed text-muted-foreground">
+      <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
         한 줄에 하나씩 입력하세요. 이 맵은 현재 export에만 적용되며, 원본 작업공간이나 외부 시트
         폴더를 변경하지 않습니다.
       </div>
       {warnings.length > 0 ? (
-        <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-amber-800 dark:text-amber-100">
+        <ul className="mt-2 space-y-1 text-xs leading-relaxed text-amber-800 dark:text-amber-100">
           {warnings.slice(0, 4).map((warning) => (
             <li key={`${warning.line}-${warning.message}`}>
               {warning.line}행: {warning.message}
@@ -950,9 +950,9 @@ function AssetReplacementPanel({
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2">
-      <div className="text-[10.5px] text-muted-foreground">{label}</div>
-      <div className="mt-0.5 font-mono text-[13px]">{value}</div>
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-2.5 py-2">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-0.5 font-mono text-sm tabular-nums">{value}</div>
     </div>
   );
 }
@@ -987,7 +987,7 @@ function DiagnosticRow({
     state === 'fatal' ? '거부 위험' : state === 'rewritten' ? '수정 예상' : '변경 없음';
   return (
     <div
-      className="flex items-start gap-2 rounded border border-border/70 bg-[var(--bg-elevated-2)] px-2.5 py-2 text-[12px]"
+      className="flex items-start gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-2.5 py-2 text-sm"
       data-testid="export-roll20-sandbox-diagnostic-item"
       data-state={state}
     >
@@ -998,8 +998,8 @@ function DiagnosticRow({
       )}
       <span>
         <span className="font-medium">{label}</span>
-        <span className="ml-1 text-[11px] text-muted-foreground">({labelText})</span>
-        <span className="block text-[11px] text-muted-foreground">{detail}</span>
+        <span className="ml-1 text-xs text-muted-foreground">({labelText})</span>
+        <span className="block text-xs text-muted-foreground">{detail}</span>
       </span>
     </div>
   );
@@ -1028,11 +1028,11 @@ function Field({
 }) {
   return (
     <label className={`flex flex-col gap-1 ${full ? 'sm:col-span-2' : ''}`}>
-      <span className="text-[11.5px] font-medium tracking-wide text-muted-foreground">
+      <span className="text-xs font-medium tracking-wide text-muted-foreground">
         {label}
       </span>
       {children}
-      {hint ? <span className="text-[10.5px] text-muted-foreground/70">{hint}</span> : null}
+      {hint ? <span className="text-xs text-muted-foreground/70">{hint}</span> : null}
     </label>
   );
 }

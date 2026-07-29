@@ -16,6 +16,7 @@ import {
   nextActionForReadiness,
   selfTestRoll20Readiness,
 } from './lib/roll20Readiness.mjs';
+import { parseParticipantCounts } from './lib/roll20ParticipantPreflight.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const RUN_DIR = path.resolve(readOption('--run-dir', args[0] ?? ''));
@@ -29,6 +30,7 @@ const SETTINGS_URL = readOption(
 const OUT_DIR_RAW = readOption('--out-dir', '');
 const OUT_DIR = OUT_DIR_RAW ? path.resolve(OUT_DIR_RAW) : '';
 const STAY_ON_CURRENT_PAGE = hasFlag('--stay-on-current-page');
+const REQUIRE_SOLO_ROOM = hasFlag('--require-solo-room');
 const DRY_RUN = hasFlag('--dry-run');
 const SELF_TEST = hasFlag('--self-test');
 
@@ -71,10 +73,24 @@ async function main() {
   const { chromium } = await import('playwright-core');
   const browser = await connectOverCdp(chromium);
   try {
-    const page = await findRoll20Page(browser);
+    const page = await findRoll20Page(browser, REQUIRE_SOLO_ROOM);
     if (!page) {
       const urls = browser.contexts().flatMap((context) => context.pages()).map((candidate) => candidate.url());
       throw new Error(`ROLL20 UPLOAD CDP BLOCKED_NO_PAGE\nNo Roll20 page found via ${CDP_URL}.\nOpen pages:\n${urls.map((url) => `- ${redactUrl(url)}`).join('\n')}`);
+    }
+
+    let participantPreflight = null;
+    if (REQUIRE_SOLO_ROOM) {
+      participantPreflight = await inspectParticipantPage(page);
+      if (participantPreflight.status !== 'PASS_SOLO') {
+        throw new Error([
+          'ROLL20 UPLOAD CDP BLOCKED_ROOM_PARTICIPANTS',
+          `page=${page.url()}`,
+          `status=${participantPreflight.status}`,
+          `counts=${participantPreflight.counts.join(',') || 'none'}`,
+          'next=Open the dedicated legacy test room, confirm exactly one visible member, and rerun with --require-solo-room.',
+        ].join('\n'));
+      }
     }
 
     if (!STAY_ON_CURRENT_PAGE && SETTINGS_URL) {
@@ -116,6 +132,7 @@ async function main() {
         fixtureId: FIXTURE_ID,
         mode: 'dry-run',
         page: readiness,
+        participantPreflight,
         snippetPath,
         outPath,
         canonicalOutDir: path.join(RUN_DIR, 'roll20-upload-handoff', 'cdp-apply'),
@@ -152,6 +169,7 @@ async function main() {
       endpointCampaignId: ENDPOINT_CAMPAIGN_ID,
       snippetPath,
       before: readiness,
+      participantPreflight,
       after,
       evaluateError,
       result,
@@ -194,13 +212,31 @@ async function connectOverCdp(chromium) {
   }
 }
 
-async function findRoll20Page(browser) {
+async function findRoll20Page(browser, requireSoloRoom = false) {
   const pages = browser.contexts().flatMap((context) => context.pages());
   const roll20Pages = pages.filter((page) => isRoll20PageUrl(page.url()));
+  if (requireSoloRoom) {
+    return roll20Pages.find((page) => safePathname(page.url()) === '/editor')
+      ?? roll20Pages.find((page) => /\/editor\//.test(safePathname(page.url())))
+      ?? roll20Pages[0]
+      ?? null;
+  }
   return roll20Pages.find((page) => /\/sheetsandbox\/settings\//.test(safePathname(page.url())))
     ?? roll20Pages.find((page) => safePathname(page.url()) === '/editor')
     ?? roll20Pages[0]
     ?? null;
+}
+
+async function inspectParticipantPage(page) {
+  const snapshot = await page.evaluate(() => ({
+    pathname: location.pathname,
+    bodyText: document.body?.innerText ?? '',
+  }));
+  return {
+    pathname: snapshot.pathname,
+    ...parseParticipantCounts(snapshot.bodyText),
+    mutationPerformed: false,
+  };
 }
 
 async function getPageSummary(page) {
@@ -274,6 +310,11 @@ function runSelfTest() {
   );
   if (!reloadedAfterSubmit || unrelatedFailure || wrongPage) {
     console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL reload-after-submit classification');
+    process.exit(1);
+  }
+  const participant = parseParticipantCounts('- generic: 1 구성원');
+  if (participant.status !== 'PASS_SOLO') {
+    console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL participant guard');
     process.exit(1);
   }
   console.log('ROLL20 UPLOAD CDP SELF_TEST PASS');

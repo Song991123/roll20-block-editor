@@ -898,3 +898,40 @@ independent evidence.
 
 All images and sidecars remain ignored under
 `reports/roll20-actual-compare/live-browser/2026-07-19-synthetic-modern/`.
+
+## 2026-07-29 Participant-Gated Sandbox Recheck and Wrapper Alignment
+
+- The only external destination used for the recheck was the dedicated
+  Custom Sheet Sandbox. A fresh visible participant check returned exactly
+  `1` member before any payload interaction.
+- The previously observed existing room with `5` members remained excluded.
+  No existing room was selected, edited, saved, or used for chat/upload
+  testing. This exclusion applies even when the room is otherwise convenient.
+- The anonymous synthetic modern payload still activated in the Sandbox
+  character iframe with its translated heading, input, and Roll20 roll
+  control. The authored root measured `850x220px`; the surrounding
+  `.charactersheet` wrapper measured `860x240px`.
+- Local renderer alignment now keeps the same `20px` horizontal inset on
+  `.dialog.largedialog` while hiding only the non-sheet chrome. Local checks
+  pass, but the external normalized root comparison remains a diagnostic
+  `2.88%` mismatch and is not promoted to parity.
+
+### Room eligibility rule
+
+An existing Roll20 room is eligible only after a fresh visible participant
+preflight confirms exactly one member. If the count is greater than one,
+unknown, stale, or unreadable, stop and exclude the room from all upload,
+save, chat, settings, and generated-sheet actions. Use the dedicated Sandbox
+or a newly created test room instead.
+
+The repository includes a read-only helper for this boundary:
+`corepack pnpm run preflight:roll20-room-members -- --page-match /editor`.
+It does not navigate or mutate the connected browser and returns
+`PASS_SOLO` only when one visible participant count is found. A missing,
+ambiguous, or non-one count is a blocking result, not permission to guess.
+
+The CDP upload helper accepts `--require-solo-room` for the dedicated legacy
+room. With that flag it performs the same fresh participant check on the
+current editor page before navigating to settings or evaluating an upload
+snippet. Sandbox uploads remain a separate path and must never be used as
+legacy-room evidence.

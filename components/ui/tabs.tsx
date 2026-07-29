@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils/cn';
 
 const Tabs = TabsPrimitive.Root;
 
+/** design-reset: 알약형 탭 — 활성 탭은 흰 카드 + 장미색 글자로 또렷하게. */
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
@@ -13,7 +14,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      'inline-flex h-9 items-center justify-center rounded-md bg-secondary p-1 text-muted-foreground',
+      'inline-flex h-11 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-secondary p-1 text-muted-foreground',
       className
     )}
     {...props}
@@ -28,10 +29,11 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1 text-xs font-medium ring-offset-background transition-all',
+      'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium ring-offset-background transition-all active:scale-[0.98]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
       'disabled:pointer-events-none disabled:opacity-50',
-      'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
+      'hover:text-foreground',
+      'data-[state=active]:bg-background data-[state=active]:font-semibold data-[state=active]:text-[var(--primary-active)] data-[state=active]:shadow-[0_1px_3px_rgba(var(--shadow-tint),0.16)]',
       className
     )}
     {...props}

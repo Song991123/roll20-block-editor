@@ -10,6 +10,7 @@ import {
   type WidgetTarget,
 } from '@/lib/stores/workspaceStore';
 import { getWidget } from '@/lib/widgets/registry';
+import { widgetTypeDisplayLabel } from './fieldLabels';
 
 /**
  * WidgetInspector — 선택된 위젯의 위치/크기/이름/클래스/기본값 폼.
@@ -62,9 +63,9 @@ export default function WidgetInspector() {
         <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-elevated-2)] text-muted-foreground">
           <MousePointerSquareDashed className="h-5 w-5" />
         </div>
-        <p className="text-sm font-medium text-foreground">선택한 요소가 없어요</p>
-        <p className="mt-1 max-w-[240px] text-[11px] leading-relaxed text-muted-foreground">
-          시트에서 요소를 클릭하거나 왼쪽 갤러리에서 새 요소를 끌어오세요.
+        <p className="text-base font-semibold text-foreground">아직 고른 요소가 없어요</p>
+        <p className="mt-1.5 max-w-[260px] text-sm leading-relaxed text-[var(--text-secondary)]">
+          시트에서 요소를 클릭하거나, 왼쪽 목록에서 새 조각을 끌어와 보세요.
         </p>
       </div>
     );
@@ -94,13 +95,13 @@ export default function WidgetInspector() {
   return (
     <ScrollArea className="h-full">
       <div className="space-y-3.5 p-3" data-testid="widget-inspector">
-        <header className="flex items-center justify-between">
-          <div>
-            <div className="text-[10.5px] uppercase tracking-wider text-muted-foreground">
-              요소
+        <header className="r20-form-card flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-muted-foreground">
+              고른 요소
             </div>
-            <div className="mt-0.5 text-sm font-medium text-foreground">
-              {def?.label ?? widget.type}
+            <div className="mt-0.5 truncate text-base font-semibold text-foreground">
+              {widgetTypeDisplayLabel(widget.type, def?.label ?? widget.type)}
             </div>
           </div>
           <button
@@ -109,9 +110,9 @@ export default function WidgetInspector() {
               removeWidget(target, widget.id);
               setSelectedWidgetId(null);
             }}
-            className="rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-500"
+            className="shrink-0 rounded-full border-[1.5px] border-[color-mix(in_srgb,var(--destructive)_40%,transparent)] bg-[var(--destructive-soft)] px-3 py-1.5 text-sm font-semibold text-[var(--destructive)] transition-colors hover:bg-[color-mix(in_srgb,var(--destructive)_16%,white)] active:scale-[0.97]"
             data-testid="widget-inspector-delete"
-            title="삭제 (Delete)"
+            title="이 요소를 시트에서 지워요 (Delete 키)"
           >
             삭제
           </button>
@@ -128,18 +129,13 @@ export default function WidgetInspector() {
         </Section>
 
         {/* 이름 (Roll20 attr) */}
-        <Section title="속성 이름 (Roll20 attr)">
+        <Section title="값을 저장할 이름">
           <input
             type="text"
             value={nameDraft}
             onChange={onNameChange}
             placeholder="예: strength, hp_max, character_name"
-            className={
-              'w-full rounded border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none ' +
-              (nameError
-                ? 'border-red-500/70 ring-1 ring-red-500/50 focus:ring-red-500'
-                : 'border-border focus:ring-1 focus:ring-[var(--primary)]')
-            }
+            className="r20-input"
             data-testid="w-inspector-name"
             data-valid={nameError ? 'false' : 'true'}
             aria-invalid={!!nameError}
@@ -147,28 +143,31 @@ export default function WidgetInspector() {
             autoComplete="off"
           />
           {nameError ? (
-            <p className="mt-1 flex items-start gap-1 text-[10.5px] font-medium text-red-500" data-testid="w-inspector-name-error">
+            <p className="mt-1.5 flex items-start gap-1 text-xs font-semibold text-[var(--destructive)]" data-testid="w-inspector-name-error">
               {nameError}
             </p>
           ) : (
-            <p className="mt-1 text-[10.5px] text-muted-foreground">
-              Roll20에서는 <code className="font-mono">attr_{nameDraft || 'name'}</code> 이름으로 저장됩니다.
+            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+              이 칸에 적힌 값이 Roll20에 <code className="font-mono">attr_{nameDraft || 'name'}</code>(으)로 저장돼요.
             </p>
           )}
         </Section>
 
         {/* 클래스 */}
-        <Section title="CSS 클래스">
+        <Section title="스타일 이름 (능숙한 사람용)">
           <input
             type="text"
             value={(widget.attrs.class as string | undefined) ?? ''}
             onChange={(e) => setAttr('class', e.target.value)}
             placeholder="예: stat-box highlighted"
-            className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+            className="r20-input"
             data-testid="w-inspector-class"
             spellCheck={false}
             autoComplete="off"
           />
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            꾸미기 블록과 이어 쓸 때만 필요해요. 비워 둬도 괜찮아요.
+          </p>
         </Section>
 
         {/* type 별 추가 필드 */}
@@ -181,7 +180,7 @@ export default function WidgetInspector() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <h3 className="mb-1.5 text-sm font-semibold text-[var(--text-secondary)]">
         {title}
       </h3>
       {children}
@@ -205,8 +204,8 @@ function NumberField({
   testid?: string;
 }) {
   return (
-    <label className="flex items-center gap-1.5 text-xs">
-      <span className="w-10 shrink-0 text-[11px] font-medium text-muted-foreground">{label}</span>
+    <label className="flex items-center gap-1.5 text-sm">
+      <span className="w-11 shrink-0 text-xs font-semibold text-muted-foreground">{label}</span>
       <input
         type="number"
         value={value}
@@ -214,7 +213,7 @@ function NumberField({
           const n = parseFloat(e.target.value);
           if (Number.isFinite(n)) onChange(n);
         }}
-        className="flex-1 min-w-0 rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)] tabular-nums"
+        className="r20-input flex-1 min-w-0 tabular-nums"
         data-testid={testid}
       />
     </label>
@@ -237,7 +236,7 @@ function TypeSpecificFields({
           type="text"
           value={(attrs.value as string | undefined) ?? ''}
           onChange={(e) => setAttr('value', e.target.value)}
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+          className="r20-input"
           data-testid="w-inspector-value"
         />
       </Section>
@@ -247,23 +246,23 @@ function TypeSpecificFields({
   if (type === 'button' || type === 'roll-button') {
     return (
       <>
-        <Section title="라벨">
+        <Section title="버튼에 쓸 글자">
           <input
             type="text"
             value={(attrs.label as string | undefined) ?? ''}
             onChange={(e) => setAttr('label', e.target.value)}
-            className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+            className="r20-input"
             data-testid="w-inspector-label"
           />
         </Section>
         {type === 'roll-button' && (
-          <Section title="굴림식">
+          <Section title="굴림식 (주사위 규칙)">
             <input
               type="text"
               value={(attrs.formula as string | undefined) ?? ''}
               onChange={(e) => setAttr('formula', e.target.value)}
               placeholder="예: 1d20+@{strength}"
-              className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs font-mono outline-none focus:ring-1 focus:ring-[var(--primary)]"
+              className="r20-input font-mono"
               data-testid="w-inspector-formula"
               spellCheck={false}
             />
@@ -275,12 +274,12 @@ function TypeSpecificFields({
 
   if (type === 'heading' || type === 'rolltemplate-header') {
     return (
-      <Section title="텍스트">
+      <Section title="글자 내용">
         <input
           type="text"
           value={(attrs.text as string | undefined) ?? ''}
           onChange={(e) => setAttr('text', e.target.value)}
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+          className="r20-input"
           data-testid="w-inspector-text"
         />
       </Section>
@@ -295,7 +294,7 @@ function TypeSpecificFields({
           value={(attrs.src as string | undefined) ?? ''}
           onChange={(e) => setAttr('src', e.target.value)}
           placeholder="https://..."
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+          className="r20-input"
           data-testid="w-inspector-src"
           spellCheck={false}
         />
@@ -316,7 +315,7 @@ function TypeSpecificFields({
             )
           }
           rows={4}
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+          className="r20-input"
           data-testid="w-inspector-options"
         />
       </Section>
@@ -325,12 +324,12 @@ function TypeSpecificFields({
 
   if (type === 'group-box') {
     return (
-      <Section title="라벨 (legend)">
+      <Section title="그룹 제목">
         <input
           type="text"
           value={(attrs.legend as string | undefined) ?? ''}
           onChange={(e) => setAttr('legend', e.target.value)}
-          className="w-full rounded border border-border bg-[var(--bg-elevated-2)] px-2 py-1 text-xs outline-none transition-colors focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+          className="r20-input"
           data-testid="w-inspector-legend"
         />
       </Section>

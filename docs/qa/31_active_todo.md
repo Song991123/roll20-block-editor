@@ -5574,3 +5574,90 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   visual smoke passed all six cases at `0%` mismatch.
 - BOUNDARY: this closes the local inspector wiring gap; it does not prove
   Figma-level resize handles, arbitrary DOM mapping, or external Roll20 parity.
+
+## 2026-07-29 Modern Sandbox Synthetic Verification
+
+- VERIFIED EXTERNAL (anonymous synthetic only): the dedicated Custom Sheet
+  Sandbox showed one visible member before use. No existing room was opened or
+  modified.
+- VERIFIED EXTERNAL: the modern payload rendered a translated heading, text
+  input, and Roll20 roll button inside the character-sheet iframe. The authored
+  root measured `850x220px`; the Roll20 `.charactersheet` wrapper measured
+  `860x240px`. A roll interaction produced the synthetic result marker in the
+  Roll20 chat log.
+- VERIFIED LOCAL: the same anonymous payload imported at `100%` token match;
+  local preview/edit baseline captured `850x240px`; payload audit, Sandbox
+  sanitize audit, cleaned-payload roundtrip (`0%`), and evidence guard passed.
+- FIXED: the actual screenshot path now uses CDP physical coordinates when the
+  browser is zoomed, and the local diff uses a matching authored-root crop.
+- VERIFY: the normalized root comparison reports `2.88%` mismatch with
+  `1062x275` actual pixels versus `1063x275` local pixels. This is improved
+  measurement, not a visual-parity claim; the remaining difference needs
+  human classification (font rasterization, wrapper, or base CSS).
+- BOUNDARY: no chat screenshot is retained because the full chat panel
+  contained unrelated prior content; only anonymous marker existence remains.
+- NEXT P0: classify the remaining synthetic root delta, then repeat with a
+  user-authorized modern payload and a separately configured legacy test room.
+  Keep both destinations separate.
+
+## 2026-07-29 Persistent Render Sync and Inspector Tab Fix
+
+- FIXED: keyed structural patching now updates text and comment node values as
+  well as element attributes. A same-node text edit can no longer leave stale
+  text in the persistent iframe until a full root replacement.
+- FIXED: the right-sidebar tooltip wrapper no longer overwrites Radix Tabs'
+  active-state attribute. The inspector action from the iframe context menu
+  now opens the attributes tab with its active visual state intact.
+- VERIFIED LOCAL: production build, lint, `ci:verify`, persistent preview
+  surface smoke for modern and legacy, preview/edit visual smoke for both
+  modes, edit-flow smoke, and direct Shadow drag smoke all passed. The
+  persistent surface retained one iframe with zero reloads during the tested
+  edit flow.
+- BOUNDARY: this is local synchronization and interaction evidence. The
+  anonymous external Sandbox root remains a `2.88%` diagnostic delta; modern
+  user-payload parity and dedicated legacy-room parity remain `VERIFY`.
+- NEXT P0: repeat the normalized actual-screen check with an authorized
+  modern payload, then run the separate legacy-enabled test-room check. Do
+  not combine their evidence.
+
+## 2026-07-29 Roll20 Dialog Inset Alignment
+
+- FIXED LOCAL: the preview/edit Roll20 wrapper now preserves the measured
+  `.dialog.largedialog` horizontal content inset (`20px` on each side) while
+  continuing to hide titlebar/button-pane chrome. The authored sheet root is
+  still allowed to keep its own intrinsic width, so the default `850px` sheet
+  remains `850px` rather than being widened.
+- VERIFIED LOCAL: `test:build-doc-bundle`, `lint`, production `build`,
+  `ci:verify`, both-mode preview/edit visual smoke (`0%` for all three
+  anonymous fixtures), strict imported-edit sync, persistent preview surface,
+  and edit-flow smoke all pass after the change.
+- VERIFIED EXTERNAL (already authorized dedicated Sandbox only): the measured
+  anonymous modern synthetic sheet still has an authored root of `850x220px`
+  inside an `860x240px` `.charactersheet` wrapper. The dedicated Sandbox had
+  exactly one visible member before use. No existing room was selected or
+  modified.
+- VERIFY: the external root image comparison remains a diagnostic `2.88%`
+  mismatch after DPR-corrected capture. This wrapper adjustment is not being
+  counted as external visual parity, and it does not close the separate
+  legacy-room gate.
+- SAFETY: an existing room is eligible only after a fresh visible participant
+  preflight confirms exactly one member. Any room with more than one member or
+  an unreadable participant count is excluded from upload, save, chat, and
+  settings operations.
+
+## 2026-07-29 Participant Preflight Safety Gate
+
+- ADDED: `scripts/roll20_room_participant_preflight.mjs` is a read-only CDP
+  helper for existing-room checks. It parses the visible participant count,
+  returns `PASS_SOLO` only for exactly one count, and blocks unknown,
+  ambiguous, or multi-member pages.
+- VERIFIED LOCAL: `test:roll20-room-members` self-test covers one-member,
+  multi-member, missing-count, and ambiguous-count cases. The helper does not
+  navigate, upload, save, open a character, click a roll, or change settings.
+- ADDED GUARD: the CDP upload helper accepts `--require-solo-room` and repeats
+  the fresh check on the current editor page before navigating to settings or
+  evaluating an upload snippet. Sandbox and legacy-room evidence remain
+  separate destinations.
+- BOUNDARY: this is a safety gate, not evidence that any current external room
+  is eligible. A fresh live preflight is still required immediately before a
+  legacy-room operation.
