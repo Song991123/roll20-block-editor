@@ -158,3 +158,14 @@ recursive deletion command before it could execute, including the explicit
 workspace-contained absolute paths. No alternate shell, per-file deletion,
 or safety bypass was used. The candidates remain **not deleted**; protected
 source roots and retained verification evidence remain untouched.
+
+## 2026-07-30 eighth-pass user-authorized retry
+
+The user explicitly authorized another complete-deletion attempt. All nine
+candidate paths were revalidated as workspace-local generated output, stale
+cache, duplicate evidence, or broken Git metadata; the active dependency tree,
+fixtures, canonical reports, source folders, and both worktrees were excluded.
+The host rejected the first exact absolute-path
+`Remove-Item -Recurse -Force` operation before execution. No target was
+deleted, and no alternate shell, per-file deletion, or safety bypass was used.
+All nine candidates remain **not deleted**.
