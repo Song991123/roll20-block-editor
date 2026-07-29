@@ -700,6 +700,7 @@ async function runMode(browser, mode) {
       };
     });
     result.flowCommit = await page.evaluate(() => {
+      window.__r20PerfTimings = {};
       window.__r20SmokeFlowStartedAt = performance.now();
       window.__r20SmokeFlowStartedEpoch = performance.timeOrigin + performance.now();
       return {
@@ -803,6 +804,14 @@ async function runMode(browser, mode) {
       runtimeToken: await frame.evaluate(() => window.__persistentPreviewRuntimeToken),
       loadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
       ackMs: await page.evaluate(() => performance.now() - window.__r20SmokeFlowStartedAt),
+      timings: await page.evaluate(() => {
+        const started = Number(window.__r20SmokeFlowStartedAt ?? 0);
+        const timings = window.__r20PerfTimings ?? {};
+        return Object.fromEntries(Object.entries(timings).map(([name, value]) => [
+          name,
+          { atMs: value, deltaMs: value - started },
+        ]));
+      }),
     });
     result.flowCommit.stats = await readApplyStats(frame);
     await page.locator('[data-testid="edit-placement-free"]').evaluate((button) => button.click());

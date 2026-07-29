@@ -23,6 +23,7 @@ import { flushEmitPipeline } from '@/lib/preview/useEmitPipeline';
 import { applyAssetReplacements } from '@/lib/export/asset_replacements';
 import { mountSheetShadow } from '@/lib/preview/shadowMount';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
+import { markEditorTiming } from '@/lib/perf/editorTiming';
 import ShadowContextMenu, { type ShadowContextMenuAction } from './ShadowContextMenu';
 import { playSfx } from '@/lib/sfx';
 import PreviewEmptyState from './PreviewEmptyState';
@@ -243,7 +244,12 @@ export default function PreviewMain() {
     [renderMode, previewAssetText.html, previewAssetText.css, emitI18n, compatibilityMode, roll20SandboxSanitize, darkMode, previewLayer, documentLanguage],
   );
   const liveBundle = useMemo(
-    () => buildSheetLiveBundle(renderOptions, { includeParts: renderMode === 'shadow' }),
+    () => {
+      markEditorTiming('live-bundle-start');
+      const bundle = buildSheetLiveBundle(renderOptions, { includeParts: renderMode === 'shadow' });
+      markEditorTiming('live-bundle-end');
+      return bundle;
+    },
     [renderMode, renderOptions],
   );
   const livePatch = liveBundle.livePatch;
@@ -446,9 +452,13 @@ export default function PreviewMain() {
             store.bumpStructure('css', adapter.countBlocks('css'));
           }
           // Blockly's mutation listener may publish one coalesced bump in a
-          // microtask. Flush after that queue drains so a committed drag is
-          // emitted once with the final workspace snapshot.
-          queueMicrotask(flushEmitPipeline);
+          // microtask. Flush after that queue drains so the final structure is
+          // emitted without applying a stale pre-listener snapshot.
+          markEditorTiming('flush-scheduled');
+          queueMicrotask(() => {
+            markEditorTiming('flush-callback');
+            flushEmitPipeline();
+          });
           store.setSelectedBlockId(origin.blockId, 'preview');
         } else if (origin.element) {
           origin.element.style.transform = origin.baseTransform;
@@ -584,6 +594,7 @@ export default function PreviewMain() {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         const appliedSource = applySourcesRef.current.get(editMessage.revision);
         if (!appliedSource) return;
+        markEditorTiming('apply-acked-parent');
         lastAppliedSourceRef.current = appliedSource;
         applySourcesRef.current.delete(editMessage.revision);
         if (pendingApplySourceRef.current === appliedSource) {
@@ -626,6 +637,21 @@ export default function PreviewMain() {
         const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
         if (editMessage.phase === 'pointermove') {
           queueIframeEditState(editMessage, visibleDropTarget);
+        } else if (editMessage.phase === 'pointerup') {
+          // The pointer-up geometry is consumed synchronously below. Publishing
+          // it into the large parent overlay state first forces a React render
+          // before the immediate emit microtask can run. Clear the transient
+          // overlay on the next frame instead; the iframe remains the source of
+          // truth for the committed visual position.
+          if (iframeEditOverlayFrameRef.current != null) {
+            window.cancelAnimationFrame(iframeEditOverlayFrameRef.current);
+            iframeEditOverlayFrameRef.current = null;
+          }
+          pendingIframeEditStateRef.current = null;
+          window.requestAnimationFrame(() => {
+            setIframeEditOverlay(null);
+            setIframeEditDropTarget(null);
+          });
         } else {
           flushIframeEditState(editMessage, visibleDropTarget);
         }
@@ -654,12 +680,15 @@ export default function PreviewMain() {
           iframeEditDragOriginRef.current = null;
           setIframeEditDragOrigin(null);
         } else if (editMessage.phase === 'pointerup') {
+          markEditorTiming('pointerup-parent');
           const ui = useUiStore.getState();
           const committedDropTarget = nextDropTarget ?? iframeEditDropTargetRef.current;
           let moved = false;
           if (ui.editPlacementMode === 'flow') {
+            markEditorTiming('commit-start');
             moved = commitIframeFlowDrop(editMessage.subject.blockId, committedDropTarget, adapter);
           } else {
+            markEditorTiming('commit-start');
             const origin = iframeEditDragOriginRef.current;
             const placement = origin
               ? resolveIframeFreePlacement(origin, editMessage, {
@@ -696,6 +725,7 @@ export default function PreviewMain() {
               }
             }
           }
+          markEditorTiming('commit-end');
           if (moved) {
             if (ui.editPlacementMode === 'flow' && committedDropTarget) {
               iframeRef.current?.contentWindow?.postMessage({
@@ -709,10 +739,17 @@ export default function PreviewMain() {
               }, '*');
             }
             const store = useWorkspaceStore.getState();
-            store.bumpStructure('html', adapter.countBlocks('html'));
-            // Let Blockly's own coalesced mutation bump settle before the
-            // immediate commit emit; this avoids a second delayed full emit.
-            queueMicrotask(flushEmitPipeline);
+            markEditorTiming('count-start');
+            const htmlBlockCount = adapter.countBlocks('html');
+            markEditorTiming('count-end');
+            store.bumpStructure('html', htmlBlockCount);
+            // Let Blockly's coalesced mutation bump settle before the
+            // immediate commit emit; this keeps the emitted structure final.
+            markEditorTiming('flush-scheduled');
+            queueMicrotask(() => {
+              markEditorTiming('flush-callback');
+              flushEmitPipeline();
+            });
             store.setSelectedBlockId(editMessage.subject.blockId, 'preview');
           } else {
             iframeEditDragOriginRef.current = null;
@@ -973,6 +1010,7 @@ export default function PreviewMain() {
       if (!currentTarget) return;
       try {
         messages.forEach((message) => currentTarget.postMessage(message, '*'));
+        if (attempts === 0) markEditorTiming('apply-sent');
       } catch {
         setPendingApplyRevision(0);
         pendingApplySourceRef.current = null;

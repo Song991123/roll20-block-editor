@@ -23,6 +23,7 @@
 import { useEffect } from 'react';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import { useWorkspaceStore, WORKSPACE_KEYS } from '@/lib/stores/workspaceStore';
+import { markEditorTiming } from '@/lib/perf/editorTiming';
 import { emitAll } from './emit';
 
 let flushVersion = 0;
@@ -41,6 +42,7 @@ function workspaceSignature(state: ReturnType<typeof useWorkspaceStore.getState>
  * iframe receives the authored HTML/CSS.
  */
 export function flushEmitPipeline(): void {
+  markEditorTiming('flush-enter');
   flushVersion += 1;
   const state = useWorkspaceStore.getState();
   immediateFlushSignature = workspaceSignature(state);
@@ -52,12 +54,14 @@ export function flushEmitPipeline(): void {
   }
 
   const adapter = getBlocklyAdapter();
+  markEditorTiming('emit-immediate-start');
   const result = emitAll({
     html: adapter.getWorkspace('html'),
     css: adapter.getWorkspace('css'),
     i18n: adapter.getWorkspace('i18n'),
     worker: adapter.getWorkspace('worker'),
   });
+  markEditorTiming('emit-immediate-end');
   state.setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, worker: result.worker });
   state.setEmitWarnings(result.warnings);
 }
@@ -110,12 +114,14 @@ export function useEmitPipeline(): void {
         return;
       }
 
+      markEditorTiming('emit-delayed-start');
       const result = emitAll({
         html: adapter.getWorkspace('html'),
         css: adapter.getWorkspace('css'),
         i18n: adapter.getWorkspace('i18n'),
         worker: adapter.getWorkspace('worker'),
       });
+      markEditorTiming('emit-delayed-end');
       setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, worker: result.worker });
       setEmitWarnings(result.warnings);
     }, 120);

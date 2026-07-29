@@ -6131,6 +6131,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: `preflight:roll20-room-members -- --self-test` and the
   upload-guard self-test pass. The current CDP preflight found no targets, so
   no existing room was opened or modified.
+
+## 2026-07-29 Performance Gate Update
+
+- DONE LOCAL: Browser Blockly repaint is deferred to the next animation frame
+  after structural mutation. The 6000-node persistent smoke still emits a
+  structural `patch` in both modern and legacy modes without reload or patch
+  fallback.
+- VERIFIED LOCAL: Commit work measured approximately `13-15ms`, optimistic
+  placement stayed below `35ms`, and browser/page errors remained `0`.
+- VERIFY OPEN P0: Final pointer-to-ack remains approximately `193.7ms` modern
+  and `169.9ms` legacy in the latest run. The queued emit gap and browser ack
+  path still require measurement and reduction; this is not complete.
+- SAFETY: No Roll20 room was opened for this run. Existing-room observation
+  remains eligible only after a fresh visible participant count of exactly `1`.
 ## 2026-07-29 Local flow-drag acceptance update
 
 - DONE LOCAL: The persistent iframe acceptance smoke now performs a real

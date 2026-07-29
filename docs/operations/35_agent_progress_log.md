@@ -6944,3 +6944,23 @@ visibility verification passed. No external room was opened or modified.
   the visible optimistic path is fast, but final emitted HTML acknowledgement
   still needs a separate measured reduction. No parity claim is made from this
   synthetic runtime test.
+
+## 2026-07-29 Deferred Blockly Paint Measurement
+
+- FIXED LOCAL: Structural Blockly operations now defer `initSvg`/`render` to the
+  next animation frame in the browser. The model mutation and live emit remain
+  authoritative; SVG repaint no longer blocks the committed iframe position.
+- VERIFIED LOCAL: In the 6000-node persistent smoke, the measured Blockly
+  commit section fell from approximately `63-68ms` to `13-15ms`. Modern and
+  legacy flows remained on `patch`, with reloads `0`, structural fallbacks `0`,
+  console/page errors `0`, and optimistic placement under `35ms`.
+- FINDING: `countBlocks` and live-bundle construction are each approximately
+  `0-2ms`; the remaining delay is before the queued emit callback and then in
+  the browser acknowledgement. The latest pointer-to-ack observation was
+  `193.7ms` modern and `169.9ms` legacy. End-to-end latency is therefore still
+  open and is not reported as solved.
+- REJECTED EXPERIMENT: forcing a synchronous flush after commit could emit a
+  stale style-only snapshot before Blockly's mutation listener settled. The
+  final path keeps the coalesced microtask so structural edits remain correct.
+- DIAGNOSTICS: timing markers are opt-in through localStorage `__perfOn=1` and
+  are not retained in ordinary user sessions.

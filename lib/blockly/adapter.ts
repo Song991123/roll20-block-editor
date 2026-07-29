@@ -167,6 +167,35 @@ export interface BlocklyAdapter {
   onChange(key: WorkspaceKey, listener: () => void): () => void;
 }
 
+type RenderableBlock = {
+  initSvg?: () => void;
+  render?: () => void;
+};
+
+/**
+ * Structural connections are model work needed for the immediate emit. SVG
+ * repaint is independent of that model result, so let the browser paint it on
+ * the next frame instead of making an iframe drop wait for Blockly rendering.
+ * Node/unit-test callers keep the synchronous fallback.
+ */
+function renderBlocksSoon(blocks: Array<RenderableBlock | null | undefined>): void {
+  const render = () => {
+    for (const block of blocks) {
+      try {
+        block?.initSvg?.();
+        block?.render?.();
+      } catch {
+        // A workspace can be disposed between the model mutation and paint.
+      }
+    }
+  };
+  if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+    window.requestAnimationFrame(render);
+    return;
+  }
+  render();
+}
+
 class DefaultAdapter implements BlocklyAdapter {
   private workspaces: Partial<Record<WorkspaceKey, Blockly.WorkspaceSvg>> = {};
 
@@ -623,10 +652,7 @@ class DefaultAdapter implements BlocklyAdapter {
       outerNext.connect(previous);
       if (followingOuter && next) next.connect(followingOuter);
 
-      block.initSvg?.();
-      block.render?.();
-      parent.initSvg?.();
-      parent.render?.();
+      renderBlocksSoon([block, parent]);
       return true;
     } catch {
       return false;
@@ -657,10 +683,7 @@ class DefaultAdapter implements BlocklyAdapter {
       insertionConnection.connect(moving.previousConnection);
       if (!moving.nextConnection || moving.nextConnection.isConnected()) return false;
       moving.nextConnection.connect(target.previousConnection);
-      moving.initSvg?.();
-      moving.render?.();
-      target.initSvg?.();
-      target.render?.();
+      renderBlocksSoon([moving, target]);
       return true;
     } catch {
       return false;
@@ -705,11 +728,7 @@ class DefaultAdapter implements BlocklyAdapter {
         if (!nextConnection) return false;
         moving.nextConnection.connect(nextConnection);
       }
-      moving.initSvg?.();
-      moving.render?.();
-      target.initSvg?.();
-      target.render?.();
-      nextBlock?.render?.();
+      renderBlocksSoon([moving, target, nextBlock]);
       return true;
     } catch {
       return false;
@@ -791,8 +810,7 @@ class DefaultAdapter implements BlocklyAdapter {
       if (child?.nextConnection) connection = child.nextConnection;
       if (connection.isConnected()) return false;
       connection.connect(moving.previousConnection);
-      moving.initSvg?.();
-      moving.render?.();
+      renderBlocksSoon([moving]);
       return true;
     } catch {
       return false;
