@@ -7636,3 +7636,23 @@ visibility verification passed. No external room was opened or modified.
   source roots, Git worktrees, or external sheet/source folders.
 - CLAIM BOUNDARY: This cleanup changes no renderer behavior and does not turn
   the still-open Sandbox render or legacy-room parity checks into PASS.
+
+## 2026-07-30 - Actual Roll20 modern/legacy synthetic parity
+
+- VERIFIED ACTUAL MODERN: The dedicated Sandbox accepted the anonymous HTML,
+  CSS, and translation payload. A new Sandbox character rendered the payload
+  in one iframe; the root measured `860 x 200px`, translation rendered `Name`,
+  and the roll button produced a `Sandbox proof` chat table.
+- VERIFIED ACTUAL LEGACY: A new one-member test room was created, `Custom` was
+  selected, and `legacy_sanitization` was visibly enabled and persisted. The
+  same payload rendered in one iframe with the same root/proof geometry,
+  translation, and roll/chat behavior.
+- VERIFIED PARITY: The sampled modern/legacy root and proof rectangles plus
+  computed fields returned an empty difference list. This is limited to the
+  anonymous payload and sampled fields; it is not a universal sheet claim.
+- CONSOLE BOUNDARY: Roll20 and browser-extension startup noise remained in
+  both tabs. Sheet-specific render/roll errors were not observed, but external
+  console cleanliness is not PASS.
+- COPYRIGHT: Screenshot and JSON evidence were written only to ignored local
+  `.tmp/roll20-sandbox-modern-legacy-proof/` during verification and were
+  purged afterward; no private sheet source was retained in tracked files.

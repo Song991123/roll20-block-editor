@@ -6875,3 +6875,31 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFY OPEN: Modern Sandbox render/chat evidence and isolated legacy-room
   parity are still unproven; the next external run must recreate ignored
   evidence rather than commit it.
+
+## 2026-07-30 Actual Roll20 modern/legacy synthetic parity
+
+- VERIFIED ACTUAL MODERN: In the authenticated dedicated Custom Sheet Sandbox,
+  an anonymous HTML/CSS/translation payload was accepted through the supported
+  file-change path. A newly created Sandbox character rendered one iframe with
+  a `860 x 200px` sheet root and a `420 x 180px` proof element. Translation
+  changed `[name]` to `Name`, and its roll button produced a `Sandbox proof`
+  chat table with a result cell.
+- VERIFIED ACTUAL LEGACY: A new dedicated `Custom` test room was created with
+  exactly one visible participant. Its saved `legacy_sanitization` option was
+  enabled, the same anonymous payload was stored, and a new character rendered
+  one iframe with the same `860 x 200px` root and `420 x 180px` proof element.
+  Translation and the same roll/chat table were also observed.
+- VERIFIED PARITY SCOPE: The sampled root/proof rectangles and computed fields
+  matched between modern Sandbox and legacy room with `0` reported differences.
+  This is a synthetic same-payload parity check, not proof for every imported
+  sheet or every Roll20 state.
+- CONSOLE BOUNDARY: The browser tabs contained Roll20/extension-generated
+  warnings and errors, including missing built-in rolltemplate messages and
+  legacy jQuery notices. No sheet-specific render or roll error was observed,
+  but the external tab cannot be reported as console-clean.
+- COPYRIGHT: Screenshots and anonymous JSON evidence were used only as
+  ignored local evidence and were purged after verification; no private or
+  copyrighted sheet source, identifier, or screenshot is committed.
+- NEXT P0: Compare the local preview/edit surface against this external
+  synthetic contract, then run a user-provided local fixture through the same
+  ignored-only pipeline without publishing its source or evidence.
