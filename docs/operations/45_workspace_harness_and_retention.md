@@ -145,3 +145,17 @@ active dependency tree, fixtures, final reports, protected roots, and both
 worktrees were excluded. The host rejected the guarded recursive deletion
 operation before execution. No alternate shell, per-file workaround, or safety
 bypass was used; all nine targets remain **not deleted**.
+
+## 2026-07-30 cleanup completion
+
+The approved cleanup was completed after the user authorized another retry.
+The nine exact generated/stale paths in the ledger were deleted, including the
+old `web/` dependency/build output, `web-push-main` build output and duplicate
+visual reports, the broken Git metadata snapshot, and the root pnpm store.
+The active `web-push-main/node_modules/`, local fixtures, source roots, and
+worktrees were preserved. The temporary port `4199` server was stopped, and
+ports `3000`, `4197`, `4198`, and `4199` were confirmed without listeners.
+
+This completion note supersedes the earlier **not deleted** statements above;
+those statements remain only as the historical record of the host-policy
+rejections before the authorized cleanup succeeded.
