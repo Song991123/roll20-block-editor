@@ -20,6 +20,7 @@ import type { CompositePackStats } from './composite_matcher';
 import { firstTextContent, allTextContent } from './dom_walker';
 import { parseAttrRefToken } from './expression_parser';
 import { parseSheetWorkerScript } from './script_parser';
+import { isRoll20WorkerScript } from './worker_source';
 
 export interface MatchedBlock {
   /** 130 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
@@ -552,7 +553,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     // Only Roll20 worker scripts belong in the worker workspace. Typed page
     // scripts must stay as raw HTML so export keeps their original tag while
     // the preview baseline hides the inert script node.
-    if (scriptType === 'text/worker' || scriptType === '') {
+    if (isRoll20WorkerScript(scriptType, body)) {
       const reporter = matchSheetWorkerReporter(body);
       if (reporter) return reporter;
       const parsed = parseSheetWorkerScript(body);
@@ -579,13 +580,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
 
     // Returning null lets the caller preserve the complete script element as
     // r20_raw_html, including non-worker type/src attributes.
-    if (scriptType !== 'text/worker' && scriptType !== '') return null;
-
-    return {
-      blockType: 'r20_raw_worker',
-      fields: { JS: body },
-      children: {},
-    };
+    return null;
   }
   if (/^h[1-6]$/.test(tag)) {
     return {

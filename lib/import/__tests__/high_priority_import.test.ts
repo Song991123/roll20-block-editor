@@ -90,6 +90,13 @@ function testTypedPageScriptStaysHtml(): void {
   expectNotContains(r.html, 'r20_get_translation', 'typed page script is not a worker reporter');
 }
 
+function testUntypedPageScriptStaysHtml(): void {
+  const html = `<script>window.sheetReady = true;</script>`;
+  const r = importSheet({ html });
+  expectContains(r.html, 'r20_raw_html', 'untyped page script stays in HTML');
+  expectNotContains(r.html, 'r20_raw_worker', 'untyped page script is not a worker');
+}
+
 // --- 3) r20_css_var_decl --------------------------------------------------
 
 function testCssVarDecl(): void {
@@ -251,6 +258,7 @@ const tests = [
   ['translation by key', testTranslationByKey],
   ['translation by lang', testTranslationByLang],
   ['typed page script stays HTML', testTypedPageScriptStaysHtml],
+  ['untyped page script stays HTML', testUntypedPageScriptStaysHtml],
   ['css var decl basic', testCssVarDecl],
   ['css var decl with spaces', testCssVarDeclWithSpaces],
   ['css regular prop not var decl', testCssRegularPropNotVarDecl],

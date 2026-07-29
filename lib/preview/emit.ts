@@ -32,6 +32,7 @@ import type {
 import { ORDER } from '@/lib/blocks/types';
 import { injectPreservedAttributes, PRESERVED_ATTRS_FIELD } from '@/lib/blocks/preservedAttributes';
 import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
+import { isRoll20WorkerScript } from '@/lib/import/worker_source';
 
 export interface EmitResult {
   code: string;
@@ -320,9 +321,9 @@ function normalizeWorkerBody(code: string): string {
 
 function stripWorkerScriptsFromHtml(html: string): string {
   if (!html) return '';
-  return html.replace(/<script\b([^>]*)>[\s\S]*?<\/script>/gi, (full, rawAttrs: string) => {
+  return html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (full, rawAttrs: string, body: string) => {
     const type = getScriptType(rawAttrs);
-    return type === 'text/worker' || type === '' ? '' : full;
+    return isRoll20WorkerScript(type, body) ? '' : full;
   });
 }
 

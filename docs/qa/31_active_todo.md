@@ -5945,6 +5945,23 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: this is a safety gate, not evidence that any current external room
   is eligible. A fresh live preflight is still required immediately before a
   legacy-room operation.
+
+## 2026-07-29 Untyped Script Runtime Boundary
+
+- FIXED: worker classification now uses one shared source boundary. Explicit
+  `type="text/worker"` scripts always enter the worker workspace; untyped
+  scripts enter it only when they visibly use Roll20 worker APIs.
+- FIXED: ordinary untyped page JavaScript remains an HTML raw block and is
+  preserved through export instead of being silently treated as a worker.
+  Preview runtime CSS still hides script nodes from the sheet surface.
+- VERIFIED LOCAL: high-priority import tests `22/22`, emit contract, worker
+  workspace smoke, worker-source audit for three prepared local fixtures, and
+  runtime visibility verification all pass. The runtime bundle reports no
+  console issues or page errors.
+- BOUNDARY: this does not claim arbitrary JavaScript is block-editable yet.
+  It establishes the safe raw-preservation boundary for the future JS
+  workspace. Actual Roll20 modern screenshot parity and the separate legacy
+  room remain `VERIFY`.
 ## 2026-07-29 Roll20 Runtime Evidence And Translation Upload Gate
 
 - VERIFIED ACTUAL: The connected test room showed exactly `1 구성원`; the

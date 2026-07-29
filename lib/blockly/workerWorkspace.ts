@@ -3,6 +3,7 @@ import { getBlocklyAdapter } from './adapter';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { emitWorkspace } from '@/lib/preview/emit';
 import { parseSheetWorkerScript, type ParsedBlock } from '@/lib/import/script_parser';
+import { isRoll20WorkerScript } from '@/lib/import/worker_source';
 
 const WORKER_BLOCK_TYPES = new Set([
   'r20_raw_worker',
@@ -210,7 +211,7 @@ export function extractRoll20WorkerScripts(html: string): Array<{ type: string; 
   while ((match = scriptRe.exec(html))) {
     const attrs = parseAttrs(match[1] ?? '');
     const type = String(attrs.type ?? '').trim().toLowerCase();
-    if (type === 'text/worker' || type === '') {
+    if (isRoll20WorkerScript(type, match[2] ?? '')) {
       scripts.push({ type: type || '(empty)', body: normalizeSourceWorkerBody(match[2] ?? '') });
     }
   }
@@ -243,9 +244,9 @@ function isRawHtmlWorkerScriptBlock(block: Blockly.Block): boolean {
 
 function stripWorkerScriptsFromRawHtml(html: string): string {
   return String(html ?? '')
-    .replace(/<script\b([^>]*)>[\s\S]*?<\/script>/gi, (full, rawAttrs: string) => {
+    .replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (full, rawAttrs: string, body: string) => {
       const type = getScriptType(rawAttrs);
-      return type === 'text/worker' || type === '' ? '' : full;
+      return isRoll20WorkerScript(type, body) ? '' : full;
     })
     .replace(/^[ \t]+$/gm, '');
 }

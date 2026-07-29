@@ -6640,3 +6640,17 @@ opened, uploaded to, saved, or otherwise modified in this run.
   generated writes remain isolated to Custom Sheet Sandbox.
 - `node --check`, the helper self-test, `ci:verify`, lint, and build passed.
   No Roll20 room was modified in this batch.
+
+## 2026-07-29 - Untyped script preservation boundary
+
+The worker split had one generic import risk: every script without a `type`
+attribute was treated as a sheet worker, and the final HTML boundary could
+remove it. Added `lib/import/worker_source.ts` as the shared classifier. An
+explicit `type="text/worker"` is always a worker; an untyped script is treated
+as a legacy worker only when it visibly calls a Roll20 worker API. Other
+untyped page JavaScript remains an `r20_raw_html` block, stays hidden by the
+preview runtime, and survives export for the future JS workspace.
+
+Verification: high-priority import `22/22`, emit contract, worker workspace
+smoke, worker-source audit across three prepared local fixtures, and runtime
+visibility verification passed. No external room was opened or modified.

@@ -59,6 +59,18 @@ Required behavior:
 - Preview execution and chat rendering must consume the worker layer, not visible HTML text.
 - Future user-facing JS block coding should operate on this worker workspace without changing the HTML/CSS block model.
 
+Untyped script compatibility:
+
+- `type="text/worker"` is the authoritative worker marker.
+- For older sheets that omit the marker, a script is moved to the worker
+  workspace only when its source visibly calls a Roll20 worker API such as
+  `on`, `getAttrs`, `setAttrs`, `getSectionIDs`, translation helpers, or
+  compendium helpers.
+- An ordinary untyped page script remains an HTML raw block and is hidden by
+  the preview runtime. It must not be silently converted into a worker or
+  dropped from export. A future JS workspace can replace this raw fallback
+  without changing the HTML/CSS mapping contract.
+
 ## Design Editor vs Source Fidelity
 
 Do not mix these two concerns:

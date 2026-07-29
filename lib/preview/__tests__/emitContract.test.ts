@@ -1,6 +1,7 @@
 import * as Blockly from 'blockly';
 import { registerAllBlocks } from '@/lib/blocks/registry';
 import { emitAll, emitWorkspace, normalizeEmittedRoll20Pair } from '../emit';
+import { isRoll20WorkerScript } from '@/lib/import/worker_source';
 
 function assert(condition: unknown, message: string): void {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
@@ -83,9 +84,23 @@ function testTypedPageScriptExportPreserved(): void {
   workspace.dispose();
 }
 
+function testUntypedPageScriptExportPreserved(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const block = workspace.newBlock('r20_raw_html');
+  block.setFieldValue('<script>window.sheetReady = true;</script>', 'HTML');
+
+  const result = emitAll({ html: workspace });
+  assert(!isRoll20WorkerScript('', 'window.sheetReady = true;'), 'untyped page script is not classified as worker');
+  assert(result.html.includes('<script') && result.html.includes('window.sheetReady = true;'), 'untyped page script is preserved');
+  assert(!result.html.includes('type="text/worker"'), 'untyped page script is not rewritten as a worker');
+  workspace.dispose();
+}
+
 testRawFallbackPair();
 testAlreadyCanonicalPair();
 testInlineStylePair();
 testGeneratedPositionCss();
 testTypedPageScriptExportPreserved();
+testUntypedPageScriptExportPreserved();
 console.log('Emit Roll20 class-pair tests passed.');
