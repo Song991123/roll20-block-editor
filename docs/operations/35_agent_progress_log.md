@@ -1,3 +1,15 @@
+## 2026-07-29 - Harness retention pass
+
+- VERIFIED: Explicit cleanup paths were checked against the workspace root,
+  Git tracking, protected source roots, worktree state, and active listeners.
+- DELETED: Removed generated `debug.log` and `tsconfig.tsbuildinfo` from the
+  active product worktree.
+- BLOCKED: Host safety policy rejected recursive directory deletion. Old
+  dependency/build folders, duplicate local reports, stale Git metadata, and
+  the local pnpm cache remain on disk and are not reported as deleted.
+- BOUNDARY: No source corpus, Roll20 reference root, archive material, or
+  active product code was changed.
+
 ## 2026-07-29 - Blockly import resize batching
 
 - FIXED: Both synchronous and chunked adapter hydration now preserve one

@@ -83,3 +83,20 @@ completed. No protected source or active product file was deleted.
 - Update `docs/operations/44_workspace_cleanup_inventory.md` after every
   structural or retention change.
 - Report `preserved`, `archived`, `deleted`, and `not deleted` separately.
+
+## 2026-07-29 third-pass retention result
+
+The active worktree had no listeners, and the explicit target inventory showed
+no tracked product files or protected source overlap. Two single-file generated
+artifacts were removed safely:
+
+- `web-push-main/debug.log`
+- `web-push-main/tsconfig.tsbuildinfo`
+
+The following generated directories and stale metadata remain **not deleted**:
+the old `web/node_modules/`, `web/.next/`, `web/out/`, the active
+`web-push-main/.next/` and `out/`, the duplicate local visual report folders,
+root `.git.broken-20260510-222058/`, and root `.pnpm-store/`. The host safety
+policy rejected recursive directory deletion, so no recursive workaround was
+used. They remain reproducible cleanup candidates for a permitted maintenance
+operation; they must not be reported as deleted.

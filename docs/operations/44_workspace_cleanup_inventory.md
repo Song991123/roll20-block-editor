@@ -103,3 +103,18 @@ Git administrative area still need a permitted Git metadata cleanup. No active
 listener was found. The shell safety guard rejected the recursive deletion
 attempt, so the candidates above are **not deleted yet**. This is intentional:
 the ledger must distinguish a verified candidate from a completed deletion.
+
+## 2026-07-29 third-pass retention result
+
+An explicit absolute-path gate confirmed that the cleanup candidates are
+workspace-local, ignored/generated, and outside protected source ownership.
+The two single-file build artifacts were deleted:
+
+- `web-push-main/debug.log`
+- `web-push-main/tsconfig.tsbuildinfo`
+
+Recursive deletion of the remaining directories was rejected by the host
+safety policy. Therefore `web/node_modules/`, `web/.next/`, `web/out/`,
+`web-push-main/.next/`, `web-push-main/out/`, both duplicate visual report
+folders, `.git.broken-20260510-222058/`, and `.pnpm-store/` remain on disk and
+are still marked **not deleted**. No command-line workaround was used.

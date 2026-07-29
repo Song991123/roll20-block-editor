@@ -1,3 +1,15 @@
+## 2026-07-29 Workspace Harness Retention Pass
+
+- DONE: Confirmed the four-zone harness, active worktree, protected source
+  roots, and listener state before cleanup.
+- DONE: Removed only the generated `debug.log` and
+  `tsconfig.tsbuildinfo` files from the active worktree.
+- VERIFY: Recursive deletion of generated directories and stale metadata was
+  rejected by the host safety policy. The remaining candidates are not
+  deleted; do not count this as disk cleanup completion.
+- NEXT P1: Run the listed directory cleanup only through a permitted
+  maintenance operation, then re-run worktree, listener, and Git checks.
+
 ## 2026-07-29 Blockly Import Resize Batch
 
 - FIXED LOCAL: `hydrateFromXml` and `hydrateFromXmlChunked` now keep the
