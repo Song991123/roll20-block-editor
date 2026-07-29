@@ -6449,3 +6449,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   separate legacy dedicated-room evidence.
 - NEXT P1: Trace the remaining deterministic reimport HTML-order drift in the
   large anonymous fixture before widening the import/edit completion claim.
+
+## 2026-07-30 User-authorized cleanup retry
+
+- VERIFY: Rechecked nine exact generated/stale workspace targets after
+  stopping project listeners. They are untracked and outside protected roots;
+  active dependencies, fixtures, final reports, and both worktrees were
+  excluded.
+- BLOCKED BY HOST: The guarded recursive deletion was rejected before
+  execution by the host safety policy. No alternate shell, per-file workaround,
+  or safety bypass was used. All nine targets remain on disk.
+- NEXT: Retry only if the host exposes an approved maintenance deletion path;
+  do not claim cleanup complete until post-delete existence and worktree checks
+  pass.

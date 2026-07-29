@@ -7232,3 +7232,15 @@ visibility verification passed. No external room was opened or modified.
 - NEXT: Keep actual Roll20 Sandbox/legacy-room verification separate, then
   investigate the deterministic reimport drift before claiming broad import
   completion.
+
+## 2026-07-30 - User-authorized cleanup retry
+
+- INVENTORIED: Revalidated nine exact workspace-local candidates: generated
+  build output, duplicate local visual reports, stale pnpm cache, and unused
+  broken Git metadata. No project listener was running; protected roots,
+  active dependencies, fixtures, final reports, and both worktrees were kept.
+- BLOCKED: The host rejected the guarded `Remove-Item -Recurse -Force`
+  operation before execution. No alternate shell, per-file deletion loop, or
+  safety bypass was used. No candidate was deleted.
+- STATUS: Cleanup remains VERIFY/NOT DELETED. The ledger in operations 44 and
+  45 is the source of truth for the exact target set.

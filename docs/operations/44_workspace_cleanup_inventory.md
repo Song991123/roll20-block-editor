@@ -169,3 +169,15 @@ The host rejected the first exact absolute-path
 `Remove-Item -Recurse -Force` operation before execution. No target was
 deleted, and no alternate shell, per-file deletion, or safety bypass was used.
 All nine candidates remain **not deleted**.
+
+## 2026-07-30 ninth-pass user-authorized retry
+
+The user authorized another complete-deletion attempt. The same nine exact
+workspace-local targets were resolved again after confirming that no project
+listener was running, neither worktree had tracked changes in those targets,
+and no protected source root or active dependency tree was included. The
+host safety policy rejected the guarded `Remove-Item -Recurse -Force`
+operation before execution. No alternate shell, per-file deletion loop, or
+safety bypass was used. All nine candidates remain **not deleted**; the
+active `web-push-main/node_modules/`, fixtures, final reports, source roots,
+and both Git worktrees remain intact.

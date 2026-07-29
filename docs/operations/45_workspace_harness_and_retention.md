@@ -135,3 +135,13 @@ development listener. The host rejected the native `Remove-Item -Recurse`
 operation before execution again. No target was deleted, and no alternate
 shell, per-file deletion, or safety bypass was used. All eight targets remain
 **not deleted**.
+
+## 2026-07-30 ninth-pass user-authorized retry
+
+The user authorized another deletion attempt. The nine exact targets in the
+cleanup ledger were re-resolved as generated output, duplicate local evidence,
+stale cache, or unused Git metadata. No project listener was running, and the
+active dependency tree, fixtures, final reports, protected roots, and both
+worktrees were excluded. The host rejected the guarded recursive deletion
+operation before execution. No alternate shell, per-file workaround, or safety
+bypass was used; all nine targets remain **not deleted**.
