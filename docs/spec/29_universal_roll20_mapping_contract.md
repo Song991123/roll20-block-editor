@@ -43,7 +43,7 @@ Every source artifact must become blocks, not opaque app-only state.
 | CSS at-rule | At-rule block or raw CSS fallback. `@media`, `@keyframes`, `@import`, and Roll20-unsafe rules must be represented before sanitization. |
 | Rolltemplate | Hidden from sheet canvas preview, represented as rolltemplate blocks, rendered in chat simulation when a roll invokes it. |
 | Sheet worker JS | Hidden from sheet canvas preview, represented as worker/event blocks or raw worker blocks, executed in the preview sandbox simulator when supported. |
-| Translation file | i18n key/value blocks or translation table. The preview must apply translations before visual comparison. |
+| Translation file | i18n key/value blocks or translation table. The preview must apply translations before visual comparison. Locale metadata must accept the user's valid BCP-47-like tag; do not limit custom sheets to a fixed language list. Roll20 export remains a flat `translation.json` string map. |
 | Roll button value | Expression tree when parseable. Raw expression fallback only with explicit diagnostics. |
 
 ## Worker JS Editing Contract

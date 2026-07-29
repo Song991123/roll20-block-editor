@@ -23,7 +23,7 @@ export interface I18nCtx {
 }
 
 export interface I18nOptions {
-  /** 기본 언어 코드 — `ko` / `en` / `ja` / `zh`. */
+  /** 기본 언어 코드 — BCP-47 형태의 locale (`ko`, `en`, `fr-FR` 등). */
   lang?: string;
 }
 
@@ -31,14 +31,26 @@ export function newI18nCtx(): I18nCtx {
   return { keys: 0, warnings: [] };
 }
 
-const LANG_CODES = new Set(['ko', 'en', 'ja', 'zh']);
+/**
+ * Custom Roll20 sheets are not limited to the four locales exposed by the
+ * first editor prototype. Keep the internal comment format safe, but accept
+ * any BCP-47-like tag so a locale is not silently dropped during import.
+ */
+const LANGUAGE_TAG_RE = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/;
+
+function isLanguageTag(value: string): boolean {
+  return LANGUAGE_TAG_RE.test(String(value ?? '').trim());
+}
 
 export function parseI18n(
   text: string,
   ctx: I18nCtx,
   opts: I18nOptions = {},
 ): MatchedBlock[] {
-  const fallbackLang = (opts.lang && LANG_CODES.has(opts.lang)) ? opts.lang : detectLang(text) || 'ko';
+  const requestedLang = String(opts.lang ?? '').trim();
+  const fallbackLang = isLanguageTag(requestedLang)
+    ? requestedLang
+    : detectLang(text) || 'ko';
   // Stage 2 fix — i18n format round-trip parity. Emit pipeline 의
   //   r20_locale_value generator 는 `<!-- i18n[lang] "key": "value" -->`
   //   주석 라인을 출력한다 (lib/blocks/i18n.ts §7). 이전 importer 는 이
@@ -90,7 +102,8 @@ export function parseI18n(
  *
  * 형식 규약:
  *   - 시작/끝 토큰은 `<!--` / `-->`
- *   - lang 코드는 ASCII 2글자 (LANG_CODES set 강제), 미허용 시 항목 skip
+ *   - lang 코드는 BCP-47-like ASCII tag (`fr`, `de-DE`, `zh-Hant` 등)
+ *     이며, 유효하지 않은 항목만 skip
  *   - key / value 는 JSON 문자열 리터럴 (jsonEscape 의 역연산 — `\"`, `\\`,
  *     `\n`, `\r`, `\t`, `\uXXXX` 지원).
  *
@@ -101,11 +114,10 @@ export function parseI18n(
 function parseComments(text: string): Array<[string, string, string]> | null {
   const out: Array<[string, string, string]> = [];
   // /g 플래그로 멀티라인 / multi-entry 한 줄 모두 처리.
-  const re = /<!--\s*i18n\[([a-z]{2})\]\s*"((?:\\.|[^"\\])*)"\s*:\s*"((?:\\.|[^"\\])*)"\s*-->/g;
+  const re = /<!--\s*i18n\[([A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*)\]\s*"((?:\\.|[^"\\])*)"\s*:\s*"((?:\\.|[^"\\])*)"\s*-->/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
     const lang = m[1];
-    if (!LANG_CODES.has(lang)) continue;
     out.push([lang, jsonUnescape(m[2]), jsonUnescape(m[3])]);
   }
   return out.length > 0 ? out : null;
@@ -133,8 +145,8 @@ function jsonUnescape(s: string): string {
 
 function detectLang(text: string): string | null {
   const head = text.slice(0, 200);
-  const m = /(?:#|\/\/)\s*lang\s*[:=]\s*([a-z]{2})/i.exec(head);
-  if (m && LANG_CODES.has(m[1].toLowerCase())) return m[1].toLowerCase();
+  const m = /(?:#|\/\/)\s*lang\s*[:=]\s*([A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*)/i.exec(head);
+  if (m && isLanguageTag(m[1])) return m[1];
   return null;
 }
 

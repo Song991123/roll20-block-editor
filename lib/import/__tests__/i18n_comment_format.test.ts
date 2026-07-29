@@ -45,6 +45,19 @@ function testCommentMultiLang(): void {
   assert(r.i18n.match(/>en</g)?.length === 2, 'two en entries');
 }
 
+function testCommentCustomLocales(): void {
+  const i18n = [
+    `<!-- i18n[fr] "title.sheet": "Fiche de personnage" -->`,
+    `<!-- i18n[de-DE] "title.sheet": "Charakterbogen" -->`,
+    `<!-- i18n[zh-Hant] "title.sheet": "角色卡" -->`,
+  ].join('\n');
+  const r = importSheet({ i18n });
+  eq(r.stats.i18nKeys, 3, 'custom locale entries are recovered');
+  assert(r.i18n.match(/>fr</g)?.length === 1, 'fr locale preserved');
+  assert(r.i18n.match(/>de-DE</g)?.length === 1, 'regional locale preserved');
+  assert(r.i18n.match(/>zh-Hant</g)?.length === 1, 'script locale preserved');
+}
+
 function testCommentEscapeNoAccumulation(): void {
   // 이전 버그: 2회 round-trip 후 key=`--i18nkotitle.sheet`, value=`"v" -->`
   // 가 박혔음. 이번 fix 후 escape 가 자라지 않아야.
@@ -54,7 +67,9 @@ function testCommentEscapeNoAccumulation(): void {
   // jsonUnescape 가 backslash-quote 를 디코드 → field 안엔 raw `"` 들어 있음.
   // XML serializer 가 그걸 `&quot;` 로 escape 하므로 r.i18n 안에선 `&quot;` 형태.
   assert(
-    r.i18n.includes('D&amp;D 5e &quot;Title&quot;') || r.i18n.includes('D&D 5e "Title"'),
+    r.i18n.includes('D&amp;D 5e "Title"')
+      || r.i18n.includes('D&amp;D 5e &quot;Title&quot;')
+      || r.i18n.includes('D&D 5e "Title"'),
     'inner quotes decoded',
   );
   // Key 가 garbage (`--i18nkotitle.sheet`) 가 아니어야.
@@ -93,6 +108,7 @@ function testCommentChainEmit(): void {
 const tests = [
   ['comment single', testCommentSingle],
   ['comment multi-lang', testCommentMultiLang],
+  ['comment custom locales', testCommentCustomLocales],
   ['comment escape no-accumulation', testCommentEscapeNoAccumulation],
   ['comment + json fallthrough', testCommentMixedWithJson],
   ['comment malformed → flat fallthrough', testCommentMalformedFallthrough],

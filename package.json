@@ -34,7 +34,7 @@
     "test:runtime-contract": "tsx lib/preview/__tests__/runtimeContract.test.ts",
     "test:emit-contract": "tsx lib/preview/__tests__/emitContract.test.ts",
     "test:preview-prefix": "tsx lib/preview/__tests__/prefix.test.ts",
-    "test:import-structure": "tsx lib/import/__tests__/basic.test.ts && tsx lib/blocks/__tests__/preservedAttributes.test.ts",
+    "test:import-structure": "tsx lib/import/__tests__/basic.test.ts && tsx lib/import/__tests__/i18n_comment_format.test.ts && tsx lib/blocks/__tests__/preservedAttributes.test.ts",
     "test:server-hygiene": "node scripts/server_hygiene_check.mjs --self-test",
     "check:server-hygiene": "node scripts/server_hygiene_check.mjs",
     "test:legacy-css-sanitize": "tsx lib/emit/__tests__/sanitize.test.ts",

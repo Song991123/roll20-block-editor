@@ -22,16 +22,6 @@ const HUE = 330;
 
 const T_STR = 'String';
 
-// ---------- dropdown 옵션 ----------
-
-/** 지원 언어 — Roll20 표준 4 종 (ko/en/ja/zh). */
-const LANG_CODES: Array<[string, string]> = [
-  ['한국어 (ko)', 'ko'],
-  ['English (en)', 'en'],
-  ['日本語 (ja)', 'ja'],
-  ['中文 (zh)', 'zh'],
-];
-
 /** 버튼 타입 — Roll20 시트 버튼 표준 3 종. */
 const BUTTON_TYPES: Array<[string, string]> = [
   ['button', 'button'],
@@ -93,6 +83,13 @@ function pickAllowed(raw: string, opts: Array<[string, string]>, fallback: strin
   const allowed = new Set(opts.map(([, v]) => v));
   const s = String(raw ?? '').trim();
   return allowed.has(s) ? s : fallback;
+}
+
+/** Keep locale values open for custom sheets while rejecting markup/whitespace. */
+const LANGUAGE_TAG_RE = /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/;
+function pickLanguage(raw: string, fallback = 'en'): string {
+  const value = String(raw ?? '').trim();
+  return LANGUAGE_TAG_RE.test(value) ? value : fallback;
 }
 
 /** r20_i18n_text 의 TAG 필드 화이트리스트 — 매처 set 과 동기화.
@@ -370,11 +367,11 @@ export const I18N_BLOCKS: BlockDef[] = [
     category: I18N,
     label: '번역 사전 항목',
     tooltip:
-      'translation.json 에 들어가는 엔트리. emit 시 HTML 주석으로 표시 — 후처리 도구가 추출.',
+      'translation.json 엔트리. ko, en, fr-FR 같은 언어 코드를 입력하면 export 시 번역 사전으로 추출.',
     init: mkInit((b) => {
       b.appendDummyInput()
         .appendField('언어 코드')
-        .appendField(new Blockly.FieldDropdown(LANG_CODES), 'LANG');
+        .appendField(new Blockly.FieldTextInput('en'), 'LANG');
       b.appendDummyInput()
         .appendField('키')
         .appendField(new Blockly.FieldTextInput('key.name'), 'KEY');
@@ -385,7 +382,7 @@ export const I18N_BLOCKS: BlockDef[] = [
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
-      const lang = pickAllowed(String(b.getFieldValue('LANG') ?? ''), LANG_CODES, 'en');
+      const lang = pickLanguage(String(b.getFieldValue('LANG') ?? ''), 'en');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const value = String(b.getFieldValue('VALUE') ?? '');
       if (!key) return '<!-- i18n: empty key -->';

@@ -1,3 +1,17 @@
+## 2026-07-29 - Generic locale preservation
+
+- Expanded the internal translation comment importer and locale-value block
+  from four hard-coded languages to validated BCP-47-like tags such as `fr`,
+  `de-DE`, and `zh-Hant`. Existing `ko`/`en` workspaces remain compatible.
+- The Roll20 export contract remains a flat `translation.json` key/value map;
+  this change only prevents a custom sheet's locale metadata from being
+  silently dropped before export.
+- Added regression coverage for custom locales and included it in
+  `test:import-structure` / `ci:verify`.
+- This is generic import/export evidence only. It does not prove actual
+  Roll20 translation rendering until a fresh isolated Sandbox comparison is
+  completed.
+
 ## 2026-07-29 - Generic CSS at-rule mapping
 
 - Extended the CSS importer to map simple single-condition `@media` rules to

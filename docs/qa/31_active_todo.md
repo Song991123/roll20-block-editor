@@ -1,3 +1,15 @@
+## 2026-07-29 Generic Locale Preservation
+
+- DONE: Translation comment parsing and the locale-value block now accept
+  validated BCP-47-like tags instead of only `ko/en/ja/zh`, preserving custom
+  sheet locales such as regional and script tags.
+- PRESERVED: Roll20 export remains a flat `translation.json` string map;
+  nested JSON is still rejected rather than being silently rewritten.
+- VERIFIED LOCAL: Custom-locale import tests pass and are now part of
+  `test:import-structure` and `ci:verify`.
+- CLAIM BOUNDARY: This proves local locale preservation only. Actual Roll20
+  Sandbox translation application remains a separate external verification.
+
 ## 2026-07-29 Generic CSS At-Rule Mapping
 
 - DONE: Simple single-condition `@media` imports now become
