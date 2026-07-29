@@ -34,6 +34,16 @@
   Roll20. Wrapper context, browser engine, assets, persisted attributes, chat,
   and actual modern/legacy destinations still require independent evidence.
 
+- VERIFIED LOCAL: Rebuilt the current export payloads from the three ignored
+  visual fixtures under `2026-07-29-current-export-audit`. The local baseline
+  and `roll20_payload_audit` both passed for AW2E, Les-Oublies, and YSHY 1bu;
+  the audit found no app wrapper/edit marker leakage, invalid translation or
+  manifest data, or ZIP payload mismatch.
+- EVIDENCE CORRECTION: The older `2026-06-18` audit still fails because it
+  inspects historical payloads generated before the current export boundary
+  fixes. It is not evidence against the current exporter and remains ignored
+  local history, not a current PASS/FAIL gate.
+
 - DONE: Added a mandatory participant preflight. Existing rooms are excluded
   when the current visible member count is unknown or greater than one; they
   are never upload, save, chat, or settings destinations.

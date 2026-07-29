@@ -25,6 +25,14 @@
   them (`60/60` and `93/93`). This verifies the shared local render surface,
   not actual Roll20 screenshot parity.
 
+- VERIFIED LOCAL: Rebuilt current Roll20 upload payloads from all three visual
+  fixtures in `2026-07-29-current-export-audit`. Local baseline generation and
+  payload ZIP audit both passed for every fixture; no app/edit marker leakage,
+  invalid translation/manifest data, or ZIP mismatch was found.
+- EVIDENCE CORRECTION: A historical payload audit failure was isolated to the
+  old `2026-06-18` generated artifacts. It is not reused as a current exporter
+  result; fresh artifacts are the authoritative local export check.
+
 - FIXED: Added an explicit preflight requiring a current visible participant
   count before an existing Roll20 room can even be observed.
 - SAFETY: Unknown participant state and any count greater than one exclude the
