@@ -6780,3 +6780,23 @@ visibility verification passed. No external room was opened or modified.
 - VERIFIED LOCAL: Participant parser and upload-guard self-tests pass. The
   current CDP preflight reports `targets=0`, so no Roll20 page was opened and
   no existing room was inspected or changed in this run.
+## 2026-07-29 - Persistent iframe flow-drag acceptance
+
+- DONE LOCAL: Extended the synthetic browser acceptance path to drag a real
+  rendered node over a sibling in the persistent Roll20-shaped iframe. The
+  test now checks immediate in-frame reordering, zero optimistic rollback,
+  emitted HTML order, Blockly layer parent/previous relations, and the final
+  live-patched iframe order.
+- VERIFIED LOCAL: `smoke:edit-flow` passed with immediate order change,
+  `rollbackBefore=0`, `rollbackAfter=0`, matching emitted order, and matching
+  persistent-iframe order. `ci:verify`, lint, build,
+  `smoke:persistent-preview-surface`, strict imported edit-sync, and both-mode
+  preview/edit visual smoke also passed with no server or CDP listener left.
+- CORRECTION RECORDED: The first acceptance attempt queried the iframe through
+  the parent document after the live patch and falsely reported empty order.
+  The smoke now reads rendered order from the active Playwright iframe frame
+  and model/order data from the parent app separately.
+- CLAIM BOUNDARY: This proves the local direct-manipulation synchronization
+  path for the synthetic flow case. It does not prove universal imported DOM
+  coverage or actual modern/legacy Roll20 screenshot parity. No Roll20 room was
+  opened or modified; the current CDP preflight had zero targets.

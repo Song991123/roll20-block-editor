@@ -368,3 +368,16 @@ blockers are cleared.
 - A trusted fallback screenshot now has positive DOM sidecar evidence at `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-sandbox-dom-evidence.json`.
 - Latest diff/status evidence: AW2E sandbox mismatch `14.01%`; total generated actual screenshots `3/6`; total generated diffs `3/6`.
 - Remaining gap: no fixture has trustworthy Roll20 chat/rolltemplate screenshot evidence, AW2E has no full-root candidate evidence yet, and production renderer CSS remains gated by `HOLD_PRODUCTION_RENDERER_PATCH`.
+## Current Evidence Refresh - 2026-07-29
+
+The latest local acceptance slice covers direct pointer flow movement on the
+persistent preview/edit iframe: immediate visual reorder, optimistic rollback
+count, emitted order, layer parent/previous relation, and authoritative iframe
+order after live patch. The slice is local synthetic evidence and must not be
+read as universal import coverage or actual Roll20 parity.
+
+The actual Roll20 track remains `VERIFY`: Custom Sheet Sandbox modern evidence
+and a dedicated legacy-enabled test-room comparison require a supported CDP
+session. Existing rooms remain observation-only and are eligible only after a
+fresh visible participant count of exactly one; no existing room was used in
+this batch.

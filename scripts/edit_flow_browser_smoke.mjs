@@ -185,6 +185,100 @@ async function main() {
     });
     assert(ids.frameId && ids.rowAId && ids.rowBId, 'synthetic frame IDs were not emitted');
 
+    // This is the user-facing path: move a real rendered node over another
+    // rendered node, let the iframe show the optimistic order immediately,
+    // then confirm the emitted/live-patched order stays authoritative.
+    await page.click('[data-testid="edit-placement-flow"]');
+    const rowABox = await frame.locator('.sheet-row-a').boundingBox();
+    const rowBBox = await frame.locator('.sheet-row-b').boundingBox();
+    assert(rowABox && rowBBox, 'synthetic flow drag targets are missing');
+    const flowRollbackBefore = await frame.evaluate(() => Number(
+      document.body.getAttribute('data-r20-optimistic-flow-rollbacks') || '0',
+    ));
+    await page.mouse.move(rowABox.x + rowABox.width / 2, rowABox.y + rowABox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(rowBBox.x + rowBBox.width / 2, rowBBox.y + rowBBox.height * 0.92, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForTimeout(40);
+    result.tests.iframeFlowReparent = await frame.evaluate(({ rowAId, rowBId, frameId, flowRollbackBefore }) => {
+      const parentIdOf = (id) => {
+        const node = document.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
+        return node?.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null;
+      };
+      const rowA = document.querySelector(`[data-r20-block-id="${CSS.escape(rowAId)}"]`);
+      const rowB = document.querySelector(`[data-r20-block-id="${CSS.escape(rowBId)}"]`);
+      const frame = document.querySelector(`[data-r20-block-id="${CSS.escape(frameId)}"]`);
+      const frameChildren = frame ? [...frame.children].map((node) => node.getAttribute('data-r20-block-id')) : [];
+      const rowAIndex = frameChildren.indexOf(rowAId);
+      const rowBIndex = frameChildren.indexOf(rowBId);
+      const rollbackAfter = Number(document.body.getAttribute('data-r20-optimistic-flow-rollbacks') || '0');
+      return {
+        immediateParent: parentIdOf(rowAId),
+        rowAIndex,
+        rowBIndex,
+        immediateAfter: rowAIndex > rowBIndex && rowAIndex >= 0,
+        rollbackBefore: flowRollbackBefore,
+        rollbackAfter,
+        rollbackFree: rollbackAfter === flowRollbackBefore,
+        rowAConnected: Boolean(rowA?.isConnected),
+        rowBConnected: Boolean(rowB?.isConnected),
+      };
+    }, { ...ids, flowRollbackBefore });
+    assert(
+      result.tests.iframeFlowReparent.immediateAfter,
+      `iframe flow drag did not move immediately: ${JSON.stringify(result.tests.iframeFlowReparent)}`,
+    );
+    assert(
+      result.tests.iframeFlowReparent.immediateParent === ids.frameId,
+      'iframe flow drag changed the rendered parent unexpectedly',
+    );
+    assert(result.tests.iframeFlowReparent.rollbackFree, 'iframe flow drag rolled back unexpectedly');
+    await page.waitForTimeout(700);
+    const authoritativeFrame = await frame.evaluate(({ rowAId, rowBId }) => {
+      const frame = document;
+      const iframeA = frame?.querySelector(`[data-r20-block-id="${CSS.escape(rowAId)}"]`);
+      const iframeB = frame?.querySelector(`[data-r20-block-id="${CSS.escape(rowBId)}"]`);
+      const renderedOrder = frame
+        ? [...frame.querySelectorAll('[data-r20-block-id]')]
+            .filter((node) => [rowAId, rowBId].includes(node.getAttribute('data-r20-block-id')))
+            .map((node) => node.getAttribute('data-r20-block-id'))
+        : [];
+      return {
+        renderedAfter: Boolean(
+          iframeA
+          && iframeB
+          && (iframeA.compareDocumentPosition(iframeB) & Node.DOCUMENT_POSITION_PRECEDING),
+        ),
+        renderedOrder,
+        renderedPositionBits: iframeA && iframeB ? iframeA.compareDocumentPosition(iframeB) : null,
+        renderedSameParent: Boolean(iframeA && iframeB && iframeA.parentElement === iframeB.parentElement),
+        htmlKey: frame?.body?.getAttribute('data-r20-html-key') ?? null,
+      };
+    }, ids);
+    const authoritativeModel = await page.evaluate(({ rowAId, rowBId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const moving = graph.find((node) => node.id === rowAId);
+      const target = graph.find((node) => node.id === rowBId);
+      const emitted = window.__perfHook.getEmitContent().html;
+      const movingIndex = emitted.indexOf(`data-r20-block-id="${rowAId}"`);
+      const targetIndex = emitted.indexOf(`data-r20-block-id="${rowBId}"`);
+      return {
+        movingParent: moving?.layerParentId ?? null,
+        targetParent: target?.layerParentId ?? null,
+        movingPrevious: moving?.layerPreviousId ?? null,
+        emittedAfter: movingIndex > targetIndex && movingIndex >= 0,
+      };
+    }, ids);
+    result.tests.iframeFlowReparent.authoritative = { ...authoritativeModel, ...authoritativeFrame };
+    assert(result.tests.iframeFlowReparent.authoritative.movingParent === ids.frameId, 'authoritative flow parent drifted');
+    assert(result.tests.iframeFlowReparent.authoritative.targetParent === ids.frameId, 'authoritative flow target parent drifted');
+    assert(result.tests.iframeFlowReparent.authoritative.movingPrevious === ids.rowBId, 'authoritative flow order was not persisted');
+    assert(result.tests.iframeFlowReparent.authoritative.emittedAfter, 'emitted HTML order did not persist the flow move');
+    assert(
+      result.tests.iframeFlowReparent.authoritative.renderedAfter,
+      `persistent iframe order did not match emitted flow order: ${JSON.stringify(result.tests.iframeFlowReparent.authoritative)}`,
+    );
+
     result.tests.canvasWidgetDrop = await frame.evaluate(() => {
       const target = document.querySelector('.sheet-frame');
       if (!target) return { dispatched: false, reason: 'missing frame' };

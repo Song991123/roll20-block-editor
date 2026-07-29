@@ -6103,3 +6103,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: `preflight:roll20-room-members -- --self-test` and the
   upload-guard self-test pass. The current CDP preflight found no targets, so
   no existing room was opened or modified.
+## 2026-07-29 Local flow-drag acceptance update
+
+- DONE LOCAL: The persistent iframe acceptance smoke now performs a real
+  pointer drag of one rendered object after another and verifies immediate
+  order, no optimistic rollback, emitted HTML order, layer parent/previous
+  relations, and final iframe order after the live patch.
+- VERIFIED LOCAL: `smoke:edit-flow`, `ci:verify`, lint, build,
+  `smoke:persistent-preview-surface`, strict imported edit-sync, and
+  modern/legacy preview-edit visual smoke pass. Server hygiene reports no
+  project or CDP listeners.
+- VERIFY: This is local synthetic/edit synchronization evidence only. Actual
+  Roll20 Sandbox modern parity and dedicated legacy-room parity remain open;
+  no existing room was opened or modified because the current CDP preflight
+  found zero targets.
+- NEXT P1: Extend the same direct iframe acceptance coverage to parent-relative
+  free placement and nested-container extraction on imported structures, then
+  compare the resulting normalized state against isolated Roll20 destinations.
