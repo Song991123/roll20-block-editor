@@ -24,6 +24,16 @@
   the current ignored fixture set. It does not prove byte-identical HTML/CSS,
   all-sheet coverage, or actual Roll20 visual parity.
 
+- VERIFIED LOCAL: `smoke:preview-edit-visual --compatibility-mode both` reported
+  `EXACT` with `0` mismatched pixels for AW2E, Les-Oublies, and YSHY 1bu in both
+  modern and legacy contracts. Translation probes passed where each fixture
+  declares them (`60/60` AW2E and `93/93` YSHY); the fixture without i18n had
+  no translation probes. This directly verifies the canonical preview/edit
+  render surface for the current ignored fixture set.
+- CLAIM BOUNDARY: Exact local preview/edit pixels do not mean exact pixels in
+  Roll20. Wrapper context, browser engine, assets, persisted attributes, chat,
+  and actual modern/legacy destinations still require independent evidence.
+
 - DONE: Added a mandatory participant preflight. Existing rooms are excluded
   when the current visible member count is unknown or greater than one; they
   are never upload, save, chat, or settings destinations.

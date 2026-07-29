@@ -19,6 +19,12 @@
 - EVIDENCE SCOPE: This is local behavior evidence only. The fixture source,
   screenshots, and reports remain ignored; no public sample was added.
 
+- VERIFIED LOCAL: Paired `preview/edit` visual smoke passed `EXACT` with zero
+  mismatched pixels for AW2E, Les-Oublies, and YSHY 1bu under both modern and
+  legacy contracts. Translation probes also passed for the fixtures that carry
+  them (`60/60` and `93/93`). This verifies the shared local render surface,
+  not actual Roll20 screenshot parity.
+
 - FIXED: Added an explicit preflight requiring a current visible participant
   count before an existing Roll20 room can even be observed.
 - SAFETY: Unknown participant state and any count greater than one exclude the
