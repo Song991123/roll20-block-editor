@@ -7162,3 +7162,12 @@ visibility verification passed. No external room was opened or modified.
   `0/3`.
 - NEXT P0: Continue from the open Sandbox handoff with user-visible file
   selection, then capture root DOM, full-sheet screenshot, and chat evidence.
+## 2026-07-29 - Page-script order regression
+
+- FIXED TEST COVERAGE: The emit contract now checks ordinary page-script order
+  relative to surrounding HTML and asserts that the separate worker workspace
+  emits one worker script only.
+- VERIFIED: `emit-contract`, `ci:verify`, lint, build, and server hygiene all
+  pass.
+- CLAIM BOUNDARY: This is local source/export protection, not actual Roll20
+  visual parity or generic JS block-workspace completion.

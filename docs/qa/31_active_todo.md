@@ -6417,3 +6417,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   `0/3`.
 - NEXT P0: Use the open Sandbox handoff with a user-visible file selection,
   then capture positive root DOM/screenshot evidence before chat or diff.
+## 2026-07-29 Page-script order regression
+
+- FIXED TEST COVERAGE: The emit contract now asserts that ordinary page
+  scripts remain between their surrounding HTML nodes and that the separate
+  worker workspace contributes exactly one worker script.
+- VERIFIED: `emit-contract`, `ci:verify`, lint, build, and server hygiene pass.
+- CLAIM BOUNDARY: This protects local source/export behavior; it is not actual
+  Roll20 visual parity or generic JS block-workspace support.

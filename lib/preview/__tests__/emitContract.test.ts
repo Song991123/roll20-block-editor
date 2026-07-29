@@ -153,6 +153,38 @@ function testUntypedPageScriptExportPreserved(): void {
   workspace.dispose();
 }
 
+function testPageScriptOrderAndWorkerUniqueness(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const workerWorkspace = new Blockly.Workspace();
+  const block = workspace.newBlock('r20_raw_html');
+  block.setFieldValue(
+    '<div id="before-script">Before</div>' +
+      '<script data-role="page">window.pageReady = true;</script>' +
+      '<div id="after-script">After</div>',
+    'HTML',
+  );
+  const workerBlock = workerWorkspace.newBlock('r20_raw_worker');
+  workerBlock.setFieldValue(
+    'on("sheet:opened", function () { setAttrs({ hp: 10 }); });',
+    'JS',
+  );
+
+  const result = emitAll({ html: workspace, worker: workerWorkspace });
+  const before = result.html.indexOf('id="sheet-before-script"');
+  const pageScript = result.html.indexOf('data-role="page"');
+  const after = result.html.indexOf('id="sheet-after-script"');
+  const worker = result.html.indexOf('type="text/worker"');
+  const workerCount = (result.html.match(/<script\b[^>]*type="text\/worker"/g) ?? []).length;
+
+  assert(before >= 0 && before < pageScript, 'page script follows preceding HTML');
+  assert(pageScript < after, 'page script stays before following HTML');
+  assert(after < worker, 'worker source is emitted after the HTML source body');
+  assert(workerCount === 1, 'worker source is emitted exactly once');
+  workspace.dispose();
+  workerWorkspace.dispose();
+}
+
 testRawFallbackPair();
 testAlreadyCanonicalPair();
 testInlineStylePair();
@@ -162,4 +194,5 @@ testGenericElementEmit();
 testGenericCssTagEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
+testPageScriptOrderAndWorkerUniqueness();
 console.log('Emit Roll20 class-pair tests passed.');
