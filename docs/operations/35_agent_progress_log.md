@@ -7330,3 +7330,13 @@ visibility verification passed. No external room was opened or modified.
   output is also disposable and remains uncommitted.
 - PRESERVED: Protected source roots, active dependencies, both worktrees, and
   the anonymous Sandbox handoff payload remain outside the deletion set.
+
+## 2026-07-30 - Layer-panel table drop acceptance
+
+- DONE LOCAL: Extended the browser edit-flow smoke to dispatch visible layer
+  dragover/drop events for a valid cell insertion and an invalid row insertion.
+- VERIFIED LOCAL: The valid drop highlights `inside`, persists the moved layer
+  under the table cell, and keeps the dragover/drop events accepted. The
+  invalid drop keeps the blocked mode and leaves the moving layer at root.
+- VERIFIED: `corepack pnpm run smoke:edit-flow` passed with zero console/page
+  errors. This remains synthetic local evidence, not Roll20 room evidence.

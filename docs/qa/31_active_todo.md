@@ -6541,3 +6541,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CLEANUP: The user-authorized stale `.tmp` evidence purge was attempted again
   but the host rejected the explicit deletion command before execution. The
   disposable evidence remains local and uncommitted.
+
+## 2026-07-30 Layer-panel table drop acceptance
+
+- DONE: Browser smoke now checks both valid table-cell insertion and invalid
+  direct row insertion, including final layer-parent state.
+- VERIFIED: `smoke:edit-flow` passes with no console/page errors.
+- CLAIM BOUNDARY: This validates local layer-panel behavior only; actual modern
+  Sandbox and isolated legacy-room parity remain open.

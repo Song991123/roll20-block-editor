@@ -603,6 +603,62 @@ async function main() {
       `valid table parent was not shown as droppable: ${JSON.stringify(result.tests.tableDropGuard)}`,
     );
 
+    result.tests.tableDropMutation = await page.evaluate(async ({ validMovingId, validTargetId, invalidMovingId, invalidTargetId }) => {
+      const dispatchDrop = async (targetId, draggedId) => {
+        const target = document.querySelector(
+          `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`,
+        );
+        if (!target) return { found: false, mode: null, defaultPrevented: false };
+        const rect = target.getBoundingClientRect();
+        const dataTransfer = new DataTransfer();
+        dataTransfer.setData('application/x-r20-layer-block', draggedId);
+        const init = {
+          bubbles: true,
+          cancelable: true,
+          clientX: rect.left + rect.width / 2,
+          clientY: rect.top + rect.height / 2,
+        };
+        const dragover = new DragEvent('dragover', init);
+        Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+        target.dispatchEvent(dragover);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        const mode = target.getAttribute('data-r20-layer-drop-mode') || null;
+        const drop = new DragEvent('drop', init);
+        Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+        target.dispatchEvent(drop);
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        const graph = window.__perfHook.getLayerSnapshot('html');
+        return {
+          found: true,
+          mode,
+          dragoverPrevented: dragover.defaultPrevented,
+          dropPrevented: drop.defaultPrevented,
+          movingParent: graph.find((node) => node.id === draggedId)?.layerParentId ?? null,
+        };
+      };
+
+      const valid = await dispatchDrop(validTargetId, validMovingId);
+      const invalid = await dispatchDrop(invalidTargetId, invalidMovingId);
+      return { valid, invalid };
+    }, {
+      validMovingId: ids.outsideId,
+      validTargetId: ids.tableCellAId,
+      invalidMovingId: ids.frameId,
+      invalidTargetId: ids.tableRowId,
+    });
+    assert(
+      result.tests.tableDropMutation.valid.found
+        && result.tests.tableDropMutation.valid.mode === 'inside'
+        && result.tests.tableDropMutation.valid.dragoverPrevented
+        && result.tests.tableDropMutation.valid.movingParent === ids.tableCellAId,
+      `valid table drop did not persist its insertion: ${JSON.stringify(result.tests.tableDropMutation)}`,
+    );
+    assert(
+      result.tests.tableDropMutation.invalid.found
+        && result.tests.tableDropMutation.invalid.movingParent === null,
+      `invalid table drop changed the layer graph: ${JSON.stringify(result.tests.tableDropMutation)}`,
+    );
+
     result.tests.layerReorder = await page.evaluate(async ({ movingId, targetId }) => {
       const target = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`);
       if (!target) return { moved: false, reason: 'missing target layer row' };
@@ -766,7 +822,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, canvas widget drop, layer collapse/expand, layer reorder/eject, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
+        '- Coverage: flow/free placement, canvas widget drop, layer collapse/expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
         '',
       ].join('\n'),
       'utf8',
