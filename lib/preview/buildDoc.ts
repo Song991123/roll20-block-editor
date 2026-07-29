@@ -519,8 +519,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var attrs = htmlChanged ? collectAttrs() : null;
     var previousWorkerSource = htmlChanged ? workerSourceText(root) : '';
     var usedStructuralPatch = false;
+    // The drag transform is only a visual preview of the pending edit. CSS-only
+    // updates keep the same HTML key, so clearing it only inside the structural
+    // patch branch can leave the committed position permanently offset.
+    clearOptimisticEditMove();
     if (htmlChanged) {
-      clearOptimisticEditMove();
       // The initial iframe contains only the empty-state placeholder. A
       // keyed morph has no state to preserve there and needlessly walks the
       // imported tree before replacing it, which is especially costly for

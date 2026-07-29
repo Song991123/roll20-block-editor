@@ -1,3 +1,16 @@
+## 2026-07-29 Optimistic Drag Reconciliation
+
+- FIXED: The persistent iframe now clears the temporary drag `transform` for
+  every authoritative live patch, including CSS-only updates. Previously a
+  free-placement edit could keep its visual drag offset because the HTML key
+  did not change.
+- VERIFIED LOCAL: `corepack pnpm run smoke:persistent-preview-surface` passed
+  modern and legacy contracts. The real pointer smoke observed a temporary
+  `translate3d(40px, 24px, 0px)` during drag and `transform: none` after the
+  CSS-only commit, with one iframe, zero reloads, and zero console/page errors.
+- CLAIM BOUNDARY: This closes one local preview/edit rollback path. It does
+  not prove live Roll20 visual parity or universal import/export coverage.
+
 ## 2026-07-29 Participant Gate Hardening
 
 - IMPLEMENTED: Existing-room participant checks now read only the currently

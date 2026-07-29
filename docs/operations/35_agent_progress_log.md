@@ -1,3 +1,19 @@
+## 2026-07-29 - CSS-only optimistic drag reconciliation
+
+- Fixed the persistent iframe bridge so a committed edit always removes the
+  temporary pointer-drag transform before applying the authoritative live
+  patch. The old condition only did this when the HTML key changed; a free
+  position update can change generated CSS while keeping the HTML key stable.
+- Extended `scripts/persistent_preview_surface_smoke.mjs` to perform a real
+  pointerdown -> pointermove -> pointerup free-placement sequence and assert
+  both sides of the transition: `translate3d(40px, 24px, 0px)` while dragging
+  and computed `transform: none` after the CSS-only acknowledgement.
+- Verification: lint, build, `test:build-doc-bundle`, `ci:verify`, and the
+  modern/legacy persistent-preview smoke all passed. The smoke kept one
+  iframe, zero reloads, and zero console/page errors. The report is local-only
+  under `reports/persistent-preview-surface/optimistic-transform-v1/`.
+- This is local synchronization evidence, not a Roll20 visual-parity claim.
+
 ## 2026-07-29 - Participant Gate Hardening
 
 - The existing-room preflight and legacy upload guard now read only the

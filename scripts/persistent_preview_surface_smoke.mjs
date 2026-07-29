@@ -827,12 +827,12 @@ async function runMode(browser, mode) {
         clientX: start.x,
         clientY: start.y,
       }));
-      subject.dispatchEvent(new PointerEvent('pointerup', {
+      subject.dispatchEvent(new PointerEvent('pointermove', {
         bubbles: true,
         cancelable: true,
         pointerId,
         button: 0,
-        buttons: 0,
+        buttons: 1,
         clientX: start.x + 40,
         clientY: start.y + 24,
       }));
@@ -840,8 +840,31 @@ async function runMode(browser, mode) {
         dispatched: true,
         subjectBlockId: subject.getAttribute('data-r20-block-id'),
         containerBlockId: container.getAttribute('data-r20-block-id'),
+        pointerId,
       };
     }));
+    await frame.waitForFunction(
+      () => document.querySelector('.sheet-probe-card')?.style.transform.includes('translate3d('),
+      null,
+      { timeout: 30000 },
+    );
+    result.freeCommit.optimisticTransform = await frame.evaluate(() => (
+      document.querySelector('.sheet-probe-card')?.style.transform ?? ''
+    ));
+    await frame.evaluate((pointerId) => {
+      const subject = document.querySelector('.sheet-probe-card');
+      if (!subject) return;
+      const rect = subject.getBoundingClientRect();
+      subject.dispatchEvent(new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        pointerId,
+        button: 0,
+        buttons: 0,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+      }));
+    }, result.freeCommit.pointerId);
     await page.waitForFunction(
       (beforeAck) => Number(document
         .querySelector('[data-r20-apply-acked]')
@@ -858,6 +881,7 @@ async function runMode(browser, mode) {
         computedPosition: subjectStyle?.position ?? '',
         computedLeft: Number.parseFloat(subjectStyle?.left ?? ''),
         computedTop: Number.parseFloat(subjectStyle?.top ?? ''),
+        transform: subjectStyle?.transform ?? '',
         containerPosition: containerStyle?.position ?? '',
         subjectClass: subject?.className ?? '',
         containerClass: container?.className ?? '',
@@ -1232,6 +1256,8 @@ async function runMode(browser, mode) {
       && result.freeCommit.computedPosition === 'absolute'
       && Number.isFinite(result.freeCommit.computedLeft)
       && Number.isFinite(result.freeCommit.computedTop)
+      && result.freeCommit.optimisticTransform.includes('translate3d(')
+      && result.freeCommit.transform === 'none'
       && result.freeCommit.computedLeft % 8 === 0
       && result.freeCommit.computedTop % 8 === 0
       && result.freeCommit.containerPosition === 'relative'
