@@ -38,6 +38,7 @@ const tasks = [
   'test:roll20-sandbox-sanitize',
   'test:roll20-render-modes',
   'test:roll20-upload-snippet',
+  'test:roll20-room-members',
   'test:roll20-runtime-evidence',
   'test:roll20-chat-renderer-targets',
   'test:roll20-chat-template-scope',

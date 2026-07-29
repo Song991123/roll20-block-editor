@@ -123,6 +123,8 @@
     "test:roll20-chat-capture-plan": "node scripts/roll20_chat_capture_plan.mjs --self-test",
     "test:roll20-chat-cdp-readiness": "node scripts/roll20_chat_cdp_capture.mjs --self-test-readiness",
     "test:roll20-cdp-preflight": "node scripts/roll20_cdp_preflight.mjs --self-test",
+    "preflight:roll20-room-members": "node scripts/roll20_room_participant_preflight.mjs",
+    "test:roll20-room-members": "node scripts/roll20_room_participant_preflight.mjs --self-test",
     "test:roll20-chat-renderer-targets": "node scripts/roll20_chat_targeted_renderer_plan.mjs --self-test",
     "test:roll20-chat-assets": "node scripts/roll20_chat_asset_preservation_plan.mjs --self-test",
     "test:roll20-chat-browser-paint": "node scripts/roll20_chat_browser_paint_plan.mjs --self-test",

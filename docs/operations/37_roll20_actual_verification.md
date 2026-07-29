@@ -923,3 +923,9 @@ preflight confirms exactly one member. If the count is greater than one,
 unknown, stale, or unreadable, stop and exclude the room from all upload,
 save, chat, settings, and generated-sheet actions. Use the dedicated Sandbox
 or a newly created test room instead.
+
+The repository includes a read-only helper for this boundary:
+`corepack pnpm run preflight:roll20-room-members -- --page-match /editor`.
+It does not navigate or mutate the connected browser and returns
+`PASS_SOLO` only when one visible participant count is found. A missing,
+ambiguous, or non-one count is a blocking result, not permission to guess.

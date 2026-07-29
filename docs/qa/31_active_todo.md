@@ -5644,3 +5644,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   preflight confirms exactly one member. Any room with more than one member or
   an unreadable participant count is excluded from upload, save, chat, and
   settings operations.
+
+## 2026-07-29 Participant Preflight Safety Gate
+
+- ADDED: `scripts/roll20_room_participant_preflight.mjs` is a read-only CDP
+  helper for existing-room checks. It parses the visible participant count,
+  returns `PASS_SOLO` only for exactly one count, and blocks unknown,
+  ambiguous, or multi-member pages.
+- VERIFIED LOCAL: `test:roll20-room-members` self-test covers one-member,
+  multi-member, missing-count, and ambiguous-count cases. The helper does not
+  navigate, upload, save, open a character, click a roll, or change settings.
+- BOUNDARY: this is a safety gate, not evidence that any current external room
+  is eligible. A fresh live preflight is still required immediately before a
+  legacy-room operation.
