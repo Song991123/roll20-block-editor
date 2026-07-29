@@ -6862,3 +6862,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   file selection, then capture same-payload root, asset, default-state,
   rolltemplate/chat, and screenshot evidence. Keep legacy verification in a
   newly created dedicated test room only.
+
+## 2026-07-30 Disposable output purge retry
+
+- DONE LOCAL: After the user's explicit authorization, removed the remaining
+  empty `.tmp/` parent and ignored `reports/legacy-export-audit/` generated
+  output. Both paths were resolved inside `web-push-main` before deletion.
+- VERIFIED CLEANUP: no `.tmp/` or `reports/legacy-export-audit/` remains;
+  tracked reports, dependencies, source roots, worktrees, and external sheet
+  sources were preserved. This cleanup does not change the Roll20 render
+  verification status.
+- VERIFY OPEN: Modern Sandbox render/chat evidence and isolated legacy-room
+  parity are still unproven; the next external run must recreate ignored
+  evidence rather than commit it.
