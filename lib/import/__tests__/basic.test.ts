@@ -388,6 +388,15 @@ function testScriptSourceClassification(): void {
   assert(!isOrdinaryPageScript('', 'getAttrs(["hp"], function () {});'), 'untyped worker API is not page JavaScript');
 }
 
+function testPageScriptMapsToEditableBlock(): void {
+  const r = importSheet({
+    html: '<script type="text/javascript" src="page-runtime.js" defer>window.ready = true;</script>',
+  });
+  assert(r.html.includes('r20_raw_page_js'), 'ordinary page script maps to an editable page-JS block');
+  assert(r.html.includes('page-runtime.js'), 'page script attributes survive import');
+  assert(r.html.includes('window.ready = true;'), 'page script body survives import');
+}
+
 const tests = [
   ['text input', testBasicTextInput],
   ['number input', testNumberInput],
@@ -428,6 +437,7 @@ const tests = [
   ['css extended element tags', testCssExtendedElementTags],
   ['css custom element selector', testCssCustomElementSelector],
   ['script source classification', testScriptSourceClassification],
+  ['page script editable block', testPageScriptMapsToEditableBlock],
 ] as const;
 
 let passed = 0;

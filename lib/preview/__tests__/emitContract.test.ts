@@ -153,6 +153,21 @@ function testUntypedPageScriptExportPreserved(): void {
   workspace.dispose();
 }
 
+function testEditablePageScriptExportPreserved(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const block = workspace.newBlock('r20_raw_page_js');
+  block.setFieldValue('type="text/javascript" src="page-runtime.js" defer', 'ATTRS');
+  block.setFieldValue('window.pageReady = true;', 'JS');
+
+  const result = emitAll({ html: workspace });
+  assert(result.html.includes('r20_raw_page_js') === false, 'page script does not leak its block type into output');
+  assert(result.html.includes('src="page-runtime.js"'), 'editable page script keeps attributes');
+  assert(result.html.includes('window.pageReady = true;'), 'editable page script keeps body');
+  assert(!result.html.includes('type="text/worker"'), 'editable page script stays outside worker output');
+  workspace.dispose();
+}
+
 function testPageScriptOrderAndWorkerUniqueness(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -219,6 +234,7 @@ testGenericElementEmit();
 testGenericCssTagEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
+testEditablePageScriptExportPreserved();
 testPageScriptOrderAndWorkerUniqueness();
 testMalformedRawTagDoesNotReceivePartialBlockId();
 console.log('Emit Roll20 class-pair tests passed.');

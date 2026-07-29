@@ -310,3 +310,14 @@ directories that had been recreated by the local build.
   workaround, or safety bypass was used.
 - PRESERVED: `node_modules/`, `reports/README.md`, source code, Git metadata,
   both worktrees, and all external sheet/source roots remain untouched.
+
+## 2026-07-30 post-verification generated-output retry
+
+- RECHECKED: the older approved stale/cache targets remain absent. The
+  completed production build recreated only `web-push-main/.next/` and
+  `web-push-main/out/`.
+- DELETED: those two exact generated directories after the build completed and
+  listener checks found no active project server.
+- PRESERVED: `node_modules/`, local fixtures, canonical reports, source roots,
+  Git worktrees, and the archive zones. No ambiguous or user-authored path was
+  included in the deletion.

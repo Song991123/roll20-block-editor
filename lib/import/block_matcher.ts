@@ -588,9 +588,17 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
       }
     }
 
-    // Returning null lets the caller preserve the complete script element as
-    // r20_raw_html, including non-worker type/src attributes.
-    return null;
+    // Keep ordinary page JavaScript editable without placing it in the worker
+    // workspace. The preview pipeline strips this inert script element, while
+    // the exporter emits the same script tag and body.
+    return {
+      blockType: 'r20_raw_page_js',
+      fields: {
+        ATTRS: serializeScriptAttrs(a),
+        JS: body,
+      },
+      children: {},
+    };
   }
   if (/^h[1-6]$/.test(tag)) {
     return {
@@ -1315,6 +1323,14 @@ function escapeText(s: string): string {
 function escapeAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
+
+function serializeScriptAttrs(attrs: Record<string, string>): string {
+  return Object.entries(attrs)
+    .filter(([name]) => !/^on[a-z]+$/i.test(name))
+    .map(([name, value]) => (value ? `${name}="${escapeAttr(value)}"` : name))
+    .join(' ');
+}
+
 function isVoidTag(tag: string): boolean {
   return isVoidElementTag(tag);
 }

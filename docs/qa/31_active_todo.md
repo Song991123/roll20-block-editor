@@ -6769,3 +6769,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   can consume the shared source contract without changing HTML/CSS mapping.
 - VERIFIED GATE: `corepack pnpm run ci:verify` passed, including the new
   script-source classification assertions and the privacy/evidence guards.
+
+## 2026-07-30 Editable page-JS boundary
+
+- DONE LOCAL: Ordinary page scripts now import as `r20_raw_page_js` blocks
+  with editable attributes and body fields. They remain outside the worker
+  workspace and export as ordinary `<script>` tags.
+- VERIFIED LOCAL: Page-JS import is `40/40`; emit-contract, build-doc bundle,
+  lint, production build, and the full `corepack pnpm run ci:verify` gate pass.
+- VERIFIED LOCAL: The preview builder strips ordinary page scripts while
+  retaining Roll20 worker scripts, so imported page JS cannot execute in the
+  editor iframe.
+- CLAIM BOUNDARY: This is an editable page-JS block, not a separate dedicated
+  JS workspace yet. Actual modern Sandbox and isolated legacy-room visual or
+  runtime parity remain VERIFY/BLOCKED_EXTERNAL.
+- NEXT P0: Keep the page-JS block source contract stable while implementing a
+  dedicated JS workspace only after its autosave/export/runtime boundaries are
+  specified and tested.

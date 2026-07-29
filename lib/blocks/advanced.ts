@@ -55,6 +55,13 @@ function safeScriptText(value: string): string {
   return String(value ?? '').replace(/<\/script/gi, '<\\/script');
 }
 
+function safeScriptAttrs(value: string): string {
+  return String(value ?? '')
+    .replace(/[<>]/g, '')
+    .replace(/\bon[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .trim();
+}
+
 // ---------- 4 블록 정의 ----------
 
 export const ADVANCED_BLOCKS: BlockDef[] = [
@@ -151,7 +158,48 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     ],
   },
 
-  // 4) HTML 주석 ---------------------------------------------------------
+  // 4) editable page JavaScript -----------------------------------------
+  {
+    type: 'r20_raw_page_js',
+    shape: 'stack',
+    category: ADVANCED,
+    label: 'Page JavaScript (advanced)',
+    tooltip: `Preserve ordinary page JavaScript for export. It stays inert in local preview. ${WARN_RAW}`,
+    init: mkInit((b) => {
+      b.appendDummyInput().appendField('Page JS');
+      b.appendDummyInput()
+        .appendField('attrs')
+        .appendField(new Blockly.FieldTextInput(''), 'ATTRS');
+      b.appendDummyInput()
+        .appendField('code')
+        .appendField(new Blockly.FieldTextInput(''), 'JS');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const attrs = safeScriptAttrs(String(b.getFieldValue('ATTRS') ?? ''));
+      const js = safeScriptText(String(b.getFieldValue('JS') ?? ''));
+      return `<script${attrs ? ` ${attrs}` : ''}>\n${js}\n</script>`;
+    },
+    inspectorSchema: [
+      {
+        name: 'ATTRS',
+        label: 'script attributes',
+        kind: 'text',
+        placeholder: 'src="page-runtime.js" defer',
+        description: 'Preserved script attributes. Inline event-handler attributes are removed.',
+      },
+      {
+        name: 'JS',
+        label: 'page JavaScript',
+        kind: 'textarea',
+        placeholder: 'window.sheetReady = true;',
+        description: 'Runs only in the exported Roll20 page context, never in local preview.',
+      },
+    ],
+  },
+
+  // 5) HTML 주석 ---------------------------------------------------------
   {
     type: 'r20_html_comment',
     shape: 'stack',

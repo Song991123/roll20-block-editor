@@ -7534,3 +7534,15 @@ visibility verification passed. No external room was opened or modified.
   next JS-surface task. Actual Roll20 visual parity remains open.
 - The full `corepack pnpm run ci:verify` gate passed, including privacy and
   Roll20 evidence guards.
+
+## 2026-07-30 - Editable page-JS boundary
+
+- Ordinary page scripts now map to `r20_raw_page_js` with separate attributes
+  and body fields, while Roll20 worker scripts continue to use the worker
+  workspace. This keeps future JS editing extensible without mixing runtimes.
+- The local preview builder removes ordinary page scripts before iframe
+  rendering; export keeps their authored script tag and body.
+- Verified: import structure `40/40`, emit-contract, build-doc bundle, lint,
+  production build, and full `corepack pnpm run ci:verify` all pass.
+- This closes only the local page-JS preservation/editability slice. It does
+  not claim a dedicated JS workspace or actual Roll20 modern/legacy parity.
