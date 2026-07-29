@@ -1,3 +1,25 @@
+## 2026-07-29 Optimistic Flow Commit Fast Path
+
+- FIXED LOCAL: A committed flow drop now carries only the validated
+  subject/placement/container or sibling ids to the persistent iframe. When
+  the iframe confirms that the optimistic DOM move already matches that
+  operation, it acknowledges the new HTML key without reparsing and morphing
+  the entire sheet. Any mismatch falls back to the existing full structural
+  patch.
+- VERIFIED LOCAL: The 6,000-block anonymous fixture passed in modern and
+  legacy modes. Both accepted the fast path once, recorded zero structural
+  fallbacks, and measured iframe apply cost below 1ms in the captured runs.
+  The local persistent-preview gate,
+  imported edit sync, visual preview/edit smoke, buildDoc bundle tests, drop
+  target tests, bridge tests, lint, build, and server hygiene all passed.
+- CLAIM BOUNDARY: The measured end-to-end acknowledgement still includes
+  browser/CDP scheduling variance and does not prove a fixed user-facing
+  latency number. This is local renderer evidence, not actual Roll20 parity.
+- NEXT P0: Repeat the same operation with a supported browser session and
+  participant-gated Roll20 Sandbox/legacy-room evidence; keep actual rooms
+  read-only and exclude any room whose visible participant count is not
+  exactly one.
+
 ## 2026-07-29 Workspace Harness Retention Pass
 
 - DONE: Confirmed the four-zone harness, active worktree, protected source

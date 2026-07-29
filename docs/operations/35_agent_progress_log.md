@@ -1,3 +1,21 @@
+## 2026-07-29 - Optimistic flow commit fast path
+
+- FIXED: A flow drop that was already applied optimistically in the canonical
+  iframe now sends a validated operation descriptor with the authored patch.
+  The iframe verifies the exact DOM relationship and skips the full HTML
+  parse/morph only for that operation; all other changes and failed checks use
+  the existing structural patch fallback.
+- MEASURED: On the 6,000-block anonymous fixture, the accepted fast path ran
+  once in each modern and legacy mode, with zero structural fallbacks and
+  iframe apply cost below `1ms` in the captured runs. End-to-end ack
+  values remain scheduling-sensitive and are not treated as a fixed latency
+  claim.
+- REGRESSION: Lint, production build, persistent preview, strict imported
+  edit sync across five anonymous fixtures, visual preview/edit smoke, build
+  bundle, drop-target, iframe-bridge, and server-hygiene tests passed.
+- BOUNDARY: No actual Roll20 room or Sandbox was opened because the current
+  CDP session has no targets. No claim about actual Roll20 parity is made.
+
 ## 2026-07-29 - Harness retention pass
 
 - VERIFIED: Explicit cleanup paths were checked against the workspace root,

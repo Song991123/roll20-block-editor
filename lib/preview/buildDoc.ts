@@ -135,8 +135,11 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var styleOnlyApplyCount = 0;
   var optimisticFlowMoveCount = 0;
   var optimisticFlowRollbackCount = 0;
+  var optimisticFlowFastPatchCount = 0;
+  var optimisticFlowCheck = '';
   var validatedFlowTarget = null;
   var optimisticFlowSnapshot = null;
+  var optimisticFlowCommit = null;
   var optimisticEditMove = null;
   var pendingLivePatchChunks = null;
   function blockNodeOf(node) {
@@ -363,7 +366,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       var currentChild = matchIndex >= 0 ? currentChildren[matchIndex] : null;
       var nextNode = currentChild ? morphNode(currentChild, nextChild) : nextChild.cloneNode(true);
       if (matchIndex >= 0) used[matchIndex] = true;
-      parent.insertBefore(nextNode, parent.childNodes[i] || null);
+      var currentAtIndex = parent.childNodes[i] || null;
+      if (nextNode !== currentAtIndex) {
+        parent.insertBefore(nextNode, currentAtIndex);
+        // morphNode returns a clone when the tag/key shape changed. Remove the
+        // old matched node after inserting the replacement; otherwise the old
+        // node is marked used and would survive as a duplicate.
+        if (currentChild && nextNode !== currentChild && currentChild.parentNode === parent) {
+          currentChild.remove();
+        }
+      }
       cursor = i + 1;
     }
     for (var r = currentChildren.length - 1; r >= 0; r -= 1) {
@@ -453,11 +465,68 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function finalizeOptimisticFlowMove(data) {
     if (data && data.committed === true) {
       optimisticFlowSnapshot = null;
+      optimisticFlowCommit = validOptimisticFlowCommit(data) ? data : null;
+      optimisticFlowCheck = optimisticFlowCommit ? 'commit-received' : 'commit-invalid';
     } else {
       rollbackOptimisticFlowMove();
       clearOptimisticEditMove();
+      optimisticFlowCommit = null;
+      optimisticFlowCheck = 'commit-rejected';
     }
     clearValidatedFlowTarget();
+  }
+  function validOptimisticFlowCommit(data) {
+    if (!data || typeof data !== 'object') return false;
+    if (typeof data.subjectBlockId !== 'string' || data.subjectBlockId.length < 1 || data.subjectBlockId.length > 256) return false;
+    if (data.placement !== 'inside' && data.placement !== 'before' && data.placement !== 'after') return false;
+    if (data.placement === 'inside') {
+      return typeof data.containerBlockId === 'string'
+        && data.containerBlockId.length > 0
+        && data.containerBlockId.length <= 256;
+    }
+    return typeof data.siblingBlockId === 'string'
+      && data.siblingBlockId.length > 0
+      && data.siblingBlockId.length <= 256;
+  }
+  function canApplyOptimisticFlowCommit(data) {
+    if (!validOptimisticFlowCommit(data)) {
+      optimisticFlowCheck = 'payload-invalid';
+      return false;
+    }
+    if (!optimisticFlowCommit) {
+      optimisticFlowCheck = 'commit-missing';
+      return false;
+    }
+    if (
+      data.subjectBlockId !== optimisticFlowCommit.subjectBlockId
+      || data.placement !== optimisticFlowCommit.placement
+      || (data.containerBlockId || null) !== (optimisticFlowCommit.containerBlockId || null)
+      || (data.siblingBlockId || null) !== (optimisticFlowCommit.siblingBlockId || null)
+    ) {
+      optimisticFlowCheck = 'commit-mismatch';
+      return false;
+    }
+    var subject = document.querySelector('[data-r20-block-id="' + cssEscape(data.subjectBlockId) + '"]');
+    if (!subject) {
+      optimisticFlowCheck = 'subject-missing';
+      return false;
+    }
+    if (data.placement === 'inside') {
+      var container = document.querySelector('[data-r20-block-id="' + cssEscape(data.containerBlockId) + '"]');
+      var nested = Boolean(container && subject.parentElement === container);
+      optimisticFlowCheck = nested ? 'accepted' : 'inside-mismatch';
+      return nested;
+    }
+    var sibling = document.querySelector('[data-r20-block-id="' + cssEscape(data.siblingBlockId) + '"]');
+    if (!sibling || subject.parentElement !== sibling.parentElement) {
+      optimisticFlowCheck = 'sibling-mismatch';
+      return false;
+    }
+    var ordered = data.placement === 'before'
+      ? subject.nextElementSibling === sibling
+      : sibling.nextElementSibling === subject;
+    optimisticFlowCheck = ordered ? 'accepted' : 'order-mismatch';
+    return ordered;
   }
   function optimisticFlowMove(data, captureSnapshot) {
     if (!data || typeof data.subjectBlockId !== 'string') return false;
@@ -516,6 +585,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     return true;
   }
   function applyLivePatch(data) {
+    var applyStartedAt = window.performance.now();
     if (!data || !Number.isInteger(data.revision) || data.revision < 1) return;
     if (typeof data.html !== 'string' || data.html.length > 15000000) return;
     if (typeof data.htmlKey !== 'string' || !/^[a-z0-9-]{1,128}$/.test(data.htmlKey)) return;
@@ -537,14 +607,28 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var root = document.querySelector('form.sheetform > .charactersheet.charsheet');
     if (!root) return;
     var htmlChanged = data.htmlKey !== lastAppliedHtmlKey;
-    var attrs = htmlChanged ? collectAttrs() : null;
-    var previousWorkerSource = htmlChanged ? workerSourceText(root) : '';
+    var usedOptimisticFlowPatch = htmlChanged && canApplyOptimisticFlowCommit(data.optimisticFlow);
+    var attrs = htmlChanged && !usedOptimisticFlowPatch ? collectAttrs() : null;
+    var previousWorkerSource = htmlChanged && !usedOptimisticFlowPatch ? workerSourceText(root) : '';
     var usedStructuralPatch = false;
     // The drag transform is only a visual preview of the pending edit. CSS-only
     // updates keep the same HTML key, so clearing it only inside the structural
     // patch branch can leave the committed position permanently offset.
     clearOptimisticEditMove();
     if (htmlChanged) {
+      if (usedOptimisticFlowPatch) {
+        // The iframe already performed and validated this exact DOM move on
+        // pointer-up. Skip reparsing/morphing the full sheet; the normal
+        // branch below remains the correctness fallback.
+        optimisticFlowFastPatchCount += 1;
+        structuralPatchCount += 1;
+        optimisticFlowCommit = null;
+        optimisticFlowSnapshot = null;
+        clearValidatedFlowTarget();
+        lastAppliedHtmlKey = data.htmlKey;
+        document.body.setAttribute('data-r20-html-key', data.htmlKey);
+        lastAppliedBlockCount = root.querySelectorAll('[data-r20-block-id]').length;
+      } else {
       // The initial iframe contains only the empty-state placeholder. A
       // keyed morph has no state to preserve there and needlessly walks the
       // imported tree before replacing it, which is especially costly for
@@ -567,6 +651,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       clearValidatedFlowTarget();
       lastAppliedHtmlKey = data.htmlKey;
       document.body.setAttribute('data-r20-html-key', data.htmlKey);
+      }
     } else {
       styleOnlyApplyCount += 1;
     }
@@ -597,7 +682,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       translations = loadTranslations();
       applyTranslations();
     }
-    if (htmlChanged) {
+    if (htmlChanged && !usedOptimisticFlowPatch) {
       emulateRoll20RepeatingSections();
       emulateRoll20ButtonClasses();
       applyRoll20Autocalc();
@@ -611,7 +696,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     document.body.setAttribute(
       'data-r20-last-apply-mode',
-      htmlChanged ? (usedStructuralPatch ? 'patch' : 'replace') : 'styles'
+      htmlChanged ? (usedOptimisticFlowPatch || usedStructuralPatch ? 'patch' : 'replace') : 'styles'
     );
     document.body.setAttribute('data-r20-root-replacements', String(rootReplacementCount));
     document.body.setAttribute('data-r20-structural-patches', String(structuralPatchCount));
@@ -620,7 +705,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     document.body.setAttribute('data-r20-style-only-applies', String(styleOnlyApplyCount));
     document.body.setAttribute('data-r20-optimistic-flow-moves', String(optimisticFlowMoveCount));
     document.body.setAttribute('data-r20-optimistic-flow-rollbacks', String(optimisticFlowRollbackCount));
+    document.body.setAttribute('data-r20-optimistic-flow-fast-patches', String(optimisticFlowFastPatchCount));
+    document.body.setAttribute('data-r20-optimistic-flow-check', optimisticFlowCheck);
     document.body.setAttribute('data-r20-last-apply-at', window.performance.now().toFixed(3));
+    document.body.setAttribute(
+      'data-r20-last-apply-cost-ms',
+      (window.performance.now() - applyStartedAt).toFixed(3)
+    );
     document.body.setAttribute(
       'data-r20-last-apply-epoch',
       String(window.performance.timeOrigin + window.performance.now())
@@ -654,6 +745,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       roll20SandboxSanitize: data.roll20SandboxSanitize === true,
       roll20RendererModel: data.roll20RendererModel,
       documentLanguage: data.documentLanguage,
+      optimisticFlow: data.optimisticFlow,
       parts: [],
       received: 0,
     };
@@ -676,6 +768,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       htmlKey: patch.htmlKey,
       styles: patch.styles,
       i18n: patch.i18n,
+      optimisticFlow: patch.optimisticFlow,
       darkMode: patch.darkMode,
       layer: patch.layer,
       roll20SandboxSanitize: patch.roll20SandboxSanitize,

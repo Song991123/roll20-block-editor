@@ -83,6 +83,8 @@ async function readApplyStats(frame) {
     rootReplacements: Number(document.body?.getAttribute('data-r20-root-replacements') ?? 0),
     structuralPatches: Number(document.body?.getAttribute('data-r20-structural-patches') ?? 0),
     structuralPatchFallbacks: Number(document.body?.getAttribute('data-r20-structural-patch-fallbacks') ?? 0),
+    optimisticFlowFastPatches: Number(document.body?.getAttribute('data-r20-optimistic-flow-fast-patches') ?? 0),
+    optimisticFlowCheck: document.body?.getAttribute('data-r20-optimistic-flow-check') ?? '',
     initialPlaceholderReplacements: Number(document.body?.getAttribute('data-r20-initial-placeholder-replacements') ?? 0),
     styleOnlyApplies: Number(document.body?.getAttribute('data-r20-style-only-applies') ?? 0),
     optimisticFlowMoves: Number(document.body?.getAttribute('data-r20-optimistic-flow-moves') ?? 0),
@@ -91,6 +93,7 @@ async function readApplyStats(frame) {
     lastOptimisticEpoch: Number(document.body?.getAttribute('data-r20-last-optimistic-epoch') ?? 0),
     lastApplyAt: Number(document.body?.getAttribute('data-r20-last-apply-at') ?? 0),
     lastApplyEpoch: Number(document.body?.getAttribute('data-r20-last-apply-epoch') ?? 0),
+    lastApplyCostMs: Number(document.body?.getAttribute('data-r20-last-apply-cost-ms') ?? 0),
   }));
 }
 
@@ -1257,6 +1260,9 @@ async function runMode(browser, mode) {
       && result.flowCommit.stats.optimisticFlowMoves > result.liveApplyMutation.stats.optimisticFlowMoves
       && result.flowCommit.stats.lastOptimisticAt > 0
       && result.flowCommit.stats.lastOptimisticAt <= result.flowCommit.stats.lastApplyAt
+      && result.flowCommit.stats.optimisticFlowFastPatches === 1
+      && result.flowCommit.stats.optimisticFlowCheck === 'accepted'
+      && result.flowCommit.stats.lastApplyCostMs < 10
       && Number.isFinite(result.flowCommit.optimisticMs)
       && result.flowCommit.optimisticMs >= 0
       && result.flowCommit.optimisticMs <= OPTIMISTIC_BUDGET_MS

@@ -47,6 +47,13 @@ import {
   decodeFriendlyWidgetDrag,
 } from '@/lib/widgets/presets';
 
+type OptimisticFlowCommit = {
+  subjectBlockId: string;
+  placement: 'inside' | 'before' | 'after';
+  containerBlockId: string | null;
+  siblingBlockId: string | null;
+};
+
 /**
  * 미리보기 메인 — iframe srcdoc, sandbox.
  *
@@ -132,6 +139,7 @@ export default function PreviewMain() {
   const applySourcesRef = useRef(new Map<number, string>());
   const lastAppliedSourceRef = useRef<string | null>(null);
   const pendingApplySourceRef = useRef<string | null>(null);
+  const pendingOptimisticFlowCommitRef = useRef<OptimisticFlowCommit | null>(null);
   const [lastApplyAck, setLastApplyAck] = useState(0);
   const [pendingApplyRevision, setPendingApplyRevision] = useState(0);
   const autoWidthSizedRef = useRef(false);
@@ -726,6 +734,16 @@ export default function PreviewMain() {
             }
           }
           markEditorTiming('commit-end');
+          const optimisticFlowCommit: OptimisticFlowCommit | null =
+            moved && ui.editPlacementMode === 'flow' && committedDropTarget
+              ? {
+                  subjectBlockId: editMessage.subject.blockId,
+                  placement: committedDropTarget.mode,
+                  containerBlockId: committedDropTarget.containerBlockId,
+                  siblingBlockId: committedDropTarget.siblingBlockId,
+                }
+              : null;
+          pendingOptimisticFlowCommitRef.current = optimisticFlowCommit;
           if (moved) {
             if (ui.editPlacementMode === 'flow' && committedDropTarget) {
               iframeRef.current?.contentWindow?.postMessage({
@@ -750,7 +768,6 @@ export default function PreviewMain() {
               markEditorTiming('flush-callback');
               flushEmitPipeline();
             });
-            store.setSelectedBlockId(editMessage.subject.blockId, 'preview');
           } else {
             iframeEditDragOriginRef.current = null;
             setIframeEditDragOrigin(null);
@@ -760,6 +777,7 @@ export default function PreviewMain() {
             protocol: R20_IFRAME_EDIT_PROTOCOL,
             bridgeId: editMessage.bridgeId,
             committed: moved,
+            ...(optimisticFlowCommit ?? {}),
           }, '*');
           iframeEditDropTargetRef.current = null;
         }
@@ -964,6 +982,8 @@ export default function PreviewMain() {
     autoWidthSizedRef.current = false;
     setPendingApplyRevision(revision);
     const chunked = livePatch.html.length > 300000;
+    const optimisticFlowCommit = pendingOptimisticFlowCommitRef.current;
+    const flowMetadata = optimisticFlowCommit ? { optimisticFlow: optimisticFlowCommit } : {};
     const messages: Array<Record<string, unknown>> = chunked
       ? (() => {
           const chunkSize = 32000;
@@ -977,6 +997,7 @@ export default function PreviewMain() {
             htmlLength: html.length,
             totalChunks,
             ...metadata,
+            ...flowMetadata,
           };
           const chunks = [];
           for (let index = 0; index < totalChunks; index += 1) {
@@ -997,6 +1018,7 @@ export default function PreviewMain() {
           bridgeId: iframeEditBridgeId,
           revision,
           ...livePatch,
+          ...flowMetadata,
         }];
     let retryTimer: number | null = null;
     let attempts = 0;
@@ -1010,7 +1032,12 @@ export default function PreviewMain() {
       if (!currentTarget) return;
       try {
         messages.forEach((message) => currentTarget.postMessage(message, '*'));
-        if (attempts === 0) markEditorTiming('apply-sent');
+        if (attempts === 0) {
+          markEditorTiming('apply-sent');
+          if (optimisticFlowCommit && pendingOptimisticFlowCommitRef.current === optimisticFlowCommit) {
+            pendingOptimisticFlowCommitRef.current = null;
+          }
+        }
       } catch {
         setPendingApplyRevision(0);
         pendingApplySourceRef.current = null;
