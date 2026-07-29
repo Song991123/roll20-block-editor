@@ -1,3 +1,19 @@
+## 2026-07-29 Blockly Import Resize Batch
+
+- FIXED LOCAL: `hydrateFromXml` and `hydrateFromXmlChunked` now keep the
+  Blockly workspace resize setter suppressed until the whole XML batch ends.
+  `Blockly.Xml.domToWorkspace` was re-enabling it after every chunk, causing
+  repeated scrollbar and screen-coordinate work during large imports.
+- VERIFIED LOCAL: Anonymous fixture performance changed from `5,556.8ms` to
+  `4,896.0ms` inject and from `5,775.9ms` to `5,084.8ms` total import on the
+  largest prepared fixture. The local budget moved from `WARN` to `PASS`.
+  Strict imported-edit sync remained PASS for all five prepared fixtures, with
+  edit/preview sync, reimport stability, and resource checks passing.
+- CLAIM BOUNDARY: This is a local Blockly import performance improvement. It
+  does not prove Roll20 Sandbox/legacy-room parity or universal sheet support.
+- NEXT P0: Keep the actual Roll20 Sandbox and participant-gated legacy-room
+  verification separate from this local performance gate.
+
 ## 2026-07-29 Render Surface Dimension Contract
 
 - FIXED LOCAL: The authored `form.sheetform > .charactersheet.charsheet`

@@ -430,12 +430,22 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     if (!ws || !xml) return;
     Blockly.Events.disable();
-    ws.setResizesEnabled(false);
+    // Blockly.Xml.domToWorkspace toggles resize handling in its own finally.
+    // Keep that toggle inside one batch so a large import performs one resize.
+    const originalSetResizesEnabled = ws.setResizesEnabled;
+    const callOriginalSetResizesEnabled = originalSetResizesEnabled.bind(ws);
+    const suppressResizeEnable = (enabled: boolean) => {
+      if (enabled) return;
+      callOriginalSetResizesEnabled(false);
+    };
+    ws.setResizesEnabled = suppressResizeEnable;
+    callOriginalSetResizesEnabled(false);
     try {
       ws.clear();
       const dom = Blockly.utils.xml.textToDom(xml);
       Blockly.Xml.domToWorkspace(dom, ws);
     } finally {
+      ws.setResizesEnabled = originalSetResizesEnabled;
       ws.setResizesEnabled(true);
       Blockly.Events.enable();
     }
@@ -466,7 +476,16 @@ class DefaultAdapter implements BlocklyAdapter {
     // Blockly 의 `appendDomToWorkspace` 가 내부적으로 `ws.clear()` 를 호출하므로
     //   chunk 단위로 호출하면 이전 chunk 내용이 매번 지워짐 → 사용 불가.
     // → 직접 `Blockly.Xml.domToWorkspace` 호출 (append 만 하고 clear 안 함).
-    ws.setResizesEnabled(false);
+    // Blockly.Xml.domToWorkspace re-enables resizing after every chunk. Keep
+    // the workspace suppressed until the whole append-only batch completes.
+    const originalSetResizesEnabled = ws.setResizesEnabled;
+    const callOriginalSetResizesEnabled = originalSetResizesEnabled.bind(ws);
+    const suppressResizeEnable = (enabled: boolean) => {
+      if (enabled) return;
+      callOriginalSetResizesEnabled(false);
+    };
+    ws.setResizesEnabled = suppressResizeEnable;
+    callOriginalSetResizesEnabled(false);
     try {
       ws.clear();
       if (total === 0) {
@@ -497,6 +516,7 @@ class DefaultAdapter implements BlocklyAdapter {
         onProgress?.(done, total);
       }
     } finally {
+      ws.setResizesEnabled = originalSetResizesEnabled;
       ws.setResizesEnabled(true);
       Blockly.Events.enable();
     }

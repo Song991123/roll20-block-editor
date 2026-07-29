@@ -1,3 +1,16 @@
+## 2026-07-29 - Blockly import resize batching
+
+- FIXED: Both synchronous and chunked adapter hydration now preserve one
+  resize-disabled batch across the full XML import. Blockly's nested
+  `domToWorkspace` finally previously re-enabled resizing after each chunk.
+- MEASURED: The anonymous largest-fixture inject path improved from `5,556.8ms`
+  to `4,896.0ms`; total import improved from `5,775.9ms` to `5,084.8ms`.
+  The sanitized performance budget is now PASS.
+- REGRESSION: Lint, build-document tests, and strict imported-edit sync passed;
+  the latter retained edit/preview sync, reimport stability, and resource PASS
+  for all five local fixtures.
+- BOUNDARY: No claim about actual Roll20 visual parity is made by this batch.
+
 ## 2026-07-29 - Participant gate and design-reset smoke alignment
 
 - VERIFIED SAFETY: `preflight:roll20-room-members -- --self-test` and
