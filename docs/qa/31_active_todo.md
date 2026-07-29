@@ -9,6 +9,23 @@
   guard self-test pass. Sandbox writes remain on the isolated Sandbox path;
   existing rooms remain observation-only.
 
+## 2026-07-29 Dual Roll20 Contract Baseline
+
+- FIXED: `roll20_actual_local_baseline.mjs` now accepts
+  `--compatibility-mode auto|modern|legacy`. `auto` preserves fixture metadata;
+  the explicit modes prepare the same imported input for the matching Sandbox
+  or dedicated legacy-room destination.
+- VERIFIED LOCAL: An explicit modern baseline completed successfully with
+  `100%` structural import matching, `40` roll controls, and zero console/page
+  errors. Its local root measured `850px x 1185px`.
+- CLAIM BOUNDARY: The fresh live modern frame measured `852px x 1148.44px`
+  under a clipped Roll20 dialog viewport. The remaining difference is still
+  state/viewport/crop-sensitive; this change improves comparison validity but
+  does not claim pixel parity.
+- NEXT P0: Generate the corresponding legacy baseline with the explicit legacy
+  mode, then compare both contracts only against their matching actual
+  destination evidence.
+
 ## 2026-07-29 Render Contract Comparison Probe
 
 - VERIFIED LOCAL: The active iframe renderer computes the same Roll20 root

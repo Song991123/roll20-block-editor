@@ -15,6 +15,7 @@
  *     --out-dir ./out --base-path /roll20-block-editor \
  *     --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare \
  *     --run-label 2026-06-18-local-baseline [--only fixture-id] \
+ *     [--compatibility-mode auto|modern|legacy] \
  *     [--state-map reports/visual-state-candidates/visual-state-candidates-state-map.json]
  */
 
@@ -42,6 +43,7 @@ const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const REPORT_ROOT = path.resolve(argOf('--report-dir', 'reports/roll20-actual-compare'));
 const RUN_LABEL = slug(argOf('--run-label', new Date().toISOString().slice(0, 19)));
 const ONLY = argOf('--only', '');
+const COMPATIBILITY_MODE = argOf('--compatibility-mode', 'auto').toLowerCase();
 const STATE_MAP_PATH = argOf('--state-map', '');
 const ASSET_MAP_FILE = argOf('--asset-map-file', '');
 const OFFICIAL_SHEETS_ROOT = path.resolve(
@@ -49,6 +51,10 @@ const OFFICIAL_SHEETS_ROOT = path.resolve(
 );
 const PORT = Number(argOf('--port', '4192'));
 const VIEWPORT = { width: 2200, height: 1200 };
+
+if (!['auto', 'modern', 'legacy'].includes(COMPATIBILITY_MODE)) {
+  throw new Error(`Unsupported --compatibility-mode: ${COMPATIBILITY_MODE}. Use auto, modern, or legacy.`);
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -151,7 +157,13 @@ async function listFixtures() {
     const html = await readMaybe(path.join(dir, 'source.html'));
     if (!html) continue;
     const fixtureManifest = await readJsonMaybe(path.join(dir, 'manifest.json'));
-    const legacyMode = await resolveLegacyMode(dir, fixtureManifest);
+    const detectedLegacyMode = await resolveLegacyMode(dir, fixtureManifest);
+    const legacyMode = COMPATIBILITY_MODE === 'auto'
+      ? detectedLegacyMode
+      : {
+          legacy: COMPATIBILITY_MODE === 'legacy',
+          source: `cli.override.${COMPATIBILITY_MODE}`,
+        };
     out.push({
       id: ent.name,
       dir,
@@ -695,6 +707,7 @@ async function main() {
   const report = {
     createdAt: new Date().toISOString(),
     runLabel: RUN_LABEL,
+    compatibilityMode: COMPATIBILITY_MODE,
     baseUrl: `http://127.0.0.1:${PORT}${BASE_PATH}/`,
     reportDir: runDir,
     stateMapPath: stateMap.path,

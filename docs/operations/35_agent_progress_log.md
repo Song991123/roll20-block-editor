@@ -9,6 +9,20 @@
 - Local checks passed: `corepack pnpm run test:roll20-room-members` and the
   upload guard self-test.
 
+## 2026-07-29 - Dual Roll20 Contract Baseline
+
+- Added `--compatibility-mode auto|modern|legacy` to the local Roll20 baseline
+  generator. `auto` follows copied fixture metadata; explicit modes make it
+  possible to compare identical input separately with Custom Sheet Sandbox and
+  the dedicated legacy-room contract.
+- Verified an explicit modern baseline: structural import `100%`, `40` roll
+  controls, zero console/page errors, local root `850px x 1185px`. The fresh
+  live modern frame remains `852px x 1148.44px` inside a clipped dialog
+  viewport, so this is comparison-pipeline progress, not a pixel-parity claim.
+- Updated the script index and actual-screen verification runbook. Next is a
+  matching explicit legacy baseline and destination-specific crop/state
+  comparison; no room action is allowed without the visible one-member gate.
+
 ## 2026-07-29 - Render Contract Comparison Probe
 
 - The active local iframe renderer was inspected after importing the current

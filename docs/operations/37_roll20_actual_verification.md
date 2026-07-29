@@ -297,6 +297,12 @@ template-scope gate. Candidate-specific smoke still needs explicit
    - Export the generated zip or HTML/CSS/translation payload for sandbox use.
    - Repeatable command:
      `node scripts/roll20_actual_local_baseline.mjs --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-actual-compare --run-label <label>`
+   - When the same copied input must be compared against both Roll20
+     destinations, run the baseline once per contract with
+     `--compatibility-mode modern` for Custom Sheet Sandbox and
+     `--compatibility-mode legacy` for the dedicated legacy room. The default
+     `auto` follows the copied fixture metadata. Never compare a modern
+     Sandbox screenshot against a legacy local baseline, or the reverse.
    - Then run payload hygiene audit before uploading:
      `corepack pnpm run audit:payload -- reports/roll20-actual-compare/<label>`
    - The payload audit must pass before upload. It checks for app UI/edit overlay/internal id leakage, valid Roll20 JSON translation payloads, and zip/file consistency.
