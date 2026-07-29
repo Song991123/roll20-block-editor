@@ -5665,6 +5665,28 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   user-authorized modern payload and a separately configured legacy test room.
   Keep both destinations separate.
 
+## 2026-07-29 Sandbox Upload And Runtime Separation
+
+- DONE: The dedicated verification page passed a fresh visible participant
+  preflight with exactly one member before the Sandbox upload attempt.
+- VERIFIED/PARTIAL: HTML, CSS, and translation file-input handlers dispatched
+  successfully. This proves the browser upload handoff reached Roll20's
+  delegated handler, not that the sheet rendered.
+- VERIFY: No character-sheet iframe was visible after the dispatch, so there is
+  no new actual sheet screenshot, computed-style sidecar, root geometry, or
+  chat evidence from this attempt.
+- VERIFY: The Sandbox observed `modern` runtime. A legacy payload must not be
+  counted as a Sandbox legacy result; use the dedicated legacy-enabled room
+  and repeat the participant preflight immediately before any write operation.
+- VERIFY: The Sandbox JSON warning node was hidden after the attempt. The
+  earlier warning is not currently classified as an active translation parse
+  failure, but translation remains unproven until the intended sheet iframe
+  visibly renders.
+- NEXT P0: Reopen the matching test character in Sandbox for modern frame
+  evidence, then upload the same payload to the separate one-member legacy
+  test room with the required participant guard. Keep screenshots and source
+  payloads local-only and ignored.
+
 ## 2026-07-29 Persistent Render Sync and Inspector Tab Fix
 
 - FIXED: keyed structural patching now updates text and comment node values as

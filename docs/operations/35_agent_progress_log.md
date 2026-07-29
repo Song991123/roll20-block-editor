@@ -1,3 +1,31 @@
+## 2026-07-29 - Sandbox Upload Handler Recheck And Runtime Boundary
+
+- VERIFIED ACTUAL SAFETY: Immediately before the operation, the dedicated
+  Roll20 verification page reported exactly `1 구성원`. No other room or
+  multi-member page was opened or used.
+- VERIFIED ACTUAL STORAGE PATH: The generated browser helper dispatched the
+  same delegated file-input change path for HTML, CSS, and translation. The
+  handler cleared each input after dispatch, which is consistent with the
+  page reading the file and starting its save/reload path.
+- NOT PROVEN: The page had no character-sheet iframe after the dispatch, so
+  the result is `FILE_INPUTS_DISPATCHED_BUT_VISIBLE_MATCH_NOT_PROVEN`. No
+  screenshot, root geometry, CSS evidence, or chat evidence was promoted.
+- DESTINATION BOUNDARY: The live Sandbox runtime reported `modern`. A legacy
+  expectation therefore returned `RUNTIME_MODE_MISMATCH`; this is expected
+  destination behavior, not legacy parity evidence. Legacy verification must
+  use the separately configured one-member test room.
+- TRANSLATION CHECK: The visible JSON warning element was hidden (`display:
+  none`) after the dispatch, and the helper did not detect an active parse
+  error. The earlier warning is not treated as proof of a current translation
+  failure; a visible character render is still required.
+- SAFETY: Existing rooms remain observation-only. Any operation that writes,
+  saves, opens a character, rolls, or changes settings requires a fresh visible
+  participant count of exactly one and must target Sandbox or the dedicated
+  test room only.
+- NEXT P0: Open the dedicated test character after a matching modern Sandbox
+  upload to capture frame-aware render evidence, then run the separate legacy
+  room path with `--require-solo-room`. Do not combine the two runtime results.
+
 ## 2026-07-29 - One-Member Roll20 Runtime Evidence And Translation Boundary
 
 - VERIFIED ACTUAL / READ-ONLY: The connected Roll20 test room visibly reported
