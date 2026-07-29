@@ -27,6 +27,9 @@
   `smoke:roll20-sandbox-preview:all` passed. Preview/edit visual smoke reported
   0% local mismatch for both compatibility modes across the prepared local
   fixtures; Sandbox expected-render smoke reported 0 console/page errors.
+- VERIFIED INTERACTION: `smoke:edit-flow` also passed after the wrapper change,
+  including layer collapse/expand, before/inside/after insertion, reorder,
+  eject, cycle rejection, selection sync, and canvas-width controls.
 - VERIFIED REMOTE: GitHub Actions run `30420232700` for commit `918a48f`
   passed safety/unit verification, lint, and build on the task branch.
 - SAFETY: Actual Roll20 observation scripts keep their generic class fallbacks

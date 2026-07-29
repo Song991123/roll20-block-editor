@@ -6622,6 +6622,9 @@ opened, uploaded to, saved, or otherwise modified in this run.
   preview/edit visual smoke in both modes, Sandbox expected preview for all
   prepared local fixtures, and server hygiene. Local preview/edit mismatch was
   0% in the visual smoke; this is not actual Roll20 parity evidence.
+- The post-migration `smoke:edit-flow` also passed layer collapse/expand,
+  before/inside/after insertion, reorder, eject, cycle rejection, selection
+  synchronization, and canvas-width controls.
 - GitHub Actions run `30420232700` for commit `918a48f` also passed safety/unit,
   lint, and build.
 - No existing room was modified. Any future existing-room observation must
