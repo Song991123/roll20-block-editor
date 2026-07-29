@@ -1,3 +1,16 @@
+## 2026-07-29 - Roll20 Sandbox browser retry
+
+- VERIFIED READ-ONLY: The logged-in Roll20 tab showed Sheet Sandbox Tools and
+  one visible member. The existing room was not edited, saved, or used for
+  chat; the tab was left open as a handoff.
+- BLOCKED: HTML/CSS/Translation inputs exist as hidden native file controls,
+  but the supported chooser interaction timed out before opening. No payload
+  left the local machine and no actual screenshot was counted.
+- CURRENT: Generated actual evidence is still `0/6`; room observation is
+  `0/3`. This is an upload-boundary blocker, not a renderer pass.
+- NEXT: Continue through a visible user-assisted Sandbox selection path, then
+  require root DOM evidence and same-action chat capture.
+
 ## 2026-07-29 - Layer drop root-before fix
 
 - FIXED: Moving a nested layer before a top-level target no longer fails when

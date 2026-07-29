@@ -1,3 +1,18 @@
+## 2026-07-29 Roll20 Sandbox browser retry
+
+- VERIFIED READ-ONLY: The logged-in Roll20 tab still exposes the isolated
+  Sheet Sandbox Tools dialog and the visible member count is one. No existing
+  room settings, sheet source, or chat message was changed.
+- VERIFY BLOCKED: The three file inputs are present but hidden native controls;
+  the supported chooser/click path timed out before a chooser was opened. No
+  local payload was transmitted.
+- CURRENT EVIDENCE: Actual generated screenshots remain `0/6`, room
+  observation screenshots remain `0/3`, and the Sandbox tab is left as a user
+  handoff.
+- NEXT P0: Use the visible Sandbox file-selection surface manually or through
+  a supported chooser, then capture positive sheet-root DOM evidence before
+  chat or parity comparison.
+
 ## 2026-07-29 Layer drop root-before fix
 
 - FIXED LOCAL: A nested layer can now be dragged before a top-level target.
