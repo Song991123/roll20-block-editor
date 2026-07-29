@@ -1,3 +1,17 @@
+## 2026-07-29 Current gate update
+
+- DONE LOCAL: The browser smoke expectations were aligned with the current
+  design-reset copy. `smoke:export-dialog` now passes and still checks import
+  dialog opening, export readiness, worker visibility boundary, and modern /
+  legacy mode synchronization.
+- VERIFIED SAFETY: Existing Roll20 rooms are selected by a fresh visible
+  participant count only. Exactly one member is eligible for read-only
+  observation; any other, unreadable, or ambiguous state blocks the room.
+  Generated writes remain limited to Sandbox or a dedicated test room.
+- VERIFY: Actual Roll20 Sandbox and dedicated legacy-room screenshots remain
+  uncollected because the supported CDP session is unavailable. No existing
+  room was opened or modified in this run.
+
 ## 2026-07-29 Form-State Browser Regression
 
 - VERIFIED LOCAL: `smoke:imported-edit-sync:strict` passed for all prepared

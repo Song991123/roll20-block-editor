@@ -509,11 +509,15 @@ async function main() {
       const bodyText = document.body.innerText;
       return {
         hasHeaderTitle: bodyText.includes('Roll20 시트 편집기'),
-        hasEmptyTitle: bodyText.includes('새 Roll20 시트를 만들어볼까요?'),
+        hasEmptyTitle:
+          bodyText.includes('캐릭터 시트, 여기서 만들어요') ||
+          bodyText.includes('새 Roll20 시트를 만들어볼까요?'),
         hasBlankCta: bodyText.includes('빈 시트로 시작'),
         hasSampleCta: bodyText.includes('샘플 시트 보기'),
         hasSampleMenu: bodyText.includes('샘플 시트'),
-        hasLocalPreviewBoundaryCopy: bodyText.includes('Roll20 형식 시트를 로컬에서 미리 보는 자리예요.'),
+        hasLocalPreviewBoundaryCopy:
+          bodyText.includes('여기 보이는 화면은 미리보기예요. 실제 Roll20 화면과는 조금 다를 수 있어요.') ||
+          bodyText.includes('Roll20 형식 시트를 로컬에서 미리 보는 자리예요.'),
         hasActualRoll20PreviewClaim: bodyText.includes('실제 Roll20 시트가 렌더되는 자리예요.'),
         hasCurrentLocalPreviewBoundaryCopy: bodyText.includes('Roll20 형식 시트를 로컬에서 미리 보는 자리입니다.'),
         bodyText,
@@ -541,7 +545,9 @@ async function main() {
       const sandboxDetails = document.querySelector('[data-testid="export-roll20-sandbox-diagnostics"]');
       const sandboxDiagnosticList = document.querySelector('[data-testid="export-roll20-sandbox-diagnostic-list"]');
       return {
-        hasTitle: dialogText.includes('Roll20 zip 내보내기'),
+        hasTitle:
+          dialogText.includes('Roll20에 올릴 파일 만들기') ||
+          dialogText.includes('Roll20 zip 내보내기'),
         hasReadiness: Boolean(document.querySelector('[data-testid="export-roll20-readiness"]')),
         readinessItemCount: document.querySelectorAll('[data-testid="export-roll20-readiness-item"]').length,
         badgeText: document.querySelector('[data-testid="export-roll20-verification-badge"]')?.textContent?.trim() ?? '',
@@ -655,7 +661,9 @@ async function main() {
     await page.fill('[role="dialog"] textarea', '<img src="https://imgur.com/import-dead.png">');
     await page.waitForSelector('[data-testid="import-asset-replacement-draft"]', { timeout: 5000 });
     result.checks.importDialog = await page.evaluate(() => ({
-      hasTitle: document.body.innerText.includes('외부 시트 불러오기'),
+      hasTitle:
+        document.body.innerText.includes('시트 파일 불러오기') ||
+        document.body.innerText.includes('외부 시트 불러오기'),
       textareaCount: document.querySelectorAll('textarea').length,
       hasProgressNode: Boolean(document.querySelector('[data-testid="import-progress"]')),
       hasAssetPreflight: Boolean(document.querySelector('[data-testid="import-asset-preflight"]')),
@@ -704,10 +712,16 @@ async function main() {
     if (result.checks.shell.hasMojibake) failures.push('mojibake detected in initial shell text');
     if (!result.checks.codeTabs.hasCodeTab) failures.push('code tab missing');
     if (!result.checks.codeTabs.workerSelected) failures.push('worker code tab did not become active');
-    if (!result.checks.codeTabs.statusText.includes('시트 위에는 표시하지 않고 Roll20에서 실행되는 코드입니다.')) {
+    if (
+      !result.checks.codeTabs.statusText.includes('화면에는 보이지 않고 Roll20 안에서 실행되는 코드예요.') &&
+      !result.checks.codeTabs.statusText.includes('시트 위에는 표시하지 않고 Roll20에서 실행되는 코드입니다.')
+    ) {
       failures.push('worker code tab runtime boundary copy missing');
     }
-    if (!result.checks.codeTabs.emptyText.includes('worker 스크립트는 여기에 보존됩니다.')) {
+    if (
+      !result.checks.codeTabs.emptyText.includes('불러온 시트의 자동 동작은 여기에 그대로 보존돼요.') &&
+      !result.checks.codeTabs.emptyText.includes('worker 스크립트는 여기에 보존됩니다.')
+    ) {
       failures.push('worker code tab empty preservation copy missing');
     }
     if (!result.checks.exportDialog.hasTitle) failures.push('export dialog title missing');

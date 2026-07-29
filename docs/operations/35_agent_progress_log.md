@@ -1,3 +1,21 @@
+## 2026-07-29 - Participant gate and design-reset smoke alignment
+
+- VERIFIED SAFETY: `preflight:roll20-room-members -- --self-test` and
+  `roll20_upload_cdp_apply.mjs --self-test` both pass. Existing rooms remain
+  observation-only and are eligible only when a fresh visible participant
+  count reads exactly one member; unknown, multiple, or non-one counts block.
+- FIXED TEST DRIFT: `smoke:export-dialog` now accepts the current design-reset
+  Korean copy for the empty preview, worker boundary, export title, and import
+  title while retaining the previous wording as a compatibility fallback.
+- VERIFIED LOCAL: `smoke:export-dialog` passed with zero console issues, page
+  errors, request failures, or external resource requests. The smoke also
+  exercised import-dialog opening and modern/legacy mode synchronization.
+- VERIFIED HYGIENE: temporary local servers were stopped; no project or CDP
+  listener remains.
+- CLAIM BOUNDARY: no existing Roll20 room was opened or modified. Actual
+  Sandbox/legacy-room visual parity remains `VERIFY` until a supported CDP
+  session and participant-gated evidence are available.
+
 ## 2026-07-29 - Form-state browser regression recheck
 
 - After exposing radio/option default-state fields, the strict imported edit
