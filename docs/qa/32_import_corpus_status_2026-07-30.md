@@ -52,6 +52,16 @@
 - CURRENT BASELINE: Pure HTML matching remains approximately `0.55s` with
   `100%` structural coverage; the large browser path still has approximately
   `36,436` HTML blocks and remains an open render/import bottleneck.
+- VERIFIED LOCAL: Preview/edit now use headless Blockly model workspaces while
+  assemble/split alone create SVG workspaces. On the large anonymous legacy
+  fixture, preview-mode import measured `inject 789.6ms`, hook total `1.54s`,
+  browser wall time about `2.0s`, `36,436` blocks, and `100%` structural match.
+- VERIFIED LOCAL: A small anonymous fixture survived preview(headless) ->
+  assemble(SVG) -> preview(headless) with `919` total blocks before and after,
+  four SVG hosts visible during assemble, and no application console errors.
+- CLAIM BOUNDARY: This removes the local SVG import bottleneck for hidden
+  preview/edit mode; it does not prove large SVG assemble entry is fast or
+  prove actual Roll20 visual parity.
 - SAFETY: The failed experiments did not alter source fixtures or public
   assets. The generated local smoke report remains ignored evidence only.
 

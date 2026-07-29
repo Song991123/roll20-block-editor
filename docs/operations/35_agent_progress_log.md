@@ -7171,3 +7171,25 @@ visibility verification passed. No external room was opened or modified.
   pass.
 - CLAIM BOUNDARY: This is local source/export protection, not actual Roll20
   visual parity or generic JS block-workspace completion.
+
+## 2026-07-30 - Headless model and SVG surface separation
+
+- IMPLEMENTED: `BlocklyModelHost` now uses headless `Blockly.Workspace` models
+  in preview/edit and rendered `WorkspaceSvg` surfaces only in assemble/split.
+  Mode changes serialize the current XML, dispose the old surface, and hydrate
+  the new workspace so emit and layer data keep one model contract.
+- IMPLEMENTED: The adapter accepts the common `Blockly.Workspace` API and
+  exposes `getWorkspaceSvg()` for SVG-only resize/layout/perf paths. Import
+  arrangement and worker layout now skip SVG-only calls for headless models.
+- VERIFIED LOCAL: Large anonymous legacy fixture import in hidden preview mode
+  measured `789.6ms` inject / `1.54s` hook total / about `2.0s` browser wall
+  time, with `36,436` blocks and `100%` structural match.
+- VERIFIED LOCAL: Small mode roundtrip preserved `919` total blocks across
+  headless -> SVG -> headless; four SVG hosts mounted in assemble and app
+  console errors were `0`.
+- VERIFIED: lint, build, `ci:verify`, and one anonymous imported edit-sync
+  browser smoke passed. Large SVG assemble-entry latency and actual Roll20
+  parity remain VERIFY.
+- REGRESSION GUARD: Added the synthetic `test:blockly-headless` test to CI;
+  it verifies headless hydrate/serialize/count and that no SVG surface is
+  exposed for the model workspace.

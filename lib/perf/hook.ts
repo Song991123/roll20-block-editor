@@ -573,7 +573,7 @@ function buildHook(): PerfHook {
 
     injectXml: async ({ key = 'html', xml, before = false }) => {
       const adapter = getBlocklyAdapter();
-      const ws = adapter.getWorkspace(key);
+      const ws = adapter.getWorkspaceSvg(key);
       if (!ws) {
         throw new Error(`[perf] workspace ${key} not registered`);
       }

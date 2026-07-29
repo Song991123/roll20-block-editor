@@ -83,9 +83,11 @@ export interface BlockFieldInfo {
 }
 
 export interface BlocklyAdapter {
-  registerWorkspace(key: WorkspaceKey, ws: Blockly.WorkspaceSvg): void;
+  registerWorkspace(key: WorkspaceKey, ws: Blockly.Workspace): void;
   unregisterWorkspace(key: WorkspaceKey): void;
-  getWorkspace(key: WorkspaceKey): Blockly.WorkspaceSvg | null;
+  getWorkspace(key: WorkspaceKey): Blockly.Workspace | null;
+  /** Return the rendered workspace only; headless model workspaces return null. */
+  getWorkspaceSvg(key: WorkspaceKey): Blockly.WorkspaceSvg | null;
   listAllBlocks(key: WorkspaceKey): BlockSnapshot[];
   getBlock(key: WorkspaceKey, id: string): BlockSnapshot | null;
   getBlockFields(key: WorkspaceKey, blockId: string): BlockFieldInfo[];
@@ -196,10 +198,24 @@ function renderBlocksSoon(blocks: Array<RenderableBlock | null | undefined>): vo
   render();
 }
 
-class DefaultAdapter implements BlocklyAdapter {
-  private workspaces: Partial<Record<WorkspaceKey, Blockly.WorkspaceSvg>> = {};
+function isWorkspaceSvg(
+  workspace: Blockly.Workspace | null | undefined,
+): workspace is Blockly.WorkspaceSvg {
+  return Boolean(
+    workspace &&
+      workspace.rendered &&
+      typeof (workspace as Blockly.WorkspaceSvg).setResizesEnabled === 'function',
+  );
+}
 
-  registerWorkspace(key: WorkspaceKey, ws: Blockly.WorkspaceSvg): void {
+function isBlockSvg(block: Blockly.Block | null | undefined): block is Blockly.BlockSvg {
+  return Boolean(block && block.rendered && typeof (block as Blockly.BlockSvg).initSvg === 'function');
+}
+
+class DefaultAdapter implements BlocklyAdapter {
+  private workspaces: Partial<Record<WorkspaceKey, Blockly.Workspace>> = {};
+
+  registerWorkspace(key: WorkspaceKey, ws: Blockly.Workspace): void {
     this.workspaces[key] = ws;
   }
 
@@ -207,8 +223,13 @@ class DefaultAdapter implements BlocklyAdapter {
     delete this.workspaces[key];
   }
 
-  getWorkspace(key: WorkspaceKey): Blockly.WorkspaceSvg | null {
+  getWorkspace(key: WorkspaceKey): Blockly.Workspace | null {
     return this.workspaces[key] ?? null;
+  }
+
+  getWorkspaceSvg(key: WorkspaceKey): Blockly.WorkspaceSvg | null {
+    const ws = this.workspaces[key];
+    return isWorkspaceSvg(ws) ? ws : null;
   }
 
   listAllBlocks(key: WorkspaceKey): BlockSnapshot[] {
@@ -322,10 +343,14 @@ class DefaultAdapter implements BlocklyAdapter {
     if (!ws) return null;
     try {
       const block = ws.newBlock(blockType);
-      const offset = ws.getTopBlocks(false).length * 8;
-      block.moveBy(20 + offset, 20 + offset);
-      block.initSvg();
-      block.render();
+      // Headless model workspaces have no canvas to lay out. Calling SVG
+      // methods here would reintroduce the large-import render bottleneck.
+      if (isBlockSvg(block)) {
+        const offset = ws.getTopBlocks(false).length * 8;
+        block.moveBy(20 + offset, 20 + offset);
+        block.initSvg();
+        block.render();
+      }
       // Phase D fix (add-block bumpStructure 버그, local_1abb2993):
       // `ws.newBlock` 은 데이터 구조만 만들고 BLOCK_CREATE 이벤트를 발화하지
       // 않는다. 따라서 BlocklyModelHost 의 changeListener (BLOCK_CREATE →
@@ -430,23 +455,29 @@ class DefaultAdapter implements BlocklyAdapter {
     const ws = this.workspaces[key];
     if (!ws || !xml) return;
     Blockly.Events.disable();
+    const svgWorkspace = isWorkspaceSvg(ws) ? ws : null;
     // Blockly.Xml.domToWorkspace toggles resize handling in its own finally.
-    // Keep that toggle inside one batch so a large import performs one resize.
-    const originalSetResizesEnabled = ws.setResizesEnabled;
-    const callOriginalSetResizesEnabled = originalSetResizesEnabled.bind(ws);
-    const suppressResizeEnable = (enabled: boolean) => {
-      if (enabled) return;
+    // Keep that toggle inside one batch for SVG workspaces. A headless model
+    // has no resize/render hooks and can take the direct fast path.
+    const originalSetResizesEnabled = svgWorkspace?.setResizesEnabled;
+    const callOriginalSetResizesEnabled = originalSetResizesEnabled?.bind(svgWorkspace);
+    if (svgWorkspace && callOriginalSetResizesEnabled) {
+      const suppressResizeEnable = (enabled: boolean) => {
+        if (enabled) return;
+        callOriginalSetResizesEnabled(false);
+      };
+      svgWorkspace.setResizesEnabled = suppressResizeEnable;
       callOriginalSetResizesEnabled(false);
-    };
-    ws.setResizesEnabled = suppressResizeEnable;
-    callOriginalSetResizesEnabled(false);
+    }
     try {
       ws.clear();
       const dom = Blockly.utils.xml.textToDom(xml);
       Blockly.Xml.domToWorkspace(dom, ws);
     } finally {
-      ws.setResizesEnabled = originalSetResizesEnabled;
-      ws.setResizesEnabled(true);
+      if (svgWorkspace && originalSetResizesEnabled && callOriginalSetResizesEnabled) {
+        svgWorkspace.setResizesEnabled = originalSetResizesEnabled;
+        callOriginalSetResizesEnabled(true);
+      }
       Blockly.Events.enable();
     }
   }
@@ -478,14 +509,17 @@ class DefaultAdapter implements BlocklyAdapter {
     // → 직접 `Blockly.Xml.domToWorkspace` 호출 (append 만 하고 clear 안 함).
     // Blockly.Xml.domToWorkspace re-enables resizing after every chunk. Keep
     // the workspace suppressed until the whole append-only batch completes.
-    const originalSetResizesEnabled = ws.setResizesEnabled;
-    const callOriginalSetResizesEnabled = originalSetResizesEnabled.bind(ws);
-    const suppressResizeEnable = (enabled: boolean) => {
-      if (enabled) return;
+    const svgWorkspace = isWorkspaceSvg(ws) ? ws : null;
+    const originalSetResizesEnabled = svgWorkspace?.setResizesEnabled;
+    const callOriginalSetResizesEnabled = originalSetResizesEnabled?.bind(svgWorkspace);
+    if (svgWorkspace && callOriginalSetResizesEnabled) {
+      const suppressResizeEnable = (enabled: boolean) => {
+        if (enabled) return;
+        callOriginalSetResizesEnabled(false);
+      };
+      svgWorkspace.setResizesEnabled = suppressResizeEnable;
       callOriginalSetResizesEnabled(false);
-    };
-    ws.setResizesEnabled = suppressResizeEnable;
-    callOriginalSetResizesEnabled(false);
+    }
     try {
       ws.clear();
       if (total === 0) {
@@ -516,8 +550,10 @@ class DefaultAdapter implements BlocklyAdapter {
         onProgress?.(done, total);
       }
     } finally {
-      ws.setResizesEnabled = originalSetResizesEnabled;
-      ws.setResizesEnabled(true);
+      if (svgWorkspace && originalSetResizesEnabled && callOriginalSetResizesEnabled) {
+        svgWorkspace.setResizesEnabled = originalSetResizesEnabled;
+        callOriginalSetResizesEnabled(true);
+      }
       Blockly.Events.enable();
     }
   }

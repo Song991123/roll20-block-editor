@@ -25,6 +25,21 @@
   approximately `70s` before completion and was reverted. The next design
   must separate the model workspace from the SVG workspace rather than patch
   Blockly's rendered hooks.
+- Implemented the separate workspace boundary: preview/edit register
+  `Blockly.Workspace` model instances, while assemble/split register rendered
+  `WorkspaceSvg` instances and restore the same XML when the mode changes.
+- Measured a large anonymous legacy fixture through the real browser hook after
+  switching to preview: `inject 789.6ms`, hook total `1.54s`, browser wall time
+  about `2.0s`, `36,436` blocks, and `100%` structural match.
+- Measured a small mode roundtrip with `919` total blocks: preview(headless) ->
+  assemble(SVG) -> preview(headless) preserved every workspace count; four SVG
+  hosts were present in assemble and application console errors were `0`.
+- Verification gate: lint, build, `ci:verify`, and anonymous custom fixture
+  imported edit/preview synchronization passed after the change.
+- Added `test:blockly-headless` to the CI verification list to protect the
+  common adapter contract from accidentally requiring SVG methods again.
+- Boundary: the large fixture's SVG assemble entry remains unmeasured and
+  actual Roll20 modern/Sandbox and legacy-room evidence remains separate.
 - Rechecked the available Roll20 tab; it is currently at the login page, so
   actual Sandbox and room evidence remain blocked at `0/6` and `0/3`. No room
   or external sheet state was changed.

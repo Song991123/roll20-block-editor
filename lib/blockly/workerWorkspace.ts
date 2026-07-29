@@ -108,8 +108,8 @@ export function moveImportedWorkerBlocksToWorkspace(
     Blockly.Events.enable();
   }
 
-  source.resizeContents?.();
-  target.resizeContents?.();
+  adapter.getWorkspaceSvg(sourceKey)?.resizeContents();
+  adapter.getWorkspaceSvg(targetKey)?.resizeContents();
   return {
     moved,
     sourceCount: adapter.countBlocks(sourceKey),

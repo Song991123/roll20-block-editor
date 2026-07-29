@@ -41,7 +41,8 @@ interface Props {
 
 export default function BlocklyModelHost({ visible }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const wsRef = useRef<Partial<Record<WorkspaceKey, Blockly.WorkspaceSvg>>>({});
+  const wsRef = useRef<Partial<Record<WorkspaceKey, Blockly.Workspace>>>({});
+  const serializedRef = useRef<Partial<Record<WorkspaceKey, string>>>({});
   const renderer = useSettingsStore((s) => s.blocklyRenderer);
   const bumpStructure = useWorkspaceStore((s) => s.bumpStructure);
   const activeWorkspace = useWorkspaceStore((s) => s.activeWorkspace);
@@ -53,33 +54,45 @@ export default function BlocklyModelHost({ visible }: Props) {
     if (!hostRef.current) return;
     registerAllBlocks();
     const adapter = getBlocklyAdapter();
+    const serializedStore = serializedRef.current;
 
     for (const key of WORKSPACE_KEYS) {
       const mountId = `bl-host-${key}`;
       const mountPoint = hostRef.current.querySelector<HTMLDivElement>(`#${mountId}`);
-      if (!mountPoint) continue;
+      if (visible && !mountPoint) continue;
       // mainMode='assemble' 에서 사용자 인터랙션 받음 — zoom/scroll/drag 다 활성.
-      const ws = Blockly.inject(mountPoint, {
-        toolbox: null as unknown as undefined,
-        renderer,
-        media: BLOCKLY_MEDIA_PATH,
-        readOnly: false,
-        trashcan: true,
-        zoom: {
-          controls: true,
-          wheel: true,
-          startScale: 1,
-          maxScale: 3,
-          minScale: 0.3,
-          scaleSpeed: 1.2,
-        },
-        move: { scrollbars: true, drag: true, wheel: true },
-        scrollbars: true,
-        sounds: false,
-        grid: { spacing: 20, length: 3, colour: '#303030', snap: true },
-      });
+      const ws: Blockly.Workspace = visible
+        ? Blockly.inject(mountPoint!, {
+            toolbox: null as unknown as undefined,
+            renderer,
+            media: BLOCKLY_MEDIA_PATH,
+            readOnly: false,
+            trashcan: true,
+            zoom: {
+              controls: true,
+              wheel: true,
+              startScale: 1,
+              maxScale: 3,
+              minScale: 0.3,
+              scaleSpeed: 1.2,
+            },
+            move: { scrollbars: true, drag: true, wheel: true },
+            scrollbars: true,
+            sounds: false,
+            grid: { spacing: 20, length: 3, colour: '#303030', snap: true },
+          })
+        : new Blockly.Workspace();
       wsRef.current[key] = ws;
       adapter.registerWorkspace(key, ws);
+
+      const savedXml = serializedStore[key];
+      if (savedXml) {
+        try {
+          adapter.hydrateFromXml(key, savedXml);
+        } finally {
+          delete serializedStore[key];
+        }
+      }
 
       // Perf hot path #3 (Phase 4): replace 50-200ms serialize-on-every-event
       // with a sub-microsecond version bump.
@@ -103,7 +116,7 @@ export default function BlocklyModelHost({ visible }: Props) {
       // change).
       let bumpScheduled = false;
       const listener = (ev?: Blockly.Events.Abstract) => {
-        if (ws.isDragging()) return;
+        if (ws.rendered && (ws as Blockly.WorkspaceSvg).isDragging()) return;
         if (!ev) return;
         // Snap SFX — preserved (drag-end BLOCK_MOVE with parent change).
         if (ev.type === Blockly.Events.BLOCK_MOVE) {
@@ -148,13 +161,18 @@ export default function BlocklyModelHost({ visible }: Props) {
       for (const key of WORKSPACE_KEYS) {
         const ws = cleanupRef[key];
         if (ws) {
+          try {
+            serializedStore[key] = adapter.serializeXml(key);
+          } catch {
+            delete serializedStore[key];
+          }
           adapter.unregisterWorkspace(key);
           ws.dispose();
         }
       }
       wsRef.current = {};
     };
-  }, [renderer, bumpStructure]);
+  }, [renderer, visible, bumpStructure]);
 
   // visible 또는 activeWorkspace 변경 → 활성 워크스페이스 svgResize.
   // 컨테이너 크기가 변하면 (off-screen 1px → fill) Blockly 가 자동 측정 안 함 → 명시 호출 필요.
@@ -163,7 +181,7 @@ export default function BlocklyModelHost({ visible }: Props) {
     let raf1 = 0;
     let raf2 = 0;
     const doResize = () => {
-      const ws = wsRef.current[activeWorkspace];
+      const ws = getBlocklyAdapter().getWorkspaceSvg(activeWorkspace);
       if (ws) {
         try {
           Blockly.svgResize(ws);
@@ -187,7 +205,7 @@ export default function BlocklyModelHost({ visible }: Props) {
     if (!visible || !hostRef.current) return;
     const node = hostRef.current;
     const observer = new ResizeObserver(() => {
-      const ws = wsRef.current[activeWorkspace];
+      const ws = getBlocklyAdapter().getWorkspaceSvg(activeWorkspace);
       if (ws) {
         try {
           Blockly.svgResize(ws);

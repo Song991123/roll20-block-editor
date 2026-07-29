@@ -54,7 +54,7 @@ const textareaClassName =
   'h-56 w-full resize-y rounded-xl border-[1.5px] border-border bg-[var(--bg-elevated)] p-3 font-mono text-sm text-foreground caret-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]';
 
 function arrangeImportedWorkspace(key: WorkspaceKey) {
-  const workspace = getBlocklyAdapter().getWorkspace(key);
+  const workspace = getBlocklyAdapter().getWorkspaceSvg(key);
   if (!workspace) return;
 
   const blocks = workspace.getTopBlocks(false);
