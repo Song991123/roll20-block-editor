@@ -185,6 +185,31 @@ function testPageScriptOrderAndWorkerUniqueness(): void {
   workerWorkspace.dispose();
 }
 
+function testMalformedRawTagDoesNotReceivePartialBlockId(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const block = workspace.newBlock('r20_raw_html');
+  block.setFieldValue(
+    '<td<span class="sheet-description" colspan="2"><i>{{desc}}</i></td>',
+    'HTML',
+  );
+
+  const result = emitAll({ html: workspace });
+  assert(
+    result.html.includes('<td<span class="sheet-description"'),
+    'malformed raw tag is preserved as authored',
+  );
+  assert(
+    !result.html.includes('<td data-r20-block-id="<span'),
+    'block id is not inserted into a partial malformed tag name',
+  );
+  assert(
+    result.html.includes('<div data-r20-block-id='),
+    'malformed raw content remains selectable through a valid outer wrapper',
+  );
+  workspace.dispose();
+}
+
 testRawFallbackPair();
 testAlreadyCanonicalPair();
 testInlineStylePair();
@@ -195,4 +220,5 @@ testGenericCssTagEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
 testPageScriptOrderAndWorkerUniqueness();
+testMalformedRawTagDoesNotReceivePartialBlockId();
 console.log('Emit Roll20 class-pair tests passed.');

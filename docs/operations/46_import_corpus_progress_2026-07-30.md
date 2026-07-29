@@ -7,8 +7,10 @@
 - Verified custom and modern imported edit/preview synchronization.
 - Verified direct movement and apply for the small legacy input, with matching
   edit/preview coordinates.
-- Kept the small legacy roundtrip open because malformed `<td<span ...>`
-  fragments already exist in the input and are normalized on reimport.
+- Fixed the partial-tag block-id injection bug for malformed `<td<span ...>`
+  fragments and added an emit-contract regression test.
+- Reverified the small legacy browser roundtrip and imported edit/preview
+  synchronization after rebuild; both passed.
 - Kept the large legacy performance gate open: structural match reached 100%,
   import took about 33 seconds, and edit acknowledgement timed out.
 - Kept actual Roll20 evidence open at `0/6` generated and `0/3` observation;

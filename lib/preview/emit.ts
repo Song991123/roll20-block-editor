@@ -367,7 +367,11 @@ function injectBlockIdAttr(html: string, id: string): string | null {
   }
   if (i >= html.length || html[i] !== '<') return null;
   // <tagname  — 일반 element 만. <!DOCTYPE / <?xml 등은 제외.
-  const m = /^<([a-zA-Z][a-zA-Z0-9-]*)/.exec(html.slice(i));
+  // Match the complete opening-tag name, not a valid prefix of malformed
+  // markup such as `<td<span ...>`. Injecting an attribute after the `td`
+  // prefix would turn preserved raw HTML into a different invalid tag and
+  // make the next browser import recover a different DOM tree.
+  const m = /^<([a-zA-Z][a-zA-Z0-9-]*)(?=\s|\/?>)/.exec(html.slice(i));
   if (!m) return null;
   const tagNameEnd = i + m[0].length;
   // opening tag 의 `>` 위치 — 따옴표 안 `>` 는 무시.

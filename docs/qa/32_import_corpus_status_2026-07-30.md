@@ -14,11 +14,13 @@
 
 ## Open Findings
 
-- The small legacy browser roundtrip still reports HTML drift caused by invalid
-  opening fragments already present in the input (`<td<span ...>`). The first
-  import preserves them as raw HTML; the second browser parse normalizes the
-  surrounding structure. This requires an explicit malformed-input policy and
-  a focused regression test before completion.
+- FIXED LOCAL: A malformed opening fragment already present in the small legacy
+  input (`<td<span ...>`) was being mistaken for a valid `td` prefix when the
+  editor injected `data-r20-block-id`. The emitter now requires a complete
+  opening-tag boundary and leaves malformed raw content behind a valid outer
+  selection wrapper.
+- VERIFIED LOCAL: After rebuilding, the small legacy browser roundtrip passed;
+  imported edit/preview synchronization and resource checks also passed.
 - The large legacy input reached 100% structural match but took approximately
   33 seconds and did not complete the edit acknowledgement smoke. Large-sheet
   interaction performance remains open.
@@ -35,6 +37,6 @@
 
 ## Next P0
 
-Decide whether malformed input should be rejected with a clear import warning
-or preserved as an opaque source island, then add a regression test. Keep
-actual Roll20 upload evidence separate from local renderer results.
+Keep the malformed-tag regression test in the emit contract and continue the
+large-sheet performance investigation. Actual Roll20 upload evidence remains
+separate from local renderer results.
