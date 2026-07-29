@@ -6891,6 +6891,29 @@ visibility verification passed. No external room was opened or modified.
 - INVARIANT: Debounced emits remain active for ordinary Blockly edits; only the
   exact snapshot already flushed synchronously is skipped.
 
+## 2026-07-29 Commit Snapshot Queueing
+
+- FIXED PERFORMANCE: Preview/edit drag commits now queue the immediate emit
+  after Blockly's mutation-listener microtask. The parent bump and Blockly's
+  coalesced bump therefore share one final workspace snapshot instead of
+  causing an immediate emit followed by a second delayed full emit.
+- VERIFY: Re-run the mounted large-sheet acknowledgement measurement; the
+  optimistic placement budget and structural-patch safety gates remain
+  separate from the end-to-end acknowledgement target.
+
+## 2026-07-29 Commit Snapshot Queueing Measurement
+
+- VERIFIED LOCAL: Two repeated mounted synthetic runs completed in both modern
+  and legacy modes with no reloads, structural-patch fallbacks, console errors,
+  or page errors.
+- OBSERVED: optimistic placement stayed below `35ms` in all four mode runs.
+  Pointer-to-ack ranged from `152.5ms` to `167.5ms` in modern mode and from
+  `161.6ms` to `203.2ms` in legacy mode, so the end-to-end acknowledgement
+  target is not yet claimed as complete.
+- OBSERVED: the free recommit acknowledgement was `48.5ms` modern and
+  `47.0ms` legacy in the latest run. This supports the duplicate-emit fix but
+  does not replace the pointer-to-ack gate.
+
 ## 2026-07-29 Mounted Large-Sheet Latency Gate
 
 - VERIFIED LOCAL: The mounted persistent iframe smoke with `6000` synthetic

@@ -439,7 +439,10 @@ export default function PreviewMain() {
           if (committed.reason === 'managed-css') {
             store.bumpStructure('css', adapter.countBlocks('css'));
           }
-          flushEmitPipeline();
+          // Blockly's mutation listener may publish one coalesced bump in a
+          // microtask. Flush after that queue drains so a committed drag is
+          // emitted once with the final workspace snapshot.
+          queueMicrotask(flushEmitPipeline);
           store.setSelectedBlockId(origin.blockId, 'preview');
         } else if (origin.element) {
           origin.element.style.transform = origin.baseTransform;
@@ -701,7 +704,9 @@ export default function PreviewMain() {
             }
             const store = useWorkspaceStore.getState();
             store.bumpStructure('html', adapter.countBlocks('html'));
-            flushEmitPipeline();
+            // Let Blockly's own coalesced mutation bump settle before the
+            // immediate commit emit; this avoids a second delayed full emit.
+            queueMicrotask(flushEmitPipeline);
             store.setSelectedBlockId(editMessage.subject.blockId, 'preview');
           } else {
             iframeEditDragOriginRef.current = null;

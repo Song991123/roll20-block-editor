@@ -10,9 +10,13 @@
   structural patch fallbacks `0`, iframe reloads `0`, and browser errors `0`.
   This proves the optimistic placement budget, not end-to-end acknowledgement
   parity.
-- NEXT P0: Reduce the separately measured pointer-to-ack observation
-  (`196.1ms` modern / `167.4ms` legacy) before claiming HTML reflection is
-  immediately complete for large sheets.
+- NEXT P0: Reduce the separately measured pointer-to-ack observation. The two
+  latest runs ranged from `152.5ms` to `167.5ms` modern and `161.6ms` to
+  `203.2ms` legacy; HTML reflection is therefore not yet claimed immediately
+  complete for large sheets.
+- DONE LOCAL: Drag commits now queue the immediate emit after Blockly's
+  coalesced mutation microtask, preventing the parent bump and listener bump
+  from scheduling two full emit passes for one drop.
 - DONE LOCAL: Synchronous committed-drop emits now mark the exact workspace
   snapshot they published, so the following structure-version effect skips a
   duplicate delayed emit. Ordinary non-committed edits still use the debounce
