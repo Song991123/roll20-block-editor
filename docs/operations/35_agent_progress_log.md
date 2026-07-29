@@ -1,3 +1,20 @@
+## 2026-07-29 - Preview page-script execution boundary
+
+- Changed the shared iframe/live-patch/Shadow-part builders so ordinary page
+  `<script>` elements are omitted from the visual preview document. This
+  prevents imported inline or external page JavaScript from executing during
+  editing, while the original raw HTML block remains available to the HTML
+  workspace and export path.
+- Roll20 worker scripts remain in the preview document and continue through
+  the worker bridge. The distinction is based on the shared worker classifier,
+  so explicit `text/worker` and recognizable legacy worker API scripts keep
+  their runtime behavior.
+- Added build-document regression coverage for both the inert page-script
+  boundary and worker retention. `ci:verify`, persistent preview modern/
+  legacy smoke, runtime visibility, rolltemplate chat, preview/edit visual
+  smoke, lint, and build all passed. This is local runtime-boundary evidence,
+  not actual Roll20 parity evidence.
+
 ## 2026-07-29 - CSS-only optimistic drag reconciliation
 
 - Fixed the persistent iframe bridge so a committed edit always removes the

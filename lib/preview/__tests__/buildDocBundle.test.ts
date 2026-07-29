@@ -19,6 +19,14 @@ const bundle = buildSheetRenderBundle(options);
 const bundleWithParts = buildSheetRenderBundle(options, { includeParts: true });
 const cssOnlyChange = buildSheetRenderBundle({ ...options, css: '.card { color: red; }' });
 const htmlChange = buildSheetRenderBundle({ ...options, html: '<section class="card">Changed</section>' });
+const scriptBundle = buildSheetRenderBundle({
+  ...options,
+  html: '<section class="card">Sheet</section><script src="page-runtime.js">window.pageRuntime = true;</script><script type="text/worker">on("sheet:opened", function () { setAttrs({ hp: 10 }); });</script>',
+});
+const scriptParts = buildSheetParts({
+  ...options,
+  html: '<section class="card">Sheet</section><script>window.pageRuntime = true;</script><script type="text/worker">on("sheet:opened", function () { setAttrs({ hp: 10 }); });</script>',
+});
 
 assert.equal(bundle.doc, buildSheetDoc(options), 'bundled document matches the standalone builder');
 assert.deepEqual(
@@ -41,6 +49,26 @@ assert.notEqual(
   htmlChange.livePatch.htmlKey,
   bundle.livePatch.htmlKey,
   'structural HTML updates force the conservative root replacement path',
+);
+assert.doesNotMatch(
+  scriptBundle.doc,
+  /page-runtime\.js|window\.pageRuntime/,
+  'ordinary page scripts do not execute in the preview iframe',
+);
+assert.match(
+  scriptBundle.doc,
+  /type="text\/worker"[\s\S]*setAttrs\(\{ hp: 10 \}\)/,
+  'Roll20 worker scripts remain available to the preview worker bridge',
+);
+assert.doesNotMatch(
+  scriptBundle.livePatch.html,
+  /page-runtime\.js|window\.pageRuntime/,
+  'ordinary page scripts are omitted from live preview patches',
+);
+assert.doesNotMatch(
+  scriptParts.html,
+  /window\.pageRuntime/,
+  'the fallback Shadow parts keep the same inert page-script boundary',
 );
 assert.match(bundle.doc, /var htmlChanged = data\.htmlKey !== lastAppliedHtmlKey/);
 assert.match(roll20BaseIframeCss, /\.ui-dialog\s+\.charsheet/);

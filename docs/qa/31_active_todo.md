@@ -1,3 +1,19 @@
+## 2026-07-29 Preview Page-Script Runtime Boundary
+
+- DONE: The shared iframe/live-patch/Shadow preview builders now omit normal
+  page `<script>` elements from the rendered sheet. This prevents imported
+  page JavaScript and external `src` files from executing inside the editor.
+- PRESERVED: The original script remains an HTML raw block for source editing
+  and export. Explicit Roll20 worker scripts and recognizable legacy worker
+  API scripts remain in the preview so the worker bridge can execute them.
+- VERIFIED LOCAL: `test:build-doc-bundle`, `ci:verify`,
+  `smoke:persistent-preview-surface`, `verify:runtime-visibility`,
+  `smoke:preview-edit-visual`, `lint`, and `build` passed. No external Roll20
+  room or browser session was used in this batch.
+- CLAIM BOUNDARY: This closes a local preview execution boundary; it does not
+  prove that arbitrary page JavaScript is supported by Roll20 or that actual
+  modern/legacy visual parity is complete.
+
 ## 2026-07-29 Legacy Upload Participant Recheck
 
 - FIXED: `roll20_upload_cdp_apply.mjs --require-solo-room` now checks the

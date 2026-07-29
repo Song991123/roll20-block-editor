@@ -71,6 +71,15 @@ Untyped script compatibility:
   dropped from export. A future JS workspace can replace this raw fallback
   without changing the HTML/CSS mapping contract.
 
+Preview execution boundary:
+
+- Ordinary page scripts are preserved as HTML raw blocks and in export, but
+  are removed from the local visual preview document so inline code and
+  external `src` resources cannot execute while a user is editing.
+- Only scripts classified as Roll20 worker source are retained in the preview
+  document. This is a runtime-safety boundary, not a claim that arbitrary
+  page JavaScript is supported by Roll20.
+
 ## Design Editor vs Source Fidelity
 
 Do not mix these two concerns:

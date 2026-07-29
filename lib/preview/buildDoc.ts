@@ -25,6 +25,7 @@ import {
   roll20DarkmodeIframeCss,
   roll20DarkmodeShadowCss,
 } from './roll20_base';
+import { isRoll20WorkerScript } from '../import/worker_source';
 import { runtimeCss } from './runtime';
 import {
   prepareSheetRenderContract,
@@ -1592,7 +1593,9 @@ function buildSheetDocFromContract(
   const roll20RendererModel = opts.roll20RendererModel ?? 'default';
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
-  const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
+  const bodyInner = stripExecutablePageScripts(
+    contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER),
+  );
   const htmlKey = sheetSourceKey(bodyInner);
   const documentLanguage = normalizeDocumentLanguage(opts.documentLanguage);
 
@@ -1639,7 +1642,9 @@ function buildSheetLivePatchFromContract(
   const darkMode = opts.darkMode === true;
   const layer = opts.previewLayer ?? 'all';
   const roll20RendererModel = opts.roll20RendererModel ?? 'default';
-  const html = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
+  const html = stripExecutablePageScripts(
+    contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER),
+  );
   return {
     html,
     htmlKey: sheetSourceKey(html),
@@ -1698,7 +1703,9 @@ function buildSheetPartsFromContract(
 ): SheetRenderParts {
   const { legacyCssSanitize, previewCss } = contract;
   const roll20RendererModel = opts.roll20RendererModel ?? 'default';
-  const bodyInner = contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER);
+  const bodyInner = stripExecutablePageScripts(
+    contract.bodyInner || (contract.hasAuthoredHtml ? '' : EMPTY_PLACEHOLDER),
+  );
   const documentLanguage = normalizeDocumentLanguage(opts.documentLanguage);
 
   // Shadow 안에서는 body 가 없음 → wrapper .charsheet 에 data-layer 박힘
@@ -1733,6 +1740,28 @@ ${bodyInner}
 </div>`;
 
   return { html, css };
+}
+
+/**
+ * Keep the preview runtime limited to Roll20 worker source.
+ *
+ * Ordinary page scripts remain in the HTML workspace and export output, but
+ * they must not execute inside the editor iframe. Roll20 worker scripts are
+ * the only authored script boundary that the local preview runtime emulates.
+ * Removing the other script elements here also prevents external `src` files
+ * from loading during import/preview while leaving the user's source intact.
+ */
+function stripExecutablePageScripts(html: string): string {
+  if (!html) return '';
+  return html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (full, rawAttrs: string, body: string) => {
+    const type = getScriptType(rawAttrs);
+    return isRoll20WorkerScript(type, body) ? full : '';
+  });
+}
+
+function getScriptType(rawAttrs: string): string {
+  const typeMatch = /\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>/]+))/i.exec(rawAttrs ?? '');
+  return String(typeMatch?.[1] ?? typeMatch?.[2] ?? typeMatch?.[3] ?? '').trim().toLowerCase();
 }
 
 export function buildSheetParts(opts: BuildDocOptions): SheetRenderParts {
