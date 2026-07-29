@@ -1,3 +1,16 @@
+## 2026-07-29 - Roll20 upload handoff regeneration
+
+- VERIFIED: Regenerated the ignored upload handoff from the latest PASS
+  pre-upload run. It lists three anonymous fixture payloads and their missing
+  Sandbox/chat evidence targets.
+- VERIFIED: Upload snippet, CDP apply, CDP preflight, and participant-gate
+  self-tests all pass.
+- NOT VERIFIED: The browser file-input boundary still prevents assigning the
+  local files from automation. No payload was transmitted, and no actual
+  Roll20 screenshot or chat evidence was produced.
+- NEXT: Continue only through the isolated Sandbox with a supported or
+  user-assisted chooser; require positive root evidence before chat capture.
+
 ## 2026-07-29 - CSS bare at-rule preservation and cleanup retry
 
 - FIXED: The generic CSS parser now carries a semicolon terminator through its

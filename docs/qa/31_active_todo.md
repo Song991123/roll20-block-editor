@@ -1,3 +1,15 @@
+## 2026-07-29 Roll20 upload handoff regeneration
+
+- VERIFIED PREUPLOAD: The ignored handoff was regenerated for the latest PASS
+  run and contains all three anonymous fixture payload sets.
+- VERIFIED TOOLING: Upload snippet, CDP apply self-test, CDP preflight
+  self-test, and participant-gate self-test all pass.
+- VERIFY: `generatedActualScreenshots=0/6` and `roomObservationScreenshots=0/3`
+  remain unchanged. No local payload was sent to Roll20 in this batch.
+- NEXT P0: Use the isolated Sandbox page's user-assisted file chooser or
+  supported browser path, then capture root/DOM/chat evidence before any
+  parity claim. Legacy remains a separate dedicated-room task.
+
 ## 2026-07-29 CSS Bare At-Rule Preservation and Cleanup Retry
 
 - FIXED LOCAL: Unsupported semicolon-terminated at-rules such as `@charset`,
