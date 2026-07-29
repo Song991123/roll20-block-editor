@@ -7457,3 +7457,15 @@ visibility verification passed. No external room was opened or modified.
 - CLAIM BOUNDARY: This is a large-workspace navigation and selection slice. It
   does not prove full virtualized block drag/reparenting, Roll20 modern/legacy
   visual parity, or Sandbox upload acceptance.
+
+## 2026-07-30 - Large workspace edit-surface follow-up
+
+- Added a browser acceptance step after the 5,200-input headless import. The
+  check switches to edit mode and confirms the Figma-style layer panel remains
+  virtualized while the same persistent iframe remains the only sheet surface.
+- Evidence: `smoke:large-workspace-browser` reports `editOwner=
+  persistent-iframe`, `iframeCount=1`, `layerRowCount=20`,
+  `shadowEditHostCount=0`, `emptyEditSlot=true`, one selected row, and zero
+  console/page errors.
+- This is local performance and surface-ownership evidence only. Imported
+  large-sheet subtree reparenting and actual Roll20 parity remain open.

@@ -140,6 +140,33 @@ async function main() {
     );
     const selected = await page.locator('[data-testid="large-workspace-row"][data-selected="true"]').count();
     assert(selected === 1, `expected one selected row, got ${selected}`);
+
+    // The large-workspace fallback must still leave the real edit surface
+    // usable. The layer panel is virtualized independently; it must not mount
+    // a second sheet renderer or fall back to the retired Shadow edit host.
+    await page.evaluate(() => window.__perfHook.setMainMode('edit'));
+    await page.locator('[data-testid="edit-canvas-root"]').waitFor({ state: 'visible', timeout: 30000 });
+    await page.locator('[data-testid="edit-layer-row"]').first().waitFor({ state: 'visible', timeout: 30000 });
+    const editSurface = await page.evaluate(() => ({
+      editOwner: document.querySelector('[data-testid="edit-canvas-root"]')?.getAttribute('data-edit-render-owner') ?? '',
+      layerRowCount: document.querySelectorAll('[data-testid="edit-layer-row"]').length,
+      iframeCount: document.querySelectorAll('[data-testid="preview-iframe"]').length,
+      shadowEditHostCount: document.querySelectorAll('[data-testid="edit-canvas-shadow-host"]').length,
+      emptyEditSlot: document.querySelector('[data-testid="edit-canvas-iframe-slot"]')?.getAttribute('aria-hidden') ?? '',
+    }));
+    assert(editSurface.editOwner === 'persistent-iframe', `large edit owner changed: ${editSurface.editOwner}`);
+    assert(editSurface.layerRowCount > 0 && editSurface.layerRowCount < 80, `large edit layer rendered too many/few rows: ${editSurface.layerRowCount}`);
+    assert(editSurface.iframeCount === 1, `large edit mounted ${editSurface.iframeCount} sheet iframes`);
+    assert(editSurface.shadowEditHostCount === 0, 'large edit mounted the retired Shadow host');
+    assert(editSurface.emptyEditSlot === 'true', 'EditCanvas still exposes a second render slot');
+    await page.locator('[data-testid="edit-layer-row"]').first().click();
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="edit-layer-row"][data-r20-layer-selected="1"]') !== null,
+      null,
+      { timeout: 10000 },
+    );
+    const editSelectedRows = await page.locator('[data-testid="edit-layer-row"][data-r20-layer-selected="1"]').count();
+    assert(editSelectedRows === 1, `expected one selected large edit layer row, got ${editSelectedRows}`);
     assert(consoleErrors.length === 0, `console errors: ${consoleErrors.join(' | ')}`);
     assert(pageErrors.length === 0, `page errors: ${pageErrors.join(' | ')}`);
 
@@ -149,6 +176,8 @@ async function main() {
       beforeSearch,
       searched,
       selectedRows: selected,
+      editSurface,
+      editSelectedRows,
       consoleErrors,
       pageErrors,
     }, null, 2));

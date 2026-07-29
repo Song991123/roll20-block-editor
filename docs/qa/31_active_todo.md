@@ -6683,3 +6683,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   modern Sandbox upload and isolated legacy-room checks remain open.
 - NEXT P0: Add real imported large-sheet subtree movement coverage to the
   lightweight browser, then resume supported Roll20 Sandbox upload evidence.
+
+## 2026-07-30 Large workspace edit-surface follow-up
+
+- VERIFIED LOCAL: The 5,200-input synthetic import now switches into edit mode
+  without mounting a second sheet renderer. `smoke:large-workspace-browser`
+  reports `editOwner=persistent-iframe`, one preview iframe, 20 virtualized
+  layer rows, zero retired Shadow edit hosts, a hidden empty EditCanvas slot,
+  one selected layer row, and zero console/page errors.
+- CLAIM BOUNDARY: This proves large-workspace edit-surface availability and
+  layer navigation. It does not yet prove imported non-leaf subtree movement
+  at this scale or actual Roll20 modern/legacy parity.
+- NEXT P0: Add an anonymous imported nested corpus case that exercises
+  subtree reparenting through the virtualized layer surface, then resume the
+  supported Roll20 Sandbox upload path.
