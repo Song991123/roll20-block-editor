@@ -6766,3 +6766,17 @@ preview runtime, and survives export for the future JS workspace.
 Verification: high-priority import `22/22`, emit contract, worker workspace
 smoke, worker-source audit across three prepared local fixtures, and runtime
 visibility verification passed. No external room was opened or modified.
+## 2026-07-29 - Existing-room participant safety reaffirmed
+
+- SAFETY RULE: An existing Roll20 room may be considered for read-only
+  observation only after a fresh, visible `.party-page-members` count proves
+  exactly `1` active participant. This is the only state treated as the
+  signed-in user being alone; `0`, `2+`, hidden, missing, unreadable, or
+  ambiguous counts mean that another user may be present and the room is
+  excluded.
+- NEVER MUTATE: Existing rooms remain observation-only even after the solo
+  gate passes. Generated HTML/CSS/translation/worker writes are restricted to
+  Custom Sheet Sandbox or a newly created dedicated test room.
+- VERIFIED LOCAL: Participant parser and upload-guard self-tests pass. The
+  current CDP preflight reports `targets=0`, so no Roll20 page was opened and
+  no existing room was inspected or changed in this run.

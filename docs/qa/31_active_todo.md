@@ -6089,3 +6089,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   the browser file chooser returned `Not allowed` and raw CDP reported the file
   input command as unsupported. No fixture was selected or uploaded. The
   unrelated `7팀` Chrome window was not inspected or used.
+## 2026-07-29 Current safety gate reaffirmation
+
+- RULE: Do not select an existing Roll20 room from its name, history, or
+  availability. Read the fresh visible `.party-page-members` indicator first.
+  Exactly `1` active participant is the only eligible read-only observation
+  state and is treated as the signed-in user alone. Any `0`, `2+`, hidden,
+  missing, unreadable, or ambiguous result excludes the room because another
+  user may be present.
+- RULE: Existing rooms never receive generated sheet uploads, saves, chat
+  rolls, or settings changes. Use Custom Sheet Sandbox or a newly created
+  dedicated test room for generated writes.
+- VERIFIED LOCAL: `preflight:roll20-room-members -- --self-test` and the
+  upload-guard self-test pass. The current CDP preflight found no targets, so
+  no existing room was opened or modified.
