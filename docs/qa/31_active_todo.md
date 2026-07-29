@@ -16,9 +16,8 @@
 - FIXED: The repository CI workflow now runs on pushes to `claude/**` as well
   as `main`, `dev`, and `codex/**`. GitHub Pages deployment remains restricted
   to `main`.
-- VERIFY: The workflow change is pushed with this batch; confirm the new
-  GitHub Actions run reaches a successful conclusion before calling remote CI
-  green.
+- VERIFIED REMOTE: GitHub Actions run `30419719796` for commit `60245d9`
+  passed safety/unit verification, lint, and build on the Claude task branch.
 
 ## 2026-07-29 Participant Gate Hardening
 

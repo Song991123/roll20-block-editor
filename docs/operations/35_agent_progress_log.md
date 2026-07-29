@@ -23,8 +23,8 @@
 - GitHub Pages deployment remains `main`-only. This change does not publish a
   feature branch or change the production target.
 - Local `ci:verify`, lint, build, and server-hygiene checks passed before the
-  workflow edit; remote CI is VERIFY until the new run for the pushed commit
-  completes.
+  workflow edit. GitHub Actions run `30419719796` for commit `60245d9` then
+  passed safety/unit verification, lint, and build.
 
 ## 2026-07-29 - Participant Gate Hardening
 
