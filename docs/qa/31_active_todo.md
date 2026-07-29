@@ -9,6 +9,29 @@
   guard self-test pass. Sandbox writes remain on the isolated Sandbox path;
   existing rooms remain observation-only.
 
+## 2026-07-29 Render Contract Comparison Probe
+
+- VERIFIED LOCAL: The active iframe renderer computes the same Roll20 root
+  contract observed in the fresh modern Sandbox: `content-box`, `13px`,
+  `18.5714px` line-height, `10px` padding, transparent root background, and
+  `position: relative`. The local probe reported zero console/page errors.
+- VERIFIED LOCAL: The current local baseline exposes `40` roll controls and a
+  root rectangle of `850px` by `1185px`; the fresh modern live frame exposed
+  the same `40` roll controls and a root rectangle of `852px` by `1148.44px`.
+- FINDING: The remaining size difference is not explained by a broad base-CSS
+  mismatch. The live frame is captured inside a shorter Roll20 viewport/state,
+  while the local baseline captures the whole rendered root. The 2px width
+  delta is within the current fixed canvas/wrapper measurement boundary.
+- VERIFIED LOCAL: `corepack pnpm run smoke:persistent-preview-surface` and
+  `corepack pnpm run smoke:imported-edit-sync:strict` passed. The server
+  hygiene check found no project or CDP listeners after the runs.
+- DECISION: No production-wide CSS override is justified by this evidence.
+  Keep modern and legacy CSS contracts separate and do not promote this to a
+  Roll20 pixel-parity PASS.
+- NEXT P0: Normalize viewport, default tab/state, crop, and root geometry;
+  then isolate the live Sandbox runtime console findings in a clean one-member
+  Sandbox run before changing renderer code.
+
 ## 2026-07-29 Modern Sandbox Fresh Payload Render
 
 - VERIFIED ACTUAL SAFETY: Immediately before the modern Sandbox write and

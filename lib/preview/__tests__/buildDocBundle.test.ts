@@ -48,6 +48,16 @@ assert.ok(roll20BaseShadowCss.length > 0, 'Shadow baseline is generated');
 assert.match(bundle.doc, /#dialog-window\.r20-preview-dialog/);
 assert.match(
   bundle.doc,
+  /<div class="ui-dialog ui-widget ui-widget-content ui-corner-all r20-preview-dialog"[^>]*id="dialog-window"/,
+  'preview keeps the Roll20 dialog wrapper as the render surface boundary',
+);
+assert.match(
+  bundle.doc,
+  /<div class="charactersheet tab-pane active charsheet lang-undefined" id="charsheet-root">/,
+  'preview keeps the Roll20 sheet root class contract',
+);
+assert.match(
+  bundle.doc,
   /#dialog-window\.r20-preview-dialog > \.dialog > \.tab-content > \.sheetform[\s\S]*?width: 100% !important/,
   'Roll20 form keeps the iframe/dialog width',
 );
@@ -60,6 +70,21 @@ assert.match(
   bundle.doc,
   /#dialog-window \.dialog\.largedialog[\s\S]*?padding: 0 20px !important/,
   'Roll20 dialog keeps the measured horizontal content inset',
+);
+assert.match(
+  roll20BaseIframeCss,
+  /\.ui-dialog\s+\.charsheet\s*\{[\s\S]*?padding:\s*10px/,
+  'Roll20 iframe baseline keeps the actual sheet padding contract',
+);
+assert.match(
+  roll20BaseIframeCss,
+  /\*\s*,\s*\*::before\s*,\s*\*::after\s*\{[\s\S]*?box-sizing:\s*content-box/,
+  'late Roll20 base rules keep the content-box contract',
+);
+assert.match(
+  roll20BaseIframeCss,
+  /body\s*\{[^}]*font-size:\s*13px/,
+  'Roll20 iframe baseline keeps the 13px body default',
 );
 assert.match(bundle.doc, /function patchRootHtml\(html\)/);
 assert.match(

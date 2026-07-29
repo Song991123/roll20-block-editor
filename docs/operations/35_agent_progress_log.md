@@ -9,6 +9,26 @@
 - Local checks passed: `corepack pnpm run test:roll20-room-members` and the
   upload guard self-test.
 
+## 2026-07-29 - Render Contract Comparison Probe
+
+- The active local iframe renderer was inspected after importing the current
+  anonymous fixture. Its computed root matched the fresh modern Roll20 frame
+  on the important baseline values: `content-box`, `13px`, `18.5714px`
+  line-height, `10px` padding, transparent background, and `position: relative`.
+- Local baseline: `40` roll controls, root `850px x 1185px`, zero console/page
+  errors. Fresh modern live frame: `40` roll controls, root `852px x
+  1148.44px`. The evidence is state/crop-sensitive and does not yet prove
+  pixel parity.
+- `corepack pnpm run smoke:persistent-preview-surface` passed modern/legacy
+  same-iframe synchronization. `corepack pnpm run
+  smoke:imported-edit-sync:strict` passed all current ignored fixture paths.
+  `corepack pnpm run check:server-hygiene` confirmed no project or CDP
+  listeners remained after the probes.
+- No broad CSS patch was applied: the measured difference does not identify a
+  universal base-CSS defect. The next work is normalized viewport/default
+  state/crop comparison and clean Sandbox runtime-error isolation, with the
+  visible participant gate before every room action.
+
 ## 2026-07-29 - Modern Sandbox Fresh Payload Render Confirmed
 
 - VERIFIED ACTUAL SAFETY: The dedicated Sandbox showed exactly
