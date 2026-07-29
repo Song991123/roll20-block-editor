@@ -1,3 +1,16 @@
+## 2026-07-29 Generic CSS At-Rule Mapping
+
+- DONE: Simple single-condition `@media` imports now become
+  `r20_media_query` blocks with nested CSS rules. Standard `@keyframes`
+  imports now become `r20_keyframes` with typed known stops.
+- PRESERVED: Complex media conditions and keyframe percentages outside the
+  current block dropdown remain raw CSS with their original values.
+- VERIFIED LOCAL: Generic import tests pass `32/32`. Full `ci:verify`, lint,
+  build, and browser render smoke remain required before this batch is called
+  complete.
+- CLAIM BOUNDARY: This improves generic CSS mapping; it does not prove full
+  CSS block coverage or actual Roll20 visual parity.
+
 ## 2026-07-29 Preview Page-Script Runtime Boundary
 
 - DONE: The shared iframe/live-patch/Shadow preview builders now omit normal

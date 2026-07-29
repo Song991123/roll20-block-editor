@@ -10,8 +10,8 @@
  *
  * 시스템 specific 토큰 0 — 모든 클래스 / 속성 / 값은 사용자 입력.
  *
- * @media / @keyframes 등 at-rule 은 130 블록 카탈로그의 r20_at_media /
- * r20_at_keyframes 가 있으면 사용. 없으면 raw_css fallback.
+ * @media / @keyframes 는 구조를 보존할 수 있는 경우 전용 블록으로
+ * 매핑하고, 표현력이 부족한 복합 at-rule 은 raw_css fallback 으로 남긴다.
  */
 
 import type { MatchedBlock } from './block_matcher';
@@ -32,8 +32,9 @@ export function newCssCtx(): CssMatchContext {
  *
  * 단순 규칙만:
  *   - top-level rule → r20_css_rule + selector reporter chain + decl stack
- *   - @media / @supports 등 → 일단 raw_css fallback (block 카탈로그에 정확한
- *     at-rule 블록이 있으면 매칭, 아니면 raw)
+ *   - 단일 괄호 조건의 @media → r20_media_query + nested rule children
+ *   - 표준 @keyframes → r20_keyframes + typed/raw stop children
+ *   - 표현력이 부족한 @supports / @container / 복합 media → raw_css fallback
  */
 export function parseCss(css: string, ctx: CssMatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
@@ -61,6 +62,12 @@ export function parseCss(css: string, ctx: CssMatchContext): MatchedBlock[] {
           fields: { SOURCE: source },
           children: {},
         });
+        ctx.matched++;
+        continue;
+      }
+      const structured = structuredAtRuleToBlock(headTrim, r.body, ctx);
+      if (structured) {
+        out.push(structured);
         ctx.matched++;
         continue;
       }
@@ -223,6 +230,114 @@ function ruleToBlock(head: string, body: string, ctx: CssMatchContext): MatchedB
     valueInputs: { SELECTOR: selector },
     children: { DECLS: decls },
   };
+}
+
+/**
+ * Map only at-rules whose generator can preserve the source shape.
+ *
+ * The media block generator owns the surrounding parentheses, so a media
+ * query is typed only when its condition is one balanced parenthesized
+ * expression. Complex media lists and media types stay raw rather than being
+ * rewritten into a different query. Keyframe stops outside the catalog's
+ * dropdown are kept as raw child CSS inside a typed keyframe container.
+ */
+function structuredAtRuleToBlock(
+  head: string,
+  body: string,
+  ctx: CssMatchContext,
+): MatchedBlock | null {
+  const mediaCondition = singleParenthesizedMediaCondition(head);
+  if (mediaCondition) {
+    const nestedCtx = newCssCtx();
+    const children = parseCss(body, nestedCtx);
+    mergeNestedDiagnostics(ctx, nestedCtx);
+    return {
+      blockType: 'r20_media_query',
+      fields: { CONDITION: mediaCondition },
+      children: { CHILDREN: children },
+    };
+  }
+
+  const keyframesMatch = /^@keyframes\s+([A-Za-z_][\w-]*)$/i.exec(head);
+  if (keyframesMatch) {
+    return {
+      blockType: 'r20_keyframes',
+      fields: { NAME: keyframesMatch[1] },
+      children: { STOPS: parseKeyframeStops(body, ctx) },
+    };
+  }
+
+  return null;
+}
+
+function singleParenthesizedMediaCondition(head: string): string | null {
+  const match = /^@media\s+([\s\S]+)$/i.exec(head.trim());
+  const condition = match?.[1]?.trim() ?? '';
+  if (!condition.startsWith('(') || !condition.endsWith(')')) return null;
+
+  let depth = 0;
+  let quote = '';
+  for (let i = 0; i < condition.length; i += 1) {
+    const char = condition[i];
+    if (quote) {
+      if (char === '\\') i += 1;
+      else if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === '(') depth += 1;
+    else if (char === ')') {
+      depth -= 1;
+      if (depth < 0 || (depth === 0 && i !== condition.length - 1)) return null;
+    }
+  }
+  if (depth !== 0 || quote) return null;
+  return condition.slice(1, -1).trim() || null;
+}
+
+const KEYFRAME_STOP_VALUES = new Set(['from', 'to', '0%', '25%', '50%', '75%', '100%']);
+
+function parseKeyframeStops(body: string, ctx: CssMatchContext): MatchedBlock[] {
+  return splitRules(body).map((rule) => {
+    if (rule.kind !== 'rule') {
+      const raw = rule.kind === 'at' ? `${rule.head}{${rule.body}}` : rule.body;
+      ctx.rawFallback++;
+      ctx.warnings.push({
+        code: 'css_keyframe_stop_raw',
+        message: 'keyframes 내부의 비표준 항목은 raw_css 로 보존',
+        hint: raw.trim().slice(0, 60),
+      });
+      return rawCssBlock(raw);
+    }
+
+    const percent = rule.head.trim();
+    if (KEYFRAME_STOP_VALUES.has(percent.toLowerCase())) {
+      return {
+        blockType: 'r20_keyframe_stop',
+        fields: { PERCENT: percent.toLowerCase() },
+        children: { DECLS: parseDecls(rule.body) },
+      };
+    }
+
+    ctx.rawFallback++;
+    ctx.warnings.push({
+      code: 'css_keyframe_stop_raw',
+      message: 'keyframes 단계가 블록 선택지 밖이라 raw_css 로 보존',
+      hint: percent.slice(0, 60),
+    });
+    return rawCssBlock(`${rule.head}{${rule.body}}`);
+  });
+}
+
+function mergeNestedDiagnostics(parent: CssMatchContext, nested: CssMatchContext): void {
+  parent.rawFallback += nested.rawFallback;
+  parent.warnings.push(...nested.warnings.map((warning) => ({
+    ...warning,
+    code: `css_nested_${warning.code}`,
+  })));
 }
 
 /**

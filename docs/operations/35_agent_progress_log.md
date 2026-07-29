@@ -1,3 +1,15 @@
+## 2026-07-29 - Generic CSS at-rule mapping
+
+- Extended the CSS importer to map simple single-condition `@media` rules to
+  the existing `r20_media_query` block and standard `@keyframes` rules to
+  `r20_keyframes` with typed known stops.
+- Complex media lists/types and keyframe stops outside the block dropdown stay
+  as raw CSS, including their original values, so coverage improvements do not
+  silently rewrite CSS semantics.
+- Added generic import tests for nested media rules and mixed typed/raw
+  keyframe stops. The change is catalog-driven and does not target any named
+  sheet or source fixture.
+
 ## 2026-07-29 - Preview page-script execution boundary
 
 - Changed the shared iframe/live-patch/Shadow-part builders so ordinary page

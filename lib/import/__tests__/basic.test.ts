@@ -229,6 +229,32 @@ function testCssImport(): void {
   assert(r.css.includes('fonts.googleapis.com'), 'import source carried');
 }
 
+function testCssMediaQueryStructure(): void {
+  const css = '@media (max-width: 640px) { .sheet-header { color: red; } }';
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 1, '@media counts as one matched top-level rule');
+  assert(r.stats.cssRawFallback === 0, 'simple @media has no raw fallback');
+  assert(r.css.includes('r20_media_query'), '@media maps to a dedicated block');
+  assert(r.css.includes('r20_css_rule'), 'nested media rule is represented');
+  assert(r.css.includes('max-width: 640px'), 'media condition is preserved');
+
+  const complex = importSheet({
+    css: '@media screen and (max-width: 640px) { .sheet-header { color: red; } }',
+  });
+  assert(!complex.css.includes('r20_media_query'), 'complex media shape stays out of the typed block');
+  assert(complex.css.includes('r20_raw_css'), 'complex media query remains lossless raw CSS');
+}
+
+function testCssKeyframesStructureAndFallback(): void {
+  const css = '@keyframes pulse { from { opacity: 0; } 50% { opacity: 0.5; } 10% { opacity: 0.1; } to { opacity: 1; } }';
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 1, '@keyframes counts as one matched top-level rule');
+  assert(r.css.includes('r20_keyframes'), '@keyframes maps to a dedicated block');
+  assert((r.css.match(/r20_keyframe_stop/g) || []).length === 3, 'known keyframe stops become typed blocks');
+  assert(r.css.includes('r20_raw_css'), 'unsupported keyframe stop stays lossless raw CSS');
+  assert(r.css.includes('10%'), 'unsupported keyframe stop value is preserved');
+}
+
 function testCssSelectorComplexFallback(): void {
   // 매우 복잡한 selector (parser 가 분해 못함) — r20_selector_complex 로 100% 보존.
   const css = `body > .foo + .bar:not(:first-child) ~ [data-x="1"] { color: red; }`;
@@ -293,6 +319,8 @@ const tests = [
   ['css @font-face', testCssFontFace],
   ['table column structure', testTableColumnStructure],
   ['css @import', testCssImport],
+  ['css @media structure', testCssMediaQueryStructure],
+  ['css @keyframes structure', testCssKeyframesStructureAndFallback],
   ['css selector_complex fallback', testCssSelectorComplexFallback],
   ['css compound selector', testCssCompoundSelector],
   ['css pseudo-element ::-webkit-*', testCssPseudoElementWebkit],
