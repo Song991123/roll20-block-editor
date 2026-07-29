@@ -699,10 +699,17 @@ class DefaultAdapter implements BlocklyAdapter {
       moving.unplug?.(true);
       if (!moving.previousConnection || !target.previousConnection) return false;
       const insertionConnection = target.previousConnection.targetConnection;
-      if (!insertionConnection || moving.previousConnection.isConnected()) return false;
-      insertionConnection.connect(moving.previousConnection);
       if (!moving.nextConnection || moving.nextConnection.isConnected()) return false;
-      moving.nextConnection.connect(target.previousConnection);
+      if (insertionConnection) {
+        if (moving.previousConnection.isConnected()) return false;
+        insertionConnection.connect(moving.previousConnection);
+        moving.nextConnection.connect(target.previousConnection);
+      } else {
+        // A root target has no predecessor connection. After unplugging a
+        // nested block, connect its next link directly to the root target so
+        // the layer can leave its container and land before that target.
+        moving.nextConnection.connect(target.previousConnection);
+      }
       renderBlocksSoon([moving, target]);
       return true;
     } catch {

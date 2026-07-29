@@ -47,4 +47,21 @@ try {
   workspace.dispose();
 }
 
+const beforeWorkspace = new Blockly.Workspace();
+const beforeContainer = beforeWorkspace.newBlock('r20_test_container');
+const nested = beforeWorkspace.newBlock('r20_test_leaf');
+const rootTarget = beforeWorkspace.newBlock('r20_test_leaf');
+beforeContainer.getInput('BODY')!.connection!.connect(nested.previousConnection!);
+
+adapter.registerWorkspace('html', beforeWorkspace as unknown as Blockly.WorkspaceSvg);
+try {
+  assert.equal(adapter.moveBlockBefore('html', nested.id, rootTarget.id), true);
+  assert.equal(rootTarget.previousConnection!.targetBlock()?.id, nested.id);
+  assert.equal(nested.getSurroundParent(), null);
+  assert.equal(beforeContainer.getInput('BODY')!.connection!.targetBlock(), null);
+} finally {
+  adapter.unregisterWorkspace('html');
+  beforeWorkspace.dispose();
+}
+
 console.log('blockly layer operations test PASS');

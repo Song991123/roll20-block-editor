@@ -1,3 +1,16 @@
+## 2026-07-29 Layer drop root-before fix
+
+- FIXED LOCAL: A nested layer can now be dragged before a top-level target.
+  The adapter reconnects the nested block directly to the target's root
+  predecessor when no predecessor exists.
+- VERIFIED LOCAL: `test:blockly-layer-operations`, `ci:verify`, lint, and build
+  all pass. The regression asserts the moved block leaves its container and
+  becomes the target's immediate predecessor.
+- CLAIM BOUNDARY: This covers the Blockly layer-operation invariant only. It
+  does not prove browser drag latency or actual Roll20 parity.
+- NEXT P0: Reconnect the isolated Roll20 Sandbox for real root/DOM evidence;
+  keep modern Sandbox and legacy-room verification separate.
+
 ## 2026-07-29 Local parity regression refresh
 
 - VERIFIED LOCAL: Preview/edit visual smoke passed `3 fixtures x 2 modes`;

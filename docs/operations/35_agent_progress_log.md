@@ -1,3 +1,14 @@
+## 2026-07-29 - Layer drop root-before fix
+
+- FIXED: Moving a nested layer before a top-level target no longer fails when
+  the target has no predecessor connection. The nested block is reconnected
+  directly before the root target after leaving its container.
+- REGRESSION: Added a Blockly adapter test covering container exit, root
+  predecessor order, and an empty source container. `ci:verify`, lint, and
+  build pass.
+- BOUNDARY: This is a local layer-model fix. Browser drag timing and actual
+  Roll20 parity remain separate verification items.
+
 ## 2026-07-29 - Local parity regression refresh
 
 - VERIFIED LOCAL: Preview/edit visual smoke passed for three local fixtures in
