@@ -17,7 +17,7 @@
 
 'use client';
 
-import { getBlocklyAdapter, type BlockSnapshot } from '@/lib/blockly/adapter';
+import { getBlocklyAdapter, type BlockFieldInfo, type BlockSnapshot } from '@/lib/blockly/adapter';
 import { registerAllBlocks } from '@/lib/blocks/registry';
 import {
   moveImportedWorkerBlocksToWorkspace,
@@ -106,6 +106,7 @@ export interface PerfHook {
   /** Workspace 인스턴스별 + 누적 블록 수 + root (top-level) 블록 수. */
   getWorkspace: () => PerfWorkspaceSnap;
   getLayerSnapshot: (key?: WorkspaceKey) => BlockSnapshot[];
+  getBlockFields: (key: WorkspaceKey, blockId: string) => BlockFieldInfo[];
   getBlockGraph: (key?: WorkspaceKey) => PerfBlockGraphNode[];
   /** emit 결과 (lazy emit). 길이만 — 본문 dump X (사용자 시트 식별자 leak 방지). */
   getEmitCache: () => PerfEmitSnap;
@@ -292,6 +293,8 @@ function buildHook(): PerfHook {
     },
 
     getLayerSnapshot: (key = 'html') => getBlocklyAdapter().listAllBlocks(key),
+
+    getBlockFields: (key, blockId) => getBlocklyAdapter().getBlockFields(key, blockId),
 
     getBlockGraph: (key = 'html') => {
       const adapter = getBlocklyAdapter();

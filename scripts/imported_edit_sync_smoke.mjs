@@ -255,21 +255,37 @@ async function runCanonicalIframeEditSync(page) {
 
   const target = await frame.locator('[data-r20-block-id]').evaluateAll((elements) => {
     const doc = document;
+    const structuralTags = new Set([
+      'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'colgroup', 'col', 'option',
+    ]);
+    const actionableTags = new Set([
+      'input', 'textarea', 'select', 'button', 'img', 'label', 'a', 'custom-card',
+    ]);
+    const visualContainerTags = new Set(['div', 'svg', 'custom-card']);
     const nodes = Array.from(doc.querySelectorAll('[data-r20-block-id]'))
       .map((node) => {
         const rect = node.getBoundingClientRect();
         const style = getComputedStyle(node);
         const nested = node.querySelector('[data-r20-block-id]');
+        const tag = node.tagName.toLowerCase();
+        const stateControl = /\bsheet-toggle-page-[\w-]+\b/.test(node.getAttribute('class') || '');
         return {
           node,
           rect,
+          tag,
           visible: style.display !== 'none' && style.visibility !== 'hidden'
-            && rect.width >= 12 && rect.height >= 12,
+            && rect.width >= 16 && rect.height >= 16,
           leaf: !nested,
+          structural: structuralTags.has(tag),
+          stateControl,
+          priority: actionableTags.has(tag) ? 0 : visualContainerTags.has(tag) ? 1 : 2,
         };
       })
-      .filter((item) => item.visible && item.leaf)
-      .sort((a, b) => (a.rect.width * a.rect.height) - (b.rect.width * b.rect.height));
+      .filter((item) => item.visible && item.leaf && !item.structural && !item.stateControl)
+      .sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return (a.rect.width * a.rect.height) - (b.rect.width * b.rect.height);
+      });
     const item = nodes[0];
     if (!item) {
       return {
@@ -285,15 +301,34 @@ async function runCanonicalIframeEditSync(page) {
     return {
       blockId: item.node.getAttribute('data-r20-block-id'),
       tag: item.node.tagName.toLowerCase(),
+      className: item.node.getAttribute('class') || '',
       rect: {
         left: item.rect.left,
         top: item.rect.top,
         width: item.rect.width,
         height: item.rect.height,
       },
+      candidateSummary: nodes.slice(0, 12).map((candidate) => ({
+        tag: candidate.tag,
+        priority: candidate.priority,
+        rect: {
+          left: candidate.rect.left,
+          top: candidate.rect.top,
+          width: candidate.rect.width,
+          height: candidate.rect.height,
+        },
+        className: candidate.node.getAttribute('class') || '',
+      })),
     };
   });
   if (!target?.blockId) return { pass: false, skipped: true, reason: 'no visible leaf in canonical iframe', debug: target?.debug };
+  const targetBlock = await page.evaluate((blockId) => {
+    const snapshot = window.__perfHook.getLayerSnapshot('html').find((block) => block.id === blockId) || null;
+    return {
+      snapshot,
+      fields: window.__perfHook.getBlockFields('html', blockId),
+    };
+  }, target.blockId);
 
   await page.evaluate(() => window.__perfHook.setMainMode('edit'));
   await page.locator('[data-testid="edit-canvas-root"]').waitFor({ state: 'visible', timeout: 30000 });
@@ -329,11 +364,26 @@ async function runCanonicalIframeEditSync(page) {
   }, target);
   if (!drag.dispatched) return { pass: false, target, drag };
 
-  await page.waitForFunction(
-    (revision) => Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0) > revision,
-    beforeAck,
-    { timeout: 30000 },
-  );
+  try {
+    await page.waitForFunction(
+      (revision) => Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0) > revision,
+      beforeAck,
+      { timeout: 30000 },
+    );
+  } catch (error) {
+    return {
+      pass: false,
+      target,
+      targetBlock,
+      drag,
+      beforeAck,
+      afterAck: await page.evaluate(() => Number(
+        document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0,
+      )),
+      ackTimeout: true,
+      error: String(error),
+    };
+  }
   const editAfter = await frame.locator('[data-r20-block-id]').evaluateAll((nodes, target) => {
     const node = nodes
       .find((candidate) => candidate.getAttribute('data-r20-block-id') === target.blockId);
@@ -360,6 +410,7 @@ async function runCanonicalIframeEditSync(page) {
   return {
     pass: synced && typeof emitted?.html === 'string' && emitted.html.length > 0,
     target,
+    targetBlock,
     drag,
     editAfter,
     previewAfter,
@@ -2185,8 +2236,8 @@ async function reimportCurrentEmit(page, compactWideRows = false) {
       compactWideRows,
     });
     const e2 = window.__perfHook.getEmitContent();
-    const n1 = stripBlockIds(e1.html);
-    const n2 = stripBlockIds(e2.html);
+    const n1 = canonicalHtml(e1.html);
+    const n2 = canonicalHtml(e2.html);
     const css1 = canonicalCss(e1.css);
     const css2 = canonicalCss(e2.css);
     return {
@@ -2226,6 +2277,14 @@ async function reimportCurrentEmit(page, compactWideRows = false) {
         .replace(/\s*data-r20-block-id="[^"]*"/g, '')
         .replace(/^[ \t]+$/gm, '')
         .replace(/\n{2,}/g, '\n');
+    }
+
+    function canonicalHtml(html) {
+      return stripBlockIds(html)
+        // Roll20 template directives are whitespace-insensitive. Keep the
+        // raw comparison above available while treating formatter-only
+        // newlines between adjacent directives as semantic no-ops.
+        .replace(/(\{\{[^{}]*\}\})\s+(?=\{\{[^{}]*\}\})/g, '$1 ');
     }
 
     function canonicalCss(css) {
@@ -2513,7 +2572,10 @@ function fmtEmit(item) {
 
 function fmtReimport(item) {
   if (!item) return 'reimport missing';
-  return isStableReimport(item) ? 'reimport stable' : 'reimport drift';
+  if (!isStableReimport(item)) return 'reimport drift';
+  return item.stable?.htmlRawWithIds && item.stable?.cssRaw
+    ? 'reimport raw stable'
+    : 'reimport stable after canonical normalization';
 }
 
 function fmtFinalResources(item, status) {

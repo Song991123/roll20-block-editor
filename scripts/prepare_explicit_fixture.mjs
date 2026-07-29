@@ -6,7 +6,8 @@
  * Usage:
  *   node scripts/prepare_explicit_fixture.mjs <fixture_root> <fixture_id> \
  *     --html <path> --css <path> [--i18n <path>] [--reference <path>] \
- *     [--corpus <name>] [--rel <label>] [--auto-prefix true|false|null] [--legacy-css-sanitize true|false|null]
+ *     [--corpus <name>] [--rel <label>] [--auto-prefix true|false|null] \
+ *     [--legacy-css-sanitize true|false|null] [--record-source-metadata true]
  */
 
 import {
@@ -57,6 +58,14 @@ function parseTriState(value) {
   throw new Error(`flag must be true, false, or null. Got ${value}`);
 }
 
+function parseBoolean(value, label) {
+  if (value === undefined || value === 'false') return false;
+  if (value === 'true') return true;
+  throw new Error(`${label} must be true or false. Got ${value}`);
+}
+
+const recordSourceMetadata = parseBoolean(flags['record-source-metadata'], 'record-source-metadata');
+
 function copyTracked(label, source, destName) {
   const resolved = resolve(source);
   if (!existsSync(resolved) || !statSync(resolved).isFile()) {
@@ -64,13 +73,14 @@ function copyTracked(label, source, destName) {
   }
   const copied = join(outDir, destName);
   copyFileSync(resolved, copied);
-  return {
+  const record = {
     label,
-    source: resolved,
-    copied,
+    copied: destName,
     bytes: statSync(copied).size,
     sha256: sha256File(copied),
   };
+  if (recordSourceMetadata) record.source = resolved;
+  return record;
 }
 
 const outDir = resolve(fixtureRoot, fixtureId);
@@ -96,14 +106,16 @@ const manifest = {
   fixtureId,
   generatedAt: new Date().toISOString(),
   corpus: flags.corpus ?? 'explicit',
-  sourceDir: resolve(flags.rel ?? '.'),
+  sourceDir: flags.rel ?? fixtureId,
   relDir: flags.rel ?? fixtureId,
-  referenceImage: flags.reference ? resolve(flags.reference) : null,
+  referenceImage: flags.reference
+    ? (recordSourceMetadata ? resolve(flags.reference) : `reference${extname(flags.reference).toLowerCase() || '.png'}`)
+    : null,
   referenceRelativeToSheet,
   autoPrefix: parseTriState(flags['auto-prefix'] ?? flags.legacy),
   autoPrefixNote: 'Controls preview auto-prefix/sanitize path only; this is not full Roll20 legacy CSS sanitization.',
   legacyCssSanitize: parseTriState(flags['legacy-css-sanitize']),
-  legacyCssSanitizeNote: 'Reserved for explicit old-Roll20 CSS sanitizer fixtures when implemented.',
+  legacyCssSanitizeNote: 'Selects the local legacy CSS sanitizer contract for preview/export preparation; actual Roll20 legacy-room parity remains a separate verification gate.',
   visualStatus: flags.reference ? 'prepared-reference' : 'prepared-no-reference',
   files,
 };

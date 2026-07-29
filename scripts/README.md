@@ -15,7 +15,7 @@ Run scripts from the project root unless noted otherwise.
 | `corepack pnpm run verify:runtime-visibility` | Run the local worker/rolltemplate visibility bundle: worker workspace separation, worker state smoke, Sandbox expected-preview runtime stripping, preview/edit visible-runtime-node checks, and local rolltemplate chat smoke. This is local evidence, not actual Roll20 visual parity. |
 | `node scripts/visual_reference_inventory.mjs` | Inventory visual reference candidates. |
 | `node scripts/prepare_visual_fixture.mjs <inventory_json> <out_root> <selector>` | Copy selected source sheets into workspace-owned visual fixtures. |
-| `node scripts/prepare_explicit_fixture.mjs <fixture_root> <fixture_id> --html <path> --css <path> [--i18n <path>]` | Copy an explicit sheet into a fixture. |
+| `node scripts/prepare_explicit_fixture.mjs <fixture_root> <fixture_id> --html <path> --css <path> [--i18n <path>]` | Copy an explicit sheet into an ignored fixture. The manifest is source-redacted by default; use `--record-source-metadata true` only for a deliberately private, disposable audit. |
 | `node scripts/render_visual_fixture_doc.mjs` | Render prepared visual fixtures into standalone preview HTML. |
 | `node scripts/make_visual_diff_pages.mjs` | Build visual diff pages and diagnostics. |
 | `corepack pnpm run capture:visual-fixtures -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/visual-fixture-render [--only <fixtureId>]` | Capture live local preview PNGs and write resource diagnostics separately from render status. Local preview capture only; not actual Roll20 visual parity. Needs `corepack pnpm run build` first. |
