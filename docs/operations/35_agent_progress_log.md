@@ -1,3 +1,17 @@
+## 2026-07-29 - Local parity regression refresh
+
+- VERIFIED LOCAL: Preview/edit visual smoke passed for three local fixtures in
+  both modern and legacy modes, with six `0%` mismatch / `EXACT` results.
+- VERIFIED LOCAL: Strict imported-edit sync passed all five prepared fixtures;
+  interaction and resource checks were also PASS.
+- BOUNDARY: This only proves the preview and edit surfaces agree inside our
+  renderer. It is not Roll20 visual parity evidence.
+- BLOCKED FOR NOW: Roll20 CDP preflight sees zero targets, so no Sandbox upload
+  or screenshot was performed. Actual evidence remains `0/6` generated and
+  `0/3` room-observation screenshots.
+- NEXT: Reconnect the isolated Sandbox through a supported or user-assisted
+  path, prove the active root with DOM evidence, then capture chat separately.
+
 ## 2026-07-29 - Roll20 upload handoff regeneration
 
 - VERIFIED: Regenerated the ignored upload handoff from the latest PASS
