@@ -241,7 +241,7 @@ async function main() {
     const iframeHandle = await iframe.elementHandle();
     const frame = await iframeHandle?.contentFrame();
     if (!frame) throw new Error('preview iframe contentFrame unavailable');
-    await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
+    await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
 
     const initial = await readState(frame);
     report.steps.push({ name: 'initial-combat', state: initial, pass: passForState(initial, 'combat') });
@@ -289,7 +289,7 @@ async function main() {
     });
 
     report.screenshotPath = path.join(REPORT_DIR, 'sheet-worker-state.png');
-    await frame.locator('#charsheet-root').screenshot({ path: report.screenshotPath });
+    await frame.locator('.charactersheet.charsheet').screenshot({ path: report.screenshotPath });
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));

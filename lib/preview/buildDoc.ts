@@ -116,7 +116,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   var lastAppliedHtmlKey = document.body
     ? document.body.getAttribute('data-r20-html-key') || ''
     : '';
-  var initialSheetRoot = document.getElementById('charsheet-root');
+  var initialSheetRoot = document.querySelector('form.sheetform > .charactersheet.charsheet');
   var lastAppliedBlockCount = initialSheetRoot
     ? initialSheetRoot.querySelectorAll('[data-r20-block-id]').length
     : 0;
@@ -353,7 +353,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     try {
       var template = document.createElement('template');
       template.innerHTML = html;
-      reconcileChildren(document.getElementById('charsheet-root'), template.content);
+      reconcileChildren(document.querySelector('form.sheetform > .charactersheet.charsheet'), template.content);
       return true;
     } catch (error) {
       return false;
@@ -513,7 +513,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       totalCss += css.length;
     }
     if (totalCss > 15000000 || typeof data.i18n !== 'string' || data.i18n.length > 5000000) return;
-    var root = document.getElementById('charsheet-root');
+    var root = document.querySelector('form.sheetform > .charactersheet.charsheet');
     if (!root) return;
     var htmlChanged = data.htmlKey !== lastAppliedHtmlKey;
     var attrs = htmlChanged ? collectAttrs() : null;
@@ -695,13 +695,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   var resizeTimer = 0;
   function measureHeight() {
-    var sheet = document.getElementById('charsheet-root') || document.getElementById('dialog-window');
+    var sheet = document.querySelector('form.sheetform > .charactersheet.charsheet') || document.getElementById('dialog-window');
     if (!sheet) return 480;
     var box = measureContentBox(sheet);
     return Math.max(120, Math.ceil(box.height + 24));
   }
   function measureWidth() {
-    var sheet = document.getElementById('charsheet-root') || document.getElementById('dialog-window');
+    var sheet = document.querySelector('form.sheetform > .charactersheet.charsheet') || document.getElementById('dialog-window');
     if (!sheet) return null;
     var box = measureContentBox(sheet);
     if (!box.width || box.width < 120) return null;
@@ -1379,7 +1379,7 @@ const ROLL20_DIALOG_OPEN_CSS = `
  * .charactersheet root choose its own intrinsic width (for example 850px in
  * the modern live sheet and 860px in the legacy live sheet). Do not turn that
  * root into a viewport-sized app panel. */
-#dialog-window.r20-preview-dialog #charsheet-root {
+#dialog-window.r20-preview-dialog > .dialog > .tab-content > .sheetform > .charactersheet.charsheet {
   width: auto !important;
   min-width: 0 !important;
   max-width: none !important;
@@ -1619,7 +1619,7 @@ ${legacyCssSanitize ? `<style id="roll20-legacy-input-state">${ROLL20_LEGACY_INP
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
 <form class="sheetform">
-<div class="charactersheet tab-pane active charsheet lang-undefined${darkMode ? ' sheet-darkmode' : ''}" id="charsheet-root">
+<div class="charactersheet tab-pane active charsheet lang-undefined${darkMode ? ' sheet-darkmode' : ''}">
 ${bodyInner}
 </div>
 </form>
@@ -1724,7 +1724,7 @@ function buildSheetPartsFromContract(
 <div class="dialog largedialog characterviewer" style="display:block;visibility:visible;">
 <div class="tab-content${darkMode ? ' sheet-darkmode' : ''}" id="tab-content" style="display:block;visibility:visible;">
 <form class="sheetform">
-<div class="charactersheet tab-pane active charsheet lang-undefined${darkMode ? ' sheet-darkmode' : ''}" id="charsheet-root">
+<div class="charactersheet tab-pane active charsheet lang-undefined${darkMode ? ' sheet-darkmode' : ''}">
 ${bodyInner}
 </div>
 </form>

@@ -153,7 +153,7 @@ async function getPreviewFrame(page) {
   const handle = await iframe.elementHandle();
   const frame = await handle?.contentFrame();
   if (!frame) throw new Error('preview iframe contentFrame unavailable');
-  await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
+  await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
   return frame;
 }
 
@@ -285,7 +285,7 @@ function safeFilePart(value) {
 async function captureAndCompare(comparePage, frame, fixture, candidate, screenshotDir, referenceDataUrl) {
   const fileName = `${fixture.id}-${safeFilePart(candidate.name)}.png`;
   const screenshotPath = path.join(screenshotDir, fileName);
-  const sheet = frame.locator('#charsheet-root').first();
+  const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.screenshot({ path: screenshotPath });
   const screenshotDataUrl = `data:image/png;base64,${(await fs.readFile(screenshotPath)).toString('base64')}`;
   const diff = await compareImages(comparePage, referenceDataUrl, screenshotDataUrl);

@@ -6609,3 +6609,18 @@ Safety boundary: only the dedicated Sandbox with a fresh visible `1`-member
 preflight was used. Existing rooms are observation-only and are excluded when
 the member count is greater than one or cannot be read. No existing room was
 opened, uploaded to, saved, or otherwise modified in this run.
+## 2026-07-29 - Roll20-shaped root wrapper contract
+
+- Removed the generated `id="charsheet-root"` from the authored sheet wrapper.
+  The iframe bridge, Shadow edit layer root, intrinsic-width CSS, and local
+  browser scripts now use the actual wrapper shape
+  `form.sheetform > .charactersheet.charsheet`.
+- Kept live Roll20 observation probes' class-based fallbacks intact. This
+  avoids treating a local editor marker as part of the live Roll20 contract.
+- Verification passed: build-doc bundle, lint, build, `ci:verify`, persistent
+  preview surface (modern and legacy, reloads 0), strict imported edit sync,
+  preview/edit visual smoke in both modes, Sandbox expected preview for all
+  prepared local fixtures, and server hygiene. Local preview/edit mismatch was
+  0% in the visual smoke; this is not actual Roll20 parity evidence.
+- No existing room was modified. Any future existing-room observation must
+  still pass the fresh visible participant gate with exactly one member.

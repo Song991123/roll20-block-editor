@@ -463,7 +463,7 @@ async function renderCandidate({
   await page.waitForTimeout(300);
 
   const metrics = await page.evaluate(() => {
-    const root = document.querySelector('#charsheet-root');
+    const root = document.querySelector('.charactersheet.charsheet');
     const dialog = document.querySelector('#dialog-window');
     const rect = (el) => {
       if (!el) return null;
@@ -564,10 +564,10 @@ async function renderCandidate({
     }
   });
 
-  const rootBox = await page.locator('#charsheet-root').boundingBox();
-  if (!rootBox) throw new Error(`candidate ${id} has no #charsheet-root`);
+  const rootBox = await page.locator('.charactersheet.charsheet').boundingBox();
+  if (!rootBox) throw new Error(`candidate ${id} has no .charactersheet.charsheet`);
   const screenshot = path.join(artifactDir, `${id}.png`);
-  await page.locator('#charsheet-root').screenshot({ path: screenshot });
+  await page.locator('.charactersheet.charsheet').screenshot({ path: screenshot });
   const comparedSize = {
     w: Math.min(Math.round(rootBox.width), actualSize.w),
     h: Math.min(Math.round(rootBox.height), actualSize.h),

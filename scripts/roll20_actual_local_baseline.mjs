@@ -379,7 +379,7 @@ async function capturePreview(page, outFile, stateCandidate) {
   });
   await waitForImportedSheet(page);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  const sheet = frame.locator('#charsheet-root').first();
+  const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   await waitForVisualStability(page, sheet);
   const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);
@@ -399,7 +399,7 @@ async function captureEdit(page, outFile) {
   // the baseline generator time out even when the visible sheet was healthy.
   await waitForImportedSheet(page);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  const sheet = frame.locator('#charsheet-root').first();
+  const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   await waitForVisualStability(page, sheet);
   await sheet.screenshot({ path: outFile });
@@ -448,14 +448,14 @@ async function waitForImportedSheet(page) {
   const handle = await iframe.elementHandle();
   const frame = await handle?.contentFrame();
   if (!frame) throw new Error('Persistent preview iframe content frame unavailable');
-  const sheet = frame.locator('#charsheet-root').first();
+  const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'attached', timeout: 30000 });
   const deadline = Date.now() + 30000;
   let lastState = null;
   while (Date.now() < deadline) {
     lastState = await Promise.all([
       frame.evaluate(() => {
-        const root = document.querySelector('#charsheet-root');
+        const root = document.querySelector('.charactersheet.charsheet');
         const body = document.body;
         return {
           bodyHtmlKey: body?.getAttribute('data-r20-html-key') ?? '',

@@ -246,7 +246,7 @@ ${payloadCss}
   <div class="dialog largedialog characterviewer">
     <div class="tab-content" id="tab-content">
       <form class="sheetform">
-        <div class="charactersheet tab-pane active charsheet lang-undefined" id="charsheet-root">
+        <div class="charactersheet tab-pane active charsheet lang-undefined">
 ${payloadHtml}
         </div>
       </form>

@@ -53,7 +53,7 @@ assert.match(
 );
 assert.match(
   bundle.doc,
-  /<div class="charactersheet tab-pane active charsheet lang-undefined" id="charsheet-root">/,
+  /<div class="charactersheet tab-pane active charsheet lang-undefined">/,
   'preview keeps the Roll20 sheet root class contract',
 );
 assert.match(
@@ -63,7 +63,7 @@ assert.match(
 );
 assert.match(
   bundle.doc,
-  /#dialog-window\.r20-preview-dialog #charsheet-root[\s\S]*?width: auto !important/,
+  /#dialog-window\.r20-preview-dialog > \.dialog > \.tab-content > \.sheetform > \.charactersheet\.charsheet[\s\S]*?width: auto !important/,
   'authored sheet root keeps its intrinsic width',
 );
 assert.match(

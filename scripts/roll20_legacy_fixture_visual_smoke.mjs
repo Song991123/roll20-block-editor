@@ -428,7 +428,7 @@ async function captureFullIframeRoot(page, sheet, output) {
 async function capturePreviewMode(page, fixtureId, mode, captureLabel = mode) {
   await setCompatibilityMode(page, mode);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  const sheet = frame.locator('#charsheet-root').first();
+  const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   const style = frame.locator('#r20-user').first();
   const userCss = (await style.textContent({ timeout: 30000 }).catch(() => '')) ?? '';

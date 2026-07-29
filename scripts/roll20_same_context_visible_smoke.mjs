@@ -342,7 +342,7 @@ async function renderCandidate({
   await renderPage.waitForTimeout(300);
 
   const metrics = await renderPage.evaluate(() => {
-    const root = document.querySelector('#charsheet-root');
+    const root = document.querySelector('.charactersheet.charsheet');
     const dialog = document.querySelector('#dialog-window');
     const body = document.body;
     function pickStyle(el) {
@@ -429,7 +429,7 @@ async function renderCandidate({
       'body',
       'form.sheetform',
       '.charactersheet',
-      '#charsheet-root',
+      '.charactersheet.charsheet',
       '.sheet-tabstoggle',
       '.sheet-fullsheet',
       '.sheet-combat',
@@ -492,13 +492,13 @@ async function renderCandidate({
       },
     });
   } else {
-    const root = renderPage.locator('#charsheet-root');
+    const root = renderPage.locator('.charactersheet.charsheet');
     const rootBox = await root.boundingBox();
-    if (!rootBox) throw new Error(`candidate ${id} has no #charsheet-root box`);
+    if (!rootBox) throw new Error(`candidate ${id} has no .charactersheet.charsheet box`);
     if (captureMode === 'fit-visible-width') {
       const scale = comparedSize[0] / Math.max(1, rootBox.width);
       await renderPage.evaluate((scale) => {
-        const root = document.querySelector('#charsheet-root');
+        const root = document.querySelector('.charactersheet.charsheet');
         if (root instanceof HTMLElement) {
           root.style.transformOrigin = 'top left';
           root.style.transform = `scale(${scale})`;
@@ -507,7 +507,7 @@ async function renderCandidate({
       await renderPage.waitForTimeout(100);
     }
     const nextBox = await root.boundingBox();
-    if (!nextBox) throw new Error(`candidate ${id} has no #charsheet-root box after transform`);
+    if (!nextBox) throw new Error(`candidate ${id} has no .charactersheet.charsheet box after transform`);
     await renderPage.screenshot({
       path: outFile,
       clip: {
@@ -611,14 +611,14 @@ async function applyRenderContextPatch(page, contextPatch) {
       const style = document.createElement('style');
       style.setAttribute('data-r20-diagnostic-context-patch', 'dpr-border-snap');
       style.textContent = `
-        #charsheet-root div.sheet-outline,
+        .charactersheet.charsheet div.sheet-outline,
         .ui-dialog .charsheet div.sheet-outline {
           border-top-width: ${2 / scale}px !important;
           border-right-width: ${2 / scale}px !important;
           border-bottom-width: ${2 / scale}px !important;
           border-left-width: ${2 / scale}px !important;
         }
-        #charsheet-root div.sheet-small-outline,
+        .charactersheet.charsheet div.sheet-small-outline,
         .ui-dialog .charsheet div.sheet-small-outline {
           border-top-width: ${1 / scale}px !important;
           border-right-width: ${1 / scale}px !important;
@@ -811,7 +811,7 @@ function compareComputedStyles(actualProbe, localProbe) {
 
 function normalizeSampleForSelector(sample, root, selector) {
   if (!sample || !root?.rect || !sample.rect) return sample;
-  if (selector === 'html' || selector === 'body' || selector === 'form.sheetform' || selector === '.charactersheet' || selector === '#charsheet-root') {
+  if (selector === 'html' || selector === 'body' || selector === 'form.sheetform' || selector === '.charactersheet' || selector === '.charactersheet.charsheet') {
     return sample;
   }
   return {

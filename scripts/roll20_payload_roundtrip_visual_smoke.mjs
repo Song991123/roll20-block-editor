@@ -272,7 +272,7 @@ async function capturePayloadPreview(page, outFile, stateCandidate, compatibilit
   });
   await page.evaluate((mode) => window.__perfHook.setRoll20CompatibilityMode(mode), compatibilityMode);
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  const sheet = frame.locator('#charsheet-root').first();
+  const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   await waitForVisualStability(page, sheet);
   const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);

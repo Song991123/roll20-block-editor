@@ -212,7 +212,7 @@ async function clickRollAndReadChat(page, fixtureId) {
   const iframeHandle = await iframe.elementHandle();
   const frame = await iframeHandle?.contentFrame();
   if (!frame) throw new Error('preview iframe contentFrame unavailable');
-  await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
+  await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
   const choice = await chooseRollButton(frame);
   const chosen = choice.chosen;
   if (!chosen) {

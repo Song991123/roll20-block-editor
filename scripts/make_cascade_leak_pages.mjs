@@ -276,7 +276,7 @@ ${marker}
       '.dialog.largedialog',
       '#tab-content',
       '.sheetform',
-      '#charsheet-root',
+      '.charactersheet.charsheet',
       'h1',
       'h2',
       'label',
@@ -306,7 +306,7 @@ ${marker}
         elements.push({ reason: selector, el: el });
       }
     });
-    Array.prototype.slice.call(document.querySelectorAll('#charsheet-root *')).some(function (el) {
+    Array.prototype.slice.call(document.querySelectorAll('.charactersheet.charsheet *')).some(function (el) {
       if (elements.length >= 36) return true;
       if (el.closest && el.closest('#r20-cascade-diagnostic-panel')) return false;
       if (seen.has(el)) return false;

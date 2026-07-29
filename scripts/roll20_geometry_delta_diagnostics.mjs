@@ -877,7 +877,7 @@ function isRootWrapperSelector(selector) {
     selector === 'body' ||
     selector === 'form.sheetform' ||
     selector === '.charactersheet' ||
-    selector === '#charsheet-root';
+    selector === '.charactersheet.charsheet';
 }
 
 function numericDeltaFromDiff(diff) {

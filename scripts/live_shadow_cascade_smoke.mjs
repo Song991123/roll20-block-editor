@@ -276,7 +276,7 @@ function pageCollectorScript() {
         '.dialog.largedialog',
         '#tab-content',
         '.sheetform',
-        '#charsheet-root',
+        '.charactersheet.charsheet',
         'h1',
         'h2',
         'label',
@@ -305,7 +305,7 @@ function pageCollectorScript() {
           out.push({ reason: selector, el });
         }
       }
-      for (const el of Array.from(root.querySelectorAll('#charsheet-root *'))) {
+      for (const el of Array.from(root.querySelectorAll('.charactersheet.charsheet *'))) {
         if (out.length >= 36) break;
         if (seen.has(el)) continue;
         const rect = el.getBoundingClientRect();
@@ -416,7 +416,7 @@ async function ensurePreviewShadowMode(page) {
   await page.waitForSelector('[data-testid="preview-pane"][data-visible="true"]', { timeout: 15000 });
   await page.evaluate(() => window.__perfHook.setPreviewRenderMode('shadow'));
   await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="preview-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    () => Boolean(document.querySelector('[data-testid="preview-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
     null,
     { timeout: 30000 },
   );
@@ -425,7 +425,7 @@ async function ensurePreviewShadowMode(page) {
 async function ensureEditShadow(page) {
   await page.evaluate(() => window.__perfHook.setMainMode('edit'));
   await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
     null,
     { timeout: 30000 },
   );

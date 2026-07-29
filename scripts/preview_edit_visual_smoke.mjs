@@ -803,7 +803,7 @@ async function capturePreview(page, fixtureId, i18n) {
     window.__perfHook.setMainMode('preview');
   });
   const frame = page.frameLocator('iframe[title]').first();
-  const sheet = frame.locator('#charsheet-root').first();
+  const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   const settled = await settleSheetForCapture(page, sheet);
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-preview.png`);
@@ -838,7 +838,7 @@ async function captureEdit(page, fixtureId, i18n) {
   const iframe = page.locator('[data-testid="preview-iframe"]').first();
   await iframe.waitFor({ state: 'visible', timeout: 30000 });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  const sheet = frame.locator('#charsheet-root').first();
+  const sheet = frame.locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'visible', timeout: 30000 });
   const output = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-edit.png`);
   const overlayOutput = path.join(REPORT_DIR, 'screenshots', `${fixtureId}-edit-overlay.png`);

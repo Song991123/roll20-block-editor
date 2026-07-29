@@ -225,7 +225,7 @@ async function runCanonicalIframeEditSync(page) {
   });
   await iframe.waitFor({ state: 'visible', timeout: 30000 });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
+  await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
   await page.waitForFunction(
     () => Number(document.querySelector('[data-r20-apply-acked]')?.getAttribute('data-r20-apply-acked') || 0) > 0,
     null,
@@ -261,8 +261,8 @@ async function runCanonicalIframeEditSync(page) {
         debug: {
           blockCount: nodes.length,
           allElements: doc.querySelectorAll('*').length,
-          rootText: (doc.querySelector('#charsheet-root')?.textContent || '').trim().slice(0, 120),
-          rootHtmlLength: doc.querySelector('#charsheet-root')?.innerHTML.length || 0,
+          rootText: (doc.querySelector('.charactersheet.charsheet')?.textContent || '').trim().slice(0, 120),
+          rootHtmlLength: doc.querySelector('.charactersheet.charsheet')?.innerHTML.length || 0,
         },
       };
     }
@@ -389,7 +389,7 @@ async function screenshotEditSheetRoot(page, screenshotPath) {
   await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
   const handle = await page.evaluateHandle(() => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    return host?.shadowRoot?.querySelector('#charsheet-root') || null;
+    return host?.shadowRoot?.querySelector('.charactersheet.charsheet') || null;
   });
   const element = handle.asElement();
   if (!element) {
@@ -409,7 +409,7 @@ async function screenshotPreviewBlock(page, blockId, screenshotPath) {
     window.__perfHook.setMainMode('preview');
   });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
+  await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
   const locator = frame.locator(`[data-r20-block-id="${cssString(blockId)}"]`).first();
   await locator.waitFor({ state: 'visible', timeout: 30000 });
   const box = await locator.boundingBox();
@@ -424,7 +424,7 @@ async function screenshotPreviewSheetRoot(page, screenshotPath) {
     window.__perfHook.setMainMode('preview');
   });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  const root = frame.locator('#charsheet-root').first();
+  const root = frame.locator('.charactersheet.charsheet').first();
   await root.waitFor({ state: 'visible', timeout: 30000 });
   const box = await root.boundingBox();
   await root.screenshot({ path: screenshotPath });
@@ -590,7 +590,7 @@ async function collectEditFormState(page) {
   await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
   return page.evaluate(() => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
     if (!root) return [];
     return collectControlState(root);
     function collectControlState(scope) {
@@ -630,7 +630,7 @@ async function collectPreviewFormState(page) {
     window.__perfHook.setMainMode('preview');
   });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  const root = frame.locator('#charsheet-root').first();
+  const root = frame.locator('.charactersheet.charsheet').first();
   await root.waitFor({ state: 'visible', timeout: 30000 });
   return root.evaluate((rootEl) => {
     return Array.from(rootEl.querySelectorAll('input, select, textarea'))
@@ -736,7 +736,7 @@ async function collectEditRenderedResources(page) {
   await page.waitForTimeout(700);
   return page.evaluate(async () => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
     return root ? collectRenderedResourceState(root) : { pass: false, reason: 'missing edit root' };
 
     async function collectRenderedResourceState(scope) {
@@ -831,7 +831,7 @@ async function collectPreviewRenderedResources(page) {
     window.__perfHook.setMainMode('preview');
   });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  const root = frame.locator('#charsheet-root').first();
+  const root = frame.locator('.charactersheet.charsheet').first();
   await root.waitFor({ state: 'visible', timeout: 30000 });
   await page.waitForTimeout(700);
   return root.evaluate(async (rootEl) => {
@@ -952,7 +952,7 @@ async function collectEditRootGeometry(page) {
   await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
   return page.evaluate(() => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
     return root ? collectRootGeometry(root) : null;
     function collectRootGeometry(rootEl) {
       const rootRect = rootEl.getBoundingClientRect();
@@ -990,7 +990,7 @@ async function collectPreviewRootGeometry(page) {
     window.__perfHook.setMainMode('preview');
   });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  const root = frame.locator('#charsheet-root').first();
+  const root = frame.locator('.charactersheet.charsheet').first();
   await root.waitFor({ state: 'visible', timeout: 30000 });
   return root.evaluate((rootEl) => {
     const rootRect = rootEl.getBoundingClientRect();
@@ -1043,7 +1043,7 @@ async function chooseEditTarget(page, excludedIds = []) {
   });
   await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
   await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
     null,
     { timeout: 30000 },
   );
@@ -1051,7 +1051,7 @@ async function chooseEditTarget(page, excludedIds = []) {
     const excludedSet = new Set(excluded);
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
     const shadow = host?.shadowRoot;
-    const root = shadow?.querySelector('#charsheet-root');
+    const root = shadow?.querySelector('.charactersheet.charsheet');
     if (!host || !shadow || !root) return null;
     const rootRect = root.getBoundingClientRect();
     const candidates = Array.from(root.querySelectorAll('[data-r20-block-id]'))
@@ -1128,7 +1128,7 @@ async function runImportedLayerReorder(page) {
   });
   await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
   await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
     null,
     { timeout: 30000 },
   );
@@ -1139,7 +1139,7 @@ async function runImportedLayerReorder(page) {
 
     function findPair() {
       const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-      const root = host?.shadowRoot?.querySelector('#charsheet-root');
+      const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
       if (!root) return null;
 
       const graph = window.__perfHook.getBlockGraph?.('html') || [];
@@ -1255,7 +1255,7 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
   });
   await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
   await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
     null,
     { timeout: 30000 },
   );
@@ -1304,7 +1304,7 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
 
     function findCandidate() {
       const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-      const root = host?.shadowRoot?.querySelector('#charsheet-root');
+      const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
       if (!root) return null;
 
       const graph = window.__perfHook.getBlockGraph?.('html') || [];
@@ -1494,14 +1494,14 @@ async function runImportedCanvasInsert(page) {
   });
   await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
   await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
     null,
     { timeout: 30000 },
   );
   await page.click('[data-testid="edit-placement-flow"]');
   return page.evaluate(async () => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
     if (!host || !root) return { pass: false, reason: 'missing edit shadow root' };
 
     const beforeIds = new Set(
@@ -1571,7 +1571,7 @@ async function runImportedCanvasInsert(page) {
       eventTarget.dispatchEvent(drop);
       await new Promise((resolve) => setTimeout(resolve, 700));
 
-      const freshRoot = host.shadowRoot?.querySelector('#charsheet-root');
+      const freshRoot = host.shadowRoot?.querySelector('.charactersheet.charsheet');
       const newInput = Array.from(freshRoot?.querySelectorAll('input[data-r20-block-id]') ?? [])
         .find((el) => !beforeIds.has(el.getAttribute('data-r20-block-id') || ''));
       const newId = newInput?.getAttribute('data-r20-block-id') || null;
@@ -1628,14 +1628,14 @@ async function runImportedFreeCanvasInsert(page) {
   });
   await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
   await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
     null,
     { timeout: 30000 },
   );
   await page.click('[data-testid="edit-placement-free"]');
   return page.evaluate(async () => {
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
     if (!host || !root) return { pass: false, reason: 'missing edit shadow root' };
 
     const beforeIds = new Set(
@@ -1709,7 +1709,7 @@ async function runImportedFreeCanvasInsert(page) {
         eventTarget.dispatchEvent(drop);
         await new Promise((resolve) => setTimeout(resolve, 800));
 
-        const freshRoot = host.shadowRoot?.querySelector('#charsheet-root');
+        const freshRoot = host.shadowRoot?.querySelector('.charactersheet.charsheet');
         const newInput = Array.from(freshRoot?.querySelectorAll('input[data-r20-block-id]') ?? [])
           .find((el) => !beforeIds.has(el.getAttribute('data-r20-block-id') || ''));
         const newId = newInput?.getAttribute('data-r20-block-id') || null;
@@ -1904,7 +1904,7 @@ async function getEditBlockState(page, blockId) {
       };
     }
     const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const root = host?.shadowRoot?.querySelector('#charsheet-root');
+    const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
     const el = host?.shadowRoot?.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
     if (!root || !el) return null;
     return summarize(root, el);
@@ -1918,8 +1918,8 @@ async function getPreviewBlockState(page, blockId) {
     window.__perfHook.setMainMode('preview');
   });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
-  await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
-  return frame.locator('#charsheet-root').evaluate((root, id) => {
+  await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
+  return frame.locator('.charactersheet.charsheet').evaluate((root, id) => {
     function styleSummary(el) {
       const cs = getComputedStyle(el);
       return {

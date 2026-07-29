@@ -1,3 +1,23 @@
+## 2026-07-29 Roll20 Root Wrapper Contract
+
+- FIXED: The generated sheet wrapper no longer adds the editor-only
+  `id="charsheet-root"`. Preview bridge, Shadow edit mounting, intrinsic-size
+  CSS, and local browser fixtures now locate the authored root through the
+  Roll20-shaped `form.sheetform > .charactersheet.charsheet` structure.
+- VERIFIED LOCAL: `test:build-doc-bundle`, lint, build, `ci:verify`,
+  `smoke:persistent-preview-surface`, `smoke:imported-edit-sync:strict`,
+  `smoke:preview-edit-visual -- --compatibility-mode both`, and
+  `smoke:roll20-sandbox-preview:all` passed. Preview/edit visual smoke reported
+  0% local mismatch for both compatibility modes across the prepared local
+  fixtures; Sandbox expected-render smoke reported 0 console/page errors.
+- SAFETY: Actual Roll20 observation scripts keep their generic class fallbacks
+  so live DOM evidence is not confused with the local generated wrapper.
+- CLAIM BOUNDARY: This removes one local DOM-contract mismatch. It does not
+  prove actual Roll20 pixel parity or universal sheet support. Existing rooms
+  remain observation-only and the participant gate is unchanged.
+- NEXT P0: Continue normalized modern Sandbox versus dedicated legacy-room
+  viewport/state/crop comparison after a fresh supported upload path.
+
 ## 2026-07-29 Optimistic Drag Reconciliation
 
 - FIXED: The persistent iframe now clears the temporary drag `transform` for

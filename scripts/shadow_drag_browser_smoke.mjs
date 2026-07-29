@@ -104,7 +104,7 @@ async function main() {
     assert(imported?.blockCount > 0, 'synthetic import produced no blocks');
     await page.waitForSelector('[data-testid="preview-shadow-host"]', { state: 'visible', timeout: 30000 });
     await page.waitForFunction(
-      () => Boolean(document.querySelector('[data-testid="preview-shadow-host"]')?.shadowRoot?.querySelector('#charsheet-root')),
+      () => Boolean(document.querySelector('[data-testid="preview-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
       null,
       { timeout: 30000 },
     );

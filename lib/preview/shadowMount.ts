@@ -596,7 +596,7 @@ export function mountSheetShadow(
   // buildSheetParts already emits the real Roll20 .charsheet root. Put layer
   // state there so Shadow edit mode matches the iframe preview selector shape.
   const layerRoot =
-    container.querySelector<HTMLElement>('#charsheet-root.charsheet') ??
+    container.querySelector<HTMLElement>('form.sheetform > .charactersheet.charsheet') ??
     container.querySelector<HTMLElement>('.charactersheet.charsheet') ??
     container.querySelector<HTMLElement>('.charsheet');
   layerRoot?.setAttribute('data-layer', opts.layer ?? 'all');

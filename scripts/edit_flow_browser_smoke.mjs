@@ -119,7 +119,7 @@ async function main() {
       await iframe.waitFor({ state: 'visible', timeout: 20000 });
       const frame = page.frames().find((candidate) => candidate !== page.mainFrame());
       assert(frame, 'persistent preview iframe frame missing');
-      await frame.waitForSelector('#charsheet-root', { state: 'attached', timeout: 20000 });
+      await frame.waitForSelector('.charactersheet.charsheet', { state: 'attached', timeout: 20000 });
       await frame.waitForFunction(
         () => document.body?.getAttribute('data-r20-edit-mode') === '1',
         null,

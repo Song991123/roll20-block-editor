@@ -180,12 +180,12 @@ async function getPreviewFrame(page) {
   const handle = await iframe.elementHandle();
   const frame = await handle?.contentFrame();
   if (!frame) throw new Error('preview iframe contentFrame unavailable');
-  await frame.locator('#charsheet-root').waitFor({ state: 'visible', timeout: 30000 });
+  await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
   return frame;
 }
 
 async function waitForImportedSheet(page) {
-  const sheet = page.frameLocator('[data-testid="preview-iframe"]').locator('#charsheet-root').first();
+  const sheet = page.frameLocator('[data-testid="preview-iframe"]').locator('.charactersheet.charsheet').first();
   await sheet.waitFor({ state: 'attached', timeout: 30000 });
   await sheet.locator(':scope > :not(.r20-empty):not(style)').first().waitFor({ state: 'attached', timeout: 30000 });
 }
@@ -326,7 +326,7 @@ function summarizeResourceIssues(issues) {
 
 async function captureFixturePreview(page, fixture, stateCandidate, screenshotPath) {
   const frame = await getPreviewFrame(page);
-  const sheet = frame.locator('#charsheet-root').first();
+  const sheet = frame.locator('.charactersheet.charsheet').first();
   const stateCandidateResult = await applyPreviewStateCandidate(page, frame, sheet, stateCandidate);
   await sheet.screenshot({ path: screenshotPath });
   const dom = await sheet.evaluate((sheetEl) => {

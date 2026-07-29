@@ -141,7 +141,7 @@ async function getPreviewFrame(page) {
   const handle = await page.waitForSelector('[data-testid="preview-iframe"]', { timeout: 30000 });
   const frame = await handle.contentFrame();
   if (!frame) throw new Error('preview iframe has no content frame');
-  await frame.waitForSelector('#charsheet-root', { timeout: 30000 });
+  await frame.waitForSelector('.charactersheet.charsheet', { timeout: 30000 });
   return frame;
 }
 
@@ -150,7 +150,7 @@ async function summarizePreview(page) {
     try {
       const frame = await getPreviewFrame(page);
       return await frame.evaluate(() => {
-        const root = document.querySelector('#charsheet-root');
+        const root = document.querySelector('.charactersheet.charsheet');
         const css = document.querySelector('#r20-user')?.textContent ?? '';
         const rootHtml = root?.innerHTML ?? '';
         return {
