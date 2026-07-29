@@ -6558,3 +6558,11 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   chat evidence is counted.
 - NEXT P0: Complete a user-visible upload or CDP-enabled browser handoff, then
   capture activation, root DOM, screenshot, and roll/chat evidence.
+
+## 2026-07-30 Cleanup retry boundary
+
+- CLEANUP BLOCKED: A further user-authorized retry targeted only generated
+  `.next/`, `out/`, `.tmp/`, `reports/edit-flow-smoke/`, and
+  `tsconfig.tsbuildinfo` after confirming no project listener was active. The
+  host rejected the guarded deletion before execution; no cleanup completion
+  is claimed and no deletion workaround was used.

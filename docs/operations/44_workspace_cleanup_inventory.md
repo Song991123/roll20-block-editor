@@ -268,3 +268,16 @@ directories that had been recreated by the local build.
   protected external material, and user-authored files remain intact. The
   newly recreated `.next/` and `out/` are untracked build output and remain
   disposable until the host permits their removal.
+
+## 2026-07-30 eleventh-pass cleanup retry
+
+- RECHECKED: `.next/`, `out/`, `.tmp/`, `reports/edit-flow-smoke/`, and
+  `tsconfig.tsbuildinfo` are workspace-local generated or diagnostic output.
+  No project listener is running on the development ports.
+- ATTEMPTED: the user-authorized, canonical-worktree-only deletion was
+  rejected by the host before execution. The rejection covered the guarded
+  recursive operation, so no target was removed.
+- NOT DELETED: all five targets remain present. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- PRESERVED: `node_modules/`, `reports/README.md`, source code, Git metadata,
+  both worktrees, and all external sheet/source roots remain untouched.
