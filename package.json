@@ -25,6 +25,7 @@
     "test:layer-roles": "tsx lib/editor/__tests__/layerRoles.test.ts",
     "test:blockly-history": "tsx lib/blockly/__tests__/history.test.ts",
     "test:blockly-headless": "tsx lib/blockly/__tests__/headlessWorkspace.test.ts",
+    "test:blockly-render-policy": "tsx lib/blockly/__tests__/renderPolicy.test.ts",
     "test:blockly-layer-operations": "tsx lib/blockly/__tests__/layerOperations.test.ts",
     "test:design-position": "tsx lib/editor/__tests__/designPosition.test.ts",
     "test:iframe-drop-target": "tsx lib/editor/__tests__/iframeDropTarget.test.ts",

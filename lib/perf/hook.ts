@@ -24,6 +24,7 @@ import {
   replaceWorkerWorkspaceFromSourceHtml,
 } from '@/lib/blockly/workerWorkspace';
 import { importSheet as importPipeline } from '@/lib/import';
+import { MAX_SVG_BLOCKS } from '@/lib/blockly/renderPolicy';
 import { emitAll } from '@/lib/preview/emit';
 import {
   usePreviewStore,
@@ -374,6 +375,22 @@ function buildHook(): PerfHook {
       registerAllBlocks();
       const parseEnd = nowMs();
       const adapter = getBlocklyAdapter();
+
+      // Keep diagnostic imports on the same large-workspace safety path as
+      // the UI import dialog. The mode update must commit before hydration so
+      // an existing SVG workspace is disposed before thousands of blocks load.
+      if (
+        result.stats.htmlTotal >= MAX_SVG_BLOCKS &&
+        useUiStore.getState().mainMode !== 'preview' &&
+        useUiStore.getState().mainMode !== 'edit'
+      ) {
+        useUiStore.getState().setMainMode('preview');
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => resolve()),
+          ),
+        );
+      }
 
       // hydrate three workspaces.
       const injectT0 = nowMs();

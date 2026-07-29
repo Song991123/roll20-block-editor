@@ -23,6 +23,7 @@ const tasks = [
   'test:layer-roles',
   'test:blockly-history',
   'test:blockly-headless',
+  'test:blockly-render-policy',
   'test:blockly-layer-operations',
   'test:design-position',
   'test:iframe-drop-target',

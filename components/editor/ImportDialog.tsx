@@ -40,6 +40,7 @@ import {
 import { usePreviewStore } from '@/lib/stores/previewStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
+import { MAX_SVG_BLOCKS } from '@/lib/blockly/renderPolicy';
 
 export interface ImportDialogProps {
   open: boolean;
@@ -149,6 +150,20 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       const adapter = getBlocklyAdapter();
       const ws = useWorkspaceStore.getState();
       const ui = useUiStore.getState();
+      // Dispose visible SVG workspaces before hydrating a large import.
+      // Otherwise Blockly creates thousands of SVG blocks while the dialog is open.
+      if (
+        result.stats.htmlTotal >= MAX_SVG_BLOCKS &&
+        ui.mainMode !== 'preview' &&
+        ui.mainMode !== 'edit'
+      ) {
+        ui.setMainMode('preview');
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => resolve()),
+          ),
+        );
+      }
       // Imported sheets may declare their own intrinsic width. Keep the
       // blank-sheet default fixed at 850px, but let imported content opt into
       // the existing measurement path.

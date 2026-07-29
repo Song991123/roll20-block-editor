@@ -25,6 +25,8 @@ import { loadWorkspace, AUTOSAVE_KEY, type SavedRecord } from '@/lib/persist/ind
 import { useSettingsStore } from '@/lib/stores/settingsStore';
 import { useChatStore } from '@/lib/stores/chatStore';
 import { useIsMobile } from './useIsMobile';
+import { WORKSPACE_KEYS, useWorkspaceStore } from '@/lib/stores/workspaceStore';
+import { MAX_SVG_BLOCKS } from '@/lib/blockly/renderPolicy';
 
 /**
  * 새 UX 셸 — Preview-first 3-zone grid + 메인 영역 분할 뷰 (D26 ②-재재).
@@ -140,6 +142,9 @@ export default function EditorShell() {
   const setLeftMode = useUiStore((s) => s.setSidebarLeftMode);
   const setRightTab = useUiStore((s) => s.setSidebarRightTab);
   const resetCanvasWidths = useUiStore((s) => s.resetCanvasWidths);
+  const hasLargeWorkspace = useWorkspaceStore((s) =>
+    WORKSPACE_KEYS.some((key) => s.workspaces[key].blockCount > MAX_SVG_BLOCKS),
+  );
 
   // 반응형 셸 (design-reset) — 920px 이하에서는 사이드바가 서랍(드로어)이 된다.
   // 모바일 진입 시 열려 있던 사이드바를 접어 시트가 화면을 가리지 않게 한다.
@@ -196,6 +201,7 @@ export default function EditorShell() {
   // only the toolbar/layer chrome beneath it.
   const workspaceVisible = mainMode !== 'preview' && mainMode !== 'edit';
   const previewVisible = mainMode !== 'assemble';
+  const renderWorkspaceSvg = workspaceVisible && !hasLargeWorkspace;
 
   // onResize: store getState() 로 fresh 읽기 — deps 가 [setMainSplit] 만 → stable callback.
   // 이전: deps=[mainSplit.left] → mousemove 다발 발생 시 closure stale → 한 drag 가 ~20px 한계.
@@ -304,7 +310,10 @@ export default function EditorShell() {
             >
               {workspaceVisible && <WorkspaceSubToolbar />}
               <div className="relative flex-1 min-h-0">
-                <BlocklyModelHost visible={workspaceVisible} />
+                <BlocklyModelHost
+                  visible={workspaceVisible}
+                  renderSvg={renderWorkspaceSvg}
+                />
                 {workspaceVisible && <EmptyCanvasHint />}
               </div>
             </div>

@@ -7193,3 +7193,20 @@ visibility verification passed. No external room was opened or modified.
 - REGRESSION GUARD: Added the synthetic `test:blockly-headless` test to CI;
   it verifies headless hydrate/serialize/count and that no SVG surface is
   exposed for the model workspace.
+
+## 2026-07-30 - Large workspace SVG render guard
+
+- IMPLEMENTED: Added `MAX_SVG_BLOCKS = 5,000`; if any workspace exceeds it,
+  `BlocklyModelHost` keeps all workspaces as headless models in visible
+  assemble/split mode and shows a concise notice.
+- IMPLEMENTED: Large imports in both `ImportDialog` and `__perfHook` switch to
+  preview and wait two animation frames before hydration, allowing the old
+  SVG surface to dispose first.
+- VERIFIED: lint, build, `ci:verify`, headless workspace test, render-policy
+  test, and diff check pass.
+- VERIFY OPEN: New browser smoke attempts timed out before a trustworthy
+  mode-transition result. The test-only server and headless processes were
+  explicitly stopped; no unrelated browser process was touched.
+- NEXT: Stabilize the browser smoke and replace the notice-only large mode
+  with a virtualized block browser. This guard does not yet equal full
+  large-sheet Blockly canvas editing.

@@ -73,8 +73,26 @@
 - CURRENT EVIDENCE: Generated actual screenshots remain `0/6`, room
   observation screenshots remain `0/3`, and live Roll20 parity is unverified.
 
+## 2026-07-30 Large Workspace Guard
+
+- IMPLEMENTED: Workspaces above `5,000` blocks now stay headless even when
+  assemble/split is visible. A visible notice directs the user to the shared
+  sheet-shaped preview/edit surface instead of creating one SVG node per
+  block.
+- IMPLEMENTED: The UI import dialog and diagnostic perf hook both switch to
+  preview and wait for the mode transition before hydrating a large import.
+- VERIFIED STATIC: `lint`, TypeScript build, `ci:verify`, the headless adapter
+  test, and the render-policy boundary test pass.
+- VERIFY OPEN: Two fresh Playwright browser runs timed out before producing a
+  reliable mode-transition result. Their test-only server and headless
+  browser processes were stopped. No browser success is claimed for the new
+  threshold path yet.
+- CLAIM BOUNDARY: This is a freeze-prevention guard, not a virtualized block
+  browser. Full large-sheet block-canvas editing remains open.
+
 ## Next P0
 
-Keep the malformed-tag regression test in the emit contract and continue the
-large-sheet performance investigation. Actual Roll20 upload evidence remains
-separate from local renderer results.
+Keep the malformed-tag regression test in the emit contract, add a reliable
+browser mode-transition smoke for the large-workspace guard, and design the
+virtualized block browser. Actual Roll20 upload evidence remains separate from
+local renderer results.

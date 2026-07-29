@@ -43,3 +43,13 @@
 - Rechecked the available Roll20 tab; it is currently at the login page, so
   actual Sandbox and room evidence remain blocked at `0/6` and `0/3`. No room
   or external sheet state was changed.
+- Added a `5,000`-block SVG render guard. Large imports now switch the UI and
+  diagnostic hook to preview before hydration, and visible assemble/split
+  keeps the model headless with a user-facing notice.
+- Verified the guard boundary with the render-policy unit test plus lint,
+  build, and the full local CI suite. A fresh browser mode-transition smoke
+  timed out twice, so the new threshold path remains browser-VERIFY rather
+  than DONE; test-only server/browser processes were cleaned up.
+- Next: stabilize that browser smoke, then build a virtualized block browser
+  for large workspaces. Do not report the headless guard as full large-sheet
+  Blockly editing or as Roll20 parity.

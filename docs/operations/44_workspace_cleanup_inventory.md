@@ -147,3 +147,14 @@ development listener. The host rejected the native `Remove-Item -Recurse`
 operation before execution again. No target was deleted, and no alternate
 shell, per-file deletion, or safety bypass was used. All eight targets remain
 **not deleted**.
+
+## 2026-07-30 seventh-pass user-authorized retry
+
+The user authorized another complete-deletion retry. The exact cleanup
+candidate paths were checked again and all remained present. The two Git
+worktrees still resolve only to `web/` and `web-push-main/`, and no listener
+was found on the project development ports. The host rejected the guarded
+recursive deletion command before it could execute, including the explicit
+workspace-contained absolute paths. No alternate shell, per-file deletion,
+or safety bypass was used. The candidates remain **not deleted**; protected
+source roots and retained verification evidence remain untouched.
