@@ -6978,6 +6978,14 @@ visibility verification passed. No external room was opened or modified.
   is local evidence only; actual Roll20 Sandbox and dedicated legacy-room
   screenshots are still VERIFY.
 
+## 2026-07-29 Pre-upload Run Reproducibility
+
+- Fixed `scripts/roll20_preupload_verification.mjs` to create a new ignored
+  run directory before generating its local baseline. This removes the stale
+  historical-report dependency that made a fresh audit fail immediately.
+- Verified fresh modern and legacy pre-upload runs. Both passed all seven local
+  checks; no live Roll20 write or room mutation occurred.
+
 ## 2026-07-29 Workspace Cleanup
 
 - DONE LOCAL: The parent workspace now has four navigation zones:

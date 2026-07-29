@@ -19,6 +19,17 @@
   after a supported CDP browser session is available. Keep existing rooms
   read-only and require a fresh visible participant count of exactly one.
 
+## 2026-07-29 Pre-upload Run Reproducibility
+
+- FIXED LOCAL: `verify:roll20-preupload` now creates its ignored run directory
+  when given a new label. It no longer depends on a deleted historical report
+  folder existing before it can generate the local baseline.
+- VERIFIED LOCAL: Fresh modern and legacy runs both passed local-baseline,
+  payload hygiene, Sandbox sanitize, cleaned-payload roundtrip, state-selector,
+  asset, and evidence guards.
+- CLAIM BOUNDARY: These are upload-readiness gates only; they do not prove a
+  live Roll20 Sandbox or legacy-room screenshot match.
+
 ## 2026-07-29 Current gate update
 
 - DONE LOCAL: Keyed structural iframe patches now use a per-parent keyed

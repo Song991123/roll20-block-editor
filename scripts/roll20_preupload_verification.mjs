@@ -25,7 +25,6 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { summarizeAssetReplacementReadiness } from './lib/assetReplacements.mjs';
@@ -149,9 +148,9 @@ const checks = [
 ];
 
 async function main() {
-  if (!existsSync(RUN_DIR)) {
-    throw new Error(`missing run folder: ${RUN_DIR}`);
-  }
+  // A run directory is local ignored evidence, so a fresh verification should
+  // be able to create it instead of depending on a stale report folder.
+  await fs.mkdir(RUN_DIR, { recursive: true });
   const startedAt = new Date().toISOString();
   const results = [];
   const assetMapGate = await runAssetMapReadinessGate();
