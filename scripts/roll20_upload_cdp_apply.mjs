@@ -211,7 +211,9 @@ async function main() {
     }
     printResult(status === 'VISIBLE_MATCH' ? 'PASS_VISIBLE_MATCH' : `APPLY_${status}`, report, outPath);
   } finally {
-    await browser.close();
+    // This is a user-owned browser connected over CDP. Disconnect the
+    // automation client without closing Chrome or any of its open rooms.
+    browser.disconnect();
   }
 }
 
@@ -231,10 +233,13 @@ async function findRoll20Page(browser, requireSoloRoom = false) {
   const pages = browser.contexts().flatMap((context) => context.pages());
   const roll20Pages = pages.filter((page) => isRoll20PageUrl(page.url()));
   if (requireSoloRoom) {
-    return roll20Pages.find((page) => safePathname(page.url()) === '/editor')
-      ?? roll20Pages.find((page) => /\/editor\//.test(safePathname(page.url())))
-      ?? roll20Pages[0]
-      ?? null;
+    const editorPages = roll20Pages.filter((page) => (
+      safePathname(page.url()) === '/editor' || /\/editor\//.test(safePathname(page.url()))
+    ));
+    // Never guess when several editor tabs are open. The selected room must
+    // be the only existing-room editor page that receives the fresh member
+    // count check below.
+    return editorPages.length === 1 ? editorPages[0] : null;
   }
   return roll20Pages.find((page) => /\/sheetsandbox\/settings\//.test(safePathname(page.url())))
     ?? roll20Pages.find((page) => safePathname(page.url()) === '/editor')

@@ -6641,6 +6641,21 @@ opened, uploaded to, saved, or otherwise modified in this run.
 - `node --check`, the helper self-test, `ci:verify`, lint, and build passed.
   No Roll20 room was modified in this batch.
 
+## 2026-07-29 - Existing-room tab selection and browser ownership guard
+
+Hardened `roll20_upload_cdp_apply.mjs --require-solo-room` so it selects an
+existing room only when exactly one Roll20 `/editor` page is open. Multiple
+editor tabs now block instead of choosing the first tab. The selected page is
+still checked for a visible participant count of exactly one before settings
+navigation, after navigation, and immediately before the write.
+
+The helper now calls `browser.disconnect()` when finished. It does not close
+the user's Chrome process, tabs, or Roll20 rooms. Uploads remain limited to the
+dedicated Sandbox or separately approved legacy test-room path.
+
+Verification: participant/upload self-tests, `ci:verify`, lint, build, and
+server hygiene passed. No existing room was opened or modified.
+
 ## 2026-07-29 - Untyped script preservation boundary
 
 The worker split had one generic import risk: every script without a `type`

@@ -5946,6 +5946,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   is eligible. A fresh live preflight is still required immediately before a
   legacy-room operation.
 
+## 2026-07-29 Existing Room Selection Safety
+
+- FIXED: `apply:roll20-upload-cdp --require-solo-room` no longer falls back to
+  an arbitrary Roll20 tab. It proceeds only when exactly one `/editor` page is
+  open, then rechecks that page's visible participant count before navigation
+  and immediately before the write.
+- FIXED: the CDP helper disconnects its automation client instead of closing
+  the user's Chrome session or any open Roll20 room.
+- VERIFIED LOCAL: upload helper and participant preflight self-tests,
+  `ci:verify`, lint, build, and server hygiene pass. No existing room was
+  opened or modified by this change.
+
 ## 2026-07-29 Untyped Script Runtime Boundary
 
 - FIXED: worker classification now uses one shared source boundary. Explicit
