@@ -11,6 +11,15 @@
 - CLAIM BOUNDARY: This closes one local preview/edit rollback path. It does
   not prove live Roll20 visual parity or universal import/export coverage.
 
+## 2026-07-29 CI Branch Coverage
+
+- FIXED: The repository CI workflow now runs on pushes to `claude/**` as well
+  as `main`, `dev`, and `codex/**`. GitHub Pages deployment remains restricted
+  to `main`.
+- VERIFY: The workflow change is pushed with this batch; confirm the new
+  GitHub Actions run reaches a successful conclusion before calling remote CI
+  green.
+
 ## 2026-07-29 Participant Gate Hardening
 
 - IMPLEMENTED: Existing-room participant checks now read only the currently

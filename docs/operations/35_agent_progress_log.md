@@ -14,6 +14,18 @@
   under `reports/persistent-preview-surface/optimistic-transform-v1/`.
 - This is local synchronization evidence, not a Roll20 visual-parity claim.
 
+## 2026-07-29 - CI coverage for Claude task branches
+
+- The CI workflow previously ran on push for `main`, `dev`, and `codex/**`,
+  while the active Claude design branch was covered only if a pull-request
+  event happened to fire. Added `claude/**` to the push trigger so every
+  pushed task batch receives the same safety/unit, lint, and build checks.
+- GitHub Pages deployment remains `main`-only. This change does not publish a
+  feature branch or change the production target.
+- Local `ci:verify`, lint, build, and server-hygiene checks passed before the
+  workflow edit; remote CI is VERIFY until the new run for the pushed commit
+  completes.
+
 ## 2026-07-29 - Participant Gate Hardening
 
 - The existing-room preflight and legacy upload guard now read only the
