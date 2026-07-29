@@ -7575,3 +7575,22 @@ visibility verification passed. No external room was opened or modified.
   test runner paths, full `corepack pnpm run ci:verify`, and upload-file smoke.
 - NOT CLAIMED: actual modern Sandbox/legacy-room visual parity remains open;
   no live CDP endpoint is listening and no private evidence was recreated.
+
+## 2026-07-30 - Script-safe Roll20 class normalization
+
+- DONE LOCAL: autoPrefixHtmlClasses now protects complete authored
+  script tags while normalizing sheet HTML. Page and worker script attributes
+  and bodies are restored byte-for-byte after the sheet markup is prefixed.
+- VERIFIED LOCAL: the prefix regression test proves HTML classes and IDs
+  outside scripts are normalized while script strings and script attributes
+  remain unchanged. test:emit-contract, test:import-structure, lint,
+  ci:verify, production build, smoke:fresh-sheet, and
+  smoke:persistent-preview-surface passed.
+- VERIFIED LOCAL: the fresh-sheet smoke reported sameIframe=true,
+  iframeCount=1, consoleErrors=0, pageErrors=0; the persistent surface smoke
+  passed for both modern and legacy mode.
+- CLAIM BOUNDARY: smoke:preview-edit-visual remains unrun because the
+  protected private test-fixtures/visual input was intentionally purged.
+  Actual Roll20 Sandbox and isolated legacy-room parity remain open; the
+  authenticated Chrome Roll20 editor was too heavy for the current control
+  request to complete, and no room or sheet was modified.

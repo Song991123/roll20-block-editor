@@ -30,6 +30,27 @@ function testRuntimeClassesStayCanonicalInHtmlButIdsRemainScoped(): void {
   assert(html.includes('id="sheet-fullcrit"'), 'ordinary IDs remain scoped');
 }
 
+function testScriptSourceAndAttributesStayByteStable(): void {
+  const script =
+    '<script class="runtime" id="runtime" data-role="page">' +
+    'window.template = \'<div class="card" id="root">\';' +
+    '</script>';
+  const html = autoPrefixHtmlClasses(
+    '<div class="card" id="root"></div>' + script,
+  );
+
+  assert(
+    html.includes('<div class="sheet-card" id="sheet-root"></div>'),
+    'sheet markup is still prefixed outside scripts',
+  );
+  assert(html.includes(script), 'authored script tag and body remain unchanged');
+  assert(
+    !html.includes('window.template = \'<div class="sheet-card"'),
+    'script string markup is not prefixed as sheet HTML',
+  );
+}
+
 testRoll20RuntimeClassesStayUnprefixed();
 testRuntimeClassesStayCanonicalInHtmlButIdsRemainScoped();
+testScriptSourceAndAttributesStayByteStable();
 console.log('Preview prefix Roll20 runtime-class tests passed.');

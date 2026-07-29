@@ -49,6 +49,7 @@ const ID_ATTR_RE = /(?<=\s)id\s*=\s*(["'])((?:(?!\1).)*)\1/g;
 
 /** `<style>...</style>` 매처 — multiline. */
 const STYLE_TAG_RE = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
+const SCRIPT_TAG_RE = /<script\b[^>]*>[\s\S]*?<\/script>/gi;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -57,7 +58,18 @@ const STYLE_TAG_RE = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
 export function autoPrefixHtmlClasses(html: string): string {
   if (!html) return html;
 
-  let out = html.replace(STYLE_TAG_RE, (full) => {
+  const scriptSlots: Array<{ marker: string; source: string }> = [];
+  let markerIndex = 0;
+  let out = html.replace(SCRIPT_TAG_RE, (source) => {
+    let marker = '';
+    do {
+      marker = '__R20_SCRIPT_SLOT_' + markerIndex++ + '__';
+    } while (html.includes(marker));
+    scriptSlots.push({ marker, source });
+    return marker;
+  });
+
+  out = out.replace(STYLE_TAG_RE, (full) => {
     const tagEnd = full.indexOf('>');
     const openTag = full.slice(0, tagEnd + 1);
     const innerContent = full.slice(tagEnd + 1, -'</style>'.length);
@@ -78,6 +90,10 @@ export function autoPrefixHtmlClasses(html: string): string {
     const next = isReservedIdToken(trimmed) ? trimmed : `sheet-${trimmed}`;
     return `id=${quote}${next}${quote}`;
   });
+
+  for (const slot of scriptSlots) {
+    out = out.split(slot.marker).join(slot.source);
+  }
 
   return out;
 }

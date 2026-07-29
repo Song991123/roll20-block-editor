@@ -6818,3 +6818,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - CLAIM BOUNDARY: This proves local import/edit/emit separation and source-order
   reconstruction. It does not prove actual Roll20 Sandbox or isolated legacy
   room parity; those remain `VERIFY/BLOCKED_EXTERNAL` while CDP is unavailable.
+
+## 2026-07-30 Script normalization safety follow-up
+
+- DONE: Protected authored page and worker scripts from the final HTML
+  class/id prefix pass so JavaScript strings and script attributes are not
+  rewritten as sheet markup.
+- VERIFIED: prefix regression, import 40/40, emit contract, lint, full
+  ci:verify, production build, fresh-sheet smoke, and persistent preview
+  surface smoke. Modern and legacy local iframe mode checks both passed with
+  zero console/page errors.
+- VERIFY OPEN: Real Roll20 Sandbox upload/render/chat evidence is still
+  missing. The authenticated Chrome editor tab was left untouched after its
+  heavy DOM request timed out; no existing room was used.
+- VERIFY OPEN: broad imported visual fixture smoke is intentionally not run
+  while the private test-fixtures/visual tree is absent.
