@@ -59,3 +59,16 @@ operations, flow versus free placement, and selection synchronization. A
 future browser acceptance test must additionally prove that the same imported
 HTML surface is visible in preview and edit after a nested drop, with no
 rollback frame and with the generated CSS output stable after re-import.
+
+## Semantic HTML Coverage
+
+Standard semantic elements such as `main`, `header`, `section`, `article`,
+`figure`, `details`, `form`, `p`, `pre`, `mark`, and `time` are represented by
+the generic `r20_semantic_container` block. The tag allow-list is shared by
+`lib/blocks/semanticTags.ts`, the HTML importer, and the HTML generator. This
+keeps the element name, class, style, preserved attributes, and child order
+editable without tying the mapping to a particular sheet.
+
+This is structured import coverage, not a claim that every HTML element or
+arbitrary JavaScript behavior is block-editable. Unknown elements still use
+the lossless raw HTML escape hatch and remain visible in the coverage warning.

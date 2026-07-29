@@ -6814,3 +6814,17 @@ visibility verification passed. No external room was opened or modified.
 - CLAIM BOUNDARY: This is direct-manipulation evidence for the synthetic
   structure. Imported structures and actual Roll20 modern/legacy screenshots
   still require separate verification; no external room was opened or changed.
+
+## 2026-07-29 - Generic Semantic Container Mapping
+
+- DONE LOCAL: Added the shared semantic-tag allow-list and the editable
+  `r20_semantic_container` block. `main`, `header`, `section`, `article`,
+  `figure`, `details`, `form`, `p`, `pre`, `mark`, `time`, and related standard
+  tags now keep their tag, class, style, preserved attributes, and child order
+  instead of falling straight to opaque raw HTML.
+- VERIFIED LOCAL: Generic importer coverage is `34/34`, emit-contract coverage
+  passes for a nested semantic container, and lint plus focused layer/drop
+  tests pass. The implementation has no sheet-specific names or fixtures.
+- CLAIM BOUNDARY: This improves structured mapping only. It does not prove all
+  arbitrary HTML elements, JavaScript behavior, or actual Roll20 modern/
+  legacy visual parity. Existing rooms were not opened or modified.

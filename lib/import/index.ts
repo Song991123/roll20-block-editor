@@ -2,7 +2,7 @@
  * Public import API — `importSheet({ html, css, i18n }): ImportResult`.
  *
  * Anchor:
- *   - docs/spec/02_functional_spec.md §3 (130 블록 카탈로그)
+ *   - docs/spec/02_functional_spec.md §3 (131 블록 카탈로그)
  *   - docs/spec/12_roll20_output_spec.md §2/§3 (emit contract — 역방향)
  *
  * 본 모듈은 입력 HTML/CSS/translation 텍스트를 Blockly XML 3 종으로 변환.

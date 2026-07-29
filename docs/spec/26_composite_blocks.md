@@ -11,7 +11,7 @@
 > **범위**: Phase 1 = `r20_attribute_card` 1 종. Phase 2~3 = skill_row /
 > repeating_section_wrapper / dot_tracker / pbta_move (backlog).
 
-본 문서는 atomic 130 블록 카탈로그를 그대로 두고 그 위에 합성 layer 1개를
+본 문서는 atomic 131 블록 카탈로그를 그대로 두고 그 위에 합성 layer 1개를
 얹는다. atomic 카탈로그 수정 0 — 기존 import / emit / round-trip 회귀 0
 보장.
 
@@ -245,5 +245,5 @@ matcher pipeline 정상 동작 입증.
 - `r20_attribute_card` matcher 의 인식 조건이 너무 보수적이면 우연 매칭 0
   대신 영시영 8 능력치 일부도 못 잡을 수 있음. 본 phase 는 false-negative
   허용 (conservative). Phase 2 에서 sample 늘리면서 인식 조건 완화.
-- atomic 130 카탈로그 / matcher / emitter 어느 것도 본 phase 에서 수정 안
+- atomic 131 카탈로그 / matcher / emitter 어느 것도 본 phase 에서 수정 안
   됨. 회귀 0 보장.

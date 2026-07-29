@@ -68,6 +68,27 @@ function testGeneratedPositionCss(): void {
   workspace.dispose();
 }
 
+function testSemanticContainerEmit(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const container = workspace.newBlock('r20_semantic_container');
+  container.setFieldValue('article', 'TAG');
+  container.setFieldValue('shell', 'CLASS');
+  container.setFieldValue('padding: 8px', 'STYLE');
+
+  const heading = workspace.newBlock('r20_heading');
+  heading.setFieldValue('2', 'LEVEL');
+  heading.setFieldValue('Title', 'TEXT');
+  container.getInput('CONTENT')!.connection!.connect(heading.previousConnection!);
+
+  const result = emitAll({ html: workspace });
+  assert(result.html.includes('<article'), 'semantic container tag is emitted');
+  assert(result.html.includes('class="sheet-shell"'), 'semantic container class is emitted');
+  assert(result.html.includes('>Title</h2>'), 'semantic container child is emitted');
+  assert(result.html.includes('data-r20-block-id='), 'semantic container remains selectable');
+  workspace.dispose();
+}
+
 function testTypedPageScriptExportPreserved(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -101,6 +122,7 @@ testRawFallbackPair();
 testAlreadyCanonicalPair();
 testInlineStylePair();
 testGeneratedPositionCss();
+testSemanticContainerEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
 console.log('Emit Roll20 class-pair tests passed.');

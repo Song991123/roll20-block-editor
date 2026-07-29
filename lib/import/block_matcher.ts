@@ -2,7 +2,7 @@
  * Block matcher — DomNode → BlockDef 타입 매칭.
  *
  * Anchor:
- *   - docs/spec/02_functional_spec.md §3 (130 블록 카탈로그)
+ *   - docs/spec/02_functional_spec.md §3 (131 블록 카탈로그)
  *   - docs/spec/12_roll20_output_spec.md §2 (HTML emit contract)
  *
  * 입력: dom_walker 의 DomNode (element)
@@ -21,9 +21,10 @@ import { firstTextContent, allTextContent } from './dom_walker';
 import { parseAttrRefToken } from './expression_parser';
 import { parseSheetWorkerScript } from './script_parser';
 import { isRoll20WorkerScript } from './worker_source';
+import { isSemanticContainerTag } from '../blocks/semanticTags';
 
 export interface MatchedBlock {
-  /** 130 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
+  /** 카탈로그 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
   blockType: string;
   /** 필드값 (NAME / CLASS / TEXT / ...). */
   fields: Record<string, string>;
@@ -153,7 +154,7 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
   ctx.rawFallbackCount++;
   ctx.warnings.push({
     code: 'raw_fallback',
-    message: `<${node.tag}> 패턴이 130 블록에 매칭되지 않음 — raw_html 로 박음`,
+    message: `<${node.tag}> 패턴이 구조화 블록에 매칭되지 않음 — raw_html 로 박음`,
     hint: node.tag,
   });
   return {
@@ -757,6 +758,18 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   const tag = node.tag;
   if (!tag) return null;
   const a = node.attrs ?? {};
+
+  if (isSemanticContainerTag(tag)) {
+    return {
+      blockType: 'r20_semantic_container',
+      fields: {
+        TAG: tag,
+        CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
+      },
+      children: { CONTENT: matchChildren(node, ctx) },
+    };
+  }
 
   if (tag === 'fieldset') {
     const cls = a.class || '';

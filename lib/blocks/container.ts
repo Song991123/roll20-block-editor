@@ -1,5 +1,5 @@
 /**
- * Container 카테고리 — 18 블록 (Stage A-2).
+ * Container 카테고리 — 19 블록 (Stage A-2).
  *
  * Anchor:
  *   - docs/spec/02_functional_spec.md §3.1 ID 1 (컨테이너 / Container, hue 180).
@@ -17,6 +17,7 @@
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
 import { styleAttr, mergeStyle } from './style_field';
+import { SEMANTIC_CONTAINER_TAGS } from './semanticTags';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -123,7 +124,7 @@ function buildCBlock(
   setStatementHooks(b);
 }
 
-// ---------- 18 블록 정의 ----------
+// ---------- 19 블록 정의 ----------
 
 export const CONTAINER_BLOCKS: BlockDef[] = [
   // 1) div ------------------------------------------------------------------
@@ -198,7 +199,53 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 4) row ------------------------------------------------------------------
+  // 4) semantic HTML container ---------------------------------------------
+  // Keep standard semantic tags editable without forcing them into raw HTML.
+  // The importer and generator share the same allow-list so an import -> emit
+  // round-trip cannot silently change the element name.
+  {
+    type: 'r20_semantic_container',
+    shape: 'c',
+    category: CONTAINER,
+    label: '의미 있는 묶음',
+    tooltip: 'main, section, article, figure 같은 HTML 구조 태그를 보존합니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('의미 있는 묶음')
+          .appendField(new Blockly.FieldDropdown(
+            SEMANTIC_CONTAINER_TAGS.map((tag) => [tag, tag]),
+          ), 'TAG')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const tagRaw = String(b.getFieldValue('TAG') ?? 'section');
+      const tag = SEMANTIC_CONTAINER_TAGS.includes(
+        tagRaw as (typeof SEMANTIC_CONTAINER_TAGS)[number],
+      )
+        ? tagRaw
+        : 'section';
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const content = ctx.statementToCode(block, 'CONTENT');
+      return wrapTag(ctx, tag, `${sheetUserClassAttr(cls)}${styleAttr(style)}`, content);
+    },
+    inspectorSchema: [
+      {
+        name: 'TAG',
+        label: '태그',
+        kind: 'select',
+        options: SEMANTIC_CONTAINER_TAGS.map((tag) => ({ value: tag, label: tag })),
+      },
+      { name: 'CLASS', label: '클래스', kind: 'text' },
+      { name: 'STYLE', label: '스타일', kind: 'text' },
+    ],
+  },
+
+  // 5) row ------------------------------------------------------------------
   {
     type: 'r20_row',
     shape: 'c',
@@ -772,7 +819,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
 ];
 
 /**
- * Stage A-2 — Container 18 블록 등록.
+ * Stage A-2 — Container 19 블록 등록.
  *
  * 1) BlockDef 메타를 target 배열에 push (UI 카탈로그 표시용).
  * 2) Blockly.Blocks[type] = { init } 등록 (워크스페이스 instantiate 가능).

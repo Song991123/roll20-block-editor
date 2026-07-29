@@ -2,9 +2,9 @@
  * 블록 등록 + 카탈로그 조회 진입점.
  * Anchor: docs/spec/02_functional_spec.md §3 + docs/spec/13_roadmap.md §3.
  * Stage A-9 + Option A-2:
- *   Expression 21 + Container 18 + Input 9 + Display 7 + Dice 12
+ *   Expression 21 + Container 19 + Input 9 + Display 7 + Dice 12
  *   + SheetWorker 25 + i18n 11 + CSS 19 + Advanced 4 + Composite 4
- *   = 130 블록 등록.
+ *   = 131 블록 등록.
  */
 
 import * as Blockly from 'blockly';

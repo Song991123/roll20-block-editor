@@ -37,6 +37,25 @@ function testNestedDiv(): void {
   assert(r.html.includes('>header<'), 'sheet- prefix stripped');
 }
 
+function testSemanticContainerTagsStayStructured(): void {
+  const html = [
+    '<main class="sheet-shell" data-layout="flow">',
+    '  <header><h1>Title</h1></header>',
+    '  <article><p>Body</p><figure><figcaption>Caption</figcaption></figure></article>',
+    '</main>',
+  ].join('');
+  const r = importSheet({ html });
+  assert(
+    (r.html.match(/r20_semantic_container/g) || []).length === 6,
+    'all semantic container tags should become editable structure blocks',
+  );
+  assert(r.html.includes('<field name="TAG">main</field>'), 'main tag preserved');
+  assert(r.html.includes('<field name="TAG">article</field>'), 'article tag preserved');
+  assert(r.html.includes('data-layout'), 'semantic container attributes are preserved');
+  assert(r.html.includes('>shell<'), 'semantic container class is normalized');
+  assert(r.stats.htmlRawFallback === 0, 'semantic container tree has no raw fallback');
+}
+
 function testRepeatingSection(): void {
   const html = `<fieldset class="repeating_skills"><input type="text" name="attr_name"></fieldset>`;
   const r = importSheet({ html });
@@ -307,6 +326,7 @@ const tests = [
   ['text input', testBasicTextInput],
   ['number input', testNumberInput],
   ['nested div', testNestedDiv],
+  ['semantic container tags', testSemanticContainerTagsStayStructured],
   ['repeating section', testRepeatingSection],
   ['structural label container', testStructuralLabelContainer],
   ['list containers', testListContainers],

@@ -11,7 +11,7 @@
  *   (D&D 5e / PbtA / 영시영) 공통 패턴이므로 시스템 specific 가 아닌 generic
  *   필드로 모든 visual 블록에 STYLE 필드 추가.
  *
- * 본 모듈은 두 함수만 노출 — 130 블록 generator 가 동일 규약으로 emit:
+ * 본 모듈은 두 함수만 노출 — 카탈로그 블록 generator 가 동일 규약으로 emit:
  *   1. `addStyleField(input)` — Blockly init 의 appendDummyInput() 에 STYLE
  *      필드를 부착 (label "스타일" + FieldTextInput).
  *   2. `styleAttr(value)` — generator 가 받은 STYLE 값을 ` style="..."` 문자열로

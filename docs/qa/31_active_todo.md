@@ -6129,3 +6129,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFY: This does not yet prove every imported DOM structure or actual
   Roll20 modern/legacy parity. Continue with imported nested-container cases
   and isolated Sandbox/dedicated legacy-room evidence when CDP is available.
+
+## 2026-07-29 Semantic Mapping Update
+
+- DONE: Standard semantic HTML containers now import into an editable generic
+  block with tag/class/style/attribute/child-order preservation.
+- VERIFY: Imported nested-container browser coverage and actual Roll20
+  modern/legacy screenshot parity remain open.
+- SAFETY: Existing rooms remain observation-only and require a fresh visible
+  participant count of exactly one; generated writes stay in Sandbox or a new
+  dedicated test room.
