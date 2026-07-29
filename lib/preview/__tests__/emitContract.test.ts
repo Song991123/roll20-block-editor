@@ -106,6 +106,24 @@ function testGenericElementEmit(): void {
   workspace.dispose();
 }
 
+function testGenericCssTagEmit(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const rule = workspace.newBlock('r20_css_rule');
+  const tag = workspace.newBlock('r20_selector_tag');
+  tag.setFieldValue('custom-card', 'TAG');
+  rule.getInput('SELECTOR')!.connection!.connect(tag.outputConnection!);
+  const decl = workspace.newBlock('r20_css_decl');
+  decl.setFieldValue('display', 'PROPERTY');
+  decl.setFieldValue('block', 'VALUE');
+  rule.getInput('DECLS')!.connection!.connect(decl.previousConnection!);
+
+  const result = emitAll({ css: workspace });
+  assert(result.css.includes('custom-card {'), 'generic CSS tag is emitted');
+  assert(result.css.includes('display: block;'), 'generic CSS declaration is emitted');
+  workspace.dispose();
+}
+
 function testTypedPageScriptExportPreserved(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -141,6 +159,7 @@ testInlineStylePair();
 testGeneratedPositionCss();
 testSemanticContainerEmit();
 testGenericElementEmit();
+testGenericCssTagEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
 console.log('Emit Roll20 class-pair tests passed.');

@@ -560,6 +560,9 @@ function buildSelectorBlock(sel: string, ctx: CssMatchContext): MatchedBlock {
   if (ELEMENT_TAGS_ALLOWED.has(trimmed)) {
     return { blockType: 'r20_selector_element', fields: { TAG: trimmed }, children: {} };
   }
+  if (/^[A-Za-z][A-Za-z0-9:_-]*$/.test(trimmed)) {
+    return { blockType: 'r20_selector_tag', fields: { TAG: trimmed }, children: {} };
+  }
 
   // 8. fallback — r20_selector_complex (raw selector 100% 보존).
   ctx.warnings.push({

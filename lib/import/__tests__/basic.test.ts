@@ -332,6 +332,15 @@ function testCssExtendedElementTags(): void {
   assert(complexMatches === 0, `no selector_complex fallback (got ${complexMatches})`);
 }
 
+function testCssCustomElementSelector(): void {
+  const r = importSheet({
+    css: 'li { list-style: none; } custom-card { display: block; }',
+  });
+  assert(r.stats.cssMatched === 2, 'custom tag rules matched');
+  assert((r.css.match(/r20_selector_tag/g) || []).length === 2, 'simple unknown tags stay editable');
+  assert(!r.css.includes('r20_selector_complex'), 'simple unknown tags avoid opaque selector fallback');
+}
+
 const tests = [
   ['text input', testBasicTextInput],
   ['number input', testNumberInput],
@@ -368,6 +377,7 @@ const tests = [
   ['css compound selector', testCssCompoundSelector],
   ['css pseudo-element ::-webkit-*', testCssPseudoElementWebkit],
   ['css extended element tags', testCssExtendedElementTags],
+  ['css custom element selector', testCssCustomElementSelector],
 ] as const;
 
 let passed = 0;

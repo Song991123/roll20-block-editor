@@ -289,6 +289,28 @@ export const CSS_BLOCKS: BlockDef[] = [
     },
   },
 
+  // 4.5) selector tag ------------------------------------------------------
+  // Keep simple standard/custom element names editable without forcing them
+  // into the fixed dropdown or the opaque selector text fallback.
+  {
+    type: 'r20_selector_tag',
+    shape: 'reporter',
+    category: CSS,
+    label: 'Tag (custom)',
+    tooltip: 'A simple HTML or custom-element tag name, such as li or custom-card.',
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('tag')
+        .appendField(new Blockly.FieldTextInput('custom-card'), 'TAG');
+      b.setOutput(true, T_STR);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      const tag = String(b.getFieldValue('TAG') ?? '').trim();
+      return [/^[A-Za-z][A-Za-z0-9:_-]*$/.test(tag) ? tag : 'div', ORDER.ATOMIC];
+    },
+  },
+
   // 5) selector attr -------------------------------------------------------
   {
     type: 'r20_selector_attr',

@@ -1,5 +1,8 @@
 ## 2026-07-29 Current gate update
 
+- DONE LOCAL: CSS simple tag selectors outside the fixed dropdown now map to
+  the editable `r20_selector_tag` block. Prepared anonymous fixtures retain
+  `405/405` structured CSS rules and `0` `raw_css` fallback blocks.
 - DONE LOCAL: The browser smoke expectations were aligned with the current
   design-reset copy. `smoke:export-dialog` now passes and still checks import
   dialog opening, export readiness, worker visibility boundary, and modern /

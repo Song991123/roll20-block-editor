@@ -6859,3 +6859,15 @@ visibility verification passed. No external room was opened or modified.
   fail the generic mapping or edit path.
 - CLAIM BOUNDARY: This is local browser evidence. It is not actual Roll20
   modern/legacy visual parity, and the external asset warning remains visible.
+## 2026-07-29 Generic CSS Tag Selectors
+
+- IMPLEMENTED: Simple standard and custom-element CSS selectors now map to
+  `r20_selector_tag` when they are not part of the fixed tag dropdown. This
+  keeps selectors such as `li` and `custom-card` directly editable while the
+  existing `r20_selector_complex` block remains the lossless path for
+  combinator, namespace, and other complex selectors.
+- VERIFIED LOCAL: CSS rules in the three prepared anonymous fixtures remain
+  `405/405` structured with `0` `raw_css` fallbacks. Import coverage is
+  `36/36`; emit, lint, and build pass.
+- SAFETY: No fixture source, screenshot, report, or third-party sheet data was
+  added to the public tree.
