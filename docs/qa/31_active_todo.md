@@ -6509,3 +6509,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Complete the Sandbox upload through a user-visible file selection
   or an approved browser upload path, then capture positive root, screenshot,
   and chat evidence. Keep legacy verification in a separate dedicated room.
+
+## 2026-07-30 Disposable evidence cleanup
+
+- DONE: Purged the local `test-fixtures/` tree and generated `reports/`
+  contents after the user-authorized retry.
+- VERIFY: local Roll20/fixture evidence must be regenerated before it is used
+  for a new report; no previous screenshot or payload is treated as current.
+- PRESERVED: source code, active dependencies, protected external sources,
+  Git worktrees, and the report README.

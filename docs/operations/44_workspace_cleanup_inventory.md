@@ -242,3 +242,15 @@ directories that had been recreated by the local build.
   Sandbox handoff.
 - PRESERVED: source roots, active dependencies, fixtures, canonical reports,
   and worktrees.
+
+## 2026-07-30 complete local-evidence purge
+
+- DELETED: the workspace-local `test-fixtures/` tree and all generated
+  contents under `reports/`, including screenshots, payloads, temporary
+  import/edit reports, and Sandbox handoff artifacts.
+- PRESERVED: `reports/README.md`, source code, active dependencies, Git
+  metadata, protected external source roots, and both worktrees.
+- VERIFIED: `test-fixtures/` is absent, `reports/` contains only its
+  tracked README, and project listeners remain stopped.
+- REBUILD RULE: future external-sheet verification must copy only an anonymous
+  minimum fixture into an ignored temporary path and remove it after the run.

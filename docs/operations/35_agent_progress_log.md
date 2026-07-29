@@ -7292,3 +7292,14 @@ visibility verification passed. No external room was opened or modified.
   uploaded or saved in Roll20, so no generated actual-sheet evidence exists.
 - NEXT: Obtain a user-visible or otherwise approved file-selection path for
   the isolated Sandbox; do not use an existing room for generated writes.
+
+## 2026-07-30 - Complete disposable evidence cleanup
+
+- DONE: Removed all local copied fixtures and generated reports after the
+  user-authorized cleanup retry.
+- PRESERVED: product source, active dependencies, protected external source
+  roots, Git worktrees, and the tracked report README.
+- VERIFIED: no project listener is active; future Roll20 verification must
+  regenerate an anonymous fixture into an ignored temporary path.
+- CLAIM BOUNDARY: prior local evidence files are no longer on disk, so any
+  future parity claim must be backed by a fresh run.

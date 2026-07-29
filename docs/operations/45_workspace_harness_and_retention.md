@@ -192,3 +192,13 @@ removed after the transient lock cleared. `.next/` and `out/` are absent; the
 ignored payload and synthetic fixture remain for the explicitly authorized
 Sandbox handoff. Source roots, active dependencies, canonical reports, and
 worktrees were preserved.
+
+## 2026-07-30 complete local-evidence purge
+
+- The user authorized a complete cleanup retry after the host rejected prior
+  recursive deletion attempts.
+- Removed the entire local `test-fixtures/` tree and every generated child of
+  `reports/`; only the report README remains.
+- No protected source folder, active dependency tree, source file, Git
+  worktree, or project listener was touched.
+- This is a disposable-evidence cleanup, not a product-source deletion.

@@ -168,6 +168,10 @@ async function main() {
       '  <div class="row-a" style="padding:8px"><input type="text" name="attr_a" value="A"></div>',
       '  <div class="row-b" style="padding:8px"><input type="text" name="attr_b" value="B"></div>',
       '</div>',
+      '<table class="sheet-table"><tbody><tr class="sheet-table-row">',
+      '  <td class="sheet-table-cell-a"><input type="text" name="attr_table_a" value="A"></td>',
+      '  <td class="sheet-table-cell-b"><input type="text" name="attr_table_b" value="B"></td>',
+      '</tr></tbody></table>',
       '<div class="outside" style="width:180px; min-height:54px; padding:8px">Outside</div>',
     ].join('\n');
     await page.evaluate((html) => window.__perfHook.importSheet({ html, css: '', i18n: '{}' }), syntheticHtml);
@@ -178,15 +182,29 @@ async function main() {
       const frameNode = document.querySelector('.sheet-frame');
       const rowA = document.querySelector('.sheet-row-a');
       const rowB = document.querySelector('.sheet-row-b');
+      const table = document.querySelector('.sheet-table');
+      const tableBody = document.querySelector('.sheet-table tbody');
+      const tableRow = document.querySelector('.sheet-table-row');
+      const tableCellA = document.querySelector('.sheet-table-cell-a');
+      const tableCellB = document.querySelector('.sheet-table-cell-b');
       const outside = document.querySelector('.sheet-outside');
       return {
         frameId: frameNode?.getAttribute('data-r20-block-id') ?? null,
         rowAId: rowA?.getAttribute('data-r20-block-id') ?? null,
         rowBId: rowB?.getAttribute('data-r20-block-id') ?? null,
+        tableId: table?.getAttribute('data-r20-block-id') ?? null,
+        tableBodyId: tableBody?.getAttribute('data-r20-block-id') ?? null,
+        tableRowId: tableRow?.getAttribute('data-r20-block-id') ?? null,
+        tableCellAId: tableCellA?.getAttribute('data-r20-block-id') ?? null,
+        tableCellBId: tableCellB?.getAttribute('data-r20-block-id') ?? null,
         outsideId: outside?.getAttribute('data-r20-block-id') ?? null,
       };
     });
-    assert(ids.frameId && ids.rowAId && ids.rowBId && ids.outsideId, 'synthetic frame IDs were not emitted');
+    assert(
+      ids.frameId && ids.rowAId && ids.rowBId && ids.tableId && ids.tableBodyId
+        && ids.tableRowId && ids.outsideId,
+      `synthetic structural IDs were not emitted: ${JSON.stringify(ids)}`,
+    );
 
     // This is the user-facing path: move a real rendered node over another
     // rendered node, let the iframe show the optimistic order immediately,
@@ -538,6 +556,51 @@ async function main() {
     assert(
       result.tests.layerDropModes.internalChildLeavePreserved,
       'layer drop highlight disappeared while pointer remained inside the row',
+    );
+
+    result.tests.tableDropGuard = await page.evaluate(async ({ movingId, validMovingId, invalidTargetId, validTargetId }) => {
+      const dispatchDragover = async (targetId, draggedId) => {
+        const target = document.querySelector(
+          `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`,
+        );
+        if (!target) return null;
+        const rect = target.getBoundingClientRect();
+        const dataTransfer = new DataTransfer();
+        dataTransfer.setData('application/x-r20-layer-block', draggedId);
+        const event = new DragEvent('dragover', {
+          bubbles: true,
+          cancelable: true,
+          clientX: rect.left + rect.width / 2,
+          clientY: rect.top + rect.height / 2,
+        });
+        Object.defineProperty(event, 'dataTransfer', { value: dataTransfer });
+        target.dispatchEvent(event);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        return {
+          mode: target.getAttribute('data-r20-layer-drop-mode') || null,
+          dropEffect: dataTransfer.dropEffect,
+          defaultPrevented: event.defaultPrevented,
+        };
+      };
+      const invalid = await dispatchDragover(invalidTargetId, movingId);
+      const valid = await dispatchDragover(validTargetId, validMovingId);
+      return { invalid, valid };
+    }, {
+      movingId: ids.frameId,
+      validMovingId: ids.tableBodyId,
+      invalidTargetId: ids.tableRowId,
+      validTargetId: ids.tableId,
+    });
+    assert(
+      result.tests.tableDropGuard.invalid?.mode === null
+        && result.tests.tableDropGuard.invalid.dropEffect === 'none'
+        && !result.tests.tableDropGuard.invalid.defaultPrevented,
+      `invalid table child was shown as droppable: ${JSON.stringify(result.tests.tableDropGuard)}`,
+    );
+    assert(
+      result.tests.tableDropGuard.valid?.mode === 'inside'
+        && result.tests.tableDropGuard.valid.defaultPrevented,
+      `valid table parent was not shown as droppable: ${JSON.stringify(result.tests.tableDropGuard)}`,
     );
 
     result.tests.layerReorder = await page.evaluate(async ({ movingId, targetId }) => {
