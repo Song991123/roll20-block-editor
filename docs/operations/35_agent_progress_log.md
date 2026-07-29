@@ -6845,3 +6845,17 @@ visibility verification passed. No external room was opened or modified.
 - CATALOG NOTE: A direct registry query at this commit reports `159` blocks;
   the runtime registry, not historical arithmetic in older spec tables, is the
   authoritative catalog count.
+
+## 2026-07-29 - Generic Element Browser Acceptance
+
+- DONE LOCAL: Added an anonymous synthetic browser fixture containing a custom
+  element, anchor, SVG, and path. The production imported-edit smoke now
+  asserts four `r20_element_container` nodes, preserved attributes, emitted
+  tags, pointer edit/preview position sync, and edited emit re-import stability.
+- VERIFIED LOCAL: The focused generic fixture passed all checks. The full
+  imported corpus passed interaction sync in the normal resource-separated
+  run. One strict rerun correctly failed only because an external image request
+  for the existing development fixture returned `net::ERR_ABORTED`; it did not
+  fail the generic mapping or edit path.
+- CLAIM BOUNDARY: This is local browser evidence. It is not actual Roll20
+  modern/legacy visual parity, and the external asset warning remains visible.

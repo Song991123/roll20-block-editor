@@ -69,6 +69,22 @@ const BUILTIN_FIXTURES = [
     i18n: '{}',
     synthetic: true,
   },
+  {
+    id: 'synthetic-generic-elements',
+    html: [
+      '<custom-card class="sheet-panel" data-kind="generic">Card</custom-card>',
+      '<a class="sheet-link" href="/sheet" aria-label="Open">Open</a>',
+      '<svg class="sheet-icon" viewBox="0 0 12 12"><path d="M0 0h12v12H0z"></path></svg>',
+    ].join('\n'),
+    css: [
+      '.sheet-panel { display: block; width: 220px; padding: 12px; }',
+      '.sheet-link { display: inline-block; margin: 8px; }',
+      '.sheet-icon { width: 12px; height: 12px; }',
+    ].join('\n'),
+    i18n: '{}',
+    synthetic: true,
+    genericElement: true,
+  },
 ];
 
 const MIME = {
@@ -2648,6 +2664,30 @@ async function main() {
         entry.htmlWorkspaceShape = summarizeHtmlWorkspaceShape(
           await page.evaluate(() => window.__perfHook.getBlockGraph?.('html') || []),
         );
+        if (fixture.genericElement) {
+          entry.genericElementCoverage = await page.evaluate(() => {
+            const graph = window.__perfHook.getBlockGraph?.('html') || [];
+            const emitted = window.__perfHook.getEmitContent?.()?.html || '';
+            const genericBlocks = graph.filter((block) => block.type === 'r20_element_container');
+            return {
+              genericBlockCount: genericBlocks.length,
+              hasCustomTag: emitted.includes('<custom-card'),
+              hasAnchorTag: emitted.includes('<a'),
+              hasSvgTag: emitted.includes('<svg'),
+              hasPreservedAttribute: emitted.includes('data-kind="generic"')
+                && emitted.includes('aria-label="Open"'),
+              pass: genericBlocks.length >= 4
+                && emitted.includes('<custom-card')
+                && emitted.includes('<a')
+                && emitted.includes('<svg')
+                && emitted.includes('data-kind="generic"')
+                && emitted.includes('aria-label="Open"'),
+            };
+          });
+          if (!entry.genericElementCoverage.pass) {
+            throw new Error(`generic element coverage failed: ${JSON.stringify(entry.genericElementCoverage)}`);
+          }
+        }
         if (CANONICAL_IFRAME) {
           entry.canonicalEditSync = await runCanonicalIframeEditSync(page);
           // The canonical iframe path is the production preview/edit surface.

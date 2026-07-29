@@ -6146,3 +6146,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   structure through `r20_element_container`.
 - VERIFY: Opaque runtime/document tags, arbitrary JS editing, and real Roll20
   modern/legacy parity remain separate verification tracks.
+
+## 2026-07-29 Generic Element Browser Acceptance
+
+- DONE: Anonymous production browser smoke covers custom element, anchor, SVG,
+  and path import as editable generic blocks, attribute preservation, direct
+  edit/preview synchronization, and re-import stability.
+- VERIFY: Strict resource gating can still be blocked by a transient external
+  development-fixture asset request; this is tracked separately from the
+  interaction result. Actual Roll20 modern/legacy parity remains open.
