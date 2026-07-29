@@ -6609,3 +6609,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - SAFETY: No existing room or sheet settings were modified.
 - NEXT P0: Complete a user-visible file selection or use a browser capability
   that explicitly supports file-input assignment, then recapture all evidence.
+
+## 2026-07-30 Cleanup retry result
+
+- CLEANUP BLOCKED: the user explicitly authorized another deletion attempt for
+  the five verified generated targets, but the host rejected the guarded
+  recursive command before execution even after path-containment and listener
+  checks passed.
+- VERIFY: `.next/`, `out/`, `.tmp/`, `reports/edit-flow-smoke/`, and
+  `tsconfig.tsbuildinfo` remain local-only disposable output.
+- SAFETY: no deletion workaround was used; source roots, `node_modules/`, Git
+  worktrees, and user-authored inputs remain preserved.
