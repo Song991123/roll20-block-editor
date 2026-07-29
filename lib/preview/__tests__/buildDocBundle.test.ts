@@ -117,6 +117,16 @@ assert.match(
 assert.match(bundle.doc, /function patchRootHtml\(html\)/);
 assert.match(
   bundle.doc,
+  /var keyedIndexes = Object\.create\(null\)[\s\S]*?var keyedCursors = Object\.create\(null\)[\s\S]*?keyedIndexes\[currentKey\]\.push\(keyedIndex\)/,
+  'keyed structural patches build one sibling index before reconciliation',
+);
+assert.doesNotMatch(
+  bundle.doc,
+  /if \(nextKey\) \{[\s\S]*?for \(var k = 0; k < currentChildren\.length;/,
+  'keyed reconciliation does not rescan every current sibling for each next keyed node',
+);
+assert.match(
+  bundle.doc,
   /current\.nodeType === 3 \|\| current\.nodeType === 8[\s\S]*?current\.nodeValue !== next\.nodeValue[\s\S]*?current\.nodeValue = next\.nodeValue/,
   'keyed morph updates text and comment node values',
 );

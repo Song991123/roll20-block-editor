@@ -26,6 +26,14 @@ import { useWorkspaceStore, WORKSPACE_KEYS } from '@/lib/stores/workspaceStore';
 import { emitAll } from './emit';
 
 let flushVersion = 0;
+let immediateFlushSignature: string | null = null;
+
+function workspaceSignature(state: ReturnType<typeof useWorkspaceStore.getState>): string {
+  return WORKSPACE_KEYS.map((key) => {
+    const workspace = state.workspaces[key];
+    return `${key}:${workspace.structureVersion}:${workspace.blockCount}`;
+  }).join('|');
+}
 
 /**
  * Publish a committed edit immediately. Pointer-move events stay debounced;
@@ -35,6 +43,7 @@ let flushVersion = 0;
 export function flushEmitPipeline(): void {
   flushVersion += 1;
   const state = useWorkspaceStore.getState();
+  immediateFlushSignature = workspaceSignature(state);
   const counts = WORKSPACE_KEYS.map((key) => state.workspaces[key].blockCount);
   if (counts.every((count) => count === 0)) {
     state.setEmitCache({ html: '', css: '', i18n: '', worker: '' });
@@ -70,6 +79,19 @@ export function useEmitPipeline(): void {
     if (htmlCount + cssCount + i18nCount + workerCount === 0) {
       setEmitCache({ html: '', css: '', i18n: '', worker: '' });
       setEmitWarnings([]);
+      return;
+    }
+
+    // A committed pointer drop calls flushEmitPipeline synchronously so the
+    // iframe can apply the new HTML immediately. The structure-version effect
+    // still runs afterward; skip that one duplicate delayed emit for the same
+    // workspace snapshot instead of paying the debounce window twice.
+    const signature = WORKSPACE_KEYS.map((key) => {
+      const workspace = useWorkspaceStore.getState().workspaces[key];
+      return `${key}:${workspace.structureVersion}:${workspace.blockCount}`;
+    }).join('|');
+    if (immediateFlushSignature === signature) {
+      immediateFlushSignature = null;
       return;
     }
 

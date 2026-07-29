@@ -318,17 +318,30 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     var used = [];
     var cursor = 0;
     var nextChildren = Array.prototype.slice.call(nextParent.childNodes);
+    // Keyed nodes are the normal path for imported sheet elements. Build the
+    // lookup once so a large structural patch does not scan every current
+    // sibling for every next sibling.
+    var keyedIndexes = Object.create(null);
+    var keyedCursors = Object.create(null);
+    for (var keyedIndex = 0; keyedIndex < currentChildren.length; keyedIndex += 1) {
+      var currentKey = keyedBlockId(currentChildren[keyedIndex]);
+      if (!currentKey) continue;
+      if (!keyedIndexes[currentKey]) keyedIndexes[currentKey] = [];
+      keyedIndexes[currentKey].push(keyedIndex);
+    }
     for (var i = 0; i < nextChildren.length; i += 1) {
       var nextChild = nextChildren[i];
       var nextKey = keyedBlockId(nextChild);
       var matchIndex = -1;
       if (nextKey) {
-        for (var k = 0; k < currentChildren.length; k += 1) {
-          if (used[k]) continue;
-          if (keyedBlockId(currentChildren[k]) === nextKey) {
-            matchIndex = k;
-            break;
-          }
+        var keyedCandidates = keyedIndexes[nextKey] || [];
+        var keyedCursor = keyedCursors[nextKey] || 0;
+        while (keyedCursor < keyedCandidates.length && used[keyedCandidates[keyedCursor]]) {
+          keyedCursor += 1;
+        }
+        if (keyedCursor < keyedCandidates.length) {
+          matchIndex = keyedCandidates[keyedCursor];
+          keyedCursors[nextKey] = keyedCursor + 1;
         }
       } else {
         for (var p = cursor; p < currentChildren.length; p += 1) {

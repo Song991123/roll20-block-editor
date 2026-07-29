@@ -1,5 +1,22 @@
 ## 2026-07-29 Current gate update
 
+- DONE LOCAL: Keyed structural iframe patches now use a per-parent keyed
+  sibling index and cursor, removing the previous full-sibling scan for every
+  keyed node. This reduces structural reconciliation from the prior quadratic
+  keyed lookup shape toward linear lookup while preserving duplicate-key and
+  unkeyed order behavior.
+- VERIFIED LOCAL: Mounted `6000`-synthetic-node latency smoke passed in modern
+  and legacy independently. Optimistic placement was `26.9ms` / `31.0ms`,
+  structural patch fallbacks `0`, iframe reloads `0`, and browser errors `0`.
+  This proves the optimistic placement budget, not end-to-end acknowledgement
+  parity.
+- NEXT P0: Reduce the separately measured pointer-to-ack observation
+  (`196.1ms` modern / `167.4ms` legacy) before claiming HTML reflection is
+  immediately complete for large sheets.
+- DONE LOCAL: Synchronous committed-drop emits now mark the exact workspace
+  snapshot they published, so the following structure-version effect skips a
+  duplicate delayed emit. Ordinary non-committed edits still use the debounce
+  path.
 - DONE LOCAL: CSS simple tag selectors outside the fixed dropdown now map to
   the editable `r20_selector_tag` block. Prepared anonymous fixtures retain
   `405/405` structured CSS rules and `0` `raw_css` fallback blocks.

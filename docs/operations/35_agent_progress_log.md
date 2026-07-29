@@ -6871,3 +6871,35 @@ visibility verification passed. No external room was opened or modified.
   `36/36`; emit, lint, and build pass.
 - SAFETY: No fixture source, screenshot, report, or third-party sheet data was
   added to the public tree.
+## 2026-07-29 Keyed Structural Patch Lookup
+
+- FIXED PERFORMANCE: Persistent iframe structural reconciliation now builds a
+  keyed sibling index once per parent instead of scanning all current siblings
+  for every keyed next node. Duplicate keys remain deterministic through a
+  per-key cursor; unkeyed text/shape matching keeps its existing order-aware
+  path.
+- VERIFIED LOCAL: `test:emit-contract` and the build-doc bundle regression
+  confirm the indexed path is present and the old keyed `O(n^2)` scan is absent.
+  The mounted large-sheet latency smoke remains the next runtime gate.
+
+## 2026-07-29 Immediate Commit Emit De-duplication
+
+- FIXED PERFORMANCE: A committed pointer drop already calls the synchronous
+  emit path. The subsequent structure-version effect now recognizes the same
+  workspace snapshot and skips its duplicate delayed emit, removing an
+  unnecessary debounce-window pass after direct manipulation.
+- INVARIANT: Debounced emits remain active for ordinary Blockly edits; only the
+  exact snapshot already flushed synchronously is skipped.
+
+## 2026-07-29 Mounted Large-Sheet Latency Gate
+
+- VERIFIED LOCAL: The mounted persistent iframe smoke with `6000` synthetic
+  filler nodes passed independently in modern and legacy mode. Optimistic
+  pointer placement measured `26.9ms` modern and `31.0ms` legacy, both inside
+  the `75ms` budget; structural patch fallbacks stayed `0`, iframe reloads
+  stayed `0`, and console/page errors stayed `0`.
+- REMAINING P0: The smoke's pointer-to-ack observation was `196.1ms` modern and
+  `167.4ms` legacy. This is above a future end-to-end acknowledgement budget;
+  the visible optimistic path is fast, but final emitted HTML acknowledgement
+  still needs a separate measured reduction. No parity claim is made from this
+  synthetic runtime test.
