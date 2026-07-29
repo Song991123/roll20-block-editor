@@ -20,6 +20,8 @@ export type LayerRole = {
   defaultDropMode: 'flow' | 'absolute' | 'none';
 };
 
+export type LayerDropMode = 'before' | 'inside' | 'after';
+
 const ROLE_STYLES: Record<LayerRoleKind, Omit<LayerRole, 'kind'>> = {
   frame: {
     label: '프레임',
@@ -157,6 +159,27 @@ export function wouldCreateLayerCycle(
     current = current.layerParentId ? byId.get(current.layerParentId) : undefined;
   }
   return false;
+}
+
+/**
+ * Check the final insertion parent for a layer-panel drop before Blockly is
+ * mutated. For before/after, the target's parent is the actual insertion
+ * container; checking only the target made table rows appear droppable even
+ * when the moving block was not a valid child of that row's parent.
+ */
+export function canMoveLayerDrop(
+  nodes: Pick<BlockSnapshot, 'id' | 'type' | 'layerParentId'>[],
+  draggedId: string,
+  targetId: string,
+  mode: LayerDropMode,
+  canNestBlockInContainer: (movingId: string, targetId: string) => boolean,
+): boolean {
+  if (wouldCreateLayerCycle(nodes, draggedId, targetId)) return false;
+  const target = nodes.find((node) => node.id === targetId);
+  if (!target) return false;
+  if (mode === 'inside') return canNestBlockInContainer(draggedId, targetId);
+  if (!target.layerParentId) return true;
+  return canNestBlockInContainer(draggedId, target.layerParentId);
 }
 
 export function classifyLayerRole(type: string): LayerRoleKind {

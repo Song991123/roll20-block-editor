@@ -223,3 +223,12 @@ source roots, both Git worktrees, and user-authored inputs were not touched.
 The prior host-policy rejection was not bypassed. The successful retry used
 the same absolute-path gate and removed only the two verified generated
 directories that had been recreated by the local build.
+
+## 2026-07-30 post-verification cleanup completion
+
+- DELETED: the `.next/` and `out/` directories recreated by the local build
+  after the layer-panel verification batch.
+- VERIFIED: both paths are absent and no listener exists on project ports
+  `3000`, `4197`, `4198`, or `4199`.
+- PRESERVED: source roots, active dependencies, local fixtures, canonical
+  reports, and both Git worktrees.

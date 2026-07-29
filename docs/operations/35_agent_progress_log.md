@@ -7264,3 +7264,17 @@ visibility verification passed. No external room was opened or modified.
 - CLAIM BOUNDARY: This is local importer/editor evidence. Actual Roll20
   Sandbox parity, isolated legacy-room evidence, and broad all-sheet coverage
   remain open.
+
+## 2026-07-30 - Mode-aware layer-panel drop guard
+
+- IMPLEMENTED: The layer panel now computes a drop decision from the selected
+  `inside`/`before`/`after` mode. Adjacent drops validate the target's real
+  parent, while inside drops validate the target itself.
+- IMPLEMENTED: The same guard runs on dragover and immediately before Blockly
+  mutation, so a visually highlighted table/flow target cannot silently accept
+  an invalid child.
+- VERIFIED LOCAL: Layer-role, iframe-drop-target, Blockly layer-operation,
+  lint, production build, and edit-flow browser smoke all pass.
+- NEXT: Add a visible browser acceptance case for valid/invalid table-child
+  highlighting; keep actual Roll20 modern Sandbox and isolated legacy-room
+  evidence separate from this local UX result.

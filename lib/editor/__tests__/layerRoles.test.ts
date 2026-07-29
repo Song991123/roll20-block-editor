@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert';
 import {
+  canMoveLayerDrop,
   canNestLayerChild,
   classifyLayerRole,
   getLayerRole,
@@ -55,5 +56,22 @@ const layerTree = [
 assert.equal(wouldCreateLayerCycle(layerTree, 'root', 'leaf'), true);
 assert.equal(wouldCreateLayerCycle(layerTree, 'leaf', 'root'), false);
 assert.equal(wouldCreateLayerCycle(layerTree, 'root', 'root'), true);
+
+const structuredTree = [
+  { id: 'table', type: 'r20_table', layerParentId: null },
+  { id: 'body', type: 'r20_tbody', layerParentId: 'table' },
+  { id: 'row-a', type: 'r20_tr', layerParentId: 'body' },
+  { id: 'cell-a', type: 'r20_td', layerParentId: 'row-a' },
+  { id: 'cell-b', type: 'r20_td', layerParentId: 'row-a' },
+];
+const tableNest = (movingId: string, targetId: string) => {
+  const moving = structuredTree.find((node) => node.id === movingId);
+  const target = structuredTree.find((node) => node.id === targetId);
+  return Boolean(moving && target && canNestLayerChild(moving.type, target.type));
+};
+assert.equal(canMoveLayerDrop(structuredTree, 'cell-a', 'row-a', 'inside', tableNest), true);
+assert.equal(canMoveLayerDrop(structuredTree, 'row-a', 'cell-a', 'inside', tableNest), false);
+assert.equal(canMoveLayerDrop(structuredTree, 'cell-a', 'row-a', 'before', tableNest), false);
+assert.equal(canMoveLayerDrop(structuredTree, 'cell-b', 'cell-a', 'after', tableNest), true);
 
 console.log('layerRoles.test PASS');

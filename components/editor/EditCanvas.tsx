@@ -6,13 +6,11 @@ import { ChevronDown, ChevronRight, Layers, Redo2, Search, Undo2, Ungroup } from
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
-import { getLayerRole, wouldCreateLayerCycle } from '@/lib/editor/layerRoles';
+import { canMoveLayerDrop, getLayerRole, type LayerDropMode } from '@/lib/editor/layerRoles';
 import { EDIT_SURFACE_LAYER_PANEL_WIDTH_PX } from '@/lib/editor/editSurfaceLayout';
 import { useUiStore } from '@/lib/stores/uiStore';
 import { useWorkspaceStore, type WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { cn } from '@/lib/utils/cn';
-
-type LayerDropMode = 'before' | 'inside' | 'after';
 
 function formatDropModeLabel(mode: LayerDropMode): string {
   if (mode === 'inside') return '안에 넣기';
@@ -387,10 +385,23 @@ function EditLayerPanel({
     });
   }, []);
 
+  const canMoveLayer = useCallback(
+    (draggedId: string, targetId: string, mode: LayerDropMode) => {
+      const adapter = getBlocklyAdapter();
+      return canMoveLayerDrop(
+        nodes,
+        draggedId,
+        targetId,
+        mode,
+        (movingId, containerId) => adapter.canNestBlockInContainer(tab, movingId, containerId),
+      );
+    },
+    [nodes, tab],
+  );
+
   const moveLayer = useCallback(
     (draggedId: string, targetId: string, mode: LayerDropMode) => {
-      if (draggedId === targetId) return;
-      if (wouldCreateLayerCycle(nodes, draggedId, targetId)) return;
+      if (!canMoveLayer(draggedId, targetId, mode)) return;
       const adapter = getBlocklyAdapter();
       const moved =
         mode === 'inside'
@@ -402,13 +413,7 @@ function EditLayerPanel({
       bumpStructure(tab, adapter.countBlocks(tab));
       setSelected(draggedId, 'tree');
     },
-    [bumpStructure, nodes, setSelected, tab],
-  );
-
-  const canMoveLayer = useCallback(
-    (draggedId: string, targetId: string) =>
-      draggedId !== targetId && !wouldCreateLayerCycle(nodes, draggedId, targetId),
-    [nodes],
+    [bumpStructure, canMoveLayer, setSelected, tab],
   );
 
   const ejectLayer = useCallback(
@@ -564,7 +569,7 @@ const EditLayerRow = memo(function EditLayerRow({
   contextOnly: boolean;
   onSelect: () => void;
   onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
-  canDrop: (draggedId: string, targetId: string) => boolean;
+  canDrop: (draggedId: string, targetId: string, mode: LayerDropMode) => boolean;
   onEject: (blockId: string) => void;
   collapsed: boolean;
   onToggleCollapse: (blockId: string) => void;
@@ -647,7 +652,7 @@ const EditLayerRow = memo(function EditLayerRow({
           return;
         }
         const mode = pickMode(e);
-        if (!canDrop(draggedId, node.id)) {
+        if (!canDrop(draggedId, node.id, mode)) {
           e.dataTransfer.dropEffect = 'none';
           return;
         }
@@ -666,7 +671,7 @@ const EditLayerRow = memo(function EditLayerRow({
         setDropMode(null);
         setIsDragging(false);
         delete document.body.dataset.r20LayerDraggingBlock;
-        if (!canDrop(draggedId, node.id)) return;
+        if (!canDrop(draggedId, node.id, mode)) return;
         onMove(draggedId, node.id, mode);
       }}
       className={`relative flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors ${

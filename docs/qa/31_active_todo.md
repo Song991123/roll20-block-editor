@@ -6479,3 +6479,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   separate legacy dedicated-room evidence.
 - NEXT P1: Keep the Figma-style layer/drop UX validation separate from renderer
   parity and widen it with synthetic container/table cases.
+
+## 2026-07-30 Mode-aware layer-panel drop guard
+
+- DONE LOCAL: Layer-panel `inside`, `before`, and `after` drops now validate
+  the actual insertion parent before any Blockly mutation. Table row/section
+  rules are applied during dragover and again at drop time.
+- VERIFIED LOCAL: Layer-role, iframe-drop-target, Blockly layer-operation,
+  lint, build, and edit-flow browser smoke all pass.
+- CLAIM BOUNDARY: This proves the local layer-panel guard, not complete Figma
+  interaction parity or actual Roll20 visual parity.
+- NEXT P1: Add a browser acceptance case that drags valid and invalid table
+  children through the visible layer panel and confirms the target highlight
+  matches the final mutation.

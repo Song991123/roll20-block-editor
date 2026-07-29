@@ -176,3 +176,11 @@ stale targets in the ledger are now absent. The active dependency tree,
 ignored local fixtures, canonical reports, protected source roots, and both
 Git worktrees remain intact. No project listener is active on ports `3000`,
 `4197`, `4198`, or `4199`.
+
+## 2026-07-30 post-verification cleanup completion
+
+The build output recreated during the layer-panel verification was removed
+after the transient `jsdom-*` entry was no longer held. `.next/` and `out/`
+are absent again; active dependencies, fixtures, canonical reports, source
+roots, and worktrees remain preserved. Project ports `3000`, `4197`, `4198`,
+and `4199` have no listeners.
