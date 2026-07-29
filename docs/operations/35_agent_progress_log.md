@@ -7244,3 +7244,23 @@ visibility verification passed. No external room was opened or modified.
   safety bypass was used. No candidate was deleted.
 - STATUS: Cleanup remains VERIFY/NOT DELETED. The ledger in operations 44 and
   45 is the source of truth for the exact target set.
+
+## 2026-07-30 - Imported table-parent drag guard
+
+- FIXED: Free placement preserves an imported table cell as the current parent
+  even when that cell is not exposed as a new Blockly statement destination.
+  This prevents a valid child from being moved to the workspace root while the
+  pointer crosses a neighboring table cell.
+- FIXED: Flow, inside, and adjacent drop resolution now checks moving and
+  target element types against HTML table parent rules before Blockly mutation.
+  Invalid placements such as a direct button child of a table row are rejected.
+- VERIFIED LOCAL: The large anonymous fixture imported `7,290` HTML blocks with
+  `100%` structural match. Canonical iframe edit, preview/edit position sync,
+  resource loading, and emit -> reimport -> emit stability all passed; HTML
+  normalized structure, CSS, and i18n were stable after the round trip.
+- VERIFIED: Focused layer, drop-target, Blockly layer-operation, lint, build,
+  and the full strict imported edit-sync browser matrix passed (`5/5`
+  anonymous cases, including the large case).
+- CLAIM BOUNDARY: This is local importer/editor evidence. Actual Roll20
+  Sandbox parity, isolated legacy-room evidence, and broad all-sheet coverage
+  remain open.

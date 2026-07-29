@@ -6462,3 +6462,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT: Retry only if the host exposes an approved maintenance deletion path;
   do not claim cleanup complete until post-delete existence and worktree checks
   pass.
+
+## 2026-07-30 Imported edit round-trip repair
+
+- DONE: Guarded free placement against invalid table reparenting. Existing
+  table-cell parents are preserved while direct child placement into table
+  rows/sections is validated by element type.
+- DONE: Full strict imported-edit browser matrix passes (`5/5` anonymous
+  cases). The large case passes canonical edit, preview/edit sync, resource
+  loading, and emit/reimport stability (`7,290` HTML blocks, `100%` structural
+  match).
+- VERIFY: The browser result is local evidence only. Positive modern Sandbox
+  root/screenshot/chat evidence and isolated legacy-room evidence remain
+  required before claiming Roll20 parity.
+- NEXT P0: Obtain positive modern Sandbox root/DOM/screenshot/chat evidence and
+  separate legacy dedicated-room evidence.
+- NEXT P1: Keep the Figma-style layer/drop UX validation separate from renderer
+  parity and widen it with synthetic container/table cases.

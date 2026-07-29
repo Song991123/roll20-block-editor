@@ -640,6 +640,11 @@ export default function PreviewMain() {
         const nextDropTarget = resolveIframeEditDropTarget(editMessage, {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+          canNestBlockInContainer: (movingBlockId, targetBlockId) => adapter.canNestBlockInContainer(
+            'html',
+            movingBlockId,
+            targetBlockId,
+          ),
         });
         const placement = useUiStore.getState().editPlacementMode;
         const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
@@ -702,6 +707,11 @@ export default function PreviewMain() {
               ? resolveIframeFreePlacement(origin, editMessage, {
                   getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
                   canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+                  canNestBlockInContainer: (movingBlockId, targetBlockId) => adapter.canNestBlockInContainer(
+                    'html',
+                    movingBlockId,
+                    targetBlockId,
+                  ),
                 }, ui.snapEnabled ? 8 : 1)
               : null;
             if (placement) {
@@ -795,6 +805,11 @@ export default function PreviewMain() {
         const nextDropTarget = resolveIframeWidgetDropTarget(editMessage, {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+          canNestBlockInContainer: (movingBlockId, targetBlockId) => adapter.canNestBlockInContainer(
+            'html',
+            movingBlockId,
+            targetBlockId,
+          ),
         });
         const placement = useUiStore.getState().editPlacementMode;
         const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);

@@ -21,6 +21,7 @@ export type IframeEditDropTarget = {
 export type IframeDropTargetLookup = {
   getBlock: (blockId: string) => BlockSnapshot | null;
   canNestInContainer: (blockId: string) => boolean;
+  canNestBlockInContainer?: (movingBlockId: string, targetBlockId: string) => boolean;
 };
 
 /**
@@ -81,6 +82,43 @@ function isSubjectDescendant(
   return false;
 }
 
+function canPlaceInside(
+  movingBlockId: string,
+  targetBlockId: string,
+  lookup: IframeDropTargetLookup,
+): boolean {
+  const block = lookup.getBlock(targetBlockId);
+  if (!block || !canReceiveChildren(block.type) || !lookup.canNestInContainer(block.id)) return false;
+  if (!movingBlockId || !lookup.canNestBlockInContainer) return true;
+  return lookup.canNestBlockInContainer(movingBlockId, targetBlockId);
+}
+
+function canPlaceAdjacent(
+  movingBlockId: string,
+  targetBlockId: string,
+  lookup: IframeDropTargetLookup,
+): boolean {
+  if (!movingBlockId || !lookup.canNestBlockInContainer) return true;
+  const target = lookup.getBlock(targetBlockId);
+  if (!target?.layerParentId) return true;
+  return lookup.canNestBlockInContainer(movingBlockId, target.layerParentId);
+}
+
+function isLayerAncestor(
+  candidateId: string,
+  descendantId: string,
+  lookup: IframeDropTargetLookup,
+): boolean {
+  let parentId = lookup.getBlock(descendantId)?.layerParentId ?? null;
+  const seen = new Set<string>([descendantId]);
+  while (parentId && !seen.has(parentId)) {
+    if (parentId === candidateId) return true;
+    seen.add(parentId);
+    parentId = lookup.getBlock(parentId)?.layerParentId ?? null;
+  }
+  return false;
+}
+
 export function resolveIframeEditDropTarget(
   message: IframeEditHitMessage,
   lookup: IframeDropTargetLookup,
@@ -92,9 +130,9 @@ export function resolveIframeEditDropTarget(
     if (!block || block.id === message.subject.blockId) continue;
     if (isSubjectDescendant(block, message.subject.blockId, lookup)) continue;
 
-    const canDropInside = canReceiveChildren(block.type)
-      && lookup.canNestInContainer(block.id);
+    const canDropInside = canPlaceInside(message.subject.blockId, block.id, lookup);
     const mode = pickDropMode(geometry, message.pointer.y, canDropInside);
+    if (mode !== 'inside' && !canPlaceAdjacent(message.subject.blockId, block.id, lookup)) continue;
     return {
       blockId: block.id,
       label: block.label || block.type,
@@ -115,8 +153,7 @@ export function resolveIframeWidgetDropTarget(
   for (const geometry of message.hitPath) {
     const block = lookup.getBlock(geometry.blockId);
     if (!block) continue;
-    const canDropInside = canReceiveChildren(block.type)
-      && lookup.canNestInContainer(block.id);
+    const canDropInside = canPlaceInside('', block.id, lookup);
     const mode = pickDropMode(geometry, message.pointer.y, canDropInside);
     return {
       blockId: block.id,
@@ -158,29 +195,40 @@ export function resolveIframeFreePlacement(
   if (origin.subject.blockId !== end.subject.blockId) return null;
   if (!lookup.getBlock(origin.subject.blockId)) return null;
 
+  const currentParentId = lookup.getBlock(origin.subject.blockId)?.layerParentId ?? null;
   const currentParentGeometry = origin.hitPath.slice(1).find((geometry) => {
-    const block = lookup.getBlock(geometry.blockId);
-    return Boolean(block && canReceiveChildren(block.type) && lookup.canNestInContainer(block.id));
+    // The current DOM parent must be preserved even when it is not a valid
+    // destination for a new child. Table cells can already contain imported
+    // children without exposing a Blockly statement input of their own.
+    return geometry.blockId === currentParentId;
+  }) ?? origin.hitPath.slice(1).find((geometry) => {
+    return canPlaceInside(origin.subject.blockId, geometry.blockId, lookup);
   }) ?? null;
   const pointerInsideOriginSubject = end.pointer.x >= origin.subject.rect.left
     && end.pointer.x <= origin.subject.rect.left + origin.subject.rect.width
     && end.pointer.y >= origin.subject.rect.top
     && end.pointer.y <= origin.subject.rect.top + origin.subject.rect.height;
-  const containingGeometry = pointerInsideOriginSubject && currentParentGeometry
-    ? currentParentGeometry
-    : end.hitPath.find((geometry) => {
+  const explicitContainingGeometry = end.hitPath.find((geometry) => {
     if (geometry.blockId === origin.subject.blockId) return false;
-    const block = lookup.getBlock(geometry.blockId);
-    return Boolean(
-      block
-      && canReceiveChildren(block.type)
-      && lookup.canNestInContainer(block.id)
+    return canPlaceInside(origin.subject.blockId, geometry.blockId, lookup)
       && end.pointer.x >= geometry.rect.left
       && end.pointer.x <= geometry.rect.left + geometry.rect.width
       && end.pointer.y >= geometry.rect.top
-      && end.pointer.y <= geometry.rect.top + geometry.rect.height,
-    );
-    }) ?? null;
+      && end.pointer.y <= geometry.rect.top + geometry.rect.height;
+  }) ?? null;
+  const currentParentIsTableCell = currentParentGeometry
+    ? ['r20_td', 'r20_th'].includes(lookup.getBlock(currentParentGeometry.blockId)?.type ?? '')
+    : false;
+  const explicitTargetIsOuterAncestor = Boolean(
+    explicitContainingGeometry
+    && currentParentGeometry
+    && explicitContainingGeometry.blockId !== currentParentGeometry.blockId
+    && isLayerAncestor(explicitContainingGeometry.blockId, currentParentGeometry.blockId, lookup),
+  );
+  const containingGeometry = explicitTargetIsOuterAncestor
+    ? currentParentGeometry
+    : explicitContainingGeometry
+      ?? (pointerInsideOriginSubject || currentParentIsTableCell ? currentParentGeometry : null);
   const deltaX = end.pointer.x - origin.pointer.x;
   const deltaY = end.pointer.y - origin.pointer.y;
   if (Math.hypot(deltaX, deltaY) < MIN_FREE_DRAG_DISTANCE) return null;

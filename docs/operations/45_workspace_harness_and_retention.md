@@ -159,3 +159,11 @@ ports `3000`, `4197`, `4198`, and `4199` were confirmed without listeners.
 This completion note supersedes the earlier **not deleted** statements above;
 those statements remain only as the historical record of the host-policy
 rejections before the authorized cleanup succeeded.
+
+## 2026-07-30 post-build cleanup retry
+
+The local build recreated `web-push-main/.next/` and `web-push-main/out/` after
+the earlier cleanup completion. The temporary port `4199` server was stopped
+after an exact process-command-line check. A new guarded recursive deletion
+attempt was rejected by the host before execution, so these two generated
+targets remain **not deleted** and can be recreated by the build.

@@ -95,6 +95,52 @@ export function canReceiveChildren(type: string): boolean {
   return getLayerRole(type).canReceiveChildren;
 }
 
+type TableNodeKind = 'table' | 'colgroup' | 'col' | 'section' | 'row' | 'cell' | 'caption';
+
+/**
+ * HTML table nodes have stricter parent/child rules than ordinary frames.
+ * Keep this separate from the visual role so a generic drop cannot produce
+ * invalid markup such as a button directly under <tr>.
+ */
+function tableNodeKind(type: string): TableNodeKind | null {
+  const normalized = type.toLowerCase().replace(/^r20[-_]?/, '').replace(/[^a-z0-9]+/g, '_');
+  if (normalized === 'table') return 'table';
+  if (normalized === 'table_col' || normalized === 'col') return 'col';
+  if (normalized === 'colgroup') return 'colgroup';
+  if (normalized === 'thead' || normalized === 'tbody' || normalized === 'tfoot') return 'section';
+  if (normalized === 'tr') return 'row';
+  if (normalized === 'td' || normalized === 'th') return 'cell';
+  if (normalized === 'table_caption' || normalized === 'caption') return 'caption';
+  return null;
+}
+
+/** Return whether a moving layer can be a direct child of a target layer. */
+export function canNestLayerChild(movingType: string, targetType: string): boolean {
+  const target = tableNodeKind(targetType);
+  if (!target) return true;
+  const moving = tableNodeKind(movingType);
+  switch (target) {
+    case 'table':
+      return moving === 'caption'
+        || moving === 'colgroup'
+        || moving === 'section'
+        || moving === 'row';
+    case 'colgroup':
+      return moving === 'col';
+    case 'section':
+      return moving === 'row';
+    case 'row':
+      return moving === 'cell';
+    case 'cell':
+      return true;
+    case 'col':
+    case 'caption':
+      return false;
+    default:
+      return true;
+  }
+}
+
 /** Reject ancestor -> descendant layer drops before they reach Blockly. */
 export function wouldCreateLayerCycle(
   nodes: Pick<BlockSnapshot, 'id' | 'layerParentId'>[],

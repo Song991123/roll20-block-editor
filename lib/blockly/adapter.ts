@@ -14,6 +14,7 @@ import * as Blockly from 'blockly';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { getBlockDef } from '@/lib/blocks/registry';
 import type { BlockCategory } from '@/lib/blocks/types';
+import { canNestLayerChild } from '@/lib/editor/layerRoles';
 
 /**
  * Main-thread yield — 가능하면 `requestIdleCallback` (브라우저 idle 시간),
@@ -161,6 +162,7 @@ export interface BlocklyAdapter {
   moveBlockOutOfContainer(key: WorkspaceKey, blockId: string): boolean;
   moveBlockToRoot(key: WorkspaceKey, blockId: string): boolean;
   canNestInContainer(key: WorkspaceKey, targetId: string): boolean;
+  canNestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   canUndo(key: WorkspaceKey): boolean;
   canRedo(key: WorkspaceKey): boolean;
@@ -834,6 +836,14 @@ class DefaultAdapter implements BlocklyAdapter {
     });
   }
 
+  canNestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {
+    const ws = this.workspaces[key];
+    const moving = ws?.getBlockById(blockId);
+    const target = ws?.getBlockById(targetId);
+    if (!ws || !moving || !target || moving === target) return false;
+    return this.canNestInContainer(key, targetId) && canNestLayerChild(moving.type, target.type);
+  }
+
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {
     const ws = this.workspaces[key];
     const moving = ws?.getBlockById(blockId) as
@@ -850,6 +860,7 @@ class DefaultAdapter implements BlocklyAdapter {
       | null;
     if (!ws || !moving || !target || moving === target) return false;
     if (!moving.previousConnection) return false;
+    if (!this.canNestBlockInContainer(key, blockId, targetId)) return false;
     // A layer drop can originate from the panel instead of the iframe bridge.
     // Reject ancestor -> descendant nesting here as the final invariant so a
     // UI caller cannot create a cyclic DOM/Blockly hierarchy.

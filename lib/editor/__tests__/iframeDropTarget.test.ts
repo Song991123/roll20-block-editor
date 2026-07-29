@@ -8,6 +8,7 @@ import {
   resolveIframeWidgetDropTarget,
 } from '../iframeDropTarget.ts';
 import type { IframeEditHitMessage, IframeEditNodeGeometry } from '@/lib/preview/iframeEditBridge';
+import { canNestLayerChild } from '../layerRoles.ts';
 
 const geometry = (
   blockId: string,
@@ -188,5 +189,100 @@ assert.equal(resolveIframeFreePlacement(freeOrigin, {
   pointer: { x: 300, y: 80 },
 }, lookup, 8)?.containingBlockId, null);
 assert.equal(resolveIframeFreePlacement(freeEnd, freeEnd, lookup, 8), null);
+
+const nestedBlocks = new Map<string, BlockSnapshot>([
+  ['outer', {
+    id: 'outer', type: 'r20_div', depth: 0, childCount: 1,
+    layerParentId: null, layerPreviousId: null, layerRelation: 'root',
+    label: 'Outer', preview: '', category: 'container',
+  }],
+  ['inner', {
+    id: 'inner', type: 'r20_div', depth: 1, childCount: 1,
+    layerParentId: 'outer', layerPreviousId: null, layerRelation: 'child',
+    label: 'Inner', preview: '', category: 'container',
+  }],
+  ['nested-subject', {
+    id: 'nested-subject', type: 'r20_text_input', depth: 2, childCount: 0,
+    layerParentId: 'inner', layerPreviousId: null, layerRelation: 'child',
+    label: 'Nested subject', preview: '', category: 'input',
+  }],
+]);
+const nestedLookup = {
+  getBlock: (id: string) => nestedBlocks.get(id) ?? null,
+  canNestInContainer: (id: string) => id === 'outer' || id === 'inner',
+};
+const nestedSubject = geometry('nested-subject', 40, 20, {
+  rect: { left: 40, top: 40, width: 80, height: 20 },
+  offsetParentBlockId: 'inner',
+});
+const nestedOrigin = message([
+  nestedSubject,
+  geometry('inner', 20, 80, { rect: { left: 20, top: 20, width: 140, height: 80 } }),
+  geometry('outer', 0, 180, { rect: { left: 0, top: 0, width: 240, height: 180 } }),
+], 45, 'pointerdown', nestedSubject);
+assert.equal(resolveIframeFreePlacement(nestedOrigin, {
+  ...nestedOrigin,
+  phase: 'pointerup' as const,
+  pointer: { x: 210, y: 100 },
+  hitPath: [geometry('outer', 0, 180, { rect: { left: 0, top: 0, width: 240, height: 180 } })],
+  buttons: 0,
+}, nestedLookup)?.containingBlockId, 'inner');
+
+const tableBlocks = new Map<string, BlockSnapshot>([
+  ['frame', {
+    id: 'frame', type: 'r20_div', depth: 0, childCount: 1,
+    layerParentId: null, layerPreviousId: null, layerRelation: 'root',
+    label: 'Frame', preview: '', category: 'container',
+  }],
+  ['table-subject', {
+    id: 'table-subject', type: 'r20_roll_button', depth: 3, childCount: 0,
+    layerParentId: 'table-cell', layerPreviousId: null, layerRelation: 'child',
+    label: 'Button', preview: '', category: 'dice',
+  }],
+  ['table-cell', {
+    id: 'table-cell', type: 'r20_td', depth: 2, childCount: 1,
+    layerParentId: 'table-row', layerPreviousId: null, layerRelation: 'child',
+    label: 'Cell', preview: '', category: 'container',
+  }],
+  ['table-row', {
+    id: 'table-row', type: 'r20_tr', depth: 1, childCount: 1,
+    layerParentId: 'table-section', layerPreviousId: null, layerRelation: 'child',
+    label: 'Row', preview: '', category: 'container',
+  }],
+  ['table-section', {
+    id: 'table-section', type: 'r20_tbody', depth: 0, childCount: 1,
+    layerParentId: 'frame', layerPreviousId: null, layerRelation: 'child',
+    label: 'Body', preview: '', category: 'container',
+  }],
+]);
+const tableLookup = {
+  getBlock: (id: string) => tableBlocks.get(id) ?? null,
+  canNestInContainer: (id: string) => id === 'table-row',
+  canNestBlockInContainer: (movingId: string, targetId: string) => {
+    const moving = tableBlocks.get(movingId);
+    const target = tableBlocks.get(targetId);
+    return Boolean(moving && target && canNestLayerChild(moving.type, target.type));
+  },
+};
+const tableSubject = geometry('table-subject', 100, 20, {
+  rect: { left: 100, top: 100, width: 20, height: 20 },
+});
+const tableOrigin = message([
+  tableSubject,
+  geometry('table-cell', 100, 20, { rect: { left: 100, top: 100, width: 20, height: 20 } }),
+  geometry('table-row', 80, 60, { rect: { left: 0, top: 80, width: 240, height: 60 } }),
+], 110, 'pointerdown', tableSubject);
+const tableEnd = {
+  ...tableOrigin,
+  phase: 'pointerup' as const,
+  pointer: { x: 140, y: 115 },
+  hitPath: [geometry('table-row', 80, 60, { rect: { left: 0, top: 80, width: 240, height: 60 } })],
+  buttons: 0,
+};
+assert.equal(resolveIframeEditDropTarget(tableEnd, tableLookup), null);
+assert.equal(
+  resolveIframeFreePlacement(tableOrigin, tableEnd, tableLookup, 1)?.containingBlockId,
+  'table-cell',
+);
 
 console.log('iframeDropTarget.test PASS');

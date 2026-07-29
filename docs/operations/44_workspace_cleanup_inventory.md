@@ -198,3 +198,14 @@ Post-cleanup verification found all nine paths absent, no listener on ports
 `3000`, `4197`, `4198`, or `4199`, and the active
 `web-push-main/node_modules/` plus local fixtures still present. The protected
 source roots, both Git worktrees, and user-authored inputs were not touched.
+
+## 2026-07-30 post-build cleanup retry
+
+- RECHECKED: The seven older targets from the completed cleanup remain absent.
+  The current build recreated only `web-push-main/.next/` and
+  `web-push-main/out/` for local verification.
+- STOPPED: The temporary static server on port `4199` was matched by its exact
+  command line and stopped. No listener remains on that port.
+- NOT DELETED: The host safety policy rejected the guarded recursive deletion
+  before execution again. No alternate shell or per-file deletion workaround
+  was used. The two regenerated targets remain disposable and reproducible.

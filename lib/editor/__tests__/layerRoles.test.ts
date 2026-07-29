@@ -1,5 +1,10 @@
 import { strict as assert } from 'node:assert';
-import { classifyLayerRole, getLayerRole, wouldCreateLayerCycle } from '../layerRoles.ts';
+import {
+  canNestLayerChild,
+  classifyLayerRole,
+  getLayerRole,
+  wouldCreateLayerCycle,
+} from '../layerRoles.ts';
 
 assert.equal(classifyLayerRole('r20_table'), 'table');
 assert.equal(classifyLayerRole('r20_thead'), 'table');
@@ -34,6 +39,13 @@ assert.equal(getLayerRole('r20_i18n_text').label, '텍스트');
 assert.equal(getLayerRole('r20_image').label, '이미지');
 assert.equal(getLayerRole('r20_worker_script').label, '시트 동작');
 assert.equal(getLayerRole('unknown_block').label, '기타');
+
+assert.equal(canNestLayerChild('r20_roll_button', 'r20_td'), true);
+assert.equal(canNestLayerChild('r20_td', 'r20_tr'), true);
+assert.equal(canNestLayerChild('r20_roll_button', 'r20_tr'), false);
+assert.equal(canNestLayerChild('r20_tr', 'r20_tbody'), true);
+assert.equal(canNestLayerChild('r20_tbody', 'r20_table'), true);
+assert.equal(canNestLayerChild('r20_div', 'r20_table'), false);
 
 const layerTree = [
   { id: 'root', layerParentId: null },
