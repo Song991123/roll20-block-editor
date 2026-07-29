@@ -6393,3 +6393,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   not prove actual Roll20 Sandbox or legacy-room parity.
 - NEXT P0: Keep the Roll20 upload gate separate and obtain actual root,
   screenshot, and chat evidence through the isolated Sandbox.
+## 2026-07-29 JavaScript runtime boundary contract
+
+- DOCUMENTED: Ordinary page scripts remain HTML raw source, stay inert in
+  preview/edit, and are preserved for export. Roll20 worker scripts remain a
+  separate runtime boundary.
+- DOCUMENTED: A future generic JS workspace must preserve script order,
+  attributes, raw fallback, and parent-document isolation before it can move
+  scripts out of HTML.
+- CLAIM BOUNDARY: This records the current contract; it does not claim that a
+  generic JS block workspace or arbitrary page-JS sandbox exists yet.
+- NEXT P1: Design a script-record model and roundtrip tests before implementing
+  generic JS blocks.

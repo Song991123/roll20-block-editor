@@ -7138,3 +7138,15 @@ visibility verification passed. No external room was opened or modified.
   actual Roll20 Sandbox or legacy-room parity evidence.
 - NEXT P0: Continue the isolated Roll20 upload path and require root DOM,
   screenshot, and same-action chat evidence before parity claims.
+## 2026-07-29 - JavaScript runtime boundary contract
+
+- DOCUMENTED: Ordinary page scripts stay as HTML raw source, remain inert in
+  preview/edit, and are preserved for export. Roll20 worker scripts remain the
+  only authored script boundary executed locally.
+- DOCUMENTED: A future generic JS workspace must carry source order, original
+  attributes, preview policy, and raw fallback; moving every script out of HTML
+  would risk changing sheet behavior.
+- CLAIM BOUNDARY: No generic JS block workspace or arbitrary page-JS sandbox is
+  implemented by this documentation change.
+- NEXT P1: Create a script-record model and browser roundtrip tests before
+  exposing generic JS blocks.
