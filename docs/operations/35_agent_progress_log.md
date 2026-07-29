@@ -10,6 +10,15 @@
   ignored local evidence. The result is a local render-contract/synchronization
   proof only, not actual Roll20 parity.
 
+- VERIFIED LOCAL: Strict imported edit-sync smoke passed for all four ignored
+  fixtures. Structural import reported `100%` for AW2E (`2,004` HTML blocks),
+  Les-Oublies (`837`), YSHY 1bu (`7,290`, `8` composite collapses), and the
+  synthetic non-leaf case (`7`). Every fixture preserved the edited block in
+  preview, re-imported stably, loaded resources without issues, and produced
+  zero console/page errors.
+- EVIDENCE SCOPE: This is local behavior evidence only. The fixture source,
+  screenshots, and reports remain ignored; no public sample was added.
+
 - FIXED: Added an explicit preflight requiring a current visible participant
   count before an existing Roll20 room can even be observed.
 - SAFETY: Unknown participant state and any count greater than one exclude the

@@ -14,6 +14,16 @@
   collect fresh modern Sandbox evidence and legacy evidence only in a
   dedicated one-member test room.
 
+- VERIFIED LOCAL: `smoke:imported-edit-sync:strict` passed across all four
+  ignored local fixtures: official AW2E (`2,004` HTML blocks), official
+  Les-Oublies (`837`), YSHY commission 1bu (`7,290`, `8` composite collapses),
+  and the synthetic non-leaf flow (`7`). Each reached `100%` structural import
+  match, edit-to-preview sync, stable re-import, zero resource issues, and zero
+  console/page errors.
+- CLAIM BOUNDARY: This confirms the local import/edit synchronization path for
+  the current ignored fixture set. It does not prove byte-identical HTML/CSS,
+  all-sheet coverage, or actual Roll20 visual parity.
+
 - DONE: Added a mandatory participant preflight. Existing rooms are excluded
   when the current visible member count is unknown or greater than one; they
   are never upload, save, chat, or settings destinations.
