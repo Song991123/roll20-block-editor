@@ -21,3 +21,6 @@
   the public `rendered` flag caused a headless-workspace error, while SVG hook
   suppression did not finish the large smoke within three minutes. Both code
   experiments were fully reverted; the large import remains an open P0.
+- Rechecked the available Roll20 tab; it is currently at the login page, so
+  actual Sandbox and room evidence remain blocked at `0/6` and `0/3`. No room
+  or external sheet state was changed.

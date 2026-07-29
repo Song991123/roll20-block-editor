@@ -50,6 +50,14 @@
 - SAFETY: The failed experiments did not alter source fixtures or public
   assets. The generated local smoke report remains ignored evidence only.
 
+## 2026-07-30 Roll20 Browser Recheck
+
+- VERIFY BLOCKED: The available Roll20 browser tab currently shows the login
+  page, not the isolated Sheet Sandbox. No existing room was opened, no
+  participant state was inferred, and no upload/chat/settings action occurred.
+- CURRENT EVIDENCE: Generated actual screenshots remain `0/6`, room
+  observation screenshots remain `0/3`, and live Roll20 parity is unverified.
+
 ## Next P0
 
 Keep the malformed-tag regression test in the emit contract and continue the
