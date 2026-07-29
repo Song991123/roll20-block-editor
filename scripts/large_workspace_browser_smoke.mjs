@@ -54,11 +54,177 @@ function assert(value, message) {
 }
 
 function buildSyntheticHtml() {
+  // Keep the large corpus anonymous, but include two real container layers so
+  // the virtualized edit tree also exercises an inside reparenting mutation.
+  const nestedCorpus = [
+    '<div class="large-root" style="position:relative;width:760px;min-height:240px;padding:12px;border:1px solid #888">',
+    '  <div class="large-source" style="display:block;width:300px;min-height:80px;padding:8px;border:1px solid #69c">',
+    '    <input type="text" name="attr_nested_source" value="Nested source">',
+    '  </div>',
+    '  <div class="large-target" style="display:block;width:340px;min-height:120px;padding:8px;border:1px solid #c96">',
+    '    <input type="text" name="attr_nested_target" value="Nested target">',
+    '  </div>',
+    '</div>',
+  ].join('\n');
   const items = Array.from(
     { length: ITEM_COUNT },
     (_, index) => `<input type="text" name="attr_item_${index}" value="Item ${index}">`,
   ).join('');
-  return items;
+  return `${nestedCorpus}${items}`;
+}
+
+async function runNestedReparentingSmoke(page) {
+  const result = await page.evaluate(async () => {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const layerScroll = document.querySelector('[data-testid="edit-layer-scroll"]');
+    if (layerScroll) {
+      layerScroll.scrollTop = 0;
+      layerScroll.dispatchEvent(new Event('scroll', { bubbles: true }));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+    const layer = window.__perfHook.getLayerSnapshot?.('html') || [];
+    const fieldsFor = (id) => (window.__perfHook.getBlockFields?.('html', id) || [])
+      .map((field) => String(field.value ?? ''))
+      .join(' ');
+    const fieldText = (node) => `${node.label} ${node.preview} ${fieldsFor(node.id)}`.toLowerCase();
+    const sourceNode = layer.find((node) => fieldText(node).includes('large-source'));
+    const targetNode = layer.find((node) => fieldText(node).includes('large-target'));
+    if (!sourceNode || !targetNode) {
+      return {
+        pass: false,
+        reason: 'nested source/target containers were not exposed as searchable layer blocks',
+        candidates: layer.filter((node) => node.childCount > 0).slice(0, 12).map((node) => ({
+          id: node.id,
+          label: node.label,
+          preview: node.preview,
+          fields: fieldsFor(node.id),
+          childCount: node.childCount,
+        })),
+      };
+    }
+    const rowFor = (id) => document.querySelector(
+      `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(id)}"]`,
+    );
+    const sourceRow = rowFor(sourceNode.id);
+    const targetRow = rowFor(targetNode.id);
+    if (!sourceRow || !targetRow) {
+      return {
+        pass: false,
+        reason: 'nested source/target rows were not mounted by the virtualized layer panel',
+        sourceId: sourceNode.id,
+        targetId: targetNode.id,
+        visibleRows: document.querySelectorAll('[data-testid="edit-layer-row"]').length,
+      };
+    }
+    if (targetRow.getAttribute('data-r20-can-drop') !== '1') {
+      return {
+        pass: false,
+        reason: 'nested target is not marked as a drop-capable container',
+        sourceId: sourceNode.id,
+        targetId: targetNode.id,
+        targetRole: targetRow.getAttribute('data-r20-layer-role-kind'),
+        targetCanDrop: targetRow.getAttribute('data-r20-can-drop'),
+      };
+    }
+
+    const beforeSnapshot = {
+      sourceParentId: sourceRow.getAttribute('data-r20-layer-parent-id') || null,
+      targetParentId: targetRow.getAttribute('data-r20-layer-parent-id') || null,
+      sourceLayerRelation: sourceRow.getAttribute('data-r20-layer-relation') || '',
+    };
+    const targetRect = targetRow.getBoundingClientRect();
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('application/x-r20-layer-block', sourceNode.id);
+    dataTransfer.effectAllowed = 'move';
+    document.body.dataset.r20LayerDraggingBlock = sourceNode.id;
+    const eventInit = {
+      bubbles: true,
+      cancelable: true,
+      clientX: Math.round(targetRect.left + targetRect.width / 2),
+      clientY: Math.round(targetRect.top + targetRect.height / 2),
+    };
+    const dragStart = new DragEvent('dragstart', {
+      ...eventInit,
+      dataTransfer,
+    });
+    sourceRow.dispatchEvent(dragStart);
+    const dragOver = new DragEvent('dragover', {
+      ...eventInit,
+      dataTransfer,
+    });
+    targetRow.dispatchEvent(dragOver);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const dropMode = targetRow.getAttribute('data-r20-layer-drop-mode') || '';
+    const drop = new DragEvent('drop', {
+      ...eventInit,
+      dataTransfer,
+    });
+    targetRow.dispatchEvent(drop);
+    sourceRow.dispatchEvent(new DragEvent('dragend', {
+      ...eventInit,
+      dataTransfer,
+    }));
+    delete document.body.dataset.r20LayerDraggingBlock;
+    await sleep(600);
+
+    const afterLayer = window.__perfHook.getLayerSnapshot?.('html') || [];
+    const sourceAfter = afterLayer.find((node) => node.id === sourceNode.id);
+    const targetAfter = afterLayer.find((node) => node.id === targetNode.id);
+    const editSourceRow = rowFor(sourceNode.id);
+    const editTargetRow = rowFor(targetNode.id);
+    const emitted = window.__perfHook.getEmitContent?.()?.html || '';
+    const emittedNestsSource = /large-target[\s\S]*large-source/.test(emitted);
+    const sourceParentId = editSourceRow?.getAttribute('data-r20-layer-parent-id') || null;
+    const sourceParentMatchesTarget = sourceParentId === targetNode.id;
+    const pass =
+      drop.defaultPrevented &&
+      dropMode === 'inside' &&
+      sourceParentMatchesTarget &&
+      sourceAfter?.layerParentId === targetNode.id &&
+      targetAfter?.childCount >= 1 &&
+      emittedNestsSource;
+    return {
+      pass,
+      sourceId: sourceNode.id,
+      targetId: targetNode.id,
+      beforeSnapshot,
+      afterSnapshot: {
+        sourceParentId,
+        sourceLayerRelation: editSourceRow?.getAttribute('data-r20-layer-relation') || '',
+        targetChildCount: editTargetRow?.getAttribute('data-r20-layer-child-count') || null,
+        modelSourceParentId: sourceAfter?.layerParentId ?? null,
+        modelSourceRelation: sourceAfter?.layerRelation ?? null,
+        modelTargetChildCount: targetAfter?.childCount ?? null,
+      },
+      dropMode,
+      dropPrevented: drop.defaultPrevented,
+      emittedNestsSource,
+    };
+  });
+  let sourceInTarget = false;
+  let previewDiagnostics = null;
+  try {
+    const frame = page.frameLocator('[data-testid="preview-iframe"]');
+    const body = frame.locator('body');
+    await body.waitFor({ state: 'attached', timeout: 30000 });
+    const nestedSource = frame.locator('.sheet-large-target .sheet-large-source');
+    previewDiagnostics = {
+      bodyCount: await body.count(),
+      targetCount: await frame.locator('.sheet-large-target').count(),
+      sourceCount: await frame.locator('.sheet-large-source').count(),
+      nestedCount: await nestedSource.count(),
+      bodyMarkup: await body.evaluate((node) => node.innerHTML.slice(0, 2000)),
+    };
+    await nestedSource.waitFor({ state: 'attached', timeout: 5000 });
+    sourceInTarget = (await nestedSource.count()) === 1;
+  } catch {
+    sourceInTarget = false;
+  }
+  result.sourceInTarget = sourceInTarget;
+  result.previewDiagnostics = previewDiagnostics;
+  result.pass = result.pass && sourceInTarget;
+  assert(result?.pass, `nested reparenting failed: ${JSON.stringify(result)}`);
+  return result;
 }
 
 async function main() {
@@ -167,6 +333,7 @@ async function main() {
     );
     const editSelectedRows = await page.locator('[data-testid="edit-layer-row"][data-r20-layer-selected="1"]').count();
     assert(editSelectedRows === 1, `expected one selected large edit layer row, got ${editSelectedRows}`);
+    const nestedReparenting = await runNestedReparentingSmoke(page);
     assert(consoleErrors.length === 0, `console errors: ${consoleErrors.join(' | ')}`);
     assert(pageErrors.length === 0, `page errors: ${pageErrors.join(' | ')}`);
 
@@ -178,6 +345,7 @@ async function main() {
       selectedRows: selected,
       editSurface,
       editSelectedRows,
+      nestedReparenting,
       consoleErrors,
       pageErrors,
     }, null, 2));

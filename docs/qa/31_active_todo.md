@@ -6697,3 +6697,30 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Add an anonymous imported nested corpus case that exercises
   subtree reparenting through the virtualized layer surface, then resume the
   supported Roll20 Sandbox upload path.
+
+## 2026-07-30 Large workspace nested reparenting
+
+- DONE LOCAL: The anonymous large corpus now contains a nested root, source
+  frame, target frame, and 5,200 flat inputs without using a real sheet or
+  public fixture.
+- VERIFIED LOCAL: `smoke:large-workspace-browser` imported 5,205 blocks with
+  `headless-large`, 17 structure rows, 20 virtual edit-layer rows, one
+  persistent iframe, zero SVG blocks, and zero console/page errors.
+- VERIFIED LOCAL: A real layer-panel `inside` drop changed the source parent
+  ID to the target ID. The emitted HTML and the iframe body both contain the
+  normalized Roll20 class nesting `.sheet-large-target .sheet-large-source`.
+  The layer model and iframe therefore agree after the reparenting mutation.
+- CLAIM BOUNDARY: This proves one anonymous nested large-workspace path. It
+  does not prove every imported DOM shape, worker runtime, or actual modern
+  Roll20 Sandbox/legacy-room visual parity.
+- NEXT P0: Complete supported modern Sandbox upload evidence, then perform
+  the isolated legacy-enabled test-room comparison without touching rooms with
+  more than one visible participant.
+
+## 2026-07-30 Generated-output cleanup
+
+- DONE LOCAL: After path-containment, reparse-point, and listener checks, the
+  user-authorized disposable targets `.next/`, `out/`, `.tmp/`,
+  `reports/edit-flow-smoke/`, and `tsconfig.tsbuildinfo` were removed.
+- PRESERVED: Source roots, `node_modules/`, Git worktrees, and user-authored
+  sheet inputs were not touched. No tracked file changed in the cleanup.

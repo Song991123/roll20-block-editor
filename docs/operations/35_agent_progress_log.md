@@ -7469,3 +7469,27 @@ visibility verification passed. No external room was opened or modified.
   console/page errors.
 - This is local performance and surface-ownership evidence only. Imported
   large-sheet subtree reparenting and actual Roll20 parity remain open.
+
+## 2026-07-30 - Large workspace nested reparenting
+
+- Added an anonymous nested corpus to `scripts/large_workspace_browser_smoke.mjs`:
+  a root frame, source frame, target frame, and 5,200 flat inputs. No real
+  sheet source, screenshot, or public fixture is used.
+- Browser evidence: 5,205 imported blocks, `headless-large`, 17 structure
+  rows, 20 virtual edit-layer rows, one persistent iframe, zero SVG blocks,
+  and zero console/page errors.
+- The layer-panel `inside` DragEvent was accepted. The source parent changed
+  to the target in both the layer snapshot and Blockly graph; the export and
+  iframe DOM show `.sheet-large-target .sheet-large-source` after Roll20 class
+  normalization.
+- This closes the anonymous large-workspace subtree-reparenting slice only.
+  It does not close universal imported DOM coverage or actual Roll20 parity.
+
+## 2026-07-30 - Generated-output cleanup completion
+
+- The five explicitly verified disposable targets were removed after the
+  canonical worktree containment, reparse-point, and listener checks:
+  `.next/`, `out/`, `.tmp/`, `reports/edit-flow-smoke/`, and
+  `tsconfig.tsbuildinfo`.
+- Source roots, dependencies, worktrees, and user-authored inputs were
+  preserved. The branch remained clean after cleanup.
