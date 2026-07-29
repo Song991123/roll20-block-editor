@@ -20,6 +20,7 @@
     "test:asset-refs": "tsx lib/export/__tests__/asset_refs.test.ts",
     "test:asset-replacements": "tsx lib/export/__tests__/asset_replacements.test.ts && node scripts/lib/assetReplacements.test.mjs",
     "test:translation-payload": "tsx lib/export/__tests__/translation_payload.test.ts",
+    "test:roll20-upload-files": "tsx lib/export/__tests__/roll20_upload_files.test.ts",
     "test:export-smoke": "tsx lib/export/__tests__/smoke.test.ts",
     "test:export-readme": "tsx lib/export/__tests__/readme.test.ts",
     "test:layer-roles": "tsx lib/editor/__tests__/layerRoles.test.ts",

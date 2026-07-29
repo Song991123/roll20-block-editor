@@ -32,7 +32,11 @@ import { SHEET_LICENSES, type SheetMetadata } from '@/lib/export/types';
 import { DEFAULT_METADATA } from '@/lib/export/manifest';
 import { analyzeEmit } from '@/lib/export/warnings';
 import { buildZip, triggerDownload } from '@/lib/export/zip_builder';
-import { prepareRoll20Payload } from '@/lib/export/payload';
+import {
+  prepareRoll20Payload,
+  prepareRoll20UploadFiles,
+  type Roll20UploadFile,
+} from '@/lib/export/payload';
 import {
   applyAssetReplacements,
   summarizeAssetReplacementReadiness,
@@ -45,7 +49,6 @@ import {
   type AssetPreflight,
 } from '@/lib/export/asset_refs';
 import {
-  sanitizeForRoll20Legacy,
   type SanitizeWarning,
 } from '@/lib/emit/sanitize';
 import {
@@ -87,6 +90,19 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
   const assetReplacementReadiness = useMemo(
     () => summarizeAssetReplacementReadiness(assetReplacementText),
     [assetReplacementText],
+  );
+
+  const roll20Upload = useMemo(
+    () => prepareRoll20UploadFiles(
+      {
+        html: exportText.html,
+        css: exportText.css,
+        translation: emitCache.i18n,
+        warnings: [],
+      },
+      { legacy: legacyMode },
+    ),
+    [emitCache.i18n, exportText.css, exportText.html, legacyMode],
   );
 
   const combinedWarnings = useMemo<EmitWarning[]>(() => {
@@ -157,8 +173,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       translation: emitCache.i18n,
       warnings: [],
     });
-    const cssForSandbox =
-      legacyMode && payload.css ? sanitizeForRoll20Legacy(payload.css).sanitized : payload.css;
+    const cssForSandbox = roll20Upload.css;
     const htmlResult = sanitizeRoll20SandboxHtml(payload.html, { prefixClasses: legacyMode });
     const cssResult = sanitizeRoll20SandboxCss(cssForSandbox, { prefixSelectors: false });
     const htmlWarnings = countSandboxWarnings(htmlResult.warnings);
@@ -186,14 +201,28 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
         (htmlWarnings['html-url-dropped'] ?? 0) + (cssWarnings['css-url-dropped'] ?? 0),
       cssRejected: cssWarnings['css-rejected'] ?? 0,
     };
-  }, [emitCache.i18n, exportText.html, exportText.css, legacyMode]);
+  }, [emitCache.i18n, exportText.html, exportText.css, legacyMode, roll20Upload.css]);
+
+  function handleDownloadTextFile(file: Roll20UploadFile) {
+    if (blocked || busy) return;
+    const blob = new Blob([file.content], { type: file.mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = file.name;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+    toast.success(`${file.name} 다운로드 준비가 끝났습니다.`);
+  }
 
   async function handleDownload() {
     if (blocked) return;
     setBusy(true);
     try {
-      let cssForZip = exportText.css;
-      let collectedWarnings: SanitizeWarning[] = [];
+      const cssForZip = roll20Upload.css;
+      const collectedWarnings: SanitizeWarning[] = roll20Upload.legacyWarnings;
       const extraFiles: Record<string, string> = {};
       if (assetReplacementText.trim()) {
         extraFiles['asset-replacements.json'] = JSON.stringify(
@@ -207,10 +236,7 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
           2,
         );
       }
-      if (legacyMode && exportText.css) {
-        const r = sanitizeForRoll20Legacy(exportText.css);
-        cssForZip = r.sanitized;
-        collectedWarnings = r.warnings;
+      if (legacyMode && collectedWarnings.length > 0) {
         extraFiles['sanitize-warnings.json'] = JSON.stringify(
           {
             mode: 'legacy-roll20-css-sanitize',
@@ -225,9 +251,9 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
       setLegacyWarnings(collectedWarnings);
       const zip = await buildZip(
         {
-          html: exportText.html,
+          html: roll20Upload.html,
           css: cssForZip,
-          translation: emitCache.i18n,
+          translation: roll20Upload.translation,
           warnings: [],
           extraFiles,
         },
@@ -337,6 +363,35 @@ export function ExportDialog({ open, onOpenChange }: ExportDialogProps) {
                 data-testid="export-meta-system"
               />
             </Field>
+          </section>
+
+          <section
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3.5"
+            data-testid="export-roll20-individual-files"
+          >
+            <div className="mb-2">
+              <div className="text-sm font-medium">Roll20 파일을 하나씩 저장</div>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Custom Sheet Sandbox에서 HTML, CSS, 번역 파일을 각각 선택해야 할 때 사용하세요.
+                ZIP과 같은 최종 payload가 저장됩니다.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {roll20Upload.files.map((file) => (
+                <Button
+                  key={file.name}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownloadTextFile(file)}
+                  disabled={blocked || busy}
+                  data-testid={`export-download-${file.name.replace('.', '-')}`}
+                >
+                  <Download className="mr-1.5 h-4 w-4" />
+                  {file.name}
+                </Button>
+              ))}
+            </div>
           </section>
 
           <section

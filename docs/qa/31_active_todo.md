@@ -6584,3 +6584,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   bypass was used.
 - VERIFY: the targets remain local-only disposable output; source roots,
   `node_modules/`, Git worktrees, and user-authored inputs were preserved.
+
+## 2026-07-30 Roll20 manual upload payload boundary
+
+- DONE LOCAL: Export now derives individual `sheet.html`, `sheet.css`, and
+  `translation.json` files through one shared payload function. ZIP and manual
+  file downloads therefore use the same internal-ID removal, translation
+  normalization, and legacy CSS transform.
+- VERIFIED LOCAL: `test:roll20-upload-files`, lint, build, and `ci:verify` pass;
+  no private fixture or real sheet source was added.
+- VERIFY/BLOCKED: The new download path has not yet been accepted by the live
+  Roll20 Sandbox file chooser. Actual generated root, screenshot, and chat
+  evidence remain absent until a user-visible upload route succeeds.
+- NEXT P0: Use the individual files in the isolated Sandbox, then capture
+  positive activation/root/screenshot/chat evidence before claiming parity.

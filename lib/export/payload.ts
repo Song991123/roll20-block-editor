@@ -1,7 +1,23 @@
 import type { EmitOutput } from './types';
+import { ZIP_FILES } from './types';
+import {
+  sanitizeForRoll20Legacy,
+  type SanitizeWarning,
+} from '../emit/sanitize';
 
 export interface PreparedPayload extends EmitOutput {
   removedInternalBlockIds: number;
+}
+
+export interface Roll20UploadFile {
+  name: string;
+  content: string;
+  mimeType: string;
+}
+
+export interface PreparedRoll20Upload extends PreparedPayload {
+  legacyWarnings: SanitizeWarning[];
+  files: Roll20UploadFile[];
 }
 
 /**
@@ -18,6 +34,48 @@ export function prepareRoll20Payload(emit: EmitOutput): PreparedPayload {
     html: htmlClean.html,
     translation: normalizeTranslationForRoll20(emit.translation),
     removedInternalBlockIds: htmlClean.removed,
+  };
+}
+
+/**
+ * Build the exact three text files that the Roll20 sheet settings form reads.
+ * ZIP export and manual Sandbox upload must share this boundary so a user does
+ * not validate one payload and upload a subtly different one.
+ */
+export function prepareRoll20UploadFiles(
+  emit: EmitOutput,
+  options: { legacy?: boolean } = {},
+): PreparedRoll20Upload {
+  const payload = prepareRoll20Payload(emit);
+  const legacyResult = options.legacy && payload.css
+    ? sanitizeForRoll20Legacy(payload.css)
+    : { sanitized: payload.css, warnings: [] as SanitizeWarning[] };
+  const prepared = {
+    ...payload,
+    css: legacyResult.sanitized,
+    translation: payload.translation.trim() || '{}',
+    legacyWarnings: legacyResult.warnings,
+  };
+
+  return {
+    ...prepared,
+    files: [
+      {
+        name: ZIP_FILES.HTML,
+        content: prepared.html,
+        mimeType: 'text/html;charset=utf-8',
+      },
+      {
+        name: ZIP_FILES.CSS,
+        content: prepared.css,
+        mimeType: 'text/css;charset=utf-8',
+      },
+      {
+        name: ZIP_FILES.TRANSLATION,
+        content: prepared.translation,
+        mimeType: 'application/json;charset=utf-8',
+      },
+    ],
   };
 }
 

@@ -7366,3 +7366,18 @@ visibility verification passed. No external room was opened or modified.
   path remain unchanged.
 - NOT CLAIMED: This is a production-safety boundary, not actual Roll20 visual
   parity. Modern Sandbox upload/root/screenshot/chat evidence remains open.
+
+## 2026-07-30 - Manual Roll20 upload file path
+
+- DONE: Added a shared `prepareRoll20UploadFiles` boundary for the exact
+  `sheet.html`, `sheet.css`, and `translation.json` payloads used by manual
+  Sandbox upload. Legacy mode applies the same CSS compatibility transform
+  before both individual downloads and ZIP packaging.
+- DONE: Export now offers individual text-file downloads so a user can select
+  each file in Roll20's separate Sandbox inputs without unpacking a ZIP.
+- VERIFIED: `test:roll20-upload-files`, lint, production build, and
+  `ci:verify` pass. The test proves internal block IDs are removed, translation
+  normalization is shared, and legacy CSS warnings are surfaced.
+- CLAIM BOUNDARY: This removes a local export UX gap but does not prove that
+  the current browser can assign files to Roll20 or that the generated sheet
+  has actual Roll20 root/screenshot/chat evidence. Sandbox upload remains open.
