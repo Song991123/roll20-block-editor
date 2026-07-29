@@ -80,3 +80,26 @@ after checking current Git worktrees and local process state:
 
 The four zones are a navigation and ownership boundary, not a claim that the
 active Git worktree can be moved without updating path-sensitive scripts.
+
+## 2026-07-29 second-pass retention inventory
+
+The four-zone harness is now documented in
+`docs/operations/45_workspace_harness_and_retention.md`. A second pass found
+these candidates, all outside protected source ownership:
+
+- Old `web/` generated output: `node_modules/` 464.53 MiB, `.next/` 195.06
+  MiB, and `out/` 6.52 MiB. `git status --ignored` shows all three as ignored.
+- Active generated output: `web-push-main/.next/` 19.73 MiB,
+  `web-push-main/out/` 2.99 MiB, `debug.log`, and `tsconfig.tsbuildinfo`.
+- Same-day duplicate visual evidence:
+  `reports/preview-edit-visual/` and `reports/preview-edit-visual-rerun/`.
+  `preview-edit-visual-final/` and `roll20-actual-compare/` remain retained
+  for the current verification goal.
+- Unused root `.git.broken-20260510-222058/` and `.pnpm-store/` metadata.
+
+The stale `web-sfx-wt` and `web-claude-legacy` registrations were pruned from
+`git worktree list --porcelain`; read-only metadata directories under the main
+Git administrative area still need a permitted Git metadata cleanup. No active
+listener was found. The shell safety guard rejected the recursive deletion
+attempt, so the candidates above are **not deleted yet**. This is intentional:
+the ledger must distinguish a verified candidate from a completed deletion.

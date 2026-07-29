@@ -21,6 +21,7 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 15. When the product goal or work allocation is being reset, read `docs/operations/41_product_reset_and_short_term_goals.md` and `docs/operations/43_agent_context_pack.md` before starting a new track.
 16. Run `git status --short --branch`.
 17. Check for unnecessary local dev servers before starting another one.
+18. For folder cleanup or retention work, read `docs/operations/45_workspace_harness_and_retention.md`.
 
 ## Non-Negotiable Rules
 
@@ -47,6 +48,9 @@ This file is the mandatory startup rulebook for Codex, Claude, and any other age
 - Parallel agents must use separate branches or read-only reports. One lead/integrator owns merges and pushes to shared branches.
 - The active short-term goal document is the control plane. Do not start a broad redesign or folder move outside a named goal, owner, branch, file boundary, and evidence gate.
 - Folder cleanup must be staged: inventory first, documentation/index second, reference or legacy moves only after all script and git references are known.
+- The four-zone workspace harness is mandatory: active code, fixed references,
+  recovery archive, and disposable local evidence have different ownership and
+  deletion rules. Do not collapse them into one undifferentiated folder.
 - The visual language must be original: light pink/pastel is allowed, but do not imitate Roll20 screens or default to an AI-looking dark blue/purple palette.
 - User-facing UI must prefer plain Korean action language, compact icons with tooltips, and optional visual previews over raw DOM/CSS/worker terminology.
 - Current persistence is local browser autosave/IndexedDB. Do not imply account sync or require login until a real auth/storage service exists and its privacy boundary is documented.
