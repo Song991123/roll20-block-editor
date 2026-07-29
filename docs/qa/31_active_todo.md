@@ -6145,6 +6145,23 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   path still require measurement and reduction; this is not complete.
 - SAFETY: No Roll20 room was opened for this run. Existing-room observation
   remains eligible only after a fresh visible participant count of exactly `1`.
+
+## 2026-07-29 Workspace Cleanup Gate
+
+- DONE LOCAL: Created `01_ACTIVE/`, `02_REFERENCE/`, `03_ARCHIVE/`, and
+  `04_LOCAL/` navigation zones at the parent workspace.
+- DONE LOCAL: Removed generated root temp/cache/log folders and active ignored
+  `.tmp/`, `.next/`, `out/`, and report subfolders. No protected source folder
+  or active Git worktree was deleted.
+- DONE LOCAL: Preserved the old single-file viewer/editor and backups under
+  `03_ARCHIVE/legacy-single-file/`; the old legacy branch remains in Git after
+  its physical worktree was removed.
+- VERIFY OPEN: Compatibility roots remain at the parent level because legacy
+  viewer and baseline-generation paths still reference them. A future move
+  needs a dedicated path migration plus lint/build/smoke verification.
+- VERIFY OPEN: Roll20 actual-screen parity is unchanged. The browser reached a
+  login/Cloudflare gate, so no existing room was selected and no participant
+  count was claimed.
 ## 2026-07-29 Local flow-drag acceptance update
 
 - DONE LOCAL: The persistent iframe acceptance smoke now performs a real

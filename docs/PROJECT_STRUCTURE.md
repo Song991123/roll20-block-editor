@@ -77,7 +77,13 @@ This repository worktree lives inside the user's `영시영 시트 고치기` fo
 | `../web/` | git repo body | `web-push-main` is a worktree of this repo; its gitdir is a Windows absolute path, so git may not work from non-Windows mounts. |
 | `../sheet/` | reference | User's YSHY sheet source copies (HTML/CSS/translation). Copy into `test-fixtures/` before use; never edit in place. |
 | `../roll20-base/`, `../api/`, `../docs/`, `../cache/` | reference | Roll20 baseline CSS, API scripts, early analysis docs, imgur cache. |
-| `../block-editor.html` (+ `.bak.*`), `../viewer*`, `../PLAN.md`, `../HANDOFF.md` | legacy (May 2026) | Single-file editor era. Superseded by this repo; current truth is `docs/` here. |
-| `../web-sfx-wt/`, `../web-sfx2/`, `../_bundle_work/`, `../samples-b-fix/` | experiment copies | Parallel experiments, already merged or abandoned. Do not start new work there. |
-| `../_pnpm_*`, `../_tmp_*`, `../_logs/`, `../__pycache__/` | byproducts | Tool caches/leftovers. |
+| `../03_ARCHIVE/legacy-single-file/` | legacy (May 2026) | Single-file editor, viewer, helper scripts, and backups. Reference-only; current truth is this repo. |
+| `../01_ACTIVE/`, `../02_REFERENCE/`, `../03_ARCHIVE/`, `../04_LOCAL/` | workspace zones | Navigation and ownership markers documented by the parent `AGENTS.md`. |
+| parent `_tmp_*`, `_pnpm_*`, `_logs/`, `__pycache__/` | removed byproducts | Generated leftovers were removed on 2026-07-29. Recreate local evidence only when needed. |
 | `../폴더 안내.md` | user guide | Korean folder guide for the user. Keep in sync when the layout changes. |
+## 2026-07-29 Parent Layout Update
+
+The parent workspace now uses four navigation zones: `01_ACTIVE/`,
+`02_REFERENCE/`, `03_ARCHIVE/`, and `04_LOCAL/`. The active worktrees and
+fixed compatibility roots remain at the parent level until their path-sensitive
+consumers are migrated and reverified.

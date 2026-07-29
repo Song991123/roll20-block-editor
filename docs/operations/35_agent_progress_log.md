@@ -6964,3 +6964,25 @@ visibility verification passed. No external room was opened or modified.
   final path keeps the coalesced microtask so structural edits remain correct.
 - DIAGNOSTICS: timing markers are opt-in through localStorage `__perfOn=1` and
   are not retained in ordinary user sessions.
+
+## 2026-07-29 Workspace Cleanup
+
+- DONE LOCAL: The parent workspace now has four navigation zones:
+  `01_ACTIVE/`, `02_REFERENCE/`, `03_ARCHIVE/`, and `04_LOCAL/`.
+- DONE LOCAL: Root generated `_tmp_*`, old pnpm cache folders, logs, Python
+  cache, and empty output folders were removed after workspace-boundary checks.
+- DONE LOCAL: Active ignored `.tmp/`, `.next/`, `out/`, and generated report
+  directories were removed. `reports/README.md` remains as the local evidence
+  policy; evidence must be regenerated when a new run is needed.
+- DONE LOCAL: The clean legacy worktree was removed while its Git branch was
+  preserved. Broken/abandoned experiment copies were removed after reference
+  and worktree checks.
+- PRESERVED: The old single-file editor, viewer, helper scripts, and backups
+  were moved intact into parent `03_ARCHIVE/legacy-single-file/` for reference.
+- PRESERVED: `web/`, `web-push-main/`, `sheet/`, `roll20-base/`, `api/`,
+  `docs/`, and `cache/` remain at their compatibility paths. Moving them is a
+  separate path-migration task and is not implied by this cleanup.
+- VERIFY OPEN: This cleanup did not perform Roll20 browser verification. A
+  browser session was blocked at the login/Cloudflare page, so no room was
+  opened; any existing-room run still requires a fresh visible participant
+  count of exactly one.
