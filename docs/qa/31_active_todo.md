@@ -1,3 +1,14 @@
+## 2026-07-29 Participant Gate Hardening
+
+- IMPLEMENTED: Existing-room participant checks now read only the currently
+  visible `.party-page-members` element. They no longer scan the whole page
+  text, chat history, room name, or stale navigation labels.
+- SAFETY GATE: A missing, hidden, unreadable, zero, or multi-member indicator
+  blocks the room. Only one visible member count passes the observation gate.
+- VERIFIED LOCAL: `corepack pnpm run test:roll20-room-members` and the upload
+  guard self-test pass. Sandbox writes remain on the isolated Sandbox path;
+  existing rooms remain observation-only.
+
 ## 2026-07-29 Modern Sandbox Fresh Payload Render
 
 - VERIFIED ACTUAL SAFETY: Immediately before the modern Sandbox write and

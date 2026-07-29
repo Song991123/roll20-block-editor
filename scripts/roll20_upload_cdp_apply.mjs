@@ -230,11 +230,20 @@ async function findRoll20Page(browser, requireSoloRoom = false) {
 async function inspectParticipantPage(page) {
   const snapshot = await page.evaluate(() => ({
     pathname: location.pathname,
-    bodyText: document.body?.innerText ?? '',
+    participantText: (() => {
+      const element = document.querySelector('.party-page-members');
+      if (!element) return '';
+      const style = getComputedStyle(element);
+      const visible = style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && element.getClientRects().length > 0;
+      return visible ? (element.innerText ?? element.textContent ?? '') : '';
+    })(),
   }));
   return {
     pathname: snapshot.pathname,
-    ...parseParticipantCounts(snapshot.bodyText),
+    ...parseParticipantCounts(snapshot.participantText),
+    source: '.party-page-members',
     mutationPerformed: false,
   };
 }

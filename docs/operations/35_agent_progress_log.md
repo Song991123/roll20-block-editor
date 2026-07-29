@@ -1,3 +1,14 @@
+## 2026-07-29 - Participant Gate Hardening
+
+- The existing-room preflight and legacy upload guard now read only the
+  visible `.party-page-members` element. They do not infer solitude from room
+  names, stale chat, or arbitrary page text.
+- Missing/hidden/ambiguous counts block the action. Exactly one visible member
+  count is the only eligible observation state; existing rooms are still
+  read-only and generated writes stay in Sandbox or a dedicated test room.
+- Local checks passed: `corepack pnpm run test:roll20-room-members` and the
+  upload guard self-test.
+
 ## 2026-07-29 - Modern Sandbox Fresh Payload Render Confirmed
 
 - VERIFIED ACTUAL SAFETY: The dedicated Sandbox showed exactly

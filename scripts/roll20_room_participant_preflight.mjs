@@ -80,15 +80,24 @@ async function inspectPage(page) {
   const snapshot = await page.evaluate(() => ({
     pathname: location.pathname,
     title: document.title,
-    bodyText: document.body?.innerText ?? '',
+    participantText: (() => {
+      const element = document.querySelector('.party-page-members');
+      if (!element) return '';
+      const style = getComputedStyle(element);
+      const visible = style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && element.getClientRects().length > 0;
+      return visible ? (element.innerText ?? element.textContent ?? '') : '';
+    })(),
   }));
-  const participant = parseParticipantCounts(snapshot.bodyText);
+  const participant = parseParticipantCounts(snapshot.participantText);
   return {
     pathname: snapshot.pathname,
     title: snapshot.title,
     status: participant.status,
     visibleCounts: participant.counts,
     evidence: participant.lines,
+    source: '.party-page-members',
     mutationPerformed: false,
   };
 }
