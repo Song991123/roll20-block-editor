@@ -1,3 +1,26 @@
+## 2026-07-29 - One-Member Roll20 Runtime Evidence And Translation Boundary
+
+- VERIFIED ACTUAL / READ-ONLY: The connected Roll20 test room visibly reported
+  `party-page-members = 1 구성원`. The room was treated as eligible only for
+  the isolated test path; no multi-user or unknown-participant room was used.
+- VERIFIED ACTUAL: The open character-sheet iframe rendered the anonymous
+  `Synthetic Roll Check` heading, `Tester` input, and one Roll20 roll button.
+  One isolated roll produced visible Roll20 chat results using the `Test`
+  rolltemplate with results `5`, `7`, and `11` in the chat log.
+- BOUNDARY: This is actual Roll20 runtime/chat evidence for the synthetic test
+  sheet. It does not prove pixel parity for the ignored official/commission
+  fixtures or the legacy compatibility path.
+- FINDING: The visible Sheet Sandbox Tools dialog showed a translation JSON
+  parse error before a new fixture upload was accepted. No fixture upload was
+  counted after that failure, and no existing room was changed.
+- FIXED LOCAL: Export normalization now turns valid JSON into a flat
+  string-valued Roll20 map and rejects arrays, nested locale objects, and
+  malformed comment-only input to `{}`. Export warnings and the local payload
+  audit now flag non-flat translation data before upload.
+- VERIFIED LOCAL: Translation payload tests, export smoke, lint, fresh local
+  Roll20 payload generation, and the payload audit passed for all three ignored
+  development fixtures. The local audit is not external Roll20 proof.
+
 ## 2026-07-29 - Layer Drop Feedback And Room Safety Clarification
 
 - FIXED: Layer rows now keep their `before / inside / after` feedback while the

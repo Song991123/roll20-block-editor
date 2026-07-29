@@ -7,6 +7,11 @@ import {
 
 const json = '{"name":"Name","hp":10,"empty":null}';
 assert.deepEqual(parseTranslationMap(json), { name: 'Name', hp: '10' });
+assert.deepEqual(JSON.parse(normalizeTranslationForRoll20('["not", "a", "map"]')), {});
+assert.deepEqual(JSON.parse(normalizeTranslationForRoll20('{"ko":{"name":"이름"}}')), {});
+assert.deepEqual(JSON.parse(normalizeTranslationForRoll20('{"name":"Name","nested":{"bad":true}}')), {
+  name: 'Name',
+});
 
 const comments = [
   '<!-- i18n[ko] "name-u": "이름" -->',
@@ -22,5 +27,6 @@ assert.deepEqual(JSON.parse(normalizeTranslationForRoll20(comments)), {
 });
 
 assert.deepEqual(parseTranslationMap('not valid translation data'), {});
+assert.equal(normalizeTranslationForRoll20('not valid translation data'), '{}');
 
 console.log('translation payload tests: PASS');

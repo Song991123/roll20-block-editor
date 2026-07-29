@@ -34,8 +34,8 @@ export function normalizeTranslationForRoll20(translation: string): string {
   const text = String(translation ?? '').trim();
   if (!text) return '{}';
   try {
-    JSON.parse(text);
-    return text;
+    const normalized = normalizeFlatJsonTranslation(JSON.parse(text));
+    if (normalized !== null) return normalized;
   } catch {
     // Fall through to the internal comment format produced by r20_locale_value.
   }
@@ -52,7 +52,22 @@ export function normalizeTranslationForRoll20(translation: string): string {
     }
   }
 
-  if (Object.keys(entries).length === 0) return text;
+  if (Object.keys(entries).length === 0) return '{}';
+  return `${JSON.stringify(entries, null, 2)}\n`;
+}
+
+/**
+ * Roll20's translation.json is a flat string map. JSON validity alone is not
+ * enough: arrays, nested locale objects, and object-valued entries are valid
+ * JSON but are not valid Roll20 translation payloads.
+ */
+function normalizeFlatJsonTranslation(value: unknown): string | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const entries: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === 'string') entries[key] = entry;
+    else if (typeof entry === 'number' || typeof entry === 'boolean') entries[key] = String(entry);
+  }
   return `${JSON.stringify(entries, null, 2)}\n`;
 }
 

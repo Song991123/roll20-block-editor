@@ -12,6 +12,7 @@
 
 import type { EmitWarning } from '@/lib/stores/workspaceStore';
 import type { EmitOutput } from './types';
+import { parseTranslationMap } from './payload';
 
 /** export.* prefix — emit.ts 의 warning code 와 충돌 방지. */
 const PREFIX = 'export.';
@@ -140,14 +141,12 @@ export function analyzeEmit(out: EmitOutput): EmitWarning[] {
       blockId: null,
     });
   } else {
-    try {
-      JSON.parse(tr);
-    } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
+    if (Object.keys(parseTranslationMap(tr)).length === 0) {
       found.push({
         severity: 'warning',
         code: CODE.TRANSLATION_PARSE,
-        message: `translation.json 이 유효한 JSON 이 아닙니다 (${detail}). 다운로드는 가능하지만 Roll20 에서 번역이 동작하지 않습니다. 번역 워크스페이스를 확인하세요.`,
+        message:
+          'translation.json 이 Roll20용 평면 문자열 맵이 아닙니다. 다운로드는 가능하지만 Roll20에서 번역이 동작하지 않을 수 있으니 { "키": "문구" } 형식으로 고치세요.',
         blockId: null,
       });
     }

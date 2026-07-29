@@ -135,7 +135,21 @@ async function auditFixture(fixture) {
   }
 
   try {
-    JSON.parse(files.translation.trim() || '{}');
+    const translation = JSON.parse(files.translation.trim() || '{}');
+    if (!translation || typeof translation !== 'object' || Array.isArray(translation)) {
+      entry.issues.push({ severity: 'error', code: 'payload.translation_not_flat_object', file: 'translation' });
+    } else {
+      for (const [key, value] of Object.entries(translation)) {
+        if (typeof value !== 'string') {
+          entry.issues.push({
+            severity: 'error',
+            code: 'payload.translation_value_not_string',
+            file: 'translation',
+            key,
+          });
+        }
+      }
+    }
   } catch (err) {
     entry.issues.push({ severity: 'error', code: 'payload.invalid_translation_json', file: 'translation', message: String(err).slice(0, 200) });
   }

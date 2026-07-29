@@ -5726,3 +5726,23 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BOUNDARY: this is a safety gate, not evidence that any current external room
   is eligible. A fresh live preflight is still required immediately before a
   legacy-room operation.
+## 2026-07-29 Roll20 Runtime Evidence And Translation Upload Gate
+
+- VERIFIED ACTUAL: The connected test room showed exactly `1 구성원`; the
+  anonymous synthetic sheet rendered in its Roll20 iframe and one roll reached
+  chat as the `Test` rolltemplate with visible results `5`, `7`, and `11`.
+- SAFETY: This was an isolated one-member test path. No existing multi-user or
+  unreadable-participant room was opened, edited, uploaded to, or used for
+  chat verification.
+- FINDING: Roll20's visible Sheet Sandbox Tools dialog currently shows a
+  translation JSON parse error. The attempted AW2E file selection did not
+  complete, so no real fixture upload or parity claim is recorded.
+- DONE: Export translation normalization now emits only a flat string map and
+  turns unsupported/malformed input into an empty safe map. Export warnings and
+  the local payload audit cover this boundary.
+- VERIFIED LOCAL: Translation payload tests, export smoke, lint, fresh local
+  payload generation, and payload audit pass for AW2E, Les-Oublies, and YSHY
+  development fixtures.
+- NEXT P0: Reconnect the exact one-member Roll20 test room, clear/identify the
+  Sandbox translation error, then apply one ignored fixture and capture fresh
+  actual sheet + chat evidence. Keep modern and legacy results separate.
