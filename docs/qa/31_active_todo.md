@@ -6786,3 +6786,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Keep the page-JS block source contract stable while implementing a
   dedicated JS workspace only after its autosave/export/runtime boundaries are
   specified and tested.
+
+## 2026-07-30 Modern/legacy export audit refresh
+
+- DONE LOCAL: Repaired the legacy export audit's stale `ExportDialog` static
+  assertions to follow the current `prepareRoll20UploadFiles(..., { legacy })`
+  boundary instead of requiring a removed direct sanitizer import.
+- VERIFIED LOCAL: `corepack pnpm run audit:legacy-export` passes all synthetic
+  sanitizer and ExportDialog routing assertions; the audit is now included in
+  `corepack pnpm run ci:verify`.
+- VERIFY OPEN: Payload/sandbox audits that consume historical actual-report
+  roots cannot run after local evidence cleanup. They remain evidence-driven
+  diagnostics, not a reason to recreate or publish private fixtures.
+- BLOCKED_EXTERNAL: CDP preflight self-test passes, but no local CDP endpoint
+  is currently listening, so no fresh modern Sandbox or isolated legacy-room
+  screenshot/runtime evidence is counted.

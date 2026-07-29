@@ -7546,3 +7546,16 @@ visibility verification passed. No external room was opened or modified.
   production build, and full `corepack pnpm run ci:verify` all pass.
 - This closes only the local page-JS preservation/editability slice. It does
   not claim a dedicated JS workspace or actual Roll20 modern/legacy parity.
+
+## 2026-07-30 - Modern/legacy export audit refresh
+
+- Updated the legacy export audit to match the current payload boundary:
+  `prepareRoll20UploadFiles` owns the legacy sanitizer and receives the mode
+  from `ExportDialog`; the dialog no longer imports the sanitizer directly.
+- Added the audit to the CI verification task list. Synthetic legacy export
+  audit now passes all assertions and still explicitly excludes actual Roll20
+  visual parity from its claim.
+- Historical payload/sandbox reports were intentionally removed during local
+  evidence cleanup, so those report-consuming audits remain open until a new
+  user-authorized capture session exists. The current CDP endpoint is not
+  listening, so no live capture was attempted.

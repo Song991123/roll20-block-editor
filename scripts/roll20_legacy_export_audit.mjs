@@ -118,14 +118,14 @@ function auditExportDialogStatic(assertions) {
   const source = readFileSync(file, 'utf8');
   check(
     assertions,
-    'ExportDialog imports sanitizeForRoll20Legacy',
-    /sanitizeForRoll20Legacy/.test(source),
+    'ExportDialog routes payload through prepareRoll20UploadFiles',
+    /prepareRoll20UploadFiles/.test(source),
     { file },
   );
   check(
     assertions,
-    'ExportDialog gates sanitizer behind legacyMode',
-    /if\s*\(\s*legacyMode\s*&&\s*exportText\.css\s*\)/.test(source),
+    'ExportDialog passes legacyMode into the upload payload boundary',
+    /prepareRoll20UploadFiles\([\s\S]*?legacy:\s*legacyMode/.test(source),
     { file },
   );
   check(

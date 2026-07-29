@@ -39,6 +39,7 @@ const tasks = [
   'test:import-structure',
   'test:imported-edit-budget',
   'test:legacy-css-sanitize',
+  'audit:legacy-export',
   'test:roll20-sandbox-sanitize',
   'test:roll20-render-modes',
   'test:roll20-upload-snippet',
