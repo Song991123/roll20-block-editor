@@ -929,3 +929,9 @@ The repository includes a read-only helper for this boundary:
 It does not navigate or mutate the connected browser and returns
 `PASS_SOLO` only when one visible participant count is found. A missing,
 ambiguous, or non-one count is a blocking result, not permission to guess.
+
+The CDP upload helper accepts `--require-solo-room` for the dedicated legacy
+room. With that flag it performs the same fresh participant check on the
+current editor page before navigating to settings or evaluating an upload
+snippet. Sandbox uploads remain a separate path and must never be used as
+legacy-room evidence.

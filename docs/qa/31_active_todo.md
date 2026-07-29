@@ -5654,6 +5654,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED LOCAL: `test:roll20-room-members` self-test covers one-member,
   multi-member, missing-count, and ambiguous-count cases. The helper does not
   navigate, upload, save, open a character, click a roll, or change settings.
+- ADDED GUARD: the CDP upload helper accepts `--require-solo-room` and repeats
+  the fresh check on the current editor page before navigating to settings or
+  evaluating an upload snippet. Sandbox and legacy-room evidence remain
+  separate destinations.
 - BOUNDARY: this is a safety gate, not evidence that any current external room
   is eligible. A fresh live preflight is still required immediately before a
   legacy-room operation.
