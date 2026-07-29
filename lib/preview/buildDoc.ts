@@ -1386,7 +1386,6 @@ const ROLL20_DIALOG_OPEN_CSS = `
 }
 
 #dialog-window,
-#dialog-window .dialog.largedialog,
 #dialog-window .characterviewer,
 #dialog-window .tab-content,
 #dialog-window .sheetform {
@@ -1397,6 +1396,12 @@ const ROLL20_DIALOG_OPEN_CSS = `
   margin: 0 !important;
   outline: 0 !important;
   padding: 0 !important;
+}
+
+/* Roll20's visible sheet dialog keeps the 20px horizontal content inset even
+ * when its title bar and button pane are not part of the sheet surface. */
+#dialog-window .dialog.largedialog {
+  padding: 0 20px !important;
 }
 
 #dialog-window::before,

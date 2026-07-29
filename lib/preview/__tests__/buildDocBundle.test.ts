@@ -56,6 +56,11 @@ assert.match(
   /#dialog-window\.r20-preview-dialog #charsheet-root[\s\S]*?width: auto !important/,
   'authored sheet root keeps its intrinsic width',
 );
+assert.match(
+  bundle.doc,
+  /#dialog-window \.dialog\.largedialog[\s\S]*?padding: 0 20px !important/,
+  'Roll20 dialog keeps the measured horizontal content inset',
+);
 assert.match(bundle.doc, /function patchRootHtml\(html\)/);
 assert.match(
   bundle.doc,

@@ -898,3 +898,28 @@ independent evidence.
 
 All images and sidecars remain ignored under
 `reports/roll20-actual-compare/live-browser/2026-07-19-synthetic-modern/`.
+
+## 2026-07-29 Participant-Gated Sandbox Recheck and Wrapper Alignment
+
+- The only external destination used for the recheck was the dedicated
+  Custom Sheet Sandbox. A fresh visible participant check returned exactly
+  `1` member before any payload interaction.
+- The previously observed existing room with `5` members remained excluded.
+  No existing room was selected, edited, saved, or used for chat/upload
+  testing. This exclusion applies even when the room is otherwise convenient.
+- The anonymous synthetic modern payload still activated in the Sandbox
+  character iframe with its translated heading, input, and Roll20 roll
+  control. The authored root measured `850x220px`; the surrounding
+  `.charactersheet` wrapper measured `860x240px`.
+- Local renderer alignment now keeps the same `20px` horizontal inset on
+  `.dialog.largedialog` while hiding only the non-sheet chrome. Local checks
+  pass, but the external normalized root comparison remains a diagnostic
+  `2.88%` mismatch and is not promoted to parity.
+
+### Room eligibility rule
+
+An existing Roll20 room is eligible only after a fresh visible participant
+preflight confirms exactly one member. If the count is greater than one,
+unknown, stale, or unreadable, stop and exclude the room from all upload,
+save, chat, settings, and generated-sheet actions. Use the dedicated Sandbox
+or a newly created test room instead.

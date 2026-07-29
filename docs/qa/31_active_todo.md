@@ -5619,3 +5619,28 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: repeat the normalized actual-screen check with an authorized
   modern payload, then run the separate legacy-enabled test-room check. Do
   not combine their evidence.
+
+## 2026-07-29 Roll20 Dialog Inset Alignment
+
+- FIXED LOCAL: the preview/edit Roll20 wrapper now preserves the measured
+  `.dialog.largedialog` horizontal content inset (`20px` on each side) while
+  continuing to hide titlebar/button-pane chrome. The authored sheet root is
+  still allowed to keep its own intrinsic width, so the default `850px` sheet
+  remains `850px` rather than being widened.
+- VERIFIED LOCAL: `test:build-doc-bundle`, `lint`, production `build`,
+  `ci:verify`, both-mode preview/edit visual smoke (`0%` for all three
+  anonymous fixtures), strict imported-edit sync, persistent preview surface,
+  and edit-flow smoke all pass after the change.
+- VERIFIED EXTERNAL (already authorized dedicated Sandbox only): the measured
+  anonymous modern synthetic sheet still has an authored root of `850x220px`
+  inside an `860x240px` `.charactersheet` wrapper. The dedicated Sandbox had
+  exactly one visible member before use. No existing room was selected or
+  modified.
+- VERIFY: the external root image comparison remains a diagnostic `2.88%`
+  mismatch after DPR-corrected capture. This wrapper adjustment is not being
+  counted as external visual parity, and it does not close the separate
+  legacy-room gate.
+- SAFETY: an existing room is eligible only after a fresh visible participant
+  preflight confirms exactly one member. Any room with more than one member or
+  an unreadable participant count is excluded from upload, save, chat, and
+  settings operations.

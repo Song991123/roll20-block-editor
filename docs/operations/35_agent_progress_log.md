@@ -6326,3 +6326,22 @@ direct Shadow drag smoke passed. The persistent smoke retained one iframe and
 reported zero reloads through the tested edit flow. This is local behavior
 evidence only; the external Sandbox diagnostic and dedicated legacy-room
 verification remain open.
+
+### 2026-07-29 - Roll20 dialog inset alignment
+
+Live Sandbox geometry showed the real viewer keeps a `20px` left/right inset
+on `.dialog.largedialog` around an authored `850px` sheet root. The local
+Roll20 dialog CSS had removed that inset together with the titlebar chrome.
+The renderer now hides the chrome but keeps `padding: 0 20px`, leaving the
+authored root intrinsic width unchanged.
+
+Verification: `test:build-doc-bundle`, `lint`, production `build`, `ci:verify`,
+both-mode preview/edit visual smoke, strict imported-edit sync, persistent
+preview smoke, and edit-flow smoke passed. The external result remains
+`VERIFIED_PARTIAL`: one anonymous synthetic payload activated in the dedicated
+Sandbox, while the DPR-normalized root diff is still a diagnostic `2.88%`.
+
+Safety boundary: only the dedicated Sandbox with a fresh visible `1`-member
+preflight was used. Existing rooms are observation-only and are excluded when
+the member count is greater than one or cannot be read. No existing room was
+opened, uploaded to, saved, or otherwise modified in this run.
