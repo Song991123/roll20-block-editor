@@ -6634,3 +6634,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Complete a supported user-visible Sandbox upload, then capture
   positive activation, root DOM, screenshot, and roll/chat evidence. Legacy
   mode still needs its isolated dedicated-room check.
+
+## 2026-07-30 Sandbox retry and renderer regression checks
+
+- VERIFY/BLOCKED: The isolated Roll20 editor still reports exactly one visible
+  member, but three visible file-picker path strategies left `#sheetHtml`
+  empty. No payload was accepted and no actual Roll20 evidence is counted.
+- VERIFIED LOCAL: `smoke:edit-flow`, modern/legacy persistent-preview smoke,
+  and `smoke:legacy-preview` pass.
+- CLAIM BOUNDARY: Local renderer and preview/edit synchronization are covered;
+  actual Roll20 visual parity, root DOM, and roll/chat parity remain open.
+- NEXT P0: Obtain a supported CDP endpoint or complete a user-visible manual
+  file selection; then run activation, sheet-frame, screenshot, and chat
+  probes. Legacy mode must be checked only in an isolated dedicated room.

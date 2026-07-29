@@ -7411,3 +7411,19 @@ visibility verification passed. No external room was opened or modified.
   smoke pass.
 - CLAIM BOUNDARY: This proves the local user import path only. It does not
   establish actual Roll20 Sandbox acceptance or modern/legacy visual parity.
+
+## 2026-07-30 - Sandbox chooser retry and local render regression pass
+
+- VERIFIED READ-ONLY: The logged-in Roll20 editor still showed the isolated
+  Sheet Sandbox controls and exactly `1 구성원`. HTML/CSS/Translation file
+  inputs were present behind their visible labels.
+- ATTEMPTED: Retried visible HTML file selection using direct path typing,
+  location-bar focus, and filename-field focus. Each route returned to the
+  editor with `#sheetHtml.files` empty and no accepted value.
+- BLOCKED: No generated payload reached Roll20; no root DOM, screenshot, or
+  chat evidence was created, and no room setting was changed.
+- VERIFIED LOCAL: `smoke:edit-flow`, `smoke:persistent-preview-surface` (modern
+  and legacy), and `smoke:legacy-preview` all pass. These remain local
+  renderer/synchronization checks, not actual Roll20 parity evidence.
+- NEXT P0: Use a supported CDP endpoint or a user-visible manual file choice,
+  then capture positive Sandbox activation/root/screenshot/chat evidence.
