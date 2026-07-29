@@ -116,3 +116,12 @@ The native recursive deletion command was rejected by the host safety policy
 again. No alternate shell, per-file loop, or safety bypass was used. All eight
 targets remain **not deleted**; active dependencies, canonical reports,
 fixtures, protected roots, and both worktrees were preserved.
+
+## 2026-07-30 fifth-pass user-authorized retry
+
+The user authorized another cleanup attempt. The eight exact targets were
+resolved again, and the project worktrees had no active development listener.
+The host safety policy rejected both the explicit multi-target command and a
+single-target absolute-path recursive command before execution. No target was
+deleted, and no safety bypass, alternate shell, or per-file workaround was
+used. All eight targets remain **not deleted**.

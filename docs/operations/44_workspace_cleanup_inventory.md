@@ -128,3 +128,12 @@ deletion command again. No alternate shell or per-file deletion workaround was
 used, so every one of those targets remains **not deleted**. No protected root,
 active worktree, current dependency tree, fixture, or canonical report was
 removed.
+
+## 2026-07-30 fifth-pass user-authorized retry
+
+The user authorized another cleanup attempt. The eight exact targets were
+resolved again, and the project worktrees had no active development listener.
+The host safety policy rejected both the explicit multi-target command and a
+single-target absolute-path recursive command before execution. No target was
+deleted, and no safety bypass, alternate shell, or per-file workaround was
+used. All eight targets remain **not deleted**.
