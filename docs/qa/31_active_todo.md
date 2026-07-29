@@ -9,6 +9,21 @@
   guard self-test pass. Sandbox writes remain on the isolated Sandbox path;
   existing rooms remain observation-only.
 
+## 2026-07-29 Clean Sandbox Recheck
+
+- VERIFIED ACTUAL SAFETY: The currently open Roll20 Sandbox page exposed the
+  visible participant indicator `1 구성원` and the `Sheet Sandbox Tools`
+  dialog. No existing room was selected and no room settings were changed.
+- VERIFY BLOCKED: This browser connection exposes the three Sandbox file
+  inputs, but its file-chooser event did not arrive after the visible HTML
+  upload control was clicked; the supported CDP fallback also rejected file
+  injection. The retry therefore produced no new uploaded-sheet evidence and
+  must not be counted as a fresh render result.
+- NEXT P0: Use a supported file chooser path or a manual user-assisted file
+  selection in the same isolated Sandbox, then capture a clean iframe/root
+  probe and console log. Keep the visible one-member gate immediately before
+  any write.
+
 ## 2026-07-29 Pre-upload Contract Propagation
 
 - FIXED: `roll20_preupload_verification.mjs` now accepts and forwards

@@ -9,6 +9,19 @@
 - Local checks passed: `corepack pnpm run test:roll20-room-members` and the
   upload guard self-test.
 
+## 2026-07-29 - Clean Sandbox Recheck
+
+- Rechecked the currently open Roll20 Sandbox page: the visible participant
+  indicator was `1 구성원`, the `Sheet Sandbox Tools` dialog was present, and
+  no existing room was selected or modified.
+- The browser connection exposed the HTML/CSS/Translation file inputs, but the
+  supported file-chooser event did not arrive after the visible HTML control
+  was clicked. The raw CDP file-input fallback was also rejected. No new
+  payload was uploaded, so this retry is recorded as an environment VERIFY
+  blocker rather than render evidence.
+- Next action remains a clean isolated Sandbox upload through a supported or
+  user-assisted chooser, followed by fresh iframe/root and console capture.
+
 ## 2026-07-29 - Pre-upload Contract Propagation
 
 - Connected `--compatibility-mode auto|modern|legacy` through
