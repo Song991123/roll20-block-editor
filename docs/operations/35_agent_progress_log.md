@@ -1,3 +1,15 @@
+## 2026-07-29 - CSS bare at-rule preservation and cleanup retry
+
+- FIXED: The generic CSS parser now carries a semicolon terminator through its
+  raw fallback for unsupported at-rules, preventing `@charset`, `@namespace`,
+  and `@layer` from being emitted as `{}` blocks.
+- VERIFIED: Import structure `37/37`, `ci:verify`, lint, build,
+  preview/edit visual smoke (`3 x 2`, exact), and strict imported-edit sync
+  all passed. This is a generic parser fix, not a fixture-specific rule.
+- CLEANUP: After the user's explicit retry authorization, eight previously
+  inventoried generated/cache targets were resolved and checked again. The
+  host still rejected recursive deletion; no target was reported as deleted.
+
 ## 2026-07-29 - Roll20 Sandbox connection recheck
 
 - VERIFIED: Chrome reached the Roll20 editor's Sheet Sandbox Tools surface and

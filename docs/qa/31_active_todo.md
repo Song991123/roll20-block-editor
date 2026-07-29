@@ -1,3 +1,17 @@
+## 2026-07-29 CSS Bare At-Rule Preservation and Cleanup Retry
+
+- FIXED LOCAL: Unsupported semicolon-terminated at-rules such as `@charset`,
+  `@namespace`, and `@layer` now remain raw CSS with their original `;`
+  terminator instead of being reconstructed as an empty `{}` block.
+- VERIFIED LOCAL: Import structure passed `37/37`; `ci:verify`, lint, build,
+  preview/edit visual smoke passed `3 fixtures x 2 modes` at `0%` mismatch,
+  and strict imported-edit sync passed all five prepared anonymous fixtures.
+- VERIFY: The user-authorized cleanup retry rechecked eight explicit generated
+  or stale targets. The host blocked recursive directory deletion again, so
+  none of those directories is counted as deleted.
+- PRESERVED: Active dependencies, current ignored fixtures/baselines, the
+  canonical visual report, protected reference roots, and both Git worktrees.
+
 ## 2026-07-29 Roll20 Sandbox Connection Recheck
 
 - VERIFIED ACTUAL: A logged-in Chrome session reached the Roll20 editor and

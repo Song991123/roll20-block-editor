@@ -100,3 +100,19 @@ root `.git.broken-20260510-222058/`, and root `.pnpm-store/`. The host safety
 policy rejected recursive directory deletion, so no recursive workaround was
 used. They remain reproducible cleanup candidates for a permitted maintenance
 operation; they must not be reported as deleted.
+
+## 2026-07-29 fourth-pass user-authorized retry
+
+The user explicitly authorized another deletion attempt after the previous
+host rejection. The following exact paths were re-resolved, checked as
+generated/stale and untracked, and confirmed to have no active listener:
+
+- old `web/node_modules/`, `web/.next/`, and `web/out/`;
+- active `web-push-main/.next/` and `web-push-main/out/`;
+- duplicate `web-push-main/reports/preview-edit-visual-rerun/`;
+- root `.git.broken-20260510-222058/` and `.pnpm-store/`.
+
+The native recursive deletion command was rejected by the host safety policy
+again. No alternate shell, per-file loop, or safety bypass was used. All eight
+targets remain **not deleted**; active dependencies, canonical reports,
+fixtures, protected roots, and both worktrees were preserved.

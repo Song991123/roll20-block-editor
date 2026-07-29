@@ -269,6 +269,21 @@ function testCssImport(): void {
   assert(r.css.includes('fonts.googleapis.com'), 'import source carried');
 }
 
+function testCssBareAtRulePreservation(): void {
+  const css = '@charset "UTF-8"; @namespace svg url("http://www.w3.org/2000/svg"); @layer reset;';
+  const r = importSheet({ css });
+  assert(r.stats.cssMatched === 0, 'bare unsupported at-rules are not typed rules');
+  assert(r.stats.cssRawFallback === 3, 'each bare at-rule is retained as raw CSS');
+  assert(r.css.includes('@charset'), 'charset at-rule is preserved');
+  assert(r.css.includes('@namespace'), 'namespace at-rule is preserved');
+  assert(r.css.includes('@layer reset;'), 'semicolon terminator is preserved');
+  assert(!r.css.includes('@layer reset{}'), 'semicolon at-rule is not rewritten as a block');
+
+  const incomplete = importSheet({ css: '@layer reset' });
+  assert(incomplete.css.includes('@layer reset'), 'unterminated at-rule text is preserved');
+  assert(!incomplete.css.includes('@layer reset;'), 'EOF at-rule is not given a new terminator');
+}
+
 function testCssMediaQueryStructure(): void {
   const css = '@media (max-width: 640px) { .sheet-header { color: red; } }';
   const r = importSheet({ css });
@@ -371,6 +386,7 @@ const tests = [
   ['css @font-face', testCssFontFace],
   ['table column structure', testTableColumnStructure],
   ['css @import', testCssImport],
+  ['css bare at-rule preservation', testCssBareAtRulePreservation],
   ['css @media structure', testCssMediaQueryStructure],
   ['css @keyframes structure', testCssKeyframesStructureAndFallback],
   ['css selector_complex fallback', testCssSelectorComplexFallback],

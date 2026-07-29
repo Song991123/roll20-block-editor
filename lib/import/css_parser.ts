@@ -71,7 +71,7 @@ export function parseCss(css: string, ctx: CssMatchContext): MatchedBlock[] {
         ctx.matched++;
         continue;
       }
-      out.push(rawCssBlock(`${r.head}{${r.body}}`));
+      out.push(rawCssBlock(renderAtRule(r)));
       ctx.rawFallback++;
       ctx.warnings.push({
         code: 'css_at_rule_raw',
@@ -97,7 +97,7 @@ export function parseCss(css: string, ctx: CssMatchContext): MatchedBlock[] {
 
 type CssRule =
   | { kind: 'rule'; head: string; body: string }
-  | { kind: 'at'; head: string; body: string }
+  | { kind: 'at'; head: string; body: string; terminator: 'block' | 'semicolon' | 'eof' }
   | { kind: 'decl_orphan'; body: string };
 
 function splitRules(css: string): CssRule[] {
@@ -125,12 +125,17 @@ function splitRules(css: string): CssRule[] {
       const head = readUntilEither(css, i, ['{', ';']);
       if (head.endChar === ';' || head.endChar === null) {
         // `@import url(...);` 같은 단독 at-rule. raw 로.
-        out.push({ kind: 'at', head: head.text, body: '' });
+        out.push({
+          kind: 'at',
+          head: head.text,
+          body: '',
+          terminator: head.endChar === ';' ? 'semicolon' : 'eof',
+        });
         i = head.end + 1;
         continue;
       }
       const body = readBraceBlock(css, head.end);
-      out.push({ kind: 'at', head: head.text, body: body.text });
+      out.push({ kind: 'at', head: head.text, body: body.text, terminator: 'block' });
       i = body.end + 1;
       continue;
     }
@@ -303,7 +308,7 @@ const KEYFRAME_STOP_VALUES = new Set(['from', 'to', '0%', '25%', '50%', '75%', '
 function parseKeyframeStops(body: string, ctx: CssMatchContext): MatchedBlock[] {
   return splitRules(body).map((rule) => {
     if (rule.kind !== 'rule') {
-      const raw = rule.kind === 'at' ? `${rule.head}{${rule.body}}` : rule.body;
+      const raw = rule.kind === 'at' ? renderAtRule(rule) : rule.body;
       ctx.rawFallback++;
       ctx.warnings.push({
         code: 'css_keyframe_stop_raw',
@@ -833,6 +838,12 @@ function rawCssBlock(text: string): MatchedBlock {
     fields: { CSS: text.trim() },
     children: {},
   };
+}
+
+function renderAtRule(rule: Extract<CssRule, { kind: 'at' }>): string {
+  if (rule.terminator === 'semicolon') return `${rule.head.trim()};`;
+  if (rule.terminator === 'eof') return rule.head.trim();
+  return `${rule.head}{${rule.body}}`;
 }
 
 /**

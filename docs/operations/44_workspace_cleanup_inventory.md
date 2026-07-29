@@ -118,3 +118,13 @@ safety policy. Therefore `web/node_modules/`, `web/.next/`, `web/out/`,
 `web-push-main/.next/`, `web-push-main/out/`, both duplicate visual report
 folders, `.git.broken-20260510-222058/`, and `.pnpm-store/` remain on disk and
 are still marked **not deleted**. No command-line workaround was used.
+
+## 2026-07-29 fourth-pass retry
+
+The user explicitly authorized a second recursive cleanup attempt. Eight exact
+generated/cache targets were rechecked after all browser smokes ended and no
+project or CDP listener remained. The host rejected the native recursive
+deletion command again. No alternate shell or per-file deletion workaround was
+used, so every one of those targets remains **not deleted**. No protected root,
+active worktree, current dependency tree, fixture, or canonical report was
+removed.
