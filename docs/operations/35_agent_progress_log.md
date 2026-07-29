@@ -7594,3 +7594,18 @@ visibility verification passed. No external room was opened or modified.
   Actual Roll20 Sandbox and isolated legacy-room parity remain open; the
   authenticated Chrome Roll20 editor was too heavy for the current control
   request to complete, and no room or sheet was modified.
+
+## 2026-07-30 - Sandbox upload path recheck
+
+- VERIFIED READ-ONLY: The authenticated Chrome editor showed the dedicated
+  Sheet Sandbox Tools dialog with separate HTML, CSS, and Translation controls.
+  The visible page also exposed an existing sheet and chat panel; no room
+  participant state was used for a write.
+- BLOCKED EXTERNAL: The supported browser file chooser opened for the generated
+  anonymous HTML payload, but the connected browser rejected file assignment
+  with Not allowed. No file was accepted and no Sandbox sheet was changed.
+- PRESERVED: The generated payload was local-only and was not committed.
+  No existing room, sheet source, chat message, or account setting was edited.
+- NEXT P0: Resume with a user-visible native file selection or another
+  explicitly supported upload path, then capture the same-payload root,
+  asset, default-state, rolltemplate/chat, and screenshot evidence.

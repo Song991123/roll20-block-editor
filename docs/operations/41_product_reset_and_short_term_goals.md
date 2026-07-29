@@ -72,7 +72,7 @@ The ratings below are evidence maturity, not feature completion percentages.
 | Area | Evidence level | Current truth | Next proof |
 | --- | ---: | --- | --- |
 | Shared preview/edit render | 3/4 | One persistent iframe, edit overlay, edit-flow smoke, and paired local visual smoke are passing. | Same-payload comparison against actual modern and legacy Roll20 destinations. |
-| Modern Roll20 runtime | 2/4 | One anonymous generated payload activated in Custom Sheet Sandbox. | Same-payload normalized screenshot and asset-complete comparison. |
+| Modern Roll20 runtime | 1/4 | The dedicated Sandbox route and separate HTML/CSS/Translation controls are observed; the current browser upload path rejects file assignment, so no retained same-payload root or screenshot evidence is counted. | Complete a user-visible or supported upload, then capture normalized root, assets, state, and chat evidence. |
 | Legacy Roll20 runtime | 1/4 | A separate legacy destination and mode-specific policy exist. | Dedicated legacy-room upload, screenshot, and state comparison. |
 | Universal HTML/CSS/translation mapping | 2/4 | Generic atomic/composite paths and preserved-attribute guards exist. | Synthetic corpus expansion and loss report across unsupported structures. |
 | Worker and rolltemplate behavior | 1/4 | Local inert worker/rolltemplate bridges and chat smoke exist. | Runtime-specific Roll20 smoke with generic output assertions. |
@@ -81,7 +81,8 @@ The ratings below are evidence maturity, not feature completion percentages.
 | CI, privacy, and repository guardrails | 3/4 | CI, ignored evidence paths, and private-content checks exist. | Verify the new branch/worktree policy and clean-clone build. |
 
 No row above is a Roll20 visual-parity claim. The strongest current result is
-activation and local contract evidence for narrow anonymous payloads.
+local contract evidence plus a read-only Sandbox route baseline; actual same-
+payload modern activation and legacy-room parity remain unproven.
 
 ## Short-Term Goals
 

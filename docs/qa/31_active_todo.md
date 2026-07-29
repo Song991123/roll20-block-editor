@@ -6833,3 +6833,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   heavy DOM request timed out; no existing room was used.
 - VERIFY OPEN: broad imported visual fixture smoke is intentionally not run
   while the private test-fixtures/visual tree is absent.
+
+## 2026-07-30 Sandbox upload path recheck
+
+- VERIFIED READ-ONLY: The authenticated editor exposed the dedicated Sheet
+  Sandbox Tools dialog and separate HTML/CSS/Translation controls.
+- BLOCKED EXTERNAL: The supported file chooser opened, but the connected
+  browser rejected assignment of the generated anonymous HTML file. No
+  Sandbox file, existing room, sheet source, chat message, or setting changed.
+- VERIFY OPEN: Modern same-payload root/screenshot/asset/chat evidence and the
+  isolated legacy-room comparison remain unproven.
+- NEXT P0: Use a user-visible native picker or another explicitly supported
+  upload path; do not treat the chooser opening alone as a successful upload.
