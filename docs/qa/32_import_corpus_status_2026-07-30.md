@@ -44,6 +44,11 @@
   replaying one render pass did not finish the large browser smoke within
   three minutes. It is not counted as a performance improvement and was
   fully reverted.
+- REJECTED FOLLOW-UP: Applying the same hook boundary without the final SVG
+  replay while the preview mode was hidden still did not return the large
+  model import within approximately `70s`. This variant was also fully
+  reverted; a separate model workspace is required before claiming a hidden
+  import fast path.
 - CURRENT BASELINE: Pure HTML matching remains approximately `0.55s` with
   `100%` structural coverage; the large browser path still has approximately
   `36,436` HTML blocks and remains an open render/import bottleneck.
