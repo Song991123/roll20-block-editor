@@ -10,6 +10,8 @@
   `smoke:roll20-sandbox-preview:all` passed. Preview/edit visual smoke reported
   0% local mismatch for both compatibility modes across the prepared local
   fixtures; Sandbox expected-render smoke reported 0 console/page errors.
+- VERIFIED REMOTE: GitHub Actions run `30420232700` for commit `918a48f`
+  passed safety/unit verification, lint, and build on the task branch.
 - SAFETY: Actual Roll20 observation scripts keep their generic class fallbacks
   so live DOM evidence is not confused with the local generated wrapper.
 - CLAIM BOUNDARY: This removes one local DOM-contract mismatch. It does not
