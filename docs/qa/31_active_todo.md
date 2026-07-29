@@ -1,3 +1,19 @@
+## 2026-07-29 Legacy Upload Participant Recheck
+
+- FIXED: `roll20_upload_cdp_apply.mjs --require-solo-room` now checks the
+  visible `.party-page-members` indicator before navigation, after reaching
+  the settings page, and immediately before evaluating the upload snippet.
+- SAFETY: Every check requires exactly one readable visible member. A missing,
+  hidden, zero, or multi-member indicator aborts before the generated write.
+  Sandbox uploads remain on the isolated Sandbox path and do not use this
+  existing-room gate.
+- VERIFIED LOCAL: `node --check scripts/roll20_upload_cdp_apply.mjs`, its
+  self-test, `ci:verify`, lint, and build pass. This is a safety-path proof,
+  not evidence that a legacy room was modified or that visual parity is done.
+- NEXT P0: Use the gate on the dedicated legacy test room only when a fresh
+  supported browser session is available; keep ordinary existing rooms
+  observation-only.
+
 ## 2026-07-29 Roll20 Root Wrapper Contract
 
 - FIXED: The generated sheet wrapper no longer adds the editor-only

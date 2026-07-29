@@ -80,22 +80,19 @@ async function main() {
     }
 
     let participantPreflight = null;
+    let participantPreflightAfterNavigation = null;
+    let participantPreflightBeforeApply = null;
     if (REQUIRE_SOLO_ROOM) {
-      participantPreflight = await inspectParticipantPage(page);
-      if (participantPreflight.status !== 'PASS_SOLO') {
-        throw new Error([
-          'ROLL20 UPLOAD CDP BLOCKED_ROOM_PARTICIPANTS',
-          `page=${page.url()}`,
-          `status=${participantPreflight.status}`,
-          `counts=${participantPreflight.counts.join(',') || 'none'}`,
-          'next=Open the dedicated legacy test room, confirm exactly one visible member, and rerun with --require-solo-room.',
-        ].join('\n'));
-      }
+      participantPreflight = await requireSoloParticipant(page, 'before-navigation');
     }
 
     if (!STAY_ON_CURRENT_PAGE && SETTINGS_URL) {
       await page.goto(SETTINGS_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    }
+
+    if (REQUIRE_SOLO_ROOM) {
+      participantPreflightAfterNavigation = await requireSoloParticipant(page, 'after-navigation');
     }
 
     const readiness = await getPageSummary(page);
@@ -133,6 +130,8 @@ async function main() {
         mode: 'dry-run',
         page: readiness,
         participantPreflight,
+        participantPreflightAfterNavigation,
+        participantPreflightBeforeApply,
         snippetPath,
         outPath,
         canonicalOutDir: path.join(RUN_DIR, 'roll20-upload-handoff', 'cdp-apply'),
@@ -143,6 +142,9 @@ async function main() {
     }
 
     const snippet = await readFile(snippetPath, 'utf8');
+    if (REQUIRE_SOLO_ROOM) {
+      participantPreflightBeforeApply = await requireSoloParticipant(page, 'immediately-before-apply');
+    }
     const consoleLines = [];
     const onConsole = (message) => {
       const text = message.text();
@@ -170,6 +172,8 @@ async function main() {
       snippetPath,
       before: readiness,
       participantPreflight,
+      participantPreflightAfterNavigation,
+      participantPreflightBeforeApply,
       after,
       evaluateError,
       result,
@@ -246,6 +250,19 @@ async function inspectParticipantPage(page) {
     source: '.party-page-members',
     mutationPerformed: false,
   };
+}
+
+async function requireSoloParticipant(page, stage) {
+  const participant = await inspectParticipantPage(page);
+  if (participant.status === 'PASS_SOLO') return { ...participant, stage };
+  throw new Error([
+    'ROLL20 UPLOAD CDP BLOCKED_ROOM_PARTICIPANTS',
+    `stage=${stage}`,
+    `page=${page.url()}`,
+    `status=${participant.status}`,
+    `counts=${participant.counts.join(',') || 'none'}`,
+    'next=Stop. Open the dedicated legacy test room, confirm exactly one visible member, and rerun with --require-solo-room.',
+  ].join('\n'));
 }
 
 async function getPageSummary(page) {

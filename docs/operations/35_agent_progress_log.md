@@ -6626,3 +6626,13 @@ opened, uploaded to, saved, or otherwise modified in this run.
   lint, and build.
 - No existing room was modified. Any future existing-room observation must
   still pass the fresh visible participant gate with exactly one member.
+## 2026-07-29 - Legacy upload participant recheck
+
+- Hardened `roll20_upload_cdp_apply.mjs --require-solo-room`: the visible
+  participant indicator is checked before navigation, after reaching the
+  settings page, and immediately before the upload snippet runs.
+- Any unreadable, hidden, zero, or multi-member state blocks before the write.
+  This gate applies only to the dedicated legacy test-room path; modern
+  generated writes remain isolated to Custom Sheet Sandbox.
+- `node --check`, the helper self-test, `ci:verify`, lint, and build passed.
+  No Roll20 room was modified in this batch.
