@@ -20,6 +20,7 @@
  *     --fixtures test-fixtures/visual \
  *     --out-dir ./out \
  *     --base-path /roll20-block-editor \
+ *     [--compatibility-mode auto|modern|legacy] \
  *     [--state-map reports/visual-state-candidates/visual-state-candidates-state-map.json]
  */
 
@@ -40,6 +41,7 @@ function argOf(name, fallback) {
 const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const OUT_DIR = path.resolve(argOf('--out-dir', './out'));
 const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
+const COMPATIBILITY_MODE = argOf('--compatibility-mode', 'auto').toLowerCase();
 const STATE_MAP_PATH = argOf('--state-map', '');
 const ASSET_MAP_FILE = argOf('--asset-map-file', '');
 const EXPLICIT_REPORT_DIR = argOf('--report-out-dir', '');
@@ -49,12 +51,20 @@ const NODE = process.execPath;
 const RUN_PARENT_DIR = path.dirname(RUN_DIR);
 const RUN_LABEL = path.basename(RUN_DIR);
 
+if (!['auto', 'modern', 'legacy'].includes(COMPATIBILITY_MODE)) {
+  throw new Error(`Unsupported --compatibility-mode: ${COMPATIBILITY_MODE}. Use auto, modern, or legacy.`);
+}
+
 function maybeStateMapArgs() {
   return STATE_MAP_PATH ? ['--state-map', path.resolve(STATE_MAP_PATH)] : [];
 }
 
 function maybeAssetMapArgs() {
   return ASSET_MAP_FILE ? ['--asset-map-file', path.resolve(ASSET_MAP_FILE)] : [];
+}
+
+function maybeCompatibilityModeArgs() {
+  return COMPATIBILITY_MODE !== 'auto' ? ['--compatibility-mode', COMPATIBILITY_MODE] : [];
 }
 
 const checks = [
@@ -74,6 +84,7 @@ const checks = [
       RUN_PARENT_DIR,
       '--run-label',
       RUN_LABEL,
+      ...maybeCompatibilityModeArgs(),
       ...maybeStateMapArgs(),
       ...maybeAssetMapArgs(),
     ],
@@ -165,6 +176,7 @@ async function main() {
     fixtureRoot: FIXTURES_DIR,
     outDir: OUT_DIR,
     basePath: BASE_PATH,
+    compatibilityMode: COMPATIBILITY_MODE,
     stateMapPath: STATE_MAP_PATH ? path.resolve(STATE_MAP_PATH) : null,
     assetMapFile: ASSET_MAP_FILE ? path.resolve(ASSET_MAP_FILE) : null,
     output: {

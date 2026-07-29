@@ -9,6 +9,21 @@
   guard self-test pass. Sandbox writes remain on the isolated Sandbox path;
   existing rooms remain observation-only.
 
+## 2026-07-29 Pre-upload Contract Propagation
+
+- FIXED: `roll20_preupload_verification.mjs` now accepts and forwards
+  `--compatibility-mode auto|modern|legacy` to local baseline generation and
+  records the selected contract in its report.
+- INVARIANT: A modern Sandbox pre-upload run and a legacy-room pre-upload run
+  must use separate report folders and explicit matching modes. A local gate
+  PASS still does not prove actual Roll20 visual parity.
+- VERIFIED LOCAL: Full pre-upload gates passed in separate ignored report
+  folders for explicit `modern` and explicit `legacy` contracts. Both runs
+  passed local-baseline, payload-audit, sandbox-sanitize-audit,
+  payload-roundtrip, state-selectors, assets, and evidence-guard. This proves
+  contract propagation and payload safety only; it does not prove live visual
+  parity or authorize an existing-room write.
+
 ## 2026-07-29 Dual Roll20 Contract Baseline
 
 - FIXED: `roll20_actual_local_baseline.mjs` now accepts

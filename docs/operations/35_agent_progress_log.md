@@ -9,6 +9,20 @@
 - Local checks passed: `corepack pnpm run test:roll20-room-members` and the
   upload guard self-test.
 
+## 2026-07-29 - Pre-upload Contract Propagation
+
+- Connected `--compatibility-mode auto|modern|legacy` through
+  `roll20_preupload_verification.mjs`. Explicit modern/legacy requests now
+  reach baseline generation and are recorded in the pre-upload report instead
+  of silently falling back to fixture metadata.
+- Updated the script index, actual-screen runbook, TODO, and progress log.
+  The complete pre-upload gate then passed in two isolated ignored report
+  folders: explicit `modern` and explicit `legacy`. Both passed
+  local-baseline, payload-audit, sandbox-sanitize-audit, payload-roundtrip,
+  state-selectors, assets, and evidence-guard. This is local contract/payload
+  evidence only; it does not prove live visual parity or permit writing to an
+  existing room.
+
 ## 2026-07-29 - Dual Roll20 Contract Baseline
 
 - Added `--compatibility-mode auto|modern|legacy` to the local Roll20 baseline

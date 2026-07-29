@@ -321,6 +321,11 @@ template-scope gate. Candidate-specific smoke still needs explicit
      `corepack pnpm run status:roll20-actual -- reports/roll20-actual-compare/<label> --require-actual`
    - Or run the full local pre-upload gate:
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor`
+   - Pass the same destination contract through the full gate when needed:
+     `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor --compatibility-mode modern`
+     or use `--compatibility-mode legacy` for the dedicated legacy room. The
+     selected mode is recorded in the gate report and forwarded to baseline
+     generation; it does not turn a local PASS into actual Roll20 parity.
    - The pre-upload gate first regenerates the local baseline and upload payloads for the selected run, then reruns payload hygiene, Roll20 sandbox sanitize diagnostics, cleaned-payload visual roundtrip, default-state selector audit, asset/resource audit, and evidence guard. Passing means the payload is ready to upload; it still does not prove Roll20 visual parity.
    - If the local baseline was captured with action/control-state hints, pass the same state map through the pre-upload gate:
      `corepack pnpm run verify:roll20-preupload -- reports/roll20-actual-compare/<label> --fixtures test-fixtures/visual --out-dir ./out --base-path /roll20-block-editor --state-map reports/visual-state-candidates/visual-state-candidates-state-map.json`
