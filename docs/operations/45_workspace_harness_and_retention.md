@@ -167,3 +167,12 @@ the earlier cleanup completion. The temporary port `4199` server was stopped
 after an exact process-command-line check. A new guarded recursive deletion
 attempt was rejected by the host before execution, so these two generated
 targets remain **not deleted** and can be recreated by the build.
+
+## 2026-07-30 user-authorized cleanup completion
+
+The regenerated `.next/` and `out/` directories were removed after an
+absolute-path and workspace-boundary recheck. The nine approved generated or
+stale targets in the ledger are now absent. The active dependency tree,
+ignored local fixtures, canonical reports, protected source roots, and both
+Git worktrees remain intact. No project listener is active on ports `3000`,
+`4197`, `4198`, or `4199`.

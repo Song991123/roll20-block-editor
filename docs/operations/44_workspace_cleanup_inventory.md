@@ -209,3 +209,17 @@ source roots, both Git worktrees, and user-authored inputs were not touched.
 - NOT DELETED: The host safety policy rejected the guarded recursive deletion
   before execution again. No alternate shell or per-file deletion workaround
   was used. The two regenerated targets remain disposable and reproducible.
+
+## 2026-07-30 user-authorized cleanup completion
+
+- RECHECKED: all nine approved generated/stale targets from the cleanup ledger.
+- DELETED: the regenerated `web-push-main/.next/` and `web-push-main/out/`
+  directories after the build's transient locked entry disappeared.
+- PRESERVED: active `web-push-main/node_modules/`, ignored local fixtures,
+  canonical reports, protected source roots, and both Git worktrees.
+- VERIFIED: all nine approved targets are absent; no listener exists on the
+  project ports `3000`, `4197`, `4198`, or `4199`.
+
+The prior host-policy rejection was not bypassed. The successful retry used
+the same absolute-path gate and removed only the two verified generated
+directories that had been recreated by the local build.
