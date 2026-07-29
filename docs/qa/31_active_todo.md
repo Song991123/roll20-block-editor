@@ -6754,3 +6754,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   cleanup; the anonymous `smoke:worker` contract passed instead.
 - CLAIM BOUNDARY: This only hardens the local verification target. It does not
   prove generic page-JS block editing or actual Roll20 modern/legacy parity.
+
+## 2026-07-30 Script source classification boundary
+
+- DONE LOCAL: Added one shared script-source classifier for explicit Roll20
+  worker tags, legacy untyped worker API scripts, and ordinary page scripts.
+  The worker workspace now consumes this classifier instead of maintaining a
+  second extraction rule.
+- VERIFIED LOCAL: Import structure is `39/39`; build, lint, synthetic worker
+  workspace smoke, preview page-script inertness, and modern/legacy render
+  contract tests pass.
+- CLAIM BOUNDARY: Ordinary page JS is still preserved/inert rather than
+  user-editable as a dedicated JS block workspace. Future JS workspace work
+  can consume the shared source contract without changing HTML/CSS mapping.
+- VERIFIED GATE: `corepack pnpm run ci:verify` passed, including the new
+  script-source classification assertions and the privacy/evidence guards.

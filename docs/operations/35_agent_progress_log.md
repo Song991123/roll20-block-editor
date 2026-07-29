@@ -7520,3 +7520,17 @@ visibility verification passed. No external room was opened or modified.
   `smoke:worker` contract passed, but it is not a broad imported-fixture audit.
 - CLAIM BOUNDARY: This is a verification-boundary fix only. Generic page-JS
   block editing and actual Roll20 modern/legacy parity remain open.
+
+## 2026-07-30 - Shared script-source classification
+
+- Added `classifyRoll20Script`, `isOrdinaryPageScript`, and
+  `extractRoll20ScriptSources` to centralize worker/page classification while
+  preserving authored attributes and source bodies for future JS editing.
+- `workerWorkspace.ts` now uses the shared extraction result. No ordinary page
+  script is executed in preview and no Roll20 worker is left in visible HTML.
+- Verified import structure `39/39`, build, lint, synthetic worker smoke,
+  preview page-script inertness, and modern/legacy render contract tests.
+- This does not claim a dedicated page-JS block workspace; that remains the
+  next JS-surface task. Actual Roll20 visual parity remains open.
+- The full `corepack pnpm run ci:verify` gate passed, including privacy and
+  Roll20 evidence guards.

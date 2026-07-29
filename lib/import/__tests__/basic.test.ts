@@ -8,6 +8,11 @@
  */
 
 import { importSheet } from '../index';
+import {
+  classifyRoll20Script,
+  extractRoll20ScriptSources,
+  isOrdinaryPageScript,
+} from '../worker_source';
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(`Assertion failed: ${msg}`);
@@ -364,6 +369,25 @@ function testCssCustomElementSelector(): void {
   assert(!r.css.includes('r20_selector_complex'), 'simple unknown tags avoid opaque selector fallback');
 }
 
+function testScriptSourceClassification(): void {
+  const source = [
+    '<script type="text/worker">on("sheet:opened", function () {});</script>',
+    '<script>setAttrs({ hp: 10 });</script>',
+    '<script type="text/javascript" src="page-runtime.js">window.ready = true;</script>',
+    '<script data-role="page">window.pageOnly = true;</script>',
+  ].join('');
+  const scripts = extractRoll20ScriptSources(source);
+  assert(scripts.length === 4, 'all authored script tags are extracted');
+  assert(scripts[0].kind === 'worker', 'explicit text/worker is a worker');
+  assert(scripts[1].kind === 'worker', 'untyped Roll20 API script is a worker');
+  assert(scripts[2].kind === 'page', 'typed page script remains page JavaScript');
+  assert(scripts[2].attrs.includes('src="page-runtime.js"'), 'page attributes are preserved');
+  assert(scripts[3].body.includes('pageOnly'), 'page source body is preserved');
+  assert(classifyRoll20Script('text/javascript', 'on("click", fn);') === 'page', 'typed page type wins');
+  assert(isOrdinaryPageScript('', 'window.ready = true;'), 'ordinary untyped page script is page JavaScript');
+  assert(!isOrdinaryPageScript('', 'getAttrs(["hp"], function () {});'), 'untyped worker API is not page JavaScript');
+}
+
 const tests = [
   ['text input', testBasicTextInput],
   ['number input', testNumberInput],
@@ -403,6 +427,7 @@ const tests = [
   ['css pseudo-element ::-webkit-*', testCssPseudoElementWebkit],
   ['css extended element tags', testCssExtendedElementTags],
   ['css custom element selector', testCssCustomElementSelector],
+  ['script source classification', testScriptSourceClassification],
 ] as const;
 
 let passed = 0;

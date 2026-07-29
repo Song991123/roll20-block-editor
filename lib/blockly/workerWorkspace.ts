@@ -3,7 +3,10 @@ import { getBlocklyAdapter } from './adapter';
 import type { WorkspaceKey } from '@/lib/stores/workspaceStore';
 import { emitWorkspace } from '@/lib/preview/emit';
 import { parseSheetWorkerScript, type ParsedBlock } from '@/lib/import/script_parser';
-import { isRoll20WorkerScript } from '@/lib/import/worker_source';
+import {
+  extractRoll20ScriptSources,
+  isRoll20WorkerScript,
+} from '@/lib/import/worker_source';
 
 const WORKER_BLOCK_TYPES = new Set([
   'r20_raw_worker',
@@ -205,17 +208,12 @@ function serializeParsedBlock(block: ParsedBlock, ids: { next: number }, nextXml
 }
 
 export function extractRoll20WorkerScripts(html: string): Array<{ type: string; body: string }> {
-  const scripts: Array<{ type: string; body: string }> = [];
-  const scriptRe = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = scriptRe.exec(html))) {
-    const attrs = parseAttrs(match[1] ?? '');
-    const type = String(attrs.type ?? '').trim().toLowerCase();
-    if (isRoll20WorkerScript(type, match[2] ?? '')) {
-      scripts.push({ type: type || '(empty)', body: normalizeSourceWorkerBody(match[2] ?? '') });
-    }
-  }
-  return scripts;
+  return extractRoll20ScriptSources(html)
+    .filter((script) => script.kind === 'worker')
+    .map((script) => ({
+      type: script.type || '(empty)',
+      body: normalizeSourceWorkerBody(script.body),
+    }));
 }
 
 function getBlockDepth(block: Blockly.Block): number {
