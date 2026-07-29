@@ -7381,3 +7381,16 @@ visibility verification passed. No external room was opened or modified.
 - CLAIM BOUNDARY: This removes a local export UX gap but does not prove that
   the current browser can assign files to Roll20 or that the generated sheet
   has actual Roll20 root/screenshot/chat evidence. Sandbox upload remains open.
+
+## 2026-07-30 - Sandbox file chooser recheck
+
+- VERIFIED READ-ONLY: The existing Roll20 editor tab still exposed the isolated
+  Sheet Sandbox tools with a visible participant count of exactly one and four
+  file inputs (`HTML`, `CSS`, `Translation`, plus the hidden upload control).
+- ATTEMPTED: Reused the anonymous ignored `sheet.html` payload and used the
+  visible file-picker path flow for the HTML input.
+- BLOCKED: After the picker returned, the `#sheetHtml` input still had an empty
+  value and no file object was accepted. No payload reached Roll20, no sheet
+  root/screenshot/chat evidence was created, and no existing room was changed.
+- NEXT: A user-visible manual file selection or a supported CDP file-input
+  handoff is still required before actual parity can be measured.

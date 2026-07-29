@@ -6598,3 +6598,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   evidence remain absent until a user-visible upload route succeeds.
 - NEXT P0: Use the individual files in the isolated Sandbox, then capture
   positive activation/root/screenshot/chat evidence before claiming parity.
+
+## 2026-07-30 Sandbox chooser recheck
+
+- VERIFIED READ-ONLY: The Roll20 Sandbox tab showed exactly one visible
+  participant and the expected upload controls.
+- BLOCKED: The CUA file-picker path attempt returned to the page, but the
+  HTML file input remained empty. No generated payload was accepted and no
+  root, screenshot, or chat evidence is counted.
+- SAFETY: No existing room or sheet settings were modified.
+- NEXT P0: Complete a user-visible file selection or use a browser capability
+  that explicitly supports file-input assignment, then recapture all evidence.
