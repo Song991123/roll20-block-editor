@@ -2,7 +2,7 @@
  * Block matcher — DomNode → BlockDef 타입 매칭.
  *
  * Anchor:
- *   - docs/spec/02_functional_spec.md §3 (131 블록 카탈로그)
+ *   - docs/spec/02_functional_spec.md §3 (블록 카탈로그)
  *   - docs/spec/12_roll20_output_spec.md §2 (HTML emit contract)
  *
  * 입력: dom_walker 의 DomNode (element)
@@ -22,6 +22,7 @@ import { parseAttrRefToken } from './expression_parser';
 import { parseSheetWorkerScript } from './script_parser';
 import { isRoll20WorkerScript } from './worker_source';
 import { isSemanticContainerTag } from '../blocks/semanticTags';
+import { isEditableElementTag, isVoidElementTag } from '../blocks/elementTags';
 
 export interface MatchedBlock {
   /** 카탈로그 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
@@ -136,7 +137,8 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
     matchDice(node, ctx) ??
     matchI18n(node, ctx) ??
     matchDisplay(node, ctx) ??
-    matchContainer(node, ctx);
+    matchContainer(node, ctx) ??
+    matchGenericElement(node, ctx);
 
   if (result) {
     ctx.matchedCount++;
@@ -997,6 +999,26 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   return null;
 }
 
+/**
+ * Preserve any safe, otherwise-unclassified element as an editable DOM
+ * container. Executable/document-level tags are deliberately excluded by the
+ * shared element policy and continue through the raw HTML boundary.
+ */
+function matchGenericElement(node: DomNode, ctx: MatchContext): MatchedBlock | null {
+  const tag = node.tag;
+  if (!tag || !isEditableElementTag(tag)) return null;
+  const a = node.attrs ?? {};
+  return {
+    blockType: 'r20_element_container',
+    fields: {
+      TAG: tag,
+      CLASS: stripSheetPrefix(a.class || ''),
+      STYLE: a.style || '',
+    },
+    children: { CONTENT: matchChildren(node, ctx) },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Helpers.
 // ---------------------------------------------------------------------------
@@ -1294,8 +1316,5 @@ function escapeAttr(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 function isVoidTag(tag: string): boolean {
-  return [
-    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-    'link', 'meta', 'param', 'source', 'track', 'wbr',
-  ].includes(tag);
+  return isVoidElementTag(tag);
 }

@@ -6139,3 +6139,10 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - SAFETY: Existing rooms remain observation-only and require a fresh visible
   participant count of exactly one; generated writes stay in Sandbox or a new
   dedicated test room.
+
+## 2026-07-29 Generic Element Update
+
+- DONE: Safe unknown HTML elements now have editable tag/class/style/child
+  structure through `r20_element_container`.
+- VERIFY: Opaque runtime/document tags, arbitrary JS editing, and real Roll20
+  modern/legacy parity remain separate verification tracks.

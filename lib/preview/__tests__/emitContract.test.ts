@@ -89,6 +89,23 @@ function testSemanticContainerEmit(): void {
   workspace.dispose();
 }
 
+function testGenericElementEmit(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const element = workspace.newBlock('r20_element_container');
+  element.setFieldValue('custom-card', 'TAG');
+  element.setFieldValue('panel', 'CLASS');
+  const child = workspace.newBlock('r20_static_text');
+  child.setFieldValue('Open', 'TEXT');
+  element.getInput('CONTENT')!.connection!.connect(child.previousConnection!);
+
+  const result = emitAll({ html: workspace });
+  assert(result.html.includes('<custom-card'), 'generic element tag is emitted');
+  assert(result.html.includes('class="sheet-panel"'), 'generic element class is emitted');
+  assert(result.html.includes('>Open</span>'), 'generic element child is emitted');
+  workspace.dispose();
+}
+
 function testTypedPageScriptExportPreserved(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -123,6 +140,7 @@ testAlreadyCanonicalPair();
 testInlineStylePair();
 testGeneratedPositionCss();
 testSemanticContainerEmit();
+testGenericElementEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
 console.log('Emit Roll20 class-pair tests passed.');

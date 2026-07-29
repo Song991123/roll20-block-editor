@@ -2,7 +2,7 @@
  * Composite 카테고리 — 4 블록 (Stage Option A-2).
  *
  * Anchor:
- *   - docs/spec/02_functional_spec.md §3 (131 블록 카탈로그, Composite 4).
+ *   - docs/spec/02_functional_spec.md §3 (블록 카탈로그, Composite 4).
  *   - docs/spec/04_block_taxonomy_v2.md — composite 정의 4.
  *   - docs/spec/09_design_system.md §1.1 (composite hue 270, gray-purple).
  *

@@ -1,7 +1,7 @@
 # 22 — HIGH 우선순위 신규 블록 5종
 
 Anchor:
-- docs/spec/02_functional_spec.md §3 (131 블록 카탈로그)
+- docs/spec/02_functional_spec.md §3 (블록 카탈로그)
 - docs/spec/04_block_taxonomy_v2.md (카테고리 별 인벤토리)
 - docs/spec/12_roll20_output_spec.md §2/§3 (emit contract)
 

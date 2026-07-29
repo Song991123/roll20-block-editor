@@ -70,5 +70,7 @@ keeps the element name, class, style, preserved attributes, and child order
 editable without tying the mapping to a particular sheet.
 
 This is structured import coverage, not a claim that every HTML element or
-arbitrary JavaScript behavior is block-editable. Unknown elements still use
-the lossless raw HTML escape hatch and remain visible in the coverage warning.
+arbitrary JavaScript behavior is block-editable. Safe unknown elements use the
+generic `r20_element_container` block; executable or document-level elements
+such as `script`, `style`, `iframe`, and `template` remain behind the lossless
+raw HTML boundary and remain visible in coverage warnings.

@@ -2,7 +2,7 @@
  * Block primitives — TS 타입 + 카테고리 메타.
  *
  * Anchor:
- *   - docs/spec/02_functional_spec.md §3 (131 블록 카탈로그)
+ *   - docs/spec/02_functional_spec.md §3 (블록 카탈로그)
  *   - docs/spec/09_design_system.md §1.1 (9 카테고리 hue)
  *   - docs/spec/16_redesign_decision_log.md §9
  *

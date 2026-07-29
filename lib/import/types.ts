@@ -2,7 +2,7 @@
  * Import 공통 타입.
  *
  * Anchor:
- *   - docs/spec/02_functional_spec.md §3 (131 블록 카탈로그)
+ *   - docs/spec/02_functional_spec.md §3 (블록 카탈로그)
  *   - docs/spec/12_roll20_output_spec.md §2/§3 (HTML/CSS emit contract)
  *
  * importSheet 의 출력 형태 — 3 워크스페이스의 Blockly XML 문자열 + coverage stats.

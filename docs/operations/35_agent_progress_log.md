@@ -6828,3 +6828,20 @@ visibility verification passed. No external room was opened or modified.
 - CLAIM BOUNDARY: This improves structured mapping only. It does not prove all
   arbitrary HTML elements, JavaScript behavior, or actual Roll20 modern/
   legacy visual parity. Existing rooms were not opened or modified.
+
+## 2026-07-29 - Safe Generic Element Mapping
+
+- DONE LOCAL: Safe, otherwise-unclassified HTML elements now become the
+  editable `r20_element_container` block. Custom elements, anchors, SVG child
+  elements, and other valid tags preserve tag/class/style/attributes/children;
+  the same tag policy is used by import, emit, and raw serialization.
+- SAFETY: `script`, `style`, `iframe`, `object`, `portal`, and `template` stay
+  behind the raw boundary. This keeps executable or document-level content out
+  of the visual DOM editor while preserving it for the separate runtime/raw
+  workspaces.
+- VERIFIED LOCAL: Import coverage is `35/35`, generic element emit tests pass,
+  lint passes, and no sheet-specific fixture was added. Actual Roll20 parity
+  remains `VERIFY` and no existing room was opened or modified.
+- CATALOG NOTE: A direct registry query at this commit reports `159` blocks;
+  the runtime registry, not historical arithmetic in older spec tables, is the
+  authoritative catalog count.

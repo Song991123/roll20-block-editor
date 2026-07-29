@@ -56,6 +56,16 @@ function testSemanticContainerTagsStayStructured(): void {
   assert(r.stats.htmlRawFallback === 0, 'semantic container tree has no raw fallback');
 }
 
+function testUnknownSafeElementsStayEditable(): void {
+  const html = '<custom-card data-kind="panel" aria-label="Card"><a href="/sheet">Open</a></custom-card>';
+  const r = importSheet({ html });
+  assert((r.html.match(/r20_element_container/g) || []).length === 2, 'safe unknown elements become generic blocks');
+  assert(r.html.includes('<field name="TAG">custom-card</field>'), 'custom element tag is preserved');
+  assert(r.html.includes('<field name="TAG">a</field>'), 'anchor tag is preserved');
+  assert(r.html.includes('data-kind'), 'generic element attributes are preserved');
+  assert(r.stats.htmlRawFallback === 0, 'safe unknown elements do not use raw fallback');
+}
+
 function testRepeatingSection(): void {
   const html = `<fieldset class="repeating_skills"><input type="text" name="attr_name"></fieldset>`;
   const r = importSheet({ html });
@@ -159,9 +169,9 @@ function testI18nFlat(): void {
 }
 
 function testRawFallback(): void {
-  const html = `<custom-element data-x="1">hi</custom-element>`;
+  const html = `<style>.sheet-x { display: none; }</style>`;
   const r = importSheet({ html });
-  assert(r.stats.htmlRawFallback >= 1, 'unknown tag → raw fallback');
+  assert(r.stats.htmlRawFallback >= 1, 'opaque style tag → raw fallback');
   assert(r.html.includes('r20_raw_html'), 'raw_html block emitted');
 }
 
@@ -327,6 +337,7 @@ const tests = [
   ['number input', testNumberInput],
   ['nested div', testNestedDiv],
   ['semantic container tags', testSemanticContainerTagsStayStructured],
+  ['unknown safe elements', testUnknownSafeElementsStayEditable],
   ['repeating section', testRepeatingSection],
   ['structural label container', testStructuralLabelContainer],
   ['list containers', testListContainers],

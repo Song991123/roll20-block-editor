@@ -1,5 +1,5 @@
 /**
- * Container 카테고리 — 19 블록 (Stage A-2).
+ * Container 카테고리 (Stage A-2).
  *
  * Anchor:
  *   - docs/spec/02_functional_spec.md §3.1 ID 1 (컨테이너 / Container, hue 180).
@@ -18,6 +18,7 @@ import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
 import { styleAttr, mergeStyle } from './style_field';
 import { SEMANTIC_CONTAINER_TAGS } from './semanticTags';
+import { isEditableElementTag, isVoidElementTag } from './elementTags';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -124,7 +125,7 @@ function buildCBlock(
   setStatementHooks(b);
 }
 
-// ---------- 19 블록 정의 ----------
+// ---------- 블록 정의 ----------
 
 export const CONTAINER_BLOCKS: BlockDef[] = [
   // 1) div ------------------------------------------------------------------
@@ -245,7 +246,46 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     ],
   },
 
-  // 5) row ------------------------------------------------------------------
+  // 5) generic editable element --------------------------------------------
+  // Unknown but safe elements remain structural instead of becoming opaque
+  // raw HTML. This is the universal escape route for custom sheet markup.
+  {
+    type: 'r20_element_container',
+    shape: 'c',
+    category: CONTAINER,
+    label: 'HTML 요소 묶음',
+    tooltip: '안전한 HTML 태그 이름을 보존하고 내부 요소를 편집합니다.',
+    init: mkInit((b) =>
+      buildCBlock(b, (top) => {
+        top
+          .appendField('HTML 요소 묶음')
+          .appendField('태그')
+          .appendField(new Blockly.FieldTextInput('section'), 'TAG')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      }),
+    ),
+    generator: (block, ctx) => {
+      const b = block as Blockly.Block;
+      const tagRaw = String(b.getFieldValue('TAG') ?? 'section').trim().toLowerCase();
+      const tag = isEditableElementTag(tagRaw) ? tagRaw : 'section';
+      if (tag !== tagRaw) {
+        ctx.warn(b.id, 'INVALID_ELEMENT_TAG', '태그 이름이 안전하지 않아 section으로 바꿨습니다.', 'warning');
+      }
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      const style = String(b.getFieldValue('STYLE') ?? '');
+      const attrs = `${sheetUserClassAttr(cls)}${styleAttr(style)}`;
+      if (isVoidElementTag(tag)) return `<${tag}${attrs}>`;
+      return wrapTag(ctx, tag, attrs, ctx.statementToCode(block, 'CONTENT'));
+    },
+    inspectorSchema: [
+      { name: 'TAG', label: '태그', kind: 'text', placeholder: 'article' },
+      { name: 'CLASS', label: '클래스', kind: 'text' },
+      { name: 'STYLE', label: '스타일', kind: 'text' },
+    ],
+  },
+
+  // 6) row ------------------------------------------------------------------
   {
     type: 'r20_row',
     shape: 'c',
@@ -819,7 +859,7 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
 ];
 
 /**
- * Stage A-2 — Container 19 블록 등록.
+ * Stage A-2 — Container 블록 등록.
  *
  * 1) BlockDef 메타를 target 배열에 push (UI 카탈로그 표시용).
  * 2) Blockly.Blocks[type] = { init } 등록 (워크스페이스 instantiate 가능).
