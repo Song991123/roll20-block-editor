@@ -665,13 +665,20 @@ const EditLayerRow = memo(function EditLayerRow({
           document.body.dataset.r20LayerDraggingBlock ||
           e.dataTransfer.getData('application/x-r20-layer-block');
         if (!draggedId) return;
+        const mode = pickMode(e);
+        const accepted = canDrop(draggedId, node.id, mode);
+        if (!accepted) {
+          e.stopPropagation();
+          setDropMode(null);
+          setIsDragging(false);
+          delete document.body.dataset.r20LayerDraggingBlock;
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
-        const mode = pickMode(e);
         setDropMode(null);
         setIsDragging(false);
         delete document.body.dataset.r20LayerDraggingBlock;
-        if (!canDrop(draggedId, node.id, mode)) return;
         onMove(draggedId, node.id, mode);
       }}
       className={`relative flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors ${

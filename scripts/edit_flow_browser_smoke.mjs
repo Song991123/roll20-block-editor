@@ -655,6 +655,7 @@ async function main() {
     );
     assert(
       result.tests.tableDropMutation.invalid.found
+        && !result.tests.tableDropMutation.invalid.dropPrevented
         && result.tests.tableDropMutation.invalid.movingParent === null,
       `invalid table drop changed the layer graph: ${JSON.stringify(result.tests.tableDropMutation)}`,
     );
