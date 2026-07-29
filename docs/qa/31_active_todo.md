@@ -1,3 +1,19 @@
+## 2026-07-29 Roll20 Sandbox Connection Recheck
+
+- VERIFIED ACTUAL: A logged-in Chrome session reached the Roll20 editor and
+  exposed the Sheet Sandbox Tools surface. The currently visible participant
+  indicator read exactly `1 구성원`; no existing room was selected or changed.
+- VERIFY BLOCKED: The supported browser file-chooser path rejected the local
+  HTML file assignment, and the tab's raw CDP path explicitly disallowed direct
+  file injection. No HTML, CSS, or translation payload was transmitted, and
+  no generated Sandbox screenshot was counted.
+- SAFETY: The participant gate remains active. Existing rooms are observation
+  only; generated writes remain limited to Sandbox or a dedicated test room.
+- NEXT P0: Continue from this open Sandbox surface with a supported chooser or
+  user-assisted file selection, then capture the same anonymous fixture's root,
+  full sheet, console, and roll/chat evidence. Run the legacy path separately
+  in a dedicated room after a fresh visible count of exactly one.
+
 ## 2026-07-29 Optimistic Flow Commit Fast Path
 
 - FIXED LOCAL: A committed flow drop now carries only the validated

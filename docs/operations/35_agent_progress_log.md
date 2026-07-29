@@ -1,3 +1,15 @@
+## 2026-07-29 - Roll20 Sandbox connection recheck
+
+- VERIFIED: Chrome reached the Roll20 editor's Sheet Sandbox Tools surface and
+  the visible member indicator read exactly one member. The read was limited
+  to the current page; no existing room was opened for editing or modified.
+- BLOCKED: Browser file-chooser assignment was rejected by the supported
+  extension path, while direct raw-CDP file injection was refused. No local
+  sheet payload was sent and no actual Sandbox render evidence was produced.
+- NEXT: Use a supported or user-assisted chooser on the isolated Sandbox,
+  capture anonymous modern evidence, then repeat only in a dedicated legacy
+  room with the participant gate freshly passing.
+
 ## 2026-07-29 - Optimistic flow commit fast path
 
 - FIXED: A flow drop that was already applied optimistically in the canonical

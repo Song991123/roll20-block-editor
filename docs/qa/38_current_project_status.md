@@ -4,6 +4,17 @@ Date: 2026-07-19
 
 This is a compact status snapshot for handoff and planning. It must not be used to claim full Roll20 visual parity. Generated reports and private sheet evidence remain local-only and ignored.
 
+## Current Recheck: 2026-07-29
+
+- Roll20 Chrome connection is available and the Sandbox Tools surface is
+  visible. The fresh visible participant indicator reads exactly one member.
+- The read-only page inspection passed, but the supported file chooser refused
+  local file assignment and direct CDP injection is not permitted by the
+  browser bridge. No generated HTML/CSS/translation payload was uploaded in
+  this recheck.
+- Actual generated Sandbox evidence remains missing. Modern Sandbox parity and
+  dedicated legacy-room parity stay `VERIFY`, not `DONE`.
+
 ## Superseding Evidence: 2026-07-18
 
 - ACTUAL ROLL20 SYNTHETIC: A browser-side synthetic HTML/CSS/translation
