@@ -405,6 +405,12 @@ function EditLayerPanel({
     [bumpStructure, nodes, setSelected, tab],
   );
 
+  const canMoveLayer = useCallback(
+    (draggedId: string, targetId: string) =>
+      draggedId !== targetId && !wouldCreateLayerCycle(nodes, draggedId, targetId),
+    [nodes],
+  );
+
   const ejectLayer = useCallback(
     (blockId: string) => {
       const adapter = getBlocklyAdapter();
@@ -523,6 +529,7 @@ function EditLayerPanel({
                     contextOnly={item.contextOnly}
                     onSelect={() => setSelected(node.id, 'tree')}
                     onMove={moveLayer}
+                    canDrop={canMoveLayer}
                     onEject={ejectLayer}
                     collapsed={collapsedLayerIds.has(node.id)}
                     onToggleCollapse={toggleLayer}
@@ -545,6 +552,7 @@ const EditLayerRow = memo(function EditLayerRow({
   contextOnly,
   onSelect,
   onMove,
+  canDrop,
   onEject,
   collapsed,
   onToggleCollapse,
@@ -556,11 +564,13 @@ const EditLayerRow = memo(function EditLayerRow({
   contextOnly: boolean;
   onSelect: () => void;
   onMove: (draggedId: string, targetId: string, mode: LayerDropMode) => void;
+  canDrop: (draggedId: string, targetId: string) => boolean;
   onEject: (blockId: string) => void;
   collapsed: boolean;
   onToggleCollapse: (blockId: string) => void;
 }) {
   const [dropMode, setDropMode] = useState<LayerDropMode | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const role = useMemo(() => {
     const base = getLayerRole(node.type);
     return {
@@ -597,6 +607,8 @@ const EditLayerRow = memo(function EditLayerRow({
       data-r20-layer-search-match={searchMatch ? '1' : '0'}
       data-r20-layer-context-only={contextOnly ? '1' : '0'}
       data-r20-layer-selected={selected ? '1' : '0'}
+      data-r20-layer-dragging={isDragging ? '1' : '0'}
+      aria-grabbed={isDragging}
       aria-label={`${node.label} ${role.label}${role.canReceiveChildren ? ' 컨테이너' : ''}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -608,11 +620,19 @@ const EditLayerRow = memo(function EditLayerRow({
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-r20-layer-block', node.id);
         e.dataTransfer.effectAllowed = 'move';
+        const rect = e.currentTarget.getBoundingClientRect();
+        e.dataTransfer.setDragImage(e.currentTarget, Math.min(28, rect.width / 2), rect.height / 2);
+        setIsDragging(true);
         document.body.dataset.r20LayerDraggingBlock = node.id;
       }}
-      onDragLeave={() => setDropMode(null)}
+      onDragLeave={(e) => {
+        const relatedTarget = e.relatedTarget;
+        if (relatedTarget instanceof Node && e.currentTarget.contains(relatedTarget)) return;
+        setDropMode(null);
+      }}
       onDragEnd={() => {
         setDropMode(null);
+        setIsDragging(false);
         delete document.body.dataset.r20LayerDraggingBlock;
       }}
       onDragOver={(e) => {
@@ -626,9 +646,14 @@ const EditLayerRow = memo(function EditLayerRow({
           e.dataTransfer.dropEffect = 'none';
           return;
         }
+        const mode = pickMode(e);
+        if (!canDrop(draggedId, node.id)) {
+          e.dataTransfer.dropEffect = 'none';
+          return;
+        }
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        setDropMode(pickMode(e));
+        setDropMode(mode);
       }}
       onDrop={(e) => {
         const draggedId =
@@ -639,7 +664,9 @@ const EditLayerRow = memo(function EditLayerRow({
         e.stopPropagation();
         const mode = pickMode(e);
         setDropMode(null);
+        setIsDragging(false);
         delete document.body.dataset.r20LayerDraggingBlock;
+        if (!canDrop(draggedId, node.id)) return;
         onMove(draggedId, node.id, mode);
       }}
       className={`relative flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors ${
@@ -656,7 +683,7 @@ const EditLayerRow = memo(function EditLayerRow({
             : dropMode === 'after'
               ? 'shadow-[inset_0_-3px_0_var(--info)]'
               : ''
-      }`}
+      } ${isDragging ? 'cursor-grabbing opacity-60' : 'cursor-grab'}`}
       style={{ paddingLeft: `${8 + node.depth * 12}px` }}
     >
       {node.depth > 0 && (

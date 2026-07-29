@@ -1,3 +1,24 @@
+## 2026-07-29 Layer Drop Safety And Room Eligibility
+
+- DONE: Layer-panel drag feedback now survives pointer movement over nested
+  row content, uses the grabbed row as the drag preview, and clears its shared
+  drag state after cancellation.
+- DONE: Cycle-producing layer drops are blocked during `dragover`, with no
+  valid drop highlight and `dropEffect=none`.
+- VERIFIED LOCAL: `corepack pnpm run smoke:edit-flow -- --report-dir
+  reports/edit-flow-smoke/layer-drag-v2` passed `before / inside / after`,
+  internal-child highlight preservation, reorder/eject, cycle protection,
+  selection sync, width inputs, and zero console/page errors. `lint`, `build`,
+  `smoke:persistent-preview-surface`, and the participant-preflight self-test
+  also passed.
+- SAFETY RULE: An existing Roll20 room is considered usable only when a fresh
+  visible participant count is exactly `1`. A count of `0`, more than `1`, or
+  an unreadable/ambiguous count is an automatic exclusion. Existing rooms are
+  observation-only; generated uploads use Sandbox or a new dedicated test
+  room.
+- VERIFY: Actual Roll20 Sandbox and dedicated legacy-room screenshots are not
+  counted by this local result. Do not call local exact pixels Roll20 parity.
+
 ## 2026-07-29 Roll20 Room Safety And Design PR Boundary
 
 - VERIFIED LOCAL: Extended `smoke:persistent-preview-surface` with a same-iframe

@@ -332,12 +332,40 @@ async function main() {
         await new Promise((resolve) => requestAnimationFrame(resolve));
         modes.push(target.getAttribute('data-r20-layer-drop-mode') || null);
       }
+      const inner = target.querySelector('[data-testid="edit-layer-role-rail"]') || target.firstElementChild;
+      const hoverTransfer = new DataTransfer();
+      hoverTransfer.setData('application/x-r20-layer-block', movingId);
+      const hoverInit = {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+      };
+      const hoverOver = new DragEvent('dragover', hoverInit);
+      Object.defineProperty(hoverOver, 'dataTransfer', { value: hoverTransfer });
+      target.dispatchEvent(hoverOver);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const modeBeforeChildLeave = target.getAttribute('data-r20-layer-drop-mode') || null;
+      const childLeave = new DragEvent('dragleave', {
+        ...hoverInit,
+        relatedTarget: inner,
+      });
+      target.dispatchEvent(childLeave);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const modeAfterChildLeave = target.getAttribute('data-r20-layer-drop-mode') || null;
       target.dispatchEvent(new DragEvent('dragleave', { bubbles: true, cancelable: true }));
-      return { modes };
+      return {
+        modes,
+        internalChildLeavePreserved: modeBeforeChildLeave === modeAfterChildLeave && Boolean(modeAfterChildLeave),
+      };
     }, { movingId: ids.rowAId, targetId: ids.rowBId });
     assert(
       ['before', 'inside', 'after'].every((mode) => result.tests.layerDropModes.modes.includes(mode)),
       `layer drop zones are incomplete: ${JSON.stringify(result.tests.layerDropModes)}`,
+    );
+    assert(
+      result.tests.layerDropModes.internalChildLeavePreserved,
+      'layer drop highlight disappeared while pointer remained inside the row',
     );
 
     result.tests.layerReorder = await page.evaluate(async ({ movingId, targetId }) => {
@@ -405,6 +433,8 @@ async function main() {
       const over = new DragEvent('dragover', init);
       Object.defineProperty(over, 'dataTransfer', { value: dataTransfer });
       target.dispatchEvent(over);
+      const dropModeBeforeDrop = target.getAttribute('data-r20-layer-drop-mode') || null;
+      const dropEffectBeforeDrop = dataTransfer.dropEffect;
       const drop = new DragEvent('drop', init);
       Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
       target.dispatchEvent(drop);
@@ -420,9 +450,19 @@ async function main() {
         afterIds: after.map((node) => node.id),
         beforeParent: beforeMoving?.layerParentId ?? null,
         afterParent: afterMoving?.layerParentId ?? null,
+        dropModeBeforeDrop,
+        dropEffectBeforeDrop,
       };
     }, { movingId: ids.frameId, targetId: ids.rowBId });
     assert(result.tests.cycleProtection.rejected, 'cycle-producing layer drop was accepted');
+    assert(
+      result.tests.cycleProtection.dropModeBeforeDrop === null,
+      'cycle-producing layer drop was shown as a valid target',
+    );
+    assert(
+      result.tests.cycleProtection.dropEffectBeforeDrop === 'none',
+      'cycle-producing layer drop did not advertise a blocked drop effect',
+    );
 
     result.tests.selectionSync = await page.evaluate(async (targetId) => {
       const row = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetId)}"]`);

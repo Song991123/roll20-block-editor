@@ -1,3 +1,26 @@
+## 2026-07-29 - Layer Drop Feedback And Room Safety Clarification
+
+- FIXED: Layer rows now keep their `before / inside / after` feedback while the
+  pointer moves across a child icon or label. The row itself is used as the
+  native drag preview, the source row exposes a dragging state, and canceled
+  drags clear the shared marker.
+- FIXED: A layer that would create a DOM ancestry cycle is rejected during
+  `dragover`, not only after drop. The UI reports `dropEffect=none` and does not
+  paint a valid drop zone for that target.
+- VERIFIED LOCAL: `smoke:edit-flow` passed the three drop modes, internal-child
+  `dragleave` preservation, reorder/eject, cycle rejection, selection sync,
+  canvas-width editing, and zero console/page errors. `lint`, `build`, and the
+  persistent modern/legacy same-iframe smoke also passed.
+- SAFETY: Existing Roll20 rooms are eligible only when a fresh visible
+  participant check reports exactly one member. Zero, unknown, unreadable, or
+  multiple participants exclude the room; existing rooms remain observation
+  only. Upload/save/chat/settings actions stay limited to Sandbox or a newly
+  created dedicated test room.
+- BOUNDARY: The browser result is local UI evidence. It does not promote
+  actual Roll20 modern/legacy visual parity; the dedicated one-member legacy
+  room and fresh Sandbox screenshots remain `VERIFY` until a stable browser
+  session is available.
+
 ## 2026-07-29 - Existing-Room Participant Preflight
 
 - VERIFIED LOCAL: Same persistent preview iframe now has a browser smoke for
