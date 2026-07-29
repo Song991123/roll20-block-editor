@@ -7559,3 +7559,19 @@ visibility verification passed. No external room was opened or modified.
   evidence cleanup, so those report-consuming audits remain open until a new
   user-authorized capture session exists. The current CDP endpoint is not
   listening, so no live capture was attempted.
+
+## 2026-07-30 - Dedicated Page-JS workspace and source-order slots
+
+- Implemented `lib/import/pageJsWorkspace.ts`. Ordinary page scripts are
+  extracted into `r20_raw_page_js` blocks in the `js` workspace; HTML retains
+  an internal `r20_page_js_slot` anchor only.
+- `emitAll` resolves anchors back to the original positions. Newly-authored
+  page scripts without a slot append after the HTML body; deleting an imported
+  script removes its slot output.
+- Registered the internal anchor block but excluded it from the visible block
+  catalog. Workspace state, autosave XML, emit cache, inspector, code tabs, and
+  import hydration all include `js`.
+- VERIFIED: import structure `40/40`, emit-contract, lint, TypeScript-aware
+  test runner paths, full `corepack pnpm run ci:verify`, and upload-file smoke.
+- NOT CLAIMED: actual modern Sandbox/legacy-room visual parity remains open;
+  no live CDP endpoint is listening and no private evidence was recreated.

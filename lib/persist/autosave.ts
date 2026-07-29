@@ -124,6 +124,7 @@ export function parseCombinedXml(
       html: out.html ?? '',
       css: out.css ?? '',
       i18n: out.i18n ?? '',
+      js: out.js ?? '',
       worker: out.worker ?? '',
       assetReplacementMap: assetMapNode ? assetMapNode.textContent ?? '' : undefined,
       assetReplacementProfiles: parseAssetReplacementProfiles(profileNode?.textContent ?? ''),

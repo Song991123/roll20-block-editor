@@ -11,8 +11,8 @@
 import { create } from 'zustand';
 import { getBlocklyAdapter } from '@/lib/blockly/adapter';
 
-export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'worker';
-export const WORKSPACE_KEYS: WorkspaceKey[] = ['html', 'css', 'i18n', 'worker'];
+export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'js' | 'worker';
+export const WORKSPACE_KEYS: WorkspaceKey[] = ['html', 'css', 'i18n', 'js', 'worker'];
 
 /**
  * Phase A — WYSIWYG 위젯 인스턴스 (spec 17 §10).
@@ -76,6 +76,7 @@ export interface EmitOutput {
   html: string;
   css: string;
   i18n: string;
+  js: string;
   worker: string;
 }
 
@@ -197,10 +198,11 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
     html: { ...emptyMeta },
     css: { ...emptyMeta },
     i18n: { ...emptyMeta },
+    js: { ...emptyMeta },
     worker: { ...emptyMeta },
   },
   activeWorkspace: 'html',
-  emitCache: { html: '', css: '', i18n: '', worker: '' },
+  emitCache: { html: '', css: '', i18n: '', js: '', worker: '' },
   emitWarnings: [],
   lastClearedAt: 0,
   selectedBlockId: null,
@@ -260,9 +262,10 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
         html: { ...emptyMeta },
         css: { ...emptyMeta },
         i18n: { ...emptyMeta },
+        js: { ...emptyMeta },
         worker: { ...emptyMeta },
       },
-      emitCache: { html: '', css: '', i18n: '', worker: '' },
+      emitCache: { html: '', css: '', i18n: '', js: '', worker: '' },
       emitWarnings: [],
       lastClearedAt: Date.now(),
       selectedBlockId: null,

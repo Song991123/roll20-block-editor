@@ -203,6 +203,8 @@ export interface BlockDef {
   advanced?: boolean;
   /** 직접 편집 sync 용. */
   domAnchor?: 'self' | 'parent' | 'none';
+  /** Internal compatibility block; register it but keep it out of the catalog. */
+  internal?: boolean;
 }
 
 export interface GeneratorContext {

@@ -18,6 +18,8 @@ export interface ImportResult {
   css: string;
   /** i18n 워크스페이스 XML. */
   i18n: string;
+  /** Ordinary page JavaScript workspace XML. */
+  js: string;
   /** 매칭 / fallback / 누락 등 진단 메시지. */
   warnings: ImportWarning[];
   /** 통계. */
@@ -31,7 +33,7 @@ export interface ImportWarning {
   /** 사람 친화 메시지. */
   message: string;
   /** 어떤 워크스페이스에 영향. */
-  workspace: 'html' | 'css' | 'i18n' | null;
+  workspace: 'html' | 'css' | 'i18n' | 'js' | null;
   /** 원본 토큰 (디버깅용 — 영시영 specific markup 그대로 박힐 수 있으므로 local-only 분석에만 사용). */
   hint?: string;
 }
@@ -47,6 +49,8 @@ export interface ImportStats {
   cssRawFallback: number;
   /** i18n 워크스페이스: 추출된 key/value 페어 수. */
   i18nKeys: number;
+  /** Ordinary page `<script>` blocks moved to the Page JS workspace. */
+  pageScriptBlocks: number;
   /** 종합 coverage % (HTML 기준). */
   coverage: number;
   /**

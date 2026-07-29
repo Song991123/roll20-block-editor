@@ -62,10 +62,11 @@ export async function loadExampleIntoWorkspaces(
     { key: 'html', xml: htmlXml },
     { key: 'css', xml: cssXml },
     { key: 'i18n', xml: i18nXml },
+    { key: 'js', xml: '' },
     { key: 'worker', xml: '' },
   ];
 
-  const counts: Record<WorkspaceKey, number> = { html: 0, css: 0, i18n: 0, worker: 0 };
+  const counts: Record<WorkspaceKey, number> = { html: 0, css: 0, i18n: 0, js: 0, worker: 0 };
 
   for (const { key, xml } of targets) {
     if (!xml) {

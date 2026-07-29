@@ -15,6 +15,7 @@ import { fieldDisplayLabel } from './fieldLabels';
 const GEOMETRY_FIELDS = new Set(['LEFT_PX', 'TOP_PX', 'WIDTH_PX', 'HEIGHT_PX']);
 
 const WORKSPACE_DISPLAY: Record<WorkspaceKey, string> = {
+  js: '페이지 JS',
   html: '화면 구성',
   css: '꾸미기',
   i18n: '번역',
@@ -40,6 +41,7 @@ export default function EditInspector() {
     s.workspaces.html.structureVersion
     + s.workspaces.css.structureVersion
     + s.workspaces.i18n.structureVersion
+    + s.workspaces.js.structureVersion
     + s.workspaces.worker.structureVersion,
   );
   const setSelected = useWorkspaceStore((s) => s.setSelectedBlockId);

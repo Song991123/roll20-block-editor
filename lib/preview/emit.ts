@@ -33,6 +33,7 @@ import { ORDER } from '@/lib/blocks/types';
 import { injectPreservedAttributes, PRESERVED_ATTRS_FIELD } from '@/lib/blocks/preservedAttributes';
 import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
 import { isRoll20WorkerScript } from '@/lib/import/worker_source';
+import { mergePageJsSlots } from '@/lib/import/pageJsWorkspace';
 
 export interface EmitResult {
   code: string;
@@ -178,6 +179,7 @@ class EmitEngine implements GeneratorContext {
    */
   wrapTopLevel(block: Blockly.Block, code: string): string {
     if (!code) return '';
+    if (this.kind === 'js' || block.type === 'r20_page_js_slot') return code;
     const def = getBlockDef(block.type);
     const shape: BlockShape = def?.shape ?? 'stack';
 
@@ -247,26 +249,30 @@ export function emitWorkspace(
  */
 export function emitAll(
   workspaces: Partial<Record<WorkspaceKey, Blockly.Workspace | null>>,
-): { html: string; css: string; i18n: string; worker: string; warnings: EmitWarning[] } {
+): { html: string; css: string; i18n: string; js: string; worker: string; warnings: EmitWarning[] } {
   const html = emitWorkspace(workspaces.html ?? null, 'html');
   const css = emitWorkspace(workspaces.css ?? null, 'css');
   const i18n = emitWorkspace(workspaces.i18n ?? null, 'i18n');
+  const pageJs = emitWorkspace(workspaces.js ?? null, 'js');
   const worker = emitWorkspace(workspaces.worker ?? null, 'worker');
   const workerBody = normalizeWorkerBody(worker.code);
   const htmlCode = stripWorkerScriptsFromHtml(html.code);
-  const htmlWithWorker = workerBody
-    ? `${htmlCode}${htmlCode ? '\n' : ''}<script type="text/worker">\n${workerBody}\n</script>`
-    : htmlCode;
+  const pageJsCode = pageJs.code.trim();
+  const htmlWithPageJs = mergePageJsSlots(htmlCode, pageJsCode);
+  const htmlWithScripts = [htmlWithPageJs, workerBody ? `<script type="text/worker">\n${workerBody}\n</script>` : '']
+    .filter(Boolean)
+    .join('\n');
   // Generated HTML layout rules are appended after user CSS to preserve the
   // old block's inline-style precedence while keeping the emitted HTML clean.
   const cssCode = [css.code, html.generatedCss].filter(Boolean).join('\n');
-  const normalized = normalizeEmittedRoll20Pair(htmlWithWorker, cssCode);
+  const normalized = normalizeEmittedRoll20Pair(htmlWithScripts, cssCode);
   return {
     html: normalized.html,
     css: normalized.css,
     i18n: i18n.code,
+    js: pageJsCode,
     worker: workerBody,
-    warnings: [...html.warnings, ...css.warnings, ...i18n.warnings, ...worker.warnings],
+    warnings: [...html.warnings, ...css.warnings, ...i18n.warnings, ...pageJs.warnings, ...worker.warnings],
   };
 }
 

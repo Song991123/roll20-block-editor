@@ -202,3 +202,14 @@ worktrees were preserved.
 - No protected source folder, active dependency tree, source file, Git
   worktree, or project listener was touched.
 - This is a disposable-evidence cleanup, not a product-source deletion.
+
+## 2026-07-30 current-build cleanup completion
+
+- The only remaining approved generated targets in the canonical worktree were
+  `.next/` and `out/` from the latest local build.
+- Both exact paths were deleted and verified absent. The first recursive
+  command was host-rejected; the same PowerShell process then removed `out/`
+  and retried `.next/` after its transient `jsdom-*` entry released.
+- `node_modules/`, source roots, local report policy, fixtures, protected
+  external material, Git metadata, and both worktrees were preserved.
+- No project listener was active on ports `3000`, `4197`, `4198`, or `4199`.

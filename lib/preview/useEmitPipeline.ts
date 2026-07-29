@@ -48,7 +48,7 @@ export function flushEmitPipeline(): void {
   immediateFlushSignature = workspaceSignature(state);
   const counts = WORKSPACE_KEYS.map((key) => state.workspaces[key].blockCount);
   if (counts.every((count) => count === 0)) {
-    state.setEmitCache({ html: '', css: '', i18n: '', worker: '' });
+    state.setEmitCache({ html: '', css: '', i18n: '', js: '', worker: '' });
     state.setEmitWarnings([]);
     return;
   }
@@ -59,10 +59,11 @@ export function flushEmitPipeline(): void {
     html: adapter.getWorkspace('html'),
     css: adapter.getWorkspace('css'),
     i18n: adapter.getWorkspace('i18n'),
+    js: adapter.getWorkspace('js'),
     worker: adapter.getWorkspace('worker'),
   });
   markEditorTiming('emit-immediate-end');
-  state.setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, worker: result.worker });
+  state.setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, js: result.js, worker: result.worker });
   state.setEmitWarnings(result.warnings);
 }
 
@@ -71,17 +72,19 @@ export function useEmitPipeline(): void {
   const htmlV = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const cssV = useWorkspaceStore((s) => s.workspaces.css.structureVersion);
   const i18nV = useWorkspaceStore((s) => s.workspaces.i18n.structureVersion);
+  const jsV = useWorkspaceStore((s) => s.workspaces.js.structureVersion);
   const workerV = useWorkspaceStore((s) => s.workspaces.worker.structureVersion);
   const htmlCount = useWorkspaceStore((s) => s.workspaces.html.blockCount);
   const cssCount = useWorkspaceStore((s) => s.workspaces.css.blockCount);
   const i18nCount = useWorkspaceStore((s) => s.workspaces.i18n.blockCount);
+  const jsCount = useWorkspaceStore((s) => s.workspaces.js.blockCount);
   const workerCount = useWorkspaceStore((s) => s.workspaces.worker.blockCount);
   const setEmitCache = useWorkspaceStore((s) => s.setEmitCache);
   const setEmitWarnings = useWorkspaceStore((s) => s.setEmitWarnings);
 
   useEffect(() => {
-    if (htmlCount + cssCount + i18nCount + workerCount === 0) {
-      setEmitCache({ html: '', css: '', i18n: '', worker: '' });
+    if (htmlCount + cssCount + i18nCount + jsCount + workerCount === 0) {
+      setEmitCache({ html: '', css: '', i18n: '', js: '', worker: '' });
       setEmitWarnings([]);
       return;
     }
@@ -107,9 +110,10 @@ export function useEmitPipeline(): void {
         adapter.countBlocks('html') +
         adapter.countBlocks('css') +
         adapter.countBlocks('i18n') +
+        adapter.countBlocks('js') +
         adapter.countBlocks('worker');
       if (liveTotal === 0) {
-        setEmitCache({ html: '', css: '', i18n: '', worker: '' });
+        setEmitCache({ html: '', css: '', i18n: '', js: '', worker: '' });
         setEmitWarnings([]);
         return;
       }
@@ -119,12 +123,13 @@ export function useEmitPipeline(): void {
         html: adapter.getWorkspace('html'),
         css: adapter.getWorkspace('css'),
         i18n: adapter.getWorkspace('i18n'),
+        js: adapter.getWorkspace('js'),
         worker: adapter.getWorkspace('worker'),
       });
       markEditorTiming('emit-delayed-end');
-      setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, worker: result.worker });
+      setEmitCache({ html: result.html, css: result.css, i18n: result.i18n, js: result.js, worker: result.worker });
       setEmitWarnings(result.warnings);
     }, 120);
     return () => window.clearTimeout(handle);
-  }, [htmlV, cssV, i18nV, workerV, htmlCount, cssCount, i18nCount, workerCount, setEmitCache, setEmitWarnings]);
+  }, [htmlV, cssV, i18nV, jsV, workerV, htmlCount, cssCount, i18nCount, jsCount, workerCount, setEmitCache, setEmitWarnings]);
 }

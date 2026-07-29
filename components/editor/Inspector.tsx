@@ -38,6 +38,7 @@ function BlockInspector() {
   const htmlV = useWorkspaceStore((s) => s.workspaces.html.structureVersion);
   const cssV = useWorkspaceStore((s) => s.workspaces.css.structureVersion);
   const i18nV = useWorkspaceStore((s) => s.workspaces.i18n.structureVersion);
+  const jsV = useWorkspaceStore((s) => s.workspaces.js.structureVersion);
   const workerV = useWorkspaceStore((s) => s.workspaces.worker.structureVersion);
 
   const { snap, key }: { snap: BlockSnapshot | null; key: WorkspaceKey | null } = useMemo(() => {
@@ -49,13 +50,13 @@ function BlockInspector() {
     }
     return { snap: null, key: null };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, htmlV, cssV, i18nV, workerV]);
+  }, [selectedId, htmlV, cssV, i18nV, jsV, workerV]);
 
   const fields: BlockFieldInfo[] = useMemo(() => {
     if (!selectedId || !key) return [];
     return getBlocklyAdapter().getBlockFields(key, selectedId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, key, htmlV, cssV, i18nV, workerV]);
+  }, [selectedId, key, htmlV, cssV, i18nV, jsV, workerV]);
 
   const onFieldChange = useCallback(
     (name: string, value: string) => {

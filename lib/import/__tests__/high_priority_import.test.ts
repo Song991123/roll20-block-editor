@@ -85,7 +85,8 @@ function testTranslationByLang(): void {
 function testTypedPageScriptStaysHtml(): void {
   const html = `<script type="text/javascript" src="sheet-runtime.js">window.sheetReady = true;</script>`;
   const r = importSheet({ html });
-  expectContains(r.html, 'r20_raw_html', 'typed page script stays in HTML');
+  expectContains(r.js, 'r20_raw_page_js', 'typed page script enters Page JS workspace');
+  expectContains(r.html, 'r20_page_js_slot', 'typed page script keeps an HTML slot');
   expectNotContains(r.html, 'r20_raw_worker', 'typed page script is not a worker');
   expectNotContains(r.html, 'r20_get_translation', 'typed page script is not a worker reporter');
 }
@@ -93,7 +94,8 @@ function testTypedPageScriptStaysHtml(): void {
 function testUntypedPageScriptStaysHtml(): void {
   const html = `<script>window.sheetReady = true;</script>`;
   const r = importSheet({ html });
-  expectContains(r.html, 'r20_raw_html', 'untyped page script stays in HTML');
+  expectContains(r.js, 'r20_raw_page_js', 'untyped page script enters Page JS workspace');
+  expectContains(r.html, 'r20_page_js_slot', 'untyped page script keeps an HTML slot');
   expectNotContains(r.html, 'r20_raw_worker', 'untyped page script is not a worker');
 }
 

@@ -70,6 +70,7 @@ export interface PerfEmitSnap {
   htmlLen: number;
   cssLen: number;
   i18nLen: number;
+  jsLen: number;
   workerLen: number;
 }
 
@@ -117,7 +118,7 @@ export interface PerfHook {
    * 우려 있으나 perf 측정 사용자는 같은 사용자라 OK). Stage 2 round-trip
    * 측정 phase 에서만 활성.
    */
-  getEmitContent: () => { html: string; css: string; i18n: string; worker: string };
+  getEmitContent: () => { html: string; css: string; i18n: string; js: string; worker: string };
   /** sync / async 작업 timing + heap delta. */
   measure: <T>(label: string, fn: () => T | Promise<T>) => Promise<PerfMeasure & { value: T }>;
   /** 영시영 / 다른 시트 raw HTML/CSS/i18n 을 generic pipeline 으로 import 후 hydrate. */
@@ -285,11 +286,12 @@ function buildHook(): PerfHook {
       const html = countBlocks('html');
       const css = countBlocks('css');
       const i18n = countBlocks('i18n');
+      const js = countBlocks('js');
       const worker = countBlocks('worker');
       return {
-        blockCount: { html: html.total, css: css.total, i18n: i18n.total, worker: worker.total },
-        totalBlocks: html.total + css.total + i18n.total + worker.total,
-        rootBlocks: { html: html.root, css: css.root, i18n: i18n.root, worker: worker.root },
+        blockCount: { html: html.total, css: css.total, i18n: i18n.total, js: js.total, worker: worker.total },
+        totalBlocks: html.total + css.total + i18n.total + js.total + worker.total,
+        rootBlocks: { html: html.root, css: css.root, i18n: i18n.root, js: js.root, worker: worker.root },
       };
     },
 
@@ -333,6 +335,7 @@ function buildHook(): PerfHook {
         htmlLen: cache.html.length,
         cssLen: cache.css.length,
         i18nLen: cache.i18n.length,
+        jsLen: cache.js.length,
         workerLen: cache.worker.length,
       };
     },
@@ -343,6 +346,7 @@ function buildHook(): PerfHook {
         html: cache.html,
         css: cache.css,
         i18n: cache.i18n,
+        js: cache.js,
         worker: cache.worker,
       };
     },

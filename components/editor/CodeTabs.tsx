@@ -11,6 +11,12 @@ import { toast } from 'sonner';
 
 const SUB_TABS = [
   {
+    id: 'js',
+    label: '페이지 JS',
+    empty: '아직 페이지 자바스크립트가 없어요.',
+    note: '내보낼 때만 포함되고, 로컬 미리보기에서는 실행되지 않아요.',
+  },
+  {
     id: 'html',
     label: 'HTML',
     empty: '아직 만들어진 HTML이 없어요. 시트에 요소를 올리면 여기에 코드가 생겨요.',
@@ -71,7 +77,7 @@ export default function CodeTabs() {
         <ToggleGroup
           type="single"
           value={subTab}
-          onValueChange={(v) => v && setSubTab(v as 'html' | 'css' | 'i18n' | 'worker')}
+          onValueChange={(v) => v && setSubTab(v as 'html' | 'css' | 'i18n' | 'js' | 'worker')}
           size="sm"
           className="w-full"
         >

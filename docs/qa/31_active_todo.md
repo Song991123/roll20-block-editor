@@ -6801,3 +6801,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - BLOCKED_EXTERNAL: CDP preflight self-test passes, but no local CDP endpoint
   is currently listening, so no fresh modern Sandbox or isolated legacy-room
   screenshot/runtime evidence is counted.
+
+## 2026-07-30 Dedicated Page-JS workspace
+
+- DONE LOCAL: Ordinary page `<script>` tags now split into a dedicated `js`
+  workspace as `r20_raw_page_js` blocks. HTML keeps only an internal source
+  slot, which is hidden from the user-facing block catalog.
+- DONE LOCAL: Emit merges imported scripts back into their original HTML slot;
+  scripts without a slot are appended after the HTML body. Deleting an
+  imported JS block removes its old script instead of leaving an anchor.
+- DONE LOCAL: Autosave, workspace mounting, code tabs, inspector labels, and
+  emit cache include the `js` workspace. Preview still strips ordinary page JS
+  and keeps Roll20 worker scripts in their separate runtime boundary.
+- VERIFIED LOCAL: import structure `40/40`, emit-contract, lint, full
+  `corepack pnpm run ci:verify`, and the Roll20 upload-file payload test pass.
+- CLAIM BOUNDARY: This proves local import/edit/emit separation and source-order
+  reconstruction. It does not prove actual Roll20 Sandbox or isolated legacy
+  room parity; those remain `VERIFY/BLOCKED_EXTERNAL` while CDP is unavailable.

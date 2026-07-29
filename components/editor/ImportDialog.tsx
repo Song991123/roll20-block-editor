@@ -178,7 +178,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       ws.resetWorkspace('html');
       ws.resetWorkspace('css');
       ws.resetWorkspace('i18n');
+      ws.resetWorkspace('js');
       ws.resetWorkspace('worker');
+      adapter.hydrateFromXml('js', result.js);
       adapter.hydrateFromXml('worker', emptyXml);
 
       // html 워크스페이스가 가장 큼 (6K 가능) → chunked. css/i18n 은 보통 작음.
@@ -206,6 +208,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       arrangeImportedWorkspace('html');
       arrangeImportedWorkspace('css');
       arrangeImportedWorkspace('i18n');
+      arrangeImportedWorkspace('js');
       arrangeImportedWorkspace('worker');
       // chunked 토스트 정리.
       if (htmlTotal >= PROGRESS_THRESHOLD) {
@@ -215,14 +218,17 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
       const htmlBlocks = adapter.getWorkspace('html')?.getAllBlocks(false).length ?? 0;
       const cssBlocks = adapter.getWorkspace('css')?.getAllBlocks(false).length ?? 0;
       const i18nBlocks = adapter.getWorkspace('i18n')?.getAllBlocks(false).length ?? 0;
+      const jsBlocks = adapter.getWorkspace('js')?.getAllBlocks(false).length ?? 0;
       const workerBlocks = adapter.getWorkspace('worker')?.getAllBlocks(false).length ?? 0;
       ws.bumpStructure('html', htmlBlocks);
       ws.bumpStructure('css', cssBlocks);
       ws.bumpStructure('i18n', i18nBlocks);
+      ws.bumpStructure('js', jsBlocks);
       ws.bumpStructure('worker', workerBlocks);
       ws.markSaved('html');
       ws.markSaved('css');
       ws.markSaved('i18n');
+      ws.markSaved('js');
       ws.markSaved('worker');
       setReport({
         coverage: result.stats.coverage,

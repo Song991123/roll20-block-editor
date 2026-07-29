@@ -15,6 +15,7 @@ import { getBlocklyAdapter } from '@/lib/blockly/adapter';
  * 블록 작업 종류 탭 (design-reset) — 자연어 라벨 + 색 점 + 툴팁에 원래 용어 병기.
  */
 const TABS: Array<{ key: WorkspaceKey; label: string; tooltip: string; color: string }> = [
+  { key: 'js', label: '페이지 JS', tooltip: 'Roll20로 내보낼 일반 페이지 자바스크립트를 관리해요.', color: 'var(--cat-advanced)' },
   { key: 'html', label: '화면 구성', tooltip: '시트의 뼈대와 요소를 조립해요. (HTML로 내보내져요)', color: 'var(--cat-container)' },
   { key: 'css', label: '꾸미기', tooltip: '색·크기·간격 같은 생김새를 정해요. (CSS로 내보내져요)', color: 'var(--cat-css)' },
   { key: 'i18n', label: '번역', tooltip: '여러 언어로 보여줄 문구를 정리해요. (translation.json)', color: 'var(--cat-i18n)' },

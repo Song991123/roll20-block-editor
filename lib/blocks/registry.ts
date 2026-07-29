@@ -86,7 +86,7 @@ export function getRegistryVersion(): number {
 }
 
 export function blocksByCategory(cat: BlockCategory): BlockDef[] {
-  return ALL_BLOCKS.filter((b) => b.category === cat);
+  return ALL_BLOCKS.filter((b) => b.category === cat && !b.internal);
 }
 
 export function searchBlocks(q: string): BlockDef[] {
@@ -94,9 +94,10 @@ export function searchBlocks(q: string): BlockDef[] {
   const needle = q.trim().toLowerCase();
   return ALL_BLOCKS.filter(
     (b) =>
-      b.label.toLowerCase().includes(needle) ||
-      b.type.toLowerCase().includes(needle) ||
-      b.tooltip.toLowerCase().includes(needle),
+      !b.internal &&
+      (b.label.toLowerCase().includes(needle) ||
+        b.type.toLowerCase().includes(needle) ||
+        b.tooltip.toLowerCase().includes(needle)),
   );
 }
 

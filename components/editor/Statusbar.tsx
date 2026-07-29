@@ -15,6 +15,7 @@ import SfxToggle from './SfxToggle';
 const APP_VERSION = 'v0.1.0';
 
 const WORKSPACE_LABEL = {
+  js: '페이지 JS',
   html: '화면 구성',
   css: '꾸미기',
   worker: '자동 동작',

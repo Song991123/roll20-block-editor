@@ -306,6 +306,11 @@ export default function BlocklyModelHost({ visible, renderSvg }: Props) {
         style={{ width: 480, height: 360 }}
       />
       <div
+        id="bl-host-js"
+        className={`blockly-host-slot${activeWorkspace === 'js' ? ' is-active' : ''}`}
+        style={{ width: 480, height: 360 }}
+      />
+      <div
         id="bl-host-worker"
         className={`blockly-host-slot${activeWorkspace === 'worker' ? ' is-active' : ''}`}
         style={{ width: 480, height: 360 }}

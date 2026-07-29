@@ -168,6 +168,41 @@ function testEditablePageScriptExportPreserved(): void {
   workspace.dispose();
 }
 
+function testDedicatedPageScriptWorkspaceAppendsExportOnly(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const block = workspace.newBlock('r20_raw_page_js');
+  block.setFieldValue('defer', 'ATTRS');
+  block.setFieldValue('window.pageReady = true;', 'JS');
+
+  const result = emitAll({ html: null, js: workspace });
+  assert(/<script[^>]*\bdefer>/.test(result.html), 'dedicated JS workspace emits a normal page script');
+  assert(result.js.includes('window.pageReady = true;'), 'dedicated JS output remains observable separately');
+  assert(!result.html.includes('type="text/worker"'), 'dedicated page JS does not enter the worker boundary');
+  workspace.dispose();
+}
+
+function testImportedPageScriptReturnsToItsHtmlSlot(): void {
+  registerAllBlocks();
+  const htmlWorkspace = new Blockly.Workspace();
+  const jsWorkspace = new Blockly.Workspace();
+  const anchor = htmlWorkspace.newBlock('r20_page_js_slot');
+  anchor.setFieldValue('page-0', 'SLOT');
+  const script = jsWorkspace.newBlock('r20_raw_page_js');
+  script.setFieldValue('page-0', 'SLOT');
+  script.setFieldValue('data-role="page"', 'ATTRS');
+  script.setFieldValue('window.pageReady = true;', 'JS');
+
+  const result = emitAll({ html: htmlWorkspace, js: jsWorkspace });
+  const before = result.html.indexOf('r20-page-js-slot');
+  const page = result.html.indexOf('data-role="page"');
+  assert(before < 0, 'internal page-JS slot marker is resolved');
+  assert(page >= 0, 'imported page script is emitted');
+  assert(result.html.indexOf('window.pageReady = true;') >= 0, 'page script body is emitted');
+  htmlWorkspace.dispose();
+  jsWorkspace.dispose();
+}
+
 function testPageScriptOrderAndWorkerUniqueness(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -235,6 +270,8 @@ testGenericCssTagEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
 testEditablePageScriptExportPreserved();
+testDedicatedPageScriptWorkspaceAppendsExportOnly();
+testImportedPageScriptReturnsToItsHtmlSlot();
 testPageScriptOrderAndWorkerUniqueness();
 testMalformedRawTagDoesNotReceivePartialBlockId();
 console.log('Emit Roll20 class-pair tests passed.');

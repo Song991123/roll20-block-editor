@@ -392,9 +392,12 @@ function testPageScriptMapsToEditableBlock(): void {
   const r = importSheet({
     html: '<script type="text/javascript" src="page-runtime.js" defer>window.ready = true;</script>',
   });
-  assert(r.html.includes('r20_raw_page_js'), 'ordinary page script maps to an editable page-JS block');
-  assert(r.html.includes('page-runtime.js'), 'page script attributes survive import');
-  assert(r.html.includes('window.ready = true;'), 'page script body survives import');
+  assert(r.js.includes('r20_raw_page_js'), 'ordinary page script maps to an editable page-JS block');
+  assert(r.js.includes('page-runtime.js'), 'page script attributes survive import');
+  assert(r.js.includes('window.ready = true;'), 'page script body survives import');
+  assert(r.html.includes('r20_page_js_slot'), 'HTML keeps a source-order anchor block');
+  assert(!r.html.includes('window.ready = true;'), 'page script body leaves the HTML workspace');
+  assert(r.stats.pageScriptBlocks === 1, 'page script count is reported');
 }
 
 const tests = [

@@ -23,6 +23,7 @@ import { parseSheetWorkerScript } from './script_parser';
 import { isRoll20WorkerScript } from './worker_source';
 import { isSemanticContainerTag } from '../blocks/semanticTags';
 import { isEditableElementTag, isVoidElementTag } from '../blocks/elementTags';
+import { parsePageJsSlotComment } from './pageJsWorkspace';
 
 export interface MatchedBlock {
   /** 카탈로그 블록 중 하나의 type, 또는 'r20_raw_html' fallback. */
@@ -93,6 +94,11 @@ export function newMatchContext(): MatchContext {
 export function matchTree(root: DomNode, ctx: MatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
   for (const c of root.children) {
+    if (c.type === 'comment') {
+      const slot = parsePageJsSlotComment(c.text || '');
+      if (slot) out.push({ blockType: 'r20_page_js_slot', fields: { SLOT: slot }, children: {} });
+      continue;
+    }
     if (c.type === 'text') {
       const text = meaningfulText(c.text, root.tag);
       if (text !== null) {
@@ -1157,6 +1163,11 @@ function textNodeBlock(text: string): MatchedBlock {
 function matchChildren(node: DomNode, ctx: MatchContext): MatchedBlock[] {
   const out: MatchedBlock[] = [];
   for (const c of node.children) {
+    if (c.type === 'comment') {
+      const slot = parsePageJsSlotComment(c.text || '');
+      if (slot) out.push({ blockType: 'r20_page_js_slot', fields: { SLOT: slot }, children: {} });
+      continue;
+    }
     if (c.type === 'text') {
       const text = meaningfulText(c.text, node.tag);
       if (text !== null) out.push(textNodeBlock(text));

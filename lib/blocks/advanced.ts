@@ -15,6 +15,7 @@
 
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
+import { makePageJsSlotComment } from '@/lib/import/pageJsWorkspace';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -163,10 +164,13 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     type: 'r20_raw_page_js',
     shape: 'stack',
     category: ADVANCED,
-    label: 'Page JavaScript (advanced)',
-    tooltip: `Preserve ordinary page JavaScript for export. It stays inert in local preview. ${WARN_RAW}`,
+    label: '페이지 JavaScript (고급)',
+    tooltip: `일반 페이지 JavaScript를 내보낼 때 보존해요. 로컬 미리보기에서는 실행하지 않아요. ${WARN_RAW}`,
     init: mkInit((b) => {
       b.appendDummyInput().appendField('Page JS');
+      b.appendDummyInput()
+        .appendField('slot')
+        .appendField(new Blockly.FieldTextInput(''), 'SLOT');
       b.appendDummyInput()
         .appendField('attrs')
         .appendField(new Blockly.FieldTextInput(''), 'ATTRS');
@@ -177,11 +181,20 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
     }),
     generator: (block) => {
       const b = block as Blockly.Block;
+      const slot = String(b.getFieldValue('SLOT') ?? '').trim();
       const attrs = safeScriptAttrs(String(b.getFieldValue('ATTRS') ?? ''));
       const js = safeScriptText(String(b.getFieldValue('JS') ?? ''));
-      return `<script${attrs ? ` ${attrs}` : ''}>\n${js}\n</script>`;
+      const script = `<script${attrs ? ` ${attrs}` : ''}>\n${js}\n</script>`;
+      return `${slot ? `${makePageJsSlotComment(slot)}\n` : ''}${script}`;
     },
     inspectorSchema: [
+      {
+        name: 'SLOT',
+        label: 'source slot',
+        kind: 'text',
+        placeholder: 'Imported scripts keep this automatically; leave blank for the end.',
+        description: 'Internal source-order anchor. New scripts without a slot are appended after the HTML body.',
+      },
       {
         name: 'ATTRS',
         label: 'script attributes',
@@ -200,6 +213,33 @@ export const ADVANCED_BLOCKS: BlockDef[] = [
   },
 
   // 5) HTML 주석 ---------------------------------------------------------
+  {
+    type: 'r20_page_js_slot',
+    shape: 'stack',
+    category: ADVANCED,
+    label: 'Page JS source slot',
+    tooltip: 'Internal source-order anchor for an imported page script.',
+    internal: true,
+    init: mkInit((b) => {
+      b.appendDummyInput()
+        .appendField('Page JS source slot')
+        .appendField(new Blockly.FieldTextInput(''), 'SLOT');
+      setStatementHooks(b);
+    }),
+    generator: (block) => {
+      const b = block as Blockly.Block;
+      return makePageJsSlotComment(String(b.getFieldValue('SLOT') ?? ''));
+    },
+    inspectorSchema: [
+      {
+        name: 'SLOT',
+        label: 'source slot',
+        kind: 'text',
+        description: 'Internal imported-script position marker.',
+      },
+    ],
+  },
+
   {
     type: 'r20_html_comment',
     shape: 'stack',

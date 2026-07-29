@@ -11,8 +11,8 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type SidebarLeftMode = 'blocks';
 export type SidebarRightTab = 'attrs' | 'code' | 'chat'; // D49 + chat (dice 굴림 결과)
-export type CodeSubTab = 'html' | 'css' | 'i18n' | 'worker';
-export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'worker';
+export type CodeSubTab = 'html' | 'css' | 'i18n' | 'js' | 'worker';
+export type WorkspaceKey = 'html' | 'css' | 'i18n' | 'js' | 'worker';
 export type PreviewZoom = 'fit' | number;               // D52
 // D26 ②-재재 — 메인 영역 분할 뷰. 'split' default (양쪽 동시), 'assemble'/'preview' = 한쪽만 max.
 export type MainMode = 'split' | 'assemble' | 'preview' | 'edit';
