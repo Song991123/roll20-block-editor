@@ -7493,3 +7493,16 @@ visibility verification passed. No external room was opened or modified.
   `tsconfig.tsbuildinfo`.
 - Source roots, dependencies, worktrees, and user-authored inputs were
   preserved. The branch remained clean after cleanup.
+
+## 2026-07-30 - Roll20 Sandbox upload boundary
+
+- Chrome showed the dedicated Sheet Sandbox dialog with exactly one visible
+  participant. No existing room was selected for mutation.
+- Added `generate:roll20-sandbox-synthetic` to generate anonymous export files
+  through `prepareRoll20UploadFiles`; its output is ignored local evidence.
+- The browser filechooser event opened, but `setFiles` was rejected by the
+  connected browser surface. The supported raw-CDP capability also refused
+  `DOM.setFileInputFiles`. Final HTML/CSS/Translation file lists were empty.
+- Result remains `VERIFY/BLOCKED_EXTERNAL`: no actual Roll20 sheet root,
+  screenshot, rolltemplate, or chat evidence is counted. The Sandbox tab was
+  left as a user handoff and no existing room was modified.

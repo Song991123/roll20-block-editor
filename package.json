@@ -45,6 +45,7 @@
     "test:roll20-sandbox-sanitize": "tsx lib/emit/__tests__/roll20SandboxSanitize.test.ts",
     "smoke:legacy-preview": "tsx scripts/roll20_legacy_preview_smoke.mjs",
     "smoke:large-workspace-browser": "node scripts/large_workspace_browser_smoke.mjs",
+    "generate:roll20-sandbox-synthetic": "tsx scripts/roll20_sandbox_synthetic_payload.ts",
     "test:roll20-render-modes": "tsx scripts/roll20_legacy_preview_smoke.mjs --no-report",
     "smoke:legacy-fixture-visual": "node scripts/roll20_legacy_fixture_visual_smoke.mjs",
     "smoke:payload-roundtrip": "node scripts/roll20_payload_roundtrip_visual_smoke.mjs",

@@ -6724,3 +6724,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   `reports/edit-flow-smoke/`, and `tsconfig.tsbuildinfo` were removed.
 - PRESERVED: Source roots, `node_modules/`, Git worktrees, and user-authored
   sheet inputs were not touched. No tracked file changed in the cleanup.
+
+## 2026-07-30 Roll20 Sandbox upload boundary
+
+- VERIFIED READ-ONLY: The logged-in Roll20 editor exposed the dedicated Sheet
+  Sandbox dialog and a fresh visible participant count of exactly one.
+- DONE LOCAL: Added `generate:roll20-sandbox-synthetic`, which uses the shared
+  export payload boundary to create only anonymous `sheet.html`, `sheet.css`,
+  and `translation.json` files under ignored `.tmp/` storage.
+- BLOCKED EXTERNAL: The supported file chooser event opened, but its file
+  assignment was rejected by the browser connection. The official raw-CDP
+  path also refuses `DOM.setFileInputFiles` in this surface. All three input
+  file lists remained empty, so no generated sheet root, screenshot, roll, or
+  chat evidence is counted.
+- SAFETY: No existing room or sheet settings outside the dedicated Sandbox
+  were changed. Leave the Sandbox tab available for a user-visible manual
+  file selection handoff.
