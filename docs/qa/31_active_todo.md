@@ -1,8 +1,9 @@
 ## 2026-07-29 Legacy Upload Participant Recheck
 
 - FIXED: `roll20_upload_cdp_apply.mjs --require-solo-room` now checks the
-  visible `.party-page-members` indicator before navigation, after reaching
-  the settings page, and immediately before evaluating the upload snippet.
+  visible `.party-page-members` indicator before navigation, then revisits the
+  original room editor URL after navigation and immediately before evaluating
+  the upload snippet. It returns to the settings page only after each check.
 - SAFETY: Every check requires exactly one readable visible member. A missing,
   hidden, zero, or multi-member indicator aborts before the generated write.
   Sandbox uploads remain on the isolated Sandbox path and do not use this

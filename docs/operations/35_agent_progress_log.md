@@ -6629,8 +6629,9 @@ opened, uploaded to, saved, or otherwise modified in this run.
 ## 2026-07-29 - Legacy upload participant recheck
 
 - Hardened `roll20_upload_cdp_apply.mjs --require-solo-room`: the visible
-  participant indicator is checked before navigation, after reaching the
-  settings page, and immediately before the upload snippet runs.
+  participant indicator is checked before navigation, then on the original
+  room editor URL after navigation and immediately before the upload snippet.
+  The helper returns to the settings page only after each room check.
 - Any unreadable, hidden, zero, or multi-member state blocks before the write.
   This gate applies only to the dedicated legacy test-room path; modern
   generated writes remain isolated to Custom Sheet Sandbox.

@@ -82,6 +82,7 @@ async function main() {
     let participantPreflight = null;
     let participantPreflightAfterNavigation = null;
     let participantPreflightBeforeApply = null;
+    const participantRoomUrl = REQUIRE_SOLO_ROOM ? page.url() : '';
     if (REQUIRE_SOLO_ROOM) {
       participantPreflight = await requireSoloParticipant(page, 'before-navigation');
     }
@@ -92,7 +93,12 @@ async function main() {
     }
 
     if (REQUIRE_SOLO_ROOM) {
-      participantPreflightAfterNavigation = await requireSoloParticipant(page, 'after-navigation');
+      participantPreflightAfterNavigation = await recheckSoloRoom(
+        page,
+        participantRoomUrl,
+        SETTINGS_URL,
+        'after-navigation',
+      );
     }
 
     const readiness = await getPageSummary(page);
@@ -143,7 +149,12 @@ async function main() {
 
     const snippet = await readFile(snippetPath, 'utf8');
     if (REQUIRE_SOLO_ROOM) {
-      participantPreflightBeforeApply = await requireSoloParticipant(page, 'immediately-before-apply');
+      participantPreflightBeforeApply = await recheckSoloRoom(
+        page,
+        participantRoomUrl,
+        SETTINGS_URL,
+        'immediately-before-apply',
+      );
     }
     const consoleLines = [];
     const onConsole = (message) => {
@@ -263,6 +274,19 @@ async function requireSoloParticipant(page, stage) {
     `counts=${participant.counts.join(',') || 'none'}`,
     'next=Stop. Open the dedicated legacy test room, confirm exactly one visible member, and rerun with --require-solo-room.',
   ].join('\n'));
+}
+
+async function recheckSoloRoom(page, roomUrl, settingsUrl, stage) {
+  if (roomUrl && page.url() !== roomUrl) {
+    await page.goto(roomUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  }
+  const participant = await requireSoloParticipant(page, stage);
+  if (settingsUrl && page.url() !== settingsUrl) {
+    await page.goto(settingsUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+  }
+  return participant;
 }
 
 async function getPageSummary(page) {
