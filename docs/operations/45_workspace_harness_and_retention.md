@@ -213,3 +213,14 @@ worktrees were preserved.
 - `node_modules/`, source roots, local report policy, fixtures, protected
   external material, Git metadata, and both worktrees were preserved.
 - No project listener was active on ports `3000`, `4197`, `4198`, or `4199`.
+
+## 2026-07-30 generated-output retry after explicit authorization
+
+- The project dev server was stopped before cleanup; no project port listener
+  remained.
+- Removed the exact canonical-worktree `.next/` directory and generated
+  `next-env.d.ts` file. No source, fixture, report README, dependency tree,
+  worktree, or external sheet folder was included.
+- Verified that `.next/`, `out/`, `.tmp/`, `next-env.d.ts`,
+  `reports/edit-flow-smoke/`, and `tsconfig.tsbuildinfo` are absent.
+- The Figma MCP process remains running because it is not a project server.

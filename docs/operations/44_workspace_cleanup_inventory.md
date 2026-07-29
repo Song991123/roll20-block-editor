@@ -342,3 +342,17 @@ directories that had been recreated by the local build.
 - PRESERVED: the Figma MCP process was not treated as a project server and was
   not stopped. No source, archive, user-authored file, or active dependency
   tree was deleted.
+
+## 2026-07-30 user-authorized complete generated-output retry
+
+- RECHECKED: the project server was stopped and no listener remained on
+  ports `3000`, `4197`, `4198`, or `4199`.
+- DELETED: the exact generated `.next/` directory and Next-generated
+  `next-env.d.ts` file after verifying both paths were inside the canonical
+  worktree. `out/`, `.tmp/`, `reports/edit-flow-smoke/`, and
+  `tsconfig.tsbuildinfo` were already absent.
+- VERIFIED: `.next/`, `out/`, `.tmp/`, `next-env.d.ts`,
+  `reports/edit-flow-smoke/`, and `tsconfig.tsbuildinfo` are absent.
+- PRESERVED: tracked `reports/README.md`, `node_modules/`, source roots,
+  Git metadata, both worktrees, and all external sheet/source folders. The
+  Figma MCP process was not stopped.
