@@ -6845,3 +6845,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   isolated legacy-room comparison remain unproven.
 - NEXT P0: Use a user-visible native picker or another explicitly supported
   upload path; do not treat the chooser opening alone as a successful upload.
+
+## 2026-07-30 Layer ordering contract coverage
+
+- DONE LOCAL: Added anonymous unit coverage for `after`, `inside`, and cycle
+  rejection in the Blockly layer adapter.
+- VERIFIED LOCAL: layer-role, iframe drop-target, history, and layer-operation
+  tests pass. The local editor contract now has explicit before/after/inside
+  and cycle-safety evidence.
+- VERIFIED CLEANUP: All nine approved disposable/stale targets from the
+  cleanup ledger are absent; active dependencies, source roots, and retained
+  report policy are preserved.
+- VERIFY OPEN: This does not prove every preview/edit visual state, actual
+  Roll20 modern Sandbox parity, or isolated legacy-room parity.
+- NEXT P0: Re-enter the supported Sandbox upload path with a user-visible
+  file selection, then capture same-payload root, asset, default-state,
+  rolltemplate/chat, and screenshot evidence. Keep legacy verification in a
+  newly created dedicated test room only.

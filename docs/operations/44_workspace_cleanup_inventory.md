@@ -258,6 +258,17 @@ directories that had been recreated by the local build.
 ## 2026-07-30 user-authorized stale evidence retry
 
 - RECHECKED: The earlier nine generated/stale cleanup targets remain absent.
+
+## 2026-07-30 layer-test build cleanup recheck
+
+- RECHECKED: The production build recreated only the disposable
+  `web-push-main/.next/` and `web-push-main/out/` directories.
+- DELETED: Both regenerated build directories after the build process released
+  a transient `.next` entry; the first immediate deletion attempt was retried
+  after the lock cleared.
+- VERIFIED: No listener remains on ports `3000`, `4197`, `4198`, or `4199`.
+  Active `node_modules/`, protected source roots, Git worktrees, local fixture
+  policy, and retained canonical report policy were preserved.
   The current ignored `.tmp/` contains 66 local evidence files totaling
   33,122,245 bytes, including a retained anonymous Sandbox handoff payload.
 - ATTEMPTED: The user-authorized explicit deletion was rejected by the host

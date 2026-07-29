@@ -64,4 +64,39 @@ try {
   beforeWorkspace.dispose();
 }
 
+const afterWorkspace = new Blockly.Workspace();
+const afterContainer = afterWorkspace.newBlock('r20_test_container');
+const afterNested = afterWorkspace.newBlock('r20_test_leaf');
+const afterTarget = afterWorkspace.newBlock('r20_test_leaf');
+afterContainer.getInput('BODY')!.connection!.connect(afterNested.previousConnection!);
+
+adapter.registerWorkspace('html', afterWorkspace as unknown as Blockly.WorkspaceSvg);
+try {
+  assert.equal(adapter.moveBlockAfter('html', afterNested.id, afterTarget.id), true);
+  assert.equal(afterTarget.nextConnection!.targetBlock()?.id, afterNested.id);
+  assert.equal(afterNested.getSurroundParent(), null);
+  assert.equal(afterContainer.getInput('BODY')!.connection!.targetBlock(), null);
+} finally {
+  adapter.unregisterWorkspace('html');
+  afterWorkspace.dispose();
+}
+
+const nestWorkspace = new Blockly.Workspace();
+const nestContainer = nestWorkspace.newBlock('r20_test_container');
+const nestMoving = nestWorkspace.newBlock('r20_test_leaf');
+const nestInner = nestWorkspace.newBlock('r20_test_container');
+nestContainer.getInput('BODY')!.connection!.connect(nestInner.previousConnection!);
+
+adapter.registerWorkspace('html', nestWorkspace as unknown as Blockly.WorkspaceSvg);
+try {
+  assert.equal(adapter.nestBlockInContainer('html', nestMoving.id, nestInner.id), true);
+  assert.equal(nestInner.getInput('BODY')!.connection!.targetBlock()?.id, nestMoving.id);
+  assert.equal(nestMoving.getSurroundParent()?.id, nestInner.id);
+  assert.equal(adapter.nestBlockInContainer('html', nestInner.id, nestMoving.id), false);
+  assert.equal(nestInner.getInput('BODY')!.connection!.targetBlock()?.id, nestMoving.id);
+} finally {
+  adapter.unregisterWorkspace('html');
+  nestWorkspace.dispose();
+}
+
 console.log('blockly layer operations test PASS');

@@ -7609,3 +7609,19 @@ visibility verification passed. No external room was opened or modified.
 - NEXT P0: Resume with a user-visible native file selection or another
   explicitly supported upload path, then capture the same-payload root,
   asset, default-state, rolltemplate/chat, and screenshot evidence.
+
+## 2026-07-30 - Layer ordering contract coverage
+
+- DONE LOCAL: Extended the Blockly layer-operation contract tests to cover
+  moving a nested block `after` a sibling, nesting a block `inside` a frame,
+  and rejecting a cycle-producing nest operation without mutating the
+  existing parent connection.
+- VERIFIED LOCAL: `layerRoles.test.ts`, `iframeDropTarget.test.ts`,
+  `history.test.ts`, and `layerOperations.test.ts` all pass. This confirms
+  the local before/after/inside and cycle-safety contract, not full visual
+  parity for every imported DOM shape.
+- CLEANUP RECHECK: The nine previously approved generated/stale cleanup
+  targets are absent. Active `web-push-main/node_modules/`, source roots,
+  fixtures policy, canonical reports, and both Git worktrees remain intact.
+- CLAIM BOUNDARY: Actual modern Roll20 Sandbox upload/render evidence and the
+  isolated legacy-room comparison remain VERIFY/BLOCKED_EXTERNAL.
