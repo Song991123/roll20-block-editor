@@ -233,18 +233,22 @@ async function findRoll20Page(browser, requireSoloRoom = false) {
   const pages = browser.contexts().flatMap((context) => context.pages());
   const roll20Pages = pages.filter((page) => isRoll20PageUrl(page.url()));
   if (requireSoloRoom) {
-    const editorPages = roll20Pages.filter((page) => (
-      safePathname(page.url()) === '/editor' || /\/editor\//.test(safePathname(page.url()))
-    ));
-    // Never guess when several editor tabs are open. The selected room must
-    // be the only existing-room editor page that receives the fresh member
-    // count check below.
-    return editorPages.length === 1 ? editorPages[0] : null;
+    return selectSoloEditorPage(roll20Pages);
   }
   return roll20Pages.find((page) => /\/sheetsandbox\/settings\//.test(safePathname(page.url())))
     ?? roll20Pages.find((page) => safePathname(page.url()) === '/editor')
     ?? roll20Pages[0]
     ?? null;
+}
+
+function selectSoloEditorPage(pages) {
+  const editorPages = pages.filter((page) => (
+    safePathname(page.url()) === '/editor' || /\/editor\//.test(safePathname(page.url()))
+  ));
+  // Never guess when several editor tabs are open. The selected room must
+  // be the only existing-room editor page that receives the fresh member
+  // count check below.
+  return editorPages.length === 1 ? editorPages[0] : null;
 }
 
 async function inspectParticipantPage(page) {
@@ -349,6 +353,21 @@ function runSelfTest() {
   const settingsId = campaignIdFromUrl('https://app.roll20.net/sheetsandbox/settings/21639681');
   if (settingsId !== '21639681') {
     console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL settings campaign id parse');
+    process.exit(1);
+  }
+  const soloEditor = { url: () => 'https://app.roll20.net/editor' };
+  const secondEditor = { url: () => 'https://app.roll20.net/editor/other' };
+  const sandboxPage = { url: () => 'https://app.roll20.net/sheetsandbox/settings/21639681' };
+  if (selectSoloEditorPage([soloEditor]) !== soloEditor) {
+    console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL single editor selection');
+    process.exit(1);
+  }
+  if (selectSoloEditorPage([soloEditor, secondEditor]) !== null) {
+    console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL multiple editor tabs must block');
+    process.exit(1);
+  }
+  if (selectSoloEditorPage([sandboxPage]) !== null) {
+    console.error('ROLL20 UPLOAD CDP SELF_TEST FAIL sandbox page is not an existing room');
     process.exit(1);
   }
   const reloadedAfterSubmit = isReloadDuringSubmit(
