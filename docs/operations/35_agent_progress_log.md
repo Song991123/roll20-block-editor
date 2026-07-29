@@ -6,6 +6,8 @@
 - BLOCKED: Browser file-chooser assignment was rejected by the supported
   extension path, while direct raw-CDP file injection was refused. No local
   sheet payload was sent and no actual Sandbox render evidence was produced.
+- VERIFIED REMOTE: GitHub Actions run `30459222308` passed safety/unit
+  verification, lint, and build for commit `be4e4f3`.
 - NEXT: Use a supported or user-assisted chooser on the isolated Sandbox,
   capture anonymous modern evidence, then repeat only in a dedicated legacy
   room with the participant gate freshly passing.

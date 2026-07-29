@@ -7,6 +7,8 @@
   HTML file assignment, and the tab's raw CDP path explicitly disallowed direct
   file injection. No HTML, CSS, or translation payload was transmitted, and
   no generated Sandbox screenshot was counted.
+- VERIFIED REMOTE: GitHub Actions run `30459222308` passed safety/unit
+  verification, lint, and build for commit `be4e4f3`.
 - SAFETY: The participant gate remains active. Existing rooms are observation
   only; generated writes remain limited to Sandbox or a dedicated test room.
 - NEXT P0: Continue from this open Sandbox surface with a supported chooser or
