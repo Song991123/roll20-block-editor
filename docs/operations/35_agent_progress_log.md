@@ -8119,6 +8119,8 @@ visibility verification passed. No external room was opened or modified.
   atomic Flow layers, while `r20_icon` classifies as a leaf Image layer.
   Their drop contracts explicitly reject `inside` placement.
 - FIXED: `<br>` export now keeps the block's authored class and style.
+- GUARDED: The catalog regression test covers all user-facing display blocks
+  and preserves the source-only role for translation dictionary entries.
 - VERIFIED: Focused role, emit, and import-structure tests, `ci:verify`, lint,
   build, edit-flow browser smoke, and strict imported-edit sync pass. Server
   hygiene reports zero project/CDP listeners. No claim of actual Roll20

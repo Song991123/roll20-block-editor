@@ -6,6 +6,9 @@
   like invalid inside-drop containers in the layer panel or Shadow surface.
 - FIXED LOCAL: The line-break generator now preserves its authored class in
   emitted HTML instead of silently dropping it.
+- GUARDED LOCAL: The block catalog regression test now requires every
+  user-facing display block to have a non-`other` layer role while keeping
+  translation dictionary entries explicitly source-only.
 - VERIFIED LOCAL: `test:layer-roles`, `test:emit-contract`,
   `test:import-structure`, `ci:verify`, lint, build, `smoke:edit-flow`, and
   strict imported-edit sync pass. Post-run server hygiene reports zero
