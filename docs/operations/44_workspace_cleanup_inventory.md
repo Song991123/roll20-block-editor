@@ -678,3 +678,21 @@ directories that had been recreated by the local build.
   per-file workaround, or safety bypass was used.
 - VERIFIED: every target remains present and unchanged; source, worktrees,
   protected external roots, active dependencies, and listeners were unaffected.
+
+## 2026-07-30 latest explicit complete-deletion retry
+
+- RECHECKED: the exact generated targets were inside the workspace, no
+  project/CDP listener was active, and the active
+  `web-push-main/node_modules/`, source, worktrees, report policy file,
+  reference/archive markers, and protected external sheet roots were excluded.
+- TARGETED: old `web/node_modules/`, `web/.next/`, `web/out/`, canonical
+  `web-push-main/.next/`, `web-push-main/out/`, `web-push-main/.tmp/`, and
+  the generated child directories under `web-push-main/reports/`.
+- ATTEMPTED: the user explicitly authorized complete deletion after the
+  boundary and listener checks passed.
+- NOT DELETED: the host rejected the exact guarded `Remove-Item -Recurse
+  -Force` command before PowerShell execution. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- VERIFIED: the selected targets remain unchanged; no product source,
+  protected external sheet, active dependency tree, worktree, or tracked
+  `reports/README.md` policy file changed.
