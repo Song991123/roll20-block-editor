@@ -9863,3 +9863,13 @@ same-hash modern/legacy comparison.
 - Next P0: run the supported modern Sandbox handoff, capture a real
   `fileHashStatus: match`, then repeat against the dedicated legacy destination
   without touching ordinary rooms.
+
+## 2026-07-31 - Chrome handoff retry boundary
+
+- The logged-in Chrome session listed the dedicated modern and legacy
+  verification tabs, and the exact modern tab was selected by title and URL.
+- Claiming that tab timed out before any DOM interaction or file selection.
+  No upload, settings save, screenshot evidence, or ordinary-room mutation
+  occurred.
+- External handoff remains open; do not treat the browser-side hash guard or
+  local CI as live Roll20 parity evidence.

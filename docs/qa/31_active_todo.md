@@ -9247,3 +9247,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: use the supported browser chooser/CDP path to bind one exact
   anonymous modern payload, record the browser-side hash result, then repeat
   independently for the dedicated legacy destination.
+
+## 2026-07-31 Chrome Sandbox handoff retry
+
+- `MEASURED EXTERNAL`: the logged-in Chrome session exposed the dedicated
+  modern and legacy verification tabs; the modern tab was identified by its
+  exact title/URL and no ordinary room was selected.
+- `VERIFY / BLOCKED EXTERNAL`: taking control of the dedicated modern tab
+  timed out again before any DOM action, file chooser, upload, settings save,
+  or payload transmission. No Roll20 state changed and no hash result was
+  produced.
+- `NEXT P0`: retry only after the supported Chrome connection is responsive;
+  then capture browser-side `fileHashStatus: match` for modern before touching
+  the dedicated legacy destination.

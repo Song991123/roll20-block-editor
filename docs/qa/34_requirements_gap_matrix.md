@@ -897,3 +897,13 @@ not close the external Roll20 parity rows above.
 - `NOT PROVEN EXTERNAL`: no live Sandbox run has yet produced a `fileHashStatus:
   match` result or same-payload Roll20 screenshot. This guard strengthens the
   evidence boundary but does not itself prove Roll20 persistence or rendering.
+
+## Chrome Handoff Retry - 2026-07-31
+
+- `MEASURED EXTERNAL`: the logged-in Chrome session listed the dedicated
+  modern and legacy verification tabs at the expected Roll20 editor URL.
+- `VERIFY / BLOCKED EXTERNAL`: claiming the dedicated modern tab timed out
+  before any browser action. No upload, settings write, screenshot, or room
+  mutation occurred; ordinary rooms remained untouched.
+- `OPEN`: the new byte-identity guard has not yet produced live
+  `fileHashStatus: match` evidence.
