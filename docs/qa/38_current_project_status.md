@@ -9,11 +9,14 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `297a5ec`. The branch is pushed
+- Active branch: `claude/design-reset` at `facdc38`. The branch is pushed
   to `origin`; the renderer-boundary patch is committed and the worktree is
   clean after this documentation update.
-- Remote CI: run `30567613322` passed safety/unit verification, lint, and
-  build for `297a5ec`.
+- Remote CI: run `30567906550` passed safety/unit verification, lint, and
+  build for `facdc38`.
+- Local interaction recheck: `smoke:edit-flow`, strict imported-edit sync, and
+  persistent preview surface passed; modern and legacy each retained one
+  iframe with zero reloads.
 - Current renderer boundary: fixture-specific chat renderer policies and CSS
   are removed from the product path. Generic Roll20 policies remain.
 - Latest local upload contract: resumable HTML/CSS/Translation handoff with
@@ -23,9 +26,9 @@ local output and is deleted after the verification batch.
 - User-sheet capture count remains `0`; dedicated legacy-room capture count
   remains `0`. Historical anonymous synthetic runtime observations are not
   promoted to current user-sheet parity.
-- Cleanup boundary: the five regenerated workspace-local dependency/build
-  directories were rechecked, but the host rejected recursive deletion before
-  execution. They remain `NOT DELETED`; no alternate deletion path was used.
+- Cleanup boundary: regenerated workspace-local dependency/build directories
+  were rechecked, but the host rejected recursive deletion before execution.
+  They remain `NOT DELETED`; no alternate deletion path was used.
 - UI copy guard: `corepack pnpm run guard:ui-copy` passes for 66 product-source
   files. The large-workspace browser's Korean copy is source-valid; the earlier
   garbled terminal display was an output-encoding artifact, not a product-file

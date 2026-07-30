@@ -1,3 +1,20 @@
+## 2026-07-31 Local interaction and cleanup recheck
+
+- VERIFIED LOCAL: `corepack pnpm run smoke:edit-flow` passed.
+- VERIFIED LOCAL: `corepack pnpm run smoke:imported-edit-sync:strict` passed
+  for the anonymous imported-edit cases with no resource issues.
+- VERIFIED LOCAL: `corepack pnpm run smoke:persistent-preview-surface` passed
+  for modern and legacy modes; both retained one iframe with `loads=0`.
+- VERIFIED LOCAL: `corepack pnpm run ci:verify`, both evidence/copy guards,
+  `git diff --check`, and `corepack pnpm run check:server-hygiene` passed;
+  no project or CDP listener was found.
+- BLOCKED HOST CLEANUP: Explicit generated targets `web-push-main/.next/`
+  and `web-push-main/out/` were boundary-checked, but the host rejected the
+  recursive deletion before execution. No source, worktree, or document was
+  deleted.
+- VERIFY / OPEN: Actual Roll20 Sandbox activation, screenshot parity, chat
+  runtime parity, and participant-gated legacy-room verification remain open.
+
 ## 2026-07-31 Sheet-agnostic chat renderer boundary
 
 - DONE LOCAL: Removed fixture-specific chat font, geometry, typography,
