@@ -7907,3 +7907,30 @@ visibility verification passed. No external room was opened or modified.
 - Post-check: all ten exact disposable targets are absent, `reports/` has only
   `README.md`, canonical Git status is clean before this doc update, and ports
   `3000`, `4197`, `4198`, and `4199` have no listeners.
+
+## 2026-07-30 - Modern Sandbox retry after cleanup
+
+- Recreated only the anonymous synthetic modern payload needed for one upload
+  attempt. Local baseline, payload hygiene, Sandbox-sanitize, cleaned-payload
+  roundtrip, state-selector, asset, pre-upload, and evidence-guard checks all
+  passed.
+- Reconnected to the dedicated authenticated Sandbox tab and visually
+  confirmed the separate HTML, CSS, and Translation controls. No existing
+  room was opened or changed.
+- The hidden HTML file input could not complete its native picker handoff;
+  the browser tab entered a picker-wait state and was handed back to the user.
+  No file selection, save, chat, room mutation, or generated Roll20 screenshot
+  occurred. `status:roll20-actual` therefore remains
+  `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL`.
+- The generated local report/build output is disposable and will be removed
+  after this evidence is recorded. The next external gate remains a permitted
+  native handoff, followed by separate modern and legacy evidence.
+
+## 2026-07-30 - Sandbox retry evidence cleanup
+
+- Removed the generated `.next/`, `out/`, actual-compare report, asset audit,
+  and state-selector audit folders after the native file handoff remained
+  blocked. `reports/` now contains only its policy README.
+- Preserved the five anonymous synthetic fixture files, active dependencies,
+  source, worktrees, and protected external sources. No Roll20 room or saved
+  Sandbox payload was changed.

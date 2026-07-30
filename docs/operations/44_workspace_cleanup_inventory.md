@@ -418,3 +418,15 @@ directories that had been recreated by the local build.
 - VERIFIED: every one of the ten selected disposable targets is absent and
   `reports/` contains only `README.md`. The parent repository's unrelated
   changes were not staged or modified.
+
+## 2026-07-30 ephemeral Sandbox retry evidence cleanup
+
+- DELETED: the generated `.next/` and `out/` build directories and the
+  ignored `reports/roll20-actual-compare/`, `reports/asset-resource-audit/`,
+  and `reports/state-selector-audit/` folders created for the one modern
+  Sandbox handoff attempt.
+- PRESERVED: anonymous synthetic fixtures, `reports/README.md`, active
+  dependencies, product source, worktrees, reference/archive zones, and
+  protected external source roots.
+- VERIFIED: all five current-run generated targets are absent, `reports/`
+  contains only `README.md`, and project ports are clear.

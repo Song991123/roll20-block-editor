@@ -266,3 +266,15 @@ worktrees were preserved.
   documentation update. Parent-repository changes were not staged or altered.
 - REBUILD RULE: future verification may recreate these ignored paths, but a
   later cleanup must repeat the same boundary, tracking, and listener checks.
+
+## 2026-07-30 ephemeral Sandbox retry evidence cleanup
+
+- DELETED: the exact generated `.next/` and `out/` build directories plus
+  `reports/roll20-actual-compare/`, `reports/asset-resource-audit/`, and
+  `reports/state-selector-audit/` after the modern Sandbox handoff remained
+  blocked at native file selection.
+- PRESERVED: source, active dependencies, anonymous synthetic fixtures,
+  `reports/README.md`, worktrees, reference/archive zones, and protected
+  external sheet/source roots.
+- VERIFIED: no project listener remains on ports `3000`, `4197`, `4198`, or
+  `4199`; `reports/` contains only its policy README.

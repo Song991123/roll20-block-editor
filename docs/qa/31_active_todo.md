@@ -7155,3 +7155,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   are absent; `reports/` contains only its README and project ports are clear.
 - `NEXT`: External Roll20 Sandbox upload and the separate legacy-room parity
   gate remain open; this cleanup does not change their verification status.
+
+## 2026-07-30 Modern Sandbox retry after cleanup
+
+- `DONE LOCAL`: Recreated one anonymous `synthetic-parity` modern payload and
+  passed local baseline, payload hygiene, Sandbox-sanitize, cleaned-payload
+  roundtrip, state-selector, asset, and evidence-guard checks.
+- `DONE LOCAL`: The authenticated dedicated Sandbox screen was reachable and
+  visibly exposed separate HTML, CSS, and Translation controls.
+- `VERIFY / BLOCKED_EXTERNAL`: Native file handoff did not complete. Clicking
+  the hidden HTML input caused the browser tab to wait on the native picker;
+  no file was selected, no save request was observed, and no Roll20 state was
+  changed. The pre-upload gate is PASS, but `status:roll20-actual` remains
+  `PREUPLOAD_READY_MISSING_GENERATED_ACTUAL` with no Sandbox root/chat proof.
+- `NEXT P0`: Resume with a supported user-visible native file selection or a
+  permitted browser handoff, then capture modern Sandbox root and chat proof.
+  Keep the legacy dedicated-room check separate.
+- `DONE LOCAL`: The temporary build output and generated comparison/audit
+  folders from this retry were removed after the blocker was recorded;
+  `reports/` retains only its policy README.
