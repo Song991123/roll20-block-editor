@@ -1,3 +1,16 @@
+## 2026-07-30 - Anonymous Sandbox payload regenerated
+
+- PREPARED LOCAL: Recreated the anonymous HTML/CSS/translation payload under
+  ignored `.tmp/roll20-sandbox-synthetic/`; no source-identifying sheet data
+  or internal block ids are included.
+- VERIFIED LOCAL: Full `ci:verify` passed after local evidence cleanup.
+- OPERATIONS NOTE: The two standalone payload/sanitize audits require a
+  retained local-baseline report and therefore report missing-input failures
+  after an evidence purge. The canonical pre-upload orchestrator regenerates
+  that baseline before auditing.
+- NEXT: User-visible file selection in the dedicated Sandbox, then positive
+  root/state/roll/chat evidence; legacy remains a separate room gate.
+
 ## 2026-07-30 - Shared preview/edit surface audit
 
 - VERIFIED LOCAL: Persistent preview surface smoke passed for modern and

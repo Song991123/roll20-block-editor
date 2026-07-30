@@ -9,6 +9,12 @@ local output and is deleted after the verification batch.
 
 ## Current Evidence
 
+- LOCAL PASS: An anonymous three-file Sandbox payload was regenerated under
+  ignored `.tmp/roll20-sandbox-synthetic/`, and full `ci:verify` passed after
+  the evidence purge.
+- OPERATIONS LIMIT: Standalone payload/sanitize audits need a retained local
+  baseline; after purge they fail with missing-input errors until the
+  pre-upload orchestrator regenerates one. This is not a Roll20 parity result.
 - LOCAL PASS: The latest persistent-preview smoke passed modern and legacy
   modes with zero iframe reloads, and strict imported-edit synchronization
   passed for anonymous structures. The same iframe retained live input/runtime
