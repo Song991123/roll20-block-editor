@@ -534,8 +534,8 @@ function ImportAssetPreflight({
         <ImportAssetMetric label="placeholder 위험" value={result.placeholderRiskRefs} />
         <ImportAssetMetric label="데이터 URL" value={result.dataRefs} />
         <ImportAssetMetric label="HTTP URL" value={result.insecureHttpRefs} />
-        <ImportAssetMetric label="직접 HTTPS 후보" value={result.canonicalDirectRefs} />
-        <ImportAssetMetric label="Imgur 직접 후보" value={result.imgurDirectCandidateRefs} />
+        <ImportAssetMetric label="직링크 후보" value={result.canonicalDirectRefs} />
+        <ImportAssetMetric label="Imgur 직링크" value={result.imgurDirectCandidateRefs} />
       </div>
       {hasRisk ? (
         <div className="mt-2 rounded-lg border border-[color-mix(in_srgb,var(--warning)_30%,transparent)] bg-[var(--warning-soft)] px-3 py-2.5 text-xs leading-relaxed text-foreground">

@@ -245,3 +245,11 @@ chat result. The visible three file inputs still report zero selected files,
 so this is positive runtime/root/roll evidence for the currently loaded
 anonymous payload only; it is not same-hash binding, screenshot parity, or
 universal-sheet evidence.
+
+## Asset preflight UI terminology - 2026-07-30
+
+Import and export now use the same Korean labels for direct HTTPS and Imgur
+direct-link candidates. The rebuilt export-dialog browser smoke passed the
+asset metrics, relink draft/persistence, mode-toggle, and edit-entry checks
+with zero console/page/request failures. This is local UI evidence only and
+does not change the external same-hash or pixel-parity status.

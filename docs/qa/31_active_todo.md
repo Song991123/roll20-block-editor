@@ -8192,3 +8192,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: make the native three-file selection succeed in the modern
   Sandbox, bind the resulting payload hash, capture normalized screenshots,
   and repeat the legacy check separately.
+
+## 2026-07-30 Asset preflight UI terminology
+
+- `FIXED LOCAL`: Import and export asset panels now use the same plain labels
+  for direct HTTPS and Imgur direct-link candidates. The mismatch had caused
+  the import-side browser smoke to miss otherwise-present metrics.
+- `VERIFIED BROWSER`: `smoke:export-dialog` passed after rebuild with import
+  and export asset metrics, replacement-draft/persistence flows, modern and
+  legacy toggle sync, edit-mode entry, and zero console/page/request issues.
+- `NEXT P0`: keep asset URL analysis separate from actual Roll20 reachability;
+  bind the exact three-file payload before screenshot parity comparison.

@@ -8924,3 +8924,11 @@ visibility verification passed. No external room was opened or modified.
 - The three visible Sandbox file inputs still had zero selected files, so the
   live result is not promoted to same-hash or pixel-parity evidence. The
   native file-selection handoff remains the next P0.
+
+## 2026-07-30 - Asset preflight UI terminology
+
+- Matched the import panel's direct-link metric labels to the export panel so
+  both surfaces expose `직링크 후보` and `Imgur 직링크` consistently.
+- Rebuilt and reran the export-dialog browser smoke. Import/export asset
+  metrics, replacement draft/persistence, modern/legacy mode synchronization,
+  and edit-mode entry passed with zero console, page, or request failures.
