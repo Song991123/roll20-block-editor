@@ -849,3 +849,16 @@ not close the external Roll20 parity rows above.
 - NOT PROVEN: The actual Roll20 sidecar still needs a fresh generic payload in
   the modern Sandbox and separate legacy destination. No renderer CSS change
   is justified by this local diagnostic patch alone.
+
+## Actual Geometry Gate - 2026-07-31
+
+- VERIFIED: `roll20_actual_geometry_gate.mjs` now keeps iframe, wrapper,
+  sheet-root, authored-canvas, and normalized-crop evidence separate.
+- VERIFIED: Dedicated modern and legacy anonymous sidecars both pass the
+  generation-specific row/column display contract, authored `760x320` canvas,
+  required controls/table markers, chat markers, and exactly-one participant
+  preflight.
+- MEASURED / VERIFY: Both live roots are `852px` wide versus local `850px`,
+  so wrapper context is still a two-pixel delta and not a parity pass.
+- OPEN: normalized crop and same-payload attachment readback are still missing;
+  worker mutation remains unverified when a worker-bearing payload is used.

@@ -9085,6 +9085,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
 
+## 2026-07-31 Actual geometry gate
+
+- `DONE LOCAL`: Added `scripts/roll20_actual_geometry_gate.mjs` and wired its
+  self-test into `ci:verify`. It compares wrapper layers, authored canvas,
+  required DOM markers, generation-specific row/column display, chat markers,
+  participant preflight, crop status, attachment readback, and worker status.
+- `VERIFIED EXTERNAL`: Anonymous sidecars from the dedicated modern and legacy
+  destinations both pass authored `760x320` geometry, required generic
+  markers, chat markers, and their separate modern/legacy layout contracts.
+- `MEASURED / VERIFY`: The live `.charactersheet` root is `852px` wide while
+  the local fixture root is `850px`; the gate records this as wrapper context
+  delta while authored canvas dimensions match.
+- `OPEN`: Normalized root crop, external attachment hash/readback, and live
+  worker mutation remain `VERIFY`; neither mode is promoted to visual parity.
+
 ## 2026-07-31 Copyright-safe Sandbox smoke entrypoint
 
 - `DONE LOCAL`: added `smoke:roll20-sandbox-preview:synthetic`, which creates

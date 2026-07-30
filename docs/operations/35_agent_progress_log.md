@@ -9803,3 +9803,19 @@ same-hash modern/legacy comparison.
 - Next: rerun the expanded diagnostic with fresh generic modern and legacy
   sidecars before changing production CSS. Local synthetic coverage is not
   actual Roll20 parity.
+
+## 2026-07-31 - Actual geometry gate
+
+- Added `scripts/roll20_actual_geometry_gate.mjs` with self-tests for complete
+  evidence, missing crop, unsafe participant count, and wrong legacy layout.
+- Verified locally: the new self-test and lint pass; the self-test is included
+  in `ci:verify`.
+- Verified externally: fresh anonymous geometry sidecars from the dedicated
+  modern and legacy destinations show matching authored `760x320` content,
+  expected generation-specific row/column displays, required generic markers,
+  and Roll/chat markers.
+- Measured / hold: both live roots are `852px` wide against local `850px`.
+  The gate therefore reports wrapper context delta, missing normalized crop,
+  and missing attachment readback rather than claiming parity.
+- Next P0: capture a supported lossless root crop and bind it to the exact
+  locally generated payload; only then revisit the two-pixel wrapper delta.
