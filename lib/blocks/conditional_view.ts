@@ -38,6 +38,13 @@ function mkInit(builder: (b: Blockly.Block) => void): (block: unknown) => void {
   } as unknown as (block: unknown) => void;
 }
 
+function joinClass(...parts: Array<string | undefined | null>): string {
+  return parts
+    .map((part) => String(part ?? '').trim())
+    .filter(Boolean)
+    .join(' ');
+}
+
 // ---------- 3 블록 정의 ----------
 
 export const CONDITIONAL_VIEW_BLOCKS: BlockDef[] = [
@@ -59,6 +66,12 @@ export const CONDITIONAL_VIEW_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('기본 켜짐')
         .appendField(new Blockly.FieldCheckbox('FALSE'), 'DEFAULT');
+      b.appendDummyInput()
+        .appendField('입력 class')
+        .appendField(new Blockly.FieldTextInput(''), 'INPUT_CLASS');
+      b.appendDummyInput()
+        .appendField('라벨 class')
+        .appendField(new Blockly.FieldTextInput(''), 'LABEL_CLASS');
       b.setPreviousStatement(true);
       b.setNextStatement(true);
     }),
@@ -69,11 +82,21 @@ export const CONDITIONAL_VIEW_BLOCKS: BlockDef[] = [
       const def = bb.getFieldValue('DEFAULT');
       const checkedAttr =
         def === 'TRUE' || def === true || def === 'true' ? ' checked' : '';
-      const out = `<input type="checkbox" id="${escapeHtmlAttr(id)}" class="r20-toggle"${checkedAttr}>
-<label for="${escapeHtmlAttr(id)}">${escapeHtmlText(label)}</label>
+      const inputClass = joinClass('r20-toggle', String(bb.getFieldValue('INPUT_CLASS') ?? ''));
+      const labelClass = String(bb.getFieldValue('LABEL_CLASS') ?? '').trim();
+      const labelClassAttr = labelClass ? ` class="${escapeHtmlAttr(labelClass)}"` : '';
+      const out = `<input type="checkbox" id="${escapeHtmlAttr(id)}" class="${escapeHtmlAttr(inputClass)}"${checkedAttr}>
+<label for="${escapeHtmlAttr(id)}"${labelClassAttr}>${escapeHtmlText(label)}</label>
 `;
       return out;
     },
+    inspectorSchema: [
+      { name: 'ID', label: '토글 ID', kind: 'text', placeholder: 'show-area' },
+      { name: 'LABEL', label: '라벨', kind: 'text', placeholder: '영역 표시' },
+      { name: 'DEFAULT', label: '기본 켜짐', kind: 'boolean' },
+      { name: 'INPUT_CLASS', label: '입력 class', kind: 'text', placeholder: 'toggle-input' },
+      { name: 'LABEL_CLASS', label: '라벨 class', kind: 'text', placeholder: 'toggle-label' },
+    ],
   },
 
   // 2) 토글 켜졌을 때 보이는 영역 -----------------------------------------
@@ -88,6 +111,9 @@ export const CONDITIONAL_VIEW_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('토글 ID')
         .appendField(new Blockly.FieldTextInput('show-area'), 'REF_ID');
+      b.appendDummyInput()
+        .appendField('영역 class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('CONTENT').setCheck(null).appendField('내용');
       b.setPreviousStatement(true);
       b.setNextStatement(true);
@@ -95,13 +121,22 @@ export const CONDITIONAL_VIEW_BLOCKS: BlockDef[] = [
     generator: (block, ctx) => {
       const bb = block as Blockly.Block;
       const id = sanitizeIdToken(String(bb.getFieldValue('REF_ID') ?? ''));
+      const className = joinClass(
+        'r20-toggle-on',
+        `r20-toggle-on--${id}`,
+        String(bb.getFieldValue('CLASS') ?? ''),
+      );
       const content = ctx.statementToCode(block, 'CONTENT');
       const indented = content ? ctx.indent(content) : '';
-      const html = `<div class="r20-toggle-on r20-toggle-on--${escapeHtmlAttr(id)}">
+      const html = `<div class="${escapeHtmlAttr(className)}">
 ${indented}</div>
 `;
       return html;
     },
+    inspectorSchema: [
+      { name: 'REF_ID', label: '토글 ID', kind: 'text', placeholder: 'show-area' },
+      { name: 'CLASS', label: '영역 class', kind: 'text', placeholder: 'area-on' },
+    ],
   },
 
   // 3) 토글 꺼졌을 때 보이는 영역 (default state) -------------------------
@@ -116,6 +151,9 @@ ${indented}</div>
       b.appendDummyInput()
         .appendField('토글 ID')
         .appendField(new Blockly.FieldTextInput('show-area'), 'REF_ID');
+      b.appendDummyInput()
+        .appendField('영역 class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('CONTENT').setCheck(null).appendField('내용');
       b.setPreviousStatement(true);
       b.setNextStatement(true);
@@ -123,13 +161,22 @@ ${indented}</div>
     generator: (block, ctx) => {
       const bb = block as Blockly.Block;
       const id = sanitizeIdToken(String(bb.getFieldValue('REF_ID') ?? ''));
+      const className = joinClass(
+        'r20-toggle-off',
+        `r20-toggle-off--${id}`,
+        String(bb.getFieldValue('CLASS') ?? ''),
+      );
       const content = ctx.statementToCode(block, 'CONTENT');
       const indented = content ? ctx.indent(content) : '';
-      const html = `<div class="r20-toggle-off r20-toggle-off--${escapeHtmlAttr(id)}">
+      const html = `<div class="${escapeHtmlAttr(className)}">
 ${indented}</div>
 `;
       return html;
     },
+    inspectorSchema: [
+      { name: 'REF_ID', label: '토글 ID', kind: 'text', placeholder: 'show-area' },
+      { name: 'CLASS', label: '영역 class', kind: 'text', placeholder: 'area-off' },
+    ],
   },
 ];
 

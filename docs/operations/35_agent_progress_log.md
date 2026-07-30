@@ -8463,3 +8463,17 @@ visibility verification passed. No external room was opened or modified.
 - OPEN: No claim of full third-party HTML/CSS mapping or Roll20 parity. The
   actual Sandbox upload is still blocked at the native file chooser boundary;
   legacy room verification has not started.
+
+## 2026-07-30 - Conditional and dual-roll classability correction
+
+- IMPLEMENTED: Added separate styling fields for the dual-roll row and both
+  roll buttons. Added input/label classes to the toggle checkbox and wrapper
+  classes to the ON/OFF conditional areas without changing their generated
+  state-selector tokens.
+- IMPLEMENTED: Added inspector schemas for the conditional blocks so these
+  authored surfaces are usable outside raw Blockly field editing.
+- VERIFIED: Focused tests, lint, production build, full CI verification,
+  modern/legacy persistent preview, isolated edit-flow smoke, and server
+  hygiene all pass. No generated report or fixture is tracked.
+- OPEN: Actual Sandbox upload and separate legacy-room verification remain
+  external gates. No full-sheet or worker parity claim is made.

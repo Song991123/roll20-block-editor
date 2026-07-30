@@ -476,6 +476,30 @@ function testValueSwitchDedupesDuplicateValues(): void {
   expectEq(panelClassMatches?.length ?? 0, 2, 'panel class appears in div + rule');
 }
 
+function testDualRollPreservesVisualClasses(): void {
+  const def = findBlock(
+    COMPOSITE_BLOCKS as Array<{ type: string }>,
+    'r20_dual_roll_button',
+  );
+  const b = new FakeBlock({
+    type: 'r20_dual_roll_button',
+    fields: {
+      LABEL_A: '공격',
+      ROLL_A: '/r 1d20',
+      LABEL_B: '피해',
+      ROLL_B: '/r 1d8',
+      ROW_CLASS: 'attack-row',
+      BUTTON_A_CLASS: 'attack-roll',
+      BUTTON_B_CLASS: 'damage-roll',
+    },
+  });
+  const out = def.generator!(b, makeCtx());
+  const code = (Array.isArray(out) ? out[0] : out) as string;
+  expectContains(code, 'class="sheet-row sheet-dual-roll sheet-attack-row"', 'row class');
+  expectContains(code, 'class="sheet-attack-roll"', 'first button class');
+  expectContains(code, 'class="sheet-damage-roll"', 'second button class');
+}
+
 // ---------- 5) r20_attr_ref SCOPE -----------------------------------------
 
 function testAttrRefSelfScope(): void {
@@ -552,6 +576,7 @@ const tests: Array<[string, () => void]> = [
   ['value switch two cases', testValueSwitchTwoCases],
   ['value switch preserves custom classes', testValueSwitchPreservesCustomClasses],
   ['value switch dedupes duplicate values', testValueSwitchDedupesDuplicateValues],
+  ['dual roll preserves visual classes', testDualRollPreservesVisualClasses],
   ['attr ref self scope', testAttrRefSelfScope],
   ['attr ref selected scope', testAttrRefSelectedScope],
   ['attr ref target scope', testAttrRefTargetScope],

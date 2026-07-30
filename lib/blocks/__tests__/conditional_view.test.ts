@@ -13,6 +13,8 @@ import {
   escapeHtmlText,
   sanitizeIdToken,
 } from '../conditional_view_emit.ts';
+import { CONDITIONAL_VIEW_BLOCKS } from '../conditional_view.ts';
+import type { GeneratorContext } from '../types.ts';
 
 function assert(cond: unknown, msg: string): void {
   if (!cond) throw new Error(`Assertion failed: ${msg}`);
@@ -90,6 +92,36 @@ function testEmitCssSanitizedKey(): void {
   expectContains(css, 't-1show', 'sanitized id used');
 }
 
+function testConditionalVisualClasses(): void {
+  const values: Record<string, string> = {
+    ID: 'show-area',
+    LABEL: '영역 표시',
+    DEFAULT: 'FALSE',
+    INPUT_CLASS: 'toggle-input',
+    LABEL_CLASS: 'toggle-label',
+  };
+  const block = { getFieldValue: (name: string) => values[name] };
+  const ctx: GeneratorContext = {
+    valueToCode: () => '',
+    statementToCode: () => '<span>내용</span>',
+    indent: (code) => code,
+    warn: () => undefined,
+  };
+  const checkbox = CONDITIONAL_VIEW_BLOCKS.find((def) => def.type === 'r20_toggle_checkbox');
+  const onArea = CONDITIONAL_VIEW_BLOCKS.find((def) => def.type === 'r20_toggle_on_area');
+  if (!checkbox?.generator || !onArea?.generator) throw new Error('conditional generators missing');
+  const checkboxHtml = checkbox.generator(block, ctx) as string;
+  expectContains(checkboxHtml, 'class="r20-toggle toggle-input"', 'checkbox class');
+  expectContains(checkboxHtml, 'class="toggle-label"', 'label class');
+
+  const areaValues: Record<string, string> = { REF_ID: 'show-area', CLASS: 'area-on' };
+  const areaHtml = onArea.generator(
+    { getFieldValue: (name: string) => areaValues[name] },
+    ctx,
+  ) as string;
+  expectContains(areaHtml, 'class="r20-toggle-on r20-toggle-on--show-area area-on"', 'area class');
+}
+
 const tests: Array<[string, () => void]> = [
   ['sanitize basic', testSanitizeBasic],
   ['sanitize starts with digit', testSanitizeStartsWithDigit],
@@ -102,6 +134,7 @@ const tests: Array<[string, () => void]> = [
   ['emitCss multiple', testEmitCssMultiple],
   ['emitCss dedupe', testEmitCssDedupe],
   ['emitCss sanitized key', testEmitCssSanitizedKey],
+  ['conditional visual classes', testConditionalVisualClasses],
 ];
 
 let passed = 0;

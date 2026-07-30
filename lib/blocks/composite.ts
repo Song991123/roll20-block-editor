@@ -255,6 +255,15 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('2 roll')
         .appendField(new Blockly.FieldTextInput(''), 'ROLL_B');
+      b.appendDummyInput()
+        .appendField('행 class')
+        .appendField(new Blockly.FieldTextInput(''), 'ROW_CLASS');
+      b.appendDummyInput()
+        .appendField('버튼 1 class')
+        .appendField(new Blockly.FieldTextInput(''), 'BUTTON_A_CLASS');
+      b.appendDummyInput()
+        .appendField('버튼 2 class')
+        .appendField(new Blockly.FieldTextInput(''), 'BUTTON_B_CLASS');
       setStatementHooks(b);
     }),
     generator: (block, ctx) => {
@@ -263,6 +272,15 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       const labelB = escapeAttr(String(b.getFieldValue('LABEL_B') ?? '').trim() || '굴림 2');
       const rollA = escapeAttr(String(b.getFieldValue('ROLL_A') ?? '').trim() || '/r 1d20');
       const rollB = escapeAttr(String(b.getFieldValue('ROLL_B') ?? '').trim() || '/r 1d20');
+      const rowClass = sheetClassList(
+        'sheet-row',
+        'sheet-dual-roll',
+        String(b.getFieldValue('ROW_CLASS') ?? '').trim(),
+      );
+      const buttonClassAttr = (name: string): string => {
+        const custom = String(b.getFieldValue(name) ?? '').trim();
+        return custom ? ` class="${escapeAttr(sheetClassList(custom))}"` : '';
+      };
       if (!String(b.getFieldValue('ROLL_A') ?? '').trim() ||
           !String(b.getFieldValue('ROLL_B') ?? '').trim()) {
         ctx.warn(
@@ -272,15 +290,18 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
           'info',
         );
       }
-      const btnA = `<button type="roll" value="${rollA}">${labelA}</button>`;
-      const btnB = `<button type="roll" value="${rollB}">${labelB}</button>`;
-      return `<div class="sheet-row sheet-dual-roll">\n${ctx.indent(`${btnA}\n${btnB}`)}\n</div>`;
+      const btnA = `<button type="roll"${buttonClassAttr('BUTTON_A_CLASS')} value="${rollA}">${labelA}</button>`;
+      const btnB = `<button type="roll"${buttonClassAttr('BUTTON_B_CLASS')} value="${rollB}">${labelB}</button>`;
+      return `<div class="${escapeAttr(rowClass)}">\n${ctx.indent(`${btnA}\n${btnB}`)}\n</div>`;
     },
     inspectorSchema: [
       { name: 'LABEL_A', label: '버튼 1 라벨', kind: 'text', placeholder: '공격' },
       { name: 'ROLL_A', label: '버튼 1 굴림', kind: 'text', placeholder: '/r 1d20+@{atk}' },
       { name: 'LABEL_B', label: '버튼 2 라벨', kind: 'text', placeholder: '피해' },
       { name: 'ROLL_B', label: '버튼 2 굴림', kind: 'text', placeholder: '/r 1d8+@{dmg}' },
+      { name: 'ROW_CLASS', label: '행 추가 class', kind: 'text', placeholder: 'attack-row' },
+      { name: 'BUTTON_A_CLASS', label: '버튼 1 추가 class', kind: 'text', placeholder: 'attack-roll' },
+      { name: 'BUTTON_B_CLASS', label: '버튼 2 추가 class', kind: 'text', placeholder: 'damage-roll' },
     ],
   },
 

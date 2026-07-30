@@ -130,6 +130,9 @@ are:
 | `r20_value_switch_panel` | frame | wrapper `CLASS` is imported and emitted | The wrapper is a real drop-capable DOM frame. |
 | `r20_value_case` | frame | panel `CLASS` is imported and emitted | Each case is a selectable visual panel under the switch. |
 | `r20_radio_group` | frame | optional wrapper `CLASS` is emitted | It is a manual composite; imported fieldsets remain generic when their structure is not losslessly recognizable. |
+| `r20_dual_roll_button` | action composite | row and both button classes are optional | The composite emits three visual styling surfaces, so one class field would be ambiguous. |
+| `r20_toggle_checkbox` | control | input and label classes are separate | The checkbox and its label are sibling visual controls with different hit/typography styling. |
+| `r20_toggle_on_area` / `r20_toggle_off_area` | frame | wrapper `CLASS` is optional | The generated state-selector classes remain fixed; authored classes extend the area without changing the CSS state contract. |
 | `r20_text_node` | text-like semantic node | no `CLASS` | It represents direct text and adding a wrapper would change inline HTML semantics. |
 | `r20_template_invoke` | runtime | no visual layer | It emits a chat template command, not sheet DOM. |
 | worker/reporter/i18n syntax | runtime/export-only | no visual `CLASS` | These blocks configure behavior or translation rather than a visible element. |

@@ -86,6 +86,11 @@ This improves the universal path without changing the claim boundary: it is
 verified on focused synthetic/import contracts and the shared iframe browser
 smokes, not on every external sheet or actual Roll20 Sandbox upload.
 
+The same boundary now covers manual dual-roll and checkbox/state-area
+composites with distinct styling surfaces and inspector fields. This is still
+local authoring support, not proof that arbitrary imported HTML has been
+decomposed into those composites.
+
 ## Goal Progress
 
 These are planning estimates, not completion claims.

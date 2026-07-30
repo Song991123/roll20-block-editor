@@ -7727,3 +7727,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P1`: Continue the classability inventory for remaining visual composite
   blocks and add only matchers that can prove a lossless import/export round
   trip; do not add generic `CLASS` fields to raw text or runtime blocks.
+
+## 2026-07-30 Conditional and dual-roll classability pass
+
+- `DONE LOCAL`: `r20_dual_roll_button` now exposes separate row, first-button,
+  and second-button class fields. The generator keeps the existing structural
+  classes and adds authored classes once.
+- `DONE LOCAL`: `r20_toggle_checkbox` now separates input and label classes;
+  `r20_toggle_on_area` and `r20_toggle_off_area` accept an area class while
+  retaining the fixed state-selector classes used by the generated CSS.
+- `DONE LOCAL`: Conditional blocks now expose inspector schemas for their
+  user-facing fields, including the new class controls.
+- `VERIFIED LOCAL`: focused tests (`22/22` high-priority, `12/12`
+  conditional), lint, build, full `ci:verify`, persistent preview in modern
+  and legacy modes, isolated edit-flow smoke, and server hygiene pass.
+- `VERIFY / OPEN`: These are manual/composite authoring improvements. They do
+  not prove every imported third-party composite is lossless, actual Roll20
+  visual parity, or worker/chat parity.
+- `NEXT P1`: Audit the remaining non-visual no-`CLASS` entries and keep them
+  explicitly semantic/runtime rather than making the layer tree noisy.
