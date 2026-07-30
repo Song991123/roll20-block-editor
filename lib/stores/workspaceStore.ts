@@ -148,6 +148,12 @@ const emptyMeta: WorkspaceMeta = {
   lastSavedAt: null,
 };
 
+// A newly added generic container should be visible and selectable on the
+// sheet. Imported blocks keep the STYLE value from their XML, so this default
+// only applies at the user-creation boundary below.
+const DEFAULT_NEW_DIV_STYLE =
+  'width: 320px; min-height: 180px; padding: 12px; border: 1px solid #d4d4d8';
+
 
 /** Phase A — 위젯 type → 기본 크기/attrs (spec 17 §5.2). */
 function defaultWidget(type: WidgetType): {
@@ -289,6 +295,14 @@ export const useWorkspaceStore = create<WorkspaceStore>((set) => ({
     const adapter = getBlocklyAdapter();
     const id = adapter.appendBlockToWorkspace(key, blockType);
     if (id) {
+      if (
+        key === 'html'
+        && blockType === 'r20_div'
+        && adapter.hasBlockField('html', id, 'STYLE')
+        && !adapter.getBlockField('html', id, 'STYLE')
+      ) {
+        adapter.setBlockField('html', id, 'STYLE', DEFAULT_NEW_DIV_STYLE);
+      }
       set({ selectedBlockId: id, selectionOrigin: 'tree' });
       // Phase D fix (add-block bumpStructure 버그, local_1abb2993):
       // adapter 내부에서 BLOCK_CREATE 이벤트를 fire 하므로 changeListener 가

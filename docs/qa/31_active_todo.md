@@ -8414,3 +8414,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   its attachment state is unknown. No three-file same-hash proof is accepted.
 - `NEXT P0`: finish translation selection from a responsive chooser, then
   capture the post-apply modern screenshot and run the independent legacy path.
+
+## 2026-07-30 New-container visibility fix
+
+- `DONE LOCAL`: newly added generic `박스 (그룹)` blocks now receive a visible
+  `320px × 180px` starter style when their STYLE field is empty. This removes
+  the misleading zero-height line while keeping imported STYLE values intact.
+- `VERIFIED LOCAL`: the editor browser smoke showed the created block as a
+  selectable visible container with the same preview surface; focused lint,
+  Blockly headless, build-doc bundle, runtime contract, design-position, and
+  iframe drop-target tests pass.
+- `VERIFY / OPEN`: imported-sheet regression and full build/CI after this
+  patch remain to be rerun. External Roll20 same-hash parity and legacy-room
+  verification remain open as recorded above.
+- `NEXT P1`: rerun the full build and CI, then continue the supported modern
+  Sandbox file-binding attempt without touching existing rooms.

@@ -9129,3 +9129,15 @@ same-hash modern/legacy comparison.
 - The translation chooser timed out afterward, so its state is unknown. No
   same-hash three-file activation or parity claim was made; protected source
   files and existing rooms remained untouched.
+
+## 2026-07-30 - New generic-container visibility fix
+
+- Reproduced the local editor bug where adding a generic `r20_div` with an
+  empty STYLE rendered only a thin horizontal selection line.
+- Added a creation-boundary default of `width: 320px; min-height: 180px` plus
+  padding and border in `lib/stores/workspaceStore.ts`. Imported blocks do not
+  pass through this path, so their source STYLE remains authoritative.
+- Browser smoke after the patch showed a visible `320 × 180` selected block in
+  the preview surface and the generated Blockly block carried the same STYLE.
+- Focused lint and editor/preview contract tests pass. Full build/CI is still
+  required before this patch is published.
