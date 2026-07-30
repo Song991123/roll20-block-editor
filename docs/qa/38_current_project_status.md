@@ -9,11 +9,10 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `ec92f76`. The branch is pushed
-  to `origin`; the renderer-boundary patch is committed and the worktree is
-  clean after this documentation update.
-- Remote CI: run `30569682564` passed safety/unit verification, lint, and
-  build for `73ca762`.
+- Active branch: `claude/design-reset` at `08e9504`. The branch is pushed to
+  `origin` and the worktree is clean.
+- Remote CI: run `30571039357` passed safety/unit verification, lint, and
+  build for `08e9504`.
 - Static corpus inventory: two protected external roots were read-only scanned;
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
@@ -27,6 +26,8 @@ local output and is deleted after the verification batch.
   CSS raw fallback was `5`. Import UI now reports HTML, CSS, and combined
   structured coverage separately instead of implying that HTML coverage also
   proves CSS coverage.
+- Import metric patch: code commit `1b7d0f5` adds HTML/CSS/combined coverage
+  and warning totals while preserving the historical HTML `coverage` field.
 - Roll20 external state: the existing browser tab is currently the login
   screen, so authenticated Sandbox and dedicated legacy-room verification are
   still open. No credentials or external sheet payload were transmitted.
@@ -37,8 +38,8 @@ local output and is deleted after the verification batch.
   are removed from the product path. Generic Roll20 policies remain.
 - Latest local upload contract: resumable HTML/CSS/Translation handoff with
   page-token retry detection; no source payload is stored in public files.
-- External state: no Chrome Roll20 tabs were available at the latest recheck,
-  so no new Sandbox upload, screenshot, room write, or parity evidence exists.
+- External state: the available in-app Roll20 tab is the login screen, so no
+  new Sandbox upload, screenshot, room write, or parity evidence exists.
 - Latest CDP preflight: `CDP_CLOSED`, `targets=0`, `roll20Targets=0`; no new
   browser process was launched by this verification batch.
 - Latest anonymous local regression: L2 roundtrip, large-workspace
@@ -55,7 +56,7 @@ local output and is deleted after the verification batch.
 - Cleanup boundary: regenerated workspace-local dependency/build directories
   were rechecked, but the host rejected recursive deletion before execution.
   They remain `NOT DELETED`; no alternate deletion path was used.
-- UI copy guard: `corepack pnpm run guard:ui-copy` passes for 66 product-source
+- UI copy guard: `corepack pnpm run guard:ui-copy` passes for 67 product-source
   files. The large-workspace browser's Korean copy is source-valid; the earlier
   garbled terminal display was an output-encoding artifact, not a product-file
   regression.
