@@ -7766,3 +7766,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P1`: Continue only with remaining composites whose output marker and
   unsupported-attribute boundary can be proven lossless; do not broaden this
   into a generic row heuristic.
+
+## 2026-07-30 Sandbox native chooser boundary recheck
+
+- `VERIFIED EXTERNAL`: The dedicated modern Sandbox dialog is visible with
+  separate HTML, CSS, and Translation inputs. No existing room was used.
+- `BLOCKED EXTERNAL`: The supported file chooser event was reached, but file
+  injection was rejected and a visible path-entry attempt left the HTML input
+  empty. No sheet root, iframe, or applied preview appeared.
+- `PRESERVED`: No existing room, chat history, settings, or source-derived
+  payload was changed. The dedicated Sandbox tab remains a user handoff.
+- `NEXT P0`: Complete the three-file selection manually in the handoff tab,
+  then capture positive modern Sandbox render/runtime/roll evidence before
+  opening a separate legacy-enabled test-room track.

@@ -8492,3 +8492,15 @@ visibility verification passed. No external room was opened or modified.
 - OPEN: This is a local roundtrip correction only. Actual modern Sandbox
   activation, legacy-room rendering, arbitrary sheet coverage, and worker/chat
   parity remain unverified.
+
+## 2026-07-30 - Sandbox native chooser boundary recheck
+
+- VERIFIED EXTERNAL: The dedicated modern Sandbox dialog and its three upload
+  controls were visible. The existing room/chat state was left untouched.
+- BLOCKED EXTERNAL: The file chooser event was reached, but supported file
+  injection returned `Not allowed`; entering the anonymous HTML path through
+  the visible selection flow still left the input empty and produced no sheet
+  root.
+- NEXT: Keep the Sandbox tab as a user handoff. Positive render/runtime/roll
+  evidence requires manual selection of the anonymous HTML, CSS, and
+  translation files; legacy verification remains a separate destination.
