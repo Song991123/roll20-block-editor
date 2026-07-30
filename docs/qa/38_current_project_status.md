@@ -53,6 +53,10 @@ local output and is deleted after the verification batch.
   the translated `Name` label, authored pink CSS, an input, and a Roll button;
   clicking it produced the expected template and result in chat. Worker live
   mutation and pixel-diff parity remain unproven.
+- Anonymous crop measurement: the Legacy sheet and local preview were both
+  normalized to `420 x 180`; threshold-20 mismatch was `5.913%`, and the best
+  tested `+2px` horizontal alignment remained `5.223%`. This is attribution
+  evidence only, not parity.
 - Roll20 safety boundary: the existing one-participant room remains
   read-only observation only. No existing room settings, sheet source, or
   chat state was changed. The Sandbox path remains modern-only; the separate

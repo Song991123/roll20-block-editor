@@ -38,6 +38,23 @@
 - VERIFY / OPEN: This proves a current anonymous Legacy runtime smoke, not
   pixel-diff parity against an original sheet or arbitrary-sheet coverage.
 
+## 2026-07-31 Anonymous Legacy crop diff measurement
+
+- MEASURED / VERIFY: The local anonymous Legacy preview and the authenticated
+  Roll20 Legacy sheet crop were normalized to `420 x 180`. Raw mean absolute
+  channel difference was `4.094`; threshold-20 mismatch was `4,470 / 75,600`
+  pixels (`5.913%`). A best translation probe of local `+2px` x reduced this
+  only to `5.223%`.
+- INTERPRETATION: Root geometry, authored pink paint, label, input, and Roll
+  control visibly align, but native control paint, font rasterization, JPEG
+  capture, and Roll20 context are not yet separated. This is measured evidence,
+  not a parity PASS.
+- SAFETY: The PNG and JSON report remain ignored local evidence. No source
+  identity, room identifier, or screenshot entered the tracked tree.
+- NEXT: Add context-aware crop and computed-style sidecars before changing
+  production CSS; do not promote a global renderer patch from this synthetic
+  sample.
+
 ## 2026-07-31 Anonymous protected-corpus static inventory
 
 - VERIFIED STATIC: Two protected external input roots were scanned read-only;

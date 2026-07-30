@@ -12,6 +12,10 @@ Date: 2026-07-31
   visible member, saved the same anonymous payload with Custom plus the Legacy
   sanitization option enabled, rendered `Name` plus authored CSS/input/Roll,
   and produced the expected template/result chat output.
+- MEASURED / VERIFY: A normalized anonymous Legacy sheet crop (`420 x 180`)
+  measured `5.913%` threshold-20 pixel mismatch against the local crop;
+  after a best `+2px` alignment probe it remained `5.223%`. This is not a
+  visual-parity pass.
 - NOT PROVEN: pixel-diff parity, arbitrary-sheet parity, live worker mutation,
   and reference-image comparison. Existing rooms remained read-only.
 - The first Legacy attempt exposed a validation-harness issue: Ace editor

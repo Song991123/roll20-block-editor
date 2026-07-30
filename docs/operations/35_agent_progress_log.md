@@ -9571,3 +9571,17 @@ same-hash modern/legacy comparison.
   sheet parity, or reference-image comparison. Existing rooms remained
   read-only; only the newly dedicated test room was written. No source payload,
   room identifier, or screenshot was committed.
+
+## 2026-07-31 - Anonymous Legacy crop diff measurement
+
+- MEASURED / VERIFY: The local anonymous Legacy preview and the authenticated
+  Legacy sheet crop were normalized to `420 x 180`. Raw mean absolute channel
+  difference was `4.094`; threshold-20 mismatch was `4,470 / 75,600` pixels
+  (`5.913%`). The best local `+2px` x alignment still measured `5.223%`.
+- INTERPRETATION: Authored root geometry, pink paint, label, input, and Roll
+  control visibly align. Native control paint, font rasterization, JPEG capture,
+  and Roll20 wrapper/context remain mixed causes. This is not a parity PASS.
+- SAFETY: The capture and diff report remain under ignored local evidence;
+  source identity, room identifier, and screenshot are absent from Git.
+- NEXT: Capture computed-style/context sidecars and improve crop normalization
+  before any production renderer change.
