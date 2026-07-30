@@ -265,11 +265,16 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       x: 0, y: 0, pointerId: -1, button: -1, buttons: 0
     });
   }
+  function workerSourceOf(script) {
+    if (!script) return '';
+    var encoded = script.getAttribute('data-r20-worker-source');
+    return encoded === null ? (script.textContent || '') : encoded;
+  }
   function workerSourceText(root) {
     if (!root) return '';
     var scripts = root.querySelectorAll('script[type="text/worker"]');
     var out = [];
-    for (var i = 0; i < scripts.length; i++) out.push(scripts[i].textContent || '');
+    for (var i = 0; i < scripts.length; i++) out.push(workerSourceOf(scripts[i]));
     return out.join('\n/* r20-worker-boundary */\n');
   }
   function ensureStyle(id, css) {
@@ -1057,7 +1062,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   function installSheetWorkers() {
     var scripts = document.querySelectorAll('script[type="text/worker"]');
     scripts.forEach(function (script) {
-      var code = script.textContent || '';
+      var code = workerSourceOf(script);
       if (!code.trim()) return;
       try {
         var fn = new Function(

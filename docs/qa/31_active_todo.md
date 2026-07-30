@@ -7051,3 +7051,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: resume from a responsive authenticated Sandbox tab or a supported
   user-visible file handoff, then collect modern and dedicated legacy evidence
   separately.
+
+## 2026-07-30 Sandbox worker-boundary fix
+
+- `DONE LOCAL`: When the optional Roll20 Sandbox sanitizer is enabled, worker
+  script source is restored as a non-executing `text/worker` boundary after the
+  HTML allow-list pass. The source is escaped into a data attribute so a
+  literal `</script>` cannot escape the boundary. Ordinary page JavaScript
+  remains removed from the preview iframe.
+- `VERIFIED LOCAL`: build-doc regression, lint, build, and strict imported-edit
+  sync all pass; the three anonymous synthetic cases remain interaction and
+  resource `PASS`.
+- `VERIFY / OPEN`: The Sandbox sanitizer remains an explicit diagnostic toggle
+  and is not the default until a responsive actual Roll20 upload confirms the
+  full tag/class allow-list. This avoids treating a partial external probe as
+  a universal renderer contract.

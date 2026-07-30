@@ -29,6 +29,12 @@ const scriptParts = buildSheetParts({
   ...options,
   html: '<section class="card">Sheet</section><script>window.pageRuntime = true;</script><script type="text/worker">on("sheet:opened", function () { setAttrs({ hp: 10 }); });</script>',
 });
+const sandboxScriptBundle = buildSheetRenderBundle({
+  ...options,
+  compatibilityMode: 'modern',
+  roll20SandboxSanitize: true,
+  html: '<section class="card">Sheet</section><script>window.pageRuntime = true;</script><script type="text/worker">on("sheet:opened", function () { setAttrs({ hp: 10 }); });</script>',
+});
 
 assert.equal(bundle.doc, buildSheetDoc(options), 'bundled document matches the standalone builder');
 assert.deepEqual(
@@ -87,6 +93,26 @@ assert.doesNotMatch(
   scriptParts.html,
   /window\.pageRuntime/,
   'the fallback Shadow parts keep the same inert page-script boundary',
+);
+assert.doesNotMatch(
+  sandboxScriptBundle.doc,
+  /<section\b/i,
+  'Sandbox HTML allow-list removes unsupported authored tags',
+);
+assert.doesNotMatch(
+  sandboxScriptBundle.doc,
+  /page-runtime|window\.pageRuntime/,
+  'Sandbox preview keeps ordinary page JavaScript inert',
+);
+assert.match(
+  sandboxScriptBundle.doc,
+  /<script type="text\/worker" data-r20-worker-source="[^\"]*setAttrs/,
+  'Sandbox preview stores worker source in the inert bridge boundary',
+);
+assert.match(
+  sandboxScriptBundle.doc,
+  /function workerSourceOf\(script\)/,
+  'worker bridge reads the sanitized source attribute',
 );
 assert.match(bundle.doc, /var htmlChanged = data\.htmlKey !== lastAppliedHtmlKey/);
 assert.match(roll20BaseIframeCss, /\.ui-dialog\s+\.charsheet/);

@@ -4,6 +4,7 @@ import {
 } from '../emit/roll20SandboxSanitize';
 import { sanitizeForRoll20Legacy } from '../emit/sanitize';
 import { parseTranslationMap } from '../export/payload';
+import { isRoll20WorkerScript } from '../import/worker_source';
 import { annotateRoll20AutocalcHtml } from './autocalc';
 import {
   autoPrefixCssClasses,
@@ -59,10 +60,13 @@ export function prepareSheetRenderContract(
   const prefixedHtml = sanitize ? autoPrefixHtmlClasses(userHtml) : userHtml;
   const prefixedCss = sanitize ? autoPrefixCssClasses(userCss) : userCss;
   const sandboxHtml = roll20SandboxSanitize
-    ? sanitizeRoll20SandboxHtml(userHtml, {
-        prefixClasses: legacyCssSanitize,
-        rewriteUrls: false,
-      }).html
+    ? restorePreviewWorkerScripts(
+        sanitizeRoll20SandboxHtml(userHtml, {
+          prefixClasses: legacyCssSanitize,
+          rewriteUrls: false,
+        }).html,
+        userHtml,
+      )
     : prefixedHtml;
   const sandboxCss = roll20SandboxSanitize
     ? sanitizeRoll20SandboxCss(userCss, {
@@ -90,6 +94,39 @@ export function prepareSheetRenderContract(
     bodyInner,
     previewCss,
   };
+}
+
+/**
+ * Roll20 removes worker script tags from the authored sheet HTML before it
+ * mounts the character iframe, but the editor still needs the worker source
+ * to drive its local preview runtime. Re-attach only worker scripts after the
+ * sandbox HTML allow-list pass; ordinary page scripts stay removed.
+ */
+function restorePreviewWorkerScripts(sanitizedHtml: string, sourceHtml: string): string {
+  const workerScripts: string[] = [];
+  const scriptRe = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = scriptRe.exec(String(sourceHtml ?? '')))) {
+    const attrs = match[1] ?? '';
+    const body = match[2] ?? '';
+    const typeMatch = /\btype\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>/]+))/i.exec(attrs);
+    const type = String(typeMatch?.[1] ?? typeMatch?.[2] ?? typeMatch?.[3] ?? '').trim();
+    if (!isRoll20WorkerScript(type, body)) continue;
+    workerScripts.push(
+      `<script type="text/worker" data-r20-worker-source="${escapeHtmlAttribute(body)}"></script>`,
+    );
+  }
+  return workerScripts.length > 0
+    ? `${sanitizedHtml}${sanitizedHtml && !sanitizedHtml.endsWith('\n') ? '\n' : ''}${workerScripts.join('\n')}`
+    : sanitizedHtml;
+}
+
+function escapeHtmlAttribute(value: string): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function applyTranslationsToHtml(html: string, i18n: string | undefined): string {

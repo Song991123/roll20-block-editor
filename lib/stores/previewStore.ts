@@ -35,7 +35,7 @@ interface PreviewStore {
   darkMode: boolean;
   sanitize: boolean;        // HTML/CSS class auto-prefix. Actual modern Roll20 keeps this OFF.
   legacyCssSanitize: boolean; // 구버전 Roll20 CSS 무해화 preview/edit toggle.
-  roll20SandboxSanitize: boolean; // 실제 Roll20 Custom Sheet Sandbox sanitize/prefix 예상 preview toggle.
+  roll20SandboxSanitize: boolean; // 실제 Roll20 Custom Sheet Sandbox 규칙을 preview/edit에 적용하는 진단 토글.
   autoRegen: boolean;       // 큰 시트 OFF 권장
   iframeSandbox: string;    // allow-scripts only — 사용자 시트 안 script 는 unique origin 안에서만 실행 (parent 접근 X). preview bridge script 동작 필요.
   renderMode: PreviewRenderMode;   // Roll20 parity default; active product surface is iframe.

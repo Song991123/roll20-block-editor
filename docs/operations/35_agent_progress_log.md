@@ -7798,3 +7798,15 @@ visibility verification passed. No external room was opened or modified.
   external browser-availability blocker, not a positive upload result.
 - Next step remains a responsive authenticated Sandbox handoff followed by a
   separate participant-gated legacy test-room run.
+
+## 2026-07-30 - Sandbox worker boundary correction
+
+- Found a real local contract gap: the optional Sandbox HTML sanitizer removed
+  worker scripts before the editor's worker bridge could read them.
+- Fixed the preview contract to reattach only classified Roll20 worker source
+  as inert `text/worker` tags after allow-list sanitization. The source is
+  escaped into a data attribute, page scripts remain stripped, and export
+  source is unchanged.
+- Verified build-doc regression, lint, build, and strict imported-edit sync.
+  The sanitizer toggle remains OFF by default until actual Roll20 allow-list
+  evidence is refreshed; this is an evidence boundary, not a parity claim.
