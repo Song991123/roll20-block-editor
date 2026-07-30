@@ -1,3 +1,25 @@
+## 2026-07-30 - Roll20 Sandbox upload handoff retry
+
+- VERIFIED READ-ONLY: The open Roll20 page exposed the `Sheet Sandbox Tools`
+  dialog and unique HTML/CSS/Translation controls.
+- BLOCKED_EXTERNAL: The supported file chooser flow reached Chrome but rejected
+  the synthetic HTML file with `Not allowed` before transmission. No room,
+  chat, save, or setting was changed.
+- REQUIRED HANDOFF: Enable the extension's file URL access or use a visible
+  user-assisted chooser for the anonymous synthetic payload. Do not treat the
+  local render gates as actual Roll20 parity.
+- NEXT: Re-run modern Sandbox evidence first; legacy verification remains a
+  separate dedicated test-room gate.
+
+## 2026-07-30 - Local render regression batch
+
+- VERIFIED LOCAL: Fresh-sheet, imported-edit-sync strict, persistent preview
+  modern/legacy, edit-flow, and worker workspace smokes passed.
+- VERIFIED LOCAL: Blank new sheets emit no ghost `sheet-section`, use the
+  `850px` default canvas, and keep one persistent iframe across edit/preview.
+- OPEN: Visual-fixture smoke needs a user-provided or locally copied ignored
+  fixture; the public worktree intentionally contains none.
+
 ## 2026-07-30 - Explicit archive deletion completed
 
 - DELETED: The user-authorized `03_ARCHIVE/legacy-single-file/` target was

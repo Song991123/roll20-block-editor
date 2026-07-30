@@ -1,3 +1,30 @@
+## 2026-07-30 Roll20 Sandbox upload handoff retry
+
+- VERIFIED READ-ONLY: The open Roll20 page exposed the dedicated `Sheet
+  Sandbox Tools` dialog and unique HTML/CSS/Translation file controls.
+- BLOCKED_EXTERNAL: Applying the anonymous synthetic HTML reached the supported
+  file chooser flow, but Chrome rejected `setFiles` with `Not allowed` before
+  any file bytes were transmitted. No Roll20 room, chat, save, or setting was
+  changed.
+- REQUIRED HANDOFF: Chrome's ChatGPT extension must allow file URL access for
+  the supported chooser flow, or the user must select the three synthetic
+  files visibly. Actual Sandbox sheet-root, CSS, translation, rolltemplate,
+  and screenshot evidence is still missing.
+- NEXT P0: Re-run only after the upload permission/user-assisted chooser is
+  available, then capture positive root/state/chat evidence before comparing.
+
+## 2026-07-30 Local render regression batch
+
+- DONE LOCAL: Fresh-sheet smoke passed with zero HTML blocks/layers in the blank
+  state, no ghost `sheet-section`, default canvas width `850px`, one iframe,
+  and non-screen-derived first placement.
+- DONE LOCAL: Imported edit-sync strict smoke passed for synthetic generic and
+  non-leaf flow fixtures; persistent preview surface passed for modern and
+  legacy; edit-flow and worker workspace smokes passed.
+- VERIFY OPEN: The visual-fixture smoke could not start because the local
+  `test-fixtures/visual` directory is intentionally absent from the public
+  worktree. No copyrighted or source-identifying fixture was recreated.
+
 ## 2026-07-30 Archive cleanup completed
 
 - DONE LOCAL: The explicitly authorized `03_ARCHIVE/legacy-single-file/`
