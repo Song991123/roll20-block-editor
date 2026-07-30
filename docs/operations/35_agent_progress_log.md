@@ -8898,5 +8898,6 @@ visibility verification passed. No external room was opened or modified.
   and legacy payloads. HTML/CSS/translation hashes match across modes; the
   mode-specific `sheet.json` hash differs as expected.
 - Chrome tab claiming timed out twice while attempting the fresh external
-  capture, before any upload or Roll20 mutation. The external parity task
-  remains `VERIFY / BLOCKED`; no renderer conclusion was drawn from it.
+  capture, and a third direct tab-access attempt also timed out before any
+  upload or Roll20 mutation. The external parity task remains
+  `VERIFY / BLOCKED`; no renderer conclusion was drawn from it.

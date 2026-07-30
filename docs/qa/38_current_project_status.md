@@ -222,5 +222,6 @@ mode-specific `sheet.json` manifest differs. Separate modern and legacy upload
 snippets were generated from those exact payload directories.
 
 Chrome currently exposes the dedicated Sandbox and legacy verification tabs,
-but claiming either tab timed out twice before a fresh upload/capture. This is
-an external-tooling blocker, not evidence of parity or a renderer failure.
+but tab claiming/direct access timed out three times before a fresh
+upload/capture. This is an external-tooling blocker, not evidence of parity or
+a renderer failure.

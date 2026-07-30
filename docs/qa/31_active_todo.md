@@ -8154,8 +8154,9 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   hashes are identical across modes; only the `sheet.json` legacy manifest
   differs as expected.
 - `VERIFY / BLOCKED EXTERNAL`: Chrome shows the two dedicated Roll20 tabs, but
-  tab claiming timed out twice before a fresh same-hash upload/capture could
-  begin. No external state was changed and no new parity claim is made.
+  tab claiming and then direct tab access timed out three times before a fresh
+  same-hash upload/capture could begin. No external state was changed and no
+  new parity claim is made.
 - `NEXT P0`: retry one-tab-at-a-time browser handoff, then bind the resulting
   external screenshots and sidecars to `payload-provenance.json` before
   calculating the normalized root diff.
