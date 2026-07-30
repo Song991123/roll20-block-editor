@@ -103,6 +103,18 @@ const ROLE_KIND_OVERRIDES: Record<string, LayerRoleKind> = {
   // Both composites emit a table row as one movable unit. They participate in
   // table/flow ordering but do not accept arbitrary children directly.
   r20_attribute_card: 'flow',
+  r20_list: 'frame',
+  r20_list_item: 'flow',
+  r20_toggle_wrap: 'frame',
+  r20_toggle_on_area: 'frame',
+  r20_toggle_off_area: 'frame',
+  r20_inline_bold: 'text',
+  r20_inline_italic: 'text',
+  r20_radio: 'control',
+  r20_template_invoke: 'action',
+  r20_computed_attr: 'runtime',
+  r20_raw_page_js: 'runtime',
+  r20_page_js_slot: 'runtime',
   r20_value_switch_panel: 'frame',
   r20_value_case: 'frame',
 };
@@ -116,10 +128,26 @@ const CAN_RECEIVE_CHILDREN_OVERRIDES: Record<string, boolean> = {
   // Attribute cards are atomic composite rows; reorder the row, do not insert
   // an unrelated block into its generated <tr> internals.
   r20_attribute_card: false,
+  // `<col>` and `<caption>` are atomic emitters. They can be reordered in
+  // their valid table position but cannot receive a child.
+  r20_table_col: false,
+  r20_table_caption: false,
   // This composite emits one complete <tr>; it is reorderable in table flow,
   // but arbitrary blocks cannot be inserted into the atomic row itself.
   r20_skill_row: false,
 };
+
+const RUNTIME_BLOCK_TYPES = new Set([
+  'r20_get_section_ids',
+  'r20_for_each_id',
+  'r20_get_attrs',
+  'r20_set_attrs',
+  'r20_set_attrs_pair',
+  'r20_generate_row_id',
+  'r20_remove_repeating_row',
+  'r20_get_translation',
+  'r20_get_compendium',
+]);
 
 export function getLayerRole(type: string): LayerRole {
   const normalized = type.toLowerCase();
@@ -229,6 +257,8 @@ export function classifyLayerRole(type: string): LayerRoleKind {
   const t = type.toLowerCase();
   const override = ROLE_KIND_OVERRIDES[t];
   if (override) return override;
+  if (t.startsWith('r20_worker_') || t.startsWith('r20_on_')) return 'runtime';
+  if (RUNTIME_BLOCK_TYPES.has(t)) return 'runtime';
   const tokens = blockTypeTokens(t);
   if (hasAnyToken(tokens, ['script', 'worker', 'rolltemplate'])) return 'runtime';
   if (hasAnyToken(tokens, ['table', 'colgroup', 'col', 'tbody', 'thead', 'tfoot', 'tr', 'td', 'th'])) return 'table';

@@ -10,6 +10,12 @@
 - FIXED LOCAL: `r20_attribute_card` is treated as a cell group: it can reorder
   inside its source `tr`, but cannot be dropped directly into `table` or
   `tbody` where its unwrapped sibling cells would make invalid HTML.
+- FIXED LOCAL: role inventory now marks list and conditional areas as child-
+  receiving frames/flow, inline emphasis as Text, radio as Input, and worker
+  event/code blocks as Sheet action instead of misleading `other` layers.
+- FIXED LOCAL: atomic table metadata blocks (`col` and `caption`) no longer
+  advertise an `inside` child drop even though their shared Table styling is
+  still used for ordering and color.
 - NEXT P0: finish the remaining local imported-edit role/inventory coverage,
   then resume the separate modern Sandbox and legacy-room evidence gate.
 

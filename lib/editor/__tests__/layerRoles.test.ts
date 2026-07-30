@@ -10,6 +10,8 @@ import {
 assert.equal(classifyLayerRole('r20_table'), 'table');
 assert.equal(classifyLayerRole('r20_colgroup'), 'table');
 assert.equal(classifyLayerRole('r20_table_col'), 'table');
+assert.equal(getLayerRole('r20_table_col').canReceiveChildren, false);
+assert.equal(getLayerRole('r20_table_caption').canReceiveChildren, false);
 assert.equal(classifyLayerRole('r20_thead'), 'table');
 assert.equal(classifyLayerRole('r20_tr'), 'table');
 assert.equal(classifyLayerRole('r20_td'), 'table');
@@ -27,6 +29,19 @@ assert.equal(getLayerRole('r20_attr_with_txt_helper').canReceiveChildren, true);
 assert.equal(classifyLayerRole('r20_repeating_section_wrapper'), 'frame');
 assert.equal(classifyLayerRole('r20_value_switch_panel'), 'frame');
 assert.equal(classifyLayerRole('r20_value_case'), 'frame');
+assert.equal(classifyLayerRole('r20_list'), 'frame');
+assert.equal(getLayerRole('r20_list').canReceiveChildren, true);
+assert.equal(classifyLayerRole('r20_list_item'), 'flow');
+assert.equal(getLayerRole('r20_list_item').canReceiveChildren, true);
+assert.equal(classifyLayerRole('r20_toggle_on_area'), 'frame');
+assert.equal(getLayerRole('r20_toggle_off_area').canReceiveChildren, true);
+assert.equal(classifyLayerRole('r20_inline_bold'), 'text');
+assert.equal(classifyLayerRole('r20_inline_italic'), 'text');
+assert.equal(classifyLayerRole('r20_radio'), 'control');
+assert.equal(classifyLayerRole('r20_template_invoke'), 'action');
+assert.equal(classifyLayerRole('r20_on_sheet_opened'), 'runtime');
+assert.equal(classifyLayerRole('r20_worker_if'), 'runtime');
+assert.equal(classifyLayerRole('r20_get_attrs'), 'runtime');
 
 assert.equal(classifyLayerRole('r20_text_input'), 'control');
 assert.equal(classifyLayerRole('r20_attr_ref'), 'control');

@@ -7955,6 +7955,26 @@ visibility verification passed. No external room was opened or modified.
   and invalid table/section placement. This remains a generic composite
   structure rule and does not use private sheet data.
 
+## 2026-07-30 - Visual layer-role inventory correction
+
+- FIXED LOCAL: list/list-item and conditional-view area blocks now expose their
+  actual child-capable Frame/Flow roles. Inline emphasis and radio controls now
+  receive visible Text/Input roles, while worker event/code and page-script
+  blocks are classified as Sheet action/runtime rather than `other`.
+- VERIFIED LOCAL: focused role tests cover the new mappings. The role source
+  remains shared by the layer panel and iframe edit surface, so no second tree
+  model was introduced.
+- CLAIM BOUNDARY: this improves local layer semantics only; it does not prove
+  arbitrary runtime behavior or actual modern/legacy Roll20 parity.
+
+## 2026-07-30 - Atomic table metadata role correction
+
+- FIXED LOCAL: `r20_table_col` and `r20_table_caption` retain Table styling for
+  ordering but are explicitly non-droppable atoms, matching their emitters'
+  lack of a CONTENT slot.
+- VERIFIED LOCAL: role regression tests cover both `canReceiveChildren=false`
+  contracts. No imported sheet or private evidence is involved.
+
 ## 2026-07-30 - Generic inline whitespace import fix
 
 - Reproduced a universal import loss where inline siblings such as

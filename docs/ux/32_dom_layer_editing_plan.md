@@ -19,6 +19,12 @@ edit surface, not a promise that every arbitrary HTML pattern is editable.
 | `image`, `img`, `media` | Image | No | Free | A visual asset |
 | `script`, `worker`, `rolltemplate` | Sheet action | No | None | Runtime code, kept out of the visual preview |
 | `r20_element_container` | Frame | Yes | Flow | Safe custom element with an editable content slot |
+| `r20_list`, `r20_list_item` | Frame / Flow | Yes | Flow | List structure whose item order and child content remain editable |
+| `r20_toggle_wrap`, `r20_toggle_on_area`, `r20_toggle_off_area` | Frame | Yes | Flow | Conditional view area controlled by a checkbox/state selector |
+| `r20_inline_bold`, `r20_inline_italic` | Text | No | Free | Inline text styling that remains selectable as visible content |
+| `r20_radio` | Input | No | Free | Radio control with a visible label |
+| `r20_table_col`, `r20_table_caption` | Table atom | No | Flow | Atomic table metadata that can be reordered but cannot receive children |
+| `r20_on_*`, `r20_worker_*` | Sheet action | No | None | Worker event/code, preserved outside the visual sheet |
 | `r20_attribute_card` | Flow row | No | Flow | Composite cell group that moves as one unit inside its source row |
 | `r20_skill_row` | Flow row | No | Flow | Composite `<tr>` that moves as one table row |
 
