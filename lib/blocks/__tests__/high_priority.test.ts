@@ -237,6 +237,15 @@ function testWorkerIfElseEmit(): void {
   expectContains(code, 'return;', 'else body emit');
 }
 
+function testWorkerUnaryNotEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_worker_not');
+  assert(def.generator, 'r20_worker_not has generator');
+  const b = new FakeBlock({ type: 'r20_worker_not' });
+  const out = def.generator!(b, makeCtx({ VALUE: 'v.disabled' }));
+  const code = Array.isArray(out) ? out[0] : out;
+  expectEq(code, '!(v.disabled)', 'unary not emit');
+}
+
 // ---------- 1b) r20_get_compendium ----------------------------------------
 
 function testCompendiumBasicPath(): void {
@@ -580,6 +589,7 @@ function testAttrRefBogusScopeFallback(): void {
 
 const tests: Array<[string, () => void]> = [
   ['worker if/else emit', testWorkerIfElseEmit],
+  ['worker unary not emit', testWorkerUnaryNotEmit],
   ['compendium basic path', testCompendiumBasicPath],
   ['compendium with subpath', testCompendiumWithSubpath],
   ['compendium empty path', testCompendiumEmptyPath],

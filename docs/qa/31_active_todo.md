@@ -8345,3 +8345,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   syntax, Roll20 execution order, and actual modern/legacy parity remain open.
 - `NEXT P1`: extend the worker catalog using the same structured-or-raw rule,
   prioritizing common expressions and preserving unsupported source exactly.
+
+## 2026-07-30 Worker unary-not mapping
+
+- `DONE LOCAL`: unary `!value` expressions now map to the dedicated
+  `r20_worker_not` reporter, including nested `!!value` expressions.
+- `VERIFIED LOCAL`: worker parser `30/30`, high-priority mapping `24/24`,
+  Blockly headless, emit contract, lint, build, full `ci:verify`, synthetic
+  modern/legacy visual smoke (`0%` mismatch), persistent preview, and strict
+  imported edit sync all pass.
+- `VERIFY / OPEN`: this is one bounded worker expression. Arbitrary worker JS,
+  Roll20 execution parity, same-hash external screenshots, and full modern /
+  legacy visual parity remain unverified.
+- `NEXT P1`: continue common worker expression coverage while preserving
+  unsupported syntax as editable raw blocks.

@@ -572,6 +572,19 @@ function valueBlock(rawExpr: string): ParsedBlock {
   const e = rawExpr.trim().replace(/;$/, '').trim();
   const binary = workerBinaryBlock(e);
   if (binary) return binary;
+  // Unary negation is checked after binary parsing so `!==` stays a
+  // comparison. Recurse to preserve nested expressions such as `!!v.active`.
+  if (e.length > 1 && e.startsWith('!') && e[1] !== '=') {
+    const operand = e.slice(1).trim();
+    if (operand) {
+      return {
+        blockType: 'r20_worker_not',
+        fields: {},
+        children: {},
+        valueInputs: { VALUE: valueBlock(operand) },
+      };
+    }
+  }
   // v.NAME / v.NAME_max — Stage worker-1 reporter.
   let m = /^v\.([A-Za-z_$][\w$]*)_max$/.exec(e);
   if (m) {

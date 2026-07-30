@@ -723,7 +723,26 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     },
   },
 
-  // 25) getTranslationByKey -------------------------------------------------
+  // 25) logical negation (worker context) ----------------------------------
+  {
+    type: 'r20_worker_not',
+    shape: 'boolean',
+    category: SHEET_WORKER,
+    label: '아님',
+    tooltip: '!VALUE — sheet worker JS 값의 참/거짓을 반전합니다.',
+    init: mkInit((b) => {
+      // JavaScript의 !는 문자열/숫자도 허용하므로 입력 타입을 제한하지 않는다.
+      b.appendValueInput('VALUE').setCheck(null);
+      b.setOutput(true, T_BOOL);
+      b.setInputsInline(true);
+    }),
+    generator: (block, ctx) => {
+      const value = ctx.valueToCode(block, 'VALUE', ORDER.NONE) || 'false';
+      return [`!(${value})`, ORDER.ATOMIC];
+    },
+  },
+
+  // 26) getTranslationByKey -------------------------------------------------
   //
   // Stage 22 §2 — LANG 필드 추가 (optional).
   //   - LANG 비면 (`''`) `getTranslationByKey('KEY')` emit (현재 언어).

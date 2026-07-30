@@ -263,6 +263,24 @@ function testWorkerBinaryExpressions(): void {
   assert(subtraction.valueInputs?.LHS.blockType === 'r20_worker_arith', 'left-associative subtraction');
 }
 
+function testWorkerUnaryNot(): void {
+  const r = parseSheetWorkerScript(
+    `if (!v.disabled) { setAttrs({ active: 1 }); }`,
+  );
+  const condition = r.blocks[0].valueInputs?.CONDITION;
+  if (!condition) throw new Error('Assertion failed: missing unary condition');
+  assert(condition.blockType === 'r20_worker_not', 'unary not condition');
+  assert(condition.valueInputs?.VALUE.blockType === 'r20_worker_v_ref', 'unary operand ref');
+  assert(condition.valueInputs?.VALUE.fields.NAME === 'disabled', 'unary operand name');
+
+  const nested = parseSheetWorkerScript(
+    `if (!!v.enabled) { setAttrs({ active: 1 }); }`,
+  ).blocks[0].valueInputs?.CONDITION;
+  if (!nested) throw new Error('Assertion failed: missing nested unary condition');
+  assert(nested.blockType === 'r20_worker_not', 'outer unary not');
+  assert(nested.valueInputs?.VALUE.blockType === 'r20_worker_not', 'nested unary not');
+}
+
 function testRawFallback(): void {
   // switch/case 는 v1 에서 unrecognized — raw fallback.
   const js = `switch (x) { case 1: a(); break; }`;
@@ -333,6 +351,7 @@ const tests = [
   ['console.log', testConsoleLog],
   ['nested complex', testNestedComplex],
   ['worker binary expressions', testWorkerBinaryExpressions],
+  ['worker unary not', testWorkerUnaryNot],
   ['raw fallback (switch)', testRawFallback],
   ['comments & strings', testCommentsAndStrings],
   ['multiple top hats', testMultipleTopLevelHats],

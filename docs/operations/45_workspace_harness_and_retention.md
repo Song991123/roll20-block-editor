@@ -435,3 +435,15 @@ external material remain preserved.
   per-file deletion, or safety bypass was used.
 - PRESERVED: active dependencies, current anonymous verification payload,
   canonical reports, source, worktrees, and protected sheet roots.
+
+## 2026-07-30 explicit retry after latest user approval
+
+- The five remaining disposable directories were re-resolved and confirmed as
+  old `web/` dependency/build output plus canonical `.next/` and `out/`.
+- The exact workspace-boundary and tracked-file checks passed, and no project
+  or CDP listener was active.
+- The host rejected the native recursive PowerShell deletion before execution.
+  No alternate shell, native API, per-file deletion, or safety bypass was
+  used, so all five targets remain **not deleted**.
+- Active dependencies, current anonymous verification input, reports, source,
+  worktrees, and protected external source roots remain preserved.

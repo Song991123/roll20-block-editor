@@ -9057,3 +9057,29 @@ same-hash modern/legacy comparison.
   modern/legacy visual smoke pass. No external sheet or source was used.
 - This is a bounded worker-language improvement, not a claim of full JS or
   Roll20 worker runtime parity.
+
+## 2026-07-30 - User-authorized disposable directory deletion retry
+
+- Rechecked the five explicitly approved generated/stale directories: old
+  `web/node_modules/`, `web/.next/`, `web/out/`, and canonical
+  `web-push-main/.next/` and `out/`.
+- No project or CDP listener was active, and the active dependency tree,
+  product source, current anonymous Sandbox payload, reports, worktrees, and
+  protected external sheet roots were excluded.
+- The host rejected the boundary-checked recursive PowerShell deletion before
+  execution. Nothing was deleted; no shell, native API, per-file workaround,
+  or safety bypass was used.
+
+## 2026-07-30 - Worker unary-not mapping
+
+- Added the generic `r20_worker_not` reporter for unary `!value` expressions.
+  The parser recognizes nested negation and checks binary operators first so
+  strict inequality remains `r20_worker_cmp`.
+- Added worker workspace registration and generator coverage. Unsupported
+  worker syntax still follows the existing raw-preservation path.
+- Local evidence: parser `30/30`, high-priority mapping `24/24`, Blockly
+  headless, emit contract, lint, build, full `ci:verify`, synthetic modern /
+  legacy visual smoke (`0%` mismatch), persistent preview, and strict
+  imported edit sync pass.
+- Scope boundary: this does not establish full worker JS coverage, Roll20
+  runtime execution parity, or actual modern/legacy screenshot parity.

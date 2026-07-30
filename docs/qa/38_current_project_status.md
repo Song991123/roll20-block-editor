@@ -343,3 +343,12 @@ socket, and the generator omits it when empty. Parser/generator tests, lint,
 build, full CI, persistent preview, imported edit sync, and synthetic visual
 smokes pass. Full arbitrary worker support and actual Roll20 parity remain
 unverified.
+
+## Worker unary-not mapping - 2026-07-30
+
+The worker importer and Blockly catalog now support unary `!value` and nested
+negation through `r20_worker_not`, while preserving `!==` as comparison. Parser
+and high-priority tests, headless workspace, emit contract, lint, build, full
+CI, and synthetic modern/legacy preview/edit smokes pass. This remains bounded
+local worker coverage; actual Roll20 same-hash visual parity and full worker
+runtime support remain unverified.

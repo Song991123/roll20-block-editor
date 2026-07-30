@@ -578,3 +578,14 @@ not close the external Roll20 parity rows above.
 - `VERIFY / OPEN`: this covers one structured control-flow family only. It
   does not establish full worker JS coverage, execution parity, or Roll20
   screenshot parity.
+
+## 2026-07-30 Worker expression coverage
+
+- `VERIFIED LOCAL`: unary `!value` and nested `!!value` expressions map to a
+  dedicated boolean reporter and emit canonical worker syntax. Strict
+  inequality remains a comparison block.
+- `MEASURED LOCAL`: parser `30/30`, high-priority mapping `24/24`, full
+  `ci:verify`, lint/build, and the synthetic modern/legacy preview/edit smoke
+  all pass.
+- `VERIFY / OPEN`: worker coverage remains bounded; arbitrary APIs,
+  execution order, and external Roll20 same-hash visual evidence remain open.
