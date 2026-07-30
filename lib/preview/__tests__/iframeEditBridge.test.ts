@@ -89,6 +89,17 @@ const blockTypeDrag = {
   hitPath: hit.hitPath,
 };
 assert.deepEqual(parseIframeEditBridgeMessage(blockTypeDrag), blockTypeDrag);
+const layerDrag = {
+  type: 'r20:layer-drag',
+  protocol: R20_IFRAME_EDIT_PROTOCOL,
+  bridgeId,
+  phase: 'drop',
+  blockId: 'block-1',
+  pointer: { x: 144, y: 155 },
+  subject,
+  hitPath: hit.hitPath,
+};
+assert.deepEqual(parseIframeEditBridgeMessage(layerDrag), layerDrag);
 const contextMenu = {
   type: 'r20:edit-context-menu',
   protocol: R20_IFRAME_EDIT_PROTOCOL,
@@ -123,6 +134,8 @@ assert.equal(parseIframeEditBridgeMessage({ ...widgetDrag, phase: 'dragstart' })
 assert.equal(parseIframeEditBridgeMessage({ ...widgetDrag, payload: 'x'.repeat(1025) }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...blockTypeDrag, blockType: 'x'.repeat(257) }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...blockTypeDrag, phase: 'dragstart' }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...layerDrag, blockId: '' }), null);
+assert.equal(parseIframeEditBridgeMessage({ ...layerDrag, subject: { ...subject, blockId: 'other' } }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...contextMenu, blockId: '' }), null);
 assert.equal(parseIframeEditBridgeMessage({ ...contextMenu, pointer: { x: Number.NaN, y: 0 } }), null);
 

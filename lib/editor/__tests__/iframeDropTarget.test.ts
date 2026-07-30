@@ -5,9 +5,15 @@ import {
   filterDropTargetForPlacement,
   resolveIframeEditDropTarget,
   resolveIframeFreePlacement,
+  resolveIframeLayerDropTarget,
+  resolveIframeLayerFreePlacement,
   resolveIframeWidgetDropTarget,
 } from '../iframeDropTarget.ts';
-import type { IframeEditHitMessage, IframeEditNodeGeometry } from '@/lib/preview/iframeEditBridge';
+import type {
+  IframeEditHitMessage,
+  IframeEditNodeGeometry,
+  IframeLayerDragMessage,
+} from '@/lib/preview/iframeEditBridge';
 import { canNestLayerChild } from '../layerRoles.ts';
 
 const geometry = (
@@ -120,6 +126,30 @@ const widgetTarget = resolveIframeWidgetDropTarget({
 }, lookup);
 assert.equal(widgetTarget?.blockId, 'frame');
 assert.equal(widgetTarget?.mode, 'inside');
+
+const layerDrag: IframeLayerDragMessage = {
+  type: 'r20:layer-drag',
+  protocol: 1,
+  bridgeId: 'r20-drop-target-test',
+  phase: 'drop',
+  blockId: 'subject',
+  pointer: { x: 40, y: 100 },
+  subject,
+  hitPath: [geometry('frame', 0, 200)],
+};
+const layerTarget = resolveIframeLayerDropTarget(layerDrag, lookup);
+assert.equal(layerTarget?.blockId, 'frame');
+assert.equal(layerTarget?.mode, 'inside');
+assert.deepEqual(resolveIframeLayerFreePlacement(layerDrag, layerTarget, lookup, 8), {
+  left: 40,
+  top: 104,
+  containingBlockId: 'frame',
+  containingBlockNeedsRelative: true,
+});
+assert.equal(resolveIframeLayerDropTarget({
+  ...layerDrag,
+  hitPath: [geometry('subject-child', 30, 10), geometry('subject', 20, 40)],
+}, lookup), null);
 
 const calls: string[] = [];
 const commitAdapter = {

@@ -72,6 +72,17 @@ export type IframeBlockTypeDragMessage = {
   hitPath: IframeEditNodeGeometry[];
 };
 
+export type IframeLayerDragMessage = {
+  type: 'r20:layer-drag';
+  protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
+  bridgeId: string;
+  phase: 'dragover' | 'dragleave' | 'drop';
+  blockId: string;
+  pointer: { x: number; y: number };
+  subject: IframeEditNodeGeometry | null;
+  hitPath: IframeEditNodeGeometry[];
+};
+
 export type IframeEditContextMenuMessage = {
   type: 'r20:edit-context-menu';
   protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
@@ -86,6 +97,7 @@ export type IframeEditBridgeMessage =
   | IframeEditAppliedMessage
   | IframeWidgetDragMessage
   | IframeBlockTypeDragMessage
+  | IframeLayerDragMessage
   | IframeEditContextMenuMessage;
 
 export type IframeEditModeCommand = {
@@ -222,6 +234,34 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
       phase: value.phase,
       blockType: value.blockType,
       pointer: { x: value.pointer.x, y: value.pointer.y },
+      hitPath: value.hitPath,
+    };
+  }
+  if (value.type === 'r20:layer-drag') {
+    if (
+      value.phase !== 'dragover'
+      && value.phase !== 'dragleave'
+      && value.phase !== 'drop'
+    ) return null;
+    if (typeof value.blockId !== 'string' || value.blockId.length === 0 || value.blockId.length > 256) {
+      return null;
+    }
+    if (!isRecord(value.pointer)) return null;
+    if (!isFiniteCoordinate(value.pointer.x) || !isFiniteCoordinate(value.pointer.y)) return null;
+    if (value.subject !== null && (!isNodeGeometry(value.subject) || value.subject.blockId !== value.blockId)) {
+      return null;
+    }
+    if (!Array.isArray(value.hitPath) || value.hitPath.length > 64 || !value.hitPath.every(isNodeGeometry)) {
+      return null;
+    }
+    return {
+      type: 'r20:layer-drag',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: value.bridgeId,
+      phase: value.phase,
+      blockId: value.blockId,
+      pointer: { x: value.pointer.x, y: value.pointer.y },
+      subject: value.subject,
       hitPath: value.hitPath,
     };
   }

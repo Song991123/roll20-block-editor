@@ -718,6 +718,67 @@ async function main() {
       `layer mini-map container signal disagrees with drop contract: ${JSON.stringify(result.tests.layerMiniMapContract)}`,
     );
 
+    // A layer row can be dragged from the Figma-style panel onto the actual
+    // rendered iframe. This used to stop at the document boundary because the
+    // iframe only understood gallery/widget payloads.
+    await page.click('[data-testid="edit-placement-flow"]');
+    result.tests.layerCanvasDrop = await frame.evaluate(({ movingId, targetId }) => {
+      const target = document.querySelector(`[data-r20-block-id="${CSS.escape(targetId)}"]`);
+      if (!target) return { dispatched: false, reason: 'missing target' };
+      const rect = target.getBoundingClientRect();
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('application/x-r20-layer-block', movingId);
+      const init = {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.right - 2,
+        clientY: rect.top + rect.height / 2,
+      };
+      const dragover = new DragEvent('dragover', init);
+      Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(dragover);
+      const drop = new DragEvent('drop', init);
+      Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(drop);
+      return {
+        dispatched: true,
+        dragoverPrevented: dragover.defaultPrevented,
+        dropPrevented: drop.defaultPrevented,
+      };
+    }, { movingId: ids.outsideId, targetId: ids.frameId });
+    await page.waitForTimeout(700);
+    const renderedLayerCanvasDrop = await frame.evaluate(({ movingId, targetId }) => {
+      const movingNode = document.querySelector(`[data-r20-block-id="${CSS.escape(movingId)}"]`);
+      return {
+        renderedParentId: movingNode?.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
+      };
+    }, { movingId: ids.outsideId, targetId: ids.frameId });
+    const emittedLayerCanvasDrop = await page.evaluate(({ movingId, targetId }) => {
+      const graph = window.__perfHook.getLayerSnapshot('html');
+      const moving = graph.find((node) => node.id === movingId);
+      const target = graph.find((node) => node.id === targetId);
+      const html = window.__perfHook.getEmitContent().html;
+      return {
+        modelParentId: moving?.layerParentId ?? null,
+        targetChildCount: target?.childCount ?? null,
+        emittedNested: html.indexOf(`data-r20-block-id="${movingId}"`)
+          > html.indexOf(`data-r20-block-id="${targetId}"`),
+      };
+    }, { movingId: ids.outsideId, targetId: ids.frameId });
+    result.tests.layerCanvasDrop.result = {
+      ...emittedLayerCanvasDrop,
+      ...renderedLayerCanvasDrop,
+    };
+    assert(result.tests.layerCanvasDrop.dispatched, 'layer canvas drop did not dispatch');
+    assert(result.tests.layerCanvasDrop.dragoverPrevented, 'iframe did not accept layer dragover');
+    assert(result.tests.layerCanvasDrop.dropPrevented, 'iframe did not accept layer drop');
+    assert(result.tests.layerCanvasDrop.result.modelParentId === ids.frameId, 'layer canvas drop did not update the model parent');
+    assert(
+      result.tests.layerCanvasDrop.result.renderedParentId === ids.frameId,
+      `layer canvas drop did not update the rendered parent: ${JSON.stringify(result.tests.layerCanvasDrop)}`,
+    );
+    assert(result.tests.layerCanvasDrop.result.emittedNested, 'layer canvas drop did not update emitted HTML');
+
     result.tests.tableDropGuard = await page.evaluate(async ({ movingId, validMovingId, invalidTargetId, validTargetId }) => {
       const dispatchDragover = async (targetId, draggedId) => {
         const target = document.querySelector(

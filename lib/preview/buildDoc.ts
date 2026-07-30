@@ -239,6 +239,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return false;
   }
+  function hasLayerPayload(dataTransfer) {
+    if (!dataTransfer || !dataTransfer.types) return false;
+    for (var i = 0; i < dataTransfer.types.length; i++) {
+      if (dataTransfer.types[i] === 'application/x-r20-layer-block') return true;
+    }
+    return false;
+  }
   function postWidgetDrag(phase, event, payload) {
     if (!editBridgeEnabled) return;
     var hitNode = hitNodeAt(event.clientX, event.clientY, event.target);
@@ -265,6 +272,23 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         phase: phase,
         blockType: blockType || null,
         pointer: { x: Number(event.clientX) || 0, y: Number(event.clientY) || 0 },
+        hitPath: hitPathOf(hitNode)
+      }, '*');
+    } catch (e) {}
+  }
+  function postLayerDrag(phase, event, blockId) {
+    if (!editBridgeEnabled || !blockId) return;
+    var hitNode = hitNodeAt(event.clientX, event.clientY, event.target);
+    var subject = document.querySelector('[data-r20-block-id="' + cssEscape(blockId) + '"]');
+    try {
+      parent.postMessage({
+        type: 'r20:layer-drag',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        phase: phase,
+        blockId: blockId,
+        pointer: { x: Number(event.clientX) || 0, y: Number(event.clientY) || 0 },
+        subject: geometryOf(subject),
         hitPath: hitPathOf(hitNode)
       }, '*');
     } catch (e) {}
@@ -1324,6 +1348,46 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
     postBlockTypeDrag('drop', e, blockType);
+  }, true);
+  document.addEventListener('dragover', function (e) {
+    if (
+      !editBridgeEnabled
+      || hasFriendlyWidgetPayload(e.dataTransfer)
+      || hasBlockTypePayload(e.dataTransfer)
+      || !hasLayerPayload(e.dataTransfer)
+    ) return;
+    var blockId = '';
+    try { blockId = e.dataTransfer.getData('application/x-r20-layer-block') || ''; } catch (_) {}
+    if (!blockId) return;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+    postLayerDrag('dragover', e, blockId);
+  }, true);
+  document.addEventListener('dragleave', function (e) {
+    if (
+      !editBridgeEnabled
+      || hasFriendlyWidgetPayload(e.dataTransfer)
+      || hasBlockTypePayload(e.dataTransfer)
+      || !hasLayerPayload(e.dataTransfer)
+    ) return;
+    if (e.relatedTarget && document.documentElement.contains(e.relatedTarget)) return;
+    var blockId = '';
+    try { blockId = e.dataTransfer.getData('application/x-r20-layer-block') || ''; } catch (_) {}
+    postLayerDrag('dragleave', e, blockId);
+  }, true);
+  document.addEventListener('drop', function (e) {
+    if (
+      !editBridgeEnabled
+      || hasFriendlyWidgetPayload(e.dataTransfer)
+      || hasBlockTypePayload(e.dataTransfer)
+      || !hasLayerPayload(e.dataTransfer)
+    ) return;
+    var blockId = '';
+    try { blockId = e.dataTransfer.getData('application/x-r20-layer-block') || ''; } catch (_) {}
+    if (!blockId) return;
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+    postLayerDrag('drop', e, blockId);
   }, true);
   document.addEventListener('contextmenu', function (e) {
     if (!editBridgeEnabled) return;

@@ -1,3 +1,18 @@
+## 2026-07-30 - Layer-panel drop onto the persistent iframe
+
+- FIXED LOCAL: Layer rows now publish `r20:layer-drag` from the panel into the
+  persistent Roll20 iframe. The parent validates the existing layer graph and
+  commits flow or free placement through the shared adapter.
+- VERIFIED BROWSER: `smoke:edit-flow` passed the layer-panel-to-canvas flow
+  drop and confirmed the model parent, emitted HTML, and rendered iframe
+  parent match. Existing gallery, widget, layer-tree, and cycle checks also
+  passed in the same run.
+- VERIFIED LOCAL: bridge/drop-target/build-doc tests, lint, production build,
+  full `ci:verify`, and server hygiene passed. Generated evidence remains
+  ignored and source-independent.
+- BOUNDARY: No actual Roll20 Sandbox screenshot or legacy-room evidence was
+  produced; the external parity gate remains open.
+
 ## 2026-07-30 - Block gallery drop through persistent iframe
 
 - FIXED LOCAL: Block-library drags now cross the persistent iframe through a

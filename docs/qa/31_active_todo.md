@@ -1,3 +1,20 @@
+## 2026-07-30 Layer-panel drop onto the persistent iframe
+
+- DONE LOCAL: Added a typed `r20:layer-drag` bridge so a layer row dragged
+  from the Figma-style panel reaches the same iframe drop resolver as gallery
+  blocks and widgets.
+- DONE LOCAL: Flow drops preserve `before/inside/after` and free drops place
+  the existing layer at the pointer coordinate, with cycle and container
+  compatibility checks before Blockly changes.
+- VERIFIED BROWSER: `smoke:edit-flow` confirms model parent, emitted HTML,
+  and rendered iframe parent agree after a layer-panel-to-canvas drop.
+- VERIFIED LOCAL: bridge, build-doc, drop-target, design-position, lint, build,
+  `ci:verify`, and server-hygiene checks pass.
+- CLAIM BOUNDARY: This is anonymous local editor evidence only. It does not
+  prove modern Sandbox or dedicated legacy-room visual parity.
+- NEXT P0: Recover a supported modern Sandbox file-selection path and capture
+  positive sheet-root/state/chat evidence; verify legacy separately.
+
 ## 2026-07-30 Block gallery drop through persistent iframe
 
 - DONE LOCAL: Added a dedicated iframe edit-bridge message for block-gallery

@@ -194,6 +194,8 @@ assert.doesNotMatch(
 assert.match(bundle.doc, /r20:edit-flow-target/);
 assert.match(bundle.doc, /r20:block-type-drag/);
 assert.match(bundle.doc, /application\/x-r20-block-type/);
+assert.match(bundle.doc, /r20:layer-drag/);
+assert.match(bundle.doc, /application\/x-r20-layer-block/);
 assert.match(bundle.doc, /r20:edit-optimistic-flow-finalize/);
 assert.match(bundle.doc, /rollbackOptimisticFlowMove/);
 assert.match(bundle.doc, /r20:edit-apply-chunk-start/);

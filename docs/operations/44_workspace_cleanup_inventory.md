@@ -531,3 +531,13 @@ directories that had been recreated by the local build.
   no generated fixture, screenshot, or report remains in the worktree.
 - PRESERVED: Product source, dependencies, Git worktrees, reference/archive
   roots, and protected external sheet sources.
+
+## 2026-07-30 final archive recheck after user authorization
+
+- RECHECKED: `03_ARCHIVE/legacy-single-file/` is absent from the parent
+  workspace. `03_ARCHIVE/` contains only its permanent `README.md` marker.
+- VERIFIED: No archive deletion was needed in this retry; the previously
+  authorized archive removal is already reflected on disk.
+- PRESERVED: The active product worktree, parent Git metadata, protected
+  external sheet roots, and all four zone markers. No project listener is
+  active on the checked development ports.

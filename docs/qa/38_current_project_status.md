@@ -16,7 +16,8 @@ local output and is deleted after the verification batch.
   selectors, asset checks, and evidence guard.
 - LOCAL PASS: The persistent iframe/edit overlay path, worker separation,
   hidden runtime nodes, roll control simulation, structured layer drops, and
-  block-gallery drops across the iframe boundary have dedicated smoke coverage.
+  block-gallery and layer-panel drops across the iframe boundary have
+  dedicated smoke coverage.
 - EXTERNAL PARTIAL: The Roll20 `Sheet Sandbox Tools` dialog was visible and
   the anonymous synthetic HTML/CSS/Translation file events were dispatched.
   Roll20 reported modern runtime, but no visible sheet root, iframe, form,
@@ -38,7 +39,7 @@ local output and is deleted after the verification batch.
 | Legacy Roll20 render | VERIFY/OPEN | Requires a separate dedicated legacy-enabled destination and current evidence. |
 | Rolltemplate/chat parity | VERIFY/SYNTHETIC_ONLY | Local chat simulation works; actual template-by-template visual parity is unproven. |
 | Asset loading/relink | VERIFY/PARTIAL | Safety checks and relink guidance exist; user-owned HTTP(S) asset targets are required for real asset-paint comparison. |
-| Figma-like edit UX | VERIFY/PARTIAL | Flow/free placement, before/inside/after drops, iframe-crossing gallery drops, layer roles, and canvas controls exist; broad imported-sheet UX still needs polish. |
+| Figma-like edit UX | VERIFY/PARTIAL | Flow/free placement, before/inside/after drops, iframe-crossing gallery/layer-panel drops, layer roles, and canvas controls exist; broad imported-sheet UX still needs polish. |
 | Public copyright safety | VERIFY/ONGOING | Real or derived sheets, screenshots, fixtures, and reports are excluded from the public tree. |
 
 ## Goal Progress
@@ -47,7 +48,7 @@ These are planning estimates, not completion claims.
 
 | Area | Current estimate | Remaining proof |
 | --- | ---: | --- |
-| Local edit/drop UX | 65% | More direct-manipulation polish and broader anonymous regression coverage. |
+| Local edit/drop UX | 68% | More direct-manipulation polish and broader anonymous regression coverage. |
 | Local preview/edit synchronization | 70% | More arbitrary DOM structures and asset/state combinations. |
 | Actual Roll20 renderer reproduction | 35% | A visible modern Sandbox render and a separate legacy-room render with normalized comparison. |
 | Actual Roll20 chat/rolltemplate reproduction | 30% | Current generated-sheet chat/template evidence and scoped visual comparison. |

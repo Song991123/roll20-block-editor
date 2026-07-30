@@ -38,6 +38,8 @@ import {
   filterDropTargetForPlacement,
   resolveIframeEditDropTarget,
   resolveIframeFreePlacement,
+  resolveIframeLayerDropTarget,
+  resolveIframeLayerFreePlacement,
   resolveIframeWidgetDropTarget,
   type IframeEditDropTarget,
 } from '@/lib/editor/iframeDropTarget';
@@ -961,6 +963,123 @@ export default function PreviewMain() {
         setIframeEditDropTarget(null);
         queueMicrotask(() => flushEmitPipeline());
         playSfx('block.add');
+        return;
+      }
+      if (editMessage?.type === 'r20:layer-drag') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        if (useUiStore.getState().mainMode !== 'edit') return;
+        if (!htmlLayerMap.has(editMessage.blockId)) return;
+        if (
+          editMessage.subject
+          && (!htmlLayerMap.has(editMessage.subject.blockId)
+            || editMessage.subject.blockId !== editMessage.blockId)
+        ) return;
+        if (!editMessage.hitPath.every((item) => htmlLayerMap.has(item.blockId))) return;
+        if (editMessage.phase === 'dragleave') {
+          setIframeEditDropTarget(null);
+          return;
+        }
+
+        const adapter = getBlocklyAdapter();
+        const nextDropTarget = resolveIframeLayerDropTarget(editMessage, {
+          getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
+          canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+          canNestBlockInContainer: (movingBlockId, targetBlockId) => adapter.canNestBlockInContainer(
+            'html',
+            movingBlockId,
+            targetBlockId,
+          ),
+        });
+        const placement = useUiStore.getState().editPlacementMode;
+        const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
+        setIframeEditDropTarget(visibleDropTarget);
+        if (editMessage.phase !== 'drop') return;
+
+        let moved = false;
+        if (placement === 'flow') {
+          moved = visibleDropTarget
+            ? commitIframeFlowDrop(editMessage.blockId, visibleDropTarget, adapter)
+            : Boolean(
+                htmlLayerMap.get(editMessage.blockId)?.layerParentId
+                && adapter.moveBlockToRoot('html', editMessage.blockId),
+              );
+        } else {
+          const freePlacement = resolveIframeLayerFreePlacement(editMessage, visibleDropTarget, {
+            getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
+            canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+            canNestBlockInContainer: (movingBlockId, targetBlockId) => adapter.canNestBlockInContainer(
+              'html',
+              movingBlockId,
+              targetBlockId,
+            ),
+          }, useUiStore.getState().snapEnabled ? 8 : 1);
+          if (freePlacement) {
+            const currentParentId = htmlLayerMap.get(editMessage.blockId)?.layerParentId ?? null;
+            let structureReady = true;
+            if (freePlacement.containingBlockId && currentParentId !== freePlacement.containingBlockId) {
+              structureReady = adapter.nestBlockInContainer(
+                'html',
+                editMessage.blockId,
+                freePlacement.containingBlockId,
+              );
+            } else if (!freePlacement.containingBlockId && currentParentId) {
+              structureReady = adapter.moveBlockToRoot('html', editMessage.blockId);
+            }
+            if (structureReady) {
+              const committed = commitManagedDesignPosition(adapter, {
+                workspace: 'html',
+                blockId: editMessage.blockId,
+                left: freePlacement.left,
+                top: freePlacement.top,
+                containingBlockId: freePlacement.containingBlockId,
+                containingBlockNeedsRelative: freePlacement.containingBlockNeedsRelative,
+              });
+              moved = committed.moved;
+              if (committed.cssBlockCreated) {
+                useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+              }
+            }
+          }
+        }
+
+        setIframeEditDropTarget(null);
+        if (!moved) {
+          toast.error('이 위치에는 레이어를 놓을 수 없어요', { duration: 2200 });
+          return;
+        }
+        if (placement === 'flow' && visibleDropTarget) {
+          pendingOptimisticFlowCommitRef.current = {
+            subjectBlockId: editMessage.blockId,
+            placement: visibleDropTarget.mode,
+            containerBlockId: visibleDropTarget.containerBlockId,
+            siblingBlockId: visibleDropTarget.siblingBlockId,
+          };
+          const target = iframeRef.current?.contentWindow;
+          const optimistic = {
+            type: 'r20:edit-optimistic-flow',
+            protocol: R20_IFRAME_EDIT_PROTOCOL,
+            bridgeId: editMessage.bridgeId,
+            subjectBlockId: editMessage.blockId,
+            placement: visibleDropTarget.mode,
+            containerBlockId: visibleDropTarget.containerBlockId,
+            siblingBlockId: visibleDropTarget.siblingBlockId,
+          };
+          target?.postMessage(optimistic, '*');
+          target?.postMessage({
+            type: 'r20:edit-optimistic-flow-finalize',
+            protocol: R20_IFRAME_EDIT_PROTOCOL,
+            bridgeId: editMessage.bridgeId,
+            committed: true,
+            subjectBlockId: editMessage.blockId,
+            placement: visibleDropTarget.mode,
+            containerBlockId: visibleDropTarget.containerBlockId,
+            siblingBlockId: visibleDropTarget.siblingBlockId,
+          }, '*');
+        }
+        const store = useWorkspaceStore.getState();
+        store.bumpStructure('html', adapter.countBlocks('html'));
+        setSelected(editMessage.blockId, 'preview');
+        queueMicrotask(() => flushEmitPipeline());
         return;
       }
       if (editMessage?.type === 'r20:edit-context-menu') {

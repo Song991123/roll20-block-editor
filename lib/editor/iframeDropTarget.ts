@@ -4,6 +4,7 @@ import type {
   IframeBlockTypeDragMessage,
   IframeEditHitMessage,
   IframeEditNodeGeometry,
+  IframeLayerDragMessage,
   IframeWidgetDragMessage,
 } from '@/lib/preview/iframeEditBridge';
 
@@ -166,6 +167,67 @@ export function resolveIframeWidgetDropTarget(
     };
   }
   return null;
+}
+
+/**
+ * Resolve a drag that starts in the layer panel and ends on the real iframe.
+ * The dragged layer is already in the document, so unlike a gallery widget it
+ * must participate in cycle and parent-compatibility checks.
+ */
+export function resolveIframeLayerDropTarget(
+  message: IframeLayerDragMessage,
+  lookup: IframeDropTargetLookup,
+): IframeEditDropTarget | null {
+  if (message.phase !== 'dragover' && message.phase !== 'drop') return null;
+  for (const geometry of message.hitPath) {
+    const block = lookup.getBlock(geometry.blockId);
+    if (!block || block.id === message.blockId) continue;
+    if (isSubjectDescendant(block, message.blockId, lookup)) continue;
+    const canDropInside = canPlaceInside(message.blockId, block.id, lookup);
+    const mode = pickDropMode(geometry, message.pointer.y, canDropInside);
+    if (mode !== 'inside' && !canPlaceAdjacent(message.blockId, block.id, lookup)) continue;
+    return {
+      blockId: block.id,
+      label: block.label || block.type,
+      mode,
+      containerBlockId: mode === 'inside' ? block.id : null,
+      siblingBlockId: mode === 'inside' ? null : block.id,
+      geometry,
+    };
+  }
+  return null;
+}
+
+/** Calculate a free-placement coordinate for a layer-panel drop. */
+export function resolveIframeLayerFreePlacement(
+  message: IframeLayerDragMessage,
+  target: IframeEditDropTarget | null,
+  lookup: IframeDropTargetLookup,
+  snapSize = 1,
+): IframeFreePlacement | null {
+  if (message.phase !== 'dragover' && message.phase !== 'drop') return null;
+  if (target && target.mode !== 'inside') return null;
+
+  const containingBlockId = target?.containerBlockId ?? null;
+  const containingBlock = containingBlockId ? lookup.getBlock(containingBlockId) : null;
+  if (containingBlockId && !containingBlock) return null;
+  const geometry = target?.geometry ?? null;
+  const left = geometry
+    ? message.pointer.x - geometry.rect.left - geometry.clientLeft + geometry.scrollLeft
+    : message.pointer.x;
+  const top = geometry
+    ? message.pointer.y - geometry.rect.top - geometry.clientTop + geometry.scrollTop
+    : message.pointer.y;
+  const step = Number.isFinite(snapSize)
+    ? Math.max(1, Math.min(128, Math.round(snapSize)))
+    : 1;
+  const snap = (value: number) => Math.max(0, Math.round(value / step) * step);
+  return {
+    left: snap(left),
+    top: snap(top),
+    containingBlockId,
+    containingBlockNeedsRelative: geometry?.position === 'static',
+  };
 }
 
 export function commitIframeFlowDrop(
