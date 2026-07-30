@@ -8,6 +8,8 @@
   `build`, `smoke:edit-flow`, and strict imported-edit sync all pass. The
   smoke now asserts that every layer-row mini-map container signal matches its
   row drop signal. Post-run server hygiene reports no project listeners.
+- VERIFIED REMOTE: GitHub Actions CI run `30513828228` for commit `c9dfa74`
+  passed safety/unit verification, lint, and build.
 - EXTERNAL VERIFY: The authenticated Chrome tab remains visible in the tab
   list, but direct tab control and claim both timed out. The in-app browser is
   at the Roll20 login surface. No participant count was accepted as fresh, and
