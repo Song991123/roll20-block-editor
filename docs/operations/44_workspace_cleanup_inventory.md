@@ -696,3 +696,17 @@ directories that had been recreated by the local build.
 - VERIFIED: the selected targets remain unchanged; no product source,
   protected external sheet, active dependency tree, worktree, or tracked
   `reports/README.md` policy file changed.
+
+## 2026-07-30 latest user-authorized retry from current session
+
+- RECHECKED: the same exact generated targets were selected inside the
+  workspace; active `web-push-main/node_modules/`, source, worktrees,
+  protected sheet roots, and tracked report policy files were excluded.
+- ATTEMPTED: the user explicitly authorized complete deletion again.
+- BLOCKED: the host rejected the boundary-checked recursive `Remove-Item`
+  operation before PowerShell execution. User approval did not override the
+  execution-policy boundary.
+- NOT DELETED: no target changed. No alternate shell, native API, per-file
+  workaround, or safety bypass was used.
+- VERIFIED: product source, protected external sheets, active dependencies,
+  Git worktrees, and report policy files remain untouched.
