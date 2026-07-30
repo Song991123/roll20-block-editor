@@ -170,6 +170,7 @@
     "smoke:persistent-preview-surface": "node scripts/persistent_preview_surface_smoke.mjs",
     "smoke:roll20-sandbox-preview": "node scripts/roll20_sandbox_preview_smoke.mjs",
     "smoke:roll20-sandbox-preview:all": "node scripts/roll20_sandbox_preview_smoke.mjs --all",
+    "smoke:roll20-sandbox-preview:synthetic": "node scripts/generate_visual_synthetic_fixture.mjs && node scripts/roll20_sandbox_preview_smoke.mjs --fixtures .tmp/visual-synthetic --all --fail-on-console-issues",
     "smoke:edit-flow": "node scripts/edit_flow_browser_smoke.mjs",
     "smoke:shadow-drag": "node scripts/shadow_drag_browser_smoke.mjs",
     "smoke:fresh-sheet": "node scripts/fresh_sheet_browser_smoke.mjs",

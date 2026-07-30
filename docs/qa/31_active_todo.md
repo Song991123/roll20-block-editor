@@ -8638,6 +8638,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
 
+## 2026-07-31 Copyright-safe Sandbox smoke entrypoint
+
+- `DONE LOCAL`: added `smoke:roll20-sandbox-preview:synthetic`, which creates
+  an anonymous local fixture and runs the Sandbox-expected render smoke with
+  strict console/page-error gating. It does not restore or publish any real
+  sheet source.
+- `VERIFIED LOCAL`: the new clean-checkout command passed with the synthetic
+  import, normal-to-sanitized transition, hidden runtime-node checks, and zero
+  console/page errors. Lint passed as well.
+- `VERIFY / OPEN`: this remains a local sanitizer approximation. Actual
+  Roll20 Sandbox screenshot parity and a dedicated legacy-room comparison are
+  still unverified because no Roll20 browser session is currently attached.
+
 ## 2026-07-31 User-facing shell visual audit
 
 - `VERIFIED LOCAL`: the static audit server was corrected to mount the export

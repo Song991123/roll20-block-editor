@@ -559,3 +559,12 @@ cache, and duplicate-report targets are absent. The host rejected the guarded
 recursive deletion before execution again, so these two directories remain.
 No alternate deletion path was used, and protected source, active
 dependencies, reports, and worktrees were preserved.
+
+## Copyright-safe Sandbox smoke entrypoint - 2026-07-31
+
+The clean-checkout path now includes
+`smoke:roll20-sandbox-preview:synthetic`. It generates only an anonymous local
+fixture, runs the local Sandbox-expected render transition with strict
+console/page-error gating, and passed. This does not restore or publish any
+real sheet source and does not replace actual Roll20 Sandbox or legacy-room
+visual evidence, which remains open without an attached Roll20 session.

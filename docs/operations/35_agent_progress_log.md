@@ -9393,3 +9393,14 @@ same-hash modern/legacy comparison.
   No alternate shell, native API, per-file workaround, or safety bypass was
   used. Protected source, active dependencies, reports, and worktrees remain
   untouched.
+
+## 2026-07-31 - Copyright-safe Sandbox smoke entrypoint
+
+- Added `smoke:roll20-sandbox-preview:synthetic` so a clean checkout can
+  generate an anonymous fixture and run the local Sandbox-expected render
+  smoke without restoring or publishing real sheet source.
+- The command passed with strict console/page-error gating, the normal-to-
+  sanitized transition, and hidden runtime-node checks. Lint also passed.
+- This is local sanitizer evidence only. Actual Roll20 Sandbox screenshot
+  parity and dedicated legacy-room behavior remain open while no Roll20
+  browser session is attached.
