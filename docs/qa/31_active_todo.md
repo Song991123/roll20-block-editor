@@ -7986,3 +7986,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   campaign setting, or source-derived payload was changed.
 - `NEXT P0`: Use a user-visible native file selection or a browser context
   that exposes the normal file primitives, then rerun activation evidence.
+
+## 2026-07-30 Structure-aware new-block drop validation
+
+- `DONE LOCAL`: New widget/block-type drops now pass their incoming block type
+  into the structural layer rules before an inside/before/after target is
+  shown or committed. Invalid table/row placements are rejected; valid row
+  insertion remains available.
+- `VERIFIED LOCAL`: Focused drop-target tests, full `ci:verify`, lint,
+  production build, and server hygiene all pass.
+- `VERIFY / OPEN`: This proves the local structural target boundary only. It
+  does not prove arbitrary imported DOM support, visual parity in Roll20, or
+  the full Figma-like editing experience.
+- `NEXT P0`: Recover the supported modern Sandbox upload path, capture positive
+  render/runtime/roll/chat evidence, then verify legacy behavior separately.

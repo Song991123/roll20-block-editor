@@ -127,6 +127,47 @@ const widgetTarget = resolveIframeWidgetDropTarget({
 assert.equal(widgetTarget?.blockId, 'frame');
 assert.equal(widgetTarget?.mode, 'inside');
 
+const widgetTableBlocks = new Map<string, BlockSnapshot>([
+  ['table', {
+    id: 'table', type: 'r20_table', depth: 0, childCount: 1,
+    layerParentId: null, layerPreviousId: null, layerRelation: 'root',
+    label: 'Table', preview: '', category: 'container',
+  }],
+  ['row', {
+    id: 'row', type: 'r20_tr', depth: 1, childCount: 0,
+    layerParentId: 'table', layerPreviousId: null, layerRelation: 'child',
+    label: 'Row', preview: '', category: 'container',
+  }],
+]);
+const widgetTableLookup = {
+  getBlock: (id: string) => widgetTableBlocks.get(id) ?? null,
+  canNestInContainer: (id: string) => id === 'table',
+  canNestTypeInContainer: (movingType: string, targetId: string) => {
+    const target = widgetTableBlocks.get(targetId);
+    return Boolean(target && canNestLayerChild(movingType, target.type));
+  },
+};
+const invalidTableWidgetTarget = resolveIframeWidgetDropTarget({
+  type: 'r20:block-type-drag',
+  protocol: 1,
+  bridgeId: 'r20-drop-target-test',
+  phase: 'dragover',
+  blockType: 'r20_text_input',
+  pointer: { x: 40, y: 10 },
+  hitPath: [geometry('row', 0, 40)],
+}, widgetTableLookup, 'r20_text_input');
+assert.equal(invalidTableWidgetTarget, null, 'invalid widget cannot target table row sibling slot');
+const validTableRowTarget = resolveIframeWidgetDropTarget({
+  type: 'r20:block-type-drag',
+  protocol: 1,
+  bridgeId: 'r20-drop-target-test',
+  phase: 'dragover',
+  blockType: 'r20_tr',
+  pointer: { x: 40, y: 10 },
+  hitPath: [geometry('row', 0, 40)],
+}, widgetTableLookup, 'r20_tr');
+assert.equal(validTableRowTarget?.mode, 'before', 'table row can target table sibling slot');
+
 const layerDrag: IframeLayerDragMessage = {
   type: 'r20:layer-drag',
   protocol: 1,

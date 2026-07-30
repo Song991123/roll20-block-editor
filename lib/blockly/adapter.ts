@@ -162,6 +162,7 @@ export interface BlocklyAdapter {
   moveBlockOutOfContainer(key: WorkspaceKey, blockId: string): boolean;
   moveBlockToRoot(key: WorkspaceKey, blockId: string): boolean;
   canNestInContainer(key: WorkspaceKey, targetId: string): boolean;
+  canNestTypeInContainer(key: WorkspaceKey, movingType: string, targetId: string): boolean;
   canNestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean;
   canUndo(key: WorkspaceKey): boolean;
@@ -843,12 +844,18 @@ class DefaultAdapter implements BlocklyAdapter {
     });
   }
 
+  canNestTypeInContainer(key: WorkspaceKey, movingType: string, targetId: string): boolean {
+    const ws = this.workspaces[key];
+    const target = ws?.getBlockById(targetId);
+    if (!ws || !target || !movingType) return false;
+    return this.canNestInContainer(key, targetId) && canNestLayerChild(movingType, target.type);
+  }
+
   canNestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {
     const ws = this.workspaces[key];
     const moving = ws?.getBlockById(blockId);
-    const target = ws?.getBlockById(targetId);
-    if (!ws || !moving || !target || moving === target) return false;
-    return this.canNestInContainer(key, targetId) && canNestLayerChild(moving.type, target.type);
+    if (!ws || !moving || moving.id === targetId) return false;
+    return this.canNestTypeInContainer(key, moving.type, targetId);
   }
 
   nestBlockInContainer(key: WorkspaceKey, blockId: string, targetId: string): boolean {

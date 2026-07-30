@@ -8692,3 +8692,14 @@ visibility verification passed. No external room was opened or modified.
   navigation, save, chat, or room mutation occurred.
 - Keep the external parity gate open. This is a browser handoff blocker, not
   evidence that the generated sheet rendered or matched Roll20.
+
+## 2026-07-30 Structure-aware widget drop validation
+
+- Added the incoming block type to iframe drop-target resolution so new
+  widget/block drops are checked against the target DOM role before an
+  inside/before/after indicator is shown.
+- Added a regression pair for table rows: a text input cannot target a row
+  sibling slot, while a row block can. Existing moved-block validation now
+  delegates through the same type-aware adapter method.
+- Local result: focused tests, full `ci:verify`, lint, production build, and
+  server hygiene passed. No external Roll20 claim was promoted.

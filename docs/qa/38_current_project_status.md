@@ -139,3 +139,12 @@ These are planning estimates, not completion claims.
 4. Do not promote global renderer or ChatPane CSS from synthetic/local evidence.
 5. Keep every source-derived payload and report local-only, then remove it
    after the verification batch.
+
+## Latest Local Change - 2026-07-30
+
+New block drops now use the same structural container rules as moved blocks.
+The editor rejects an invalid widget type before it paints a misleading drop
+target, while valid structural rows still expose the expected adjacent drop.
+This is verified by focused drop-target tests, `ci:verify`, lint, build, and
+server hygiene. Modern Sandbox, legacy-room, and actual Roll20 visual/chat
+parity remain unverified.

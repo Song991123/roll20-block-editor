@@ -23,6 +23,7 @@ export type IframeEditDropTarget = {
 export type IframeDropTargetLookup = {
   getBlock: (blockId: string) => BlockSnapshot | null;
   canNestInContainer: (blockId: string) => boolean;
+  canNestTypeInContainer?: (movingType: string, targetBlockId: string) => boolean;
   canNestBlockInContainer?: (movingBlockId: string, targetBlockId: string) => boolean;
 };
 
@@ -88,9 +89,13 @@ function canPlaceInside(
   movingBlockId: string,
   targetBlockId: string,
   lookup: IframeDropTargetLookup,
+  movingType = '',
 ): boolean {
   const block = lookup.getBlock(targetBlockId);
   if (!block || !canReceiveChildren(block.type) || !lookup.canNestInContainer(block.id)) return false;
+  if (movingType && lookup.canNestTypeInContainer && !lookup.canNestTypeInContainer(movingType, targetBlockId)) {
+    return false;
+  }
   if (!movingBlockId || !lookup.canNestBlockInContainer) return true;
   return lookup.canNestBlockInContainer(movingBlockId, targetBlockId);
 }
@@ -99,10 +104,14 @@ function canPlaceAdjacent(
   movingBlockId: string,
   targetBlockId: string,
   lookup: IframeDropTargetLookup,
+  movingType = '',
 ): boolean {
-  if (!movingBlockId || !lookup.canNestBlockInContainer) return true;
   const target = lookup.getBlock(targetBlockId);
   if (!target?.layerParentId) return true;
+  if (movingType && lookup.canNestTypeInContainer) {
+    return lookup.canNestTypeInContainer(movingType, target.layerParentId);
+  }
+  if (!movingBlockId || !lookup.canNestBlockInContainer) return true;
   return lookup.canNestBlockInContainer(movingBlockId, target.layerParentId);
 }
 
@@ -150,13 +159,15 @@ export function resolveIframeEditDropTarget(
 export function resolveIframeWidgetDropTarget(
   message: IframeWidgetDragMessage | IframeBlockTypeDragMessage,
   lookup: IframeDropTargetLookup,
+  movingType = '',
 ): IframeEditDropTarget | null {
   if (message.phase !== 'dragover' && message.phase !== 'drop') return null;
   for (const geometry of message.hitPath) {
     const block = lookup.getBlock(geometry.blockId);
     if (!block) continue;
-    const canDropInside = canPlaceInside('', block.id, lookup);
+    const canDropInside = canPlaceInside('', block.id, lookup, movingType);
     const mode = pickDropMode(geometry, message.pointer.y, canDropInside);
+    if (mode !== 'inside' && !canPlaceAdjacent('', block.id, lookup, movingType)) continue;
     return {
       blockId: block.id,
       label: block.label || block.type,

@@ -813,20 +813,25 @@ export default function PreviewMain() {
         }
         const adapter = getBlocklyAdapter();
         if (!editMessage.hitPath.every((item) => htmlLayerMap.has(item.blockId))) return;
+        const preset = editMessage.payload ? decodeFriendlyWidgetDrag(editMessage.payload) : null;
         const nextDropTarget = resolveIframeWidgetDropTarget(editMessage, {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+          canNestTypeInContainer: (movingType, targetBlockId) => adapter.canNestTypeInContainer(
+            'html',
+            movingType,
+            targetBlockId,
+          ),
           canNestBlockInContainer: (movingBlockId, targetBlockId) => adapter.canNestBlockInContainer(
             'html',
             movingBlockId,
             targetBlockId,
           ),
-        });
+        }, preset?.blockType ?? '');
         const placement = useUiStore.getState().editPlacementMode;
         const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
         setIframeEditDropTarget(visibleDropTarget);
         if (editMessage.phase !== 'drop' || !editMessage.payload) return;
-        const preset = decodeFriendlyWidgetDrag(editMessage.payload);
         if (!preset) {
           setIframeEditDropTarget(null);
           return;
@@ -884,12 +889,17 @@ export default function PreviewMain() {
         const nextDropTarget = resolveIframeWidgetDropTarget(editMessage, {
           getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
           canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+          canNestTypeInContainer: (movingType, targetBlockId) => adapter.canNestTypeInContainer(
+            'html',
+            movingType,
+            targetBlockId,
+          ),
           canNestBlockInContainer: (movingBlockId, targetBlockId) => adapter.canNestBlockInContainer(
             'html',
             movingBlockId,
             targetBlockId,
           ),
-        });
+        }, blockType);
         const placement = useUiStore.getState().editPlacementMode;
         const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
         setIframeEditDropTarget(visibleDropTarget);

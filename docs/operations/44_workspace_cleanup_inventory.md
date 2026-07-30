@@ -710,3 +710,19 @@ directories that had been recreated by the local build.
   workaround, or safety bypass was used.
 - VERIFIED: product source, protected external sheets, active dependencies,
   Git worktrees, and report policy files remain untouched.
+
+## 2026-07-30 latest explicit deletion retry result
+
+- RECHECKED: the six exact generated/stale targets still existed inside the
+  workspace: old `web/node_modules/`, `web/.next/`, `web/out/`, and the
+  canonical worktree's `.next/`, `out/`, and `.tmp/` directories. The active
+  canonical `node_modules/`, source, worktrees, report policy files, archive
+  markers, and protected external sheet roots were excluded.
+- ATTEMPTED: the user explicitly authorized complete deletion after the exact
+  path and workspace-boundary checks passed.
+- BLOCKED: the host rejected the guarded recursive `Remove-Item -Recurse
+  -Force` operation before PowerShell execution. User approval cannot override
+  this host execution boundary; no alternate shell, native API, per-file
+  workaround, or safety bypass was used.
+- VERIFIED: none of the selected targets changed, and no source, active
+  dependency tree, worktree, protected sheet, or tracked policy file changed.

@@ -525,3 +525,12 @@ parent-relative free placement on a synthetic nested structure. This narrows
 the local UX gap but does not close universal imported DOM support or actual
 Roll20 modern/legacy parity. Those remain `VERIFY` until imported cases and
 isolated external destinations produce matching evidence.
+
+## 2026-07-30 Structural Drop Reconciliation
+
+The iframe drop resolver now validates the incoming widget/block type against
+the target container before advertising an inside or adjacent insertion. This
+keeps table, section, row, cell, and list constraints consistent for new
+objects as well as existing moved blocks. The contract is covered by focused
+tests and the full local verification gate; it remains local evidence and does
+not close the external Roll20 parity rows above.
