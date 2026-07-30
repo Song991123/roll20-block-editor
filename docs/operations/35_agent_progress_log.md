@@ -9548,5 +9548,26 @@ same-hash modern/legacy comparison.
 - SAFETY: Existing room observation remained read-only and no protected or
   third-party source was uploaded. The browser capture was inspected in-session
   and no screenshot or source payload was committed.
-- OPEN: Dedicated legacy-enabled room verification and actual screenshot
-  comparison remain the next external gates.
+- OPEN: Actual screenshot comparison remains the next external gate. Dedicated
+  Legacy runtime smoke is recorded in the following entry.
+
+## 2026-07-31 - Dedicated Legacy room actual smoke
+
+- VERIFIED EXTERNAL: A newly created dedicated test room showed exactly one
+  visible member before interaction. The same anonymous synthetic HTML/CSS/
+  Translation payload was saved as Custom with `구 버전 무해화 처리` enabled.
+- VERIFIED EXTERNAL: The character iframe rendered the translated `Name` label,
+  authored pink CSS, one visible `attr_name` input, and one `roll_check`
+  button. The iframe exposed two `.charsheet` roots because Roll20 retains a
+  hidden duplicate; the visible control counts remained one each.
+- VERIFIED EXTERNAL: Clicking Roll produced the expected `Sandbox proof`
+  template and `Result` output in the Roll20 chat surface.
+- ROOT CAUSE: The first attempt used an empty i18n fallback and the browser
+  editor interaction appended JSON fragments. Roll20 then showed `[name]`.
+  The validation harness now supports `--legacy`; the visible Ace editor is
+  replaced through select-all/delete before each input, and the synthetic
+  label retains `Name` as the Roll20-required fallback.
+- NOT PROVEN: live worker attribute mutation, pixel-diff parity, arbitrary
+  sheet parity, or reference-image comparison. Existing rooms remained
+  read-only; only the newly dedicated test room was written. No source payload,
+  room identifier, or screenshot was committed.

@@ -10,8 +10,33 @@
   remains observation-only; the browser capture was inspected in-session and
   no screenshot or source payload was committed.
 - VERIFY / OPEN: This is a modern Sandbox runtime smoke, not screenshot
-  parity. Legacy proof still requires a separate legacy-enabled test room,
-  and actual reference-image comparison remains open.
+  parity. The separate legacy-room smoke is recorded below; actual
+  reference-image comparison remains open.
+
+## 2026-07-31 Roll20 dedicated legacy-room actual smoke
+
+- VERIFIED EXTERNAL: A newly created dedicated test room showed exactly one
+  visible member before interaction. Its Custom Sheet settings saved the same
+  anonymous synthetic HTML/CSS/Translation payload with `구 버전 무해화 처리`
+  enabled.
+- VERIFIED EXTERNAL: The character iframe rendered the translated `Name` label,
+  one `attr_name` input, one `roll_check` button, and the expected pink authored
+  CSS. The iframe exposed two `.charsheet` roots because Roll20 keeps a hidden
+  duplicate; only one input and one roll control were visible in the probe.
+- VERIFIED EXTERNAL: Clicking the roll control produced the expected
+  `Sandbox proof` template and a `Result` line in the Roll20 chat surface.
+  Worker script tags were absent from the rendered DOM as expected; live
+  worker attribute mutation was not promoted because it was not observed.
+- ROOT CAUSE FIXED IN TEST HARNESS: The first synthetic HTML used an empty
+  `data-i18n` element and the browser editor input method accumulated JSON
+  fragments. Replacing the editor contents through its visible Ace surface and
+  retaining the Roll20-required fallback text produced a single valid
+  translation map and removed the `[name]` result.
+- SAFETY: Existing rooms remained read-only. Only the newly dedicated test room
+  was written. No room identifier, source identity, payload, screenshot, or
+  external sheet material was committed.
+- VERIFY / OPEN: This proves a current anonymous Legacy runtime smoke, not
+  pixel-diff parity against an original sheet or arbitrary-sheet coverage.
 
 ## 2026-07-31 Anonymous protected-corpus static inventory
 

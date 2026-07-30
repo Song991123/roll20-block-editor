@@ -72,17 +72,18 @@ The ratings below are evidence maturity, not feature completion percentages.
 | Area | Evidence level | Current truth | Next proof |
 | --- | ---: | --- | --- |
 | Shared preview/edit render | 3/4 | One persistent iframe, edit overlay, edit-flow smoke, and paired local visual smoke are passing. | Same-payload comparison against actual modern and legacy Roll20 destinations. |
-| Modern Roll20 runtime | 1/4 | The dedicated Sandbox route and separate HTML/CSS/Translation controls are observed; the current browser upload path rejects file assignment, so no retained same-payload root or screenshot evidence is counted. | Complete a user-visible or supported upload, then capture normalized root, assets, state, and chat evidence. |
-| Legacy Roll20 runtime | 1/4 | A separate legacy destination and mode-specific policy exist. | Dedicated legacy-room upload, screenshot, and state comparison. |
+| Modern Roll20 runtime | 2/4 | An authenticated dedicated Sandbox accepted an anonymous synthetic payload; the iframe showed translation/input/Roll and chat template output. | Same-payload screenshot/crop, asset/state comparison, and arbitrary-sheet coverage. |
+| Legacy Roll20 runtime | 2/4 | A newly created dedicated room with exactly one visible member saved the same anonymous payload with Legacy sanitization enabled; translation, authored CSS, input/Roll, and chat output rendered. | Same-payload screenshot/crop, state comparison, live worker proof, and broader sheet coverage. |
 | Universal HTML/CSS/translation mapping | 2/4 | Generic atomic/composite paths and preserved-attribute guards exist. | Synthetic corpus expansion and loss report across unsupported structures. |
-| Worker and rolltemplate behavior | 1/4 | Local inert worker/rolltemplate bridges and chat smoke exist. | Runtime-specific Roll20 smoke with generic output assertions. |
+| Worker and rolltemplate behavior | 2/4 | Generic Roll20 template output is now observed in modern Sandbox and Legacy room; live worker attribute mutation remains unproven. | Runtime-specific worker smoke and generic output assertions across imported sheets. |
 | Figma-like editing | 2/4 | Layer roles, insertion zones, and overlay chrome exist. | Direct manipulation latency, parent-relative drop, and undo/redo smoke. |
 | User-facing information architecture | 1/4 | The app has multiple modes and sidebars, but the first-run path is not yet coherent. | Design reset implementation and task-based UX review. |
 | CI, privacy, and repository guardrails | 3/4 | CI, ignored evidence paths, and private-content checks exist. | Verify the new branch/worktree policy and clean-clone build. |
 
-No row above is a Roll20 visual-parity claim. The strongest current result is
-local contract evidence plus a read-only Sandbox route baseline; actual same-
-payload modern activation and legacy-room parity remain unproven.
+No row above is a full Roll20 visual-parity claim. The strongest current result
+is local contract evidence plus anonymous modern Sandbox and dedicated Legacy
+runtime smoke. Same-payload pixel parity, arbitrary-sheet coverage, and live
+worker execution remain unproven.
 
 ## Short-Term Goals
 

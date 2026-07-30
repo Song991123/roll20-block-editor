@@ -1,29 +1,48 @@
 # 34. Requirements Gap Matrix
 
-Date: 2026-06-12
+Date: 2026-07-31
+
+## Latest External Reconciliation - 2026-07-31
+
+- The current code checkpoint before this validation-harness update is
+  `bbafd08`; its remote CI run `30574906436` passed.
+- VERIFIED EXTERNAL: The authenticated modern Sandbox rendered the anonymous
+  synthetic payload with translation, input, Roll button, and chat template.
+- VERIFIED EXTERNAL: A newly created dedicated Legacy room showed exactly one
+  visible member, saved the same anonymous payload with Custom plus the Legacy
+  sanitization option enabled, rendered `Name` plus authored CSS/input/Roll,
+  and produced the expected template/result chat output.
+- NOT PROVEN: pixel-diff parity, arbitrary-sheet parity, live worker mutation,
+  and reference-image comparison. Existing rooms remained read-only.
+- The first Legacy attempt exposed a validation-harness issue: Ace editor
+  updates accumulated JSON fragments. The harness now replaces the visible
+  editor contents and keeps the Roll20-required fallback text for i18n labels.
 
 ## Current Checkpoint - 2026-07-31
 
-- The active integration branch is `claude/design-reset` at `08e9504`; the
-  worktree is clean and the latest remote CI run `30571039357` passed.
+- The active integration branch is `claude/design-reset` at `bbafd08` before
+  this validation-harness update; the latest remote CI run `30574906436`
+  passed.
 - Local preview/edit, fresh-sheet creation, protected local-input visual
   checks in modern/legacy contracts, import/export, worker preservation,
   Sandbox-sanitizer approximation, privacy guards, and the resumable Roll20
   upload handoff are locally verified.
 - The product chat renderer no longer contains fixture-specific font,
   geometry, typography, paint, or rolltemplate policies.
-- Actual current-payload Roll20 Sandbox activation, screenshot parity,
-  worker/chat evidence, and dedicated legacy-room visual proof remain
-  `VERIFY / OPEN`.
+- Actual anonymous current-payload modern Sandbox activation and chat smoke,
+  plus dedicated Legacy-room render/chat smoke, are now verified. Screenshot
+  parity, arbitrary-sheet parity, live worker mutation, and reference-image
+  comparison remain `VERIFY / OPEN`.
 - The importer now reports HTML, CSS, and combined structured coverage
   separately. A 32-selection anonymous read-only batch passed determinism and
   structural fingerprint checks; it still found five CSS raw fallbacks, so
   this is not an all-sheet 100% mapping claim. The same batch measured CSS
   coverage from `94.6%` to `100%`, combined structured coverage from `97.7%`
   to `100%`, and `50` total importer warnings.
-- The latest browser check found the existing in-app Roll20 tab on the login
-  screen, not an authenticated editor or Sandbox. No authentication,
-  upload, save, room mutation, or public evidence was created.
+- The authenticated Roll20 browser session was used only with the dedicated
+  modern Sandbox and newly created Legacy test room. Existing rooms remained
+  read-only, and no source payload, room identifier, or screenshot was added
+  to the public tree.
 
 ## Latest Local Context-Menu Reconciliation: 2026-07-31
 

@@ -9,10 +9,11 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `0abdf6c`. The branch is pushed to
+- Active branch: `claude/design-reset` at `bbafd08` before the current
+  validation-harness update. The branch is pushed to
   `origin` and the worktree is clean.
-- Remote CI: run `30573906380` passed safety/unit verification, lint, and
-  build for `0abdf6c`.
+- Remote CI: run `30574906436` passed safety/unit verification, lint, and
+  build for `bbafd08`.
 - Static corpus inventory: two protected external roots were read-only scanned;
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
@@ -46,10 +47,16 @@ local output and is deleted after the verification batch.
   text input, and Roll button; clicking the button produced the expected
   template message in chat. This proves a current modern Sandbox render and
   chat smoke only, not screenshot parity or arbitrary-sheet fidelity.
+- Roll20 Legacy checkpoint: a newly created dedicated test room showed one
+  visible member before use. The same anonymous synthetic payload was saved
+  with Custom plus `구 버전 무해화 처리` enabled. The visible iframe rendered
+  the translated `Name` label, authored pink CSS, an input, and a Roll button;
+  clicking it produced the expected template and result in chat. Worker live
+  mutation and pixel-diff parity remain unproven.
 - Roll20 safety boundary: the existing one-participant room remains
   read-only observation only. No existing room settings, sheet source, or
-  chat state was changed. A dedicated legacy-enabled room is still required
-  for legacy proof because the Sandbox path is modern-only.
+  chat state was changed. The Sandbox path remains modern-only; the separate
+  dedicated Legacy room now supplies the anonymous Legacy smoke evidence.
 - Local anonymous evidence: the browser capture was inspected in the
   authenticated session and no source payload, source identity, screenshot,
   or external URL was tracked or documented.
@@ -60,10 +67,9 @@ local output and is deleted after the verification batch.
   are removed from the product path. Generic Roll20 policies remain.
 - Latest local upload contract: resumable HTML/CSS/Translation handoff with
   page-token retry detection; no source payload is stored in public files.
-- External state: no attached Roll20 tab is available, so no new Sandbox
-  upload, screenshot, room write, or parity evidence exists.
-- Latest CDP preflight: `CDP_CLOSED`, `targets=0`, `roll20Targets=0`; no new
-  browser process was launched by this verification batch.
+- External state: the authenticated Roll20 verification tabs were used for the
+  anonymous modern Sandbox and dedicated Legacy smoke. Screens were inspected
+  in-session only; no screenshot or payload was retained in the repository.
 - Latest anonymous local regression: L2 roundtrip, large-workspace
   reparenting, modern/legacy preview-edit visual smoke, and synthetic Sandbox
   sanitize preview all passed. This does not promote arbitrary-sheet or
@@ -72,9 +78,9 @@ local output and is deleted after the verification batch.
   user-facing warning; one self-contained ignored official-tree sample passed
   imported-edit and modern/legacy visual smoke. Template compilation itself is
   intentionally not claimed.
-- User-sheet capture count remains `0`; dedicated legacy-room capture count
-  remains `0`. Historical anonymous synthetic runtime observations are not
-  promoted to current user-sheet parity.
+- User-sheet capture count remains `0`. Anonymous synthetic runtime smoke is
+  now proven for modern Sandbox and the separate Legacy room; this is not
+  user-sheet parity and does not close reference-image comparison.
 - Cleanup boundary: regenerated workspace-local dependency/build directories
   were rechecked, but the host rejected recursive deletion before execution.
   They remain `NOT DELETED`; no alternate deletion path was used.
