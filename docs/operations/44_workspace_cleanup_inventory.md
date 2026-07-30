@@ -633,3 +633,20 @@ directories that had been recreated by the local build.
   outputs, not product source.
 - VERIFIED: no source, protected external sheet, active dependency tree,
   worktree, or tracked report policy file changed in this retry.
+
+## 2026-07-30 user-authorized exact cleanup retry after latest request
+
+- RECHECKED: the remaining approved cleanup candidates are the old `web/`
+  build/dependency output plus the canonical worktree's `.next/`, `out/`,
+  `.tmp/`, generated `reports/*` entries, and generated Next metadata/log
+  files. The active `web-push-main/node_modules/`, `reports/README.md`,
+  source, worktrees, protected sheet roots, and archive/reference markers
+  were excluded.
+- REQUESTED: the user explicitly authorized another complete deletion retry.
+- BLOCKED: the boundary-checked `Remove-Item -LiteralPath ... -Recurse -Force`
+  command was rejected by the host before PowerShell execution. User approval
+  does not override this execution-policy boundary.
+- NOT DELETED: no target changed. No alternate shell, native API, per-file
+  deletion loop, or safety bypass was used.
+- VERIFIED: product source, protected external sheets, active dependencies,
+  Git worktrees, and tracked report policy remain untouched.

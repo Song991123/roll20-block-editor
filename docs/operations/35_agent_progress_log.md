@@ -8516,3 +8516,17 @@ visibility verification passed. No external room was opened or modified.
   material were untouched.
 - NEXT: Leave the tab as a handoff for manual three-file selection, then
   capture modern runtime/roll/chat evidence and start the separate legacy path.
+
+## 2026-07-30 - Cleanup retry after explicit user authorization
+
+- RECHECKED: the approved generated/stale cleanup set was limited to old
+  `web/` build/dependency output, canonical `.next/`, `out/`, `.tmp/`,
+  generated reports, and generated Next metadata/log files.
+- EXCLUDED: the active dependency tree, source, worktrees, protected sheet
+  roots, archive/reference markers, and tracked report policy.
+- BLOCKED: the exact boundary-checked recursive deletion was rejected by the
+  host before PowerShell execution. No target was removed and no workaround
+  was attempted.
+- STATUS: this remains an environment execution-policy block, not a missing
+  user approval. Keep the targets out of product claims and retry only if the
+  host policy changes.
