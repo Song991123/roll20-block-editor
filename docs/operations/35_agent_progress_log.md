@@ -44,6 +44,16 @@
 - BOUNDARY: Generated actual and chat evidence remain missing; pre-upload PASS
   is not Roll20 visual parity.
 
+## 2026-07-30 - Large-workspace edit UX regression
+
+- VERIFIED LOCAL: A synthetic 5,200-item import produced `5,205` model blocks
+  with `0` SVG blocks while search and selection remained usable.
+- VERIFIED LOCAL: The edit surface kept one persistent iframe and `0` Shadow
+  edit hosts; the layer `inside` reparenting matched model, emitted HTML, and
+  iframe nesting with no console/page errors.
+- BOUNDARY: This is synthetic local evidence, not universal third-party-sheet
+  or actual Roll20 runtime proof.
+
 ## 2026-07-30 - Local render regression batch
 
 - VERIFIED LOCAL: Fresh-sheet, imported-edit-sync strict, persistent preview

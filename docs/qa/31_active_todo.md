@@ -49,6 +49,16 @@
   evidence as missing. No actual Roll20 screenshot, DOM sidecar, or parity
   result is implied by the pre-upload PASS.
 
+## 2026-07-30 Large-workspace edit UX regression
+
+- DONE LOCAL: The synthetic 5,200-item import kept `5,205` model blocks,
+  rendered `0` SVG blocks, and preserved structure search/selection.
+- DONE LOCAL: Edit mode used one persistent iframe, `20` virtual layer rows,
+  and `0` Shadow edit hosts. The layer `inside` reparenting update matched the
+  model, emitted HTML, and iframe nesting with no console/page errors.
+- VERIFY OPEN: This is synthetic performance and interaction evidence; broad
+  arbitrary-sheet and actual Roll20 runtime behavior remain separate gates.
+
 ## 2026-07-30 Local render regression batch
 
 - DONE LOCAL: Fresh-sheet smoke passed with zero HTML blocks/layers in the blank
