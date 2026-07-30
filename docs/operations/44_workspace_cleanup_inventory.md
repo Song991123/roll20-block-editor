@@ -832,3 +832,21 @@ directories that had been recreated by the local build.
   per-file workaround, or safety bypass was used.
 - VERIFIED: product source, active dependencies, Git worktrees, report policy,
   and protected external sheet roots remain untouched.
+
+## 2026-07-30 user-authorized exact deletion retry (current)
+
+- RECHECKED: the five remaining old/generated directories were inside the
+  workspace and outside protected source ownership: old `web/node_modules/`,
+  old `web/.next/`, old `web/out/`, canonical `.next/`, and canonical `out/`.
+  No project or CDP listener was active.
+- ATTEMPTED: the user explicitly authorized complete deletion after the
+  absolute-path and directory-boundary checks passed.
+- BLOCKED: the host rejected the guarded `Remove-Item -Recurse -Force`
+  operation before PowerShell execution. User approval cannot override this
+  host execution boundary.
+- NOT DELETED: all five directories remain unchanged. No alternate shell,
+  native API, per-file deletion loop, or safety bypass was used.
+- PRESERVED: the active anonymous Sandbox payload under
+  `web-push-main/.tmp/roll20-sandbox-synthetic/` was intentionally excluded
+  because it is the current external verification input; source, dependencies,
+  worktrees, report policy, and protected external sheets remain untouched.

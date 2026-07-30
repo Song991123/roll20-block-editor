@@ -8942,3 +8942,18 @@ visibility verification passed. No external room was opened or modified.
 - The tab still showed one visible participant and the previously loaded
   anonymous sheet/chat state. This is a browser handoff limitation, not proof
   of a renderer failure; same-hash and pixel comparison remain open.
+
+## 2026-07-30 - User-authorized generated-output deletion retry
+
+- RECHECKED: no project or CDP listener was active, and the five selected
+  old/generated directories were inside the workspace and outside protected
+  source ownership: old `web/node_modules/`, old `web/.next/`, old `web/out/`,
+  canonical `.next/`, and canonical `out/`.
+- ATTEMPTED: the user explicitly authorized complete deletion after the
+  boundary and generated-output checks passed.
+- BLOCKED: the host rejected `Remove-Item -Recurse -Force` before PowerShell
+  execution. No alternate shell, native API, per-file deletion loop, or safety
+  bypass was used.
+- PRESERVED: the current anonymous Sandbox payload, active dependencies,
+  source, worktrees, report policy, and protected external sources. Git status
+  remains clean; the five selected directories remain not deleted.

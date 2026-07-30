@@ -407,3 +407,17 @@ external material remain preserved.
   operation before execution. The rejection was not bypassed.
 - PRESERVED: active dependencies, product source, report policy README,
   Git worktrees, four-zone markers, and protected external sheet roots.
+
+## 2026-07-30 latest user-authorized deletion retry
+
+- RECHECKED: no project or CDP listener was active; only old `web/` generated
+  output and canonical `.next/`/`out/` remained in the selected set.
+- ATTEMPTED: complete deletion was requested after exact workspace-boundary,
+  generated-output, and protected-source checks.
+- BLOCKED: the host rejected the recursive PowerShell deletion before it ran.
+  The operation was not bypassed with another shell, native API, or per-file
+  workaround.
+- PRESERVED: the active dependency tree, product source, worktrees, report
+  policy, protected sources, and current anonymous Sandbox payload remain
+  intact. The five selected directories are still recreateable cleanup
+  candidates for a permitted maintenance operation.

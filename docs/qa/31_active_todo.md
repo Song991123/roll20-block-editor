@@ -1,3 +1,14 @@
+## 2026-07-30 Disposable-output deletion retry
+
+- VERIFY/BLOCKED: The user-authorized recursive deletion was reattempted after
+  exact path, listener, worktree, and protected-source checks. The host
+  rejected the operation before execution, so old `web/` generated output and
+  canonical `.next/`/`out/` remain on disk.
+- PRESERVED: active `node_modules/`, current anonymous Sandbox payload,
+  product source, report policy, worktrees, and protected external sources.
+- NEXT: use a permitted maintenance operation when available; do not use a
+  shell/API/per-file deletion workaround. This does not affect product code.
+
 ## 2026-07-30 Exact before/inside/after drop indicators
 
 - DONE LOCAL: The persistent iframe overlay now paints `before` and `after`
