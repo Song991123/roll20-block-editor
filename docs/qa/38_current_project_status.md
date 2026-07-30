@@ -225,3 +225,12 @@ Chrome currently exposes the dedicated Sandbox and legacy verification tabs,
 but tab claiming/direct access timed out three times before a fresh
 upload/capture. This is an external-tooling blocker, not evidence of parity or
 a renderer failure.
+
+## Generic asset-reference coverage - 2026-07-30
+
+The shared export preflight now detects HTML `srcset`/`imagesrcset` candidates,
+`poster` and common lazy-load attributes, and URLs inside HTML inline styles.
+The regression test passes for external and relative candidates. This improves
+the user's ability to find and relink assets before export, but it remains
+local analysis only: external URL reachability and actual Roll20 pixel parity
+still require a fresh same-hash modern Sandbox and separate legacy-room run.

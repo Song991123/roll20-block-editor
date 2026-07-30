@@ -146,4 +146,30 @@ assert.match(draft, /https:\/\/imgsrv\.roll20\.net\/\?src=http:\/\/i\.imgur\.com
 assert.match(draft, /local\/background\.png => <paste-user-owned-https-url-here> # relative-path/);
 assert.doesNotMatch(draft, /data:image\/png/);
 
+const htmlAttributeRefs = analyzeAssetRefs(
+  [
+    '<picture>',
+    '  <source srcset="https://cdn.example.com/small.png 1x, https://cdn.example.com/large.png 2x">',
+    '  <img srcset="/images/card-small.png 480w, /images/card-large.png 960w" poster="https://cdn.example.com/poster.png">',
+    '  <div style="background-image: url(./inline-background.png)"></div>',
+    '</picture>',
+  ].join('\n'),
+  '',
+);
+
+assert.equal(htmlAttributeRefs.externalRefs, 3);
+assert.equal(htmlAttributeRefs.relativeRefs, 3);
+assert.equal(htmlAttributeRefs.totalRefs, 6);
+assert.deepEqual(
+  htmlAttributeRefs.refs.map((item) => item.ref),
+  [
+    'https://cdn.example.com/poster.png',
+    'https://cdn.example.com/small.png',
+    'https://cdn.example.com/large.png',
+    '/images/card-small.png',
+    '/images/card-large.png',
+    './inline-background.png',
+  ],
+);
+
 console.log('asset_refs.test PASS');

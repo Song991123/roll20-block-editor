@@ -8160,3 +8160,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: retry one-tab-at-a-time browser handoff, then bind the resulting
   external screenshots and sidecars to `payload-provenance.json` before
   calculating the normalized root diff.
+
+## 2026-07-30 Generic asset-reference coverage
+
+- `DONE LOCAL`: The export asset preflight now also inspects HTML `srcset` /
+  `imagesrcset` candidates, `poster`/common lazy-load attributes, and URLs in
+  inline `style` attributes. This closes detection gaps without downloading,
+  bundling, or rewriting user-owned asset files.
+- `VERIFIED LOCAL`: `corepack pnpm run test:asset-refs` passes with external,
+  relative, and inline-style candidates. This is analyzer coverage only; it
+  does not prove that a user-owned URL is reachable in Roll20 or that the
+  rendered pixels match.
+- `NEXT P0`: bind the exact current payload hash to fresh modern Sandbox and
+  separately legacy-room screenshots, then compare asset loading and pixels.

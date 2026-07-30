@@ -205,11 +205,29 @@ function extractCssUrls(css: string): string[] {
 
 function extractHtmlAssetUrls(html: string): string[] {
   const refs: string[] = [];
-  const re = /\b(?:src|href|xlink:href)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
+  const re = /\b(?:src|href|xlink:href|poster|imagesrc|data-src|data-original|data-background|data-background-image)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
   for (const match of html.matchAll(re)) {
     refs.push(match[1] ?? match[2] ?? match[3] ?? '');
   }
+
+  const srcsetRe = /\b(?:srcset|imagesrcset)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
+  for (const match of html.matchAll(srcsetRe)) {
+    refs.push(...extractSrcsetUrls(match[1] ?? match[2] ?? match[3] ?? ''));
+  }
+
+  const inlineStyleRe = /\bstyle\s*=\s*("|')(.*?)\1/gi;
+  for (const match of html.matchAll(inlineStyleRe)) {
+    refs.push(...extractCssUrls(match[2] ?? ''));
+  }
+
   return refs;
+}
+
+function extractSrcsetUrls(value: string): string[] {
+  return value
+    .split(/\s*,\s*(?=(?:(?:https?:)?\/\/|\/|\.\.?\/|data:|[^\s,]+\s))/i)
+    .map((candidate) => candidate.trim().split(/\s+/)[0] ?? '')
+    .filter(Boolean);
 }
 
 function normalizeAssetRef(ref: string): string {

@@ -8901,3 +8901,14 @@ visibility verification passed. No external room was opened or modified.
   capture, and a third direct tab-access attempt also timed out before any
   upload or Roll20 mutation. The external parity task remains
   `VERIFY / BLOCKED`; no renderer conclusion was drawn from it.
+
+## 2026-07-30 - Generic HTML asset-reference coverage
+
+- Extended the shared asset preflight to detect responsive `srcset` and
+  `imagesrcset` candidates, `poster` and common lazy-load attributes, and
+  `url()` references inside HTML inline styles.
+- Added regression coverage for external and relative candidates. The change
+  stays at URL analysis/relink guidance; it does not fetch or retain user
+  assets and does not change Roll20 runtime proxy behavior.
+- External modern/legacy asset loading and screenshot parity remain open until
+  the same-hash browser handoff is captured.
