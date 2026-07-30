@@ -1,3 +1,16 @@
+## 2026-07-30 - Sandbox positive-render retry
+
+- VERIFIED EXTERNAL: The dedicated modern Sandbox showed exactly one visible
+  member and the HTML/CSS/Translation controls.
+- BLOCKED EXTERNAL: The connected page context exposed no `File`,
+  `DataTransfer`, or `Uint8Array`, and the file-input locator had no supported
+  attachment method. No sheet root or iframe appeared.
+- NO MUTATION: Existing rooms, chat, campaign settings, and source-derived
+  payloads were untouched. The tab remains a user handoff.
+- NEXT: Use a user-visible native selection or a browser context with normal
+  file primitives; only then capture positive modern evidence and begin the
+  separate legacy-room verification.
+
 ## 2026-07-30 - i18n aria-label tag preservation
 
 - IMPLEMENTED: Added a shared i18n display-tag policy. The aria-label block

@@ -2,6 +2,17 @@
 
 Date: 2026-06-12
 
+## Latest External Sandbox Recheck: 2026-07-30
+
+- The dedicated modern Sandbox remains isolated and visibly reports exactly
+  one member with all three file controls present.
+- The current browser connection still lacks the normal file primitives and a
+  supported input-file attachment method. No applied sheet root, iframe, or
+  fresh Roll20 render evidence was produced.
+- Keep modern Sandbox activation and the separate legacy-room gate as
+  `VERIFY/BLOCKED at browser handoff`; local renderer tests must not promote
+  either external gate.
+
 ## Latest Local Import Fidelity Reconciliation: 2026-07-30
 
 - `data-i18n-aria-label` now preserves the source tag through a shared i18n

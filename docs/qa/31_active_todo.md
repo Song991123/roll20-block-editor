@@ -1,3 +1,16 @@
+## 2026-07-30 Sandbox positive-render retry
+
+- VERIFIED EXTERNAL: The isolated modern Sandbox still shows exactly
+  `1 구성원` and separate HTML, CSS, and Translation file controls.
+- BLOCKED EXTERNAL: The connected page context exposes no `File`,
+  `DataTransfer`, or `Uint8Array`, and the available file-input locator has no
+  supported file-attachment method. No sheet root or iframe appeared.
+- NO MUTATION: No existing room, chat, campaign setting, or source-derived
+  payload was changed. The dedicated Sandbox tab was left as a handoff.
+- NEXT P0: Select the three anonymous files through a user-visible native
+  chooser or a supported browser context, then capture active root/state,
+  worker, roll, chat, and asset evidence. Keep legacy verification separate.
+
 ## 2026-07-30 i18n aria-label tag preservation
 
 - DONE LOCAL: Added a shared i18n display-tag policy and preserved the source
