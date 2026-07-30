@@ -111,12 +111,26 @@ async function main() {
     await page.getByRole('tab', { name: 'CSS' }).click();
     const cssTextarea = page.locator('[data-testid="import-dialog"] [data-state="active"] textarea');
     assert(await cssTextarea.count() === 1, 'active CSS textarea is not unique');
-    await cssTextarea.fill('.sheet { color: red; } @layer reset;');
+    await cssTextarea.fill('.sheet-root { color: red; } @layer reset;');
     await clickConvert();
     await page.waitForSelector('[data-testid="import-css-fallback-warning"]', {
       state: 'visible',
       timeout: 20000,
     });
+    await page.waitForFunction(
+      () => window.__perfHook.getEmitContent().css.includes('.sheet-root'),
+      null,
+      { timeout: 20000 },
+    );
+    const cssFrame = page.frames().find((frame) => frame !== page.mainFrame());
+    assert(cssFrame, 'persistent preview iframe frame is missing after CSS import');
+    const computedSheetColor = await cssFrame.locator('.sheet-root').evaluate(
+      (node) => getComputedStyle(node).color,
+    );
+    assert(
+      computedSheetColor === 'rgb(255, 0, 0)',
+      `fallback CSS did not reach the preview surface: ${computedSheetColor}`,
+    );
 
     await page.getByRole('tab', { name: 'JS' }).click();
     await page.locator('[data-testid="import-js-textarea"]').fill('window.r20ExternalPageProbe = true;');

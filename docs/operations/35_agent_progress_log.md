@@ -27,7 +27,8 @@
   fallback blocks. The message states that the rendered CSS is retained while
   block-level editing is limited for those rules.
 - Extended the browser import smoke to select the CSS tab, import a generic
-  unsupported at-rule, and assert the warning is visible. This is local UX
+  unsupported at-rule, assert the warning is visible, and verify that the
+  emitted CSS changes the preview iframe computed style. This is local UX
   evidence, not arbitrary-sheet or Roll20 parity evidence.
 
 ## 2026-07-31 - Roll20 browser authentication preflight

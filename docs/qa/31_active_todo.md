@@ -29,7 +29,8 @@
   an original fallback block instead of being split into structured blocks.
   This makes the edit limitation visible without implying full CSS mapping.
 - VERIFIED LOCAL: The import-dialog browser smoke now enters the CSS tab,
-  imports a generic unsupported at-rule, and requires the fallback warning;
+  imports a generic unsupported at-rule, requires the fallback warning, and
+  checks that the emitted CSS changes the preview iframe's computed color;
   the smoke still reports one persistent iframe and zero browser errors.
 - VERIFY / OPEN: This improves truthful local feedback only. It does not
   establish arbitrary-sheet CSS fidelity or actual Roll20 visual parity.
