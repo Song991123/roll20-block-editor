@@ -8777,3 +8777,40 @@ visibility verification passed. No external room was opened or modified.
 - VERIFIED: the Roll20 tab remained unchanged; no sheet, room setting, chat,
   or character state was modified. External modern activation and screenshot
   evidence remain open, and no legacy claim is promoted.
+
+## 2026-07-30 - Local render and edit baseline recheck
+
+- Sequential local gates passed: synthetic preview/edit visual parity reported
+  `0%` mismatch in modern and legacy modes; persistent iframe reported
+  `loads=0` in both modes; edit-flow, fresh-sheet, and strict imported-edit
+  synchronization passed.
+- One intentionally parallel four-smoke invocation reported a transient
+  modern persistent-surface failure with `loads=0`; an isolated immediate
+  rerun passed for both modes. Treat the parallel result as test-runner
+  contention evidence, not a product regression or a parity pass.
+- No product source changed in this recheck. Actual Roll20 modern activation,
+  legacy-room rendering, and real roll/chat screenshots remain open.
+
+## 2026-07-30 - Anonymous Sandbox runtime proof and cleanup boundary
+
+- VERIFIED LOCAL: The ignored anonymous baseline imported with `100%` block
+  matching. Modern and legacy local preview/edit both measured `850x200`,
+  contained one input and one roll button, hid page-script and rolltemplate
+  nodes, and passed with no blocking warnings. The local baseline export was
+  `html=291`, `css=272`, `translation=21`, and `zip=1226` bytes.
+- VERIFIED EXTERNAL: The dedicated Custom Sheet Sandbox showed exactly one
+  visible member. The anonymous HTML/CSS/translation payload was activated in
+  its existing verification character. The live iframe contained one
+  `.charactersheet` root and one authored root measuring `420x180`; the
+  authored root had the expected pink background and translated `Name` label.
+  The live Roll button carried the expected `default` rolltemplate payload,
+  and a real Roll20 chat row returned `Sandbox proof` with a numeric result.
+- CLAIM BOUNDARY: This is positive modern Sandbox runtime, geometry, and
+  roll/chat evidence for one copyright-safe synthetic payload. It is not a
+  pixel-parity claim for arbitrary imported sheets and does not verify the
+  separate legacy destination. The captured screenshot and sidecar remain
+  ignored local evidence only.
+- CLEANUP: After this evidence was recorded, only reproducible generated
+  output and stale caches are eligible for deletion. Active dependencies,
+  source, Git worktrees, protected sheet roots, report policy, and any evidence
+  still needed for the next verification step remain preserved.

@@ -744,3 +744,23 @@ directories that had been recreated by the local build.
   deletion loop, or safety bypass was used.
 - VERIFIED: source, active dependencies, Git worktrees, report policy, and
   protected external sheet roots remain untouched.
+
+## 2026-07-30 user-authorized retry after anonymous Sandbox evidence
+
+- RECHECKED: the same boundary-safe disposable set was resolved again: old
+  `web/node_modules/`, old `web/.next/`, old `web/out/`, canonical `.next/`,
+  canonical `out/`, canonical `.tmp/`, generated report child directories,
+  and generated root metadata files. The active canonical `node_modules/`,
+  `reports/README.md`, source, worktrees, protected sheet roots, and recorded
+  anonymous evidence scope were excluded from the target list.
+- VERIFIED: no project or CDP listener was found on the checked ports before
+  the attempt. Every selected path was checked against the workspace boundary
+  and no tracked product path was included.
+- ATTEMPTED: the user explicitly authorized complete deletion after the
+  anonymous modern Sandbox runtime result had been recorded.
+- BLOCKED: the host rejected the exact boundary-checked PowerShell
+  `Remove-Item -Recurse -Force` invocation before PowerShell execution.
+  User approval cannot override that host execution boundary.
+- NOT DELETED: no selected path changed. No alternate shell, native API,
+  per-file deletion loop, or safety bypass was used. The cleanup remains
+  pending a permitted maintenance operation.

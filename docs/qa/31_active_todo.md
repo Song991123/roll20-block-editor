@@ -8069,3 +8069,38 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   Roll20 during this retry.
 - `NEXT P0`: Keep the isolated one-member Sandbox tab open for a user-visible
   native file selection, or reconnect a CDP-enabled browser before retrying.
+
+## 2026-07-30 Local baseline recheck
+
+- `VERIFIED LOCAL`: Sequential synthetic visual, persistent-iframe,
+  edit-flow, fresh-sheet, and strict imported-edit gates pass. Modern and
+  legacy visual smoke both report `0%` mismatch and the persistent iframe
+  reports zero reloads.
+- `VERIFY`: A parallel four-smoke run had one transient modern failure, while
+  the immediate isolated rerun passed. Do not use the parallel run as product
+  evidence; keep smoke orchestration sequential unless each run has isolated
+  resources.
+- `NEXT P0`: Recover positive Sandbox activation, then repeat the same
+  evidence against a separate legacy-enabled destination.
+
+## 2026-07-30 Anonymous Sandbox runtime proof and cleanup boundary
+
+- `VERIFIED LOCAL`: The ignored anonymous baseline imported at `100%` matching.
+  Modern and legacy local preview/edit both measured `850x200`, retained one
+  input and one roll button, hid page-script and rolltemplate nodes, and had
+  no blocking warnings. Export sizes were `html=291`, `css=272`,
+  `translation=21`, and `zip=1226` bytes.
+- `VERIFIED EXTERNAL`: The dedicated Custom Sheet Sandbox showed exactly one
+  visible member. Its existing verification character rendered the anonymous
+  payload with one `.charactersheet` root and one authored `420x180` root,
+  including the expected pink background and translated `Name` label. The
+  roll button used the expected `default` rolltemplate payload, and the real
+  Roll20 chat returned `Sandbox proof` with a numeric result.
+- `VERIFY / OPEN`: This proves modern Sandbox runtime, geometry, and
+  roll/chat behavior for one copyright-safe synthetic payload only. It does
+  not prove pixel parity for arbitrary imported sheets or the separate legacy
+  destination. The screenshot and sidecar stay ignored local evidence.
+- `CLEANUP BOUNDARY`: Reproducible build output, stale cache, duplicate or
+  obsolete generated reports may be deleted after this record. Active
+  dependencies, source, Git worktrees, protected sheet roots, report policy,
+  and evidence still needed for the next verification step remain preserved.
