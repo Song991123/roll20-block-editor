@@ -257,6 +257,10 @@ assertCheck(checks, 'mounted main toolbar exposes modern and legacy modes',
   mainAreaToolbar.includes('data-testid="roll20-mode-control"')
     && mainAreaToolbar.includes('data-testid={`roll20-mode-${key}`}')
     && mainAreaToolbar.includes('setRoll20CompatibilityMode'));
+assertCheck(checks, 'mounted main toolbar exposes the independent Sandbox upload-rule toggle',
+  mainAreaToolbar.includes('data-testid="roll20-sandbox-sanitize-toggle"')
+    && mainAreaToolbar.includes('roll20SandboxSanitize')
+    && mainAreaToolbar.includes('setRoll20SandboxSanitize'));
 assertCheck(checks, 'mounted main toolbar exposes the shared Roll20 document language',
   mainAreaToolbar.includes('data-testid="roll20-document-language"')
     && mainAreaToolbar.includes('setDocumentLanguage(event.target.value)')
@@ -265,6 +269,10 @@ assertCheck(checks, 'editor shell mounts the main toolbar', editorShell.includes
 assertCheck(checks, 'preview store defaults to modern class handling', /sanitize:\s*false/.test(previewStore));
 assertCheck(checks, 'preview store defaults legacy sanitize off', /legacyCssSanitize:\s*false/.test(previewStore));
 assertCheck(checks, 'legacy mode atomically enables prefix and CSS sanitize', /sanitize:\s*mode === 'legacy'[\s\S]*legacyCssSanitize:\s*mode === 'legacy'/.test(previewStore));
+assertCheck(checks, 'Sandbox upload-rule state remains separate from compatibility mode',
+  /roll20SandboxSanitize:\s*false/.test(previewStore)
+    && /setRoll20SandboxSanitize:\s*\(v\) => set\(\{ roll20SandboxSanitize: v \}\)/.test(previewStore)
+    && renderContract.includes('roll20SandboxSanitize = input.roll20SandboxSanitize === true'));
 assertCheck(checks, 'preview store exposes no independent compatibility mutators',
   !previewStore.includes('setSanitize:') && !previewStore.includes('setLegacyCssSanitize:'));
 assertCheck(checks, 'preview and edit share the mounted iframe render surface',

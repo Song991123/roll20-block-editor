@@ -1,3 +1,16 @@
+## 2026-07-30 Sandbox upload-rule toggle boundary
+
+- FIXED LOCAL: The shared preview/edit toolbar now exposes the observed
+  Custom Sheet Sandbox HTML/CSS cleanup as an explicit `업로드 규칙` toggle.
+  It remains separate from the modern/legacy selector and defaults to OFF so
+  authored modern classes are not silently rewritten.
+- GUARDED LOCAL: The legacy preview smoke checks the toggle, store setter, and
+  shared render-contract flag. This proves local wiring only; it does not
+  prove current Roll20 Sandbox visual parity.
+- NEXT P0: Reconnect a supported modern Sandbox upload path and capture actual
+  sheet-root, asset, state, and chat evidence; verify the legacy contract in a
+  dedicated legacy-enabled test room.
+
 ## 2026-07-30 Visual display-atom role audit
 
 - FIXED LOCAL: Visible `hr`, spacer, and line-break blocks now use the Flow

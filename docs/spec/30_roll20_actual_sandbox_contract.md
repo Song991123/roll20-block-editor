@@ -83,6 +83,18 @@ Do not conflate these two layers:
 
 ## Current Evidence Boundary
 
+### Product toggle boundary
+
+The editor exposes the Sandbox upload-rule approximation as an explicit
+`업로드 규칙` toggle in the shared preview/edit toolbar. It is intentionally
+independent from the `신버전` / `구버전` compatibility selector: the selector
+chooses the Roll20 generation contract, while the toggle asks the local
+renderer to apply the observed Custom Sheet Sandbox HTML/CSS cleanup before
+the generation-specific asset policy. The toggle is off by default so an
+imported modern sheet keeps authored classes and unsupported-source evidence
+visible until the user intentionally tests the upload boundary. The same
+state is passed to the persistent iframe used by preview and edit.
+
 Actual generated-sheet visual parity is still unproven. Chrome can reach the
 Roll20 Custom Sheet Sandbox. A 2026-07-16 live handler inspection confirmed that
 the in-editor `#sheetHtml`, `#sheetCss`, and `#sheetTranslation` controls use a

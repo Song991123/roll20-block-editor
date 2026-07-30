@@ -1,3 +1,13 @@
+## 2026-07-30 - Sandbox upload-rule toggle boundary
+
+- FIXED LOCAL: Added an explicit shared-toolbar toggle for the observed
+  Custom Sheet Sandbox HTML/CSS cleanup approximation. It is independent from
+  modern/legacy compatibility and remains off by default.
+- GUARDED LOCAL: The legacy preview smoke now checks the toolbar, store, and
+  render-contract wiring. This is not actual Roll20 parity evidence.
+- NEXT: Resume the modern Sandbox and separate legacy-room evidence gate only
+  through the participant and destination safety rules.
+
 ## 2026-07-29 - Roll20 Sandbox browser retry
 
 - VERIFIED READ-ONLY: The logged-in Roll20 tab showed Sheet Sandbox Tools and

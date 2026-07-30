@@ -1,6 +1,6 @@
 'use client';
 
-import { Blocks, Eye, Languages, PanelsLeftRight, PencilRuler, ShieldAlert, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { Blocks, Eye, Languages, PanelsLeftRight, PencilRuler, ShieldAlert, ShieldCheck, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import { useUiStore, type EditSubmode, type MainMode } from '@/lib/stores/uiStore';
 import { usePreviewStore, type Roll20CompatibilityMode } from '@/lib/stores/previewStore';
 import {
@@ -40,6 +40,8 @@ export default function MainAreaToolbar() {
   const setEditSubmode = useUiStore((s) => s.setEditSubmode);
   const legacyCssSanitize = usePreviewStore((s) => s.legacyCssSanitize);
   const setRoll20CompatibilityMode = usePreviewStore((s) => s.setRoll20CompatibilityMode);
+  const roll20SandboxSanitize = usePreviewStore((s) => s.roll20SandboxSanitize);
+  const setRoll20SandboxSanitize = usePreviewStore((s) => s.setRoll20SandboxSanitize);
   const documentLanguage = usePreviewStore((s) => s.documentLanguage);
   const setDocumentLanguage = usePreviewStore((s) => s.setDocumentLanguage);
   const roll20Mode: Roll20CompatibilityMode = legacyCssSanitize ? 'legacy' : 'modern';
@@ -162,6 +164,25 @@ export default function MainAreaToolbar() {
               );
             })}
           </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <label className="inline-flex h-9 cursor-pointer select-none items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated-2)] px-3 text-xs font-medium">
+                <SlidersHorizontal className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="hidden xl:inline">업로드 규칙</span>
+                <input
+                  type="checkbox"
+                  checked={roll20SandboxSanitize}
+                  onChange={(event) => setRoll20SandboxSanitize(event.target.checked)}
+                  aria-label="Roll20 Sandbox 업로드 규칙 미리 적용"
+                  data-testid="roll20-sandbox-sanitize-toggle"
+                  className="h-4 w-4 accent-[var(--primary)]"
+                />
+              </label>
+            </TooltipTrigger>
+            <TooltipContent>
+              Roll20 Custom Sheet Sandbox에 업로드할 때 적용되는 HTML/CSS 정리 규칙을 미리 적용해요. 신버전·구버전 선택과는 별개예요.
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </TooltipProvider>
