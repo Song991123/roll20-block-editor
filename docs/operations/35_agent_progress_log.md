@@ -1,3 +1,15 @@
+## 2026-07-30 - Page JS import/emit path reconciliation
+
+- FIXED LOCAL: `__perfHook.importSheet` now clears/hydrates the Page JS
+  workspace and updates its block count and emit cache together with HTML,
+  CSS, i18n, and worker sources.
+- GUARDED LOCAL: Worker workspace browser smoke now covers a synthetic
+  ordinary page script and verifies both the HTML slot merge and `emit.js`.
+- VERIFIED: Build, worker/page-JS smoke, and legacy preview contract smoke
+  pass. This does not authorize page JavaScript execution in the preview.
+- NEXT: Continue the actual Roll20 modern Sandbox upload and legacy-room
+  evidence gate only through the documented safety boundaries.
+
 ## 2026-07-30 - Sandbox chooser handoff retry
 
 - VERIFIED READ-ONLY: The existing Chrome tab exposed the dedicated `Sheet

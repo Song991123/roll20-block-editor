@@ -103,11 +103,13 @@ async function main() {
             });
           });
         </script>
+        <script type="text/javascript" src="page-runtime.js">window.pageRuntime = true;</script>
       `;
       const imported = await window.__perfHook.importSheet({ html, css: '', i18n: '{}' });
       await new Promise((resolve) => setTimeout(resolve, 200));
       const workspace = window.__perfHook.getWorkspace();
       const htmlGraph = window.__perfHook.getBlockGraph('html');
+      const jsGraph = window.__perfHook.getBlockGraph('js');
       const workerGraph = window.__perfHook.getBlockGraph('worker');
       const emit = window.__perfHook.getEmitContent();
       const parsedHtml = `
@@ -129,7 +131,10 @@ async function main() {
         imported,
         workspace,
         htmlWorkerTypes: htmlGraph.filter((b) => /^(r20_raw_worker|r20_on_|r20_worker_|r20_get_attrs|r20_set_attrs)/.test(b.type)).map((b) => b.type),
+        jsTypes: jsGraph.map((b) => b.type),
         workerTypes: workerGraph.map((b) => b.type),
+        emitHasPageScript: /src=["']page-runtime\.js["']/i.test(emit.html) && emit.html.includes('window.pageRuntime = true;'),
+        emitPageJs: emit.js,
         emitHasWorkerScript: /<script\s+type=["']text\/worker["']>/i.test(emit.html),
         emitWorkerBodyLen: emit.worker.length,
         emitWorkerScriptCount: (emit.html.match(/<script\s+type=["']text\/worker["']>/gi) ?? []).length,
@@ -144,8 +149,12 @@ async function main() {
 
     const pass =
       result.workspace.blockCount.worker > 0 &&
+      result.workspace.blockCount.js > 0 &&
       result.imported.workerBlockCount > 0 &&
       result.htmlWorkerTypes.length === 0 &&
+      result.jsTypes.includes('r20_raw_page_js') &&
+      result.emitHasPageScript &&
+      result.emitPageJs.includes('window.pageRuntime = true;') &&
       result.workerTypes.length > 0 &&
       result.emitHasWorkerScript &&
       result.emitWorkerBodyLen > 0 &&

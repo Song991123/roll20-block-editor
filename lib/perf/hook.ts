@@ -396,7 +396,9 @@ function buildHook(): PerfHook {
         );
       }
 
-      // hydrate three workspaces.
+      // Hydrate every source workspace. Page JS must be cleared and rebuilt
+      // with the same import, otherwise the diagnostic/browser import path
+      // leaves stale JS blocks and stale export cache behind.
       const injectT0 = nowMs();
       const emptyXml = '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
       adapter.hydrateFromXml('worker', emptyXml);
@@ -405,6 +407,7 @@ function buildHook(): PerfHook {
       const workerSource = replaceWorkerWorkspaceFromSourceHtml(html);
       adapter.hydrateFromXml('css', css ? result.css : emptyXml);
       adapter.hydrateFromXml('i18n', i18n ? result.i18n : emptyXml);
+      adapter.hydrateFromXml('js', result.js || emptyXml);
       const injectEnd = nowMs();
 
       // hydrateFromXml 은 Blockly events disabled 로 돌므로 changeListener 의
@@ -415,6 +418,7 @@ function buildHook(): PerfHook {
       bump('html', adapter.countBlocks('html'));
       bump('css', adapter.countBlocks('css'));
       bump('i18n', adapter.countBlocks('i18n'));
+      bump('js', adapter.countBlocks('js'));
       bump('worker', adapter.countBlocks('worker'));
 
       // emit pipeline cost (synchronous emitAll — bypass 500ms debounce).
@@ -423,6 +427,7 @@ function buildHook(): PerfHook {
         html: adapter.getWorkspace('html'),
         css: adapter.getWorkspace('css'),
         i18n: adapter.getWorkspace('i18n'),
+        js: adapter.getWorkspace('js'),
         worker: adapter.getWorkspace('worker'),
       });
       const emitEnd = nowMs();
@@ -432,6 +437,7 @@ function buildHook(): PerfHook {
         html: emitOut.html,
         css: emitOut.css,
         i18n: emitOut.i18n,
+        js: emitOut.js,
         worker: emitOut.worker,
       });
       useWorkspaceStore.getState().setEmitWarnings(emitOut.warnings);

@@ -295,6 +295,11 @@ assertCheck(checks, 'iframe, live patch, and Shadow serializers share one prepar
 assertCheck(checks, 'visual smoke hook exposes the same atomic compatibility mode action',
   perfHook.includes('setRoll20CompatibilityMode: (mode: Roll20CompatibilityMode) => void')
     && perfHook.includes('usePreviewStore.getState().setRoll20CompatibilityMode(mode)'));
+assertCheck(checks, 'diagnostic import hydrates and emits the dedicated Page JS workspace',
+  perfHook.includes("adapter.hydrateFromXml('js', result.js || emptyXml)")
+    && perfHook.includes("bump('js', adapter.countBlocks('js'))")
+    && perfHook.includes("js: adapter.getWorkspace('js')")
+    && perfHook.includes('js: emitOut.js'));
 assertCheck(checks, 'legacy compatibility smoke alias preserves the atomic mode invariant',
   perfHook.includes("setRoll20CompatibilityMode(enabled ? 'legacy' : 'modern')")
     && !perfHook.includes('usePreviewStore.getState().setLegacyCssSanitize(enabled)'));

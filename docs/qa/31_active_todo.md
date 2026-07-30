@@ -1,3 +1,18 @@
+## 2026-07-30 Page JS import/emit path reconciliation
+
+- FIXED LOCAL: The browser/diagnostic import path now clears and hydrates the
+  dedicated Page JS workspace, bumps its block count, and includes its output
+  in the shared emit cache. This prevents stale or invisible page-JS blocks
+  when importing a new sheet through `__perfHook.importSheet`.
+- GUARDED LOCAL: The worker workspace browser smoke now imports a synthetic
+  ordinary page script alongside a worker and verifies the Page JS block,
+  emitted HTML script, and separate `emit.js` output.
+- VERIFIED LOCAL: Page-JS smoke, legacy preview contract smoke, and the
+  production build pass. Actual Roll20 page-script execution remains outside
+  the sheet preview and is intentionally not run locally.
+- NEXT P0: Resume the modern Sandbox upload handoff, then verify the separate
+  legacy-room destination with a fresh solo participant preflight.
+
 ## 2026-07-30 Sandbox chooser handoff retry
 
 - VERIFIED READ-ONLY: The existing Chrome tab exposed the dedicated `Sheet
