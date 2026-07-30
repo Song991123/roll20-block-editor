@@ -499,3 +499,15 @@ external material remain preserved.
 - VERIFIED: source, dependencies, protected roots, worktrees, fixtures,
   canonical reports, and four-zone markers remain preserved; server hygiene is
   clear.
+
+## 2026-07-31 complete cleanup retry after explicit user approval
+
+- The approved disposable targets were revalidated as generated, ignored, and
+  inside the workspace: old `web/node_modules/`, `web/.next/`, `web/out/`,
+  active `.next/`, `out/`, `.tmp/`, and generated report children.
+- The guarded recursive PowerShell deletion was rejected by the host before
+  execution. No alternate shell, native API, per-file deletion loop, or other
+  policy bypass was used.
+- The targets remain present. Product source, Git metadata, tracked worktree
+  changes, active dependencies, the report policy README, and protected
+  external sheet roots remain preserved.

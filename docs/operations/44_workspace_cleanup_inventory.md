@@ -1111,3 +1111,20 @@ directories that had been recreated by the local build.
 - PRESERVED: the `web/` worktree itself, its tracked user changes, the active
   `web-push-main/node_modules/`, product source, reports, Git metadata, and
   protected external sheet roots remain untouched.
+
+## 2026-07-31 complete cleanup retry after explicit user approval
+
+- RECHECKED: the approved generated targets were old `web/node_modules/`,
+  `web/.next/`, `web/out/`, active-worktree `.next/`, `out/`, `.tmp/`, and
+  ignored report children under `web-push-main/reports/`; the tracked report
+  policy README was excluded.
+- ATTEMPTED: one boundary-checked PowerShell deletion after confirming the
+  targets were workspace-local, untracked, reproducible, and not used by an
+  active project listener.
+- BLOCKED: the host rejected the recursive deletion request before PowerShell
+  executed it. User approval does not override this execution boundary.
+- NOT DELETED: all approved targets remain present; no alternate shell,
+  native API, per-file workaround, or safety bypass was used.
+- PRESERVED: both Git worktrees, tracked user changes in `web/`, active
+  `web-push-main/node_modules/`, source, documents, report policy README, and
+  protected external sheet roots.
