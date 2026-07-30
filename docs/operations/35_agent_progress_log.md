@@ -13,6 +13,14 @@
 - Boundary: actual Roll20 Sandbox activation and chat screenshot parity are
   still unverified because no connected Chrome Roll20 session is available.
 
+## 2026-07-31 - Fresh-sheet and public-sample boundary recheck
+
+- Re-ran the fresh-sheet browser smoke. It passed the empty-model, no-ghost-
+  section, single-iframe, and 850px default-width assertions for preview/edit.
+- Rechecked the public example registry and product tree. The registry remains
+  empty and no real-sheet example payload is bundled in the public app path.
+- Actual Roll20 Sandbox and dedicated legacy-room parity remain open.
+
 ## 2026-07-31 - Large workspace local-input smoke
 
 - Added an opt-in local-input path to the large-workspace browser smoke. It

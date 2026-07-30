@@ -14,6 +14,16 @@
   parity. Sandbox activation, chat screenshot parity, and dedicated legacy
   room verification remain open.
 
+## 2026-07-31 Fresh-sheet and public-sample boundary recheck
+
+- VERIFIED LOCAL: Fresh-sheet browser smoke confirms an empty new sheet emits
+  no ghost sheet-section, starts with no HTML layers, keeps one preview iframe,
+  and uses the default 850px canvas width in both preview and edit controls.
+- VERIFIED LOCAL: The public example registry is empty, and the product
+  source/public tree contains no bundled real-sheet example payload.
+- VERIFY / OPEN: This does not replace actual modern Sandbox and dedicated
+  legacy-room screenshot parity.
+
 ## 2026-07-31 Large workspace local-input smoke
 
 - `DONE LOCAL`: The large-workspace smoke now accepts optional local HTML/CSS/
