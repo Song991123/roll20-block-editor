@@ -33,6 +33,9 @@ local output and is deleted after the verification batch.
 - EXTERNAL BLOCKED: The supported native file chooser timed out and reset the
   browser connection. No Sandbox screenshot or generated-sheet parity diff was
   captured.
+- HANDOFF READY: An anonymous synthetic HTML/CSS/translation payload has been
+  regenerated in ignored local output for a user-visible Sandbox file choice.
+  This is preparation only; the sheet is not yet proven active in Roll20.
 - LEGACY VERIFY OPEN: Legacy output must be checked separately in a dedicated
   legacy-enabled test room. A modern Sandbox result cannot satisfy that gate.
 

@@ -1,3 +1,14 @@
+## 2026-07-30 Roll20 Sandbox handoff preparation
+
+- DONE LOCAL: Regenerated an anonymous synthetic Sandbox payload containing
+  HTML, CSS, and translation files under the ignored local handoff folder.
+- VERIFY OPEN: The authenticated Sandbox dialog is visible in Chrome, but the
+  supported native file chooser still requires a user-visible file selection.
+  No upload, save, room change, screenshot, or parity claim has occurred.
+- NEXT P0: Select the three synthetic files in the dedicated Sandbox only,
+  then capture positive sheet-root, state, roll-control, and chat evidence.
+  Keep legacy verification in a separate dedicated legacy-enabled room.
+
 ## 2026-07-30 Local compatibility roundtrip regression fix
 
 - DONE LOCAL: Browser L2 import -> emit -> re-import -> emit now passes for

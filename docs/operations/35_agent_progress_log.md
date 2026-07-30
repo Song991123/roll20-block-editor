@@ -1,3 +1,15 @@
+## 2026-07-30 - Anonymous Sandbox upload handoff prepared
+
+- PREPARED LOCAL: Regenerated the anonymous synthetic HTML, CSS, and
+  translation payload used for the modern Custom Sheet Sandbox handoff under
+  ignored local output only.
+- VERIFY OPEN: The dedicated Sandbox dialog is visible, but Chrome's native
+  file chooser boundary still needs a user-visible selection. No Roll20 upload,
+  save, room mutation, screenshot, or visual-parity claim was made.
+- NEXT: Select the three files in Sandbox, require a visible active sheet root
+  and matching modern runtime, then capture root/state/roll/chat evidence.
+  Legacy remains a separate dedicated-room gate.
+
 ## 2026-07-30 - Local render/edit gate refresh
 
 - VERIFIED LOCAL: `ci:verify` passed the full current safety, import,
