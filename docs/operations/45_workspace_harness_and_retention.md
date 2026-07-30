@@ -447,3 +447,17 @@ external material remain preserved.
   used, so all five targets remain **not deleted**.
 - Active dependencies, current anonymous verification input, reports, source,
   worktrees, and protected external source roots remain preserved.
+
+## 2026-07-31 single-target retry after explicit user approval
+
+- RECHECKED: the canonical `web-push-main/.next/` and `out/` directories are
+  the only approved cleanup targets currently present; no project listener is
+  active and both paths are generated, ignored, and inside the active
+  worktree.
+- ATTEMPTED: a single absolute-path `out/` deletion was requested after the
+  workspace and protected-source checks.
+- BLOCKED: the host rejected the native `Remove-Item -Recurse -Force`
+  invocation before PowerShell execution. User approval cannot override this
+  host execution boundary.
+- NOT DELETED: both `.next/` and `out/` remain. No alternate shell, native
+  API, per-file workaround, or safety bypass was used.

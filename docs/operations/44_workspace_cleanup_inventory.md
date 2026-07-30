@@ -964,6 +964,17 @@ directories that had been recreated by the local build.
 - PRESERVED: active `web-push-main/node_modules/`, source, reports, worktrees,
   local evidence policy, and protected external sheet roots remain untouched.
 
+## 2026-07-31 single-target retry after explicit user approval
+
+- RECHECKED: only canonical `web-push-main/.next/` and `out/` remain from the
+  approved generated-output set; no project listener is active.
+- ATTEMPTED: exact absolute-path deletion of `web-push-main/out/` after the
+  workspace-boundary and protected-source checks passed.
+- BLOCKED: the host rejected the native recursive PowerShell deletion before
+  execution. User approval did not override the host boundary.
+- NOT DELETED: `.next/` and `out/` remain present; no alternate shell, native
+  API, per-file workaround, or safety bypass was used.
+
 ## 2026-07-31 current-state correction after user-authorized retry
 
 - RECHECKED: the old worktree output, old dependency tree, broken metadata,
