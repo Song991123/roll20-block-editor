@@ -4,10 +4,12 @@ Date: 2026-06-12
 
 ## Current Checkpoint - 2026-07-31
 
-- The active integration branch is `claude/design-reset` at `3e32e66`; the
-  worktree is clean and the latest remote CI run `30559743246` passed.
-- Local preview/edit, import/export, worker preservation, privacy guards, and
-  the resumable Roll20 upload handoff are locally verified.
+- The active integration branch is `claude/design-reset` at `df28128`; the
+  worktree is clean and the latest remote CI run `30565202140` passed.
+- Local preview/edit, protected local-input visual checks in modern/legacy
+  contracts, import/export, worker preservation, Sandbox-sanitizer
+  approximation, privacy guards, and the resumable Roll20 upload handoff are
+  locally verified.
 - Actual current-payload Roll20 Sandbox activation, screenshot parity, worker/
   chat evidence, and dedicated legacy-room visual proof remain `VERIFY / OPEN`.
 - The latest Chrome recheck found no accessible Roll20 tabs. No upload, save,
