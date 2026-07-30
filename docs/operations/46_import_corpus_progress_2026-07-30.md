@@ -69,3 +69,13 @@
   their resource and interaction assertions enabled.
 - This strengthens local edit/import evidence only; it does not promote the
   actual Roll20 upload, worker/chat, or universal all-sheet gates.
+
+## 2026-07-30 Synthetic visual baseline re-established
+
+- Recreated a disposable anonymous fixture only for local regression after the
+  previous fixture purge. No third-party or user sheet material was restored.
+- Modern and legacy preview/edit visual smoke both returned `EXACT` with `0%`
+  mismatch, `0 ppm`, and translation `3/3`.
+- Persistent preview surface smoke returned reload count `0` in both modes.
+- The result is local baseline evidence; Roll20 Sandbox and legacy-room
+  evidence remain unverified.

@@ -7776,3 +7776,15 @@ visibility verification passed. No external room was opened or modified.
 - BOUNDARY: This is local interaction evidence. Actual modern Sandbox upload,
   separate legacy-room comparison, worker/rolltemplate parity, and universal
   all-sheet support remain unverified.
+
+## 2026-07-30 - Synthetic visual baseline re-established
+
+- Recreated only an anonymous ignored `synthetic-parity` fixture after the
+  disposable fixture tree had been purged. It contains no third-party sheet
+  source, identity, artwork, or URL.
+- VERIFIED: modern and legacy preview/edit visual smoke both report `0%`
+  mismatch, `0 ppm`, `EXACT` parity, and translation `3/3`.
+- VERIFIED: persistent preview/edit surface smoke reports reload count `0` in
+  both compatibility modes.
+- BOUNDARY: This is a local synthetic baseline only; actual Sandbox upload and
+  dedicated legacy-room evidence remain open.

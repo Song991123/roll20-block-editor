@@ -116,3 +116,15 @@ local renderer results.
   Sandbox and legacy-room visual parity.
 - NEXT P0: resume the permitted modern Sandbox upload, then repeat the same
   anonymous payload in the separate legacy-enabled test destination.
+
+## 2026-07-30 Synthetic visual recheck
+
+- VERIFIED LOCAL: The ignored anonymous `synthetic-parity` fixture rendered in
+  both modern and legacy contracts with `0%` mismatch, `0 ppm` mismatched
+  pixels, `EXACT` preview/edit parity, and translation `3/3`.
+- VERIFIED LOCAL: The persistent preview surface smoke passed in both modes
+  with iframe reload count `0` while switching preview/edit and applying
+  changes.
+- CLAIM BOUNDARY: This re-establishes a disposable local baseline after the
+  prior fixture purge. It is not a user-sheet result and does not prove actual
+  Roll20 Sandbox/legacy-room parity.

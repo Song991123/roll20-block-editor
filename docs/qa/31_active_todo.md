@@ -7029,3 +7029,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN`: This does not prove actual modern Sandbox upload, isolated
   legacy-room parity, worker/rolltemplate parity, or universal all-sheet
   support. Resume those gates separately.
+
+## 2026-07-30 Synthetic visual baseline re-established
+
+- `DONE LOCAL`: Ignored anonymous `synthetic-parity` preview/edit visual smoke
+  passed in modern and legacy modes with mismatch `0%`, `0 ppm`, `EXACT`, and
+  translation `3/3`.
+- `DONE LOCAL`: Persistent iframe preview/edit smoke passed in both modes with
+  reload count `0`.
+- `VERIFY / OPEN`: The disposable baseline does not replace user-provided
+  Roll20 evidence. Modern Sandbox upload and dedicated legacy-room parity are
+  still separate P0 gates.
