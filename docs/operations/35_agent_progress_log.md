@@ -9044,3 +9044,16 @@ same-hash modern/legacy comparison.
 - Rechecked the separate legacy tab: one visible member, no upload controls,
   no navigation or mutation. External same-hash and pixel evidence remain
   `VERIFY / BLOCKED EXTERNAL`.
+
+## 2026-07-30 - Worker if/else mapping
+
+- Added structured parsing for `else` and `else if` branches. Each branch is
+  stored in the existing worker `if` block's `ELSE` statement input, so the
+  visual worker workspace retains control-flow structure.
+- Added the matching Blockly socket and conditional generator output. An empty
+  ELSE socket does not add an `else` clause to emitted JS.
+- Local evidence: parser `29/29`, worker generator `23/23`, lint, build, full
+  `ci:verify`, persistent preview, strict imported edit sync, and synthetic
+  modern/legacy visual smoke pass. No external sheet or source was used.
+- This is a bounded worker-language improvement, not a claim of full JS or
+  Roll20 worker runtime parity.

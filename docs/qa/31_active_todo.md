@@ -8329,3 +8329,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   also remained at a fresh visible member count of exactly one.
 - `NEXT P0`: continue only with a user-visible native file selection or a
   CDP-enabled browser that supports the already-generated local handoff.
+
+## 2026-07-30 Worker if/else mapping
+
+- `DONE LOCAL`: imported worker `if` statements now preserve `else` and
+  `else if` branches as the same structured worker block, instead of leaving
+  the branch as a detached raw-JS fragment.
+- `DONE LOCAL`: the Blockly `r20_worker_if` block now exposes a second
+  `그 밖에는` statement socket and emits the branch only when it contains
+  statements, preserving the no-else output shape.
+- `VERIFIED LOCAL`: parser `29/29`, worker generator `23/23`, lint, build,
+  full `ci:verify`, persistent preview, imported edit sync, and synthetic
+  modern/legacy visual smoke pass.
+- `VERIFY / OPEN`: this adds one common worker construct; arbitrary worker
+  syntax, Roll20 execution order, and actual modern/legacy parity remain open.
+- `NEXT P1`: extend the worker catalog using the same structured-or-raw rule,
+  prioritizing common expressions and preserving unsupported source exactly.

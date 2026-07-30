@@ -334,3 +334,12 @@ constructible `File`, `Blob`, or `DataTransfer` objects. No endpoint fallback
 or settings save was attempted; all three inputs remained empty. The separate
 legacy tab also remained one-member and unchanged. This is a confirmed tooling
 boundary, not a renderer success or parity result.
+
+## Worker if/else mapping - 2026-07-30
+
+Worker imports now retain `else` and `else if` as structured branches in the
+same `r20_worker_if` block. The Blockly editor exposes the optional ELSE
+socket, and the generator omits it when empty. Parser/generator tests, lint,
+build, full CI, persistent preview, imported edit sync, and synthetic visual
+smokes pass. Full arbitrary worker support and actual Roll20 parity remain
+unverified.

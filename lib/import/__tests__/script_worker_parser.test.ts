@@ -125,6 +125,23 @@ function testIfStatement(): void {
   assert(inner[0].blockType === 'r20_set_attrs', 'inner set_attrs');
 }
 
+function testIfElseStatement(): void {
+  const js = `if (hp < 0) { setAttrs({ hp: 0 }); } else { return; }`;
+  const r = parseSheetWorkerScript(js);
+  const root = r.blocks[0];
+  assert(root.blockType === 'r20_worker_if', 'if/else block');
+  const alternate = root.children.ELSE || [];
+  assert(alternate.length === 1, 'one else statement');
+  assert(alternate[0].blockType === 'r20_worker_return', 'else return');
+
+  const chained = parseSheetWorkerScript(
+    `if (hp < 0) { setAttrs({ hp: 0 }); } else if (hp === 0) { return; }`,
+  ).blocks[0];
+  const nested = chained.children.ELSE || [];
+  assert(nested.length === 1, 'one else-if block');
+  assert(nested[0].blockType === 'r20_worker_if', 'else-if stays structured');
+}
+
 function testForCount(): void {
   const js = `for (let i = 0; i < 10; i++) { setAttrs({ x: 1 }); }`;
   const r = parseSheetWorkerScript(js);
@@ -305,6 +322,7 @@ const tests = [
   ['getSectionIDs', testGetSectionIDs],
   ['forEach', testForEach],
   ['if statement', testIfStatement],
+  ['if else statement', testIfElseStatement],
   ['for count', testForCount],
   ['let declare', testVarLet],
   ['var alias', testVarAlias],

@@ -569,3 +569,12 @@ not close the external Roll20 parity rows above.
   construct files in the Roll20 page (`setInputFiles`, `File`, `Blob`, and
   `DataTransfer` are unavailable). No current payload hash, screenshot, or
   settings write was accepted as evidence.
+
+## 2026-07-30 Worker control-flow coverage
+
+- `VERIFIED LOCAL`: `if`, `else`, and `else if` now roundtrip through the
+  worker block model and generator. The Blockly `ELSE` socket is optional at
+  emit time, so existing no-else workers retain their output shape.
+- `VERIFY / OPEN`: this covers one structured control-flow family only. It
+  does not establish full worker JS coverage, execution parity, or Roll20
+  screenshot parity.

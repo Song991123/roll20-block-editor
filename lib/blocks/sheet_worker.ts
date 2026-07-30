@@ -277,16 +277,19 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     init: mkInit((b) => {
       b.appendValueInput('CONDITION').setCheck(T_BOOL).appendField('만약');
       b.appendStatementInput('CHILDREN').setCheck(null).appendField('이면');
+      b.appendStatementInput('ELSE').setCheck(null).appendField('그 밖에는');
       setStackHooks(b);
     }),
     generator: (block, ctx) => {
       const cond = ctx.valueToCode(block, 'CONDITION', ORDER.NONE) || 'false';
       const body = ctx.statementToCode(block, 'CHILDREN');
+      const elseBody = ctx.statementToCode(block, 'ELSE');
       // Reporter blocks already preserve their own grouping. Avoid adding a
       // redundant outer pair here so imported worker conditions can roundtrip
       // through the same source shape instead of falling back to raw JS.
       const condition = cond.trim().startsWith('(') ? cond.trim() : `(${cond})`;
-      return `if ${condition} ${wrapBraceBody(ctx, body)}\n`;
+      const elseClause = elseBody.trim() ? ` else ${wrapBraceBody(ctx, elseBody)}` : '';
+      return `if ${condition} ${wrapBraceBody(ctx, body)}${elseClause}\n`;
     },
   },
 

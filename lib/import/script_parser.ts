@@ -763,15 +763,38 @@ function parseOneStatement(body: string, start: number, stats: ParseStats): OneM
           if (braceEnd > 0) {
             const inner = body.slice(braceStart + 1, braceEnd - 1);
             const innerBlocks = parseStatements(inner, stats);
+            let end = braceEnd;
+            let elseBlocks: ParsedBlock[] = [];
+            const elseStart = skipTrivia(body, braceEnd);
+            const hasElse = body.startsWith('else', elseStart)
+              && !/[A-Za-z0-9_$]/.test(body[elseStart + 4] ?? '');
+            if (hasElse) {
+              const afterElse = skipTrivia(body, elseStart + 4);
+              const hasElseIf = body.startsWith('if', afterElse)
+                && !/[A-Za-z0-9_$]/.test(body[afterElse + 2] ?? '');
+              if (hasElseIf) {
+                const nested = parseOneStatement(body, afterElse, stats);
+                if (nested) {
+                  elseBlocks = [nested.block];
+                  end = nested.end;
+                }
+              } else if (body[afterElse] === '{') {
+                const elseEnd = findMatchingClose(body, afterElse);
+                if (elseEnd > 0) {
+                  elseBlocks = parseStatements(body.slice(afterElse + 1, elseEnd - 1), stats);
+                  end = elseEnd;
+                }
+              }
+            }
             stats.matched++;
             return {
               block: {
                 blockType: 'r20_worker_if',
                 fields: {},
-                children: { CHILDREN: innerBlocks },
+                children: { CHILDREN: innerBlocks, ELSE: elseBlocks },
                 valueInputs: { CONDITION: valueBlock(cond) },
               },
-              end: braceEnd,
+              end,
             };
           }
         }

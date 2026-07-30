@@ -220,6 +220,25 @@ function findBlock(arr: Array<{ type: string }>, type: string): {
 
 // ---------- 1) r20_get_compendium -----------------------------------------
 
+function testWorkerIfElseEmit(): void {
+  const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_worker_if');
+  assert(def.generator, 'r20_worker_if has generator');
+  const b = new FakeBlock({
+    type: 'r20_worker_if',
+    children: {
+      CHILDREN: [new FakeBlock({ type: 'r20_set_attrs', fields: { _emit: 'setAttrs({ hp: 0 });' } })],
+      ELSE: [new FakeBlock({ type: 'r20_worker_return', fields: { _emit: 'return;' } })],
+    },
+  });
+  const out = def.generator!(b, makeCtx({ CONDITION: 'hp < 0' }));
+  const code = Array.isArray(out) ? out[0] : out;
+  expectContains(code, 'if (hp < 0)', 'if condition emit');
+  expectContains(code, 'else', 'else branch emit');
+  expectContains(code, 'return;', 'else body emit');
+}
+
+// ---------- 1b) r20_get_compendium ----------------------------------------
+
 function testCompendiumBasicPath(): void {
   const def = findBlock(SHEET_WORKER_BLOCKS as Array<{ type: string }>, 'r20_get_compendium');
   assert(def.generator, 'r20_get_compendium has generator');
@@ -560,6 +579,7 @@ function testAttrRefBogusScopeFallback(): void {
 // ---------- runner ---------------------------------------------------------
 
 const tests: Array<[string, () => void]> = [
+  ['worker if/else emit', testWorkerIfElseEmit],
   ['compendium basic path', testCompendiumBasicPath],
   ['compendium with subpath', testCompendiumWithSubpath],
   ['compendium empty path', testCompendiumEmptyPath],
