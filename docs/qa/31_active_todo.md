@@ -8193,6 +8193,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   Sandbox, bind the resulting payload hash, capture normalized screenshots,
   and repeat the legacy check separately.
 
+## 2026-07-30 Modern Sandbox native chooser retry
+
+- `VERIFY / BLOCKED EXTERNAL`: The dedicated Sandbox still showed a fresh
+  visible participant count of `1`, but both the ordinary click path and the
+  location-entry keyboard path left HTML/CSS/translation `files.length` at
+  `0`. The dialog remained open and no payload upload was confirmed.
+- `PRESERVED`: The existing anonymous Sandbox sheet and chat state were not
+  replaced; no existing room, source sheet, or public artifact was changed.
+- `NEXT P0`: use a supported user-visible native file selection or enable the
+  browser's local-file handoff, then bind the selected files to the provenance
+  manifest before any parity claim.
+
 ## 2026-07-30 Asset preflight UI terminology
 
 - `FIXED LOCAL`: Import and export asset panels now use the same plain labels

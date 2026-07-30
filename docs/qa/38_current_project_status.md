@@ -253,3 +253,11 @@ direct-link candidates. The rebuilt export-dialog browser smoke passed the
 asset metrics, relink draft/persistence, mode-toggle, and edit-entry checks
 with zero console/page/request failures. This is local UI evidence only and
 does not change the external same-hash or pixel-parity status.
+
+## Modern Sandbox chooser retry - 2026-07-30
+
+The dedicated modern Sandbox remained readable with one visible participant,
+but both visible/native chooser paths left all three file inputs at
+`files.length=0`. No upload or external sheet replacement was confirmed. The
+existing anonymous runtime state was preserved, so same-hash payload binding
+and pixel parity remain `VERIFY / BLOCKED EXTERNAL`.

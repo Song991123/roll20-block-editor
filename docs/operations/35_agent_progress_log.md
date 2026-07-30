@@ -8932,3 +8932,13 @@ visibility verification passed. No external room was opened or modified.
 - Rebuilt and reran the export-dialog browser smoke. Import/export asset
   metrics, replacement draft/persistence, modern/legacy mode synchronization,
   and edit-mode entry passed with zero console, page, or request failures.
+
+## 2026-07-30 - Modern Sandbox native chooser retry
+
+- Retried the dedicated modern Sandbox HTML selection through the visible
+  control and the native location-entry keyboard path. Both returned
+  `files.length=0` for HTML, CSS, and translation; no upload or replacement
+  was confirmed.
+- The tab still showed one visible participant and the previously loaded
+  anonymous sheet/chat state. This is a browser handoff limitation, not proof
+  of a renderer failure; same-hash and pixel comparison remain open.
