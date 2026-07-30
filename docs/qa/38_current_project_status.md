@@ -56,6 +56,9 @@ local output and is deleted after the verification batch.
   but the supported chooser returned `Not allowed`; the native screen-level
   attempt did not populate any file input. No sheet root, iframe, or form
   appeared, and no room or chat state was changed.
+- EXTERNAL BLOCKED (latest connection retry): Fresh tab discovery found the
+  exact isolated Sandbox URL, but claiming that tab timed out before DOM
+  inspection. No upload, save, navigation, room, or chat mutation occurred.
 - HANDOFF READY: An anonymous synthetic HTML/CSS/translation payload has been
   regenerated in ignored local output for a user-visible Sandbox file choice.
   This is preparation only; the sheet is not yet proven active in Roll20.

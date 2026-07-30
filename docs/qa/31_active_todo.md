@@ -51,6 +51,18 @@
 - CLAIM BOUNDARY: This preserves declaration kind; it does not claim complete
   JavaScript parsing or live worker execution.
 
+## 2026-07-30 Isolated Sandbox connection retry
+
+- VERIFIED EXTERNAL: A fresh tab listing still found the expected isolated
+  Sandbox editor tab.
+- BLOCKED EXTERNAL: Claiming that exact tab timed out before DOM inspection or
+  file selection could begin.
+- NO MUTATION: No existing room, campaign setting, chat, upload, or source
+  material was touched. Actual Sandbox render parity remains open.
+- NEXT P0: Recover a stable user-visible Sandbox handoff, then select only the
+  anonymous HTML/CSS/translation payload and capture positive root/state,
+  worker, roll, and chat evidence.
+
 ## 2026-07-30 Modern Sandbox file-selection retry
 
 - VERIFIED EXTERNAL: The isolated Sandbox showed exactly one visible member and

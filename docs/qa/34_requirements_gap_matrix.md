@@ -32,6 +32,15 @@ Date: 2026-06-12
 - BOUNDARY: This is declaration-kind preservation, not complete JavaScript
   support or live worker runtime evidence.
 
+## Latest External Sandbox Connection Reconciliation: 2026-07-30
+
+- Fresh Chrome discovery still finds the isolated Sandbox tab at its expected
+  editor URL, but the exact tab claim times out before DOM/file-input access.
+- NO MUTATION: No room, campaign setting, upload, chat, or source material was
+  changed during this retry.
+- STATUS: Actual modern Sandbox render evidence and the separate legacy-room
+  gate remain open; this connection failure is not a parity result.
+
 ## Latest External Sandbox File-Selection Retry: 2026-07-30
 
 - The isolated modern Sandbox visibly reported one member and all three upload

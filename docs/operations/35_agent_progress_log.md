@@ -8684,3 +8684,11 @@ visibility verification passed. No external room was opened or modified.
 - Extended the existing variable block with a `KIND` selector and preserved
   `let`, `var`, and `const` through import and emit. Added parser coverage for
   all three forms without adding source-derived fixtures.
+
+## 2026-07-30 Isolated Sandbox connection retry
+
+- Fresh Chrome tab discovery still found the expected isolated Roll20 Sandbox
+  tab. Claiming that exact tab timed out before DOM inspection, so no upload,
+  navigation, save, chat, or room mutation occurred.
+- Keep the external parity gate open. This is a browser handoff blocker, not
+  evidence that the generated sheet rendered or matched Roll20.
