@@ -7935,6 +7935,17 @@ visibility verification passed. No external room was opened or modified.
   source, worktrees, and protected external sources. No Roll20 room or saved
   Sandbox payload was changed.
 
+## 2026-07-30 - Packed table-row structural insertion
+
+- FIXED LOCAL: `tableNodeKind()` now recognizes `r20_skill_row` as a table
+  row. The composite emits a complete `<tr>`, so rejecting it under `tbody`
+  or `table` was an editor-structure bug rather than a valid drop restriction.
+- VERIFIED LOCAL: focused layer/drop tests and the complete `ci:verify` gate
+  pass. The change is generic to the composite output contract and does not
+  depend on any private sheet fixture.
+- CLAIM BOUNDARY: this proves only structural drop validation; actual browser
+  interaction timing and modern/legacy Roll20 screenshots remain unverified.
+
 ## 2026-07-30 - Generic inline whitespace import fix
 
 - Reproduced a universal import loss where inline siblings such as

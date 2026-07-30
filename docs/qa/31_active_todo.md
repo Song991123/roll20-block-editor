@@ -1,3 +1,15 @@
+## 2026-07-30 Packed table-row drop contract
+
+- FIXED LOCAL: `r20_skill_row` now participates in table structural validation
+  as a real row because its composite emitter produces a complete `<tr>`.
+  Packed rows can therefore be inserted under `tbody`, `thead`, or `table`,
+  while the row itself remains a non-droppable atomic layer.
+- VERIFIED LOCAL: `test:layer-roles`, `test:iframe-drop-target`, and the full
+  `ci:verify` gate pass. This covers structural insertion rules only; it does
+  not prove browser drag latency or actual modern/legacy Roll20 parity.
+- NEXT P0: finish the remaining local imported-edit role/inventory coverage,
+  then resume the separate modern Sandbox and legacy-room evidence gate.
+
 ## 2026-07-29 Roll20 Sandbox browser retry
 
 - VERIFIED READ-ONLY: The logged-in Roll20 tab still exposes the isolated

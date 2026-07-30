@@ -19,7 +19,8 @@ edit surface, not a promise that every arbitrary HTML pattern is editable.
 | `image`, `img`, `media` | Image | No | Free | A visual asset |
 | `script`, `worker`, `rolltemplate` | Sheet action | No | None | Runtime code, kept out of the visual preview |
 | `r20_element_container` | Frame | Yes | Flow | Safe custom element with an editable content slot |
-| `r20_attribute_card`, `r20_skill_row` | Flow row | No | Flow | Composite table row that moves as one unit |
+| `r20_attribute_card` | Flow row | No | Flow | Composite cell group that moves as one unit inside its source row |
+| `r20_skill_row` | Flow row | No | Flow | Composite `<tr>` that moves as one table row |
 
 The classifier lives in `lib/editor/layerRoles.ts`. Each layer row exposes the
 same semantic information through `data-r20-layer-role` and
@@ -72,7 +73,10 @@ cases are frame layers; the generic element and helper composites expose their
 content slots as frame layers; attribute-card and skill-row composites stay
 reorderable in flow but do not accept arbitrary children. Composite blocks that
 emit several DOM nodes remain one intentional layer when their internal parts
-are exposed through the composite's own fields.
+are exposed through the composite's own fields. A packed `r20_skill_row` is
+treated as a table row by structural drop validation even though its visual
+layer color remains Flow; this keeps a packed row insertable under `tbody` or
+`thead` without making its generated cells arbitrary drop zones.
 
 This describes the current local interaction contract. It does not claim that
 every arbitrary runtime script or third-party markup pattern is decomposed into

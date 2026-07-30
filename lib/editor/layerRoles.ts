@@ -147,6 +147,9 @@ function tableNodeKind(type: string): TableNodeKind | null {
   if (normalized === 'colgroup') return 'colgroup';
   if (normalized === 'thead' || normalized === 'tbody' || normalized === 'tfoot') return 'section';
   if (normalized === 'tr') return 'row';
+  // The packed skill-row composite emits a complete <tr>. Keep table
+  // insertion valid after an imported row has been collapsed.
+  if (normalized === 'skill_row') return 'row';
   if (normalized === 'td' || normalized === 'th') return 'cell';
   if (normalized === 'table_caption' || normalized === 'caption') return 'caption';
   return null;

@@ -59,6 +59,9 @@ assert.equal(canNestLayerChild('r20_roll_button', 'r20_tr'), false);
 assert.equal(canNestLayerChild('r20_tr', 'r20_tbody'), true);
 assert.equal(canNestLayerChild('r20_tbody', 'r20_table'), true);
 assert.equal(canNestLayerChild('r20_div', 'r20_table'), false);
+assert.equal(canNestLayerChild('r20_skill_row', 'r20_tbody'), true);
+assert.equal(canNestLayerChild('r20_skill_row', 'r20_table'), true);
+assert.equal(canNestLayerChild('r20_skill_row', 'r20_tr'), false);
 
 const layerTree = [
   { id: 'root', layerParentId: null },
