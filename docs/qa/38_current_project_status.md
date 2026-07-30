@@ -497,3 +497,12 @@ resource checks, and edit-to-preview synchronization through the persistent
 iframe path, without copying source files into tracked or public fixtures. This
 remains local imported-source evidence; actual Roll20 same-payload parity,
 legacy-room behavior, and universal source coverage are still open.
+
+## Protected large-input workspace smoke - 2026-07-31
+
+The read-only anonymous local-input path also passed the large-workspace
+browser route in `headless-large` mode. The persistent iframe owner remained
+singular, no Blockly SVG surface was created, layer selection worked, and
+browser/page errors were zero. This is local import/edit performance evidence
+only; source-derived counts and identities are intentionally omitted, and
+actual Roll20 modern/legacy parity remains open.

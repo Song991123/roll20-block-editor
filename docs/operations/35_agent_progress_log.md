@@ -9325,3 +9325,13 @@ same-hash modern/legacy comparison.
 - This is local imported-source evidence only. It does not prove actual
   Roll20 same-payload parity, legacy-room behavior, or universal source
   coverage.
+
+## 2026-07-31 - Protected large-input workspace smoke
+
+- The same read-only `local-input` path passed the large-workspace browser
+  route in `headless-large` mode. The persistent iframe edit owner remained
+  singular, no Blockly SVG surface was created, layer selection worked, and
+  browser/page errors were zero.
+- This confirms the large-import interaction boundary locally without
+  recording source-derived counts, names, paths, or visual assets.
+- Roll20 same-payload parity and legacy-room behavior remain external gates.

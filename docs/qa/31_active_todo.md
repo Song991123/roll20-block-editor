@@ -8637,3 +8637,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   universal source coverage.
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
+
+## 2026-07-31 Protected large-input workspace smoke
+
+- `VERIFIED LOCAL`: the read-only `local-input` path passed the large-workspace
+  browser route in `headless-large` mode. The persistent iframe owner remained
+  singular, no Blockly SVG surface was created, layer selection worked, and
+  browser/page errors were zero.
+- `VERIFY / OPEN`: this is anonymous local import/performance evidence only;
+  source-derived counts and identities are intentionally not recorded, and
+  Roll20 same-payload/legacy evidence remains open.
+- `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
+  bind the same payload before collecting modern and legacy evidence.
