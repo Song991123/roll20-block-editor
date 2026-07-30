@@ -1,3 +1,17 @@
+## 2026-07-31 GitHub Pages freshness gate
+
+- `DONE LOCAL/REMOTE`: Added `pnpm verify:pages-deploy`, which compares the
+  selected branch SHA with the latest successful Pages workflow SHA and checks
+  the public URL response.
+- `VERIFIED REMOTE`: For `main`, the public URL returned HTTP 200 and matched
+  Pages run `30399580622` at commit `98d4b4965be2`.
+- `VERIFY / OPEN`: The active `claude/design-reset` branch is at
+  `f7c4dc86963e`, while Pages deploys `main` only. Its latest work is not
+  public until a reviewed merge to `main` and a successful Pages run.
+- `NEXT P0`: Keep actual Roll20 same-hash Sandbox binding and dedicated legacy
+  room verification open; after any production merge rerun
+  `pnpm verify:pages-deploy`.
+
 ## 2026-07-30 Frame surface metrics for external probes
 
 - DONE LOCAL: `roll20_sheet_frame_probe.mjs` now records anonymous root

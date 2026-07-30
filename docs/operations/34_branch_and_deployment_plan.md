@@ -8,7 +8,7 @@ Date: 2026-06-12
 | --- | --- | --- |
 | Production branch | `main` | `.github/workflows/deploy.yml` deploys only on `main` push. |
 | Production page | GitHub Pages | `https://song991123.github.io/roll20-block-editor/` returned HTTP 200 on 2026-06-12. |
-| Latest production deploy | Current when checked | GitHub Actions latest Pages run completed successfully on 2026-06-12. Recheck after every push because documenting a SHA creates another deploy. |
+| Latest production deploy | Verified 2026-07-31 | `pnpm verify:pages-deploy` matched `main` commit `98d4b4965be2` to successful Pages run `30399580622`; public URL returned HTTP 200. |
 | Development branch | `dev` | Created from current `main` and pushed to origin. |
 | Development CI | `CI` workflow | Runs safety/unit verification, lint, and build on `main`, `dev`, and PRs. |
 | Production deploy gate | `Deploy to GitHub Pages` workflow | Runs the same safety/unit verification and lint before static export/upload. |
@@ -62,4 +62,4 @@ The CI/CD boundary is intentionally conservative:
 | DONE | Confirm CI runs on `dev`. |
 | DONE | Add safety/unit verification to both CI and GitHub Pages deploy. |
 | TODO | Decide public preview hosting strategy: Vercel/Netlify, second Pages repo, or same-site `/dev/` artifact merge. |
-| TODO | Add a deploy verification script that records page status, latest Actions SHA, and commit match. |
+| DONE | Add a deploy verification script that records page status, latest Actions SHA, and commit match. |

@@ -69,6 +69,7 @@
     "test:roll20-runtime-evidence": "node scripts/roll20_runtime_evidence_compare.mjs --self-test",
     "compare:roll20-runtime-evidence": "node scripts/roll20_runtime_evidence_compare.mjs",
     "status:roll20-actual": "node scripts/roll20_actual_status.mjs",
+    "verify:pages-deploy": "node scripts/verify_github_pages_deploy.mjs",
     "gate:roll20-renderer-ready": "node scripts/roll20_actual_status.mjs --require-renderer-ready",
     "crop:roll20-actual": "node scripts/roll20_actual_screenshot_crop.mjs",
     "plan:roll20-root-capture": "node scripts/roll20_root_capture_plan.mjs",

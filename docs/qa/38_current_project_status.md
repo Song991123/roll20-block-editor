@@ -1,6 +1,6 @@
 # 38. Current Project Status
 
-Date: 2026-07-30
+Date: 2026-07-31
 
 This is an anonymous handoff snapshot. It contains no real sheet names,
 creator names, source URLs, screenshots, private room identifiers, or
@@ -8,6 +8,13 @@ source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
 ## Current Evidence
+
+- DEPLOYMENT VERIFIED: `pnpm verify:pages-deploy` reports the public GitHub
+  Pages URL as HTTP 200 and matches the latest successful `main` Pages run at
+  `98d4b4965be2` (`30399580622`).
+- DEPLOYMENT BOUNDARY: the current integration branch is
+  `claude/design-reset` at `f7c4dc86963e`; Pages deploys only `main`, so this
+  branch is CI-verified but not publicly deployed.
 
 - LOCAL FIX: `setAttrs(attributes, options)` calls whose options argument is
   not representable by the current visual block now stay intact in the raw

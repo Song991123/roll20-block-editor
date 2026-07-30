@@ -1,3 +1,15 @@
+## 2026-07-31 - Pages freshness verification gate
+
+- Added `scripts/verify_github_pages_deploy.mjs` and the
+  `pnpm verify:pages-deploy` package script. It checks the public site status,
+  the latest successful Pages workflow, and commit equality against the
+  selected branch without requiring a local GitHub CLI session.
+- Verified `main` at `98d4b4965be2` is live at HTTP 200 through Pages run
+  `30399580622`. The active `claude/design-reset` branch at `f7c4dc86963e`
+  remains intentionally unpublished until review and merge.
+- This is a deployment freshness check only. It does not promote local
+  renderer evidence to actual Roll20 parity or change any Roll20 room.
+
 ## 2026-07-30 - Exact before/inside/after drop indicators
 
 - IMPLEMENTED: Added a small geometry helper for the parent-owned iframe
