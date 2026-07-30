@@ -1,3 +1,19 @@
+## 2026-07-31 Sheet-agnostic chat renderer boundary
+
+- DONE LOCAL: Removed fixture-specific chat font, geometry, typography,
+  paint, and rolltemplate selectors from the product renderer. Chat policy
+  controls now expose only generic Roll20-compatible policies.
+- DONE LOCAL: Removed the matching fixture-specific branches from the
+  local chat smoke so the diagnostic contract no longer blesses a single
+  sample sheet.
+- VERIFIED LOCAL: Static reference scan, Node syntax check, lint, build,
+  full ci:verify, synthetic Sandbox smoke, preview/edit visual smoke for
+  modern and legacy modes, and strict imported-edit synchronization pass.
+  Synthetic Sandbox smoke remains the clean-checkout copyright-safe path.
+- VERIFY / OPEN: This is a product-boundary cleanup, not actual Roll20
+  parity. Sandbox activation, chat screenshot parity, and dedicated legacy
+  room verification remain open.
+
 ## 2026-07-31 Large workspace local-input smoke
 
 - `DONE LOCAL`: The large-workspace smoke now accepts optional local HTML/CSS/

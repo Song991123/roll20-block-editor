@@ -40,23 +40,14 @@ function safeRolltemplateClass(name: string): string {
 type ChatFontPolicy =
   | 'default'
   | 'roll20-chat-fallback'
-  | 'roll20-sandbox-font-proxy'
-  | 'fixtureC-bookk-unavailable';
+  | 'roll20-sandbox-font-proxy';
 type ChatTextPolicy = 'default' | 'roll20-auto-aa';
 type ChatShadowPolicy = 'default' | 'no-template-shadow';
 type ChatGeometryPolicy =
   | 'default'
   | 'tight-cell-spacing'
   | 'roll20-chat-shell-width-340'
-  | 'fixtureA-message-full-width'
   | 'table-scale-x'
-  | 'fixtureA-root-width-actual'
-  | 'coc-table-scale-x'
-  | 'coc-table-intrinsic-clamp'
-  | 'coc-table-actual-width'
-  | 'coc-crop-origin-y20'
-  | 'coc-overflow-crop-model'
-  | 'coc-overflow-crop-origin-y20'
   | 'roll20-message-padding'
   | 'roll20-break-word'
   | 'roll20-intrinsic-spacing'
@@ -66,25 +57,13 @@ type ChatTypographyPolicy =
   | 'default'
   | 'roll20-shell-typography'
   | 'roll20-template-typography'
-  | 'roll20-cell-metrics'
-  | 'fixtureA-font-size-only'
-  | 'fixtureA-text-metrics'
-  | 'fixtureA-message-cell-font-context'
-  | 'fixtureA-message-cell-wrap-context'
-  | 'fixtureC-table-font-context'
-  | 'fixtureC-bookk-missing-render'
-  | 'fixtureC-missing-bookk-table-font-context'
-  | 'fixtureC-sanitize-typography'
-  | 'fixtureC-bookk-fallback-only'
-  | 'fixtureC-korean-glyph-metrics'
-  | 'fixtureC-roll20-fallback-stack';
+  | 'roll20-cell-metrics';
 type ChatPaintPolicy =
   | 'default'
   | 'roll20-dim-background'
   | 'roll20-dim-brightness'
   | 'roll20-dim-saturate'
-  | 'roll20-edge-shadow'
-  | 'coc-background-size-actual';
+  | 'roll20-edge-shadow';
 
 function isChatDiagnosticMode(): boolean {
   // Candidate CSS is useful while measuring Roll20, but must never become a
@@ -101,8 +80,7 @@ function currentChatFontPolicy(): ChatFontPolicy {
   const value = window.localStorage.getItem('__r20ChatFontPolicy');
   if (
     value === 'roll20-chat-fallback' ||
-    value === 'roll20-sandbox-font-proxy' ||
-    value === 'fixtureC-bookk-unavailable'
+    value === 'roll20-sandbox-font-proxy'
   ) return value;
   return 'default';
 }
@@ -127,15 +105,7 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
   if (
     value === 'tight-cell-spacing' ||
     value === 'roll20-chat-shell-width-340' ||
-    value === 'fixtureA-message-full-width' ||
     value === 'table-scale-x' ||
-    value === 'fixtureA-root-width-actual' ||
-    value === 'coc-table-scale-x' ||
-    value === 'coc-table-intrinsic-clamp' ||
-    value === 'coc-table-actual-width' ||
-    value === 'coc-crop-origin-y20' ||
-    value === 'coc-overflow-crop-model' ||
-    value === 'coc-overflow-crop-origin-y20' ||
     value === 'roll20-message-padding' ||
     value === 'roll20-break-word' ||
     value === 'roll20-intrinsic-spacing' ||
@@ -151,18 +121,7 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
   if (
     value === 'roll20-shell-typography' ||
     value === 'roll20-template-typography' ||
-    value === 'roll20-cell-metrics' ||
-    value === 'fixtureA-font-size-only' ||
-    value === 'fixtureA-text-metrics' ||
-    value === 'fixtureA-message-cell-font-context' ||
-    value === 'fixtureA-message-cell-wrap-context' ||
-    value === 'fixtureC-table-font-context' ||
-    value === 'fixtureC-bookk-missing-render' ||
-    value === 'fixtureC-missing-bookk-table-font-context' ||
-    value === 'fixtureC-sanitize-typography' ||
-    value === 'fixtureC-bookk-fallback-only' ||
-    value === 'fixtureC-korean-glyph-metrics' ||
-    value === 'fixtureC-roll20-fallback-stack'
+    value === 'roll20-cell-metrics'
   ) return value;
   return 'default';
 }
@@ -174,8 +133,7 @@ function currentChatPaintPolicy(): ChatPaintPolicy {
     value === 'roll20-dim-background' ||
     value === 'roll20-dim-brightness' ||
     value === 'roll20-dim-saturate' ||
-    value === 'roll20-edge-shadow' ||
-    value === 'coc-background-size-actual'
+    value === 'roll20-edge-shadow'
   ) return value;
   return 'default';
 }
@@ -183,11 +141,7 @@ function currentChatPaintPolicy(): ChatPaintPolicy {
 function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'default'): string {
   const prefixedCss = autoPrefixCssClasses(css);
   const rawFontFaces = prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
-  const fontFaces = fontPolicy === 'roll20-chat-fallback'
-    ? []
-    : fontPolicy === 'fixtureC-bookk-unavailable'
-      ? rawFontFaces.filter((fontFace) => !/font-family\s*:\s*["']?BookkMyungjo-Bd["']?/i.test(fontFace))
-      : rawFontFaces;
+  const fontFaces = fontPolicy === 'roll20-chat-fallback' ? [] : rawFontFaces;
   const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
   const rolltemplateCss = rewriteRoll20AssetUrls([...fontFaces, ...(matches ?? [])].join('\n'), {
     proxyFontUrls: fontPolicy === 'roll20-sandbox-font-proxy',
@@ -257,34 +211,9 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-chat-shell-width-340"] .r20-chat-card-group .message {
   width: 340px;
 }
-.r20-chat-pane[data-r20-chat-geometry-policy="fixtureA-message-full-width"] .r20-chat-card-group:has(.sheet-rolltemplate-aw),
-.r20-chat-pane[data-r20-chat-geometry-policy="fixtureA-message-full-width"] .r20-chat-card-group .message:has(.sheet-rolltemplate-aw) {
-  width: 340px;
-}
 .r20-chat-pane[data-r20-chat-geometry-policy="table-scale-x"] [class*="sheet-rolltemplate-"] table {
   transform: scaleX(0.981);
   transform-origin: left top;
-}
-.r20-chat-pane[data-r20-chat-geometry-policy="fixtureA-root-width-actual"] .sheet-rolltemplate-aw {
-  width: 279px;
-}
-.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-scale-x"] .sheet-rolltemplate-coc table {
-  transform: scaleX(0.981);
-  transform-origin: left top;
-}
-.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-intrinsic-clamp"] .sheet-rolltemplate-coc table {
-  border-spacing: 0 !important;
-  max-width: 1249px;
-  overflow-wrap: break-word;
-  width: max-content;
-}
-.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-actual-width"] .sheet-rolltemplate-coc table {
-  border-spacing: 0 !important;
-  overflow-wrap: break-word;
-  width: 1248.55px !important;
-}
-.r20-chat-pane[data-r20-chat-geometry-policy="coc-crop-origin-y20"] .sheet-rolltemplate-coc table {
-  margin-top: 20px !important;
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-message-padding"] .r20-chat-card-group .message {
   padding-right: 28px;
@@ -338,123 +267,6 @@ const roll20ChatShellCss = `
   letter-spacing: normal;
   -webkit-font-smoothing: auto;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw table,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw td {
-  font-size: 13.65px;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw table,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw td {
-  font-size: 13.65px;
-  letter-spacing: normal;
-  -webkit-font-smoothing: auto;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw table {
-  font-size: 13.65px;
-  letter-spacing: normal;
-  -webkit-font-smoothing: auto;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw td {
-  font-size: 27.3px;
-  letter-spacing: normal;
-  -webkit-font-smoothing: auto;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw table {
-  color: rgb(64, 64, 64);
-  font-size: 13.65px;
-  letter-spacing: normal;
-  overflow-wrap: break-word;
-  -webkit-font-smoothing: antialiased;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw td {
-  color: rgb(64, 64, 64);
-  font-size: 27.3px;
-  letter-spacing: normal;
-  overflow-wrap: break-word;
-  -webkit-font-smoothing: antialiased;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-  font-size: 13.65px;
-  letter-spacing: normal;
-  -webkit-font-smoothing: antialiased;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc td,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc td,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
-  font-family: "__r20_missing_BookkMyungjo_Bd__", sans-serif !important;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-  font-size: 13.65px;
-  letter-spacing: normal;
-  -webkit-font-smoothing: antialiased;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc td {
-  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-  font-size: 13.65px;
-  letter-spacing: normal;
-  overflow-wrap: break-word;
-  -webkit-font-smoothing: antialiased;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  border-spacing: 0;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc td,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
-  font-family: "Noto Sans KR", sans-serif !important;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc td {
-  font-family: "Noto Sans KR", sans-serif;
-  letter-spacing: normal;
-  overflow-wrap: break-word;
-  -webkit-font-smoothing: antialiased;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  font-size: 13.65px;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  border-spacing: 0;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Noto Sans KR", sans-serif;
-  font-size: 13.65px;
-  letter-spacing: normal;
-  overflow-wrap: break-word;
-  -webkit-font-smoothing: antialiased;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc td,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
-  font-family: "BookkMyungjo-Bd", "Noto Sans KR", sans-serif;
-  letter-spacing: normal;
-  overflow-wrap: break-word;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  border-spacing: 0;
-}
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
@@ -479,9 +291,6 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] caption,
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-edge-shadow"] .r20-chat-card-group [class*="sheet-rolltemplate-"] td {
   box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.08);
-}
-.r20-chat-pane[data-r20-chat-paint-policy="coc-background-size-actual"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  background-size: 1248.55px auto !important;
 }
 .r20-chat-pane .textchatcontainer .content {
   line-height: 1.25em;
@@ -616,34 +425,6 @@ const roll20ChatShellCss = `
 }
 .r20-chat-pane .sheet-rolltemplate-default tr:nth-child(even) {
   background-color: #eee;
-}
-`;
-
-const roll20ChatDiagnosticOverrideCss = `
-.r20-chat-pane[data-r20-chat-geometry-policy="coc-table-actual-width"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  border-spacing: 0 !important;
-  max-width: 1248.55px !important;
-  overflow-wrap: break-word !important;
-  width: 1248.55px !important;
-}
-.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-model"] .r20-chat-card-group .message:has(.sheet-rolltemplate-coc) {
-  overflow: hidden;
-}
-.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-model"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  border-spacing: 0 !important;
-  max-width: 1248.55px !important;
-  overflow-wrap: break-word !important;
-  width: 1248.55px !important;
-}
-.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-origin-y20"] .r20-chat-card-group .message:has(.sheet-rolltemplate-coc) {
-  overflow: hidden;
-}
-.r20-chat-pane[data-r20-chat-geometry-policy="coc-overflow-crop-origin-y20"] .r20-chat-card-group .sheet-rolltemplate-coc table {
-  border-spacing: 0 !important;
-  margin-top: 20px !important;
-  max-width: 1248.55px !important;
-  overflow-wrap: break-word !important;
-  width: 1248.55px !important;
 }
 `;
 
@@ -860,7 +641,6 @@ export default function ChatPane() {
   const chatGeometryPolicy = currentChatGeometryPolicy();
   const chatTypographyPolicy = currentChatTypographyPolicy();
   const chatPaintPolicy = currentChatPaintPolicy();
-  const chatDiagnosticsEnabled = isChatDiagnosticMode();
   const rolltemplateCss = useMemo(
     () => extractRolltemplateCss(emittedCss, chatFontPolicy),
     [emittedCss, chatFontPolicy],
@@ -882,9 +662,6 @@ export default function ChatPane() {
           data-r20-chat-user-css
           dangerouslySetInnerHTML={{ __html: rolltemplateCss }}
         />
-      )}
-      {chatDiagnosticsEnabled && (
-        <style data-r20-chat-diagnostic-css dangerouslySetInnerHTML={{ __html: roll20ChatDiagnosticOverrideCss }} />
       )}
       <div className="h-11 shrink-0 border-b border-border px-3 flex items-center justify-between">
         <div className="text-sm font-semibold text-foreground">

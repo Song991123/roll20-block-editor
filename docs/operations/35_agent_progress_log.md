@@ -1,3 +1,18 @@
+## 2026-07-31 - Sheet-agnostic chat renderer boundary
+
+- Removed fixture-specific chat policy unions, CSS selectors, diagnostic
+  overrides, and font branches from components/editor/ChatPane.tsx.
+  The renderer now keeps only generic Roll20 shell/template policies.
+- Removed the matching sample-only allowlists and targeted assertions from
+  scripts/rolltemplate_chat_smoke.mjs. The smoke still records generic
+  computed-style evidence without encoding a sample sheet's class names,
+  widths, or font family.
+- Static scan, Node syntax check, lint, build, full ci:verify, synthetic
+  Sandbox smoke, modern/legacy preview-edit visual smoke, and strict imported
+  edit synchronization passed.
+- Boundary: actual Roll20 Sandbox activation and chat screenshot parity are
+  still unverified because no connected Chrome Roll20 session is available.
+
 ## 2026-07-31 - Large workspace local-input smoke
 
 - Added an opt-in local-input path to the large-workspace browser smoke. It
