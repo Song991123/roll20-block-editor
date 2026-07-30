@@ -470,6 +470,11 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
             <div>
               전체 구조화: <span className="tabular-nums">{report.structuredCoverage}%</span>
             </div>
+            {report.rawCss > 0 && (
+              <div className="mt-1 text-amber-500" data-testid="import-css-fallback-warning">
+                CSS {report.rawCss}건은 현재 구조화 블록으로 분해하지 않고 원본 CSS 블록으로 보존했습니다. 화면은 유지되지만 해당 규칙은 블록 단위 편집이 제한됩니다.
+              </div>
+            )}
             {(report.pageJsBlocks > 0 || report.workerBlocks > 0) && (
               <div>
                 JS 블록: 페이지 <span className="tabular-nums">{report.pageJsBlocks}</span> · 동작{' '}
