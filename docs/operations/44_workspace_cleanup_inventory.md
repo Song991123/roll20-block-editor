@@ -389,3 +389,15 @@ directories that had been recreated by the local build.
   the active branch is clean.
 - PRESERVED: `node_modules/`, `reports/README.md`, product source, Git metadata,
   both worktrees, archive/reference zones, and all external sheet/source roots.
+
+## 2026-07-30 eighth-pass user-authorized retry
+
+- RECHECKED: the exact canonical-worktree targets `.next/`, `out/`, `.tmp/`,
+  `next-env.d.ts`, and `reports/legacy-export-audit/` were present, generated,
+  untracked/recreatable, and outside protected source ownership. Project
+  listener checks were clear.
+- NOT DELETED: the guarded native PowerShell deletion was rejected by the host
+  before execution. No target changed state.
+- PRESERVED: `node_modules/`, source files, report policy, Git metadata,
+  fixtures, both worktrees, and all protected external sheet/source folders.
+  No alternate shell, per-file workaround, or safety bypass was used.

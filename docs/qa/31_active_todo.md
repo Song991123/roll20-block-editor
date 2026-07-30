@@ -7005,3 +7005,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: use a supported native file chooser or a browser connection with a
   permitted request/file-input surface, then re-run the same anonymous handoff
   and capture positive root/asset/state/chat evidence.
+
+## 2026-07-30 Cleanup retry status (eighth pass)
+
+- `VERIFY / NOT DELETED`: after explicit user authorization, the exact
+  generated targets `.next/`, `out/`, `.tmp/`, `next-env.d.ts`, and
+  `reports/legacy-export-audit/` were re-resolved inside the canonical
+  worktree. No project listener was active.
+- The host rejected the guarded native deletion before execution. Nothing was
+  deleted, and no alternate shell or per-file safety workaround was used.
+- NEXT P1: retry only when the host permits this maintenance operation; keep
+  `node_modules/`, source roots, active fixtures, report policy, and protected
+  external sheet sources intact.

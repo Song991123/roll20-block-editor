@@ -7750,3 +7750,16 @@ visibility verification passed. No external room was opened or modified.
 - This is a tooling-boundary result, not Roll20 render parity. A supported
   native file chooser or permitted network/file-input browser surface is still
   required for actual upload evidence.
+
+## 2026-07-30 - User-authorized cleanup retry blocked before execution
+
+- Rechecked the exact generated targets `.next/`, `out/`, `.tmp/`,
+  `next-env.d.ts`, and `reports/legacy-export-audit/` under the canonical
+  worktree. The project ports were clear and protected sources/worktrees were
+  excluded.
+- The host rejected the guarded native recursive deletion before it executed.
+  All five targets remain present; no alternate shell, per-file workaround, or
+  safety bypass was used.
+- This is a maintenance-policy blocker only. Product source, active
+  dependencies, fixtures, reports policy, and external sheet sources remain
+  untouched.
