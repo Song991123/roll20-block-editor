@@ -1,3 +1,13 @@
+## 2026-07-31 - Anonymous protected-corpus static inventory
+
+- Read two protected external input roots in read-only mode and recorded only
+  aggregate counts: `1,428` sheet directories and `18,550` candidate files.
+- No source name, path, snippet, screenshot, fixture, or derived sheet payload
+  was committed. This audit is static inventory evidence, not import, runtime,
+  or visual-parity evidence.
+- The remaining gates are anonymous broader import coverage and permitted
+  modern Sandbox plus separate legacy-room checks.
+
 ## 2026-07-31 - Import source-boundary hardening
 
 - Added high-confidence template-marker detection to the HTML import boundary.

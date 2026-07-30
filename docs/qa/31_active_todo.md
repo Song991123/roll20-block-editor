@@ -1,3 +1,14 @@
+## 2026-07-31 Anonymous protected-corpus static inventory
+
+- VERIFIED STATIC: Two protected external input roots were scanned read-only;
+  the aggregate contained `1,428` sheet directories and `18,550` candidate
+  files.
+- SCOPE: This is a static feature inventory only. No source identity, path,
+  snippet, screenshot, fixture, or derived sheet payload was added to the
+  tracked tree, and the scan does not prove import fidelity or visual parity.
+- VERIFY / OPEN: Expand anonymous import coverage and complete the permitted
+  modern Sandbox plus separate legacy-room visual/runtime checks.
+
 ## 2026-07-31 Import source-boundary hardening
 
 - DONE LOCAL: Import now detects high-confidence unexpanded build-template

@@ -9,11 +9,15 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `facdc38`. The branch is pushed
+- Active branch: `claude/design-reset` at `ec92f76`. The branch is pushed
   to `origin`; the renderer-boundary patch is committed and the worktree is
   clean after this documentation update.
-- Remote CI: run `30568385840` passed safety/unit verification, lint, and
+- Remote CI: run `30569682564` passed safety/unit verification, lint, and
   build for `73ca762`.
+- Static corpus inventory: two protected external roots were read-only scanned;
+  the anonymous aggregate contains `1,428` sheet directories and `18,550`
+  candidate files. This is inventory evidence only and does not establish
+  arbitrary import fidelity or actual Roll20 parity.
 - Local interaction recheck: `smoke:edit-flow`, strict imported-edit sync, and
   persistent preview surface passed; modern and legacy each retained one
   iframe with zero reloads.
