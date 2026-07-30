@@ -1,3 +1,23 @@
+## 2026-07-31 Legacy computed-style/context correction
+
+- VERIFIED EXTERNAL: An anonymous computed-style sidecar was captured from the
+  dedicated Legacy test-room iframe. The visible root inherited the Roll20
+  `Helvetica Neue`/`13px` base; no broad `sans-serif`/`16px` sheet surface was
+  present in the actual frame.
+- FIXED LOCAL: Removed the unverified `.charsheet > *` legacy font/spacing
+  override. Legacy mode still keeps selector prefixing, measured asset policy,
+  and the separate input-state layer.
+- VERIFIED LOCAL: Legacy preview smoke, build-doc bundle test, production
+  build, and paired modern/legacy preview-edit visual smoke pass. The updated
+  sidecar comparison reports `leafDifferences=0` within its explicit `1px`
+  diagnostic tolerance.
+- MEASURED / VERIFY: The updated anonymous `420 x 180` crop has raw mean
+  channel difference `3.759`, threshold-20 mismatch `6.167%`, and best tested
+  translated mismatch `4.187%`. This remains `MEASURED_NOT_PARITY` because
+  wrapper width/inset and capture scale are not normalized.
+- OPEN: Normalize the actual iframe wrapper/crop context and extend the probe
+  beyond the synthetic controls before promoting another renderer change.
+
 ## 2026-07-31 Roll20 modern Sandbox actual smoke
 
 - VERIFIED EXTERNAL: The dedicated authenticated Custom Sheet Sandbox saved an

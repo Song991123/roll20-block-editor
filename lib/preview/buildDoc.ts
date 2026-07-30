@@ -1636,6 +1636,7 @@ const ROLL20_DIALOG_OPEN_CSS = `
   height: auto;
   min-height: 0;
   overflow: visible;
+  color: #333;
 }
 
 #dialog-window,

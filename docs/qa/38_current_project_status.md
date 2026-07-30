@@ -7,6 +7,23 @@ creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
+## Latest Legacy Render Correction - 2026-07-31
+
+- VERIFIED EXTERNAL: The anonymous Legacy iframe computed-style sidecar shows
+  the visible root using the Roll20 `Helvetica Neue`/`13px` base cascade. The
+  broad legacy `sans-serif`/`16px` surface previously added by the local
+  renderer was not present in the actual frame.
+- FIXED LOCAL: Removed the broad legacy surface override; selector prefixing,
+  runtime asset handling, and legacy input-state behavior remain separate.
+- VERIFIED LOCAL: Legacy preview smoke, build-doc bundle test, production
+  build, and paired modern/legacy preview-edit visual smoke pass. The sampled
+  leaf style comparison has zero significant differences under the explicit
+  `1px` diagnostic tolerance.
+- MEASURED / VERIFY: The refreshed anonymous crop is `3.759` mean channel
+  difference, `6.167%` threshold-20 mismatch, and `4.187%` after best tested
+  translation. The result remains `MEASURED_NOT_PARITY` because wrapper and
+  capture normalization are still open.
+
 ## Current Checkpoint - 2026-07-31
 
 - Active branch: `claude/design-reset` at `bbafd08` before the current

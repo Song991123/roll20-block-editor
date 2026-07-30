@@ -195,8 +195,7 @@ assertCheck(checks, 'iframe modern does not force legacy disabled input paint', 
 assertCheck(checks, 'iframe legacy applies overridable disabled input paint', /input\[disabled\][\s\S]*?background-color:\s*rgba\(255,\s*255,\s*255,\s*0\)/i.test(legacyInputCss) && !/!important/i.test(legacyInputCss));
 assertCheck(checks, 'iframe base mirrors current Roll20 text input height', /\.charsheet input\[type="text"\]\s*{\s*height:\s*27\.6px;/i.test(modernBaseCss));
 assertCheck(checks, 'iframe modern keeps legacy sheet surface out', modernLegacySurfaceCss === '');
-assertCheck(checks, 'iframe legacy applies the measured sheet surface', /\.charsheet\s*>\s*\*\s*{[\s\S]*?font-family:\s*sans-serif[\s\S]*?font-size:\s*16px[\s\S]*?line-height:\s*20px/i.test(legacySurfaceCss));
-assertCheck(checks, 'iframe legacy applies measured form and label defaults', /\.charsheet input,[\s\S]*?font-size:\s*13px[\s\S]*?line-height:\s*18px/i.test(legacySurfaceCss) && /\.characterviewer label[\s\S]*?margin-bottom:\s*8px/i.test(legacySurfaceCss));
+assertCheck(checks, 'iframe legacy does not add an unverified broad sheet surface override', legacySurfaceCss === '');
 assertCheck(checks, 'iframe base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;[\s\S]*?vertical-align:\s*middle;/i.test(modernBaseCss));
 assertCheck(checks, 'iframe base mirrors Roll20 repeating-control height', /\.charsheet \.repcontrol\s*{\s*min-height:\s*27\.6px;/i.test(modernBaseCss));
 assertCheck(checks, 'iframe runtime applies Roll20 button classes', modernDoc.includes("button.classList.add('btn')") && modernDoc.includes("button.classList.add('ui-draggable')"));
@@ -229,8 +228,7 @@ assertCheck(checks, 'shadow legacy inlines CSS var', includesText(legacyShadowUs
 assertCheck(checks, 'shadow legacy preserves stable CSS', includesText(legacyShadowUserCss, 'padding: 8px') && includesText(legacyShadowUserCss, 'color: red'));
 assertCheck(checks, 'shadow base mirrors current Roll20 text input height', /\.charsheet input\[type="text"\]\s*{\s*height:\s*27\.6px;/i.test(modernShadowBaseCss));
 assertCheck(checks, 'shadow modern keeps legacy sheet surface out', modernShadowLegacySurfaceCss.trim() === '');
-assertCheck(checks, 'shadow legacy applies the measured sheet surface', /\.charsheet\s*>\s*\*\s*{[\s\S]*?font-family:\s*sans-serif[\s\S]*?font-size:\s*16px[\s\S]*?line-height:\s*20px/i.test(legacyShadowSurfaceCss));
-assertCheck(checks, 'shadow legacy applies measured form and label defaults', /\.charsheet input,[\s\S]*?font-size:\s*13px[\s\S]*?line-height:\s*18px/i.test(legacyShadowSurfaceCss) && /\.characterviewer label[\s\S]*?margin-bottom:\s*8px/i.test(legacyShadowSurfaceCss));
+assertCheck(checks, 'shadow legacy does not add an unverified broad sheet surface override', legacyShadowSurfaceCss.trim() === '');
 assertCheck(checks, 'shadow base mirrors Roll20 roll-button runtime defaults', /button\[type="roll"\][\s\S]*?border-radius:\s*4px;[\s\S]*?color:\s*#333;[\s\S]*?vertical-align:\s*middle;/i.test(modernShadowBaseCss));
 assertCheck(checks, 'shadow base mirrors Roll20 repeating-control height', /\.charsheet \.repcontrol\s*{\s*min-height:\s*27\.6px;/i.test(modernShadowBaseCss));
 assertCheck(checks, 'shadow repeating controls use Roll20 btn class', modernParts.html.includes('class="btn repcontrol_edit"') && modernParts.html.includes('class="btn repcontrol_add"'));

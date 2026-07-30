@@ -9585,3 +9585,22 @@ same-hash modern/legacy comparison.
   source identity, room identifier, and screenshot are absent from Git.
 - NEXT: Capture computed-style/context sidecars and improve crop normalization
   before any production renderer change.
+
+## 2026-07-31 - Legacy computed-style/context correction
+
+- EXTERNAL PROBE: Captured an anonymous sidecar from the dedicated Legacy
+  iframe. The visible sheet root inherited `Helvetica Neue`/`13px`; the
+  actual frame did not contain the local heuristic `.charsheet > *` font
+  override.
+- LOCAL FIX: Removed the broad legacy sheet-surface CSS. The legacy contract
+  still independently applies selector prefixing, runtime asset policy, and
+  input-state handling.
+- VERIFIED LOCAL: Legacy preview smoke, build-doc bundle, production build,
+  and paired modern/legacy preview-edit smoke pass. A reusable sidecar
+  comparison reports zero significant sampled leaf-style differences under a
+  documented `1px` tolerance, while retaining wrapper deltas separately.
+- MEASURED: Refreshed anonymous crop metrics are mean channel difference
+  `3.759`, threshold-20 mismatch `6.167%`, and best translated mismatch
+  `4.187%`. This is still not a parity claim.
+- NEXT: Normalize actual iframe width/inset and capture scale, then expand the
+  anonymous probe to generic layout controls before another CSS change.

@@ -49,29 +49,13 @@ const roll20LiveRuntimeParityCss = `
 }
 `;
 
-// The legacy-enabled room keeps the dialog shell on the current Roll20 base,
-// but its legacy-sanitized sheet content falls back to the older browser
-// surface: sans-serif/16px content, fixed 18px form-control text, and the
-// older label spacing. Keep this overlay mode-specific and before authored CSS
-// so an imported sheet can still override it.
-export const roll20LegacySheetSurfaceCss = `
-.charsheet > * {
-  font-family: sans-serif;
-  font-size: 16px;
-  line-height: 20px;
-}
-.charsheet input,
-.charsheet select,
-.charsheet textarea {
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 18px;
-}
-.characterviewer label {
-  line-height: 18px;
-  margin-bottom: 8px;
-}
-`;
+// The legacy-enabled room still uses the same current Roll20 sheet-facing
+// base cascade. A previous heuristic added a broad `.charsheet > *` font
+// override here, but a fresh dedicated legacy-room probe showed that rule is
+// not present in Roll20: the sheet inherits the measured Helvetica/13px base.
+// Keep the slot exported for source-order compatibility; mode-specific
+// differences belong to the legacy selector/asset/input-state contracts.
+export const roll20LegacySheetSurfaceCss = '';
 
 /**
  * descendant prefix `.ui-dialog ` 제거.

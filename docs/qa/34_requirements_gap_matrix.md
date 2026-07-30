@@ -2,6 +2,22 @@
 
 Date: 2026-07-31
 
+## Latest Legacy Computed-Style Reconciliation - 2026-07-31
+
+- VERIFIED EXTERNAL: The anonymous dedicated Legacy iframe sidecar shows the
+  visible sheet root inheriting `Helvetica Neue`/`13px`; the previously used
+  broad legacy `sans-serif`/`16px` surface is not present in the actual frame.
+- FIXED LOCAL: Removed that unverified global legacy surface override while
+  retaining the separate legacy selector, asset, and input-state contracts.
+- VERIFIED LOCAL: Legacy smoke, build-doc bundle, production build, and paired
+  modern/legacy preview-edit smoke pass. Sampled leaf computed styles compare
+  with zero significant differences under the documented `1px` tolerance.
+- MEASURED / VERIFY: The refreshed anonymous crop is `3.759` mean channel
+  difference, `6.167%` threshold-20 mismatch, and `4.187%` after the best
+  tested translation. This is not visual parity.
+- NOT PROVEN: wrapper-normalized pixel parity, arbitrary-sheet parity, live
+  worker mutation, and reference-image comparison.
+
 ## Latest External Reconciliation - 2026-07-31
 
 - The current code checkpoint before this validation-harness update is
