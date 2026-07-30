@@ -23,6 +23,17 @@
   totals were `50` across the batch. These are anonymous local measurements,
   not a claim of all-sheet or Roll20 visual parity.
 
+## 2026-07-31 CSS fallback user feedback
+
+- DONE LOCAL: The import result now explicitly explains when CSS was kept as
+  an original fallback block instead of being split into structured blocks.
+  This makes the edit limitation visible without implying full CSS mapping.
+- VERIFIED LOCAL: The import-dialog browser smoke now enters the CSS tab,
+  imports a generic unsupported at-rule, and requires the fallback warning;
+  the smoke still reports one persistent iframe and zero browser errors.
+- VERIFY / OPEN: This improves truthful local feedback only. It does not
+  establish arbitrary-sheet CSS fidelity or actual Roll20 visual parity.
+
 ## 2026-07-31 Roll20 browser authentication preflight
 
 - VERIFY / BLOCKED EXTERNAL: The existing in-app browser tab is on the Roll20

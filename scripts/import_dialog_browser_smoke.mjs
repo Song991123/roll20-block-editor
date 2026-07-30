@@ -108,6 +108,16 @@ async function main() {
     assert(result.workspace.blockCount.html >= 3, 'dialog import created fewer than three HTML blocks');
     assert(result.iframeCount === 1, `import remounted the preview surface: ${result.iframeCount}`);
 
+    await page.getByRole('tab', { name: 'CSS' }).click();
+    const cssTextarea = page.locator('[data-testid="import-dialog"] [data-state="active"] textarea');
+    assert(await cssTextarea.count() === 1, 'active CSS textarea is not unique');
+    await cssTextarea.fill('.sheet { color: red; } @layer reset;');
+    await clickConvert();
+    await page.waitForSelector('[data-testid="import-css-fallback-warning"]', {
+      state: 'visible',
+      timeout: 20000,
+    });
+
     await page.getByRole('tab', { name: 'JS' }).click();
     await page.locator('[data-testid="import-js-textarea"]').fill('window.r20ExternalPageProbe = true;');
     await clickConvert();

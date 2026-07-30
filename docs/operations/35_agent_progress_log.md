@@ -21,6 +21,15 @@
   `50` total warnings. This keeps CSS fallback and warning scope visible
   without retaining any source identity in the repository.
 
+## 2026-07-31 - CSS fallback user feedback
+
+- Added a visible import-result warning for CSS rules preserved as original
+  fallback blocks. The message states that the rendered CSS is retained while
+  block-level editing is limited for those rules.
+- Extended the browser import smoke to select the CSS tab, import a generic
+  unsupported at-rule, and assert the warning is visible. This is local UX
+  evidence, not arbitrary-sheet or Roll20 parity evidence.
+
 ## 2026-07-31 - Roll20 browser authentication preflight
 
 - The existing in-app browser tab was read-only inspected and showed the
