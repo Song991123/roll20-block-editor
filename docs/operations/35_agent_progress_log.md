@@ -1,3 +1,17 @@
+## 2026-07-30 - Modern Sandbox file-selection retry
+
+- VERIFIED EXTERNAL: The isolated Sandbox still showed exactly one visible
+  member and the three HTML/CSS/Translation upload controls.
+- BLOCKED EXTERNAL: The visible control could be clicked, but this browser
+  connection could not attach the anonymous HTML file. The file input stayed
+  empty and no applied sheet root or iframe appeared.
+- SAFETY: The generated-sheet path was not mutated; no existing room, chat,
+  campaign setting, or source-derived material was touched. The tab was left
+  as a manual-selection handoff.
+- NEXT: After the three files are selected visibly, capture modern root/state,
+  worker, rolltemplate/chat, and asset evidence. Legacy remains a separate
+  dedicated-room verification track.
+
 ## 2026-07-30 - Worker binary-expression mapping
 
 - IMPLEMENTED: Added recursive parsing for the existing worker arithmetic,

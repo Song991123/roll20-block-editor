@@ -1,3 +1,17 @@
+## 2026-07-30 Modern Sandbox file-selection retry
+
+- VERIFIED EXTERNAL: The isolated Sandbox showed exactly one visible member and
+  separate HTML, CSS, and Translation controls.
+- BLOCKED EXTERNAL: A user-visible click and keyboard selection attempt did not
+  attach the anonymous HTML file; the input still reported zero files and no
+  sheet root or iframe appeared.
+- NO MUTATION: No existing room, campaign setting, chat message, or source
+  material was changed. The dedicated tab remains a handoff for manual file
+  selection.
+- NEXT P0: Select the three anonymous files through the visible native chooser,
+  then capture positive modern root/state/worker/roll/chat evidence. Keep the
+  legacy-enabled room as a separate gate.
+
 ## 2026-07-30 Worker binary-expression mapping
 
 - DONE LOCAL: The worker parser now recursively maps supported top-level

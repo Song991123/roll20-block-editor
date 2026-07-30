@@ -2,6 +2,15 @@
 
 Date: 2026-06-12
 
+## Latest External Sandbox File-Selection Retry: 2026-07-30
+
+- The isolated modern Sandbox visibly reported one member and all three upload
+  controls.
+- The visible selection attempt did not attach the anonymous HTML file; the
+  input remained empty and no applied root or iframe appeared.
+- Keep modern activation and the separate legacy-room runtime/visual gate at
+  `VERIFY/BLOCKED at browser handoff`. No actual parity claim is promoted.
+
 ## Latest Local Worker Mapping Reconciliation: 2026-07-30
 
 - Supported worker arithmetic, comparison, and logical expressions now map
