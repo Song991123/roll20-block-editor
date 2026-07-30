@@ -665,3 +665,16 @@ directories that had been recreated by the local build.
   deletion loop, or safety bypass was used.
 - VERIFIED: product source, protected external sheets, active dependencies,
   Git worktrees, and tracked report policy remain untouched.
+
+## 2026-07-30 user-authorized retry result
+
+- RECHECKED: the exact generated targets were inside the workspace and no
+  project or CDP listener was active.
+- ATTEMPTED: complete deletion of old `web/` dependency/build output,
+  canonical build output, and disposable `.tmp/`/generated report children;
+  active `web-push-main/node_modules/` and `reports/README.md` were excluded.
+- NOT DELETED: the host rejected the boundary-checked native PowerShell
+  recursive operation before execution. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- VERIFIED: every target remains present and unchanged; source, worktrees,
+  protected external roots, active dependencies, and listeners were unaffected.

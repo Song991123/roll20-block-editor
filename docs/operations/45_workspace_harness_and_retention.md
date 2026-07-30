@@ -396,3 +396,14 @@ external material remain preserved.
   native API, or a per-file deletion loop.
 - The active dependency tree, source, worktrees, four-zone markers,
   protected source folders, and tracked report policy remain preserved.
+
+## 2026-07-30 user-authorized retry result
+
+- RECHECKED: no project or CDP listener was active and all requested paths
+  were generated/stale workspace-local targets outside protected ownership.
+- ATTEMPTED: deletion of old `web/` generated/dependency output, canonical
+  build output, and disposable `.tmp/`/generated report children.
+- NOT DELETED: the host rejected the boundary-checked recursive PowerShell
+  operation before execution. The rejection was not bypassed.
+- PRESERVED: active dependencies, product source, report policy README,
+  Git worktrees, four-zone markers, and protected external sheet roots.
