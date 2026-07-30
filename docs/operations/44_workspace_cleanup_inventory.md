@@ -613,3 +613,23 @@ directories that had been recreated by the local build.
   preserved.
 - VERIFIED: no product source, external sheet source, Git worktree, or server
   was changed by this retry.
+
+## 2026-07-30 latest user-authorized retry from current session
+
+- RECHECKED: no project or CDP listener was active on the checked ports, and
+  the canonical worktree was clean before the deletion attempt.
+- TARGETED: only the canonical worktree's generated `.next/`, `out/`, and
+  `.tmp/` directories plus generated subdirectories under `reports/`.
+  `reports/README.md`, `node_modules/`, source, fixtures, worktrees, and all
+  protected external sheet roots were excluded.
+- ATTEMPTED: the user explicitly authorized complete deletion. Each resolved
+  target was checked to remain inside `web-push-main/` before the command.
+- NOT DELETED: the host rejected the recursive `Remove-Item -Recurse -Force`
+  operation before PowerShell execution. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- CURRENT RESIDUALS: `.next/` 196 files / 20,818,129 bytes, `out/` 64 files /
+  3,185,739 bytes, `.tmp/` 9 files / 893,619 bytes, and generated `reports/`
+  content 26 files / 121,877 bytes remain. They are reproducible local
+  outputs, not product source.
+- VERIFIED: no source, protected external sheet, active dependency tree,
+  worktree, or tracked report policy file changed in this retry.
