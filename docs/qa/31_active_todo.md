@@ -1,3 +1,33 @@
+## 2026-07-31 Local payload fidelity gate
+
+- DONE LOCAL: Added `roll20_payload_fidelity_gate.mjs` and wired its self-test
+  into `ci:verify`. The gate compares payload files with the generated upload
+  snippet by name, byte length, SHA-256, and decoded base64 bytes.
+- VERIFIED LOCAL: Two anonymous generic payload fixtures passed
+  `fileBinding`, `appEmit`, `zipBinding`, and local DOM/CSS roundtrip checks.
+  The worker-bearing fixture also passed exact canonical worker preservation.
+- CLAIM BOUNDARY: This proves the local emit -> payload -> ZIP -> upload-snippet
+  chain only. It does not prove Roll20 returned or saved identical attachment
+  bytes, external visual parity, live worker mutation, or all-sheet support.
+- NEXT P0: Run the same gate for every generated local payload before Sandbox
+  upload, then capture fresh modern/legacy runtime evidence under the separate
+  external parity gate.
+
+## 2026-07-31 Fresh dedicated Roll20 runtime recheck
+
+- VERIFIED EXTERNAL: Only the dedicated modern and dedicated legacy tabs were
+  inspected; both still showed exactly `1 구성원` before interaction. No
+  ordinary room was opened or changed.
+- MEASURED EXTERNAL: The current anonymous layout rendered the same translated
+  labels, form controls, table, and Roll control in both tabs. Modern computed
+  the row as `block` with `inline-block` columns; legacy computed `flex` with
+  `block` columns. Both roots measured `852x340` including the authored box.
+- VERIFIED EXTERNAL: A Roll click in each dedicated destination produced the
+  anonymous `Layout proof` rolltemplate with a `Result` value in chat.
+- CLAIM BOUNDARY: The local fidelity gate PASS proves the local payload and
+  generated upload snippet agree. Roll20 does not expose attachment bytes here,
+  so external same-hash and normalized screenshot parity remain VERIFY.
+
 ## 2026-07-31 Actual generic layout proof
 
 - VERIFIED EXTERNAL: The same anonymous generic HTML/CSS/translation payload

@@ -2,6 +2,31 @@
 
 Date: 2026-07-31
 
+## Local Payload Fidelity Gate - 2026-07-31
+
+- DONE LOCAL: The new fidelity gate checks exact local payload/snippet byte
+  binding, app emit hashes, ZIP entries, and local DOM/CSS roundtrip evidence.
+- VERIFIED LOCAL: The two anonymous generic payload fixtures passed all
+  applicable local checks; the worker-bearing fixture passed worker source
+  preservation as well.
+- VERIFY / OPEN: Roll20 external attachment readback is unavailable, so
+  same-hash attachment parity remains unproven. Actual modern/legacy screenshot
+  parity, worker mutation, assets, reference images, and arbitrary-sheet
+  coverage remain open.
+
+## Fresh Dedicated Runtime Recheck - 2026-07-31
+
+- VERIFIED EXTERNAL: The dedicated modern and legacy destinations each passed
+  a fresh visible one-participant preflight. No ordinary room was touched.
+- MEASURED EXTERNAL: Both rendered the same anonymous translated labels,
+  controls, table, and Roll control. Modern used `block`/`inline-block` for
+  the generic row/columns; legacy used `flex`/`block`. Both visible roots were
+  `852x340` including the authored box.
+- VERIFIED EXTERNAL: Both Roll clicks produced the anonymous `Layout proof`
+  template with a `Result` in chat.
+- VERIFY / OPEN: This strengthens runtime/context evidence only. It does not
+  promote the external attachment hash or normalized screenshot comparison.
+
 ## Actual Generic Layout Proof - 2026-07-31
 
 - VERIFIED EXTERNAL: The same anonymous generic layout payload rendered in the

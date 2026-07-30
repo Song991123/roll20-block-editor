@@ -7,6 +7,32 @@ creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
+## Local Payload Fidelity Gate - 2026-07-31
+
+- DONE LOCAL: Added a content-addressed gate for editor emit -> payload files
+  -> ZIP -> generated Roll20 upload snippet.
+- VERIFIED LOCAL: Two anonymous generic payload fixtures passed exact file
+  binding, app emit hash/length comparison, ZIP byte comparison, and local
+  DOM/CSS roundtrip checks. The worker-bearing fixture passed exact canonical
+  worker preservation.
+- OPEN EXTERNAL: Roll20 attachment bytes are not exposed for readback. The
+  external same-hash claim therefore remains VERIFY, alongside normalized
+  modern/legacy screenshot parity, worker mutation, assets, reference images,
+  and arbitrary-sheet coverage.
+
+## Fresh Dedicated Roll20 Runtime Recheck - 2026-07-31
+
+- VERIFIED EXTERNAL: Only the dedicated modern and legacy destinations were
+  inspected; each had a fresh visible one-participant preflight. Ordinary
+  rooms remained untouched.
+- MEASURED EXTERNAL: Both showed the same anonymous translated labels, inputs,
+  table cells, and Roll control. Modern computed `block`/`inline-block` and
+  legacy computed `flex`/`block`; both visible roots measured `852x340`.
+- VERIFIED EXTERNAL: Both Roll clicks produced the anonymous `Layout proof`
+  rolltemplate and `Result` in chat.
+- OPEN EXTERNAL: Attachment byte readback, normalized screenshot parity,
+  worker mutation, asset/reference-image parity, and arbitrary-sheet coverage.
+
 ## Actual Generic Layout Proof - 2026-07-31
 
 - VERIFIED EXTERNAL: The same anonymous payload rendered in the dedicated

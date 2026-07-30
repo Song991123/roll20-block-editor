@@ -1083,3 +1083,13 @@ directories that had been recreated by the local build.
 - VERIFIED: `Test-Path` is false for both targets and the worktree remains
   clean. No source, dependency, worktree, report, or protected external sheet
   root was changed.
+
+## 2026-07-31 post-build generated output cleanup
+
+- RECHECKED: the production build recreated only ignored `web-push-main/.next/`
+  and `web-push-main/out/` under the active worktree.
+- CLEANED: both generated targets were removed after clearing only their local
+  read-only attributes where needed.
+- VERIFIED: `.next` and `out` are absent, no project/CDP listener is active,
+  and source, dependency, worktree, report, and protected external roots were
+  not changed.

@@ -1,3 +1,29 @@
+## 2026-07-31 - Payload fidelity gate
+
+- Added the local-only payload fidelity gate and CI self-test. It compares the
+  editor's recorded emit hashes, payload files, ZIP entries, and generated
+  browser upload snippet without storing source contents in the report.
+- Ran it against two anonymous generic payload fixtures: both passed file
+  binding, app emit, ZIP binding, and local DOM/CSS roundtrip checks. The
+  worker-bearing fixture also passed exact canonical worker preservation.
+- Kept the claim boundary explicit: this is not Roll20 attachment readback or
+  visual parity. Modern Sandbox and dedicated legacy-room evidence remain a
+  separate external verification track.
+
+## 2026-07-31 - Fresh dedicated Roll20 runtime recheck
+
+- Inspected only the dedicated modern and legacy destinations, each with a
+  fresh visible `1 구성원` preflight. Existing ordinary rooms were untouched.
+- Both destinations rendered the same anonymous translated labels, controls,
+  table, and Roll control. The real generation split remained visible:
+  modern `block`/`inline-block`, legacy `flex`/`block`; both roots measured
+  `852x340` including the authored box.
+- Clicked Roll in both destinations and confirmed the anonymous `Layout proof`
+  template plus `Result` in chat.
+- Kept external same-hash and normalized screenshot parity at VERIFY because
+  the page does not expose uploaded attachment bytes and wrapper/crop evidence
+  is not normalized yet.
+
 ## 2026-07-31 - Actual generic layout and table-layer proof
 
 - Ran the same anonymous layout payload only in the dedicated modern Sandbox

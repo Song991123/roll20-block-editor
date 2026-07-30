@@ -49,6 +49,7 @@ const tasks = [
   'test:visual-synthetic',
   'test:roll20-upload-snippet',
   'test:roll20-payload-provenance',
+  'test:roll20-payload-fidelity',
   'test:roll20-upload-cdp',
   'test:roll20-geometry',
   'test:roll20-computed-style-context',
