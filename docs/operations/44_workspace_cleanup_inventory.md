@@ -521,3 +521,13 @@ directories that had been recreated by the local build.
   the local report tree.
 - PRESERVED: product source, dependencies, Git worktrees, reference/archive
   roots, and protected external sheet sources.
+
+## 2026-07-30 post-CI privacy cleanup
+
+- DELETED: Build and CI-generated `.next/`, `out/`, `.tmp/`, and report
+  outputs created for the upload diagnostic and status-safety pass; only the
+  tracked `reports/README.md` remains.
+- VERIFIED: The updated status document contains anonymous evidence only, and
+  no generated fixture, screenshot, or report remains in the worktree.
+- PRESERVED: Product source, dependencies, Git worktrees, reference/archive
+  roots, and protected external sheet sources.

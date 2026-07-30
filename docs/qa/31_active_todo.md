@@ -1,3 +1,16 @@
+## 2026-07-30 Upload diagnostic and status-safety pass
+
+- DONE LOCAL: Added `SANDBOX_NO_VISIBLE_SHEET_TARGET` to the generated Roll20
+  upload and activation probes so an empty Sandbox character surface is
+  distinguished from a parse or runtime failure.
+- DONE LOCAL: Replaced the current status snapshot with an anonymous version;
+  removed room identifiers, source-derived measurements, and historical
+  private evidence references from the tracked document.
+- VERIFIED LOCAL: upload-snippet self-test, lint, `ci:verify`, and production
+  build passed. Generated outputs were removed afterward.
+- VERIFY OPEN: Roll20 Sandbox activation and dedicated legacy-room comparison
+  still require a stable browser handoff and visible sheet-root evidence.
+
 ## 2026-07-30 Roll20 Sandbox upload retry
 
 - VERIFIED EXTERNAL: The dedicated `Sheet Sandbox Tools` dialog was present;

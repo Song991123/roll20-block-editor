@@ -8259,6 +8259,19 @@ visibility verification passed. No external room was opened or modified.
   keep generated evidence local-only and keep modern/legacy verification
   separate.
 
+## 2026-07-30 - Upload diagnostic and status-safety pass
+
+- FIXED LOCAL: Roll20 upload/activation snippets now report
+  `SANDBOX_NO_VISIBLE_SHEET_TARGET` when Sandbox controls exist but no
+  character-sheet surface is open, with a direct next action.
+- SANITIZED DOCS: Replaced the tracked current-status snapshot with an
+  anonymous evidence summary and removed source-identifying room details and
+  source-derived measurements from that public document.
+- VERIFIED LOCAL: upload-snippet self-test, lint, `ci:verify`, and production
+  build passed. Recreated local outputs were purged after verification.
+- OPEN: Actual modern Sandbox activation and separate legacy-room parity remain
+  external verification gates; no parity claim is made.
+
 ## 2026-07-30 - Roll20 Sandbox upload retry
 
 - VERIFIED EXTERNAL: The dedicated Sandbox tools page accepted synthetic

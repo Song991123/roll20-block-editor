@@ -581,6 +581,7 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
   const inaccessibleSheetIframeCount = sheetIframes.filter((frame) => frame.looksLikeSheet && !frame.accessible).length;
   const characterEditorCount = document.querySelectorAll('.charactereditor').length;
   const characterDialogCount = document.querySelectorAll('.characterdialog,.characterviewer').length;
+  const sheetSandboxInputCount = document.querySelectorAll('#sheetHtml,#sheetCss,#sheetTranslation').length;
   const runtime = readRuntimeMode();
   const status = parseError
     ? 'ROLL20_EDITOR_PARSE_ERROR'
@@ -594,6 +595,8 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
         ? 'CHARACTER_DIALOG_NO_SHEET_BODY'
       : chatTemplateHitCount > 0
         ? 'CHAT_TEMPLATE_ONLY'
+      : sheetSandboxInputCount > 0
+        ? 'SANDBOX_NO_VISIBLE_SHEET_TARGET'
       : 'NOT_PROVEN';
   const result = {
     fixtureId: DATA.fixtureId,
@@ -618,7 +621,7 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
       characterDialogCount,
       domRolltemplateClasses: topProbe.visible.domRolltemplateClasses,
       textchatCount: document.querySelectorAll('#textchat,.textchatcontainer').length,
-      sheetSandboxInputCount: document.querySelectorAll('#sheetHtml,#sheetCss,#sheetTranslation').length,
+      sheetSandboxInputCount,
       bodyTextSnippet: topProbe.visible.bodyTextSnippet,
     },
     nextAction: status === 'VISIBLE_MATCH'
@@ -629,6 +632,8 @@ function renderActivationCheckSnippet({ fixtureId, activationHints, expectedRunt
         ? 'A character dialog is open, but expected sheet body markers are not visible. Open the character sheet iframe/tab before activation capture.'
       : status === 'CHAT_TEMPLATE_ONLY'
         ? 'Only the chat rolltemplate marker is visible. Do not capture sheet-root parity evidence until sheet body markers such as roll buttons, attrs, or expected text are visible.'
+      : status === 'SANDBOX_NO_VISIBLE_SHEET_TARGET'
+        ? 'The Sandbox upload controls are present, but no character-sheet surface is open. Open or create a dedicated Sandbox character sheet, then run the activation check again.'
       : status === 'ROLL20_EDITOR_PARSE_ERROR'
         ? 'Do not capture evidence. Restore the sandbox and fix the upload manifest/settings shape.'
       : status === 'RUNTIME_MODE_MISMATCH'
@@ -1034,6 +1039,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const afterChatTemplateHits = chatTemplateHitCount(after);
     const afterSheetIframeCount = after?.visible?.sheetIframeCount || 0;
     const afterCharacterDialogCount = (after?.visible?.characterEditorCount || 0) + (after?.visible?.characterDialogCount || 0);
+    const afterSandboxInputCount = after?.visible?.sheetSandboxInputCount || 0;
     const addedHits = Object.fromEntries(Object.entries(after?.hits || {}).map(([key, values]) => {
       const previous = new Set(before?.hits?.[key] || []);
       return [key, values.filter((value) => !previous.has(value))];
@@ -1052,6 +1058,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
         ? 'CHARACTER_DIALOG_NO_SHEET_BODY'
       : afterChatTemplateHits > 0
         ? 'CHAT_TEMPLATE_ONLY'
+      : afterSandboxInputCount > 0
+        ? 'SANDBOX_NO_VISIBLE_SHEET_TARGET'
       : allFileInputsDispatched
         ? 'FILE_INPUTS_DISPATCHED_BUT_VISIBLE_MATCH_NOT_PROVEN'
         : 'NOT_PROVEN';
@@ -1072,6 +1080,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
           ? 'A character dialog is open, but the expected sheet body is not visible. Open the character sheet iframe/tab before activation capture.'
         : status === 'CHAT_TEMPLATE_ONLY'
           ? 'Only rolltemplate/chat markers are visible. Do not capture sheet-root parity evidence until the sheet body exposes expected attrs, roll buttons, or text.'
+        : status === 'SANDBOX_NO_VISIBLE_SHEET_TARGET'
+          ? 'The Sandbox upload controls are present but no character-sheet surface is open. Open or create a dedicated Sandbox character sheet, then run the activation check again.'
         : status === 'ROLL20_EDITOR_PARSE_ERROR'
           ? 'Roll20 editor returned a parse error after upload/settings save. Do not capture evidence; restore the sandbox and fix the upload manifest/settings shape first.'
         : status === 'RUNTIME_MODE_MISMATCH'
@@ -1298,10 +1308,12 @@ function runSelfTest() {
   if (!activationCheckSnippet.includes('VISIBLE_MATCH')) failures.push('generated activation check missing visible-match status');
   if (!activationCheckSnippet.includes('SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE')) failures.push('generated activation check missing sheet iframe state');
   if (!activationCheckSnippet.includes('CHARACTER_DIALOG_NO_SHEET_BODY')) failures.push('generated activation check missing character dialog state');
+  if (!activationCheckSnippet.includes('SANDBOX_NO_VISIBLE_SHEET_TARGET')) failures.push('generated activation check missing empty Sandbox target state');
   if (!activationCheckSnippet.includes('CHAT_TEMPLATE_ONLY')) failures.push('generated activation check missing chat-template-only status');
   if (!activationCheckSnippet.includes('NOT_PROVEN')) failures.push('generated activation check missing not-proven status');
   if (!snippet.includes('SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE')) failures.push('generated upload snippet missing sheet iframe state');
   if (!snippet.includes('CHARACTER_DIALOG_NO_SHEET_BODY')) failures.push('generated upload snippet missing character dialog state');
+  if (!snippet.includes('SANDBOX_NO_VISIBLE_SHEET_TARGET')) failures.push('generated upload snippet missing empty Sandbox target state');
   if (!applySnippet.includes("save-button-missing")) failures.push('apply snippet should tolerate missing settings save button on editor pages');
   if (!activationCheckSnippet.includes('rollButtonCount')) failures.push('generated activation check missing roll button count');
   if (!activationCheckSnippet.includes('renderEvidence')) failures.push('generated activation check missing render evidence');
