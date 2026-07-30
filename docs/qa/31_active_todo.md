@@ -7,6 +7,8 @@
 - GUARDED LOCAL: The legacy preview smoke checks the toggle, store setter, and
   shared render-contract flag. This proves local wiring only; it does not
   prove current Roll20 Sandbox visual parity.
+- VERIFIED REMOTE: GitHub Actions CI run `30515011933` for commit `91fa7fc`
+  passed safety/unit verification, lint, and build.
 - NEXT P0: Reconnect a supported modern Sandbox upload path and capture actual
   sheet-root, asset, state, and chat evidence; verify the legacy contract in a
   dedicated legacy-enabled test room.

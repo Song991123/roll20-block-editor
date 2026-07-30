@@ -5,6 +5,8 @@
   modern/legacy compatibility and remains off by default.
 - GUARDED LOCAL: The legacy preview smoke now checks the toolbar, store, and
   render-contract wiring. This is not actual Roll20 parity evidence.
+- VERIFIED REMOTE: GitHub Actions run `30515011933` for commit `91fa7fc`
+  passed safety/unit verification, lint, and build.
 - NEXT: Resume the modern Sandbox and separate legacy-room evidence gate only
   through the participant and destination safety rules.
 
