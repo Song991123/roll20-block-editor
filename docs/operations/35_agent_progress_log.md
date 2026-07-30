@@ -9848,3 +9848,18 @@ same-hash modern/legacy comparison.
   actual Roll20 worker mutation or legacy-room evidence is claimed.
 - Next P0: recover supported modern Sandbox file binding, then run independent
   modern and legacy worker mutation smokes against the same anonymous payload.
+
+## 2026-07-31 - Browser File byte identity guard
+
+- Added generated-snippet verification for decoded payload bytes and the
+  browser `File.arrayBuffer()` result using Web Crypto SHA-256.
+- A mismatch now stops both delegated file-input dispatch and endpoint fallback;
+  missing crypto support is reported as `unavailable`, never as a match.
+- Local verification passed: upload-file, payload-fidelity, provenance,
+  CDP-helper, snippet self-tests, lint, production build, and `ci:verify`.
+- External boundary is unchanged: the supported browser handoff has not yet
+  accepted a live payload in this run, so no actual modern/legacy render,
+  worker mutation, or same-hash screenshot claim is made.
+- Next P0: run the supported modern Sandbox handoff, capture a real
+  `fileHashStatus: match`, then repeat against the dedicated legacy destination
+  without touching ordinary rooms.

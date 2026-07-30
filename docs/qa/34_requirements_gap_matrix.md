@@ -885,3 +885,15 @@ not close the external Roll20 parity rows above.
 - `VERIFY / BLOCKED EXTERNAL`: the fix has not been promoted to actual Roll20
   worker parity because the supported modern Sandbox file handoff still rejects
   the local payload before activation. No legacy destination was modified.
+
+## Upload Byte Identity Guard - 2026-07-31
+
+- `IMPLEMENTED / VERIFIED LOCAL`: `roll20_upload_snippet.mjs` now compares the
+  locally expected SHA-256 with both decoded payload bytes and the browser
+  `File.arrayBuffer()` result before dispatch. Mismatch blocks the upload and
+  endpoint fallback; unavailable Web Crypto is reported explicitly.
+- `VERIFIED LOCAL`: upload-file, fidelity, provenance, CDP-helper, snippet
+  self-tests, lint, build, and `ci:verify` pass.
+- `NOT PROVEN EXTERNAL`: no live Sandbox run has yet produced a `fileHashStatus:
+  match` result or same-payload Roll20 screenshot. This guard strengthens the
+  evidence boundary but does not itself prove Roll20 persistence or rendering.

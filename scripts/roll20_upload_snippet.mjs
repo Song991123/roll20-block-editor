@@ -851,6 +851,46 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     }
     return output;
   };
+  const toArrayBuffer = (value) => {
+    if (typeof ArrayBuffer !== 'function') return null;
+    if (value instanceof ArrayBuffer) return value;
+    if (typeof ArrayBuffer.isView === 'function' && ArrayBuffer.isView(value)) {
+      return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+    }
+    return null;
+  };
+  const sha256Hex = async (value) => {
+    const buffer = toArrayBuffer(value);
+    const cryptoApi = typeof globalThis !== 'undefined' ? globalThis.crypto : null;
+    if (!buffer || !cryptoApi?.subtle || typeof cryptoApi.subtle.digest !== 'function') return null;
+    try {
+      const digest = await cryptoApi.subtle.digest('SHA-256', buffer);
+      return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+    } catch {
+      return null;
+    }
+  };
+  const verifyFilePayload = async (file, bytes, expectedSha256) => {
+    const expected = String(expectedSha256 || '').toLowerCase();
+    const sourceBytesSha256 = await sha256Hex(bytes);
+    let fileBytesSha256 = null;
+    if (typeof file?.arrayBuffer === 'function') {
+      try {
+        fileBytesSha256 = await sha256Hex(await file.arrayBuffer());
+      } catch {
+        fileBytesSha256 = null;
+      }
+    }
+    const complete = Boolean(expected && sourceBytesSha256 && fileBytesSha256);
+    return {
+      expectedSha256: expected,
+      sourceBytesSha256,
+      fileBytesSha256,
+      fileHashStatus: complete
+        ? sourceBytesSha256 === expected && fileBytesSha256 === expected ? 'match' : 'mismatch'
+        : 'unavailable',
+    };
+  };
   const assertSandboxPage = () => {
     const okHost = location.hostname === 'app.roll20.net';
     const hasSandboxInputs = Boolean(document.querySelector('#sheetHtml, #sheetCss, #sheetTranslation'));
@@ -951,7 +991,16 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       afterDispatchFiles: 0,
       afterWaitFiles: 0,
       clearedAfterDispatch: false,
+      expectedSha256: String(item.sha256 || '').toLowerCase(),
+      sourceBytesSha256: null,
+      fileBytesSha256: null,
+      fileHashStatus: 'unavailable',
     };
+    Object.assign(result, await verifyFilePayload(file, bytesFromBase64(item.base64), item.sha256));
+    if (result.fileHashStatus === 'mismatch') {
+      result.status = 'hash-mismatch';
+      return result;
+    }
     try {
       input.files = transfer.files;
     } catch {
@@ -1136,13 +1185,16 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const afterSheetIframeCount = after?.visible?.sheetIframeCount || 0;
     const afterCharacterDialogCount = (after?.visible?.characterEditorCount || 0) + (after?.visible?.characterDialogCount || 0);
     const afterSandboxInputCount = after?.visible?.sheetSandboxInputCount || 0;
+    const fileHashMismatchCount = fileInputs.filter((item) => item.fileHashStatus === 'mismatch').length;
     const addedHits = Object.fromEntries(Object.entries(after?.hits || {}).map(([key, values]) => {
       const previous = new Set(before?.hits?.[key] || []);
       return [key, values.filter((value) => !previous.has(value))];
     }));
     const addedHitCount = Object.values(addedHits).reduce((sum, values) => sum + values.length, 0);
     const allFileInputsDispatched = fileInputs.every((item) => item.status === 'dispatched');
-    const status = sandboxMessages?.roll20EditorParseError
+    const status = fileHashMismatchCount > 0
+      ? 'UPLOAD_FILE_HASH_MISMATCH'
+      : sandboxMessages?.roll20EditorParseError
       ? 'ROLL20_EDITOR_PARSE_ERROR'
       : after?.runtime?.matches === false
         ? 'RUNTIME_MODE_MISMATCH'
@@ -1165,6 +1217,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       afterHits,
       afterSheetHits,
       afterChatTemplateHits,
+      fileHashMismatchCount,
       addedHits,
       addedHitCount,
       runtime: after?.runtime ?? null,
@@ -1182,6 +1235,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
           ? 'Roll20 editor returned a parse error after upload/settings save. Do not capture evidence; restore the sandbox and fix the upload manifest/settings shape first.'
         : status === 'RUNTIME_MODE_MISMATCH'
           ? 'The visible Roll20 runtime mode does not match this payload. Set legacy sanitization to the expected mode, reload, and probe again.'
+        : status === 'UPLOAD_FILE_HASH_MISMATCH'
+          ? 'The browser File bytes do not match the locally generated payload hash. Do not dispatch or capture evidence; regenerate the snippet and inspect the local payload handoff.'
         : 'Roll20 file-input handlers ran, but visible activation is not proven. Save/reload settings and use the frame-aware probe before capturing parity evidence.',
     };
   };
@@ -1234,6 +1289,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   const anyFileInputHandlerRan = results.some((item) => item.status === 'dispatched');
   const fileInputHandlerRan = results.length === UPLOAD_ITEMS.length
     && results.every((item) => item.status === 'dispatched');
+  const hasFileHashMismatch = results.some((item) => item.fileHashStatus === 'mismatch');
   if (RESUME_UPLOAD && currentItem && anyFileInputHandlerRan) {
     const nextIndex = Math.min(UPLOAD_ITEMS.length, currentIndex + 1);
     writeUploadState({ nextIndex, pendingIndex: null, pendingPageToken: null, complete: nextIndex >= UPLOAD_ITEMS.length, settingsSubmitted: uploadStateBefore.settingsSubmitted });
@@ -1241,7 +1297,9 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   const endpointFallback = USE_ENDPOINT_FALLBACK
     && !uploadAlreadyComplete
     && !anyFileInputHandlerRan
-    ? await postEndpointFallback()
+    ? hasFileHashMismatch
+      ? { status: 'blocked-file-hash-mismatch', results: [] }
+      : await postEndpointFallback()
     : { status: fileInputHandlerRan || anyFileInputHandlerRan ? 'not-needed-file-input-handler-dispatched' : 'disabled' };
   const endpointCompletedUpload = endpointFallback.status === 'posted';
   if (RESUME_UPLOAD && endpointCompletedUpload) {
@@ -1316,6 +1374,7 @@ function renderReadme(report) {
     'For an anonymous local payload directory containing only `sheet.html`, `sheet.css`, and `translation.json`, pass `--payload-dir <ignored-local-folder>`. A synthetic modern/legacy manifest is created in memory only; no settings endpoint is enabled unless `--apply-settings` is explicitly supplied.',
     '',
     'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. A 2026-07-16 live handler inspection confirmed that this invokes the same Roll20 delegated handler as a manual file choice: FileReader reads raw text, the page POSTs base64 source to `/sheetsandbox/savesheetsettings`, then reloads sheet data and open characters. The resumable path writes only payload hashes and the next-file index to sessionStorage, never the sheet source; clear the generated state key to restart. The helper also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. When file inputs are unavailable, the explicit endpoint fallback uses the same form-encoded payload shape and triggers the same reload helpers. Upload execution is still not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` means a character-sheet iframe exists but top-document JS could not prove its markers, and `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
+    'Before dispatch, the helper hashes both the decoded source bytes and `File.arrayBuffer()` with browser Web Crypto. Each result reports `expectedSha256`, `sourceBytesSha256`, `fileBytesSha256`, and `fileHashStatus`; a mismatch blocks the file-input handler and endpoint fallback. `unavailable` is not a hash match and must not be promoted to same-payload evidence.',
     '',
     'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `RUNTIME_MODE_MISMATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. The expected modern/legacy mode comes from `sheet.json` unless `--expected-runtime-mode modern|legacy` overrides it. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH`, a matching runtime mode, and a visual check that the visible sheet belongs to the intended fixture.',
     '',
@@ -1445,6 +1504,11 @@ function runSelfTest() {
   if (!applySnippet.includes("not-needed-file-input-handler-dispatched")) failures.push('endpoint fallback should not duplicate a successful file-input upload');
   if (!snippet.includes("typeof DataTransfer === 'function'")) failures.push('generated snippet missing DataTransfer compatibility fallback');
   if (!snippet.includes('const textFromBytes = (bytes)')) failures.push('generated snippet missing TextDecoder compatibility fallback');
+  if (!snippet.includes('const sha256Hex = async (value)')) failures.push('generated snippet missing browser SHA-256 helper');
+  if (!snippet.includes('const verifyFilePayload = async (file, bytes, expectedSha256)')) failures.push('generated snippet missing File byte verification helper');
+  if (!snippet.includes('fileHashStatus')) failures.push('generated snippet missing File hash status fields');
+  if (!snippet.includes('UPLOAD_FILE_HASH_MISMATCH')) failures.push('generated snippet missing upload hash mismatch status');
+  if (!applySnippet.includes('blocked-file-hash-mismatch')) failures.push('apply snippet should block endpoint fallback after a hash mismatch');
   if (!snippet.includes("const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'")) failures.push('generated snippet missing base64 decoder fallback');
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
   if (!snippet.includes('input[name="customcharsheet_json"]')) failures.push('generated snippet missing narrow manifest input selector');
@@ -1482,6 +1546,7 @@ function runSelfTest() {
   if (!readme.includes('--out-dir <ignored-local-folder>')) failures.push('generated README missing output override instruction');
   if (!readme.includes('--payload-dir <ignored-local-folder>')) failures.push('generated README missing direct payload instruction');
   if (!readme.includes('sessionStorage state resumes')) failures.push('generated README missing resumable upload instruction');
+  if (!readme.includes('File.arrayBuffer()')) failures.push('generated README missing browser File hash verification instruction');
   if (failures.length) throw new Error(`roll20_upload_snippet self-test failed: ${failures.join(', ')}`);
   console.log('ROLL20 UPLOAD SNIPPET SELF-TEST PASS');
 }

@@ -9229,3 +9229,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   remain external gates.
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
+
+## 2026-07-31 Upload payload byte-binding guard
+
+- `FIXED LOCAL`: generated Sandbox upload snippets now hash the decoded source
+  bytes and `File.arrayBuffer()` with browser Web Crypto before dispatching a
+  file-input change. Each result records expected/source/File SHA-256 values
+  and an explicit `match`, `mismatch`, or `unavailable` status.
+- `FIXED LOCAL`: a file hash mismatch blocks both the delegated file-input
+  dispatch and the explicit endpoint fallback; `unavailable` remains visible
+  and is never treated as proof.
+- `VERIFIED LOCAL`: upload-file, payload-fidelity, provenance, CDP-helper,
+  upload-snippet self-tests, lint, production build, and `ci:verify` pass.
+- `VERIFY / OPEN`: no live Roll20 payload was accepted in this turn. Browser
+  File-byte verification is implemented but not yet observed in a real
+  Sandbox run; actual rendered parity and legacy-room evidence remain open.
+- `NEXT P0`: use the supported browser chooser/CDP path to bind one exact
+  anonymous modern payload, record the browser-side hash result, then repeat
+  independently for the dedicated legacy destination.
