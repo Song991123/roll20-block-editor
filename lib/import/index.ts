@@ -19,6 +19,7 @@ import { parseCss, newCssCtx } from './css_parser';
 import { parseI18n, newI18nCtx, type I18nOptions } from './i18n_extractor';
 import { emitWorkspaceXml } from './xml_emitter';
 import { splitOrdinaryPageScripts } from './pageJsWorkspace';
+import { detectTemplateMarkers } from './templateMarkers';
 import type { ImportHtmlOptions, ImportInput, ImportResult, ImportWarning } from './types';
 
 export type { ImportInput, ImportResult, ImportWarning } from './types';
@@ -34,6 +35,16 @@ export function importSheet(
 ): ImportResult {
   const warnings: ImportWarning[] = [];
   const pageJsSplit = splitOrdinaryPageScripts(input.html ?? '');
+  const templateMarkers = detectTemplateMarkers(input.html ?? '');
+  if (templateMarkers.count > 0) {
+    warnings.push({
+      severity: 'warning',
+      code: 'html_template_directive',
+      message: 'HTML에 확장되지 않은 템플릿 구문이 남아 있습니다. 최종 Roll20 HTML로 변환한 뒤 다시 불러오세요.',
+      workspace: 'html',
+      hint: templateMarkers.kinds.join(','),
+    });
+  }
 
   // HTML.
   const htmlCtx = newMatchContext();
@@ -114,6 +125,7 @@ export function importSheet(
       cssRawFallback: cssCtx.rawFallback,
       i18nKeys: i18nCtx.keys,
       pageScriptBlocks: pageJsSplit.entries.length,
+      templateMarkerCount: templateMarkers.count,
       coverage,
       sanitizeDropped: htmlCtx.sanitizeDropped,
       scriptBlocksMatched: htmlCtx.scriptBlocksMatched,

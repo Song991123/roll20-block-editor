@@ -29,6 +29,10 @@ local output and is deleted after the verification batch.
   reparenting, modern/legacy preview-edit visual smoke, and synthetic Sandbox
   sanitize preview all passed. This does not promote arbitrary-sheet or
   actual-Roll20 parity.
+- Import boundary hardening: unexpanded build-template markers now produce a
+  user-facing warning; one self-contained ignored official-tree sample passed
+  imported-edit and modern/legacy visual smoke. Template compilation itself is
+  intentionally not claimed.
 - User-sheet capture count remains `0`; dedicated legacy-room capture count
   remains `0`. Historical anonymous synthetic runtime observations are not
   promoted to current user-sheet parity.

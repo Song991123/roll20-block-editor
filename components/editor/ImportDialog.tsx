@@ -112,6 +112,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     i18nKeys: number;
     pageJsBlocks: number;
     workerBlocks: number;
+    templateMarkerCount: number;
     warnings: number;
     sanitizeDropped: number;
     wideRowBundles: number;
@@ -232,6 +233,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         i18nKeys: result.stats.i18nKeys,
         pageJsBlocks: jsBlocks,
         workerBlocks: workerSource.replaced ? workerSource.targetCount : workerMove.targetCount,
+        templateMarkerCount: result.stats.templateMarkerCount,
         warnings: result.warnings.length,
         sanitizeDropped: result.stats.sanitizeDropped,
         wideRowBundles: result.stats.wideRowBundles ?? 0,
@@ -474,8 +476,13 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
                 보안을 위해 인라인 이벤트 핸들러(onclick 등) {report.sanitizeDropped}개를 제거했습니다.
               </div>
             )}
+            {report.templateMarkerCount > 0 && (
+              <div className="mt-1 text-amber-500" data-testid="import-template-warning">
+                확장되지 않은 템플릿 구문 {report.templateMarkerCount}건을 발견했습니다. 최종 HTML로 변환한 뒤 사용하는 것을 권장합니다.
+              </div>
+            )}
             {report.warnings > 0 && (
-              <div className="mt-1 text-amber-500">경고 {report.warnings}건은 원본 블록으로 보존했습니다.</div>
+              <div className="mt-1 text-amber-500">경고 {report.warnings}건이 있습니다. 가져온 결과와 원본 파일을 확인하세요.</div>
             )}
           </div>
         )}

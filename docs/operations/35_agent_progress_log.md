@@ -1,3 +1,17 @@
+## 2026-07-31 - Import source-boundary hardening
+
+- Added high-confidence template-marker detection to the HTML import boundary.
+  Jinja/ERB/structural Handlebars source now produces a generic warning and
+  count; ordinary Roll20 `{{name}}` text remains unflagged. No source snippets
+  are retained in the warning or committed files.
+- Added the warning to the import result UI and covered it with unit tests.
+- A self-contained official-tree HTML/CSS sample was copied to an ignored
+  temporary fixture only; imported-edit sync and modern/legacy visual smoke
+  passed with clean resources. The original source folder was read-only.
+- `test:import-structure`, import-dialog smoke, lint, build, full `ci:verify`,
+  and privacy/UI guards passed. This does not prove arbitrary-sheet or actual
+  Roll20 parity.
+
 ## 2026-07-31 - Anonymous synthetic regression batch
 
 - Confirmed the public visual-fixture directory is empty; no real or derived

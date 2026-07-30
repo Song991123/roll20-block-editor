@@ -51,6 +51,8 @@ export interface ImportStats {
   i18nKeys: number;
   /** Ordinary page `<script>` blocks moved to the Page JS workspace. */
   pageScriptBlocks: number;
+  /** High-confidence unexpanded build-template markers found in HTML. */
+  templateMarkerCount: number;
   /** 종합 coverage % (HTML 기준). */
   coverage: number;
   /**

@@ -1,3 +1,19 @@
+## 2026-07-31 Import source-boundary hardening
+
+- DONE LOCAL: Import now detects high-confidence unexpanded build-template
+  markers (Jinja, ERB, and structural Handlebars) and reports
+  `html_template_directive` instead of silently presenting raw template source
+  as a successful Roll20 sheet. Ordinary Roll20 double-brace text is not
+  flagged.
+- VERIFIED LOCAL: Template-marker unit/structure tests, import-dialog smoke,
+  lint, production build, full `ci:verify`, and evidence/copy guards pass.
+- VERIFIED LOCAL: One self-contained HTML/CSS set copied only to an ignored
+  temporary fixture passed imported-edit sync and modern/legacy preview visual
+  smoke with no resource issues.
+- VERIFY / OPEN: Repository template sources still need their own build step;
+  this warning is not a template compiler. Arbitrary official/community/custom
+  coverage and actual Roll20 parity remain unproven.
+
 ## 2026-07-31 Anonymous synthetic regression batch
 
 - VERIFIED LOCAL: The public `test-fixtures/visual/` directory contains no
