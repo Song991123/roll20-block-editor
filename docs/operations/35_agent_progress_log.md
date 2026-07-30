@@ -1,3 +1,11 @@
+## 2026-07-30 - Explicit archive deletion completed
+
+- DELETED: The user-authorized `03_ARCHIVE/legacy-single-file/` target was
+  removed after verifying its exact boundary and archived contents.
+- VERIFIED: The target path is absent; protected external sheet roots,
+  canonical worktrees, and files outside the target were untouched.
+- Historical blocked deletion notes remain below as audit history.
+
 ## 2026-07-30 - Page JS import/emit path reconciliation
 
 - FIXED LOCAL: `__perfHook.importSheet` now clears/hydrates the Page JS

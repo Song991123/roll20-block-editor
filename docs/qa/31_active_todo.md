@@ -1,3 +1,13 @@
+## 2026-07-30 Archive cleanup completed
+
+- DONE LOCAL: The explicitly authorized `03_ARCHIVE/legacy-single-file/`
+  archive was fully removed after boundary, contents, and target absence were
+  checked.
+- VERIFIED: No protected source, canonical worktree, or external sheet folder
+  was touched. Earlier blocked-attempt notes remain historical only.
+- NEXT P0: Continue the modern Sandbox upload and separate legacy-room
+  evidence gate; cleanup completion does not imply Roll20 parity.
+
 ## 2026-07-30 Page JS import/emit path reconciliation
 
 - FIXED LOCAL: The browser/diagnostic import path now clears and hydrates the

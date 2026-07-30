@@ -3,6 +3,15 @@
 Date: 2026-07-29
 Status: ACTIVE
 
+## 2026-07-30 Archive Deletion Completion
+
+- DELETED: The explicitly authorized `03_ARCHIVE/legacy-single-file/` archive
+  was removed after its boundary and contents were rechecked.
+- VERIFIED: The exact target path is absent. No protected source root,
+  worktree, or file outside that path was changed.
+- Historical `NOT DELETED` entries below describe earlier failed attempts and
+  are retained for audit history only.
+
 This document defines the four-zone workspace harness. The zones are an
 operating boundary for agents, not a second copy of the product source.
 

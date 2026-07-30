@@ -77,7 +77,7 @@ This repository worktree lives inside the user's `roll20-sheet-builder 시트 �
 | `../web/` | git repo body | `web-push-main` is a worktree of this repo; its gitdir is a Windows absolute path, so git may not work from non-Windows mounts. |
 | `../sheet/` | reference | User's fixture-C sheet source copies (HTML/CSS/translation). Copy into `test-fixtures/` before use; never edit in place. |
 | `../roll20-base/`, `../api/`, `../docs/`, `../cache/` | reference | Roll20 baseline CSS, API scripts, early analysis docs, imgur cache. |
-| `../03_ARCHIVE/legacy-single-file/` | legacy (May 2026) | Single-file editor, viewer, helper scripts, and backups. Reference-only; current truth is this repo. |
+| `../03_ARCHIVE/legacy-single-file/` | removed (2026-07-30) | Explicitly authorized archive cleanup target; path is absent. Current truth is this repo. |
 | `../01_ACTIVE/`, `../02_REFERENCE/`, `../03_ARCHIVE/`, `../04_LOCAL/` | workspace zones | Navigation and ownership markers documented by the parent `AGENTS.md`. |
 | parent `_tmp_*`, `_pnpm_*`, `_logs/`, `__pycache__/` | removed byproducts | Generated leftovers were removed on 2026-07-29. Recreate local evidence only when needed. |
 | `../폴더 안내.md` | user guide | Korean folder guide for the user. Keep in sync when the layout changes. |
