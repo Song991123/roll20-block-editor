@@ -212,3 +212,15 @@ This remains `VERIFY/PARTIAL`, not parity: the external button sidecar reports
 payload hash, so the difference is currently classified as capture/payload
 provenance drift. A fresh same-hash external capture is required before
 changing generic Roll20 cascade order. Evidence remains ignored and local-only.
+
+## Same-hash external capture handoff - 2026-07-30
+
+The verification tooling now creates a local-only provenance manifest for the
+exact modern/legacy payload pair. In the current anonymous pair, `sheet.html`,
+`sheet.css`, and `translation.json` have identical SHA-256 values; only the
+mode-specific `sheet.json` manifest differs. Separate modern and legacy upload
+snippets were generated from those exact payload directories.
+
+Chrome currently exposes the dedicated Sandbox and legacy verification tabs,
+but claiming either tab timed out twice before a fresh upload/capture. This is
+an external-tooling blocker, not evidence of parity or a renderer failure.

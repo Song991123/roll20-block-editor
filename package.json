@@ -61,6 +61,7 @@
     "snippet:roll20-upload": "node scripts/roll20_upload_snippet.mjs",
     "apply:roll20-upload-cdp": "node scripts/roll20_upload_cdp_apply.mjs",
     "test:roll20-upload-snippet": "node scripts/roll20_upload_snippet.mjs --self-test",
+    "test:roll20-payload-provenance": "node scripts/roll20_payload_provenance_manifest.mjs --self-test",
     "test:roll20-upload-cdp": "node scripts/roll20_upload_cdp_apply.mjs --self-test",
     "test:roll20-geometry": "node scripts/lib/roll20Geometry.test.mjs",
     "test:roll20-runtime-evidence": "node scripts/roll20_runtime_evidence_compare.mjs --self-test",

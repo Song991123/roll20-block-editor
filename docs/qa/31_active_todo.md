@@ -8143,3 +8143,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: bind the exact current payload hash to a fresh modern Sandbox and
   dedicated legacy-room capture, then rerun the crop/diff. Keep arbitrary
   imported DOM, assets, worker JS, and non-default rolltemplate coverage open.
+
+## 2026-07-30 Same-hash external capture handoff
+
+- `DONE TOOLING`: Added `roll20_payload_provenance_manifest.mjs` and its
+  self-test. It records only file sizes, SHA-256 hashes, and modern/legacy
+  mode metadata in ignored local evidence.
+- `VERIFIED LOCAL`: The current anonymous modern/legacy payload pair was
+  generated into separate ignored handoff folders. HTML, CSS, and translation
+  hashes are identical across modes; only the `sheet.json` legacy manifest
+  differs as expected.
+- `VERIFY / BLOCKED EXTERNAL`: Chrome shows the two dedicated Roll20 tabs, but
+  tab claiming timed out twice before a fresh same-hash upload/capture could
+  begin. No external state was changed and no new parity claim is made.
+- `NEXT P0`: retry one-tab-at-a-time browser handoff, then bind the resulting
+  external screenshots and sidecars to `payload-provenance.json` before
+  calculating the normalized root diff.

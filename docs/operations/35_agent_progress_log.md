@@ -8888,3 +8888,15 @@ visibility verification passed. No external room was opened or modified.
 - `PRESERVED`: no source, active dependency tree, fixture, report policy,
   worktree, protected sheet root, or verification evidence was changed. No
   alternate deletion or per-file workaround was used.
+
+## 2026-07-30 - Same-hash payload handoff
+
+- Added a local-only provenance manifest generator that records payload file
+  sizes, SHA-256 values, and modern/legacy mode metadata without embedding
+  sheet contents or source identity.
+- Generated separate ignored upload snippets for the current anonymous modern
+  and legacy payloads. HTML/CSS/translation hashes match across modes; the
+  mode-specific `sheet.json` hash differs as expected.
+- Chrome tab claiming timed out twice while attempting the fresh external
+  capture, before any upload or Roll20 mutation. The external parity task
+  remains `VERIFY / BLOCKED`; no renderer conclusion was drawn from it.
