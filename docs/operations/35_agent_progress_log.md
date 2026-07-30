@@ -11,6 +11,17 @@
 - NEXT: Re-run modern Sandbox evidence first; legacy verification remains a
   separate dedicated test-room gate.
 
+## 2026-07-30 - Reproducible synthetic visual gate
+
+- FIXED LOCAL: Added a generator and package command for an anonymous ignored
+  visual fixture, so preview/edit pixel checks do not depend on retained real
+  sheet sources.
+- VERIFIED LOCAL: `smoke:preview-edit-visual:synthetic` passed modern and
+  legacy with `0 pixels / 0 ppm`; `test:visual-synthetic` is included in
+  `ci:verify`.
+- BOUNDARY: This strengthens local evidence only and does not replace actual
+  Roll20 Sandbox or legacy-room screenshots.
+
 ## 2026-07-30 - Local render regression batch
 
 - VERIFIED LOCAL: Fresh-sheet, imported-edit-sync strict, persistent preview

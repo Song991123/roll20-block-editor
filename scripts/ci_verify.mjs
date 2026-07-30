@@ -43,6 +43,7 @@ const tasks = [
   'audit:legacy-export',
   'test:roll20-sandbox-sanitize',
   'test:roll20-render-modes',
+  'test:visual-synthetic',
   'test:roll20-upload-snippet',
   'test:roll20-upload-cdp',
   'test:roll20-geometry',

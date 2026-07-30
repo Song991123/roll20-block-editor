@@ -13,6 +13,19 @@
 - NEXT P0: Re-run only after the upload permission/user-assisted chooser is
   available, then capture positive root/state/chat evidence before comparing.
 
+## 2026-07-30 Reproducible synthetic visual gate
+
+- DONE LOCAL: Added `generate:visual-synthetic` and
+  `smoke:preview-edit-visual:synthetic`. The generator creates only an
+  anonymous ignored fixture, and the browser gate confirms modern/legacy
+  preview-edit equality at `0 pixels / 0 ppm`.
+- GUARDED CI: `test:visual-synthetic` now checks the fixture contract inside
+  `ci:verify`; it does not add any sheet sample, screenshot, or report to the
+  public tree.
+- VERIFY OPEN: This reproduces local render unification only. Actual Roll20
+  Sandbox and dedicated legacy-room evidence still require the blocked upload
+  handoff.
+
 ## 2026-07-30 Local render regression batch
 
 - DONE LOCAL: Fresh-sheet smoke passed with zero HTML blocks/layers in the blank
