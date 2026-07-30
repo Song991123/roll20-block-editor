@@ -7833,3 +7833,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: Run the generated anonymous snippet in the isolated modern
   Sandbox tab, then require positive sheet-root and runtime evidence before
   capturing screenshots or chat.
+
+## 2026-07-30 Sandbox browser primitive boundary
+
+- `VERIFIED EXTERNAL`: The dedicated Sandbox still showed exactly one member
+  and all three upload inputs were present.
+- `BLOCKED EXTERNAL`: The supported page-evaluation surface did not expose
+  `File`, `DataTransfer`, or `Uint8Array`; both generated snippet execution
+  and the explicit three-input dispatch therefore stopped before any file was
+  attached. No sheet root or iframe appeared.
+- `SAFETY`: The settings endpoint fallback was not used. No room, chat,
+  campaign setting, or source-derived payload was changed.
+- `NEXT P0`: Use a user-visible native file selection or a browser context
+  that exposes the normal file primitives, then rerun activation evidence.

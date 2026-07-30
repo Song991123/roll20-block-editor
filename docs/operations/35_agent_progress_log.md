@@ -8563,3 +8563,15 @@ visibility verification passed. No external room was opened or modified.
 - OPEN: The generated helper still needs to be run in the isolated modern
   Sandbox and followed by positive root/runtime/roll/chat evidence. No actual
   parity claim is made yet.
+
+## 2026-07-30 - Sandbox browser primitive boundary
+
+- VERIFIED EXTERNAL: The isolated Sandbox remained at exactly one visible
+  member with HTML/CSS/Translation controls present.
+- BLOCKED EXTERNAL: The connected page-evaluation context exposed neither
+  `File` nor `DataTransfer` nor `Uint8Array`, so the generated file-input
+  dispatch could not attach a file. The page showed no applied root or iframe.
+- SAFETY: No endpoint fallback, room mutation, chat send, settings save, or
+  source-derived evidence capture was performed.
+- NEXT: Continue only through user-visible native selection or a supported
+  browser context with normal file primitives.
