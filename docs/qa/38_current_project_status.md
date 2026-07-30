@@ -9,10 +9,10 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `08e9504`. The branch is pushed to
+- Active branch: `claude/design-reset` at `3178e16`. The branch is pushed to
   `origin` and the worktree is clean.
-- Remote CI: run `30571039357` passed safety/unit verification, lint, and
-  build for `08e9504`.
+- Remote CI: run `30572300989` passed safety/unit verification, lint, and
+  build for `3178e16`.
 - Static corpus inventory: two protected external roots were read-only scanned;
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
@@ -31,9 +31,13 @@ local output and is deleted after the verification batch.
 - Metric recheck for the anonymous 32-selection batch: HTML `100%` for every
   selection, CSS `94.6-100%`, combined structured coverage `97.7-100%`, and
   `50` total warnings. This is local importer evidence only.
-- Roll20 external state: the existing browser tab is currently the login
-  screen, so authenticated Sandbox and dedicated legacy-room verification are
-  still open. No credentials or external sheet payload were transmitted.
+- Import UX recheck: CSS fallback blocks now produce an explicit Korean
+  warning in the result panel; the browser smoke enters the CSS tab and
+  verifies that warning with one persistent iframe and zero browser errors.
+- Roll20 external state: the current in-app browser has no attached tab and
+  the existing Chrome tab inventory has no Roll20 target, so authenticated
+  Sandbox and dedicated legacy-room verification remain open. No credentials
+  or external sheet payload were transmitted.
 - Local interaction recheck: `smoke:edit-flow`, strict imported-edit sync, and
   persistent preview surface passed; modern and legacy each retained one
   iframe with zero reloads.
