@@ -98,3 +98,21 @@ Keep the malformed-tag regression test in the emit contract, add imported
 large-sheet subtree movement coverage to the virtualized browser, and resume
 supported Roll20 upload evidence. Actual Roll20 results remain separate from
 local renderer results.
+
+## 2026-07-30 Local interaction rerun
+
+- VERIFIED LOCAL: `smoke:large-workspace-browser` now covers an anonymous
+  5,205-block import with `headless-large`, 17 structure rows, 20 virtual
+  edit-layer rows, one persistent preview iframe, zero SVG blocks, and zero
+  console/page errors.
+- VERIFIED LOCAL: A real layer-panel `inside` drop reparented the source frame
+  under the target frame. The Blockly layer model, emitted HTML, and iframe
+  DOM all report the same nested target/source relationship.
+- VERIFIED LOCAL: `smoke:imported-edit-sync:strict` passed its synthetic generic
+  and non-leaf-flow cases with resource checks enabled. `smoke:edit-flow` also
+  passed the pointer, layer, flow/free-placement, and width-control suite.
+- CLAIM BOUNDARY: These are local anonymous interaction gates. They do not
+  prove universal DOM coverage, worker/rolltemplate parity, or actual modern
+  Sandbox and legacy-room visual parity.
+- NEXT P0: resume the permitted modern Sandbox upload, then repeat the same
+  anonymous payload in the separate legacy-enabled test destination.

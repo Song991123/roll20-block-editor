@@ -7017,3 +7017,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P1: retry only when the host permits this maintenance operation; keep
   `node_modules/`, source roots, active fixtures, report policy, and protected
   external sheet sources intact.
+
+## 2026-07-30 Local import/edit interaction rerun
+
+- `DONE LOCAL`: The large anonymous browser smoke passed with 5,205 blocks,
+  `headless-large`, 17 structure rows, 20 virtual edit-layer rows, one
+  persistent iframe, zero SVG blocks, and zero console/page errors.
+- `DONE LOCAL`: The layer-panel `inside` drop reparented a source frame under a
+  target frame; the model snapshot, emitted HTML, and iframe DOM agreed.
+- `DONE LOCAL`: `smoke:imported-edit-sync:strict` and `smoke:edit-flow` passed.
+- `VERIFY / OPEN`: This does not prove actual modern Sandbox upload, isolated
+  legacy-room parity, worker/rolltemplate parity, or universal all-sheet
+  support. Resume those gates separately.

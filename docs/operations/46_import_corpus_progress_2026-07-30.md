@@ -55,3 +55,17 @@
 - Boundary: this is navigation/selection evidence, not full virtualized block
   drag editing or Roll20 parity. Actual modern Sandbox upload and isolated
   legacy-room evidence remain separate.
+
+## 2026-07-30 Local interaction rerun
+
+- Re-ran `smoke:large-workspace-browser` against the generated local build.
+  The anonymous corpus produced 5,205 model blocks, 17 visible structure rows,
+  20 virtual edit-layer rows, `headless-large`, one persistent iframe, zero
+  SVG blocks, and zero console/page errors.
+- The real layer-panel `inside` path reparented the source frame beneath the
+  target frame. The layer snapshot, emitted HTML, and iframe DOM agreed on the
+  resulting nesting.
+- `smoke:imported-edit-sync:strict` and `smoke:edit-flow` both passed with
+  their resource and interaction assertions enabled.
+- This strengthens local edit/import evidence only; it does not promote the
+  actual Roll20 upload, worker/chat, or universal all-sheet gates.

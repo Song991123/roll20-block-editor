@@ -7763,3 +7763,16 @@ visibility verification passed. No external room was opened or modified.
 - This is a maintenance-policy blocker only. Product source, active
   dependencies, fixtures, reports policy, and external sheet sources remain
   untouched.
+
+## 2026-07-30 - Local import/edit interaction rerun
+
+- VERIFIED: The large anonymous workspace smoke passed with 5,205 blocks,
+  `headless-large`, 17 structure rows, 20 virtual edit rows, one persistent
+  iframe, zero SVG blocks, and zero console/page errors.
+- VERIFIED: A layer-panel `inside` drop moved the source frame below the target
+  frame and kept the Blockly model, emitted HTML, and iframe DOM in agreement.
+- VERIFIED: Strict imported-edit synchronization and the full edit-flow smoke
+  passed for the available anonymous synthetic cases.
+- BOUNDARY: This is local interaction evidence. Actual modern Sandbox upload,
+  separate legacy-room comparison, worker/rolltemplate parity, and universal
+  all-sheet support remain unverified.
