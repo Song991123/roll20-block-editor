@@ -9,6 +9,11 @@
   structural fingerprint checks at `100%` coverage with zero raw fallbacks,
   template-marker findings, and warnings. This is a sample gate only, not an
   all-sheet support claim.
+- A wider anonymous batch of `32` read-only selections also passed `32/32`
+  determinism and structural fingerprint checks. The batch had zero HTML raw
+  fallbacks and five CSS raw fallbacks; the old single coverage value was
+  HTML-only. The import result now exposes HTML, CSS, combined structured
+  coverage, and warning totals separately.
 - The remaining gates are anonymous broader import coverage and permitted
   modern Sandbox plus separate legacy-room checks.
 

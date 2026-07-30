@@ -22,6 +22,11 @@ local output and is deleted after the verification batch.
   Node import and structural fingerprint checks at `100%` coverage with zero
   raw fallbacks, template-marker findings, and warnings. This remains sample
   evidence, not all-sheet or actual Roll20 evidence.
+- Wider anonymous import sample: `32/32` selections passed deterministic Node
+  import and structural fingerprint checks; HTML raw fallback was `0`, while
+  CSS raw fallback was `5`. Import UI now reports HTML, CSS, and combined
+  structured coverage separately instead of implying that HTML coverage also
+  proves CSS coverage.
 - Roll20 external state: the existing browser tab is currently the login
   screen, so authenticated Sandbox and dedicated legacy-room verification are
   still open. No credentials or external sheet payload were transmitted.

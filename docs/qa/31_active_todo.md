@@ -10,6 +10,11 @@
   protected roots passed Node import determinism and structural fingerprint
   checks (`8/8`), each reported `100%` coverage with `0` raw fallbacks,
   unexpanded template markers, and warnings.
+- VERIFIED LOCAL SAMPLE: A wider anonymous batch of `32` read-only selections
+  passed determinism and structural fingerprint checks (`32/32`). HTML raw
+  fallback was `0`; CSS raw fallback was `5`. The prior `100%` value was
+  HTML-scoped, so the importer now exposes separate HTML, CSS, and combined
+  structured coverage values in the import result.
 - VERIFY / OPEN: Expand anonymous import coverage and complete the permitted
   modern Sandbox plus separate legacy-room visual/runtime checks.
 
