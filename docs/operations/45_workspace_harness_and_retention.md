@@ -511,3 +511,17 @@ external material remain preserved.
 - The targets remain present. Product source, Git metadata, tracked worktree
   changes, active dependencies, the report policy README, and protected
   external sheet roots remain preserved.
+
+## 2026-07-31 user-authorized complete-cleanup retry (host blocked)
+
+- RECHECKED: the old worktree build/dependency output, active-worktree
+  `.next/`, `out/`, `.tmp/`, and generated report directories were still
+  present. The tracked report README and active `node_modules/` were excluded.
+- SAFETY CHECK: every target was inside the workspace, untracked, reproducible,
+  and outside protected source ownership. No project listener was active.
+- ATTEMPTED: the exact native PowerShell recursive deletion after the user gave
+  explicit approval.
+- BLOCKED: the host rejected the deletion invocation before PowerShell ran.
+  User approval cannot override this execution boundary.
+- NOT DELETED: no target changed. No alternate shell, native API, per-file
+  workaround, or safety bypass was used.

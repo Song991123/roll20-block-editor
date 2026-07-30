@@ -1128,3 +1128,20 @@ directories that had been recreated by the local build.
 - PRESERVED: both Git worktrees, tracked user changes in `web/`, active
   `web-push-main/node_modules/`, source, documents, report policy README, and
   protected external sheet roots.
+
+## 2026-07-31 user-authorized complete-cleanup retry (host blocked)
+
+- RECHECKED: the exact generated targets were still present: old
+  `web/node_modules/`, `web/.next/`, `web/out/`, active-worktree `.next/`,
+  `out/`, `.tmp/`, and every child directory under `web-push-main/reports/`
+  except the tracked `reports/README.md`.
+- SAFETY CHECK: all targets resolved inside the workspace, were untracked and
+  reproducible, did not include the active `web-push-main/node_modules/`, and
+  no project listener was active on ports `3000`, `4197`, `4198`, or `4199`.
+- ATTEMPTED: one native PowerShell `Remove-Item -LiteralPath ... -Recurse
+  -Force` operation after the boundary and protected-root checks passed.
+- BLOCKED: the host rejected the deletion command before PowerShell executed
+  it. User approval does not override this host execution boundary.
+- NOT DELETED: all targets remain present; `reports/README.md` and the active
+  dependency tree remain present. No alternate shell, native API, per-file
+  workaround, or safety bypass was used.
