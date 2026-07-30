@@ -294,3 +294,14 @@ surface diagnosis reproducible before a screenshot diff.
 The frame-probe self-test, lint, and full `ci:verify` pass. This is a diagnostic
 improvement only; the external same-hash chooser binding and pixel comparison
 remain open.
+
+## Local render/edit revalidation - 2026-07-30
+
+Current local evidence is green for the shared render surface: persistent
+preview/edit, strict imported-edit synchronization, fresh-sheet creation,
+edit-flow drag/reparent, and the 5,200-item layer workspace smoke all pass.
+The anonymous synthetic visual fixture is pixel-exact in both modern and legacy
+local modes (`0%` mismatch, translation `1/1`). The authenticated Roll20
+connection timed out during the next targeted read, so the current local files
+are still not bound to a fresh Sandbox payload and no external screenshot
+parity claim is promoted.

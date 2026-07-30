@@ -8987,3 +8987,13 @@ visibility verification passed. No external room was opened or modified.
 - CLAIM BOUNDARY: These metrics improve diagnosis and geometry comparison only;
   they do not prove current-payload hash binding, screenshot parity, or
   universal sheet support.
+
+## 2026-07-30 local render/edit revalidation
+
+The local gates were rerun after the external browser handoff remained
+unavailable. Persistent preview surface, strict imported edit synchronization,
+fresh-sheet creation, edit-flow drag/reparent, and the 5,200-item large
+workspace smoke all passed. The synthetic visual fixture also matched exactly
+in both modern and legacy local modes (`0%` mismatch, translation `1/1`).
+This improves the local evidence tier only; no new Roll20 upload, screenshot,
+or actual visual-parity claim was made.

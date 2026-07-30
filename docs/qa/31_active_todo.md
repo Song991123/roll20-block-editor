@@ -8254,3 +8254,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   legacy toggle sync, edit-mode entry, and zero console/page/request issues.
 - `NEXT P0`: keep asset URL analysis separate from actual Roll20 reachability;
   bind the exact three-file payload before screenshot parity comparison.
+
+## 2026-07-30 local render/edit revalidation
+
+- `smoke:persistent-preview-surface`: PASS for modern and legacy; one
+  persistent iframe per mode and no reload drift observed.
+- `smoke:imported-edit-sync:strict`: PASS for the generic and non-leaf-flow
+  synthetic imports; interaction and resource checks passed.
+- `smoke:fresh-sheet`: PASS; the fresh-sheet path retained the editable
+  default-width contract.
+- `smoke:edit-flow`: PASS; flow/free placement, exact before/inside/after
+  feedback, optimistic rendering, and committed order stayed synchronized.
+- `smoke:large-workspace-browser`: PASS with 5,200 synthetic items; the edit
+  surface still owned one persistent iframe and nested reparenting committed.
+- `smoke:preview-edit-visual:synthetic`: PASS with 0% mismatch in both modern
+  and legacy synthetic modes and translation `1/1` in each mode.
+- Boundary: these are local synthetic or anonymous regression checks. The
+  current browser connection timed out before fresh same-hash Roll20 upload or
+  screenshot capture, so actual modern/legacy pixel parity remains `VERIFY`.
