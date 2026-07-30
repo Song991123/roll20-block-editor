@@ -488,3 +488,12 @@ an HTML wrapper. Focused position tests, imported edit synchronization, server
 hygiene, and the full local CI verification gate pass. This is still local
 editor evidence; actual modern Roll20 same-payload parity, legacy-room
 behavior, and arbitrary user-sheet coverage remain open.
+
+## Protected local-input edit sync - 2026-07-31
+
+The imported-edit smoke now supports read-only local HTML/CSS/i18n paths via an
+anonymous `local-input` mode. A protected local-source run passed interaction,
+resource checks, and edit-to-preview synchronization through the persistent
+iframe path, without copying source files into tracked or public fixtures. This
+remains local imported-source evidence; actual Roll20 same-payload parity,
+legacy-room behavior, and universal source coverage are still open.

@@ -17,6 +17,12 @@
  *   node scripts/imported_edit_sync_smoke.mjs \
  *     --out-dir ./out --base-path /roll20-block-editor \
  *     --fixtures test-fixtures/visual --report-dir reports/imported-edit-sync
+ *
+ * For a protected local source, use the ignored in-memory input mode instead
+ * of copying the source into the repository:
+ *   R20_IMPORTED_EDIT_HTML_PATH=... R20_IMPORTED_EDIT_CSS_PATH=... \
+ *   R20_IMPORTED_EDIT_I18N_PATH=... node scripts/imported_edit_sync_smoke.mjs \
+ *     --only local-input
  */
 
 import http from 'node:http';
@@ -35,6 +41,9 @@ const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/imported-edit-sync'));
 const ONLY = argOf('--only', '');
+const LOCAL_HTML_PATH = process.env.R20_IMPORTED_EDIT_HTML_PATH || '';
+const LOCAL_CSS_PATH = process.env.R20_IMPORTED_EDIT_CSS_PATH || '';
+const LOCAL_I18N_PATH = process.env.R20_IMPORTED_EDIT_I18N_PATH || '';
 const CANONICAL_IFRAME = argOf('--canonical-iframe', 'true') !== 'false';
 const PORT = Number(argOf('--port', '4196'));
 const VIEWPORT = { width: 2200, height: 1200 };
@@ -135,8 +144,27 @@ async function readMaybe(file) {
   }
 }
 
+async function loadLocalInputFixture() {
+  if (!LOCAL_HTML_PATH) return null;
+  const html = await readMaybe(path.resolve(LOCAL_HTML_PATH));
+  if (!html.trim()) throw new Error('R20_IMPORTED_EDIT_HTML_PATH did not contain HTML');
+  return {
+    // Keep local source identity out of reports and screenshot filenames.
+    id: 'local-input',
+    html,
+    css: LOCAL_CSS_PATH ? await readMaybe(path.resolve(LOCAL_CSS_PATH)) : '',
+    i18n: LOCAL_I18N_PATH ? await readMaybe(path.resolve(LOCAL_I18N_PATH)) : '',
+    synthetic: false,
+    localInput: true,
+  };
+}
+
 async function listFixtures() {
-  const out = BUILTIN_FIXTURES.filter((fixture) => !ONLY || fixture.id === ONLY).map((fixture) => ({ ...fixture }));
+  const out = [];
+  const localInput = await loadLocalInputFixture();
+  if (localInput && (!ONLY || ONLY === localInput.id)) out.push(localInput);
+  if (ONLY === 'local-input') return out;
+  out.push(...BUILTIN_FIXTURES.filter((fixture) => !ONLY || fixture.id === ONLY).map((fixture) => ({ ...fixture })));
   let entries = [];
   try {
     entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });

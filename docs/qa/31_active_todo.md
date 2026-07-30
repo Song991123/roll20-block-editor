@@ -8624,3 +8624,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   arbitrary user-sheet coverage remain unverified.
 - `NEXT P0`: recover a supported modern Sandbox three-file handoff and bind
   the same payload before collecting modern and legacy evidence.
+
+## 2026-07-31 Protected local-input edit sync
+
+- `DONE LOCAL`: imported-edit smoke supports read-only local HTML/CSS/i18n
+  paths through an anonymous `local-input` mode, without copying protected
+  source files into repository fixtures or exposing their names in reports.
+- `VERIFIED LOCAL`: the protected local-input run passed interaction, resource
+  checks, and edit-to-preview synchronization on the persistent iframe path.
+- `VERIFY / OPEN`: this strengthens local imported-source evidence only; it
+  does not prove actual Roll20 same-payload parity, legacy-room behavior, or
+  universal source coverage.
+- `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
+  bind the same payload before collecting modern and legacy evidence.

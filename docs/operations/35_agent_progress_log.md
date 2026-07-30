@@ -9314,3 +9314,14 @@ same-hash modern/legacy comparison.
 - The focused position test, imported edit sync smoke, server hygiene, and
   full `ci:verify` pass. Actual Roll20 same-payload and legacy-room parity
   remain external verification items.
+
+## 2026-07-31 - Protected local-input edit sync
+
+- The imported-edit smoke now accepts optional local HTML/CSS/i18n paths in
+  memory and labels the run only as `local-input`; source names and paths are
+  not copied into the repository or used in report filenames.
+- A read-only protected-source run passed interaction, resource checks, and
+  edit-to-preview synchronization through the current persistent iframe path.
+- This is local imported-source evidence only. It does not prove actual
+  Roll20 same-payload parity, legacy-room behavior, or universal source
+  coverage.
