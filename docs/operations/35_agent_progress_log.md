@@ -7724,3 +7724,29 @@ visibility verification passed. No external room was opened or modified.
 - BOUNDARY: The `850` versus `860` measurement is a generic wrapper question,
   not proof that a global width patch is safe. A user fixture with its actual
   assets, default state, chat, and trusted Roll20 crop is still required.
+
+## 2026-07-30 - User-authorized generated-output cleanup retry
+
+- Re-resolved the exact generated targets `.next/`, `out/`, `.tmp/`,
+  `next-env.d.ts`, and `reports/legacy-export-audit/` under the canonical
+  worktree. No project listener was active and protected sources/worktrees
+  were excluded.
+- The host rejected both the guarded recursive deletion and the separate
+  generated-file deletion before execution. Nothing was deleted and no shell
+  or per-file safety bypass was attempted.
+- Current evidence: all five targets remain on disk; the uncommitted
+  `scripts/roll20_upload_snippet.mjs` compatibility patch remains intact.
+
+## 2026-07-30 - Sandbox upload compatibility boundary
+
+- Hardened the local-only upload snippet for the connected browser surface:
+  missing `Uint8Array`, `File`, `Event`, `fetch`, `XMLHttpRequest`, and
+  `console.table` no longer cause misleading success or an unhandled crash.
+- Fresh anonymous `fixture-A` execution in the isolated Sandbox returned three
+  `unsupported-browser-primitive` file inputs and endpoint status
+  `request-primitive-unavailable`; no payload was saved and no existing room
+  was touched. The visible iframe was classified as
+  `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, not as activation.
+- This is a tooling-boundary result, not Roll20 render parity. A supported
+  native file chooser or permitted network/file-input browser surface is still
+  required for actual upload evidence.

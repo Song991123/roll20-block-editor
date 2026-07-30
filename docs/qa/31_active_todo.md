@@ -6977,3 +6977,31 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Decide the generic viewport/root width rule from one user fixture in
   both destinations; do not patch the baseline from the anonymous synthetic
   sample alone.
+
+## 2026-07-30 Cleanup retry status
+
+- `VERIFY / NOT DELETED`: the user-authorized retry targeted only regenerated
+  `.next/`, `out/`, `.tmp/`, `next-env.d.ts`, and
+  `reports/legacy-export-audit/` inside the canonical worktree.
+- The host rejected the destructive operation before execution. All five
+  targets remain present; no alternate deletion path was used.
+- Server hygiene is clean: no project listener is active on the checked ports.
+- NEXT P1: repeat the same exact cleanup only when the host permits recursive
+  deletion; preserve `node_modules/`, source roots, fixtures needed for the
+  active verification batch, and protected external sources.
+
+## 2026-07-30 Sandbox upload retry status
+
+- `VERIFY / BLOCKED_EXTERNAL`: the isolated Roll20 Sandbox page remained
+  visible and the anonymous `fixture-A` handoff ran without mutating an
+  existing room.
+- The connected browser evaluation surface reported all three file inputs as
+  `unsupported-browser-primitive`; its endpoint fallback reported
+  `request-primitive-unavailable` because neither `fetch` nor
+  `XMLHttpRequest` is exposed. No HTML, CSS, or translation payload was saved.
+- Activation remains `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`; this is not an
+  upload or visual-parity result. The source-compatible snippet now returns
+  this blocker explicitly instead of falsely reporting `posted`.
+- NEXT P0: use a supported native file chooser or a browser connection with a
+  permitted request/file-input surface, then re-run the same anonymous handoff
+  and capture positive root/asset/state/chat evidence.

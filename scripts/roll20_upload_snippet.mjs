@@ -662,11 +662,93 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   const USE_ENDPOINT_FALLBACK = ${applySettings ? 'true' : 'false'};
   const ENDPOINT_CAMPAIGN_ID = ${JSON.stringify(endpointCampaignId)};
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const dispatchChange = (element, type) => {
+    if (typeof Event !== 'function' || typeof element?.dispatchEvent !== 'function') return false;
+    try {
+      element.dispatchEvent(new Event(type, { bubbles: true }));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const canConstructByteArray = () => {
+    try {
+      if (typeof Uint8Array !== 'function') return false;
+      new Uint8Array(0);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const bytesFromBase64 = (base64) => {
-    const bin = atob(base64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+    const normalized = String(base64).replace(/[^A-Za-z0-9+/=]/g, '');
+    if (!canConstructByteArray()) {
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+      let binary = '';
+      let buffer = 0;
+      let bits = 0;
+      for (const char of normalized) {
+        if (char === '=') break;
+        const value = alphabet.indexOf(char);
+        if (value < 0) continue;
+        buffer = (buffer << 6) | value;
+        bits += 6;
+        if (bits >= 8) {
+          bits -= 8;
+          binary += String.fromCharCode((buffer >> bits) & 0xff);
+        }
+      }
+      return binary;
+    }
+    if (typeof atob === 'function') {
+      const bin = atob(normalized);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const padding = normalized.endsWith('==') ? 2 : normalized.endsWith('=') ? 1 : 0;
+    const bytes = new Uint8Array(Math.max(0, Math.floor(normalized.length * 3 / 4) - padding));
+    let buffer = 0;
+    let bits = 0;
+    let offset = 0;
+    for (const char of normalized) {
+      if (char === '=') break;
+      const value = alphabet.indexOf(char);
+      if (value < 0) continue;
+      buffer = (buffer << 6) | value;
+      bits += 6;
+      if (bits >= 8) {
+        bits -= 8;
+        if (offset < bytes.length) bytes[offset] = (buffer >> bits) & 0xff;
+        offset += 1;
+      }
+    }
     return bytes;
+  };
+  const textFromBytes = (bytes) => {
+    if (typeof bytes === 'string') return bytes;
+    if (typeof TextDecoder === 'function') return new TextDecoder().decode(bytes);
+    let output = '';
+    for (let i = 0; i < bytes.length;) {
+      const first = bytes[i++];
+      if (first < 0x80) {
+        output += String.fromCharCode(first);
+      } else if (first < 0xe0 && i < bytes.length) {
+        output += String.fromCharCode(((first & 0x1f) << 6) | (bytes[i++] & 0x3f));
+      } else if (first < 0xf0 && i + 1 < bytes.length) {
+        const second = bytes[i++];
+        const third = bytes[i++];
+        output += String.fromCharCode(((first & 0x0f) << 12) | ((second & 0x3f) << 6) | (third & 0x3f));
+      } else if (i + 2 < bytes.length) {
+        const second = bytes[i++];
+        const third = bytes[i++];
+        const fourth = bytes[i++];
+        const codePoint = ((first & 0x07) << 18) | ((second & 0x3f) << 12) | ((third & 0x3f) << 6) | (fourth & 0x3f);
+        output += String.fromCodePoint(codePoint);
+      }
+    }
+    return output;
   };
   const assertSandboxPage = () => {
     const okHost = location.hostname === 'app.roll20.net';
@@ -694,6 +776,14 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     const campaignid = inferCampaignId();
     if (!campaignid) return { status: 'missing-campaign-id' };
     const postOne = async (key, item) => {
+      if (typeof fetch !== 'function') {
+        return {
+          key,
+          ok: false,
+          status: 'request-primitive-unavailable',
+          text: 'This connected browser evaluation surface exposes neither fetch nor XMLHttpRequest.',
+        };
+      }
       const body = new URLSearchParams({ campaignid, [key]: item.base64 });
       const response = await fetch('/sheetsandbox/savesheetsettings', {
         method: 'POST',
@@ -713,17 +803,25 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
       await postOne('css', DATA.payload.css),
       await postOne('translation', DATA.payload.translation),
     ];
+    const okCount = results.filter((item) => item.ok).length;
+    const status = okCount === results.length
+      ? 'posted'
+      : okCount > 0
+        ? 'partial'
+        : results.every((item) => item.status === 'request-primitive-unavailable')
+          ? 'request-primitive-unavailable'
+          : 'request-failed';
     const sheetEditing = window.d20?.journal?.sheetEditing;
     let reloadTriggered = false;
-    if (results.every((item) => item.ok) && sheetEditing) {
+    if (status === 'posted' && sheetEditing) {
       sheetEditing.reloadSheetData?.();
       sheetEditing.reloadOpenCharacters?.();
       reloadTriggered = true;
     }
     return {
-      status: 'posted',
+      status,
       campaignid,
-      transport: 'form-urlencoded-like-jquery-post',
+      transport: typeof fetch === 'function' ? 'fetch-form-urlencoded' : 'unavailable',
       reloadTriggered,
       results,
     };
@@ -731,8 +829,16 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   const setFileInput = async (selector, item, type) => {
     const input = document.querySelector(selector);
     if (!input) return { selector, status: 'missing' };
-    const transfer = new DataTransfer();
-    transfer.items.add(new File([bytesFromBase64(item.base64)], item.name, { type }));
+    if (!canConstructByteArray() || typeof File !== 'function') {
+      return { selector, status: 'unsupported-browser-primitive' };
+    }
+    const file = new File([bytesFromBase64(item.base64)], item.name, { type });
+    // Some supported browser surfaces expose File but not the DataTransfer
+    // constructor. The Roll20 delegated handler only needs a FileList-like
+    // value with length and index access, so keep the endpoint fallback usable
+    // without weakening the normal browser path.
+    const transfer = typeof DataTransfer === 'function' ? new DataTransfer() : { files: [file] };
+    transfer.items?.add?.(file);
     const result = {
       selector,
       status: 'pending',
@@ -764,8 +870,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     }
     result.afterAssignFiles = input.files?.length ?? 0;
     result.beforeDispatchFiles = input.files?.length ?? 0;
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    dispatchChange(input, 'input');
+    dispatchChange(input, 'change');
     result.afterDispatchFiles = input.files?.length ?? 0;
     await sleep(1200);
     result.afterWaitFiles = input.files?.length ?? 0;
@@ -776,7 +882,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     return result;
   };
   const setManifest = () => {
-    const rawText = new TextDecoder().decode(bytesFromBase64(DATA.payload.manifest.base64));
+    const rawText = textFromBytes(bytesFromBase64(DATA.payload.manifest.base64));
     const text = buildSettingsManifest(rawText);
     const targets = Array.from(document.querySelectorAll('textarea[name="customcharsheet_json"], input[name="customcharsheet_json"]'))
       .filter((el) => !el.classList.contains('ace_text-input'));
@@ -785,8 +891,8 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     for (const el of targets) {
       if ('value' in el) {
         el.value = text;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-        el.dispatchEvent(new Event('change', { bubbles: true }));
+        dispatchChange(el, 'input');
+        dispatchChange(el, 'change');
       }
     }
     if (typeof editors === 'object' && editors?.json && typeof editors.json.setValue === 'function') {
@@ -996,10 +1102,18 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     console.log('Local payload validation:', DATA.validation);
   }
   const activationBefore = collectActivationProbe('before-upload');
-  const results = [];
-  results.push(await setFileInput('#sheetHtml', DATA.payload.html, 'text/html'));
-  results.push(await setFileInput('#sheetCss', DATA.payload.css, 'text/css'));
-  results.push(await setFileInput('#sheetTranslation', DATA.payload.translation, 'application/json'));
+  const fileInputCapable = canConstructByteArray() && typeof File === 'function';
+  const results = fileInputCapable
+    ? [
+      await setFileInput('#sheetHtml', DATA.payload.html, 'text/html'),
+      await setFileInput('#sheetCss', DATA.payload.css, 'text/css'),
+      await setFileInput('#sheetTranslation', DATA.payload.translation, 'application/json'),
+    ]
+    : [
+      { selector: '#sheetHtml', status: 'unsupported-browser-primitive' },
+      { selector: '#sheetCss', status: 'unsupported-browser-primitive' },
+      { selector: '#sheetTranslation', status: 'unsupported-browser-primitive' },
+    ];
   const fileInputHandlerRan = results.every((item) => item.status === 'dispatched');
   const endpointFallback = USE_ENDPOINT_FALLBACK && !fileInputHandlerRan
     ? await postEndpointFallback()
@@ -1019,7 +1133,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   const sandboxMessages = inspectSandboxMessages();
   const activationAfter = collectActivationProbe('after-upload');
   const activation = classifyActivation(activationBefore, activationAfter, results, sandboxMessages);
-  console.table(results);
+  if (typeof console.table === 'function') console.table(results);
   console.log('Manifest:', manifest);
   console.log('Settings save:', settingsSave);
   console.log('Endpoint fallback:', endpointFallback);
@@ -1167,6 +1281,9 @@ function runSelfTest() {
   if (!applySnippet.includes("application/x-www-form-urlencoded; charset=UTF-8")) failures.push('endpoint fallback does not match jquery form transport');
   if (!applySnippet.includes('reloadSheetData')) failures.push('endpoint fallback missing sheet data reload');
   if (!applySnippet.includes("not-needed-file-input-handler-dispatched")) failures.push('endpoint fallback should not duplicate a successful file-input upload');
+  if (!snippet.includes("typeof DataTransfer === 'function'")) failures.push('generated snippet missing DataTransfer compatibility fallback');
+  if (!snippet.includes('const textFromBytes = (bytes)')) failures.push('generated snippet missing TextDecoder compatibility fallback');
+  if (!snippet.includes("const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'")) failures.push('generated snippet missing base64 decoder fallback');
   if (!snippet.includes('jsoninfo: parsed')) failures.push('generated snippet missing jsoninfo wrapper builder');
   if (!snippet.includes('input[name="customcharsheet_json"]')) failures.push('generated snippet missing narrow manifest input selector');
   if (!snippet.includes('textarea[name="customcharsheet_layout"]')) failures.push('generated snippet missing campaign settings layout selector');

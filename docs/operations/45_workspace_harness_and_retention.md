@@ -233,3 +233,17 @@ worktrees were preserved.
 - The active dependency tree, product source, report policy, Git worktrees,
   reference/archive zones, and protected external source folders were kept.
 - No project listener was active during the check.
+
+## 2026-07-30 seventh-pass user-authorized retry
+
+- The user authorized another complete cleanup retry after the current Roll20
+  comparison recreated local build output and disposable evidence.
+- The exact canonical-worktree targets were re-resolved as `.next/`, `out/`,
+  `.tmp/`, `next-env.d.ts`, and `reports/legacy-export-audit/`. All are inside
+  `web-push-main/`, untracked/recreatable, and outside protected source roots;
+  active `node_modules/` and both Git worktrees were excluded.
+- The host rejected the guarded recursive deletion before execution and also
+  rejected a separate generated-file deletion attempt. No alternate shell,
+  per-file workaround, or safety bypass was used.
+- **NOT DELETED:** all five exact targets remain present. No product source,
+  external sheet source, worktree, dependency tree, or server was changed.
