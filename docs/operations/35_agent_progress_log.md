@@ -7850,3 +7850,15 @@ visibility verification passed. No external room was opened or modified.
   fixtures pass as `expr` and `rolltemplate`; `ci:verify` passes in full.
 - This is local app containment only. It is deliberately not presented as
   evidence of the actual Roll20 Sandbox sanitizer or external chat parity.
+
+## 2026-07-30 - Rebuilt browser verification after containment fix
+
+- Rebuilt the static app after the rolltemplate sanitizer change before
+  re-running browser checks, closing the earlier stale-build verification gap.
+- Verified `synthetic-parity` as `PASS kind=expr` and
+  `synthetic-rolltemplate` as `PASS kind=rolltemplate`. The generated local
+  chat evidence contains no `javascript:`, `onerror`, inline `style`, or
+  `<script>` residue.
+- Persistent preview-surface smoke passed in modern and legacy modes with
+  reload count `0`; edit-flow smoke passed as well. This remains local evidence
+  and does not replace actual Roll20 Sandbox or legacy-room verification.

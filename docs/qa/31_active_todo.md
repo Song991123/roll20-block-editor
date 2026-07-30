@@ -7101,3 +7101,9 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN`: This protects the local editor surface; it does not claim
   Roll20 Sandbox's own sanitizer or actual chat parity. External modern and
   legacy Roll20 evidence remains open.
+
+- `VERIFIED LOCAL`: After rebuilding the static app from the sanitizer change,
+  browser chat smoke passed for both `expr` and `rolltemplate`; the generated
+  local chat evidence contained no `javascript:`, `onerror`, inline `style`,
+  or `<script>` residue. Persistent preview-surface and edit-flow smoke also
+  passed in this rebuilt artifact.
