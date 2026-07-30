@@ -8763,3 +8763,17 @@ visibility verification passed. No external room was opened or modified.
   zero visible runtime nodes, and zero console/page errors.
 - Scope note: this is local import-path evidence only. Actual Roll20 Sandbox
   activation and modern/legacy visual parity remain open.
+
+## 2026-07-30 - Sandbox upload path retry
+
+- Generated a fresh anonymous synthetic modern payload and upload handoff
+  under ignored `.tmp/roll20-sandbox-synthetic-run/`.
+- The browser file-input path was rechecked through the supported page
+  surface; the extension rejected native file assignment before any file was
+  attached.
+- The separate CDP handoff was attempted with the exact one-member Sandbox
+  campaign guard, but no `127.0.0.1:9222` listener was available, so it
+  stopped before connecting and before transmitting any payload.
+- VERIFIED: the Roll20 tab remained unchanged; no sheet, room setting, chat,
+  or character state was modified. External modern activation and screenshot
+  evidence remain open, and no legacy claim is promoted.

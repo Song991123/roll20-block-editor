@@ -8057,3 +8057,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN`: This does not change the external Roll20 gate. Sandbox
   activation, real render parity, roll/chat behavior, and separate legacy
   destination verification remain open.
+
+## 2026-07-30 Sandbox upload transport retry
+
+- `DONE LOCAL`: Regenerated an anonymous modern payload and its ignored
+  browser handoff files.
+- `BLOCKED EXTERNAL`: Native file assignment remains disallowed by the
+  connected browser extension. The optional CDP path also stopped before
+  connection because `127.0.0.1:9222` is not listening.
+- `NO MUTATION`: No file, setting, character, chat, or room state reached
+  Roll20 during this retry.
+- `NEXT P0`: Keep the isolated one-member Sandbox tab open for a user-visible
+  native file selection, or reconnect a CDP-enabled browser before retrying.
