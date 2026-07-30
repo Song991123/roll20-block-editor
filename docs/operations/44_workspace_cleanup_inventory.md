@@ -885,3 +885,19 @@ directories that had been recreated by the local build.
 - PRESERVED: active dependencies, the anonymous Sandbox payload, canonical
   reports, product source, worktrees, report policy, and protected external
   sheet roots remain intact.
+
+## 2026-07-30 latest user-authorized retry after host rejection
+
+- RECHECKED: the five remaining approved targets are old `web/node_modules/`,
+  old `web/.next/`, old `web/out/`, canonical `web-push-main/.next/`, and
+  canonical `web-push-main/out/`. They are workspace-local, reproducible, and
+  outside protected source ownership. No project listener is active.
+- ATTEMPTED: the user explicitly authorized complete deletion and the exact
+  absolute paths were passed to one guarded PowerShell operation.
+- BLOCKED: the host rejected `Remove-Item -Recurse -Force` before PowerShell
+  execution. User approval cannot override this execution boundary.
+- NOT DELETED: all five targets remain present. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- PRESERVED: active `web-push-main/node_modules/`, source, fixtures policy,
+  canonical reports, worktrees, and protected external sheet roots remain
+  untouched.
