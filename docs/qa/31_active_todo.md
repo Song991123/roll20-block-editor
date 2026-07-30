@@ -7066,3 +7066,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   and is not the default until a responsive actual Roll20 upload confirms the
   full tag/class allow-list. This avoids treating a partial external probe as
   a universal renderer contract.
+
+## 2026-07-30 Local dice and rolltemplate smoke
+
+- `DONE LOCAL`: The anonymous ignored `synthetic-parity` fixture now exposes a
+  Roll20-style `type="roll"` button with a `1d20` value. A real preview iframe
+  click produced a visible `expr` chat card with no functional console/page
+  errors.
+- `DONE LOCAL`: The anonymous ignored `synthetic-rolltemplate` fixture covered
+  `&{template:default}`, a custom `<rolltemplate>` body, field substitution,
+  and user CSS. The smoke produced one visible `rolltemplate` card with the
+  Roll20-like message shell, sender/timestamp line, template class, and
+  positive template width.
+- `VERIFY / OPEN`: These are local runtime checks only. They do not prove
+  actual Roll20 Sandbox upload, Roll20 chat typography/assets, or legacy-room
+  parity. Both external checks remain separate P0 gates.

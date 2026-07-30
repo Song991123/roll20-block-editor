@@ -7810,3 +7810,18 @@ visibility verification passed. No external room was opened or modified.
 - Verified build-doc regression, lint, build, and strict imported-edit sync.
   The sanitizer toggle remains OFF by default until actual Roll20 allow-list
   evidence is refreshed; this is an evidence boundary, not a parity claim.
+
+## 2026-07-30 - Local dice and rolltemplate smoke
+
+- Added a `value="1d20"` to the ignored anonymous synthetic fixture so the
+  existing roll smoke cannot silently pass by skipping a button without a
+  Roll20 expression.
+- Added an ignored anonymous `synthetic-rolltemplate` fixture containing a
+  custom `sheet-rolltemplate-default` body, Roll20 template invocation, and
+  local CSS. No protected or third-party sheet source was used.
+- Verified the ordinary expression path as `PASS kind=expr` and the template
+  path as `PASS kind=rolltemplate`. The latter rendered one card with the
+  message shell, sender/timestamp line, template class, and positive template
+  width.
+- Scope boundary: this proves local iframe-to-ChatPane behavior only. Actual
+  Roll20 Sandbox upload and the participant-gated legacy room remain unverified.
