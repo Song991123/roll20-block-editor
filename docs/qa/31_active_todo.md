@@ -1,3 +1,16 @@
+## 2026-07-30 Sandbox chooser handoff retry
+
+- VERIFIED READ-ONLY: The existing Chrome tab exposed the dedicated `Sheet
+  Sandbox Tools` dialog and the expected HTML/CSS/Translation file controls.
+- BLOCKED: The supported native file chooser timed out on the synthetic
+  HTML selection, and a follow-up tab claim timed out. No HTML, CSS, or
+  translation file was transmitted; no room, chat, save, or setting changed.
+- VERIFIED LOCAL: The browser session was finalized and project/CDP listener
+  hygiene remains clear.
+- NEXT P0: Resume through a user-assisted visible chooser or a newly
+  supported Sandbox handoff, then require positive sheet-root evidence before
+  capturing assets, state, or chat.
+
 ## 2026-07-30 Sandbox upload-rule toggle boundary
 
 - FIXED LOCAL: The shared preview/edit toolbar now exposes the observed

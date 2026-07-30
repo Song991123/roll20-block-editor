@@ -1,3 +1,15 @@
+## 2026-07-30 - Sandbox chooser handoff retry
+
+- VERIFIED READ-ONLY: The existing Chrome tab exposed the dedicated `Sheet
+  Sandbox Tools` dialog and the expected three sheet file controls.
+- BLOCKED: Native chooser selection timed out before the synthetic HTML file
+  could be transmitted; a follow-up claim also timed out. No Roll20 room,
+  chat, save, or setting was changed.
+- VERIFIED: Browser session finalization completed; server hygiene reports no
+  project or CDP listener.
+- NEXT: Continue only through a user-assisted chooser or a supported Sandbox
+  handoff and require positive sheet-root DOM evidence.
+
 ## 2026-07-30 - Sandbox upload-rule toggle boundary
 
 - FIXED LOCAL: Added an explicit shared-toolbar toggle for the observed
