@@ -865,6 +865,104 @@ export default function PreviewMain() {
         if (id) setSelected(id, 'preview');
         return;
       }
+      if (editMessage?.type === 'r20:block-type-drag') {
+        if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
+        if (useUiStore.getState().mainMode !== 'edit') return;
+        const blockType = editMessage.blockType;
+        const def = blockType ? getBlockDef(blockType) : null;
+        if (editMessage.phase === 'dragleave' || !blockType || !def) {
+          setDragOver(false);
+          setIframeEditDropTarget(null);
+          return;
+        }
+        setDragOver(editMessage.phase === 'dragover');
+        const adapter = getBlocklyAdapter();
+        if (!editMessage.hitPath.every((item) => htmlLayerMap.has(item.blockId))) return;
+        const nextDropTarget = resolveIframeWidgetDropTarget(editMessage, {
+          getBlock: (blockId) => htmlLayerMap.get(blockId) ?? null,
+          canNestInContainer: (blockId) => adapter.canNestInContainer('html', blockId),
+          canNestBlockInContainer: (movingBlockId, targetBlockId) => adapter.canNestBlockInContainer(
+            'html',
+            movingBlockId,
+            targetBlockId,
+          ),
+        });
+        const placement = useUiStore.getState().editPlacementMode;
+        const visibleDropTarget = filterDropTargetForPlacement(nextDropTarget, placement);
+        setIframeEditDropTarget(visibleDropTarget);
+        if (editMessage.phase !== 'drop') return;
+
+        const id = appendBlock(blockType, 'html');
+        if (!id) {
+          setDragOver(false);
+          setIframeEditDropTarget(null);
+          toast.error('블록을 시트에 놓지 못했어요', { duration: 2200 });
+          return;
+        }
+        let moved = false;
+        const target = visibleDropTarget;
+        if (placement === 'flow' && target) {
+          moved = commitIframeFlowDrop(id, target, adapter);
+        } else {
+          const freeInside = placement === 'free'
+            && target?.mode === 'inside'
+            && Boolean(target.containerBlockId);
+          const position = freeInside && target
+            ? {
+                left: Math.max(0, Math.round(
+                  editMessage.pointer.x
+                  - target.geometry.rect.left
+                  - target.geometry.clientLeft
+                  + target.geometry.scrollLeft,
+                )),
+                top: Math.max(0, Math.round(
+                  editMessage.pointer.y
+                  - target.geometry.rect.top
+                  - target.geometry.clientTop
+                  + target.geometry.scrollTop,
+                )),
+              }
+            : {
+                left: Math.max(0, Math.round(editMessage.pointer.x)),
+                top: Math.max(0, Math.round(editMessage.pointer.y)),
+              };
+          let structureReady = true;
+          if (freeInside && target?.containerBlockId) {
+            structureReady = adapter.nestBlockInContainer('html', id, target.containerBlockId);
+          }
+          if (structureReady) {
+            const committed = commitManagedDesignPosition(adapter, {
+              workspace: 'html',
+              blockId: id,
+              left: position.left,
+              top: position.top,
+              containingBlockId: freeInside ? target?.containerBlockId ?? null : null,
+              containingBlockNeedsRelative: freeInside
+                ? target?.geometry.position === 'static'
+                : false,
+            });
+            moved = committed.moved;
+            if (committed.cssBlockCreated) {
+              useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+            }
+          }
+        }
+        if (!moved) {
+          adapter.deleteBlock('html', id);
+          setDragOver(false);
+          setIframeEditDropTarget(null);
+          toast.error('이 위치에는 해당 블록을 놓을 수 없어요', { duration: 2200 });
+          return;
+        }
+        const store = useWorkspaceStore.getState();
+        store.bumpStructure('html', adapter.countBlocks('html'));
+        setSelected(id, 'preview');
+        setDragOver(false);
+        setIframeEditDropTarget(null);
+        queueMicrotask(() => flushEmitPipeline());
+        playSfx('block.add');
+        return;
+      }
       if (editMessage?.type === 'r20:edit-context-menu') {
         if (editMessage.bridgeId !== iframeEditBridgeIdRef.current) return;
         if (useUiStore.getState().mainMode !== 'edit') return;
@@ -993,7 +1091,7 @@ export default function PreviewMain() {
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [canvasWidthAuto, editSubmode, flushIframeEditState, htmlLayerMap, iframeDocumentSrcdoc, queueIframeEditState, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
+  }, [appendBlock, canvasWidthAuto, editSubmode, flushIframeEditState, htmlLayerMap, iframeDocumentSrcdoc, queueIframeEditState, setAutoCanvasWidth, setHoveredWidgetId, setSelected, setSelectedWidgetId]);
 
   useEffect(() => {
     if (!iframeEditBridgeId) return;
@@ -1191,9 +1289,35 @@ export default function PreviewMain() {
           setDragOver(false);
           if (!type) return;
           e.preventDefault();
+          if (e.target === iframeRef.current) return;
           const id = appendBlock(type);
           const def = getBlockDef(type);
           if (id) {
+            if (activeWs === 'html' && mainMode === 'edit') {
+              const adapter = getBlocklyAdapter();
+              const iframe = iframeRef.current;
+              const rect = iframe?.getBoundingClientRect() ?? e.currentTarget.getBoundingClientRect();
+              const scaleX = iframe && iframe.offsetWidth > 0 ? rect.width / iframe.offsetWidth : 1;
+              const scaleY = iframe && iframe.offsetHeight > 0 ? rect.height / iframe.offsetHeight : scaleX;
+              const committed = commitManagedDesignPosition(adapter, {
+                workspace: 'html',
+                blockId: id,
+                left: Math.max(0, Math.round((e.clientX - rect.left) / scaleX)),
+                top: Math.max(0, Math.round((e.clientY - rect.top) / scaleY)),
+                containingBlockId: null,
+                containingBlockNeedsRelative: false,
+              });
+              if (!committed.moved) {
+                adapter.deleteBlock('html', id);
+                toast.error('이 위치에는 해당 블록을 놓을 수 없어요', { duration: 2200 });
+                return;
+              }
+              if (committed.cssBlockCreated) {
+                useWorkspaceStore.getState().bumpStructure('css', adapter.countBlocks('css'));
+              }
+              useWorkspaceStore.getState().bumpStructure('html', adapter.countBlocks('html'));
+              queueMicrotask(() => flushEmitPipeline());
+            }
             playSfx('block.add');
             toast(
               `'${def?.label ?? type}' 추가됨 — ${(activeWs as WorkspaceKey).toUpperCase()} 워크스페이스`,

@@ -1,6 +1,7 @@
 import type { BlockSnapshot } from '@/lib/blockly/adapter';
 import { canReceiveChildren } from '@/lib/editor/layerRoles';
 import type {
+  IframeBlockTypeDragMessage,
   IframeEditHitMessage,
   IframeEditNodeGeometry,
   IframeWidgetDragMessage,
@@ -146,7 +147,7 @@ export function resolveIframeEditDropTarget(
 }
 
 export function resolveIframeWidgetDropTarget(
-  message: IframeWidgetDragMessage,
+  message: IframeWidgetDragMessage | IframeBlockTypeDragMessage,
   lookup: IframeDropTargetLookup,
 ): IframeEditDropTarget | null {
   if (message.phase !== 'dragover' && message.phase !== 'drop') return null;

@@ -1,3 +1,18 @@
+## 2026-07-30 Block gallery drop through persistent iframe
+
+- DONE LOCAL: Added a dedicated iframe edit-bridge message for block-gallery
+  drags. Drops over the real rendered sheet now resolve the shared layer target
+  contract instead of disappearing at the iframe boundary.
+- VERIFIED BROWSER: Flow mode inserts a new block inside a valid frame;
+  free mode keeps the frame parent and persists absolute `left/top` placement.
+  The persistent preview/edit iframe remains the only render surface.
+- VERIFIED LOCAL: bridge/build-doc tests, `smoke:edit-flow`, persistent preview,
+  fresh-sheet, strict imported-edit sync, lint, build, and `ci:verify` pass.
+- CLAIM BOUNDARY: This proves the anonymous local editor interaction only. It
+  does not prove actual Roll20 Sandbox visual parity or arbitrary-sheet parity.
+- NEXT P0: Recover a supported Sandbox file-selection path and capture positive
+  modern root/state/chat evidence; keep legacy verification separate.
+
 ## 2026-07-30 Upload diagnostic and status-safety pass
 
 - DONE LOCAL: Added `SANDBOX_NO_VISIBLE_SHEET_TARGET` to the generated Roll20

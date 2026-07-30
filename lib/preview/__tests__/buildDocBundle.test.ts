@@ -192,6 +192,8 @@ assert.doesNotMatch(
   'iframe height does not add a fixed blank tail to every sheet',
 );
 assert.match(bundle.doc, /r20:edit-flow-target/);
+assert.match(bundle.doc, /r20:block-type-drag/);
+assert.match(bundle.doc, /application\/x-r20-block-type/);
 assert.match(bundle.doc, /r20:edit-optimistic-flow-finalize/);
 assert.match(bundle.doc, /rollbackOptimisticFlowMove/);
 assert.match(bundle.doc, /r20:edit-apply-chunk-start/);

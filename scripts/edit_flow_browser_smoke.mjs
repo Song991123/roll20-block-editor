@@ -408,6 +408,102 @@ async function main() {
     assert(result.tests.canvasWidgetDrop.created.nested, 'widget did not enter the frame');
     assert(!result.tests.canvasWidgetDrop.created.nestedAbsolute, 'flow widget unexpectedly became absolute');
 
+    await page.click('[data-testid="edit-placement-flow"]');
+    const blockDropBefore = await frame.evaluate(() => [...document.querySelectorAll('input[data-r20-block-id]')]
+      .map((node) => node.getAttribute('data-r20-block-id'))
+      .filter(Boolean));
+    result.tests.canvasBlockDrop = await frame.evaluate(() => {
+      const target = document.querySelector('.sheet-frame');
+      if (!target) return { dispatched: false, reason: 'missing frame' };
+      const rect = target.getBoundingClientRect();
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('application/x-r20-block-type', 'r20_text_input');
+      const init = {
+        bubbles: true,
+        cancelable: true,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.top + rect.height / 2,
+      };
+      const dragover = new DragEvent('dragover', init);
+      Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(dragover);
+      const drop = new DragEvent('drop', init);
+      Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(drop);
+      return {
+        dispatched: true,
+        dragoverPrevented: dragover.defaultPrevented,
+        dropPrevented: drop.defaultPrevented,
+      };
+    });
+    await page.waitForTimeout(500);
+    result.tests.canvasBlockDrop.created = await frame.evaluate((beforeIds) => {
+      const created = [...document.querySelectorAll('input[data-r20-block-id]')]
+        .find((node) => !beforeIds.includes(node.getAttribute('data-r20-block-id')));
+      if (!created) return { created: false };
+      const block = created.closest('[data-r20-block-id]') ?? created;
+      return {
+        created: true,
+        position: getComputedStyle(block).position,
+        parentBlockId: block.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
+        hasClass: Boolean(block.getAttribute('class')),
+      };
+    }, blockDropBefore);
+    assert(result.tests.canvasBlockDrop.dispatched, 'block gallery drop did not dispatch');
+    assert(result.tests.canvasBlockDrop.dragoverPrevented, 'iframe did not accept block gallery dragover');
+    assert(result.tests.canvasBlockDrop.dropPrevented, 'iframe did not accept block gallery drop');
+    assert(result.tests.canvasBlockDrop.created.created, 'block gallery drop did not create a block');
+    assert(
+      result.tests.canvasBlockDrop.created.parentBlockId === ids.frameId,
+      `block gallery drop did not enter the frame: ${JSON.stringify(result.tests.canvasBlockDrop)}`,
+    );
+    assert(result.tests.canvasBlockDrop.created.position !== 'absolute', 'flow block gallery drop became absolute');
+
+    await page.click('[data-testid="edit-placement-free"]');
+    const freeBlockDropBefore = await frame.evaluate(() => [...document.querySelectorAll('input[data-r20-block-id]')]
+      .map((node) => node.getAttribute('data-r20-block-id'))
+      .filter(Boolean));
+    const freeBlockDropPoint = await frame.evaluate(() => {
+      const target = document.querySelector('.sheet-frame');
+      if (!target) return null;
+      const rect = target.getBoundingClientRect();
+      return { x: rect.left + rect.width * 0.72, y: rect.top + rect.height * 0.72 };
+    });
+    assert(freeBlockDropPoint, 'free block gallery drop target is missing');
+    await frame.evaluate(({ x, y }) => {
+      const target = document.querySelector('.sheet-frame');
+      if (!target) return;
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData('application/x-r20-block-type', 'r20_text_input');
+      const init = { bubbles: true, cancelable: true, clientX: x, clientY: y };
+      const dragover = new DragEvent('dragover', init);
+      Object.defineProperty(dragover, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(dragover);
+      const drop = new DragEvent('drop', init);
+      Object.defineProperty(drop, 'dataTransfer', { value: dataTransfer });
+      target.dispatchEvent(drop);
+    }, freeBlockDropPoint);
+    await page.waitForTimeout(500);
+    result.tests.freeCanvasBlockDrop = await frame.evaluate((beforeIds) => {
+      const created = [...document.querySelectorAll('input[data-r20-block-id]')]
+        .find((node) => !beforeIds.includes(node.getAttribute('data-r20-block-id')));
+      if (!created) return { created: false };
+      const block = created.closest('[data-r20-block-id]') ?? created;
+      const style = getComputedStyle(block);
+      return {
+        created: true,
+        position: style.position,
+        parentBlockId: block.parentElement?.closest('[data-r20-block-id]')?.getAttribute('data-r20-block-id') ?? null,
+        left: Number.parseFloat(style.left),
+        top: Number.parseFloat(style.top),
+      };
+    }, freeBlockDropBefore);
+    assert(result.tests.freeCanvasBlockDrop.created, 'free block gallery drop did not create a block');
+    assert(result.tests.freeCanvasBlockDrop.position === 'absolute', 'free block gallery drop did not become absolute');
+    assert(result.tests.freeCanvasBlockDrop.parentBlockId === ids.frameId, 'free block gallery drop lost its frame parent');
+    assert(Number.isFinite(result.tests.freeCanvasBlockDrop.left), 'free block gallery drop did not persist left');
+    assert(Number.isFinite(result.tests.freeCanvasBlockDrop.top), 'free block gallery drop did not persist top');
+
     // Free placement must honor the visible target filter. Hover the top edge
     // of a flow row, where the structural resolver would normally say
     // "before"; in free mode that hidden target must create a root absolute
@@ -887,7 +983,7 @@ async function main() {
         `- Status: ${result.pass ? 'PASS' : 'FAIL'}`,
         `- Console errors: ${consoleErrors.length}`,
         `- Page errors: ${pageErrors.length}`,
-        '- Coverage: flow/free placement, canvas widget drop, layer collapse/expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
+        '- Coverage: flow/free placement, canvas widget and block gallery drops, layer collapse/expand, layer reorder/eject, table drop guard and mutation, cycle rejection, selection sync, sheet/rolltemplate canvas widths.',
         '',
       ].join('\n'),
       'utf8',

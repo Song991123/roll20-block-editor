@@ -232,6 +232,13 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     }
     return false;
   }
+  function hasBlockTypePayload(dataTransfer) {
+    if (!dataTransfer || !dataTransfer.types) return false;
+    for (var i = 0; i < dataTransfer.types.length; i += 1) {
+      if (dataTransfer.types[i] === 'application/x-r20-block-type') return true;
+    }
+    return false;
+  }
   function postWidgetDrag(phase, event, payload) {
     if (!editBridgeEnabled) return;
     var hitNode = hitNodeAt(event.clientX, event.clientY, event.target);
@@ -242,6 +249,21 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
         bridgeId: editBridgeId,
         phase: phase,
         payload: payload || null,
+        pointer: { x: Number(event.clientX) || 0, y: Number(event.clientY) || 0 },
+        hitPath: hitPathOf(hitNode)
+      }, '*');
+    } catch (e) {}
+  }
+  function postBlockTypeDrag(phase, event, blockType) {
+    if (!editBridgeEnabled) return;
+    var hitNode = hitNodeAt(event.clientX, event.clientY, event.target);
+    try {
+      parent.postMessage({
+        type: 'r20:block-type-drag',
+        protocol: 1,
+        bridgeId: editBridgeId,
+        phase: phase,
+        blockType: blockType || null,
         pointer: { x: Number(event.clientX) || 0, y: Number(event.clientY) || 0 },
         hitPath: hitPathOf(hitNode)
       }, '*');
@@ -1269,6 +1291,39 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     try { e.preventDefault(); } catch (_) {}
     try { e.stopImmediatePropagation(); } catch (_) {}
     postWidgetDrag('drop', e, payload);
+  }, true);
+  document.addEventListener('dragover', function (e) {
+    if (
+      !editBridgeEnabled
+      || hasFriendlyWidgetPayload(e.dataTransfer)
+      || !hasBlockTypePayload(e.dataTransfer)
+    ) return;
+    var blockType = '';
+    try { blockType = e.dataTransfer.getData('application/x-r20-block-type') || ''; } catch (_) {}
+    try { e.preventDefault(); } catch (_) {}
+    try { e.dataTransfer.dropEffect = 'copy'; } catch (_) {}
+    postBlockTypeDrag('dragover', e, blockType);
+  }, true);
+  document.addEventListener('dragleave', function (e) {
+    if (
+      !editBridgeEnabled
+      || hasFriendlyWidgetPayload(e.dataTransfer)
+      || !hasBlockTypePayload(e.dataTransfer)
+    ) return;
+    if (e.relatedTarget && document.documentElement.contains(e.relatedTarget)) return;
+    postBlockTypeDrag('dragleave', e, null);
+  }, true);
+  document.addEventListener('drop', function (e) {
+    if (
+      !editBridgeEnabled
+      || hasFriendlyWidgetPayload(e.dataTransfer)
+      || !hasBlockTypePayload(e.dataTransfer)
+    ) return;
+    var blockType = '';
+    try { blockType = e.dataTransfer.getData('application/x-r20-block-type') || ''; } catch (_) {}
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopImmediatePropagation(); } catch (_) {}
+    postBlockTypeDrag('drop', e, blockType);
   }, true);
   document.addEventListener('contextmenu', function (e) {
     if (!editBridgeEnabled) return;

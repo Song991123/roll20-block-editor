@@ -1,3 +1,18 @@
+## 2026-07-30 - Block gallery drop through persistent iframe
+
+- FIXED LOCAL: Block-library drags now cross the persistent iframe through a
+  typed `r20:block-type-drag` bridge message. The parent reuses the existing
+  layer/drop resolver and Roll20 HTML block adapter rather than maintaining a
+  second editor model.
+- VERIFIED BROWSER: Anonymous edit-flow smoke passes both flow insertion into
+  a frame and free absolute placement inside that frame, including persisted
+  position and immediate emit. No source-identifying fixture was used.
+- VERIFIED LOCAL: bridge and build-doc contract tests, persistent preview,
+  fresh-sheet, strict imported-edit sync, lint, production build, and full
+  `ci:verify` pass. Project listener hygiene is clear after the run.
+- CLAIM BOUNDARY: This is local editor evidence. It does not upgrade the
+  actual modern Sandbox or dedicated legacy-room parity gates.
+
 ## 2026-07-30 - Roll20 Sandbox upload handoff retry
 
 - VERIFIED READ-ONLY: The open Roll20 page exposed the `Sheet Sandbox Tools`

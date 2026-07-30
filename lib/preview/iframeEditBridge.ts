@@ -62,6 +62,16 @@ export type IframeWidgetDragMessage = {
   hitPath: IframeEditNodeGeometry[];
 };
 
+export type IframeBlockTypeDragMessage = {
+  type: 'r20:block-type-drag';
+  protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
+  bridgeId: string;
+  phase: 'dragover' | 'dragleave' | 'drop';
+  blockType: string | null;
+  pointer: { x: number; y: number };
+  hitPath: IframeEditNodeGeometry[];
+};
+
 export type IframeEditContextMenuMessage = {
   type: 'r20:edit-context-menu';
   protocol: typeof R20_IFRAME_EDIT_PROTOCOL;
@@ -75,6 +85,7 @@ export type IframeEditBridgeMessage =
   | IframeEditHitMessage
   | IframeEditAppliedMessage
   | IframeWidgetDragMessage
+  | IframeBlockTypeDragMessage
   | IframeEditContextMenuMessage;
 
 export type IframeEditModeCommand = {
@@ -185,6 +196,31 @@ export function parseIframeEditBridgeMessage(value: unknown): IframeEditBridgeMe
       bridgeId: value.bridgeId,
       phase: value.phase,
       payload: value.payload,
+      pointer: { x: value.pointer.x, y: value.pointer.y },
+      hitPath: value.hitPath,
+    };
+  }
+  if (value.type === 'r20:block-type-drag') {
+    if (
+      value.phase !== 'dragover'
+      && value.phase !== 'dragleave'
+      && value.phase !== 'drop'
+    ) return null;
+    if (
+      value.blockType !== null
+      && (typeof value.blockType !== 'string' || value.blockType.length > 256)
+    ) return null;
+    if (!isRecord(value.pointer)) return null;
+    if (!isFiniteCoordinate(value.pointer.x) || !isFiniteCoordinate(value.pointer.y)) return null;
+    if (!Array.isArray(value.hitPath) || value.hitPath.length > 64 || !value.hitPath.every(isNodeGeometry)) {
+      return null;
+    }
+    return {
+      type: 'r20:block-type-drag',
+      protocol: R20_IFRAME_EDIT_PROTOCOL,
+      bridgeId: value.bridgeId,
+      phase: value.phase,
+      blockType: value.blockType,
       pointer: { x: value.pointer.x, y: value.pointer.y },
       hitPath: value.hitPath,
     };
