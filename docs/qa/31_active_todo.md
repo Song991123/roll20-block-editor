@@ -1,3 +1,19 @@
+## 2026-07-31 Chrome Roll20 session recheck
+
+- `OBSERVED EXTERNAL`: Chrome contained two user-owned Roll20 tabs: a
+  dedicated Sandbox upload tab and a separate legacy verification tab. The
+  Sandbox tab was visibly in the Roll20 editor with the one-member state and
+  Sheet Sandbox Tools dialog; the three upload inputs were confirmed by
+  narrow DOM inspection.
+- `VERIFY / BLOCKED EXTERNAL`: The browser connection timed out while claiming
+  the Sandbox tab for the file-selection action. No file chooser completed, no
+  file was uploaded, no settings were saved, and no room was modified. The
+  tabs were released after the failed attempt.
+- `NEXT P0`: Reconnect the same Chrome session when its browser bridge is
+  responsive, then apply only the ignored anonymous payload through the
+  resumable uploader. Require three payload hashes, matching runtime,
+  `VISIBLE_MATCH`, and fresh root/chat evidence before comparison.
+
 ## 2026-07-31 Roll20 upload reload-resume handoff
 
 - `DONE LOCAL`: Generated Sandbox upload snippets now default to a resumable

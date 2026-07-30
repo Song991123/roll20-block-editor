@@ -1,3 +1,17 @@
+## 2026-07-31 - Chrome Roll20 session recheck
+
+- Chrome tab inventory showed the dedicated `Sandbox upload` tab and a
+  separate `Legacy Verify` tab. The Sandbox surface was the Roll20 editor with
+  the one-member state and Sheet Sandbox Tools open; narrow DOM inspection
+  confirmed `#sheetHtml`, `#sheetCss`, and `#sheetTranslation` were present.
+- The browser bridge timed out while claiming the Sandbox tab for the file
+  chooser action. No file selection, upload, settings save, room write, or
+  screenshot evidence occurred. Existing tabs were released afterward.
+- This is stronger readiness evidence than an absent browser, but it does not
+  advance same-hash modern parity or legacy-room proof. Keep both external
+  tracks `VERIFY / OPEN` until the bridge completes the anonymous payload
+  upload and fresh evidence capture.
+
 ## 2026-07-31 - Roll20 upload reload-resume handoff
 
 - Fixed a real handoff failure: Roll20 can reload the Sandbox immediately
