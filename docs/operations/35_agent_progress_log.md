@@ -7862,3 +7862,16 @@ visibility verification passed. No external room was opened or modified.
 - Persistent preview-surface smoke passed in modern and legacy modes with
   reload count `0`; edit-flow smoke passed as well. This remains local evidence
   and does not replace actual Roll20 Sandbox or legacy-room verification.
+
+## 2026-07-30 - Roll20 Sandbox upload boundary
+
+- Reconnected to the authenticated Roll20 Sandbox list and read the dedicated
+  verification game's settings and game surface without changing them. The
+  game surface exposes separate HTML, CSS, and Translation file inputs.
+- The supported browser file-chooser event was available, but the browser
+  backend rejected `setFiles` with `Not allowed` for the anonymous local
+  fixture. No upload, save, room mutation, chat message, or setting change
+  occurred.
+- This is a tooling-permission boundary, not a renderer result. The next
+  external gate requires a permitted native file handoff; modern Sandbox and
+  legacy dedicated-room evidence remain separate.

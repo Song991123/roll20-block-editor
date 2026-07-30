@@ -7107,3 +7107,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   local chat evidence contained no `javascript:`, `onerror`, inline `style`,
   or `<script>` residue. Persistent preview-surface and edit-flow smoke also
   passed in this rebuilt artifact.
+
+## 2026-07-30 Roll20 Sandbox upload boundary
+
+- `VERIFY / BLOCKED_EXTERNAL`: The authenticated Roll20 Custom Sheet Sandbox
+  index and a dedicated verification Sandbox were reachable. The game view
+  exposed separate HTML, CSS, and Translation file inputs, confirming the
+  intended modern verification destination.
+- The supported browser file-chooser event was observable, but its permitted
+  `setFiles` operation returned `Not allowed` for the anonymous local fixture.
+  No file was selected, no payload was saved, and no existing room or setting
+  was changed.
+- The dedicated Sandbox itself is not evidence of our current payload; the
+  upload step must succeed before comparing its rendered root, assets, state,
+  worker behavior, and chat output.
+- `NEXT P0`: continue only with a browser session that permits native file
+  handoff, or use the user-visible native picker. Keep modern Sandbox and
+  legacy dedicated-room verification separate.
