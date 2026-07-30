@@ -9,10 +9,10 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `c8b71fd`. The branch is pushed to
+- Active branch: `claude/design-reset` at `72a8250`. The branch is pushed to
   `origin` and the worktree is clean.
-- Remote CI: run `30573457763` passed safety/unit verification, lint, and
-  build for `c8b71fd`.
+- Remote CI: run `30573668133` passed safety/unit verification, lint, and
+  build for `72a8250`.
 - Static corpus inventory: two protected external roots were read-only scanned;
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
