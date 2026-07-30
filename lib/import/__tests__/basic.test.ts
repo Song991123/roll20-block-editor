@@ -197,6 +197,19 @@ function testCoverageStat(): void {
   `;
   const r = importSheet({ html });
   assert(r.stats.coverage > 90, `coverage should be >90, got ${r.stats.coverage}`);
+  assert(r.stats.htmlCoverage === r.stats.coverage, 'legacy coverage remains HTML coverage');
+  assert(r.stats.cssCoverage === 0, 'empty CSS has zero CSS coverage');
+  assert(r.stats.structuredCoverage > 90, 'combined structured coverage is reported');
+  assert(r.stats.warningCount === r.warnings.length, 'warning count mirrors warnings');
+}
+
+function testCssCoverageExposesRawFallback(): void {
+  const r = importSheet({ css: '.sheet { color: red; } @layer reset;' });
+  assert(r.stats.cssMatched === 1, 'one typed CSS rule is matched');
+  assert(r.stats.cssRawFallback === 1, 'unsupported at-rule remains raw');
+  assert(r.stats.cssCoverage === 50, `CSS coverage should expose raw fallback, got ${r.stats.cssCoverage}`);
+  assert(r.stats.structuredCoverage === 50, `combined coverage should expose raw fallback, got ${r.stats.structuredCoverage}`);
+  assert(r.stats.warningCount === 1, 'raw CSS fallback is visible in warning count');
 }
 
 
@@ -437,6 +450,7 @@ const tests = [
   ['i18n flat', testI18nFlat],
   ['raw fallback', testRawFallback],
   ['coverage', testCoverageStat],
+  ['css coverage exposes raw fallback', testCssCoverageExposesRawFallback],
   ['inline bold <b>', testInlineBoldB],
   ['inline bold <strong>', testInlineBoldStrong],
   ['inline italic <em>', testInlineItalicEm],

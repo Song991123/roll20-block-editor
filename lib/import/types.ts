@@ -55,6 +55,14 @@ export interface ImportStats {
   templateMarkerCount: number;
   /** 종합 coverage % (HTML 기준). */
   coverage: number;
+  /** HTML element matching percentage. */
+  htmlCoverage: number;
+  /** CSS rule matching percentage, including typed at-rule handling. */
+  cssCoverage: number;
+  /** Combined structured matching percentage across HTML elements and CSS rules. */
+  structuredCoverage: number;
+  /** Total importer warnings across all workspaces. */
+  warningCount: number;
   /**
    * 보안상 제거된 인라인 이벤트 핸들러 (onclick / onload / ...) 의 총 개수.
    * UI 가 0 보다 크면 사용자에게 명시적 경고를 표시 (silent drop 방지).

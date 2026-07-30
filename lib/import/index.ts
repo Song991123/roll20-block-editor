@@ -105,9 +105,19 @@ export function importSheet(
     }
   }
 
-  const coverage =
+  const htmlCoverage =
     htmlCtx.totalCount > 0
       ? Math.round((htmlCtx.matchedCount * 1000) / htmlCtx.totalCount) / 10
+      : 0;
+  const cssCoverage =
+    cssCtx.total > 0
+      ? Math.round((cssCtx.matched * 1000) / cssCtx.total) / 10
+      : 0;
+  const structuredTotal = htmlCtx.totalCount + cssCtx.total;
+  const structuredMatched = htmlCtx.matchedCount + cssCtx.matched;
+  const structuredCoverage =
+    structuredTotal > 0
+      ? Math.round((structuredMatched * 1000) / structuredTotal) / 10
       : 0;
 
   return {
@@ -126,7 +136,13 @@ export function importSheet(
       i18nKeys: i18nCtx.keys,
       pageScriptBlocks: pageJsSplit.entries.length,
       templateMarkerCount: templateMarkers.count,
-      coverage,
+      // Keep the historical field as the HTML-only percentage for callers
+      // that already consume it; expose the CSS and combined scopes too.
+      coverage: htmlCoverage,
+      htmlCoverage,
+      cssCoverage,
+      structuredCoverage,
+      warningCount: warnings.length,
       sanitizeDropped: htmlCtx.sanitizeDropped,
       scriptBlocksMatched: htmlCtx.scriptBlocksMatched,
       scriptStatementsRaw: htmlCtx.scriptStatementsRaw,

@@ -104,9 +104,12 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
   const setAssetReplacementMap = usePreviewStore((state) => state.setAssetReplacementMap);
   const [report, setReport] = useState<null | {
     coverage: number;
+    cssCoverage: number;
+    structuredCoverage: number;
     matched: number;
     total: number;
     rawHtml: number;
+    rawCss: number;
     cssMatched: number;
     cssTotal: number;
     i18nKeys: number;
@@ -225,9 +228,12 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
 
       setReport({
         coverage: result.stats.coverage,
+        cssCoverage: result.stats.cssCoverage,
+        structuredCoverage: result.stats.structuredCoverage,
         matched: result.stats.htmlMatched,
         total: result.stats.htmlTotal,
         rawHtml: result.stats.htmlRawFallback,
+        rawCss: result.stats.cssRawFallback,
         cssMatched: result.stats.cssMatched,
         cssTotal: result.stats.cssTotal,
         i18nKeys: result.stats.i18nKeys,
@@ -247,7 +253,7 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
         );
       }
       toast.success(
-        `불러오기 완료: HTML 매칭 ${result.stats.htmlMatched}/${result.stats.htmlTotal} (${result.stats.coverage}%) · 원본 보존 ${result.stats.htmlRawFallback}개`,
+        `불러오기 완료: HTML ${result.stats.htmlCoverage}% · CSS ${result.stats.cssCoverage}% · 원본 보존 ${result.stats.htmlRawFallback + result.stats.cssRawFallback}개`,
         { duration: 3500 },
       );
     } catch (error) {
@@ -457,8 +463,12 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
               <span className="tabular-nums">{report.rawHtml}</span>개
             </div>
             <div>
-              CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span> · 번역 키{' '}
+              CSS 규칙: <span className="tabular-nums">{report.cssMatched}/{report.cssTotal}</span> ({report.cssCoverage}%) · 원본 보존{' '}
+              <span className="tabular-nums">{report.rawCss}</span>개 · 번역 키{' '}
               <span className="tabular-nums">{report.i18nKeys}</span>
+            </div>
+            <div>
+              전체 구조화: <span className="tabular-nums">{report.structuredCoverage}%</span>
             </div>
             {(report.pageJsBlocks > 0 || report.workerBlocks > 0) && (
               <div>
