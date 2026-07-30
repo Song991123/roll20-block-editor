@@ -7,6 +7,9 @@
 - VERIFIED LOCAL: `test:layer-roles`, `test:iframe-drop-target`, and the full
   `ci:verify` gate pass. This covers structural insertion rules only; it does
   not prove browser drag latency or actual modern/legacy Roll20 parity.
+- FIXED LOCAL: `r20_attribute_card` is treated as a cell group: it can reorder
+  inside its source `tr`, but cannot be dropped directly into `table` or
+  `tbody` where its unwrapped sibling cells would make invalid HTML.
 - NEXT P0: finish the remaining local imported-edit role/inventory coverage,
   then resume the separate modern Sandbox and legacy-room evidence gate.
 

@@ -77,6 +77,9 @@ are exposed through the composite's own fields. A packed `r20_skill_row` is
 treated as a table row by structural drop validation even though its visual
 layer color remains Flow; this keeps a packed row insertable under `tbody` or
 `thead` without making its generated cells arbitrary drop zones.
+The packed `r20_attribute_card` is instead a `cell_group`: it may reorder
+within its source `tr`, but cannot be inserted directly under `table` or
+`tbody` because it emits sibling cells without a wrapper.
 
 This describes the current local interaction contract. It does not claim that
 every arbitrary runtime script or third-party markup pattern is decomposed into

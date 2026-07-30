@@ -133,7 +133,7 @@ export function canReceiveChildren(type: string): boolean {
   return getLayerRole(type).canReceiveChildren;
 }
 
-type TableNodeKind = 'table' | 'colgroup' | 'col' | 'section' | 'row' | 'cell' | 'caption';
+type TableNodeKind = 'table' | 'colgroup' | 'col' | 'section' | 'row' | 'cell' | 'cell_group' | 'caption';
 
 /**
  * HTML table nodes have stricter parent/child rules than ordinary frames.
@@ -150,6 +150,9 @@ function tableNodeKind(type: string): TableNodeKind | null {
   // The packed skill-row composite emits a complete <tr>. Keep table
   // insertion valid after an imported row has been collapsed.
   if (normalized === 'skill_row') return 'row';
+  // The attribute-card composite emits sibling <td> cells without a wrapper.
+  // It is valid inside a row, but never as a direct table child.
+  if (normalized === 'attribute_card') return 'cell_group';
   if (normalized === 'td' || normalized === 'th') return 'cell';
   if (normalized === 'table_caption' || normalized === 'caption') return 'caption';
   return null;
@@ -171,11 +174,12 @@ export function canNestLayerChild(movingType: string, targetType: string): boole
     case 'section':
       return moving === 'row';
     case 'row':
-      return moving === 'cell';
+      return moving === 'cell' || moving === 'cell_group';
     case 'cell':
       return true;
     case 'col':
     case 'caption':
+    case 'cell_group':
       return false;
     default:
       return true;

@@ -7946,6 +7946,15 @@ visibility verification passed. No external room was opened or modified.
 - CLAIM BOUNDARY: this proves only structural drop validation; actual browser
   interaction timing and modern/legacy Roll20 screenshots remain unverified.
 
+## 2026-07-30 - Packed cell-group structural insertion
+
+- FIXED LOCAL: `r20_attribute_card` now has a dedicated `cell_group` table
+  contract. Its unwrapped sibling `<td>` output can reorder inside `tr`, but
+  cannot be inserted directly into `table` or `tbody`.
+- VERIFIED LOCAL: layer-role regression assertions cover valid row placement
+  and invalid table/section placement. This remains a generic composite
+  structure rule and does not use private sheet data.
+
 ## 2026-07-30 - Generic inline whitespace import fix
 
 - Reproduced a universal import loss where inline siblings such as
