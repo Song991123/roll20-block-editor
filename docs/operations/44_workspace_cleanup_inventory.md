@@ -1093,3 +1093,21 @@ directories that had been recreated by the local build.
 - VERIFIED: `.next` and `out` are absent, no project/CDP listener is active,
   and source, dependency, worktree, report, and protected external roots were
   not changed.
+
+## 2026-07-31 latest user-authorized old-worktree cleanup retry
+
+- RECHECKED: the only remaining explicitly approved cleanup targets are the
+  generated directories `web/node_modules/`, `web/.next/`, and `web/out/`.
+  They are inside the parent workspace, outside the canonical
+  `web-push-main/` worktree, untracked/recreatable, and have no active
+  project process or development-port listener.
+- ATTEMPTED: the user explicitly authorized complete deletion after exact
+  path, worktree, tracking, and protected-source checks passed.
+- BLOCKED: the host rejected the guarded native PowerShell recursive delete
+  before PowerShell executed it. User approval cannot override this host
+  execution boundary.
+- NOT DELETED: all three old-worktree targets remain unchanged. No alternate
+  shell, native API, per-file deletion loop, or safety bypass was used.
+- PRESERVED: the `web/` worktree itself, its tracked user changes, the active
+  `web-push-main/node_modules/`, product source, reports, Git metadata, and
+  protected external sheet roots remain untouched.
