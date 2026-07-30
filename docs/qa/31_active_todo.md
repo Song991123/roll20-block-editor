@@ -7253,3 +7253,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN`: Actual modern Sandbox and dedicated legacy-room visual
   comparison remain separate gates; local interaction evidence cannot promote
   Roll20 parity.
+
+## 2026-07-30 External verification handoff boundary
+
+- `VERIFY / BLOCKED_CURRENT_SESSION`: The in-app browser showed a login surface;
+  the connected Chrome dedicated verification tab timed out while being handed
+  to browser control. No room or sheet state was changed.
+- `NEXT P0`: Retry only after a controllable authenticated Sandbox/test-room
+  tab is available. Existing rooms still require a fresh visible participant
+  count of exactly one and remain observation-only.

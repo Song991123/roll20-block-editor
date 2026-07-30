@@ -8019,3 +8019,12 @@ visibility verification passed. No external room was opened or modified.
 - Local evidence: role unit test, lint, production build, full `ci:verify`,
   persistent preview-surface smoke, edit-flow smoke, and imported-edit-sync
   smoke all pass. No external Roll20 screenshot or upload was created here.
+
+## 2026-07-30 - External verification handoff boundary
+
+- The in-app browser opened Roll20 at an unauthenticated login surface. Chrome
+  exposed a dedicated verification tab, but claiming that tab timed out before
+  control was established.
+- No existing room was opened, no participant state was used, and no upload,
+  save, chat message, setting change, or test-room mutation occurred. External
+  modern/legacy visual evidence therefore remains open.
