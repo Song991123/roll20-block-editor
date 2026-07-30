@@ -37,6 +37,9 @@
   browser smoke, and strict imported-edit synchronization. A parallel run
   briefly tripped the existing large-stylesheet timing budget; the isolated
   rerun and the full serial CI gate passed.
+- Added regression assertions to the upload-snippet self-test for sequential
+  dispatch and page-token-aware same-page retry versus post-reload resume.
+  The isolated snippet test, lint, and full `ci:verify` pass.
 
 ## 2026-07-31 - Edit surface context-menu commit path
 

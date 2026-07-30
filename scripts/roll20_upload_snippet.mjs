@@ -1433,6 +1433,10 @@ function runSelfTest() {
   if (!snippet.includes('const USE_ENDPOINT_FALLBACK = false;')) failures.push('default snippet should not post endpoint fallback');
   if (!snippet.includes('const RESUME_UPLOAD = true;')) failures.push('default snippet should use resumable upload');
   if (!snippet.includes('pendingIndex')) failures.push('resumable snippet missing pending upload state');
+  if (!snippet.includes('const PAGE_TOKEN')) failures.push('resumable snippet missing page token');
+  if (!snippet.includes('pendingPageToken !== PAGE_TOKEN')) failures.push('resumable snippet should distinguish reload from same-page retry');
+  if (!snippet.includes('for (const { selector, item, type } of selectedItems)')) failures.push('upload files should be dispatched sequentially');
+  if (snippet.includes('Promise.all(selectedItems')) failures.push('upload files must not dispatch concurrently');
   if (!applySnippet.includes('const SUBMIT_SETTINGS_FORM = true;')) failures.push('apply snippet missing submit settings flag');
   if (!applySnippet.includes('const USE_ENDPOINT_FALLBACK = true;')) failures.push('apply snippet missing endpoint fallback flag');
   if (!applySnippet.includes('const ENDPOINT_CAMPAIGN_ID = "12345";')) failures.push('apply snippet missing explicit campaign id');

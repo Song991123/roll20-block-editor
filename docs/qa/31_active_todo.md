@@ -27,6 +27,9 @@
 - `VERIFIED LOCAL`: Upload-snippet, CDP-upload, CDP-preflight, payload
   provenance, syntax, and diff checks pass. An anonymous synthetic three-file
   handoff was regenerated under ignored `.tmp` output.
+- `VERIFIED LOCAL`: The upload-snippet self-test now guards sequential file
+  dispatch, page-token reload detection, and the absence of concurrent
+  `Promise.all` upload behavior.
 - `VERIFIED LOCAL`: Serial `lint`, `build`, `ci:verify` (all renderer/import/
   privacy guards), `smoke:edit-flow`, and strict imported-edit synchronization
   all pass. The first parallel CI attempt hit an existing timing-sensitive
