@@ -160,6 +160,20 @@ function testI18nPlaceholderStylePreserved(): void {
   assert(style === 'width:14%', `i18n_placeholder STYLE preserved, got "${style}"`);
 }
 
+function testI18nAriaLabelClassPreserved(): void {
+  const html =
+    `<span data-i18n-aria-label="help.label" aria-label="도움말" ` +
+    `class="sheet-help-label" style="display:block"></span>`;
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_i18n_aria_label'), 'r20_i18n_aria_label matched');
+  assert(
+    allFieldValues(r.html, 'CLASS').includes('help-label'),
+    'i18n aria-label CLASS is editable and preserved',
+  );
+  const style = fieldValue(r.html, 'STYLE');
+  assert(style === 'display:block', `i18n_aria_label STYLE preserved, got "${style}"`);
+}
+
 // ---------- 빈 style → STYLE="" (no `style=""` emit) ----------
 
 function testEmptyStyleProducesEmptyField(): void {
@@ -230,6 +244,7 @@ const tests: ReadonlyArray<readonly [string, () => void]> = [
   ['label style 보존', testLabelStylePreserved],
   ['i18n_text style 보존 (TAG=td 와 함께)', testI18nTextStylePreserved],
   ['i18n_placeholder style 보존', testI18nPlaceholderStylePreserved],
+  ['i18n_aria_label class/style 보존', testI18nAriaLabelClassPreserved],
   ['style 없는 element → STYLE=""', testEmptyStyleProducesEmptyField],
   ['grid 사용자 STYLE + built-in 병합', testGridUserStyleMerged],
   ['special movable blocks keep CLASS', testMovableSpecialBlocksKeepClassFields],

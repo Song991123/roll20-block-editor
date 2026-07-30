@@ -7791,3 +7791,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   artifact was changed. The Sandbox tab remains a handoff, not a parity pass.
 - `NEXT P0`: User-visible selection of all three anonymous files is required
   before modern render/runtime/roll evidence can be collected.
+
+## 2026-07-30 i18n aria-label class mapping
+
+- `DONE LOCAL`: `data-i18n-aria-label` blocks now expose the authored class as
+  an ordinary editable `CLASS` field, matching the other i18n display blocks.
+  The generated span keeps the Roll20 class prefix and style contract.
+- `VERIFIED LOCAL`: import-structure `41/41`, high-priority generator/import
+  `22/22` and `25/25`, full `ci:verify`, production build, modern/legacy
+  persistent-preview smoke, edit-flow smoke, and server hygiene all pass.
+- `VERIFY / OPEN`: This is a targeted mapping correction. It does not prove
+  arbitrary third-party HTML/CSS losslessness or actual Roll20 visual parity.
+- `NEXT P0`: Complete user-visible three-file selection in the dedicated
+  modern Sandbox handoff, then capture applied root, worker, roll, chat, and
+  asset evidence; legacy verification remains a separate test-room track.

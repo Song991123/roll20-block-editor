@@ -320,6 +320,9 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본 aria-label')
         .appendField(new Blockly.FieldTextInput('Accessible label'), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -329,8 +332,10 @@ export const I18N_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
-        `<span${attr('data-i18n-aria-label', key)}${attr('aria-label', def)}${styleAttr(style)}></span>`
+        `<span${attr('data-i18n-aria-label', key)}${attr('aria-label', def)}` +
+        `${sheetClassAttr(cls)}${styleAttr(style)}></span>`
       );
     },
   },

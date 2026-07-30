@@ -500,6 +500,7 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
       fields: {
         KEY: a['data-i18n-aria-label'],
         DEFAULT: a['aria-label'] || '',
+        CLASS: stripSheetPrefix(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},

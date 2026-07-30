@@ -8530,3 +8530,14 @@ visibility verification passed. No external room was opened or modified.
 - STATUS: this remains an environment execution-policy block, not a missing
   user approval. Keep the targets out of product claims and retry only if the
   host policy changes.
+
+## 2026-07-30 - i18n aria-label class mapping
+
+- IMPLEMENTED: `r20_i18n_aria_label` now maps the source class into a visible
+  `CLASS` field and emits it through the normal Roll20-prefixed class path.
+  This closes a small user-editability gap without changing the preview/edit
+  surface or runtime boundary.
+- VERIFIED: import-structure, high-priority mapping, full `ci:verify`, build,
+  modern/legacy persistent preview, edit-flow smoke, and server hygiene pass.
+- OPEN: Actual Sandbox upload is still blocked at the native file chooser;
+  no Roll20 visual, worker, roll, chat, or legacy-room parity claim is made.

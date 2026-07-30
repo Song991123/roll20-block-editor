@@ -496,7 +496,7 @@ const ATTR_FIELD_MAP = {
   r20_i18n_text: { 'data-i18n': 'KEY', class: 'CLASS', style: 'STYLE' },
   r20_i18n_html: { 'data-i18n-html': 'KEY', class: 'CLASS', style: 'STYLE' },
   r20_i18n_title: { 'data-i18n-title': 'KEY', title: 'DEFAULT', class: 'CLASS', style: 'STYLE' },
-  r20_i18n_aria_label: { 'data-i18n-aria-label': 'KEY', 'aria-label': 'DEFAULT', style: 'STYLE' },
+  r20_i18n_aria_label: { 'data-i18n-aria-label': 'KEY', 'aria-label': 'DEFAULT', class: 'CLASS', style: 'STYLE' },
   r20_i18n_legend: { 'data-i18n': 'KEY', class: 'CLASS', style: 'STYLE' },
   r20_raw_worker: {},
   r20_heading: { class: 'CLASS', style: 'STYLE' },
