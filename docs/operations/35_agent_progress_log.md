@@ -8703,3 +8703,17 @@ visibility verification passed. No external room was opened or modified.
   delegates through the same type-aware adapter method.
 - Local result: focused tests, full `ci:verify`, lint, production build, and
   server hygiene passed. No external Roll20 claim was promoted.
+
+## 2026-07-30 Synthetic-only evidence refresh
+
+- Re-ran the copyright-safe synthetic preview/edit visual gate: modern and
+  legacy both passed with `0%` pixel mismatch.
+- Re-ran the persistent iframe gate: modern and legacy both passed with zero
+  iframe reloads and preserved runtime/input state.
+- Re-ran canonical imported-edit sync: `synthetic-generic-elements` and
+  `synthetic-nonleaf-flow` passed. The current worktree has no
+  `test-fixtures/visual` directory, so historical source-derived fixture
+  results were not re-reported as current evidence.
+- External Roll20 remains open: Sandbox tab discovery succeeded, but claiming
+  the isolated tab timed out before DOM inspection. No upload or room mutation
+  occurred.

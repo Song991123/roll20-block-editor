@@ -8000,3 +8000,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   the full Figma-like editing experience.
 - `NEXT P0`: Recover the supported modern Sandbox upload path, capture positive
   render/runtime/roll/chat evidence, then verify legacy behavior separately.
+
+## 2026-07-30 Current fixture and render evidence reconciliation
+
+- `VERIFIED LOCAL`: The copyright-safe synthetic preview/edit visual smoke is
+  pixel-exact (`0%` mismatch) in both modern and legacy modes. The canonical
+  persistent iframe smoke reports zero iframe reloads in both modes, and the
+  canonical imported-edit smoke passes `synthetic-generic-elements` and
+  `synthetic-nonleaf-flow`.
+- `RECONCILED`: The current worktree has no `test-fixtures/visual` directory.
+  Historical notes about three prepared source-derived fixtures are retained as
+  history only, not as current evidence. No real or derived sheet was restored.
+- `VERIFY / OPEN`: Universal imported-sheet parity and actual Roll20 parity
+  remain unproven. A user-provided fixture must be copied into an ignored local
+  path before source-derived visual checks resume.
+- `NEXT P0`: Use the isolated Sandbox handoff for positive modern activation;
+  keep legacy verification in a separate dedicated legacy-enabled destination.

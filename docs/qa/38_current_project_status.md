@@ -148,3 +148,12 @@ target, while valid structural rows still expose the expected adjacent drop.
 This is verified by focused drop-target tests, `ci:verify`, lint, build, and
 server hygiene. Modern Sandbox, legacy-room, and actual Roll20 visual/chat
 parity remain unverified.
+
+## Evidence Reconciliation - 2026-07-30
+
+The latest reproducible local evidence is intentionally synthetic-only. The
+preview/edit pixel smoke reports `0%` mismatch in modern and legacy modes; the
+persistent iframe smoke reports zero reloads in both modes; and canonical
+imported-edit sync passes two neutral structures. The current worktree does
+not contain `test-fixtures/visual`, so historical source-derived fixture counts
+are not current evidence. No source-derived sheet was restored or committed.
