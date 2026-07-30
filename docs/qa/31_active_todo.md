@@ -9263,3 +9263,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: retry only after the supported Chrome connection is responsive;
   then capture browser-side `fileHashStatus: match` for modern before touching
   the dedicated legacy destination.
+
+## 2026-07-31 Modern Sandbox same-payload proof
+
+- `VERIFIED EXTERNAL`: the dedicated modern Sandbox accepted the anonymous
+  HTML, CSS, and translation files through Roll20's three file-input
+  handlers. All three browser `File.arrayBuffer()` hashes matched the local
+  payload hashes; no endpoint fallback or settings save was used.
+- `VERIFIED EXTERNAL`: the character iframe rendered the translated `Name`
+  label, `attr_name` input, and `roll_check` button under the Roll20 dialog/tab
+  wrapper context.
+- `VERIFIED EXTERNAL`: clicking the uploaded `roll_check` button appended a
+  `Sandbox proof` default rolltemplate result to the dedicated Sandbox chat.
+- `VERIFY / OPEN`: this proves one anonymous modern Sandbox roundtrip, not
+  universal source coverage, screenshot-level parity, worker mutation parity,
+  or the separate legacy destination.
+- `NEXT P0`: capture the lossless modern crop/sidecar and run the same-payload
+  legacy test in a separately approved legacy destination. Keep both rooms
+  outside public Git evidence.

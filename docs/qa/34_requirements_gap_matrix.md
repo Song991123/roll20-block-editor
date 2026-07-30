@@ -911,3 +911,22 @@ not close the external Roll20 parity rows above.
   mutation occurred; ordinary rooms remained untouched.
 - `OPEN`: the new byte-identity guard has not yet produced live
   `fileHashStatus: match` evidence.
+
+## Modern Sandbox Roundtrip - 2026-07-31
+
+- `VERIFIED EXTERNAL`: the dedicated modern Sandbox received all three
+  anonymous payload files through Roll20's visible HTML/CSS/Translation file
+  controls; expected, decoded-source, and browser `File` SHA-256 values match
+  for HTML, CSS, and translation.
+- `VERIFIED EXTERNAL`: the actual character iframe contains the translated
+  label, named input, and roll control from that payload under Roll20's dialog
+  wrapper. This is same-payload activation evidence for the modern Sandbox.
+- `VERIFIED EXTERNAL`: the roll control produced a `Sandbox proof` default
+  rolltemplate row in the dedicated Sandbox chat.
+- `PARTIAL`: one anonymous modern roundtrip is verified. Screenshot crop
+  normalization, computed-style sidecar parity, worker mutation parity,
+  broad source coverage, and independent legacy same-payload verification
+  remain open.
+- `SAFETY`: no ordinary room was edited; the dedicated Sandbox showed exactly
+  one visible member. Local evidence remains ignored and public docs contain
+  no sheet source or screenshot.

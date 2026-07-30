@@ -9876,3 +9876,35 @@ same-hash modern/legacy comparison.
   occurred.
 - External handoff remains open; do not treat the browser-side hash guard or
   local CI as live Roll20 parity evidence.
+
+## 2026-07-31 - Modern Sandbox same-payload roundtrip
+
+- External verification succeeded in the dedicated modern Sandbox. Roll20's
+  visible HTML, CSS, and Translation controls each dispatched one local
+  anonymous payload file.
+- Browser-side SHA-256 evidence matched for all three files: expected source
+  bytes, decoded bytes, and `File.arrayBuffer()` bytes were identical. The
+  upload snippet did not use endpoint fallback and did not save game settings.
+- The opened character iframe showed the payload's translated label, named
+  input, and roll button under the real Roll20 dialog/tab wrapper. A click on
+  the roll button added a `Sandbox proof` default rolltemplate result to chat.
+- Safety: the dedicated Sandbox showed exactly one visible member. No ordinary
+  room was modified. The browser tab was agent-created and remains a local
+  verification surface only.
+- Scope: this is one modern same-payload roundtrip, not a universal parity
+  claim. Lossless crop/sidecar comparison, worker mutation, and independent
+  legacy same-payload verification remain open.
+
+## 2026-07-31 - User-authorized disposable-output purge retry
+
+- Rechecked 55 exact targets: old `web/` dependency/build output, active
+  ignored `.next`/`out`/`.tmp`, and generated report directories. Every target
+  was inside the workspace, untracked, and outside protected source roots;
+  no project or CDP listener was active.
+- The host rejected the boundary-checked native recursive PowerShell deletion
+  before PowerShell execution. User approval cannot override this execution
+  boundary, so no alternate shell, native API, or per-file workaround was
+  used.
+- Result: all 55 targets remain present. The active
+  `web-push-main/node_modules`, report policy README, source, worktrees,
+  protected roots, and user-authored material were preserved.

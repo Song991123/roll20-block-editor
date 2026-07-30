@@ -1145,3 +1145,21 @@ directories that had been recreated by the local build.
 - NOT DELETED: all targets remain present; `reports/README.md` and the active
   dependency tree remain present. No alternate shell, native API, per-file
   workaround, or safety bypass was used.
+
+## 2026-07-31 modern Sandbox evidence and complete-cleanup retry (latest)
+
+- RENDER EVIDENCE: before cleanup, the dedicated modern Sandbox accepted the
+  anonymous HTML/CSS/translation payload. All three browser file hashes
+  matched the local payload, the iframe rendered the translated label/input/
+  roll control, and the roll control produced a default rolltemplate chat row.
+- RECHECKED: 55 generated/stale targets were inside the workspace, untracked,
+  and outside protected ownership. No project or CDP listener was active.
+- REQUESTED: complete deletion of old `web/` dependency/build output, active
+  ignored build/tmp output, and generated report directories. The active
+  `web-push-main/node_modules/` and `reports/README.md` were excluded.
+- BLOCKED: the host rejected the exact boundary-checked native recursive
+  PowerShell operation before execution. User approval cannot override this
+  host execution boundary. No alternate shell, native API, per-file
+  workaround, or safety bypass was used.
+- NOT DELETED: all 55 targets remain. Source, worktrees, protected external
+  sheet roots, active dependencies, and the report policy remain preserved.
