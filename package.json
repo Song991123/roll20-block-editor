@@ -144,6 +144,7 @@
     "test:roll20-chat-cell-allocation": "node scripts/roll20_chat_cell_allocation_probe.mjs --self-test",
     "test:roll20-sheet-frame-probe": "node scripts/roll20_sheet_frame_probe.mjs --self-test",
     "verify:runtime-visibility": "node scripts/roll20_runtime_visibility_verify.mjs",
+    "verify:runtime-visibility:synthetic": "node scripts/generate_visual_synthetic_fixture.mjs && node scripts/roll20_runtime_visibility_verify.mjs --fixtures .tmp/visual-synthetic --report-dir reports/runtime-visibility-synthetic",
     "diagnose:roll20-height-drift": "node scripts/roll20_height_drift_diagnostics.mjs",
     "diagnose:roll20-visibility-selectors": "node scripts/roll20_visibility_selector_diagnostics.mjs",
     "diagnose:roll20-playbook-state": "node scripts/roll20_playbook_state_diagnostics.mjs",

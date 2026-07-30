@@ -26,6 +26,18 @@
   Sandbox and dedicated legacy-room evidence still require the blocked upload
   handoff.
 
+## 2026-07-30 Local runtime visibility and chat bundle
+
+- DONE LOCAL: Synthetic worker-state smoke passed, including hidden input
+  attribute updates used by CSS state selectors.
+- DONE LOCAL: Synthetic roll button smoke passed and rendered a local
+  rolltemplate card in ChatPane.
+- DONE LOCAL: `roll20_runtime_visibility_verify` passed worker separation,
+  hidden runtime nodes, preview/edit pixel equality, and rolltemplate chat in
+  one bundle.
+- VERIFY OPEN: This proves the local runtime simulation only; actual Roll20
+  worker execution and chat screenshot parity remain unverified.
+
 ## 2026-07-30 Local render regression batch
 
 - DONE LOCAL: Fresh-sheet smoke passed with zero HTML blocks/layers in the blank

@@ -22,6 +22,17 @@
 - BOUNDARY: This strengthens local evidence only and does not replace actual
   Roll20 Sandbox or legacy-room screenshots.
 
+## 2026-07-30 - Local runtime visibility and chat bundle
+
+- VERIFIED LOCAL: Synthetic worker-state and rolltemplate-chat smokes passed.
+  The roll button produced a local ChatPane card while runtime nodes stayed
+  out of the visible sheet surface.
+- VERIFIED LOCAL: The combined runtime visibility bundle passed worker
+  workspace separation, hidden-runtime checks, preview/edit pixel equality,
+  and local rolltemplate chat.
+- BOUNDARY: No actual Roll20 worker execution or chat screenshot parity is
+  claimed until Sandbox/legacy evidence is captured.
+
 ## 2026-07-30 - Local render regression batch
 
 - VERIFIED LOCAL: Fresh-sheet, imported-edit-sync strict, persistent preview
