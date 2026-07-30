@@ -8957,3 +8957,22 @@ visibility verification passed. No external room was opened or modified.
 - PRESERVED: the current anonymous Sandbox payload, active dependencies,
   source, worktrees, report policy, and protected external sources. Git status
   remains clean; the five selected directories remain not deleted.
+
+## 2026-07-30 - Modern and legacy runtime probe refresh
+
+- MODERN VERIFIED: The dedicated Sandbox iframe exposed the anonymous
+  `sheet-sandbox-proof` root at `420x180`, one `attr_name` input, and one
+  `roll_check` button. Computed background and border matched the authored
+  synthetic CSS, and clicking the control added a real numeric default-template
+  result to chat.
+- LEGACY VERIFIED: The separate verification room passed a fresh visible
+  participant count of exactly one. Its iframe exposed the same root/input/roll
+  shape, and a button click added a numeric default-template result. No
+  existing room or non-test sheet was changed.
+- CLAIM BOUNDARY: The explicit legacy-sanitization flag was not exposed by the
+  frame, and the current local three-file hash was not freshly attached through
+  the file chooser. These are runtime/interaction observations only, not
+  same-hash or pixel-parity evidence.
+- BLOCKED EXTERNAL: Reattaching the two existing Chrome tabs timed out after
+  the probe. The tabs were not navigated to another room; the next P0 remains
+  a fresh chooser-bound capture and normalized modern/legacy screenshot diff.

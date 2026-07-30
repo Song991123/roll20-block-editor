@@ -9,6 +9,23 @@
 - NEXT: use a permitted maintenance operation when available; do not use a
   shell/API/per-file deletion workaround. This does not affect product code.
 
+## 2026-07-30 Roll20 runtime probe refresh
+
+- VERIFIED EXTERNAL: The dedicated modern Sandbox iframe exposed the anonymous
+  `420x180` root, one `attr_name` input, one `roll_check` button, and the
+  authored background/border computed styles. Clicking the button added a
+  numeric default-template chat result.
+- VERIFIED EXTERNAL: The separate legacy verification room again showed a
+  fresh visible participant count of exactly one, the same anonymous root,
+  one input, one roll button, and a numeric default-template chat result.
+- LIMIT: The runtime's explicit legacy-sanitization flag was not exposed, and
+  the current local file hash was not newly bound through the chooser. This is
+  positive runtime/interaction evidence for the loaded anonymous payload, not
+  same-hash evidence or pixel parity.
+- NEXT P0: Reconnect the dedicated Sandbox with the supported file chooser,
+  bind the current three-file payload, capture normalized screenshots, then
+  repeat the legacy room with an explicit mode proof.
+
 ## 2026-07-30 Exact before/inside/after drop indicators
 
 - DONE LOCAL: The persistent iframe overlay now paints `before` and `after`

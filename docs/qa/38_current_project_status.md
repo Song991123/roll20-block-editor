@@ -261,3 +261,24 @@ but both visible/native chooser paths left all three file inputs at
 `files.length=0`. No upload or external sheet replacement was confirmed. The
 existing anonymous runtime state was preserved, so same-hash payload binding
 and pixel parity remain `VERIFY / BLOCKED EXTERNAL`.
+
+## Runtime probe refresh - 2026-07-30
+
+The dedicated modern Sandbox iframe was inspected again without changing the
+room. It exposed the anonymous `420x180` sheet root, one `attr_name` input, and
+one `roll_check` control. The measured root retained `420px` width, `180px`
+height, the authored light-pink background, and the authored border. A button
+click added a numeric result to the real default-template chat.
+
+The separate legacy verification room passed a fresh visible participant count
+of exactly one and exposed the same root/input/roll shape. A legacy-room button
+click also added a numeric default-template result. The explicit legacy
+sanitization flag was not readable from the connected frame, and the current
+local three-file hash was not freshly attached through the chooser. Therefore
+both observations remain positive runtime/interaction evidence only; they do
+not promote same-hash, screenshot, or pixel-parity status.
+
+The browser connection then timed out while reattaching the two existing tabs.
+No existing room or non-test sheet was modified. The next external gate is a
+fresh chooser-bound capture, followed by normalized modern/legacy screenshot
+diffs.
