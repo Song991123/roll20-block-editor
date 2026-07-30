@@ -1073,3 +1073,13 @@ directories that had been recreated by the local build.
   native API, per-file workaround, or safety bypass was used.
 - PRESERVED: active dependencies, product source, reports, worktrees, local
   evidence policy, and protected external sheet roots remain untouched.
+
+## 2026-07-31 deletion completion
+
+- RECHECKED: the approved targets were limited to the generated directories
+  `web-push-main/.next/` and `web-push-main/out/` inside the active worktree.
+- CLEANED: the generated targets' read-only directory attribute was cleared
+  only within those targets, then both directories were deleted.
+- VERIFIED: `Test-Path` is false for both targets and the worktree remains
+  clean. No source, dependency, worktree, report, or protected external sheet
+  root was changed.
