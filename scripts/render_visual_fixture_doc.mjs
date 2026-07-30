@@ -52,7 +52,7 @@ function sha256(value) {
 }
 
 function resolveBuildDocModule() {
-  const outRoot = join(REPO_WEB, '.tmp/visual-fixture-build');
+  const outRoot = join(REPO_WEB, '.tmp/visual-fixtureBuild');
   const compiled = join(outRoot, 'lib/preview/buildDoc.js');
   const tsPath = join(REPO_WEB, 'lib/preview/buildDoc.ts');
   const tscJs = join(REPO_WEB, 'node_modules/typescript/lib/tsc.js');

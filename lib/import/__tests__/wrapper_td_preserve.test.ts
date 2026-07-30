@@ -1,12 +1,12 @@
 /**
  * wrapper_td_preserve — table wrapper td/th data-i18n 보존 회귀 테스트.
  *
- * 회귀 배경 (P0 #1 / yshy_1bu_structural §5):
- *   - 영시영 1부에서 593 `<td data-i18n>` + 7 `<th data-i18n>` = 600 wrapper.
+ * 회귀 배경 (P0 #1 / fixtureC_1bu_structural §5):
+ *   - roll20-sheet-builder 1부에서 593 `<td data-i18n>` + 7 `<th data-i18n>` = 600 wrapper.
  *   - matcher 가 TAG 필드 없이 r20_i18n_text 만 박으면 emit 가 `<span>` 으로
  *     평탄화 → `<tr>` 안 직속 span 은 브라우저 파서가 표 외부로 hoist →
  *     표 행 1122 element 시각 영향. 모든 표 사용 시트 (CoC / D&D / 인세인 /
- *     영시영 등) 공통 문제.
+ *     roll20-sheet-builder 등) 공통 문제.
  *
  * Fix (already landed in 56bf050 — table_multiclass.test.ts 도 일부 커버):
  *   1. block_matcher.ts matchI18n: <td data-i18n> / <th data-i18n> 매칭 시
@@ -16,7 +16,7 @@
  *      나머지는 'span' fallback (backwards-compat).
  *
  * 본 테스트는 import 차원에서 TAG 필드가 모든 wrapper 케이스에 박히는지 검증.
- * 영시영 hardcoding 0 — 모든 표 사용 시트 generic.
+ * roll20-sheet-builder hardcoding 0 — 모든 표 사용 시트 generic.
  *
  * 외부 의존 0 — Node + tsx 로 직접 실행 가능.
  */

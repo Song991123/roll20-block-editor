@@ -25,7 +25,7 @@ import type { MatchedBlock } from './block_matcher';
  *   4. `@{NAME|max}` → r20_attr_ref_max NAME=NAME
  *   5. `@{NAME}` → SCOPE=self NAME=NAME
  *
- * 패턴이 아니면 null 반환. 매칭된 NAME 은 영시영/일반 attr 식별자 허용
+ * 패턴이 아니면 null 반환. 매칭된 NAME 은 roll20-sheet-builder/일반 attr 식별자 허용
  * 문자만 (`[\w-]+`).
  */
 export function parseAttrRefToken(text: string): MatchedBlock | null {

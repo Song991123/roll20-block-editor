@@ -7,9 +7,9 @@
  * 렌더링 로직은 `composite_repeating_section_wrapper_emit.ts` (pure module,
  * Blockly 의존 0) 에 분리. 단위 테스트도 emit 모듈만 호출.
  *
- * 일반화 — Roll20 `<fieldset class="repeating_X">` 표준 idiom. 영시영 / DnD
+ * 일반화 — Roll20 `<fieldset class="repeating_X">` 표준 idiom. roll20-sheet-builder / DnD
  * 5e / CoC / PbtA / WoD 등 거의 모든 시스템에 동일 패턴. 시스템 specific
- * 토큰 0. 영시영 hardcoding 0.
+ * 토큰 0. roll20-sheet-builder hardcoding 0.
  */
 
 import * as Blockly from 'blockly';

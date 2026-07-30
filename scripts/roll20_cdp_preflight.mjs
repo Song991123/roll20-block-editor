@@ -462,7 +462,7 @@ function runSelfTest() {
     failures.push('READY/no-plan next action did not point to renderer diagnostics');
   }
   const plannedNext = nextActionForEndpoint(readyEndpoint, {
-    plannedFixtures: ['official-roll20-AW2E'],
+    plannedFixtures: ['fixtureA'],
     currentEvidence: heldEvidence,
   });
   if (!plannedNext.includes('run the sheet-frame probe')) {

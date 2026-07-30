@@ -744,7 +744,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
       blockers.push(`chat source/intrinsic matrix blocks renderer CSS: ${chatSourceIntrinsicMatrixSummary.blockingFixtures.map((fixture) => `${fixture.fixtureId}:${fixture.decision}`).join(', ')}`);
     }
   } else if (needsSourceIntrinsicMatrix) {
-    warnings.push('chat source/intrinsic matrix has not been run; run diagnose:roll20-chat-source-intrinsic before promoting CoC/YSHY table renderer CSS');
+    warnings.push('chat source/intrinsic matrix has not been run; run diagnose:roll20-chat-source-intrinsic before promoting CoC/fixtureC table renderer CSS');
   }
   if (chatSourceIntrinsicCandidateAuditSummary) {
     positiveFindings.push(`chat source/intrinsic candidate audit: status=${chatSourceIntrinsicCandidateAuditSummary.status}, ready=${chatSourceIntrinsicCandidateAuditSummary.readyCandidates}, partial=${chatSourceIntrinsicCandidateAuditSummary.partialCandidates}, blockers=${chatSourceIntrinsicCandidateAuditSummary.blockers}`);
@@ -772,7 +772,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   if (chatRowRasterCandidatesSummary) {
     positiveFindings.push(`chat row raster candidate comparison: compared=${chatRowRasterCandidatesSummary.compared}/${chatRowRasterCandidatesSummary.totalCandidates}, rejected=${chatRowRasterCandidatesSummary.rejected}, noMeaningfulGain=${chatRowRasterCandidatesSummary.noMeaningfulGain}`);
     for (const candidate of chatRowRasterCandidatesSummary.rejectedCandidates) {
-      positiveFindings.push(`${candidate.name} row raster rejected: risk=${candidate.rowRasterRisk}, aw2eWeightedDelta=${num(candidate.aw2eRowWeightedDeltaPct)}, aw2eWorstDelta=${num(candidate.aw2eWorstRowDeltaPct)}, yshyWeightedDelta=${num(candidate.yshyRowWeightedDeltaPct)}, yshyWorstDelta=${num(candidate.yshyWorstRowDeltaPct)}`);
+      positiveFindings.push(`${candidate.name} row raster rejected: risk=${candidate.rowRasterRisk}, fixtureAWeightedDelta=${num(candidate.fixtureARowWeightedDeltaPct)}, fixtureAWorstDelta=${num(candidate.fixtureAWorstRowDeltaPct)}, fixtureCWeightedDelta=${num(candidate.fixtureCRowWeightedDeltaPct)}, fixtureCWorstDelta=${num(candidate.fixtureCWorstRowDeltaPct)}`);
     }
   }
   if (chatRowCompositingProbeSummary) {
@@ -905,7 +905,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   if (!chatStyleSummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-style -- ${path.relative(process.cwd(), activeRunDir)} before the next ChatPane CSS candidate.`);
   } else if (chatStyleSummary.conflictingTableWidthDirection) {
-    nextActions.push('Use chat-style context diagnostics to explain the opposite AW2E/YSHY table-width deltas before testing another global ChatPane width, padding, or wrap patch.');
+    nextActions.push('Use chat-style context diagnostics to explain the opposite fixtureA/fixtureC table-width deltas before testing another global ChatPane width, padding, or wrap patch.');
   }
   if (!chatRendererPolicySummary) {
     nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-renderer-policy -- ${path.relative(process.cwd(), activeRunDir)} and keep the policy output local-only.`);
@@ -913,7 +913,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(chatRendererPolicySummary.nextAction || 'Follow the chat renderer policy before any production ChatPane renderer change.');
   }
   if (!chatResidualSummary) {
-    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-residual -- ${path.relative(process.cwd(), activeRunDir)} before the next Les/YSHY chat renderer hypothesis.`);
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-residual -- ${path.relative(process.cwd(), activeRunDir)} before the next Les/fixtureC chat renderer hypothesis.`);
   } else if (chatResidualSummary.highMismatchFixtures.length) {
     nextActions.push(...chatResidualSummary.highMismatchFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextDiagnostic}`));
   }
@@ -949,13 +949,13 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
   }
   const needsIntrinsicProbe = chatTableWidthBudgetSummary?.actionableFixtures?.some((fixture) => /INTRINSIC|LAYOUT_CONSTRAINT/i.test(fixture.budgetDecision));
   if (!chatTableIntrinsicProbeSummary && needsIntrinsicProbe) {
-    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe -- ${path.relative(process.cwd(), activeRunDir)} before testing the next CoC/YSHY table intrinsic candidate.`);
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-table-intrinsic-probe -- ${path.relative(process.cwd(), activeRunDir)} before testing the next CoC/fixtureC table intrinsic candidate.`);
   } else if (chatTableIntrinsicProbeSummary?.actionableFixtures.length) {
     nextActions.push(...chatTableIntrinsicProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   const needsOverflowCropProbe = chatTableIntrinsicProbeSummary?.actionableFixtures?.some((fixture) => /CROP|INTRINSIC/i.test(fixture.probeDecision));
   if (!chatOverflowCropProbeSummary && needsOverflowCropProbe) {
-    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-overflow-crop -- ${path.relative(process.cwd(), activeRunDir)} before testing the next CoC/YSHY overflow/crop renderer candidate.`);
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-overflow-crop -- ${path.relative(process.cwd(), activeRunDir)} before testing the next CoC/fixtureC overflow/crop renderer candidate.`);
   } else if (chatOverflowCropProbeSummary?.actionableFixtures.length) {
     nextActions.push(...chatOverflowCropProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
@@ -976,7 +976,7 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     nextActions.push(...chatFontIntrinsicProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   if (!chatSourceIntrinsicMatrixSummary && needsSourceIntrinsicMatrix) {
-    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-source-intrinsic -- ${path.relative(process.cwd(), activeRunDir)} before changing CoC/YSHY table renderer CSS.`);
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-source-intrinsic -- ${path.relative(process.cwd(), activeRunDir)} before changing CoC/fixtureC table renderer CSS.`);
   } else if (chatSourceIntrinsicMatrixSummary?.blockingFixtures.length) {
     nextActions.push(...chatSourceIntrinsicMatrixSummary.blockingFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
@@ -990,13 +990,13 @@ function recommend(fixtures, status, activeRunDir, inputFlowAxis, chatParity, ch
     chatWidthReconciliationSummary?.actionableFixtures?.some((fixture) => /TABLE_SCROLL_INTRINSIC|CROP_OR_PAINT/i.test(fixture.nextExperiment || '')) ||
     chatCandidateStyleProofSummary?.rejectedCandidates?.some((candidate) => candidate.name === 'paint-dim-background');
   if (!chatRowPaintSourceProbeSummary && needsRowPaintSourceProbe) {
-    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-row-paint-source -- ${path.relative(process.cwd(), activeRunDir)} before adding another YSHY/CoC paint, source-order, or table intrinsic candidate.`);
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-row-paint-source -- ${path.relative(process.cwd(), activeRunDir)} before adding another fixtureC/CoC paint, source-order, or table intrinsic candidate.`);
   } else if (chatRowPaintSourceProbeSummary?.actionableFixtures.length) {
     nextActions.push(...chatRowPaintSourceProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
   const needsRowRasterProbe = chatRowPaintSourceProbeSummary?.actionableFixtures?.some((fixture) => /ROW_BAND_RASTER|ROW_LUMA|ROW_MASK/i.test(fixture.decision || ''));
   if (!chatRowRasterProbeSummary && needsRowRasterProbe) {
-    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-row-raster -- ${path.relative(process.cwd(), activeRunDir)} before building the next YSHY/CoC row-band renderer experiment.`);
+    nextActions.push(`Run corepack pnpm run diagnose:roll20-chat-row-raster -- ${path.relative(process.cwd(), activeRunDir)} before building the next fixtureC/CoC row-band renderer experiment.`);
   } else if (chatRowRasterProbeSummary?.actionableFixtures.length) {
     nextActions.push(...chatRowRasterProbeSummary.actionableFixtures.map((fixture) => `${fixture.fixtureId}: ${fixture.nextAction}`));
   }
@@ -1819,18 +1819,18 @@ function summarizeChatRowRasterCandidates(report) {
     name: candidate.name,
     status: candidate.status ?? 'UNKNOWN',
     rowRasterRisk: candidate.rowRasterRisk ?? '',
-    aw2eRowWeightedDeltaPct: candidate.aw2eRowWeightedDeltaPct ?? null,
-    aw2eWorstRowDeltaPct: candidate.aw2eWorstRowDeltaPct ?? null,
-    aw2eWorstRowLumaDeltaChange: candidate.aw2eWorstRowLumaDeltaChange ?? null,
-    aw2eRowWeightedMismatchPct: candidate.aw2e?.rowWeightedMismatchPct ?? '',
-    aw2eWorstRowMismatchPct: candidate.aw2e?.worstRowMismatchPct ?? '',
-    aw2eWorstRowIndex: candidate.aw2e?.worstRowIndex ?? null,
-    yshyRowWeightedDeltaPct: candidate.yshyRowWeightedDeltaPct ?? null,
-    yshyWorstRowDeltaPct: candidate.yshyWorstRowDeltaPct ?? null,
-    yshyWorstRowLumaDeltaChange: candidate.yshyWorstRowLumaDeltaChange ?? null,
-    yshyRowWeightedMismatchPct: candidate.yshy?.rowWeightedMismatchPct ?? '',
-    yshyWorstRowMismatchPct: candidate.yshy?.worstRowMismatchPct ?? '',
-    yshyWorstRowIndex: candidate.yshy?.worstRowIndex ?? null,
+    fixtureARowWeightedDeltaPct: candidate.fixtureARowWeightedDeltaPct ?? null,
+    fixtureAWorstRowDeltaPct: candidate.fixtureAWorstRowDeltaPct ?? null,
+    fixtureAWorstRowLumaDeltaChange: candidate.fixtureAWorstRowLumaDeltaChange ?? null,
+    fixtureARowWeightedMismatchPct: candidate.fixtureA?.rowWeightedMismatchPct ?? '',
+    fixtureAWorstRowMismatchPct: candidate.fixtureA?.worstRowMismatchPct ?? '',
+    fixtureAWorstRowIndex: candidate.fixtureA?.worstRowIndex ?? null,
+    fixtureCRowWeightedDeltaPct: candidate.fixtureCRowWeightedDeltaPct ?? null,
+    fixtureCWorstRowDeltaPct: candidate.fixtureCWorstRowDeltaPct ?? null,
+    fixtureCWorstRowLumaDeltaChange: candidate.fixtureCWorstRowLumaDeltaChange ?? null,
+    fixtureCRowWeightedMismatchPct: candidate.fixtureC?.rowWeightedMismatchPct ?? '',
+    fixtureCWorstRowMismatchPct: candidate.fixtureC?.worstRowMismatchPct ?? '',
+    fixtureCWorstRowIndex: candidate.fixtureC?.worstRowIndex ?? null,
   }));
   return {
     totalCandidates: Number(report.summary.candidates ?? candidates.length),
@@ -2170,7 +2170,7 @@ function summarizeChatCandidate(candidate) {
     regressedFixtures: Number(candidate.regressedFixtures ?? 0),
     improvedFixtures: Number(candidate.improvedFixtures ?? 0),
     fixtureAlignedDeltaPct: candidate.fixtureAlignedDeltaPct ?? {},
-    yshyAlignedDeltaPct: parsePctValue(candidate.yshyAlignedDeltaPct),
+    fixtureCAlignedDeltaPct: parsePctValue(candidate.fixtureCAlignedDeltaPct),
   };
 }
 
@@ -2496,13 +2496,13 @@ function renderMarkdown(report) {
     lines.push(`- Best numeric candidates: ${report.chatCandidates.bestNumericCandidates.map(formatChatCandidate).join('; ') || 'none'}`);
     if (report.chatCandidates.regressingCandidates.length || report.chatCandidates.styleProofCandidates.length) {
       lines.push('');
-      lines.push('| Candidate | Risk | Mean delta | Regressions | AW2E delta | Les delta | YSHY delta |');
+      lines.push('| Candidate | Risk | Mean delta | Regressions | fixtureA delta | Les delta | fixtureC delta |');
       lines.push('| --- | --- | ---: | ---: | ---: | ---: | ---: |');
       for (const candidate of [
         ...report.chatCandidates.styleProofCandidates,
         ...report.chatCandidates.regressingCandidates.slice(0, 6),
       ]) {
-        lines.push(`| \`${candidate.name}\` | ${candidate.risk} | ${fmtPct(candidate.meanAlignedDeltaPct)} | ${candidate.regressedFixtures} | ${fmtPct(candidate.fixtureAlignedDeltaPct?.aw2e)} | ${fmtPct(candidate.fixtureAlignedDeltaPct?.lesOublies)} | ${fmtPct(candidate.fixtureAlignedDeltaPct?.yshy)} |`);
+        lines.push(`| \`${candidate.name}\` | ${candidate.risk} | ${fmtPct(candidate.meanAlignedDeltaPct)} | ${candidate.regressedFixtures} | ${fmtPct(candidate.fixtureAlignedDeltaPct?.fixtureA)} | ${fmtPct(candidate.fixtureAlignedDeltaPct?.lesOublies)} | ${fmtPct(candidate.fixtureAlignedDeltaPct?.fixtureC)} |`);
       }
     }
     lines.push('');
@@ -2826,10 +2826,10 @@ function renderMarkdown(report) {
     lines.push(`- Production safe: ${report.chatRowRasterCandidates.productionSafe ? 'yes' : 'no'}`);
     if (report.chatRowRasterCandidates.candidates.length) {
       lines.push('');
-      lines.push('| Candidate | Status | Risk | AW2E weighted | AW2E delta | AW2E worst | AW2E worst delta | YSHY weighted | YSHY delta | YSHY worst | YSHY worst delta |');
+      lines.push('| Candidate | Status | Risk | fixtureA weighted | fixtureA delta | fixtureA worst | fixtureA worst delta | fixtureC weighted | fixtureC delta | fixtureC worst | fixtureC worst delta |');
       lines.push('| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
       for (const candidate of report.chatRowRasterCandidates.candidates) {
-        lines.push(`| \`${candidate.name}\` | ${candidate.status} | ${candidate.rowRasterRisk || 'n/a'} | ${candidate.aw2eRowWeightedMismatchPct || 'n/a'} | ${fmtSigned(candidate.aw2eRowWeightedDeltaPct)} | ${candidate.aw2eWorstRowMismatchPct || 'n/a'} | ${fmtSigned(candidate.aw2eWorstRowDeltaPct)} | ${candidate.yshyRowWeightedMismatchPct || 'n/a'} | ${fmtSigned(candidate.yshyRowWeightedDeltaPct)} | ${candidate.yshyWorstRowMismatchPct || 'n/a'} | ${fmtSigned(candidate.yshyWorstRowDeltaPct)} |`);
+        lines.push(`| \`${candidate.name}\` | ${candidate.status} | ${candidate.rowRasterRisk || 'n/a'} | ${candidate.fixtureARowWeightedMismatchPct || 'n/a'} | ${fmtSigned(candidate.fixtureARowWeightedDeltaPct)} | ${candidate.fixtureAWorstRowMismatchPct || 'n/a'} | ${fmtSigned(candidate.fixtureAWorstRowDeltaPct)} | ${candidate.fixtureCRowWeightedMismatchPct || 'n/a'} | ${fmtSigned(candidate.fixtureCRowWeightedDeltaPct)} | ${candidate.fixtureCWorstRowMismatchPct || 'n/a'} | ${fmtSigned(candidate.fixtureCWorstRowDeltaPct)} |`);
       }
     }
     lines.push('');

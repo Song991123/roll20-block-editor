@@ -7,7 +7,7 @@ const expectedFixture = valueAfterFlag(args, '--expect-fixture') ?? '';
 const positionalArgs = positionalOnly(args, new Set(['--expect-fixture']));
 const runDirArg = positionalArgs[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const defaultProbe = path.join(runDirArg, 'chat-row-geometry', 'live-typography-probe-current.json');
-const legacyProbe = path.join(runDirArg, 'chat-row-geometry', 'yshy-live-typography-probe.json');
+const legacyProbe = path.join(runDirArg, 'chat-row-geometry', 'fixtureC-live-typography-probe.json');
 const probeArg = positionalArgs[1] ?? (existsSync(defaultProbe) ? defaultProbe : legacyProbe);
 const localSmokeArg = positionalArgs[2] ?? 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json';
 
@@ -72,7 +72,7 @@ const report = {
   claimBoundary: [
     'A live typography probe is DOM/style evidence only. It is not a same-moment screenshot sidecar and cannot prove Roll20 pixel parity.',
     'The selected template must match the intended fixture class before its numbers can be used for that fixture.',
-    'If the selected template is AW2E-like, do not use it to explain YSHY mismatch.',
+    'If the selected template is fixtureA-like, do not use it to explain fixtureC mismatch.',
   ],
 };
 
@@ -121,9 +121,9 @@ function positionalOnly(values, flagsWithValue) {
 }
 
 function fixtureForTemplateClass(className) {
-  if (/\bsheet-rolltemplate-aw\b/.test(className)) return 'official-roll20-AW2E';
-  if (/\bsheet-rolltemplate-initiative-roll\b/.test(className)) return 'official-roll20-Les-Oublies';
-  if (/\bsheet-rolltemplate-coc\b/.test(className)) return 'yshy-commission-1bu';
+  if (/\bsheet-rolltemplate-aw\b/.test(className)) return 'fixtureA';
+  if (/\bsheet-rolltemplate-initiative-roll\b/.test(className)) return 'fixtureB';
+  if (/\bsheet-rolltemplate-coc\b/.test(className)) return 'fixtureC-commission-1bu';
   return '';
 }
 

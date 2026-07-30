@@ -27,7 +27,7 @@ Roll20's sandbox preview script does more than load base CSS. The local preview
 must model these behaviors separately from our legacy compatibility toggle.
 
 Important update, 2026-06-19: a later read-only probe of the actual generated
-character iframe found that the rendered CSSOM for the uploaded Les-Oublies
+character iframe found that the rendered CSSOM for the uploaded fixture-B
 payload still contained unprefixed state selectors such as `.tabstoggle[...]`,
 while the rendered HTML state anchors were prefixed as `.sheet-tabstoggle`.
 Those selectors therefore did not match the actual panels, and Roll20 showed
@@ -92,7 +92,7 @@ then invokes `reloadSheetData()` and `reloadOpenCharacters()`. The generated
 upload helper now dispatches that same handler; its direct endpoint fallback is
 allowed only when no file-input handler ran, so it cannot duplicate an upload.
 
-The first generated Les-Oublies Roll20 sandbox screenshot exists locally and
+The first generated fixture-B Roll20 sandbox screenshot exists locally and
 diffs against the local baseline at `18.81%` mismatch. A real Roll20 roll button
 click produced a `sheet-rolltemplate-classic-roll` chat DOM message, but a
 trustworthy chat-pane screenshot is still missing. Therefore the current state is
@@ -185,7 +185,7 @@ roots to `1187x1879` modern and `895x1861` legacy. An asset-complete same-browse
 recapture remains required before geometry or pixel claims.
 
 Later evidence supersedes the `18.81%` visible-top screenshot as the main
-Les-Oublies generated-sheet comparison: a stitched full-height actual Roll20 root
+fixture-B generated-sheet comparison: a stitched full-height actual Roll20 root
 image is available locally and currently differs from the local preview by
 `6.90%`. This is still not parity. The new state visibility diagnostic command
 
@@ -199,13 +199,13 @@ Roll20 expected-render path must not blindly assume CSS selector prefixing until
 the actual character iframe behavior is modeled and rechecked.
 
 2026-06-19 update: the dedicated sandbox endpoint/settings-form fallback also
-rendered YSHY 1BU in the actual Roll20 character iframe. Fresh local-only
+rendered fixture-C 1BU in the actual Roll20 character iframe. Fresh local-only
 computed-style evidence found a `.charactersheet` root at `850px` width with
 `1049` inputs, `808` roll buttons, `88` tables, and `9` scripts. The active
 computed-style diagnostic now compares `3/3` fixtures with
 `missingActualStyle=0`, but still reports `DO_NOT_PROMOTE_DIRECTLY`.
 
-2026-06-19 renderer-gate update: AW2E's older stitched full-root screenshot is
+2026-06-19 renderer-gate update: fixture-A's older stitched full-root screenshot is
 still cutoff-prone (`9168px` stitched vs `11788.087px` live sidecar), but a
 scroll-metrics source candidate now qualifies for diagnostic renderer-candidate
 comparison (`rootDelta +8.188px`, `panelY +16.6px`, `panelH +0.2px`). Status may
@@ -215,17 +215,17 @@ readiness: the renderer gate still holds production CSS because reliable patch
 families disagree across fixtures.
 
 2026-06-19 blocker-matrix update: the scroll-metrics-aware matrix shows that
-AW2E source-state already matches live root/panel geometry tightly (`11/11`
-panels, `maxY 16.6px`, `maxH 9.05px`), while Les-Oublies and YSHY remain best
+fixture-A source-state already matches live root/panel geometry tightly (`11/11`
+panels, `maxY 16.6px`, `maxH 9.05px`), while fixture-B and fixture-C remain best
 on `inline-block+text-input-height`. Treat this as two renderer axes, not one
-global CSS tweak: Les/YSHY need the Roll20 input/inline-flow baseline modeled,
-while AW2E stays on the selector/default-state/source-state path until the gate
+global CSS tweak: Les/fixture-C need the Roll20 input/inline-flow baseline modeled,
+while fixture-A stays on the selector/default-state/source-state path until the gate
 proves a shared fix.
 
 2026-06-19 input-flow update: `diagnose:roll20-input-flow-axis` now compares
 source-state against inline/text-input-height candidates with actual computed
-style sidecars. Latest result is `SPLIT_RENDERER_AXIS_CONFIRMED`: Les-Oublies
-and YSHY are inline/text-input-best, but AW2E's scroll-metrics source-state is
+style sidecars. Latest result is `SPLIT_RENDERER_AXIS_CONFIRMED`: fixture-B
+and fixture-C are inline/text-input-best, but fixture-A's scroll-metrics source-state is
 already closer to the actual root (`+8.188px`) and worsens under the inline/text
 candidate (`+47.188px`). Do not ship a global input/inline-flow CSS patch until
 this split is represented in the renderer model and the action gate agrees.
@@ -235,13 +235,13 @@ this split is represented in the renderer model and the action gate agrees.
 The new `input-flow-27` / `input-flow-276` models are off by default and are not
 a user-facing renderer fix. `smoke:roll20-full-root-candidates` includes
 production-path candidates that reproduce the previous post-load diagnostic
-patch numbers for Les-Oublies and YSHY while preserving the AW2E warning: AW2E
+patch numbers for fixture-B and fixture-C while preserving the fixture-A warning: fixture-A
 still prefers source-state under scroll-metrics. Keep the action gate as the
 authority before enabling any model globally.
 
 2026-06-19 boundary-gate update: `diagnose:roll20-input-flow-axis` now emits
-machine-readable model boundaries. Current evidence marks Les-Oublies and YSHY
-as `APPLY_CANDIDATE_FOR_THIS_AXIS`, but AW2E as `BLOCK_GLOBAL_MODEL`; therefore
+machine-readable model boundaries. Current evidence marks fixture-B and fixture-C
+as `APPLY_CANDIDATE_FOR_THIS_AXIS`, but fixture-A as `BLOCK_GLOBAL_MODEL`; therefore
 `globalModelSafe=NO`. `gate:roll20-renderer-action` surfaces this directly and
 must continue to block global input-flow until broader fixture evidence proves
 that source/state-dominant sheets are not harmed.

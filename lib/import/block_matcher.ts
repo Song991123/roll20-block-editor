@@ -10,7 +10,7 @@
  *
  * 매칭 안 되면 r20_raw_html escape hatch fallback. fallback 카운트로 coverage 측정.
  *
- * 일반화 원칙: 영시영 / D&D 5e / PbtA 어느 시트도 동일 알고리즘으로 매칭.
+ * 일반화 원칙: roll20-sheet-builder / D&D 5e / PbtA 어느 시트도 동일 알고리즘으로 매칭.
  * 한글 라벨 / class name hardcoding 0.
  */
 
@@ -525,7 +525,7 @@ function dedentCommonIndent(text: string): string {
   const width = common.length;
   // 공백만 있는 줄은 빈 줄로 수렴 — HTML emitter 의 pretty-print 가 비어있지
   // 않은 줄에만 indent 를 더하므로, 공백-전용 줄을 그대로 두면 그 줄만 매
-  // roundtrip 마다 indent 가 증식한다 (Les-Oublies L2 FAIL 잔여 원인).
+  // roundtrip 마다 indent 가 증식한다 (fixtureB L2 FAIL 잔여 원인).
   return lines.map((line) => (line.trim() ? line.slice(width) : '')).join('\n');
 }
 
@@ -850,7 +850,7 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     // multi-class guard (row/col 과 동일 원칙): 인식 패턴 외 추가 class 토큰이
     // 있으면 r20_div 로 떨어뜨려 모든 토큰을 보존한다. 가드가 없으면
     // `sheet-col small-outline section-oublie` 가 자기 emit 을 재import 할 때
-    // section_wrap 으로 흡수돼 col/small-outline 이 소실됐다 (Les-Oublies
+    // section_wrap 으로 흡수돼 col/small-outline 이 소실됐다 (fixtureB
     // browser L2 roundtrip FAIL 원인).
     const sectionN = /\bsheet-section-(\S+)/.exec(cls);
     if (
@@ -1207,7 +1207,7 @@ function hasOnlyTextOrInline(node: DomNode): boolean {
   });
 }
 
-/** `attr_foo` → `foo`. 영시영 / Roll20 표준 prefix. */
+/** `attr_foo` → `foo`. roll20-sheet-builder / Roll20 표준 prefix. */
 function stripAttrPrefix(name: string): string {
   return name.replace(/^attr_/, '');
 }

@@ -222,7 +222,7 @@ function buildReport(runDirLabel, reports, overrides = {}) {
 }
 
 function requiredModelFor(strategy, nextExperiment) {
-  if (strategy === 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS' || nextExperiment === 'CHAT_MESSAGE_CONTENT_WIDTH' || nextExperiment === 'TEXT_METRIC_ALLOCATION') {
+  if (strategy === 'fixtureA_TEMPLATE_SCOPED_TEXT_METRICS' || nextExperiment === 'CHAT_MESSAGE_CONTENT_WIDTH' || nextExperiment === 'TEXT_METRIC_ALLOCATION') {
     return 'MESSAGE_CONTENT_TEXT_METRICS';
   }
   if (strategy === 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL' || nextExperiment === 'TABLE_SCROLL_INTRINSIC') {
@@ -233,10 +233,10 @@ function requiredModelFor(strategy, nextExperiment) {
 }
 
 function requiredScopeFor(fixtureId, strategy, nextExperiment) {
-  if (fixtureId === 'official-roll20-AW2E' || strategy.includes('AW2E') || nextExperiment === 'CHAT_MESSAGE_CONTENT_WIDTH') {
+  if (fixtureId === 'fixtureA' || strategy.includes('fixtureA') || nextExperiment === 'CHAT_MESSAGE_CONTENT_WIDTH') {
     return '.sheet-rolltemplate-aw';
   }
-  if (fixtureId === 'yshy-commission-1bu' || strategy.includes('COC') || nextExperiment === 'TABLE_SCROLL_INTRINSIC') {
+  if (fixtureId === 'fixtureC-commission-1bu' || strategy.includes('COC') || nextExperiment === 'TABLE_SCROLL_INTRINSIC') {
     return '.sheet-rolltemplate-coc';
   }
   if (strategy === 'KEEP_DEFAULT' || nextExperiment === 'KEEP_DEFAULT') return 'default';
@@ -251,7 +251,7 @@ function proofChecklistForModel(requiredModel) {
       'message-content-width-sidecar',
       'exact-text-measurement-sidecar',
       'source-intrinsic-matrix-promotion-blocker-cleared',
-      'no-les-yshy-regression',
+      'no-les-fixtureC-regression',
       'row-raster-and-background-nonregression',
     ];
   }
@@ -262,7 +262,7 @@ function proofChecklistForModel(requiredModel) {
       'scrollwidth-clientwidth-table-intrinsic-sidecar',
       'font-face-rule-order-sanitize-source-context',
       'source-intrinsic-matrix-promotion-blocker-cleared',
-      'no-aw2e-les-regression',
+      'no-fixtureA-les-regression',
       'row-raster-and-background-nonregression',
     ];
   }
@@ -294,22 +294,22 @@ function isFixturePromotionReady(candidate, guards = {}) {
 
 function nextActionFor(fixtureId, requiredModel, sourceContext = null, sourceIntrinsic = null) {
   if (sourceIntrinsic?.decision === 'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED') {
-    return 'Build a CoC/YSHY scoped source/intrinsic model that proves Roll20 sanitize/rule order, table auto-layout intrinsic sizing, and crop/top-origin together before CSS review.';
+    return 'Build a CoC/fixtureC scoped source/intrinsic model that proves Roll20 sanitize/rule order, table auto-layout intrinsic sizing, and crop/top-origin together before CSS review.';
   }
   if (sourceIntrinsic?.decision === 'CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED') {
     return 'Separate crop/top-origin from intrinsic table width with paired source/intrinsic evidence before reviewing renderer CSS.';
   }
   if (sourceContext?.decision === 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED') {
-    return 'Build a CoC/YSHY scoped source model that proves Roll20 rule order, font-face activation, and table intrinsic context together; do not replay sanitized typography as CSS.';
+    return 'Build a CoC/fixtureC scoped source model that proves Roll20 rule order, font-face activation, and table intrinsic context together; do not replay sanitized typography as CSS.';
   }
   if (sourceContext?.decision === 'RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED') {
     return 'Build a template-scoped source-context model and prove rule order plus font-face/table intrinsic behavior before reviewing renderer CSS.';
   }
   if (requiredModel === 'MESSAGE_CONTENT_TEXT_METRICS') {
-    return 'Build and style-proof an AW2E template-scoped message/content width plus exact text metrics candidate; do not widen global ChatPane.';
+    return 'Build and style-proof an fixtureA template-scoped message/content width plus exact text metrics candidate; do not widen global ChatPane.';
   }
   if (requiredModel === 'TABLE_INTRINSIC_SANITIZE_FONT') {
-    return 'Build and style-proof a CoC/YSHY table intrinsic, sanitize-order, and font-context candidate; do not use transform or broad typography CSS.';
+    return 'Build and style-proof a CoC/fixtureC table intrinsic, sanitize-order, and font-context candidate; do not use transform or broad typography CSS.';
   }
   if (requiredModel === 'KEEP_DEFAULT') {
     return 'Keep the default renderer while P0 fixtures are modeled.';
@@ -500,8 +500,8 @@ function sourceIntrinsicHoldReason(sourceIntrinsic) {
 }
 
 function rowRasterPrefixForFixture(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
   return fixtureKeyForId(fixtureId);
 }
 
@@ -640,9 +640,9 @@ function normalizeReportOverrides(overrides) {
 }
 
 function fixtureKeyForId(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureB') return 'lesOublies';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
   return fixtureId
     .replace(/^official-roll20-/, '')
     .replace(/-([a-z])/g, (_, char) => char.toUpperCase())
@@ -678,29 +678,29 @@ function selfTest() {
   const report = buildReport('reports/test', {
     plan: {
       fixtures: [
-        { fixtureId: 'official-roll20-AW2E', priority: 'P0', alignedMismatchRatio: 0.18, strategy: 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS' },
-        { fixtureId: 'yshy-commission-1bu', priority: 'P0', alignedMismatchRatio: 0.2, strategy: 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL' },
-        { fixtureId: 'official-roll20-Les-Oublies', priority: 'P1', alignedMismatchRatio: 0.06, strategy: 'KEEP_DEFAULT' },
+        { fixtureId: 'fixtureA', priority: 'P0', alignedMismatchRatio: 0.18, strategy: 'fixtureA_TEMPLATE_SCOPED_TEXT_METRICS' },
+        { fixtureId: 'fixtureC-commission-1bu', priority: 'P0', alignedMismatchRatio: 0.2, strategy: 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL' },
+        { fixtureId: 'fixtureB', priority: 'P1', alignedMismatchRatio: 0.06, strategy: 'KEEP_DEFAULT' },
       ],
     },
     reconciliation: {
       fixtures: [
-        { fixtureId: 'official-roll20-AW2E', signals: { tableWidthDelta: 15.75, tableTextResidual: 0.148, tableScrollWidthDelta: 16 } },
-        { fixtureId: 'yshy-commission-1bu', signals: { tableWidthDelta: -24.531, tableTextResidual: 30.415, tableScrollWidthDelta: -25 } },
+        { fixtureId: 'fixtureA', signals: { tableWidthDelta: 15.75, tableTextResidual: 0.148, tableScrollWidthDelta: 16 } },
+        { fixtureId: 'fixtureC-commission-1bu', signals: { tableWidthDelta: -24.531, tableTextResidual: 30.415, tableScrollWidthDelta: -25 } },
       ],
     },
     policy: { summary: { globalSafeCandidates: 0 } },
     candidates: {
       candidates: [
-        { name: 'aw2e-font-size-only', status: 'OK', promotionRisk: 'no-meaningful-gain', fixtureAlignedDeltaPct: { aw2e: -0.02 }, regressedFixtures: 0 },
-        { name: 'paint-dim-background', status: 'OK', promotionRisk: 'reject-regresses-fixtures', fixtureAlignedDeltaPct: { yshy: -1.62 }, regressedFixtures: 1 },
+        { name: 'fixtureA-font-size-only', status: 'OK', promotionRisk: 'no-meaningful-gain', fixtureAlignedDeltaPct: { fixtureA: -0.02 }, regressedFixtures: 0 },
+        { name: 'paint-dim-background', status: 'OK', promotionRisk: 'reject-regresses-fixtures', fixtureAlignedDeltaPct: { fixtureC: -1.62 }, regressedFixtures: 1 },
       ],
     },
     styleProof: { candidates: [] },
     assetPlan: {
       fixtures: [
         {
-          fixtureId: 'official-roll20-AW2E',
+          fixtureId: 'fixtureA',
           decision: 'SOURCE_ASSET_LOST_RELINK_REQUIRED',
           rendererPolicy: 'DO_NOT_PROMOTE_CSS',
           blockers: ['external source/proxy currently resolves to a placeholder image'],
@@ -710,11 +710,11 @@ function selfTest() {
     rowRasterCandidates: {
       candidates: [
         {
-          name: 'aw2e-font-size-only',
+          name: 'fixtureA-font-size-only',
           rowRasterRisk: 'reject-row-raster-regression',
-          aw2eRowWeightedDeltaPct: 6.82,
-          aw2eWorstRowDeltaPct: 8.16,
-          aw2e: { rowWeightedMismatchPct: '24.75%', worstRowMismatchPct: '34.44%' },
+          fixtureARowWeightedDeltaPct: 6.82,
+          fixtureAWorstRowDeltaPct: 8.16,
+          fixtureA: { rowWeightedMismatchPct: '24.75%', worstRowMismatchPct: '34.44%' },
         },
       ],
     },
@@ -722,7 +722,7 @@ function selfTest() {
       summary: { status: 'CELL_ALLOCATION_BLOCKERS_FOUND' },
       fixtures: [
         {
-          fixtureId: 'official-roll20-AW2E',
+          fixtureId: 'fixtureA',
           scenarios: [
             {
               scenario: 'default',
@@ -734,7 +734,7 @@ function selfTest() {
               maxAbsCellRatioDeltaPct: 0.255,
             },
             {
-              scenario: 'aw2e-font-size-only',
+              scenario: 'fixtureA-font-size-only',
               status: 'COMPARED',
               allocationDecision: 'BROAD_STYLE_BREAKS_CELL_ALLOCATION',
               productionBlocker: true,
@@ -749,14 +749,14 @@ function selfTest() {
     sourceContext: {
       fixtures: [
         {
-          fixtureId: 'official-roll20-AW2E',
+          fixtureId: 'fixtureA',
           decision: 'RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED',
           cssEvidence: { classification: 'EXPECTED_RULE_PRESENT', expectedRulePresent: true },
           fontActivation: { decision: 'FONT_FACE_ACTIVATION_DIFFERS', changedFonts: [] },
           tableContext: { decision: 'TABLE_INTRINSIC_SOURCE_CONTEXT_REQUIRED', tableWidthDelta: 15.75 },
         },
         {
-          fixtureId: 'yshy-commission-1bu',
+          fixtureId: 'fixtureC-commission-1bu',
           decision: 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED',
           cssEvidence: { classification: 'EXPECTED_RULE_PRESENT', expectedRulePresent: true },
           fontActivation: { decision: 'FONT_FACE_ACTIVATION_DIFFERS', changedFonts: [{ spec: '12px BookkMyungjo-Bd' }] },
@@ -768,7 +768,7 @@ function selfTest() {
     sourceIntrinsic: {
       fixtures: [
         {
-          fixtureId: 'official-roll20-AW2E',
+          fixtureId: 'fixtureA',
           decision: 'CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED',
           promotionBlocker: true,
           source: { tableMaxWidthPx: 110 },
@@ -781,7 +781,7 @@ function selfTest() {
           },
         },
         {
-          fixtureId: 'yshy-commission-1bu',
+          fixtureId: 'fixtureC-commission-1bu',
           decision: 'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED',
           promotionBlocker: true,
           source: { tableMaxWidthPx: 280 },
@@ -806,16 +806,16 @@ function selfTest() {
   assert.ok(report.blockers.some((blocker) => blocker.includes('source/context gate requires SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('source/intrinsic matrix requires CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED')));
   assert.ok(report.blockers.some((blocker) => blocker.includes('source/intrinsic matrix requires SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED')));
-  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredScope, '.sheet-rolltemplate-aw');
-  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredProofChecklist.includes('message-content-width-sidecar'));
-  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').requiredProofChecklist.includes('source-intrinsic-matrix-promotion-blocker-cleared'));
-  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').cellAllocationBlocksPromotion, true);
-  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').sourceContextBlocksPromotion, true);
-  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').sourceIntrinsicBlocksPromotion, true);
-  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E').promotionReady, false);
-  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredModel, 'TABLE_INTRINSIC_SANITIZE_FONT');
-  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredProofChecklist.includes('font-face-rule-order-sanitize-source-context'));
-  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').requiredProofChecklist.includes('source-intrinsic-matrix-promotion-blocker-cleared'));
-  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'yshy-commission-1bu').sourceIntrinsicBlocksPromotion, true);
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').requiredScope, '.sheet-rolltemplate-aw');
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').requiredProofChecklist.includes('message-content-width-sidecar'));
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').requiredProofChecklist.includes('source-intrinsic-matrix-promotion-blocker-cleared'));
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').cellAllocationBlocksPromotion, true);
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').sourceContextBlocksPromotion, true);
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').sourceIntrinsicBlocksPromotion, true);
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureA').promotionReady, false);
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC-commission-1bu').requiredModel, 'TABLE_INTRINSIC_SANITIZE_FONT');
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC-commission-1bu').requiredProofChecklist.includes('font-face-rule-order-sanitize-source-context'));
+  assert.ok(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC-commission-1bu').requiredProofChecklist.includes('source-intrinsic-matrix-promotion-blocker-cleared'));
+  assert.equal(report.fixtures.find((fixture) => fixture.fixtureId === 'fixtureC-commission-1bu').sourceIntrinsicBlocksPromotion, true);
   console.log('roll20_chat_template_scope_gate self-test PASS');
 }

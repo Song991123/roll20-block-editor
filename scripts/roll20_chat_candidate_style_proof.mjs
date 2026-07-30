@@ -29,12 +29,12 @@ const CANDIDATE_SMOKE = {
   'no-shadow': 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json',
   'roll20-chat-shell-width-340': 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/rolltemplate-chat-smoke-results.json',
   'roll20-sandbox-font-proxy': 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/rolltemplate-chat-smoke-results.json',
-  'aw2e-message-full-width': 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/rolltemplate-chat-smoke-results.json',
-  'aw2e-message-width-font-size': 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json',
-  'aw2e-message-width-text-metrics': 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json',
-  'aw2e-message-source-context': 'reports/rolltemplate-chat-smoke-aw2e-message-source-context/rolltemplate-chat-smoke-results.json',
+  'fixtureA-message-full-width': 'reports/rolltemplate-chat-smoke-fixtureA-message-full-width/rolltemplate-chat-smoke-results.json',
+  'fixtureA-message-width-font-size': 'reports/rolltemplate-chat-smoke-fixtureA-message-width-font-size/rolltemplate-chat-smoke-results.json',
+  'fixtureA-message-width-text-metrics': 'reports/rolltemplate-chat-smoke-fixtureA-message-width-text-metrics/rolltemplate-chat-smoke-results.json',
+  'fixtureA-message-source-context': 'reports/rolltemplate-chat-smoke-fixtureA-message-source-context/rolltemplate-chat-smoke-results.json',
   'table-scale-x': 'reports/rolltemplate-chat-smoke-table-scale-x/rolltemplate-chat-smoke-results.json',
-  'aw2e-root-width-actual': 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/rolltemplate-chat-smoke-results.json',
+  'fixtureA-root-width-actual': 'reports/rolltemplate-chat-smoke-fixtureA-root-width-actual/rolltemplate-chat-smoke-results.json',
   'coc-table-scale-x': 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json',
   'coc-table-actual-width': 'reports/rolltemplate-chat-smoke-coc-table-actual-width/rolltemplate-chat-smoke-results.json',
   'coc-overflow-crop-model': 'reports/rolltemplate-chat-smoke-coc-overflow-crop-model/rolltemplate-chat-smoke-results.json',
@@ -42,15 +42,15 @@ const CANDIDATE_SMOKE = {
   'roll20-intrinsic-spacing': 'reports/rolltemplate-chat-smoke-intrinsic-spacing/rolltemplate-chat-smoke-results.json',
   'roll20-border-spacing': 'reports/rolltemplate-chat-smoke-border-spacing/rolltemplate-chat-smoke-results.json',
   'roll20-letter-spacing': 'reports/rolltemplate-chat-smoke-letter-spacing/rolltemplate-chat-smoke-results.json',
-  'aw2e-font-size-only': 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/rolltemplate-chat-smoke-results.json',
-  'aw2e-message-cell-font-context': 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/rolltemplate-chat-smoke-results.json',
-  'aw2e-message-cell-wrap-context': 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/rolltemplate-chat-smoke-results.json',
-  'yshy-bookk-unavailable': 'reports/rolltemplate-chat-smoke-yshy-bookk-unavailable/rolltemplate-chat-smoke-results.json',
-  'yshy-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-table-font-context/rolltemplate-chat-smoke-results.json',
-  'yshy-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
-  'yshy-bookk-missing-render': 'reports/rolltemplate-chat-smoke-yshy-bookk-missing-render/rolltemplate-chat-smoke-results.json',
-  'yshy-missing-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-yshy-missing-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
-  'yshy-roll20-fallback-stack': 'reports/rolltemplate-chat-smoke-yshy-roll20-fallback-stack/rolltemplate-chat-smoke-results.json',
+  'fixtureA-font-size-only': 'reports/rolltemplate-chat-smoke-fixtureA-font-size-only/rolltemplate-chat-smoke-results.json',
+  'fixtureA-message-cell-font-context': 'reports/rolltemplate-chat-smoke-fixtureA-message-cell-font-context/rolltemplate-chat-smoke-results.json',
+  'fixtureA-message-cell-wrap-context': 'reports/rolltemplate-chat-smoke-fixtureA-message-cell-wrap-context/rolltemplate-chat-smoke-results.json',
+  'fixtureC-bookk-unavailable': 'reports/rolltemplate-chat-smoke-fixtureC-bookk-unavailable/rolltemplate-chat-smoke-results.json',
+  'fixtureC-table-font-context': 'reports/rolltemplate-chat-smoke-fixtureC-table-font-context/rolltemplate-chat-smoke-results.json',
+  'fixtureC-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-fixtureC-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
+  'fixtureC-bookk-missing-render': 'reports/rolltemplate-chat-smoke-fixtureC-bookk-missing-render/rolltemplate-chat-smoke-results.json',
+  'fixtureC-missing-bookk-table-font-context': 'reports/rolltemplate-chat-smoke-fixtureC-missing-bookk-table-font-context/rolltemplate-chat-smoke-results.json',
+  'fixtureC-roll20-fallback-stack': 'reports/rolltemplate-chat-smoke-fixtureC-roll20-fallback-stack/rolltemplate-chat-smoke-results.json',
   'coc-table-intrinsic-clamp': 'reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp/rolltemplate-chat-smoke-results.json',
   'paint-dim-background': 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json',
   'paint-dim-brightness': 'reports/rolltemplate-chat-smoke-paint-dim-brightness/rolltemplate-chat-smoke-results.json',
@@ -183,21 +183,21 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
     return summarizeNoShadow(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   if (
-    candidate.name === 'aw2e-message-width-font-size' ||
-    candidate.name === 'aw2e-message-width-text-metrics' ||
-    candidate.name === 'aw2e-message-source-context' ||
-    candidate.name === 'aw2e-message-cell-font-context' ||
-    candidate.name === 'aw2e-message-cell-wrap-context'
+    candidate.name === 'fixtureA-message-width-font-size' ||
+    candidate.name === 'fixtureA-message-width-text-metrics' ||
+    candidate.name === 'fixtureA-message-source-context' ||
+    candidate.name === 'fixtureA-message-cell-font-context' ||
+    candidate.name === 'fixtureA-message-cell-wrap-context'
   ) {
     return summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
-  if (candidate.name === 'roll20-chat-shell-width-340' || candidate.name === 'aw2e-message-full-width') {
+  if (candidate.name === 'roll20-chat-shell-width-340' || candidate.name === 'fixtureA-message-full-width') {
     return summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actualSidecar);
   }
   if (candidate.name === 'table-scale-x' || candidate.name === 'coc-table-scale-x') {
     return summarizeTableScale(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
-  if (candidate.name === 'aw2e-root-width-actual') {
+  if (candidate.name === 'fixtureA-root-width-actual') {
     return summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'root', 1.5);
   }
   if (candidate.name === 'coc-table-actual-width' || candidate.name === 'coc-overflow-crop-model') {
@@ -214,23 +214,23 @@ function summarizeProof(candidate, fixtureId, defaultTemplate, candidateTemplate
   ) {
     return summarizeIntrinsicSpacing(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
-  if (candidate.name === 'aw2e-font-size-only') {
+  if (candidate.name === 'fixtureA-font-size-only') {
     return summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTemplate);
   }
   if (
-    candidate.name === 'yshy-bookk-unavailable' ||
-    candidate.name === 'yshy-table-font-context' ||
-    candidate.name === 'yshy-bookk-table-font-context' ||
-    candidate.name === 'yshy-bookk-missing-render' ||
-    candidate.name === 'yshy-missing-bookk-table-font-context' ||
-    candidate.name === 'yshy-bookk-fallback-only'
+    candidate.name === 'fixtureC-bookk-unavailable' ||
+    candidate.name === 'fixtureC-table-font-context' ||
+    candidate.name === 'fixtureC-bookk-table-font-context' ||
+    candidate.name === 'fixtureC-bookk-missing-render' ||
+    candidate.name === 'fixtureC-missing-bookk-table-font-context' ||
+    candidate.name === 'fixtureC-bookk-fallback-only'
   ) {
     return summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
-  if (candidate.name === 'yshy-roll20-fallback-stack') {
+  if (candidate.name === 'fixtureC-roll20-fallback-stack') {
     return summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
-  if (candidate.name.startsWith('yshy-coc-table-source-context')) {
+  if (candidate.name.startsWith('fixtureC-coc-table-source-context')) {
     return summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar);
   }
   if (candidate.name === 'text-auto-aa') {
@@ -263,7 +263,7 @@ function summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actu
   const chatDelta = delta(localChatGroupWidth, actualChatWidth);
   const messageMatches = typeof messageDelta === 'number' && Math.abs(messageDelta) <= 1.5;
   const chatMatches = typeof chatDelta === 'number' && Math.abs(chatDelta) <= 1.5;
-  if (candidate.name === 'aw2e-message-full-width' && fixtureId !== 'official-roll20-AW2E' && messageMatches) {
+  if (candidate.name === 'fixtureA-message-full-width' && fixtureId !== 'fixtureA' && messageMatches) {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
@@ -288,11 +288,11 @@ function summarizeMessageShellWidth(candidate, fixtureId, candidateFixture, actu
 }
 
 function summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
-  if (fixtureId !== 'official-roll20-AW2E') {
+  if (fixtureId !== 'fixtureA') {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
-      finding: 'AW2E-scoped candidate does not target this fixture',
+      finding: 'fixtureA-scoped candidate does not target this fixture',
       evidence: [],
     };
   }
@@ -313,10 +313,10 @@ function summarizeAw2eMessageWidthFontSize(candidate, fixtureId, candidateTempla
     fixtureId,
     status,
     finding: compatible
-      ? 'AW2E message/content width, table width, text-cell widths, and cell font context match actual Roll20 evidence'
+      ? 'fixtureA message/content width, table width, text-cell widths, and cell font context match actual Roll20 evidence'
       : status === 'NO_COMPUTED_STYLE_PROOF'
-        ? 'AW2E text-cell proof needs refreshed Roll20 sidecar fields before this candidate can be style-compatible'
-        : 'AW2E message/content width plus cell font candidate is not fully supported by actual Roll20 table/text-cell style evidence',
+        ? 'fixtureA text-cell proof needs refreshed Roll20 sidecar fields before this candidate can be style-compatible'
+        : 'fixtureA message/content width plus cell font candidate is not fully supported by actual Roll20 table/text-cell style evidence',
     evidence: [
       ...shell.evidence.map((item) => ({ ...item, group: 'message-shell' })),
       ...tableWidth.evidence.map((item) => ({ ...item, group: 'table-width' })),
@@ -396,15 +396,15 @@ function summarizeAw2eFontSize(candidate, fixtureId, candidateTemplate, actualTe
     fixtureId,
     status: fontSizeMatches && !letterSpacingContradicted ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
     finding: fontSizeMatches
-      ? 'AW2E table font-size matches actual Roll20; letter-spacing decides whether this narrower candidate is enough'
-      : 'AW2E table font-size does not match actual Roll20',
+      ? 'fixtureA table font-size matches actual Roll20; letter-spacing decides whether this narrower candidate is enough'
+      : 'fixtureA table font-size does not match actual Roll20',
     evidence,
   };
 }
 
 function summarizeAw2eTextCellWidths(candidate, fixtureId, candidateTemplate, actualTemplate) {
-  const localCells = aw2eTextCells(candidateTemplate);
-  const actualCells = aw2eTextCells(actualTemplate);
+  const localCells = fixtureATextCells(candidateTemplate);
+  const actualCells = fixtureATextCells(actualTemplate);
   const maxCells = Math.max(localCells.length, actualCells.length, 3);
   const evidence = [];
   for (let index = 0; index < maxCells; index += 1) {
@@ -433,7 +433,7 @@ function summarizeAw2eTextCellWidths(candidate, fixtureId, candidateTemplate, ac
     return {
       fixtureId,
       status: 'NO_COMPUTED_STYLE_PROOF',
-      finding: 'AW2E text-cell width fields are missing from local or actual Roll20 sidecars',
+      finding: 'fixtureA text-cell width fields are missing from local or actual Roll20 sidecars',
       evidence,
     };
   }
@@ -443,13 +443,13 @@ function summarizeAw2eTextCellWidths(candidate, fixtureId, candidateTemplate, ac
     fixtureId,
     status: maxDelta <= 8 ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
     finding: maxDelta <= 8
-      ? 'AW2E text-cell widths match actual Roll20 within 8px'
-      : `AW2E text-cell widths differ from actual Roll20 by up to ${fmtPx(maxDelta)}`,
+      ? 'fixtureA text-cell widths match actual Roll20 within 8px'
+      : `fixtureA text-cell widths differ from actual Roll20 by up to ${fmtPx(maxDelta)}`,
     evidence,
   };
 }
 
-function aw2eTextCells(template) {
+function fixtureATextCells(template) {
   const rows = Array.isArray(template?.rowMetrics) ? template.rowMetrics : [];
   const dataRow = rows.find((row) => (
     Array.isArray(row?.cells) &&
@@ -461,11 +461,11 @@ function aw2eTextCells(template) {
 }
 
 function summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
-  if (fixtureId !== 'yshy-commission-1bu') {
+  if (fixtureId !== 'fixtureC-commission-1bu') {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
-      finding: 'YSHY/CoC font-context candidate is scoped away from this fixture',
+      finding: 'fixtureC/CoC font-context candidate is scoped away from this fixture',
       evidence: [],
     };
   }
@@ -499,25 +499,25 @@ function summarizeYshyFontContext(candidate, fixtureId, candidateTemplate, actua
   const bookkMatches = fontEvidence
     .filter((item) => item.localCandidate != null && item.actual != null)
     .every((item) => sameValue(item.localCandidate, item.actual));
-  const expectsBookk = candidate.name === 'yshy-bookk-unavailable' || candidate.name === 'yshy-bookk-table-font-context';
-  const expectsTableFont = candidate.name === 'yshy-table-font-context' || candidate.name === 'yshy-bookk-table-font-context';
+  const expectsBookk = candidate.name === 'fixtureC-bookk-unavailable' || candidate.name === 'fixtureC-bookk-table-font-context';
+  const expectsTableFont = candidate.name === 'fixtureC-table-font-context' || candidate.name === 'fixtureC-bookk-table-font-context';
   const compatible = (!expectsBookk || bookkMatches) && (!expectsTableFont || tableMatches);
   return {
     fixtureId,
     status: compatible ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
     finding: compatible
-      ? 'YSHY font-context candidate matches the targeted actual Roll20 font checks/styles'
-      : `YSHY font-context candidate mismatch: table=${tableMatches ? 'match' : 'diff'}, Bookk availability=${bookkMatches ? 'match' : 'diff'}`,
+      ? 'fixtureC font-context candidate matches the targeted actual Roll20 font checks/styles'
+      : `fixtureC font-context candidate mismatch: table=${tableMatches ? 'match' : 'diff'}, Bookk availability=${bookkMatches ? 'match' : 'diff'}`,
     evidence: [...evidence, ...fontEvidence],
   };
 }
 
 function summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
-  if (fixtureId !== 'yshy-commission-1bu') {
+  if (fixtureId !== 'fixtureC-commission-1bu') {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
-      finding: 'YSHY Roll20 fallback-stack diagnostic is scoped away from this fixture',
+      finding: 'fixtureC Roll20 fallback-stack diagnostic is scoped away from this fixture',
       evidence: [],
     };
   }
@@ -575,8 +575,8 @@ function summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplat
       ? 'STYLE_COMPATIBLE'
       : 'CONTRADICTED_BY_ACTUAL_STYLE',
     finding: tableWidthCompatible
-      ? `YSHY fallback-stack matches table width but only ${styleMatches}/${comparableStyles.length} computed font/style fields match actual Roll20; max text metric delta ${fmtPx(metricMaxDelta)}`
-      : `YSHY fallback-stack table width differs from actual Roll20; max text metric delta ${fmtPx(metricMaxDelta)}`,
+      ? `fixtureC fallback-stack matches table width but only ${styleMatches}/${comparableStyles.length} computed font/style fields match actual Roll20; max text metric delta ${fmtPx(metricMaxDelta)}`
+      : `fixtureC fallback-stack table width differs from actual Roll20; max text metric delta ${fmtPx(metricMaxDelta)}`,
     evidence: [
       ...widthProof.evidence.map((item) => ({ ...item, group: 'table-width' })),
       ...styleEvidence,
@@ -587,20 +587,20 @@ function summarizeYshyRoll20FallbackStack(candidate, fixtureId, candidateTemplat
 }
 
 function summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTemplate, actualTemplate, candidateFixture, actualSidecar) {
-  if (fixtureId !== 'yshy-commission-1bu') {
+  if (fixtureId !== 'fixtureC-commission-1bu') {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
-      finding: 'YSHY/CoC table source-context candidate is scoped away from this fixture',
+      finding: 'fixtureC/CoC table source-context candidate is scoped away from this fixture',
       evidence: [],
     };
   }
   const widthProof = summarizeWidthCandidate(candidate, fixtureId, candidateTemplate, actualTemplate, 'table', 1.5);
   const fontCandidateName = candidate.name.includes('actual-font')
-    ? 'yshy-table-font-context'
+    ? 'fixtureC-table-font-context'
     : candidate.name.includes('fallback-only')
-      ? 'yshy-bookk-fallback-only'
-    : 'yshy-missing-bookk-table-font-context';
+      ? 'fixtureC-bookk-fallback-only'
+    : 'fixtureC-missing-bookk-table-font-context';
   const fontProof = summarizeYshyFontContext(
     { ...candidate, name: fontCandidateName },
     fixtureId,
@@ -615,8 +615,8 @@ function summarizeYshyCocTableSourceContext(candidate, fixtureId, candidateTempl
     fixtureId,
     status: widthCompatible && fontCompatible ? 'STYLE_COMPATIBLE' : 'CONTRADICTED_BY_ACTUAL_STYLE',
     finding: widthCompatible && fontCompatible
-      ? 'CoC/YSHY table width and font/source context match actual Roll20 evidence'
-      : `CoC/YSHY source-context candidate mismatch: table width=${widthCompatible ? 'match' : 'diff'}, font/source=${fontCompatible ? 'match' : 'diff'}`,
+      ? 'CoC/fixtureC table width and font/source context match actual Roll20 evidence'
+      : `CoC/fixtureC source-context candidate mismatch: table width=${widthCompatible ? 'match' : 'diff'}, font/source=${fontCompatible ? 'match' : 'diff'}`,
     evidence: [
       ...widthProof.evidence.map((item) => ({ ...item, group: 'table-width' })),
       ...fontProof.evidence.map((item) => ({ ...item, group: 'font-source-context' })),
@@ -690,7 +690,7 @@ function summarizePaintFilter(candidate, fixtureId, candidateTemplate, actualTem
 }
 
 function summarizeCocBackgroundSize(candidate, fixtureId, candidateTemplate, actualTemplate) {
-  if (fixtureId !== 'yshy-commission-1bu') {
+  if (fixtureId !== 'fixtureC-commission-1bu') {
     return {
       fixtureId,
       status: 'STYLE_NEUTRAL',
@@ -934,7 +934,7 @@ async function main() {
     const smokePath = candidateSmokeOverrides.get(candidate.name) ?? CANDIDATE_SMOKE[candidate.name];
     const candidateSmoke = smokePath ? await readJson(smokePath) : null;
     const fixtures = [];
-    for (const fixtureId of ['official-roll20-AW2E', 'official-roll20-Les-Oublies', 'yshy-commission-1bu']) {
+    for (const fixtureId of ['fixtureA', 'fixtureB', 'fixtureC-commission-1bu']) {
       const actualSidecar = await readJson(actualTemplateFor(RUN_DIR, fixtureId));
       const defaultFixture = fixtureById(defaultSmoke, fixtureId);
       const candidateFixture = fixtureById(candidateSmoke, fixtureId);

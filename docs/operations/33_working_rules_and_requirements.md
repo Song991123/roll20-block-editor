@@ -32,7 +32,7 @@ Protected source folders:
 
 - `D:\훙냥냥\마렌상\roll20-character-sheets-master`
 - `D:\훙냥냥\마렌상\티알[중요]커스텀시트`
-- `D:\훙냥냥\마렌상\티알\0 CoC\영시영\H님 커미션\시트`
+- `D:\훙냥냥\마렌상\티알\0 CoC\roll20-sheet-builder\user-owned 커미션\시트`
 
 Allowed workspace-owned places for copied evidence:
 

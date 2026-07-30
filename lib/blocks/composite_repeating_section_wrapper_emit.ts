@@ -13,7 +13,7 @@
  *   `</fieldset>`
  *
  * 자식 행은 emit 시 외부에서 statement 로 들어옴 — body 파라미터로 받는다.
- * 시스템 specific 토큰 0. 영시영 hardcoding 0.
+ * 시스템 specific 토큰 0. roll20-sheet-builder hardcoding 0.
  */
 
 export interface RepeatingSectionWrapperFields {

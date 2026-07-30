@@ -94,7 +94,7 @@ function summarizeFixture(fixtureId, reports) {
   const rowRaster = findFixture(reports.rowRaster?.fixtures, fixtureId);
   const width = findFixture(reports.widthReconciliation?.fixtures, fixtureId);
   const backgroundSize = candidateByName(reports.rowRasterCandidates, 'coc-background-size-actual');
-  const yshyBackgroundSize = fixtureId === 'yshy-commission-1bu' ? backgroundSize : null;
+  const fixtureCBackgroundSize = fixtureId === 'fixtureC-commission-1bu' ? backgroundSize : null;
   const priority = backgroundSource?.priority ?? rowRaster?.priority ?? compositing?.priority ?? 'P2';
   const compositingSummary = summarizeCompositing(compositing);
   const decision = decide({
@@ -107,7 +107,7 @@ function summarizeFixture(fixtureId, reports) {
     edgeMismatchSharePct: compositingSummary.edgeMismatchSharePct,
     localDarkerMismatchSharePct: compositingSummary.localDarkerMismatchSharePct,
     chromaMismatchSharePct: compositingSummary.chromaMismatchSharePct,
-    backgroundSizeRisk: yshyBackgroundSize?.rowRasterRisk ?? '',
+    backgroundSizeRisk: fixtureCBackgroundSize?.rowRasterRisk ?? '',
     widthExperiment: width?.nextExperiment ?? '',
   });
   return {
@@ -128,14 +128,14 @@ function summarizeFixture(fixtureId, reports) {
     localBrighterMismatchSharePct: compositingSummary.localBrighterMismatchSharePct,
     chromaMismatchSharePct: compositingSummary.chromaMismatchSharePct,
     worstRow: compositingSummary.worstRow,
-    backgroundSizeRisk: yshyBackgroundSize?.rowRasterRisk ?? '',
-    backgroundSizeWeightedDeltaPct: yshyBackgroundSize?.yshyRowWeightedDeltaPct ?? null,
-    backgroundSizeWorstDeltaPct: yshyBackgroundSize?.yshyWorstRowDeltaPct ?? null,
+    backgroundSizeRisk: fixtureCBackgroundSize?.rowRasterRisk ?? '',
+    backgroundSizeWeightedDeltaPct: fixtureCBackgroundSize?.fixtureCRowWeightedDeltaPct ?? null,
+    backgroundSizeWorstDeltaPct: fixtureCBackgroundSize?.fixtureCWorstRowDeltaPct ?? null,
     widthExperiment: width?.nextExperiment ?? '',
     tableWidthDelta: width?.tableWidthDelta ?? backgroundSource?.tableWidthDelta ?? null,
     scrollDelta: width?.tableScrollWidthDelta ?? null,
     textResidual: width?.tableTextResidual ?? null,
-    evidence: evidenceNotes({ backgroundSource, compositing, rowRaster, yshyBackgroundSize, width }),
+    evidence: evidenceNotes({ backgroundSource, compositing, rowRaster, fixtureCBackgroundSize, width }),
   };
 }
 
@@ -229,13 +229,13 @@ function nextAction(decision) {
     case 'DECLARATION_DIFF_BEFORE_RASTER_MODEL':
       return 'resolve exact background declaration/cascade differences before pixel-tuned raster work';
     case 'COLOR_ASSET_RASTER_MODEL_REQUIRED':
-      return 'keep this fixture on color/asset raster investigation; do not reuse YSHY/CoC background candidates';
+      return 'keep this fixture on color/asset raster investigation; do not reuse fixtureC/CoC background candidates';
     default:
       return 'keep background raster model secondary for this fixture';
   }
 }
 
-function evidenceNotes({ backgroundSource, compositing, rowRaster, yshyBackgroundSize, width }) {
+function evidenceNotes({ backgroundSource, compositing, rowRaster, fixtureCBackgroundSize, width }) {
   const notes = [];
   const compositingSummary = summarizeCompositing(compositing);
   if (backgroundSource?.decision) notes.push(`background/source ${backgroundSource.decision}; style ${backgroundSource.backgroundStyleDecision || 'n/a'}`);
@@ -247,7 +247,7 @@ function evidenceNotes({ backgroundSource, compositing, rowRaster, yshyBackgroun
     }
   }
   if (rowRaster?.decision) notes.push(`row raster ${rowRaster.decision}; worst ${rowRaster.worstRows?.[0]?.mismatchPct || 'n/a'}`);
-  if (yshyBackgroundSize) notes.push(`coc-background-size-actual ${yshyBackgroundSize.rowRasterRisk || 'n/a'}; weighted delta ${signed(yshyBackgroundSize.yshyRowWeightedDeltaPct)}; worst delta ${signed(yshyBackgroundSize.yshyWorstRowDeltaPct)}`);
+  if (fixtureCBackgroundSize) notes.push(`coc-background-size-actual ${fixtureCBackgroundSize.rowRasterRisk || 'n/a'}; weighted delta ${signed(fixtureCBackgroundSize.fixtureCRowWeightedDeltaPct)}; worst delta ${signed(fixtureCBackgroundSize.fixtureCWorstRowDeltaPct)}`);
   if (width?.nextExperiment) notes.push(`width reconciliation ${width.nextExperiment}; table delta ${px(width.tableWidthDelta)}; scroll delta ${px(width.tableScrollWidthDelta)}; residual ${px(width.tableTextResidual)}`);
   return notes;
 }

@@ -6,10 +6,10 @@
  * Blockly 의존 0 — composite_skill_row.ts 와 composite_matcher.ts 가 본 모듈
  * 만 import. 단위 테스트도 Blockly 미사용으로 본 모듈만 호출.
  *
- * 일반화 — 영시영 / CoC / DnD 5e / PbtA / 인세인 어떤 시트도 같은 schema:
+ * 일반화 — roll20-sheet-builder / CoC / DnD 5e / PbtA / 인세인 어떤 시트도 같은 schema:
  *   `<tr>` 한 행 = (체크박스?) + (label, 보통 i18n) + (값 input)×1~2 +
  *   (굴림 버튼)×0~3 + 가능한 empty spacer td.
- *   각 부분은 선택적 (없으면 해당 `<td>` 미emit). 영시영 hardcoding 0.
+ *   각 부분은 선택적 (없으면 해당 `<td>` 미emit). roll20-sheet-builder hardcoding 0.
  *
  * CELL_LAYOUT 필드로 cell 순서/spacer 보존 — round-trip 시 원본의 빈 td 와
  * 자식 배치를 byte-identical 로 복원하기 위해.
@@ -76,7 +76,7 @@ export interface SkillRowFields {
   ROLL_CLASS: string;
   ROLL_EXPR: string;
 
-  /** 2nd roll (영시영 dual-roll, CoC critical 등). */
+  /** 2nd roll (roll20-sheet-builder dual-roll, CoC critical 등). */
   HAS_ROLL2: string;
   ROLL2_TD_CLASS: string;
   ROLL2_NAME: string;

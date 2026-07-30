@@ -20,7 +20,7 @@
  * Usage:
  *   node scripts/browser_roundtrip_smoke.mjs \
  *     --out-dir ./out --report-dir reports/roundtrip-browser \
- *     [--fixtures test-fixtures/visual] [--only yshy-commission-1bu] [--port 4180]
+ *     [--fixtures test-fixtures/visual] [--only fixtureC-commission-1bu] [--port 4180]
  */
 
 import http from 'node:http';

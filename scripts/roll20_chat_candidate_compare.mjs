@@ -51,12 +51,12 @@ const baseCandidates = [
   ['soft-shadow-rejected', 'reports/rolltemplate-chat-smoke-soft-template-shadow/screenshots'],
   ['tight-cell-spacing', 'reports/rolltemplate-chat-smoke-tight-cell-spacing/screenshots'],
   ['roll20-chat-shell-width-340', 'reports/rolltemplate-chat-smoke-roll20-chat-shell-width-340/screenshots'],
-  ['aw2e-message-full-width', 'reports/rolltemplate-chat-smoke-aw2e-message-full-width/screenshots'],
-  ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
-  ['aw2e-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/screenshots'],
-  ['aw2e-message-source-context', 'reports/rolltemplate-chat-smoke-aw2e-message-source-context/screenshots'],
+  ['fixtureA-message-full-width', 'reports/rolltemplate-chat-smoke-fixtureA-message-full-width/screenshots'],
+  ['fixtureA-message-width-font-size', 'reports/rolltemplate-chat-smoke-fixtureA-message-width-font-size/screenshots'],
+  ['fixtureA-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-fixtureA-message-width-text-metrics/screenshots'],
+  ['fixtureA-message-source-context', 'reports/rolltemplate-chat-smoke-fixtureA-message-source-context/screenshots'],
   ['table-scale-x', 'reports/rolltemplate-chat-smoke-table-scale-x/screenshots'],
-  ['aw2e-root-width-actual', 'reports/rolltemplate-chat-smoke-aw2e-root-width-actual/screenshots'],
+  ['fixtureA-root-width-actual', 'reports/rolltemplate-chat-smoke-fixtureA-root-width-actual/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
   ['coc-table-actual-width', 'reports/rolltemplate-chat-smoke-coc-table-actual-width/screenshots'],
   ['coc-crop-origin-y20', 'reports/rolltemplate-chat-smoke-coc-crop-origin-y20/screenshots'],
@@ -69,17 +69,17 @@ const baseCandidates = [
   ['shell-typography', 'reports/rolltemplate-chat-smoke-shell-typography/screenshots'],
   ['template-typography', 'reports/rolltemplate-chat-smoke-template-typography/screenshots'],
   ['cell-metrics', 'reports/rolltemplate-chat-smoke-cell-metrics/screenshots'],
-  ['aw2e-font-size-only', 'reports/rolltemplate-chat-smoke-aw2e-font-size-only/screenshots'],
-  ['aw2e-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-text-metrics/screenshots'],
-  ['aw2e-message-cell-font-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/screenshots'],
-  ['aw2e-message-cell-wrap-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/screenshots'],
-  ['yshy-bookk-unavailable', 'reports/rolltemplate-chat-smoke-yshy-bookk-unavailable/screenshots'],
-  ['yshy-table-font-context', 'reports/rolltemplate-chat-smoke-yshy-table-font-context/screenshots'],
-  ['yshy-bookk-table-font-context', 'reports/rolltemplate-chat-smoke-yshy-bookk-table-font-context/screenshots'],
-  ['yshy-bookk-missing-render', 'reports/rolltemplate-chat-smoke-yshy-bookk-missing-render/screenshots'],
-  ['yshy-missing-bookk-table-font-context', 'reports/rolltemplate-chat-smoke-yshy-missing-bookk-table-font-context/screenshots'],
+  ['fixtureA-font-size-only', 'reports/rolltemplate-chat-smoke-fixtureA-font-size-only/screenshots'],
+  ['fixtureA-text-metrics', 'reports/rolltemplate-chat-smoke-fixtureA-text-metrics/screenshots'],
+  ['fixtureA-message-cell-font-context', 'reports/rolltemplate-chat-smoke-fixtureA-message-cell-font-context/screenshots'],
+  ['fixtureA-message-cell-wrap-context', 'reports/rolltemplate-chat-smoke-fixtureA-message-cell-wrap-context/screenshots'],
+  ['fixtureC-bookk-unavailable', 'reports/rolltemplate-chat-smoke-fixtureC-bookk-unavailable/screenshots'],
+  ['fixtureC-table-font-context', 'reports/rolltemplate-chat-smoke-fixtureC-table-font-context/screenshots'],
+  ['fixtureC-bookk-table-font-context', 'reports/rolltemplate-chat-smoke-fixtureC-bookk-table-font-context/screenshots'],
+  ['fixtureC-bookk-missing-render', 'reports/rolltemplate-chat-smoke-fixtureC-bookk-missing-render/screenshots'],
+  ['fixtureC-missing-bookk-table-font-context', 'reports/rolltemplate-chat-smoke-fixtureC-missing-bookk-table-font-context/screenshots'],
   ['coc-table-intrinsic-clamp', 'reports/rolltemplate-chat-smoke-coc-table-intrinsic-clamp/screenshots'],
-  ['yshy-sanitize-typography', 'reports/rolltemplate-chat-smoke-yshy-sanitize-typography/screenshots'],
+  ['fixtureC-sanitize-typography', 'reports/rolltemplate-chat-smoke-fixtureC-sanitize-typography/screenshots'],
   ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
   ['paint-dim-brightness', 'reports/rolltemplate-chat-smoke-paint-dim-brightness/screenshots'],
   ['paint-dim-saturate', 'reports/rolltemplate-chat-smoke-paint-dim-saturate/screenshots'],
@@ -116,9 +116,9 @@ const defaultRow = rows.find((row) => row.name === 'default' && row.status === '
 const withDelta = rows.map((row) => {
   if (!defaultRow || row.status !== 'OK') return row;
   const fixtureDeltas = {
-    aw2e: pctNumberDelta(row.aw2e.alignedPct, defaultRow.aw2e.alignedPct),
+    fixtureA: pctNumberDelta(row.fixtureA.alignedPct, defaultRow.fixtureA.alignedPct),
     lesOublies: pctNumberDelta(row.lesOublies.alignedPct, defaultRow.lesOublies.alignedPct),
-    yshy: pctNumberDelta(row.yshy.alignedPct, defaultRow.yshy.alignedPct),
+    fixtureC: pctNumberDelta(row.fixtureC.alignedPct, defaultRow.fixtureC.alignedPct),
   };
   const deltaValues = Object.values(fixtureDeltas).filter((value) => typeof value === 'number');
   const improvedFixtures = deltaValues.filter((value) => value <= -0.5).length;
@@ -141,8 +141,8 @@ const withDelta = rows.map((row) => {
       maxRegressionPct,
       meanAlignedDeltaPct,
     }),
-    yshyAlignedDeltaPct: formatPctDelta(fixtureDeltas.yshy),
-    yshyHighlightYDeltaChange: numberDelta(row.yshy.highlightCentroidDelta?.[1], defaultRow.yshy.highlightCentroidDelta?.[1]),
+    fixtureCAlignedDeltaPct: formatPctDelta(fixtureDeltas.fixtureC),
+    fixtureCHighlightYDeltaChange: numberDelta(row.fixtureC.highlightCentroidDelta?.[1], defaultRow.fixtureC.highlightCentroidDelta?.[1]),
   };
 });
 
@@ -155,7 +155,7 @@ for (const row of withDelta) {
     console.log(`SKIP ${row.name} ${row.status}`);
     continue;
   }
-  console.log(`CANDIDATE ${row.name} risk=${row.promotionRisk ?? ''} mean=${formatPctDelta(row.meanAlignedDeltaPct)} regressions=${row.regressedFixtures ?? ''} yshy=${row.yshy.rawPct}/${row.yshy.alignedPct} delta=${row.yshyAlignedDeltaPct ?? ''} highlightYChange=${row.yshyHighlightYDeltaChange ?? ''}`);
+  console.log(`CANDIDATE ${row.name} risk=${row.promotionRisk ?? ''} mean=${formatPctDelta(row.meanAlignedDeltaPct)} regressions=${row.regressedFixtures ?? ''} fixtureC=${row.fixtureC.rawPct}/${row.fixtureC.alignedPct} delta=${row.fixtureCAlignedDeltaPct ?? ''} highlightYChange=${row.fixtureCHighlightYDeltaChange ?? ''}`);
 }
 console.log(`out=${path.relative(process.cwd(), outDir)}`);
 
@@ -176,9 +176,9 @@ function safeFilePart(value) {
 function summarizeReport(name, screenshots, report) {
   const fixture = (id) => report.fixtures.find((item) => item.fixtureId === id);
   const fixtureRows = {
-    aw2e: summarizeFixture(fixture('official-roll20-AW2E')),
-    lesOublies: summarizeFixture(fixture('official-roll20-Les-Oublies')),
-    yshy: summarizeFixture(fixture('yshy-commission-1bu')),
+    fixtureA: summarizeFixture(fixture('fixtureA')),
+    lesOublies: summarizeFixture(fixture('fixtureB')),
+    fixtureC: summarizeFixture(fixture('fixtureC-commission-1bu')),
   };
   const comparedFixtures = Object.values(fixtureRows).filter((row) => row.status === 'DIFFED').length;
   return {
@@ -244,7 +244,7 @@ function renderMarkdown(runDirLabel, candidates) {
     `Generated: ${new Date().toISOString()}`,
     `Run: \`${runDirLabel}\``,
     '',
-    '| Candidate | Status | Risk | Mean delta | Regressions | AW2E delta | Les delta | YSHY raw | YSHY aligned | YSHY delta | Highlight ratio | Highlight count L/A | Highlight centroid delta | Highlight Y change | Shadow share | Gate aligned high |',
+    '| Candidate | Status | Risk | Mean delta | Regressions | fixtureA delta | Les delta | fixtureC raw | fixtureC aligned | fixtureC delta | Highlight ratio | Highlight count L/A | Highlight centroid delta | Highlight Y change | Shadow share | Gate aligned high |',
     '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | ---: | ---: |',
   ];
   for (const row of candidates) {
@@ -252,7 +252,7 @@ function renderMarkdown(runDirLabel, candidates) {
       lines.push(`| \`${row.name}\` | ${row.status} |  |  |  |  |  |  |  |  |  |  |  |  |  |  |`);
       continue;
     }
-    lines.push(`| \`${row.name}\` | ${row.status} | ${row.promotionRisk ?? ''} | ${formatPctDelta(row.meanAlignedDeltaPct)} | ${row.regressedFixtures ?? ''} | ${formatPctDelta(row.fixtureAlignedDeltaPct?.aw2e)} | ${formatPctDelta(row.fixtureAlignedDeltaPct?.lesOublies)} | ${row.yshy.rawPct} | ${row.yshy.alignedPct} | ${row.yshyAlignedDeltaPct ?? ''} | ${pct(row.yshy.highlightMismatchRatio)} | ${row.yshy.highlightLocalCount}/${row.yshy.highlightActualCount} | ${row.yshy.highlightCentroidDelta?.join(',') ?? ''} | ${row.yshyHighlightYDeltaChange ?? ''} | ${pct(row.yshy.shadowMismatchShare)} | ${row.summary.alignedHighMismatch} |`);
+    lines.push(`| \`${row.name}\` | ${row.status} | ${row.promotionRisk ?? ''} | ${formatPctDelta(row.meanAlignedDeltaPct)} | ${row.regressedFixtures ?? ''} | ${formatPctDelta(row.fixtureAlignedDeltaPct?.fixtureA)} | ${formatPctDelta(row.fixtureAlignedDeltaPct?.lesOublies)} | ${row.fixtureC.rawPct} | ${row.fixtureC.alignedPct} | ${row.fixtureCAlignedDeltaPct ?? ''} | ${pct(row.fixtureC.highlightMismatchRatio)} | ${row.fixtureC.highlightLocalCount}/${row.fixtureC.highlightActualCount} | ${row.fixtureC.highlightCentroidDelta?.join(',') ?? ''} | ${row.fixtureCHighlightYDeltaChange ?? ''} | ${pct(row.fixtureC.shadowMismatchShare)} | ${row.summary.alignedHighMismatch} |`);
   }
   lines.push('');
   lines.push('This comparison is diagnostic-only. A candidate is not production-safe unless actual Roll20 computed style and the renderer gate also support it.');

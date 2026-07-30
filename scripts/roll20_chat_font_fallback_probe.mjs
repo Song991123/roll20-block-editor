@@ -17,7 +17,7 @@ const optionNamesWithValues = new Set(['--out-dir', '--actual-sidecar', '--fixtu
 const args = rawArgs.filter((arg, index) => !arg.startsWith('--') && !optionNamesWithValues.has(rawArgs[index - 1]));
 const runDirArg = args[0] ?? 'reports/roll20-actual-compare/2026-06-18-state-map-v1';
 const runDir = path.resolve(runDirArg);
-const fixtureId = readOption('--fixture', args[1] ?? 'yshy-commission-1bu');
+const fixtureId = readOption('--fixture', args[1] ?? 'fixtureC-commission-1bu');
 const outDir = path.resolve(readOption('--out-dir', path.join(runDir, 'chat-font-fallback-probe')));
 const actualSidecarPath = path.resolve(readOption(
   '--actual-sidecar',

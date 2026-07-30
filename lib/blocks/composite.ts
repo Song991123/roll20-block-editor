@@ -348,7 +348,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
 
   // 5) value switch panel ----------------------------------------------------
   //
-  // Stage 22 §4 — `r20_value_switch_panel` (영시영 era 토글 같은 일반화 패턴).
+  // Stage 22 §4 — `r20_value_switch_panel` (roll20-sheet-builder era 토글 같은 일반화 패턴).
   //   - ATTR_NAME 필드 + statement input `CASES` (자식 = r20_value_case).
   //   - 자식 r20_value_case 의 VALUE 별로 panel `<div>` emit.
   //   - 같은 wrapper 안에 inline `<style>` 로 sibling trick CSS 묶음.
@@ -374,7 +374,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
     category: COMPOSITE,
     label: '묶음: 값별 영역 전환',
     tooltip:
-      '값에 따라 영역 toggle — name="attr_NAME" 라디오 + sibling CSS 자동 emit (영시영 era 패턴 일반화).',
+      '값에 따라 영역 toggle — name="attr_NAME" 라디오 + sibling CSS 자동 emit (roll20-sheet-builder era 패턴 일반화).',
     init: mkInit((b) => {
       b.appendDummyInput().appendField('값별 영역 전환');
       b.appendDummyInput()

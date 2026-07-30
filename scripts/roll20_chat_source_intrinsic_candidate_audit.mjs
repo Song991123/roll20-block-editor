@@ -168,7 +168,7 @@ function auditCandidateForFixture(candidate, fixtureKey, sourceFixture, requirem
   if (asset?.rendererPolicy && asset.rendererPolicy !== 'DO_NOT_PROMOTE_CSS') coveredAxes.push('asset-policy-clear');
   if (sourceFixture.promotionBlocker) missingReasons.push(`source/intrinsic blocker ${sourceFixture.decision}`);
 
-  if (requirements.axes.includes('message-content-width') && /aw2e-message|message-width/.test(candidate.name)) coveredAxes.push('message-content-width');
+  if (requirements.axes.includes('message-content-width') && /fixtureA-message|message-width/.test(candidate.name)) coveredAxes.push('message-content-width');
   if (requirements.axes.includes('table-auto-layout-intrinsic') && /coc-table|table-intrinsic|source-context/.test(candidate.name)) coveredAxes.push('table-auto-layout-intrinsic');
   if (requirements.axes.includes('sanitize-rule-order') && /sanitize|source-context|font-context/.test(candidate.name)) coveredAxes.push('sanitize-rule-order');
   if (requirements.axes.includes('crop-top-origin') && /crop|overflow/.test(candidate.name)) coveredAxes.push('crop-top-origin');
@@ -206,7 +206,7 @@ function requirementsFor(sourceFixture) {
   }
   if (sourceFixture.decision === 'CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED') {
     const axes = ['crop-top-origin', 'intrinsic-width-split', 'row-raster-nonregression', 'style-proof', 'asset-policy-clear'];
-    if (sourceFixture.fixtureId === 'official-roll20-AW2E') axes.unshift('message-content-width');
+    if (sourceFixture.fixtureId === 'fixtureA') axes.unshift('message-content-width');
     return {
       model: 'CROP_INTRINSIC_SPLIT',
       axes,
@@ -220,7 +220,7 @@ function requirementsFor(sourceFixture) {
 
 function nextActionFor(decision, missingAxes) {
   if (decision === 'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED') {
-    return `Build a CoC/YSHY model that proves ${missingAxes.join(', ') || 'all required axes'} together; do not hard-code used table width or replay sanitized typography as CSS.`;
+    return `Build a CoC/fixtureC model that proves ${missingAxes.join(', ') || 'all required axes'} together; do not hard-code used table width or replay sanitized typography as CSS.`;
   }
   if (decision === 'CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED') {
     return `Build paired evidence that separates ${missingAxes.join(', ') || 'crop/top-origin and intrinsic width'} before another renderer candidate.`;
@@ -348,16 +348,16 @@ function renderMarkdown(report) {
 }
 
 function fixtureKeyForId(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureB') return 'lesOublies';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
   return fixtureId.replace(/^official-roll20-/, '').replace(/-([a-z])/g, (_, char) => char.toUpperCase());
 }
 
 function scopeHintFor(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
-  if (fixtureId === 'official-roll20-Les-Oublies') return 'les';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
+  if (fixtureId === 'fixtureB') return 'les';
   return fixtureId;
 }
 
@@ -423,7 +423,7 @@ function selfTest() {
     sourceIntrinsic: {
       fixtures: [
         {
-          fixtureId: 'yshy-commission-1bu',
+          fixtureId: 'fixtureC-commission-1bu',
           priority: 'P0',
           decision: 'SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED',
           promotionBlocker: true,
@@ -435,43 +435,43 @@ function selfTest() {
     candidates: {
       candidates: [
         {
-          name: 'yshy-coc-table-source-context-r1',
+          name: 'fixtureC-coc-table-source-context-r1',
           status: 'OK',
           promotionRisk: 'single-fixture-only',
           regressedFixtures: 0,
-          fixtureAlignedDeltaPct: { yshy: -1.2 },
+          fixtureAlignedDeltaPct: { fixtureC: -1.2 },
         },
         {
           name: 'paint-dim-background',
           status: 'OK',
           promotionRisk: 'reject-regresses-fixtures',
           regressedFixtures: 1,
-          fixtureAlignedDeltaPct: { yshy: -1.62 },
+          fixtureAlignedDeltaPct: { fixtureC: -1.62 },
         },
       ],
     },
     styleProof: {
       candidates: [
-        { name: 'yshy-coc-table-source-context-r1', styleProofStatus: 'STYLE_COMPATIBLE' },
+        { name: 'fixtureC-coc-table-source-context-r1', styleProofStatus: 'STYLE_COMPATIBLE' },
         { name: 'paint-dim-background', styleProofStatus: 'NOT_STYLE_PROVEN' },
       ],
     },
     rowRasterCandidates: {
       candidates: [
-        { name: 'yshy-coc-table-source-context-r1', rowRasterRisk: 'no-meaningful-row-raster-gain' },
+        { name: 'fixtureC-coc-table-source-context-r1', rowRasterRisk: 'no-meaningful-row-raster-gain' },
         { name: 'paint-dim-background', rowRasterRisk: 'reject-row-raster-regression' },
       ],
     },
     assetPlan: {
       fixtures: [
-        { fixtureId: 'yshy-commission-1bu', decision: 'SOURCE_ASSET_LOST_RELINK_REQUIRED', rendererPolicy: 'DO_NOT_PROMOTE_CSS' },
+        { fixtureId: 'fixtureC-commission-1bu', decision: 'SOURCE_ASSET_LOST_RELINK_REQUIRED', rendererPolicy: 'DO_NOT_PROMOTE_CSS' },
       ],
     },
   });
   const fixture = report.fixtures[0];
   assert.equal(report.summary.status, 'SOURCE_INTRINSIC_CANDIDATE_BLOCKED');
   assert.equal(fixture.readyCandidates.length, 0);
-  assert.equal(fixture.partialCandidates[0].name, 'yshy-coc-table-source-context-r1');
+  assert.equal(fixture.partialCandidates[0].name, 'fixtureC-coc-table-source-context-r1');
   assert.ok(fixture.blockers.some((blocker) => blocker.includes('source/intrinsic matrix still blocks promotion')));
   assert.ok(fixture.rejectedCandidates.some((candidate) => candidate.name === 'paint-dim-background'));
   console.log('roll20_chat_source_intrinsic_candidate_audit self-test PASS');

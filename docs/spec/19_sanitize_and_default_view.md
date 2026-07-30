@@ -22,7 +22,7 @@ Anchor:
 
 - Roll20 Community Wiki: Sheet sandbox CSS restrictions (직접 fetch 권한 없을 시 운영 경험치 + 오픈소스 시트 grep 결과 사용)
 - `roll20-character-sheets-master` 안의 official 시트가 사용 / 회피하는 패턴
-- 본 프로젝트의 영시영 1부 / 2부 검증에서 확인된 케이스
+- 본 프로젝트의 roll20-sheet-builder 1부 / 2부 검증에서 확인된 케이스
 
 **측정 못 한 항목은 "측정 불가" 로 표기. 추측 변환 금지** (V10, R1).
 
@@ -143,7 +143,7 @@ Phase 다음: 정식 emit 파이프라인 (`lib/preview/emit.ts` — 다른 세�
 #show-pulp:checked ~ .r20-toggle-off--show-pulp { display: none; }
 ```
 
-`~` (general sibling) selector 가 sandbox 에서 동작 — 영시영 1부 / 2부 합치기에 쓰는 패턴.
+`~` (general sibling) selector 가 sandbox 에서 동작 — roll20-sheet-builder 1부 / 2부 합치기에 쓰는 패턴.
 
 ### 2.2 블록 카탈로그 — 3 블록
 
@@ -205,11 +205,11 @@ CSS:
 
 ### 2.3 일반화 보장 — hardcoding 0
 
-영시영 / 1부 / 2부 / 펄프 등 시스템 specific 식별자는 **블록 정의에 들어가지 않는다**. 사용자가 ID / LABEL 을 직접 입력. block label 도 일반 한국어 ("토글 체크박스", "켜졌을 때 보이는 영역", "꺼졌을 때 보이는 영역").
+roll20-sheet-builder / 1부 / 2부 / 펄프 등 시스템 specific 식별자는 **블록 정의에 들어가지 않는다**. 사용자가 ID / LABEL 을 직접 입력. block label 도 일반 한국어 ("토글 체크박스", "켜졌을 때 보이는 영역", "꺼졌을 때 보이는 영역").
 
 ### 2.4 측정 불가 — 솔직히
 
-- `~` (general sibling) selector 가 모든 Roll20 sandbox 버전에서 동작하는지는 **측정 불가** (sandbox PoC 필요). community 보고 + 영시영 1부 working copy 의 동작 사례 기반 추정.
+- `~` (general sibling) selector 가 모든 Roll20 sandbox 버전에서 동작하는지는 **측정 불가** (sandbox PoC 필요). community 보고 + roll20-sheet-builder 1부 working copy 의 동작 사례 기반 추정.
 - `:checked` pseudo 도 동일 — sandbox 확인 필요.
 - block API 가 실제로 워크스페이스 / generator 파이프라인에 연결돼 end-to-end 동작하는지는 본 phase 에서 단위 테스트 + type check 만 — **live UI regression 측정은 R5 회귀 phase 에서 별도**.
 

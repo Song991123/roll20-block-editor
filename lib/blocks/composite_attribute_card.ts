@@ -7,11 +7,11 @@
  * 렌더링 로직은 `composite_attribute_card_emit.ts` (pure module, Blockly
  * 의존 0) 에 분리.
  *
- * 일반화 — 영시영 / CoC / DnD 5e / PbtA 어떤 시트도 같은 schema:
+ * 일반화 — roll20-sheet-builder / CoC / DnD 5e / PbtA 어떤 시트도 같은 schema:
  *   LABEL / I18N_KEY / ATTR_NAME / CURRENT_VALUE / MAX_VALUE
  *   / ROLL_BUTTON_NAME / ROLL_EXPR / LABEL_CLASS / INPUT_CLASS
  *
- * 시스템 specific 토큰 0. 영시영 hardcoding 0.
+ * 시스템 specific 토큰 0. roll20-sheet-builder hardcoding 0.
  */
 
 import * as Blockly from 'blockly';

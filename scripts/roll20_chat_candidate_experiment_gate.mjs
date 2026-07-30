@@ -217,18 +217,18 @@ function summarizeExperiment(reports) {
           meanAlignedDeltaPct: candidateRow.meanAlignedDeltaPct ?? null,
           regressedFixtures: candidateRow.regressedFixtures ?? null,
           fixtureAlignedDeltaPct: candidateRow.fixtureAlignedDeltaPct ?? {},
-          aw2eAlignedPct: candidateRow.aw2e?.alignedPct ?? '',
-          yshyAlignedPct: candidateRow.yshy?.alignedPct ?? '',
+          fixtureAAlignedPct: candidateRow.fixtureA?.alignedPct ?? '',
+          fixtureCAlignedPct: candidateRow.fixtureC?.alignedPct ?? '',
         }
       : null,
     rowRaster: rowRasterRow
       ? {
           status: rowRasterRow.status,
           rowRasterRisk: rowRasterRow.rowRasterRisk ?? '',
-          aw2eRowWeightedDeltaPct: rowRasterRow.aw2eRowWeightedDeltaPct ?? null,
-          aw2eWorstRowDeltaPct: rowRasterRow.aw2eWorstRowDeltaPct ?? null,
-          yshyRowWeightedDeltaPct: rowRasterRow.yshyRowWeightedDeltaPct ?? null,
-          yshyWorstRowDeltaPct: rowRasterRow.yshyWorstRowDeltaPct ?? null,
+          fixtureARowWeightedDeltaPct: rowRasterRow.fixtureARowWeightedDeltaPct ?? null,
+          fixtureAWorstRowDeltaPct: rowRasterRow.fixtureAWorstRowDeltaPct ?? null,
+          fixtureCRowWeightedDeltaPct: rowRasterRow.fixtureCRowWeightedDeltaPct ?? null,
+          fixtureCWorstRowDeltaPct: rowRasterRow.fixtureCWorstRowDeltaPct ?? null,
         }
       : null,
     styleProof: styleProofRow
@@ -273,8 +273,8 @@ function renderMarkdown(report) {
     `- Mean aligned delta: ${formatValue(report.summary.candidate?.meanAlignedDeltaPct)}`,
     `- Regressed fixtures: ${formatValue(report.summary.candidate?.regressedFixtures)}`,
     `- Fixture deltas: \`${JSON.stringify(report.summary.candidate?.fixtureAlignedDeltaPct ?? {})}\``,
-    `- Row raster AW2E weighted delta: ${formatValue(report.summary.rowRaster?.aw2eRowWeightedDeltaPct)}`,
-    `- Row raster YSHY weighted delta: ${formatValue(report.summary.rowRaster?.yshyRowWeightedDeltaPct)}`,
+    `- Row raster fixtureA weighted delta: ${formatValue(report.summary.rowRaster?.fixtureARowWeightedDeltaPct)}`,
+    `- Row raster fixtureC weighted delta: ${formatValue(report.summary.rowRaster?.fixtureCRowWeightedDeltaPct)}`,
     '',
     '## Top Renderer Blockers',
     '',

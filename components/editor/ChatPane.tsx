@@ -41,16 +41,16 @@ type ChatFontPolicy =
   | 'default'
   | 'roll20-chat-fallback'
   | 'roll20-sandbox-font-proxy'
-  | 'yshy-bookk-unavailable';
+  | 'fixtureC-bookk-unavailable';
 type ChatTextPolicy = 'default' | 'roll20-auto-aa';
 type ChatShadowPolicy = 'default' | 'no-template-shadow';
 type ChatGeometryPolicy =
   | 'default'
   | 'tight-cell-spacing'
   | 'roll20-chat-shell-width-340'
-  | 'aw2e-message-full-width'
+  | 'fixtureA-message-full-width'
   | 'table-scale-x'
-  | 'aw2e-root-width-actual'
+  | 'fixtureA-root-width-actual'
   | 'coc-table-scale-x'
   | 'coc-table-intrinsic-clamp'
   | 'coc-table-actual-width'
@@ -67,17 +67,17 @@ type ChatTypographyPolicy =
   | 'roll20-shell-typography'
   | 'roll20-template-typography'
   | 'roll20-cell-metrics'
-  | 'aw2e-font-size-only'
-  | 'aw2e-text-metrics'
-  | 'aw2e-message-cell-font-context'
-  | 'aw2e-message-cell-wrap-context'
-  | 'yshy-table-font-context'
-  | 'yshy-bookk-missing-render'
-  | 'yshy-missing-bookk-table-font-context'
-  | 'yshy-sanitize-typography'
-  | 'yshy-bookk-fallback-only'
-  | 'yshy-korean-glyph-metrics'
-  | 'yshy-roll20-fallback-stack';
+  | 'fixtureA-font-size-only'
+  | 'fixtureA-text-metrics'
+  | 'fixtureA-message-cell-font-context'
+  | 'fixtureA-message-cell-wrap-context'
+  | 'fixtureC-table-font-context'
+  | 'fixtureC-bookk-missing-render'
+  | 'fixtureC-missing-bookk-table-font-context'
+  | 'fixtureC-sanitize-typography'
+  | 'fixtureC-bookk-fallback-only'
+  | 'fixtureC-korean-glyph-metrics'
+  | 'fixtureC-roll20-fallback-stack';
 type ChatPaintPolicy =
   | 'default'
   | 'roll20-dim-background'
@@ -102,7 +102,7 @@ function currentChatFontPolicy(): ChatFontPolicy {
   if (
     value === 'roll20-chat-fallback' ||
     value === 'roll20-sandbox-font-proxy' ||
-    value === 'yshy-bookk-unavailable'
+    value === 'fixtureC-bookk-unavailable'
   ) return value;
   return 'default';
 }
@@ -127,9 +127,9 @@ function currentChatGeometryPolicy(): ChatGeometryPolicy {
   if (
     value === 'tight-cell-spacing' ||
     value === 'roll20-chat-shell-width-340' ||
-    value === 'aw2e-message-full-width' ||
+    value === 'fixtureA-message-full-width' ||
     value === 'table-scale-x' ||
-    value === 'aw2e-root-width-actual' ||
+    value === 'fixtureA-root-width-actual' ||
     value === 'coc-table-scale-x' ||
     value === 'coc-table-intrinsic-clamp' ||
     value === 'coc-table-actual-width' ||
@@ -152,17 +152,17 @@ function currentChatTypographyPolicy(): ChatTypographyPolicy {
     value === 'roll20-shell-typography' ||
     value === 'roll20-template-typography' ||
     value === 'roll20-cell-metrics' ||
-    value === 'aw2e-font-size-only' ||
-    value === 'aw2e-text-metrics' ||
-    value === 'aw2e-message-cell-font-context' ||
-    value === 'aw2e-message-cell-wrap-context' ||
-    value === 'yshy-table-font-context' ||
-    value === 'yshy-bookk-missing-render' ||
-    value === 'yshy-missing-bookk-table-font-context' ||
-    value === 'yshy-sanitize-typography' ||
-    value === 'yshy-bookk-fallback-only' ||
-    value === 'yshy-korean-glyph-metrics' ||
-    value === 'yshy-roll20-fallback-stack'
+    value === 'fixtureA-font-size-only' ||
+    value === 'fixtureA-text-metrics' ||
+    value === 'fixtureA-message-cell-font-context' ||
+    value === 'fixtureA-message-cell-wrap-context' ||
+    value === 'fixtureC-table-font-context' ||
+    value === 'fixtureC-bookk-missing-render' ||
+    value === 'fixtureC-missing-bookk-table-font-context' ||
+    value === 'fixtureC-sanitize-typography' ||
+    value === 'fixtureC-bookk-fallback-only' ||
+    value === 'fixtureC-korean-glyph-metrics' ||
+    value === 'fixtureC-roll20-fallback-stack'
   ) return value;
   return 'default';
 }
@@ -185,7 +185,7 @@ function extractRolltemplateCss(css: string, fontPolicy: ChatFontPolicy = 'defau
   const rawFontFaces = prefixedCss.match(/@font-face\s*\{[^{}]*\}/gi) ?? [];
   const fontFaces = fontPolicy === 'roll20-chat-fallback'
     ? []
-    : fontPolicy === 'yshy-bookk-unavailable'
+    : fontPolicy === 'fixtureC-bookk-unavailable'
       ? rawFontFaces.filter((fontFace) => !/font-family\s*:\s*["']?BookkMyungjo-Bd["']?/i.test(fontFace))
       : rawFontFaces;
   const matches = prefixedCss.match(/[^{}]*sheet-rolltemplate[^{}]*\{[^{}]*\}/g);
@@ -257,15 +257,15 @@ const roll20ChatShellCss = `
 .r20-chat-pane[data-r20-chat-geometry-policy="roll20-chat-shell-width-340"] .r20-chat-card-group .message {
   width: 340px;
 }
-.r20-chat-pane[data-r20-chat-geometry-policy="aw2e-message-full-width"] .r20-chat-card-group:has(.sheet-rolltemplate-aw),
-.r20-chat-pane[data-r20-chat-geometry-policy="aw2e-message-full-width"] .r20-chat-card-group .message:has(.sheet-rolltemplate-aw) {
+.r20-chat-pane[data-r20-chat-geometry-policy="fixtureA-message-full-width"] .r20-chat-card-group:has(.sheet-rolltemplate-aw),
+.r20-chat-pane[data-r20-chat-geometry-policy="fixtureA-message-full-width"] .r20-chat-card-group .message:has(.sheet-rolltemplate-aw) {
   width: 340px;
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="table-scale-x"] [class*="sheet-rolltemplate-"] table {
   transform: scaleX(0.981);
   transform-origin: left top;
 }
-.r20-chat-pane[data-r20-chat-geometry-policy="aw2e-root-width-actual"] .sheet-rolltemplate-aw {
+.r20-chat-pane[data-r20-chat-geometry-policy="fixtureA-root-width-actual"] .sheet-rolltemplate-aw {
   width: 279px;
 }
 .r20-chat-pane[data-r20-chat-geometry-policy="coc-table-scale-x"] .sheet-rolltemplate-coc table {
@@ -338,121 +338,121 @@ const roll20ChatShellCss = `
   letter-spacing: normal;
   -webkit-font-smoothing: auto;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw table,
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw td {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw table,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-font-size-only"] .r20-chat-card-group .sheet-rolltemplate-aw td {
   font-size: 13.65px;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw table,
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw td {
-  font-size: 13.65px;
-  letter-spacing: normal;
-  -webkit-font-smoothing: auto;
-}
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw table {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw table,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-text-metrics"] .r20-chat-card-group .sheet-rolltemplate-aw td {
   font-size: 13.65px;
   letter-spacing: normal;
   -webkit-font-smoothing: auto;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw td {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw table {
+  font-size: 13.65px;
+  letter-spacing: normal;
+  -webkit-font-smoothing: auto;
+}
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-font-context"] .r20-chat-card-group .sheet-rolltemplate-aw td {
   font-size: 27.3px;
   letter-spacing: normal;
   -webkit-font-smoothing: auto;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw,
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw table {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw table {
   color: rgb(64, 64, 64);
   font-size: 13.65px;
   letter-spacing: normal;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
-.r20-chat-pane[data-r20-chat-typography-policy="aw2e-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw td {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureA-message-cell-wrap-context"] .r20-chat-card-group .sheet-rolltemplate-aw td {
   color: rgb(64, 64, 64);
   font-size: 27.3px;
   letter-spacing: normal;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   font-size: 13.65px;
   letter-spacing: normal;
   -webkit-font-smoothing: antialiased;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc td,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc td,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-missing-render"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
   font-family: "__r20_missing_BookkMyungjo_Bd__", sans-serif !important;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-missing-bookk-table-font-context"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   font-size: 13.65px;
   letter-spacing: normal;
   -webkit-font-smoothing: antialiased;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc td {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc td {
   font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   font-size: 13.65px;
   letter-spacing: normal;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-sanitize-typography"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   border-spacing: 0;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc td,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-bookk-fallback-only"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
   font-family: "Noto Sans KR", sans-serif !important;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc td {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc td {
   font-family: "Noto Sans KR", sans-serif;
   letter-spacing: normal;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   font-size: 13.65px;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-korean-glyph-metrics"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   border-spacing: 0;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   font-family: "Proxima Nova", ProximaNova-Regular, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "Noto Sans KR", sans-serif;
   font-size: 13.65px;
   letter-spacing: normal;
   overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc td,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc caption,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc td,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_label,
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc .sheet-template_value {
   font-family: "BookkMyungjo-Bd", "Noto Sans KR", sans-serif;
   letter-spacing: normal;
   overflow-wrap: break-word;
 }
-.r20-chat-pane[data-r20-chat-typography-policy="yshy-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
+.r20-chat-pane[data-r20-chat-typography-policy="fixtureC-roll20-fallback-stack"] .r20-chat-card-group .sheet-rolltemplate-coc table {
   border-spacing: 0;
 }
 .r20-chat-pane[data-r20-chat-paint-policy="roll20-dim-background"] .r20-chat-card-group [class*="sheet-rolltemplate-"] table,

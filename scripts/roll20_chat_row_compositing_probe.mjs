@@ -427,7 +427,7 @@ function decide({ priority, decomposition, rowPaintSource, raster }) {
 function nextAction(decision) {
   switch (decision) {
     case 'BACKGROUND_COMPOSITING_MODEL_REQUIRED':
-      return 'build the next YSHY/CoC candidate around row background compositing/source context; do not use CSS filter';
+      return 'build the next fixtureC/CoC candidate around row background compositing/source context; do not use CSS filter';
     case 'LUMA_BACKGROUND_COMPOSITING_MODEL_REQUIRED':
       return 'model the Roll20 row background/luma compositing path before writing CSS; virtual luma correction explains a meaningful slice of the mismatch';
     case 'LOCAL_BACKGROUND_TOO_DARK':

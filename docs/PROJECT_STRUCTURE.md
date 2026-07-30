@@ -68,14 +68,14 @@ This file explains where things should live. It is intentionally conservative: d
 | TODO | Remove or archive only proven-unused root byproducts after checking scripts, CI, and user workflows. |
 | HOLD | Do not rename or move protected source folders, active worktrees, or ignored reports during the product reset. |
 
-## Parent Folder Context (`영시영 시트 고치기/`)
+## Parent Folder Context (`roll20-sheet-builder 시트 고치기/`)
 
-This repository worktree lives inside the user's `영시영 시트 고치기` folder, which also contains legacy and reference material. Added 2026-06-12.
+This repository worktree lives inside the user's `roll20-sheet-builder 시트 고치기` folder, which also contains legacy and reference material. Added 2026-06-12.
 
 | Sibling | Category | Note |
 | --- | --- | --- |
 | `../web/` | git repo body | `web-push-main` is a worktree of this repo; its gitdir is a Windows absolute path, so git may not work from non-Windows mounts. |
-| `../sheet/` | reference | User's YSHY sheet source copies (HTML/CSS/translation). Copy into `test-fixtures/` before use; never edit in place. |
+| `../sheet/` | reference | User's fixture-C sheet source copies (HTML/CSS/translation). Copy into `test-fixtures/` before use; never edit in place. |
 | `../roll20-base/`, `../api/`, `../docs/`, `../cache/` | reference | Roll20 baseline CSS, API scripts, early analysis docs, imgur cache. |
 | `../03_ARCHIVE/legacy-single-file/` | legacy (May 2026) | Single-file editor, viewer, helper scripts, and backups. Reference-only; current truth is this repo. |
 | `../01_ACTIVE/`, `../02_REFERENCE/`, `../03_ARCHIVE/`, `../04_LOCAL/` | workspace zones | Navigation and ownership markers documented by the parent `AGENTS.md`. |

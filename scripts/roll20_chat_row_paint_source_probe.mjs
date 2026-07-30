@@ -128,7 +128,7 @@ async function summarizeFixture(fixtureId, reports) {
   const alignedMismatch = numberOrNull(parity?.bestAlignedMismatchRatio ?? parity?.mismatchRatio);
   const paintCandidate = candidateByName(reports.candidates, 'paint-dim-background');
   const noShadowCandidate = candidateByName(reports.candidates, 'no-shadow');
-  const sanitizeCandidate = candidateByName(reports.candidates, 'yshy-sanitize-typography');
+  const sanitizeCandidate = candidateByName(reports.candidates, 'fixtureC-sanitize-typography');
   const edgeShadowCandidate = candidateByName(reports.candidates, 'paint-edge-shadow');
   const paintStyle = styleProofByName(reports.styleProof, 'paint-dim-background')?.fixtures?.find((item) => item.fixtureId === fixtureId);
   const cssEvidence = actualSidecar?.chatCssEvidence ?? {};
@@ -168,7 +168,7 @@ async function summarizeFixture(fixtureId, reports) {
     diagnosticCandidateDeltas: {
       paintDimBackground: paintGain,
       noShadow: fixtureDelta(noShadowCandidate, key),
-      yshySanitizeTypography: fixtureDelta(sanitizeCandidate, key),
+      fixtureCSanitizeTypography: fixtureDelta(sanitizeCandidate, key),
       paintEdgeShadow: fixtureDelta(edgeShadowCandidate, key),
     },
     geometrySignals: {
@@ -369,9 +369,9 @@ function fixtureDelta(candidate, key) {
 }
 
 function fixtureKeyForId(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureB') return 'lesOublies';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
   return fixtureId;
 }
 

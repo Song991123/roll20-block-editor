@@ -20,7 +20,7 @@ The Windows Codex owns merge order, shared TODO/progress updates, final combined
 Paste this into the Codex task that owns the Windows workspace:
 
 ```text
-Repository: D:\훙냥냥\마렌상\영시영 시트 고치기\web-push-main
+Repository: D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main
 Branch: codex/roll20-mapping-fidelity-smoke
 
 Use $roll20-render-ops. You are the lead integrator and the only agent allowed to merge or push the integration branch.
@@ -29,7 +29,7 @@ Read, in order: AGENTS.md, docs/operations/33_working_rules_and_requirements.md,
 
 First run git status and corepack pnpm run check:server-hygiene. Stop only matching project dev/smoke listeners; preserve Roll20 CDP 9222 while actual-browser verification is active.
 
-Primary task: make preview and edit use one canonical Roll20 render document and the same wrapper, baseline, user CSS, translation/default state, asset replacement, legacy/modern mode, and intrinsic sizing. Edit must be the preview render plus edit-only overlays, not a separately redrawn sheet. Remove dialog chrome, blank starter nodes, script/worker source, rolltemplate source, debug labels, and other non-sheet UI from the visible sheet surface. Do not add fixture-specific or YSHY-specific product logic.
+Primary task: make preview and edit use one canonical Roll20 render document and the same wrapper, baseline, user CSS, translation/default state, asset replacement, legacy/modern mode, and intrinsic sizing. Edit must be the preview render plus edit-only overlays, not a separately redrawn sheet. Remove dialog chrome, blank starter nodes, script/worker source, rolltemplate source, debug labels, and other non-sheet UI from the visible sheet surface. Do not add fixture-specific or fixture-C-specific product logic.
 
 Before changing renderer CSS, rerun the current actual-status, template-scope, source/intrinsic, and renderer-action gates. Keep global renderer changes on hold when the gate says HOLD. Apply generated sheets only to Roll20 Custom Sheet Sandbox or a new dedicated test room; existing solo rooms are observation-only.
 
@@ -71,10 +71,10 @@ Do not hard-code any private fixture or sheet family. Use synthetic fixtures in 
 Create a separate worktree so Claude Code never shares the Windows Codex files:
 
 ```powershell
-Set-Location -LiteralPath 'D:\훙냥냥\마렌상\영시영 시트 고치기\web-push-main'
+Set-Location -LiteralPath 'D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main'
 git fetch origin
 git worktree add '..\web-claude-mapping' -b claude/universal-mapping-legacy-20260715 origin/codex/roll20-mapping-fidelity-smoke
-Set-Location -LiteralPath 'D:\훙냥냥\마렌상\영시영 시트 고치기\web-claude-mapping'
+Set-Location -LiteralPath 'D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-claude-mapping'
 gh auth status
 corepack pnpm install --frozen-lockfile
 claude
@@ -83,7 +83,7 @@ claude
 ## Windows Claude Code 1 Prompt
 
 ```text
-Repository: D:\훙냥냥\마렌상\영시영 시트 고치기\web-claude-mapping
+Repository: D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-claude-mapping
 Branch: claude/universal-mapping-legacy-20260715
 
 Work autonomously until this track's acceptance checks pass, then commit and push your branch. Do not stop after an audit or proposal when an in-scope implementation and test can be completed.

@@ -8,7 +8,7 @@
  * 인식 실패 시 atomic 그대로 유지 (fail-safe).
  *
  * 일반화: HTML 구조 + 표준 Roll20 idiom (`attr_X` / `data-i18n="KEY"`
- * / `type="roll"` / `repeating_X`) 만 본다. 영시영 / DnD 5e / CoC / PbtA
+ * / `type="roll"` / `repeating_X`) 만 본다. roll20-sheet-builder / DnD 5e / CoC / PbtA
  * 어떤 시트도 동일. 한글 라벨 / 시스템 specific class hardcoding 0.
  *
  * Phase 1: `r20_attribute_card`.
@@ -440,7 +440,7 @@ function tryMatchSkillRow(b: MatchedBlock): MatchedBlock | null {
   //   - label-like 자식 (i18n_text / inline_bold / static_text) 또는 empty td
   //     로 0~2 개의 label 슬롯 허용 (empty 는 다음 input 직전에만)
   //   - 1~2 개의 input (text / number) — 첫 번째 input 의 NAME 이 필수
-  //   - 마지막 0~3 개의 roll_button (영시영의 dual-roll, CoC 의 critical 등)
+  //   - 마지막 0~3 개의 roll_button (roll20-sheet-builder의 dual-roll, CoC 의 critical 등)
   //
   // 그 외 자식 type 이 섞이면 atomic 유지 (사용자 변형 - 안전).
   let checkboxIdx = -1;

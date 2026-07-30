@@ -2,7 +2,7 @@
 
 Date: 2026-05-19
 
-This is the execution plan for making the editor honestly compatible with official Roll20 sheets, user custom sheets, and the YSHY commission sheets. It is written so Codex, Claude, or another agent can continue without guessing the user's intent.
+This is the execution plan for making the editor honestly compatible with official Roll20 sheets, user custom sheets, and the fixture-C commission sheets. It is written so Codex, Claude, or another agent can continue without guessing the user's intent.
 
 ## Core Goal
 
@@ -50,7 +50,7 @@ Owner goal: understand corpus shape before fixing one sample.
 
 Tasks:
 
-- Scan official Roll20 sheets, user custom sheets, and YSHY fixtures.
+- Scan official Roll20 sheets, user custom sheets, and fixture-C fixtures.
 - For each detected sheet bundle, classify files as HTML, CSS, translation, worker JS, images, and documentation.
 - Detect whether HTML contains inline `<script type="text/worker">`, `<rolltemplate>`, hidden inputs, `repeating_`, `:checked`, and default-era keywords.
 - Produce a JSON/Markdown report under workspace docs or reports.
@@ -114,7 +114,7 @@ Tasks:
 Exit criteria:
 
 - Computed-style origin/leak report exists.
-- Screenshot diff report exists for at least one official fixture and YSHY 1부.
+- Screenshot diff report exists for at least one official fixture and fixture-C 1부.
 
 ### T5. Default View and Sheet Worker Simulation
 
@@ -130,11 +130,11 @@ Tasks:
   - `getSectionIDs`;
   - translation helpers if used.
 - Expose current preview attrs/state in a user-friendly panel.
-- Do not hardcode "pulp", "1920", or YSHY names into generic runtime.
+- Do not hardcode "pulp", "1920", or fixture-C names into generic runtime.
 
 Exit criteria:
 
-- CoC 7th official default view and YSHY default view can be toggled through generic controls.
+- CoC 7th official default view and fixture-C default view can be toggled through generic controls.
 - Reports distinguish CSS-only default logic from worker-driven default logic.
 
 ### T6. Legacy Roll20 Sanitization On/Off
@@ -191,7 +191,7 @@ Read:
 
 Rules:
 - Do not edit any external source corpus folder.
-- First produce static CSS feature counts for official samples, custom samples, and YSHY.
+- First produce static CSS feature counts for official samples, custom samples, and fixture-C.
 - Do not claim Roll20 behavior unless measured in Roll20 or clearly labeled as inferred.
 - Implement on/off only as explicit preview/export setting.
 - Export must include sanitizer warnings.
@@ -270,7 +270,7 @@ Result:
 
 Use this order to avoid session overload:
 
-1. YSHY 1부 HTML/CSS/translation.
+1. fixture-C 1부 HTML/CSS/translation.
 2. `Call_of_Cthulhu_7th_Ed` official.
 3. `DnD_5e` official.
 4. `13th Age by Roll20` official.

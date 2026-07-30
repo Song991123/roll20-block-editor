@@ -111,7 +111,7 @@ function sanitizeKey(raw: string): string {
   if (!s) return '';
   // 과거: [^A-Za-z0-9_.\-] 전부 제거 → "fighting(brawl)-u" 가 "fightingbrawl-u" 로,
   // "Move rate-u" 가 "Moverate-u" 로 망가져 사용자의 translation.json 과 키가
-  // 어긋남 (Roll20 은 키에 공백/괄호/슬래시/한글 허용 — 영시영 원본이 실증).
+  // 어긋남 (Roll20 은 키에 공백/괄호/슬래시/한글 허용 — roll20-sheet-builder 원본이 실증).
   // attribute escape 는 attr()/escapeAttr 가 담당하므로 여기서는 제어문자만 제거.
   return s.replace(/[\u0000-\u001F\u007F]/g, '');
 }
@@ -294,7 +294,7 @@ export const I18N_BLOCKS: BlockDef[] = [
       const disabled = String(b.getFieldValue('DISABLED') ?? 'FALSE') === 'TRUE';
       // raw class/name — sheet- / attr_ prefix 보존. (i18n_button 컨벤션과 동일.)
       // DEFAULT 는 placeholder 속성으로 — value 로 내보내면 실제 속성값이
-      // 안내문 텍스트로 오염된다 (YSHY 맵핑 검증에서 발견). value 속성은
+      // 안내문 텍스트로 오염된다 (fixtureC 맵핑 검증에서 발견). value 속성은
       // 별도 VALUE 필드 (san_thresh 처럼 placeholder + value 둘 다 있는 입력).
       return (
         `<input${attr('type', type)}${attr('class', cls)}${attr('name', name)}` +

@@ -121,7 +121,7 @@ export interface PerfHook {
   getEmitContent: () => { html: string; css: string; i18n: string; js: string; worker: string };
   /** sync / async 작업 timing + heap delta. */
   measure: <T>(label: string, fn: () => T | Promise<T>) => Promise<PerfMeasure & { value: T }>;
-  /** 영시영 / 다른 시트 raw HTML/CSS/i18n 을 generic pipeline 으로 import 후 hydrate. */
+  /** roll20-sheet-builder / 다른 시트 raw HTML/CSS/i18n 을 generic pipeline 으로 import 후 hydrate. */
   importSheet: (input: {
     html: string;
     css?: string;
@@ -153,7 +153,7 @@ export interface PerfHook {
   startLongTaskObserver: () => void;
   stopLongTaskObserver: () => Array<{ startTime: number; duration: number; name: string }>;
   /**
-   * 합성 (synthetic) Blockly XML 생성기 — 영시영 식별자 / 사용자 시트 토큰 0.
+   * 합성 (synthetic) Blockly XML 생성기 — roll20-sheet-builder 식별자 / 사용자 시트 토큰 0.
    * 6K 블록 inject hot path 측정용. r20_text_input 블록의 next-chain.
    * @param n  체인 길이 (블록 수)
    * @param prefix  field NAME 접두사 (기본 'syn').
@@ -567,9 +567,9 @@ function buildHook(): PerfHook {
       // FLAT top-level 구조 — 각 블록이 독립 top-level (next-chain 없음).
       // 이유: 직전 세션의 next-chain 구현은 N≥256 에서 V8 stack limit 으로
       //   `Blockly.Xml.domToBlock` 재귀가 cap 됨 → 실측 무효 (docs/perf/05).
-      // 영시영 1부 실 import 도 top-level 다수 + 얕은 nesting 이므로 flat 구조가
+      // roll20-sheet-builder 1부 실 import 도 top-level 다수 + 얕은 nesting 이므로 flat 구조가
       //   더 충실한 시뮬레이션.
-      // 시트 specific 0: NAME 필드 = `${prefix}${i}` (영시영 식별자 / 한글 0).
+      // 시트 specific 0: NAME 필드 = `${prefix}${i}` (roll20-sheet-builder 식별자 / 한글 0).
       if (n <= 0) return '<xml xmlns="https://developers.google.com/blockly/xml"></xml>';
       const parts: string[] = [];
       parts.push('<xml xmlns="https://developers.google.com/blockly/xml">');

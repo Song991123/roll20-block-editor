@@ -7,13 +7,13 @@
  * MatchedBlock 트리 조작만).
  *
  * 검증:
- *   1) 표준 영시영 능력치 카드 chain → r20_attribute_card 1 개로 packing
+ *   1) 표준 roll20-sheet-builder 능력치 카드 chain → r20_attribute_card 1 개로 packing
  *   2) max input 포함 케이스
  *   3) 인식 안 되는 케이스 (mismatched name prefix / 다른 자식 type) → atomic 유지
  *   4) packComposites 통계 정확성
  *   5) 재귀 — children chain (예: tr 안의 td chain) 도 packing
  *
- * 영시영 hardcoding 0 — 모든 fixture 는 generic Roll20 idiom 만.
+ * roll20-sheet-builder hardcoding 0 — 모든 fixture 는 generic Roll20 idiom 만.
  */
 
 import type { MatchedBlock } from '../block_matcher';

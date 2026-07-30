@@ -116,8 +116,8 @@ function buildCBlock(
 ): void {
   topFields(b.appendDummyInput());
   // STYLE 필드 — inline `style="..."` 보존 (모든 c-shape 컨테이너 공통).
-  // 영시영 1부 측정 결과 style 607 건 100% 손실 — 모든 시트 generic fix.
-  // Anchor: docs/validation/verify/yshy_1bu_structural.md §4.3.
+  // roll20-sheet-builder 1부 측정 결과 style 607 건 100% 손실 — 모든 시트 generic fix.
+  // Anchor: docs/validation/verify/fixtureC_1bu_structural.md §4.3.
   b.appendDummyInput()
     .appendField('스타일')
     .appendField(new Blockly.FieldTextInput(''), 'STYLE');

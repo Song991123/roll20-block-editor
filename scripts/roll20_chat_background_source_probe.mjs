@@ -101,7 +101,7 @@ async function summarizeFixture(fixtureId, reports) {
   const backgroundStyle = compareBackgroundStyle(localTable, actualTable);
   const cocBackgroundSize = candidateByName(reports.rasterCandidates, 'coc-background-size-actual');
   const backgroundSizeStyleProof = candidateByName(reports.styleProof, 'coc-background-size-actual');
-  const isYshyCoc = fixtureId === 'yshy-commission-1bu';
+  const isYshyCoc = fixtureId === 'fixtureC-commission-1bu';
   const fixtureCandidate = candidateForFixture(cocBackgroundSize, fixtureId);
   const observedTableWidthDelta = rectDelta(localTable?.rect, actualTable?.rect, 'width');
   const contextTableWidthDelta = observedTableWidthDelta ?? style?.tableDelta?.width ?? null;
@@ -113,7 +113,7 @@ async function summarizeFixture(fixtureId, reports) {
     compositing,
     tableWidthDelta: contextTableWidthDelta,
     backgroundSizeCandidateRisk: isYshyCoc ? cocBackgroundSize?.rowRasterRisk ?? '' : '',
-    yshyRowWeightedDeltaPct: isYshyCoc ? cocBackgroundSize?.yshyRowWeightedDeltaPct ?? null : null,
+    fixtureCRowWeightedDeltaPct: isYshyCoc ? cocBackgroundSize?.fixtureCRowWeightedDeltaPct ?? null : null,
     lumaCorrectionGainPct: compositing?.summary?.lumaCorrectionGainPct ?? null,
   });
   return {
@@ -150,11 +150,11 @@ async function summarizeFixture(fixtureId, reports) {
   };
 }
 
-function decide({ fixtureId, isYshyCoc, priority, backgroundStyle, compositing, tableWidthDelta, backgroundSizeCandidateRisk, yshyRowWeightedDeltaPct, lumaCorrectionGainPct }) {
+function decide({ fixtureId, isYshyCoc, priority, backgroundStyle, compositing, tableWidthDelta, backgroundSizeCandidateRisk, fixtureCRowWeightedDeltaPct, lumaCorrectionGainPct }) {
   if (priority === 'P2') return 'BACKGROUND_SOURCE_SECONDARY';
   if (!backgroundStyle.localPresent || !backgroundStyle.actualPresent) return 'BACKGROUND_STYLE_EVIDENCE_MISSING';
   if (!backgroundStyle.imageEquivalent) return 'BACKGROUND_ASSET_URL_OR_PROXY_MISMATCH';
-  if (fixtureId === 'official-roll20-AW2E' && compositing?.decision === 'COLOR_ASSET_RASTER_MODEL_REQUIRED') {
+  if (fixtureId === 'fixtureA' && compositing?.decision === 'COLOR_ASSET_RASTER_MODEL_REQUIRED') {
     return 'COLOR_ASSET_RASTER_CONTEXT_REQUIRED';
   }
   if (backgroundStyle.declarationMatches && Math.abs(Number(lumaCorrectionGainPct ?? 0)) < 1 && compositing?.summary?.flatPaintMismatchShare >= 0.45) {
@@ -164,7 +164,7 @@ function decide({ fixtureId, isYshyCoc, priority, backgroundStyle, compositing, 
   if (Math.abs(Number(tableWidthDelta ?? 0)) > 8 && backgroundStyle.declarationMatches) {
     return 'TABLE_WIDTH_CONTEXT_BEFORE_BACKGROUND_CSS';
   }
-  if (isYshyCoc && typeof yshyRowWeightedDeltaPct === 'number' && yshyRowWeightedDeltaPct < -0.5) return 'BACKGROUND_SIZE_NEEDS_STYLE_PROOF';
+  if (isYshyCoc && typeof fixtureCRowWeightedDeltaPct === 'number' && fixtureCRowWeightedDeltaPct < -0.5) return 'BACKGROUND_SIZE_NEEDS_STYLE_PROOF';
   if (backgroundStyle.imageEquivalent && !backgroundStyle.declarationMatches) return 'BACKGROUND_DECLARATION_DIFFERS';
   return 'BACKGROUND_SOURCE_SECONDARY';
 }
@@ -178,7 +178,7 @@ function nextAction(decision) {
     case 'TABLE_WIDTH_CONTEXT_BEFORE_BACKGROUND_CSS':
       return 'model table width/crop context before any background CSS candidate';
     case 'COLOR_ASSET_RASTER_CONTEXT_REQUIRED':
-      return 'keep AW2E on its color/asset raster axis; do not reuse YSHY/CoC background-size candidates';
+      return 'keep fixtureA on its color/asset raster axis; do not reuse fixtureC/CoC background-size candidates';
     case 'BACKGROUND_DECLARATION_DIFFERS':
       return 'compare exact background declarations and Roll20-side cascade before trying pixel-tuned CSS';
     case 'BACKGROUND_ASSET_URL_OR_PROXY_MISMATCH':
@@ -236,9 +236,9 @@ function evidenceNotes({ fixtureId, isYshyCoc, backgroundStyle, compositing, sty
     notes.push(`flat ${compositing.summary?.flatPaintMismatchSharePct || 'n/a'}, local darker ${compositing.summary?.localDarkerMismatchSharePct || 'n/a'}`);
   }
   if (isYshyCoc && cocBackgroundSize) {
-    notes.push(`coc-background-size-actual row raster risk ${cocBackgroundSize.rowRasterRisk || 'n/a'}, YSHY weighted delta ${fmtSigned(cocBackgroundSize.yshyRowWeightedDeltaPct)}, worst delta ${fmtSigned(cocBackgroundSize.yshyWorstRowDeltaPct)}`);
+    notes.push(`coc-background-size-actual row raster risk ${cocBackgroundSize.rowRasterRisk || 'n/a'}, fixtureC weighted delta ${fmtSigned(cocBackgroundSize.fixtureCRowWeightedDeltaPct)}, worst delta ${fmtSigned(cocBackgroundSize.fixtureCWorstRowDeltaPct)}`);
   } else if (cocBackgroundSize) {
-    notes.push(`coc-background-size-actual is YSHY/CoC-scoped; ${fixtureId} keeps its own compositing/style axis`);
+    notes.push(`coc-background-size-actual is fixtureC/CoC-scoped; ${fixtureId} keeps its own compositing/style axis`);
   }
   if (backgroundSizeStyleProof) {
     notes.push(`coc-background-size-actual style proof ${backgroundSizeStyleProof.styleProofStatus || 'n/a'}`);
@@ -298,9 +298,9 @@ function candidateByName(report, name) {
 
 function candidateForFixture(candidate, fixtureId) {
   if (!candidate) return null;
-  if (fixtureId === 'official-roll20-AW2E') return candidate.aw2e ?? null;
-  if (fixtureId === 'official-roll20-Les-Oublies') return candidate.lesOublies ?? null;
-  if (fixtureId === 'yshy-commission-1bu') return candidate.yshy ?? null;
+  if (fixtureId === 'fixtureA') return candidate.fixtureA ?? null;
+  if (fixtureId === 'fixtureB') return candidate.lesOublies ?? null;
+  if (fixtureId === 'fixtureC-commission-1bu') return candidate.fixtureC ?? null;
   return null;
 }
 

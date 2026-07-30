@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-roll20_base_inline.ts 재생성 — D:\\훙냥냥\\마렌상\\영시영 시트 고치기\\roll20-base
+roll20_base_inline.ts 재생성 — D:\\훙냥냥\\마렌상\\roll20-sheet-builder 시트 고치기\\roll20-base
 의 CSS 파일들을 TypeScript 모듈로 inline.
 
 usage:
@@ -44,7 +44,7 @@ def main():
     header = """/**
  * roll20_base_inline.ts — Roll20 sandbox CSS 의 사용자 큐레이션 ground truth.
  *
- * 출처: D:\\\\훙냥냥\\\\마렌상\\\\영시영 시트 고치기\\\\roll20-base\\\\
+ * 출처: D:\\\\훙냥냥\\\\마렌상\\\\roll20-sheet-builder 시트 고치기\\\\roll20-base\\\\
  *   - base.css (449KB) — Bootstrap + normalize + Roll20 grimoire color tokens
  *   - charactersheet.css (14KB) — .ui-dialog .charsheet / .characterdialog
  *   - jquery.css (43KB) — jQuery UI Bootstrap (dialog chrome)

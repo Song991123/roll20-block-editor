@@ -189,7 +189,7 @@ class EmitEngine implements GeneratorContext {
         return `<input class="${shape === 'boolean' ? 'expr-bool' : 'expr-value'}" data-r20-block-id="${block.id}" type="text" readonly value="${safe}" />`;
       }
       // stack / cap / hat / c / e —
-      //   원래: `<div data-r20-block-id=...>${code}</div>` 로 감쌌으나, 영시영 1부
+      //   원래: `<div data-r20-block-id=...>${code}</div>` 로 감쌌으나, roll20-sheet-builder 1부
       //   처럼 import 한 시트 (flat top-level 6K+) 에선 CSS sibling trick 룰
       //   (`.sheet-toggle[value="1"]:checked ~ div.sheet-X`) 이 wrapper 한
       //   레벨 깊어 매치 X → era 토글 영역 전체 hidden, 미리보기는 body
@@ -344,7 +344,7 @@ function getScriptType(rawAttrs: string): string {
  * 동기:
  *   - top-level 블록을 `<div data-r20-block-id>...</div>` 로 감싸면 CSS
  *     sibling 셀렉터 (`A:checked ~ B`) 가 wrapper 안 element 끼리만 동작 →
- *     서로 다른 top-level 블록이 형제일 때 매치 X → 영시영 1부 같은 era
+ *     서로 다른 top-level 블록이 형제일 때 매치 X → roll20-sheet-builder 1부 같은 era
  *     toggle 시트가 통째로 hidden.
  *   - wrapper 제거 + 첫 element tag 에 속성만 주입 → 형제 관계 그대로,
  *     preview bridge 의 click→select 도 부모 walk 으로 동일 동작.

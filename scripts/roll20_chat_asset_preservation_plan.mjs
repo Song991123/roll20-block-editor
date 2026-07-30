@@ -316,7 +316,7 @@ function selfTest() {
       sourceMatchesProxy: true,
     },
     backgroundRaster: { decision: 'FLAT_PAINT_SOURCE_OR_BROWSER_COLOR_MODEL_REQUIRED' },
-    targetPlan: { priority: 'P0', strategy: 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS' },
+    targetPlan: { priority: 'P0', strategy: 'fixtureA_TEMPLATE_SCOPED_TEXT_METRICS' },
   });
   assert.equal(paint.decision, 'BROWSER_PAINT_CONTEXT_REQUIRED');
   assert.equal(paint.rendererPolicy, 'CSS_HELD_UNTIL_PAINT_PROVEN');

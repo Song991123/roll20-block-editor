@@ -224,11 +224,11 @@ corepack pnpm run gate:roll20-chat-candidate-experiment -- reports\roll20-actual
   --out-dir ..\_tmp_codex_smoke\candidate-experiment-<candidate>
 ```
 
-For combined YSHY/CoC one-off candidates, a `STYLE_COMPATIBLE` or
+For combined fixture-C/CoC one-off candidates, a `STYLE_COMPATIBLE` or
 `STYLE_COMPATIBLE_NEEDS_PIXEL_REVIEW` style proof is not enough. The candidate
 must also avoid cross-fixture pixel regression and row-raster regression. The
-rejected `yshy-coc-table-source-context-fallback-only` run is the current
-example: style proof was compatible for YSHY, but candidate comparison and row
+rejected `fixture-c-coc-table-source-context-fallback-only` run is the current
+example: style proof was compatible for fixture-C, but candidate comparison and row
 raster still required `HOLD_PRODUCTION_RENDERER_PATCH`.
 
 When a fresh local smoke needs to be compared against actual Roll20 intrinsic
@@ -240,7 +240,7 @@ corepack pnpm run diagnose:roll20-chat-intrinsic-width -- reports\roll20-actual-
   --out-dir ..\_tmp_codex_smoke\intrinsic-width-<candidate>
 ```
 
-This is especially important for AW2E-style candidates: a policy can be
+This is especially important for fixture-A-style candidates: a policy can be
 `APPLIED` while still breaking intrinsic cell allocation. Treat the intrinsic
 report as a blocker/guidance report, not production CSS approval.
 
@@ -759,9 +759,9 @@ corrupting the editor's advanced settings JSON.
 For legacy official sheets, preserve the source `sheet.json` legacy mode. A
 fixture whose official manifest declares `"legacy": true` must not be uploaded
 with a generated `"legacy": false` manifest. Also note that endpoint `200`
-responses are not enough for legacy coverage: AW2E returned `200` for generated
+responses are not enough for legacy coverage: fixture-A returned `200` for generated
 and official source payloads but still produced an empty character iframe in the
-dedicated sandbox. A later YSHY restore through the same endpoint path also
+dedicated sandbox. A later fixture-C restore through the same endpoint path also
 returned `200` but reopened blank, so treat this fallback as storage-only until
 a fresh iframe DOM/root check proves activation. Use the browser file-input
 upload path, a complete settings-form save path, or another verified Roll20

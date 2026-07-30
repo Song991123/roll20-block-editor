@@ -204,16 +204,16 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
     };
   }
   if (
-    fixtureId === 'official-roll20-AW2E' ||
+    fixtureId === 'fixtureA' ||
     (signals.reconciliationDecision === 'CHAT_MESSAGE_CONTENT_WIDTH' &&
       Math.abs(signals.tableTextResidual ?? 999) <= 2 &&
       Math.abs(signals.tableWidthDelta ?? 0) >= 8)
   ) {
     return {
-      strategy: 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS',
+      strategy: 'fixtureA_TEMPLATE_SCOPED_TEXT_METRICS',
       nextExperiment: 'message-width plus exact text-metric allocation, scoped to .sheet-rolltemplate-aw',
       blockers: [
-        'same-template mismatch remains high after current AW2E candidates',
+        'same-template mismatch remains high after current fixtureA candidates',
         'combined width/font candidate improved raw crop but did not beat default after alignment',
         ...failedCandidateBlockers(signals.triedCandidates),
         ...sourceAssetBlockers(signals),
@@ -223,7 +223,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
       evidence: [
         `table width delta ${fmtPx(signals.tableWidthDelta)} with text residual ${fmtPx(signals.tableTextResidual)}`,
         `message/content shell delta ${fmtPx(signals.shellDeltas?.messageWidthDelta)} / ${fmtPx(signals.shellDeltas?.contentWidthDelta)}`,
-        'text metrics explain AW2E table width, so broad typography and global shell CSS are too risky',
+        'text metrics explain fixtureA table width, so broad typography and global shell CSS are too risky',
         ...candidateEvidence(signals.triedCandidates),
         ...sourceAssetEvidence(signals),
         ...sourceContextEvidence(signals),
@@ -240,19 +240,19 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         command('plan:roll20-chat-assets'),
         command('diagnose:roll20-chat-background-raster'),
       ],
-      promotionRule: 'Only promote an AW2E-scoped rule after it beats default on AW2E without regressing Les/YSHY and style proof matches actual Roll20.',
+      promotionRule: 'Only promote an fixtureA-scoped rule after it beats default on fixtureA without regressing Les/fixtureC and style proof matches actual Roll20.',
     };
   }
   if (
-    fixtureId === 'yshy-commission-1bu' ||
+    fixtureId === 'fixtureC-commission-1bu' ||
     signals.textWidthDecision === 'TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT' ||
     Math.abs(signals.tableScrollWidthDelta ?? 0) >= 8
   ) {
     return {
       strategy: 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL',
-      nextExperiment: 'CoC/YSHY-scoped table intrinsic sizing, font availability, and sanitize-order model',
+      nextExperiment: 'CoC/fixtureC-scoped table intrinsic sizing, font availability, and sanitize-order model',
       blockers: [
-        'YSHY table width delta conflicts with AW2E message-width direction',
+        'fixtureC table width delta conflicts with fixtureA message-width direction',
         'current transform, broad font, and paint candidates are rejected or fixture-local',
         ...failedCandidateBlockers(signals.triedCandidates),
         ...sourceAssetBlockers(signals),
@@ -282,7 +282,7 @@ function classifyFixture(fixtureId, alignedMismatch, signals) {
         command('diagnose:roll20-chat-font-intrinsic'),
         command('plan:roll20-chat-assets'),
       ],
-      promotionRule: 'Only promote a CoC/YSHY-scoped rule after scrollWidth/clientWidth, font availability, and style proof agree; do not use transform/scale as production behavior.',
+      promotionRule: 'Only promote a CoC/fixtureC-scoped rule after scrollWidth/clientWidth, font availability, and style proof agree; do not use transform/scale as production behavior.',
     };
   }
   return {
@@ -384,14 +384,14 @@ function formatWorstRow(rowRaster) {
 }
 
 function proofChecklistForStrategy(strategy) {
-  if (strategy === 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS') {
+  if (strategy === 'fixtureA_TEMPLATE_SCOPED_TEXT_METRICS') {
     return [
       'asset-relink-or-explicit-placeholder-acceptance',
       'style-proof:.sheet-rolltemplate-aw',
       'message-content-width-sidecar',
       'exact-text-measurement-sidecar',
       'source-intrinsic-matrix-promotion-blocker-cleared',
-      'no-les-yshy-regression',
+      'no-les-fixtureC-regression',
       'row-raster-and-background-nonregression',
     ];
   }
@@ -402,7 +402,7 @@ function proofChecklistForStrategy(strategy) {
       'scrollwidth-clientwidth-table-intrinsic-sidecar',
       'font-face-rule-order-sanitize-source-context',
       'source-intrinsic-matrix-promotion-blocker-cleared',
-      'no-aw2e-les-regression',
+      'no-fixtureA-les-regression',
       'row-raster-and-background-nonregression',
     ];
   }
@@ -581,18 +581,18 @@ function countBy(values) {
 
 function summarizeTriedCandidates(fixtureId, candidateByName) {
   const fixtureKey = fixtureKeyForId(fixtureId);
-  const candidateNames = fixtureId === 'official-roll20-AW2E'
+  const candidateNames = fixtureId === 'fixtureA'
     ? [
-      'aw2e-text-metrics',
-      'aw2e-font-size-only',
-      'aw2e-message-width-font-size',
-      'aw2e-message-width-text-metrics',
-      'aw2e-message-source-context',
-      'aw2e-message-cell-font-context',
-      'aw2e-message-cell-wrap-context',
+      'fixtureA-text-metrics',
+      'fixtureA-font-size-only',
+      'fixtureA-message-width-font-size',
+      'fixtureA-message-width-text-metrics',
+      'fixtureA-message-source-context',
+      'fixtureA-message-cell-font-context',
+      'fixtureA-message-cell-wrap-context',
     ]
-    : fixtureId === 'yshy-commission-1bu'
-      ? ['yshy-sanitize-typography', 'coc-table-intrinsic-clamp', 'paint-dim-background']
+    : fixtureId === 'fixtureC-commission-1bu'
+      ? ['fixtureC-sanitize-typography', 'coc-table-intrinsic-clamp', 'paint-dim-background']
       : [];
   return candidateNames
     .map((name) => {
@@ -610,9 +610,9 @@ function summarizeTriedCandidates(fixtureId, candidateByName) {
 }
 
 function fixtureKeyForId(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureB') return 'lesOublies';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
   return fixtureId;
 }
 
@@ -643,7 +643,7 @@ function quoteCommandArg(value) {
 }
 
 function selfTest() {
-  const aw2e = classifyFixture('official-roll20-AW2E', 0.18, {
+  const fixtureA = classifyFixture('fixtureA', 0.18, {
     reconciliationDecision: 'CHAT_MESSAGE_CONTENT_WIDTH',
     tableTextResidual: 0.148,
     tableWidthDelta: 15.75,
@@ -668,16 +668,16 @@ function selfTest() {
     sourceIntrinsicTableWidthDelta: 15.75,
     sourceIntrinsicMaxAbsTopDelta: 406.188,
   });
-  assert.equal(aw2e.strategy, 'AW2E_TEMPLATE_SCOPED_TEXT_METRICS');
-  assert(proofChecklistForStrategy(aw2e.strategy).includes('style-proof:.sheet-rolltemplate-aw'));
-  assert(proofChecklistForStrategy(aw2e.strategy).includes('source-intrinsic-matrix-promotion-blocker-cleared'));
-  assert(aw2e.blockers.some((blocker) => blocker.includes('worst row 1 26.28%')));
-  assert(aw2e.blockers.some((blocker) => blocker.includes('RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED')));
-  assert(aw2e.blockers.some((blocker) => blocker.includes('CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED')));
-  assert(aw2e.evidence.some((item) => item.includes('weighted 17.93%')));
-  assert(aw2e.evidence.some((item) => item.includes('actual chat CSS EXPECTED_RULE_PRESENT')));
-  assert(aw2e.evidence.some((item) => item.includes('source/intrinsic CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED')));
-  const yshy = classifyFixture('yshy-commission-1bu', 0.2068, {
+  assert.equal(fixtureA.strategy, 'fixtureA_TEMPLATE_SCOPED_TEXT_METRICS');
+  assert(proofChecklistForStrategy(fixtureA.strategy).includes('style-proof:.sheet-rolltemplate-aw'));
+  assert(proofChecklistForStrategy(fixtureA.strategy).includes('source-intrinsic-matrix-promotion-blocker-cleared'));
+  assert(fixtureA.blockers.some((blocker) => blocker.includes('worst row 1 26.28%')));
+  assert(fixtureA.blockers.some((blocker) => blocker.includes('RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED')));
+  assert(fixtureA.blockers.some((blocker) => blocker.includes('CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED')));
+  assert(fixtureA.evidence.some((item) => item.includes('weighted 17.93%')));
+  assert(fixtureA.evidence.some((item) => item.includes('actual chat CSS EXPECTED_RULE_PRESENT')));
+  assert(fixtureA.evidence.some((item) => item.includes('source/intrinsic CROP_AND_TABLE_INTRINSIC_SPLIT_REQUIRED')));
+  const fixtureC = classifyFixture('fixtureC-commission-1bu', 0.2068, {
     textWidthDecision: 'TEXT_WIDTH_OVERCONSTRAINED_BY_LAYOUT',
     tableScrollWidthDelta: -25,
     tableTextResidual: 30.415,
@@ -695,12 +695,12 @@ function selfTest() {
     sourceIntrinsicMaxAbsCellDelta: 0.906,
     sourceIntrinsicMaxAbsTopDelta: 52.703,
   });
-  assert.equal(yshy.strategy, 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL');
-  assert(proofChecklistForStrategy(yshy.strategy).includes('font-face-rule-order-sanitize-source-context'));
-  assert(proofChecklistForStrategy(yshy.strategy).includes('source-intrinsic-matrix-promotion-blocker-cleared'));
-  assert(yshy.blockers.some((blocker) => blocker.includes('SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED')));
-  assert(yshy.blockers.some((blocker) => blocker.includes('SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED')));
-  const les = classifyFixture('official-roll20-Les-Oublies', 0.0634, {});
+  assert.equal(fixtureC.strategy, 'COC_TABLE_INTRINSIC_AND_SANITIZE_MODEL');
+  assert(proofChecklistForStrategy(fixtureC.strategy).includes('font-face-rule-order-sanitize-source-context'));
+  assert(proofChecklistForStrategy(fixtureC.strategy).includes('source-intrinsic-matrix-promotion-blocker-cleared'));
+  assert(fixtureC.blockers.some((blocker) => blocker.includes('SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED')));
+  assert(fixtureC.blockers.some((blocker) => blocker.includes('SANITIZE_INTRINSIC_CROP_MODEL_REQUIRED')));
+  const les = classifyFixture('fixtureB', 0.0634, {});
   assert.equal(les.strategy, 'KEEP_DEFAULT');
   const fallback = classifyFixture('unknown-fixture', 0.5, {});
   assert.equal(fallback.commands[0], command('diagnose:roll20-chat-refresh'));

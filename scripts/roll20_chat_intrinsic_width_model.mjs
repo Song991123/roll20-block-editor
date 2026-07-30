@@ -550,9 +550,9 @@ function buildConstraintModel({ deltas, rowCellDeltas, structureDeltas, ratios, 
 }
 
 function fixtureCandidateKey(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureB') return 'lesOublies';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
   return fixtureId;
 }
 

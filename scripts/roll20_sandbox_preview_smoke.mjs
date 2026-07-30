@@ -24,7 +24,7 @@ const BASE_PATH = argOf('--base-path', '/roll20-block-editor');
 const FIXTURES_DIR = path.resolve(argOf('--fixtures', 'test-fixtures/visual'));
 const RUN_ALL = args.includes('--all');
 const FAIL_ON_CONSOLE_ISSUES = args.includes('--fail-on-console-issues');
-const FIXTURE_ID = argOf('--fixture', RUN_ALL ? '' : 'official-roll20-Les-Oublies');
+const FIXTURE_ID = argOf('--fixture', RUN_ALL ? '' : 'fixtureB');
 const REPORT_DIR = path.resolve(argOf('--report-dir', 'reports/roll20-sandbox-preview-smoke'));
 const PORT = Number(argOf('--port', '4331'));
 

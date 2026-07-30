@@ -230,7 +230,7 @@ function summarizeChatAxis(chatParity, chatStyle, chatCandidates) {
       meanAlignedDeltaPct: round(candidate.meanAlignedDeltaPct),
       regressedFixtures: Number(candidate.regressedFixtures ?? 0),
       improvedFixtures: Number(candidate.improvedFixtures ?? 0),
-      yshyAlignedDeltaPct: parsePct(candidate.yshyAlignedDeltaPct),
+      fixtureCAlignedDeltaPct: parsePct(candidate.fixtureCAlignedDeltaPct),
     }))
     .sort((a, b) => a.regressedFixtures - b.regressedFixtures || Number(a.meanAlignedDeltaPct ?? 0) - Number(b.meanAlignedDeltaPct ?? 0));
   const styleByFixture = new Map(styleFixtures.map((fixture) => [fixture.id, fixture]));
@@ -305,19 +305,19 @@ function diagnoseDisagreement(fixtures, scrollMetricsFixtures, actionGate) {
     fullRootBestFamilies.get(family).push(fixture.fixtureId);
   }
   const qualifiedScrollMetrics = scrollMetricsFixtures.filter((fixture) => fixture.qualifiedSource);
-  const aw2e = scrollMetricsFixtures.find((fixture) => fixture.fixtureId === 'official-roll20-AW2E');
+  const fixtureA = scrollMetricsFixtures.find((fixture) => fixture.fixtureId === 'fixtureA');
   const notes = [];
   if (gateBlockers.some((blocker) => blocker.includes('best diagnostic patch is not uniform'))) {
     notes.push('The remaining renderer gate blocker is cross-fixture patch-family disagreement.');
   }
-  if (aw2e?.qualifiedSource) {
-    notes.push('AW2E source-state already matches live scroll-metrics root/panel geometry tightly; its mismatch is not primarily fixed by the Les/YSHY inline-block+text-input-height family.');
+  if (fixtureA?.qualifiedSource) {
+    notes.push('fixtureA source-state already matches live scroll-metrics root/panel geometry tightly; its mismatch is not primarily fixed by the Les/fixtureC inline-block+text-input-height family.');
   }
   const inlineBestFixtures = fixtures
     .filter((fixture) => fixture.bestPatch === 'inline-block+text-input-height')
     .map((fixture) => fixture.fixtureId);
   if (inlineBestFixtures.length) {
-    notes.push(`inline-block+text-input-height remains fixture-best for ${inlineBestFixtures.join(', ')} and should be investigated as a generic Roll20 input/inline-flow baseline axis, not blindly shipped.`);
+    notes.push(`inline-block+text-input-height remains fixtureBest for ${inlineBestFixtures.join(', ')} and should be investigated as a generic Roll20 input/inline-flow baseline axis, not blindly shipped.`);
   }
   return {
     status: gateBlockers.length ? 'BLOCKER_EXPLAINED_NEEDS_RENDERER_MODEL' : 'NO_ACTIVE_GATE_BLOCKER',
@@ -382,7 +382,7 @@ function assessPromotionRisks(fixtures, matrix, actionGate) {
     if (row.hurts > 0) reasons.push(`hurts ${row.hurts}/${fixtureCount} fixture(s)`);
     if (missingCoverage) reasons.push(`missing from ${row.missing}/${fixtureCount} fixture(s)`);
     if (dangerousRootShift) reasons.push('contains >500px root-height shift');
-    if (broadButNotUniform) reasons.push('helps multiple fixtures but is not fixture-best everywhere');
+    if (broadButNotUniform) reasons.push('helps multiple fixtures but is not fixtureBest everywhere');
     if (!isBestSomewhere) reasons.push('not best for any fixture');
     if (!reasons.length) reasons.push('requires local production-path experiment before reviewed renderer patch');
     return {
@@ -494,10 +494,10 @@ function renderMarkdown(report) {
     }
     lines.push('');
     if (report.chatAxis.candidates.length) {
-      lines.push('| Chat candidate | Risk | Mean delta | Improved | Regressions | YSHY aligned delta |');
+      lines.push('| Chat candidate | Risk | Mean delta | Improved | Regressions | fixtureC aligned delta |');
       lines.push('| --- | --- | ---: | ---: | ---: | ---: |');
       for (const candidate of report.chatAxis.candidates) {
-        lines.push(`| ${candidate.name} | ${candidate.risk} | ${candidate.meanAlignedDeltaPct ?? ''}% | ${candidate.improvedFixtures} | ${candidate.regressedFixtures} | ${candidate.yshyAlignedDeltaPct ?? ''}% |`);
+        lines.push(`| ${candidate.name} | ${candidate.risk} | ${candidate.meanAlignedDeltaPct ?? ''}% | ${candidate.improvedFixtures} | ${candidate.regressedFixtures} | ${candidate.fixtureCAlignedDeltaPct ?? ''}% |`);
       }
       lines.push('');
     }
@@ -517,7 +517,7 @@ function renderMarkdown(report) {
   lines.push('- Keep production renderer CSS on HOLD when `Promotion Risk` says `DO_NOT_PROMOTE_DIRECTLY`, even if a candidate helps two fixtures.');
   lines.push('- Treat the Chat Rolltemplate Axis as a separate blocker from full-root sheet rendering; fixing one does not prove the other.');
   lines.push('- Run `corepack pnpm run diagnose:roll20-computed-style-context -- <run>` after refreshing actual Roll20 computed-style sidecars for `.sheet-2colrow`, `.sheet-3colrow`, `.sheet-col`, `input[type="text"]`, and textarea.');
-  lines.push('- Resolve AW2E root-cutoff/root-height disagreement before using AW2E pixel-best candidates as production evidence.');
+  lines.push('- Resolve fixtureA root-cutoff/root-height disagreement before using fixtureA pixel-best candidates as production evidence.');
   lines.push('- Use this report after each candidate-smoke rerun to avoid promoting a fixture-specific CSS tweak.');
   lines.push('');
   return `${lines.join('\n')}\n`;

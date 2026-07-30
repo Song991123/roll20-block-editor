@@ -46,10 +46,10 @@ now reports `GENERATED_ACTUAL_SCREENSHOTS_DIFFED`, generated screenshots/diffs
 `chatNeedsNormalizedCapture=0`, `trustedFullRoot=3/3`,
 `reliableTrustedFullRoot=3/3`, and `rendererReady=NO`. The active blocker is no
 longer missing chat captures. It is renderer/model parity: same-structure chat
-high mismatch remains `2/3` with max aligned mismatch `20.68%`, AW2E/YSHY have
+high mismatch remains `2/3` with max aligned mismatch `20.68%`, fixture-A/fixture-C have
 asset-relink blockers, and the renderer gate still holds global ChatPane CSS
-because AW2E and YSHY require different template-scoped models. Older notes in
-this matrix that mention `2/6`, `4/6`, or missing AW2E/YSHY chat captures are
+because fixture-A and fixture-C require different template-scoped models. Older notes in
+this matrix that mention `2/6`, `4/6`, or missing fixture-A/fixture-C chat captures are
 historical unless a newer section explicitly reintroduces that state.
 
 Current local preview/edit status, 2026-07-16:
@@ -95,8 +95,8 @@ only; it does not affect Roll20 renderer parity, which remains blocked by
 Current Roll20 chat-renderer note, 2026-06-20 policy gate:
 `diagnose:roll20-chat-renderer-policy` now records the current actual Roll20
 chat evidence as an explicit diagnostic rollout policy. The current policy is
-`HOLD_GLOBAL_CHAT_RENDERER_PATCH` and `DO_NOT_EXPOSE`: AW2E keeps the default
-ChatPane renderer, Les-Oublies needs a new diagnostic model, and YSHY has only
+`HOLD_GLOBAL_CHAT_RENDERER_PATCH` and `DO_NOT_EXPOSE`: fixture-A keeps the default
+ChatPane renderer, fixture-B needs a new diagnostic model, and fixture-C has only
 fixture-local candidates. This prevents a single global width/padding/font patch
 from being mistaken for Roll20 parity while table-width deltas conflict across
 fixtures.
@@ -114,17 +114,17 @@ Current local chat-renderer note, 2026-06-19 Roll20 shell alignment:
 `components/editor/ChatPane.tsx` now uses readable Korean copy and Roll20-like
 chat wrapper classes (`textchatcontainer`, `message`, `spacer`, `by`, `tstamp`).
 `scripts/rolltemplate_chat_smoke.mjs` now verifies those shell markers. Latest
-local smoke PASSes AW2E, Les-Oublies, and YSHY with rolltemplate kind, 280px card
+local smoke PASSes fixture-A, fixture-B, and fixture-C with rolltemplate kind, 280px card
 width, shell markers present, and no debug `rolltemplate:name` label. This
 improves local comparison readiness but is not actual Roll20 chat parity.
 
 Current Roll20 actual-screen note, 2026-06-19 chat evidence split:
 `scripts/roll20_actual_status.mjs` and `scripts/roll20_upload_handoff.mjs` now
 separate chat DOM evidence and page-level screenshots from visual chat
-screenshot evidence. Latest rerun shows Les-Oublies has
+screenshot evidence. Latest rerun shows fixture-B has
 `chat-dom-page-screenshot-only` / `DOM_PAGE_ONLY`: `roll20-chat-page.png` exists
 beside DOM evidence, but it is not accepted as chat visual evidence because
-`roll20-chat.png` is still missing. AW2E and YSHY are also missing
+`roll20-chat.png` is still missing. fixture-A and fixture-C are also missing
 `roll20-chat.png`. Actual Roll20 rolltemplate/chat visual parity remains
 unverified even though the local app chat smoke passes.
 
@@ -133,30 +133,30 @@ Chrome could claim the dedicated Roll20 editor tab, but ordinary page DOM reads
 could not access the character iframe and this runtime blocks CDP target
 discovery/auto-attach, so no new Roll20 sheet screenshot was captured in this
 batch. `scripts/roll20_upload_handoff.mjs` now uses the same generated-sheet
-evidence gate as status/diff. Latest missing-only handoff reports AW2E as
-`SUSPECT` and still needing generated actual evidence, while Les-Oublies and
-YSHY have generated sheet evidence present but still need chat screenshots.
+evidence gate as status/diff. Latest missing-only handoff reports fixture-A as
+`SUSPECT` and still needing generated actual evidence, while fixture-B and
+fixture-C have generated sheet evidence present but still need chat screenshots.
 
 Current Roll20 actual-screen note, 2026-06-19 screenshot-diff truthfulness
 update: `scripts/roll20_actual_screenshot_diff.mjs` now applies the same
 fallback evidence rule as `scripts/roll20_actual_status.mjs`. A bare
 `roll20-sandbox.png` viewport capture is `SUSPECT` and is not diffed unless a
 positive iframe DOM/root sidecar proves the Roll20 sheet rendered. Latest diff
-rerun for `reports\roll20-actual-compare\2026-06-18-state-map-v1` reports AW2E
-`SUSPECT`, Les-Oublies sandbox mismatch `6.57%`, YSHY sandbox mismatch `22.93%`,
+rerun for `reports\roll20-actual-compare\2026-06-18-state-map-v1` reports fixture-A
+`SUSPECT`, fixture-B sandbox mismatch `6.57%`, fixture-C sandbox mismatch `22.93%`,
 and all room/chat targets `SKIP`. This prevents endpoint-storage screenshots
 from masquerading as actual Roll20 visual comparisons.
 
 Current Roll20 actual-screen note, 2026-06-19 legacy manifest correction:
-AW2E exposed a real verification-payload bug. The official AW2E `sheet.json`
+fixture-A exposed a real verification-payload bug. The official fixture-A `sheet.json`
 uses `"legacy": true`, but the local baseline generator had emitted
 `"legacy": false` for every fixture. The generator now resolves legacy mode
-from fixture metadata or the official source `sheet.json`, and regenerated AW2E
-payloads carry `"legacy": true`. However, reapplying that regenerated AW2E
+from fixture metadata or the official source `sheet.json`, and regenerated fixture-A
+payloads carry `"legacy": true`. However, reapplying that regenerated fixture-A
 payload to the dedicated Roll20 sandbox still produced a blank character
-iframe; applying the official AW2E source HTML/CSS/translation plus original
-`sheet.json` also produced a blank iframe. Therefore AW2E endpoint-fallback
-evidence is currently not trustworthy for visual parity. A later YSHY restore
+iframe; applying the official fixture-A source HTML/CSS/translation plus original
+`sheet.json` also produced a blank iframe. Therefore fixture-A endpoint-fallback
+evidence is currently not trustworthy for visual parity. A later fixture-C restore
 through the same endpoint path also reopened as an empty iframe, so endpoint
 fallback success is now classified as storage-only evidence unless followed by
 a fresh iframe DOM/root check. Use this as a blocked/verification gap for Custom
@@ -164,24 +164,24 @@ Sheet Sandbox activation behavior, not as proof that any fixture matches
 Roll20.
 
 Current Roll20 actual-screen note, 2026-06-19 endpoint viewport update:
-the dedicated Roll20 sandbox endpoint fallback was reused for AW2E and YSHY.
+the dedicated Roll20 sandbox endpoint fallback was reused for fixture-A and fixture-C.
 POSTs to `/sheetsandbox/savesheetsettings` accepted base64 HTML/CSS/translation,
 and `/campaigns/savesettings/21639681` saved each fixture's
-`customcharsheet_json`. Later rechecks downgraded AW2E endpoint viewport evidence to
+`customcharsheet_json`. Later rechecks downgraded fixture-A endpoint viewport evidence to
 `SUSPECT` because no positive iframe DOM/root sidecar proves the sheet rendered.
-Latest counted evidence is Les-Oublies sandbox mismatch `6.57%` and YSHY
+Latest counted evidence is fixture-B sandbox mismatch `6.57%` and fixture-C
 sandbox mismatch `22.93%`, both from DPR-corrected full-root evidence. Latest
 status is still partial:
 `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`,
 `roomObservationScreenshots=0/3`, and `roomObservationDiffed=0/3`;
 `--require-actual` correctly fails because all 3 Roll20 chat screenshots are
-missing. AW2E/YSHY still need normalized sheet-root/full-root capture before
+missing. fixture-A/fixture-C still need normalized sheet-root/full-root capture before
 renderer CSS conclusions.
 
 Current Roll20 actual-screen note, 2026-06-19: the preferred sandbox evidence is
 now `roll20-sandbox-root.png` when present. The crop helper normalizes a visible
 Roll20 character iframe screenshot from a full viewport capture plus metadata.
-For the current Les-Oublies evidence, the root crop diff is `21.67%`, and the
+For the current fixture-B evidence, the root crop diff is `21.67%`, and the
 classifier now records this as a matched visible viewport mismatch while also
 flagging that only the visible top of the tall sheet was captured. Do not make a
 full-sheet parity claim from this number alone; first inspect visible-crop
@@ -193,21 +193,21 @@ reports top-aligned local crop gain only `0.34%`, so simple horizontal crop
 drift does not explain the visible mismatch.
 `corepack pnpm run diagnose:roll20-visible-context -- reports\roll20-actual-compare\2026-06-18-state-map-v1`
 then confirms the actual Roll20 iframe DOM/CSS is not readable in the current
-evidence. Les-Oublies ranks as: full-height evidence gap first (`760x556` is
+evidence. fixture-B ranks as: full-height evidence gap first (`760x556` is
 `12.42%` of local `850x4477`), visible CSS/state/asset mismatch second
 (`21.67%`, crop gain `0.34%`), then sandbox sanitize rewrite, unconfirmed actual
-default state, asset proxying, and missing chat screenshot. AW2E/YSHY now have
+default state, asset proxying, and missing chat screenshot. fixture-A/fixture-C now have
 generated Roll20 sandbox viewport screenshots, but not normalized full-root
 evidence. This is triage only.
 `corepack pnpm run smoke:roll20-same-context-visible -- reports\roll20-actual-compare\2026-06-18-state-map-v1`
-adds local Roll20-like context candidates. Les-Oublies best candidate is
+adds local Roll20-like context candidates. fixture-B best candidate is
 `normal-root-top-left` at `21.60%`, so measured frame/inset/sandbox-width
 simulation does not materially improve the actual visible mismatch.
 Chrome/CDP live iframe probing then made the actual Roll20 character iframe
-readable for generated Les-Oublies. The actual default state is
+readable for generated fixture-B. The actual default state is
 `sheetTab=combat` / `sheetTabForBtn=combat`, not the local state-map's
 `act_fullsheet` assumption. Rerunning the same-context smoke with explicit
-no-state candidates still leaves Les-Oublies at `21.60%`, so state alone is not
+no-state candidates still leaves fixture-B at `21.60%`, so state alone is not
 the root cause. Computed-style comparison identifies a Roll20 baseline mismatch:
 actual `.charactersheet` uses content-box sizing, `13px` font, `18.5714px`
 line-height, transparent root background, and `4px` input padding; the local
@@ -218,11 +218,11 @@ First renderer alignment patch removed the old hand-written fallback baseline
 from actual render paths and stopped injecting full `vtt.css` into sheet
 preview/edit. It also removed the Shadow edit-only forced `border-box` reset so
 the local edit root can follow the actual Roll20 content-box root. Latest
-same-context smoke reports Les-Oublies `21.38%` best mismatch, a small
+same-context smoke reports fixture-B `21.38%` best mismatch, a small
 improvement over `21.60%`, while computed-style comparison no longer reports the
 prior `html` or input font/background/padding app-style overrides. Latest local
-preview/edit regression smoke still passes after that box-model change: AW2E
-`1.75%`, Les-Oublies `2.02%`, YSHY 1BU `1.01%`. Remaining actual-Roll20 evidence
+preview/edit regression smoke still passes after that box-model change: fixture-A
+`1.75%`, fixture-B `2.02%`, fixture-C 1BU `1.01%`. Remaining actual-Roll20 evidence
 points to root width/context, full-height capture, structure/table-count, and
 fine control styling.
 Latest DPR/root-width diagnostic rerun:
@@ -230,7 +230,7 @@ Latest DPR/root-width diagnostic rerun:
 now renders local candidates with the measured actual crop DPR
 (`deviceScaleFactor=1.25`), adds actual-root-width and CSS-scale context
 candidates, reports native-pixel mismatch, and scores computed-style ties.
-Les-Oublies best candidate is `sandbox-actual-root-width-no-state` with CSS
+fixture-B best candidate is `sandbox-actual-root-width-no-state` with CSS
 mismatch `21.49%`, native mismatch `21.55%`, and style score `339`. The old
 `21.38%` value came from a less fair local DPR setup, so treat `21.49%` as the
 current same-context evidence. Actual-root-width matching lowers computed-style
@@ -252,7 +252,7 @@ height from `554px` to `297px`, but it does not improve the image diff
 (`21.56%` vs current best `21.49%`). Treat this as a root-cause clue, not a
 production CSS patch.
 Chrome/CDP then saved a read-only actual layout-context probe at
-`live-iframe-probe/official-roll20-Les-Oublies-layout-context.json`. The source
+`live-iframe-probe/fixture-B-layout-context.json`. The source
 `.outline` is present as Roll20 `.sheet-outline`, so wrapper loss is not the
 cause. Actual row layout includes the Roll20 dialog chain and `20px` dialog
 padding; a DPR border-snapping diagnostic candidate did not remove the local row
@@ -272,19 +272,19 @@ remaining full-root geometry/height mismatch.
 Follow-up state-diagnostic report wording update: `scripts/roll20_state_visibility_diagnostics.mjs`
 now detects that `buildSheetDoc`, `ExportDialog`, and the sandbox sanitize audit
 already use `prefixSelectors: false` for Roll20 actual expected-render evidence.
-The report still classifies the captured Les-Oublies fixture as
+The report still classifies the captured fixture-B fixture as
 `ACTUAL_CSS_STATE_SELECTORS_DO_NOT_MATCH_PREFIXED_HTML`, but its next action is
 now cross-fixture re-verification and local Sandbox expected visibility
 comparison, not re-applying blanket CSS selector prefixing.
 Follow-up local expected visibility comparison: the same diagnostic now renders
 the local payload HTML/CSS in a Roll20 wrapper and compares the captured
-actual-visible panel selector set. Latest Les-Oublies rerun reports local
+actual-visible panel selector set. Latest fixture-B rerun reports local
 Sandbox expected panel visibility matches the actual sampled panel set `9/9`.
 This narrows this fixture's remaining mismatch toward geometry/assets/control
 styling; cross-fixture state re-verification is still required before broad
 claims.
 Follow-up sampled panel height delta update: the diagnostic now also reports
-local-vs-actual heights for the same sampled visible panels. Latest Les-Oublies
+local-vs-actual heights for the same sampled visible panels. Latest fixture-B
 lightweight-wrapper sample highlights `.sheet-section-competences` (+496.872px)
 and `.sheet-skills` (+496.272px) as the largest local-over-actual panel deltas.
 Treat these as geometry triage clues only; the full-root candidate smoke remains
@@ -292,7 +292,7 @@ the stronger renderer signal before CSS changes.
 Follow-up renderer action gate: `corepack pnpm run gate:roll20-renderer-action --
 reports\roll20-actual-compare\2026-06-18-state-map-v1` now consolidates actual
 status, full-root candidates, state visibility, and geometry diagnostics. Latest
-recommendation is `HOLD_PRODUCTION_RENDERER_PATCH` because AW2E lacks trusted
+recommendation is `HOLD_PRODUCTION_RENDERER_PATCH` because fixture-A lacks trusted
 root evidence, all Roll20 chat screenshots are missing, only 2/3 fixtures have
 full-root candidates, and the best diagnostic patch is not uniform across
 fixtures. Diagnostic CSS candidates must remain out of production until these
@@ -301,12 +301,12 @@ blockers are cleared.
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
 | VERIFY | P0 | Shared preview/edit render path. | The visible product surface is one persistent Roll20 iframe mounted by `PreviewMain`; `EditorShell` places that same pane over the edit canvas while `EditCanvas` owns only toolbar/layer chrome and an `aria-hidden` empty slot. `smoke:persistent-preview-surface` passes modern and legacy with one iframe, zero reloads, preserved runtime/input state, and stable iframe identity through preview/edit/zoom/roll flows. `smoke:large-workspace-browser` additionally passes edit mode with 5,200 model blocks, 20 virtual layer rows, one iframe, and zero retired Shadow edit hosts. Serializer-level Shadow parts remain test-only compatibility coverage, not a second visible product surface. | Fix remaining fixture-specific visual differences and then compare against actual Roll20 sandbox/test-room output before marking DONE. |
-| VERIFY | P0 | Computed CSS cascade leak report. | Standalone `buildSheetDoc` report (`reports/cascade-leak/cascade-leak-results.md`) and live static app Shadow DOM report (`reports/live-shadow-cascade/live-shadow-cascade-results.md`) both found 0 app-like final winners in sampled visible sheet elements across 3 fixtures. `preview_edit_visual_smoke` now reports 0 resource issues for the local preview/edit screenshot path after iframe referrer policy alignment. Asset URL reachability audit also PASS for AW2E, Les-Oublies, and YSHY 1BU source/payload refs with 0 failed HTTP probes and 0 missing local relative refs. | Keep as VERIFY until actual Roll20 sandbox/test-room screenshots prove whether Roll20 itself loads the same assets and visual state. |
-| DOING | P0 | Actual Roll20 visual comparison. | Local baseline and pre-upload gate pass for the latest state-map run: `corepack pnpm run verify:roll20-preupload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixtures test-fixtures\visual --out-dir ./out --base-path /roll20-block-editor --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json`. Chrome reached the dedicated Custom Sheet Sandbox. The file chooser path remains unreliable, and endpoint `200` responses are now treated as storage-only unless fresh iframe DOM/root evidence confirms activation. `scripts/roll20_actual_status.mjs`, `scripts/roll20_actual_screenshot_diff.mjs`, and `scripts/roll20_upload_handoff.mjs` now report fallback viewport-only evidence as `SUSPECT`; status/handoff also separate chat DOM evidence from `roll20-chat.png`. Latest handoff rerun reports AW2E `SUSPECT + needs generated actual`, Les-Oublies `chat-dom-only`, and YSHY missing chat screenshot. Latest diff rerun reports AW2E `SUSPECT`, Les-Oublies sandbox mismatch `6.57%`, YSHY sandbox mismatch `22.93%`, and all room/chat targets `SKIP`. Current status is `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`, `roomObservationScreenshots=0/3`, and `roomObservationDiffed=0/3`. Les-Oublies and YSHY have DPR-corrected full-root evidence; AW2E is SUSPECT and all Roll20 chat screenshots are missing. This is partial actual evidence, not visual parity. | Unblock the Roll20 file-input/full settings activation path, recapture AW2E with positive DOM/root evidence, add trustworthy Roll20 chat screenshots, then compare actual vs local Sandbox expected geometry before production renderer CSS changes. Room View Check remains observation-only. |
-| VERIFY | P0 | Actual Roll20 sandbox sanitize/prefix contract. | Chrome observation of the dedicated Roll20 sandbox settings page found `customcharsheet_json` on the visible settings surface and script references for `customcharsheet_layout`, `customcharsheet_style`, and `#customsheet-preview iframe -> #root`. Added dedicated `lib/emit/roll20SandboxSanitize.ts`, separate from `sanitizeForRoll20Legacy`, and `corepack pnpm run test:roll20-sandbox-sanitize` covers selector prefixing, URL proxy/drop behavior, unsafe CSS rejection, HTML allow-list handling, class prefix exceptions, runtime stripping, and HTML URL handling. Added `scripts/roll20_sandbox_sanitize_audit.mjs` and wired it into `verify:roll20-preupload`; latest state-map run PASS reports all three payloads would be rewritten by the observed Roll20 sandbox rules but not fatally rejected. The export dialog exposes the same expected-transform diagnostic as a pre-upload panel without changing the zip payload. The regular preview UI no longer exposes the local `Sandbox 예상` render toggle; `scripts/roll20_sandbox_preview_smoke.mjs` now enables the same diagnostic path through `window.__perfHook.setRoll20SandboxSanitize(true)` so verification remains available without confusing the product surface. Browser smoke PASS: `corepack pnpm run smoke:roll20-sandbox-preview -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --fixture official-roll20-Les-Oublies --report-dir reports/roll20-sandbox-preview-smoke --port 4331`; normal preview `colgroup=6`, `rolltemplate=3`, `sourceWorkerScript=1`; Sandbox expected preview `colgroup=0`, `rolltemplate=0`, `sourceWorkerScript=0`; console/page errors 0. See `docs/spec/30_roll20_actual_sandbox_contract.md`. | Compare against Roll20 sandbox screenshots once upload is unblocked. Keep this as local expected-render evidence, not visual parity. |
-| VERIFY | P0 | All prepared fixtures pass local Roll20 Sandbox expected-render smoke. | `scripts/roll20_sandbox_preview_smoke.mjs` now supports `--all` and the package script `smoke:roll20-sandbox-preview:all`. Latest run: `corepack pnpm run smoke:roll20-sandbox-preview:all -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-sandbox-preview-smoke --port 4333` PASS/WARN for AW2E, Les-Oublies, and YSHY 1BU. Fixture-level sanitizer render checks passed for all three, Sandbox expected mode removed visible rolltemplate/source-worker runtime nodes to 0, page errors were 0, and console issues were recorded as WARN due to Roll20 image-proxy font CORS plus source sheet numeric-expression warnings. | Keep console/resource WARN classification visible; use `--fail-on-console-issues` when strict console gating is needed. Actual Roll20 screenshots are still required before any visual parity claim. |
-| DOING | P0 | Reference-image pixel diff pipeline. | Inventory/render/diff reports exist. `corepack pnpm run diff:visual-fixtures` now captures live local preview screenshots before diffing and applies `reports/visual-state-candidates/visual-state-candidates-state-map.json` when present. Latest diagnostics: AW2E applies a discovered radio/control state (`attr_class=Hardholder`) and reports 16.23% best mismatch with 9.71% crop gain; Les-Oublies applies `act_fullsheet` and reports 8.84% best mismatch with 5.96% crop gain, replacing the stale default-state 13.51% comparison. 0 console/page errors. `scripts/classify_visual_fixture_diffs.mjs` now detects when the state-map hint is already reflected in the current diff and classifies both AW2E and Les-Oublies as `reference/capture context mismatch` instead of asking agents to re-run the same state hint. Local preview/edit screenshot path records 0 resource issues for the 3 prepared fixtures; source/payload asset URL audit records 0 failed HTTP probes and 0 missing local refs. | Normalize reference/capture crop/context or collect actual Roll20 screenshot before renderer CSS changes; expand fixture set; compare Roll20 sandbox asset loading once actual upload is unblocked. |
-| VERIFY | P1 | Legacy mode verification. | Auto-prefix and legacy CSS sanitize are separated in reports. Export-level synthetic audit checks `sanitizeForRoll20Legacy` behavior and verifies `ExportDialog` only routes CSS through it when legacy mode is enabled: `reports/legacy-export-audit/legacy-export-audit-results.md`. Preview/edit render-path smoke checks `buildSheetDoc` and `buildSheetParts` consume `legacyCssSanitize` consistently, and the preview toolbar exposes a local `구버전 CSS` toggle: `reports/legacy-preview-smoke/legacy-preview-smoke-results.md`. Imported-fixture visual smoke now captures local preview screenshots with legacy mode off/on: `reports/legacy-fixture-visual/legacy-fixture-visual-results.md` PASS for AW2E, Les-Oublies, and YSHY 1BU; Les-Oublies reduced legacy-risk CSS `1 -> 0`, while the other two fixtures were `no-risk-css`. This is still not actual Roll20 legacy visual parity. | Verify legacy payload behavior in Roll20 Custom Sheet Sandbox or a new test room after Chrome upload is enabled. |
+| VERIFY | P0 | Computed CSS cascade leak report. | Standalone `buildSheetDoc` report (`reports/cascade-leak/cascade-leak-results.md`) and live static app Shadow DOM report (`reports/live-shadow-cascade/live-shadow-cascade-results.md`) both found 0 app-like final winners in sampled visible sheet elements across 3 fixtures. `preview_edit_visual_smoke` now reports 0 resource issues for the local preview/edit screenshot path after iframe referrer policy alignment. Asset URL reachability audit also PASS for fixture-A, fixture-B, and fixture-C 1BU source/payload refs with 0 failed HTTP probes and 0 missing local relative refs. | Keep as VERIFY until actual Roll20 sandbox/test-room screenshots prove whether Roll20 itself loads the same assets and visual state. |
+| DOING | P0 | Actual Roll20 visual comparison. | Local baseline and pre-upload gate pass for the latest state-map run: `corepack pnpm run verify:roll20-preupload -- reports\roll20-actual-compare\2026-06-18-state-map-v1 --fixtures test-fixtures\visual --out-dir ./out --base-path /roll20-block-editor --state-map reports\visual-state-candidates\visual-state-candidates-state-map.json`. Chrome reached the dedicated Custom Sheet Sandbox. The file chooser path remains unreliable, and endpoint `200` responses are now treated as storage-only unless fresh iframe DOM/root evidence confirms activation. `scripts/roll20_actual_status.mjs`, `scripts/roll20_actual_screenshot_diff.mjs`, and `scripts/roll20_upload_handoff.mjs` now report fallback viewport-only evidence as `SUSPECT`; status/handoff also separate chat DOM evidence from `roll20-chat.png`. Latest handoff rerun reports fixture-A `SUSPECT + needs generated actual`, fixture-B `chat-dom-only`, and fixture-C missing chat screenshot. Latest diff rerun reports fixture-A `SUSPECT`, fixture-B sandbox mismatch `6.57%`, fixture-C sandbox mismatch `22.93%`, and all room/chat targets `SKIP`. Current status is `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`, `roomObservationScreenshots=0/3`, and `roomObservationDiffed=0/3`. fixture-B and fixture-C have DPR-corrected full-root evidence; fixture-A is SUSPECT and all Roll20 chat screenshots are missing. This is partial actual evidence, not visual parity. | Unblock the Roll20 file-input/full settings activation path, recapture fixture-A with positive DOM/root evidence, add trustworthy Roll20 chat screenshots, then compare actual vs local Sandbox expected geometry before production renderer CSS changes. Room View Check remains observation-only. |
+| VERIFY | P0 | Actual Roll20 sandbox sanitize/prefix contract. | Chrome observation of the dedicated Roll20 sandbox settings page found `customcharsheet_json` on the visible settings surface and script references for `customcharsheet_layout`, `customcharsheet_style`, and `#customsheet-preview iframe -> #root`. Added dedicated `lib/emit/roll20SandboxSanitize.ts`, separate from `sanitizeForRoll20Legacy`, and `corepack pnpm run test:roll20-sandbox-sanitize` covers selector prefixing, URL proxy/drop behavior, unsafe CSS rejection, HTML allow-list handling, class prefix exceptions, runtime stripping, and HTML URL handling. Added `scripts/roll20_sandbox_sanitize_audit.mjs` and wired it into `verify:roll20-preupload`; latest state-map run PASS reports all three payloads would be rewritten by the observed Roll20 sandbox rules but not fatally rejected. The export dialog exposes the same expected-transform diagnostic as a pre-upload panel without changing the zip payload. The regular preview UI no longer exposes the local `Sandbox 예상` render toggle; `scripts/roll20_sandbox_preview_smoke.mjs` now enables the same diagnostic path through `window.__perfHook.setRoll20SandboxSanitize(true)` so verification remains available without confusing the product surface. Browser smoke PASS: `corepack pnpm run smoke:roll20-sandbox-preview -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --fixture fixture-B --report-dir reports/roll20-sandbox-preview-smoke --port 4331`; normal preview `colgroup=6`, `rolltemplate=3`, `sourceWorkerScript=1`; Sandbox expected preview `colgroup=0`, `rolltemplate=0`, `sourceWorkerScript=0`; console/page errors 0. See `docs/spec/30_roll20_actual_sandbox_contract.md`. | Compare against Roll20 sandbox screenshots once upload is unblocked. Keep this as local expected-render evidence, not visual parity. |
+| VERIFY | P0 | All prepared fixtures pass local Roll20 Sandbox expected-render smoke. | `scripts/roll20_sandbox_preview_smoke.mjs` now supports `--all` and the package script `smoke:roll20-sandbox-preview:all`. Latest run: `corepack pnpm run smoke:roll20-sandbox-preview:all -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/roll20-sandbox-preview-smoke --port 4333` PASS/WARN for fixture-A, fixture-B, and fixture-C 1BU. Fixture-level sanitizer render checks passed for all three, Sandbox expected mode removed visible rolltemplate/source-worker runtime nodes to 0, page errors were 0, and console issues were recorded as WARN due to Roll20 image-proxy font CORS plus source sheet numeric-expression warnings. | Keep console/resource WARN classification visible; use `--fail-on-console-issues` when strict console gating is needed. Actual Roll20 screenshots are still required before any visual parity claim. |
+| DOING | P0 | Reference-image pixel diff pipeline. | Inventory/render/diff reports exist. `corepack pnpm run diff:visual-fixtures` now captures live local preview screenshots before diffing and applies `reports/visual-state-candidates/visual-state-candidates-state-map.json` when present. Latest diagnostics: fixture-A applies a discovered radio/control state (`attr_class=Hardholder`) and reports 16.23% best mismatch with 9.71% crop gain; fixture-B applies `act_fullsheet` and reports 8.84% best mismatch with 5.96% crop gain, replacing the stale default-state 13.51% comparison. 0 console/page errors. `scripts/classify_visual_fixture_diffs.mjs` now detects when the state-map hint is already reflected in the current diff and classifies both fixture-A and fixture-B as `reference/capture context mismatch` instead of asking agents to re-run the same state hint. Local preview/edit screenshot path records 0 resource issues for the 3 prepared fixtures; source/payload asset URL audit records 0 failed HTTP probes and 0 missing local refs. | Normalize reference/capture crop/context or collect actual Roll20 screenshot before renderer CSS changes; expand fixture set; compare Roll20 sandbox asset loading once actual upload is unblocked. |
+| VERIFY | P1 | Legacy mode verification. | Auto-prefix and legacy CSS sanitize are separated in reports. Export-level synthetic audit checks `sanitizeForRoll20Legacy` behavior and verifies `ExportDialog` only routes CSS through it when legacy mode is enabled: `reports/legacy-export-audit/legacy-export-audit-results.md`. Preview/edit render-path smoke checks `buildSheetDoc` and `buildSheetParts` consume `legacyCssSanitize` consistently, and the preview toolbar exposes a local `구버전 CSS` toggle: `reports/legacy-preview-smoke/legacy-preview-smoke-results.md`. Imported-fixture visual smoke now captures local preview screenshots with legacy mode off/on: `reports/legacy-fixture-visual/legacy-fixture-visual-results.md` PASS for fixture-A, fixture-B, and fixture-C 1BU; fixture-B reduced legacy-risk CSS `1 -> 0`, while the other two fixtures were `no-risk-css`. This is still not actual Roll20 legacy visual parity. | Verify legacy payload behavior in Roll20 Custom Sheet Sandbox or a new test room after Chrome upload is enabled. |
 
 ## Import/Export and Runtime
 
@@ -314,19 +314,19 @@ blockers are cleared.
 | --- | ---: | --- | --- | --- |
 | DONE | P0 | L2 browser roundtrip. | 3/3 fixtures PASS (`reports/roundtrip-browser/`). Section/toggle multi-class guard + worker-body normalization made import idempotent over its own emit. Imported edit-step smoke now PASS for 3 fixtures in `reports/imported-edit-sync/`. | Expand fixture set and add a true import -> edit -> export -> re-import structural comparison. |
 | VERIFY | P1 | Large-workspace block navigation without SVG freeze. | `components/editor/HeadlessBlockBrowser.tsx` keeps workspaces above 5,000 blocks model-backed and virtualizes the visible hierarchy. `corepack pnpm run smoke:large-workspace-browser` passes with an anonymous 5,200-input plus nested-frame import: 5,205 model blocks, `headless-large`, 17 structure rows, authored-value search, one selected structure row, then edit mode with 20 virtual layer rows, one persistent iframe, zero SVG blocks, zero retired Shadow hosts, a real layer-panel `inside` reparenting mutation, matching export/iframe nesting, and 0 console/page errors. | Broaden imported DOM-shape coverage, then verify the same behavior against actual modern Sandbox and isolated legacy-room evidence; this is not universal imported-sheet support. |
-| DONE | P0 | Roll20 mapping fidelity for the real user sheet. | `reports/mapping-fidelity/mapping-fidelity-yshy.md`: every Roll20-meaningful token category (attr names, inputs, roll buttons name+value, data-i18n, placeholders, disabled, translation keys, CSS selectors) is now an exact multiset match for YSHY 1부; 10 import/emit defects fixed. | Extend the same token audit to AW2E/Les-Oublies raw-fallback regions and to export(.zip) output. |
-| VERIFY | P0 | Worker JS separate workspace. | First slice is implemented and source-audited: imported sheet worker bodies are kept in a separate `worker` Blockly workspace, nested/raw worker scripts are removed from visual HTML, and final emit appends one Roll20 worker script without duplicate leakage. Evidence: `corepack pnpm run audit:worker -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/worker-source-audit` PASS with exact worker body preservation for AW2E, Les-Oublies, and YSHY 1BU; `corepack pnpm run smoke:worker`, `scripts/browser_roundtrip_smoke.mjs`, and `scripts/imported_edit_sync_smoke.mjs` also PASS on 2026-06-18. Roundtrip block counts are diagnostic because multiple source worker scripts can be canonicalized into one emitted worker script. | Expand worker source audits beyond the 3 prepared fixtures, then verify worker runtime behavior in Roll20 Custom Sheet Sandbox/test room. |
-| VERIFY | P1 | Rolltemplate/chat rendering. | `scripts/rolltemplate_chat_smoke.mjs` verifies local preview iframe roll button -> ChatPane card rendering. It clears chat per fixture and checks 1 card, 280px rolltemplate width, no app-only `rolltemplate:name` debug label, and Roll20-like shell classes (`textchatcontainer`, `message`, `spacer`, `by`, `tstamp`). AW2E, Les-Oublies, and YSHY PASS with real user-click after `r20_hidden_input` class preservation restored Les-Oublies tab/default-state CSS selectors. `components/editor/ChatPane.tsx` copy is now readable Korean instead of mojibake. `corepack pnpm run smoke:worker-state` also verifies duplicate `attr_*` checkbox mirroring so user-clicked visible controls update hidden CSS `:checked` anchors. Latest actual status/handoff now classifies Les-Oublies as `chat-dom-only` and AW2E/YSHY as missing `roll20-chat.png`; this is not actual Roll20 chat visual parity. | Capture trustworthy Roll20 chat screenshots, ideally with DOM sidecar evidence tying the screenshot to rendered rolltemplate/message markers. |
-| DONE | P0 | Guard default-state CSS selector anchors across export payloads. | `scripts/roll20_state_selector_audit.mjs` audits hidden/value/checked CSS state selectors against fixture source controls and generated Roll20 payload controls. Latest local run PASS for AW2E, Les-Oublies, and YSHY 1BU using `reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1`: AW2E/Les-Oublies had no missing source or payload anchors; YSHY had 7 source-only dead/worker-driven selector anchors but 0 new payload regressions. | Keep this audit in the pre-Roll20-upload verification set and expand it with broader fixtures when the corpus set grows. |
+| DONE | P0 | Roll20 mapping fidelity for the real user sheet. | `reports/mapping-fidelity/mapping-fidelity-fixture-c.md`: every Roll20-meaningful token category (attr names, inputs, roll buttons name+value, data-i18n, placeholders, disabled, translation keys, CSS selectors) is now an exact multiset match for fixture-C 1부; 10 import/emit defects fixed. | Extend the same token audit to fixture-A/fixture-B raw-fallback regions and to export(.zip) output. |
+| VERIFY | P0 | Worker JS separate workspace. | First slice is implemented and source-audited: imported sheet worker bodies are kept in a separate `worker` Blockly workspace, nested/raw worker scripts are removed from visual HTML, and final emit appends one Roll20 worker script without duplicate leakage. Evidence: `corepack pnpm run audit:worker -- --out-dir ./out --base-path /roll20-block-editor --fixtures test-fixtures/visual --report-dir reports/worker-source-audit` PASS with exact worker body preservation for fixture-A, fixture-B, and fixture-C 1BU; `corepack pnpm run smoke:worker`, `scripts/browser_roundtrip_smoke.mjs`, and `scripts/imported_edit_sync_smoke.mjs` also PASS on 2026-06-18. Roundtrip block counts are diagnostic because multiple source worker scripts can be canonicalized into one emitted worker script. | Expand worker source audits beyond the 3 prepared fixtures, then verify worker runtime behavior in Roll20 Custom Sheet Sandbox/test room. |
+| VERIFY | P1 | Rolltemplate/chat rendering. | `scripts/rolltemplate_chat_smoke.mjs` verifies local preview iframe roll button -> ChatPane card rendering. It clears chat per fixture and checks 1 card, 280px rolltemplate width, no app-only `rolltemplate:name` debug label, and Roll20-like shell classes (`textchatcontainer`, `message`, `spacer`, `by`, `tstamp`). fixture-A, fixture-B, and fixture-C PASS with real user-click after `r20_hidden_input` class preservation restored fixture-B tab/default-state CSS selectors. `components/editor/ChatPane.tsx` copy is now readable Korean instead of mojibake. `corepack pnpm run smoke:worker-state` also verifies duplicate `attr_*` checkbox mirroring so user-clicked visible controls update hidden CSS `:checked` anchors. Latest actual status/handoff now classifies fixture-B as `chat-dom-only` and fixture-A/fixture-C as missing `roll20-chat.png`; this is not actual Roll20 chat visual parity. | Capture trustworthy Roll20 chat screenshots, ideally with DOM sidecar evidence tying the screenshot to rendered rolltemplate/message markers. |
+| DONE | P0 | Guard default-state CSS selector anchors across export payloads. | `scripts/roll20_state_selector_audit.mjs` audits hidden/value/checked CSS state selectors against fixture source controls and generated Roll20 payload controls. Latest local run PASS for fixture-A, fixture-B, and fixture-C 1BU using `reports/roll20-actual-compare/2026-06-18-pseudo-fix-v1`: fixture-A/fixture-B had no missing source or payload anchors; fixture-C had 7 source-only dead/worker-driven selector anchors but 0 new payload regressions. | Keep this audit in the pre-Roll20-upload verification set and expand it with broader fixtures when the corpus set grows. |
 
 ## Edit Mode UX
 
 | Status | Priority | Requirement | Current Evidence | Next Action |
 | --- | ---: | --- | --- | --- |
-| VERIFY | P0 | Edit mode is real preview plus overlays. | Edit canvas uses `buildSheetParts` and Shadow DOM. Latest `smoke:preview-edit-visual` rerun PASS across 3 imported fixtures: AW2E 1.87%, Les-Oublies 2.07%, YSHY 1BU 1.02%, with matching preview/edit dimensions, edit host/content height coverage, toolbar overlap 0, 0 visible runtime nodes, and DOM signature parity PASS. `imported_edit_sync_smoke` was hardened so non-leaf reorder candidates must be real siblings with the same parent/depth, and free absolute-in-frame drops no longer fail on a naive first-closing-tag string check after DOM proves nesting. Latest rerun on port 4424 PASSed AW2E, Les-Oublies, and YSHY 1BU: real pointer drag, edit/preview same block position, emitted absolute CSS check, imported flow/free insertion, safe non-leaf layer subtree handling, and edited emit re-import stability. AW2E/YSHY still have resource WARNs from external image loading. | Continue reducing fixture-specific mismatch and compare against actual Roll20 sandbox/test-room output before DONE. |
+| VERIFY | P0 | Edit mode is real preview plus overlays. | Edit canvas uses `buildSheetParts` and Shadow DOM. Latest `smoke:preview-edit-visual` rerun PASS across 3 imported fixtures: fixture-A 1.87%, fixture-B 2.07%, fixture-C 1BU 1.02%, with matching preview/edit dimensions, edit host/content height coverage, toolbar overlap 0, 0 visible runtime nodes, and DOM signature parity PASS. `imported_edit_sync_smoke` was hardened so non-leaf reorder candidates must be real siblings with the same parent/depth, and free absolute-in-frame drops no longer fail on a naive first-closing-tag string check after DOM proves nesting. Latest rerun on port 4424 PASSed fixture-A, fixture-B, and fixture-C 1BU: real pointer drag, edit/preview same block position, emitted absolute CSS check, imported flow/free insertion, safe non-leaf layer subtree handling, and edited emit re-import stability. fixture-A/fixture-C still have resource WARNs from external image loading. | Continue reducing fixture-specific mismatch and compare against actual Roll20 sandbox/test-room output before DONE. |
 | DONE | P1 | Flow-aware gallery drop and existing-object drag smoke. | Browser smoke PASS with real dragover/drop DragEvents: background drop -> absolute, container drop -> flow nesting without `position:absolute`; existing section mouse drag updates computed position and emitted CSS rule to the same coordinates. Imported real-fixture object movement and imported canvas flow insertion are now covered by `reports/imported-edit-sync/` for 3 fixtures. | Expand imported fixture coverage and add richer real-user screenshot evidence. |
 | DONE | P1 | Droppable container affordances. | Real drag/drop + screenshots captured: dropped section exposes `data-r20-layer-role="frame"`, `data-r20-can-drop="1"`; dragover onto the section exposes `hostDropMode=inside` and active target `data-r20-drop-mode="inside"`; nested input visible in `c2-input-nested.png` and in the layer panel. | Add richer before/after canvas insertion lines for sibling placement. |
-| VERIFY | P1 | Before/after/inside drop zones. | Layer panel row dragover now separates top/middle/bottom into `before`, `inside`, and `after`; canvas widget dragover marks active container `inside` and leaf sibling targets as `before`/`after`; adapter has top-level `moveBlockBefore`/`moveBlockAfter`, nested `after` insertion can splice between an existing target and its next sibling, `inside` uses container nesting, and children inside a Blockly statement chain can reorder before/after siblings. Layer rows now visibly show role labels, `담기 가능` for containers, default placement mode (`흐름` / `자유`), and Korean drop badges. `scripts/edit_flow_browser_smoke.mjs` verifies row modes, layer role/drop affordance attributes/text, canvas inside/before/after indicators, nested input reorder, canvas insertion of new inputs before/after an existing nested input, and synthetic non-leaf group reordering where a group with a connected next sibling moves after its sibling while child inputs remain inside their original groups in emitted HTML. `scripts/imported_edit_sync_smoke.mjs` verifies imported canvas insertion for 3 fixtures and imported layer reorder for Les-Oublies when a safe leaf pair exists. | Add imported-sheet non-leaf subtree reorder coverage and broader fixture coverage. |
+| VERIFY | P1 | Before/after/inside drop zones. | Layer panel row dragover now separates top/middle/bottom into `before`, `inside`, and `after`; canvas widget dragover marks active container `inside` and leaf sibling targets as `before`/`after`; adapter has top-level `moveBlockBefore`/`moveBlockAfter`, nested `after` insertion can splice between an existing target and its next sibling, `inside` uses container nesting, and children inside a Blockly statement chain can reorder before/after siblings. Layer rows now visibly show role labels, `담기 가능` for containers, default placement mode (`흐름` / `자유`), and Korean drop badges. `scripts/edit_flow_browser_smoke.mjs` verifies row modes, layer role/drop affordance attributes/text, canvas inside/before/after indicators, nested input reorder, canvas insertion of new inputs before/after an existing nested input, and synthetic non-leaf group reordering where a group with a connected next sibling moves after its sibling while child inputs remain inside their original groups in emitted HTML. `scripts/imported_edit_sync_smoke.mjs` verifies imported canvas insertion for 3 fixtures and imported layer reorder for fixture-B when a safe leaf pair exists. | Add imported-sheet non-leaf subtree reorder coverage and broader fixture coverage. |
 | VERIFY | P1 | Absolute positioning inside frames/groups. | Drag commit supports containing block measurement and relative parent fallback. The edit toolbar now exposes flow/free placement modes. `scripts/edit_flow_browser_smoke.mjs` verifies both a synthetic frame child drag with managed design CSS and a free-mode gallery drop into a frame. `scripts/imported_edit_sync_smoke.mjs` now also verifies the 3 prepared ignored fixtures: a free-mode widget drop becomes nested absolute content inside an imported frame/flow target, with parent `relative`, child `absolute`, and emitted/computed left/top matching. | Capture richer UX screenshot evidence and compare against actual Roll20 sandbox/test-room output before marking DONE. |
 
 ## Branching and Deployment
@@ -346,11 +346,11 @@ blockers are cleared.
 ## 2026-06-19 Roll20 Browser Recheck Gap Note
 
 - Dedicated Roll20 editor/settings tabs were reclaimed for Custom Sheet Sandbox verification only; no existing room was modified.
-- The sandbox settings page still held the YSHY `customcharsheet_json` manifest, so AW2E is not currently proven as the loaded generated sheet.
-- AW2E upload through the visible `Sheet Sandbox Tools` HTML file chooser still failed with Chrome `Not allowed`; the file-input/full-activation blocker remains.
+- The sandbox settings page still held the fixture-C `customcharsheet_json` manifest, so fixture-A is not currently proven as the loaded generated sheet.
+- fixture-A upload through the visible `Sheet Sandbox Tools` HTML file chooser still failed with Chrome `Not allowed`; the file-input/full-activation blocker remains.
 - An initial `roll20-chat.png` capture used uncorrected CSS clip coordinates and captured the sandbox tools dialog. That bad local PNG was removed.
 - A DPR-corrected chat capture showed the Roll20 chat panel, but only default chat tips/invite text, not a rolltemplate card.
-- Les-Oublies `roll20-chat-dom-evidence.json` was refreshed from the current DOM and now records 5 messages and 0 rolltemplates.
+- fixture-B `roll20-chat-dom-evidence.json` was refreshed from the current DOM and now records 5 messages and 0 rolltemplates.
 - Latest actual status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`, `generatedActualScreenshots=2/6`, `generatedDiffed=2/6`; Roll20 chat visual evidence is still missing.
 
 ## 2026-06-19 Chat Evidence Gate Gap Note
@@ -358,26 +358,26 @@ blockers are cleared.
 - Hardened `scripts/roll20_actual_status.mjs`, `scripts/roll20_actual_screenshot_diff.mjs`, and `scripts/roll20_upload_handoff.mjs` so `roll20-chat.png` is not trusted by itself.
 - Chat evidence now requires a `roll20-chat-dom-evidence.json` sidecar with rendered rolltemplate markers.
 - The chat PNG and DOM sidecar must be fresh relative to each other; stale pairs are reported as suspect instead of proof.
-- Temporary regression check copied a local PNG into the Les-Oublies chat target while the current sidecar had 0 rolltemplates. Status stayed `generatedActualScreenshots=2/6`, and screenshot diff reported Les-Oublies chat `SUSPECT`. The temporary PNG was removed.
+- Temporary regression check copied a local PNG into the fixture-B chat target while the current sidecar had 0 rolltemplates. Status stayed `generatedActualScreenshots=2/6`, and screenshot diff reported fixture-B chat `SUSPECT`. The temporary PNG was removed.
 - Current actual status remains `PARTIAL_GENERATED_ACTUAL_SCREENSHOTS`; no Roll20 chat visual parity claim is allowed.
 
 ## 2026-06-19 Export Dialog Evidence-Boundary Gap Note
 
 - User-facing upload readiness is now clearer: local zip file presence, Chrome/Codex upload permission, and actual Roll20 screenshot comparison are separate states.
 - Smoke coverage now fails if the export dialog stops warning that file chooser blocking needs file URL access or if it implies zip download proves Roll20 rendering.
-- This closes a UI-truthfulness gap only. The actual Roll20 visual comparison gap remains open: current status is still partial generated actual evidence, AW2E is still suspect, and Roll20 chat visual evidence is still missing.
+- This closes a UI-truthfulness gap only. The actual Roll20 visual comparison gap remains open: current status is still partial generated actual evidence, fixture-A is still suspect, and Roll20 chat visual evidence is still missing.
 
 ## 2026-06-19 Sandbox Upload Snippet Gap Note
 
 - Added a safer fallback path for the Chrome file chooser blocker: a generated Sandbox-only snippet can create in-page `File` objects from the already verified local-baseline payload.
 - The gap remains open until the snippet or normal file chooser is actually run in Roll20 and produces fresh iframe/root/chat evidence. Endpoint success, snippet generation, or handoff files are not rendering proof.
 
-## 2026-06-19 AW2E Actual Roll20 Render Evidence Gap Note
+## 2026-06-19 fixture-A Actual Roll20 Render Evidence Gap Note
 
-- The AW2E generated sheet is no longer only endpoint/storage evidence: the dedicated Roll20 Custom Sheet Sandbox character sheet tab visibly rendered AW2E controls (`Angel`, `Battlebabe`, `Brainer`, `Child-Thing`, `Chopper`, `Driver`, `Faceless`, `GunLugger`, `Hardholder`).
-- A trusted fallback screenshot now has positive DOM sidecar evidence at `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/official-roll20-AW2E/screenshots/roll20-sandbox-dom-evidence.json`.
-- Latest diff/status evidence: AW2E sandbox mismatch `14.01%`; total generated actual screenshots `3/6`; total generated diffs `3/6`.
-- Remaining gap: no fixture has trustworthy Roll20 chat/rolltemplate screenshot evidence, AW2E has no full-root candidate evidence yet, and production renderer CSS remains gated by `HOLD_PRODUCTION_RENDERER_PATCH`.
+- The fixture-A generated sheet is no longer only endpoint/storage evidence: the dedicated Roll20 Custom Sheet Sandbox character sheet tab visibly rendered fixture-A controls (`Angel`, `Battlebabe`, `Brainer`, `Child-Thing`, `Chopper`, `Driver`, `Faceless`, `GunLugger`, `Hardholder`).
+- A trusted fallback screenshot now has positive DOM sidecar evidence at `reports/roll20-actual-compare/2026-06-18-state-map-v1/local-baseline/fixture-A/screenshots/roll20-sandbox-dom-evidence.json`.
+- Latest diff/status evidence: fixture-A sandbox mismatch `14.01%`; total generated actual screenshots `3/6`; total generated diffs `3/6`.
+- Remaining gap: no fixture has trustworthy Roll20 chat/rolltemplate screenshot evidence, fixture-A has no full-root candidate evidence yet, and production renderer CSS remains gated by `HOLD_PRODUCTION_RENDERER_PATCH`.
 ## Current Evidence Refresh - 2026-07-29
 
 The latest local acceptance slice covers direct pointer flow movement on the

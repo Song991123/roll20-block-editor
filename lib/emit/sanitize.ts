@@ -9,7 +9,7 @@
  *
  * 본 모듈은 순수 함수 (no DOM, no fs). 단순 정규식 + 상태 머신 기반 — fastpath.
  *
- * 시스템 specific 토큰 0. 영시영 / 1부 / 2부 / 펄프 등 식별자 hardcoding 없음.
+ * 시스템 specific 토큰 0. roll20-sheet-builder / 1부 / 2부 / 펄프 등 식별자 hardcoding 없음.
  */
 
 export type SanitizeWarningCode =

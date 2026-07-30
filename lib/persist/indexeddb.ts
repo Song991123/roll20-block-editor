@@ -6,7 +6,7 @@
  * 형태: { key: string (primary), xml: string, meta: SaveMeta } 1 row per workspace.
  *
  * 설계 원칙
- *   - 어떤 sheet 종류에도 의존 X (영시영/D&D/CoC 무관 — XML 그대로 저장)
+ *   - 어떤 sheet 종류에도 의존 X (roll20-sheet-builder/D&D/CoC 무관 — XML 그대로 저장)
  *   - 모든 IDB API 호출은 try/catch — quota/private-mode/Safari throttle 등
  *     graceful fallback. 호출자는 `ok:false` 로 실패를 감지.
  *   - SSR safe — `typeof indexedDB === 'undefined'` 시 즉시 null/no-op.

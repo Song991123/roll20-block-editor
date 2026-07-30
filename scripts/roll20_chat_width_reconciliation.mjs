@@ -133,7 +133,7 @@ function decideNextExperiment({ alignedMismatch, signals, bestCandidate }) {
     evidence.push(`table width is explained by exact text metrics: residual ${fmtPx(signals.tableTextResidual)}`);
     return {
       nextExperiment: 'TEXT_METRIC_ALLOCATION',
-      nextAction: 'Build an AW2E-scoped exact text/cell allocation candidate; do not change global ChatPane width.',
+      nextAction: 'Build an fixtureA-scoped exact text/cell allocation candidate; do not change global ChatPane width.',
       blockers,
       evidence,
     };
@@ -147,7 +147,7 @@ function decideNextExperiment({ alignedMismatch, signals, bestCandidate }) {
     if (signals.actualTableVsCropRatio >= 2) evidence.push(`actual table/crop ratio ${fmtRatio(signals.actualTableVsCropRatio)}`);
     return {
       nextExperiment: 'TABLE_SCROLL_INTRINSIC',
-      nextAction: 'Build a YSHY/CoC-scoped table intrinsic sizing probe using actual scrollWidth/clientWidth evidence; avoid transform and broad font CSS.',
+      nextAction: 'Build a fixtureC/CoC-scoped table intrinsic sizing probe using actual scrollWidth/clientWidth evidence; avoid transform and broad font CSS.',
       blockers,
       evidence,
     };
@@ -246,9 +246,9 @@ async function readOptionalJson(file) {
 }
 
 function fixtureKeyForId(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureB') return 'lesOublies';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
   return fixtureId
     .replace(/^official-roll20-/, '')
     .replace(/-([a-z])/g, (_, char) => char.toUpperCase())

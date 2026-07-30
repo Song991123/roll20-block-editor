@@ -95,7 +95,7 @@ Agent (이 세션) 가 직접 live 브라우저 세션을 열어 측정한 수�
 
 ## 5. 회귀 sanity — 미수행
 
-- 5블록 sanity / 미리보기 sanity / 영시영 1부 sanity: 이 세션에선 코드 리뷰만 수행 → 라이브 sanity 0.
+- 5블록 sanity / 미리보기 sanity / roll20-sheet-builder 1부 sanity: 이 세션에선 코드 리뷰만 수행 → 라이브 sanity 0.
 - BlockTile mount 시 emit 로직 자체는 건들지 않음 (rootMargin 1줄만). 회귀 위험 낮음.
 - 사용자 측 sanity 결과 받으면 §3 결론 수정 가능.
 

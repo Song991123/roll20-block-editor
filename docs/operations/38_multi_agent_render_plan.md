@@ -11,7 +11,7 @@ Purpose: split Roll20 render/edit work across Codex, Claude, and optional MacBoo
 | CI/CD | Feature branch CI now passes on GitHub Actions at run `29419603505`, commit `4bebbf09268e82e72fdfc9dbfcbf8bf13ed080f2`. | This proves the lightweight safety/unit suite, lint, and build on that commit. It is not a visual parity proof. |
 | Hosting | GitHub Pages is enough for the current static export. `main` deploys production; `dev` and PRs run CI only. | A separate public dev URL is still TODO. |
 | Actual Roll20 evidence | Existing local reports include generated screenshots/diffs `6/6`, trusted full-root `3/3`, and chat structure matched `3/3`. | Renderer still reports `HOLD_PRODUCTION_RENDERER_PATCH`; visual parity is not proven. |
-| Renderer root cause | Current source/intrinsic diagnostics route AW2E/Les to crop/table-intrinsic split work and YSHY to sanitize/intrinsic/crop modeling. | No product renderer CSS should be promoted yet. |
+| Renderer root cause | Current source/intrinsic diagnostics route fixture-A/Les to crop/table-intrinsic split work and fixture-C to sanitize/intrinsic/crop modeling. | No product renderer CSS should be promoted yet. |
 | Edit UX | Basic overlay/drop behavior exists, but Figma-like manipulation, flow-aware insertion, layer visualization, grouping, and preview/edit exact sync are incomplete. | Needs browser smoke plus UX review on imported sheets. |
 | Copyright safety | Public repo must not include real sheet source, screenshots, generated fixtures, reports, or third-party preview images. | Use user import and ignored local evidence only. |
 
@@ -92,7 +92,7 @@ All four sessions may work concurrently only because their file ownership and ph
 ### Codex 1: Lead/Integrator
 
 ```text
-cd /d "D:\훙냥냥\마렌상\영시영 시트 고치기\web-push-main"
+cd /d "D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main"
 git fetch origin
 git switch -c codex/ops-render-integration-20260715 origin/codex/roll20-mapping-fidelity-smoke
 
@@ -102,7 +102,7 @@ Use $roll20-render-ops. You are the lead integrator. Read AGENTS.md, docs/operat
 ### Codex 2: Render Evidence
 
 ```text
-cd /d "D:\훙냥냥\마렌상\영시영 시트 고치기\web-push-main"
+cd /d "D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main"
 git fetch origin
 git switch -c codex/render-source-intrinsic-20260715 origin/codex/roll20-mapping-fidelity-smoke
 
@@ -112,17 +112,17 @@ Use $roll20-render-ops. Focus only on Roll20 render parity evidence. Do not edit
 ### Codex 3: Edit UX and Performance
 
 ```text
-cd /d "D:\훙냥냥\마렌상\영시영 시트 고치기\web-push-main"
+cd /d "D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main"
 git fetch origin
 git switch -c codex/edit-flow-ux-perf-20260715 origin/codex/roll20-mapping-fidelity-smoke
 
-Use $roll20-render-ops. Work on edit mode only. The edit screen must be the same rendered sheet as preview plus an edit overlay. Improve flow-aware before/inside/after insertion, layer visualization, container highlighting, absolute-inside-frame behavior, and drag latency. Do not add hard-coded YSHY behavior. Add/update browser smoke evidence. Run check:server-hygiene, relevant edit smoke, ci:verify, lint, and build. Update TODO/progress docs.
+Use $roll20-render-ops. Work on edit mode only. The edit screen must be the same rendered sheet as preview plus an edit overlay. Improve flow-aware before/inside/after insertion, layer visualization, container highlighting, absolute-inside-frame behavior, and drag latency. Do not add hard-coded fixture-C behavior. Add/update browser smoke evidence. Run check:server-hygiene, relevant edit smoke, ci:verify, lint, and build. Update TODO/progress docs.
 ```
 
 ### Claude 1: Research and Corpus
 
 ```text
-Read-only research task. Repository: D:\훙냥냥\마렌상\영시영 시트 고치기\web-push-main
+Read-only research task. Repository: D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main
 
 Read AGENTS.md and docs/research/40_roll20_render_reference_inventory.md first. Research official Roll20 custom sheet docs, the Roll20 character sheets GitHub repository, and relevant forum/GitHub discussions about legacy sanitizer, rolltemplates, sheet workers, translations, repeating sections, and sheet.json. Do not copy real sheet files, screenshots, or fixtures into the repo. Produce a Markdown report with links, exact evidence, and implementation implications. Mark forum findings as hypotheses unless verified in Roll20 Sandbox.
 ```
@@ -130,7 +130,7 @@ Read AGENTS.md and docs/research/40_roll20_render_reference_inventory.md first. 
 ### Claude 2: Security and Optimization Audit
 
 ```text
-Read-only audit first. Repository: D:\훙냥냥\마렌상\영시영 시트 고치기\web-push-main
+Read-only audit first. Repository: D:\훙냥냥\마렌상\roll20-sheet-builder 시트 고치기\web-push-main
 
 Read AGENTS.md, docs/operations/38_multi_agent_render_plan.md, package.json, next.config.*, scripts/ci_verify.mjs, .github/workflows, import/export code paths, preview/edit rendering paths, and asset relink code. Produce a security and optimization risk report. Focus on untrusted imported HTML/CSS/translation/assets/future worker JS, script stripping, CSS isolation, asset URL policy, CI guards, bundle size, worker offload, drag latency, and public repo leakage. Do not change code until the lead approves the report.
 ```

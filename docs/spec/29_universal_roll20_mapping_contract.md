@@ -2,7 +2,7 @@
 
 Date: 2026-05-19
 
-This is the contract for the editor. The goal is not "make YSHY look okay." YSHY is only one high-pressure fixture. The product must import, represent, edit, preview, and export arbitrary Roll20 custom sheets and official sheet patterns without silently losing semantics.
+This is the contract for the editor. The goal is not "make fixture-C look okay." fixture-C is only one high-pressure fixture. The product must import, represent, edit, preview, and export arbitrary Roll20 custom sheets and official sheet patterns without silently losing semantics.
 
 ## Product Requirement
 
@@ -26,7 +26,7 @@ An import/export pass is not "matched enough." It is one of these:
 | L3 | Byte-identical or documented normalized diff: source and emitted output match after only explicitly allowed normalization. | "Roundtrip verified." |
 | L4 | Visual parity: local preview matches Roll20 sandbox screenshot within accepted diff bounds. | "Roll20 visual verified." |
 
-The project may only say "100%" for the exact level and corpus that passed. For example: "YSHY 1부 L1 passed, L3 failed on expression parsing" is acceptable. "Import 100%" without a report is forbidden.
+The project may only say "100%" for the exact level and corpus that passed. For example: "fixture-C 1부 L1 passed, L3 failed on expression parsing" is acceptable. "Import 100%" without a report is forbidden.
 
 ## Source to Block Mapping
 
@@ -119,14 +119,14 @@ The visual editor must behave like a design tool while preserving HTML semantics
 
 ## Default View and Era Controls
 
-Roll20 sheets often show only one default era/view until a checkbox, radio, or hidden attr changes. Examples include CoC 7th and YSHY references to `1920`, `pulp`, and era skill lists.
+Roll20 sheets often show only one default era/view until a checkbox, radio, or hidden attr changes. Examples include CoC 7th and fixture-C references to `1920`, `pulp`, and era skill lists.
 
 Required model:
 
 - Hidden input/radio/checkbox controls must be imported.
 - CSS sibling selectors such as `:checked ~ .sheet-section` must be preserved.
 - Sheet worker initialization that sets default attrs must be simulated when possible.
-- Preview must expose a user-facing state panel for defaults without hardcoding YSHY or CoC names.
+- Preview must expose a user-facing state panel for defaults without hardcoding fixture-C or CoC names.
 - "Legacy sanitization" must not erase default-view behavior unless the export report explicitly says what changed.
 
 ## Legacy Sanitization
@@ -181,7 +181,7 @@ Therefore every technical block should have:
 
 ## Forbidden Shortcuts
 
-- YSHY-specific parser branches.
+- fixture-C-specific parser branches.
 - CoC-specific or Pulp-specific hardcoding outside named fixtures/tests.
 - Reporting aggregate PASS when a subset failed.
 - Hiding raw unsupported content without representing it as a block.

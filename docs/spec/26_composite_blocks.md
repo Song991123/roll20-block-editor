@@ -21,7 +21,7 @@
 
 ### 1.1 측정된 inflation
 
-영시영 1부 (732 KB HTML, CoC 7e 변형) import 시:
+roll20-sheet-builder 1부 (732 KB HTML, CoC 7e 변형) import 시:
 
 | layer | 블록 수 | 비고 |
 |---|---:|---|
@@ -31,13 +31,13 @@
 | `r20_checkbox` (스킬 토글) | 427 | 거의 모든 스킬 행에 동일 |
 | `r20_i18n_text` (label) | 874 | 거의 모든 label/cell |
 
-`docs/validation/working/yshy_part1/html_blocks_dist.json` 의 distribution +
+`docs/validation/working/fixture-c_part1/html_blocks_dist.json` 의 distribution +
 사용자 보고. 정확 9093 은 worker block 포함값.
 
 ### 1.2 사용자 관점 문제
 
 - **renderer freeze** — Blockly 가 1000+ 블록 동시 인스턴스화하면 main thread
-  blocking. 영시영 외 어떤 커스텀 시트도 동일.
+  blocking. roll20-sheet-builder 외 어떤 커스텀 시트도 동일.
 - **편집 부담** — 능력치 1 개 = atomic 9 개 (td×3 + i18n + input + button×2
   + literal×2). 능력치 수정하려면 9 블록을 정확히 찾아야 함. UX 0.
 - **공식 시트 호환** — 동일 패턴이 D&D 5e / CoC / 인세인 / PbtA 거의 모든
@@ -56,13 +56,13 @@ composite 는 atomic 의 **wrapper** 일 뿐. emit 시:
 
 ## §2 Phase 1~3 candidate matrix
 
-영시영 1부 + 공식 시트 (`docs/spec/20_official_sheet_patterns.md`,
+roll20-sheet-builder 1부 + 공식 시트 (`docs/spec/20_official_sheet_patterns.md`,
 `21_official_sheet_phase2.md`) 의 빈도 cross-reference.
 
 | # | type | priority | 시각 영향 | 시스템 보편성 | atomic / composite ratio | Phase |
 |---|---|---|---|---|---:|---|
 | 1 | `r20_attribute_card` | **P0** | 높음 | D&D 5e STR/DEX/CON/...×6, CoC×8, 거의 모든 시스템에 능력치 카드 | ~9:1 | **Phase 1** |
-| 2 | `r20_skill_row` | **P0** | 매우 높음 | CoC 50 + 영시영 100 + 인세인 / PbtA `<tr>` 행 패턴 | ~12:1 | Phase 2 |
+| 2 | `r20_skill_row` | **P0** | 매우 높음 | CoC 50 + roll20-sheet-builder 100 + 인세인 / PbtA `<tr>` 행 패턴 | ~12:1 | Phase 2 |
 | 3 | `r20_repeating_section_wrapper` | **P0** | 중간 | `<fieldset class="repeating_X">` 거의 전 시스템 (19/20 — `docs/spec/20` §3) | ~5:1 (header + thead/tbody 묶음) | Phase 2 |
 | 4 | `r20_dot_tracker` | P1 | 높음 | WoD / CoD / BitD dot UI (라디오 N 펼침) | ~N:1 (N=4~10) | Phase 3 |
 | 5 | `r20_pbta_move` | P1 | 높음 | MotW 1128, Dungeon World, Apocalypse Keys ... | ~7:1 | Phase 3 |
@@ -149,7 +149,7 @@ parseHtml(html)
 
 ### 4.2 attribute card pattern 인식
 
-영시영 1부 의 능력치 카드 atomic 시퀀스 (1 행 안 td chain):
+roll20-sheet-builder 1부 의 능력치 카드 atomic 시퀀스 (1 행 안 td chain):
 
 ```
 r20_td [class=attr-label]  ← children: r20_inline_bold {TEXT:"근력", CLASS:""} or r20_i18n_text {KEY:"STR-u", DEFAULT:"근력"}
@@ -189,7 +189,7 @@ function packComposites(chain: MatchedBlock[]): MatchedBlock[] {
 
 ### 4.4 inflation 예상
 
-영시영 1부 8 능력치 × atomic 7~9 = ~64 atomic. Phase 1 적용 후 → 8 composite.
+roll20-sheet-builder 1부 8 능력치 × atomic 7~9 = ~64 atomic. Phase 1 적용 후 → 8 composite.
 **약 56 block 감소.**
 
 스킬 행 (Phase 2): 50 ~ 100 행 × atomic 12 ≈ 600 ~ 1200 atomic → 50 ~ 100
@@ -198,7 +198,7 @@ composite. **~550 ~ 1100 block 감소.**
 repeating section wrapper (Phase 2): 12 × atomic 5 ≈ 60 atomic → 12 composite.
 **48 block 감소.**
 
-dot tracker / pbta move (Phase 3, 영시영 비해당) — 영시영 1부 의 9093 → ~1500
+dot tracker / pbta move (Phase 3, roll20-sheet-builder 비해당) — roll20-sheet-builder 1부 의 9093 → ~1500
 은 Phase 1 + 2 만으로는 부족. Phase 3 + matcher fine-tuning 이 필요.
 
 본 Phase 1 commit 의 측정 목표: **8 atomic 감소** (sanity check), composite
@@ -209,9 +209,9 @@ matcher pipeline 정상 동작 입증.
 ## §5 generic 시트 호환 강조
 
 - composite block 의 모든 field 는 `LABEL` / `ATTR_NAME` / `ROLL_EXPR` 등
-  **general parameter**. 영시영 / D&D 5e / PbtA / CoC 무엇이든 같은 schema.
+  **general parameter**. roll20-sheet-builder / D&D 5e / PbtA / CoC 무엇이든 같은 schema.
 - matcher 의 인식 조건은 HTML 구조 + 표준 Roll20 idiom (`attr_X` /
-  `data-i18n="KEY"` / `type="roll"`) 만. 한글 라벨 / 영시영 specific class
+  `data-i18n="KEY"` / `type="roll"`) 만. 한글 라벨 / roll20-sheet-builder specific class
   hardcoding 0.
 - 어떤 시스템도 능력치 카드 패턴이 있으면 자동 packing. 사용자가 새 시트를
   import 해도 같은 혜택.
@@ -220,11 +220,11 @@ matcher pipeline 정상 동작 입증.
 
 ## §6 미해결 / Phase 2~3 backlog
 
-1. **Phase 2** — `r20_skill_row` 추가. atomic 12 → composite 1 (영시영 1부
+1. **Phase 2** — `r20_skill_row` 추가. atomic 12 → composite 1 (roll20-sheet-builder 1부
    100+ 행 → ~1100 atomic 감소).
-2. **Phase 2** — `r20_repeating_section_wrapper`. 영시영 12 instance —
+2. **Phase 2** — `r20_repeating_section_wrapper`. roll20-sheet-builder 12 instance —
    `<fieldset class="repeating_X">` + `<thead>` + `<tbody>` packing.
-3. **Phase 3** — `r20_dot_tracker` (WoD / BitD). 영시영 비해당이지만 generic
+3. **Phase 3** — `r20_dot_tracker` (WoD / BitD). roll20-sheet-builder 비해당이지만 generic
    compat 강화.
 4. **Phase 3** — `r20_pbta_move` (MotW / DW / Apocalypse Keys). PbtA family
    ~7:1 ratio.
@@ -237,13 +237,13 @@ matcher pipeline 정상 동작 입증.
 
 ## §7 정직 보고 — R10
 
-- 본 phase 의 측정값 (`r20_attribute_card` matcher 만 적용) 은 영시영 1부
+- 본 phase 의 측정값 (`r20_attribute_card` matcher 만 적용) 은 roll20-sheet-builder 1부
   기준 atomic 감소 폭이 미미 (~8 블록). **사용자가 기대한 "9093 → 1500"
   까지는 Phase 2~3 누적 + 후처리가 필요**. Phase 1 commit 은 **infra +
   contract** — composite layer 가 회귀 없이 돌아간다는 것이 본 commit 의
   goal.
 - `r20_attribute_card` matcher 의 인식 조건이 너무 보수적이면 우연 매칭 0
-  대신 영시영 8 능력치 일부도 못 잡을 수 있음. 본 phase 는 false-negative
+  대신 roll20-sheet-builder 8 능력치 일부도 못 잡을 수 있음. 본 phase 는 false-negative
   허용 (conservative). Phase 2 에서 sample 늘리면서 인식 조건 완화.
 - atomic 카탈로그 / matcher / emitter 어느 것도 본 phase 에서 수정 안
   됨. 회귀 0 보장.

@@ -31,7 +31,7 @@
 | A6 | quota 초과 → **graceful fallback** (자동 OFF X) | 토스트만, 다음 변경에 재시도. autosave OFF 는 사용자 의도 |
 | A7 | key = **hardcoded** (`autosave-current`) | 사용자 입력이 key 가 되지 않음. 향후 multi-sheet 시 sheet name 별 key — 그 때 `isValidKey` regex 통과 강제 |
 | A8 | autosave 토글 = settingsStore.autosave | UI 토글 별도 추가 안 함 (settings panel 자체가 없음) — default ON 유지 |
-| A9 | sheet 종류 hardcoding **0** | 영시영 / D&D / CoC 무관 — XML 그대로 저장/복구 |
+| A9 | sheet 종류 hardcoding **0** | roll20-sheet-builder / D&D / CoC 무관 — XML 그대로 저장/복구 |
 
 ---
 
@@ -121,7 +121,7 @@ This stores the user's local-only asset relink map so external/dead sheet assets
 | Payload > 10MB | 저장 skip + 토스트 "10MB 초과" |
 | 손상 / 형식 어김 | 복구 시 토스트 + 자동 삭제 |
 | key 변조 (future multi-sheet) | `isValidKey` regex `^[a-z0-9][a-z0-9_\-]{0,63}$` 강제 |
-| 영시영 / 시트 종류 의존 | **없음** — combined XML wrapper 만 보고 hydrate. 어느 sheet든 동일 동작 |
+| roll20-sheet-builder / 시트 종류 의존 | **없음** — combined XML wrapper 만 보고 hydrate. 어느 sheet든 동일 동작 |
 
 ---
 

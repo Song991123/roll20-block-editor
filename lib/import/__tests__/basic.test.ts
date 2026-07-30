@@ -4,7 +4,7 @@
  * 본 파일은 Node.js + ts-node 또는 vitest 로 실행 가능. import 의 외부 의존 0
  * (jsdom X) — 빠르게 결정적 테스트.
  *
- * 영시영 specific content 0 — generic HTML 만.
+ * roll20-sheet-builder specific content 0 — generic HTML 만.
  */
 
 import { importSheet } from '../index';

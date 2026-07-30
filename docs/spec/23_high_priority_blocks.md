@@ -52,7 +52,7 @@ Anchor:
 - `LANG` 비면 → `getTranslationByKey('${KEY}')` (기존 동작 유지).
 - `LANG` 채우면 → `getTranslationByLang('${LANG}', '${KEY}')`.
 
-**Backward compat**: 영시영 1부 등 LANG 미사용 시트는 기존 emit 보존 → 매칭 회귀 0.
+**Backward compat**: roll20-sheet-builder 1부 등 LANG 미사용 시트는 기존 emit 보존 → 매칭 회귀 0.
 
 ## 3. `r20_css_var_decl` — 변수 선언 (값 슬롯)
 
@@ -79,7 +79,7 @@ Anchor:
 **카테고리**: `composite` (HUE 270)
 **Shape**: `c` (parent) / `stack` (case)
 
-영시영 era toggle 같은 "값에 따라 다른 영역 보이기" 패턴을 일반화. 시스템 specific
+roll20-sheet-builder era toggle 같은 "값에 따라 다른 영역 보이기" 패턴을 일반화. 시스템 specific
 이름 0 — `ATTR_NAME` 이 사용자 입력.
 
 ### 부모 — `r20_value_switch_panel`
@@ -118,7 +118,7 @@ Anchor:
 **빈 ATTR_NAME**: emit 생략 + warning.
 **빈 CASES**: wrapper 만 emit + warning.
 
-**영시영 era toggle 과 호환**: era panel 5개 (`pulp` / `modern` / ...) 가 본 패턴과
+**roll20-sheet-builder era toggle 과 호환**: era panel 5개 (`pulp` / `modern` / ...) 가 본 패턴과
 sibling rule 형태 동일 → 매칭 회귀 0.
 
 ## 5. `r20_attr_ref` SCOPE 옵션 확장
@@ -159,7 +159,7 @@ SCOPE 필드 누락 시 dropdown 의 첫 번째 값(`self`) 자동 적용 → em
 
 **Round-trip 보장**:
 - 신규 5 매처의 단위 테스트 `lib/import/__tests__/high_priority_import.test.ts` 20 케이스 모두 통과.
-- 영시영 1부 회귀: `htmlMatched=6134/6134, cssMatched=202/202, htmlRawFallback=0` — 매칭 회귀 0. (영시영 1부 자체는 emit 형식의 `sheet-X-switch` / `getCompendium*` / CSS `--var` / 단일 `@{...}` token EXPR 패턴이 거의 없으므로 신규 매처 trigger 0 — 정상.)
+- roll20-sheet-builder 1부 회귀: `htmlMatched=6134/6134, cssMatched=202/202, htmlRawFallback=0` — 매칭 회귀 0. (roll20-sheet-builder 1부 자체는 emit 형식의 `sheet-X-switch` / `getCompendium*` / CSS `--var` / 단일 `@{...}` token EXPR 패턴이 거의 없으므로 신규 매처 trigger 0 — 정상.)
 - 합성 round-trip (emit → import → emit) 일관성: spec 의 emit 형식과 매처가 1:1 대응되어 동일 입력 → 동일 블록 트리 복원.
 
 **제약**:
@@ -169,7 +169,7 @@ SCOPE 필드 누락 시 dropdown 의 첫 번째 값(`self`) 자동 적용 → em
 ## 7. 측정 못 한 항목
 
 - compendium API 의 시스템 별 정확한 PATH 형식 — 사용자 책임 (R1).
-- `r20_value_switch_panel` 의 inline `<style>` 가 Roll20 sandbox 에서 적용되는지 — 영시영
+- `r20_value_switch_panel` 의 inline `<style>` 가 Roll20 sandbox 에서 적용되는지 — roll20-sheet-builder
   1부 era pattern 과 등가이므로 정상 동작 추정. 다른 sandbox 정책 변경 시 영향.
 - `getTranslationByLang` API 실재 여부 — Roll20 공식 wiki 직접 fetch 권한 없음 (R10).
   운영 경험치 기준 emit, 실제 사용 시 검증 필요.

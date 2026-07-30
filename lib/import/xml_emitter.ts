@@ -32,7 +32,7 @@ const XML_NS = 'https://developers.google.com/blockly/xml';
  *   N >= ~3K 시 emitChainedBlock 재귀로 V8 stack overflow.
  * v2 (regression fix): top-level 들은 별개 `<block>` 으로 직렬화 — comment 가
  *   원래 의도였던 그대로. Blockly 가 import 시 자동 chain 안 함 → 워크스페이스
- *   상 top-level 로 N 개 그대로 박힘. (이게 영시영 1부 import 의 의도된 동작.)
+ *   상 top-level 로 N 개 그대로 박힘. (이게 roll20-sheet-builder 1부 import 의 의도된 동작.)
  *   `<next>` 안 쓰면 emit 도 재귀 안 함 → 6000+ 블록도 stack-safe.
  *
  * 일반화: 시트 size N 에 무관하게 안전 (system-specific 토큰 0).
@@ -48,7 +48,7 @@ export function emitWorkspaceXml(top: MatchedBlock[]): string {
   // y 좌표는 index × Y_STEP 으로 명시적으로 부여 — 그래야 emit 단계의
   // ws.getTopBlocks(true) (Y 정렬) 가 import 순서를 그대로 보존.
   // 미부여 시 Blockly auto-bump 가 순서를 재배치 → 형제 의존 CSS
-  // (`.toggle:checked ~ div.target`) 가 깨짐. 영시영 1부 era toggle 등.
+  // (`.toggle:checked ~ div.target`) 가 깨짐. roll20-sheet-builder 1부 era toggle 등.
   const Y_STEP = 40;
   for (let i = 0; i < top.length; i += 1) {
     const xy = ` x="20" y="${20 + i * Y_STEP}"`;
@@ -61,7 +61,7 @@ export function emitWorkspaceXml(top: MatchedBlock[]): string {
 /**
  * 단일 block 직렬화 — `<next>` 체인은 사용 안 함 (top-level 평탄화).
  * value / statement 안의 child block 은 여전히 재귀하지만, 그 depth 는 시트 구조
- * 상 작음 (영시영 1부 최대 depth ~ 10). 사용자 시트 specific 가정 0.
+ * 상 작음 (roll20-sheet-builder 1부 최대 depth ~ 10). 사용자 시트 specific 가정 0.
  */
 function emitSingleBlock(b: MatchedBlock, topAttrs: string = ''): string {
   const buf: string[] = [];

@@ -52,16 +52,16 @@ const baseCandidates = [
   ['default', 'reports/rolltemplate-chat-smoke/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke/screenshots'],
   ['no-shadow', 'reports/rolltemplate-chat-smoke-no-template-shadow/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-no-template-shadow/screenshots'],
   ['roll20-sandbox-font-proxy', 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-roll20-sandbox-font-proxy/screenshots'],
-  ['aw2e-message-width-font-size', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-font-size/screenshots'],
-  ['aw2e-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-width-text-metrics/screenshots'],
-  ['aw2e-message-source-context', 'reports/rolltemplate-chat-smoke-aw2e-message-source-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-source-context/screenshots'],
-  ['aw2e-message-cell-font-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-font-context/screenshots'],
-  ['aw2e-message-cell-wrap-context', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-aw2e-message-cell-wrap-context/screenshots'],
+  ['fixtureA-message-width-font-size', 'reports/rolltemplate-chat-smoke-fixtureA-message-width-font-size/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-fixtureA-message-width-font-size/screenshots'],
+  ['fixtureA-message-width-text-metrics', 'reports/rolltemplate-chat-smoke-fixtureA-message-width-text-metrics/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-fixtureA-message-width-text-metrics/screenshots'],
+  ['fixtureA-message-source-context', 'reports/rolltemplate-chat-smoke-fixtureA-message-source-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-fixtureA-message-source-context/screenshots'],
+  ['fixtureA-message-cell-font-context', 'reports/rolltemplate-chat-smoke-fixtureA-message-cell-font-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-fixtureA-message-cell-font-context/screenshots'],
+  ['fixtureA-message-cell-wrap-context', 'reports/rolltemplate-chat-smoke-fixtureA-message-cell-wrap-context/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-fixtureA-message-cell-wrap-context/screenshots'],
   ['coc-table-scale-x', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-table-scale-x/screenshots'],
   ['paint-dim-background', 'reports/rolltemplate-chat-smoke-paint-dim-background/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-paint-dim-background/screenshots'],
   ['coc-background-size-actual', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-coc-background-size-actual/screenshots'],
   ['paint-edge-shadow', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-paint-edge-shadow/screenshots'],
-  ['yshy-sanitize-typography', 'reports/rolltemplate-chat-smoke-yshy-sanitize-typography/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-yshy-sanitize-typography/screenshots'],
+  ['fixtureC-sanitize-typography', 'reports/rolltemplate-chat-smoke-fixtureC-sanitize-typography/rolltemplate-chat-smoke-results.json', 'reports/rolltemplate-chat-smoke-fixtureC-sanitize-typography/screenshots'],
 ];
 const knownCandidateNames = new Set(baseCandidates.map(([name]) => name));
 const dynamicCandidates = [...includedCandidates]
@@ -98,12 +98,12 @@ const compared = rows.map((row) => {
   if (row.status !== 'OK' || !defaultRow) return row;
   return {
     ...row,
-    aw2eRowWeightedDeltaPct: numberDelta(row.aw2e?.rowWeightedPctNumber, defaultRow.aw2e?.rowWeightedPctNumber),
-    aw2eWorstRowDeltaPct: numberDelta(row.aw2e?.worstRowMismatchPctNumber, defaultRow.aw2e?.worstRowMismatchPctNumber),
-    aw2eWorstRowLumaDeltaChange: numberDelta(row.aw2e?.worstRowSignedLumaDelta, defaultRow.aw2e?.worstRowSignedLumaDelta),
-    yshyRowWeightedDeltaPct: numberDelta(row.yshy?.rowWeightedPctNumber, defaultRow.yshy?.rowWeightedPctNumber),
-    yshyWorstRowDeltaPct: numberDelta(row.yshy?.worstRowMismatchPctNumber, defaultRow.yshy?.worstRowMismatchPctNumber),
-    yshyWorstRowLumaDeltaChange: numberDelta(row.yshy?.worstRowSignedLumaDelta, defaultRow.yshy?.worstRowSignedLumaDelta),
+    fixtureARowWeightedDeltaPct: numberDelta(row.fixtureA?.rowWeightedPctNumber, defaultRow.fixtureA?.rowWeightedPctNumber),
+    fixtureAWorstRowDeltaPct: numberDelta(row.fixtureA?.worstRowMismatchPctNumber, defaultRow.fixtureA?.worstRowMismatchPctNumber),
+    fixtureAWorstRowLumaDeltaChange: numberDelta(row.fixtureA?.worstRowSignedLumaDelta, defaultRow.fixtureA?.worstRowSignedLumaDelta),
+    fixtureCRowWeightedDeltaPct: numberDelta(row.fixtureC?.rowWeightedPctNumber, defaultRow.fixtureC?.rowWeightedPctNumber),
+    fixtureCWorstRowDeltaPct: numberDelta(row.fixtureC?.worstRowMismatchPctNumber, defaultRow.fixtureC?.worstRowMismatchPctNumber),
+    fixtureCWorstRowLumaDeltaChange: numberDelta(row.fixtureC?.worstRowSignedLumaDelta, defaultRow.fixtureC?.worstRowSignedLumaDelta),
     rowRasterRisk: classifyRowRasterRisk(row, defaultRow),
   };
 });
@@ -130,7 +130,7 @@ for (const row of compared) {
     console.log(`SKIP ${row.name} ${row.status}`);
     continue;
   }
-  console.log(`ROW_RASTER_CANDIDATE ${row.name} risk=${row.rowRasterRisk} aw2eWeighted=${row.aw2e?.rowWeightedMismatchPct} aw2eDelta=${formatSigned(row.aw2eRowWeightedDeltaPct)} aw2eWorst=${row.aw2e?.worstRowMismatchPct} aw2eWorstDelta=${formatSigned(row.aw2eWorstRowDeltaPct)} yshyWeighted=${row.yshy?.rowWeightedMismatchPct} yshyDelta=${formatSigned(row.yshyRowWeightedDeltaPct)} yshyWorst=${row.yshy?.worstRowMismatchPct} yshyWorstDelta=${formatSigned(row.yshyWorstRowDeltaPct)}`);
+  console.log(`ROW_RASTER_CANDIDATE ${row.name} risk=${row.rowRasterRisk} fixtureAWeighted=${row.fixtureA?.rowWeightedMismatchPct} fixtureADelta=${formatSigned(row.fixtureARowWeightedDeltaPct)} fixtureAWorst=${row.fixtureA?.worstRowMismatchPct} fixtureAWorstDelta=${formatSigned(row.fixtureAWorstRowDeltaPct)} fixtureCWeighted=${row.fixtureC?.rowWeightedMismatchPct} fixtureCDelta=${formatSigned(row.fixtureCRowWeightedDeltaPct)} fixtureCWorst=${row.fixtureC?.worstRowMismatchPct} fixtureCWorstDelta=${formatSigned(row.fixtureCWorstRowDeltaPct)}`);
 }
 console.log(`out=${path.relative(process.cwd(), outDir)}`);
 
@@ -142,9 +142,9 @@ function summarizeCandidate(name, smokeFile, screenshotsDir, candidateOutDir, re
     smokeFile,
     screenshotsDir,
     reportDir: path.relative(process.cwd(), candidateOutDir),
-    aw2e: summarizeFixture(fixture('official-roll20-AW2E')),
-    lesOublies: summarizeFixture(fixture('official-roll20-Les-Oublies')),
-    yshy: summarizeFixture(fixture('yshy-commission-1bu')),
+    fixtureA: summarizeFixture(fixture('fixtureA')),
+    lesOublies: summarizeFixture(fixture('fixtureB')),
+    fixtureC: summarizeFixture(fixture('fixtureC-commission-1bu')),
     decisions: report.summary?.decisions ?? {},
   };
 }
@@ -166,7 +166,7 @@ function summarizeFixture(fixture) {
 
 function classifyRowRasterRisk(row, defaultRow) {
   if (row.name === 'default') return 'baseline';
-  const fixtureDeltas = ['aw2e', 'yshy'].map((fixtureKey) => ({
+  const fixtureDeltas = ['fixtureA', 'fixtureC'].map((fixtureKey) => ({
     fixtureKey,
     weightedDelta: numberDelta(row[fixtureKey]?.rowWeightedPctNumber, defaultRow[fixtureKey]?.rowWeightedPctNumber),
     worstDelta: numberDelta(row[fixtureKey]?.worstRowMismatchPctNumber, defaultRow[fixtureKey]?.worstRowMismatchPctNumber),
@@ -187,7 +187,7 @@ function renderMarkdown(report) {
     '',
     'Scope: diagnostic-only. Candidate outputs are isolated under this report folder and do not replace the default gate evidence.',
     '',
-    '| Candidate | Status | Risk | AW2E weighted | AW2E delta | AW2E worst | AW2E worst delta | YSHY weighted | YSHY delta | YSHY worst | YSHY worst delta |',
+    '| Candidate | Status | Risk | fixtureA weighted | fixtureA delta | fixtureA worst | fixtureA worst delta | fixtureC weighted | fixtureC delta | fixtureC worst | fixtureC worst delta |',
     '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
   ];
   for (const row of report.candidates) {
@@ -195,7 +195,7 @@ function renderMarkdown(report) {
       lines.push(`| \`${row.name}\` | ${row.status} |  |  |  |  |  |  |  |  |  |`);
       continue;
     }
-    lines.push(`| \`${row.name}\` | OK | ${row.rowRasterRisk} | ${row.aw2e?.rowWeightedMismatchPct ?? ''} | ${formatSigned(row.aw2eRowWeightedDeltaPct)} | ${row.aw2e?.worstRowMismatchPct ?? ''} | ${formatSigned(row.aw2eWorstRowDeltaPct)} | ${row.yshy?.rowWeightedMismatchPct ?? ''} | ${formatSigned(row.yshyRowWeightedDeltaPct)} | ${row.yshy?.worstRowMismatchPct ?? ''} | ${formatSigned(row.yshyWorstRowDeltaPct)} |`);
+    lines.push(`| \`${row.name}\` | OK | ${row.rowRasterRisk} | ${row.fixtureA?.rowWeightedMismatchPct ?? ''} | ${formatSigned(row.fixtureARowWeightedDeltaPct)} | ${row.fixtureA?.worstRowMismatchPct ?? ''} | ${formatSigned(row.fixtureAWorstRowDeltaPct)} | ${row.fixtureC?.rowWeightedMismatchPct ?? ''} | ${formatSigned(row.fixtureCRowWeightedDeltaPct)} | ${row.fixtureC?.worstRowMismatchPct ?? ''} | ${formatSigned(row.fixtureCWorstRowDeltaPct)} |`);
   }
   lines.push('', '## Claim Boundary', '');
   lines.push('- This is a routing diagnostic, not Roll20 visual parity.');

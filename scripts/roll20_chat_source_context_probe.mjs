@@ -304,13 +304,13 @@ function decide({ priority, cssEvidence, fontActivation, tableContext, sanitizeR
 }
 
 function nextAction(decision, fixtureId = '') {
-  const isCoc = fixtureId === 'yshy-commission-1bu';
+  const isCoc = fixtureId === 'fixtureC-commission-1bu';
   switch (decision) {
     case 'SANITIZE_REPLAY_REJECTED_SOURCE_MODEL_REQUIRED':
       return 'do not replay observed sanitized typography as local CSS; inspect actual Roll20 rule order, font activation, and table intrinsic context together';
     case 'RULE_ORDER_FONT_FACE_TABLE_CONTEXT_REQUIRED':
       return isCoc
-        ? 'build a CoC/YSHY diagnostic model that mirrors Roll20 CSS rule order plus font-face availability before table min-content sizing'
+        ? 'build a CoC/fixtureC diagnostic model that mirrors Roll20 CSS rule order plus font-face availability before table min-content sizing'
         : 'build a template-scoped diagnostic model that mirrors Roll20 CSS rule order plus font-face availability before intrinsic table sizing';
     case 'FONT_FACE_ACTIVATION_REQUIRED':
       return 'compare Roll20 and local font-face activation/order; do not force broad table typography yet';

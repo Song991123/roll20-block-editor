@@ -15,7 +15,7 @@
  *   #ID:checked ~ .r20-toggle-off--ID { display: none; }
  *
  * 시스템 specific 식별자 0 — ID / LABEL / scope 다 사용자 입력 (블록 fields).
- * 영시영 hardcoding 0.
+ * roll20-sheet-builder hardcoding 0.
  */
 
 import * as Blockly from 'blockly';

@@ -12,7 +12,7 @@ const runDir = path.resolve(runDirArg);
 const localSmokeFile = path.resolve(localSmokeArg);
 const outDir = path.join(runDir, 'chat-row-geometry');
 
-const fixtureIds = ['official-roll20-AW2E', 'official-roll20-Les-Oublies', 'yshy-commission-1bu'];
+const fixtureIds = ['fixtureA', 'fixtureB', 'fixtureC-commission-1bu'];
 
 const localSmoke = existsSync(localSmokeFile) ? JSON.parse(await readFile(localSmokeFile, 'utf8')) : null;
 const rows = [];

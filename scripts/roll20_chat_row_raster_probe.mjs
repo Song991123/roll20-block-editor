@@ -329,7 +329,7 @@ function decide({ priority, rowPaintSource, raster }) {
 function nextAction(decision) {
   switch (decision) {
     case 'COC_ROW_RASTER_MODEL_REQUIRED':
-      return 'build the next YSHY/CoC experiment from row-level background/text raster evidence, not a CSS filter';
+      return 'build the next fixtureC/CoC experiment from row-level background/text raster evidence, not a CSS filter';
     case 'ROW_LUMA_RASTER_MODEL_REQUIRED':
       return 'inspect row-level luma/background/text antialiasing before another renderer CSS candidate';
     case 'ROW_MASK_RASTER_MODEL_REQUIRED':

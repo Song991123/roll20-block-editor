@@ -200,7 +200,7 @@ function renderMarkdown(report) {
   lines.push('## Next Action');
   lines.push('');
   lines.push('- If a fixture has alias-only hide selectors and local screenshots show extra conditional content, compare Roll20 actual DOM/class rewriting before changing production CSS.');
-  lines.push('- Do not blindly add dual selectors globally; verify this behavior against at least AW2E, Les-Oublies, and YSHY full-root evidence.');
+  lines.push('- Do not blindly add dual selectors globally; verify this behavior against at least fixtureA, fixtureB, and fixtureC full-root evidence.');
   lines.push('');
   return `${lines.join('\n')}\n`;
 }

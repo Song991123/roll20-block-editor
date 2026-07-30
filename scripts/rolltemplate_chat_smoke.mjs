@@ -545,7 +545,7 @@ async function clickRollAndReadChat(page, fixtureId) {
       const tdStyle = readStyle(firstTd);
       const checks = [];
       if (
-        smokePolicies?.chatTypographyPolicy === 'aw2e-message-cell-wrap-context' &&
+        smokePolicies?.chatTypographyPolicy === 'fixtureA-message-cell-wrap-context' &&
         root?.classList.contains('sheet-rolltemplate-aw')
       ) {
         checks.push({
@@ -825,7 +825,7 @@ async function main() {
     await page.goto(report.baseUrl, { waitUntil: 'networkidle' });
     await page.evaluate(() => localStorage.setItem('__perfOn', '1'));
     await page.evaluate((policy) => {
-      if (policy === 'roll20-chat-fallback' || policy === 'roll20-sandbox-font-proxy' || policy === 'yshy-bookk-unavailable') {
+      if (policy === 'roll20-chat-fallback' || policy === 'roll20-sandbox-font-proxy' || policy === 'fixtureC-bookk-unavailable') {
         localStorage.setItem('__r20ChatFontPolicy', policy);
         if (policy === 'roll20-chat-fallback' || policy === 'roll20-sandbox-font-proxy') {
           localStorage.setItem('__r20SuppressUserDocumentFonts', '1');
@@ -855,9 +855,9 @@ async function main() {
       if (
         policy === 'tight-cell-spacing' ||
         policy === 'roll20-chat-shell-width-340' ||
-        policy === 'aw2e-message-full-width' ||
+        policy === 'fixtureA-message-full-width' ||
         policy === 'table-scale-x' ||
-        policy === 'aw2e-root-width-actual' ||
+        policy === 'fixtureA-root-width-actual' ||
         policy === 'coc-table-scale-x' ||
         policy === 'coc-table-intrinsic-clamp' ||
         policy === 'coc-table-actual-width' ||
@@ -880,17 +880,17 @@ async function main() {
         policy === 'roll20-shell-typography' ||
         policy === 'roll20-template-typography' ||
         policy === 'roll20-cell-metrics' ||
-        policy === 'aw2e-font-size-only' ||
-        policy === 'aw2e-text-metrics' ||
-        policy === 'aw2e-message-cell-font-context' ||
-        policy === 'aw2e-message-cell-wrap-context' ||
-        policy === 'yshy-table-font-context' ||
-        policy === 'yshy-bookk-missing-render' ||
-        policy === 'yshy-missing-bookk-table-font-context' ||
-        policy === 'yshy-sanitize-typography' ||
-        policy === 'yshy-bookk-fallback-only' ||
-        policy === 'yshy-korean-glyph-metrics' ||
-        policy === 'yshy-roll20-fallback-stack'
+        policy === 'fixtureA-font-size-only' ||
+        policy === 'fixtureA-text-metrics' ||
+        policy === 'fixtureA-message-cell-font-context' ||
+        policy === 'fixtureA-message-cell-wrap-context' ||
+        policy === 'fixtureC-table-font-context' ||
+        policy === 'fixtureC-bookk-missing-render' ||
+        policy === 'fixtureC-missing-bookk-table-font-context' ||
+        policy === 'fixtureC-sanitize-typography' ||
+        policy === 'fixtureC-bookk-fallback-only' ||
+        policy === 'fixtureC-korean-glyph-metrics' ||
+        policy === 'fixtureC-roll20-fallback-stack'
       ) {
         localStorage.setItem('__r20ChatTypographyPolicy', policy);
       } else {

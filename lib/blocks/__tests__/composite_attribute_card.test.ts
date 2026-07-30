@@ -14,7 +14,7 @@
  *   5) ATTR_NAME 비었을 때 빈 문자열 반환 + warning
  *   6) atomic 펼침과 동등 — escape/whitespace 정확
  *
- * 영시영 hardcoding 0.
+ * roll20-sheet-builder hardcoding 0.
  */
 
 import {

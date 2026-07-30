@@ -324,7 +324,7 @@ function decideProbe(signals) {
 function nextAction(decision) {
   switch (decision) {
     case 'TABLE_WIDE_INTRINSIC_WITH_CROP_OFFSET':
-      return 'build the next YSHY/CoC probe around table intrinsic width plus rolltemplate crop/top-origin context; do not use transform, global font, or spacing bundles';
+      return 'build the next fixtureC/CoC probe around table intrinsic width plus rolltemplate crop/top-origin context; do not use transform, global font, or spacing bundles';
     case 'TABLE_WIDE_INTRINSIC_AFTER_REJECTED_CSS':
       return 'test a narrow table intrinsic/caption width model that is scoped to the rolltemplate structure and backed by actual style proof';
     case 'TABLE_WIDE_INTRINSIC_PROBE':
@@ -423,9 +423,9 @@ function priorityFor(parity) {
 }
 
 function fixtureKeyForId(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureB') return 'lesOublies';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
   return fixtureId
     .replace(/^official-roll20-/, '')
     .replace(/-([a-z])/g, (_, char) => char.toUpperCase())

@@ -205,7 +205,7 @@ function decide(signals) {
 function nextAction(decision) {
   switch (decision) {
     case 'FONT_FACE_INTRINSIC_MODEL_REQUIRED':
-      return 'build a YSHY/CoC diagnostic that mirrors Roll20 font-face availability/order before table min-content sizing; direct width/overflow CSS is already no-gain';
+      return 'build a fixtureC/CoC diagnostic that mirrors Roll20 font-face availability/order before table min-content sizing; direct width/overflow CSS is already no-gain';
     case 'FONT_CONTEXT_BEFORE_WIDTH_CSS':
       return 'compare Roll20 and local font-face activation/order before another table-width candidate';
     case 'TABLE_MIN_CONTENT_MODEL_REQUIRED':
@@ -311,9 +311,9 @@ function priorityFor(parity) {
 }
 
 function fixtureKeyForId(fixtureId) {
-  if (fixtureId === 'official-roll20-AW2E') return 'aw2e';
-  if (fixtureId === 'official-roll20-Les-Oublies') return 'lesOublies';
-  if (fixtureId === 'yshy-commission-1bu') return 'yshy';
+  if (fixtureId === 'fixtureA') return 'fixtureA';
+  if (fixtureId === 'fixtureB') return 'lesOublies';
+  if (fixtureId === 'fixtureC-commission-1bu') return 'fixtureC';
   return fixtureId
     .replace(/^official-roll20-/, '')
     .replace(/-([a-z])/g, (_, char) => char.toUpperCase())

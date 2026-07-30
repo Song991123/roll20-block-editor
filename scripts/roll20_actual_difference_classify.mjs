@@ -365,7 +365,7 @@ function buildGlobalNextActions(fixtures) {
     actions.push('Run local Sandbox expected preview vs actual Roll20 DOM/CSS comparison for diffed fixtures.');
   }
   if (fixtures.some((fixture) => fixture.targets.sandbox?.status === 'SKIP')) {
-    actions.push('Apply and capture missing AW2E/YSHY generated sandbox screenshots in the dedicated sandbox/test room.');
+    actions.push('Apply and capture missing fixtureA/fixtureC generated sandbox screenshots in the dedicated sandbox/test room.');
   }
   return [...new Set(actions)];
 }

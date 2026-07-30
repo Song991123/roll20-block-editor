@@ -649,7 +649,7 @@ function buildNextChecks({ root, topFindings, contentFindings, selectorFindings,
   if (contentFindings.some((item) => item.selector.includes('button'))) {
     checks.push('Check Roll20 button pseudo/background styles separately; button deltas affect visual parity but may not explain total root height.');
   }
-  checks.push('Do not add sheet-specific fixes for Les-Oublies; any renderer patch must be generic Roll20 context behavior and rerun preview/edit regression smokes.');
+  checks.push('Do not add sheet-specific fixes for fixtureB; any renderer patch must be generic Roll20 context behavior and rerun preview/edit regression smokes.');
   return checks;
 }
 

@@ -12,7 +12,7 @@
  * 멱등성: 이미 `sheet-` / `charsheet` / `repeating_*` / `sheet-rolltemplate-*`
  * 박혀있는 식별자는 그대로 유지. 같은 입력 두 번 호출 = 같은 결과.
  *
- * 시스템 specific / 영시영 hardcoding 0 — 모든 class/id 토큰은 사용자 입력 텍스트.
+ * 시스템 specific / roll20-sheet-builder hardcoding 0 — 모든 class/id 토큰은 사용자 입력 텍스트.
  */
 
 /** prefix 미부착 reserved 토큰 — 이미 Roll20 강제 패턴. */
