@@ -92,11 +92,30 @@ const ROLE_STYLES: Record<LayerRoleKind, Omit<LayerRole, 'kind'>> = {
 // the generic classifier can infer. Keep these contracts explicit so the
 // layer panel and the Shadow edit surface agree about where children belong.
 const ROLE_KIND_OVERRIDES: Record<string, LayerRoleKind> = {
+  // The generic element block is the structured escape route for safe custom
+  // tags. It has a CONTENT statement slot, so it must remain a visible frame
+  // in the layer editor instead of becoming an opaque "other" leaf.
+  r20_element_container: 'frame',
+  // This composite emits a <div> wrapper plus user-editable CONTENT. Keep the
+  // wrapper visible as a frame even though its generated helper inputs are
+  // atomic children in the emitted HTML.
+  r20_attr_with_txt_helper: 'frame',
+  // Both composites emit a table row as one movable unit. They participate in
+  // table/flow ordering but do not accept arbitrary children directly.
+  r20_attribute_card: 'flow',
   r20_value_switch_panel: 'frame',
   r20_value_case: 'frame',
 };
 
 const CAN_RECEIVE_CHILDREN_OVERRIDES: Record<string, boolean> = {
+  // A generic element has a CONTENT statement slot. Void tags are lowered to
+  // dedicated input/media blocks by the importer, so this role stays a safe
+  // container for the generic non-void path.
+  r20_element_container: true,
+  r20_attr_with_txt_helper: true,
+  // Attribute cards are atomic composite rows; reorder the row, do not insert
+  // an unrelated block into its generated <tr> internals.
+  r20_attribute_card: false,
   // This composite emits one complete <tr>; it is reorderable in table flow,
   // but arbitrary blocks cannot be inserted into the atomic row itself.
   r20_skill_row: false,

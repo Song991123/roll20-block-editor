@@ -18,6 +18,8 @@ edit surface, not a promise that every arbitrary HTML pattern is editable.
 | `text`, `label`, `heading`, `i18n` | Text | No | Free | Visible copy or translated text |
 | `image`, `img`, `media` | Image | No | Free | A visual asset |
 | `script`, `worker`, `rolltemplate` | Sheet action | No | None | Runtime code, kept out of the visual preview |
+| `r20_element_container` | Frame | Yes | Flow | Safe custom element with an editable content slot |
+| `r20_attribute_card`, `r20_skill_row` | Flow row | No | Flow | Composite table row that moves as one unit |
 
 The classifier lives in `lib/editor/layerRoles.ts`. Each layer row exposes the
 same semantic information through `data-r20-layer-role` and
@@ -66,10 +68,11 @@ The Shadow edit surface now receives the same role lookup used by the layer
 panel. Imported DOM nodes therefore get `data-r20-layer-role` and
 `data-r20-can-drop` from one classifier instead of relying on panel-only hints.
 Table columns/column groups are table layers; value-switch panels and their
-cases are frame layers; the atomic skill-row composite stays reorderable in
-flow but does not accept arbitrary children. Composite blocks that emit several
-DOM nodes remain one intentional layer when their internal parts are exposed
-through the composite's own fields.
+cases are frame layers; the generic element and helper composites expose their
+content slots as frame layers; attribute-card and skill-row composites stay
+reorderable in flow but do not accept arbitrary children. Composite blocks that
+emit several DOM nodes remain one intentional layer when their internal parts
+are exposed through the composite's own fields.
 
 This describes the current local interaction contract. It does not claim that
 every arbitrary runtime script or third-party markup pattern is decomposed into

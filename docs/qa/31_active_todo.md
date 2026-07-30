@@ -7262,3 +7262,12 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: Retry only after a controllable authenticated Sandbox/test-room
   tab is available. Existing rooms still require a fresh visible participant
   count of exactly one and remain observation-only.
+
+## 2026-07-30 Generic layer-role coverage correction
+
+- DONE LOCAL: Generic safe element containers and helper composites now expose
+  their CONTENT slots as frame layers; atomic attribute-card rows are flow
+  layers and remain non-droppable internally.
+- VERIFIED TARGETED: Role tests cover the new frame/flow/drop contracts.
+- VERIFY OPEN: The correction improves generic layer affordances locally but
+  does not upgrade universal import coverage or actual Roll20 parity.

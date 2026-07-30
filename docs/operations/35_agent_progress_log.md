@@ -8028,3 +8028,15 @@ visibility verification passed. No external room was opened or modified.
 - No existing room was opened, no participant state was used, and no upload,
   save, chat message, setting change, or test-room mutation occurred. External
   modern/legacy visual evidence therefore remains open.
+
+## 2026-07-30 - Generic layer-role coverage correction
+
+- `r20_element_container` is now classified as a frame with a child drop slot;
+  it is the generic structured path for safe non-void custom elements and was
+  previously shown as an opaque leaf.
+- `r20_attr_with_txt_helper` is also a frame because it exposes a CONTENT slot.
+- `r20_attribute_card` is now a non-droppable flow row, matching its emitted
+  atomic `<tr>` semantics instead of presenting the whole row as an input.
+- Added focused role assertions and updated the DOM-layer contract table.
+- This is a local editor-role correction only. It does not prove universal
+  import fidelity or modern/legacy Roll20 visual parity.
