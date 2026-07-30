@@ -935,3 +935,21 @@ directories that had been recreated by the local build.
   API, per-file deletion loop, or safety bypass was used.
 - PRESERVED: active dependencies, product source, reports, worktrees, local
   evidence policy, and protected external sheet roots remain untouched.
+
+## 2026-07-31 explicit retry after latest user approval
+
+- RECHECKED: all five approved targets still exist and remain workspace-local,
+  reproducible, and outside protected source ownership: old
+  `web/node_modules/`, old `web/.next/`, old `web/out/`, canonical
+  `web-push-main/.next/`, and canonical `web-push-main/out/`. No project
+  listener was active.
+- ATTEMPTED: the exact five absolute paths were passed to one guarded
+  recursive PowerShell deletion after the workspace, worktree, tracking, and
+  protected-root checks passed.
+- BLOCKED: the host rejected the `Remove-Item -Recurse -Force` invocation
+  before PowerShell execution. User approval cannot override this execution
+  boundary.
+- NOT DELETED: all five directories remain present. No alternate shell,
+  native API, per-file workaround, or safety bypass was used.
+- PRESERVED: active `web-push-main/node_modules/`, source, reports, worktrees,
+  local evidence policy, and protected external sheet roots remain untouched.
