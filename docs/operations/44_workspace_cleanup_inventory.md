@@ -1041,3 +1041,19 @@ directories that had been recreated by the local build.
   lint, and the fixture-A/fixture-B preview-edit smoke passed.
 - VERIFIED: active source, dependencies, worktrees, protected external roots,
   and local report policy remain intact; no project or CDP listener remains.
+
+## 2026-07-31 latest user-authorized deletion retry
+
+- RECHECKED: the only currently present approved cleanup targets are the
+  ignored generated directories `web-push-main/.next/` and
+  `web-push-main/out/`. Both are inside the active worktree, untracked, and
+  outside protected source ownership. No project listener was active.
+- ATTEMPTED: the user explicitly authorized complete deletion after the
+  absolute-path, tracking, worktree, and protected-root checks passed.
+- BLOCKED: the host rejected the exact guarded PowerShell
+  `Remove-Item -LiteralPath ... -Recurse -Force` invocation before PowerShell
+  execution. User approval cannot override this host execution boundary.
+- NOT DELETED: both generated directories remain present. No alternate shell,
+  native API, per-file workaround, or safety bypass was used.
+- PRESERVED: active dependencies, source, reports, worktrees, local evidence
+  policy, and protected external sheet roots remain untouched.
