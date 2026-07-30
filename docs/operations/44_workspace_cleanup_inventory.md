@@ -764,3 +764,21 @@ directories that had been recreated by the local build.
 - NOT DELETED: no selected path changed. No alternate shell, native API,
   per-file deletion loop, or safety bypass was used. The cleanup remains
   pending a permitted maintenance operation.
+
+## 2026-07-30 current user-authorized retry result
+
+- RECHECKED: old `web/` generated/dependency output, canonical `.next/`,
+  `out/`, `.tmp/`, generated report child directories, and generated Next
+  metadata were inside the workspace and outside protected ownership. No
+  project listener was active; canonical `node_modules/`, source, fixtures
+  policy, `reports/README.md`, worktrees, and protected sheet roots were
+  excluded.
+- ATTEMPTED: the user explicitly authorized complete deletion. The exact
+  boundary-checked recursive operation was rejected by the host before
+  PowerShell execution. A separate exact generated-file deletion attempt was
+  rejected the same way.
+- NOT DELETED: no selected target changed. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- VERIFIED: source, active dependencies, Git worktrees, report policy, and
+  protected external sheet roots remain untouched. The remaining disposable
+  targets require a permitted maintenance operation outside this session.

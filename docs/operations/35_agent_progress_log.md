@@ -8814,3 +8814,24 @@ visibility verification passed. No external room was opened or modified.
   output and stale caches are eligible for deletion. Active dependencies,
   source, Git worktrees, protected sheet roots, report policy, and any evidence
   still needed for the next verification step remain preserved.
+
+## 2026-07-30 - Mode-specific Roll20 surface correction
+
+- Live external probes showed a real mode distinction inside authored content:
+  modern uses Helvetica Neue at 13px, while the legacy-enabled room uses
+  sans-serif at 16px with 20px line-height; legacy labels use 19.2px and an
+  8px bottom margin, text inputs remain 13px, and roll buttons use 20.8px.
+- Added a generic legacy sheet-surface layer in `roll20_base.ts`. It
+  is not tied to any sheet identity and remains before authored CSS so user CSS
+  can override it. The iframe and Shadow serializers consume the same layer.
+- Fixed a real toggle bug: the persistent iframe retained the initial base
+  surface after switching compatibility mode. Live patches now replace only
+  the small `roll20-legacy-sheet-surface` slot, avoiding repeated
+  transfer of the large base CSS while preserving mode truth.
+- Focused render-mode, bundle, runtime, and emit tests pass; production build,
+  persistent-preview, and edit-flow browser smokes pass. One iframe remained
+  through modern -> legacy -> modern and returned the measured values each way.
+- Scope: external evidence is anonymous synthetic runtime/geometry and real
+  roll/chat behavior for one modern Sandbox and one dedicated legacy room.
+  Pixel parity for arbitrary sheets remains open; no source-derived payload,
+  screenshot, room identity, or report was added to Git.

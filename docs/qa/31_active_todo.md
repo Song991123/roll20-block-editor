@@ -8104,3 +8104,25 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   obsolete generated reports may be deleted after this record. Active
   dependencies, source, Git worktrees, protected sheet roots, report policy,
   and evidence still needed for the next verification step remain preserved.
+
+## 2026-07-30 Mode-specific Roll20 surface parity
+
+- `DONE LOCAL`: The shared Roll20 render contract now keeps the modern
+  base CSS stable and swaps a separate `roll20-legacy-sheet-surface`
+  layer when compatibility mode changes. The layer is used by iframe preview,
+  Shadow/edit serialization, and live patch application together.
+- `VERIFIED LOCAL`: A browser roundtrip kept the same iframe while
+  switching modern -> legacy -> modern. Legacy calculated `sans-serif`,
+  `16px`, and `20px` line-height on authored content; labels
+  became `19.2px` with `8px` bottom margin; text inputs stayed
+  `13px`; roll buttons became `20.8px`. Modern values
+  returned after switching back. Persistent-preview and edit-flow smokes pass.
+- `VERIFIED EXTERNAL / ANONYMOUS`: The isolated modern Sandbox and
+  dedicated legacy-enabled room each showed exactly one visible member, one
+  sheet iframe/root, the anonymous `420x180` authored root, and a real
+  default rolltemplate chat result. This is runtime/geometry and interaction
+  evidence for one synthetic payload only.
+- `VERIFY / OPEN`: External authored-root screenshots were not
+  pixel-identical before this local typography correction, and a normalized
+  post-fix screenshot diff has not been captured. Arbitrary-sheet visual parity,
+  assets, worker execution, and non-default templates remain open.

@@ -82,9 +82,9 @@ local output and is deleted after the verification batch.
 | Universal HTML/CSS/translation mapping | VERIFY/PARTIAL | Anonymous custom and legacy compatibility roundtrips now pass locally; arbitrary official/community/custom coverage is not proven. |
 | Future JS/worker preservation | VERIFY/PARTIAL | Separate workspace/export and hidden-runtime smokes pass locally; actual Roll20 worker execution is not proven. |
 | Modern local preview/edit surface | VERIFY/GOOD_LOCAL | Preview and edit share the persistent iframe surface with an edit-only overlay. |
-| Modern Roll20 Sandbox render | BLOCKED_EXTERNAL | Upload dispatch occurred, but visible sheet activation and screenshot evidence are missing. |
-| Legacy Roll20 render | VERIFY/OPEN | Requires a separate dedicated legacy-enabled destination and current evidence. |
-| Rolltemplate/chat parity | VERIFY/SYNTHETIC_ONLY | Local chat simulation works; actual template-by-template visual parity is unproven. |
+| Modern Roll20 Sandbox render | VERIFY/PARTIAL | Anonymous Sandbox runtime/root/geometry and real default-template chat evidence exist; pixel parity for arbitrary sheets is unproven. |
+| Legacy Roll20 render | VERIFY/PARTIAL | Anonymous dedicated legacy-enabled runtime/root/geometry and real default-template chat evidence exist; pixel parity for arbitrary sheets is unproven. |
+| Rolltemplate/chat parity | VERIFY/PARTIAL | One anonymous default template reached real chat in both destinations; template-by-template visual parity remains unproven. |
 | Asset loading/relink | VERIFY/PARTIAL | Safety checks and relink guidance exist; user-owned HTTP(S) asset targets are required for real asset-paint comparison. |
 | Figma-like edit UX | VERIFY/PARTIAL | Flow/free placement, before/inside/after drops, iframe-crossing gallery/layer-panel drops, layer roles, and canvas controls exist; broad imported-sheet UX still needs polish. |
 | Public copyright safety | VERIFY/ONGOING | Real or derived sheets, screenshots, fixtures, and reports are excluded from the public tree. |
@@ -180,3 +180,19 @@ contained the three expected HTML/CSS/Translation inputs. The extension denied
 the automated file chooser assignment, so no file was uploaded and no room or
 chat state changed. The tab remains a user handoff; actual modern rendering and
 legacy-room comparison are still unverified.
+
+## Current External Runtime Update - 2026-07-30
+
+The earlier chooser-blocked entries above are historical attempts. A later
+anonymous verification run used the isolated modern Sandbox and a separate
+legacy-enabled test room. Both destinations had a fresh visible participant
+count of exactly one. Each rendered one iframe and one sheet root with the same
+anonymous 420x180 authored root, and each real roll produced a numeric result
+in the default template chat. This is positive runtime/geometry/interaction
+evidence for one synthetic payload, not a universal or pixel-parity claim.
+
+The local renderer now has a mode-specific legacy surface layer and can switch
+modern -> legacy -> modern without replacing the persistent iframe. Local
+computed-style verification matches the measured mode distinction, and the
+persistent-preview/edit-flow smokes pass. The remaining P0 is normalized
+post-fix screenshot comparison and broader anonymous structure/asset coverage.

@@ -24,6 +24,7 @@ import {
   roll20BaseShadowCss,
   roll20DarkmodeIframeCss,
   roll20DarkmodeShadowCss,
+  roll20LegacySheetSurfaceCss,
 } from './roll20_base';
 import { isRoll20WorkerScript } from '../import/worker_source';
 import { runtimeCss } from './runtime';
@@ -642,6 +643,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     if (typeof data.htmlKey !== 'string' || !/^[a-z0-9-]{1,128}$/.test(data.htmlKey)) return;
     if (!data.styles || typeof data.styles !== 'object') return;
     var allowedStyles = [
+      'roll20-legacy-sheet-surface',
       'roll20-base-dark',
       'roll20-legacy-input-state',
       'r20-layer-filter',
@@ -1854,7 +1856,8 @@ function buildSheetDocFromContract(
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>시트 미리보기</title>
 <!-- spec 25 + actual Roll20 probe: 실 Roll20 sandbox CSS (ground truth) → runtime overlay → user CSS -->
-<style id="roll20-base">${roll20BaseIframeCss}</style>${darkMode ? `
+<style id="roll20-base">${roll20BaseIframeCss}</style>
+<style id="roll20-legacy-sheet-surface">${legacyCssSanitize ? roll20LegacySheetSurfaceCss : ''}</style>${darkMode ? `
 <style id="roll20-base-dark">${roll20DarkmodeIframeCss}</style>` : ''}
 <style id="roll20-dialog-open">${ROLL20_DIALOG_OPEN_CSS}</style>
 ${legacyCssSanitize ? `<style id="roll20-legacy-input-state">${ROLL20_LEGACY_INPUT_STATE_CSS}</style>` : ''}
@@ -1894,6 +1897,7 @@ function buildSheetLivePatchFromContract(
   );
   const htmlKey = sheetSourceKey(html);
   const styles = {
+    'roll20-legacy-sheet-surface': contract.legacyCssSanitize ? roll20LegacySheetSurfaceCss : '',
     'roll20-base-dark': darkMode ? roll20DarkmodeIframeCss : '',
     'roll20-legacy-input-state': contract.legacyCssSanitize ? ROLL20_LEGACY_INPUT_STATE_CSS : '',
     'r20-layer-filter': layerFilterCss(),
@@ -1992,6 +1996,10 @@ function buildSheetPartsFromContract(
   const darkMode = opts.darkMode === true;
   const css = [
     styleSourceChunk('roll20-base', roll20BaseShadowCss),
+    styleSourceChunk(
+      'roll20-legacy-sheet-surface',
+      legacyCssSanitize ? roll20LegacySheetSurfaceCss : '',
+    ),
     darkMode ? styleSourceChunk('roll20-darkmode', roll20DarkmodeShadowCss) : '',
     styleSourceChunk('roll20-dialog-context', ROLL20_DIALOG_OPEN_CSS),
     legacyCssSanitize ? styleSourceChunk('roll20-legacy-input-state', ROLL20_LEGACY_INPUT_STATE_CSS) : '',
