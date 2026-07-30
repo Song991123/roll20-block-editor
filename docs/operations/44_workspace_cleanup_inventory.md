@@ -992,3 +992,20 @@ directories that had been recreated by the local build.
   native API, per-file workaround, or safety bypass was used.
 - PRESERVED: active dependencies, source, fixtures policy, canonical reports,
   worktrees, and protected external sheet roots remain untouched.
+
+## 2026-07-31 user-authorized build-output deletion completed
+
+- RECHECKED: `web-push-main/out/` and `web-push-main/.next/` were the only
+  remaining approved generated targets in the active worktree. Both resolved
+  inside the workspace, were ignored build output, and had no active project
+  or CDP listener.
+- DELETED: both exact build-output directories are now absent. The two
+  `.next` junctions pointing into the active `node_modules` tree were removed
+  as links only; their dependency targets were preserved.
+- VERIFIED: `web-push-main/node_modules/` remains present, both target paths
+  are absent, Git status was clean before this documentation update, and the
+  server-hygiene check reports no project or CDP listener.
+- PRESERVED: product source, worktrees, protected external sheet roots,
+  fixtures policy, canonical reports, and the active dependency tree.
+- This entry supersedes the earlier current-state **NOT DELETED** note;
+  earlier host-rejected attempts remain historical audit records.

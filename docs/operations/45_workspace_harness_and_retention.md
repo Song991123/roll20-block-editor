@@ -461,3 +461,19 @@ external material remain preserved.
   host execution boundary.
 - NOT DELETED: both `.next/` and `out/` remain. No alternate shell, native
   API, per-file workaround, or safety bypass was used.
+
+## 2026-07-31 user-authorized build-output deletion completed
+
+- RECHECKED: `web-push-main/out/` and `web-push-main/.next/` were the only
+  approved generated targets present in the active worktree. No project or
+  CDP listener was active.
+- DELETED: both exact directories are absent. The two `.next` junctions were
+  removed as links only; their targets under the active `node_modules` tree
+  remain intact.
+- VERIFIED: the active dependency tree remains present, both build-output
+  paths are absent, and `check:server-hygiene` reports no project or CDP
+  listener.
+- PRESERVED: source, worktrees, protected external sheet roots, fixtures,
+  canonical reports, and four-zone markers.
+- This supersedes the earlier current-state **NOT DELETED** note; prior host
+  rejections remain historical records.
