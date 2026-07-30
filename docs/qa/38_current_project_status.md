@@ -25,6 +25,10 @@ local output and is deleted after the verification batch.
   so no new Sandbox upload, screenshot, room write, or parity evidence exists.
 - Latest CDP preflight: `CDP_CLOSED`, `targets=0`, `roll20Targets=0`; no new
   browser process was launched by this verification batch.
+- Latest anonymous local regression: L2 roundtrip, large-workspace
+  reparenting, modern/legacy preview-edit visual smoke, and synthetic Sandbox
+  sanitize preview all passed. This does not promote arbitrary-sheet or
+  actual-Roll20 parity.
 - User-sheet capture count remains `0`; dedicated legacy-room capture count
   remains `0`. Historical anonymous synthetic runtime observations are not
   promoted to current user-sheet parity.

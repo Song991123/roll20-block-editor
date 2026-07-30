@@ -1,3 +1,14 @@
+## 2026-07-31 - Anonymous synthetic regression batch
+
+- Confirmed the public visual-fixture directory is empty; no real or derived
+  sheet source was used in this batch.
+- L2 browser roundtrip passed. The large-workspace smoke passed with 5,205
+  blocks, one persistent iframe, virtualized layer rows, and successful
+  inside reparenting reflected in emitted preview output.
+- Synthetic modern/legacy preview-edit visual smoke reported zero mismatch,
+  and synthetic Sandbox sanitize preview passed with no console/page errors.
+- These are local synthetic contracts only; actual Roll20 parity remains open.
+
 ## 2026-07-31 - Roll20 CDP preflight recheck
 
 - The preflight helper reported `CDP_CLOSED` with zero browser targets and

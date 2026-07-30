@@ -1,3 +1,18 @@
+## 2026-07-31 Anonymous synthetic regression batch
+
+- VERIFIED LOCAL: The public `test-fixtures/visual/` directory contains no
+  local source fixture, so no real sheet payload was used or exposed.
+- VERIFIED LOCAL: Anonymous browser L2 import -> emit -> re-import -> emit
+  roundtrip passed.
+- VERIFIED LOCAL: The large-workspace smoke passed with 5,205 model blocks,
+  one persistent iframe, zero Shadow edit hosts, searchable layers, and a
+  successful inside reparenting/drop reflected in preview output.
+- VERIFIED LOCAL: Synthetic modern and legacy preview/edit visual smoke passed
+  at `0%` mismatch; synthetic Roll20 Sandbox preview/sanitize smoke passed
+  with no console or page errors.
+- VERIFY / OPEN: Synthetic evidence does not prove arbitrary user-sheet
+  fidelity or actual Roll20 Sandbox/legacy-room parity.
+
 ## 2026-07-31 Roll20 CDP preflight recheck
 
 - VERIFY / BLOCKED EXTERNAL: `preflight:roll20-cdp` reports `CDP_CLOSED`,
