@@ -41,7 +41,9 @@
   authored user CSS in both iframe and Shadow bundle paths. Preview-only
   runtime hiding remains last so authored scripts cannot become visible.
 - VERIFIED LOCAL: The build-doc bundle test asserts source order in both
-  render surfaces; the shared iframe CSS smoke and full CI remain green.
+  render surfaces; synthetic modern/legacy preview-edit visual smoke reports
+  `0%` mismatch in both modes, and persistent iframe smoke reports `loads=0`.
+- VERIFIED LOCAL: The shared iframe CSS smoke and full CI remain green.
 - VERIFY / OPEN: This closes a local cascade-order defect, not actual Roll20
   screenshot parity or arbitrary-sheet CSS coverage.
 

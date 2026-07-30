@@ -9,10 +9,10 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `96b5caf`. The branch is pushed to
+- Active branch: `claude/design-reset` at `c8b71fd`. The branch is pushed to
   `origin` and the worktree is clean.
-- Remote CI: run `30573343174` passed safety/unit verification, lint, and
-  build for `96b5caf`.
+- Remote CI: run `30573457763` passed safety/unit verification, lint, and
+  build for `c8b71fd`.
 - Static corpus inventory: two protected external roots were read-only scanned;
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
@@ -37,7 +37,9 @@ local output and is deleted after the verification batch.
   computed style with one persistent iframe and zero browser errors.
 - Cascade recheck: the optional renderer-model CSS is emitted before
   authored user CSS in both iframe and Shadow bundle paths, with source-order
-  assertions in the build-doc test. This is local cascade evidence only.
+  assertions in the build-doc test. Synthetic modern/legacy preview-edit
+  visual smoke reports `0%` mismatch and persistent iframe smoke reports
+  `loads=0`; this is local cascade evidence only.
 - Roll20 external state: the current in-app browser has no attached tab and
   the existing Chrome tab inventory has no Roll20 target, so authenticated
   Sandbox and dedicated legacy-room verification remain open. No credentials
@@ -49,8 +51,8 @@ local output and is deleted after the verification batch.
   are removed from the product path. Generic Roll20 policies remain.
 - Latest local upload contract: resumable HTML/CSS/Translation handoff with
   page-token retry detection; no source payload is stored in public files.
-- External state: the available in-app Roll20 tab is the login screen, so no
-  new Sandbox upload, screenshot, room write, or parity evidence exists.
+- External state: no attached Roll20 tab is available, so no new Sandbox
+  upload, screenshot, room write, or parity evidence exists.
 - Latest CDP preflight: `CDP_CLOSED`, `targets=0`, `roll20Targets=0`; no new
   browser process was launched by this verification batch.
 - Latest anonymous local regression: L2 roundtrip, large-workspace

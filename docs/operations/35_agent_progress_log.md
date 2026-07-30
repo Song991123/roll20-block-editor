@@ -37,8 +37,9 @@
   standalone iframe document and Shadow bundle. Preview-only hidden-runtime
   CSS stays after user CSS to preserve the no-visible-JS boundary.
 - Added source-order assertions to `buildDocBundle.test.ts` for both render
-  surfaces. The fix is local cascade evidence only; actual Roll20 parity is
-  still open.
+  surfaces. Synthetic modern/legacy preview-edit visual smoke then reported
+  `0%` mismatch in both modes, and persistent iframe smoke reported `loads=0`.
+  The fix is local cascade evidence only; actual Roll20 parity is still open.
 
 ## 2026-07-31 - Roll20 browser authentication preflight
 
