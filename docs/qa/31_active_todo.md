@@ -1,3 +1,11 @@
+## 2026-07-31 Roll20 CDP preflight recheck
+
+- VERIFY / BLOCKED EXTERNAL: `preflight:roll20-cdp` reports `CDP_CLOSED`,
+  `targets=0`, and `roll20Targets=0` on `127.0.0.1:9222`.
+- No browser launch, login, upload, settings save, chat action, or room
+  mutation was performed. The next step remains a user-visible logged-in
+  Sandbox session, followed by a separately participant-gated legacy target.
+
 ## 2026-07-31 Local interaction and cleanup recheck
 
 - VERIFIED LOCAL: `corepack pnpm run smoke:edit-flow` passed.

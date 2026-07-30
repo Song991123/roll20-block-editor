@@ -23,6 +23,8 @@ local output and is deleted after the verification batch.
   page-token retry detection; no source payload is stored in public files.
 - External state: no Chrome Roll20 tabs were available at the latest recheck,
   so no new Sandbox upload, screenshot, room write, or parity evidence exists.
+- Latest CDP preflight: `CDP_CLOSED`, `targets=0`, `roll20Targets=0`; no new
+  browser process was launched by this verification batch.
 - User-sheet capture count remains `0`; dedicated legacy-room capture count
   remains `0`. Historical anonymous synthetic runtime observations are not
   promoted to current user-sheet parity.

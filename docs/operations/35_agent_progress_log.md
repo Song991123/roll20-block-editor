@@ -1,3 +1,10 @@
+## 2026-07-31 - Roll20 CDP preflight recheck
+
+- The preflight helper reported `CDP_CLOSED` with zero browser targets and
+  zero Roll20 targets at `127.0.0.1:9222`.
+- No browser was launched and no Roll20 login, upload, save, chat, or room
+  mutation occurred. Actual modern/legacy parity remains VERIFY/OPEN.
+
 ## 2026-07-31 - Local interaction and cleanup recheck
 
 - Re-ran `smoke:edit-flow`, strict `smoke:imported-edit-sync`, and
