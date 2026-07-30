@@ -7788,3 +7788,13 @@ visibility verification passed. No external room was opened or modified.
   both compatibility modes.
 - BOUNDARY: This is a local synthetic baseline only; actual Sandbox upload and
   dedicated legacy-room evidence remain open.
+
+## 2026-07-30 - Roll20 browser reconnect boundary
+
+- The browser connection listed only the existing modern/legacy editor tabs;
+  no Sandbox settings tab was present. Both full and lightweight visible-DOM
+  reads timed out before page state could be inspected.
+- No room, Sandbox payload, character, chat, or setting was mutated. This is an
+  external browser-availability blocker, not a positive upload result.
+- Next step remains a responsive authenticated Sandbox handoff followed by a
+  separate participant-gated legacy test-room run.

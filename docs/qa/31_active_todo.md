@@ -7040,3 +7040,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN`: The disposable baseline does not replace user-provided
   Roll20 evidence. Modern Sandbox upload and dedicated legacy-room parity are
   still separate P0 gates.
+
+## 2026-07-30 Roll20 browser reconnect status
+
+- `VERIFY / BLOCKED_EXTERNAL`: The connected browser currently exposes only
+  the two editor tabs; no Sandbox settings tab is available. Lightweight
+  visible-DOM reads time out before page state can be inspected.
+- No existing room, Sandbox payload, character, chat message, or setting was
+  changed during this probe.
+- NEXT P0: resume from a responsive authenticated Sandbox tab or a supported
+  user-visible file handoff, then collect modern and dedicated legacy evidence
+  separately.
