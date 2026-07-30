@@ -35,6 +35,16 @@
 - VERIFY / OPEN: This improves truthful local feedback only. It does not
   establish arbitrary-sheet CSS fidelity or actual Roll20 visual parity.
 
+## 2026-07-31 Render cascade order correction
+
+- DONE LOCAL: The optional diagnostic renderer-model CSS now loads before
+  authored user CSS in both iframe and Shadow bundle paths. Preview-only
+  runtime hiding remains last so authored scripts cannot become visible.
+- VERIFIED LOCAL: The build-doc bundle test asserts source order in both
+  render surfaces; the shared iframe CSS smoke and full CI remain green.
+- VERIFY / OPEN: This closes a local cascade-order defect, not actual Roll20
+  screenshot parity or arbitrary-sheet CSS coverage.
+
 ## 2026-07-31 Roll20 browser authentication preflight
 
 - VERIFY / BLOCKED EXTERNAL: The existing in-app browser tab is on the Roll20

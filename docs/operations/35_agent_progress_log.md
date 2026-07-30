@@ -31,6 +31,15 @@
   emitted CSS changes the preview iframe computed style. This is local UX
   evidence, not arbitrary-sheet or Roll20 parity evidence.
 
+## 2026-07-31 - Render cascade order correction
+
+- Moved the optional renderer-model CSS before authored user CSS in both the
+  standalone iframe document and Shadow bundle. Preview-only hidden-runtime
+  CSS stays after user CSS to preserve the no-visible-JS boundary.
+- Added source-order assertions to `buildDocBundle.test.ts` for both render
+  surfaces. The fix is local cascade evidence only; actual Roll20 parity is
+  still open.
+
 ## 2026-07-31 - Roll20 browser authentication preflight
 
 - The existing in-app browser tab was read-only inspected and showed the

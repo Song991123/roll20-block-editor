@@ -35,6 +35,12 @@ const sandboxScriptBundle = buildSheetRenderBundle({
   roll20SandboxSanitize: true,
   html: '<section class="card">Sheet</section><script>window.pageRuntime = true;</script><script type="text/worker">on("sheet:opened", function () { setAttrs({ hp: 10 }); });</script>',
 });
+const rendererModel = ['input', 'flow', '27'].join('-') as 'input-flow-27';
+const rendererModelBundle = buildSheetRenderBundle({
+  ...options,
+  roll20RendererModel: rendererModel,
+  css: '.card input[type="text"] { min-height: 9px; }',
+}, { includeParts: true });
 
 assert.equal(bundle.doc, buildSheetDoc(options), 'bundled document matches the standalone builder');
 assert.deepEqual(
@@ -103,6 +109,28 @@ assert.doesNotMatch(
   sandboxScriptBundle.doc,
   /page-runtime|window\.pageRuntime/,
   'Sandbox preview keeps ordinary page JavaScript inert',
+);
+const iframeStyleOrder = [
+  'id="r20-runtime"',
+  'id="r20-layer-filter"',
+  'id="r20-renderer-model"',
+  'id="r20-user"',
+  'id="r20-preview-hidden"',
+].map((marker) => bundle.doc.indexOf(marker));
+assert(
+  iframeStyleOrder.every((index, i) => index >= 0 && (i === 0 || index > iframeStyleOrder[i - 1])),
+  `iframe CSS source order must keep renderer model before user CSS: ${iframeStyleOrder.join(',')}`,
+);
+const shadowStyleOrder = [
+  'r20-style-source:app-preview-runtime',
+  'r20-style-source:app-layer-filter',
+  'r20-style-source:roll20-renderer-model',
+  'r20-style-source:sheet-user-css',
+  'r20-style-source:preview-hidden-runtime',
+].map((marker) => rendererModelBundle.parts?.css.indexOf(marker) ?? -1);
+assert(
+  shadowStyleOrder.every((index, i) => index >= 0 && (i === 0 || index > shadowStyleOrder[i - 1])),
+  `Shadow CSS source order must keep renderer model before user CSS: ${shadowStyleOrder.join(',')}`,
 );
 assert.match(
   sandboxScriptBundle.doc,

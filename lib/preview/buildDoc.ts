@@ -1863,8 +1863,8 @@ function buildSheetDocFromContract(
 ${legacyCssSanitize ? `<style id="roll20-legacy-input-state">${ROLL20_LEGACY_INPUT_STATE_CSS}</style>` : ''}
 <style id="r20-runtime">${runtimeCss}</style>
 <style id="r20-layer-filter">${layerFilterCss()}</style>
-<style id="r20-user">${previewCss}</style>
 <style id="r20-renderer-model">${roll20RendererModelCss(roll20RendererModel)}</style>
+<style id="r20-user">${previewCss}</style>
 <style id="r20-preview-hidden">${ROLL20_PREVIEW_HIDDEN_CSS}</style>
 </head>
 <body${darkMode ? ' data-theme="dark"' : ''} data-layer="${layer}" data-roll20-sandbox-sanitize="${roll20SandboxSanitize ? '1' : '0'}" data-roll20-renderer-model="${roll20RendererModel}" data-r20-html-key="${htmlKey}">
@@ -2005,8 +2005,8 @@ function buildSheetPartsFromContract(
     legacyCssSanitize ? styleSourceChunk('roll20-legacy-input-state', ROLL20_LEGACY_INPUT_STATE_CSS) : '',
     styleSourceChunk('app-preview-runtime', runtimeCss),
     styleSourceChunk('app-layer-filter', layerFilterCss('.charsheet')),
-    styleSourceChunk('sheet-user-css', previewCss),
     styleSourceChunk('roll20-renderer-model', roll20RendererModelCss(roll20RendererModel)),
+    styleSourceChunk('sheet-user-css', previewCss),
     styleSourceChunk('preview-hidden-runtime', ROLL20_PREVIEW_HIDDEN_CSS),
   ].join('\n');
 
