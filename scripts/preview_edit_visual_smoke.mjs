@@ -14,6 +14,10 @@
  *     --out-dir ./out --base-path /roll20-block-editor \
  *     --fixtures test-fixtures/visual --report-dir reports/preview-edit-visual \
  *     --compatibility-mode modern|legacy|both
+ *
+ * A protected source can be measured read-only without copying it into the
+ * repository by setting R20_VISUAL_SMOKE_HTML_PATH and optionally the CSS and
+ * i18n path variables. The report and screenshot identity stays `local-input`.
  */
 
 import http from 'node:http';
@@ -85,6 +89,20 @@ async function readMaybe(file) {
 }
 
 async function listFixtures() {
+  const localHtmlPath = process.env.R20_VISUAL_SMOKE_HTML_PATH;
+  if (localHtmlPath) {
+    if (ONLY && ONLY !== 'local-input') return [];
+    const html = await readMaybe(localHtmlPath);
+    if (!html.trim()) {
+      throw new Error('R20_VISUAL_SMOKE_HTML_PATH did not contain readable HTML');
+    }
+    return [{
+      id: 'local-input',
+      html,
+      css: await readMaybe(process.env.R20_VISUAL_SMOKE_CSS_PATH),
+      i18n: await readMaybe(process.env.R20_VISUAL_SMOKE_I18N_PATH),
+    }];
+  }
   const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
   const out = [];
   for (const ent of entries) {

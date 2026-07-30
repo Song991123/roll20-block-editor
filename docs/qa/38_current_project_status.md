@@ -515,3 +515,12 @@ runtime-node check, and zero console/page errors. Worker-state, emit-contract,
 and worker-parser checks passed as well. This remains local runtime evidence;
 actual modern Sandbox same-payload parity, legacy-room behavior, and universal
 source coverage remain open.
+
+## Protected local-input visual parity recheck - 2026-07-31
+
+The preview/edit visual smoke now reads protected local HTML/CSS/i18n inputs
+without copying them into the repository and reports them only as
+`local-input`. The actual imported input passed both modern and legacy local
+contracts with exact shared-crop preview/edit parity and translation checks.
+This is local evidence for one input only; actual Roll20 Sandbox activation,
+legacy-room behavior, and universal source coverage remain open.

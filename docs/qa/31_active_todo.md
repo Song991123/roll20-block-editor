@@ -8662,3 +8662,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   source coverage.
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
+
+## 2026-07-31 Protected local-input visual parity recheck
+
+- `VERIFIED LOCAL`: the preview/edit visual smoke now accepts protected local
+  HTML/CSS/i18n paths read-only under the anonymous `local-input` identity.
+  The actual imported input passed in both modern and legacy local contracts,
+  with exact shared-crop preview/edit parity and translation checks passing.
+- `VERIFY / OPEN`: this proves local preview/edit parity for one protected
+  input only; it does not prove actual Roll20 Sandbox parity, legacy-room
+  behavior, or universal source coverage.
+- `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
+  bind the same payload before collecting modern and legacy evidence.

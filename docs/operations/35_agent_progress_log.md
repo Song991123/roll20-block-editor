@@ -9344,3 +9344,13 @@ same-hash modern/legacy comparison.
 - Worker state smoke, emit-contract tests, and worker-parser tests also passed.
 - This is local runtime-boundary evidence only. Actual Roll20 same-payload and
   legacy-room parity remain external verification gates.
+
+## 2026-07-31 - Protected local-input visual parity recheck
+
+- The preview/edit visual smoke now supports read-only protected HTML/CSS/i18n
+  paths while keeping report and screenshot identity at `local-input`.
+- The actual imported input passed both modern and legacy local contracts with
+  exact shared-crop preview/edit parity and translation checks passing.
+- This remains local evidence for one protected input. It does not replace
+  actual Roll20 Sandbox activation, screenshot comparison, or legacy-room
+  behavior proof.
