@@ -1,3 +1,23 @@
+## 2026-07-31 Canonical imported layer/edit verification
+
+- DONE LOCAL: Imported edit-sync smoke now reads rendered block metadata through
+  Playwright's canonical persistent preview iframe frame. It no longer uses the
+  retired Shadow edit host for layer, non-leaf, or edit-state assertions.
+- DONE LOCAL: Edit block/root screenshots and computed-state reads use the same
+  iframe surface as preview. Parent-owned edit/drop overlays are hidden only
+  during pixel capture and restored immediately, so overlay paint is not
+  misclassified as sheet-render drift.
+- VERIFIED LOCAL: Strict imported smoke passed for three anonymous synthetic
+  fixtures with `0` console/page errors, canonical edit sync PASS, and stable
+  re-import HTML/CSS PASS. The layer-siblings fixture passed visible leaf
+  before-drop; the non-leaf flow fixture passed subtree reorder, edit/preview
+  coordinate sync, and visual mismatch `0%`.
+- VERIFIED / SKIP: The generic-elements fixture has no safe visible sibling or
+  non-leaf subtree, so only its layer checks are recorded as SKIP rather than
+  being reported as PASS.
+- VERIFY / BLOCKED EXTERNAL: No Roll20 Sandbox or room was changed in this
+  batch; authenticated browser/CDP remains unavailable.
+
 ## 2026-07-31 Generic layout sidecar coverage extension
 
 - DONE LOCAL: Expanded the computed-style comparison target set to match the

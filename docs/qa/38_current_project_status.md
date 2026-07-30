@@ -7,6 +7,20 @@ creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
+## Latest Canonical Imported Edit Verification - 2026-07-31
+
+- VERIFIED LOCAL: Imported edit-sync now uses the persistent preview iframe for
+  layer metadata, non-leaf reorder, edit state, and screenshot capture. The
+  parent edit/drop overlay is excluded only while computing pixel parity.
+- VERIFIED LOCAL: Anonymous layer-siblings fixture passed visible leaf
+  before-drop; anonymous non-leaf flow reorder passed with `0%` normalized
+  edit/preview mismatch. All three fixtures passed canonical sync, stable
+  HTML/CSS re-import, and zero console/page errors.
+- PARTIAL: Generic-elements layer checks are SKIP because that fixture has no
+  safe sibling/non-leaf structure. This does not prove universal layer editing.
+- OPEN / EXTERNAL: Roll20 Sandbox/legacy destination comparison remains
+  unverified because the authenticated browser/CDP path is unavailable.
+
 ## Latest Wrapper Geometry Reconciliation - 2026-07-31
 
 ## Latest Generic Layout Regression - 2026-07-31
@@ -47,9 +61,9 @@ local output and is deleted after the verification batch.
 
 ## Current Pushed Checkpoint - 2026-07-31
 
-- The active branch is `claude/design-reset` at `f095066`; no product source
-  changed in the cleanup-only commit. The current probe/crop-tool changes in
-  this batch are local and pending their own verification commit.
+- The active branch is `claude/design-reset` at `1b3db82`; canonical imported
+  layer/edit verification is committed and locally verified. Actual Roll20
+  destination parity remains open.
 
 ## Latest Legacy Render Correction - 2026-07-31
 

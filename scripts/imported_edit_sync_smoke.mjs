@@ -101,6 +101,22 @@ const BUILTIN_FIXTURES = [
     synthetic: true,
     genericElement: true,
   },
+  {
+    id: 'synthetic-layer-siblings',
+    html: [
+      '<div class="sheet-layer-root" style="width: 520px; min-height: 180px; padding: 12px; border: 1px solid #999">',
+      '  <div class="sheet-layer-frame" style="display: block; width: 320px; min-height: 96px; padding: 10px; border: 1px solid #69c">',
+      '    <input type="text" name="attr_layer_first" value="First"><input type="text" name="attr_layer_second" value="Second">',
+      '  </div>',
+      '</div>',
+    ].join('\n'),
+    css: [
+      '.sheet-layer-root { background: #fff; }',
+      '.sheet-layer-frame input { display: block; width: 140px; margin: 4px 0; }',
+    ].join('\n'),
+    i18n: '{}',
+    synthetic: true,
+  },
 ];
 
 const MIME = {
@@ -462,25 +478,48 @@ function safeFilePart(value) {
   return String(value).replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'fixture';
 }
 
+async function clearIframeHighlight(page) {
+  await page.evaluate(() => {
+    const iframe = document.querySelector('[data-testid="preview-iframe"]');
+    iframe?.contentWindow?.postMessage({ type: 'r20:highlight', blockId: null }, '*');
+  });
+  await page.waitForTimeout(50);
+}
+
+async function withParentEditOverlaysHidden(page, capture) {
+  await page.evaluate(() => {
+    document.querySelectorAll('[data-testid="iframe-edit-overlay"], [data-testid="iframe-edit-drop-overlay"]')
+      .forEach((element) => {
+        element.setAttribute('data-r20-capture-visibility', element.style.visibility);
+        element.style.visibility = 'hidden';
+      });
+  });
+  try {
+    return await capture();
+  } finally {
+    await page.evaluate(() => {
+      document.querySelectorAll('[data-r20-capture-visibility]').forEach((element) => {
+        element.style.visibility = element.getAttribute('data-r20-capture-visibility') || '';
+        element.removeAttribute('data-r20-capture-visibility');
+      });
+    });
+  }
+}
+
 async function screenshotEditBlock(page, blockId, screenshotPath) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
   });
-  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
-  const handle = await page.evaluateHandle((id) => {
-    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    return host?.shadowRoot?.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`) || null;
-  }, blockId);
-  const element = handle.asElement();
-  if (!element) {
-    await handle.dispose();
-    return null;
-  }
-  const box = await element.boundingBox();
-  await element.screenshot({ path: screenshotPath });
-  await handle.dispose();
-  return { path: screenshotPath, box };
+  const frame = await waitForPreviewSheetFrame(page);
+  await clearIframeHighlight(page);
+  const element = frame.locator(`[data-r20-block-id="${cssString(blockId)}"]`).first();
+  await element.waitFor({ state: 'visible', timeout: 30000 });
+  return withParentEditOverlaysHidden(page, async () => {
+    const box = await element.boundingBox();
+    await element.screenshot({ path: screenshotPath });
+    return { path: screenshotPath, box };
+  });
 }
 
 async function screenshotEditSheetRoot(page, screenshotPath) {
@@ -488,20 +527,15 @@ async function screenshotEditSheetRoot(page, screenshotPath) {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
   });
-  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
-  const handle = await page.evaluateHandle(() => {
-    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    return host?.shadowRoot?.querySelector('.charactersheet.charsheet') || null;
+  const frame = await waitForPreviewSheetFrame(page);
+  await clearIframeHighlight(page);
+  const element = frame.locator('.charactersheet.charsheet').first();
+  await element.waitFor({ state: 'visible', timeout: 30000 });
+  return withParentEditOverlaysHidden(page, async () => {
+    const box = await element.boundingBox();
+    await element.screenshot({ path: screenshotPath });
+    return { path: screenshotPath, box };
   });
-  const element = handle.asElement();
-  if (!element) {
-    await handle.dispose();
-    return null;
-  }
-  const box = await element.boundingBox();
-  await element.screenshot({ path: screenshotPath });
-  await handle.dispose();
-  return { path: screenshotPath, box };
 }
 
 async function screenshotPreviewBlock(page, blockId, screenshotPath) {
@@ -512,6 +546,7 @@ async function screenshotPreviewBlock(page, blockId, screenshotPath) {
   });
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
+  await clearIframeHighlight(page);
   const locator = frame.locator(`[data-r20-block-id="${cssString(blockId)}"]`).first();
   await locator.waitFor({ state: 'visible', timeout: 30000 });
   const box = await locator.boundingBox();
@@ -528,6 +563,7 @@ async function screenshotPreviewSheetRoot(page, screenshotPath) {
   const frame = page.frameLocator('[data-testid="preview-iframe"]').first();
   const root = frame.locator('.charactersheet.charsheet').first();
   await root.waitFor({ state: 'visible', timeout: 30000 });
+  await clearIframeHighlight(page);
   const box = await root.boundingBox();
   await root.screenshot({ path: screenshotPath });
   return { path: screenshotPath, box };
@@ -1143,18 +1179,12 @@ async function chooseEditTarget(page, excludedIds = []) {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
   });
-  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
-  await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
-    null,
-    { timeout: 30000 },
-  );
+  await waitForPreviewSheetFrame(page);
   return page.evaluate((excluded) => {
     const excludedSet = new Set(excluded);
-    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const shadow = host?.shadowRoot;
-    const root = shadow?.querySelector('.charactersheet.charsheet');
-    if (!host || !shadow || !root) return null;
+    const iframe = document.querySelector('[data-testid="preview-iframe"]');
+    const root = iframe?.contentDocument?.querySelector('.charactersheet.charsheet');
+    if (!iframe || !root) return null;
     const rootRect = root.getBoundingClientRect();
     const candidates = Array.from(root.querySelectorAll('[data-r20-block-id]'))
       .map((el) => {
@@ -1223,34 +1253,99 @@ async function chooseEditTarget(page, excludedIds = []) {
   }, excludedIds);
 }
 
+async function waitForPreviewSheetFrame(page) {
+  const iframeHandle = await page.locator('[data-testid="preview-iframe"]').elementHandle();
+  if (!iframeHandle) throw new Error('persistent preview iframe handle is missing');
+  const frame = await iframeHandle.contentFrame();
+  if (!frame) throw new Error('persistent preview iframe content frame is missing');
+  await frame.locator('.charactersheet.charsheet').waitFor({ state: 'visible', timeout: 30000 });
+  await frame
+    .locator('.charactersheet.charsheet [data-r20-block-id]')
+    .first()
+    .waitFor({ state: 'attached', timeout: 30000 });
+  return frame;
+}
+
+async function readPreviewBlockMetadata(frame) {
+  return frame.evaluate(() => {
+    const root = document.querySelector('.charactersheet.charsheet');
+    return Array.from(root?.querySelectorAll('[data-r20-block-id]') || []).map((el) => {
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return {
+        blockId: el.getAttribute('data-r20-block-id') || '',
+        tag: el.tagName.toLowerCase(),
+        role: el.getAttribute('data-r20-layer-role') || '',
+        nestedCount: el.querySelectorAll('[data-r20-block-id]').length,
+        text: String(el.textContent || '').trim().slice(0, 60),
+        visible: Boolean(
+          rect.width >= 4 &&
+          rect.height >= 4 &&
+          style.display !== 'none' &&
+          style.visibility !== 'hidden',
+        ),
+      };
+    });
+  });
+}
+
 async function runImportedLayerReorder(page) {
   await page.evaluate(() => {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
   });
-  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
-  await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
-    null,
-    { timeout: 30000 },
-  );
-  const result = await page.evaluate(async () => {
+  const frame = await waitForPreviewSheetFrame(page);
+  const renderedBlocks = await readPreviewBlockMetadata(frame);
+  const result = await page.evaluate(async (renderedBlocks) => {
+    const renderedById = new Map(renderedBlocks.map((item) => [item.blockId, item]));
+
+    function collectLayerDiagnostics() {
+      const graph = window.__perfHook.getBlockGraph?.('html') || [];
+      const layer = window.__perfHook.getLayerSnapshot?.('html') || [];
+      const graphById = new Map(graph.map((node) => [node.id, node]));
+      const visibleIds = new Set(renderedBlocks.filter((item) => item.visible).map((item) => item.blockId));
+      const siblingGroups = new Map();
+      for (const node of layer) {
+        const key = `${node.layerParentId ?? 'root'}:${node.depth}`;
+        siblingGroups.set(key, (siblingGroups.get(key) || 0) + 1);
+      }
+      return {
+        graphCount: graph.length,
+        layerCount: layer.length,
+        renderedBlockCount: renderedBlocks.length,
+        visibleBlockCount: visibleIds.size,
+        layerRelationCounts: layer.reduce((counts, node) => {
+          counts[node.layerRelation] = (counts[node.layerRelation] || 0) + 1;
+          return counts;
+        }, {}),
+        siblingGroupCount: siblingGroups.size,
+        siblingGroupSizes: [...siblingGroups.values()].sort((a, b) => b - a).slice(0, 8),
+        graphLeafCount: graph.filter((node) => node.childCount <= 0 && !node.hasNextTarget).length,
+        graphNonLeafCount: graph.filter((node) => node.childCount > 0).length,
+        layerSiblingNodeCount: layer.filter((node) => node.layerRelation === 'sibling').length,
+        visibleLayerSiblingNodeCount: layer.filter((node) => node.layerRelation === 'sibling' && visibleIds.has(node.id)).length,
+        layerSiblingDetails: layer
+          .filter((node) => node.layerRelation === 'sibling')
+          .map((node) => ({
+            type: graphById.get(node.id)?.type || '',
+            rendered: renderedById.has(node.id),
+            visible: visibleIds.has(node.id),
+            hasLayerRow: Boolean(document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(node.id)}"]`)),
+          })),
+      };
+    }
+
     function emittedIndex(id) {
       return window.__perfHook.getEmitContent().html.indexOf(`data-r20-block-id="${id}"`);
     }
 
     function findPair() {
-      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-      const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
-      if (!root) return null;
-
       const graph = window.__perfHook.getBlockGraph?.('html') || [];
       const layer = window.__perfHook.getLayerSnapshot?.('html') || [];
       const byId = new Map(graph.map((node) => [node.id, node]));
       const layerById = new Map(layer.map((node) => [node.id, node]));
       const describe = (node) => {
-        const el = root.querySelector(`[data-r20-block-id="${CSS.escape(node.id)}"]`);
-        const rect = el?.getBoundingClientRect();
+        const rendered = renderedById.get(node.id) || null;
         const layerNode = layerById.get(node.id) || null;
         return {
           blockId: node.id,
@@ -1258,26 +1353,21 @@ async function runImportedLayerReorder(page) {
           layerParentId: layerNode?.layerParentId ?? null,
           layerPreviousId: layerNode?.layerPreviousId ?? null,
           layerRelation: layerNode?.layerRelation ?? null,
-          tag: el?.tagName.toLowerCase() || node.type,
-          role: el?.getAttribute('data-r20-layer-role') || '',
-          nestedCount: el?.querySelectorAll('[data-r20-block-id]').length ?? node.childCount,
-          text: String(el?.textContent || '').trim().slice(0, 60),
-          visible: Boolean(
-            el &&
-              rect &&
-              rect.width >= 4 &&
-              rect.height >= 4 &&
-              getComputedStyle(el).display !== 'none' &&
-              getComputedStyle(el).visibility !== 'hidden',
-          ),
+          tag: rendered?.tag || node.type,
+          role: rendered?.role || '',
+          nestedCount: rendered?.nestedCount ?? node.childCount,
+          text: rendered?.text || '',
+          visible: rendered?.visible === true,
         };
       };
 
-      for (const movingNode of graph) {
-        if (!movingNode.previousId || movingNode.hasNextTarget || movingNode.childCount > 0) continue;
+      for (const movingLayer of layer) {
+        if (movingLayer.layerRelation !== 'sibling' || !movingLayer.layerPreviousId) continue;
+        const movingNode = byId.get(movingLayer.id);
+        if (!movingNode || movingNode.childCount > 0) continue;
         if (/script|worker|rolltemplate/i.test(movingNode.type)) continue;
-        const targetNode = byId.get(movingNode.previousId);
-        if (!targetNode || targetNode.nextId !== movingNode.id) continue;
+        const targetNode = byId.get(movingLayer.layerPreviousId);
+        if (!targetNode) continue;
         if (/script|worker|rolltemplate/i.test(targetNode.type)) continue;
         const targetRow = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(targetNode.id)}"]`);
         const movingRow = document.querySelector(`[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(movingNode.id)}"]`);
@@ -1300,7 +1390,14 @@ async function runImportedLayerReorder(page) {
     }
 
     const pair = findPair();
-    if (!pair) return { pass: false, skipped: true, reason: 'no imported leaf sibling pair found' };
+    if (!pair) {
+      return {
+        pass: false,
+        skipped: true,
+        reason: 'no imported leaf sibling pair found',
+        diagnostics: collectLayerDiagnostics(),
+      };
+    }
     const targetRow = document.querySelector(
       `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(pair.target.blockId)}"]`,
     );
@@ -1346,7 +1443,7 @@ async function runImportedLayerReorder(page) {
       after.targetIndex >= 0 &&
       after.movingIndex < after.targetIndex;
     return { pass, skipped: false, pair, mode, before, after };
-  });
+  }, renderedBlocks);
   return result;
 }
 
@@ -1355,13 +1452,38 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
     window.__perfHook.setPreviewZoom(1);
     window.__perfHook.setMainMode('edit');
   });
-  await page.waitForSelector('[data-testid="edit-canvas-shadow-host"]', { timeout: 30000 });
-  await page.waitForFunction(
-    () => Boolean(document.querySelector('[data-testid="edit-canvas-shadow-host"]')?.shadowRoot?.querySelector('.charactersheet.charsheet')),
-    null,
-    { timeout: 30000 },
-  );
-  const result = await page.evaluate(async () => {
+  const frame = await waitForPreviewSheetFrame(page);
+  const renderedBlocks = await readPreviewBlockMetadata(frame);
+  const result = await page.evaluate(async (renderedBlocks) => {
+    const renderedById = new Map(renderedBlocks.map((item) => [item.blockId, item]));
+
+    function collectLayerDiagnostics() {
+      const graph = window.__perfHook.getBlockGraph?.('html') || [];
+      const layer = window.__perfHook.getLayerSnapshot?.('html') || [];
+      const visibleIds = new Set(renderedBlocks.filter((item) => item.visible).map((item) => item.blockId));
+      const siblingGroups = new Map();
+      for (const node of layer) {
+        const key = `${node.layerParentId ?? 'root'}:${node.depth}`;
+        siblingGroups.set(key, (siblingGroups.get(key) || 0) + 1);
+      }
+      return {
+        graphCount: graph.length,
+        layerCount: layer.length,
+        renderedBlockCount: renderedBlocks.length,
+        visibleBlockCount: visibleIds.size,
+        layerRelationCounts: layer.reduce((counts, node) => {
+          counts[node.layerRelation] = (counts[node.layerRelation] || 0) + 1;
+          return counts;
+        }, {}),
+        siblingGroupCount: siblingGroups.size,
+        siblingGroupSizes: [...siblingGroups.values()].sort((a, b) => b - a).slice(0, 8),
+        graphLeafCount: graph.filter((node) => node.childCount <= 0 && !node.hasNextTarget).length,
+        graphNonLeafCount: graph.filter((node) => node.childCount > 0).length,
+        layerSiblingNodeCount: layer.filter((node) => node.layerRelation === 'sibling').length,
+        visibleLayerSiblingNodeCount: layer.filter((node) => node.layerRelation === 'sibling' && visibleIds.has(node.id)).length,
+      };
+    }
+
     function emittedIndex(id) {
       return window.__perfHook.getEmitContent().html.indexOf(`data-r20-block-id="${id}"`);
     }
@@ -1377,9 +1499,8 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
         .map((node) => node.id);
     }
 
-    function describe(root, node, childIds, layerById) {
-      const el = root.querySelector(`[data-r20-block-id="${CSS.escape(node.id)}"]`);
-      const rect = el?.getBoundingClientRect();
+    function describe(node, childIds, layerById) {
+      const rendered = renderedById.get(node.id) || null;
       const layerNode = layerById.get(node.id) || null;
       return {
         blockId: node.id,
@@ -1387,28 +1508,17 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
         layerParentId: layerNode?.layerParentId ?? null,
         layerPreviousId: layerNode?.layerPreviousId ?? null,
         layerRelation: layerNode?.layerRelation ?? null,
-        tag: el?.tagName.toLowerCase() || node.type,
-        role: el?.getAttribute('data-r20-layer-role') || '',
+        tag: rendered?.tag || node.type,
+        role: rendered?.role || '',
         childIds,
         childCount: childIds.length,
-        nestedCount: el?.querySelectorAll('[data-r20-block-id]').length ?? node.childCount,
-        text: String(el?.textContent || '').trim().slice(0, 60),
-        visible: Boolean(
-          el &&
-            rect &&
-            rect.width >= 4 &&
-            rect.height >= 4 &&
-            getComputedStyle(el).display !== 'none' &&
-            getComputedStyle(el).visibility !== 'hidden',
-        ),
+        nestedCount: rendered?.nestedCount ?? node.childCount,
+        text: rendered?.text || '',
+        visible: rendered?.visible === true,
       };
     }
 
     function findCandidate() {
-      const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-      const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
-      if (!root) return null;
-
       const graph = window.__perfHook.getBlockGraph?.('html') || [];
       const layer = window.__perfHook.getLayerSnapshot?.('html') || [];
       const byId = new Map(graph.map((node) => [node.id, node]));
@@ -1454,8 +1564,8 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
             `[data-testid="edit-layer-row"][data-r20-block-id="${CSS.escape(option.targetNode.id)}"]`,
           );
           if (!targetRow) continue;
-          const moving = describe(root, movingNode, childIds, layerById);
-          const target = describe(root, option.targetNode, directChildIds(graph, option.targetNode.id, option.targetNode.nextId), layerById);
+          const moving = describe(movingNode, childIds, layerById);
+          const target = describe(option.targetNode, directChildIds(graph, option.targetNode.id, option.targetNode.nextId), layerById);
           if (!moving.visible || !target.visible) continue;
           const relationMatches =
             option.direction === 'after'
@@ -1481,6 +1591,7 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
         pass: false,
         skipped: true,
         reason: 'no imported visible non-leaf sibling subtree found',
+        diagnostics: collectLayerDiagnostics(),
       };
     }
 
@@ -1568,7 +1679,7 @@ async function runImportedNonLeafLayerReorder(page, fixtureId) {
       movedAcrossTarget,
       dropPrevented: drop.defaultPrevented,
     };
-  });
+  }, renderedBlocks);
   if (!result?.pass || result?.skipped || !result?.candidate?.moving?.blockId) return result;
   const editAfter = await getEditBlockState(page, result.candidate.moving.blockId);
   const previewAfter = await getPreviewBlockState(page, result.candidate.moving.blockId);
@@ -1903,7 +2014,12 @@ async function runImportedFreeCanvasInsert(page) {
 }
 
 async function getEditBlockState(page, blockId) {
-  return page.evaluate((id) => {
+  await page.evaluate(() => {
+    window.__perfHook.setPreviewZoom(1);
+    window.__perfHook.setMainMode('edit');
+  });
+  const frame = await waitForPreviewSheetFrame(page);
+  return frame.locator('.charactersheet.charsheet').evaluate((root, id) => {
     function styleSummary(el) {
       const cs = getComputedStyle(el);
       return {
@@ -1923,6 +2039,11 @@ async function getEditBlockState(page, blockId) {
         paddingBottom: cs.paddingBottom,
         borderTopWidth: cs.borderTopWidth,
         borderBottomWidth: cs.borderBottomWidth,
+        backgroundColor: cs.backgroundColor,
+        backgroundImage: cs.backgroundImage,
+        color: cs.color,
+        borderTopColor: cs.borderTopColor,
+        borderBottomColor: cs.borderBottomColor,
       };
     }
     function childLayoutSummary(root, el) {
@@ -1971,6 +2092,17 @@ async function getEditBlockState(page, blockId) {
           left: cs.left,
           top: cs.top,
           transform: cs.transform,
+          backgroundColor: cs.backgroundColor,
+          backgroundImage: cs.backgroundImage,
+          color: cs.color,
+          borderTopColor: cs.borderTopColor,
+          borderBottomColor: cs.borderBottomColor,
+        },
+        rootStyle: styleSummary(root),
+        documentStyle: {
+          htmlBackground: getComputedStyle(root.ownerDocument.documentElement).backgroundColor,
+          bodyBackground: getComputedStyle(root.ownerDocument.body).backgroundColor,
+          bodyImage: getComputedStyle(root.ownerDocument.body).backgroundImage,
         },
         relative: {
           left: Math.round(rect.left - rootRect.left),
@@ -2005,10 +2137,8 @@ async function getEditBlockState(page, blockId) {
         }()),
       };
     }
-    const host = document.querySelector('[data-testid="edit-canvas-shadow-host"]');
-    const root = host?.shadowRoot?.querySelector('.charactersheet.charsheet');
-    const el = host?.shadowRoot?.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
-    if (!root || !el) return null;
+    const el = root.querySelector(`[data-r20-block-id="${CSS.escape(id)}"]`);
+    if (!el) return null;
     return summarize(root, el);
   }, blockId);
 }
@@ -2089,6 +2219,17 @@ async function getPreviewBlockState(page, blockId) {
           left: cs.left,
           top: cs.top,
           transform: cs.transform,
+          backgroundColor: cs.backgroundColor,
+          backgroundImage: cs.backgroundImage,
+          color: cs.color,
+          borderTopColor: cs.borderTopColor,
+          borderBottomColor: cs.borderBottomColor,
+        },
+        rootStyle: styleSummary(rootEl),
+        documentStyle: {
+          htmlBackground: getComputedStyle(rootEl.ownerDocument.documentElement).backgroundColor,
+          bodyBackground: getComputedStyle(rootEl.ownerDocument.body).backgroundColor,
+          bodyImage: getComputedStyle(rootEl.ownerDocument.body).backgroundImage,
         },
         relative: {
           left: Math.round(rect.left - rootRect.left),
@@ -2786,6 +2927,9 @@ async function main() {
           }
         }
         if (CANONICAL_IFRAME) {
+          await page.waitForTimeout(1300);
+          entry.layerReorder = await runImportedLayerReorder(page);
+          entry.nonLeafLayerReorder = await runImportedNonLeafLayerReorder(page, fixture.id);
           entry.canonicalEditSync = await runCanonicalIframeEditSync(page);
           // The canonical iframe path is the production preview/edit surface.
           // Keep its round-trip claim honest too: an edit is not fully synced
@@ -2794,6 +2938,9 @@ async function main() {
           entry.reimport = await reimportCurrentEmit(page, COMPACT_WIDE_ROWS);
           entry.interactionPass = entry.canonicalEditSync.pass === true;
           entry.interactionPass = entry.interactionPass && isStableReimport(entry.reimport);
+          entry.interactionPass = entry.interactionPass
+            && (entry.layerReorder?.pass === true || entry.layerReorder?.skipped === true)
+            && (entry.nonLeafLayerReorder?.pass === true || entry.nonLeafLayerReorder?.skipped === true);
           entry.pass = entry.interactionPass;
         } else {
         await page.waitForTimeout(1300);

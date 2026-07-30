@@ -1,3 +1,21 @@
+## 2026-07-31 - Canonical imported layer/edit verification
+
+- Rewired imported edit-sync layer and non-leaf checks to inspect the
+  persistent preview iframe through its real Playwright frame context. The
+  retired Shadow host is no longer used for these canonical assertions.
+- Rewired edit block/root screenshots and state reads to the same iframe used
+  by preview. Pixel captures temporarily hide only parent-owned edit/drop
+  overlays, then restore them; this keeps overlay paint out of render parity
+  while preserving a separate interaction smoke.
+- Strict local run passed for three anonymous synthetic fixtures with zero
+  console/page errors, canonical sync PASS, and stable HTML/CSS re-import.
+  The layer-siblings fixture passed visible leaf before-drop; the non-leaf
+  fixture passed subtree reorder and `0%` edit/preview visual mismatch. The
+  generic-elements fixture remains honestly recorded as SKIP because it has no
+  safe sibling/non-leaf structure.
+- Roll20 Sandbox/room state was not changed; browser/CDP access remains an
+  external verification boundary.
+
 ## 2026-07-31 - Generic layout sidecar coverage extension
 
 - Expanded the computed-style target set to include row/column containers,

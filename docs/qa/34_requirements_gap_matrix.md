@@ -2,6 +2,21 @@
 
 Date: 2026-07-31
 
+## Latest Canonical Imported Edit Verification - 2026-07-31
+
+- FIXED LOCAL: Imported layer/non-leaf smoke now reads the canonical persistent
+  iframe, and edit-state/capture helpers no longer depend on the retired Shadow
+  host.
+- VERIFIED LOCAL: Anonymous layer-siblings fixture passed visible leaf
+  before-drop; the non-leaf flow fixture passed subtree reorder, edit/preview
+  coordinate sync, and normalized pixel comparison at `0%` mismatch. All
+  three anonymous fixtures passed canonical sync, stable HTML/CSS re-import,
+  and zero console/page errors.
+- HONEST SKIP: The generic-elements fixture has no safe layer sibling or
+  non-leaf subtree, so only those checks are skipped for that fixture.
+- OPEN: This is local synthetic evidence only. Actual Roll20 Sandbox/legacy
+  destination parity remains pending.
+
 ## Latest Wrapper Geometry Reconciliation - 2026-07-31
 
 ## Latest Generic Layout Regression - 2026-07-31
@@ -40,9 +55,9 @@ Date: 2026-07-31
 
 ## Latest Pushed Checkpoint - 2026-07-31
 
-- The current pushed checkpoint is `f095066` on `claude/design-reset`. The
-  latest cleanup/docs-only push did not change product render code; the probe
-  and crop-tool edits in the current work batch still require commit/CI.
+- The current pushed checkpoint is `1b3db82` on `claude/design-reset`. This
+  checkpoint contains the canonical imported layer/edit verification and its
+  local evidence; actual Roll20 destination parity remains open.
 
 ## Latest Legacy Computed-Style Reconciliation - 2026-07-31
 
