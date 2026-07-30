@@ -1,3 +1,19 @@
+## 2026-07-30 - Worker binary-expression mapping
+
+- IMPLEMENTED: Added recursive parsing for the existing worker arithmetic,
+  comparison, and logical reporter blocks. The parser chooses precedence-aware
+  right-most operators, preserves nested grouping, and leaves unsupported
+  syntax on the existing literal/raw boundary.
+- IMPLEMENTED: Adjusted worker `if` emission to avoid redundant condition
+  parentheses that previously caused a supported imported graph to fall back
+  to one raw worker block during the source-stability check.
+- VERIFIED: parser `25/25`, worker workspace smoke with a synthetic nested
+  condition/calculation, lint, production build, full `ci:verify`, persistent
+  preview modern/legacy, edit-flow, and strict imported-edit sync all pass.
+- LIMIT: No actual Roll20 worker execution or chat/roll parity claim is made.
+  Modern Sandbox activation and the separate legacy-enabled room gate remain
+  open at the browser file-selection boundary.
+
 ## 2026-07-30 - i18n title/html tag preservation
 
 - IMPLEMENTED: Added source-tag preservation to the i18n title and rich-HTML

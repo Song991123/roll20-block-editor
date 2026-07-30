@@ -2,6 +2,21 @@
 
 Date: 2026-06-12
 
+## Latest Local Worker Mapping Reconciliation: 2026-07-30
+
+- Supported worker arithmetic, comparison, and logical expressions now map
+  recursively to the existing worker blocks, including nested precedence and
+  grouping. Unsupported expressions remain preserved instead of being falsely
+  marked as parsed.
+- The worker `if` emitter now avoids redundant outer grouping so the supported
+  imported graph can pass the existing source-stability gate.
+- VERIFIED LOCAL: parser `25/25`, worker workspace browser smoke, lint,
+  production build, full `ci:verify`, persistent preview in modern/legacy,
+  edit-flow, and strict imported-edit synchronization pass.
+- BOUNDARY: This is local worker mapping evidence only. Actual Roll20 worker
+  execution, roll/chat runtime parity, modern Sandbox activation, and the
+  separate legacy-room verification remain open.
+
 ## Latest Local i18n Attribute Fidelity Reconciliation: 2026-07-30
 
 - `data-i18n-title` and `data-i18n-html` now preserve supported source tags

@@ -37,6 +37,7 @@ const tasks = [
   'test:runtime-contract',
   'test:emit-contract',
   'test:preview-prefix',
+  'test:worker-parser',
   'test:import-structure',
   'test:high-priority-mapping',
   'test:imported-edit-budget',

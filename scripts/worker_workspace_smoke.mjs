@@ -116,7 +116,9 @@ async function main() {
         <div class="sheet-main"><input type="text" name="attr_hp"></div>
         <script type="text/worker">
           on('change:hp', () => {
-            setAttrs({ 'hp': 10 });
+            if ((v.hp > 0) && (v.mp > 0)) {
+              setAttrs({ 'total': (v.hp + (v.mp * 2)) });
+            }
           });
           on('clicked:roll', () => {
             setAttrs({ 'hp': 11 });
@@ -160,11 +162,15 @@ async function main() {
       result.emitWorkerBodyLen > 0 &&
       result.emitWorkerScriptCount === 1 &&
       result.parsedWorkerTypes.includes('r20_on_attr_change') &&
+      result.parsedWorkerTypes.includes('r20_worker_if') &&
+      result.parsedWorkerTypes.includes('r20_worker_logic') &&
+      result.parsedWorkerTypes.includes('r20_worker_cmp') &&
+      result.parsedWorkerTypes.includes('r20_worker_arith') &&
       result.parsedWorkerTypes.includes('r20_set_attrs') &&
       result.parsedWorkerTypes.includes('r20_on_button_click') &&
       result.parsedWorkerTopLevelCount === 2 &&
       result.parsedEmitWorkerScriptCount === 1 &&
-      result.parsedEmitWorker.includes("setAttrs({ 'hp': 10 });") &&
+      result.parsedEmitWorker.includes("setAttrs({ 'total': (v.hp + (v.mp * 2)) });") &&
       consoleErrors.length === 0;
 
     const report = {

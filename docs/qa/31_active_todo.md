@@ -1,3 +1,21 @@
+## 2026-07-30 Worker binary-expression mapping
+
+- DONE LOCAL: The worker parser now recursively maps supported top-level
+  arithmetic (`+ - * / %`), comparison (`=== !== < <= > >=`), and logical
+  (`&& ||`) expressions to the existing worker blocks. Unsupported syntax
+  remains on the literal/raw preservation path.
+- FIXED LOCAL: Worker `if` emission no longer adds a redundant outer pair of
+  condition parentheses, allowing stable parsed-block roundtrip for the
+  supported expression shape.
+- VERIFIED LOCAL: parser `25/25`, worker workspace smoke, lint, production
+  build, full `ci:verify`, persistent preview modern/legacy, edit-flow, and
+  strict imported-edit synchronization all pass.
+- VERIFY OPEN: This proves local parser/workspace/emit behavior only. Actual
+  Roll20 worker execution, chat/roll runtime parity, modern Sandbox upload,
+  and the separate legacy-enabled room remain unverified.
+- NEXT P0: Complete user-visible three-file selection in the isolated modern
+  Sandbox, then capture positive root/state/worker/roll/chat evidence.
+
 ## 2026-07-30 i18n title/html tag preservation
 
 - DONE LOCAL: `data-i18n-title` and `data-i18n-html` now share the same

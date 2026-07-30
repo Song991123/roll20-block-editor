@@ -180,6 +180,47 @@ function testNestedComplex(): void {
   assert(setBlk.valueInputs?.VALUE.blockType === 'r20_worker_v_max_ref', 'v.NAME_max recognized');
 }
 
+function testWorkerBinaryExpressions(): void {
+  const js = `if (v.hp > 0 && v.mp > 0) {
+    setAttrs({ total: v.hp + (v.mp * 2) });
+  }`;
+  const r = parseSheetWorkerScript(js);
+  const root = r.blocks[0];
+  assert(root.blockType === 'r20_worker_if', 'if root');
+
+  const condition = root.valueInputs?.CONDITION;
+  if (!condition) throw new Error('Assertion failed: missing condition');
+  assert(condition?.blockType === 'r20_worker_logic', 'logic condition');
+  assert(condition.fields.OP === '&&', 'logic operator');
+  assert(condition.valueInputs?.LHS.blockType === 'r20_worker_cmp', 'left comparison');
+  assert(condition.valueInputs?.RHS.blockType === 'r20_worker_cmp', 'right comparison');
+  assert(condition.valueInputs?.LHS.fields.OP === '>', 'left comparison operator');
+
+  const setAttrs = root.children.CHILDREN?.[0];
+  const total = setAttrs?.valueInputs?.VALUE;
+  if (!total) throw new Error('Assertion failed: missing arithmetic value');
+  assert(total?.blockType === 'r20_worker_arith', 'arithmetic value');
+  assert(total.fields.OP === '+', 'outer arithmetic operator');
+  assert(total.valueInputs?.RHS.blockType === 'r20_worker_arith', 'nested arithmetic');
+  assert(total.valueInputs?.RHS.fields.OP === '*', 'nested arithmetic operator');
+
+  const alternate = parseSheetWorkerScript(
+    `if (v.a === v.b || v.c !== v.d) { setAttrs({ result: a - b - c }); }`,
+  ).blocks[0];
+  const alternateCondition = alternate.valueInputs?.CONDITION;
+  if (!alternateCondition) throw new Error('Assertion failed: missing alternate condition');
+  assert(alternateCondition.blockType === 'r20_worker_logic', 'or condition');
+  assert(alternateCondition.fields.OP === '||', 'or operator');
+  assert(alternateCondition.valueInputs?.LHS.fields.OP === '===', 'strict equality operator');
+  assert(alternateCondition.valueInputs?.RHS.fields.OP === '!==', 'strict inequality operator');
+
+  const subtraction = alternate.children.CHILDREN?.[0]?.valueInputs?.VALUE;
+  if (!subtraction) throw new Error('Assertion failed: missing subtraction');
+  assert(subtraction.blockType === 'r20_worker_arith', 'subtraction arithmetic');
+  assert(subtraction.fields.OP === '-', 'right-most subtraction operator');
+  assert(subtraction.valueInputs?.LHS.blockType === 'r20_worker_arith', 'left-associative subtraction');
+}
+
 function testRawFallback(): void {
   // switch/case 는 v1 에서 unrecognized — raw fallback.
   const js = `switch (x) { case 1: a(); break; }`;
@@ -245,6 +286,7 @@ const tests = [
   ['removeRepeatingRow', testRemoveRepeatingRow],
   ['console.log', testConsoleLog],
   ['nested complex', testNestedComplex],
+  ['worker binary expressions', testWorkerBinaryExpressions],
   ['raw fallback (switch)', testRawFallback],
   ['comments & strings', testCommentsAndStrings],
   ['multiple top hats', testMultipleTopLevelHats],

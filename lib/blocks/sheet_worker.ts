@@ -282,7 +282,11 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     generator: (block, ctx) => {
       const cond = ctx.valueToCode(block, 'CONDITION', ORDER.NONE) || 'false';
       const body = ctx.statementToCode(block, 'CHILDREN');
-      return `if (${cond}) ${wrapBraceBody(ctx, body)}\n`;
+      // Reporter blocks already preserve their own grouping. Avoid adding a
+      // redundant outer pair here so imported worker conditions can roundtrip
+      // through the same source shape instead of falling back to raw JS.
+      const condition = cond.trim().startsWith('(') ? cond.trim() : `(${cond})`;
+      return `if ${condition} ${wrapBraceBody(ctx, body)}\n`;
     },
   },
 

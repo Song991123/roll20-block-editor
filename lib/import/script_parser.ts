@@ -458,8 +458,120 @@ function eventToHatBlock(
 // v1: literal_string fallback. 후속 phase 에서 v.NAME / 산술 / 비교 분해.
 // ---------------------------------------------------------------------------
 
+type WorkerBinaryGroup = {
+  blockType: 'r20_worker_arith' | 'r20_worker_cmp' | 'r20_worker_logic';
+  operators: readonly string[];
+};
+
+// Keep these groups ordered from lowest to highest precedence. The parser
+// picks the right-most operator in a group so left-associative expressions
+// such as `a - b - c` rebuild as `(a - b) - c`.
+const WORKER_BINARY_GROUPS: readonly WorkerBinaryGroup[] = [
+  { blockType: 'r20_worker_logic', operators: ['||'] },
+  { blockType: 'r20_worker_logic', operators: ['&&'] },
+  { blockType: 'r20_worker_cmp', operators: ['===', '!==', '<=', '>=', '<', '>'] },
+  { blockType: 'r20_worker_arith', operators: ['+', '-'] },
+  { blockType: 'r20_worker_arith', operators: ['*', '/', '%'] },
+];
+
+/** Remove only a pair of parentheses that wraps the complete expression. */
+function stripWrappingParens(text: string): string {
+  let value = text.trim();
+  while (value.startsWith('(')) {
+    const end = findMatchingClose(value, 0);
+    if (end !== value.length) break;
+    value = value.slice(1, -1).trim();
+  }
+  return value;
+}
+
+function isBinaryOperatorPosition(text: string, index: number, operator: string): boolean {
+  if (operator !== '+' && operator !== '-') return true;
+  const before = text.slice(0, index).trimEnd().slice(-1);
+  if (!before || '([{,:;!?&|=<>+-*/%'.includes(before)) return false;
+  // Do not split increment/decrement tokens into arithmetic operators.
+  const after = text[index + operator.length] ?? '';
+  if (after === operator || after === '=') return false;
+  // A negative exponent is part of a numeric literal, not subtraction.
+  if (operator === '-' && /[eE]/.test(before) && /\d/.test(text[index - 2] ?? '')) return false;
+  return true;
+}
+
+/** Find the right-most operator at depth zero, ignoring strings/comments. */
+function findTopLevelBinary(
+  text: string,
+  operators: readonly string[],
+): { index: number; operator: string } | null {
+  const ordered = [...operators].sort((a, b) => b.length - a.length);
+  let depth = 0;
+  let found: { index: number; operator: string } | null = null;
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (c === '"' || c === "'" || c === '`') {
+      const end = skipString(text, i);
+      if (end < 0) return found;
+      i = end;
+      continue;
+    }
+    if (c === '/' && text[i + 1] === '/') {
+      i = skipLineComment(text, i);
+      continue;
+    }
+    if (c === '/' && text[i + 1] === '*') {
+      i = skipBlockComment(text, i);
+      continue;
+    }
+    if (c === '(' || c === '{' || c === '[') {
+      depth++;
+      i++;
+      continue;
+    }
+    if (c === ')' || c === '}' || c === ']') {
+      depth = Math.max(0, depth - 1);
+      i++;
+      continue;
+    }
+    if (depth === 0) {
+      const match = ordered.find(
+        (operator) =>
+          text.startsWith(operator, i) && isBinaryOperatorPosition(text, i, operator),
+      );
+      if (match) {
+        found = { index: i, operator: match };
+        i += match.length;
+        continue;
+      }
+    }
+    i++;
+  }
+  return found;
+}
+
+function workerBinaryBlock(rawExpr: string): ParsedBlock | null {
+  const expression = stripWrappingParens(rawExpr);
+  if (!expression) return null;
+
+  for (const group of WORKER_BINARY_GROUPS) {
+    const match = findTopLevelBinary(expression, group.operators);
+    if (!match) continue;
+    const lhs = expression.slice(0, match.index).trim();
+    const rhs = expression.slice(match.index + match.operator.length).trim();
+    if (!lhs || !rhs) continue;
+    return {
+      blockType: group.blockType,
+      fields: { OP: match.operator },
+      children: {},
+      valueInputs: { LHS: valueBlock(lhs), RHS: valueBlock(rhs) },
+    };
+  }
+  return null;
+}
+
 function valueBlock(rawExpr: string): ParsedBlock {
   const e = rawExpr.trim().replace(/;$/, '').trim();
+  const binary = workerBinaryBlock(e);
+  if (binary) return binary;
   // v.NAME / v.NAME_max — Stage worker-1 reporter.
   let m = /^v\.([A-Za-z_$][\w$]*)_max$/.exec(e);
   if (m) {

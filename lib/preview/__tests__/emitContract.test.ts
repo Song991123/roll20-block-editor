@@ -320,6 +320,26 @@ function testPageScriptOrderAndWorkerUniqueness(): void {
   workerWorkspace.dispose();
 }
 
+function testWorkerIfDoesNotDuplicateReporterGrouping(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const ifBlock = workspace.newBlock('r20_worker_if');
+  const comparison = workspace.newBlock('r20_worker_cmp');
+  const lhs = workspace.newBlock('r20_worker_v_ref');
+  const rhs = workspace.newBlock('r20_literal_string');
+  comparison.setFieldValue('>', 'OP');
+  lhs.setFieldValue('hp', 'NAME');
+  rhs.setFieldValue('0', 'STR');
+  comparison.getInput('LHS')?.connection?.connect(lhs.outputConnection!);
+  comparison.getInput('RHS')?.connection?.connect(rhs.outputConnection!);
+  ifBlock.getInput('CONDITION')?.connection?.connect(comparison.outputConnection!);
+
+  const result = emitWorkspace(workspace, 'worker').code;
+  assert(result.includes('if (v.hp > 0) {}'), 'worker if keeps one condition grouping');
+  assert(!result.includes('if ((v.hp > 0))'), 'worker if avoids duplicate grouping');
+  workspace.dispose();
+}
+
 function testMalformedRawTagDoesNotReceivePartialBlockId(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -363,5 +383,6 @@ testEditablePageScriptExportPreserved();
 testDedicatedPageScriptWorkspaceAppendsExportOnly();
 testImportedPageScriptReturnsToItsHtmlSlot();
 testPageScriptOrderAndWorkerUniqueness();
+testWorkerIfDoesNotDuplicateReporterGrouping();
 testMalformedRawTagDoesNotReceivePartialBlockId();
 console.log('Emit Roll20 class-pair tests passed.');

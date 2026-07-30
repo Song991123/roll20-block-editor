@@ -37,6 +37,7 @@
     "test:runtime-contract": "tsx lib/preview/__tests__/runtimeContract.test.ts",
     "test:emit-contract": "tsx lib/preview/__tests__/emitContract.test.ts",
     "test:preview-prefix": "tsx lib/preview/__tests__/prefix.test.ts",
+    "test:worker-parser": "tsx lib/import/__tests__/script_worker_parser.test.ts",
     "test:import-structure": "tsx lib/import/__tests__/basic.test.ts && tsx lib/import/__tests__/i18n_comment_format.test.ts && tsx lib/blocks/__tests__/preservedAttributes.test.ts && tsx lib/blocks/__tests__/style_field_preservation.test.ts && tsx lib/blocks/__tests__/table_multiclass.test.ts",
     "test:high-priority-mapping": "tsx lib/blocks/__tests__/high_priority.test.ts && tsx lib/import/__tests__/high_priority_import.test.ts && tsx lib/import/__tests__/composite_matcher.test.ts && tsx lib/import/__tests__/composite_matcher_phase2.test.ts && tsx lib/blocks/__tests__/conditional_view.test.ts",
     "test:server-hygiene": "node scripts/server_hygiene_check.mjs --self-test",
