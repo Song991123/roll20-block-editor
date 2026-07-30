@@ -8688,3 +8688,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   actual Roll20 Sandbox activation, screenshot parity, or legacy-room behavior.
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
+
+## 2026-07-31 Edit-flow and persistent-surface recheck
+
+- `VERIFIED LOCAL`: the edit-flow browser smoke passed the direct manipulation
+  path, and the persistent preview surface smoke passed independently for both
+  modern and legacy contracts without iframe reloads.
+- `VERIFY / OPEN`: this confirms local Figma-like interaction and shared
+  surface stability only; actual Roll20 screenshot parity and room behavior
+  remain external gates.
+- `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
+  bind the same payload before collecting modern and legacy evidence.

@@ -533,3 +533,10 @@ smoke gate now treats worker scripts as inert runtime data and checks actual
 visibility instead of failing on their DOM presence. This remains local
 sanitizer evidence; actual Roll20 Sandbox activation, screenshot parity, and
 legacy-room behavior remain open.
+
+## Edit-flow and persistent-surface recheck - 2026-07-31
+
+The direct manipulation smoke passed, and the persistent preview surface stayed
+on the same iframe for both modern and legacy local contracts. This confirms
+local interaction and surface stability only; actual Roll20 screenshot parity
+and room behavior remain open.

@@ -9364,3 +9364,11 @@ same-hash modern/legacy comparison.
   for local runtime emulation from an actually rendered runtime node.
 - This remains local sanitizer evidence only and does not prove actual Roll20
   Sandbox activation, screenshot parity, or legacy-room behavior.
+
+## 2026-07-31 - Edit-flow and persistent-surface recheck
+
+- The edit-flow browser smoke passed the direct manipulation path.
+- The persistent preview surface smoke passed independently for modern and
+  legacy contracts without iframe reloads.
+- This is local interaction/surface evidence only; actual Roll20 screenshot
+  parity and room behavior remain external gates.
