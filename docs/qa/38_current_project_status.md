@@ -387,3 +387,14 @@ CSS selection succeeded when the anonymous file was provided from an ASCII-only
 temporary path, after the HTML reload. Translation selection then timed out, so
 the three-file same-hash state remains unproven and actual modern/legacy parity
 continues as `VERIFY / BLOCKED EXTERNAL`.
+
+## Local container regression verification - 2026-07-30
+
+The new generic-container starter style was rechecked after the production
+build. Strict imported edit synchronization, fresh-sheet creation, edit-flow
+drag/reparenting, and the 5,200-item layer workspace browser smoke all pass.
+The large workspace uses one persistent preview iframe, completes inside
+reparenting, emits nested preview DOM, and reports zero console/page errors.
+Remote CI run `30553196837` also passed build, lint, and the full verification
+gate. This strengthens local editor evidence only; it does not change the
+external same-hash Roll20 or legacy-room parity status.

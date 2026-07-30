@@ -629,3 +629,15 @@ not close the external Roll20 parity rows above.
 - `VERIFY / OPEN`: translation selection timed out; all-three-file binding,
   same-hash identity, modern normalized parity, and legacy evidence remain
   unproven.
+
+## 2026-07-30 Local editor verification update
+
+- `VERIFIED LOCAL`: the generic-container visibility fix passed production
+  build and remote CI `30553196837`. Strict imported edit sync, fresh-sheet,
+  edit-flow, and 5,200-item layer/reparenting browser smokes pass.
+- `MEASURED LOCAL`: the large workspace retains one persistent iframe and
+  produces nested preview DOM after an inside drop, with zero console/page
+  errors.
+- `VERIFY / BLOCKED EXTERNAL`: current Roll20 payload identity, modern
+  normalized screenshot parity, and independent legacy-room evidence remain
+  unproven because the available browser surface rejects local file binding.

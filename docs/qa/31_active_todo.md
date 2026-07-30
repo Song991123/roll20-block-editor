@@ -8429,3 +8429,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   verification remain open as recorded above.
 - `NEXT P1`: rerun the full build and CI, then continue the supported modern
   Sandbox file-binding attempt without touching existing rooms.
+
+## 2026-07-30 New-container verification reconciliation
+
+- `VERIFIED LOCAL`: production build and remote CI run `30553196837` passed
+  after the starter-style patch. Strict imported edit sync, fresh-sheet smoke,
+  edit-flow smoke, and 5,200-item layer workspace smoke also pass.
+- `MEASURED LOCAL`: the large workspace kept one persistent preview iframe,
+  completed inside reparenting, emitted nested DOM, and reported zero console
+  and page errors. The created generic container is visible and selectable.
+- `VERIFY / BLOCKED EXTERNAL`: no change to the external Roll20 status. The
+  three-file current-payload binding and independent legacy-room capture still
+  require a browser surface that accepts file selection.
+- `NEXT P0`: continue only with a supported Sandbox upload route or a user
+  manual file-selection handoff; do not promote local smoke evidence to actual
+  Roll20 parity.

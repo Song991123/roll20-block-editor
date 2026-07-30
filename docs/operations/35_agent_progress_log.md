@@ -9139,5 +9139,8 @@ same-hash modern/legacy comparison.
   pass through this path, so their source STYLE remains authoritative.
 - Browser smoke after the patch showed a visible `320 × 180` selected block in
   the preview surface and the generated Blockly block carried the same STYLE.
-- Focused lint and editor/preview contract tests pass. Full build/CI is still
-  required before this patch is published.
+- Focused lint and editor/preview contract tests pass. Follow-up strict
+  imported edit sync, fresh-sheet, edit-flow, and 5,200-item layer workspace
+  smokes also pass; production build and remote CI run `30553196837` are green.
+- The external Roll20 same-hash and legacy-room checks remain blocked by the
+  browser file-binding capability and are not promoted by these local results.
