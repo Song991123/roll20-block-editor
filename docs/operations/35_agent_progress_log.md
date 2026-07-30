@@ -8113,3 +8113,19 @@ visibility verification passed. No external room was opened or modified.
 - Added focused role assertions and updated the DOM-layer contract table.
 - This is a local editor-role correction only. It does not prove universal
   import fidelity or modern/legacy Roll20 visual parity.
+## 2026-07-30 - Layer mini-map drop contract
+
+- FIXED LOCAL: `LayerMiniMap` no longer infers an actionable container from a
+  broad `frame`/`flow`/`table` role. It now mirrors `canReceiveChildren`, so
+  atomic packed rows and table metadata are visibly non-droppable as well as
+  structurally guarded.
+- VERIFIED LOCAL: role/drop tests, lint, build, edit-flow browser smoke, strict
+  imported-edit sync, and post-run server hygiene all pass. The browser smoke
+  checks the mini-map and row data attributes for agreement.
+- EXTERNAL BOUNDARY: Chrome tab discovery still succeeds, but the isolated
+  Roll20 tab cannot be claimed or controlled within the current browser
+  connection. The in-app browser is unauthenticated. No external mutation or
+  participant-gated room observation was performed in this batch.
+- NEXT: Use the visible Sandbox native file picker or user-assisted handoff;
+  keep generated evidence local-only and keep modern/legacy verification
+  separate.

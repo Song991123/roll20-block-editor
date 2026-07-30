@@ -829,13 +829,16 @@ function LayerMiniMap({
   defaultDropMode: ReturnType<typeof getLayerRole>['defaultDropMode'];
 }) {
   const visibleSlots = Math.min(LAYER_MINI_CHILD_SLOTS, Math.max(0, childCount));
-  const isContainer = canReceiveChildren || roleKind === 'frame' || roleKind === 'flow' || roleKind === 'table';
+  // Role color communicates structure; the mini-map container shape must
+  // communicate the actionable drop contract, not merely the broad role.
+  const isContainer = canReceiveChildren;
   return (
     <span
       aria-hidden
       data-testid="edit-layer-mini-map"
       data-r20-layer-mini-role={roleKind}
       data-r20-layer-mini-can-drop={canReceiveChildren ? '1' : '0'}
+      data-r20-layer-mini-container={isContainer ? '1' : '0'}
       data-r20-layer-mini-child-count={childCount}
       data-r20-layer-mini-relation={relation}
       data-r20-layer-mini-drop-mode={defaultDropMode}

@@ -2,6 +2,19 @@
 
 Date: 2026-06-12
 
+## Latest Reconciliation: 2026-07-30
+
+- The current active evidence boundary is the latest TODO/progress entry, not
+  older historical sections below it. Local preview/edit and imported-edit
+  smoke remain passing, but they are same-renderer evidence only.
+- The authenticated Chrome tab list is visible, but the isolated Roll20 tab
+  could not be claimed or controlled in the current connection. The in-app
+  browser is unauthenticated. No fresh participant count, upload, save, chat,
+  room observation, or generated Roll20 screenshot was accepted in this batch.
+- Treat modern Sandbox and legacy-room actual parity as `VERIFY/BLOCKED at
+  browser handoff`, not as complete. Keep the historical measurements below
+  for provenance, but do not use them to promote the current renderer gate.
+
 ## Superseding Evidence: 2026-07-18
 
 - A browser-side anonymous synthetic payload has now rendered in both a modern

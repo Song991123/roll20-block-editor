@@ -604,6 +604,24 @@ async function main() {
       'layer drop highlight disappeared while pointer remained inside the row',
     );
 
+    result.tests.layerMiniMapContract = await page.evaluate(() => {
+      const mismatches = Array.from(document.querySelectorAll('[data-testid="edit-layer-row"]'))
+        .map((row) => {
+          const mini = row.querySelector('[data-testid="edit-layer-mini-map"]');
+          return {
+            blockId: row.getAttribute('data-r20-block-id'),
+            canDrop: row.getAttribute('data-r20-can-drop'),
+            miniContainer: mini?.getAttribute('data-r20-layer-mini-container') ?? null,
+          };
+        })
+        .filter((item) => item.miniContainer !== item.canDrop);
+      return { mismatches };
+    });
+    assert(
+      result.tests.layerMiniMapContract.mismatches.length === 0,
+      `layer mini-map container signal disagrees with drop contract: ${JSON.stringify(result.tests.layerMiniMapContract)}`,
+    );
+
     result.tests.tableDropGuard = await page.evaluate(async ({ movingId, validMovingId, invalidTargetId, validTargetId }) => {
       const dispatchDragover = async (targetId, draggedId) => {
         const target = document.querySelector(

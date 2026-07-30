@@ -1,3 +1,25 @@
+## 2026-07-30 Layer mini-map drop contract
+
+- FIXED LOCAL: The layer mini-map now uses the same `canReceiveChildren`
+  contract as the actual drop guard. Atomic flow/table layers such as packed
+  rows, cell groups, `col`, and `caption` no longer look like child-receiving
+  containers merely because their broad role is `flow` or `table`.
+- VERIFIED LOCAL: `test:layer-roles`, `test:iframe-drop-target`, `lint`,
+  `build`, `smoke:edit-flow`, and strict imported-edit sync all pass. The
+  smoke now asserts that every layer-row mini-map container signal matches its
+  row drop signal. Post-run server hygiene reports no project listeners.
+- EXTERNAL VERIFY: The authenticated Chrome tab remains visible in the tab
+  list, but direct tab control and claim both timed out. The in-app browser is
+  at the Roll20 login surface. No participant count was accepted as fresh, and
+  no room, sheet, chat, or Sandbox state was changed.
+- CURRENT EVIDENCE: Modern/legacy actual generated-sheet screenshots remain
+  unproven at the active gate; local same-renderer evidence must not be called
+  Roll20 parity.
+- NEXT P0: Resume from a supported/user-assisted Sandbox file selection, then
+  capture positive sheet-root, full-height, asset, state, console, and chat
+  evidence. Verify the legacy path separately in a dedicated legacy-enabled
+  test room after a fresh visible participant count of exactly one.
+
 ## 2026-07-30 Packed table-row drop contract
 
 - FIXED LOCAL: `r20_skill_row` now participates in table structural validation
