@@ -22,6 +22,9 @@ local output and is deleted after the verification batch.
   Node import and structural fingerprint checks at `100%` coverage with zero
   raw fallbacks, template-marker findings, and warnings. This remains sample
   evidence, not all-sheet or actual Roll20 evidence.
+- Roll20 external state: the existing browser tab is currently the login
+  screen, so authenticated Sandbox and dedicated legacy-room verification are
+  still open. No credentials or external sheet payload were transmitted.
 - Local interaction recheck: `smoke:edit-flow`, strict imported-edit sync, and
   persistent preview surface passed; modern and legacy each retained one
   iframe with zero reloads.

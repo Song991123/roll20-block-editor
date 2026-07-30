@@ -12,6 +12,16 @@
 - The remaining gates are anonymous broader import coverage and permitted
   modern Sandbox plus separate legacy-room checks.
 
+## 2026-07-31 - Roll20 browser authentication preflight
+
+- The existing in-app browser tab was read-only inspected and showed the
+  Roll20 login screen; no authenticated editor, Sandbox, or room target was
+  available.
+- No credentials, authentication codes, uploads, room mutations, saves, chat
+  actions, or sheet payload transmissions were performed.
+- Actual modern/legacy Roll20 evidence remains pending an authenticated
+  user-visible session.
+
 ## 2026-07-31 - Import source-boundary hardening
 
 - Added high-confidence template-marker detection to the HTML import boundary.

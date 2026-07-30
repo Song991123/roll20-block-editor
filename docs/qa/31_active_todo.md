@@ -13,6 +13,15 @@
 - VERIFY / OPEN: Expand anonymous import coverage and complete the permitted
   modern Sandbox plus separate legacy-room visual/runtime checks.
 
+## 2026-07-31 Roll20 browser authentication preflight
+
+- VERIFY / BLOCKED EXTERNAL: The existing in-app browser tab is on the Roll20
+  login screen, not an authenticated editor, Sandbox, or room target.
+- SAFETY: No password, authentication code, upload, room change, save, chat,
+  or external sheet payload was entered or transmitted.
+- NEXT: After the user signs in in the existing browser session, rerun the
+  modern Sandbox check first; use a dedicated legacy destination separately.
+
 ## 2026-07-31 Import source-boundary hardening
 
 - DONE LOCAL: Import now detects high-confidence unexpanded build-template
