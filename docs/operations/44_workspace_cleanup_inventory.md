@@ -634,6 +634,21 @@ directories that had been recreated by the local build.
 - VERIFIED: no source, protected external sheet, active dependency tree,
   worktree, or tracked report policy file changed in this retry.
 
+## 2026-07-30 latest complete-deletion retry
+
+- RECHECKED: the only remaining approved disposable targets are the old
+  `web/` dependency/build output plus `web-push-main/.next/`, `out/`, `.tmp/`,
+  and generated report directories. The active
+  `web-push-main/node_modules/`, `reports/README.md`, source roots,
+  worktrees, four-zone markers, and protected external sheet roots were
+  excluded.
+- REQUESTED: the user explicitly authorized another complete deletion retry.
+- NOT DELETED: the host rejected the exact boundary-checked native
+  PowerShell recursive deletion before execution. No alternate shell, native
+  API, per-file workaround, or safety bypass was used.
+- VERIFIED: all approved targets remain unchanged; no source, dependency
+  tree, worktree, report policy file, or protected external material changed.
+
 ## 2026-07-30 user-authorized exact cleanup retry after latest request
 
 - RECHECKED: the remaining approved cleanup candidates are the old `web/`

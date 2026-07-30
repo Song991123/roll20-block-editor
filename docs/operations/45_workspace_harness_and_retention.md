@@ -386,3 +386,13 @@ external material remain preserved.
 - VERIFIED: all seven targets remain, while the canonical active dependency
   tree, product source, worktrees, protected external sources, and tracked
   report policy remain intact.
+
+## 2026-07-30 latest complete-deletion retry
+
+- The user explicitly authorized another deletion attempt for the exact
+  generated/stale targets in the cleanup inventory.
+- The boundary-checked native PowerShell recursive deletion was rejected by
+  the host before execution. This was not bypassed with another shell, a
+  native API, or a per-file deletion loop.
+- The active dependency tree, source, worktrees, four-zone markers,
+  protected source folders, and tracked report policy remain preserved.
