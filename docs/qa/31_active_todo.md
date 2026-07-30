@@ -29,6 +29,17 @@
   claim that arbitrary worker JavaScript is block-mapped or executed by live
   Roll20.
 
+## 2026-07-30 Worker options preservation
+
+- FIXED LOCAL: `setAttrs(attributes, options)` now stays in the explicit raw
+  worker boundary when the second options object is present. The prior parser
+  kept only the first object, which could silently remove Roll20 behavior such
+  as `{ silent: true }`.
+- VERIFIED LOCAL: a regression test confirms the complete options statement is
+  preserved and counted as one unsupported statement.
+- CLAIM BOUNDARY: This is lossless preservation, not block-level support for
+  `setAttrs` options or proof of live Roll20 worker execution.
+
 ## 2026-07-30 Modern Sandbox file-selection retry
 
 - VERIFIED EXTERNAL: The isolated Sandbox showed exactly one visible member and

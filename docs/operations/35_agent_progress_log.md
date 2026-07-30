@@ -8669,3 +8669,10 @@ visibility verification passed. No external room was opened or modified.
   source-derived evidence capture was performed.
 - NEXT: Continue only through user-visible native selection or a supported
   browser context with normal file primitives.
+## 2026-07-30 Worker options preservation
+
+- Found that `tryParseSetAttrs` ignored a second `setAttrs` argument. That
+  could remove Roll20 semantics such as `silent` during import/export.
+- Changed unsupported two-argument calls to the existing complete raw-worker
+  fallback and added a focused parser regression test. No public or
+  source-derived fixture was added.

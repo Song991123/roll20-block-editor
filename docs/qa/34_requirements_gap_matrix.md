@@ -14,6 +14,16 @@ Date: 2026-06-12
   Sandbox upload, Roll20 visual parity, worker/chat runtime, or dedicated
   legacy-room gates.
 
+## Latest Local Worker Preservation Reconciliation: 2026-07-30
+
+- `setAttrs(attributes, options)` is now treated as an explicit raw-worker
+  fallback when the second argument is present, so unsupported options are
+  not silently removed during import/export.
+- VERIFIED LOCAL: worker parser `27/27`, full `ci:verify`, lint, build, and
+  server-hygiene checks pass.
+- BOUNDARY: This preserves unsupported worker semantics; it does not provide
+  block-level options editing or prove live Roll20 worker execution.
+
 ## Latest External Sandbox File-Selection Retry: 2026-07-30
 
 - The isolated modern Sandbox visibly reported one member and all three upload

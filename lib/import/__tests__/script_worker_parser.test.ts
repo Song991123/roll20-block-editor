@@ -84,6 +84,14 @@ function testSetAttrsOverflowPreservesRaw(): void {
   assert(r.stats.unparsed === 1, 'overflow is counted as unparsed');
 }
 
+function testSetAttrsOptionsPreservesRaw(): void {
+  const js = `setAttrs({ hp: 10 }, { silent: true });`;
+  const r = parseSheetWorkerScript(js);
+  assert(r.blocks[0].blockType === 'r20_raw_worker', 'options use raw worker boundary');
+  assert(r.blocks[0].fields.JS.includes('silent: true'), 'setAttrs options are preserved');
+  assert(r.stats.unparsed === 1, 'options are counted as unparsed');
+}
+
 function testGetAttrs(): void {
   const js = `getAttrs(['hp','max_hp'], function(v) { setAttrs({ hp: 5 }); });`;
   const r = parseSheetWorkerScript(js);
@@ -283,6 +291,7 @@ const tests = [
   ['setAttrs single', testSetAttrsSingle],
   ['setAttrs multi', testSetAttrsMulti],
   ['setAttrs overflow raw fallback', testSetAttrsOverflowPreservesRaw],
+  ['setAttrs options raw fallback', testSetAttrsOptionsPreservesRaw],
   ['getAttrs', testGetAttrs],
   ['getSectionIDs', testGetSectionIDs],
   ['forEach', testForEach],

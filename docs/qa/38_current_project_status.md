@@ -9,6 +9,11 @@ local output and is deleted after the verification batch.
 
 ## Current Evidence
 
+- LOCAL FIX: `setAttrs(attributes, options)` calls whose options argument is
+  not representable by the current visual block now stay intact in the raw
+  worker boundary. The focused worker parser suite is `27/27` after this
+  guard; this prevents silent loss of Roll20 behavior such as `silent`.
+
 - LOCAL PASS: An anonymous three-file Sandbox payload was regenerated under
   ignored `.tmp/roll20-sandbox-synthetic/`, and full `ci:verify` passed after
   the evidence purge.

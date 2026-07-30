@@ -997,9 +997,11 @@ function tryParseGetAttrs(args: string, stats: ParseStats): ParsedBlock | null {
 }
 
 function tryParseSetAttrs(args: string): ParsedBlock | null {
-  // setAttrs 는 (object) 또는 (object, options) 둘 다 가능 — options 무시하고 첫 인자만.
+  // setAttrs 의 두 번째 options 객체는 현재 시각 블록이 표현할 수 없다.
+  // 첫 번째 객체만 블록화하면 silent 등의 동작이 조용히 사라지므로
+  // 지원하지 않는 호출은 전체 statement raw-worker 경계로 보존한다.
   const parts = splitArgs(args);
-  if (parts.length < 1) return null;
+  if (parts.length !== 1) return null;
   const pairs = parseObjectPairs(parts[0]);
   if (!pairs) return null;
 
