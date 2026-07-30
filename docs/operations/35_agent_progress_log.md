@@ -5,6 +5,10 @@
 - No source name, path, snippet, screenshot, fixture, or derived sheet payload
   was committed. This audit is static inventory evidence, not import, runtime,
   or visual-parity evidence.
+- An anonymous eight-selection Node import batch passed `8/8` determinism and
+  structural fingerprint checks at `100%` coverage with zero raw fallbacks,
+  template-marker findings, and warnings. This is a sample gate only, not an
+  all-sheet support claim.
 - The remaining gates are anonymous broader import coverage and permitted
   modern Sandbox plus separate legacy-room checks.
 

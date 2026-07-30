@@ -6,6 +6,10 @@
 - SCOPE: This is a static feature inventory only. No source identity, path,
   snippet, screenshot, fixture, or derived sheet payload was added to the
   tracked tree, and the scan does not prove import fidelity or visual parity.
+- VERIFIED LOCAL SAMPLE: Eight anonymous read-only selections from the same
+  protected roots passed Node import determinism and structural fingerprint
+  checks (`8/8`), each reported `100%` coverage with `0` raw fallbacks,
+  unexpanded template markers, and warnings.
 - VERIFY / OPEN: Expand anonymous import coverage and complete the permitted
   modern Sandbox plus separate legacy-room visual/runtime checks.
 

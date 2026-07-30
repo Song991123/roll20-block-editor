@@ -18,6 +18,10 @@ local output and is deleted after the verification batch.
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
   arbitrary import fidelity or actual Roll20 parity.
+- Anonymous local import sample: `8/8` selected inputs passed deterministic
+  Node import and structural fingerprint checks at `100%` coverage with zero
+  raw fallbacks, template-marker findings, and warnings. This remains sample
+  evidence, not all-sheet or actual Roll20 evidence.
 - Local interaction recheck: `smoke:edit-flow`, strict imported-edit sync, and
   persistent preview surface passed; modern and legacy each retained one
   iframe with zero reloads.
