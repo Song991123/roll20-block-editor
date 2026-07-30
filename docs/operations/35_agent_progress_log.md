@@ -7707,3 +7707,20 @@ visibility verification passed. No external room was opened or modified.
   clean on `claude/design-reset`.
 - PRESERVED: active `node_modules/`, product source, docs, report policy, Git
   worktrees, reference/archive zones, and protected external sheet sources.
+
+## 2026-07-30 - Normalized Roll20 wrapper/root contract
+
+- IMPLEMENTED: Added `scripts/lib/roll20Geometry.mjs` and its self-test. The
+  helper normalizes iframe, dialog, form, root, and authored content rectangles
+  into parent-relative CSS-pixel layers and separates context deltas from
+  authored-canvas deltas.
+- MEASURED: The current anonymous Roll20 modern/legacy tabs use a `900px`
+  iframe and `860px` root/form at a `20px` inset, while the local synthetic
+  default is `850px` outer root. Local preview/edit remains exact in both modes;
+  the comparison now holds promotion when wrapper geometry is not comparable.
+- VERIFIED: geometry self-test, runtime-evidence self-test, `ci:verify`, lint,
+  and build passed. No production width or baseline CSS was changed by this
+  batch, and no actual/private sheet source was retained.
+- BOUNDARY: The `850` versus `860` measurement is a generic wrapper question,
+  not proof that a global width patch is safe. A user fixture with its actual
+  assets, default state, chat, and trusted Roll20 crop is still required.

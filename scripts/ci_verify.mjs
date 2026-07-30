@@ -44,6 +44,7 @@ const tasks = [
   'test:roll20-render-modes',
   'test:roll20-upload-snippet',
   'test:roll20-upload-cdp',
+  'test:roll20-geometry',
   'test:roll20-room-members',
   'test:roll20-runtime-evidence',
   'test:roll20-chat-renderer-targets',

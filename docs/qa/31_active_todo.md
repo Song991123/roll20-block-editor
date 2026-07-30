@@ -6953,3 +6953,27 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Capture the normalized wrapper/root contract as a reusable report,
   then run one user-provided fixture through modern Sandbox and the dedicated
   legacy room using ignored-only evidence.
+
+## 2026-07-30 Normalized wrapper/root geometry contract
+
+- DONE TOOLING: Added `scripts/lib/roll20Geometry.mjs` with a versioned
+  `iframe -> dialog -> form -> root -> content` CSS-pixel contract. It reports
+  authored canvas dimensions separately from outer wrapper/context deltas and
+  refuses parity promotion when parent-relative evidence is missing.
+- VERIFIED ACTUAL: The anonymous modern and legacy Roll20 tabs both measured a
+  `900px` iframe, `860 x 200px` form/root at a `20px` left inset, and an
+  authored content box of about `840 x 180px`. Legacy still has the separate
+  `12px` roll-button top margin.
+- VERIFIED LOCAL: The same anonymous synthetic fixture rendered preview/edit
+  exactly in both modes (`0` mismatched pixels). The local default measured an
+  `850 x 200px` outer root with an `830 x 180px` content box, so the new
+  comparator classifies the remaining difference as wrapper/content geometry,
+  not as a selector or edit-overlay regression.
+- VERIFIED GATES: geometry self-test, runtime-evidence self-test, `ci:verify`,
+  lint, and build all pass. Evidence remains ignored and was not committed.
+- CLAIM BOUNDARY: This is a measurement and promotion guard, not a production
+  width change and not universal Roll20 visual parity. A user-provided fixture,
+  full assets, default state, chat, and trusted screenshot crop remain open.
+- NEXT P0: Decide the generic viewport/root width rule from one user fixture in
+  both destinations; do not patch the baseline from the anonymous synthetic
+  sample alone.

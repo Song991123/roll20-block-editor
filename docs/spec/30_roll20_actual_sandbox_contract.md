@@ -264,3 +264,28 @@ that source/state-dominant sheets are not harmed.
 - Translation remains unverified in this observed UI path. Treat translation
   application as a separate evidence item until the actual upload path is
   completed.
+
+## 2026-07-30 Wrapper/Root Measurement Contract
+
+The local evidence comparator now uses `scripts/lib/roll20Geometry.mjs` to
+represent the visible surface as five layers:
+
+| Layer | Meaning | Comparison rule |
+| --- | --- | --- |
+| `iframe` | Roll20 character-frame viewport | context only |
+| `dialog` | Roll20 dialog chrome/content shell | compare parent-relative inset when captured |
+| `form` | `sheetform` content allocation | compare parent-relative size and origin |
+| `root` | `.charactersheet.charsheet` outer box | report separately from authored canvas |
+| `content` | root content-box/authored sheet canvas | primary sheet geometry comparison |
+
+The contract uses CSS pixels, records missing parent layers as non-comparable,
+and returns `PASS_WITH_CONTEXT_DELTA` when the authored canvas is comparable but
+the wrapper differs. A result is never promoted to parity from that status.
+This prevents a `900px` Roll20 iframe with an `860px` root and `20px` inset from
+being compared as if its wrapper were the user's authored sheet width.
+
+The current anonymous probe measured an `860 x 200px` Roll20 root with roughly
+`840 x 180px` content, while the local default synthetic surface measured an
+`850 x 200px` root with roughly `830 x 180px` content. This is recorded as an
+open generic viewport/root decision, not as permission for a fixture-specific
+CSS patch or a universal parity claim.
