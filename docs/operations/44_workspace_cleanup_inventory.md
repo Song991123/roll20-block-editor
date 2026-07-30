@@ -800,3 +800,17 @@ directories that had been recreated by the local build.
 - NOT DELETED: all selected targets remain unchanged. No alternate shell,
   native API, per-file workaround, or safety bypass was used. Git status is
   still clean and no project listener is active.
+
+## 2026-07-30 current retry after explicit approval
+
+- RECHECKED: only the canonical generated `.next/` and `out/` directories
+  remained from the approved disposable set; the old worktree outputs,
+  duplicate reports, stale metadata, and old dependency tree were already
+  absent. No project listener was active.
+- ATTEMPTED: the two exact canonical generated directories were resolved
+  inside this worktree and excluded all source, dependencies, fixtures,
+  reports, worktrees, and protected sheet roots.
+- BLOCKED: the host rejected the exact boundary-checked recursive
+  `Remove-Item -Recurse -Force` operation before PowerShell execution.
+- NOT DELETED: `.next/` and `out/` remain. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.

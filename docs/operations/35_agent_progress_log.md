@@ -8875,3 +8875,16 @@ visibility verification passed. No external room was opened or modified.
   payload hash, then rerun the same native-size diff before changing the
   generic Roll20 CSS order. Keep arbitrary-sheet, asset, worker, and chat
   template parity open.
+
+## 2026-07-30 - Explicit generated-output deletion retry
+
+- `RECHECKED`: the old worktree outputs, duplicate reports, stale metadata,
+  and old dependency tree are already absent. Only the canonical generated
+  `.next/` (19.93 MiB) and `out/` (3.04 MiB) directories remain.
+- `ATTEMPTED`: both exact paths passed the workspace-boundary check and no
+  project listener was active.
+- `BLOCKED`: the host rejected the recursive deletion before PowerShell
+  execution. User approval does not override this session boundary.
+- `PRESERVED`: no source, active dependency tree, fixture, report policy,
+  worktree, protected sheet root, or verification evidence was changed. No
+  alternate deletion or per-file workaround was used.
