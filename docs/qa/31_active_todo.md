@@ -6925,3 +6925,31 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - NEXT P0: Define the normalized wrapper-versus-sheet comparison contract,
   then rerun one user-provided fixture only in ignored local evidence before
   changing generic width or Roll20 baseline rules.
+
+## 2026-07-30 Legacy selector-specificity reconciliation
+
+- VERIFIED ACTUAL: The dedicated anonymous modern Sandbox and legacy test-room
+  payloads still share the same `860 x 200px` sheet root and `420 x 180px`
+  proof element, but the legacy CSSOM applies the user roll-button rule under
+  `.charsheet`, producing `margin: 12px 3px 0px`; modern keeps the baseline
+  `margin: 0px 3px`. This is a mode-specific render contract, not a parity
+  failure to hide.
+- DONE LOCAL: Added `scopeRoll20LegacyCss()` to the shared render contract.
+  Legacy preview/edit now scopes normalized user selectors below `.charsheet`
+  while modern authored CSS remains unscoped. Conditional at-rules retain the
+  same scope; existing `.charsheet` and rolltemplate selectors are not doubled.
+- VERIFIED LOCAL: Anonymous preview/edit smoke passes in modern and legacy
+  modes with `0` mismatched pixels, exact DOM/style/geometry parity, and the
+  expected mode-specific button margins (`0px 3px` / `12px 3px 0px`). Prefix
+  and build-doc regression tests pass; edit-flow and 6,500-block persistent
+  preview-surface smokes also pass.
+- VERIFIED GATES: `lint`, `build`, and full `ci:verify` pass after the change,
+  including legacy export/sanitize and private-evidence guards.
+- CLAIM BOUNDARY: This improves one externally observed legacy specificity
+  axis. It does not prove full-sheet visual parity, state-selector behavior,
+  assets, chat/template parity, or all-sheet import support. The `850px`
+  local default root versus the external `860px` wrapper content width remains
+  a separate normalization question.
+- NEXT P0: Capture the normalized wrapper/root contract as a reusable report,
+  then run one user-provided fixture through modern Sandbox and the dedicated
+  legacy room using ignored-only evidence.

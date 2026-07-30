@@ -43,6 +43,11 @@ assert.deepEqual(
 );
 assert.deepEqual(liveBundle.livePatch, bundleWithParts.livePatch, 'live bundle keeps the shared live patch contract');
 assert.deepEqual(liveBundle.parts, bundleWithParts.parts, 'live bundle keeps the shared Shadow parts contract');
+assert.match(
+  bundle.livePatch.styles['r20-user'],
+  /\.charsheet\s+\.sheet-card\s*\{/,
+  'legacy preview CSS uses the observed Roll20 sheet scope',
+);
 assert.match(bundle.doc, new RegExp(`data-r20-html-key="${bundle.livePatch.htmlKey}"`));
 assert.equal(
   cssOnlyChange.livePatch.htmlKey,

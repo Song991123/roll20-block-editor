@@ -7675,3 +7675,25 @@ visibility verification passed. No external room was opened or modified.
   measured `860 x 200px` inside a `900px` iframe versus the product's default
   `850px` user canvas. Relative child geometry matched, but wrapper/root
   normalization remains VERIFY and no universal parity claim is made.
+
+## 2026-07-30 - Legacy selector-specificity reconciliation
+
+- Fresh read-only measurements from the dedicated anonymous Roll20 Sandbox and
+  legacy test-room tabs confirmed a mode-specific computed-style difference:
+  both roots are `860 x 200px`, but the modern roll button keeps
+  `margin: 0px 3px` while legacy applies `margin: 12px 3px 0px`. The legacy
+  CSSOM contains the user rule scoped below `.charsheet`, which wins against
+  the baseline selector.
+- Implemented `scopeRoll20LegacyCss()` in `lib/preview/prefix.ts` and applied
+  it only to the legacy branch of `prepareSheetRenderContract()`. Modern
+  authored CSS remains unchanged; legacy selector scope is applied inside
+  conditional at-rules and avoids doubling existing `.charsheet` or
+  rolltemplate selectors.
+- Local anonymous preview/edit smoke now reproduces the measured margins in
+  each mode while retaining `0` mismatched pixels and exact DOM/style/geometry
+  parity. Prefix and build-doc tests passed; edit-flow and the 6,500-block
+  persistent preview-surface smoke also passed. `lint`, `build`, and the full
+  `ci:verify` gate passed, including legacy export/sanitize and privacy guards.
+- This is a focused legacy specificity correction, not a universal parity
+  claim. The local `850px` default canvas and external `900px` iframe /
+  `860px` sheet-root wrapper still require normalized comparison evidence.

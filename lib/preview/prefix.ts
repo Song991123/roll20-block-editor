@@ -103,11 +103,25 @@ export function autoPrefixCssClasses(css: string): string {
   return processCss(css);
 }
 
+/**
+ * Reproduce the legacy Roll20 sheet scope after authored classes have been
+ * normalized. Legacy character frames apply user selectors below
+ * `.charsheet`, which changes specificity against the Roll20 baseline.
+ * Modern preview intentionally does not use this transform.
+ */
+export function scopeRoll20LegacyCss(css: string): string {
+  if (!css) return css;
+  return processCss(css, prefixLegacySelectorList);
+}
+
 // ---------------------------------------------------------------------------
 // CSS 처리 내부
 // ---------------------------------------------------------------------------
 
-function processCss(css: string): string {
+function processCss(
+  css: string,
+  selectorTransform: (selectorBlob: string) => string = prefixSelectorList,
+): string {
   let out = '';
   let i = 0;
   while (i < css.length) {
@@ -119,6 +133,13 @@ function processCss(css: string): string {
       }
       out += css.slice(i, end + 2);
       i = end + 2;
+      continue;
+    }
+
+    if (/\s/.test(css[i])) {
+      const start = i;
+      while (i < css.length && /\s/.test(css[i])) i += 1;
+      out += css.slice(start, i);
       continue;
     }
 
@@ -143,7 +164,7 @@ function processCss(css: string): string {
       }
       const body = css.slice(blockStart + 1, blockEnd);
       if (isConditionalAtRule(keyword)) {
-        out += `${head}{${processCss(body)}}`;
+        out += `${head}{${processCss(body, selectorTransform)}}`;
       } else {
         out += `${head}{${body}}`;
       }
@@ -163,7 +184,7 @@ function processCss(css: string): string {
     }
     const selector = css.slice(i, blockStart);
     const body = css.slice(blockStart + 1, blockEnd);
-    out += `${prefixSelectorList(selector)}{${body}}`;
+    out += `${selectorTransform(selector)}{${body}}`;
     i = blockEnd + 1;
   }
   return out;
@@ -213,6 +234,24 @@ function matchBrace(css: string, openIdx: number): number {
 function prefixSelectorList(selectorBlob: string): string {
   const parts = splitTopLevel(selectorBlob, ',');
   return parts.map(prefixSingleSelector).join(',');
+}
+
+function prefixLegacySelectorList(selectorBlob: string): string {
+  return splitTopLevel(selectorBlob, ',')
+    .map((selector) => {
+      const trimmed = selector.trim();
+      if (
+        !trimmed ||
+        trimmed.startsWith('@') ||
+        trimmed === '.charsheet' ||
+        trimmed.startsWith('.charsheet ') ||
+        trimmed.startsWith('.sheet-rolltemplate-')
+      ) {
+        return selector;
+      }
+      return `.charsheet ${trimmed}`;
+    })
+    .join(',');
 }
 
 function prefixSingleSelector(selector: string): string {

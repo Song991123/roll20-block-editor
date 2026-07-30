@@ -5,7 +5,11 @@ import {
 import { sanitizeForRoll20Legacy } from '../emit/sanitize';
 import { parseTranslationMap } from '../export/payload';
 import { annotateRoll20AutocalcHtml } from './autocalc';
-import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
+import {
+  autoPrefixCssClasses,
+  autoPrefixHtmlClasses,
+  scopeRoll20LegacyCss,
+} from './prefix';
 import {
   applyRoll20RuntimeCssAssetPolicy,
   applyRoll20RuntimeHtmlAssetPolicy,
@@ -69,7 +73,7 @@ export function prepareSheetRenderContract(
   const runtimeHtml = applyRoll20RuntimeHtmlAssetPolicy(sandboxHtml, compatibilityMode);
   const runtimeCss = applyRoll20RuntimeCssAssetPolicy(sandboxCss, compatibilityMode);
   const previewCss = legacyCssSanitize
-    ? sanitizeForRoll20Legacy(runtimeCss).sanitized
+    ? sanitizeForRoll20Legacy(scopeRoll20LegacyCss(runtimeCss)).sanitized
     : runtimeCss;
   const bodyInner = runtimeHtml
     ? addRoll20RepeatingRuntimeHtml(

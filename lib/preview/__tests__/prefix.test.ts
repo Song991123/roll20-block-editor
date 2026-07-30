@@ -1,4 +1,8 @@
-import { autoPrefixCssClasses, autoPrefixHtmlClasses } from '../prefix';
+import {
+  autoPrefixCssClasses,
+  autoPrefixHtmlClasses,
+  scopeRoll20LegacyCss,
+} from '../prefix';
 
 function assert(condition: unknown, message: string): void {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
@@ -50,7 +54,20 @@ function testScriptSourceAndAttributesStayByteStable(): void {
   );
 }
 
+function testLegacyCssUsesRoll20SheetScope(): void {
+  const css = scopeRoll20LegacyCss(
+    '.panel { color: red; } @media (min-width: 1px) { .nested { display: block; } } .charsheet .already { color: blue; } .sheet-rolltemplate-test { color: green; }',
+  );
+
+  assert(css.includes('.charsheet .panel'), 'legacy selectors are scoped below .charsheet');
+  assert(/@media \(min-width: 1px\)\s*\{\s*\.charsheet \.nested/.test(css), 'legacy scope is preserved inside media rules');
+  assert(css.includes('.charsheet .already'), 'existing .charsheet scope is not duplicated');
+  assert(css.includes('.sheet-rolltemplate-test'), 'rolltemplate selectors keep their global Roll20 scope');
+  assert(!css.includes('.charsheet .charsheet .already'), 'legacy scope is not duplicated');
+}
+
 testRoll20RuntimeClassesStayUnprefixed();
 testRuntimeClassesStayCanonicalInHtmlButIdsRemainScoped();
 testScriptSourceAndAttributesStayByteStable();
+testLegacyCssUsesRoll20SheetScope();
 console.log('Preview prefix Roll20 runtime-class tests passed.');
