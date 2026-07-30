@@ -421,3 +421,17 @@ external material remain preserved.
   policy, protected sources, and current anonymous Sandbox payload remain
   intact. The five selected directories are still recreateable cleanup
   candidates for a permitted maintenance operation.
+
+## 2026-07-30 explicit retry after user approval (latest)
+
+- RECHECKED: old `web/node_modules/`, `web/.next/`, `web/out/`, and canonical
+  `web-push-main/.next/` and `out/` were workspace-local generated targets;
+  no project or CDP listener was active.
+- ATTEMPTED: the exact absolute-path deletion was requested after the
+  workspace, tracked-file, worktree, and protected-root gates passed.
+- BLOCKED: the host rejected `Remove-Item -Recurse -Force` before PowerShell
+  execution. This cannot be overridden by user approval in this session.
+- NOT DELETED: the five targets remain. No alternate shell, native API,
+  per-file deletion, or safety bypass was used.
+- PRESERVED: active dependencies, current anonymous verification payload,
+  canonical reports, source, worktrees, and protected sheet roots.

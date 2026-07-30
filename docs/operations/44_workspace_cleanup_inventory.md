@@ -850,3 +850,20 @@ directories that had been recreated by the local build.
   `web-push-main/.tmp/roll20-sandbox-synthetic/` was intentionally excluded
   because it is the current external verification input; source, dependencies,
   worktrees, report policy, and protected external sheets remain untouched.
+
+## 2026-07-30 explicit retry after user approval (latest)
+
+- RECHECKED: the only five present approved cleanup targets were old
+  `web/node_modules/`, `web/.next/`, `web/out/`, and canonical
+  `web-push-main/.next/` and `out/`. All resolved inside the workspace and
+  outside protected ownership. No project or CDP listener was active.
+- ATTEMPTED: the user explicitly authorized complete deletion after the
+  absolute-path, worktree, tracked-file, and protected-root checks passed.
+- BLOCKED: the host rejected the guarded `Remove-Item -Recurse -Force`
+  operation before PowerShell execution. User approval cannot override this
+  execution boundary.
+- NOT DELETED: all five targets remain unchanged. No alternate shell, native
+  API, per-file deletion loop, or safety bypass was used.
+- PRESERVED: active `web-push-main/node_modules/`, the anonymous Sandbox
+  payload, canonical reports, source, worktrees, and protected external sheet
+  roots remain intact.
