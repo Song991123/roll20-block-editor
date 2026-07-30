@@ -316,3 +316,15 @@ external material remain preserved.
   native API, per-file workaround, or safety bypass was used.
 - VERIFIED: the archive directory remains intact; no source, worktree, report,
   or user-authored file outside this exact target was changed.
+
+## 2026-07-30 user-authorized archive deletion retry (current)
+
+- RECHECKED: `03_ARCHIVE/legacy-single-file/` contains the same 43 recovery
+  files and has no active viewer/server process or project listener.
+- REQUESTED: the user explicitly authorized complete deletion of this exact
+  archive directory.
+- NOT DELETED: the host rejected the boundary-checked recursive PowerShell
+  deletion before execution. No alternate shell, per-file deletion, native
+  API, or safety bypass was used.
+- VERIFIED: the archive directory and all 43 files remain intact. No product
+  source, worktree, report, protected source, or user-authored file changed.
