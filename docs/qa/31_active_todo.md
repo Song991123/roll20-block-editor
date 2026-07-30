@@ -1,3 +1,13 @@
+## 2026-07-31 Persistent render-surface recheck
+
+- `VERIFIED LOCAL`: The current branch's persistent preview surface smoke
+  passed independently for modern and legacy modes. Both rows report one
+  persistent iframe and `loads=0`, so preview/edit mode changes did not remount
+  or reload the visible sheet surface.
+- `VERIFY / OPEN`: This refreshes local synchronization evidence only. It does
+  not count as current-payload Roll20 Sandbox activation, screenshot parity,
+  worker/chat runtime parity, or dedicated legacy-room proof.
+
 ## 2026-07-31 Chrome Roll20 session recheck
 
 - `OBSERVED EXTERNAL`: Chrome contained two user-owned Roll20 tabs: a

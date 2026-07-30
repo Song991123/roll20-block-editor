@@ -1,3 +1,12 @@
+## 2026-07-31 - Persistent render-surface recheck
+
+- Re-ran `smoke:persistent-preview-surface` against the current clean branch.
+  Modern and legacy rows both passed with `loads=0`, confirming that the
+  preview/edit surface remains one persistent iframe while mode and edit state
+  change.
+- This is fresh local synchronization evidence only; actual current-payload
+  Roll20 Sandbox and dedicated legacy-room evidence remain open.
+
 ## 2026-07-31 - Chrome Roll20 session recheck
 
 - Chrome tab inventory showed the dedicated `Sandbox upload` tab and a
