@@ -278,3 +278,12 @@ worktrees were preserved.
   external sheet/source roots.
 - VERIFIED: no project listener remains on ports `3000`, `4197`, `4198`, or
   `4199`; `reports/` contains only its policy README.
+
+## 2026-07-30 final user-authorized disposable purge
+
+The last local verification remnants were removed after an exact path and
+worktree-boundary check. This removed the anonymous `test-fixtures/` tree and
+generated `next-env.d.ts`; the other approved build/cache targets were already
+absent. `reports/README.md`, source, dependencies, Git worktrees, and all
+protected external material were explicitly retained. No project listener was
+active during the final check.

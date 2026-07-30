@@ -430,3 +430,15 @@ directories that had been recreated by the local build.
   protected external source roots.
 - VERIFIED: all five current-run generated targets are absent, `reports/`
   contains only `README.md`, and project ports are clear.
+
+## 2026-07-30 final user-authorized disposable purge
+
+- DELETED: the remaining anonymous `test-fixtures/` tree and generated
+  `next-env.d.ts` file. `.next/`, `out/`, `.tmp/`, and
+  `tsconfig.tsbuildinfo` were already absent.
+- VERIFIED: every approved disposable target is absent; `reports/README.md`
+  is the only report entry and remains tracked.
+- PRESERVED: product source, `node_modules/`, Git metadata and worktrees,
+  reference/archive zones, and every protected external sheet/source folder.
+- VERIFIED: no project listener is active on ports `3000`, `4197`, `4198`,
+  `4199`, or `9222`.
