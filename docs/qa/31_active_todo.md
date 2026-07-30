@@ -7271,3 +7271,13 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - VERIFIED TARGETED: Role tests cover the new frame/flow/drop contracts.
 - VERIFY OPEN: The correction improves generic layer affordances locally but
   does not upgrade universal import coverage or actual Roll20 parity.
+
+## 2026-07-30 Sandbox upload retry after Chrome reconnect
+
+- VERIFIED READ-ONLY: The dedicated Sandbox tab was controllable again and
+  exposed separate HTML, CSS, and Translation inputs.
+- BLOCKED EXTERNAL: Uploading the anonymous synthetic HTML still failed at the
+  supported chooser boundary with `Not allowed`; no Roll20 state was changed.
+- NEXT P0: Use a user-visible native file selection for the three generated
+  files, then capture the applied Sandbox root, assets, default state, worker
+  visibility, and chat result. Keep legacy-room verification separate.

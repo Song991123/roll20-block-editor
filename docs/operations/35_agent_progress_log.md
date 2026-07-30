@@ -8029,6 +8029,21 @@ visibility verification passed. No external room was opened or modified.
   save, chat message, setting change, or test-room mutation occurred. External
   modern/legacy visual evidence therefore remains open.
 
+## 2026-07-30 - Sandbox upload retry after Chrome reconnect
+
+- Reconnected to the existing dedicated `Codex Roll20 Verify` Sandbox tab and
+  confirmed the visible `Sheet Sandbox Tools` dialog plus `#sheetHtml`,
+  `#sheetCss`, and `#sheetTranslation` controls.
+- Generated only the anonymous local `synthetic-parity` payload. The HTML,
+  CSS, and translation files were ready locally, but the supported chooser
+  still rejected the HTML file at `setFiles` with `Not allowed`.
+- No file was attached, no save request was submitted, and no room, sheet,
+  chat, or setting state changed. The tab was released as a handoff so the
+  user can select the three files through the visible native picker if needed.
+- External modern payload parity and the separate legacy-room gate remain
+  VERIFY/BLOCKED at the file-handoff boundary; Sandbox screen visibility is
+  not counted as generated-sheet evidence.
+
 ## 2026-07-30 - Generic layer-role coverage correction
 
 - `r20_element_container` is now classified as a frame with a child drop slot;
