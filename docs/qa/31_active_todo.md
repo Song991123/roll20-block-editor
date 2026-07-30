@@ -1,3 +1,20 @@
+## 2026-07-30 Local compatibility roundtrip regression fix
+
+- DONE LOCAL: Browser L2 import -> emit -> re-import -> emit now passes for
+  one anonymous custom compatibility fixture and one anonymous legacy
+  compatibility fixture. HTML/CSS/translation/worker outputs are stable and
+  browser console and page errors are zero for both.
+- FIXED LOCAL: Inline text, controls, labels, radio wrappers, `<br>`, and
+  mixed inline/block list content no longer gain or lose whitespace during
+  re-import. Reserved top-level text markers rehydrate as text blocks.
+- VERIFIED LOCAL: emit/import focused tests, lint, production build, and the
+  full `ci:verify` gate pass.
+- PRIVACY: The source-derived inputs existed only in ignored local fixtures.
+  Deletion was attempted after verification but the host rejected the guarded
+  recursive operation before execution; they remain local-only and untracked.
+- OPEN: This is browser L2 determinism, not visual parity with Roll20. Modern
+  Sandbox activation and a separate legacy-enabled room remain external gates.
+
 ## 2026-07-30 Local render/edit gate refresh
 
 - DONE LOCAL: `ci:verify` passed all unit, safety, import, legacy-sanitize,

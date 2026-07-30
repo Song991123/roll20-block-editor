@@ -24,7 +24,8 @@ function isPreservableAttribute(name: string): boolean {
     SAFE_ATTRIBUTE_NAME.test(name) &&
     !EVENT_ATTRIBUTE.test(lower) &&
     lower !== 'srcdoc' &&
-    lower !== 'data-r20-block-id'
+    lower !== 'data-r20-block-id' &&
+    lower !== 'data-r20-text-node'
   );
 }
 

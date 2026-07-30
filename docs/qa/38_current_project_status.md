@@ -9,6 +9,12 @@ local output and is deleted after the verification batch.
 
 ## Current Evidence
 
+- LOCAL PASS: Browser L2 compatibility roundtrip passed for one anonymous
+  custom fixture and one anonymous legacy fixture. HTML/CSS/translation/worker
+  output remained stable with zero browser console/page errors. The
+  source-derived inputs remain only in ignored local evidence because the
+  host rejected the guarded cleanup attempt before execution; none is tracked
+  or public.
 - LOCAL PASS: The latest full `ci:verify`, persistent-preview, fresh-sheet,
   and edit-flow browser gates pass with no project/CDP listener left behind.
 - LOCAL PASS: Anonymous synthetic preview/edit rendering is exact in both
@@ -34,7 +40,7 @@ local output and is deleted after the verification batch.
 
 | Area | Status | Evidence boundary |
 | --- | --- | --- |
-| Universal HTML/CSS/translation mapping | VERIFY/PARTIAL | Synthetic and local regression paths exist; arbitrary official/community/custom coverage is not proven. |
+| Universal HTML/CSS/translation mapping | VERIFY/PARTIAL | Anonymous custom and legacy compatibility roundtrips now pass locally; arbitrary official/community/custom coverage is not proven. |
 | Future JS/worker preservation | VERIFY/PARTIAL | Separate workspace/export and hidden-runtime smokes pass locally; actual Roll20 worker execution is not proven. |
 | Modern local preview/edit surface | VERIFY/GOOD_LOCAL | Preview and edit share the persistent iframe surface with an edit-only overlay. |
 | Modern Roll20 Sandbox render | BLOCKED_EXTERNAL | Upload dispatch occurred, but visible sheet activation and screenshot evidence are missing. |

@@ -14,6 +14,7 @@
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext } from './types';
 import { styleAttr } from './style_field';
+import { isInlineMarkup, startsInlineMarkup } from './inlineMarkup';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -130,7 +131,10 @@ function sheetClassAttrWithBase(base: string, cls: string): string {
 /** 숫자 크기 → 양의 정수 문자열 또는 ''. */
 /** Preserve nested statement indentation for semantic inline containers. */
 function wrapTag(ctx: GeneratorContext, tag: string, attrs: string, content: string): string {
-  if (!content || !content.trim()) return `<${tag}${attrs}></${tag}>`;
+  if (!content) return `<${tag}${attrs}></${tag}>`;
+  if (isInlineMarkup(content) || startsInlineMarkup(content)) {
+    return `<${tag}${attrs}>${content}</${tag}>`;
+  }
   return `<${tag}${attrs}>\n${ctx.indent(content)}\n</${tag}>`;
 }
 

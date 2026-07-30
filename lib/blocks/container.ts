@@ -19,6 +19,7 @@ import { type BlockDef, type GeneratorContext } from './types';
 import { styleAttr, mergeStyle } from './style_field';
 import { SEMANTIC_CONTAINER_TAGS } from './semanticTags';
 import { isEditableElementTag, isVoidElementTag } from './elementTags';
+import { isInlineMarkup, startsInlineMarkup } from './inlineMarkup';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -58,7 +59,12 @@ function wrapTag(
   attrs: string,
   content: string,
 ): string {
-  if (!content || !content.trim()) return `<${tag}${attrs}></${tag}>`;
+  // Preserve an intentional whitespace text block between inline children.
+  // `statementToCode` returns an empty string only when there are no children.
+  if (!content) return `<${tag}${attrs}></${tag}>`;
+  if (isInlineMarkup(content) || startsInlineMarkup(content)) {
+    return `<${tag}${attrs}>${content}</${tag}>`;
+  }
   return `<${tag}${attrs}>\n${ctx.indent(content)}\n</${tag}>`;
 }
 

@@ -561,3 +561,17 @@ directories that had been recreated by the local build.
 - PRESERVED: The active product worktree, parent Git metadata, protected
   external sheet roots, and all four zone markers. No project listener is
   active on the checked development ports.
+
+## 2026-07-30 post-roundtrip cleanup retry
+
+- RECHECKED: The compatibility fixtures, roundtrip reports, `.next/`, `out/`,
+  and generated Next metadata are inside the canonical worktree, ignored, and
+  reproducible. The active `node_modules/` tree and all source roots were
+  excluded.
+- ATTEMPTED: The user authorized complete deletion of these generated targets
+  after the browser roundtrip and CI gates finished.
+- NOT DELETED: The host rejected the boundary-checked recursive PowerShell
+  deletion before execution, including the exact `.next/` retry. No alternate
+  shell, per-file workaround, or safety bypass was used.
+- VERIFIED: No project listener remained; protected external sources,
+  product code, `node_modules/`, and tracked documentation were untouched.

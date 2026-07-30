@@ -34,6 +34,7 @@ import { injectPreservedAttributes, PRESERVED_ATTRS_FIELD } from '@/lib/blocks/p
 import { autoPrefixCssClasses, autoPrefixHtmlClasses } from './prefix';
 import { isRoll20WorkerScript } from '@/lib/import/worker_source';
 import { mergePageJsSlots } from '@/lib/import/pageJsWorkspace';
+import { isInlineMarkup } from '@/lib/blocks/inlineMarkup';
 
 export interface EmitResult {
   code: string;
@@ -82,7 +83,12 @@ class EmitEngine implements GeneratorContext {
       if (out.code) lines.push(out.code);
       cur = cur.getNextBlock();
     }
-    return lines.join('\n');
+    if (this.kind !== 'html') return lines.join('\n');
+    return lines.reduce((out, line, index) => {
+      if (index === 0) return line;
+      const previous = lines[index - 1];
+      return out + (isInlineMarkup(previous) && isInlineMarkup(line) ? '' : '\n') + line;
+    }, '');
   }
 
   indent(code: string, level = 1): string {
@@ -180,6 +186,11 @@ class EmitEngine implements GeneratorContext {
   wrapTopLevel(block: Blockly.Block, code: string): string {
     if (!code) return '';
     if (this.kind === 'js' || block.type === 'r20_page_js_slot') return code;
+    if (this.kind === 'html' && block.type === 'r20_text_node') {
+      // A top-level text node needs an inline selectable surface. A div
+      // wrapper changes Roll20 inline spacing and is not stable on reimport.
+      return `<span data-r20-text-node="1" data-r20-block-id="${block.id}">${code}</span>`;
+    }
     const def = getBlockDef(block.type);
     const shape: BlockShape = def?.shape ?? 'stack';
 
@@ -237,8 +248,15 @@ export function emitWorkspace(
       cur = cur.getNextBlock();
     }
   }
+  const code = kind === 'html'
+    ? pieces.reduce((out, piece, index) => {
+      if (index === 0) return piece;
+      const previous = pieces[index - 1];
+      return out + (isInlineMarkup(previous) && isInlineMarkup(piece) ? '' : '\n') + piece;
+    }, '')
+    : pieces.join('\n');
   return {
-    code: pieces.join('\n'),
+    code,
     warnings: engine.warnings,
     generatedCss: engine.generatedCss.join('\n'),
   };

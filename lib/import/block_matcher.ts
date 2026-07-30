@@ -143,6 +143,24 @@ export function matchElement(node: DomNode, ctx: MatchContext): MatchedBlock | n
     }
   }
 
+  // Top-level direct text is emitted as an inline span so the rendered
+  // object remains selectable without changing inline layout. Rehydrate that
+  // reserved marker back into the text-node block instead of treating it as a
+  // normal span; this keeps import -> emit stable for spaces between controls.
+  if (
+    node.tag === 'span'
+    && node.attrs?.['data-r20-text-node'] === '1'
+    && node.children.every((child) => child.type === 'text')
+  ) {
+    return {
+      blockType: 'r20_text_node',
+      fields: {
+        TEXT: node.children.map((child) => child.text ?? '').join(''),
+      },
+      children: {},
+    };
+  }
+
   const result =
     matchInput(node, ctx) ??
     matchDice(node, ctx) ??
@@ -1253,7 +1271,7 @@ const INLINE_TEXT_TAGS = new Set([
 
 const INLINE_WHITESPACE_TAGS = new Set([
   ...INLINE_TEXT_TAGS,
-  'a', 'abbr', 'button', 'code', 'data', 'del', 'ins', 'kbd', 'mark',
+  'a', 'abbr', 'button', 'code', 'data', 'del', 'ins', 'kbd', 'label', 'mark',
   'q', 's', 'samp', 'select', 'textarea', 'time', 'var', 'input', 'img',
 ]);
 

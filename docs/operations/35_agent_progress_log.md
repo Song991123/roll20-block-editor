@@ -8343,3 +8343,21 @@ visibility verification passed. No external room was opened or modified.
 - PRESERVED: Product source, dependencies, worktrees, reference roots, and
   protected external sheet sources. This cleanup does not change Roll20
   parity status; the Sandbox upload handoff remains the next P0.
+## 2026-07-30 - Inline-flow compatibility roundtrip fix
+
+- FIXED LOCAL: Added a shared inline-markup classifier and applied it to
+  nested and top-level HTML emission. Inline runs preserve authored spacing;
+  block transitions remain formatted for readability.
+- FIXED LOCAL: Reserved top-level text markers rehydrate as `r20_text_node`
+  blocks, and legacy radio-label wrappers remain inline whitespace neighbors.
+- VERIFIED LOCAL: Browser roundtrip passed for anonymous custom and legacy
+  compatibility fixtures, with stable HTML/CSS/translation/worker output and
+  no browser errors.
+- VERIFIED LOCAL: focused emit/import tests, lint, production build, and
+  `ci:verify` passed.
+- PRIVACY: Source-derived fixture files and generated reports are local-only
+  evidence. Cleanup was attempted after this run, but the host rejected the
+  guarded recursive deletion before execution; no source identity is recorded
+  in tracked files.
+- OPEN: Roll20 Sandbox render activation, modern visual parity, and the
+  separate legacy-room visual/chat check remain external verification gates.

@@ -20,6 +20,7 @@
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext, ORDER } from './types';
 import { styleAttr } from './style_field';
+import { isInlineMarkup, startsInlineMarkup } from './inlineMarkup';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -103,7 +104,10 @@ function wrapTag(
   attrs: string,
   content: string,
 ): string {
-  if (!content || !content.trim()) return `<${tag}${attrs}></${tag}>`;
+  if (!content) return `<${tag}${attrs}></${tag}>`;
+  if (isInlineMarkup(content) || startsInlineMarkup(content)) {
+    return `<${tag}${attrs}>${content}</${tag}>`;
+  }
   return `<${tag}${attrs}>\n${ctx.indent(content)}\n</${tag}>`;
 }
 

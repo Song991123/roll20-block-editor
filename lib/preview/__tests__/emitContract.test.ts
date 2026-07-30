@@ -2,6 +2,7 @@ import * as Blockly from 'blockly';
 import { registerAllBlocks } from '@/lib/blocks/registry';
 import { emitAll, emitWorkspace, normalizeEmittedRoll20Pair } from '../emit';
 import { isRoll20WorkerScript } from '@/lib/import/worker_source';
+import { importSheet } from '@/lib/import/index';
 
 function assert(condition: unknown, message: string): void {
   if (!condition) throw new Error(`Assertion failed: ${message}`);
@@ -117,6 +118,38 @@ function testInlineBreakClassEmit(): void {
   assert(result.html.includes('<br'), 'inline break element is emitted');
   assert(result.html.includes('class="sheet-line-break"'), 'inline break class is preserved');
   assert(result.html.includes('style="display: block"'), 'inline break style is preserved');
+  workspace.dispose();
+}
+
+function testTopLevelWhitespaceTextRoundTrip(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const text = workspace.newBlock('r20_text_node');
+  text.setFieldValue(' ', 'TEXT');
+
+  const first = emitAll({ html: workspace });
+  assert(first.html.includes('<span data-r20-text-node="1"'), 'top-level text uses an inline marker');
+  assert(!first.html.includes('<div data-r20-block-id='), 'top-level text is not wrapped in a block div');
+
+  const imported = importSheet({ html: first.html });
+  assert(imported.html.includes('r20_text_node'), 'inline text marker rehydrates as a text block');
+  const secondWorkspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), secondWorkspace);
+  const second = emitAll({ html: secondWorkspace });
+  const stripIds = (html: string) => html.replace(/\sdata-r20-block-id="[^"]*"/g, '');
+  assert(stripIds(first.html) === stripIds(second.html), 'top-level whitespace survives import -> emit');
+  workspace.dispose();
+  secondWorkspace.dispose();
+}
+
+function testInlineFlowDoesNotGainWhitespace(): void {
+  registerAllBlocks();
+  const imported = importSheet({ html: '<p>🕷<b>Select a Playbook above to get started</b>🕷</p>' });
+  const workspace = new Blockly.Workspace();
+  Blockly.Xml.domToWorkspace(Blockly.utils.xml.textToDom(imported.html), workspace);
+  const emitted = emitAll({ html: workspace }).html;
+  assert(!/🕷\s+<b/.test(emitted), 'inline text before bold does not gain whitespace');
+  assert(!/<\/b>\s+🕷/.test(emitted), 'inline text after bold does not gain whitespace');
   workspace.dispose();
 }
 
@@ -281,6 +314,8 @@ testGeneratedPositionCss();
 testSemanticContainerEmit();
 testGenericElementEmit();
 testInlineBreakClassEmit();
+testTopLevelWhitespaceTextRoundTrip();
+testInlineFlowDoesNotGainWhitespace();
 testGenericCssTagEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
