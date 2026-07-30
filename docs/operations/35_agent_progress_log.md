@@ -8835,3 +8835,17 @@ visibility verification passed. No external room was opened or modified.
   roll/chat behavior for one modern Sandbox and one dedicated legacy room.
   Pixel parity for arbitrary sheets remains open; no source-derived payload,
   screenshot, room identity, or report was added to Git.
+
+## 2026-07-30 Explicit disposable-output deletion retry
+
+- `RECHECKED`: No project or CDP listener was active. Old `web/` dependency
+  and build output, canonical `.next/`, `out/`, `.tmp/`, and untracked report
+  children were resolved inside the workspace and excluded the active
+  canonical dependency tree, source, worktrees, policy files, and protected
+  external sheet roots.
+- `BLOCKED`: The host rejected the guarded recursive deletion before
+  PowerShell execution. User approval does not override this execution
+  boundary, and no alternate deletion method was used.
+- `PRESERVED`: No source, active dependency, Git worktree, report policy, or
+  external sheet material changed. The generated targets remain disposable
+  cleanup candidates for a permitted maintenance operation.

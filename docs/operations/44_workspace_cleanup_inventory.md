@@ -782,3 +782,21 @@ directories that had been recreated by the local build.
 - VERIFIED: source, active dependencies, Git worktrees, report policy, and
   protected external sheet roots remain untouched. The remaining disposable
   targets require a permitted maintenance operation outside this session.
+
+## 2026-07-30 latest explicit retry after user approval
+
+- RECHECKED: no listener was active on the project/CDP ports. The exact
+  disposable targets were old `web/node_modules/`, `web/.next/`, `web/out/`,
+  canonical `.next/`, `out/`, `.tmp/`, and untracked child directories under
+  canonical `reports/` except `reports/README.md`.
+- VERIFIED: every selected path resolved inside the workspace; the canonical
+  active `node_modules/`, source roots, Git metadata/worktree roots, report
+  policy file, reference/archive zones, and protected external sheet roots
+  were excluded.
+- ATTEMPTED: the user explicitly authorized complete deletion.
+- BLOCKED: the host rejected the boundary-checked PowerShell recursive
+  deletion before PowerShell execution. User approval cannot override this
+  execution boundary.
+- NOT DELETED: all selected targets remain unchanged. No alternate shell,
+  native API, per-file workaround, or safety bypass was used. Git status is
+  still clean and no project listener is active.
