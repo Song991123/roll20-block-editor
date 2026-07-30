@@ -9083,3 +9083,15 @@ same-hash modern/legacy comparison.
   imported edit sync pass.
 - Scope boundary: this does not establish full worker JS coverage, Roll20
   runtime execution parity, or actual modern/legacy screenshot parity.
+
+## 2026-07-30 - Sandbox native file chooser capability retry
+
+- Reconnected to the dedicated modern Sandbox and observed the three separate
+  file controls with a fresh visible one-member indicator. The local anonymous
+  HTML, CSS, and translation payload hashes were checked before the attempt.
+- The browser locator surface exposes no direct file setter. A supported
+  native file-chooser wait did not emit after the visible HTML control click;
+  the direct input click then timed out before a chooser handle was returned.
+- No file was attached and no external side effect was attempted. The legacy
+  tab was not promoted to fresh evidence after the browser connection timed
+  out. Actual modern/legacy same-payload parity remains blocked external.

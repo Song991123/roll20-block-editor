@@ -589,3 +589,14 @@ not close the external Roll20 parity rows above.
   all pass.
 - `VERIFY / OPEN`: worker coverage remains bounded; arbitrary APIs,
   execution order, and external Roll20 same-hash visual evidence remain open.
+
+## 2026-07-30 Native chooser capability retry
+
+- `MEASURED EXTERNAL`: modern Sandbox controls and a one-member preflight were
+  visible before the handoff attempt; the anonymous payload files were present
+  locally with recorded hashes.
+- `VERIFY / BLOCKED EXTERNAL`: the browser file-chooser event did not emit and
+  the direct input click timed out. No payload hash was bound to Roll20 and no
+  screenshot or settings write is accepted as evidence.
+- `NEXT P0`: use a responsive supported chooser/CDP file-input path, then run
+  modern Sandbox and dedicated legacy-room checks independently.

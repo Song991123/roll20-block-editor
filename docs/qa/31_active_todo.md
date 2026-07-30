@@ -8359,3 +8359,18 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   legacy visual parity remain unverified.
 - `NEXT P1`: continue common worker expression coverage while preserving
   unsupported syntax as editable raw blocks.
+
+## 2026-07-30 Sandbox native file chooser capability retry
+
+- `OBSERVED`: the dedicated modern Sandbox still exposed separate HTML, CSS,
+  and Translation inputs, and the fresh visible member indicator showed one
+  member before the interaction.
+- `VERIFY / BLOCKED EXTERNAL`: the supported locator surface has no direct file
+  setter. The native file-chooser event path did not emit, and the direct file
+  input click then timed out before a chooser handle could be obtained.
+- `PRESERVED`: no file was attached, no save/reload/settings action occurred,
+  and no room, chat, or source-derived content was changed. The legacy tab was
+  not counted as fresh evidence after the browser connection timed out.
+- `NEXT P0`: recover a responsive supported native chooser or CDP file-input
+  capability, then bind the exact anonymous three-file payload before taking
+  any modern/legacy render comparison.

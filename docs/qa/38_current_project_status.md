@@ -352,3 +352,12 @@ and high-priority tests, headless workspace, emit contract, lint, build, full
 CI, and synthetic modern/legacy preview/edit smokes pass. This remains bounded
 local worker coverage; actual Roll20 same-hash visual parity and full worker
 runtime support remain unverified.
+
+## Sandbox file chooser capability retry - 2026-07-30
+
+The modern Sandbox controls and one-member preflight were visible, but the
+supported file chooser did not emit and the direct file-input click timed out.
+No anonymous payload was attached and no Roll20 state changed. The legacy tab
+was not treated as fresh evidence after the browser connection stalled. Actual
+same-payload modern and legacy render parity remains `VERIFY / BLOCKED
+EXTERNAL`.
