@@ -17,6 +17,7 @@ import {
   nextActionForReadiness,
   selfTestRoll20Readiness,
 } from './lib/roll20Readiness.mjs';
+import { ROLL20_LAYOUT_SELECTORS } from './lib/roll20LayoutSelectors.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const SELF_TEST = hasFlag('--self-test');
@@ -408,22 +409,7 @@ async function probeSheetFrames(page, hints) {
             markerAncestors.push({ node: ancestor, depth });
           }
         }
-        const layoutSelectors = [
-          '.sheet-2colrow',
-          '.sheet-3colrow',
-          '.sheet-col',
-          'table',
-          'thead',
-          'tbody',
-          'tr',
-          'td',
-          'th',
-          'input',
-          'textarea',
-          'select',
-          "button[type='roll']",
-        ];
-        const layout = Object.fromEntries(layoutSelectors.map((selector) => {
+        const layout = Object.fromEntries(expected.layoutSelectors.map((selector) => {
           const nodes = Array.from(document.querySelectorAll(selector));
           return [selector, {
             count: nodes.length,
@@ -462,7 +448,7 @@ async function probeSheetFrames(page, hints) {
           },
           hits,
         };
-      }, hints);
+      }, { ...hints, layoutSelectors: ROLL20_LAYOUT_SELECTORS });
       const sheetHitCount = result.hits.rollButtonNames.length + result.hits.attrNames.length + result.hits.textTokens.length;
       const chatTemplateHitCount = result.hits.rolltemplateClasses.length;
       const activationMatch = classifyActivationMatch(result.hits);

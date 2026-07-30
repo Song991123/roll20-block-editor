@@ -5,6 +5,11 @@
   select, and Roll buttons are now compared instead of silently omitted.
 - DONE LOCAL: Added a self-test with anonymous synthetic geometry and wired it
   into `ci:verify`.
+- DONE LOCAL: Full-root local candidates now persist a generic
+  `targetGeometry.layout` sidecar for row/column, table section/cell, input,
+  textarea, select, and Roll-button selectors. The computed-style comparator
+  consumes that sidecar before older aggregate arrays, preventing false
+  `localCount=0` results for nested controls.
 - VERIFIED LOCAL: The computed-style self-test, geometry test, runtime contract
   test, and emit contract test pass.
 - VERIFIED LOCAL: After server hygiene cleared all project/CDP listeners, the
@@ -24,6 +29,8 @@
   targets were boundary-checked and confirmed untracked, but recursive removal
   was rejected by the host before execution. No alternate deletion path was
   used; the targets remain local-only.
+- VERIFY / OPEN: Existing private full-root reports predate this sidecar field;
+  regenerate them only when fresh anonymous Roll20 evidence is available.
 
 ## 2026-07-31 Wrapper geometry and capture-format reconciliation
 

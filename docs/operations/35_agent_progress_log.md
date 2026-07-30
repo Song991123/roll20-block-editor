@@ -3,6 +3,10 @@
 - Expanded the computed-style target set to include row/column containers,
   table sections/cells, input, textarea, select, and Roll buttons.
 - Added an anonymous synthetic self-test and wired it into `ci:verify`.
+- Extended full-root candidate metrics with a generic `targetGeometry.layout`
+  sidecar. The comparator prefers this direct selector map, so nested table
+  controls are no longer treated as absent when older aggregate arrays omit
+  them.
 - After server hygiene cleared all project/CDP listeners, the visual smoke
   rerun on port `4197` passed both anonymous fixtures in modern and legacy
   modes with `0%` mismatch, `EXACT` parity, and fixture-B i18n `5/5`.
@@ -13,6 +17,8 @@
 - Explicit ignored generated targets were verified untracked and inside the
   worktree, but host policy rejected recursive removal before execution. No
   alternate deletion route was used.
+- Existing private candidate reports were not rewritten; fresh Roll20 evidence
+  is required before regenerating them with the new sidecar.
 
 ## 2026-07-31 - Wrapper geometry and capture-format reconciliation
 

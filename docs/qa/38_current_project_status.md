@@ -18,6 +18,10 @@ local output and is deleted after the verification batch.
   `0%` pixel mismatch, geometry parity `true`, and i18n `5/5`.
 - VERIFIED LOCAL: The clean port-`4197` rerun after server hygiene reproduced
   exact parity for both anonymous synthetic fixtures in modern and legacy modes.
+- FIXED LOCAL: Full-root candidates now retain direct generic layout selector
+  samples for nested tables and form controls; computed-style comparison uses
+  this map before older aggregate arrays. Existing external reports remain
+  unchanged and require fresh evidence to regenerate.
 - DIAGNOSTIC ONLY: The earlier port-`4186` run failed before the legacy capture
   with `ERR_NO_BUFFER_SPACE`; it did not produce a visual mismatch result.
 - OPEN: This is local generic coverage only. Live Roll20 layout-family

@@ -15,6 +15,10 @@ Date: 2026-07-31
   the same exact result for fixture-A and fixture-B in both compatibility modes.
 - DIAGNOSTIC ONLY: The prior port-`4186` fixture-B legacy failure was a single
   pre-capture `ERR_NO_BUFFER_SPACE` resource error, not a measured mismatch.
+- FIXED LOCAL: Full-root candidate metrics now carry direct generic layout
+  selector samples, and the computed-style comparator consumes them before
+  older aggregate geometry. This closes a diagnostic false-negative path for
+  nested table/form controls; existing actual reports still need regeneration.
 - NOT PROVEN: live Roll20 computed-style or screenshot parity for those layout
   families; the actual current Legacy payload still has no such nodes.
 

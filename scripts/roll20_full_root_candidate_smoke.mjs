@@ -15,6 +15,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
+import { ROLL20_LAYOUT_SELECTORS } from './lib/roll20LayoutSelectors.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..');
@@ -462,7 +463,7 @@ async function renderCandidate({
   if (applyStateHint) await applyStateCandidate(page, stateCandidate);
   await page.waitForTimeout(300);
 
-  const metrics = await page.evaluate(() => {
+  const metrics = await page.evaluate((layoutSelectors) => {
     const root = document.querySelector('.charactersheet.charsheet');
     const dialog = document.querySelector('#dialog-window');
     const rect = (el) => {
@@ -545,6 +546,12 @@ async function renderCandidate({
         tables: Array.from(document.querySelectorAll('table')).slice(0, 12).map((table, index) => ({ index, ...target(table) })),
         images: Array.from(document.querySelectorAll('img')).map((image, index) => ({ index, ...target(image) })),
         inputs: Array.from(document.querySelectorAll('input')).slice(0, 80).map((input, index) => ({ index, ...target(input) })),
+        layout: Object.fromEntries(layoutSelectors.map((selector) => [
+          selector,
+          Array.from(document.querySelectorAll(selector))
+            .slice(0, selector === 'input' ? 80 : 120)
+            .map((node, index) => ({ index, ...target(node, 2) })),
+        ])),
         statePanels: collectStatePanels().map((panel, index) => ({ index, ...target(panel) })),
       },
     };
@@ -562,7 +569,7 @@ async function renderCandidate({
         })
         .slice(0, 600);
     }
-  });
+  }, ROLL20_LAYOUT_SELECTORS);
 
   const rootBox = await page.locator('.charactersheet.charsheet').boundingBox();
   if (!rootBox) throw new Error(`candidate ${id} has no .charactersheet.charsheet`);

@@ -8,6 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { ROLL20_LAYOUT_SELECTORS } from './lib/roll20LayoutSelectors.mjs';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
 const selfTest = args.includes('--self-test');
@@ -23,21 +24,7 @@ const fullRootPath = path.join(runDir, 'full-root-candidate-smoke', 'full-root-c
 // Keep this list aligned with roll20_sheet_frame_probe.mjs. The sidecar can
 // already capture these selectors; omitting them here made a generic payload
 // look covered while silently skipping table cells, selects, and roll buttons.
-const targetSelectors = [
-  '.sheet-2colrow',
-  '.sheet-3colrow',
-  '.sheet-col',
-  'table',
-  'thead',
-  'tbody',
-  'tr',
-  'td',
-  'th',
-  'input',
-  'textarea',
-  'select',
-  "button[type='roll']",
-];
+const targetSelectors = ROLL20_LAYOUT_SELECTORS;
 const styleFields = [
   'display',
   'position',
@@ -204,6 +191,8 @@ function compareSelector(actual, candidate, selector) {
 
 function localNodesForSelector(candidate, selector) {
   const geometry = candidate.metrics?.targetGeometry ?? {};
+  const layoutSamples = geometry.layout?.[selector];
+  if (Array.isArray(layoutSamples)) return layoutSamples;
   const allNodes = flattenStatePanels(geometry);
   if (selector === '.sheet-2colrow') return geometry.rows ?? [];
   if (selector === '.sheet-3colrow') return allNodes.filter((node) => hasClass(node, 'sheet-3colrow'));
@@ -229,6 +218,9 @@ function flattenStatePanels(geometry) {
     ...(geometry.rows ?? []),
     ...(geometry.tables ?? []),
     ...(geometry.inputs ?? []),
+    ...(geometry.textareas ?? []),
+    ...(geometry.selects ?? []),
+    ...(geometry.rollButtons ?? []),
   ];
   const out = [];
   const seen = new Set();
@@ -246,8 +238,12 @@ function flattenStatePanels(geometry) {
 
 function runSelfTest() {
   const cell = { tag: 'TD', rect: { width: 10, height: 10 }, children: [] };
-  const row = { tag: 'TR', rect: { width: 20, height: 10 }, children: [cell] };
-  const table = { tag: 'TABLE', rect: { width: 20, height: 10 }, children: [row] };
+  const heading = { tag: 'TH', rect: { width: 10, height: 10 }, children: [] };
+  const headRow = { tag: 'TR', rect: { width: 20, height: 10 }, children: [heading] };
+  const bodyRow = { tag: 'TR', rect: { width: 20, height: 10 }, children: [cell] };
+  const head = { tag: 'THEAD', rect: { width: 20, height: 10 }, children: [headRow] };
+  const body = { tag: 'TBODY', rect: { width: 20, height: 10 }, children: [bodyRow] };
+  const table = { tag: 'TABLE', rect: { width: 20, height: 20 }, children: [head, body] };
   const geometry = {
     rows: [{ tag: 'DIV', className: 'sheet-2colrow', rect: { width: 100, height: 40 }, children: [
       { tag: 'DIV', className: 'sheet-col', rect: { width: 50, height: 40 }, children: [] },
@@ -259,13 +255,31 @@ function runSelfTest() {
     selects: [{ tag: 'SELECT', rect: { width: 20, height: 10 }, children: [] }],
     rollButtons: [{ tag: 'BUTTON', type: 'roll', rect: { width: 20, height: 10 }, children: [] }],
   };
+  geometry.layout = {
+    '.sheet-2colrow': geometry.rows,
+    '.sheet-3colrow': [],
+    '.sheet-col': geometry.rows[0].children,
+    table: geometry.tables,
+    thead: [head],
+    tbody: [body],
+    tr: [headRow, bodyRow],
+    td: [cell],
+    th: [heading],
+    input: geometry.inputs,
+    textarea: geometry.textareas,
+    select: geometry.selects,
+    "button[type='roll']": geometry.rollButtons,
+  };
   const candidate = { metrics: { targetGeometry: geometry } };
   const expectations = new Map([
     ['.sheet-2colrow', 1],
     ['.sheet-col', 2],
     ['table', 1],
-    ['tr', 1],
+    ['thead', 1],
+    ['tbody', 1],
+    ['tr', 2],
     ['td', 1],
+    ['th', 1],
     ['input', 1],
     ['textarea', 1],
     ['select', 1],
