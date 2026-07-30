@@ -52,6 +52,19 @@ function joinClass(...parts: Array<string | undefined | null>): string {
     .join(' ');
 }
 
+/**
+ * Composite HTML follows the same Roll20 class convention as primitive
+ * containers: user class tokens are sheet-prefixed once, while built-in
+ * tokens that already start with `sheet-` stay unchanged.
+ */
+function sheetClassList(...parts: Array<string | undefined | null>): string {
+  return joinClass(...parts)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => (token.startsWith('sheet-') ? token : `sheet-${token}`))
+    .join(' ');
+}
+
 /** OPTIONS 멀티라인 파싱 — "value|label" 또는 "value" 줄 단위. */
 function parseOptions(raw: string): Array<{ value: string; label: string }> {
   return String(raw ?? '')
@@ -290,6 +303,9 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('OPTIONS')
         .appendField(new Blockly.FieldTextInput(''), 'OPTIONS');
+      b.appendDummyInput()
+        .appendField('추가 class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('CONTENT').setCheck(null);
       setStatementHooks(b);
     }),
@@ -315,6 +331,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         );
       }
       const legend = String(b.getFieldValue('LEGEND') ?? '').trim();
+      const extraClass = String(b.getFieldValue('CLASS') ?? '').trim();
       const inner = ctx.statementToCode(block, 'CONTENT');
       const nameAttr = escapeAttr(`attr_${rawName}`);
       const legendHtml = legend ? `<legend>${escapeAttr(legend)}</legend>` : '';
@@ -331,7 +348,8 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         .join('\n');
       const body = [legendHtml, radios, inner].filter((s) => s && s.trim()).join('\n');
       const indented = body ? ctx.indent(body) : '';
-      return `<fieldset class="sheet-radio-group">\n${indented}\n</fieldset>`;
+      const fieldsetClass = sheetClassList('sheet-radio-group', extraClass);
+      return `<fieldset class="${escapeAttr(fieldsetClass)}">\n${indented}\n</fieldset>`;
     },
     inspectorSchema: [
       { name: 'NAME', label: '속성 이름', kind: 'text', placeholder: 'alignment' },
@@ -342,6 +360,13 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         kind: 'textarea',
         placeholder: 'lg|선악\nln|중립\nch|혼돈',
         description: '한 줄에 `value|label` (label 생략 시 value 그대로 표시).',
+      },
+      {
+        name: 'CLASS',
+        label: '추가 class',
+        kind: 'text',
+        placeholder: 'radio-panel',
+        description: '추가 class 이름. `sheet-`는 자동으로 한 번만 붙습니다.',
       },
     ],
   },
@@ -380,6 +405,9 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('NAME')
         .appendField(new Blockly.FieldTextInput('era'), 'ATTR_NAME');
+      b.appendDummyInput()
+        .appendField('추가 class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('CASES').setCheck(null);
       setStatementHooks(b);
     }),
@@ -397,7 +425,7 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         return '';
       }
       // 자식 r20_value_case 순회 — statement 시퀀스 chain.
-      type Case = { value: string; panel: string };
+      type Case = { value: string; panel: string; className: string };
       const cases: Case[] = [];
       let cur = b.getInputTargetBlock('CASES');
       while (cur) {
@@ -406,7 +434,8 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
           const v = rawV.replace(/[^A-Za-z0-9_-]/g, '');
           if (v) {
             const panel = ctx.statementToCode(cur, 'PANEL');
-            cases.push({ value: v, panel });
+            const className = String(cur.getFieldValue('CLASS') ?? '').trim();
+            cases.push({ value: v, panel, className });
           } else {
             ctx.warn(
               cur.id,
@@ -434,6 +463,10 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         return true;
       });
       const cls = (suffix: string): string => `sheet-${attr}-${suffix}`;
+      const switchClass = sheetClassList(
+        cls('switch'),
+        String(b.getFieldValue('CLASS') ?? '').trim(),
+      );
       const nameAttr = escapeAttr(`attr_${attr}`);
       const cssLines: string[] = [];
       cssLines.push(`  .${cls('panel')} { display: none; }`);
@@ -451,14 +484,19 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       const panelLines = uniq
         .map((c) => {
           const inner = c.panel && c.panel.trim() ? `\n${ctx.indent(c.panel)}\n` : '';
-          return `<div class="${escapeAttr(cls('panel'))} ${escapeAttr(cls('panel-' + c.value))}">${inner}</div>`;
+          const panelClass = sheetClassList(
+            cls('panel'),
+            cls('panel-' + c.value),
+            c.className,
+          );
+          return `<div class="${escapeAttr(panelClass)}">${inner}</div>`;
         })
         .join('\n');
       const styleBlock = `<style>\n${cssLines.join('\n')}\n</style>`;
       const inner = [styleBlock, radioLines, panelLines]
         .filter((s) => s && s.trim().length > 0)
         .join('\n');
-      return `<div class="${escapeAttr(cls('switch'))}">\n${ctx.indent(inner)}\n</div>`;
+      return `<div class="${escapeAttr(switchClass)}">\n${ctx.indent(inner)}\n</div>`;
     },
     inspectorSchema: [
       {
@@ -487,6 +525,9 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       b.appendDummyInput()
         .appendField('값')
         .appendField(new Blockly.FieldTextInput('1'), 'VALUE');
+      b.appendDummyInput()
+        .appendField('추가 class')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendStatementInput('PANEL').setCheck(null);
       setStatementHooks(b);
     }),
@@ -503,7 +544,12 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
       }
       if (!v) return '';
       const inner = panel && panel.trim() ? `\n${ctx.indent(panel)}\n` : '';
-      return `<div class="sheet-value-case sheet-value-case-${escapeAttr(v)}">${inner}</div>`;
+      const panelClass = sheetClassList(
+        'sheet-value-case',
+        `sheet-value-case-${v}`,
+        String(b.getFieldValue('CLASS') ?? '').trim(),
+      );
+      return `<div class="${escapeAttr(panelClass)}">${inner}</div>`;
     },
     inspectorSchema: [
       {
@@ -512,6 +558,13 @@ export const COMPOSITE_BLOCKS: BlockDef[] = [
         kind: 'text',
         placeholder: '1',
         description: '대응 값 — `[value="VALUE"]:checked` sibling 매칭에 사용.',
+      },
+      {
+        name: 'CLASS',
+        label: '추가 class',
+        kind: 'text',
+        placeholder: 'panel-highlight',
+        description: '이 값의 panel에 붙일 추가 class.',
       },
     ],
   },

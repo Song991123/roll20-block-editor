@@ -421,6 +421,31 @@ function testValueSwitchTwoCases(): void {
   );
 }
 
+function testValueSwitchPreservesCustomClasses(): void {
+  const def = findBlock(
+    COMPOSITE_BLOCKS as Array<{ type: string }>,
+    'r20_value_switch_panel',
+  );
+  const child = new FakeBlock({
+    type: 'r20_value_case',
+    fields: { VALUE: 'pulp', CLASS: 'panel-highlight', _emit: '<p>pulp</p>' },
+    children: { PANEL: [] },
+  });
+  const b = new FakeBlock({
+    type: 'r20_value_switch_panel',
+    fields: { ATTR_NAME: 'era', CLASS: 'switch-shell' },
+    children: { CASES: [child] },
+  });
+  const out = def.generator!(b, makeCtx());
+  const code = (Array.isArray(out) ? out[0] : out) as string;
+  expectContains(code, 'class="sheet-era-switch sheet-switch-shell"', 'wrapper custom class');
+  expectContains(
+    code,
+    'class="sheet-era-panel sheet-era-panel-pulp sheet-panel-highlight"',
+    'panel custom class',
+  );
+}
+
 function testValueSwitchDedupesDuplicateValues(): void {
   const def = findBlock(
     COMPOSITE_BLOCKS as Array<{ type: string }>,
@@ -525,6 +550,7 @@ const tests: Array<[string, () => void]> = [
   ['css class selector preserves Roll20 runtime class', testCssClassSelectorPreservesRoll20RuntimeClass],
   ['value switch empty attr', testValueSwitchEmptyAttr],
   ['value switch two cases', testValueSwitchTwoCases],
+  ['value switch preserves custom classes', testValueSwitchPreservesCustomClasses],
   ['value switch dedupes duplicate values', testValueSwitchDedupesDuplicateValues],
   ['attr ref self scope', testAttrRefSelfScope],
   ['attr ref selected scope', testAttrRefSelectedScope],

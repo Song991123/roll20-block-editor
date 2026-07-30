@@ -77,6 +77,15 @@ local output and is deleted after the verification batch.
 | Figma-like edit UX | VERIFY/PARTIAL | Flow/free placement, before/inside/after drops, iframe-crossing gallery/layer-panel drops, layer roles, and canvas controls exist; broad imported-sheet UX still needs polish. |
 | Public copyright safety | VERIFY/ONGOING | Real or derived sheets, screenshots, fixtures, and reports are excluded from the public tree. |
 
+## 2026-07-30 Local Mapping Update
+
+The local mapping boundary now preserves authored classes on the generic value
+switch wrapper and its case panels, gives manual radio composites an explicit
+class field, and keeps chat-template invocation out of the visual layer tree.
+This improves the universal path without changing the claim boundary: it is
+verified on focused synthetic/import contracts and the shared iframe browser
+smokes, not on every external sheet or actual Roll20 Sandbox upload.
+
 ## Goal Progress
 
 These are planning estimates, not completion claims.

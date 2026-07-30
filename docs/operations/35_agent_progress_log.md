@@ -8446,3 +8446,20 @@ visibility verification passed. No external room was opened or modified.
 - NEXT: Keep the tab as a user handoff. Apply only the anonymous synthetic
   payload through a visible file selection, then gather positive modern
   Sandbox evidence before beginning any separate legacy-room run.
+
+## 2026-07-30 - Universal layer classability correction
+
+- IMPLEMENTED: Added user-facing class fields to the generic visual composite
+  switch/case and radio-group blocks. The value-switch importer now removes
+  only generated structural tokens and carries authored wrapper/panel classes
+  into those fields.
+- IMPLEMENTED: Reclassified chat template invocation as runtime so it is not
+  presented as a selectable visual button layer.
+- VERIFIED: Generator/import/layer focused tests pass; production build,
+  `ci:verify`, persistent preview surface in modern and legacy modes,
+  single-process edit-flow smoke, import-dialog smoke, and server hygiene pass.
+  The first parallel edit-flow attempt was flaky at drop-target discovery; the
+  isolated rerun passed and is the authoritative browser result.
+- OPEN: No claim of full third-party HTML/CSS mapping or Roll20 parity. The
+  actual Sandbox upload is still blocked at the native file chooser boundary;
+  legacy room verification has not started.

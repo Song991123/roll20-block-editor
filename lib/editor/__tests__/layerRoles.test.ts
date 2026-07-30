@@ -46,7 +46,7 @@ assert.equal(getLayerRole('r20_spacer').canReceiveChildren, false);
 assert.equal(getLayerRole('r20_inline_break').canReceiveChildren, false);
 assert.equal(getLayerRole('r20_icon').canReceiveChildren, false);
 assert.equal(classifyLayerRole('r20_radio'), 'control');
-assert.equal(classifyLayerRole('r20_template_invoke'), 'action');
+assert.equal(classifyLayerRole('r20_template_invoke'), 'runtime');
 assert.equal(classifyLayerRole('r20_on_sheet_opened'), 'runtime');
 assert.equal(classifyLayerRole('r20_worker_if'), 'runtime');
 assert.equal(classifyLayerRole('r20_get_attrs'), 'runtime');

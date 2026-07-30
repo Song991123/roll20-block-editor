@@ -7702,3 +7702,28 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   files is still required. After selection, verify the applied root, assets,
   default state, worker execution, roll control, and chat in modern Sandbox;
   use a separate dedicated legacy room for legacy verification.
+
+## 2026-07-30 Universal visual-layer classability pass
+
+- `DONE LOCAL`: `r20_value_switch_panel` and `r20_value_case` now expose and
+  preserve authored wrapper/panel classes through import and emit. Class
+  tokens are sheet-prefixed once, so the structural `sheet-X-*` contract is
+  retained without double-prefixing.
+- `DONE LOCAL`: `r20_radio_group` exposes an optional wrapper class for manual
+  composite authoring; ordinary imported fieldsets continue through the
+  generic lossless fieldset path when composite recognition would not be
+  lossless.
+- `DONE LOCAL`: `r20_template_invoke` is classified as runtime rather than a
+  visible action layer because it emits a chat command, not sheet DOM.
+- `VERIFIED LOCAL`: focused generator/import/layer tests pass (`21/21`,
+  `23/23`, role tests); lint, production build, `ci:verify`, persistent
+  preview surface (modern + legacy), edit-flow single-process rerun, import
+  dialog smoke, and server hygiene all pass with zero browser errors in the
+  reports.
+- `VERIFY / OPEN`: This is a targeted universal mapping correction, not proof
+  that every third-party composite or arbitrary runtime markup is lossless.
+  Actual modern Sandbox activation and separate legacy-room visual/chat
+  evidence remain external gates.
+- `NEXT P1`: Continue the classability inventory for remaining visual composite
+  blocks and add only matchers that can prove a lossless import/export round
+  trip; do not add generic `CLASS` fields to raw text or runtime blocks.

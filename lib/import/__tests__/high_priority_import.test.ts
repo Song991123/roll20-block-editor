@@ -153,6 +153,18 @@ function testValueSwitchPanelMinimal(): void {
   expectContains(r.html, 'r20_static_text', 'panel child span matched');
 }
 
+function testValueSwitchPanelPreservesCustomClasses(): void {
+  const html = `
+    <div class="sheet-era-switch sheet-switch-shell">
+      <input type="radio" class="sheet-era-input" name="attr_era" value="pulp">
+      <div class="sheet-era-panel sheet-era-panel-pulp sheet-panel-highlight"><span>P</span></div>
+    </div>
+  `;
+  const r = importSheet({ html });
+  expectContains(r.html, '>switch-shell<', 'switch wrapper class preserved');
+  expectContains(r.html, '>panel-highlight<', 'panel class preserved');
+}
+
 function testValueSwitchPanelNoMatch(): void {
   // sheet-X-switch 아닌 일반 div 는 매칭 안 됨.
   const html = `<div class="sheet-era-wrap"><span>x</span></div>`;
@@ -265,6 +277,7 @@ const tests = [
   ['css var decl with spaces', testCssVarDeclWithSpaces],
   ['css regular prop not var decl', testCssRegularPropNotVarDecl],
   ['value switch panel minimal', testValueSwitchPanelMinimal],
+  ['value switch panel custom classes', testValueSwitchPanelPreservesCustomClasses],
   ['value switch panel no false match', testValueSwitchPanelNoMatch],
   ['value switch panel only', testValueSwitchPanelPanelOnly],
   ['attr_ref self token', testAttrRefSelfToken],

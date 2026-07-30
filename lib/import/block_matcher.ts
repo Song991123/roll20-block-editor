@@ -1121,12 +1121,14 @@ function matchValueSwitchPanel(
   if (!m) return null;
   const attr = m[1];
   if (!attr) return null;
+  const switchToken = `sheet-${attr}-switch`;
+  const switchClass = stripKnownClasses(cls, [switchToken]);
   // Note: template literal 안의 `\s` 는 escape 안 됨 → `\\s` 로 해야 RegExp 안에 `\s` 도달.
   const inputClsRe = new RegExp('(?:^|\\s)sheet-' + escapeRegExp(attr) + '-input(?:\\s|$)');
   const panelClsRe = new RegExp('(?:^|\\s)sheet-' + escapeRegExp(attr) + '-panel-([\\w-]+)(?:\\s|$)');
   // 자식 element 들 중 input (radio) + panel div 추출.
   const radioValues: string[] = [];
-  const panelByValue = new Map<string, DomNode>();
+  const panelByValue = new Map<string, { node: DomNode; className: string }>();
   for (const c of node.children) {
     if (c.type !== 'element') continue;
     const ca = c.attrs ?? {};
@@ -1140,7 +1142,14 @@ function matchValueSwitchPanel(
       const mm = panelClsRe.exec(childCls);
       if (mm) {
         const v = mm[1];
-        if (!panelByValue.has(v)) panelByValue.set(v, c);
+        if (!panelByValue.has(v)) {
+          const basePanelToken = `sheet-${attr}-panel`;
+          const valuePanelToken = `sheet-${attr}-panel-${v}`;
+          panelByValue.set(v, {
+            node: c,
+            className: stripKnownClasses(childCls, [basePanelToken, valuePanelToken]),
+          });
+        }
       }
     }
     // <style> 자식은 skip — emit 가 다시 채우므로 round-trip 시 동일.
@@ -1164,8 +1173,9 @@ function matchValueSwitchPanel(
   }
   const cases: MatchedBlock[] = [];
   for (const v of orderedValues) {
-    const panelDiv = panelByValue.get(v);
-    if (!panelDiv) continue;
+    const panelEntry = panelByValue.get(v);
+    if (!panelEntry) continue;
+    const panelDiv = panelEntry.node;
     // PANEL 슬롯 = panel div 의 자식 element 들을 matchTree 처리.
     const panelChildren: MatchedBlock[] = [];
     for (const c of panelDiv.children) {
@@ -1175,13 +1185,13 @@ function matchValueSwitchPanel(
     }
     cases.push({
       blockType: 'r20_value_case',
-      fields: { VALUE: v },
+      fields: { VALUE: v, CLASS: panelEntry.className },
       children: panelChildren.length ? { PANEL: panelChildren } : {},
     });
   }
   return {
     blockType: 'r20_value_switch_panel',
-    fields: { ATTR_NAME: attr },
+    fields: { ATTR_NAME: attr, CLASS: switchClass },
     children: { CASES: cases },
   };
 }

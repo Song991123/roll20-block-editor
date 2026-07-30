@@ -118,3 +118,26 @@ arbitrary JavaScript behavior is block-editable. Safe unknown elements use the
 generic `r20_element_container` block; executable or document-level elements
 such as `script`, `style`, `iframe`, and `template` remain behind the lossless
 raw HTML boundary and remain visible in coverage warnings.
+
+## Classability Audit Decisions
+
+The layer editor must preserve authored classes on visual composites without
+turning non-visual syntax into selectable sheet layers. The current decisions
+are:
+
+| Block | Visual layer | CLASS policy | Reason |
+| --- | --- | --- | --- |
+| `r20_value_switch_panel` | frame | wrapper `CLASS` is imported and emitted | The wrapper is a real drop-capable DOM frame. |
+| `r20_value_case` | frame | panel `CLASS` is imported and emitted | Each case is a selectable visual panel under the switch. |
+| `r20_radio_group` | frame | optional wrapper `CLASS` is emitted | It is a manual composite; imported fieldsets remain generic when their structure is not losslessly recognizable. |
+| `r20_text_node` | text-like semantic node | no `CLASS` | It represents direct text and adding a wrapper would change inline HTML semantics. |
+| `r20_template_invoke` | runtime | no visual layer | It emits a chat template command, not sheet DOM. |
+| worker/reporter/i18n syntax | runtime/export-only | no visual `CLASS` | These blocks configure behavior or translation rather than a visible element. |
+
+For class-bearing composites, import strips only the generated structural
+tokens and stores the remaining class tokens in the user-facing `CLASS`
+field. The generator reattaches the `sheet-` prefix once, so a normal
+import/export round trip does not double-prefix or silently drop the authored
+selector. This is a local mapping contract; arbitrary composite internals and
+third-party runtime markup remain subject to the coverage report until a
+fixture proves a lossless matcher.

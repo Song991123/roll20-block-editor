@@ -117,7 +117,9 @@ const ROLE_KIND_OVERRIDES: Record<string, LayerRoleKind> = {
   r20_inline_break: 'flow',
   r20_icon: 'media',
   r20_radio: 'control',
-  r20_template_invoke: 'action',
+  // Template invocation emits a chat command string, not a visible sheet
+  // element. Keep it out of the selectable visual layer tree.
+  r20_template_invoke: 'runtime',
   r20_computed_attr: 'runtime',
   r20_raw_page_js: 'runtime',
   r20_page_js_slot: 'runtime',
