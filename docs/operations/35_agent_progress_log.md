@@ -8541,3 +8541,12 @@ visibility verification passed. No external room was opened or modified.
   modern/legacy persistent preview, edit-flow smoke, and server hygiene pass.
 - OPEN: Actual Sandbox upload is still blocked at the native file chooser;
   no Roll20 visual, worker, roll, chat, or legacy-room parity claim is made.
+
+## 2026-07-30 - Sandbox applied-surface read-only recheck
+
+- VERIFIED EXTERNAL: The dedicated Sandbox tab still showed exactly one
+  visible member and remained isolated from ordinary room verification.
+- BLOCKED EXTERNAL: No applied sheet root, iframe, or form was visible after a
+  read-only dialog interaction; only the Sandbox upload controls were present.
+- NO MUTATION: No room, chat, campaign setting, or source-derived payload was
+  changed. The tab was left as a handoff for manual file selection.

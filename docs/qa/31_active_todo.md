@@ -7805,3 +7805,15 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: Complete user-visible three-file selection in the dedicated
   modern Sandbox handoff, then capture applied root, worker, roll, chat, and
   asset evidence; legacy verification remains a separate test-room track.
+
+## 2026-07-30 Sandbox applied-surface read-only recheck
+
+- `VERIFIED EXTERNAL`: The dedicated Sandbox tab visibly reports exactly one
+  member and remains the isolated verification destination.
+- `BLOCKED EXTERNAL`: A read-only view after the tool dialog interaction still
+  exposed no applied sheet root, iframe, or form; the upload controls remain
+  the only sheet-specific surface. This is not modern parity evidence.
+- `NO MUTATION`: No room settings, chat message, campaign data, or source
+  payload was changed. The tab was returned to handoff state.
+- `NEXT P0`: Manually select the three anonymous Sandbox files, then capture
+  positive root, state, worker, roll, chat, and asset evidence.
