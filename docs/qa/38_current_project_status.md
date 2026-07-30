@@ -9,11 +9,11 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `3a15cac`. The branch is pushed
+- Active branch: `claude/design-reset` at `297a5ec`. The branch is pushed
   to `origin`; the renderer-boundary patch is committed and the worktree is
   clean after this documentation update.
-- Remote CI: run `30567180269` passed safety/unit verification, lint, and
-  build for `3a15cac`.
+- Remote CI: run `30567613322` passed safety/unit verification, lint, and
+  build for `297a5ec`.
 - Current renderer boundary: fixture-specific chat renderer policies and CSS
   are removed from the product path. Generic Roll20 policies remain.
 - Latest local upload contract: resumable HTML/CSS/Translation handoff with

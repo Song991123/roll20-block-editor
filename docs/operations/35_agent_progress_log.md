@@ -21,6 +21,15 @@
   empty and no real-sheet example payload is bundled in the public app path.
 - Actual Roll20 Sandbox and dedicated legacy-room parity remain open.
 
+## 2026-07-31 - Roll20 connection retry
+
+- There were no attached user Roll20 tabs. A newly opened editor tab timed
+  out during navigation, so it was closed without authentication, file
+  selection, settings save, chat, or room mutation.
+- The current anonymous three-file Sandbox payload was generated locally and
+  remains ignored. External parity stays VERIFY/BLOCKED until a responsive
+  logged-in user tab is available.
+
 ## 2026-07-31 - Large workspace local-input smoke
 
 - Added an opt-in local-input path to the large-workspace browser smoke. It

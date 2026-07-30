@@ -24,6 +24,15 @@
 - VERIFY / OPEN: This does not replace actual modern Sandbox and dedicated
   legacy-room screenshot parity.
 
+## 2026-07-31 Roll20 connection retry
+
+- VERIFY / BLOCKED EXTERNAL: No user Roll20 tabs were attached. A fresh
+  dedicated editor tab timed out during navigation and was closed without
+  authentication, upload, save, chat, or room mutation.
+- NEXT P0: Resume only from a responsive user-visible logged-in Roll20 tab,
+  then apply the current anonymous three-file payload in modern Sandbox and
+  use a separate participant-gated legacy destination.
+
 ## 2026-07-31 Large workspace local-input smoke
 
 - `DONE LOCAL`: The large-workspace smoke now accepts optional local HTML/CSS/
