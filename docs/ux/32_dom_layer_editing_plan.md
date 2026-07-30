@@ -39,12 +39,15 @@ invent separate DOM models.
 2. `before` and `after` preserve sibling order in the same parent.
 3. A flow or table container keeps the dropped child in document order; it
    must not silently become absolute-positioned.
-4. Free placement inside a container is explicit. It records the container as
+4. A list container accepts only list-item blocks as direct children; a list
+   item may contain ordinary content or a nested list, but not another direct
+   list item.
+5. Free placement inside a container is explicit. It records the container as
    the offset parent and writes generated layout CSS, while the HTML remains
    free of editor-only inline layout declarations.
-5. A drop that would put an ancestor inside its descendant is rejected before
+6. A drop that would put an ancestor inside its descendant is rejected before
    Blockly is changed.
-6. The iframe overlay and layer panel clear their target state after drop or
+7. The iframe overlay and layer panel clear their target state after drop or
    pointer cancellation.
 
 ## Visual Language

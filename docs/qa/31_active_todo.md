@@ -16,6 +16,11 @@
 - FIXED LOCAL: atomic table metadata blocks (`col` and `caption`) no longer
   advertise an `inside` child drop even though their shared Table styling is
   still used for ordering and color.
+- FIXED LOCAL: list structural drops now enforce `ul/ol -> li`; ordinary
+  content can enter an `li`, while a direct `li -> li` insertion is rejected.
+- VERIFIED BROWSER: edit-flow and imported edit-sync smoke remain PASS after
+  list validation; post-run server hygiene still reports zero project
+  listeners.
 - VERIFIED BROWSER: `smoke:edit-flow` and imported edit-sync pass after the
   role inventory update; the post-run server hygiene check reports no project
   dev/smoke listener.

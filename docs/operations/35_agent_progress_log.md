@@ -7983,6 +7983,16 @@ visibility verification passed. No external room was opened or modified.
 - VERIFIED HYGIENE: the post-smoke check reports no project dev/smoke listener;
   generated output remains ignored local evidence.
 
+## 2026-07-30 - List structural drop validation
+
+- FIXED LOCAL: structural nesting now treats `r20_list` as `ul/ol` and
+  `r20_list_item` as `li`, allowing only direct list-item children under the
+  list and rejecting direct list-item nesting under another item.
+- VERIFIED LOCAL: layer-role structural tests cover list insertion and
+  rejection alongside the existing table/composite rules.
+- VERIFIED BROWSER: edit-flow and imported edit-sync smoke pass after the
+  list contract was added; no project listener remained after the run.
+
 ## 2026-07-30 - Generic inline whitespace import fix
 
 - Reproduced a universal import loss where inline siblings such as

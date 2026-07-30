@@ -161,14 +161,25 @@ export function canReceiveChildren(type: string): boolean {
   return getLayerRole(type).canReceiveChildren;
 }
 
-type TableNodeKind = 'table' | 'colgroup' | 'col' | 'section' | 'row' | 'cell' | 'cell_group' | 'caption';
+type StructuralNodeKind =
+  | 'table'
+  | 'colgroup'
+  | 'col'
+  | 'section'
+  | 'row'
+  | 'cell'
+  | 'cell_group'
+  | 'caption'
+  | 'list'
+  | 'list_item';
 
 /**
- * HTML table nodes have stricter parent/child rules than ordinary frames.
+ * HTML table/list nodes have stricter parent/child rules than ordinary frames.
  * Keep this separate from the visual role so a generic drop cannot produce
- * invalid markup such as a button directly under <tr>.
+ * invalid markup such as a button directly under <tr> or a div directly under
+ * ul/ol.
  */
-function tableNodeKind(type: string): TableNodeKind | null {
+function structuralNodeKind(type: string): StructuralNodeKind | null {
   const normalized = type.toLowerCase().replace(/^r20[-_]?/, '').replace(/[^a-z0-9]+/g, '_');
   if (normalized === 'table') return 'table';
   if (normalized === 'table_col' || normalized === 'col') return 'col';
@@ -183,14 +194,16 @@ function tableNodeKind(type: string): TableNodeKind | null {
   if (normalized === 'attribute_card') return 'cell_group';
   if (normalized === 'td' || normalized === 'th') return 'cell';
   if (normalized === 'table_caption' || normalized === 'caption') return 'caption';
+  if (normalized === 'list') return 'list';
+  if (normalized === 'list_item') return 'list_item';
   return null;
 }
 
 /** Return whether a moving layer can be a direct child of a target layer. */
 export function canNestLayerChild(movingType: string, targetType: string): boolean {
-  const target = tableNodeKind(targetType);
+  const target = structuralNodeKind(targetType);
   if (!target) return true;
-  const moving = tableNodeKind(movingType);
+  const moving = structuralNodeKind(movingType);
   switch (target) {
     case 'table':
       return moving === 'caption'
@@ -205,6 +218,10 @@ export function canNestLayerChild(movingType: string, targetType: string): boole
       return moving === 'cell' || moving === 'cell_group';
     case 'cell':
       return true;
+    case 'list':
+      return moving === 'list_item';
+    case 'list_item':
+      return moving !== 'list_item';
     case 'col':
     case 'caption':
     case 'cell_group':
