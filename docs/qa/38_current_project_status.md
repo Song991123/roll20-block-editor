@@ -305,3 +305,12 @@ local modes (`0%` mismatch, translation `1/1`). The authenticated Roll20
 connection timed out during the next targeted read, so the current local files
 are still not bound to a fresh Sandbox payload and no external screenshot
 parity claim is promoted.
+
+## Sandbox chooser wiring retry - 2026-07-30
+
+The isolated Sandbox tab reconnected and its three upload inputs were each
+present and visible. The supported chooser event still did not open when the
+HTML control was clicked, so no current-payload hash binding or fresh
+external screenshot was accepted. The dedicated modern and legacy tabs remain
+handoff-only; no room mutation occurred. Actual Roll20 parity remains
+`VERIFY / BLOCKED EXTERNAL` pending a supported file-selection or CDP path.

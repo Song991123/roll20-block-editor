@@ -8997,3 +8997,13 @@ workspace smoke all passed. The synthetic visual fixture also matched exactly
 in both modern and legacy local modes (`0%` mismatch, translation `1/1`).
 This improves the local evidence tier only; no new Roll20 upload, screenshot,
 or actual visual-parity claim was made.
+
+## 2026-07-30 Sandbox chooser wiring retry
+
+The isolated Sandbox tab reconnected and exposed one visible HTML, CSS, and
+translation input each. The supported file chooser did not emit after the
+HTML control was clicked, so the current anonymous payload was not replaced
+and no fresh root or screenshot evidence was produced. The two dedicated tabs
+were left for handoff; no room or source material was modified. A supported
+user-visible file selection or CDP-enabled browser is still required before
+same-hash modern/legacy comparison.

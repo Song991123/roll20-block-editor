@@ -8272,3 +8272,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - Boundary: these are local synthetic or anonymous regression checks. The
   current browser connection timed out before fresh same-hash Roll20 upload or
   screenshot capture, so actual modern/legacy pixel parity remains `VERIFY`.
+
+## 2026-07-30 Sandbox chooser wiring retry
+
+- `OBSERVED`: the isolated Sandbox tab reconnected; each HTML, CSS, and
+  translation input resolved to exactly one visible control.
+- `VERIFY / BLOCKED EXTERNAL`: clicking the visible HTML control did not emit
+  a file-chooser event within the supported browser handoff. No file was
+  attached, no new sheet root was confirmed, and no screenshot or room write
+  was accepted as evidence.
+- `PRESERVED`: the existing anonymous Sandbox and dedicated legacy tabs were
+  left in handoff state. No existing room, source sheet, or public artifact
+  was changed.
+- `NEXT P0`: resume with a user-visible supported file selection or a
+  connected CDP endpoint, then bind the three file hashes before capture.
