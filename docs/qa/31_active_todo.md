@@ -8173,3 +8173,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   rendered pixels match.
 - `NEXT P0`: bind the exact current payload hash to fresh modern Sandbox and
   separately legacy-room screenshots, then compare asset loading and pixels.
+
+## 2026-07-30 Live Roll20 runtime observation
+
+- `MEASURED EXTERNAL / ANONYMOUS`: The dedicated modern Sandbox tab and the
+  separate legacy verification room were both readable with a fresh visible
+  participant count of exactly `1`. Each showed one sheet iframe containing
+  the anonymous generated sheet, a `420x180` root, one text input, and one
+  Roll button.
+- `MEASURED EXTERNAL / MODERN`: Clicking the generated Roll button added a
+  real default-template chat result. No existing room or non-test sheet was
+  changed.
+- `VERIFY OPEN`: The visible HTML/CSS/translation file inputs still reported
+  zero selected files, so this observation is not bound to the latest
+  same-hash handoff manifest. It proves runtime/root/roll behavior for the
+  currently loaded anonymous payload only, not pixel parity or universal
+  import support.
+- `NEXT P0`: make the native three-file selection succeed in the modern
+  Sandbox, bind the resulting payload hash, capture normalized screenshots,
+  and repeat the legacy check separately.

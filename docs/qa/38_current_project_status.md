@@ -234,3 +234,14 @@ The regression test passes for external and relative candidates. This improves
 the user's ability to find and relink assets before export, but it remains
 local analysis only: external URL reachability and actual Roll20 pixel parity
 still require a fresh same-hash modern Sandbox and separate legacy-room run.
+
+## Live anonymous Roll20 runtime observation - 2026-07-30
+
+The dedicated modern Sandbox and separate legacy verification room were read
+with a fresh visible participant count of exactly one each. Both currently
+render an anonymous generated sheet iframe with a `420x180` authored root, one
+input, and one Roll button. A modern test roll added a real default-template
+chat result. The visible three file inputs still report zero selected files,
+so this is positive runtime/root/roll evidence for the currently loaded
+anonymous payload only; it is not same-hash binding, screenshot parity, or
+universal-sheet evidence.

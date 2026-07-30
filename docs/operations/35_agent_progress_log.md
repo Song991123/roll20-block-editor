@@ -8912,3 +8912,15 @@ visibility verification passed. No external room was opened or modified.
   assets and does not change Roll20 runtime proxy behavior.
 - External modern/legacy asset loading and screenshot parity remain open until
   the same-hash browser handoff is captured.
+
+## 2026-07-30 - Live anonymous Roll20 runtime observation
+
+- Read the dedicated modern Sandbox and separate legacy verification room. Both
+  had a fresh visible participant count of exactly one and showed the same
+  anonymous generated sheet in an iframe with a `420x180` authored root, one
+  input, and one Roll button.
+- Ran the modern test button once; a real default-template chat result was
+  added. No existing room or non-test sheet was modified.
+- The three visible Sandbox file inputs still had zero selected files, so the
+  live result is not promoted to same-hash or pixel-parity evidence. The
+  native file-selection handoff remains the next P0.
