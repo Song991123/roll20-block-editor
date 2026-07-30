@@ -1,3 +1,29 @@
+## 2026-07-31 - Roll20 upload reload-resume handoff
+
+- Fixed a real handoff failure: Roll20 can reload the Sandbox immediately
+  after the delegated HTML file handler runs, so a single evaluation could
+  never reliably reach CSS and Translation.
+- Generated snippets now default to one file per invocation with a
+  hash-scoped `sessionStorage` cursor. A pending step is resumed after the
+  navigation; source text is not stored in browser storage. Manifest setup
+  happens before upload so it is not lost when the first reload interrupts the
+  evaluation. An explicit `--single-pass-upload` option preserves the old
+  behavior for a destination proven not to reload between inputs.
+- The CDP apply runner now retries the generated resumable snippet across page
+  contexts, records each attempt and console output, and saves settings only
+  after all payload files are complete. It still refuses non-Sandbox targets
+  and keeps existing rooms read-only unless the dedicated solo-room gate is
+  explicitly requested.
+- Local proof: upload-snippet, CDP-upload, CDP-preflight, payload-provenance,
+  syntax, and diff checks pass. A synthetic anonymous three-file handoff was
+  generated under ignored `.tmp` output. There is no new external Roll20
+  proof: the current CDP endpoint is unavailable, so modern same-hash visual
+  parity and legacy-room evidence remain `VERIFY / OPEN`.
+- Serial product gates then passed: `lint`, `build`, `ci:verify`, edit-flow
+  browser smoke, and strict imported-edit synchronization. A parallel run
+  briefly tripped the existing large-stylesheet timing budget; the isolated
+  rerun and the full serial CI gate passed.
+
 ## 2026-07-31 - Edit surface context-menu commit path
 
 - Fixed the iframe context-menu mutation path in `PreviewMain.tsx`. Delete,

@@ -156,24 +156,62 @@ async function main() {
         'immediately-before-apply',
       );
     }
-    const consoleLines = [];
-    const onConsole = (message) => {
-      const text = message.text();
-      if (text) consoleLines.push({ type: message.type(), text: text.slice(0, 2000) });
-    };
-    page.on('console', onConsole);
     let result;
     let evaluateError = null;
-    try {
-      result = await page.evaluate(snippet);
-    } catch (error) {
-      evaluateError = String(error?.message ?? error);
-    } finally {
-      page.off('console', onConsole);
+    let reloadDuringSubmit = false;
+    const attempts = [];
+    const maxAttempts = 4;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const consoleLines = [];
+      const onConsole = (message) => {
+        const text = message.text();
+        if (text) consoleLines.push({ type: message.type(), text: text.slice(0, 2000) });
+      };
+      let attemptResult = null;
+      let attemptError = null;
+      page.on('console', onConsole);
+      try {
+        attemptResult = await page.evaluate(snippet);
+        result = attemptResult;
+      } catch (error) {
+        attemptError = String(error?.message ?? error);
+      } finally {
+        page.off('console', onConsole);
+      }
+      await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(1000).catch(() => {});
+      const attemptAfter = await getPageSummary(page);
+      const attemptReloaded = isReloadDuringSubmit(attemptError, attemptAfter);
+      reloadDuringSubmit = reloadDuringSubmit || attemptReloaded;
+      attempts.push({
+        attempt: attempt + 1,
+        evaluateError: attemptError,
+        reloadDuringSubmit: attemptReloaded,
+        after: attemptAfter,
+        result: attemptResult,
+        consoleLines,
+      });
+
+      if (attemptError && !attemptReloaded) {
+        evaluateError = attemptError;
+        break;
+      }
+      if (attemptResult?.uploadProgress?.complete) {
+        evaluateError = null;
+        break;
+      }
+      if (attemptResult?.uploadProgress?.mode === 'single-pass') {
+        evaluateError = attemptError;
+        break;
+      }
+      if (!attemptResult && !attemptReloaded) {
+        evaluateError = attemptError || 'Roll20 upload snippet returned no result';
+        break;
+      }
+      evaluateError = attemptError;
     }
-    await page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
-    await page.waitForTimeout(1000).catch(() => {});
     const after = await getPageSummary(page);
+    const consoleLines = attempts.flatMap((attempt) => attempt.consoleLines || []);
     const report = {
       generatedAt: new Date().toISOString(),
       fixtureId: FIXTURE_ID,
@@ -189,10 +227,10 @@ async function main() {
       evaluateError,
       result,
       consoleLines,
+      attempts,
     };
     await writeFile(outPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 
-    const reloadDuringSubmit = isReloadDuringSubmit(evaluateError, after);
     report.reloadDuringSubmit = reloadDuringSubmit;
     await writeFile(outPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
     if (evaluateError && !reloadDuringSubmit) {
@@ -205,7 +243,7 @@ async function main() {
     }
 
     const status = result?.activation?.status || 'UNKNOWN';
-    if (reloadDuringSubmit) {
+    if (reloadDuringSubmit && !result?.uploadProgress?.complete) {
       printResult('APPLY_CONTEXT_RELOADED_NEEDS_ACTIVATION_PROBE', report, outPath);
       return;
     }

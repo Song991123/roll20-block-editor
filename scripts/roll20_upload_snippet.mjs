@@ -19,6 +19,7 @@ const [RUN_DIR_ARG, ONLY] = parseArgs(positionalArgs);
 const RUN_ROOT = path.resolve('reports/roll20-actual-compare');
 const SELF_TEST = args.includes('--self-test');
 const APPLY_SETTINGS = args.includes('--apply-settings');
+const SINGLE_PASS_UPLOAD = args.includes('--single-pass-upload');
 const ENDPOINT_CAMPAIGN_ID = readOptionValue(args, '--endpoint-campaign-id') || '';
 const EXPECTED_RUNTIME_MODE = readOptionValue(args, '--expected-runtime-mode') || 'auto';
 const OUT_DIR_ARG = readOptionValue(args, '--out-dir') || '';
@@ -74,6 +75,7 @@ async function main() {
   for (const fixtureId of fixtureIds) {
     entries.push(await writeFixtureSnippet(runDir, fixtureId, outDir, {
       applySettings: APPLY_SETTINGS,
+      resumeUpload: !SINGLE_PASS_UPLOAD,
       endpointCampaignId: ENDPOINT_CAMPAIGN_ID,
       expectedRuntimeMode: EXPECTED_RUNTIME_MODE,
       payloadDir: directPayloadDir,
@@ -97,6 +99,7 @@ async function main() {
     applySettings: APPLY_SETTINGS,
     endpointCampaignId: ENDPOINT_CAMPAIGN_ID || null,
     expectedRuntimeMode: EXPECTED_RUNTIME_MODE,
+    resumeUpload: !SINGLE_PASS_UPLOAD,
     outputOverride: OUT_DIR_ARG ? outDir : null,
     snippets: entries.map((entry) => entry.snippetRelativePath),
     activationCheckSnippets: entries.map((entry) => entry.activationCheckSnippetRelativePath),
@@ -202,6 +205,7 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir, options = {}) {
     activationCheckSnippetRelativePath: path.relative(process.cwd(), activationCheckFile),
     options: {
       applySettings: Boolean(options.applySettings),
+      resumeUpload: options.resumeUpload !== false,
       endpointCampaignId: options.endpointCampaignId || '',
       expectedRuntimeMode,
     },
@@ -684,6 +688,7 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     expectedRuntimeMode,
   }, null, 2);
   const applySettings = Boolean(options.applySettings);
+  const resumeUpload = options.resumeUpload !== false;
   const endpointCampaignId = options.endpointCampaignId || '';
   return `// Roll20 Custom Sheet Sandbox upload helper for ${fixtureId}
 // Local-only generated snippet. Do not paste this into existing real rooms.
@@ -694,8 +699,70 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   const DATA = ${literal};
   const SUBMIT_SETTINGS_FORM = ${applySettings ? 'true' : 'false'};
   const USE_ENDPOINT_FALLBACK = ${applySettings ? 'true' : 'false'};
+  const RESUME_UPLOAD = ${resumeUpload ? 'true' : 'false'};
   const ENDPOINT_CAMPAIGN_ID = ${JSON.stringify(endpointCampaignId)};
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const UPLOAD_ITEMS = [
+    { key: 'html', selector: '#sheetHtml', type: 'text/html', item: DATA.payload.html },
+    { key: 'css', selector: '#sheetCss', type: 'text/css', item: DATA.payload.css },
+    { key: 'translation', selector: '#sheetTranslation', type: 'application/json', item: DATA.payload.translation },
+  ];
+  const UPLOAD_STATE_KEY = 'r20-roll20-upload:' + DATA.fixtureId + ':' + [
+    DATA.payload.html.sha256,
+    DATA.payload.css.sha256,
+    DATA.payload.translation.sha256,
+  ].join(':');
+  const PAGE_TOKEN = typeof performance !== 'undefined' && Number.isFinite(performance.timeOrigin)
+    ? String(performance.timeOrigin)
+    : 'page-' + String(Date.now());
+  const defaultUploadState = () => ({ nextIndex: 0, pendingIndex: null, pendingPageToken: null, complete: false, settingsSubmitted: false });
+  const readUploadState = () => {
+    if (!RESUME_UPLOAD) return defaultUploadState();
+    try {
+      const raw = sessionStorage.getItem(UPLOAD_STATE_KEY);
+      if (!raw) return defaultUploadState();
+      const parsed = JSON.parse(raw);
+      const nextIndex = Number.isInteger(parsed?.nextIndex) ? Math.max(0, Math.min(UPLOAD_ITEMS.length, parsed.nextIndex)) : 0;
+      const pendingIndex = Number.isInteger(parsed?.pendingIndex) ? parsed.pendingIndex : null;
+      const pendingPageToken = typeof parsed?.pendingPageToken === 'string' ? parsed.pendingPageToken : null;
+      // A Roll20 upload commonly navigates immediately after the delegated
+      // handler reads the File. A pending step therefore counts as completed
+      // only when the page token changed. Re-running on the same page retries
+      // the pending file instead of silently skipping a failed attachment.
+      if (pendingIndex !== null && pendingIndex >= 0 && pendingIndex < UPLOAD_ITEMS.length && pendingPageToken !== PAGE_TOKEN) {
+        const resumed = {
+          nextIndex: Math.max(nextIndex, pendingIndex + 1),
+          pendingIndex: null,
+          pendingPageToken: null,
+          complete: Math.max(nextIndex, pendingIndex + 1) >= UPLOAD_ITEMS.length,
+          settingsSubmitted: Boolean(parsed?.settingsSubmitted),
+        };
+        sessionStorage.setItem(UPLOAD_STATE_KEY, JSON.stringify(resumed));
+        return resumed;
+      }
+      return {
+        nextIndex,
+        pendingIndex,
+        pendingPageToken,
+        complete: Boolean(parsed?.complete) || nextIndex >= UPLOAD_ITEMS.length,
+        settingsSubmitted: Boolean(parsed?.settingsSubmitted),
+      };
+    } catch {
+      return defaultUploadState();
+    }
+  };
+  const writeUploadState = (state) => {
+    if (!RESUME_UPLOAD) return;
+    try {
+      sessionStorage.setItem(UPLOAD_STATE_KEY, JSON.stringify(state));
+    } catch {
+      // The upload still works when storage is unavailable; the next step then
+      // requires a fresh manual invocation without resume state.
+    }
+  };
+  const clearUploadState = () => {
+    try { sessionStorage.removeItem(UPLOAD_STATE_KEY); } catch {}
+  };
   const dispatchChange = (element, type) => {
     if (typeof Event !== 'function' || typeof element?.dispatchEvent !== 'function') return false;
     try {
@@ -1141,31 +1208,73 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
     console.log('Local payload validation:', DATA.validation);
   }
   const activationBefore = collectActivationProbe('before-upload');
-  const fileInputCapable = canConstructByteArray() && typeof File === 'function';
-  const results = fileInputCapable
-    ? [
-      await setFileInput('#sheetHtml', DATA.payload.html, 'text/html'),
-      await setFileInput('#sheetCss', DATA.payload.css, 'text/css'),
-      await setFileInput('#sheetTranslation', DATA.payload.translation, 'application/json'),
-    ]
-    : [
-      { selector: '#sheetHtml', status: 'unsupported-browser-primitive' },
-      { selector: '#sheetCss', status: 'unsupported-browser-primitive' },
-      { selector: '#sheetTranslation', status: 'unsupported-browser-primitive' },
-    ];
-  const fileInputHandlerRan = results.every((item) => item.status === 'dispatched');
-  const endpointFallback = USE_ENDPOINT_FALLBACK && !fileInputHandlerRan
-    ? await postEndpointFallback()
-    : { status: fileInputHandlerRan ? 'not-needed-file-input-handler-dispatched' : 'disabled' };
+  const uploadStateBefore = readUploadState();
+  const currentIndex = RESUME_UPLOAD ? uploadStateBefore.nextIndex : 0;
+  const currentItem = UPLOAD_ITEMS[currentIndex] || null;
+  const uploadAlreadyComplete = RESUME_UPLOAD && (uploadStateBefore.complete || !currentItem);
   const manifest = setManifest();
+  const fileInputCapable = canConstructByteArray() && typeof File === 'function';
+  const selectedItems = RESUME_UPLOAD
+    ? (currentItem ? [currentItem] : [])
+    : UPLOAD_ITEMS;
+  if (RESUME_UPLOAD && currentItem && fileInputCapable) {
+    writeUploadState({ nextIndex: currentIndex, pendingIndex: currentIndex, pendingPageToken: PAGE_TOKEN, complete: false, settingsSubmitted: uploadStateBefore.settingsSubmitted });
+  }
+  const results = uploadAlreadyComplete
+    ? [{ selector: 'resume-state', status: 'already-complete' }]
+    : fileInputCapable
+      ? (await (async () => {
+        const output = [];
+        for (const { selector, item, type } of selectedItems) {
+          output.push(await setFileInput(selector, item, type));
+        }
+        return output;
+      })())
+      : selectedItems.map(({ selector }) => ({ selector, status: 'unsupported-browser-primitive' }));
+  const anyFileInputHandlerRan = results.some((item) => item.status === 'dispatched');
+  const fileInputHandlerRan = results.length === UPLOAD_ITEMS.length
+    && results.every((item) => item.status === 'dispatched');
+  if (RESUME_UPLOAD && currentItem && anyFileInputHandlerRan) {
+    const nextIndex = Math.min(UPLOAD_ITEMS.length, currentIndex + 1);
+    writeUploadState({ nextIndex, pendingIndex: null, pendingPageToken: null, complete: nextIndex >= UPLOAD_ITEMS.length, settingsSubmitted: uploadStateBefore.settingsSubmitted });
+  }
+  const endpointFallback = USE_ENDPOINT_FALLBACK
+    && !uploadAlreadyComplete
+    && !anyFileInputHandlerRan
+    ? await postEndpointFallback()
+    : { status: fileInputHandlerRan || anyFileInputHandlerRan ? 'not-needed-file-input-handler-dispatched' : 'disabled' };
+  const endpointCompletedUpload = endpointFallback.status === 'posted';
+  if (RESUME_UPLOAD && endpointCompletedUpload) {
+    writeUploadState({ nextIndex: UPLOAD_ITEMS.length, pendingIndex: null, pendingPageToken: null, complete: true, settingsSubmitted: uploadStateBefore.settingsSubmitted });
+  }
+  const uploadProgress = {
+    mode: RESUME_UPLOAD ? 'resumable-single-file-step' : 'single-pass',
+    stateKey: RESUME_UPLOAD ? UPLOAD_STATE_KEY : null,
+    currentIndex,
+    currentFile: currentItem?.key || null,
+    nextIndex: endpointCompletedUpload
+      ? UPLOAD_ITEMS.length
+      : anyFileInputHandlerRan
+        ? Math.min(UPLOAD_ITEMS.length, currentIndex + 1)
+        : currentIndex,
+    complete: uploadAlreadyComplete
+      || endpointCompletedUpload
+      || (anyFileInputHandlerRan && currentIndex + 1 >= UPLOAD_ITEMS.length),
+    rerunAfterReload: Boolean(RESUME_UPLOAD && currentItem && !uploadAlreadyComplete),
+  };
   let settingsSave = { status: 'disabled' };
-  if (SUBMIT_SETTINGS_FORM) {
-    const button = document.querySelector('#save-changes-button');
-    if (button) {
-      button.click();
-      settingsSave = { status: 'clicked' };
+  if (SUBMIT_SETTINGS_FORM && uploadProgress.complete) {
+    if (uploadStateBefore.settingsSubmitted) {
+      settingsSave = { status: 'already-submitted' };
     } else {
-      settingsSave = { status: 'save-button-missing' };
+      const button = document.querySelector('#save-changes-button');
+      if (button) {
+        writeUploadState({ nextIndex: UPLOAD_ITEMS.length, pendingIndex: null, pendingPageToken: null, complete: true, settingsSubmitted: true });
+        button.click();
+        settingsSave = { status: 'clicked' };
+      } else {
+        settingsSave = { status: 'save-button-missing' };
+      }
     }
   }
   await sleep(1500);
@@ -1176,13 +1285,16 @@ function renderSnippet({ fixtureId, payload, validation, activationHints, option
   console.log('Manifest:', manifest);
   console.log('Settings save:', settingsSave);
   console.log('Endpoint fallback:', endpointFallback);
+  console.log('Upload progress:', uploadProgress);
   console.log('Sandbox messages:', sandboxMessages);
   console.log('Activation probe:', activation);
   console.log('Fixture:', DATA.fixtureId);
   console.log(activation.status === 'VISIBLE_MATCH'
     ? 'Next: capture roll20-sandbox root evidence and roll20-chat.png, then run status/diff gates.'
-    : 'Next: do not capture parity evidence yet; save/reload the dedicated Sandbox or test room, then run the frame-aware activation probe.');
-  return { fixtureId: DATA.fixtureId, validation: DATA.validation, uploadContract: 'roll20-delegated-file-input-change', fileInputs: results, endpointFallback, manifest, settingsSave, sandboxMessages, activationBefore, activationAfter, activation };
+    : uploadProgress.complete
+      ? 'Next: do not capture parity evidence yet; save/reload the dedicated Sandbox or test room, then run the frame-aware activation probe.'
+      : 'Next: after Roll20 reloads, run this same snippet again to upload the next payload file; clear sessionStorage state to restart.');
+  return { fixtureId: DATA.fixtureId, validation: DATA.validation, uploadContract: 'roll20-delegated-file-input-change', fileInputs: results, endpointFallback, manifest, settingsSave, uploadProgress, sandboxMessages, activationBefore, activationAfter, activation };
 })();
 `;
 }
@@ -1197,13 +1309,13 @@ function renderReadme(report) {
     '',
     'Use upload snippets only in the dedicated Roll20 Custom Sheet Sandbox editor/settings page. Do not run these in existing real rooms.',
     '',
-    'Default snippets are non-submitting helpers. Pass `--apply-settings --endpoint-campaign-id <sandboxCampaignId>` only for the dedicated Sandbox/test room when you intentionally want the generated snippet to save settings. The endpoint fallback runs only when the Roll20 file-input handler could not run.',
+    'Default snippets are non-submitting helpers and upload one file per invocation. If Roll20 reloads after a file is accepted, run the same generated snippet again; its sessionStorage state resumes with the next file. Pass `--single-pass-upload` only when the destination is known not to reload between file inputs. Pass `--apply-settings --endpoint-campaign-id <sandboxCampaignId>` only for the dedicated Sandbox/test room when you intentionally want the generated snippet to save settings. The endpoint fallback runs only when no file-input handler ran.',
     '',
     'If the canonical ignored report folder is locked, pass `--out-dir <ignored-local-folder>` to generate a fresh handoff without overwriting earlier evidence.',
     '',
     'For an anonymous local payload directory containing only `sheet.html`, `sheet.css`, and `translation.json`, pass `--payload-dir <ignored-local-folder>`. A synthetic modern/legacy manifest is created in memory only; no settings endpoint is enabled unless `--apply-settings` is explicitly supplied.',
     '',
-    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. A 2026-07-16 live handler inspection confirmed that this invokes the same Roll20 delegated handler as a manual file choice: FileReader reads raw text, the page POSTs base64 source to `/sheetsandbox/savesheetsettings`, then reloads sheet data and open characters. The helper also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. When file inputs are unavailable, the explicit endpoint fallback uses the same form-encoded payload shape and triggers the same reload helpers. Upload execution is still not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` means a character-sheet iframe exists but top-document JS could not prove its markers, and `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
+    'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. A 2026-07-16 live handler inspection confirmed that this invokes the same Roll20 delegated handler as a manual file choice: FileReader reads raw text, the page POSTs base64 source to `/sheetsandbox/savesheetsettings`, then reloads sheet data and open characters. The resumable path writes only payload hashes and the next-file index to sessionStorage, never the sheet source; clear the generated state key to restart. The helper also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. When file inputs are unavailable, the explicit endpoint fallback uses the same form-encoded payload shape and triggers the same reload helpers. Upload execution is still not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` means a character-sheet iframe exists but top-document JS could not prove its markers, and `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
     '',
     'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `RUNTIME_MODE_MISMATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. The expected modern/legacy mode comes from `sheet.json` unless `--expected-runtime-mode modern|legacy` overrides it. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH`, a matching runtime mode, and a visual check that the visible sheet belongs to the intended fixture.',
     '',
@@ -1319,6 +1431,8 @@ function runSelfTest() {
   if (!validateSettingsFieldManifest(directModernManifest).ok) failures.push('direct payload manifest failed settings validation');
   if (!snippet.includes('const SUBMIT_SETTINGS_FORM = false;')) failures.push('default snippet should not submit settings');
   if (!snippet.includes('const USE_ENDPOINT_FALLBACK = false;')) failures.push('default snippet should not post endpoint fallback');
+  if (!snippet.includes('const RESUME_UPLOAD = true;')) failures.push('default snippet should use resumable upload');
+  if (!snippet.includes('pendingIndex')) failures.push('resumable snippet missing pending upload state');
   if (!applySnippet.includes('const SUBMIT_SETTINGS_FORM = true;')) failures.push('apply snippet missing submit settings flag');
   if (!applySnippet.includes('const USE_ENDPOINT_FALLBACK = true;')) failures.push('apply snippet missing endpoint fallback flag');
   if (!applySnippet.includes('const ENDPOINT_CAMPAIGN_ID = "12345";')) failures.push('apply snippet missing explicit campaign id');
@@ -1363,6 +1477,7 @@ function runSelfTest() {
   if (!readme.includes('Apply settings')) failures.push('generated README missing apply settings column');
   if (!readme.includes('--out-dir <ignored-local-folder>')) failures.push('generated README missing output override instruction');
   if (!readme.includes('--payload-dir <ignored-local-folder>')) failures.push('generated README missing direct payload instruction');
+  if (!readme.includes('sessionStorage state resumes')) failures.push('generated README missing resumable upload instruction');
   if (failures.length) throw new Error(`roll20_upload_snippet self-test failed: ${failures.join(', ')}`);
   console.log('ROLL20 UPLOAD SNIPPET SELF-TEST PASS');
 }

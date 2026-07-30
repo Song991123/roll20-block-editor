@@ -1,3 +1,28 @@
+## 2026-07-31 Roll20 upload reload-resume handoff
+
+- `DONE LOCAL`: Generated Sandbox upload snippets now default to a resumable
+  one-file-per-invocation flow. They write only payload hashes and the next
+  file index to `sessionStorage`, set the manifest before the first upload,
+  and resume after Roll20 reloads between HTML, CSS, and Translation.
+- `DONE LOCAL`: The CDP apply runner retries the same generated snippet across
+  up to four page contexts, records each attempt, and defers settings save
+  until all three files are complete. The single-pass mode remains available
+  only through the explicit `--single-pass-upload` option.
+- `VERIFIED LOCAL`: Upload-snippet, CDP-upload, CDP-preflight, payload
+  provenance, syntax, and diff checks pass. An anonymous synthetic three-file
+  handoff was regenerated under ignored `.tmp` output.
+- `VERIFIED LOCAL`: Serial `lint`, `build`, `ci:verify` (all renderer/import/
+  privacy guards), `smoke:edit-flow`, and strict imported-edit synchronization
+  all pass. The first parallel CI attempt hit an existing timing-sensitive
+  stylesheet budget; the same gate passed when rerun serially.
+- `VERIFY / OPEN`: No current-payload same-hash Roll20 activation or screenshot
+  was created in this turn because the connected CDP endpoint is unavailable.
+  Modern Sandbox visual parity, worker/chat evidence, and dedicated legacy
+  room proof remain open; local handoff tests do not close them.
+- `NEXT P0`: Reconnect a CDP-enabled Roll20 session, apply the anonymous
+  payload only in Custom Sheet Sandbox, require matching runtime and
+  `VISIBLE_MATCH`, then capture root/chat evidence before any parity claim.
+
 ## 2026-07-31 Context-menu subtree deletion and sync
 
 - `DONE LOCAL`: Figma-like layer deletion now removes the selected HTML block

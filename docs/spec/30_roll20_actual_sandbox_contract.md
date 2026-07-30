@@ -104,6 +104,16 @@ then invokes `reloadSheetData()` and `reloadOpenCharacters()`. The generated
 upload helper now dispatches that same handler; its direct endpoint fallback is
 allowed only when no file-input handler ran, so it cannot duplicate an upload.
 
+The upload handoff is reload-resilient. Roll20 may navigate immediately after
+the delegated handler accepts a file, so the default generated snippet uploads
+one of HTML, CSS, or Translation per invocation and stores only the payload
+hashes plus the next-file cursor in `sessionStorage`. Re-running the same
+snippet after the navigation resumes the next file; an explicit
+`--single-pass-upload` option is required to restore the old all-at-once
+behavior. The CDP runner repeats this resumable snippet across fresh page
+contexts and records each attempt. This improves transport reliability only;
+it does not turn handler execution into visual parity evidence.
+
 The first generated fixture-B Roll20 sandbox screenshot exists locally and
 diffs against the local baseline at `18.81%` mismatch. A real Roll20 roll button
 click produced a `sheet-rolltemplate-classic-roll` chat DOM message, but a
