@@ -58,22 +58,18 @@ function testMultiClassOnInputPreserved(): void {
   );
 }
 
-function testMultiClassOnRowFallsThroughToDiv(): void {
+function testMultiClassOnRowKeepsStructure(): void {
   // <div class="sheet-row sheet-header"> — 단순 r20_row 로 단축하면 sheet-header
   // 손실. r20_div 로 fallback 해 양 토큰 보존.
   const html = `<div class="sheet-row sheet-header"><span>x</span></div>`;
   const r = importSheet({ html });
   assert(
-    r.html.includes('r20_div'),
+    r.html.includes('r20_row'),
     `multi-class div 는 r20_div 로 매칭되어야, xml=${r.html}`,
-  );
-  assert(
-    !r.html.includes('"r20_row"'),
-    `multi-class 인 경우 r20_row 단축은 금지, xml=${r.html}`,
   );
   const cls = fieldValue(r.html, 'CLASS');
   assert(
-    cls === 'row header',
+    cls === 'header',
     `CLASS 가 'row header' 여야 함 (sheet- strip 후), got "${cls}"`,
   );
 }
@@ -88,20 +84,22 @@ function testPureRowStillShortcuts(): void {
   );
 }
 
-function testMultiClassOnColFallsThroughToDiv(): void {
+function testMultiClassOnColKeepsStructure(): void {
   const html = `<div class="sheet-col sheet-narrow"><span>x</span></div>`;
   const r = importSheet({ html });
-  assert(r.html.includes('r20_div'), `multi-class col 도 r20_div 로 fallback, xml=${r.html}`);
+  assert(r.html.includes('r20_col'), `multi-class col should stay structural, xml=${r.html}`);
+  assert(fieldValue(r.html, 'CLASS') === 'narrow', 'col user class is retained');
 }
 
-function testMultiClassOnColrowFallsThroughToDiv(): void {
+function testMultiClassOnColrowKeepsStructure(): void {
   // sheet-colrow + sheet-colrow-2 + extra → r20_div.
   const html = `<div class="sheet-colrow sheet-colrow-2 sheet-extra"></div>`;
   const r = importSheet({ html });
   assert(
-    r.html.includes('r20_div'),
+    r.html.includes('r20_colrow_n'),
     `multi-class colrow 도 r20_div, xml=${r.html}`,
   );
+  assert(fieldValue(r.html, 'CLASS') === 'extra', 'colrow user class is retained');
 }
 
 // --- table 구조 보존 -------------------------------------------------------
@@ -147,10 +145,10 @@ function testTableRoundtripStructurePreserved(): void {
 
 const tests: ReadonlyArray<readonly [string, () => void]> = [
   ['multi-class on input preserved (양 토큰)', testMultiClassOnInputPreserved],
-  ['multi-class on div.sheet-row falls through to r20_div', testMultiClassOnRowFallsThroughToDiv],
+  ['multi-class row keeps structural block', testMultiClassOnRowKeepsStructure],
   ['pure sheet-row still shortcuts to r20_row', testPureRowStillShortcuts],
-  ['multi-class on div.sheet-col falls through to r20_div', testMultiClassOnColFallsThroughToDiv],
-  ['multi-class on div.sheet-colrow falls through to r20_div', testMultiClassOnColrowFallsThroughToDiv],
+  ['multi-class col keeps structural block', testMultiClassOnColKeepsStructure],
+  ['multi-class colrow keeps structural block', testMultiClassOnColrowKeepsStructure],
   ['<td data-i18n> preserves TAG=td', testTdDataI18nPreservesTag],
   ['<th data-i18n> preserves TAG=th', testThDataI18nPreservesTag],
   ['table round-trip preserves all structural tags', testTableRoundtripStructurePreserved],

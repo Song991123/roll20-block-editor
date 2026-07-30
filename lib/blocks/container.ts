@@ -63,10 +63,16 @@ function wrapTag(
 }
 
 /** ` class="..."` 또는 빈 문자열 — class 없을 때 attr 자체 생략. */
-function classAttr(value: string): string {
-  const v = value.trim();
-  if (!v) return '';
-  return ` class="${escapeAttr(v)}"`;
+/** `class="BASE sheet-foo"` for structural blocks with a built-in class. */
+function sheetClassAttrWithBase(base: string, value: string): string {
+  const v = String(value ?? '').trim();
+  if (!v) return ` class="${escapeAttr(base)}"`;
+  const user = v
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => (token.startsWith('sheet-') ? token : `sheet-${token}`))
+    .join(' ');
+  return ` class="${escapeAttr(base)} ${escapeAttr(user)}"`;
 }
 
 /**
@@ -294,14 +300,18 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     tooltip: '가로 행 — sheet-row.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('가로 줄');
+        top
+          .appendField('가로 줄')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
       const _b = block as Blockly.Block;
       const style = String(_b.getFieldValue('STYLE') ?? '');
+      const cls = String(_b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', `${classAttr('sheet-row')}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase('sheet-row', cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -314,14 +324,18 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     tooltip: '세로 열 — sheet-col.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('세로 줄');
+        top
+          .appendField('세로 줄')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
       const _b = block as Blockly.Block;
       const style = String(_b.getFieldValue('STYLE') ?? '');
+      const cls = String(_b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', `${classAttr('sheet-col')}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase('sheet-col', cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -336,16 +350,19 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       buildCBlock(b, (top) => {
         top
           .appendField('여러 칸 가로 줄 · 칸 수=')
-          .appendField(new Blockly.FieldNumber(2, 1, 12, 1), 'N');
+          .appendField(new Blockly.FieldNumber(2, 1, 12, 1), 'N')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const n = Number(b.getFieldValue('N') ?? 2);
       const safe = Number.isFinite(n) && n >= 1 ? Math.floor(n) : 2;
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', `${classAttr(`sheet-colrow sheet-colrow-${safe}`)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase(`sheet-colrow sheet-colrow-${safe}`, cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -570,15 +587,18 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       buildCBlock(b, (top) => {
         top
           .appendField('반복 영역 이름')
-          .appendField(new Blockly.FieldTextInput('items'), 'NAME');
+          .appendField(new Blockly.FieldTextInput('items'), 'NAME')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'items';
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'fieldset', `${classAttr(`repeating_${name}`)}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'fieldset', `${sheetClassAttrWithBase(`repeating_${name}`, cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -593,14 +613,18 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
     tooltip: '반복 섹션 안의 한 행 — sheet-repeating-row.',
     init: mkInit((b) =>
       buildCBlock(b, (top) => {
-        top.appendField('반복 영역의 한 줄');
+        top
+          .appendField('반복 영역의 한 줄')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
       const _b = block as Blockly.Block;
       const style = String(_b.getFieldValue('STYLE') ?? '');
+      const cls = String(_b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
-      return wrapTag(ctx, 'div', `${classAttr('sheet-repeating-row')}${styleAttr(style)}`, content);
+      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase('sheet-repeating-row', cls)}${styleAttr(style)}`, content);
     },
   },
 
@@ -618,6 +642,9 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
         .appendField('이름표')
         .appendField(new Blockly.FieldTextInput('이름'), 'TEXT');
       b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -626,8 +653,9 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
       const text = String(b.getFieldValue('TEXT') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const safe = escapeAttr(text);
-      return `<label${styleAttr(style)}>${safe}</label>`;
+      return `<label${sheetUserClassAttr(cls)}${styleAttr(style)}>${safe}</label>`;
     },
   },
 
@@ -730,18 +758,21 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       buildCBlock(b, (top) => {
         top
           .appendField('섹션 묶음 이름')
-          .appendField(new Blockly.FieldTextInput('main'), 'NAME');
+          .appendField(new Blockly.FieldTextInput('main'), 'NAME')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'main';
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
       return wrapTag(
         ctx,
         'div',
-        `${classAttr(`sheet-section sheet-section-${name}`)}${styleAttr(style)}`,
+        `${sheetClassAttrWithBase(`sheet-section sheet-section-${name}`, cls)}${styleAttr(style)}`,
         content,
       );
     },
@@ -760,18 +791,21 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       buildCBlock(b, (top) => {
         top
           .appendField('펼치기/접기 묶음 이름')
-          .appendField(new Blockly.FieldTextInput('panel'), 'NAME');
+          .appendField(new Blockly.FieldTextInput('panel'), 'NAME')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
       const name = String(b.getFieldValue('NAME') ?? '').trim() || 'panel';
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const content = ctx.statementToCode(block, 'CONTENT');
       return wrapTag(
         ctx,
         'div',
-        ` class="sheet-toggle sheet-toggle-${escapeAttr(name)}"${nameAttr('data-toggle', name)}${styleAttr(style)}`,
+        `${sheetClassAttrWithBase(`sheet-toggle sheet-toggle-${name}`, cls)}${nameAttr('data-toggle', name)}${styleAttr(style)}`,
         content,
       );
     },
@@ -790,18 +824,21 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       buildCBlock(b, (top) => {
         top
           .appendField('격자 배치 · 칸 수=')
-          .appendField(new Blockly.FieldNumber(2, 1, 12, 1), 'COLS');
+          .appendField(new Blockly.FieldNumber(2, 1, 12, 1), 'COLS')
+          .appendField('클래스')
+          .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       }),
     ),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const userStyle = String(b.getFieldValue('STYLE') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const cols = Number(b.getFieldValue('COLS') ?? 2);
       const safe = Number.isFinite(cols) && cols >= 1 ? Math.floor(cols) : 2;
       const content = ctx.statementToCode(block, 'CONTENT');
       const builtinStyle = `grid-template-columns: repeat(${safe}, 1fr)`;
       const mergedStyle = mergeStyle(userStyle, builtinStyle);
-      return wrapTag(ctx, 'div', ` class="sheet-grid"${mergedStyle}`, content);
+      return wrapTag(ctx, 'div', `${sheetClassAttrWithBase('sheet-grid', cls)}${mergedStyle}`, content);
     },
   },
 

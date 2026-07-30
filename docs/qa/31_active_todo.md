@@ -7191,3 +7191,43 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   beyond the existing evidence boundary.
 - `NEXT P0`: Continue the permitted modern Sandbox upload, then collect
   separate legacy-room evidence before promoting the external render gate.
+
+## 2026-07-30 Generic movable-block class contract
+
+- `DONE LOCAL`: Visual structural blocks that can be moved freely now expose a
+  generic editable `CLASS` field, keep their built-in Roll20 class, and emit
+  editor-managed layout through the separate CSS workspace.
+- `DONE LOCAL`: Import keeps extra classes on row/column/grid/section/toggle/
+  repeating/spacer/label/line-break nodes instead of lowering them to an
+  unstructured div.
+- `VERIFIED LOCAL`: `test:import-structure` includes the new special-block and
+  multi-class tests; lint, build, full `ci:verify`, persistent preview-surface,
+  and edit-flow smoke all pass.
+- `VERIFY / OPEN`: This is not a universal all-block guarantee yet. Some
+  semantic/runtime blocks intentionally remain non-visual or have no editable
+  class field. Actual Roll20 modern Sandbox and separate legacy-room evidence
+  remain blocked at the native file handoff boundary.
+- `NEXT P1`: Inventory remaining visual block types without `CLASS` and decide
+  whether each is draggable UI or intentionally semantic/non-visual; then
+  resume permitted modern Sandbox upload and capture independent legacy proof.
+
+## 2026-07-30 Visible translation and option blocks
+
+- `DONE LOCAL`: i18n HTML/legend and normal/i18n option blocks now preserve
+  classes through import and separate CSS emission.
+- `VERIFIED LOCAL`: production build, full `ci:verify`, persistent preview
+  surface smoke, and edit-flow smoke passed after this extension.
+- `VERIFY / OPEN`: Remaining semantic/runtime blocks without `CLASS` must be
+  classified before claiming every visual layer is movable. Roll20 modern
+  Sandbox and separate legacy-room proof remain blocked by native file input.
+
+## 2026-07-30 Archive deletion retry
+
+- `VERIFY / BLOCKED_BY_HOST_POLICY`: The exact archive target was rechecked as
+  43 files / 6,324,287 bytes within `03_ARCHIVE/legacy-single-file`, but the
+  host rejected the authorized recursive deletion before execution. The
+  target remains intact; no unsafe workaround was used.
+- `VERIFY / OPEN`: Ignored `.next/out` and smoke/audit reports from this final
+  verification run could not be removed for the same host policy. They are not
+  tracked or included in the commit; the anonymous synthetic payload remains
+  the only retained local fixture.

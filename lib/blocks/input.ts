@@ -281,6 +281,9 @@ export const INPUT_BLOCKS: BlockDef[] = [
         .appendField('기본 선택')
         .appendField(new Blockly.FieldCheckbox('FALSE'), 'SELECTED');
       b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       b.setPreviousStatement(true, 'SelectOption');
@@ -291,9 +294,10 @@ export const INPUT_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const value = String(b.getFieldValue('VALUE') ?? '');
       const label = String(b.getFieldValue('LABEL') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const selected = String(b.getFieldValue('SELECTED') ?? 'FALSE') === 'TRUE';
       return (
-        `<option${attr('value', value)}${selected ? ' selected="selected"' : ''}` +
+        `<option${attr('value', value)}${sheetClassAttr(cls)}${selected ? ' selected="selected"' : ''}` +
         `${styleAttr(style)}>${escapeAttr(label)}</option>`
       );
     },

@@ -7952,3 +7952,47 @@ visibility verification passed. No external room was opened or modified.
   rerun passed in both modern/legacy preview modes with iframe loads `0`.
 - Scope remains local import fidelity only. No actual Roll20 screenshot or
   Sandbox payload was produced, so modern/legacy external parity remains open.
+
+## 2026-07-30 - Generic movable-block class contract
+
+- Reproduced a universal editor failure for visual blocks that had `STYLE` but
+  no editable `CLASS`: free placement could reach `missing-style-or-class`, so
+  the user saw no durable movement even though the drag interaction completed.
+- Added editable class fields and separate-class emission to the generic
+  spacer, line-break, label, row, column, column-row, repeating section/row,
+  section wrapper, toggle wrapper, and grid blocks. Built-in Roll20 classes
+  remain intact; imported extra classes are stored without the `sheet-`
+  prefix and re-emitted with it.
+- Structural matching now keeps those nodes typed when extra classes are
+  present instead of degrading them to `r20_div`. This is a generic import
+  contract change, not a fixture-specific rule.
+- Added the special-block class round-trip and multi-class structural tests to
+  `test:import-structure`. Local evidence: lint, production build,
+  `ci:verify`, persistent preview-surface smoke, and edit-flow smoke passed.
+- Claim boundary: this proves the changed generic block paths locally. It does
+  not prove every future/unsupported block has a draggable class field, and it
+  does not upgrade actual Roll20 Sandbox or legacy-room parity while browser
+  native file handoff remains unavailable.
+
+## 2026-07-30 - Visible translation and option blocks
+
+- Extended the same generic class contract to visible i18n HTML/legend blocks
+  and normal/i18n select options. Their existing translation, selected-state,
+  value, and style fields remain unchanged.
+- Import now retains their source classes, so these elements do not become
+  unaddressable when they are selected or reordered in the edit surface.
+- Rebuilt and reran the full CI gate plus persistent preview and edit-flow
+  browser smoke. All passed. No actual Roll20 upload or screenshot was made.
+
+## 2026-07-30 - Archive deletion retry boundary
+
+- Revalidated the exact user-authorized target
+  `03_ARCHIVE/legacy-single-file`: 43 files, 6,324,287 bytes, entirely inside
+  the archive zone.
+- Retried deletion once with the verified absolute PowerShell target. The host
+  rejected the recursive delete before PowerShell execution (`blocked by
+  policy`), so no archive file changed and no alternate shell/API workaround
+  was used.
+- Build/smoke output cleanup was likewise blocked by the host's recursive
+  delete policy; generated output remains ignored and untracked. Protected
+  source roots and worktrees were not touched.

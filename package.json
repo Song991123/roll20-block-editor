@@ -37,7 +37,7 @@
     "test:runtime-contract": "tsx lib/preview/__tests__/runtimeContract.test.ts",
     "test:emit-contract": "tsx lib/preview/__tests__/emitContract.test.ts",
     "test:preview-prefix": "tsx lib/preview/__tests__/prefix.test.ts",
-    "test:import-structure": "tsx lib/import/__tests__/basic.test.ts && tsx lib/import/__tests__/i18n_comment_format.test.ts && tsx lib/blocks/__tests__/preservedAttributes.test.ts",
+    "test:import-structure": "tsx lib/import/__tests__/basic.test.ts && tsx lib/import/__tests__/i18n_comment_format.test.ts && tsx lib/blocks/__tests__/preservedAttributes.test.ts && tsx lib/blocks/__tests__/style_field_preservation.test.ts && tsx lib/blocks/__tests__/table_multiclass.test.ts",
     "test:server-hygiene": "node scripts/server_hygiene_check.mjs --self-test",
     "test:chat-diagnostics": "tsx lib/dice/__tests__/chatDiagnostics.test.ts",
     "test:rolltemplate-render": "tsx lib/dice/__tests__/rolltemplateRender.test.ts",

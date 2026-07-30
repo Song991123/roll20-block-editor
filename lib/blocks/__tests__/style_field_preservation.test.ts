@@ -181,6 +181,40 @@ function testGridUserStyleMerged(): void {
   assert(style === 'gap:8px', `grid user STYLE captured, got "${style}"`);
 }
 
+function testMovableSpecialBlocksKeepClassFields(): void {
+  const html = [
+    '<div class="sheet-row sheet-row-highlight"><label class="sheet-name-label">Name</label></div>',
+    '<div class="sheet-spacer sheet-spacer-large sheet-gap"></div>',
+    '<br class="sheet-break">',
+    '<div class="sheet-section sheet-section-main sheet-panel">Section</div>',
+    '<div class="sheet-toggle sheet-toggle-panel sheet-extra">Toggle</div>',
+    '<div class="sheet-grid sheet-grid-card"></div>',
+    '<span data-i18n-html="rich" class="sheet-rich">Rich</span>',
+    '<legend data-i18n="title" class="sheet-legend-title">Title</legend>',
+    '<select><option value="a" class="sheet-option">A</option><option value="b" data-i18n="b" class="sheet-i18n-option">B</option></select>',
+  ].join('');
+  const r = importSheet({ html });
+  assert(r.html.includes('r20_row'), 'row remains a structural block');
+  assert(r.html.includes('r20_label'), 'label remains editable');
+  assert(r.html.includes('r20_spacer'), 'spacer remains editable');
+  assert(r.html.includes('r20_inline_break'), 'line break remains editable');
+  assert(r.html.includes('r20_section_wrap'), 'section remains a structural block');
+  assert(r.html.includes('r20_toggle_wrap'), 'toggle remains a structural block');
+  assert(r.html.includes('r20_grid'), 'grid remains a structural block');
+  assert(allFieldValues(r.html, 'CLASS').includes('row-highlight'), 'row class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('name-label'), 'label class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('gap'), 'spacer class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('break'), 'line break class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('panel'), 'section class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('extra'), 'toggle class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('grid-card'), 'grid class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('rich'), 'i18n HTML class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('legend-title'), 'i18n legend class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('option'), 'option class is retained');
+  assert(allFieldValues(r.html, 'CLASS').includes('i18n-option'), 'i18n option class is retained');
+  assert(r.stats.htmlRawFallback === 0, 'special movable blocks have no raw fallback');
+}
+
 // ---------- runner ----------
 
 const tests: ReadonlyArray<readonly [string, () => void]> = [
@@ -198,6 +232,7 @@ const tests: ReadonlyArray<readonly [string, () => void]> = [
   ['i18n_placeholder style 보존', testI18nPlaceholderStylePreserved],
   ['style 없는 element → STYLE=""', testEmptyStyleProducesEmptyField],
   ['grid 사용자 STYLE + built-in 병합', testGridUserStyleMerged],
+  ['special movable blocks keep CLASS', testMovableSpecialBlocksKeepClassFields],
 ];
 
 let passed = 0;

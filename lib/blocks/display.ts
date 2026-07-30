@@ -353,6 +353,9 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField('여백')
         .appendField(new Blockly.FieldDropdown(SPACER_SIZES), 'SIZE');
       b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -360,10 +363,11 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     generator: (block) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const sizeRaw = String(b.getFieldValue('SIZE') ?? 'medium');
       const allowed = new Set(SPACER_SIZES.map(([, v]) => v));
       const size = allowed.has(sizeRaw) ? sizeRaw : 'medium';
-      return `<div class="sheet-spacer sheet-spacer-${size}"${styleAttr(style)}></div>`;
+      return `<div${sheetClassAttrWithBase(`sheet-spacer sheet-spacer-${size}`, cls)}${styleAttr(style)}></div>`;
     },
   },
 
@@ -545,6 +549,9 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
     tooltip: '줄바꿈 — <br>. void element.',
     init: mkInit((b) => {
       b.appendDummyInput().appendField('줄바꿈');
+      b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');

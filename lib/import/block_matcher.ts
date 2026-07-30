@@ -341,6 +341,7 @@ function matchOption(node: DomNode, _ctx: MatchContext): MatchedBlock {
         DEFAULT: label,
         VALUE: a.value || '',
         SELECTED: 'selected' in a || a.selected != null ? 'TRUE' : 'FALSE',
+        CLASS: stripSheetPrefix(a.class || ''),
         STYLE: a.style || '',
       },
       children: {},
@@ -352,6 +353,7 @@ function matchOption(node: DomNode, _ctx: MatchContext): MatchedBlock {
       VALUE: a.value || '',
       LABEL: label,
       SELECTED: 'selected' in a || a.selected != null ? 'TRUE' : 'FALSE',
+      CLASS: stripSheetPrefix(a.class || ''),
       STYLE: a.style || '',
     },
     children: {},
@@ -453,7 +455,12 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
     const inner = innerHtmlSerialize(node);
     return {
       blockType: 'r20_i18n_html',
-      fields: { KEY: a['data-i18n-html'], DEFAULT: inner, STYLE: a.style || '' },
+      fields: {
+        KEY: a['data-i18n-html'],
+        DEFAULT: inner,
+        CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
+      },
       children: {},
     };
   }
@@ -483,7 +490,12 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
   if (tag === 'legend' && a['data-i18n']) {
     return {
       blockType: 'r20_i18n_legend',
-      fields: { KEY: a['data-i18n'], DEFAULT: firstTextContent(node), STYLE: a.style || '' },
+      fields: {
+        KEY: a['data-i18n'],
+        DEFAULT: firstTextContent(node),
+        CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
+      },
       children: {},
     };
   }
@@ -663,7 +675,11 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (m && /sheet-spacer/.test(cls)) {
       return {
         blockType: 'r20_spacer',
-        fields: { SIZE: m[1], STYLE: a.style || '' },
+        fields: {
+          SIZE: m[1],
+          CLASS: stripKnownClasses(cls, ['sheet-spacer', `sheet-spacer-${m[1]}`]),
+          STYLE: a.style || '',
+        },
         children: {},
       };
     }
@@ -736,7 +752,7 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'br') {
     return {
       blockType: 'r20_inline_break',
-      fields: { STYLE: a.style || '' },
+      fields: { CLASS: stripSheetPrefix(a.class || ''), STYLE: a.style || '' },
       children: {},
     };
   }
@@ -768,7 +784,11 @@ function matchDisplay(node: DomNode, ctx: MatchContext): MatchedBlock | null {
   if (tag === 'label' && hasOnlyTextOrInline(node)) {
     return {
       blockType: 'r20_label',
-      fields: { TEXT: allTextContent(node), STYLE: a.style || '' },
+      fields: {
+        TEXT: allTextContent(node),
+        CLASS: stripSheetPrefix(a.class || ''),
+        STYLE: a.style || '',
+      },
       children: {},
     };
   }
@@ -798,7 +818,11 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     if (repeating) {
       return {
         blockType: 'r20_repeating_section',
-        fields: { NAME: repeating[1], STYLE: a.style || '' },
+        fields: {
+          NAME: repeating[1],
+          CLASS: stripKnownClasses(cls, [`repeating_${repeating[1]}`]),
+          STYLE: a.style || '',
+        },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
@@ -825,30 +849,33 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     // r20_row 의 generator 는 `class="sheet-row"` 만 emit → 추가 class 손실.
     // r20_div 의 generator (sheetUserClassAttr) 는 모든 토큰을 보존.
     const tokens = cls.split(/\s+/).filter(Boolean);
-    if (/\bsheet-row\b/.test(cls) && tokens.length === 1 && tokens[0] === 'sheet-row') {
+    if (/\bsheet-row\b/.test(cls)) {
       return {
         blockType: 'r20_row',
-        fields: { STYLE: a.style || '' },
+        fields: { CLASS: stripKnownClasses(cls, ['sheet-row']), STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
-    if (/\bsheet-col\b/.test(cls) && tokens.length === 1 && tokens[0] === 'sheet-col') {
+    if (/\bsheet-col\b/.test(cls)) {
       return {
         blockType: 'r20_col',
-        fields: { STYLE: a.style || '' },
+        fields: { CLASS: stripKnownClasses(cls, ['sheet-col']), STYLE: a.style || '' },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
     const colrowN = /\bsheet-colrow-(\d+)\b/.exec(cls);
     if (
       colrowN &&
-      tokens.length === 2 &&
       tokens.includes('sheet-colrow') &&
       tokens.includes(`sheet-colrow-${colrowN[1]}`)
     ) {
       return {
         blockType: 'r20_colrow_n',
-        fields: { N: colrowN[1], STYLE: a.style || '' },
+        fields: {
+          N: colrowN[1],
+          CLASS: stripKnownClasses(cls, ['sheet-colrow', `sheet-colrow-${colrowN[1]}`]),
+          STYLE: a.style || '',
+        },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
@@ -860,51 +887,58 @@ function matchContainer(node: DomNode, ctx: MatchContext): MatchedBlock | null {
     const sectionN = /\bsheet-section-(\S+)/.exec(cls);
     if (
       sectionN &&
-      ((tokens.length === 1 && tokens[0] === `sheet-section-${sectionN[1]}`) ||
-        (tokens.length === 2 &&
-          tokens.includes('sheet-section') &&
-          tokens.includes(`sheet-section-${sectionN[1]}`)))
+      tokens.includes(`sheet-section-${sectionN[1]}`)
     ) {
       return {
         blockType: 'r20_section_wrap',
-        fields: { NAME: sectionN[1], STYLE: a.style || '' },
+        fields: {
+          NAME: sectionN[1],
+          CLASS: stripKnownClasses(cls, ['sheet-section', `sheet-section-${sectionN[1]}`]),
+          STYLE: a.style || '',
+        },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
     const toggleN = /\bsheet-toggle-(\S+)/.exec(cls);
     if (
       toggleN &&
-      ((tokens.length === 1 && tokens[0] === `sheet-toggle-${toggleN[1]}`) ||
-        (tokens.length === 2 &&
-          tokens.includes('sheet-toggle') &&
-          tokens.includes(`sheet-toggle-${toggleN[1]}`)))
+      tokens.includes(`sheet-toggle-${toggleN[1]}`)
     ) {
       return {
         blockType: 'r20_toggle_wrap',
-        fields: { NAME: toggleN[1], STYLE: a.style || '' },
+        fields: {
+          NAME: toggleN[1],
+          CLASS: stripKnownClasses(cls, ['sheet-toggle', `sheet-toggle-${toggleN[1]}`]),
+          STYLE: a.style || '',
+        },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
     if (
       /\bsheet-repeating-row\b/.test(cls) &&
-      tokens.length === 1 &&
-      tokens[0] === 'sheet-repeating-row'
+      tokens.includes('sheet-repeating-row')
     ) {
       return {
         blockType: 'r20_repeating_row',
-        fields: { STYLE: a.style || '' },
+        fields: {
+          CLASS: stripKnownClasses(cls, ['sheet-repeating-row']),
+          STYLE: a.style || '',
+        },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
     if (
       /\bsheet-grid\b/.test(cls) &&
-      tokens.length === 1 &&
-      tokens[0] === 'sheet-grid'
+      tokens.includes('sheet-grid')
     ) {
       const cols = extractGridCols(a.style || '') || '2';
       return {
         blockType: 'r20_grid',
-        fields: { COLS: cols, STYLE: a.style || '' },
+        fields: {
+          COLS: cols,
+          CLASS: stripKnownClasses(cls, ['sheet-grid']),
+          STYLE: a.style || '',
+        },
         children: { CONTENT: matchChildren(node, ctx) },
       };
     }
@@ -1264,6 +1298,16 @@ function stripSheetPrefix(cls: string): string {
     .split(/\s+/)
     .filter(Boolean)
     .map((t) => t.replace(/^sheet-/, ''))
+    .join(' ');
+}
+
+function stripKnownClasses(cls: string, known: string[]): string {
+  const ignored = new Set(known);
+  return cls
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((token) => !ignored.has(token))
+    .map((token) => token.replace(/^sheet-/, ''))
     .join(' ');
 }
 

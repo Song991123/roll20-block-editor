@@ -406,6 +406,9 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본 HTML')
         .appendField(new Blockly.FieldTextInput('<b>Default</b>'), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -415,8 +418,9 @@ export const I18N_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       // DEFAULT 는 HTML 그대로 — escape 하지 않음 (data-i18n-html 의 의도).
-      return `<span${attr('data-i18n-html', key)}${styleAttr(style)}>${def}</span>`;
+      return `<span${sheetClassAttr(cls)}${attr('data-i18n-html', key)}${styleAttr(style)}>${def}</span>`;
     },
   },
 
@@ -442,6 +446,9 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본 선택')
         .appendField(new Blockly.FieldCheckbox('FALSE'), 'SELECTED');
       b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -452,9 +459,10 @@ export const I18N_BLOCKS: BlockDef[] = [
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
       const value = String(b.getFieldValue('VALUE') ?? '');
+      const cls = String(b.getFieldValue('CLASS') ?? '');
       const selected = String(b.getFieldValue('SELECTED') ?? 'FALSE') === 'TRUE';
       return (
-        `<option${attr('value', value)}${attr('data-i18n', key)}` +
+        `<option${attr('value', value)}${sheetClassAttr(cls)}${attr('data-i18n', key)}` +
         `${selected ? ' selected="selected"' : ''}${styleAttr(style)}>` +
         `${escapeAttr(def)}</option>`
       );
@@ -519,6 +527,9 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본 텍스트')
         .appendField(new Blockly.FieldTextInput('Section'), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('클래스')
+        .appendField(new Blockly.FieldTextInput(''), 'CLASS');
+      b.appendDummyInput()
         .appendField('스타일')
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
@@ -528,7 +539,8 @@ export const I18N_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
-      return `<legend${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</legend>`;
+      const cls = String(b.getFieldValue('CLASS') ?? '');
+      return `<legend${sheetClassAttr(cls)}${attr('data-i18n', key)}${styleAttr(style)}>${escapeAttr(def)}</legend>`;
     },
   },
 ];
