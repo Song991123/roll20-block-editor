@@ -24,14 +24,6 @@
 
 export const runtimeCss = String.raw`
 /* iframe body — Shadow DOM 에선 body 가 없으므로 noop */
-html, body {
-  margin: 0;
-  padding: 0;
-  min-height: 0;
-  overflow: visible;
-  background: #ffffff;
-}
-
 /* preview-only — fieldset[class*=repeating_] 시각 hint
    (Roll20 의 repcontainer 와 별개. 사용자가 fieldset 으로 repeating section 박은
    경우 미리보기에서 "여기 반복 섹션이다" 를 알려주는 우리 표시.) */
@@ -45,7 +37,7 @@ html, body {
   content: '↻ 반복 섹션';
   display: none;
   font-size: 10px;
-  color: var(--r20-fg-muted, #57606a);
+  color: #57606a;
   margin-bottom: 6px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -53,100 +45,21 @@ html, body {
 
 /* preview-only 선택 강조 (PreviewMain 이 postMessage 로 highlight) */
 .charsheet [data-r20-preview-selected='1'] {
-  outline: 2px solid var(--r20-focus, #2f81f7);
+  outline: 2px solid #2f81f7;
   outline-offset: 1px;
   border-radius: 3px;
 }
 
 /* ─── generic layout helpers (Roll20 표준 X — 우리 helper) ─────── */
 /* colrow_n N-column grid */
-.sheet-colrow-2, .sheet-colrow-3, .sheet-colrow-4, .sheet-colrow-5, .sheet-colrow-6 {
-  display: grid;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-.sheet-colrow-2 { grid-template-columns: repeat(2, 1fr); }
-.sheet-colrow-3 { grid-template-columns: repeat(3, 1fr); }
-.sheet-colrow-4 { grid-template-columns: repeat(4, 1fr); }
-.sheet-colrow-5 { grid-template-columns: repeat(5, 1fr); }
-.sheet-colrow-6 { grid-template-columns: repeat(6, 1fr); }
-
 /* fieldset basic — baseline 의 fieldset 룰보다 약한 specificity */
-.sheet-fieldset, fieldset.sheet-fieldset {
-  padding: 0.5rem;
-  border: 1px solid var(--r20-border, #d0d7de);
-  border-radius: 0.25rem;
-}
 
 /* sheet-table — 우리 generic (Roll20 의 raw table 은 baseline 이 처리) */
-.sheet-table { border-collapse: collapse; width: 100%; }
-.sheet-table th, .sheet-table td { padding: 0.25rem 0.5rem; text-align: left; }
 
 /* generic repeating section (Roll20 fieldset.repeating_* 와 별도 helper) */
-.repeating_section {
-  border: 1px solid var(--r20-border, #d0d7de);
-  padding: 0.5rem;
-  margin: 0.5rem 0;
-}
 
 /* spacers */
-.sheet-spacer-small { height: 0.25rem; }
-.sheet-spacer-medium { height: 0.5rem; }
-.sheet-spacer-large { height: 1rem; }
 
 /* ─── 다크 모드 토큰 ──────────────────────────────────────────── */
-:root {
-  --r20-bg: #ffffff;
-  --r20-fg: #1f2328;
-  --r20-fg-muted: #57606a;
-  --r20-border: #d0d7de;
-  --r20-input-bg: #ffffff;
-  --r20-button-bg: #f6f8fa;
-  --r20-roll-bg: #ddf4ff;
-  --r20-roll-border: #54aeff;
-  --r20-roll-fg: #0969da;
-  --r20-action-bg: #fff8c5;
-  --r20-action-border: #d4a72c;
-  --r20-action-fg: #7d4e00;
-  --r20-repeat-bg: rgba(208, 215, 222, 0.08);
-  --r20-thead-bg: #f6f8fa;
-  --r20-focus: #2f81f7;
-}
-
-body[data-theme='dark'] {
-  --r20-bg: #0d1117;
-  --r20-fg: #e6edf3;
-  --r20-fg-muted: #8b949e;
-  --r20-border: #30363d;
-  --r20-input-bg: #161b22;
-  --r20-button-bg: #21262d;
-  --r20-roll-bg: #1b3148;
-  --r20-roll-border: #316dca;
-  --r20-roll-fg: #58a6ff;
-  --r20-action-bg: #3a2e0c;
-  --r20-action-border: #7d6219;
-  --r20-action-fg: #f3d175;
-  --r20-repeat-bg: rgba(110, 118, 129, 0.1);
-  --r20-thead-bg: #161b22;
-  --r20-focus: #58a6ff;
-}
-
 /* Shadow DOM 모드 — host 에 다크 모드 토큰. body 가 없으므로 :host */
-:host([data-theme='dark']) {
-  --r20-bg: #0d1117;
-  --r20-fg: #e6edf3;
-  --r20-fg-muted: #8b949e;
-  --r20-border: #30363d;
-  --r20-input-bg: #161b22;
-  --r20-button-bg: #21262d;
-  --r20-roll-bg: #1b3148;
-  --r20-roll-border: #316dca;
-  --r20-roll-fg: #58a6ff;
-  --r20-action-bg: #3a2e0c;
-  --r20-action-border: #7d6219;
-  --r20-action-fg: #f3d175;
-  --r20-repeat-bg: rgba(110, 118, 129, 0.1);
-  --r20-thead-bg: #161b22;
-  --r20-focus: #58a6ff;
-}
 `;

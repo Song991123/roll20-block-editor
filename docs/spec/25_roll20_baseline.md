@@ -12,6 +12,18 @@
 
 ---
 
+### Render-surface ownership correction (2026-07-31)
+
+The shared preview runtime is overlay-only. Builder conveniences must not be
+global sheet CSS because an imported sheet may legitimately use the same class
+names. `r20_colrow_n` and `r20_spacer` emit their defaults with the block's
+generated CSS; raw/imported sheets receive only the Roll20 baseline and their
+authored CSS plus the documented editor overlays.
+
+This does not replace a live Roll20 comparison. Generic row, table, and form
+controls still require a fresh anonymous payload in the dedicated Sandbox or
+Legacy verification destination.
+
 ## §0. 한 줄 — 왜 spec 25 가 필요했나
 
 여태 우리 미리보기는 Roll20 sandbox 가 시트 영역에 박는 base CSS (Bootstrap 3

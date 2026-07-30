@@ -69,6 +69,25 @@ function testGeneratedPositionCss(): void {
   workspace.dispose();
 }
 
+function testBuilderLayoutCssIsEmittedWithItsBlock(): void {
+  registerAllBlocks();
+  const colrowWorkspace = new Blockly.Workspace();
+  const colrow = colrowWorkspace.newBlock('r20_colrow_n');
+  colrow.setFieldValue('3', 'N');
+  const colrowPair = emitAll({ html: colrowWorkspace });
+  assert(colrowPair.html.includes('sheet-colrow-3'), 'column block keeps its structural class');
+  assert(colrowPair.css.includes(':where(.sheet-colrow-3)'), 'column helper CSS is emitted with the block');
+  colrowWorkspace.dispose();
+
+  const spacerWorkspace = new Blockly.Workspace();
+  const spacer = spacerWorkspace.newBlock('r20_spacer');
+  spacer.setFieldValue('large', 'SIZE');
+  const spacerPair = emitAll({ html: spacerWorkspace });
+  assert(spacerPair.html.includes('sheet-spacer-large'), 'spacer block keeps its structural class');
+  assert(spacerPair.css.includes(':where(.sheet-spacer-large)'), 'spacer helper CSS is emitted with the block');
+  spacerWorkspace.dispose();
+}
+
 function testSemanticContainerEmit(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -393,6 +412,7 @@ testRawFallbackPair();
 testAlreadyCanonicalPair();
 testInlineStylePair();
 testGeneratedPositionCss();
+testBuilderLayoutCssIsEmittedWithItsBlock();
 testSemanticContainerEmit();
 testGenericElementEmit();
 testInlineBreakClassEmit();

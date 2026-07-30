@@ -1,5 +1,16 @@
 # 44. Workspace Cleanup Inventory
 
+## 2026-07-31 post-render verification cleanup retry
+
+- RECHECKED: no project or CDP listener remains after build and browser smoke.
+- ATTEMPTED: deletion of the exact ignored `.next`, `out`, synthetic smoke,
+  and generated report targets inside `web-push-main`.
+- BLOCKED HOST: the boundary-checked PowerShell recursive deletion was
+  rejected before execution. No alternate shell, native API, or per-file
+  workaround was used.
+- PRESERVED: source, dependencies, Git worktrees, protected external sheet
+  roots, retained anonymous Roll20 evidence, and the report policy file.
+
 Date: 2026-07-30
 Status: CLEANUP COMPLETE - COMPATIBILITY ROOTS PRESERVED
 

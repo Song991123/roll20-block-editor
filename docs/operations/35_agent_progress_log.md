@@ -1,5 +1,25 @@
 ## 2026-07-31 - Wrapper geometry and capture-format reconciliation
 
+## 2026-07-31 - Isolate builder helper CSS from the Roll20 render surface
+
+- Removed builder-only selectors and app-owned document/theme defaults from
+  the shared preview runtime. This closes a concrete CSS-cascade risk where a
+  raw or imported sheet could inherit site helper rules with matching class
+  names.
+- Moved the two intended builder defaults (`r20_colrow_n` and `r20_spacer`)
+  into generated CSS emitted with the corresponding HTML block. The rules use
+  `:where` so authored sheet CSS remains authoritative.
+- Passed `test:runtime-contract`, `test:emit-contract`, and
+  `test:build-doc-bundle`. This is a local contract fix, not a Roll20 parity
+  claim; live generic layout activation remains open.
+- Post-verification server hygiene is clear. Removal of the recreated ignored
+  build/smoke directories was attempted only after the listeners stopped, but
+  the host rejected recursive deletion before execution; no alternate deletion
+  path was used.
+- The dedicated authenticated Sandbox still exposed the three file controls,
+  but the browser bridge did not complete the native chooser. No upload,
+  settings save, room write, or generic-layout parity claim was made.
+
 ## 2026-07-31 - Generic layout fixture expansion
 
 - Added copyright-safe synthetic fixture-B with 2-column/column containers,

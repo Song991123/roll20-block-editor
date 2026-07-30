@@ -1,5 +1,29 @@
 ## 2026-07-31 Wrapper geometry and capture-format reconciliation
 
+## 2026-07-31 Render-surface helper isolation
+
+- DONE LOCAL: Removed builder-only layout helpers, app document resets, and
+  `--r20-*` theme tokens from the shared sheet runtime CSS. A raw/imported
+  sheet no longer receives site-owned `.sheet-colrow-*`, `.sheet-spacer-*`,
+  `.sheet-table`, or `.sheet-fieldset` rules merely because it is previewed.
+- DONE LOCAL: `r20_colrow_n` and `r20_spacer` now emit their optional helper
+  CSS alongside the generated sheet CSS, using `:where(...)` so authored CSS
+  can still override the builder default. The HTML keeps the same structural
+  classes and import mapping.
+- VERIFIED LOCAL: runtime, emit-contract, and build-doc bundle tests pass.
+- VERIFY / OPEN: This proves the app runtime no longer owns those selectors;
+  it does not prove arbitrary-sheet visual parity. Actual generic row/table
+  computed-style evidence still requires a fresh anonymous Roll20 payload in
+  the dedicated Sandbox or Legacy test destination.
+- CLEANUP / BLOCKED HOST: The post-build `.next`, `out`, and ignored smoke
+  directories were boundary-checked after all listeners stopped, but the host
+  rejected the recursive deletion before execution. They remain local-only and
+  are excluded from Git; no source or evidence ownership was changed.
+- VERIFY / BLOCKED EXTERNAL: The dedicated authenticated Sandbox remained
+  visible and its HTML/CSS/Translation controls were found, but the Chrome
+  bridge did not expose a completed native file chooser. No generic fixture was
+  uploaded and no Roll20 setting or room was modified in this attempt.
+
 ## 2026-07-31 Generic layout fixture expansion
 
 - VERIFIED LOCAL: Added a copyright-safe synthetic `fixture-B` containing

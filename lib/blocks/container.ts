@@ -368,6 +368,11 @@ export const CONTAINER_BLOCKS: BlockDef[] = [
       const n = Number(b.getFieldValue('N') ?? 2);
       const safe = Number.isFinite(n) && n >= 1 ? Math.floor(n) : 2;
       const content = ctx.statementToCode(block, 'CONTENT');
+      if (ctx.addGeneratedCss) {
+        ctx.addGeneratedCss(
+          `:where(.sheet-colrow-${safe}) { display: grid; gap: 0.5rem; margin-bottom: 0.5rem; grid-template-columns: repeat(${safe}, 1fr); }`,
+        );
+      }
       return wrapTag(ctx, 'div', `${sheetClassAttrWithBase(`sheet-colrow sheet-colrow-${safe}`, cls)}${styleAttr(style)}`, content);
     },
   },

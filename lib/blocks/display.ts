@@ -364,13 +364,17 @@ export const DISPLAY_BLOCKS: BlockDef[] = [
         .appendField(new Blockly.FieldTextInput(''), 'STYLE');
       setStatementHooks(b);
     }),
-    generator: (block) => {
+    generator: (block, ctx) => {
       const b = block as Blockly.Block;
       const style = String(b.getFieldValue('STYLE') ?? '');
       const cls = String(b.getFieldValue('CLASS') ?? '');
       const sizeRaw = String(b.getFieldValue('SIZE') ?? 'medium');
       const allowed = new Set(SPACER_SIZES.map(([, v]) => v));
       const size = allowed.has(sizeRaw) ? sizeRaw : 'medium';
+      if (ctx.addGeneratedCss) {
+        const heights: Record<string, string> = { small: '0.25rem', medium: '0.5rem', large: '1rem' };
+        ctx.addGeneratedCss(`:where(.sheet-spacer-${size}) { height: ${heights[size]}; }`);
+      }
       return `<div${sheetClassAttrWithBase(`sheet-spacer sheet-spacer-${size}`, cls)}${styleAttr(style)}></div>`;
     },
   },
