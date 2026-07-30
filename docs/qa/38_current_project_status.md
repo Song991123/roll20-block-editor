@@ -9,6 +9,12 @@ local output and is deleted after the verification batch.
 
 ## Current Evidence
 
+- LOCAL EDIT FIX: context-menu mutations now explicitly publish the model and
+  flush the persistent preview. Delete, duplicate, and sibling moves provide
+  truthful feedback, with duplicated layers selected immediately.
+- LOCAL VERIFICATION: lint, production build, `smoke:edit-flow`, and layer
+  operation tests passed after the edit-surface patch.
+
 - DEPLOYMENT VERIFIED: `pnpm verify:pages-deploy` reports the public GitHub
   Pages URL as HTTP 200 and matches the latest successful `main` Pages run at
   `98d4b4965be2` (`30399580622`).

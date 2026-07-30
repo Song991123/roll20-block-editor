@@ -1337,9 +1337,8 @@ export default function PreviewMain() {
 
   // Phase E — 컨텍스트 메뉴 액션 디스패치.
   // - inspect: selectedBlockId 갱신 + sidebar right 펼침 + 'attrs' (Inspector) 탭 활성.
-  // - delete: adapter.deleteBlock → BLOCK_DELETE event → bumpStructure → emit → preview 재mount.
-  // - duplicate: adapter.duplicateBlock → 실패 (null) 시 toast.
-  // - moveUp/moveDown: adapter.moveBlockUp/Down → false (statement chain 등) 시 toast '지원 예정'.
+  // - delete/duplicate/move: adapter mutation → explicit structure bump →
+  //   immediate emit → the persistent preview stays current.
   // 워크스페이스 키는 active 우선, 없으면 html/css/i18n 순회 — drag/edit 와 동일 전략.
   const dispatchContextAction = (
     action: ShadowContextMenuAction,
@@ -1360,6 +1359,14 @@ export default function PreviewMain() {
       toast.error('블록을 찾을 수 없습니다', { duration: 1800 });
       return;
     }
+    const commitContextMutation = () => {
+      const store = useWorkspaceStore.getState();
+      store.bumpStructure(ws, adapter.countBlocks(ws));
+      // Blockly usually emits its own change event, but an explicit commit
+      // keeps the persistent preview from waiting on that event or a later
+      // unrelated edit.
+      queueMicrotask(() => flushEmitPipeline());
+    };
     switch (action) {
       case 'inspect': {
         setSelected(blockId, 'inspector');
@@ -1369,23 +1376,48 @@ export default function PreviewMain() {
       }
       case 'delete': {
         const ok = adapter.deleteBlock(ws, blockId);
-        if (!ok) toast.error('삭제 실패', { duration: 1800 });
+        if (!ok) {
+          toast.error('이 요소는 지금 삭제할 수 없어요', { duration: 1800 });
+          return;
+        }
+        commitContextMutation();
+        if (useWorkspaceStore.getState().selectedBlockId === blockId) {
+          setSelected(null, 'preview');
+        }
+        toast.success('요소를 삭제했어요', { duration: 1400 });
         return;
       }
       case 'duplicate': {
         const newId = adapter.duplicateBlock(ws, blockId);
-        if (!newId) toast('복사 지원 예정 (이 블록은 복제 불가)', { duration: 2000 });
-        else toast('블록 복사됨', { duration: 1200 });
+        if (!newId) {
+          toast('이 요소는 복제할 수 없어요', { duration: 2000 });
+          return;
+        }
+        commitContextMutation();
+        setSelected(newId, 'preview');
+        toast.success('요소를 복제했어요', { duration: 1400 });
         return;
       }
       case 'moveUp': {
         const ok = adapter.moveBlockUp(ws, blockId);
-        if (!ok) toast('위로 이동 지원 예정 (현재 최상단 또는 statement chain)', { duration: 2000 });
+        if (!ok) {
+          toast('이 위치에서는 더 위로 옮길 수 없어요', { duration: 2000 });
+          return;
+        }
+        commitContextMutation();
+        setSelected(blockId, 'preview');
+        toast.success('요소를 한 칸 위로 옮겼어요', { duration: 1400 });
         return;
       }
       case 'moveDown': {
         const ok = adapter.moveBlockDown(ws, blockId);
-        if (!ok) toast('아래로 이동 지원 예정 (현재 최하단 또는 statement chain)', { duration: 2000 });
+        if (!ok) {
+          toast('이 위치에서는 더 아래로 옮길 수 없어요', { duration: 2000 });
+          return;
+        }
+        commitContextMutation();
+        setSelected(blockId, 'preview');
+        toast.success('요소를 한 칸 아래로 옮겼어요', { duration: 1400 });
         return;
       }
       default: return;

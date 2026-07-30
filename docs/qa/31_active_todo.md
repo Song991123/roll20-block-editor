@@ -1,3 +1,16 @@
+## 2026-07-31 Edit surface context actions
+
+- `DONE LOCAL`: context-menu delete, duplicate, move-up, and move-down now
+  explicitly bump the model and flush the shared preview emit after a
+  successful mutation. Duplicated layers become selected immediately.
+- `DONE LOCAL`: unsupported-action wording was replaced with accurate
+  success/failure feedback; no action is reported as “지원 예정” when the
+  adapter already supports it.
+- `VERIFIED LOCAL`: lint, production build, `smoke:edit-flow`, layer-operation
+  tests, and diff checks pass. This is a local edit-surface improvement only.
+- `VERIFY / OPEN`: current-payload Roll20 Sandbox binding, actual screenshot
+  parity, and dedicated legacy-room evidence remain unchanged and open.
+
 ## 2026-07-31 GitHub Pages freshness gate
 
 - `DONE LOCAL/REMOTE`: Added `pnpm verify:pages-deploy`, which compares the

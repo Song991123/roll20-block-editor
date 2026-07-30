@@ -1,3 +1,14 @@
+## 2026-07-31 - Edit surface context-menu commit path
+
+- Fixed the iframe context-menu mutation path in `PreviewMain.tsx`. Delete,
+  duplicate, move-up, and move-down now publish an explicit structure bump and
+  queue the shared emit immediately, keeping the persistent preview aligned
+  after a direct edit. Duplicates select the new layer.
+- Replaced stale “지원 예정” feedback with accurate Korean success/failure
+  messages. Local lint, build, edit-flow smoke, and layer-operation tests pass.
+- This strengthens local Figma-style editing only. It does not promote the
+  blocked same-payload Roll20 Sandbox or legacy-room parity gates.
+
 ## 2026-07-31 - Pages freshness verification gate
 
 - Added `scripts/verify_github_pages_deploy.mjs` and the
