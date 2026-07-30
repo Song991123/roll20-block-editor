@@ -21,6 +21,18 @@ local output and is deleted after the verification batch.
 - OPEN / EXTERNAL: Roll20 Sandbox/legacy destination comparison remains
   unverified because the authenticated browser/CDP path is unavailable.
 
+## Latest Chrome Roll20 Observation - 2026-07-31
+
+- PARTIAL EXTERNAL: Dedicated modern and legacy verification destinations each
+  passed the visible one-participant preflight. Their currently loaded
+  anonymous proof iframe roots measured `860x200` with sampled Roll20 base
+  typography of `13px Helvetica Neue`.
+- BLOCKED EXTERNAL: The supported Sandbox chooser rejected the anonymous local
+  HTML handoff and the supported CDP path could not set the file input. No
+  current payload was attached and no external state changed.
+- OPEN: Same-hash modern screenshot/crop comparison, independent legacy
+  screenshot/crop comparison, asset reachability, and live worker evidence.
+
 ## Latest Wrapper Geometry Reconciliation - 2026-07-31
 
 ## Latest Generic Layout Regression - 2026-07-31

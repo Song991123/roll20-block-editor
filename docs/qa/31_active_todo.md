@@ -1,3 +1,29 @@
+## 2026-07-31 Chrome Roll20 observation and Sandbox handoff boundary
+
+- VERIFIED EXTERNAL OBSERVATION: The dedicated modern Sandbox tab and separate
+  legacy verification tab each showed a fresh visible participant count of
+  exactly one. Both were read-only observation targets during this check.
+- VERIFIED EXTERNAL OBSERVATION: Both iframe roots rendered at `860x200` with
+  Roll20's sampled `13px Helvetica Neue` base. This confirms wrapper/font
+  context evidence for the currently loaded anonymous proof state only.
+- BLOCKED EXTERNAL: The dedicated Sandbox file inputs were present, but the
+  supported chooser rejected the workspace-local anonymous HTML file with
+  `Not allowed`; the supported raw CDP path was also unavailable. All three
+  file inputs remained empty, so no current payload hash, save, screenshot, or
+  chat change is accepted as parity evidence.
+- SAFETY: No existing room was written to. The browser state, room settings,
+  and chat remained unchanged. The same-hash modern/legacy screenshot gate
+  remains VERIFY/BLOCKED EXTERNAL.
+
+## 2026-07-31 Local editor browser surface check
+
+- VERIFIED LOCAL: The first screen uses the pastel shell with no public sample
+  catalog, and preview mode hides the editor sidebars and layout workspace.
+- VERIFIED LOCAL: Direct edit mode exposes the persistent iframe, layer panel,
+  role mini-map, modern/legacy switch, and sheet width control. A browser fill
+  of `1000` persisted as the input property after blur, and the tab reported
+  zero console errors/warnings during the check.
+
 ## 2026-07-31 Canonical imported layer/edit verification
 
 - DONE LOCAL: Imported edit-sync smoke now reads rendered block metadata through

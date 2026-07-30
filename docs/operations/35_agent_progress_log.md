@@ -1,3 +1,26 @@
+## 2026-07-31 - Chrome Roll20 observation and Sandbox handoff boundary
+
+- Reconnected the existing Chrome session and inspected only the two dedicated
+  verification destinations. Each showed exactly one visible participant
+  before inspection; no ordinary user room was used or modified.
+- Both currently loaded anonymous proof sheets exposed one iframe root at
+  `860x200` and the sampled Roll20 base font `13px Helvetica Neue`. This is
+  runtime/context evidence for the loaded proof state, not same-payload parity.
+- The Sandbox HTML/CSS/Translation inputs were present. The supported file
+  chooser rejected the local anonymous HTML handoff with `Not allowed`, and
+  the supported raw CDP path could not set files. Inputs remained empty; no
+  save, room setting, chat message, or screenshot evidence was promoted.
+- The modern same-hash upload and independent legacy screenshot comparison
+  therefore remain VERIFY/BLOCKED EXTERNAL.
+
+## 2026-07-31 - Local editor browser surface check
+
+- Inspected the live local shell, first-run blank state, direct edit surface,
+  persistent iframe, layer panel mini-map, and preview-focus surface.
+- Verified the width control retains a browser-entered `1000` value after
+  blur through the live input property. The local tab emitted no console
+  errors or warnings during this check.
+
 ## 2026-07-31 - Canonical imported layer/edit verification
 
 - Rewired imported edit-sync layer and non-leaf checks to inspect the
