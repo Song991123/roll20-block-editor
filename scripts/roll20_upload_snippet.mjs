@@ -22,6 +22,7 @@ const APPLY_SETTINGS = args.includes('--apply-settings');
 const ENDPOINT_CAMPAIGN_ID = readOptionValue(args, '--endpoint-campaign-id') || '';
 const EXPECTED_RUNTIME_MODE = readOptionValue(args, '--expected-runtime-mode') || 'auto';
 const OUT_DIR_ARG = readOptionValue(args, '--out-dir') || '';
+const PAYLOAD_DIR_ARG = readOptionValue(args, '--payload-dir') || '';
 
 if (SELF_TEST) {
   runSelfTest();
@@ -50,15 +51,18 @@ function readOptionValue(rawArgs, name) {
 }
 
 async function main() {
-  const runDir = RUN_DIR_ARG ? path.resolve(RUN_DIR_ARG) : await findLatestPreuploadRun();
+  const directPayloadDir = PAYLOAD_DIR_ARG ? path.resolve(PAYLOAD_DIR_ARG) : '';
+  const runDir = directPayloadDir || (RUN_DIR_ARG ? path.resolve(RUN_DIR_ARG) : await findLatestPreuploadRun());
   const baselineDir = path.join(runDir, 'local-baseline');
-  if (!existsSync(baselineDir)) throw new Error(`missing local baseline folder: ${baselineDir}`);
+  if (!directPayloadDir && !existsSync(baselineDir)) throw new Error(`missing local baseline folder: ${baselineDir}`);
 
-  const fixtureIds = (await fs.readdir(baselineDir, { withFileTypes: true }))
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .filter((fixtureId) => !ONLY || fixtureId === ONLY)
-    .sort((a, b) => a.localeCompare(b));
+  const fixtureIds = directPayloadDir
+    ? ['anonymous-payload']
+    : (await fs.readdir(baselineDir, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .filter((fixtureId) => !ONLY || fixtureId === ONLY)
+      .sort((a, b) => a.localeCompare(b));
   if (!fixtureIds.length) throw new Error(`no matching fixture found${ONLY ? `: ${ONLY}` : ''}`);
 
   const outDir = OUT_DIR_ARG
@@ -72,12 +76,14 @@ async function main() {
       applySettings: APPLY_SETTINGS,
       endpointCampaignId: ENDPOINT_CAMPAIGN_ID,
       expectedRuntimeMode: EXPECTED_RUNTIME_MODE,
+      payloadDir: directPayloadDir,
     }));
   }
 
   const report = {
     generatedAt: new Date().toISOString(),
     runDir,
+    payloadDir: directPayloadDir || null,
     privacy: 'local-only ignored report; do not commit generated snippets because they embed source-derived payloads',
     scope: 'Custom Sheet Sandbox upload helper only; not Roll20 visual parity evidence',
     entries,
@@ -123,19 +129,19 @@ async function findLatestPreuploadRun() {
 }
 
 async function writeFixtureSnippet(runDir, fixtureId, outDir, options = {}) {
-  const payloadDir = path.join(runDir, 'local-baseline', fixtureId, 'payload');
+  const payloadDir = options.payloadDir || path.join(runDir, 'local-baseline', fixtureId, 'payload');
   const files = {
     html: path.join(payloadDir, 'sheet.html'),
     css: path.join(payloadDir, 'sheet.css'),
     translation: path.join(payloadDir, 'translation.json'),
     manifest: path.join(payloadDir, 'sheet.json'),
   };
-  for (const [label, file] of Object.entries(files)) {
+  for (const [label, file] of Object.entries(files).filter(([label]) => label !== 'manifest')) {
     if (!existsSync(file)) throw new Error(`missing ${label} payload file for ${fixtureId}: ${file}`);
   }
 
   const payload = {};
-  for (const [label, file] of Object.entries(files)) {
+  for (const [label, file] of Object.entries(files).filter(([label]) => label !== 'manifest')) {
     const bytes = await fs.readFile(file);
     payload[label] = {
       name: path.basename(file),
@@ -144,11 +150,21 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir, options = {}) {
       base64: bytes.toString('base64'),
     };
   }
+  const manifestText = existsSync(files.manifest)
+    ? await fs.readFile(files.manifest, 'utf8')
+    : buildDirectPayloadManifest(options.expectedRuntimeMode);
+  const manifestBytes = Buffer.from(manifestText, 'utf8');
+  payload.manifest = {
+    name: 'sheet.json',
+    bytes: manifestBytes.length,
+    sha256: createHash('sha256').update(manifestBytes).digest('hex'),
+    base64: manifestBytes.toString('base64'),
+  };
   const sourceTexts = {
     html: await fs.readFile(files.html, 'utf8'),
     css: await fs.readFile(files.css, 'utf8'),
     translation: await fs.readFile(files.translation, 'utf8'),
-    manifest: await fs.readFile(files.manifest, 'utf8'),
+    manifest: manifestText,
   };
   const validation = {
     translation: validateJsonPayload(sourceTexts.translation, 'translation.json'),
@@ -194,6 +210,19 @@ async function writeFixtureSnippet(runDir, fixtureId, outDir, options = {}) {
     activationHints,
     validation,
   };
+}
+
+function buildDirectPayloadManifest(expectedRuntimeMode = 'modern') {
+  return `${JSON.stringify({
+    html: 'sheet.html',
+    css: 'sheet.css',
+    translations: 'translation.json',
+    legacy: expectedRuntimeMode === 'legacy',
+    useroptions: [],
+    name: 'Anonymous Sandbox Payload',
+    short_name: 'anonymous-sandbox',
+    authors: 'Local verification',
+  }, null, 2)}\n`;
 }
 
 function resolveExpectedRuntimeMode(manifestText, requestedMode = 'auto') {
@@ -1172,6 +1201,8 @@ function renderReadme(report) {
     '',
     'If the canonical ignored report folder is locked, pass `--out-dir <ignored-local-folder>` to generate a fresh handoff without overwriting earlier evidence.',
     '',
+    'For an anonymous local payload directory containing only `sheet.html`, `sheet.css`, and `translation.json`, pass `--payload-dir <ignored-local-folder>`. A synthetic modern/legacy manifest is created in memory only; no settings endpoint is enabled unless `--apply-settings` is explicitly supplied.',
+    '',
     'The snippet creates browser `File` objects and dispatches `change` events on the Sandbox Tools inputs. A 2026-07-16 live handler inspection confirmed that this invokes the same Roll20 delegated handler as a manual file choice: FileReader reads raw text, the page POSTs base64 source to `/sheetsandbox/savesheetsettings`, then reloads sheet data and open characters. The helper also fills the submitted `customcharsheet_json` control with the settings-page `{ sheet, userOptions, jsoninfo }` wrapper derived from exported `sheet.json` when the settings page is open. When file inputs are unavailable, the explicit endpoint fallback uses the same form-encoded payload shape and triggers the same reload helpers. Upload execution is still not proof that Roll20 rendered the sheet unless the activation probe reports `VISIBLE_MATCH`; `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE` means a character-sheet iframe exists but top-document JS could not prove its markers, and `CHAT_TEMPLATE_ONLY` means chat rolltemplate evidence exists but sheet body markers are not proven.',
     '',
     'After settings save and editor reload, run the matching `*-activation-check-snippet.js` on `https://app.roll20.net/editor`. It returns `VISIBLE_MATCH`, `RUNTIME_MODE_MISMATCH`, `SHEET_IFRAME_PRESENT_NEEDS_FRAME_PROBE`, `CHARACTER_DIALOG_NO_SHEET_BODY`, `CHAT_TEMPLATE_ONLY`, `ROLL20_EDITOR_PARSE_ERROR`, or `NOT_PROVEN`. The expected modern/legacy mode comes from `sheet.json` unless `--expected-runtime-mode modern|legacy` overrides it. Capture Roll20 sheet-root evidence only after `VISIBLE_MATCH`, a matching runtime mode, and a visual check that the visible sheet belongs to the intended fixture.',
@@ -1203,6 +1234,7 @@ function runSelfTest() {
     authors: 'Local verification',
   });
   const settingsText = buildSettingsManifestText(manifestText);
+  const directModernManifest = buildDirectPayloadManifest('modern');
   const settings = JSON.parse(settingsText);
   const validation = validateSettingsFieldManifest(manifestText);
   const payload = {
@@ -1283,6 +1315,8 @@ function runSelfTest() {
   if (validation.shape !== 'wrapped-jsoninfo') failures.push(`validation shape was ${validation.shape}`);
   if (resolveExpectedRuntimeMode(manifestText, 'auto') !== 'legacy') failures.push('manifest legacy mode was not resolved');
   if (resolveExpectedRuntimeMode('{"legacy":false}', 'auto') !== 'modern') failures.push('manifest modern mode was not resolved');
+  if (resolveExpectedRuntimeMode(directModernManifest, 'auto') !== 'modern') failures.push('direct payload manifest was not resolved as modern');
+  if (!validateSettingsFieldManifest(directModernManifest).ok) failures.push('direct payload manifest failed settings validation');
   if (!snippet.includes('const SUBMIT_SETTINGS_FORM = false;')) failures.push('default snippet should not submit settings');
   if (!snippet.includes('const USE_ENDPOINT_FALLBACK = false;')) failures.push('default snippet should not post endpoint fallback');
   if (!applySnippet.includes('const SUBMIT_SETTINGS_FORM = true;')) failures.push('apply snippet missing submit settings flag');
@@ -1328,6 +1362,7 @@ function runSelfTest() {
   if (!readme.includes('*-activation-check-snippet.js')) failures.push('generated README missing activation check instruction');
   if (!readme.includes('Apply settings')) failures.push('generated README missing apply settings column');
   if (!readme.includes('--out-dir <ignored-local-folder>')) failures.push('generated README missing output override instruction');
+  if (!readme.includes('--payload-dir <ignored-local-folder>')) failures.push('generated README missing direct payload instruction');
   if (failures.length) throw new Error(`roll20_upload_snippet self-test failed: ${failures.join(', ')}`);
   console.log('ROLL20 UPLOAD SNIPPET SELF-TEST PASS');
 }

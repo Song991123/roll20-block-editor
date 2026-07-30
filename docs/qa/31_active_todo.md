@@ -7817,3 +7817,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   payload was changed. The tab was returned to handoff state.
 - `NEXT P0`: Manually select the three anonymous Sandbox files, then capture
   positive root, state, worker, roll, chat, and asset evidence.
+
+## 2026-07-30 Anonymous Sandbox handoff path
+
+- `DONE LOCAL`: `scripts/roll20_upload_snippet.mjs` now accepts
+  `--payload-dir` for an ignored folder containing only `sheet.html`,
+  `sheet.css`, and `translation.json`. It creates the manifest in memory and
+  emits only the normal browser File/change-event path by default.
+- `VERIFIED LOCAL`: script syntax, upload-snippet self-test, synthetic payload
+  generation, and direct anonymous handoff generation pass. The generated
+  helper keeps settings submission and endpoint fallback disabled unless the
+  explicit apply flag is supplied.
+- `VERIFY / OPEN`: This prepares a supported browser handoff; it is not proof
+  that Roll20 accepted or rendered the payload.
+- `NEXT P0`: Run the generated anonymous snippet in the isolated modern
+  Sandbox tab, then require positive sheet-root and runtime evidence before
+  capturing screenshots or chat.

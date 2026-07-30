@@ -8550,3 +8550,16 @@ visibility verification passed. No external room was opened or modified.
   read-only dialog interaction; only the Sandbox upload controls were present.
 - NO MUTATION: No room, chat, campaign setting, or source-derived payload was
   changed. The tab was left as a handoff for manual file selection.
+
+## 2026-07-30 - Anonymous Sandbox handoff path
+
+- IMPLEMENTED: The upload snippet generator accepts a direct ignored payload
+  directory with only HTML, CSS, and translation files. A synthetic manifest
+  is held in memory for activation diagnostics, while the default generated
+  code dispatches only the Roll20 file-input change path.
+- VERIFIED: Syntax, the upload-snippet self-test, anonymous payload generation,
+  and direct handoff generation pass. Settings submission and endpoint
+  fallback remain opt-in.
+- OPEN: The generated helper still needs to be run in the isolated modern
+  Sandbox and followed by positive root/runtime/roll/chat evidence. No actual
+  parity claim is made yet.
