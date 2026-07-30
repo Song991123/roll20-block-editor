@@ -137,13 +137,22 @@ function testVarLet(): void {
   const r = parseSheetWorkerScript(js);
   assert(r.blocks[0].blockType === 'r20_worker_var_let', 'var_let');
   assert(r.blocks[0].fields.VAR === 'x', 'VAR=x');
+  assert(r.blocks[0].fields.KIND === 'let', 'KIND=let');
 }
 
 function testVarAlias(): void {
-  // var → 동일 블록 (alias).
+  // var 는 같은 UI 블록을 사용하되 선언 종류를 보존한다.
   const js = `var ids = ['a'];`;
   const r = parseSheetWorkerScript(js);
   assert(r.blocks[0].blockType === 'r20_worker_var_let', 'var → var_let alias');
+  assert(r.blocks[0].fields.KIND === 'var', 'KIND=var');
+}
+
+function testConstDeclaration(): void {
+  const js = `const total = 5;`;
+  const r = parseSheetWorkerScript(js);
+  assert(r.blocks[0].blockType === 'r20_worker_var_let', 'const uses declaration block');
+  assert(r.blocks[0].fields.KIND === 'const', 'KIND=const');
 }
 
 function testReturn(): void {
@@ -299,6 +308,7 @@ const tests = [
   ['for count', testForCount],
   ['let declare', testVarLet],
   ['var alias', testVarAlias],
+  ['const declare', testConstDeclaration],
   ['return', testReturn],
   ['generateRowID', testGenerateRowID],
   ['removeRepeatingRow', testRemoveRepeatingRow],

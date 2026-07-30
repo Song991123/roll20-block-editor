@@ -24,6 +24,14 @@ Date: 2026-06-12
 - BOUNDARY: This preserves unsupported worker semantics; it does not provide
   block-level options editing or prove live Roll20 worker execution.
 
+## Latest Local Worker Declaration Reconciliation: 2026-07-30
+
+- The variable declaration block now preserves `let`, `var`, and `const`
+  through its explicit `KIND` field instead of rewriting `var` to `let`.
+- VERIFIED LOCAL: parser coverage includes all three declaration forms.
+- BOUNDARY: This is declaration-kind preservation, not complete JavaScript
+  support or live worker runtime evidence.
+
 ## Latest External Sandbox File-Selection Retry: 2026-07-30
 
 - The isolated modern Sandbox visibly reported one member and all three upload

@@ -529,10 +529,14 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     shape: 'stack',
     category: SHEET_WORKER,
     label: '변수 만들기',
-    tooltip: 'let NAME = VALUE; — 새 지역 변수 선언.',
+    tooltip: 'let / var / const NAME = VALUE; — 새 변수 선언.',
     init: mkInit((b) => {
       b.appendDummyInput()
-        .appendField('변수 만들기')
+        .appendField(new Blockly.FieldDropdown([
+          ['let', 'let'],
+          ['var', 'var'],
+          ['const', 'const'],
+        ]), 'KIND')
         .appendField(new Blockly.FieldTextInput('x'), 'VAR')
         .appendField('=');
       b.appendValueInput('VALUE').setCheck(null);
@@ -540,9 +544,11 @@ export const SHEET_WORKER_BLOCKS: BlockDef[] = [
     }),
     generator: (block, ctx) => {
       const b = block as Blockly.Block;
+      const rawKind = String(b.getFieldValue('KIND') ?? 'let');
+      const kind = rawKind === 'var' || rawKind === 'const' ? rawKind : 'let';
       const varName = String(b.getFieldValue('VAR') ?? '').trim() || 'x';
       const value = ctx.valueToCode(block, 'VALUE', ORDER.NONE) || '0';
-      return `let ${varName} = ${value};\n`;
+      return `${kind} ${varName} = ${value};\n`;
     },
   },
 

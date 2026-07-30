@@ -839,9 +839,9 @@ function parseOneStatement(body: string, start: number, stats: ParseStats): OneM
     }
   }
 
-  // ---- let VAR = EXPR; ----
+  // ---- let / var / const VAR = EXPR; ----
   {
-    const m = /^let\s+([A-Za-z_$][\w$]*)\s*=\s*/.exec(body.slice(i));
+    const m = /^(let|var|const)\s+([A-Za-z_$][\w$]*)\s*=\s*/.exec(body.slice(i));
     if (m) {
       const exprStart = i + m[0].length;
       const [exprEnd] = findStatementEnd(body, exprStart);
@@ -850,7 +850,7 @@ function parseOneStatement(body: string, start: number, stats: ParseStats): OneM
       return {
         block: {
           blockType: 'r20_worker_var_let',
-          fields: { VAR: m[1] },
+          fields: { KIND: m[1], VAR: m[2] },
           children: {},
           valueInputs: { VALUE: valueBlock(expr) },
         },

@@ -8676,3 +8676,11 @@ visibility verification passed. No external room was opened or modified.
 - Changed unsupported two-argument calls to the existing complete raw-worker
   fallback and added a focused parser regression test. No public or
   source-derived fixture was added.
+
+## 2026-07-30 Worker declaration keyword preservation
+
+- Found that imported `var` declarations were emitted as `let`, changing
+  JavaScript scope semantics.
+- Extended the existing variable block with a `KIND` selector and preserved
+  `let`, `var`, and `const` through import and emit. Added parser coverage for
+  all three forms without adding source-derived fixtures.

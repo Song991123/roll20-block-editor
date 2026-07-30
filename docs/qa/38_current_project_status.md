@@ -14,6 +14,10 @@ local output and is deleted after the verification batch.
   worker boundary. The focused worker parser suite is `27/27` after this
   guard; this prevents silent loss of Roll20 behavior such as `silent`.
 
+- LOCAL FIX: Worker variable declarations now retain their original `let`,
+  `var`, or `const` keyword through the shared declaration block and emit
+  path. This avoids a scope-changing `var` to `let` rewrite.
+
 - LOCAL PASS: An anonymous three-file Sandbox payload was regenerated under
   ignored `.tmp/roll20-sandbox-synthetic/`, and full `ci:verify` passed after
   the evidence purge.

@@ -40,6 +40,17 @@
 - CLAIM BOUNDARY: This is lossless preservation, not block-level support for
   `setAttrs` options or proof of live Roll20 worker execution.
 
+## 2026-07-30 Worker declaration keyword preservation
+
+- FIXED LOCAL: The shared variable-declaration block now carries `let`, `var`,
+  or `const` as an explicit field. Import no longer silently rewrites `var`
+  declarations to `let`, and the emitted worker source uses the selected
+  keyword.
+- VERIFIED LOCAL: parser regressions cover all three declaration keywords;
+  broader CI and build gates remain required for this batch.
+- CLAIM BOUNDARY: This preserves declaration kind; it does not claim complete
+  JavaScript parsing or live worker execution.
+
 ## 2026-07-30 Modern Sandbox file-selection retry
 
 - VERIFIED EXTERNAL: The isolated Sandbox showed exactly one visible member and
