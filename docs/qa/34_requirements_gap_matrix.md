@@ -2,6 +2,17 @@
 
 Date: 2026-06-12
 
+## Current Checkpoint - 2026-07-31
+
+- The active integration branch is `claude/design-reset` at `3e32e66`; the
+  worktree is clean and the latest remote CI run `30559743246` passed.
+- Local preview/edit, import/export, worker preservation, privacy guards, and
+  the resumable Roll20 upload handoff are locally verified.
+- Actual current-payload Roll20 Sandbox activation, screenshot parity, worker/
+  chat evidence, and dedicated legacy-room visual proof remain `VERIFY / OPEN`.
+- The latest Chrome recheck found no accessible Roll20 tabs. No upload, save,
+  room mutation, or public evidence was created.
+
 ## Latest Local Context-Menu Reconciliation: 2026-07-31
 
 - The Figma-like context delete path now removes the selected HTML layer and

@@ -7,6 +7,19 @@ creator names, source URLs, screenshots, private room identifiers, or
 source-derived measurements. Private evidence, when needed, stays in ignored
 local output and is deleted after the verification batch.
 
+## Current Checkpoint - 2026-07-31
+
+- Active branch: `claude/design-reset` at `3e32e66`. The worktree is clean and
+  the branch is pushed to `origin`.
+- Remote CI: run `30559743246` passed safety/unit verification, lint, and build.
+- Latest local upload contract: resumable HTML/CSS/Translation handoff with
+  page-token retry detection; no source payload is stored in public files.
+- External state: no Chrome Roll20 tabs were available at the latest recheck,
+  so no new Sandbox upload, screenshot, room write, or parity evidence exists.
+- User-sheet capture count remains `0`; dedicated legacy-room capture count
+  remains `0`. Historical anonymous synthetic runtime observations are not
+  promoted to current user-sheet parity.
+
 ## Current Evidence
 
 - LOCAL EDIT FIX: context-menu mutations now explicitly publish the model and
@@ -19,7 +32,7 @@ local output and is deleted after the verification batch.
   Pages URL as HTTP 200 and matches the latest successful `main` Pages run at
   `98d4b4965be2` (`30399580622`).
 - DEPLOYMENT BOUNDARY: the current integration branch is
-  `claude/design-reset` at `f7c4dc86963e`; Pages deploys only `main`, so this
+  `claude/design-reset` at `3e32e66`; Pages deploys only `main`, so this
   branch is CI-verified but not publicly deployed.
 
 - LOCAL FIX: `setAttrs(attributes, options)` calls whose options argument is
