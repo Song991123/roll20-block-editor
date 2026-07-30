@@ -9068,6 +9068,25 @@ same-hash modern/legacy comparison.
   no navigation or mutation. External same-hash and pixel evidence remain
   `VERIFY / BLOCKED EXTERNAL`.
 
+## 2026-07-31 - Context-menu subtree deletion and persistent iframe proof
+
+- The HTML layer adapter now uses subtree deletion for the Figma-like delete
+  action. Blockly `dispose(true)` was incorrect here because it heals a
+  statement gap by promoting descendants; `dispose(false)` removes the
+  selected layer and its nested HTML structure together.
+- The duplicate path now removes the cloned block's top-level `<next>` chain
+  before hydration, preventing following siblings from being copied. The
+  delete path preserves a middle layer's next sibling by reconnecting it to
+  the previous block or parent statement input.
+- The persistent preview browser smoke now covers the user-facing sequence
+  `right-click -> duplicate -> select duplicate -> delete`. It verifies the
+  Blockly count, emitted HTML, rendered DOM count, iframe identity, and zero
+  reloads in modern and legacy local compatibility modes.
+- Evidence: `test:blockly-layer-operations`, `lint`, `build`, and
+  `smoke:persistent-preview-surface` passed. This is local renderer/edit
+  evidence only; same-payload Roll20 Sandbox upload and dedicated legacy-room
+  visual evidence remain open.
+
 ## 2026-07-30 - Worker if/else mapping
 
 - Added structured parsing for `else` and `else if` branches. Each branch is

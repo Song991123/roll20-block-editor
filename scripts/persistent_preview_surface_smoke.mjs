@@ -465,6 +465,99 @@ async function runMode(browser, mode) {
           && row.getAttribute('data-r20-layer-selected') === '1');
       return !menu && selected;
     }, result.contextMenu.blockId);
+
+    // Exercise the mutating context actions against the same persistent iframe.
+    // A visible menu alone is insufficient: duplicate/delete must update the
+    // Blockly model, emit cache, and rendered DOM without replacing the iframe.
+    const openContextMenuFor = async (blockId) => {
+      const dispatched = await frame.evaluate((targetBlockId) => {
+        const target = Array.from(document.querySelectorAll('[data-r20-block-id]'))
+          .find((node) => node.getAttribute('data-r20-block-id') === targetBlockId);
+        if (!target) return false;
+        const rect = target.getBoundingClientRect();
+        return !target.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          clientX: rect.left + 12,
+          clientY: rect.top + 12,
+        }));
+      }, blockId);
+      await contextMenu.waitFor({ state: 'visible', timeout: 30000 });
+      return {
+        dispatched,
+        menuBlockId: await contextMenu.getAttribute('data-r20-block-id'),
+      };
+    };
+    result.contextMenu.mutations = {
+      beforeAck: await page.evaluate(() => Number(document
+        .querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked'))),
+      beforeBlockCount: await page.evaluate(() => window.__perfHook.getWorkspace().blockCount.html),
+      beforeCardCount: await frame.locator('.sheet-probe-card').count(),
+    };
+    const duplicateMenu = await openContextMenuFor(result.contextMenu.blockId);
+    await contextMenu.locator('[data-r20-context-action="duplicate"]').click();
+    await page.waitForFunction(
+      ({ beforeAck, beforeBlockCount }) => (
+        Number(document.querySelector('[data-r20-apply-acked]')
+          ?.getAttribute('data-r20-apply-acked')) > beforeAck
+        && window.__perfHook.getWorkspace().blockCount.html > beforeBlockCount
+      ),
+      result.contextMenu.mutations,
+      { timeout: 30000 },
+    );
+    await frame.waitForFunction(
+      () => document.querySelectorAll('.sheet-probe-card').length === 2,
+      null,
+      { timeout: 30000 },
+    );
+    const duplicateId = await page.evaluate(() => (
+      window.__perfHook.getSelectedBlockId?.()
+      ?? document.querySelector('[data-testid="edit-layer-row"][data-r20-layer-selected="1"]')
+        ?.getAttribute('data-r20-block-id')
+      ?? null
+    ));
+    result.contextMenu.mutations.duplicate = {
+      dispatched: duplicateMenu.dispatched,
+      menuBlockId: duplicateMenu.menuBlockId,
+      duplicateId,
+      selected: duplicateId !== null,
+      cardCount: await frame.locator('.sheet-probe-card').count(),
+      blockCount: await page.evaluate(() => window.__perfHook.getWorkspace().blockCount.html),
+      emitted: await page.evaluate((id) => (
+        typeof id === 'string' && window.__perfHook.getEmitContent().html
+          .includes(`data-r20-block-id="${id}"`)
+      ), duplicateId),
+    };
+    if (!duplicateId) throw new Error('context duplicate did not select a new block');
+
+    result.contextMenu.mutations.deleteBeforeAck = await page.evaluate(() => Number(document
+      .querySelector('[data-r20-apply-acked]')
+      ?.getAttribute('data-r20-apply-acked')));
+    const deleteMenu = await openContextMenuFor(duplicateId);
+    await contextMenu.locator('[data-r20-context-action="delete"]').click();
+    await page.waitForFunction(
+      (beforeAck) => Number(document.querySelector('[data-r20-apply-acked]')
+        ?.getAttribute('data-r20-apply-acked')) > beforeAck,
+      result.contextMenu.mutations.deleteBeforeAck,
+      { timeout: 30000 },
+    );
+    await frame.waitForFunction(
+      () => document.querySelectorAll('.sheet-probe-card').length === 1,
+      null,
+      { timeout: 30000 },
+    );
+    result.contextMenu.mutations.delete = {
+      dispatched: deleteMenu.dispatched,
+      menuBlockId: deleteMenu.menuBlockId,
+      cardCount: await frame.locator('.sheet-probe-card').count(),
+      blockCount: await page.evaluate(() => window.__perfHook.getWorkspace().blockCount.html),
+      duplicateAbsent: await page.evaluate((id) => !window.__perfHook.getEmitContent().html
+        .includes(`data-r20-block-id="${id}"`), duplicateId),
+      iframeCount: await page.locator('[data-testid="preview-iframe"]').count(),
+      loadCount: await page.evaluate(() => window.__persistentPreviewLoadCount),
+    };
     const overlaySignature = () => page.evaluate(() => {
       const overlay = document.querySelector('[data-testid="iframe-edit-overlay"]');
       return {
@@ -1223,6 +1316,19 @@ async function runMode(browser, mode) {
       && result.contextMenu.menuBlockId === result.contextMenu.blockId
       && result.contextMenu.insideIframeViewport === true
       && result.contextMenu.inspectActivated === true
+      && result.contextMenu.mutations.duplicate.dispatched === true
+      && result.contextMenu.mutations.duplicate.menuBlockId === result.contextMenu.blockId
+      && result.contextMenu.mutations.duplicate.selected === true
+      && result.contextMenu.mutations.duplicate.cardCount === 2
+      && result.contextMenu.mutations.duplicate.blockCount > result.contextMenu.mutations.beforeBlockCount
+      && result.contextMenu.mutations.duplicate.emitted === true
+      && result.contextMenu.mutations.delete.dispatched === true
+      && result.contextMenu.mutations.delete.menuBlockId === result.contextMenu.mutations.duplicate.duplicateId
+      && result.contextMenu.mutations.delete.cardCount === 1
+      && result.contextMenu.mutations.delete.blockCount === result.contextMenu.mutations.beforeBlockCount
+      && result.contextMenu.mutations.delete.duplicateAbsent === true
+      && result.contextMenu.mutations.delete.iframeCount === 1
+      && result.contextMenu.mutations.delete.loadCount === 0
       && result.staleBridgeRejected === true
       && result.bridgeDispatch.dispatched === true
       && result.bridgeDispatch.defaultPrevented === true

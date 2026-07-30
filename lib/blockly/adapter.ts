@@ -135,8 +135,8 @@ export interface BlocklyAdapter {
     },
   ): Promise<void>;
   /**
-   * Phase E WYSIWYG context menu — 블록 삭제. dispose(healStack=true).
-   * 블록이 없으면 false.
+   * Phase E WYSIWYG context menu — 선택 레이어와 하위 구조 삭제.
+   * 같은 flow의 다음 형제는 보존하고, 블록이 없으면 false.
    */
   deleteBlock(key: WorkspaceKey, blockId: string): boolean;
   /**
@@ -568,13 +568,40 @@ class DefaultAdapter implements BlocklyAdapter {
     }
   }
 
-  /** Phase E — block dispose(true). */
+  /** Phase E — delete the selected layer and its nested HTML structure. */
   deleteBlock(key: WorkspaceKey, blockId: string): boolean {
     const ws = this.workspaces[key];
     const b = ws?.getBlockById(blockId);
     if (!b) return false;
     try {
-      b.dispose(true);
+      // `true` heals a statement gap by promoting the selected block's
+      // children/successors. That is useful for Blockly statement editing,
+      // but wrong for a Figma-like layer delete: a deleted frame must not
+      // leave its descendants as new root layers.
+      // Detach the next sibling first so deleting a middle layer does not
+      // consume the rest of its parent's flow chain. Reconnect that sibling
+      // to the previous block or the original statement input afterward.
+      const nextCandidate = b.nextConnection?.targetBlock() ?? null;
+      const next = nextCandidate
+        && nextCandidate.previousConnection?.targetConnection === b.nextConnection
+        ? nextCandidate
+        : null;
+      const previousConnection = b.previousConnection?.targetConnection ?? null;
+      const previousSource = previousConnection?.getSourceBlock?.() ?? null;
+      const previous = previousSource
+        && previousSource.nextConnection === previousConnection
+        ? previousSource
+        : null;
+      const parentStatementConnection = !previous ? previousConnection : null;
+      next?.previousConnection?.disconnect();
+      b.dispose(false);
+      if (next) {
+        if (previous?.nextConnection && !previous.nextConnection.isConnected()) {
+          previous.nextConnection.connect(next.previousConnection!);
+        } else if (parentStatementConnection && !parentStatementConnection.isConnected()) {
+          parentStatementConnection.connect(next.previousConnection!);
+        }
+      }
       return true;
     } catch {
       return false;
@@ -588,6 +615,11 @@ class DefaultAdapter implements BlocklyAdapter {
     if (!ws || !b) return null;
     try {
       const dom = Blockly.Xml.blockToDom(b, true) as Element;
+      // blockToDom includes the following statement chain. A layer duplicate
+      // must copy the selected block and its nested inputs, not its siblings.
+      const nextNode = Array.from(dom.children)
+        .find((child) => child.tagName.toLowerCase() === 'next');
+      nextNode?.remove();
       // domToBlock 은 Blockly 12 의 단일 블록 hydrate API.
       const newBlock = Blockly.Xml.domToBlock(dom, ws);
       const xy = b.getRelativeToSurfaceXY();

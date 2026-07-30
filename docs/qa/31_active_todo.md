@@ -1,3 +1,22 @@
+## 2026-07-31 Context-menu subtree deletion and sync
+
+- `DONE LOCAL`: Figma-like layer deletion now removes the selected HTML block
+  together with its nested statement subtree. The previous `dispose(true)`
+  healed the Blockly statement gap by promoting descendants into new root
+  layers, which left duplicate rendered nodes after a duplicate/delete cycle.
+- `DONE LOCAL`: Layer duplication now strips only the top-level `<next>` chain
+  from Blockly XML, so following siblings are not copied. Deleting a middle
+  flow layer reconnects the next sibling instead of consuming or promoting it.
+- `DONE LOCAL`: Persistent preview smoke now exercises `duplicate` and
+  `delete` through the iframe context menu in both modern and legacy local
+  contracts. It checks model block count, selected duplicate, emitted HTML,
+  rendered card count, iframe identity, and reload count.
+- `VERIFIED LOCAL`: layer-operation unit test, lint, production build, and
+  `smoke:persistent-preview-surface` pass for modern and legacy (`loads=0`).
+- `VERIFY / OPEN`: This closes a local edit-surface regression only. It does
+  not prove current-payload Roll20 Sandbox binding, screenshot parity, or the
+  dedicated legacy-room gate.
+
 ## 2026-07-31 Edit surface context actions
 
 - `DONE LOCAL`: context-menu delete, duplicate, move-up, and move-down now

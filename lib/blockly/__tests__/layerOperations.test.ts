@@ -99,4 +99,68 @@ try {
   nestWorkspace.dispose();
 }
 
+const deleteWorkspace = new Blockly.Workspace();
+const deleteRoot = deleteWorkspace.newBlock('r20_test_container');
+const deleteFrame = deleteWorkspace.newBlock('r20_test_container');
+const deleteChild = deleteWorkspace.newBlock('r20_test_leaf');
+const deleteFollowing = deleteWorkspace.newBlock('r20_test_leaf');
+deleteRoot.getInput('BODY')!.connection!.connect(deleteFrame.previousConnection!);
+deleteFrame.getInput('BODY')!.connection!.connect(deleteChild.previousConnection!);
+deleteChild.nextConnection!.connect(deleteFollowing.previousConnection!);
+
+adapter.registerWorkspace('html', deleteWorkspace as unknown as Blockly.WorkspaceSvg);
+try {
+  // Layer deletion removes the selected frame and its complete nested
+  // subtree; it must not promote the frame's descendants to new root layers.
+  assert.equal(adapter.deleteBlock('html', deleteFrame.id), true);
+  assert.equal(deleteWorkspace.getBlockById(deleteFrame.id), null);
+  assert.equal(deleteWorkspace.getBlockById(deleteChild.id), null);
+  assert.equal(deleteWorkspace.getBlockById(deleteFollowing.id), null);
+  assert.equal(deleteRoot.getInput('BODY')!.connection!.targetBlock(), null);
+  assert.deepEqual(adapter.listAllBlocks('html').map((layer) => layer.id), [deleteRoot.id]);
+} finally {
+  adapter.unregisterWorkspace('html');
+  deleteWorkspace.dispose();
+}
+
+const siblingDeleteWorkspace = new Blockly.Workspace();
+const siblingDeleteRoot = siblingDeleteWorkspace.newBlock('r20_test_container');
+const siblingDeleteFirst = siblingDeleteWorkspace.newBlock('r20_test_leaf');
+const siblingDeleteMiddle = siblingDeleteWorkspace.newBlock('r20_test_leaf');
+const siblingDeleteLast = siblingDeleteWorkspace.newBlock('r20_test_leaf');
+siblingDeleteRoot.getInput('BODY')!.connection!.connect(siblingDeleteFirst.previousConnection!);
+siblingDeleteFirst.nextConnection!.connect(siblingDeleteMiddle.previousConnection!);
+siblingDeleteMiddle.nextConnection!.connect(siblingDeleteLast.previousConnection!);
+
+adapter.registerWorkspace('html', siblingDeleteWorkspace as unknown as Blockly.WorkspaceSvg);
+try {
+  assert.equal(adapter.deleteBlock('html', siblingDeleteMiddle.id), true);
+  assert.equal(siblingDeleteWorkspace.getBlockById(siblingDeleteMiddle.id), null);
+  assert.equal(siblingDeleteRoot.getInput('BODY')!.connection!.targetBlock()?.id, siblingDeleteFirst.id);
+  assert.equal(siblingDeleteFirst.nextConnection!.targetBlock()?.id, siblingDeleteLast.id);
+  assert.equal(siblingDeleteLast.getPreviousBlock()?.id, siblingDeleteFirst.id);
+} finally {
+  adapter.unregisterWorkspace('html');
+  siblingDeleteWorkspace.dispose();
+}
+
+const duplicateWorkspace = new Blockly.Workspace();
+const duplicateSource = duplicateWorkspace.newBlock('r20_test_leaf');
+const duplicateFollowing = duplicateWorkspace.newBlock('r20_test_leaf');
+duplicateSource.nextConnection!.connect(duplicateFollowing.previousConnection!);
+
+adapter.registerWorkspace('html', duplicateWorkspace as unknown as Blockly.WorkspaceSvg);
+try {
+  const duplicateId = adapter.duplicateBlock('html', duplicateSource.id);
+  assert.ok(duplicateId);
+  const duplicate = duplicateWorkspace.getBlockById(duplicateId!);
+  assert.ok(duplicate);
+  assert.equal(duplicate!.getNextBlock(), null);
+  assert.equal(duplicateSource.getNextBlock()?.id, duplicateFollowing.id);
+  assert.equal(duplicateWorkspace.getAllBlocks(false).length, 3);
+} finally {
+  adapter.unregisterWorkspace('html');
+  duplicateWorkspace.dispose();
+}
+
 console.log('blockly layer operations test PASS');

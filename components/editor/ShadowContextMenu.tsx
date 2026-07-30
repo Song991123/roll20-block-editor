@@ -11,8 +11,8 @@
  *
  * 항목 5개 (spec 17 Phase E 결정):
  *   - 속성 (inspect)  — Inspector 활성 + selectedBlockId 갱신
- *   - 삭제 (delete)   — adapter.deleteBlock
- *   - 복사 (duplicate)— adapter.duplicateBlock
+ *   - 삭제 (delete)   — adapter.deleteBlock (하위 구조 포함)
+ *   - 복사 (duplicate)— adapter.duplicateBlock (다음 형제 제외)
  *   - 위로 이동       — adapter.moveBlockUp (없으면 toast)
  *   - 아래로 이동     — adapter.moveBlockDown (없으면 toast)
  *

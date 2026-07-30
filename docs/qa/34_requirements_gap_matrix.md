@@ -2,6 +2,20 @@
 
 Date: 2026-06-12
 
+## Latest Local Context-Menu Reconciliation: 2026-07-31
+
+- The Figma-like context delete path now removes the selected HTML layer and
+  its nested subtree instead of promoting descendants to the root. This fixes
+  a local duplicate/delete regression in the shared iframe surface.
+- The duplicate path excludes the selected block's following statement chain,
+  and middle-layer deletion preserves the next sibling in the same flow.
+- VERIFIED LOCAL: persistent preview smoke exercises duplicate and delete in
+  modern and legacy compatibility modes with the same iframe, emitted HTML,
+  model count, and zero reloads.
+- BOUNDARY: This remains local edit-surface evidence. It does not close the
+  current-payload Roll20 Sandbox upload, screenshot parity, worker/chat
+  runtime parity, or dedicated legacy-room verification.
+
 ## Latest Local Edit Affordance Reconciliation: 2026-07-30
 
 - The parent-owned iframe overlay now distinguishes exact `before`, `inside`,
