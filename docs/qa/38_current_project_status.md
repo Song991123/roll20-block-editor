@@ -9,6 +9,8 @@ local output and is deleted after the verification batch.
 
 ## Current Evidence
 
+- LOCAL PASS: The latest full `ci:verify`, persistent-preview, fresh-sheet,
+  and edit-flow browser gates pass with no project/CDP listener left behind.
 - LOCAL PASS: Anonymous synthetic preview/edit rendering is exact in both
   modern and legacy local contracts for the current regression fixture.
 - LOCAL PASS: The pre-upload gate passed local baseline generation, payload

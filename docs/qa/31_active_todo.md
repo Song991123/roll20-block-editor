@@ -1,3 +1,19 @@
+## 2026-07-30 Local render/edit gate refresh
+
+- DONE LOCAL: `ci:verify` passed all unit, safety, import, legacy-sanitize,
+  worker/chat-boundary, visual-synthetic, and evidence-guard checks.
+- VERIFIED BROWSER: `smoke:persistent-preview-surface` passed modern and
+  legacy modes; `smoke:fresh-sheet` and `smoke:edit-flow` passed. The edit
+  surface still uses one persistent iframe and layer/gallery flow/free drops
+  remain synchronized with model and emitted HTML.
+- VERIFIED HYGIENE: no project or CDP listener remains after the run.
+- BLOCKED EXTERNAL: Chrome tab control timed out while claiming the existing
+  Roll20 Sandbox tab. No Sandbox upload, room write, screenshot, or parity
+  comparison occurred.
+- NEXT P0: Recover a supported user-assisted Sandbox file chooser, capture
+  visible sheet-root/state/input/roll/chat evidence, then verify legacy in a
+  separate dedicated test room with a fresh solo-participant preflight.
+
 ## 2026-07-30 Layer-panel drop onto the persistent iframe
 
 - DONE LOCAL: Added a typed `r20:layer-drag` bridge so a layer row dragged

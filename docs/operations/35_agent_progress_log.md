@@ -1,3 +1,18 @@
+## 2026-07-30 - Local render/edit gate refresh
+
+- VERIFIED LOCAL: `ci:verify` passed the full current safety, import,
+  Roll20-contract, legacy-sanitize, worker/chat, visual-synthetic, and
+  evidence-guard suite.
+- VERIFIED BROWSER: persistent preview surface passed modern and legacy,
+  fresh-sheet smoke passed, and edit-flow smoke passed for flow/free canvas,
+  gallery, layer-panel, selection, width, and synchronization checks.
+- VERIFIED HYGIENE: project and CDP listeners were clear after the run.
+- BLOCKED_EXTERNAL: the existing authenticated Roll20 Sandbox tab was still
+  visible in Chrome, but tab claiming timed out and reset the browser kernel.
+  No external upload or room mutation occurred, and no parity claim is made.
+- NEXT: resume only with a supported visible chooser/user-assisted upload;
+  keep the legacy test-room check separate and participant-gated.
+
 ## 2026-07-30 - Layer-panel drop onto the persistent iframe
 
 - FIXED LOCAL: Layer rows now publish `r20:layer-drag` from the panel into the
