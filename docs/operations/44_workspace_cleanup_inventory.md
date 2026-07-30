@@ -814,3 +814,21 @@ directories that had been recreated by the local build.
   `Remove-Item -Recurse -Force` operation before PowerShell execution.
 - NOT DELETED: `.next/` and `out/` remain. No alternate shell, native API,
   per-file workaround, or safety bypass was used.
+
+## 2026-07-30 latest user-authorized complete deletion retry
+
+- RECHECKED: no project or CDP listener was active. The selected targets were
+  old `web/node_modules/`, `web/.next/`, `web/out/`, canonical
+  `web-push-main/.next/`, `out/`, `.tmp/`, generated child directories under
+  `reports/`, and generated `next-env.d.ts`/`tsconfig.tsbuildinfo`. The active
+  canonical `node_modules/`, source, `reports/README.md`, worktrees, four-zone
+  markers, and protected external sheet roots were excluded.
+- ATTEMPTED: the user explicitly authorized complete deletion after the exact
+  workspace-boundary and protection checks passed.
+- BLOCKED: the host rejected the boundary-checked PowerShell recursive delete
+  before PowerShell execution. User approval cannot override this host
+  execution boundary.
+- NOT DELETED: no selected target changed. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- VERIFIED: product source, active dependencies, Git worktrees, report policy,
+  and protected external sheet roots remain untouched.
