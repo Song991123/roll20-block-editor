@@ -244,6 +244,26 @@ directories that had been recreated by the local build.
 - PRESERVED: source roots, active dependencies, local fixtures, canonical
   reports, and both Git worktrees.
 
+## 2026-07-30 user-authorized complete-deletion retry (latest)
+
+- RECHECKED: `web/.next/`, `web/out/`, `web/node_modules/`,
+  `web-push-main/.next/`, and `web-push-main/out/` are workspace-local,
+  ignored, reproducible generated/dependency targets. The active
+  `web-push-main/node_modules/`, protected external sources, source files,
+  fixtures, and canonical reports were excluded.
+- RECHECKED: no project listener is active; the remaining `node` process is
+  the Figma MCP helper, not a project server.
+- NOT DELETED: the host rejected the exact boundary-checked recursive
+  PowerShell operation before execution. No alternate shell, native API,
+  per-file workaround, or safety bypass was used.
+- WORKTREE METADATA: Git's official prune removed the stale worktree
+  registrations for `web-claude-legacy` and `web-sfx-wt`; their empty stale
+  administrative directories remain because the host denied metadata-folder
+  deletion.
+- VERIFIED: the five generated targets remain present and the active product
+  worktree, protected roots, source, dependencies, and reports were not
+  changed.
+
 ## 2026-07-30 post-Sandbox-baseline cleanup completion
 
 - DELETED: the `.next/` and `out/` directories recreated for the anonymous

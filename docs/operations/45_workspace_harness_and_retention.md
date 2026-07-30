@@ -337,3 +337,18 @@ external material remain preserved.
   API, or safety bypass was used.
 - VERIFIED: the archive directory and all 43 files remain intact. No product
   source, worktree, report, protected source, or user-authored file changed.
+
+## 2026-07-30 latest generated-output deletion retry
+
+- The user authorized another complete deletion attempt for the exact
+  generated targets listed in the cleanup inventory.
+- The host rejected the boundary-checked recursive PowerShell deletion before
+  execution. This was not bypassed with another shell, a native API, or a
+  per-file workaround.
+- Git's official `worktree prune` removed the stale registrations for the
+  absent `web-claude-legacy` and `web-sfx-wt` worktrees. Empty administrative
+  metadata directories remain because direct metadata deletion was denied.
+- Current residual generated targets are still `web/.next/`, `web/out/`,
+  `web/node_modules/`, `web-push-main/.next/`, and `web-push-main/out/`.
+  The active product dependency tree `web-push-main/node_modules/` remains
+  intentionally preserved.
