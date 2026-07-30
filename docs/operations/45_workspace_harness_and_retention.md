@@ -489,3 +489,13 @@ external material remain preserved.
 - VERIFIED: source, dependencies, worktrees, protected external sources,
   fixtures, and canonical reports remain intact; the two build-output paths
   are absent and server hygiene remains clear.
+
+## 2026-07-31 post-fixture regression cleanup
+
+- RECHECKED: fixture-B build and preview/edit smoke recreated only the ignored
+  `.next/` and `out/` directories in the active worktree.
+- DELETED: both exact generated directories were removed after `ci:verify`,
+  lint, and modern/legacy fixture-A/fixture-B visual smoke passed.
+- VERIFIED: source, dependencies, protected roots, worktrees, fixtures,
+  canonical reports, and four-zone markers remain preserved; server hygiene is
+  clear.

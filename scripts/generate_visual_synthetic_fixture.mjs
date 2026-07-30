@@ -36,6 +36,47 @@ const files = {
     synthetic: true,
     legacyMode: 'modern',
   }),
+  'fixture-B/source.html': [
+    '<div class="sheet-layout-proof" style="width:760px;min-height:320px;padding:16px">',
+    '  <div class="sheet-2colrow">',
+    '    <div class="sheet-col">',
+    '      <label data-i18n="name"></label>',
+    '      <input type="text" name="attr_name" value="">',
+    '      <textarea name="attr_notes" rows="3"></textarea>',
+    '    </div>',
+    '    <div class="sheet-col">',
+    '      <label data-i18n="role"></label>',
+    '      <select name="attr_role"><option value="one">One</option><option value="two">Two</option></select>',
+    '      <table class="sheet-layout-table">',
+    '        <thead><tr><th data-i18n="score"></th><th data-i18n="state"></th></tr></thead>',
+    '        <tbody><tr><td><input type="number" name="attr_score" value="0"></td><td data-i18n="ready"></td></tr></tbody>',
+    '      </table>',
+    '    </div>',
+    '  </div>',
+    '</div>',
+  ].join('\n'),
+  'fixture-B/source.css': [
+    '.sheet-layout-proof { background: #fffafc; border: 2px solid #d96b91; box-sizing: border-box; color: #3b2730; }',
+    '.sheet-layout-proof .sheet-2colrow { display: flex; gap: 16px; align-items: flex-start; }',
+    '.sheet-layout-proof .sheet-col { flex: 1 1 0; min-width: 0; }',
+    '.sheet-layout-proof label { display: block; font-weight: 700; margin-bottom: 6px; }',
+    '.sheet-layout-proof textarea, .sheet-layout-proof select { display: block; margin-top: 8px; }',
+    '.sheet-layout-proof table { width: 100%; margin-top: 14px; border-collapse: collapse; }',
+    '.sheet-layout-proof th, .sheet-layout-proof td { border: 1px solid #e7b5c6; padding: 4px; }',
+  ].join('\n'),
+  'fixture-B/source.i18n': JSON.stringify({
+    name: 'Name',
+    role: 'Role',
+    score: 'Score',
+    state: 'State',
+    ready: 'Ready',
+  }),
+  'fixture-B/manifest.json': JSON.stringify({
+    id: 'fixture-B',
+    synthetic: true,
+    legacyMode: 'modern',
+    purpose: 'generic layout/control regression',
+  }),
 };
 
 async function main() {
@@ -55,6 +96,18 @@ async function main() {
     if (JSON.parse(files['fixture-A/manifest.json']).synthetic !== true) {
       throw new Error('synthetic manifest marker missing');
     }
+    if (!files['fixture-B/source.html'].includes('sheet-2colrow')) {
+      throw new Error('layout fixture row marker missing');
+    }
+    if (!files['fixture-B/source.html'].includes('<table')) {
+      throw new Error('layout fixture table marker missing');
+    }
+    if (!files['fixture-B/source.html'].includes('textarea')) {
+      throw new Error('layout fixture textarea marker missing');
+    }
+    if (JSON.parse(files['fixture-B/source.i18n']).ready !== 'Ready') {
+      throw new Error('layout fixture translation marker missing');
+    }
     console.log('VISUAL SYNTHETIC FIXTURE SELF-TEST PASS');
     return;
   }
@@ -66,7 +119,7 @@ async function main() {
   }
   await writeFile(
     path.join(outDir, 'synthetic-meta.json'),
-    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A'], files: Object.keys(files) }, null, 2)}\n`,
+    `${JSON.stringify({ synthetic: true, fixtureIds: ['fixture-A', 'fixture-B'], files: Object.keys(files) }, null, 2)}\n`,
     'utf8',
   );
   console.log(`VISUAL SYNTHETIC FIXTURE GENERATED ${outDir}`);

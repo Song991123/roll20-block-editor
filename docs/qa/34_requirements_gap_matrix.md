@@ -4,6 +4,16 @@ Date: 2026-07-31
 
 ## Latest Wrapper Geometry Reconciliation - 2026-07-31
 
+## Latest Generic Layout Regression - 2026-07-31
+
+- VERIFIED LOCAL: Synthetic fixture-B covers 2-column/column containers,
+  table structure, input, textarea, select, option, CSS, and five i18n keys.
+  It imported `24` HTML blocks with zero warnings.
+- VERIFIED LOCAL: Modern and legacy preview/edit runs both report geometry
+  parity `true`, exact pixel parity (`0%` mismatch), and i18n `5/5`.
+- NOT PROVEN: live Roll20 computed-style or screenshot parity for those layout
+  families; the actual current Legacy payload still has no such nodes.
+
 - VERIFIED EXTERNAL: The dedicated Legacy verification tab measured a
   `1495 x 582` page viewport at DPR `1.25`, a `900 x 283.55` sheet iframe,
   and a `420 x 180` visible sheet crop. The wrapper evidence is anonymous and

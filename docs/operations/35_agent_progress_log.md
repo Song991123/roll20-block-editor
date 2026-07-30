@@ -1,5 +1,17 @@
 ## 2026-07-31 - Wrapper geometry and capture-format reconciliation
 
+## 2026-07-31 - Generic layout fixture expansion
+
+- Added copyright-safe synthetic fixture-B with 2-column/column containers,
+  table descendants, input, textarea, select, option, authored CSS, and five
+  translations. It contains no third-party sheet identity or asset.
+- Local import produced `24` HTML blocks with zero warnings. Modern and legacy
+  preview/edit smoke both passed with geometry parity `true`, exact pixel
+  mismatch `0%`, and i18n `5/5`.
+- Claim boundary: this is a local mapping/render regression gate. It does not
+  substitute for applying the same anonymous payload to the dedicated Roll20
+  Sandbox/Legacy destinations and collecting live wrapper/computed-style data.
+
 - Read the current dedicated Legacy verification tab without changing room
   settings. The anonymous page viewport measured `1495 x 582` at DPR `1.25`,
   the sheet iframe measured `900 x 283.55`, and the visible sheet crop measured

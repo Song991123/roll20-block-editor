@@ -1,5 +1,19 @@
 ## 2026-07-31 Wrapper geometry and capture-format reconciliation
 
+## 2026-07-31 Generic layout fixture expansion
+
+- VERIFIED LOCAL: Added a copyright-safe synthetic `fixture-B` containing
+  `.sheet-2colrow`, `.sheet-col`, table/thead/tbody/tr/th/td, input, textarea,
+  select, option, CSS, and five translation keys.
+- VERIFIED LOCAL: fixture-B imported `24` HTML blocks with zero warnings. Both
+  modern and legacy preview/edit runs retained the expected tag families,
+  reported geometry parity `true`, preview/edit pixel mismatch `0%`, and
+  translation match `5/5`.
+- CLAIM BOUNDARY: This expands the local generic regression surface only. It
+  does not prove that the same layout families match a live Roll20 frame until
+  an anonymous generic payload is applied in the dedicated Sandbox/Legacy test
+  destination and its wrapper/computed-style sidecar is captured.
+
 - VERIFIED EXTERNAL: The dedicated Legacy tab's current page viewport measured
   `1495 x 582` CSS px at DPR `1.25`; the sheet iframe measured `900 x 283.55`.
   The sheet crop was `420 x 180` at the observed viewport scale. Evidence is

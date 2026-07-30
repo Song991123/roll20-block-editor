@@ -1021,3 +1021,12 @@ directories that had been recreated by the local build.
 - VERIFIED: the active worktree source and `node_modules` remain present; the
   two build-output paths are absent and server hygiene still reports no
   project or CDP listener.
+
+## 2026-07-31 post-fixture regression cleanup
+
+- RECHECKED: the fixture-B build and preview/edit smoke recreated only the
+  ignored `web-push-main/.next/` and `web-push-main/out/` directories.
+- DELETED: both exact generated directories were removed after `ci:verify`,
+  lint, and the fixture-A/fixture-B preview-edit smoke passed.
+- VERIFIED: active source, dependencies, worktrees, protected external roots,
+  and local report policy remain intact; no project or CDP listener remains.

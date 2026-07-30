@@ -9,6 +9,17 @@ local output and is deleted after the verification batch.
 
 ## Latest Wrapper Geometry Reconciliation - 2026-07-31
 
+## Latest Generic Layout Regression - 2026-07-31
+
+- VERIFIED LOCAL: Added anonymous synthetic fixture-B with 2-column/column
+  containers, table structure, input, textarea, select, option, authored CSS,
+  and five translations. Import produced `24` HTML blocks and zero warnings.
+- VERIFIED LOCAL: Modern and legacy preview/edit visual smoke both report
+  `0%` pixel mismatch, geometry parity `true`, and i18n `5/5`.
+- OPEN: This is local generic coverage only. Live Roll20 layout-family
+  computed-style and screenshot parity still needs a dedicated generic payload
+  capture.
+
 - VERIFIED EXTERNAL: The dedicated Legacy verification tab measured a
   `1495 x 582` page viewport at DPR `1.25`, a `900 x 283.55` iframe, and a
   `420 x 180` sheet crop. The saved geometry sidecar is anonymous and ignored.
