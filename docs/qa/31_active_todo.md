@@ -7224,10 +7224,19 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 ## 2026-07-30 Archive deletion retry
 
 - `VERIFY / BLOCKED_BY_HOST_POLICY`: The exact archive target was rechecked as
-  43 files / 6,324,287 bytes within `03_ARCHIVE/legacy-single-file`, but the
-  host rejected the authorized recursive deletion before execution. The
-  target remains intact; no unsafe workaround was used.
+  43 files / 6,324,287 bytes within `03_ARCHIVE/legacy-single-file`. Both a
+  recursive deletion and an individually scoped removal attempt were rejected
+  by the host before execution. The target remains intact; no unsafe workaround
+  was used.
 - `VERIFY / OPEN`: Ignored `.next/out` and smoke/audit reports from this final
   verification run could not be removed for the same host policy. They are not
   tracked or included in the commit; the anonymous synthetic payload remains
   the only retained local fixture.
+
+## 2026-07-30 Structural contract map correction
+
+- `DONE LOCAL`: Updated `scripts/structural_verify.mjs` for the existing
+  `CLASS` contract on hidden inputs and table head/body/row/header/data cells.
+- `VERIFY / OPEN`: The change removes stale audit false positives only. It is
+  not evidence of universal import fidelity or actual modern/legacy Roll20
+  parity.

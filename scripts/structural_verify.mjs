@@ -481,7 +481,7 @@ const ATTR_FIELD_MAP = {
   r20_number_input: { name: 'NAME', class: 'CLASS', value: 'DEFAULT', min: 'MIN', max: 'MAX', type: '@implicit', style: 'STYLE' },
   r20_checkbox: { name: 'NAME', class: 'CLASS', value: 'VALUE', type: '@implicit', checked: '@implicit', style: 'STYLE' },
   r20_radio: { name: 'NAME', class: 'CLASS', value: 'VALUE', type: '@implicit', style: 'STYLE' },
-  r20_hidden_input: { name: 'NAME', value: 'DEFAULT', type: '@implicit', style: 'STYLE' },
+  r20_hidden_input: { name: 'NAME', class: 'CLASS', value: 'DEFAULT', type: '@implicit', style: 'STYLE' },
   r20_file_input: { name: 'NAME', class: 'CLASS', accept: 'ACCEPT', type: '@implicit', style: 'STYLE' },
   r20_i18n_placeholder: { 'data-i18n-placeholder': 'KEY', name: 'NAME', class: 'CLASS', type: 'TYPE', value: 'DEFAULT', accept: 'ACCEPT', min: 'MIN', max: 'MAX', style: 'STYLE' },
   r20_select: { name: 'NAME', class: 'CLASS', style: 'STYLE' },
@@ -523,11 +523,11 @@ const ATTR_FIELD_MAP = {
   r20_div: { class: 'CLASS', style: 'STYLE' },
   r20_span: { class: 'CLASS', style: 'STYLE' },
   r20_table: { class: 'CLASS', style: 'STYLE' },
-  r20_thead: { style: 'STYLE' },
-  r20_tbody: { style: 'STYLE' },
-  r20_tr: { style: 'STYLE' },
-  r20_th: { style: 'STYLE' },
-  r20_td: { style: 'STYLE' },
+  r20_thead: { class: 'CLASS', style: 'STYLE' },
+  r20_tbody: { class: 'CLASS', style: 'STYLE' },
+  r20_tr: { class: 'CLASS', style: 'STYLE' },
+  r20_th: { class: 'CLASS', style: 'STYLE' },
+  r20_td: { class: 'CLASS', style: 'STYLE' },
 };
 
 // 카테고리별 attribute 손실. PER_ATTR_NEVER_KEPT = block 의 field set 에 절대 없는 attr.
