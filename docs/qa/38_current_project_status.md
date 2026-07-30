@@ -524,3 +524,12 @@ without copying them into the repository and reports them only as
 contracts with exact shared-crop preview/edit parity and translation checks.
 This is local evidence for one input only; actual Roll20 Sandbox activation,
 legacy-room behavior, and universal source coverage remain open.
+
+## Protected local-input Sandbox approximation recheck - 2026-07-31
+
+The same protected local input passed the local normal-to-Sandbox-sanitized
+render transition with no visible runtime nodes or browser/page errors. The
+smoke gate now treats worker scripts as inert runtime data and checks actual
+visibility instead of failing on their DOM presence. This remains local
+sanitizer evidence; actual Roll20 Sandbox activation, screenshot parity, and
+legacy-room behavior remain open.

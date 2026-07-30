@@ -8674,3 +8674,17 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
   behavior, or universal source coverage.
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
+
+## 2026-07-31 Protected local-input Sandbox approximation recheck
+
+- `VERIFIED LOCAL`: the Sandbox-approximation browser smoke accepts the same
+  protected local HTML/CSS/i18n input read-only and passed its normal-to-
+  sanitized render transition with zero visible runtime nodes and no console
+  or page errors.
+- `FIXED TEST`: worker script presence is no longer treated as visual leakage;
+  the gate now checks actual rendered visibility while preserving the inert
+  worker boundary needed by the local runtime.
+- `VERIFY / OPEN`: this is local sanitizer evidence only. It does not prove
+  actual Roll20 Sandbox activation, screenshot parity, or legacy-room behavior.
+- `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
+  bind the same payload before collecting modern and legacy evidence.

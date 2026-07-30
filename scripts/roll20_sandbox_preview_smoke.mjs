@@ -6,6 +6,10 @@
  * This does not prove actual Roll20 visual parity. It proves the local preview
  * can show the same sanitizer approximation already used by the pre-upload
  * audit and export diagnostics after a real fixture import path.
+ *
+ * A protected source can be measured read-only by setting
+ * R20_SANDBOX_SMOKE_HTML_PATH and optionally the CSS and i18n path variables.
+ * The generated local evidence uses the anonymous `local-input` identity.
  */
 
 import http from 'node:http';
@@ -85,6 +89,19 @@ async function loadFixture(id) {
 }
 
 async function loadFixtures() {
+  const localHtmlPath = process.env.R20_SANDBOX_SMOKE_HTML_PATH;
+  if (localHtmlPath) {
+    const html = await readMaybe(localHtmlPath);
+    if (!html.trim()) {
+      throw new Error('R20_SANDBOX_SMOKE_HTML_PATH did not contain readable HTML');
+    }
+    return [{
+      id: 'local-input',
+      html,
+      css: await readMaybe(process.env.R20_SANDBOX_SMOKE_CSS_PATH),
+      i18n: await readMaybe(process.env.R20_SANDBOX_SMOKE_I18N_PATH),
+    }];
+  }
   if (FIXTURE_ID) return [await loadFixture(FIXTURE_ID)];
   const entries = await fs.readdir(FIXTURES_DIR, { withFileTypes: true });
   const ids = entries
@@ -160,6 +177,15 @@ async function summarizePreview(page) {
           colgroupCount: root?.querySelectorAll('colgroup, col').length ?? 0,
           rolltemplateCount: root?.querySelectorAll('rolltemplate').length ?? 0,
           sourceWorkerScriptCount: root?.querySelectorAll('script[type="text/worker"]').length ?? 0,
+          visibleRuntimeNodeCount: Array.from(root?.querySelectorAll('script, rolltemplate') ?? [])
+            .filter((el) => {
+              const style = getComputedStyle(el);
+              const rect = el.getBoundingClientRect();
+              return style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && rect.width > 0
+                && rect.height > 0;
+            }).length,
           unprefixedClassSample: Array.from(root?.querySelectorAll('[class]') ?? [])
             .flatMap((el) => Array.from(el.classList))
             .filter((token) =>
@@ -221,8 +247,8 @@ async function validateFixture(page, fixture) {
   if (checks.sandboxPreview.colgroupCount > checks.normalPreview.colgroupCount) {
     failures.push('sandbox preview increased stripped table structure count');
   }
-  if (checks.sandboxPreview.sourceWorkerScriptCount > 0) {
-    failures.push('sandbox preview still has visible source worker scripts in the sheet root');
+  if (checks.sandboxPreview.visibleRuntimeNodeCount > 0) {
+    failures.push('sandbox preview still has visible runtime nodes in the sheet root');
   }
   if (checks.sandboxPreview.rolltemplateCount > 0) {
     failures.push('sandbox preview still has rolltemplates in the sheet root');

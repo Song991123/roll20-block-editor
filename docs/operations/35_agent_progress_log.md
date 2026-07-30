@@ -9354,3 +9354,13 @@ same-hash modern/legacy comparison.
 - This remains local evidence for one protected input. It does not replace
   actual Roll20 Sandbox activation, screenshot comparison, or legacy-room
   behavior proof.
+
+## 2026-07-31 - Protected local-input Sandbox approximation recheck
+
+- The local Sandbox-approximation smoke passed the protected input through the
+  normal and sanitized render paths with zero visible runtime nodes and no
+  console or page errors.
+- The smoke gate was corrected to distinguish an inert worker script retained
+  for local runtime emulation from an actually rendered runtime node.
+- This remains local sanitizer evidence only and does not prove actual Roll20
+  Sandbox activation, screenshot parity, or legacy-room behavior.
