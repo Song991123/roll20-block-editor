@@ -9095,3 +9095,18 @@ same-hash modern/legacy comparison.
 - No file was attached and no external side effect was attempted. The legacy
   tab was not promoted to fresh evidence after the browser connection timed
   out. Actual modern/legacy same-payload parity remains blocked external.
+
+## 2026-07-30 - Modern Sandbox rendered-state observation
+
+- The dedicated modern Sandbox visibly contained the anonymous proof marker in
+  a Roll20 character iframe. Snapshot evidence showed the tab links, `Name`
+  textbox, and Roll control; the iframe measured `900 x 432.6875` CSS pixels
+  in a `1536 x 729` viewport.
+- One Roll click produced a fresh `Sandbox proof / Result 3` chat result with
+  the default Roll20 template appearance.
+- The file inputs still read empty, so the visible state is recorded as an
+  external rendered observation only, not as same-hash proof for the current
+  local files. Console diagnostics included missing-template warnings and
+  extension message-channel errors.
+- The legacy read-only preflight timed out and was not promoted to fresh
+  evidence. No legacy room or existing room was modified.

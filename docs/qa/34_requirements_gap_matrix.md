@@ -600,3 +600,15 @@ not close the external Roll20 parity rows above.
   screenshot or settings write is accepted as evidence.
 - `NEXT P0`: use a responsive supported chooser/CDP file-input path, then run
   modern Sandbox and dedicated legacy-room checks independently.
+
+## 2026-07-30 Modern rendered-state observation
+
+- `OBSERVED EXTERNAL`: the modern Sandbox showed the anonymous proof sheet in
+  its Roll20 iframe, including tabs, a textbox, a Roll control, and a measured
+  `900 x 432.6875` iframe surface. A new default-template chat result appeared
+  after one Roll click.
+- `VERIFY / OPEN`: the three input controls were empty, so no current-payload
+  hash is bound to this rendered state. Missing-template and extension
+  message-channel diagnostics were also observed.
+- `VERIFY / BLOCKED EXTERNAL`: the legacy read-only participant preflight timed
+  out; no fresh legacy evidence is counted.

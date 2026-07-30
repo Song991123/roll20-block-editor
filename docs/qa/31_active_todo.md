@@ -8374,3 +8374,20 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: recover a responsive supported native chooser or CDP file-input
   capability, then bind the exact anonymous three-file payload before taking
   any modern/legacy render comparison.
+
+## 2026-07-30 Modern Sandbox rendered-state observation
+
+- `OBSERVED EXTERNAL`: the dedicated modern Sandbox visibly rendered the
+  anonymous proof marker inside a Roll20 character iframe. The DOM snapshot
+  showed the Roll20 tabs, `Name` textbox, and `tRoll` control; measured iframe
+  geometry was `900 x 432.6875` in a `1536 x 729` viewport.
+- `OBSERVED EXTERNAL`: one Sandbox Roll click produced a new `Sandbox proof /
+  Result 3` chat result with default Roll20 template styling.
+- `VERIFY / OPEN`: the three file inputs were empty after the observation, so
+  the rendered state is not accepted as same-hash local-payload proof. Console
+  diagnostics also contain missing-template and extension message warnings.
+- `VERIFY / BLOCKED EXTERNAL`: the legacy read-only participant preflight timed
+  out in this run and is not counted as fresh evidence.
+- `NEXT P0`: bind the current anonymous payload through a supported file-input
+  path, then collect independent modern and legacy evidence with normalized
+  screenshots and console diagnostics.

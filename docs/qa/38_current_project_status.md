@@ -361,3 +361,14 @@ No anonymous payload was attached and no Roll20 state changed. The legacy tab
 was not treated as fresh evidence after the browser connection stalled. Actual
 same-payload modern and legacy render parity remains `VERIFY / BLOCKED
 EXTERNAL`.
+
+## Modern Sandbox rendered-state observation - 2026-07-30
+
+The dedicated modern Sandbox visibly rendered the anonymous proof marker inside
+the Roll20 character iframe. The snapshot exposed the Roll20 tabs, `Name`
+textbox, and Roll control; one click produced a new default-template chat
+result. The iframe measured `900 x 432.6875` CSS pixels. The file inputs were
+empty, so this is an external rendered observation rather than same-hash local
+payload proof. Missing-template and extension message-channel diagnostics were
+present, and the legacy preflight timed out; actual modern/legacy parity remains
+`VERIFY / BLOCKED EXTERNAL`.
