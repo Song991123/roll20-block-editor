@@ -282,3 +282,15 @@ The browser connection then timed out while reattaching the two existing tabs.
 No existing room or non-test sheet was modified. The next external gate is a
 fresh chooser-bound capture, followed by normalized modern/legacy screenshot
 diffs.
+
+## External frame surface metrics - 2026-07-30
+
+`roll20_sheet_frame_probe.mjs` now records anonymous root candidates and
+marker-ancestor surface metrics in the local-only sidecar. The metrics include
+rect, display/position, box sizing, overflow, background, text color, border,
+classes, and tag/id hints. They are intended to make wrapper-versus-authored
+surface diagnosis reproducible before a screenshot diff.
+
+The frame-probe self-test, lint, and full `ci:verify` pass. This is a diagnostic
+improvement only; the external same-hash chooser binding and pixel comparison
+remain open.

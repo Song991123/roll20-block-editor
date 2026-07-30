@@ -1,3 +1,14 @@
+## 2026-07-30 Frame surface metrics for external probes
+
+- DONE LOCAL: `roll20_sheet_frame_probe.mjs` now records anonymous root
+  candidates and marker-ancestor metrics: rect, display/position, box sizing,
+  overflow, background, text color, border, classes, and tag/id hints.
+- VERIFIED LOCAL: frame-probe self-test, lint, and the full `ci:verify` gate
+  pass. These metrics are diagnostic evidence only and do not promote a
+  screenshot or parity result.
+- NEXT P0: Use the surface sidecar after a fresh same-hash Sandbox chooser
+  upload, then compare root/content geometry against both local modes.
+
 ## 2026-07-30 Disposable-output deletion retry
 
 - VERIFY/BLOCKED: The user-authorized recursive deletion was reattempted after

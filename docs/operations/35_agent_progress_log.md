@@ -8976,3 +8976,14 @@ visibility verification passed. No external room was opened or modified.
 - BLOCKED EXTERNAL: Reattaching the two existing Chrome tabs timed out after
   the probe. The tabs were not navigated to another room; the next P0 remains
   a fresh chooser-bound capture and normalized modern/legacy screenshot diff.
+
+## 2026-07-30 - External frame surface metrics
+
+- FIXED LOCAL: `roll20_sheet_frame_probe.mjs` now records anonymous root and
+  marker-ancestor surface metrics for every candidate frame. The sidecar can
+  now retain rect, computed display/position/box-sizing/overflow, background,
+  color, border, classes, and tag/id hints without storing source HTML.
+- VERIFIED LOCAL: The frame-probe self-test, lint, and full `ci:verify` pass.
+- CLAIM BOUNDARY: These metrics improve diagnosis and geometry comparison only;
+  they do not prove current-payload hash binding, screenshot parity, or
+  universal sheet support.

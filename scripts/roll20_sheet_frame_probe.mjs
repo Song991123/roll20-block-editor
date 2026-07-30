@@ -336,12 +336,61 @@ async function probeSheetFrames(page, hints) {
         const rootNodes = Array.from(document.querySelectorAll('.charsheet,.charactersheet,.sheetform,#charsheet-root'));
         const rollButtons = Array.from(document.querySelectorAll('button[type="roll"], button[name^="roll_"], [name^="roll_"]'));
         const attrs = Array.from(document.querySelectorAll('[name^="attr_"]'));
+        const finite = (value) => Number.isFinite(Number(value))
+          ? Number(Number(value).toFixed(3))
+          : null;
+        const surfaceMetric = (node, role) => {
+          const rect = node.getBoundingClientRect?.();
+          const style = getComputedStyle(node);
+          return {
+            role,
+            tag: String(node.tagName || '').toLowerCase(),
+            id: node.id || '',
+            classes: Array.from(node.classList || []).slice(0, 16),
+            rect: rect ? {
+              x: finite(rect.x),
+              y: finite(rect.y),
+              width: finite(rect.width),
+              height: finite(rect.height),
+            } : null,
+            computed: {
+              width: style.width,
+              height: style.height,
+              display: style.display,
+              position: style.position,
+              boxSizing: style.boxSizing,
+              overflow: style.overflow,
+              backgroundColor: style.backgroundColor,
+              color: style.color,
+              border: style.border,
+            },
+          };
+        };
+        const rootSurfaces = rootNodes.slice(0, 8)
+          .map((node) => surfaceMetric(node, 'roll20-root'));
+        const markerAncestors = [];
+        const markerNodes = [...attrs, ...rollButtons];
+        for (const marker of markerNodes) {
+          let ancestor = marker.parentElement;
+          for (let depth = 0; ancestor && depth < 6; depth += 1, ancestor = ancestor.parentElement) {
+            if (ancestor === document.body || ancestor === document.documentElement || rootNodes.includes(ancestor)) continue;
+            if (markerAncestors.some((entry) => entry.node === ancestor)) continue;
+            markerAncestors.push({ node: ancestor, depth });
+          }
+        }
         return {
           bodyLen: bodyText.length,
           bodySnippet: bodyText.slice(0, 1200),
           rootCount: rootNodes.length,
           roots: rootNodes.length,
           rootSamples: rootNodes.slice(0, 8).map((node) => normalize(node.innerText || node.textContent).slice(0, 240)),
+          surface: {
+            rootCandidates: rootSurfaces,
+            markerAncestors: markerAncestors.slice(0, 12).map(({ node, depth }) => ({
+              depth,
+              ...surfaceMetric(node, 'marker-ancestor'),
+            })),
+          },
           counts: {
             charsheetCount: document.querySelectorAll('.charsheet,.charactersheet').length,
             sheetformCount: document.querySelectorAll('.sheetform').length,
@@ -379,6 +428,7 @@ async function probeSheetFrames(page, hints) {
         bodyLen: 0,
         rootCount: 0,
         counts: { attrCount: 0, rollButtonCount: 0 },
+        surface: { rootCandidates: [], markerAncestors: [] },
         sheetHitCount: 0,
         chatTemplateHitCount: 0,
       });
