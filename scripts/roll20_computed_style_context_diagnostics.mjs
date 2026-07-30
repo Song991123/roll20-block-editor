@@ -10,16 +10,34 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const args = process.argv.slice(2).filter((arg) => arg !== '--');
-const runDir = path.resolve(args[0] ?? '');
+const selfTest = args.includes('--self-test');
+const runDir = path.resolve(args.find((arg) => !arg.startsWith('--')) ?? '');
 
-if (!args[0]) {
+if (!selfTest && !args.find((arg) => !arg.startsWith('--'))) {
   console.error('Usage: node scripts/roll20_computed_style_context_diagnostics.mjs reports/roll20-actual-compare/<label>');
   process.exit(2);
 }
 
 const outDir = path.join(runDir, 'computed-style-context-diagnostics');
 const fullRootPath = path.join(runDir, 'full-root-candidate-smoke', 'full-root-candidate-smoke-results.json');
-const targetSelectors = ['.sheet-2colrow', '.sheet-3colrow', '.sheet-col', 'table', 'input', 'textarea'];
+// Keep this list aligned with roll20_sheet_frame_probe.mjs. The sidecar can
+// already capture these selectors; omitting them here made a generic payload
+// look covered while silently skipping table cells, selects, and roll buttons.
+const targetSelectors = [
+  '.sheet-2colrow',
+  '.sheet-3colrow',
+  '.sheet-col',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'td',
+  'th',
+  'input',
+  'textarea',
+  'select',
+  "button[type='roll']",
+];
 const styleFields = [
   'display',
   'position',
@@ -40,6 +58,11 @@ const styleFields = [
 ];
 
 async function main() {
+  if (selfTest) {
+    runSelfTest();
+    console.log('ROLL20 COMPUTED STYLE CONTEXT SELF-TEST PASS');
+    return;
+  }
   if (!existsSync(fullRootPath)) throw new Error(`Missing full-root candidate report: ${fullRootPath}`);
   const fullRoot = JSON.parse(await readFile(fullRootPath, 'utf8'));
   const report = {
@@ -181,12 +204,22 @@ function compareSelector(actual, candidate, selector) {
 
 function localNodesForSelector(candidate, selector) {
   const geometry = candidate.metrics?.targetGeometry ?? {};
+  const allNodes = flattenStatePanels(geometry);
   if (selector === '.sheet-2colrow') return geometry.rows ?? [];
-  if (selector === '.sheet-3colrow') return flattenStatePanels(geometry).filter((node) => hasClass(node, 'sheet-3colrow'));
-  if (selector === '.sheet-col') return flattenStatePanels(geometry).filter((node) => hasClass(node, 'sheet-col'));
-  if (selector === 'table') return geometry.tables ?? [];
-  if (selector === 'input') return geometry.inputs ?? [];
-  if (selector === 'textarea') return flattenStatePanels(geometry).filter((node) => node.tag === 'TEXTAREA');
+  if (selector === '.sheet-3colrow') return allNodes.filter((node) => hasClass(node, 'sheet-3colrow'));
+  if (selector === '.sheet-col') return allNodes.filter((node) => hasClass(node, 'sheet-col'));
+  if (selector === 'table') return geometry.tables ?? allNodes.filter((node) => node.tag === 'TABLE');
+  if (selector === 'thead') return allNodes.filter((node) => node.tag === 'THEAD');
+  if (selector === 'tbody') return allNodes.filter((node) => node.tag === 'TBODY');
+  if (selector === 'tr') return allNodes.filter((node) => node.tag === 'TR');
+  if (selector === 'td') return allNodes.filter((node) => node.tag === 'TD');
+  if (selector === 'th') return allNodes.filter((node) => node.tag === 'TH');
+  if (selector === 'input') return geometry.inputs ?? allNodes.filter((node) => node.tag === 'INPUT');
+  if (selector === 'textarea') return geometry.textareas ?? allNodes.filter((node) => node.tag === 'TEXTAREA');
+  if (selector === 'select') return geometry.selects ?? allNodes.filter((node) => node.tag === 'SELECT');
+  if (selector === "button[type='roll']") {
+    return geometry.rollButtons ?? allNodes.filter((node) => node.tag === 'BUTTON' && String(node.type ?? '').toLowerCase() === 'roll');
+  }
   return [];
 }
 
@@ -198,14 +231,52 @@ function flattenStatePanels(geometry) {
     ...(geometry.inputs ?? []),
   ];
   const out = [];
+  const seen = new Set();
   const stack = [...roots];
   while (stack.length) {
     const node = stack.shift();
     if (!node) continue;
+    if (seen.has(node)) continue;
+    seen.add(node);
     out.push(node);
     if (Array.isArray(node.children)) stack.push(...node.children);
   }
   return out;
+}
+
+function runSelfTest() {
+  const cell = { tag: 'TD', rect: { width: 10, height: 10 }, children: [] };
+  const row = { tag: 'TR', rect: { width: 20, height: 10 }, children: [cell] };
+  const table = { tag: 'TABLE', rect: { width: 20, height: 10 }, children: [row] };
+  const geometry = {
+    rows: [{ tag: 'DIV', className: 'sheet-2colrow', rect: { width: 100, height: 40 }, children: [
+      { tag: 'DIV', className: 'sheet-col', rect: { width: 50, height: 40 }, children: [] },
+      { tag: 'DIV', className: 'sheet-col', rect: { width: 50, height: 40 }, children: [] },
+    ] }],
+    tables: [table],
+    inputs: [{ tag: 'INPUT', rect: { width: 20, height: 10 }, children: [] }],
+    textareas: [{ tag: 'TEXTAREA', rect: { width: 20, height: 20 }, children: [] }],
+    selects: [{ tag: 'SELECT', rect: { width: 20, height: 10 }, children: [] }],
+    rollButtons: [{ tag: 'BUTTON', type: 'roll', rect: { width: 20, height: 10 }, children: [] }],
+  };
+  const candidate = { metrics: { targetGeometry: geometry } };
+  const expectations = new Map([
+    ['.sheet-2colrow', 1],
+    ['.sheet-col', 2],
+    ['table', 1],
+    ['tr', 1],
+    ['td', 1],
+    ['input', 1],
+    ['textarea', 1],
+    ['select', 1],
+    ["button[type='roll']", 1],
+  ]);
+  for (const [selector, expected] of expectations) {
+    const actual = localNodesForSelector(candidate, selector).length;
+    if (actual !== expected) {
+      throw new Error(`selector ${selector} expected ${expected}, got ${actual}`);
+    }
+  }
 }
 
 function diffNodeStyles(actualNode, localNode) {

@@ -11,6 +11,10 @@ Date: 2026-07-31
   It imported `24` HTML blocks with zero warnings.
 - VERIFIED LOCAL: Modern and legacy preview/edit runs both report geometry
   parity `true`, exact pixel parity (`0%` mismatch), and i18n `5/5`.
+- VERIFIED LOCAL: A clean rerun after server hygiene on port `4197` reproduced
+  the same exact result for fixture-A and fixture-B in both compatibility modes.
+- DIAGNOSTIC ONLY: The prior port-`4186` fixture-B legacy failure was a single
+  pre-capture `ERR_NO_BUFFER_SPACE` resource error, not a measured mismatch.
 - NOT PROVEN: live Roll20 computed-style or screenshot parity for those layout
   families; the actual current Legacy payload still has no such nodes.
 
@@ -753,3 +757,13 @@ not close the external Roll20 parity rows above.
 - `VERIFY / BLOCKED EXTERNAL`: current Roll20 payload identity, modern
   normalized screenshot parity, and independent legacy-room evidence remain
   unproven because the available browser surface rejects local file binding.
+## Latest Generic Layout Comparison Coverage - 2026-07-31
+
+- FIXED LOCAL: `roll20_computed_style_context_diagnostics.mjs` now compares
+  every generic layout selector captured by the sheet-frame probe, including
+  table sections/cells, select controls, and Roll buttons.
+- VERIFIED LOCAL: The anonymous geometry self-test covers the expanded selector
+  set and passes through `ci:verify`.
+- NOT PROVEN: The actual Roll20 sidecar still needs a fresh generic payload in
+  the modern Sandbox and separate legacy destination. No renderer CSS change
+  is justified by this local diagnostic patch alone.

@@ -1,3 +1,19 @@
+## 2026-07-31 - Generic layout sidecar coverage extension
+
+- Expanded the computed-style target set to include row/column containers,
+  table sections/cells, input, textarea, select, and Roll buttons.
+- Added an anonymous synthetic self-test and wired it into `ci:verify`.
+- After server hygiene cleared all project/CDP listeners, the visual smoke
+  rerun on port `4197` passed both anonymous fixtures in modern and legacy
+  modes with `0%` mismatch, `EXACT` parity, and fixture-B i18n `5/5`.
+- The earlier port-`4186` fixture-B legacy result stopped before capture with
+  `ERR_NO_BUFFER_SPACE`; it was not a visual mismatch and did not reproduce.
+- No fresh generic payload was applied to Roll20 because the browser bridge and
+  local CDP endpoint were unavailable. No room or Sandbox setting changed.
+- Explicit ignored generated targets were verified untracked and inside the
+  worktree, but host policy rejected recursive removal before execution. No
+  alternate deletion route was used.
+
 ## 2026-07-31 - Wrapper geometry and capture-format reconciliation
 
 ## 2026-07-31 - Isolate builder helper CSS from the Roll20 render surface
@@ -9659,3 +9675,18 @@ same-hash modern/legacy comparison.
   `4.187%`. This is still not a parity claim.
 - NEXT: Normalize actual iframe width/inset and capture scale, then expand the
   anonymous probe to generic layout controls before another CSS change.
+## 2026-07-31 - Generic layout computed-style comparison coverage
+
+- Expanded `scripts/roll20_computed_style_context_diagnostics.mjs` so its
+  selector set matches `roll20_sheet_frame_probe.mjs`: row/column containers,
+  table/thead/tbody/tr/td/th, input, textarea, select, and `button[type=roll]`.
+- Added geometry de-duplication and anonymous synthetic self-test coverage;
+  wired `test:roll20-computed-style-context` into `scripts/ci_verify.mjs`.
+- Verification: computed-style self-test, Roll20 geometry self-test, runtime
+  contract, and emit contract passed.
+- External boundary: Chrome extension communication failed and the local CDP
+  preflight reported `CDP_CLOSED` with zero targets. No fresh generic payload
+  was uploaded and no Roll20 room/Sandbox state was modified.
+- Next: rerun the expanded diagnostic with fresh generic modern and legacy
+  sidecars before changing production CSS. Local synthetic coverage is not
+  actual Roll20 parity.

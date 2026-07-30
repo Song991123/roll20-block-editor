@@ -16,6 +16,10 @@ local output and is deleted after the verification batch.
   and five translations. Import produced `24` HTML blocks and zero warnings.
 - VERIFIED LOCAL: Modern and legacy preview/edit visual smoke both report
   `0%` pixel mismatch, geometry parity `true`, and i18n `5/5`.
+- VERIFIED LOCAL: The clean port-`4197` rerun after server hygiene reproduced
+  exact parity for both anonymous synthetic fixtures in modern and legacy modes.
+- DIAGNOSTIC ONLY: The earlier port-`4186` run failed before the legacy capture
+  with `ERR_NO_BUFFER_SPACE`; it did not produce a visual mismatch result.
 - OPEN: This is local generic coverage only. Live Roll20 layout-family
   computed-style and screenshot parity still needs a dedicated generic payload
   capture.
@@ -685,3 +689,14 @@ fixture, runs the local Sandbox-expected render transition with strict
 console/page-error gating, and passed. This does not restore or publish any
 real sheet source and does not replace actual Roll20 Sandbox or legacy-room
 visual evidence, which remains open without an attached Roll20 session.
+## Latest Generic Layout Sidecar Extension - 2026-07-31
+
+- FIXED LOCAL: The computed-style comparison now covers the complete generic
+  layout probe set: row/column containers, table structure, input, textarea,
+  select, and Roll button.
+- VERIFIED LOCAL: The anonymous synthetic geometry self-test and the existing
+  runtime/emit contract tests pass.
+- OPEN: A fresh generic payload must still be activated in the dedicated
+  modern Sandbox and separate legacy test destination. Browser extension and
+  local CDP were unavailable in the latest attempt, so no new external
+  evidence was collected.

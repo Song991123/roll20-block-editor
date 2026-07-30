@@ -1,3 +1,30 @@
+## 2026-07-31 Generic layout sidecar coverage extension
+
+- DONE LOCAL: Expanded the computed-style comparison target set to match the
+  frame probe: row/column containers, table sections/cells, input, textarea,
+  select, and Roll buttons are now compared instead of silently omitted.
+- DONE LOCAL: Added a self-test with anonymous synthetic geometry and wired it
+  into `ci:verify`.
+- VERIFIED LOCAL: The computed-style self-test, geometry test, runtime contract
+  test, and emit contract test pass.
+- VERIFIED LOCAL: After server hygiene cleared all project/CDP listeners, the
+  visual smoke was rerun on port `4197`; fixture-A and fixture-B both passed in
+  modern and legacy modes with `0%` mismatch, `EXACT` parity, and fixture-B
+  translation match `5/5`.
+- DIAGNOSTIC ONLY: The earlier port-`4186` run failed before fixture-B legacy
+  capture with one `ERR_NO_BUFFER_SPACE` resource error. It was not a render
+  mismatch; the clean rerun above is the accepted local result.
+- VERIFY / BLOCKED EXTERNAL: No fresh generic payload was applied to Roll20 in
+  this batch because the browser extension and local CDP endpoint were both
+  unavailable. No room or Sandbox setting was changed.
+- OPEN: Run the expanded sidecar against the dedicated modern Sandbox and
+  separate legacy test destination when the authenticated browser/CDP path is
+  available. Do not promote CSS from local synthetic evidence alone.
+- CLEANUP / BLOCKED HOST: The explicitly listed ignored build and smoke output
+  targets were boundary-checked and confirmed untracked, but recursive removal
+  was rejected by the host before execution. No alternate deletion path was
+  used; the targets remain local-only.
+
 ## 2026-07-31 Wrapper geometry and capture-format reconciliation
 
 ## 2026-07-31 Render-surface helper isolation
