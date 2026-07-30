@@ -9085,6 +9085,22 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
 
+## 2026-07-31 Worker state reentrancy fix
+
+- `FIXED LOCAL`: local `setAttrs()` now compares the effective DOM state before
+  dispatching `change:` and queues nested worker events instead of recursively
+  calling handlers. Same-value worker writes no longer create an unbounded
+  synchronous loop.
+- `VERIFIED LOCAL`: build-doc contract tests, worker parser tests, production
+  build, and the browser `smoke:worker-state` passed. The smoke exercised a
+  worker that writes the same attribute from its own change handler and ended
+  with zero queue overflows and no browser/page errors.
+- `VERIFY / OPEN`: this is local worker-runtime evidence only. Actual Roll20
+  worker activation and mutation for the same uploaded payload remain blocked
+  at the supported Sandbox file handoff boundary.
+- `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
+  run independent modern and legacy worker mutation checks.
+
 ## 2026-07-31 Actual geometry gate
 
 - `DONE LOCAL`: Added `scripts/roll20_actual_geometry_gate.mjs` and wired its

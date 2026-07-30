@@ -9834,3 +9834,17 @@ same-hash modern/legacy comparison.
 - Next P0: recover a supported file-input/CDP handoff, then run independent
   modern and legacy worker mutation smokes before promoting worker runtime
   status.
+
+## 2026-07-31 - Local worker state reentrancy fix
+
+- Fixed `buildDoc.ts` so `setAttrs()` only emits `change:` for an effective DOM
+  state change and nested worker events are processed through a bounded queue.
+- Verified locally: build-doc contract tests, worker parser tests, production
+  build, and `smoke:worker-state` all pass. The smoke includes a same-value
+  self-writing handler and records zero worker queue overflows and zero
+  browser/page errors.
+- External boundary unchanged: the actual modern Sandbox upload handoff still
+  rejects the supported browser primitive before accepting a payload, so no
+  actual Roll20 worker mutation or legacy-room evidence is claimed.
+- Next P0: recover supported modern Sandbox file binding, then run independent
+  modern and legacy worker mutation smokes against the same anonymous payload.

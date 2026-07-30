@@ -208,6 +208,16 @@ assert.match(
   'keyed morph updates text and comment node values',
 );
 assert.match(bundle.doc, /data-r20-structural-patches/);
+assert.match(
+  bundle.doc,
+  /var sheetWorkerEventQueue = \[\][\s\S]*?var sheetWorkerDispatching = false/,
+  'worker events use a queued dispatcher instead of recursive handler calls',
+);
+assert.match(
+  bundle.doc,
+  /var changedKeys = \[\][\s\S]*?if \(writeSheetAttr\(k, values\[k\]\)\) changedKeys\.push\(k\)/,
+  'worker setAttrs dispatches change events only for changed values',
+);
 assert.match(bundle.doc, /if \(style\.textContent !== css\) style\.textContent = css/);
 assert.match(
   bundle.doc,

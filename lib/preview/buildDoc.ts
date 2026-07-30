@@ -926,6 +926,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
     });
   }
   var sheetWorkerHandlers = {};
+  var sheetWorkerEventQueue = [];
+  var sheetWorkerDispatching = false;
+  var sheetWorkerQueueOverflowCount = 0;
   var settingAttrs = false;
   var translations = loadTranslations();
   function sheetWorkerOn(events, fn) {
@@ -943,14 +946,19 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function writeSheetAttr(name, value) {
     var nodes = document.querySelectorAll('[name="attr_' + cssEscape(name) + '"]');
+    var changed = false;
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
       if (el.type === 'checkbox') {
-        el.checked = String(value) === String(el.value || '1') || value === true || value === 1 || value === '1';
+        var nextChecked = String(value) === String(el.value || '1') || value === true || value === 1 || value === '1';
+        if (el.checked !== nextChecked || (nextChecked && el.getAttribute('checked') !== 'checked') || (!nextChecked && el.hasAttribute('checked'))) changed = true;
+        el.checked = nextChecked;
         if (el.checked) el.setAttribute('checked', 'checked');
         else el.removeAttribute('checked');
       } else if (el.type === 'radio') {
-        el.checked = String(el.value) === String(value);
+        var nextRadioChecked = String(el.value) === String(value);
+        if (el.checked !== nextRadioChecked || (nextRadioChecked && el.getAttribute('checked') !== 'checked') || (!nextRadioChecked && el.hasAttribute('checked'))) changed = true;
+        el.checked = nextRadioChecked;
         if (el.checked) el.setAttribute('checked', 'checked');
         else el.removeAttribute('checked');
       } else {
@@ -959,10 +967,12 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
           var isAutocalcExpression = el.getAttribute('data-r20-autocalc-expression') === nextValue;
           if (isAutocalcExpression || !isFinite(Number(nextValue))) continue;
         }
+        if (el.value !== nextValue || el.getAttribute('value') !== nextValue) changed = true;
         el.value = nextValue;
         el.setAttribute('value', nextValue);
       }
     }
+    return changed;
   }
   function mirrorChangedSheetAttr(el) {
     if (!el || !el.getAttribute) return;
@@ -976,9 +986,9 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
       value = el.value == null ? '' : String(el.value);
     }
     settingAttrs = true;
-    writeSheetAttr(key, value);
+    var changed = writeSheetAttr(key, value);
     settingAttrs = false;
-    triggerSheetWorker('change:' + key, { sourceAttribute: key });
+    if (changed) triggerSheetWorker('change:' + key, { sourceAttribute: key });
     scheduleResize();
   }
   function sheetWorkerGetAttrs(names, cb) {
@@ -988,17 +998,39 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   }
   function sheetWorkerSetAttrs(values, opts, cb) {
     if (typeof opts === 'function') { cb = opts; opts = undefined; }
+    var changedKeys = [];
     settingAttrs = true;
-    Object.keys(values || {}).forEach(function (k) { writeSheetAttr(k, values[k]); });
+    Object.keys(values || {}).forEach(function (k) {
+      if (writeSheetAttr(k, values[k])) changedKeys.push(k);
+    });
     settingAttrs = false;
-    Object.keys(values || {}).forEach(function (k) { triggerSheetWorker('change:' + k, { sourceAttribute: k }); });
+    changedKeys.forEach(function (k) { triggerSheetWorker('change:' + k, { sourceAttribute: k }); });
     if (typeof cb === 'function') cb();
     scheduleResize();
   }
   function triggerSheetWorker(evt, payload) {
-    var list = sheetWorkerHandlers[evt] || [];
-    for (var i = 0; i < list.length; i++) {
-      try { list[i](payload || { sourceAttribute: evt.replace(/^change:/, '') }); } catch (e) { console.error('[sheet worker]', evt, e); }
+    if (!evt) return;
+    sheetWorkerEventQueue.push({ evt: evt, payload: payload || { sourceAttribute: evt.replace(/^change:/, '') } });
+    if (sheetWorkerDispatching) return;
+    sheetWorkerDispatching = true;
+    var processed = 0;
+    try {
+      while (sheetWorkerEventQueue.length && processed < 512) {
+        var queued = sheetWorkerEventQueue.shift();
+        processed += 1;
+        var list = (sheetWorkerHandlers[queued.evt] || []).slice();
+        for (var i = 0; i < list.length; i++) {
+          try { list[i](queued.payload); } catch (e) { console.error('[sheet worker]', queued.evt, e); }
+        }
+      }
+      if (sheetWorkerEventQueue.length) {
+        sheetWorkerEventQueue = [];
+        sheetWorkerQueueOverflowCount += 1;
+        document.body.setAttribute('data-r20-worker-queue-overflows', String(sheetWorkerQueueOverflowCount));
+        console.error('[sheet worker] event queue overflow');
+      }
+    } finally {
+      sheetWorkerDispatching = false;
     }
   }
   function loadTranslations() {
@@ -1566,6 +1598,7 @@ const PREVIEW_BRIDGE_SCRIPT = String.raw`
   emulateRoll20RepeatingSections();
   emulateRoll20ButtonClasses();
   applyRoll20Autocalc();
+  document.body.setAttribute('data-r20-worker-queue-overflows', String(sheetWorkerQueueOverflowCount));
   installSheetWorkers();
   scheduleResize();
   try {

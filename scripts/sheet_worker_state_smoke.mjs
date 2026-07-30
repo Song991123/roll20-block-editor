@@ -60,12 +60,16 @@ const SYNTHETIC_SHEET = {
     <div class="choice">Choice list that should hide when mirrored lock is checked</div>
   </div>
 </div>
+<input type="text" name="attr_loop_probe" value="idle">
 <script type="text/worker">
   on("clicked:character", function () {
     setAttrs({ sheetTab: "character" });
   });
   on("clicked:combat", function () {
     setAttrs({ sheetTab: "combat" });
+  });
+  on("change:loop_probe", function () {
+    setAttrs({ loop_probe: "armed" });
   });
 </script>
 `,
@@ -162,6 +166,8 @@ async function readState(frame) {
       localLockChecked: localLock?.checked ?? null,
       localLockCheckedAttribute: localLock?.getAttribute('checked') ?? null,
       choiceDisplay: choiceStyle?.display ?? null,
+      loopProbe: document.querySelector('[name="attr_loop_probe"]')?.value ?? null,
+      workerQueueOverflows: Number(document.body?.getAttribute('data-r20-worker-queue-overflows') ?? 0),
     };
   });
 }
@@ -286,6 +292,21 @@ async function main() {
         afterLock.visibleLockCheckedAttribute === 'checked' &&
         afterLock.localLockCheckedAttribute === 'checked' &&
         afterLock.choiceDisplay === 'none',
+    });
+
+    await frame.locator('[name="attr_loop_probe"]').fill('armed');
+    await frame.locator('[name="attr_loop_probe"]').evaluate((node) => {
+      node.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await frame.waitForFunction(() => (
+      document.querySelector('[name="attr_loop_probe"]')?.value === 'armed' &&
+      document.body?.getAttribute('data-r20-worker-queue-overflows') === '0'
+    ), null, { timeout: 10000 });
+    const workerLoop = await readState(frame);
+    report.steps.push({
+      name: 'same-value-change-does-not-reenter-worker',
+      state: workerLoop,
+      pass: workerLoop.loopProbe === 'armed' && workerLoop.workerQueueOverflows === 0,
     });
 
     report.screenshotPath = path.join(REPORT_DIR, 'sheet-worker-state.png');

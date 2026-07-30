@@ -873,3 +873,15 @@ not close the external Roll20 parity rows above.
   recorded.
 - PRESERVED: the dedicated legacy destination was not changed after the modern
   handoff failed; no ordinary room was used.
+
+## Worker State Reentrancy - 2026-07-31
+
+- `FIXED LOCAL`: `setAttrs()` dispatch now uses changed-value detection and a
+  bounded event queue, preventing same-value `change:` loops while preserving
+  CSS-visible property/attribute synchronization.
+- `VERIFIED LOCAL`: build-doc contract, worker-parser, production build, and
+  browser worker-state smoke passed with zero queue overflows and zero browser
+  or page errors.
+- `VERIFY / BLOCKED EXTERNAL`: the fix has not been promoted to actual Roll20
+  worker parity because the supported modern Sandbox file handoff still rejects
+  the local payload before activation. No legacy destination was modified.
