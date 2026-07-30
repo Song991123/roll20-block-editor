@@ -76,6 +76,14 @@ function testSetAttrsMulti(): void {
   assert(r.blocks[0].fields.KEY3 === 'ac', 'KEY3');
 }
 
+function testSetAttrsOverflowPreservesRaw(): void {
+  const js = `setAttrs({ hp: 10, mp: 5, ac: 12, init: 3 });`;
+  const r = parseSheetWorkerScript(js);
+  assert(r.blocks[0].blockType === 'r20_raw_worker', 'overflow uses raw worker boundary');
+  assert(r.blocks[0].fields.JS.includes('init: 3'), 'overflow property is preserved');
+  assert(r.stats.unparsed === 1, 'overflow is counted as unparsed');
+}
+
 function testGetAttrs(): void {
   const js = `getAttrs(['hp','max_hp'], function(v) { setAttrs({ hp: 5 }); });`;
   const r = parseSheetWorkerScript(js);
@@ -274,6 +282,7 @@ const tests = [
   ['on clicked', testOnClicked],
   ['setAttrs single', testSetAttrsSingle],
   ['setAttrs multi', testSetAttrsMulti],
+  ['setAttrs overflow raw fallback', testSetAttrsOverflowPreservesRaw],
   ['getAttrs', testGetAttrs],
   ['getSectionIDs', testGetSectionIDs],
   ['forEach', testForEach],

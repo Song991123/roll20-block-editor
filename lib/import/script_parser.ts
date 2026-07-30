@@ -1011,7 +1011,10 @@ function tryParseSetAttrs(args: string): ParsedBlock | null {
       valueInputs: { VALUE: valueBlock(pairs[0][1]) },
     };
   }
-  // 2~3 페어 — r20_set_attrs_pair. 3개 이상은 첫 3개만 — 솔직 표시.
+  // The visual block has three value slots. Never silently drop a fourth
+  // property: return null so the caller preserves the complete statement in
+  // the explicit raw-worker boundary.
+  if (pairs.length > 3) return null;
   const slice = pairs.slice(0, 3);
   const fields: Record<string, string> = {};
   const valueInputs: Record<string, ParsedBlock> = {};

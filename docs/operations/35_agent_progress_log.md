@@ -13,6 +13,16 @@
 - NEXT: Finish the isolated modern Sandbox file-selection handoff, then run
   the separate legacy-enabled room gate only after a fresh solo preflight.
 
+## 2026-07-30 - Worker overflow preservation
+
+- FIXED: A `setAttrs` object with more than the three visual block slots now
+  falls back to one raw worker statement, preserving every property rather
+  than truncating the source.
+- VERIFIED: Parser regression `26/26` passed; full CI/lint/build and the
+  existing browser edit smoke are the next gates for this small batch.
+- BOUNDARY: This is a loss-prevention guard, not broad worker block coverage
+  or live Roll20 runtime proof.
+
 ## 2026-07-30 - Modern Sandbox file-selection retry
 
 - VERIFIED EXTERNAL: The isolated Sandbox still showed exactly one visible

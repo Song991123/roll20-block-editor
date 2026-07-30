@@ -17,6 +17,18 @@
   Sandbox, then capture positive root/state/worker/roll/chat evidence. Keep
   legacy verification in a separate participant-gated test room.
 
+## 2026-07-30 Worker overflow preservation
+
+- FIXED LOCAL: `setAttrs` statements with more properties than the three-slot
+  visual block now stay intact in `r20_raw_worker` instead of silently dropping
+  later properties during import.
+- VERIFIED LOCAL: worker parser regression now passes `26/26`; the full local
+  CI, lint, build, and edit-flow gates remain required before the batch is
+  pushed.
+- CLAIM BOUNDARY: This improves lossless fallback behavior only. It does not
+  claim that arbitrary worker JavaScript is block-mapped or executed by live
+  Roll20.
+
 ## 2026-07-30 Modern Sandbox file-selection retry
 
 - VERIFIED EXTERNAL: The isolated Sandbox showed exactly one visible member and
