@@ -1,3 +1,16 @@
+## 2026-07-31 - Large workspace local-input smoke
+
+- Added an opt-in local-input path to the large-workspace browser smoke. It
+  accepts HTML, CSS, and i18n paths only for a one-off ignored verification
+  run; the default remains the anonymous synthetic fixture.
+- Verified both the default synthetic path and a user-supplied local input
+  path without changing or copying the source into the repository. The local
+  edit surface stayed headless for large models, kept the persistent iframe,
+  and reported no browser console or page errors.
+- Boundary: this is local import/edit evidence only. It does not prove current
+  payload activation, visual parity, worker runtime, or legacy-room behavior
+  in Roll20.
+
 ## 2026-07-31 - Persistent render-surface recheck
 
 - Re-ran `smoke:persistent-preview-surface` against the current clean branch.

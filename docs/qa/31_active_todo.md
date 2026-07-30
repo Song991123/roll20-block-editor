@@ -1,3 +1,14 @@
+## 2026-07-31 Large workspace local-input smoke
+
+- `DONE LOCAL`: The large-workspace smoke now accepts optional local HTML/CSS/
+  i18n paths without adding source-derived files to the repository. The
+  anonymous synthetic path remains the default CI behavior.
+- `VERIFIED LOCAL`: Both the default synthetic path and a one-off local input
+  path reached the headless large-workspace route, preserved the persistent
+  preview iframe, and completed with zero browser/page errors.
+- `VERIFY / OPEN`: This does not close actual Roll20 Sandbox parity, worker
+  runtime, or dedicated legacy-room verification.
+
 ## 2026-07-31 Persistent render-surface recheck
 
 - `VERIFIED LOCAL`: The current branch's persistent preview surface smoke

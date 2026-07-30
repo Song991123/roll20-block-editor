@@ -5,6 +5,8 @@
  * The input is synthetic and anonymous. It verifies that a large import keeps
  * the model available without creating one SVG block per element, while the
  * lightweight structure browser still supports search and selection.
+ * A user-provided local HTML/CSS/i18n path can be supplied through the
+ * R20_LARGE_SMOKE_*_PATH variables for an ignored, one-off verification run.
  */
 
 import http from 'node:http';
@@ -16,6 +18,10 @@ const OUT_DIR = path.resolve(process.env.R20_LARGE_SMOKE_OUT_DIR ?? './out');
 const PORT = Number(process.env.R20_LARGE_SMOKE_PORT ?? '4199');
 const BASE_PATH = '/roll20-block-editor';
 const ITEM_COUNT = Number(process.env.R20_LARGE_SMOKE_ITEMS ?? '5200');
+const HTML_PATH = process.env.R20_LARGE_SMOKE_HTML_PATH ?? '';
+const CSS_PATH = process.env.R20_LARGE_SMOKE_CSS_PATH ?? '';
+const I18N_PATH = process.env.R20_LARGE_SMOKE_I18N_PATH ?? '';
+const SEARCH_QUERY = process.env.R20_LARGE_SMOKE_QUERY?.trim() ?? '';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -71,6 +77,24 @@ function buildSyntheticHtml() {
     (_, index) => `<input type="text" name="attr_item_${index}" value="Item ${index}">`,
   ).join('');
   return `${nestedCorpus}${items}`;
+}
+
+async function loadSmokeInput() {
+  if (!HTML_PATH) {
+    return {
+      html: buildSyntheticHtml(),
+      css: '',
+      i18n: '',
+      mode: 'synthetic',
+    };
+  }
+
+  const [html, css, i18n] = await Promise.all([
+    fs.readFile(HTML_PATH, 'utf8'),
+    CSS_PATH ? fs.readFile(CSS_PATH, 'utf8') : Promise.resolve(''),
+    I18N_PATH ? fs.readFile(I18N_PATH, 'utf8') : Promise.resolve(''),
+  ]);
+  return { html, css, i18n, mode: 'local-input' };
 }
 
 async function runNestedReparentingSmoke(page) {
@@ -231,6 +255,7 @@ async function main() {
   if (!Number.isInteger(ITEM_COUNT) || ITEM_COUNT < 5001) {
     throw new Error(`ITEM_COUNT must be at least 5001, got ${ITEM_COUNT}`);
   }
+  const input = await loadSmokeInput();
   const server = await startServer();
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1480, height: 960 } });
@@ -255,8 +280,11 @@ async function main() {
     await page.goto(`http://127.0.0.1:${PORT}${BASE_PATH}/`, { waitUntil: 'load' });
     await page.waitForFunction(() => Boolean(window.__perfHook), null, { timeout: 30000 });
 
-    const imported = await page.evaluate((html) => window.__perfHook.importSheet({ html }), buildSyntheticHtml());
-    assert(imported.blockCount > 5000, `synthetic HTML did not reach the large threshold: ${imported.blockCount}`);
+    const imported = await page.evaluate(
+      ({ html, css, i18n }) => window.__perfHook.importSheet({ html, css, i18n }),
+      { html: input.html, css: input.css, i18n: input.i18n },
+    );
+    assert(imported.blockCount > 5000, `input did not reach the large threshold: ${imported.blockCount}`);
 
     await page.evaluate(() => window.__perfHook.setMainMode('assemble'));
     await page.waitForSelector('[data-testid="large-workspace-browser"]', {
@@ -281,22 +309,25 @@ async function main() {
     assert(beforeSearch.listCount > 0 && beforeSearch.listCount < 80, `virtual list rendered too many/few rows: ${beforeSearch.listCount}`);
     assert(beforeSearch.svgBlockCount === 0, `large workspace created SVG blocks: ${beforeSearch.svgBlockCount}`);
 
-    await page.locator('[data-testid="large-workspace-search"]').fill(`item_${ITEM_COUNT - 1}`);
-    await page.waitForFunction(
-      (label) => {
-        const rows = [...document.querySelectorAll('[data-testid="large-workspace-row"]')];
-        return rows.length > 0 && rows.some((row) => row.textContent?.includes(label));
-      },
-      `item_${ITEM_COUNT - 1}`,
-      { timeout: 10000 },
-    );
+    const searchQuery = SEARCH_QUERY || (input.mode === 'synthetic' ? `item_${ITEM_COUNT - 1}` : '');
+    if (searchQuery) {
+      await page.locator('[data-testid="large-workspace-search"]').fill(searchQuery);
+      await page.waitForFunction(
+        (label) => {
+          const rows = [...document.querySelectorAll('[data-testid="large-workspace-row"]')];
+          return rows.length > 0 && rows.some((row) => row.textContent?.includes(label));
+        },
+        searchQuery,
+        { timeout: 10000 },
+      );
+    }
     const searched = await page.evaluate(() => ({
+      query: document.querySelector('[data-testid="large-workspace-search"]')?.value ?? '',
       rows: [...document.querySelectorAll('[data-testid="large-workspace-row"]')].map((row) => row.textContent?.trim()),
     }));
-    assert(
-      searched.rows.some((row) => row?.includes(`item_${ITEM_COUNT - 1}`)),
-      'search did not find the last synthetic item',
-    );
+    if (searchQuery) {
+      assert(searched.rows.some((row) => row?.includes(searchQuery)), `search did not find ${searchQuery}`);
+    }
 
     await page.locator('[data-testid="large-workspace-row"]').first().click();
     await page.waitForFunction(
@@ -333,13 +364,17 @@ async function main() {
     );
     const editSelectedRows = await page.locator('[data-testid="edit-layer-row"][data-r20-layer-selected="1"]').count();
     assert(editSelectedRows === 1, `expected one selected large edit layer row, got ${editSelectedRows}`);
-    const nestedReparenting = await runNestedReparentingSmoke(page);
+    const nestedReparenting = input.mode === 'synthetic'
+      ? await runNestedReparentingSmoke(page)
+      : { pass: true, skipped: true, reason: 'nested synthetic fixture is not part of local-input mode' };
     assert(consoleErrors.length === 0, `console errors: ${consoleErrors.join(' | ')}`);
     assert(pageErrors.length === 0, `page errors: ${pageErrors.join(' | ')}`);
 
     console.log(JSON.stringify({
       pass: true,
-      itemCount: ITEM_COUNT,
+      inputMode: input.mode,
+      syntheticItemCount: input.mode === 'synthetic' ? ITEM_COUNT : null,
+      imported,
       beforeSearch,
       searched,
       selectedRows: selected,
