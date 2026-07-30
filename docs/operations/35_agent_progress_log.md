@@ -8258,3 +8258,16 @@ visibility verification passed. No external room was opened or modified.
 - NEXT: Use the visible Sandbox native file picker or user-assisted handoff;
   keep generated evidence local-only and keep modern/legacy verification
   separate.
+
+## 2026-07-30 - Disposable evidence purge
+
+- DELETED LOCAL: Removed the generated report evidence under
+  `web-push-main/reports/` while retaining only the tracked policy README;
+  about `1.09 GB` of disposable output was removed.
+- DELETED LOCAL: Removed the current worktree's `.next/`, `out/`, `.tmp/`,
+  `next-env.d.ts`, `tsconfig.tsbuildinfo`, and `debug.log` outputs.
+- VERIFIED LOCAL: Server hygiene reports no project/CDP listener, reports
+  contains only `README.md`, and Git tracks no generated evidence.
+- PRESERVED: Product source, dependencies, worktrees, reference roots, and
+  protected external sheet sources. This cleanup does not change Roll20
+  parity status; the Sandbox upload handoff remains the next P0.

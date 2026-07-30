@@ -497,3 +497,16 @@ directories that had been recreated by the local build.
   API, or safety bypass was used.
 - VERIFIED: the archive directory remains intact and no product source,
   worktree, report, protected source, or user-authored file changed.
+
+## 2026-07-30 user-authorized disposable evidence purge
+
+- DELETED: the 95 generated local report directories and files under
+  `web-push-main/reports/`, retaining only the tracked `reports/README.md`
+  policy file. The removed evidence occupied about 1.09 GB.
+- DELETED: the current worktree's reproducible `.next/`, `out/`, `.tmp/`,
+  `next-env.d.ts`, `tsconfig.tsbuildinfo`, and `debug.log` outputs.
+- VERIFIED: no project or CDP listener remains; only `reports/README.md` is
+  present under `reports/`; the archive target is absent; Git tracks no
+  generated report, fixture, or build output.
+- PRESERVED: product source, `node_modules/`, Git metadata and worktrees,
+  reference/archive zone roots, and all protected external sheet sources.

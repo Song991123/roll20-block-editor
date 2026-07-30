@@ -1,3 +1,14 @@
+## 2026-07-30 Disposable evidence purge
+
+- DONE LOCAL: Removed generated report evidence under `reports/`, retaining
+  only the tracked policy README; about `1.09 GB` was deleted.
+- DONE LOCAL: Removed `.next/`, `out/`, `.tmp/`, generated TypeScript/build
+  files, and `debug.log` from the active worktree.
+- VERIFIED: Server hygiene is clean, no generated report/fixture/build output
+  is tracked, and protected source folders were not touched.
+- NEXT P0: Re-run the modern Roll20 Sandbox upload with a supported visible
+  file chooser, then verify legacy separately in a dedicated test room.
+
 ## 2026-07-30 Roll20 Sandbox upload handoff retry
 
 - VERIFIED READ-ONLY: The open Roll20 page exposed the dedicated `Sheet
