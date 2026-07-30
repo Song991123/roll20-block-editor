@@ -61,7 +61,7 @@ local output and is deleted after the verification batch.
 
 ## Current Pushed Checkpoint - 2026-07-31
 
-- The active branch is `claude/design-reset` at `1b3db82`; canonical imported
+- The active branch is `claude/design-reset` at `37f7ae5`; canonical imported
   layer/edit verification is committed and locally verified. Actual Roll20
   destination parity remains open.
 

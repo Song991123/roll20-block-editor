@@ -55,7 +55,7 @@ Date: 2026-07-31
 
 ## Latest Pushed Checkpoint - 2026-07-31
 
-- The current pushed checkpoint is `1b3db82` on `claude/design-reset`. This
+- The current pushed checkpoint is `37f7ae5` on `claude/design-reset`. This
   checkpoint contains the canonical imported layer/edit verification and its
   local evidence; actual Roll20 destination parity remains open.
 
