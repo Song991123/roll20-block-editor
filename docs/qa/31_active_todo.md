@@ -8453,3 +8453,14 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / BLOCKED EXTERNAL`: this remains local renderer evidence only;
   current-payload Roll20 binding, actual screenshot comparison, and legacy
   room verification are still open.
+
+## 2026-07-30 Screen-level Sandbox upload retry
+
+- `OBSERVED EXTERNAL`: the dedicated modern Sandbox still showed the three
+  HTML/CSS/Translation controls and the one-member state. The file inputs were
+  empty before and after a screen-level click on HTML.
+- `VERIFY / BLOCKED EXTERNAL`: the visible click did not open a usable native
+  file picker through the connected browser surface. No payload was attached,
+  no Sandbox settings were saved, and no existing room was changed.
+- `NEXT P0`: user-assisted file selection or a Chrome session with permitted
+  local file injection is required before same-hash modern/legacy comparison.

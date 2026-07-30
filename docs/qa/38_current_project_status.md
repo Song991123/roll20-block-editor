@@ -406,3 +406,11 @@ legacy compatibility modes (`0%` mismatch, `0` pixels, i18n `1/1`). The
 persistent preview surface smoke also reports zero reloads in both modes.
 These are local renderer invariants and do not count as actual Roll20
 same-payload or legacy-room visual evidence.
+
+## Sandbox screen-level upload retry - 2026-07-30
+
+The dedicated modern Sandbox still exposed the three upload controls and the
+one-member state. A screen-level click on the HTML control did not open a
+usable native file picker through the connected browser surface; all three
+inputs remained empty. No Sandbox save, room change, or payload attachment was
+counted. Same-hash modern/legacy parity remains `VERIFY / BLOCKED EXTERNAL`.

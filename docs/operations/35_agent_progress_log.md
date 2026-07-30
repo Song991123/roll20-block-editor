@@ -9152,3 +9152,13 @@ same-hash modern/legacy comparison.
 - Persistent preview surface smoke reports zero reloads in both modes.
 - These results strengthen local renderer evidence only; they do not promote
   the external Roll20 same-payload or legacy-room checks.
+
+## 2026-07-30 - Screen-level Sandbox upload retry
+
+- Reconnected to the dedicated modern Sandbox and confirmed the HTML, CSS,
+  and Translation controls plus the one-member observation state.
+- A screen-level click on HTML did not open a usable native file picker through
+  the connected browser surface; all three inputs remained empty.
+- No payload was attached, no Sandbox settings were saved, and no existing
+  room was modified. User-assisted selection or a permitted Chrome file-input
+  path is still required for same-hash modern/legacy evidence.
