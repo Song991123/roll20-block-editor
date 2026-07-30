@@ -20,9 +20,10 @@ Date: 2026-07-31
 
 ## Latest External Reconciliation - 2026-07-31
 
-- The current local code checkpoint is `15bf7fc`; its local lint, build,
-  `ci:verify`, and parity-focused smoke gates passed. Remote CI is pending
-  after the push of this checkpoint.
+- The current pushed checkpoint is `b15d789` (the render correction is in
+  `15bf7fc`); local lint, build, `ci:verify`, and parity-focused smoke gates
+  passed, and remote CI run `30578368146` passed safety/unit verification,
+  lint, and build.
 - VERIFIED EXTERNAL: The authenticated modern Sandbox rendered the anonymous
   synthetic payload with translation, input, Roll button, and chat template.
 - VERIFIED EXTERNAL: A newly created dedicated Legacy room showed exactly one

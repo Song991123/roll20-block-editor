@@ -26,9 +26,9 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at local checkpoint `15bf7fc`, which
-  includes the legacy computed-style correction and sidecar diagnostic.
-  Local verification is complete; remote CI is pending after push.
+- Active branch: `claude/design-reset` at pushed checkpoint `b15d789`; the
+  legacy computed-style correction and sidecar diagnostic are in `15bf7fc`.
+- Remote CI run `30578368146` passed safety/unit verification, lint, and build.
 - Static corpus inventory: two protected external roots were read-only scanned;
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
