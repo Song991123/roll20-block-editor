@@ -7240,3 +7240,16 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `VERIFY / OPEN`: The change removes stale audit false positives only. It is
   not evidence of universal import fidelity or actual modern/legacy Roll20
   parity.
+
+## 2026-07-30 Shadow layer-role wiring
+
+- `DONE LOCAL`: Shadow edit mounting now receives the shared HTML block-role
+  lookup, so canvas drop affordances and layer-panel roles are sourced from
+  the same classifier.
+- `DONE LOCAL`: Corrected table column, value-switch, and atomic skill-row
+  role/drop contracts with unit coverage.
+- `VERIFIED LOCAL`: role test, lint, build, `ci:verify`, persistent preview,
+  edit-flow, and imported-edit-sync smoke passed.
+- `VERIFY / OPEN`: Actual modern Sandbox and dedicated legacy-room visual
+  comparison remain separate gates; local interaction evidence cannot promote
+  Roll20 parity.

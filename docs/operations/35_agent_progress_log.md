@@ -8006,3 +8006,16 @@ visibility verification passed. No external room was opened or modified.
   stale and could report a false dropped-attribute gap.
 - This is an audit-map correction only. It does not add a new Roll20 fixture,
   promote the universal import claim, or prove modern/legacy external parity.
+
+## 2026-07-30 - Shadow layer-role wiring
+
+- Wired `PreviewMain` to pass the shared HTML layer snapshot through
+  `getLayerRoleForBlock` when mounting the Shadow edit surface. Frame, flow,
+  table, and child-drop affordances now use the same role source as the layer
+  panel.
+- Corrected generic role classification for `col`/`colgroup`, value-switch
+  panels/cases, and the atomic skill-row composite. The skill row can move in
+  table flow but cannot receive an arbitrary child.
+- Local evidence: role unit test, lint, production build, full `ci:verify`,
+  persistent preview-surface smoke, edit-flow smoke, and imported-edit-sync
+  smoke all pass. No external Roll20 screenshot or upload was created here.

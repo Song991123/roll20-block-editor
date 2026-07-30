@@ -60,6 +60,21 @@ future browser acceptance test must additionally prove that the same imported
 HTML surface is visible in preview and edit after a nested drop, with no
 rollback frame and with the generated CSS output stable after re-import.
 
+## Composite And Shadow Role Contract
+
+The Shadow edit surface now receives the same role lookup used by the layer
+panel. Imported DOM nodes therefore get `data-r20-layer-role` and
+`data-r20-can-drop` from one classifier instead of relying on panel-only hints.
+Table columns/column groups are table layers; value-switch panels and their
+cases are frame layers; the atomic skill-row composite stays reorderable in
+flow but does not accept arbitrary children. Composite blocks that emit several
+DOM nodes remain one intentional layer when their internal parts are exposed
+through the composite's own fields.
+
+This describes the current local interaction contract. It does not claim that
+every arbitrary runtime script or third-party markup pattern is decomposed into
+individually editable layers.
+
 ## Semantic HTML Coverage
 
 Standard semantic elements such as `main`, `header`, `section`, `article`,

@@ -42,6 +42,7 @@ import {
   type IframeEditDropTarget,
 } from '@/lib/editor/iframeDropTarget';
 import { commitManagedDesignPosition } from '@/lib/editor/designPosition';
+import { getLayerRole } from '@/lib/editor/layerRoles';
 import {
   appendFriendlyWidgetPreset,
   decodeFriendlyWidgetDrag,
@@ -349,6 +350,13 @@ export default function PreviewMain() {
       includeEditorOverlays: true,
       layer: previewLayer,
       darkMode,
+      // Keep Shadow edit affordances on the same DOM block model as the
+      // layer panel. The callback was previously left unwired, so the sheet
+      // could be selected but never showed frame/drop-role state in-canvas.
+      getLayerRoleForBlock: (blockId) => {
+        const block = htmlLayerMap.get(blockId);
+        return block ? getLayerRole(block.type) : null;
+      },
       // Phase B — Shadow 안 element 클릭 → workspaceStore.selectedBlockId 갱신.
       // origin 'preview' — 양방향 sync 시 src 구분.
       onSelect: (blockId) => setSelected(blockId, 'preview'),
@@ -539,7 +547,7 @@ export default function PreviewMain() {
       }
       cleanup();
     };
-  }, [renderMode, parts, emitI18n, previewLayer, darkMode, setSelected]);
+  }, [renderMode, parts, emitI18n, previewLayer, darkMode, htmlLayerMap, setSelected]);
 
   // Phase B — selectedBlockId 변경 → Shadow 안 outline 동기화.
   // iframe 모드 or 미마운트 시 ref.current === null → noop.

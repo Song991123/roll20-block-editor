@@ -88,9 +88,26 @@ const ROLE_STYLES: Record<LayerRoleKind, Omit<LayerRole, 'kind'>> = {
   },
 };
 
+// A few composite blocks emit a real DOM container without a type token that
+// the generic classifier can infer. Keep these contracts explicit so the
+// layer panel and the Shadow edit surface agree about where children belong.
+const ROLE_KIND_OVERRIDES: Record<string, LayerRoleKind> = {
+  r20_value_switch_panel: 'frame',
+  r20_value_case: 'frame',
+};
+
+const CAN_RECEIVE_CHILDREN_OVERRIDES: Record<string, boolean> = {
+  // This composite emits one complete <tr>; it is reorderable in table flow,
+  // but arbitrary blocks cannot be inserted into the atomic row itself.
+  r20_skill_row: false,
+};
+
 export function getLayerRole(type: string): LayerRole {
-  const kind = classifyLayerRole(type);
-  return { kind, ...ROLE_STYLES[kind] };
+  const normalized = type.toLowerCase();
+  const kind = ROLE_KIND_OVERRIDES[normalized] ?? classifyLayerRole(normalized);
+  const role = { kind, ...ROLE_STYLES[kind] };
+  const canReceiveChildren = CAN_RECEIVE_CHILDREN_OVERRIDES[normalized];
+  return canReceiveChildren === undefined ? role : { ...role, canReceiveChildren };
 }
 
 export function canReceiveChildren(type: string): boolean {
@@ -184,9 +201,11 @@ export function canMoveLayerDrop(
 
 export function classifyLayerRole(type: string): LayerRoleKind {
   const t = type.toLowerCase();
+  const override = ROLE_KIND_OVERRIDES[t];
+  if (override) return override;
   const tokens = blockTypeTokens(t);
   if (hasAnyToken(tokens, ['script', 'worker', 'rolltemplate'])) return 'runtime';
-  if (hasAnyToken(tokens, ['table', 'tbody', 'thead', 'tfoot', 'tr', 'td', 'th'])) return 'table';
+  if (hasAnyToken(tokens, ['table', 'colgroup', 'col', 'tbody', 'thead', 'tfoot', 'tr', 'td', 'th'])) return 'table';
   if (hasAnyToken(tokens, ['row', 'col', 'colrow', 'grid', 'flex'])) return 'flow';
   if (hasAnyToken(tokens, ['div', 'span', 'section', 'fieldset', 'form', 'group', 'container', 'wrapper'])) {
     return 'frame';
