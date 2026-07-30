@@ -540,3 +540,22 @@ The direct manipulation smoke passed, and the persistent preview surface stayed
 on the same iframe for both modern and legacy local contracts. This confirms
 local interaction and surface stability only; actual Roll20 screenshot parity
 and room behavior remain open.
+
+## User-facing shell visual audit - 2026-07-31
+
+The static browser audit was corrected to mount the export at its configured
+base path. The desktop first screen rendered as a bounded pastel editor shell
+with the primary preview/edit flows, modern/legacy switch, import/export
+actions, and empty-workspace guidance. Console and page errors were zero.
+The earlier raw/narrow capture was a verifier 404 and is excluded from
+evidence. This does not establish imported-sheet parity or actual Roll20
+rendering.
+
+## Generated-output cleanup retry - 2026-07-31
+
+The current cleanup inventory contains only the reproducible
+`web-push-main/.next/` and `web-push-main/out/` directories; older generated,
+cache, and duplicate-report targets are absent. The host rejected the guarded
+recursive deletion before execution again, so these two directories remain.
+No alternate deletion path was used, and protected source, active
+dependencies, reports, and worktrees were preserved.

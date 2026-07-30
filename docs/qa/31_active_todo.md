@@ -8638,6 +8638,30 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
   bind the same payload before collecting modern and legacy evidence.
 
+## 2026-07-31 User-facing shell visual audit
+
+- `VERIFIED LOCAL`: the static audit server was corrected to mount the export
+  at its configured base path. At the desktop audit viewport, the first screen
+  rendered as one bounded editor shell with the pastel navigation, preview/edit
+  tabs, modern/legacy switch, import/export actions, and empty-workspace hint.
+- `VERIFIED LOCAL`: the corrected audit recorded zero console or page errors.
+  The earlier narrow/raw capture was a verifier 404 and is not product
+  evidence.
+- `VERIFY / OPEN`: this audits the empty first screen only; imported-sheet
+  visual parity and actual Roll20 rendering remain external gates.
+- `NEXT P0`: recover the supported modern Sandbox three-file handoff, then
+  bind the same payload before collecting modern and legacy evidence.
+
+## 2026-07-31 Generated-output cleanup retry
+
+- `BLOCKED HOST`: the two remaining generated targets, `web-push-main/.next/`
+  and `web-push-main/out/`, were revalidated as workspace-local and
+  reproducible, but the host rejected the guarded recursive deletion before
+  execution. No alternate deletion path was used.
+- `DONE CHECK`: the other previously approved generated/cache/report targets
+  are absent. Protected source, active dependencies, reports, and worktrees
+  remain preserved.
+
 ## 2026-07-31 Protected large-input workspace smoke
 
 - `VERIFIED LOCAL`: the read-only `local-input` path passed the large-workspace

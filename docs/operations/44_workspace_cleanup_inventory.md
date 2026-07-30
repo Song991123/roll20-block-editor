@@ -953,3 +953,21 @@ directories that had been recreated by the local build.
   native API, per-file workaround, or safety bypass was used.
 - PRESERVED: active `web-push-main/node_modules/`, source, reports, worktrees,
   local evidence policy, and protected external sheet roots remain untouched.
+
+## 2026-07-31 current-state correction after user-authorized retry
+
+- RECHECKED: the old worktree output, old dependency tree, broken metadata,
+  package-store metadata, and duplicate visual-report targets are absent.
+  The only two approved cleanup targets currently present are the reproducible
+  `web-push-main/.next/` and `web-push-main/out/` directories recreated by the
+  latest local build and browser audit.
+- ATTEMPTED: the user explicitly authorized deletion after confirming no
+  project or CDP listener and after resolving both exact targets inside the
+  active worktree.
+- BLOCKED: the host rejected the guarded recursive PowerShell deletion before
+  PowerShell execution. User approval cannot override this host execution
+  boundary.
+- NOT DELETED: the two generated directories remain. No alternate shell,
+  native API, per-file workaround, or safety bypass was used.
+- PRESERVED: active dependencies, source, fixtures policy, canonical reports,
+  worktrees, and protected external sheet roots remain untouched.

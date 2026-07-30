@@ -9372,3 +9372,24 @@ same-hash modern/legacy comparison.
   legacy contracts without iframe reloads.
 - This is local interaction/surface evidence only; actual Roll20 screenshot
   parity and room behavior remain external gates.
+
+## 2026-07-31 - User-facing shell visual audit
+
+- The static audit server was corrected to mount the export at its configured
+  base path. The desktop first screen now has verified bounded geometry for the
+  pastel shell, preview/edit tabs, modern/legacy switch, import/export actions,
+  and empty-workspace hint.
+- The corrected browser audit recorded zero console or page errors. The prior
+  narrow/raw capture was a verifier 404 and is not product evidence.
+- This is an empty-shell audit only. Imported-sheet visual parity and actual
+  Roll20 rendering remain external gates.
+
+## 2026-07-31 - Generated-output cleanup retry
+
+- The approved cleanup inventory was rechecked after the local build. Only the
+  reproducible `web-push-main/.next/` and `web-push-main/out/` targets remain;
+  older generated/cache/report targets are absent.
+- The host rejected the guarded recursive deletion before execution again.
+  No alternate shell, native API, per-file workaround, or safety bypass was
+  used. Protected source, active dependencies, reports, and worktrees remain
+  untouched.
