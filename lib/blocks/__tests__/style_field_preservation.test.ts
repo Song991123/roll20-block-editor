@@ -172,6 +172,12 @@ function testI18nAriaLabelClassPreserved(): void {
   );
   const style = fieldValue(r.html, 'STYLE');
   assert(style === 'display:block', `i18n_aria_label STYLE preserved, got "${style}"`);
+
+  const divResult = importSheet({
+    html: `<div data-i18n-aria-label="panel.label" aria-label="Panel" class="sheet-panel"></div>`,
+  });
+  assert(divResult.html.includes('r20_i18n_aria_label'), 'div aria-label block matched');
+  assert(fieldValue(divResult.html, 'TAG') === 'div', 'i18n aria-label TAG is preserved');
 }
 
 // ---------- 빈 style → STYLE="" (no `style=""` emit) ----------

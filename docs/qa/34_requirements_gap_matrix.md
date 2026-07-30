@@ -2,6 +2,19 @@
 
 Date: 2026-06-12
 
+## Latest Local Import Fidelity Reconciliation: 2026-07-30
+
+- `data-i18n-aria-label` now preserves the source tag through a shared i18n
+  tag policy. Supported tags carry an editable `TAG` field into the generated
+  HTML; unsupported tags no longer get forced into the aria-label block and
+  continue through the generic/container path.
+- VERIFIED LOCAL: import-structure `41/41`, emit contract, lint, production
+  build, full `ci:verify`, persistent preview modern/legacy, edit-flow, strict
+  imported-edit synchronization, and legacy preview smoke all pass.
+- BOUNDARY: This closes one targeted structure-loss candidate. It does not
+  prove arbitrary HTML/CSS losslessness, actual Roll20 visual parity, worker
+  runtime parity, or legacy-room verification.
+
 ## Latest Local Role Reconciliation: 2026-07-30
 
 - The visual layer classifier now covers the remaining built-in display atoms:

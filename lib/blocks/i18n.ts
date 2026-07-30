@@ -13,6 +13,7 @@
 import * as Blockly from 'blockly';
 import { type BlockDef, type GeneratorContext, ORDER } from './types';
 import { styleAttr } from './style_field';
+import { pickI18nDisplayTag } from './i18nTagPolicy';
 
 // ---------- 카테고리 / 상수 ----------
 
@@ -94,12 +95,8 @@ function pickLanguage(raw: string, fallback = 'en'): string {
 
 /** r20_i18n_text 의 TAG 필드 화이트리스트 — 매처 set 과 동기화.
  * 미허용 시 'span' fallback (backwards-compat). */
-const I18N_TEXT_ALLOWED_TAGS = new Set([
-  'span', 'div', 'label', 'strong', 'b', 'em', 'small', 'p', 'td', 'th',
-]);
 function pickI18nTextTag(raw: string): string {
-  const s = String(raw ?? '').trim().toLowerCase();
-  return I18N_TEXT_ALLOWED_TAGS.has(s) ? s : 'span';
+  return pickI18nDisplayTag(raw);
 }
 
 /**
@@ -320,6 +317,9 @@ export const I18N_BLOCKS: BlockDef[] = [
         .appendField('기본 aria-label')
         .appendField(new Blockly.FieldTextInput('Accessible label'), 'DEFAULT');
       b.appendDummyInput()
+        .appendField('태그')
+        .appendField(new Blockly.FieldTextInput('span'), 'TAG');
+      b.appendDummyInput()
         .appendField('클래스')
         .appendField(new Blockly.FieldTextInput(''), 'CLASS');
       b.appendDummyInput()
@@ -332,10 +332,11 @@ export const I18N_BLOCKS: BlockDef[] = [
       const style = String(b.getFieldValue('STYLE') ?? '');
       const key = sanitizeKey(String(b.getFieldValue('KEY') ?? ''));
       const def = String(b.getFieldValue('DEFAULT') ?? '');
+      const tag = pickI18nDisplayTag(String(b.getFieldValue('TAG') ?? 'span'));
       const cls = String(b.getFieldValue('CLASS') ?? '');
       return (
-        `<span${attr('data-i18n-aria-label', key)}${attr('aria-label', def)}` +
-        `${sheetClassAttr(cls)}${styleAttr(style)}></span>`
+        `<${tag}${attr('data-i18n-aria-label', key)}${attr('aria-label', def)}` +
+        `${sheetClassAttr(cls)}${styleAttr(style)}></${tag}>`
       );
     },
   },

@@ -171,6 +171,22 @@ function testGenericCssTagEmit(): void {
   workspace.dispose();
 }
 
+function testI18nAriaLabelTagEmit(): void {
+  registerAllBlocks();
+  const workspace = new Blockly.Workspace();
+  const block = workspace.newBlock('r20_i18n_aria_label');
+  block.setFieldValue('panel.label', 'KEY');
+  block.setFieldValue('Panel', 'DEFAULT');
+  block.setFieldValue('div', 'TAG');
+  block.setFieldValue('panel', 'CLASS');
+
+  const result = emitAll({ html: workspace });
+  assert(result.html.includes('<div'), 'i18n aria-label keeps the authored tag');
+  assert(result.html.includes('data-i18n-aria-label="panel.label"'), 'i18n aria key is emitted');
+  assert(!result.html.includes('<span data-i18n-aria-label="panel.label"'), 'aria label is not forced to span');
+  workspace.dispose();
+}
+
 function testTypedPageScriptExportPreserved(): void {
   registerAllBlocks();
   const workspace = new Blockly.Workspace();
@@ -317,6 +333,7 @@ testInlineBreakClassEmit();
 testTopLevelWhitespaceTextRoundTrip();
 testInlineFlowDoesNotGainWhitespace();
 testGenericCssTagEmit();
+testI18nAriaLabelTagEmit();
 testTypedPageScriptExportPreserved();
 testUntypedPageScriptExportPreserved();
 testEditablePageScriptExportPreserved();

@@ -1,3 +1,18 @@
+## 2026-07-30 i18n aria-label tag preservation
+
+- DONE LOCAL: Added a shared i18n display-tag policy and preserved the source
+  tag for `data-i18n-aria-label` blocks through import and emit. Unsupported
+  tags are left for the generic/container matcher instead of being rewritten
+  to `<span>`.
+- VERIFIED LOCAL: style/import tests `16/16`, import structure `41/41`, emit
+  contract, lint, build, full `ci:verify`, modern/legacy persistent preview,
+  edit-flow, strict imported-edit sync, and legacy preview smoke pass.
+- VERIFY OPEN: This is one targeted mapping correction, not full HTML/CSS
+  losslessness or actual Roll20 parity. Sandbox upload and dedicated legacy
+  room evidence remain open.
+- NEXT P0: Complete the user-visible three-file selection in the isolated
+  modern Sandbox, then capture positive root/state/worker/roll/chat evidence.
+
 ## 2026-07-30 Anonymous Sandbox payload regenerated
 
 - DONE LOCAL: Regenerated an anonymous three-file Sandbox payload under

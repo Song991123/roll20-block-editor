@@ -383,7 +383,9 @@ function expectedBlockType(node) {
   }
   if (a['data-i18n-html'] && (tag === 'span' || tag === 'div')) return 'r20_i18n_html';
   if (a['data-i18n-title']) return 'r20_i18n_title';
-  if (a['data-i18n-aria-label']) return 'r20_i18n_aria_label';
+  if (a['data-i18n-aria-label'] && ['span','div','label','strong','b','em','small','p','td','th'].includes(tag)) {
+    return 'r20_i18n_aria_label';
+  }
   if (tag === 'legend' && a['data-i18n']) return 'r20_i18n_legend';
 
   // matchDisplay

@@ -23,6 +23,7 @@ import { parseSheetWorkerScript } from './script_parser';
 import { isRoll20WorkerScript } from './worker_source';
 import { isSemanticContainerTag } from '../blocks/semanticTags';
 import { isEditableElementTag, isVoidElementTag } from '../blocks/elementTags';
+import { I18N_DISPLAY_TAG_SET } from '../blocks/i18nTagPolicy';
 import { parsePageJsSlotComment } from './pageJsWorkspace';
 
 export interface MatchedBlock {
@@ -494,12 +495,16 @@ function matchI18n(node: DomNode, _ctx: MatchContext): MatchedBlock | null {
       children: {},
     };
   }
-  if (a['data-i18n-aria-label']) {
+  // Keep this block limited to tags its generator can emit. Unsupported
+  // elements continue through the generic/container matchers, which preserve
+  // their original tag and attributes instead of being rewritten to <span>.
+  if (a['data-i18n-aria-label'] && I18N_DISPLAY_TAG_SET.has(tag)) {
     return {
       blockType: 'r20_i18n_aria_label',
       fields: {
         KEY: a['data-i18n-aria-label'],
         DEFAULT: a['aria-label'] || '',
+        TAG: tag,
         CLASS: stripSheetPrefix(a.class || ''),
         STYLE: a.style || '',
       },
