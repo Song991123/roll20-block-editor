@@ -9,10 +9,10 @@ local output and is deleted after the verification batch.
 
 ## Current Checkpoint - 2026-07-31
 
-- Active branch: `claude/design-reset` at `d735915`. The branch is pushed to
+- Active branch: `claude/design-reset` at `96b5caf`. The branch is pushed to
   `origin` and the worktree is clean.
-- Remote CI: run `30572738232` passed safety/unit verification, lint, and
-  build for `d735915`.
+- Remote CI: run `30573343174` passed safety/unit verification, lint, and
+  build for `96b5caf`.
 - Static corpus inventory: two protected external roots were read-only scanned;
   the anonymous aggregate contains `1,428` sheet directories and `18,550`
   candidate files. This is inventory evidence only and does not establish
@@ -35,6 +35,9 @@ local output and is deleted after the verification batch.
   warning in the result panel; the browser smoke enters the CSS tab, verifies
   the warning, and confirms the emitted rule changes the preview iframe's
   computed style with one persistent iframe and zero browser errors.
+- Cascade recheck: the optional renderer-model CSS is emitted before
+  authored user CSS in both iframe and Shadow bundle paths, with source-order
+  assertions in the build-doc test. This is local cascade evidence only.
 - Roll20 external state: the current in-app browser has no attached tab and
   the existing Chrome tab inventory has no Roll20 target, so authenticated
   Sandbox and dedicated legacy-room verification remain open. No credentials
