@@ -18,7 +18,9 @@ Date: 2026-06-12
 - The importer now reports HTML, CSS, and combined structured coverage
   separately. A 32-selection anonymous read-only batch passed determinism and
   structural fingerprint checks; it still found five CSS raw fallbacks, so
-  this is not an all-sheet 100% mapping claim.
+  this is not an all-sheet 100% mapping claim. The same batch measured CSS
+  coverage from `94.6%` to `100%`, combined structured coverage from `97.7%`
+  to `100%`, and `50` total importer warnings.
 - The latest browser check found the existing in-app Roll20 tab on the login
   screen, not an authenticated editor or Sandbox. No authentication,
   upload, save, room mutation, or public evidence was created.

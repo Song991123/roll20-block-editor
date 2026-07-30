@@ -17,6 +17,11 @@
   structured coverage values in the import result.
 - VERIFY / OPEN: Expand anonymous import coverage and complete the permitted
   modern Sandbox plus separate legacy-room visual/runtime checks.
+- VERIFIED METRIC RECHECK: On the same 32-selection batch, HTML coverage was
+  `100%` for every selection, CSS coverage ranged from `94.6%` to `100%`,
+  combined structured coverage ranged from `97.7%` to `100%`, and warning
+  totals were `50` across the batch. These are anonymous local measurements,
+  not a claim of all-sheet or Roll20 visual parity.
 
 ## 2026-07-31 Roll20 browser authentication preflight
 

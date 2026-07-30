@@ -16,6 +16,10 @@
   coverage, and warning totals separately.
 - The remaining gates are anonymous broader import coverage and permitted
   modern Sandbox plus separate legacy-room checks.
+- Re-running that batch after the metric patch reported HTML `100%` across
+  the batch, CSS `94.6-100%`, combined structured coverage `97.7-100%`, and
+  `50` total warnings. This keeps CSS fallback and warning scope visible
+  without retaining any source identity in the repository.
 
 ## 2026-07-31 - Roll20 browser authentication preflight
 

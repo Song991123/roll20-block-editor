@@ -28,6 +28,9 @@ local output and is deleted after the verification batch.
   proves CSS coverage.
 - Import metric patch: code commit `1b7d0f5` adds HTML/CSS/combined coverage
   and warning totals while preserving the historical HTML `coverage` field.
+- Metric recheck for the anonymous 32-selection batch: HTML `100%` for every
+  selection, CSS `94.6-100%`, combined structured coverage `97.7-100%`, and
+  `50` total warnings. This is local importer evidence only.
 - Roll20 external state: the existing browser tab is currently the login
   screen, so authenticated Sandbox and dedicated legacy-room verification are
   still open. No credentials or external sheet payload were transmitted.
