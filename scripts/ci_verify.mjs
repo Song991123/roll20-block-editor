@@ -30,6 +30,7 @@ const tasks = [
   'test:blockly-layer-operations',
   'test:design-position',
   'test:iframe-drop-target',
+  'test:drop-indicator',
   'test:blockly-sound-policy',
   'test:iframe-edit-bridge',
   'test:build-doc-bundle',

@@ -1,3 +1,22 @@
+## 2026-07-30 Exact before/inside/after drop indicators
+
+- DONE LOCAL: The persistent iframe overlay now paints `before` and `after`
+  as thin edge insertion lines and `inside` as a full container frame. Each
+  mode has a plain Korean action label; the layer panel uses the same visual
+  distinction instead of one ambiguous full-row highlight.
+- VERIFIED BROWSER: `smoke:edit-flow -- --port 4197` observed exact `before`
+  and `after` modes, `data-r20-drop-indicator=exact`, labels `앞에 놓기` /
+  `뒤에 놓기`, and 4px marker height while the flow move remained immediate
+  and authoritative after emit/apply.
+- VERIFIED LOCAL: `test:drop-indicator`, iframe drop-target tests, lint, and
+  production build pass. The new helper is geometry-only and does not enter
+  the Roll20 iframe stylesheet.
+- CLAIM BOUNDARY: This improves local edit affordance truthfulness only. It
+  does not promote actual modern Sandbox or dedicated legacy-room parity.
+- NEXT P0: Complete user-visible three-file selection in the isolated modern
+  Sandbox, then capture positive root/state/worker/roll/chat evidence. Keep
+  legacy verification in a separate participant-gated test room.
+
 ## 2026-07-30 Modern Sandbox file-selection retry
 
 - VERIFIED EXTERNAL: The isolated Sandbox showed exactly one visible member and

@@ -66,6 +66,13 @@ invent separate DOM models.
 These colors describe editability and structure, not the imported sheet's
 actual styling. They must never enter the Roll20 iframe stylesheet.
 
+Exact insertion feedback is separate from role color: `before` and `after`
+paint a thin teal edge line at the target's corresponding boundary, while
+`inside` paints a rose frame around the candidate container. The same mode
+label and distinction are used by the parent-owned iframe overlay and the
+layer-panel row. A candidate container is therefore not presented as an
+already-selected insertion position.
+
 ## Verification Boundary
 
 Local tests cover classification, cycle protection, before/inside/after layer

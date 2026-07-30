@@ -45,6 +45,7 @@ import {
 } from '@/lib/editor/iframeDropTarget';
 import { commitManagedDesignPosition } from '@/lib/editor/designPosition';
 import { getLayerRole } from '@/lib/editor/layerRoles';
+import { dropIndicatorLabel, getDropIndicatorRect } from '@/lib/editor/dropIndicator';
 import {
   appendFriendlyWidgetPreset,
   decodeFriendlyWidgetDrag,
@@ -1508,24 +1509,43 @@ export default function PreviewMain() {
               />
             )}
             {renderMode === 'iframe' && mainMode === 'edit' && iframeEditDropTarget && (
-              <div
-                aria-hidden="true"
-                data-testid="iframe-edit-drop-overlay"
-                data-r20-drop-target-id={iframeEditDropTarget.blockId}
-                data-r20-drop-mode={iframeEditDropTarget.mode}
-                className={`pointer-events-none absolute z-30 border-2 ${
-                  iframeEditDropTarget.mode === 'inside'
-                    ? 'border-rose-500 bg-rose-400/10'
-                    : 'border-teal-500 bg-teal-400/10'
-                }`}
-                style={{
-                  left: `${iframeEditDropTarget.geometry.rect.left}px`,
-                  top: `${iframeEditDropTarget.geometry.rect.top}px`,
-                  width: `${iframeEditDropTarget.geometry.rect.width}px`,
-                  height: `${iframeEditDropTarget.geometry.rect.height}px`,
-                  boxSizing: 'border-box',
-                }}
-              />
+              (() => {
+                const indicator = getDropIndicatorRect(
+                  iframeEditDropTarget.mode,
+                  iframeEditDropTarget.geometry.rect,
+                );
+                const inside = iframeEditDropTarget.mode === 'inside';
+                return (
+                  <div
+                    aria-hidden="true"
+                    data-testid="iframe-edit-drop-overlay"
+                    data-r20-drop-target-id={iframeEditDropTarget.blockId}
+                    data-r20-drop-mode={iframeEditDropTarget.mode}
+                    data-r20-drop-indicator="exact"
+                    className={`pointer-events-none absolute z-30 box-border ${
+                      inside
+                        ? 'rounded-sm border-2 border-rose-500 bg-rose-400/10'
+                        : 'rounded-full border-2 border-teal-600 bg-teal-400/30 shadow-[0_0_0_2px_rgba(20,184,166,0.18)]'
+                    }`}
+                    style={{
+                      left: `${indicator.left}px`,
+                      top: `${indicator.top}px`,
+                      width: `${indicator.width}px`,
+                      height: `${indicator.height}px`,
+                    }}
+                  >
+                    <span
+                      data-testid="iframe-edit-drop-label"
+                      className={`absolute left-1 z-10 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4 text-white shadow-sm ${
+                        inside ? 'bg-rose-600' : 'bg-teal-700'
+                      }`}
+                      style={{ top: inside || iframeEditDropTarget.mode === 'before' ? '4px' : '-24px' }}
+                    >
+                      {dropIndicatorLabel(iframeEditDropTarget.mode)}
+                    </span>
+                  </div>
+                );
+              })()
             )}
             </div>
           </div>

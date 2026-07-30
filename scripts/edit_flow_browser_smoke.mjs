@@ -218,7 +218,30 @@ async function main() {
     ));
     await page.mouse.move(rowABox.x + rowABox.width / 2, rowABox.y + rowABox.height / 2);
     await page.mouse.down();
+    await page.mouse.move(rowBBox.x + rowBBox.width / 2, rowBBox.y + rowBBox.height * 0.08, { steps: 4 });
+    await page.waitForTimeout(40);
+    const beforeDropIndicator = await page.evaluate(() => {
+      const overlay = document.querySelector('[data-testid="iframe-edit-drop-overlay"]');
+      const label = overlay?.querySelector('[data-testid="iframe-edit-drop-label"]');
+      return {
+        mode: overlay?.getAttribute('data-r20-drop-mode') ?? null,
+        indicator: overlay?.getAttribute('data-r20-drop-indicator') ?? null,
+        label: label?.textContent?.trim() ?? null,
+        height: overlay ? Number.parseFloat(getComputedStyle(overlay).height) : null,
+      };
+    });
     await page.mouse.move(rowBBox.x + rowBBox.width / 2, rowBBox.y + rowBBox.height * 0.92, { steps: 6 });
+    await page.waitForTimeout(40);
+    const afterDropIndicator = await page.evaluate(() => {
+      const overlay = document.querySelector('[data-testid="iframe-edit-drop-overlay"]');
+      const label = overlay?.querySelector('[data-testid="iframe-edit-drop-label"]');
+      return {
+        mode: overlay?.getAttribute('data-r20-drop-mode') ?? null,
+        indicator: overlay?.getAttribute('data-r20-drop-indicator') ?? null,
+        label: label?.textContent?.trim() ?? null,
+        height: overlay ? Number.parseFloat(getComputedStyle(overlay).height) : null,
+      };
+    });
     await page.mouse.up();
     await page.waitForTimeout(40);
     result.tests.iframeFlowReparent = await frame.evaluate(({ rowAId, rowBId, frameId, flowRollbackBefore }) => {
@@ -245,6 +268,10 @@ async function main() {
         rowBConnected: Boolean(rowB?.isConnected),
       };
     }, { ...ids, flowRollbackBefore });
+    result.tests.iframeFlowReparent.dropIndicator = {
+      before: beforeDropIndicator,
+      after: afterDropIndicator,
+    };
     assert(
       result.tests.iframeFlowReparent.immediateAfter,
       `iframe flow drag did not move immediately: ${JSON.stringify(result.tests.iframeFlowReparent)}`,
@@ -254,6 +281,22 @@ async function main() {
       'iframe flow drag changed the rendered parent unexpectedly',
     );
     assert(result.tests.iframeFlowReparent.rollbackFree, 'iframe flow drag rolled back unexpectedly');
+    assert(
+      result.tests.iframeFlowReparent.dropIndicator.before.mode === 'before'
+        && result.tests.iframeFlowReparent.dropIndicator.before.indicator === 'exact'
+        && result.tests.iframeFlowReparent.dropIndicator.before.label === '앞에 놓기'
+        && Number.isFinite(result.tests.iframeFlowReparent.dropIndicator.before.height)
+        && result.tests.iframeFlowReparent.dropIndicator.before.height <= 12,
+      `before drop indicator was not an exact insertion line: ${JSON.stringify(result.tests.iframeFlowReparent.dropIndicator.before)}`,
+    );
+    assert(
+      result.tests.iframeFlowReparent.dropIndicator.after.mode === 'after'
+        && result.tests.iframeFlowReparent.dropIndicator.after.indicator === 'exact'
+        && result.tests.iframeFlowReparent.dropIndicator.after.label === '뒤에 놓기'
+        && Number.isFinite(result.tests.iframeFlowReparent.dropIndicator.after.height)
+        && result.tests.iframeFlowReparent.dropIndicator.after.height <= 12,
+      `after drop indicator was not an exact insertion line: ${JSON.stringify(result.tests.iframeFlowReparent.dropIndicator.after)}`,
+    );
     await page.waitForTimeout(700);
     const authoritativeFrame = await frame.evaluate(({ rowAId, rowBId }) => {
       const frame = document;

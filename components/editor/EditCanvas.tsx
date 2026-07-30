@@ -717,8 +717,26 @@ const EditLayerRow = memo(function EditLayerRow({
         )}
       />
       {dropMode && (
-        <span className="pointer-events-none absolute right-1 top-1/2 z-[1] -translate-y-1/2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
-          {formatDropModeLabel(dropMode)}
+        <span
+          aria-hidden="true"
+          data-testid="edit-layer-drop-marker"
+          className={cn(
+            'pointer-events-none absolute z-[2] rounded-full',
+            dropMode === 'inside'
+              ? 'inset-0 rounded-lg border-2 border-rose-500 bg-rose-400/10'
+              : dropMode === 'before'
+                ? 'left-0 right-0 top-0 h-1 bg-teal-600 shadow-[0_0_0_2px_rgba(20,184,166,0.18)]'
+                : 'bottom-0 left-0 right-0 h-1 bg-teal-600 shadow-[0_0_0_2px_rgba(20,184,166,0.18)]',
+          )}
+        >
+          <span
+            className={cn(
+              'absolute left-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold leading-4 text-white shadow-sm',
+              dropMode === 'inside' ? 'top-1 bg-rose-600' : dropMode === 'before' ? 'top-1 bg-teal-700' : '-top-6 bg-teal-700',
+            )}
+          >
+            {formatDropModeLabel(dropMode)}
+          </span>
         </span>
       )}
       <span

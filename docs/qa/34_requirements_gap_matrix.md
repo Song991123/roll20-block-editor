@@ -2,6 +2,18 @@
 
 Date: 2026-06-12
 
+## Latest Local Edit Affordance Reconciliation: 2026-07-30
+
+- The parent-owned iframe overlay now distinguishes exact `before`, `inside`,
+  and `after` insertion: before/after are thin edge lines and inside is a
+  container frame. The layer panel exposes the same state and action labels.
+- VERIFIED LOCAL: drop-indicator unit test, iframe drop-target tests, lint,
+  build, and browser edit-flow smoke pass. The smoke observed 4px before/after
+  lines and stable model/emitted/rendered order after commit.
+- BOUNDARY: This is edit UX evidence only. It does not close the actual modern
+  Sandbox upload, Roll20 visual parity, worker/chat runtime, or dedicated
+  legacy-room gates.
+
 ## Latest External Sandbox File-Selection Retry: 2026-07-30
 
 - The isolated modern Sandbox visibly reported one member and all three upload

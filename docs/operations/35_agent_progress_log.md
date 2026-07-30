@@ -1,3 +1,18 @@
+## 2026-07-30 - Exact before/inside/after drop indicators
+
+- IMPLEMENTED: Added a small geometry helper for the parent-owned iframe
+  overlay. `before` and `after` now use exact edge lines while `inside` keeps
+  the target bounds as a container frame; the layer-panel row paints the same
+  distinction and action label.
+- VERIFIED: `test:drop-indicator`, `test:iframe-drop-target`, lint, build, and
+  browser `smoke:edit-flow` passed. The browser evidence observed `before` /
+  `after`, `exact`, Korean labels, 4px lines, zero console/page errors, and
+  authoritative model/HTML/iframe order after the drop.
+- BOUNDARY: This is anonymous local editor evidence. It does not prove actual
+  Roll20 visual parity or legacy-room behavior.
+- NEXT: Finish the isolated modern Sandbox file-selection handoff, then run
+  the separate legacy-enabled room gate only after a fresh solo preflight.
+
 ## 2026-07-30 - Modern Sandbox file-selection retry
 
 - VERIFIED EXTERNAL: The isolated Sandbox still showed exactly one visible
