@@ -862,3 +862,14 @@ not close the external Roll20 parity rows above.
   so wrapper context is still a two-pixel delta and not a parity pass.
 - OPEN: normalized crop and same-payload attachment readback are still missing;
   worker mutation remains unverified when a worker-bearing payload is used.
+
+## Worker Runtime Handoff - 2026-07-31
+
+- VERIFIED LOCAL: worker source preservation remains covered by the anonymous
+  local fixture and is separate from visual render evidence.
+- VERIFY / BLOCKED EXTERNAL: the dedicated modern Sandbox file-input surface
+  rejected the supported browser handoff as `unsupported-browser-primitive`.
+  No worker payload was accepted or activated, so no live mutation claim is
+  recorded.
+- PRESERVED: the dedicated legacy destination was not changed after the modern
+  handoff failed; no ordinary room was used.

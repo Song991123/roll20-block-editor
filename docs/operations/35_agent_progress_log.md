@@ -9819,3 +9819,18 @@ same-hash modern/legacy comparison.
   and missing attachment readback rather than claiming parity.
 - Next P0: capture a supported lossless root crop and bind it to the exact
   locally generated payload; only then revisit the two-pixel wrapper delta.
+
+## 2026-07-31 - Worker runtime handoff boundary
+
+- Verified local: the worker-bearing anonymous fixture preserves its worker
+  source through local import/emit, while the actual-runtime gate keeps worker
+  state separate from DOM and geometry checks.
+- Blocked external: the dedicated modern Sandbox passed the exactly-one-member
+  preflight and exposed file controls, but the supported browser handoff
+  returned `unsupported-browser-primitive`. No worker payload was accepted,
+  activated, or observed mutating an attribute.
+- Safety: the dedicated legacy destination was not modified after the modern
+  handoff failed; ordinary rooms remained untouched.
+- Next P0: recover a supported file-input/CDP handoff, then run independent
+  modern and legacy worker mutation smokes before promoting worker runtime
+  status.

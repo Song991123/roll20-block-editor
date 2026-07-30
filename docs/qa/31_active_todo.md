@@ -9100,6 +9100,21 @@ If fixtures are needed, copy selected files into workspace-owned ignored folders
 - `OPEN`: Normalized root crop, external attachment hash/readback, and live
   worker mutation remain `VERIFY`; neither mode is promoted to visual parity.
 
+## 2026-07-31 Worker runtime handoff boundary
+
+- `VERIFIED LOCAL`: The worker-bearing anonymous fixture still passes local
+  source-to-emitted worker preservation and the new geometry gate can report
+  worker status independently from visual DOM checks.
+- `VERIFY / BLOCKED EXTERNAL`: The dedicated modern Sandbox showed exactly one
+  participant and its file controls, but the supported browser surface
+  reported `unsupported-browser-primitive` while dispatching the worker
+  payload. No worker payload was accepted, activated, or mutated in Roll20.
+- `SAFETY`: The dedicated legacy destination was not modified after the modern
+  handoff failed. Ordinary rooms remain untouched.
+- `NEXT P0`: Recover a supported file-input/CDP handoff, apply the worker
+  payload independently to modern Sandbox and the dedicated legacy room, then
+  observe a generic attribute mutation before updating worker status.
+
 ## 2026-07-31 Copyright-safe Sandbox smoke entrypoint
 
 - `DONE LOCAL`: added `smoke:roll20-sandbox-preview:synthetic`, which creates
