@@ -21,9 +21,12 @@
 - DONE LOCAL: Imported edit-sync strict smoke passed for synthetic generic and
   non-leaf flow fixtures; persistent preview surface passed for modern and
   legacy; edit-flow and worker workspace smokes passed.
-- VERIFY OPEN: The visual-fixture smoke could not start because the local
-  `test-fixtures/visual` directory is intentionally absent from the public
-  worktree. No copyrighted or source-identifying fixture was recreated.
+- DONE LOCAL: An anonymous synthetic fixture in ignored `.tmp/visual-synthetic`
+  rendered preview and edit for both modern and legacy. Pixel diff was `0`
+  pixels / `0 ppm` in both modes, with nonblank screenshots and i18n `1/1`.
+- VERIFY OPEN: The standard `test-fixtures/visual` directory remains absent by
+  policy. No copyrighted or source-identifying fixture was recreated; the
+  synthetic result is not actual Roll20 parity evidence.
 
 ## 2026-07-30 Archive cleanup completed
 

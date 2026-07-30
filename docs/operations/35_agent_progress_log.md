@@ -17,8 +17,12 @@
   modern/legacy, edit-flow, and worker workspace smokes passed.
 - VERIFIED LOCAL: Blank new sheets emit no ghost `sheet-section`, use the
   `850px` default canvas, and keep one persistent iframe across edit/preview.
-- OPEN: Visual-fixture smoke needs a user-provided or locally copied ignored
-  fixture; the public worktree intentionally contains none.
+- VERIFIED LOCAL: An anonymous synthetic fixture under ignored
+  `.tmp/visual-synthetic` rendered nonblank preview/edit screenshots for both
+  modern and legacy with `0` mismatched pixels / `0 ppm` and i18n `1/1`.
+- OPEN: The public worktree intentionally has no real-sheet visual fixture.
+  Synthetic pixel equality does not promote the result to actual Roll20
+  parity.
 
 ## 2026-07-30 - Explicit archive deletion completed
 
